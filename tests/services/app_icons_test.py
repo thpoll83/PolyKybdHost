@@ -225,7 +225,15 @@ class UserAgentTest(unittest.TestCase):
             def __enter__(self): return self
             def __exit__(self, *a): return False
 
-        def fake_open(request, timeout=None):
+        def fake_open(request, timeout=None, context=None):
+            # ⚠️ `context` is not padding: the fetch passes a trust store built
+            # from BOTH the platform store and certifi, because a python.org
+            # macOS build gives urllib neither and every mark died with
+            # CERTIFICATE_VERIFY_FAILED. A fake without the parameter raises a
+            # TypeError that `fetch_icon` swallows, so the whole test passes
+            # over its own subject -- which is how this failed when the trust
+            # store landed.
+            seen["context"] = context
             seen["ua"] = request.get_header("User-agent")
             seen["url"] = request.full_url
             return FakeResponse()
@@ -236,6 +244,7 @@ class UserAgentTest(unittest.TestCase):
         self.assertEqual(seen["ua"], ai.USER_AGENT)
         self.assertNotIn("urllib", seen["ua"].lower())
         self.assertIn("microsoft-word", seen["url"])
+        self.assertIsNotNone(seen["context"], "no trust store was passed")
 
 
 class OfflineTest(unittest.TestCase):

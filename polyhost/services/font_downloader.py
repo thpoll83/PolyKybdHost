@@ -22,6 +22,8 @@ import tempfile
 import urllib.request
 from dataclasses import dataclass
 
+from polyhost.util.https import ssl_context
+
 
 class DownloadCancelled(Exception):
     """Raised by download_font when the caller's cancel event is set mid-transfer."""
@@ -169,7 +171,10 @@ def download_font(font: NotoFont, dest_dir: str | None = None,
     os.close(fd)
     req = urllib.request.Request(font.url, headers={"User-Agent": "PolyKybdHost"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        # ⚠️ `context=` — see `util.https`; without it this cannot fetch a Noto
+        # source on a python.org macOS build.
+        with urllib.request.urlopen(req, timeout=timeout,
+                                    context=ssl_context()) as resp:
             total = int(resp.headers.get("Content-Length", -1))
             done = 0
             with open(tmp, "wb") as f:

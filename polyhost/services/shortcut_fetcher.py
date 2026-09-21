@@ -292,8 +292,10 @@ class ShortcutIconFetcher:
         overlays: dict = {}
         for face, names in sorted(by_face.items()):
             wanted = sorted(set(names) | set(floor.get(face, ())))
+            reasons: dict = {}
             try:
-                font = icon_catalog.fetch_subset(wanted, self._cache_dir, face=face)
+                font = icon_catalog.fetch_subset(wanted, self._cache_dir, face=face,
+                                                 reasons=reasons)
                 table = (codepoints if face == icon_catalog.MATERIAL
                          else icon_catalog.load_codepoints(self._cache_dir, face=face))
             except Exception:
@@ -303,7 +305,17 @@ class ShortcutIconFetcher:
             if not font or not table:
                 # ⚠️ Per face, not fatal: Fluent being unreachable must still
                 # leave the Material half drawn rather than blanking the app.
-                self._say(app, f"the {face} icons are neither cached nor reachable")
+                #
+                # ⚠️ And it names WHICH of the two is missing and WHY. The bare
+                # sentence reads the same for a refused download, an unwritable
+                # cache, a proxy page served with a 200 and a stylesheet that
+                # carried no url -- four causes with four different remedies,
+                # and nothing below INFO said anything at all (field, macOS,
+                # 2026-09-21: both faces failed and the log could not narrow it).
+                missing = ("the font" if not font else "the codepoint table")
+                self._say(app, f"the {face} icons are neither cached nor "
+                               f"reachable -- {missing} is missing"
+                               + (f" ({reasons[face]})" if reasons.get(face) else ""))
                 continue
             try:
                 overlays.update(shortcut_overlays.render(

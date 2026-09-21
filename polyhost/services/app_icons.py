@@ -126,6 +126,7 @@ _EXE_SUFFIX_RE = re.compile(r"\.(exe|app|bin)$")
 # docstring describes: the lookup finds bytes, this side renders them, and
 # the dependency runs one way only (see `tools/os_icon_probe.py`).
 from polyhost.services import icon_binarise
+from polyhost.util.https import ssl_context
 
 log = logging.getLogger("PolyHost")
 
@@ -361,7 +362,12 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
     url = SOURCES[source].format(name=name)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+        # ⚠️ `context=` is load-bearing, not tidiness: a python.org macOS build
+        # gives urllib no certificate store, so this died with
+        # CERTIFICATE_VERIFY_FAILED on every mark while `requests` worked in the
+        # same process. See `util.https`.
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT,
+                                    context=ssl_context()) as response:
             data = response.read()
     except urllib.error.HTTPError as exc:
         log.debug("No catalog mark for '%s' (HTTP %s)", slug, exc.code)

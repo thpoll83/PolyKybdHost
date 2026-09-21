@@ -82,7 +82,7 @@ from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
-from polyhost.gui.dialog_util import position_near_tray
+from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui import about_dialog
 from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.server.control_server import ControlServer
@@ -251,6 +251,14 @@ class PolyHost(QApplication):
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
+        # ⚠️ Directly after it, because it is the COST of the line above: an
+        # accessory app is never promoted to active by opening a window, so
+        # without this every dialog the tray opens lands behind whatever the
+        # user was in. One filter rather than a call at each `show()` -- there
+        # are a dozen sites across the two apps and `.exec_()` modals among
+        # them. See `gui.dialog_util.install_front_on_show`.
+        from polyhost.gui.dialog_util import install_front_on_show
+        install_front_on_show(self)
         # `verbosity` is the log level knob (--dev N); `developer` is the feature
         # surface (the --dev flag, else the persisted developer_mode setting) —
         # the two are deliberately separate, so the settings toggle can reveal the
@@ -1566,8 +1574,7 @@ class PolyHost(QApplication):
                 parent=None,
                 diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
         self.report_problem_dialog.show()
-        self.report_problem_dialog.raise_()
-        self.report_problem_dialog.activateWindow()
+        bring_to_front(self.report_problem_dialog)
 
     def _on_crash_detected(self, payload):
         """The core found a firmware crash record in the keyboard's console.
@@ -1592,8 +1599,7 @@ class PolyHost(QApplication):
                 clear_cb=self.core.clear_crash_record)
         self.crash_alert_dialog.add_record(rec)
         self.crash_alert_dialog.show()
-        self.crash_alert_dialog.raise_()
-        self.crash_alert_dialog.activateWindow()
+        bring_to_front(self.crash_alert_dialog)
 
     def _open_report_with_crash(self, description: str, title: str) -> None:
         """Open Report-a-Problem with the crash written into the description."""
@@ -1622,8 +1628,7 @@ class PolyHost(QApplication):
                 parent=None,
                 diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
         self.log_bundle_dialog.show()
-        self.log_bundle_dialog.raise_()
-        self.log_bundle_dialog.activateWindow()
+        bring_to_front(self.log_bundle_dialog)
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
