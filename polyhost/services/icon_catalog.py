@@ -36,6 +36,28 @@ import urllib.request
 
 CSS_ENDPOINT = "https://fonts.googleapis.com/css2"
 FAMILY = "Material Symbols Outlined"
+
+#: The `wght` axis Material Symbols is fetched at. The default is 400 and it is
+#: visibly heavier than Fluent beside it: measured over eight concepts both
+#: catalogs carry, at the shipped 36 px 1-bit render, Material inks **1.30x**
+#: Fluent at 400 and **0.85x** at 300. The two faces are mixed on one keycap row
+#: -- a menu bar draws four side by side -- so that difference reads as a
+#: different stroke weight rather than as a different icon set.
+#:
+#: WARNING: THE ENDPOINT QUANTISES to the named instances, so this is not a free
+#: dial. Measured: 200 and 250 return a BYTE-IDENTICAL font, as do 300 and 350.
+#: Only 200 / 300 / 400 are reachable here. That matters because the overlay
+#: generator prescribes "250-300" for Material
+#: (`res/overlay_sources/material_symbols.py`, which renders the variable font
+#: locally and really can hit 250) -- asking for 250 through THIS path silently
+#: gets you 200, which that same note calls "too thin to survive the 1-bit/40 px
+#: downscale". 300 is the only served instance between the two.
+MATERIAL_WEIGHT = 300
+
+#: `opsz,wght,FILL,GRAD` in that order -- the CSS2 API wants registered (lower
+#: case) axes first, then custom ones, each alphabetically, and rejects any
+#: other ordering.
+MATERIAL_AXES = "opsz,wght,FILL,GRAD@24,{wght},0,0"
 CODEPOINTS_URL = (
     "https://raw.githubusercontent.com/google/material-design-icons/master/"
     "variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints"
@@ -360,7 +382,16 @@ def subset_path(names, cache_dir: str | None = None,
     if face == FLUENT:
         return os.path.join(cache_dir or default_cache_dir(), "fluent-regular.ttf")
     key = hashlib.sha256(",".join(sorted(set(names))).encode()).hexdigest()[:16]
-    return os.path.join(cache_dir or default_cache_dir(), f"symbols-{key}.ttf")
+    # WARNING: THE WEIGHT IS IN THE FILENAME, and it has to be: the cache is
+    # keyed on what the file CONTAINS, not on what was asked for. Leave it out
+    # and every machine that has already fetched a set keeps serving the old
+    # weight for good -- a change to MATERIAL_WEIGHT would then be invisible to
+    # exactly the users who have been running the feature, and visible only on a
+    # fresh install. In the name rather than folded into the hash so a mismatch
+    # is readable in the cache dir instead of being one opaque digest against
+    # another.
+    return os.path.join(cache_dir or default_cache_dir(),
+                        f"symbols-w{MATERIAL_WEIGHT}-{key}.ttf")
 
 
 def _store_font(path: str, data: bytes) -> str | None:
@@ -443,9 +474,10 @@ def fetch_subset(names, cache_dir: str | None = None,
         except Exception:
             return None
     try:
-        query = urllib.parse.urlencode({"family": FAMILY.replace(" ", "+"),
+        family = f"{FAMILY}:{MATERIAL_AXES.format(wght=MATERIAL_WEIGHT)}"
+        query = urllib.parse.urlencode({"family": family.replace(" ", "+"),
                                         "icon_names": ",".join(names)},
-                                       safe="+,")
+                                       safe="+,@")
         css = _get(f"{CSS_ENDPOINT}?{query}", TTF_USER_AGENT).decode("utf-8", "replace")
         start = css.find("url(")
         if start < 0:
