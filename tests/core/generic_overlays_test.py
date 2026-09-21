@@ -515,6 +515,23 @@ class ForwardedTest(unittest.TestCase):
         _tick(core)
         self.assertIsNone(core._app_icons.overlay_for.call_args.kwargs["identity"])
 
+    def test_a_LOCAL_window_passes_its_PID(self):
+        """⚠️ The regression that made the OS-icon route DEAD, on every platform.
+
+        `overlay_for(pid=...)` and `os_app_icon.app_identity(pid, ...)` have
+        taken a pid all along, and this file's other tests pass one -- but the
+        one production caller passed neither it nor an identity for a local
+        window. `app_identity` resolves no pid of its own, so every local app
+        logged `(OS names: <none>)` and fell through to the catalog, which is
+        the half that needs a brand to exist. Measured on macOS, where the
+        app's own `.icns` sits in the bundle the pid would have found
+        (field, 2026-09-21).
+        """
+        core = make_core(app=("gimp", None), mask=_mask())
+        core.overlay_handler.focused_pid.return_value = 4242
+        _tick(core)
+        self.assertEqual(core._app_icons.overlay_for.call_args.kwargs["pid"], 4242)
+
 
 class FailurePathTest(unittest.TestCase):
 

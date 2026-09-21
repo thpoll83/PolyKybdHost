@@ -286,13 +286,29 @@ def icon_path(slug: str, cache_dir: str | None = None) -> str:
 
 
 def fetch_icon(slug: str, cache_dir: str | None = None,
-               allow_network: bool | None = None) -> str | None:
+               allow_network: bool | None = None,
+               reasons: dict | None = None) -> str | None:
     """Path to the mark's SVG, downloading it once if needed.
+
+    ⚠️ `reasons` is how a MISS becomes diagnosable. Every failure below used to
+    be `log.debug` or nothing at all, so at the default level the only thing a
+    user saw was the aggregate "the catalog carries none of ..." -- which cannot
+    tell a 404 (this brand is not in the catalog, nothing to do) from a refused
+    download (network, proxy, an unwritable cache) from the fetch never being
+    attempted because auto-fetch is off. Those need opposite actions, and the
+    line that reported them was identical. Measured on macOS 2026-09-21:
+    `si:googlechrome` is a real slug that answers 200 from here, and the log
+    still said only "carries none of" (field).
 
     Returns None when it is neither cached nor reachable -- and when the catalog
     simply does not carry it, which is an ordinary 404 rather than a fault. The
     caller then draws nothing, so nothing here raises.
     """
+    def why(text):
+        if reasons is not None:
+            reasons[slug] = text
+        return None
+
     if not slug:
         return None
     source, name = split_name(slug)
@@ -301,12 +317,12 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
         # unknown source (a stale name, a hand-dropped file) is served as if the
         # source were real, and the one function that decides what may be fetched
         # answers from disk instead.
-        return None
+        return why("unknown source")
     path = icon_path(slug, cache_dir)
     if os.path.exists(path) and os.path.getsize(path) > 16:
         return path
     if not (auto_fetch_enabled() if allow_network is None else allow_network):
-        return None
+        return why("not cached, and auto-fetch is off")
     url = SOURCES[source].format(name=name)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
@@ -314,20 +330,26 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
             data = response.read()
     except urllib.error.HTTPError as exc:
         log.debug("No catalog mark for '%s' (HTTP %s)", slug, exc.code)
-        return None
+        if exc.code == 404:
+            # An ordinary answer, not a fault: this brand is not in the
+            # catalog. Nothing to fix, and worth saying so plainly.
+            return why("not in the catalog (404)")
+        return why("HTTP %s" % exc.code)
     except Exception as exc:
         log.debug("Could not fetch the mark for '%s': %s", slug, exc)
-        return None
+        return why("download failed: %s" % exc)
     if not _is_svg(data):
-        return None
+        # Silent before this: a proxy's error page returning 200 was refused
+        # here and reported as if the brand did not exist.
+        return why("the download was not an SVG (%d B)" % len(data))
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         tmp = path + ".part"
         with open(tmp, "wb") as fh:
             fh.write(data)
         os.replace(tmp, path)       # never leave a half file under the real name
-    except OSError:
-        return None
+    except OSError as exc:
+        return why("could not be cached: %s" % exc)
     return path
 
 
@@ -638,8 +660,9 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
                  icon_binarise.MIN_SCORE)
 
     tried = candidates(app_name, names)
+    reasons: dict = {}
     for name in tried:
-        path = fetch_icon(name, cache_dir, allow_network)
+        path = fetch_icon(name, cache_dir, allow_network, reasons=reasons)
         if not path:
             continue
         mask = render_overlay(path)
@@ -649,6 +672,8 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     # The names are the whole story when nothing draws -- they say whether the
     # OS gave us a usable display name or only an executable stem.
     log.info("No program mark for %s: the catalog carries none of %s "
-             "(OS names: %s)", app_name, ", ".join(tried) or "<no candidates>",
+             "(OS names: %s)", app_name,
+             ", ".join("%s [%s]" % (n, reasons.get(n, "did not render"))
+                       for n in tried) or "<no candidates>",
              ", ".join(names) or "<none>")
     return None, (tried[0] if tried else None)
