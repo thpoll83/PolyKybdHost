@@ -383,15 +383,34 @@ def main_macos(args) -> list[dict] | None:
     if delay:
         print(f"probing the frontmost app in {delay}s -- click it now...")
         time.sleep(delay)
-    found = _macos.shortcuts_for_app("", budget=args.max_nodes)
     # ⚠️ The app's own NAME, not a constant: `watch --unmatched` attributes
     # every label it logs to this string, so a constant would file Xcode's
     # "Build" and Mail's "Send" under one heading (Greptile, #248).
+    #
+    # ⚠️ READ IT FIRST AND HAND IT TO THE HARVEST, rather than asking a second
+    # time afterwards. Two independent frontmost lookups are two observations of
+    # a value the user can change between them, so a focus switch mid-harvest
+    # reported app A's shortcuts under app B's name -- and in `--watch
+    # --unmatched`, filed A's unmatched labels under B permanently (Greptile,
+    # #248, a second round on this same line).
+    #
+    # Passing `who` in is what closes it, because `shortcuts_for_app` already
+    # verifies focus has not moved -- that is the whole purpose of its `name`
+    # argument, and the probe was opting out of the guard by passing "". If the
+    # user does switch, `names_agree` fails, the harvest returns [] and the
+    # report reads "0 shortcuts" for the app that WAS focused. Honest, and the
+    # same strictness the running app gets.
+    #
+    # ⚠️ `names_agree` FAILS OPEN on an empty name, so an unreadable frontmost
+    # name leaves the race open -- but it also leaves `who` empty, and the
+    # report then says "frontmost application" rather than naming the wrong one.
+    # The label degrades to generic instead of to a lie.
     try:
-        who = _macos._frontmost_name(_macos._api()[3]) or "frontmost application"
+        who = _macos._frontmost_name(_macos._api()[3]) or ""
     except Exception:
-        who = "frontmost application"
-    return [report(who, found, len(found),
+        who = ""
+    found = _macos.shortcuts_for_app(who, budget=args.max_nodes)
+    return [report(who or "frontmost application", found, len(found),
                    icons=_icon_matcher() if args.icons else None,
                    quiet=getattr(args, "quiet", False))]
 

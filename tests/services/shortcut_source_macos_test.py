@@ -338,6 +338,88 @@ class FocusRaceTest(unittest.TestCase):
         self.assertFalse(macos.names_agree("Mail", "Xcode"))
 
 
+class ProbeLabellingTest(unittest.TestCase):
+    """`shortcut_probe --backend macos` must not label a harvest with a SECOND
+    frontmost lookup.
+
+    ⚠️ Two independent lookups are two observations of a value the user changes
+    at will, so a focus switch between them reported app A's shortcuts under
+    app B's name -- and `--watch --unmatched` then filed A's unmatched labels
+    under B for the life of the log. The fix is not a third lookup: it is to
+    read the name FIRST and hand it to `shortcuts_for_app`, whose `name`
+    argument exists precisely to verify focus has not moved. The probe was
+    opting out of that guard by passing "" (Greptile, #248).
+    """
+
+    def run_probe(self, frontmost_name, name_at_harvest=None, raises=False):
+        """Drive main_macos with a fake backend; returns (report, name_passed)."""
+        from tools import shortcut_probe
+
+        from polyhost.services.shortcut_source.model import Shortcut
+
+        seen = {}
+
+        def fake_shortcuts_for_app(name="", budget=0):
+            """The backend's CONTRACT, not a re-entry into the real one.
+
+            Calling `macos.shortcuts_for_app` here would recurse, because the
+            probe imports that module AS `_macos` -- patching one patches both.
+            What is under test is the probe's wiring, and the contract it leans
+            on is the one `FocusRaceTest` above pins directly: the harvest
+            refuses when the name it was given no longer matches the frontmost.
+            """
+            seen["name"] = name
+            moved = (name_at_harvest if name_at_harvest is not None
+                     else frontmost_name)
+            if not macos.names_agree(name, moved):
+                return []
+            return [Shortcut(label="Save", role="menu item", accel="Cmd+S",
+                             mods=MOD_GUI, keysym="s", hid=0x16,
+                             displayable=True)]
+
+        def fake_frontmost_name(_workspace):
+            if raises:
+                raise RuntimeError("AppKit is unreadable")
+            return frontmost_name
+
+        args = type("A", (), {"max_nodes": 500, "delay": 0,
+                              "icons": False, "quiet": True})()
+        with patch.object(shortcut_probe._macos, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_probe._macos, "_api",
+                          return_value=(None, None, None, object())), \
+             patch.object(shortcut_probe._macos, "_frontmost_name",
+                          side_effect=fake_frontmost_name), \
+             patch.object(shortcut_probe._macos, "shortcuts_for_app",
+                          side_effect=fake_shortcuts_for_app):
+            out = shortcut_probe.main_macos(args)
+        return out[0], seen.get("name")
+
+    def test_the_harvest_is_told_WHICH_app_the_label_will_name(self):
+        """The whole fix: one observation, used for both."""
+        rep, passed = self.run_probe("Mousepad")
+        self.assertEqual(passed, "Mousepad")
+        self.assertEqual(rep["app"], "Mousepad")
+
+    def test_a_focus_switch_yields_NO_shortcuts_rather_than_wrong_ones(self):
+        """Mail was focused; the user switched to Xcode mid-harvest.
+
+        The honest outcome is "Mail: nothing" -- NOT Xcode's shortcuts filed
+        under Mail, which is what a second lookup produced.
+        """
+        rep, passed = self.run_probe("Mail", name_at_harvest="Xcode")
+        self.assertEqual(passed, "Mail")
+        self.assertEqual(rep["app"], "Mail")
+        self.assertEqual(rep["total"], 0)
+
+    def test_an_UNREADABLE_name_degrades_to_generic_not_to_a_lie(self):
+        """`names_agree` fails open on an empty name, so the race stays open
+        here -- but the label is then generic rather than somebody else's."""
+        rep, passed = self.run_probe("", raises=True)
+        self.assertEqual(passed, "")
+        self.assertEqual(rep["app"], "frontmost application")
+
+
 class AttributeReadTest(unittest.TestCase):
 
     def test_an_unsupported_attribute_yields_the_default(self):
