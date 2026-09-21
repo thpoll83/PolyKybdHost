@@ -49,7 +49,10 @@ bindings:
   - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen", source: "ms-fluent/Full Screen Maximize (MIT)" }
 
   # --- Shift -> B channel of primary ---
-  - { key: DELETE, mods: [SHIFT], icon: deleteperm.png, label: "Delete (perm)", source: "ms-fluent/Delete Dismiss (MIT)" }
+  # `normalize` drops the parenthesis, so this reads as the bare concept "delete"
+  # and would render the same picture as Del above. Permanent delete is a
+  # different action, so it keeps its own icon.
+  - { key: DELETE, mods: [SHIFT], icon: deleteperm.png, label: "Delete (perm)", shared: false, source: "ms-fluent/Delete Dismiss (MIT)" }
 
   # --- Alt -> G channel of primary (navigation) ---
   - { key: ENTER, mods: [ALT], icon: properties.png, label: Properties, source: "ms-fluent/Settings (MIT)" }

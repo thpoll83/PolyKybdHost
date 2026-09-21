@@ -312,6 +312,110 @@ DEFAULT_ANCHOR = "bottom-right"
 DEFAULT_MARGIN = 2
 
 
+# A per-binding placement decision. Any of these opts the binding out of the
+# shared renderer, which owns the geometry and so cannot honour them.
+GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
+
+
+def concept_to_share(binding: dict) -> str:
+    """The concept this binding draws from the SHARED renderer, or "".
+
+    Pure and network-free, so the generator and `tests/res/overlay_sharing_test`
+    ask the same question of the same data. Two copies of this rule would drift
+    the moment either moved, and nothing would go red -- the test would simply
+    survey a different set than the generator writes.
+
+    Three ways a binding declines to share:
+
+    * `shared: false` -- the label folds onto a sibling's concept and the app's
+      own art carries a distinction the concept cannot (Explorer's Delete vs
+      Delete (perm), which `normalize` flattens by dropping the parenthesis).
+    * an explicit GEOMETRY key -- see the call site; the shared renderer owns
+      the placement, so it cannot honour a hand-made one.
+    * the label merely FOLDS to a concept rather than naming it. `match()` is
+      built for the generic path, where any recognisable icon beats a text
+      label, so it folds hard: over the committed templates the fuzzy-free
+      matcher still sends 626 bindings to 43 concepts, collapsing 36 distinct
+      labels onto `new` ("New appt", "New composition", "New folder") and 14
+      onto `delete` ("Clear screen", "Delete char left"). That is right when the
+      alternative is nothing and wrong when the alternative is art somebody
+      drew: it produced 97 same-app collisions, two keys of one app rendering
+      the same picture for different actions. Requiring the label to BE the
+      concept -- or its spelling fold, so a plural still lands -- takes it to
+      252 cells over 29 concepts with no collision at all.
+    """
+    from polyhost.services import shortcut_icons
+
+    label = str(binding.get("label") or "")
+    if not label or not binding.get("shared", True):
+        return ""
+    if any(key in binding for key in GEOMETRY_KEYS):
+        return ""
+    # Both guards below are EQUIVALENT MUTANTS on today's data -- measured, and
+    # said so rather than tested, because a test would pin a no-op. `allow_fuzzy`
+    # cannot change the verdict (fuzzy only runs when no literal rule matched, so
+    # its concept can never equal the normalised label), and every LEXICON entry
+    # currently carries an icon name. They are kept because the first guards a
+    # change of default and the second a codepoint-only concept, which would
+    # otherwise have the generator draw the committed icon while this function
+    # claimed the cell was shared -- the one divergence the survey cannot see.
+    hit = shortcut_icons.match(label, allow_fuzzy=False)
+    if hit is None or not hit.icon:
+        return ""
+    text = shortcut_icons.normalize(label)
+    if text != hit.concept and shortcut_icons.fold_spelling(text) != hit.concept:
+        return ""
+    return hit.concept
+
+
+def shared_concept_mask(concept: str, cache_dir: str | None = None):
+    """The mask the RUNNING APP would draw for this label, or None.
+
+    ⚠️ This is the whole of the template/generic sharing, and it works by using
+    ONE RENDERER rather than by making two agree. Measured first: the same
+    Fluent artwork through cairosvg and through FreeType agrees on 2799 of 2880
+    pixels and differs on 81, all stroke-edge antialiasing landing on opposite
+    sides of the 1-bit threshold. No region, margin or size closes that -- two
+    rasterisers simply do not produce the same bytes. So a binding whose label
+    the lexicon knows is drawn by `icon_catalog.render_overlay`, exactly as the
+    generic path draws it, and `overlay_cache._bytes_to_slot` then collapses the
+    two into one pool slot because they ARE the same bytes.
+
+    WHICH bindings reach here is `concept_to_share`'s decision, not this
+    function's -- it renders whatever concept it is handed.
+
+    ⚠️ The DEFAULTS are used, never `icon_height()`/`icon_placement()`. Those
+    read the user's settings, and a generator whose output depends on the
+    machine it ran on is not reproducible. The consequence is worth knowing: the
+    sharing holds while a user is on the default height and corner. Change
+    either and the generic icons re-render while these committed PNGs do not, so
+    they stop sharing a slot -- correct, but no longer free.
+
+    Raises rather than falling back when the font is unreachable: a silent
+    fall-back would emit the OLD artwork and the diff would look like "nothing
+    changed", which is the worst available outcome for a build-time script.
+    """
+    from polyhost.services import icon_catalog, shortcut_icons
+
+    qualified = shortcut_icons.icon_for(concept)
+    if not qualified:
+        return None, ""
+    face, bare = icon_catalog.split_face(qualified)
+    table = icon_catalog.load_codepoints(cache_dir, face=face)
+    font = icon_catalog.fetch_subset([bare], cache_dir, face=face)
+    if not font or not table:
+        raise RuntimeError(
+            f"the {face} icon catalog is unreachable, so {concept!r} cannot be "
+            f"drawn the way the app draws it. Refusing rather than silently "
+            f"emitting the old artwork -- re-run with a network, or set "
+            f"`shared: false` on that binding to keep its own icon.")
+    mask = icon_catalog.render_overlay(
+        bare, font, table,
+        height=icon_catalog.DEFAULT_ICON_HEIGHT,
+        placement=icon_catalog.DEFAULT_PLACEMENT)
+    return mask, qualified
+
+
 def region_box(anchor: str, size: tuple[int, int], margin: int) -> tuple[int, int, int, int]:
     """Return (x0, y0, w, h): the sub-rectangle of the 72x40 cell to draw into."""
     bw, bh = min(size[0], SLOT_W), min(size[1], SLOT_H)
@@ -543,7 +647,23 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         icon = b.get("icon")
         label = b.get("label") or b["key"]
         src = (icon_dir / icon) if icon else None
-        if src and src.exists():
+        # A label the lexicon knows is drawn by the SHARED renderer, so this
+        # cell and the generic path's are byte-identical and share one pool
+        # slot. `shared: false` opts a binding out and keeps its own art.
+        #
+        # ⚠️ So does an explicit GEOMETRY tweak, and that is not a shortcut for
+        # the flag -- the shared renderer owns the placement, so honouring the
+        # tweak is impossible and ignoring it would discard a decision somebody
+        # made by hand. Refusing to share is the only reading that keeps both
+        # true. It costs 3 cells of 258 today, all in VS Code's block of lifted
+        # original artwork, which is drawn full-cell centred on purpose.
+        shared, qualified = (None, "")
+        concept = concept_to_share(b)
+        if concept:
+            shared, qualified = shared_concept_mask(concept)
+        if shared is not None:
+            mask, source = shared, f"concept:{qualified}"
+        elif src and src.exists():
             mask = render_icon(src, b.get("fit", fit),
                                int(b.get("threshold", threshold)), b.get("invert"),
                                region, b.get("mode", mode))

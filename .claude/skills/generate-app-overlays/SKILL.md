@@ -135,11 +135,19 @@ are the icons the user actually sees. Order of preference:
    Tabler/Lucide are also fine (MIT/ISC). **Don't assume the app's icons come
    from one of these** — verify (render both and compare silhouettes); they're
    usually custom and only *style*-compatible.
-   - **Material Symbols (Apache-2.0) is available as a backup / comparison
-     source**, via the shared helper
+   - **Material Symbols (Apache-2.0) is wired in as the automatic fallback.**
+     `icon_fetch.fluent()` tries Fluent first; a spec of the form
+     **`"ms:<name>"`** goes straight to Material, and a bare Fluent folder name
+     that 404s at every size is retried there before the helper gives up. ⚠️
+     **Prefer the explicit `ms:` form** — Material's vocabulary is its own
+     (`undo`, not `Arrow Undo`; `groups`, not `People Team`), so the automatic
+     pass only ever helps where the two sets already agree on a name, and the
+     error message names both sources when neither has it. A **pinned** full
+     Fluent asset path never falls back: substituting a different icon set for
+     a cut that was chosen on purpose is worse than failing. Browse names at
+     fonts.google.com/icons; the lower-level
      `polyhost/res/overlay_sources/material_symbols.py`
-     (`ms.render(name, path, weight=300)`; browse names at
-     fonts.google.com/icons). It became license-clean with the **2026-06 GPLv3
+     (`ms.render(name, path, weight=300)`) is still there for a one-off. It became license-clean with the **2026-06 GPLv3
      relicense** (Apache-2.0 is GPLv2-incompatible but GPLv3-compatible). A full
      Photoshop+Illustrator A/B (2026-06) concluded: **keep Fluent** — Material is
      a wash for bread-and-butter glyphs, *better* for a handful of abstract
@@ -197,6 +205,39 @@ bindings:
   - { key: F, mods: [CTRL, SHIFT], icon: findfiles.png, label: "Find files" }
   - { key: F5, mods: [],           icon: run.png,       label: Run, invert: true }
 ```
+
+### ⚠️ A label that NAMES a concept is drawn by the shared renderer, not by your icon
+
+The running app draws a keycap icon for a shortcut it has no template for, from
+the same Fluent/Material catalog. So a binding whose label **is** a concept
+(`Copy`, `Save`, `Undo`, `Paste`, `Bold`, …) is rendered by that same code path
+rather than from `icons/`, and the two cells come out **byte-identical** — which
+is the whole point: `overlay_cache` dedupes by content, so the concept costs one
+pool slot board-wide instead of one per app. Measured over the committed
+templates: the 29 concepts they name were drawn **84** ways before and **33**
+after. You will see `concept:fluent:copy` in the placement table where the source
+column would normally show your PNG, and the committed icon is simply unused.
+
+Three ways a binding declines, and the last two are automatic:
+
+- **`shared: false`** — the label folds onto a sibling's concept and your art
+  carries a distinction the concept cannot. Explorer's `Delete (perm)` needs it,
+  because `normalize` drops the parenthesis and it would otherwise draw the same
+  trash can as plain `Delete`.
+- **any of `region` / `anchor` / `margin` / `fit` / `threshold` / `mode`** — the
+  shared renderer owns the placement, so it cannot honour a hand-made one, and
+  ignoring it would discard your decision. Set one and the binding keeps its art.
+- **a label that merely FOLDS to a concept** — `Copy merged`, `Duplicate line`,
+  `Go to definition`, `New folder`. ⚠️ Do **not** widen this: the lexicon is
+  built for the generic path, where any recognisable icon beats a text label, so
+  it folds hard. Matching on a fold instead of the name sent 626 bindings to 43
+  concepts and produced **97 same-app collisions** — two keys of one app drawing
+  the same picture for different actions ("Add cursor above" and "Add cursor
+  below" both an insert glyph; four of Figma's `*properties*` all a gear).
+
+`tests/res/overlay_sharing_test.py` asserts every template drawing a concept
+draws the same bytes, and calls the generator's own `concept_to_share` so the
+rule cannot exist in two places.
 
 Per-binding overrides: `anchor`, `region`, `margin`, `fit`, `mode`, `threshold`,
 `invert`, `source`. Unknown keys (like `source`) are ignored by the generator, so

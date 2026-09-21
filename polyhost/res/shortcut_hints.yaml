@@ -1,0 +1,52 @@
+# Label -> keycap glyph, for labels the shortcut-icon rules miss or get wrong.
+#
+# Consulted BEFORE the lexicon in polyhost/services/shortcut_icons.py, so an
+# entry here always wins.
+#
+#   key    the label, normalised: lower-case, no mnemonic marker, no ellipsis.
+#          Write "save as", not "&Save As...".
+#   value  a concept name from LEXICON (reuses its glyph)
+#          icon:<name>  a catalog icon by name, for a label that wants a picture
+#                  no concept carries -- `icon:description`, `icon:fluent:toolbox`
+#          U+XXXX  a literal codepoint -- it must resolve in the shipped fonts,
+#                  which tests/services/shortcut_icons_test.py checks
+#          text    deliberately no icon; draw the label instead
+#
+# To find labels worth adding: `shortcut_probe.py --unmatched <file>` logs every
+# label that got no icon, and `--review <file>` prints them by frequency with a
+# stub to paste here. Marking one `text` is a real answer -- it takes the label
+# off the queue instead of letting it resurface every run.
+
+hints:
+  # "System" names the window menu, not an action. The word is the information.
+  system: text
+  # MENU-BAR TITLES, not commands. A desktop app exposes its whole menu bar as
+  # shortcuts like any other -- AT-SPI does on gnome-terminal, UIA does on
+  # Windows -- so Alt+F/E/V/T arrive at the matcher as labels. None of the four
+  # is a verb, so none earns a LEXICON concept: "File" does not mean new, open or
+  # save, and "Edit" does not mean cut, copy or paste. They are named here, as
+  # data, because the picture is a property of the WORD rather than of an action.
+  #
+  # Each is the Material name, and they are one face on purpose -- a menu bar
+  # draws four of these side by side on one keycap row, so a Fluent glyph among
+  # Material ones reads as a different weight. Measured at the shipped 36 px
+  # 1-bit: description 418 px, visibility 332, edit 244, construction 354, and
+  # none collides with `settings` (the gear, which Options already takes).
+  #
+  # ⚠️ The note this replaces said "Edit, Help, Search and Terminal already
+  # resolve on their own", from a gnome-terminal harvest (2026-09-18, 14 of 16
+  # drawn). Help does; EDIT DOES NOT -- `match("Edit")` returns None against the
+  # shipped tables, and the fuzzy floor exists precisely to stop it reaching
+  # "exit" at 0.75. A field log on 7-Zip is what exposed it: File, View,
+  # Favorites and Help drew, Edit and Tools did not. A comment naming a set is
+  # worth re-running before it is trusted.
+  #
+  # ⚠️ `construction` is the crossed hammer and wrench, NOT the lone wrench
+  # (`build`). Material and Fluent both draw a wrench for configure/settings, so
+  # the single tool would put two near-identical glyphs on the same menu bar --
+  # Tools beside Options. Fluent's `toolbox` renders more cleanly still (290 px,
+  # a clean outline) and is the one to reach for if this set ever moves to Fluent.
+  file: icon:description
+  edit: icon:edit
+  view: icon:visibility
+  tools: icon:construction

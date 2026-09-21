@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.keys import KeyCode, Modifier, MODIFIER_ANY
 from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
 
 
@@ -20,6 +20,20 @@ from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
 _MODIFIER_NAMES = [m.name.replace("_", "+").replace("NO+MOD", "NO").replace("GUI+KEY", "GUI")
                    for m in Modifier]
 _NUM_MODIFIER_VARIANTS = len(_MODIFIER_NAMES)
+
+
+def _modifier_label(value: int) -> str:
+    """Name a modifier slot, including the "same under every modifier" one.
+
+    ⚠️ The range check is `0 <= value`, not `value < len(...)` alone: `MODIFIER_ANY`
+    is -1 and Python would hand back the LAST name for it — the GUI+Ctrl+Alt+Shift
+    cell, silently, for an image that is on every variant.
+    """
+    if value == MODIFIER_ANY:
+        return "any"
+    if 0 <= value < len(_MODIFIER_NAMES):
+        return _MODIFIER_NAMES[value]
+    return str(value)
 _NUM_KEYCODE_SLOTS = 90
 _IMG_SCALE = 2
 _IMG_W = 72 * _IMG_SCALE
@@ -175,8 +189,7 @@ class MRUInspectorDialog(QDialog):
         keycode_slot = display_idx % _NUM_KEYCODE_SLOTS
         modifier_value = display_idx // _NUM_KEYCODE_SLOTS
         kc_name = _keycode_slot_name(keycode_slot)
-        mod_name = (_MODIFIER_NAMES[modifier_value]
-                    if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
+        mod_name = _modifier_label(modifier_value)
         return f"{display_idx}\n{kc_name}·{mod_name}"
 
     @staticmethod
@@ -184,8 +197,7 @@ class MRUInspectorDialog(QDialog):
         keycode_slot = pool_slot % _NUM_KEYCODE_SLOTS
         modifier_value = pool_slot // _NUM_KEYCODE_SLOTS
         kc_name = _keycode_slot_name(keycode_slot)
-        mod_name = (_MODIFIER_NAMES[modifier_value]
-                    if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
+        mod_name = _modifier_label(modifier_value)
         return f"{pool_slot}\n{kc_name}·{mod_name}"
 
     def _build_grid(self, cache: OverlayMRUCache) -> QWidget:
@@ -247,7 +259,7 @@ class MRUInspectorDialog(QDialog):
             basename = os.path.basename(full_path)
             if len(basename) > 18:
                 basename = basename[:16] + "…"
-            mod_name = _MODIFIER_NAMES[mod_val] if mod_val < len(_MODIFIER_NAMES) else str(mod_val)
+            mod_name = _modifier_label(mod_val)
             try:
                 kc_name = KeyCode(kc).name.replace("KC_", "")
             except ValueError:

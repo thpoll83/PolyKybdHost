@@ -1,0 +1,336 @@
+"""The harvest queue: never block the caller, never re-walk a proven-empty app.
+
+The properties worth pinning are the ones whose failure only shows up under a
+real workload — a lookup that blocks the window tick, a duplicate harvest per
+poll, a negative result that is not cached — so every test drives the real
+queue with the slow half stubbed out.
+"""
+
+import threading
+import time
+import unittest
+from unittest.mock import patch
+
+from polyhost.services import shortcut_fetcher
+from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
+
+MASKS = {"@sc:save:32lower_left": {(1, 0x16): "MASK"}}
+
+
+def _sc():
+    from polyhost.services.shortcut_source.model import Shortcut
+    return Shortcut(label="Save", role="", accel="", mods=1, keysym="",
+                    hid=0x16, displayable=True)
+
+
+def _plan():
+    from polyhost.services.shortcut_overlays import Plan, Slot
+    return Plan([Slot(modifier=1, keycode=0x16, concept="save", icon="save",
+                      label="Save", confidence=1.0)], {})
+
+
+def settled(fetcher, app, timeout=2.0, **kw):
+    """Poll `overlays_for` until the thread has answered, or give up.
+
+    ⚠️ RE-READS after seeing the cache filled, rather than returning the `out`
+    from the top of the loop. Those are two different instants: the worker
+    routinely finishes in between, and the stale `out` is then `{}` while the
+    real answer sits in the cache -- which reads as "the fetcher returned
+    nothing" and fails the test for a reason that is entirely the helper's.
+    Measured at ~1 run in 5, and recorded as an unexplained flake for a while
+    before the two reads were noticed.
+    """
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        out = fetcher.overlays_for(app, **kw)
+        if out:
+            return out
+        with fetcher._lock:
+            done = any(k.startswith(app + "\x00") for k in fetcher._overlays)
+        if done:
+            return fetcher.overlays_for(app, **kw)
+        time.sleep(0.01)
+    return None
+
+
+class QueueTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ready = []
+        self.fetcher = ShortcutIconFetcher(on_ready=self.ready.append)
+        self.addCleanup(self.fetcher.stop)
+
+    def test_the_FIRST_lookup_never_blocks_and_returns_nothing(self):
+        """⚠️ The whole reason this class exists: the caller is the window tick,
+        and the work behind it is a tree walk over another process plus a
+        possible download."""
+        with patch.object(self.fetcher, "_resolve", side_effect=lambda *a: MASKS):
+            started = time.monotonic()
+            self.assertEqual(self.fetcher.overlays_for("mousepad"), {})
+            self.assertLess(time.monotonic() - started, 0.2)
+            self.assertEqual(settled(self.fetcher, "mousepad"), MASKS)
+
+    def test_the_answer_reaches_on_ready(self):
+        """Without it the icons appear only the SECOND time you focus an app."""
+        with patch.object(self.fetcher, "_resolve", side_effect=lambda *a: MASKS):
+            settled(self.fetcher, "mousepad")
+        self.assertEqual(self.ready, ["mousepad"])
+
+    def test_an_app_is_harvested_ONCE_not_once_per_poll(self):
+        """⚠️ A name is neither queued nor cached while it is in flight, so
+        without the `_inflight` set the tick re-queues it every time — a
+        duplicate tree walk and a duplicate re-send. Measured on the app-icon
+        fetcher, where the first cut fired the callback twice."""
+        calls = []
+
+        def slow(app, height, placement):
+            calls.append(app)
+            time.sleep(0.05)
+            return MASKS
+
+        with patch.object(self.fetcher, "_resolve", side_effect=slow):
+            for _ in range(20):
+                self.fetcher.overlays_for("mousepad")
+            settled(self.fetcher, "mousepad")
+        self.assertEqual(calls, ["mousepad"])
+
+    def test_an_EMPTY_result_is_cached(self):
+        """Most apps yield nothing — a modern toolkit exposes no accelerator at
+        all — so a re-walk per window switch would be the normal case."""
+        calls = []
+        with patch.object(self.fetcher, "_resolve",
+                          side_effect=lambda a, h, p: calls.append(a) or {}):
+            self.fetcher.overlays_for("gedit")
+            settled(self.fetcher, "gedit")
+            for _ in range(5):
+                self.assertEqual(self.fetcher.overlays_for("gedit"), {})
+            time.sleep(0.05)
+        self.assertEqual(calls, ["gedit"])
+
+    def test_an_empty_result_does_NOT_fire_on_ready(self):
+        """A re-send that can only draw the same nothing is pure cost."""
+        with patch.object(self.fetcher, "_resolve", side_effect=lambda *a: {}):
+            self.fetcher.overlays_for("gedit")
+            settled(self.fetcher, "gedit")
+            time.sleep(0.05)
+        self.assertEqual(self.ready, [])
+
+    def test_a_RENDER_SETTING_change_re_harvests(self):
+        """⚠️ The cached masks were drawn at the old size, and `source_name()`
+        alone would not be consulted again — so height and corner are part of
+        this cache's key as well as the keyboard's."""
+        seen = []
+        with patch.object(self.fetcher, "_resolve",
+                          side_effect=lambda a, h, p: seen.append((h, p)) or MASKS):
+            with patch.object(shortcut_fetcher.icon_catalog, "icon_height",
+                              return_value=32):
+                self.fetcher.overlays_for("mousepad")
+                settled(self.fetcher, "mousepad")
+            with patch.object(shortcut_fetcher.icon_catalog, "icon_height",
+                              return_value=16):
+                self.fetcher.overlays_for("mousepad")
+                time.sleep(0.2)
+        self.assertEqual([h for h, _ in seen], [32, 16])
+
+    def test_the_switch_OFF_asks_nothing(self):
+        """Off means another process's accessibility tree is never read."""
+        with patch.object(shortcut_fetcher, "enabled", return_value=False):
+            with patch.object(self.fetcher, "_resolve") as resolve:
+                self.assertEqual(self.fetcher.overlays_for("mousepad"), {})
+                time.sleep(0.05)
+                resolve.assert_not_called()
+
+    def test_a_raising_on_ready_never_reaches_the_EXCEPTHOOK(self):
+        """⚠️ This is the property, and it is NOT "the queue keeps working" —
+        `_ensure_thread` restarts a dead thread on the next lookup, so a suite
+        that only re-queries passes with the `except` deleted. Measured: that
+        mutation escaped until this test watched the hook instead.
+
+        What the `except` is really for: an escape reaches
+        `threading.excepthook`, and this app installs one that writes
+        crash_log.txt — so a failing observer would put a spurious crash in
+        every later problem report.
+        """
+        seen = []
+        previous = threading.excepthook
+        threading.excepthook = seen.append
+        self.addCleanup(lambda: setattr(threading, "excepthook", previous))
+        boom = ShortcutIconFetcher(on_ready=lambda app: 1 / 0)
+        self.addCleanup(boom.stop)
+        with patch.object(boom, "_resolve", side_effect=lambda *a: MASKS):
+            self.assertEqual(settled(boom, "mousepad"), MASKS)
+            self.assertEqual(settled(boom, "gedit"), MASKS)
+        time.sleep(0.05)
+        self.assertEqual([type(e.exc_value).__name__ for e in seen], [])
+
+    def test_stop_is_idempotent_and_blocks_a_restart(self):
+        """⚠️ One-way flag under the lock the start path takes, or a window
+        switch landing concurrently restarts the thread after shutdown."""
+        self.fetcher.overlays_for("mousepad")
+        self.fetcher.stop()
+        self.fetcher.stop()
+        self.fetcher.overlays_for("kate")
+        self.assertIsNone(self.fetcher._thread)
+
+    def test_forget_makes_the_next_focus_re_harvest(self):
+        calls = []
+        with patch.object(self.fetcher, "_resolve",
+                          side_effect=lambda a, h, p: calls.append(a) or {}):
+            self.fetcher.overlays_for("gedit")
+            settled(self.fetcher, "gedit")
+            self.fetcher.forget()
+            self.fetcher.overlays_for("gedit")
+            time.sleep(0.2)
+        self.assertEqual(calls, ["gedit", "gedit"])
+
+
+class RelayedHarvestTest(unittest.TestCase):
+    """A forwarded app's shortcuts are harvested on the OTHER machine.
+
+    Only the harvest moves. Which concept a label means, which catalog subset to
+    fetch and what height and corner to raster at are all knowable only here,
+    so everything after the harvest runs unchanged.
+    """
+
+    def setUp(self):
+        self.fetcher = ShortcutIconFetcher()
+        self.addCleanup(self.fetcher.stop)
+
+    def test_a_RELAYED_harvest_never_touches_the_local_backend(self):
+        """⚠️ The whole point. The local backend would walk THIS machine's tree,
+        never find the app, and report "exposes no accelerators" — which is
+        indistinguishable from an app that genuinely has none. Measured from a
+        real log: a Windows daemon reported 0 icons for a gnome-terminal whose
+        own machine exposes 16."""
+        relayed = [_sc()]
+        with patch.object(shortcut_fetcher.shortcut_source, "harvest") as harvest, \
+             patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason") as why, \
+             patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=_plan()), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value="f.ttf"), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          return_value=MASKS):
+            self.assertEqual(settled(self.fetcher, "gnome-terminal",
+                                     harvested=relayed), MASKS)
+            harvest.assert_not_called()
+            # ⚠️ And the availability probe is not consulted either: a keyboard
+            # machine with NO backend at all (macOS, or a venv that cannot see
+            # PyGObject) must still draw a forwarded app's icons. Gating on it
+            # would make the relay useless on exactly the setups that need it.
+            why.assert_not_called()
+
+    def test_the_RELAYED_shortcuts_are_what_gets_PLANNED(self):
+        relayed = [_sc(), _sc()]
+        with patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=_plan()) as plan, \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value="f.ttf"), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          return_value=MASKS):
+            settled(self.fetcher, "gnome-terminal", harvested=relayed)
+        self.assertEqual(plan.call_args.args[0], tuple(relayed))
+
+    def test_an_EMPTY_relayed_harvest_says_WHOSE_answer_it_is(self):
+        # A user reading "the app exposes no accelerators" on a forwarded app
+        # goes and checks the wrong machine.
+        said = []
+        self.fetcher._say = lambda app, reason: said.append(reason)
+        self.fetcher._harvested["gedit"] = ()
+        self.assertEqual(self.fetcher._resolve("gedit", 32, "lower_left"), {})
+        self.assertEqual(len(said), 1)
+        self.assertIn("forwarder", said[0])
+
+    def test_the_relayed_answer_SURVIVES_forget(self):
+        # `forget()` invalidates masks drawn at the old size; it does not
+        # invalidate the other machine's answer about its own application, and
+        # nothing would ever ask for it again.
+        self.fetcher.overlays_for("gnome-terminal", harvested=[_sc()])
+        self.fetcher.forget()
+        self.assertIn("gnome-terminal", self.fetcher._harvested)
+
+
+class BackendReasonTest(unittest.TestCase):
+    """The log has to say WHICH of the three causes, not a flat platform claim."""
+
+    def test_the_REASON_reaches_the_log_verbatim(self):
+        # ⚠️ It used to say "no accessibility backend on this platform" whatever
+        # the cause -- true on macOS, and misleading for the commonest case,
+        # which is an interpreter that cannot see the system PyGObject. A user
+        # reading that line installs a package they already have.
+        f = ShortcutIconFetcher()
+        said = []
+        f._say = lambda app, reason: said.append((app, reason))
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                               return_value="this virtualenv cannot see the "
+                                            "system PyGObject"):
+            self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
+        self.assertEqual(len(said), 1)
+        self.assertIn("virtualenv", said[0][1])
+
+    def test_a_USABLE_backend_gets_past_the_gate(self):
+        f = ShortcutIconFetcher()
+        said = []
+        f._say = lambda app, reason: said.append(reason)
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                               return_value=None), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest", return_value=[]):
+            self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
+        # It reached the NEXT refusal, which is a different sentence entirely.
+        self.assertEqual(said, ["the app exposes no accelerators"])
+
+
+class ResolveTest(unittest.TestCase):
+    """`_resolve` is the slow half; every failure in it must cost {} and a line."""
+
+    def setUp(self):
+        self.fetcher = ShortcutIconFetcher()
+        self.addCleanup(self.fetcher.stop)
+
+    def test_no_backend_is_reported_as_such(self):
+        with patch.object(shortcut_fetcher.shortcut_source, "pick", return_value=None):
+            self.assertEqual(self.fetcher._resolve("mousepad", 32, "lower_left"), {})
+
+    def test_a_render_that_raises_costs_nothing(self):
+        with patch.object(shortcut_fetcher.shortcut_source, "pick", return_value=object()), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest",
+                          return_value=[object()]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "plan",
+                          return_value=["slot"]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "icon_names",
+                          return_value=["save"]), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value="f.ttf"), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          side_effect=OSError("boom")):
+            self.assertEqual(self.fetcher._resolve("mousepad", 32, "lower_left"), {})
+
+    def test_an_unreachable_subset_costs_nothing(self):
+        with patch.object(shortcut_fetcher.shortcut_source, "pick", return_value=object()), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest",
+                          return_value=[object()]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "plan",
+                          return_value=["slot"]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "icon_names",
+                          return_value=["save"]), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value=None), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render") as render:
+            self.assertEqual(self.fetcher._resolve("mousepad", 32, "lower_left"), {})
+            # ⚠️ Asserting the RETURN alone is not enough: the real renderer
+            # swallows a None font path and answers {} of its own accord, so the
+            # guard could be deleted and this would still pass. What must hold is
+            # that nothing is asked to draw from a font that does not exist.
+            render.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

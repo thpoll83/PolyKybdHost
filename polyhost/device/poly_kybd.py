@@ -17,7 +17,9 @@ from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsTy
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
+from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
+                                  MODIFIER_ANY, describe_key)
+from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.services import iso_lang_country
 
@@ -1302,11 +1304,18 @@ class PolyKybd:
         return overlay.compressed_msgs
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
-                          cancel: threading.Event | None = None) -> bool:
+                          cancel: threading.Event | None = None,
+                          synthetic: dict | None = None) -> bool:
         """
         Send only overlay images not already in the keyboard's MRU pool, then
         update the display-position → pool-slot mapping in one command.
         Does NOT call reset_overlays_and_usage (cached images must be preserved).
+
+        `synthetic` maps a pseudo-filename in `filenames` to an already-built
+        converter (see device/synthetic_overlay.py) — an overlay source with no
+        file behind it, used for the generic icon fall-back. It is resolved by
+        the CALLER, on the caller's thread, because building one may fetch over
+        the network and this method runs on the HID worker.
         """
         import os
         hid_msg_counter = 0
@@ -1321,9 +1330,13 @@ class PolyKybd:
         # unreadable file blanked the keycaps and then returned False, leaving the
         # keyboard with no overlays until the next program switch. Validating up
         # front makes a bad request a no-op on the device.
+        synthetic = synthetic or {}
         converters = []
         for filename in filenames:
             self.log.info("Send Overlay MRU '%s'...", filename)
+            if filename in synthetic:
+                converters.append(synthetic[filename])
+                continue
             converter = ImageConverter(self.device_settings)
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)
@@ -1352,7 +1365,30 @@ class PolyKybd:
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
         with cache.batch():
-            for converter in converters:
+            # zip, not `for converter in converters`: the cache key below names
+            # the file an image came from, and a bare loop leaves `filename` at
+            # the LAST entry of the decode loop above for every converter. The
+            # two lists are parallel by construction (a failed open() returns
+            # early), so this is the only pairing that can be right.
+            # Which (modifier, keycode) pairs a source has already claimed. A
+            # SYNTHETIC source skips a pair a real template already draws, so
+            # the hand-made design always wins and no upload is wasted on an
+            # image the mapping would immediately overwrite. Real sources keep
+            # their existing last-one-wins behaviour.
+            covered: set[tuple[int, int]] = set()
+            # What each source ended up drawing, for the summary below, and what
+            # it OFFERED and lost -- a source that draws nothing is otherwise
+            # absent from the summary, which reads exactly like one that was
+            # never fetched.
+            per_source: dict[str, list] = {}
+            deferred: dict[str, list] = {}
+            uploaded = 0
+            for filename, converter in zip(filenames, converters):
+                source_is_synthetic = filename in synthetic
+                # An image that is the SAME under every modifier is keyed ONCE,
+                # so the variants after the first are cache hits that upload
+                # nothing -- see synthetic_overlay.program_converter.
+                invariant = getattr(converter, "modifier_invariant", False)
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1368,7 +1404,15 @@ class PolyKybd:
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays_mru cancelled")
                             return False
-                        content_key = (os.path.basename(filename), modifier.value, keycode)
+                        if source_is_synthetic and (modifier.value, keycode) in covered:
+                            self.log.debug_detailed(
+                                "%s: 0x%x/%s is drawn by a template already",
+                                filename, keycode, modifier)
+                            deferred.setdefault(filename, []).append((keycode, modifier))
+                            continue
+                        covered.add((modifier.value, keycode))
+                        key_modifier = MODIFIER_ANY if invariant else modifier.value
+                        content_key = (os.path.basename(filename), key_modifier, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
                         if not is_hit:
@@ -1394,6 +1438,9 @@ class PolyKybd:
 
                         display_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[display_idx] = pool_slot
+                        per_source.setdefault(filename, []).append((keycode, modifier))
+                        if not is_hit:
+                            uploaded += 1
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
@@ -1404,12 +1451,16 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        # hid_msg_counter counts ONLY image uploads (cache misses). A full cache
-        # hit is 0 here even though the mapping send (logged separately below)
-        # and enable_overlays still go over HID — that 0 is the MRU win, not a
-        # "nothing was sent". Word it so the log can't be misread.
-        self.log.info("MRU: %d image upload(s) (rest served from cache), "
-                      "%d display positions to map",
+        # hid_msg_counter counts HID MESSAGES, and only those carrying image
+        # data (cache misses) — one image is several. A full cache hit is 0 here
+        # even though the mapping send (logged separately below) and
+        # enable_overlays still go over HID; that 0 is the MRU win, not a
+        # "nothing was sent". ⚠️ Say "message(s)": the summary a few lines down
+        # counts KEYCAPS uploaded, so two adjacent lines both reading
+        # "N upload(s)" over different units read as a contradiction (measured
+        # on a real send: 4 here against 2 there).
+        self.log.info("MRU: %d HID message(s) of image data (rest served from "
+                      "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
 
         # Re-check right before the commit: the token can flip after the last
@@ -1425,7 +1476,117 @@ class PolyKybd:
             return False
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
+        self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
         return True
+
+    # How many keys a source may contribute before the summary stops naming
+    # them. A template covers most of the board and listing it would bury the
+    # line; a synthetic source is a handful of keys and naming them IS the
+    # point -- "which shortcuts did it just add" has no other answer.
+    NAME_KEYS_UP_TO = 12
+
+    def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int,
+                             deferred: dict | None = None):
+        """TWO lines saying what a send put on the keyboard, and what it did not.
+
+        The window tick logs which app was matched; this says what that turned
+        into on the keycaps, which is otherwise only visible by looking at them.
+
+        ⚠️ **Two lines, not one per source.** A gap-filled app routinely has a
+        template plus five or six synthetic sources, and a line each buried the
+        one thing a reader wants -- which generic icons were TAKEN and which
+        were not -- under a paragraph they have to reassemble by eye. Both
+        halves go on one line so the comparison is left-to-right instead of
+        top-to-bottom.
+
+        ⚠️ **`deferred` is printed even when it is EMPTY.** "Which were not
+        taken" is the question, and an omitted clause answers it only if the
+        reader knows the clause exists. `none` is one word and says it.
+        """
+        if not per_source and not deferred:
+            return
+        self.log.info("Overlays: %d keycap(s) from %d source(s), %d uploaded, %d cached",
+                      mapped, len(per_source), uploaded, mapped - uploaded)
+        # ⚠️ A source that drew NOTHING still appears, in the deferred half, and
+        # that is the whole reason it is reported: the program mark stands down
+        # on any key a hand-made template already draws, and every shipped
+        # template draws ESC -- so on an app that HAS a template the mark is
+        # correctly invisible, and its silent absence reads as "the icon was
+        # never fetched" (field, 2026-09-10).
+        #
+        # ⚠️ And a source is reported as deferred even when it ALSO drew, which
+        # the first version got wrong. Since E3 the mark offers every modifier
+        # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
+        # and "it lost the bare ESC to the template" is exactly the question a
+        # reader has when that keycap shows the hand-made design.
+        self.log.info("  drawn: %s | deferred to the template: %s",
+                      self._describe_sources(per_source),
+                      self._describe_sources(deferred or {}))
+
+    def _describe_sources(self, sources: dict) -> str:
+        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`."""
+        if not sources:
+            return "none"
+        return ", ".join("%s=%s" % (self._short_source(f), self._describe_keys(k))
+                         for f, k in sources.items())
+
+    @staticmethod
+    def _short_source(filename: str) -> str:
+        """The readable half of a source name.
+
+        ⚠️ The GEOMETRY segment is dropped, not the face. `source_name()` builds
+        `@sc:<face>:<concept>:<height><placement>`, and the height and corner are
+        user settings that are identical for every source in one send -- so
+        repeating them six times on one line is noise, while the face is what
+        says whether a concept came from Fluent or from the Material fall-back.
+        The concept itself may contain `:` (`icon:description`), which is why
+        this takes the LAST segment off rather than splitting from the front.
+
+        `mark ` rather than the bare slug for a program mark: `@prog:` is what
+        distinguishes the icon fall-back from a hand-made template, and it is
+        the source most likely to be the one that lost a key.
+        """
+        if filename.startswith(PROGRAM_PREFIX):
+            return "mark " + filename[len(PROGRAM_PREFIX):]
+        if filename.startswith(SHORTCUT_PREFIX):
+            body = filename[len(SHORTCUT_PREFIX):]
+            head, sep, _geometry = body.rpartition(":")
+            return head if sep else body
+        # A real file: the basename without the channel-pack suffix, which is
+        # the same on every template and therefore carries nothing.
+        #
+        # ⚠️ Split on BOTH separators rather than `os.path.basename`. These
+        # paths are built on the machine that owns the keyboard, but the log is
+        # read (and these lines are tested) elsewhere, and `posixpath.basename`
+        # does not split a Windows path -- it hands back the whole
+        # `C:\...\sevenzip_template.mods.png`, which is precisely the noise
+        # this line exists to remove.
+        name = re.split(r"[\\/]", filename)[-1]
+        for suffix in (".combo.mods.png", ".mods.png"):
+            if name.endswith(suffix):
+                return name[:-len(suffix)]
+        return name
+
+    def _describe_keys(self, keys: list) -> str:
+        """`ESC, S` / `ESC on 15 modifier variants` / `31 keycap(s)`.
+
+        ⚠️ The MIDDLE form exists because of E3 and a bare count is useless for
+        it. The program mark is ONE key on up to 16 variants, so the old
+        threshold turned it into "15 keycap(s)" -- which a reader cannot tell
+        apart from fifteen DIFFERENT keys, and the difference is the whole
+        behaviour of the feature. Spelling out "ESC, Ctrl+ESC, Shift+ESC, ..."
+        is no better; naming the key once and counting the variants is.
+        """
+        if not keys:
+            return "nothing"
+        distinct = {kc for kc, _ in keys}
+        if len(distinct) == 1 and len(keys) > 1:
+            from polyhost.device.keys import Modifier
+            return "%s on %d modifier variant(s)" % (
+                describe_key(next(iter(distinct)), Modifier.NO_MOD), len(keys))
+        if len(keys) <= self.NAME_KEYS_UP_TO:
+            return ", ".join(describe_key(kc, mod) for kc, mod in keys)
+        return "%d keycap(s)" % len(keys)
 
     def execute_commands(self, command_list: list,
                          cancel: threading.Event | None = None) -> None:

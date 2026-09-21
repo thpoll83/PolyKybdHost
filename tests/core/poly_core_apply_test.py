@@ -91,13 +91,15 @@ class TestReportWindow(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(payload, {"reported": True})
         core.overlay_handler.remote_handler.report_window.assert_called_once_with(
-            "7", "Code.exe", "x - VS Code", os=None)
+            "7", "Code.exe", "x - VS Code", os=None, url=None, names=(),
+            icon_key=None, icon=None, shortcuts=None)
 
     def test_forwards_os_to_remote_handler(self):
         core = make_core()
         core.report_window("7", "Code.exe", "x - VS Code", os=2)
         core.overlay_handler.remote_handler.report_window.assert_called_once_with(
-            "7", "Code.exe", "x - VS Code", os=2)
+            "7", "Code.exe", "x - VS Code", os=2, url=None, names=(),
+            icon_key=None, icon=None, shortcuts=None)
 
     def test_no_window_tracking_returns_error(self):
         core = make_core()
@@ -146,6 +148,19 @@ class TestApplyReconnect(unittest.TestCase):
     def test_paused_returns_none(self):
         core = make_core(paused=True)
         self.assertIsNone(core.apply_reconnect(connect_snapshot()))
+
+    def test_a_fresh_connect_FORGETS_the_generic_overlays(self):
+        # ⚠️ The MRU cache is reset and the keyboard's pool is cleared, so the
+        # mark and every shortcut icon are gone -- but the dedupe still claimed
+        # they were there, so the tick never re-sent them and the keycaps stayed
+        # blank until the user switched application. Latent since the mark
+        # shipped; the shortcut half made it worse, because it is ~20 keycaps
+        # rather than one.
+        core = make_core()
+        core._generic_on_device = ("si:gimp", ())
+        core.apply_reconnect(connect_snapshot())
+        core.device_mgr.reset_all_caches.assert_called_once()
+        self.assertIsNone(core._generic_on_device)
 
     def test_fresh_compatible_connect_runs_post_connect(self):
         core = make_core(unicode_mode=True)
