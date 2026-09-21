@@ -292,8 +292,6 @@ class TestDerivedNameFallback(unittest.TestCase):
         self.assertEqual(so.plan([sc("Export as PDF")]), [])
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class PlanReportTest(unittest.TestCase):
@@ -378,3 +376,7 @@ class KeyNameTest(unittest.TestCase):
         """So two lines about the same chord read the same in a pasted log."""
         self.assertEqual(so.pretty_key(CTRL | SHIFT | ALT, KC_S), "Ctrl+Shift+Alt+S")
         self.assertEqual(so.pretty_key(0, KC_S), "S")
+
+
+if __name__ == "__main__":
+    unittest.main()

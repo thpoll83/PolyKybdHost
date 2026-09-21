@@ -698,8 +698,6 @@ class GenericOverlayMasterSwitchTest(unittest.TestCase):
                 self.assertIsNone(core._generic_on_device)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class StaleGenericClearTest(unittest.TestCase):
@@ -937,3 +935,7 @@ class StaleGenericClearTest(unittest.TestCase):
         self.assertIsNone(core._generic_on_device)
         entry = core.device_mgr.all_entries[0]
         entry.device.send_overlays_mru.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

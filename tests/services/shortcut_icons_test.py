@@ -363,8 +363,6 @@ class FluentPreferenceTest(unittest.TestCase):
                           "superscript"])
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class CloseFamilyTest(unittest.TestCase):
@@ -400,3 +398,7 @@ class CloseFamilyTest(unittest.TestCase):
         self.assertEqual(hit.concept, "wrap text")
         self.assertIsNone(hit.codepoint)
         self.assertEqual(hit.icon, "wrap_text")
+
+
+if __name__ == "__main__":
+    unittest.main()
