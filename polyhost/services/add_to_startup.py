@@ -1,5 +1,7 @@
 import platform
 import os
+import plistlib
+import shutil
 import sys
 import shlex
 import subprocess
@@ -396,10 +398,26 @@ def _write_executable_if_changed(path, content):
     already there. Rewriting the launcher on every startup changes the file a
     registered macOS LaunchAgent points at, which makes macOS re-fire its
     "Background Items Added" notification each launch — so leave it untouched
-    when nothing changed."""
+    when nothing changed.
+
+    ⚠️ THE MODE IS REPAIRED EVEN WHEN THE CONTENT MATCHES. Returning early on
+    identical content used to skip the chmod entirely, so a launcher that kept
+    its bytes but lost its executable bit stayed unlaunchable for good -- and
+    nothing rewrites it, because the content is exactly right. A Time Machine
+    restore, a `cp -r` without `-p`, or a sync tool that drops modes is enough.
+    That costs the macOS `.app` its only executable and Launchpad then opens
+    nothing at all (Sourcery, #250).
+    """
     path = Path(path)
     try:
         if path.read_text(encoding="utf-8") == content:
+            try:
+                if not path.stat().st_mode & 0o111:
+                    path.chmod(0o755)
+            except OSError:
+                # Best effort: a mode we cannot read or set is not a reason to
+                # rewrite a file whose contents are already correct.
+                pass
             return False
     except OSError:
         pass
@@ -454,6 +472,143 @@ def _macos_plist_path(app_name=APP_NAME):
     """Path to this app's launchd LaunchAgent plist."""
     return Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
 
+def _macos_app_bundle(app_name=APP_NAME):
+    """Path to this app's manual launcher — the thing Launchpad can show."""
+    return Path.home() / "Applications" / f"{app_name}.app"
+
+# ⚠️ THE OWNERSHIP STAMP, and it is load-bearing for the teardown below.
+# `~/Applications/PolyHost.app` is a NAME, not a reservation — a packaged
+# PolyHost.app (a .dmg build of this very project would be the likeliest one)
+# or any unrelated app of the same name can already be sitting there. Without a
+# stamp, registration writes our Info.plist and shim into somebody else's
+# bundle and `remove_autostart` then `shutil.rmtree`s the whole directory,
+# destroying an application the user installed — i.e. turning "disable
+# autostart" into "delete an app" (Greptile, #250). So the bundle we write
+# carries a private Info.plist key and BOTH adoption and deletion are gated on
+# it. No migration is needed: this landed in the same PR as the launcher, so no
+# unstamped bundle of ours has ever existed in the field.
+MACOS_LAUNCHER_MARKER = "PolyKybdHostManagedLauncher"
+
+def _macos_bundle_is_foreign(bundle):
+    """True when something at `bundle` is not a launcher this app wrote.
+
+    Fails **CLOSED**: anything that cannot be positively identified as ours is
+    foreign, so the cost of an unreadable or unparseable Info.plist is a
+    launcher that stops refreshing — never an `rmtree` of a directory we cannot
+    identify. A path that does not exist is NOT foreign; there is nothing to
+    adopt and creating it is the normal case.
+
+    ⚠️ Read with `plistlib`, not as text. A real application's Info.plist is
+    usually the **binary** plist format, where `read_text()` raises
+    `UnicodeDecodeError` — which is not an `OSError`, so a text read would
+    propagate out of the one function whose whole job is to be cautious.
+    """
+    if not bundle.is_dir():
+        return False
+    try:
+        with open(bundle / "Contents" / "Info.plist", "rb") as f:
+            return plistlib.load(f).get(MACOS_LAUNCHER_MARKER) is not True
+    except Exception:
+        # Missing, unreadable, truncated, not a plist at all — all foreign.
+        return True
+
+def create_macos_app_bundle(app_name, wrapper_path, icon_path):
+    """Write a minimal `.app` so the user can START the app again by hand.
+
+    ⚠️ macOS was the ONLY platform with no manual launcher, and the LaunchAgent
+    is not one: Launchpad indexes `.app` bundles, and a plist is not a bundle.
+    Windows has always written a Start-menu `.lnk` beside its autostart entry
+    and Linux a second `.desktop` under `~/.local/share/applications`; macOS got
+    the plist alone, so a user who quit the app had no way back short of a
+    terminal or a logout (field, 2026-09-21). The tell that this was an
+    oversight rather than a decision is in the plist itself: it sets
+    `CFBundleIconFile`, a BUNDLE key that does nothing in a LaunchAgent.
+
+    A bundle is just a directory, so this needs no packaging tool and no build
+    step -- `pcolor.icns` already ships and `_icon_path()` already returns it on
+    Darwin.
+
+    ⚠️ `LSUIElement` is true because this is a MENU-BAR app: without it macOS
+    gives the running process a Dock tile and an application menu it has no use
+    for. Launchpad lists installed bundles regardless, so the launcher still
+    appears -- that is the one claim here that cannot be checked off a Mac, and
+    dropping the key is the fallback if it turns out otherwise.
+    """
+    bundle = _macos_app_bundle(app_name)
+    macos_dir = bundle / "Contents" / "MacOS"
+    resources = bundle / "Contents" / "Resources"
+    icon_name = Path(icon_path).name if icon_path else ""
+    plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleName</key>
+    <string>{app_name}</string>
+    <key>CFBundleDisplayName</key>
+    <string>{app_name}</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.{app_name}</string>
+    <key>CFBundleExecutable</key>
+    <string>{app_name}</string>
+    <key>CFBundleIconFile</key>
+    <string>{icon_name}</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>{MACOS_LAUNCHER_MARKER}</key>
+    <true/>
+</dict>
+</plist>
+"""
+    if _macos_bundle_is_foreign(bundle):
+        # Refuse to ADOPT as well as to delete: writing into a bundle we do not
+        # own would overwrite its Info.plist and its executable, which is the
+        # same destruction one step earlier.
+        print(f"Not writing a launcher to {bundle}: it was not created by "
+              f"{app_name}, so it is left untouched.")
+        return None
+    try:
+        macos_dir.mkdir(parents=True, exist_ok=True)
+        resources.mkdir(parents=True, exist_ok=True)
+        # Same if-changed discipline as the wrapper and the plist: rewriting a
+        # registered bundle on every launch is what re-fires macOS's
+        # "Background Items Added" notification.
+        info = bundle / "Contents" / "Info.plist"
+        try:
+            stale = info.read_text(encoding="utf-8") != plist
+        except OSError:
+            stale = True
+        if stale:
+            info.write_text(plist, encoding="utf-8")
+        # ⚠️ A SHIM, not a copy of the wrapper. The wrapper is regenerated on
+        # upgrade (venv moves, pythonw changes); pointing at it by path means
+        # the bundle never goes stale, and `exec` keeps one process rather than
+        # leaving a shell parked for the life of the app.
+        # ⚠️ shlex.quote, not bare double quotes: a `$`, a backtick or a `"`
+        # anywhere in the path -- all legal in a macOS home directory name --
+        # would otherwise produce a broken shim or run something the user did
+        # not ask for (Sourcery, #250).
+        _write_executable_if_changed(
+            macos_dir / app_name,
+            f'#!/bin/sh\nexec {shlex.quote(str(Path(wrapper_path).resolve()))} "$@"\n')
+        if icon_name and Path(icon_path).is_file():
+            target = resources / icon_name
+            data = Path(icon_path).read_bytes()
+            if not target.is_file() or target.read_bytes() != data:
+                target.write_bytes(data)
+        print(f"Launcher installed at: {bundle}")
+        return bundle
+    except OSError as e:
+        # The launcher is a convenience; autostart is the job. A failure here
+        # must not stop the plist being written, so it is reported and swallowed
+        # rather than raised.
+        print(f"Could not create the app launcher at {bundle}: {e}")
+        return None
+
 def add_to_startup(wrapper_path, app_name, icon_path):
     """Register autostart on Linux/macOS (Windows is handled separately)."""
     system = platform.system()
@@ -468,6 +623,11 @@ def add_to_startup(wrapper_path, app_name, icon_path):
         create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
 
     elif system == "Darwin":
+        # ⚠️ BEFORE the plist's early return below, which fires on every launch
+        # where the plist is unchanged -- i.e. almost always. Put this after it
+        # and the launcher is created once and can never self-heal if the user
+        # deletes it or an upgrade moves the wrapper.
+        create_macos_app_bundle(app_name, wrapper_path, icon_path)
         plist_path = _macos_plist_path(app_name)
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -579,6 +739,18 @@ def remove_autostart(app_name=APP_NAME):
             subprocess.run(["launchctl", "unload", str(plist)], check=False)
             plist.unlink()
             print(f"Removed launchd plist: {plist}")
+        # The manual launcher goes too, matching both other platforms --
+        # Windows removes its Start-menu .lnk "so teardown leaves nothing
+        # behind" and Linux removes its applications/.desktop.
+        bundle = _macos_app_bundle(app_name)
+        if _macos_bundle_is_foreign(bundle):
+            print(f"Left {bundle} alone: it is not a launcher {app_name} wrote.")
+        elif bundle.is_dir():
+            try:
+                shutil.rmtree(bundle)
+                print(f"Removed launcher: {bundle}")
+            except OSError as e:
+                print(f"Could not remove launcher {bundle}: {e}")
 
     # The generated launchers are ours alone (nothing else references them once
     # the entry above is gone), in both the current and the legacy location.
