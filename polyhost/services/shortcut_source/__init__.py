@@ -111,12 +111,30 @@ def unavailable_reason() -> str | None:
     return reason()
 
 
-def harvest(app: str) -> list:
-    """Shortcuts for the focused app, or [] — the one call the core makes."""
+def harvest(app: str, reason: dict | None = None) -> list:
+    """Shortcuts for the focused app, or [] — the one call the core makes.
+
+    ⚠️ **An empty list has six different meanings on macOS and the caller
+    cannot tell them apart.** Pass a dict as `reason` and the backend fills
+    `reason["why"]` with a sentence and `reason["retry"]` with whether THIS
+    harvest looked at all -- a focus race and an app with genuinely no key
+    equivalents both return [] and need opposite handling, and the second must
+    never be cached as the first.
+
+    Every backend takes the parameter so this needs no branch; only `macos`
+    fills it today.
+    """
     backend = pick()
     if backend is None:
         return []
     try:
-        return backend.shortcuts_for_app(app)
-    except Exception:
+        return backend.shortcuts_for_app(app, reason=reason)
+    except Exception as exc:
+        if reason is not None:
+            # The backend's own guard should have caught this, so reaching here
+            # is itself the finding -- say so rather than letting it read as
+            # "the app has no shortcuts".
+            reason["why"] = ("the %s backend raised past its own guard: %s: %s"
+                             % (backend_name(), type(exc).__name__, exc))
+            reason["retry"] = True
         return []

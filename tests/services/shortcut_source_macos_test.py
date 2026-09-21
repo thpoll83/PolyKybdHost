@@ -338,6 +338,114 @@ class FocusRaceTest(unittest.TestCase):
         self.assertFalse(macos.names_agree("Mail", "Xcode"))
 
 
+class EmptyHarvestReasonTest(unittest.TestCase):
+    """⚠️ SIX ways of returning [], and the caller could tell none of them apart.
+
+    Its one sentence — *"the app exposes no accelerators"* — is true of exactly
+    one, and reads as settled fact for the other five. The field log that
+    prompted this had four macOS apps reporting it on a machine where Chrome
+    harvested 65 in the same session, so the pyobjc import and the Accessibility
+    grant were both provably fine and the line narrowed nothing (2026-09-21).
+
+    `retry` is the half a human does not read: true means THIS harvest never
+    looked, so the empty answer says nothing about the app and must not be
+    cached as if it did.
+    """
+
+    def why(self, requested="Mousepad", frontmost="Mousepad", app=..., **kw):
+        if app is ...:
+            app = FakeElement(AXMenuBar=menu_bar(
+                APPLE_MENU, bar_item("File", menu_item("Save", "S", mods=0))))
+        reason = {}
+        with patch.object(macos, "_trusted", return_value=kw.pop("trusted", True)), \
+             patch.object(macos, "_api", return_value=(
+                 lambda pid: app, fake_copy_attr, lambda: True,
+                 FakeWorkspace(frontmost))):
+            got = macos.shortcuts_for_app(requested, reason=reason, **kw)
+        return got, reason
+
+    def test_a_MISSING_PERMISSION_names_the_setting(self):
+        got, reason = self.why(trusted=False)
+        self.assertEqual(got, [])
+        self.assertIn("Accessibility", reason["why"])
+        # Not retryable: the grant needs a restart, so asking again this session
+        # can only produce the same answer.
+        self.assertFalse(reason["retry"])
+
+    def test_a_MOVED_FOCUS_names_both_apps_and_asks_to_RETRY(self):
+        got, reason = self.why(requested="Mail", frontmost="Xcode")
+        self.assertEqual(got, [])
+        self.assertIn("Mail", reason["why"])
+        self.assertIn("Xcode", reason["why"])
+        self.assertTrue(reason["retry"])
+
+    def test_NO_FRONTMOST_APP_asks_to_RETRY(self):
+        class NoApp:
+            @staticmethod
+            def sharedWorkspace():
+                return NoApp()
+
+            @staticmethod
+            def frontmostApplication():
+                return None
+
+        reason = {}
+        with patch.object(macos, "_trusted", return_value=True), \
+             patch.object(macos, "_api", return_value=(
+                 lambda pid: None, fake_copy_attr, lambda: True, NoApp())):
+            self.assertEqual(macos.shortcuts_for_app("x", reason=reason), [])
+        self.assertIn("frontmost", reason["why"])
+        self.assertTrue(reason["retry"])
+
+    def test_NO_MENU_BAR_says_so_and_is_NOT_retryable(self):
+        got, reason = self.why(app=FakeElement())
+        self.assertEqual(got, [])
+        self.assertIn("AXMenuBar", reason["why"])
+        self.assertFalse(reason["retry"])
+
+    def test_an_AX_FAILURE_names_the_exception_and_asks_to_RETRY(self):
+        reason = {}
+        with patch.object(macos, "_api", side_effect=RuntimeError("no pyobjc")):
+            self.assertEqual(macos.shortcuts_for_app("x", reason=reason), [])
+        self.assertIn("RuntimeError", reason["why"])
+        self.assertIn("no pyobjc", reason["why"])
+        self.assertTrue(reason["retry"])
+
+    def test_a_REAL_EMPTY_MENU_reports_the_COUNTS_and_is_NOT_retryable(self):
+        """The one empty answer that is CORRECT — and the counts are what
+        separate its two causes. A bar the walk never entered is not the same as
+        a full menu with no key equivalents in it, and a toolkit that populates
+        a submenu only when it is first SHOWN looks like the second while being
+        the first (module docstring)."""
+        got, reason = self.why(app=FakeElement(AXMenuBar=menu_bar(
+            APPLE_MENU,
+            bar_item("File", menu_item("Save")),          # no key equivalent
+            bar_item("Edit", menu_item("Undo")))))
+        self.assertEqual(got, [])
+        self.assertIn("2 menu(s) past the Apple menu", reason["why"])
+        self.assertIn("node(s) walked", reason["why"])
+        self.assertFalse(reason["retry"])
+
+    def test_an_EMPTY_BAR_is_distinguishable_from_a_full_one(self):
+        """Both are "no key equivalents"; only the counts say which."""
+        _, reason = self.why(app=FakeElement(AXMenuBar=menu_bar(APPLE_MENU)))
+        self.assertIn("0 menu(s) past the Apple menu", reason["why"])
+
+    def test_a_SUCCESSFUL_harvest_leaves_the_reason_ALONE(self):
+        got, reason = self.why()
+        self.assertEqual([s.label for s in got], ["Save"])
+        self.assertEqual(reason, {})
+
+    def test_the_reason_is_OPTIONAL(self):
+        """Every existing caller passes nothing; filling it must not be what
+        makes the harvest work."""
+        with patch.object(macos, "_trusted", return_value=True), \
+             patch.object(macos, "_api", return_value=(
+                 lambda pid: FakeElement(), fake_copy_attr, lambda: True,
+                 FakeWorkspace("Mousepad"))):
+            self.assertEqual(macos.shortcuts_for_app("Mousepad"), [])
+
+
 class ProbeLabellingTest(unittest.TestCase):
     """`shortcut_probe --backend macos` must not label a harvest with a SECOND
     frontmost lookup.

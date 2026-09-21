@@ -164,7 +164,16 @@ class ShortcutIconFetcher:
             app, height, placement = key.split("\x00")
             overlays = self._resolve(app, int(height), placement)
             with self._lock:
-                self._overlays[key] = overlays
+                # ⚠️ None means "this harvest never LOOKED" -- focus had already
+                # moved on, or the accessibility call failed outright -- and it
+                # must not be cached. An empty dict IS cached, deliberately (see
+                # the module docstring), so storing a did-not-look answer as one
+                # pins "this app has no shortcuts" for the life of the process
+                # and the app is never re-harvested however long it is focused.
+                # Exactly the distinction the relay path is warned about in
+                # `overlays_for`, one layer down.
+                if overlays is not None:
+                    self._overlays[key] = overlays
                 self._inflight.discard(key)
             if overlays and self._on_ready is not None:
                 try:
@@ -176,14 +185,21 @@ class ShortcutIconFetcher:
                     self.log.debug("shortcut-icon ready callback failed",
                                    exc_info=True)
 
-    def _resolve(self, app: str, height: int, placement: str) -> dict:
-        """Everything slow, on this thread. Returns {} for every failure.
+    def _resolve(self, app: str, height: int, placement: str) -> dict | None:
+        """Everything slow, on this thread. `{}` for a failure, None to retry.
 
         The three reasons a `{}` happens are told apart in the log, because they
         need opposite fixes: the backend is unusable (install the bridge, or
         grant Accessibility permission on macOS), the app exposes nothing (a
         modern toolkit — nothing to do), or nothing in what it exposes matched a
-        concept (curation).
+        concept (curation). On macOS the middle one splits further still — see
+        `shortcut_source.harvest`.
+
+        ⚠️ **None is not a failure, it is "did not look"**, and `_loop` must not
+        cache it. A harvest the backend abandoned -- focus moved before it ran,
+        or the API failed -- says nothing about the app, so caching it as an
+        empty result is indistinguishable from the app genuinely having no
+        shortcuts and just as permanent.
         """
         relayed = self._harvested.get(app)
         if relayed is not None:
@@ -210,10 +226,22 @@ class ShortcutIconFetcher:
                 # no shortcuts unless the reason says otherwise.
                 self._say(app, unusable)
                 return {}
-            shortcuts = shortcut_source.harvest(app)
+            reason: dict = {}
+            shortcuts = shortcut_source.harvest(app, reason=reason)
             if not shortcuts:
-                self._say(app, "the app exposes no accelerators")
-                return {}
+                # ⚠️ The backend's own sentence when it has one. *"The app
+                # exposes no accelerators"* is true of exactly ONE of the six
+                # ways the macOS backend returns [], and reads as settled fact
+                # for the other five -- a revoked permission, an app with no
+                # AXMenuBar, a focus race, an AX failure. Four macOS apps
+                # reported it on a machine where Chrome harvested 65, so the
+                # import and the permission were provably fine and the line
+                # narrowed nothing (field, 2026-09-21).
+                self._say(app, reason.get("why")
+                          or "the app exposes no accelerators")
+                # Nothing was learned about this app, so do not cache it;
+                # `_loop` reads the None, and its comment says why.
+                return None if reason.get("retry") else {}
         # ⚠️ The codepoint table is loaded BEFORE planning, not after, because
         # the planner now uses it: a label the lexicon does not know falls back
         # to a name derived from the label, and the table is what rejects a

@@ -279,7 +279,8 @@ def _dotted(tag: str) -> str:
     """`312` -> `3.12`, so the message names a version a human recognises."""
     return "%s.%s" % (tag[0], tag[1:]) if len(tag) > 1 else tag
 
-def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET) -> list[Shortcut]:
+def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET,
+                      reason: dict | None = None) -> list[Shortcut]:
     """Every shortcut the named application exposes, or [] for anything at all.
 
     Matched on a substring of the desktop child's name, the same rule the probe's
@@ -289,6 +290,13 @@ def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET) -> list[Shor
     ⚠️ Returns [] rather than raising on ANY failure. This runs on a background
     thread for a cosmetic feature; an app that died mid-walk, a bridge that is
     not running, or a D-Bus timeout must all cost nothing.
+
+    `reason` is accepted and not filled in, so all three backends share ONE
+    signature and `harvest()` needs no branch to call them -- the same reason
+    `_backend_module()` replaced the if/else that `pick()` and
+    `unavailable_reason()` each carried. A backend that fills it tells the
+    caller WHICH empty answer this was (`macos` does); one that does not leaves
+    the caller on its generic sentence, which is today's behaviour.
     """
     if not name:
         return []

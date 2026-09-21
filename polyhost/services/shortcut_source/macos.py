@@ -44,6 +44,15 @@ about code:
 ⚠️ NOTHING HERE RAISES — same contract as the other two backends. It runs on a
 background thread for a cosmetic feature, so a missing bridge, a denied
 permission or an app that quit mid-walk each cost an empty list.
+
+⚠️ **Which makes SIX ways of answering [], and the caller cannot tell them
+apart from the list.** They need entirely different responses -- grant a
+permission, do nothing, or ask again in a moment -- so `shortcuts_for_app`
+takes a `reason` out-parameter that names the one that fired. Without it the
+log says *"the app exposes no accelerators"* for all six, which is a lie about
+five of them: measured in the field, four macOS apps reported exactly that on a
+machine where Chrome harvested 65 in the same session, so both the causes that
+sentence implies were provably absent (2026-09-21).
 """
 
 from __future__ import annotations
@@ -235,7 +244,8 @@ def _menu_shortcuts(copy_attr, menu, path, found, seen, budget):
 
 
 def shortcuts_for_app(name: str = "",
-                      budget: int = DEFAULT_NODE_BUDGET) -> list[Shortcut]:
+                      budget: int = DEFAULT_NODE_BUDGET,
+                      reason: dict | None = None) -> list[Shortcut]:
     """Every key equivalent the FRONTMOST application's menu bar exposes.
 
     ⚠️ `name` does not SELECT the application -- the AX API answers "which app
@@ -251,14 +261,40 @@ def shortcuts_for_app(name: str = "",
     defect `WINDOW_MANAGER_CHORDS` exists to prevent on Windows.
 
     Returns [] on any failure, for the reason the other two backends do.
+
+    ⚠️ **`reason` is what tells the SIX ways of returning [] apart**, and they
+    need entirely different responses: grant a permission, do nothing (the app
+    really has no key equivalents), or ask again in a moment. Flattened into
+    the caller's one sentence -- *"the app exposes no accelerators"* -- five of
+    the six are a lie, and the field log that prompted this had four macOS apps
+    reporting exactly that while Chrome harvested 65 on the same machine, so
+    the permission and the import were provably fine and the sentence narrowed
+    nothing (2026-09-21).
+
+    It is an out-parameter rather than a return value because the empty list is
+    the contract every caller already codes against; `_say(app, reason["why"])`
+    is the whole consumer. `reason["retry"]` is the machine-readable half: true
+    means THIS HARVEST did not look, so the answer must not be cached.
     """
+    def why(text, retry=False):
+        if reason is not None:
+            reason["why"] = text
+            reason["retry"] = retry
+        return []
+
     try:
         create_app, copy_attr, _is_trusted, workspace = _api()
         if not _trusted():
-            return []
+            # Normally unreachable: the fetcher consults `unavailable_reason()`
+            # first. Reachable if the grant is revoked mid-session, and then the
+            # cached answer is stale rather than wrong -- so say the same thing
+            # that function does rather than inventing a second sentence.
+            return why(unavailable_reason() or "this process has no "
+                       "Accessibility permission")
         pid = _frontmost_pid(workspace)
         if pid is None:
-            return []
+            return why("macOS reports no frontmost application -- the harvest "
+                       "landed between two apps", retry=True)
         # ⚠️ The harvest runs on a WORKER THREAD, queued by the window tick, so
         # focus can move between the two -- and the fetcher caches the result
         # under the name it ASKED about. Without this check app B's shortcuts
@@ -269,12 +305,16 @@ def shortcuts_for_app(name: str = "",
         # it resolves the focused ELEMENT, whose owning application name costs
         # another cross-process call. This backend is deliberately the stricter
         # of the two rather than both being left equally loose.
-        if not names_agree(name, _frontmost_name(workspace)):
-            return []
+        frontmost = _frontmost_name(workspace)
+        if not names_agree(name, frontmost):
+            return why("focus moved to '%s' before the harvest ran, so this "
+                       "never looked at '%s'" % (frontmost or "?", name),
+                       retry=True)
         app = create_app(pid)
         menu_bar = _attr(copy_attr, app, AX_MENU_BAR)
         if menu_bar is None:
-            return []
+            return why("it exposes no AXMenuBar at all -- a non-AppKit app, or "
+                       "one whose menu bar is not readable by this process")
         found: list[Shortcut] = []
         seen: set[tuple[int, str]] = set()
         remaining = [int(budget)]
@@ -283,6 +323,18 @@ def shortcuts_for_app(name: str = "",
             title = str(_attr(copy_attr, bar_item, AX_TITLE, "") or "").strip()
             for menu in _attr(copy_attr, bar_item, AX_CHILDREN, []) or []:
                 _menu_shortcuts(copy_attr, menu, [title], found, seen, remaining)
+        if not found:
+            # ⚠️ The one empty answer that is CORRECT, and the counts are what
+            # separate its two causes. A bar the walk never entered -- 0 menus
+            # past the Apple menu -- is not the same as a full menu bar with no
+            # key equivalents in it, and per the module docstring a toolkit that
+            # populates a submenu only when it is first SHOWN looks like the
+            # second while being the first.
+            return why("its menu bar has %d menu(s) past the Apple menu and "
+                       "not one key equivalent in them (%d node(s) walked)"
+                       % (len(list(bar_items)[1:]),
+                          int(budget) - max(remaining[0], 0)))
         return found
-    except Exception:
-        return []
+    except Exception as exc:
+        return why("the Accessibility API failed: %s: %s"
+                   % (type(exc).__name__, exc), retry=True)

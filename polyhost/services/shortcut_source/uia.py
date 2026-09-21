@@ -109,7 +109,7 @@ def available() -> bool:
         return False
 
 
-def shortcuts_for_app(name: str = "") -> list[Shortcut]:
+def shortcuts_for_app(name: str = "", reason: dict | None = None) -> list[Shortcut]:
     """Every shortcut the FOCUSED top-level window exposes.
 
     ⚠️ `name` is accepted and ignored, so the two backends share one signature.
@@ -119,6 +119,9 @@ def shortcuts_for_app(name: str = "") -> list[Shortcut]:
     opinion about the same thing.
 
     Returns [] on any failure, for the reason the AT-SPI side does.
+
+    `reason` is accepted and not filled in -- see the note on the AT-SPI side
+    for why all three backends carry it regardless.
     """
     try:
         _, iuia = _uia()

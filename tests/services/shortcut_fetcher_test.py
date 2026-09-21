@@ -284,6 +284,118 @@ class BackendReasonTest(unittest.TestCase):
         self.assertEqual(said, ["the app exposes no accelerators"])
 
 
+class EmptyHarvestReasonTest(unittest.TestCase):
+    """What the backend said about an empty harvest, and what is cached.
+
+    ⚠️ *"The app exposes no accelerators"* is true of exactly ONE of the six
+    ways the macOS backend returns [], and reads as settled fact for the other
+    five. Four macOS apps reported it on a machine where Chrome harvested 65 in
+    the same session (field, 2026-09-21).
+    """
+
+    def resolve(self, harvested=(), reason=None):
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        said = []
+        f._say = lambda app, why: said.append(why)
+
+        def harvest(app, reason=None):
+            if reason is not None and self._reason:
+                reason.update(self._reason)
+            return list(harvested)
+
+        self._reason = reason or {}
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            got = f._resolve("gimp", 32, "lower_left")
+        return got, said
+
+    def test_the_BACKENDS_sentence_wins_over_the_generic_one(self):
+        got, said = self.resolve(reason={"why": "focus moved to 'Xcode' before "
+                                                "the harvest ran", "retry": True})
+        self.assertEqual(said, ["focus moved to 'Xcode' before the harvest ran"])
+        self.assertIsNone(got)
+
+    def test_a_BACKEND_WITHOUT_a_sentence_keeps_the_generic_one(self):
+        """AT-SPI and UIA fill nothing, so their behaviour must not change."""
+        got, said = self.resolve()
+        self.assertEqual(said, ["the app exposes no accelerators"])
+        self.assertEqual(got, {})
+
+    def test_a_DID_NOT_LOOK_answer_is_NOT_CACHEABLE(self):
+        """⚠️ None, not {}. `_resolve`'s empty dict IS cached by `_loop`, so a
+        harvest that never looked would pin "this app has no shortcuts" for the
+        life of the process — the same trap `overlays_for` warns about for the
+        relay, one layer down."""
+        got, _ = self.resolve(reason={"why": "the AX API failed", "retry": True})
+        self.assertIsNone(got)
+
+    def test_a_REAL_empty_menu_IS_cacheable(self):
+        """The one correct empty answer. Caching it is the point — without the
+        negative cache every window switch re-walks a tree already proven
+        empty."""
+        got, _ = self.resolve(reason={"why": "not one key equivalent in them",
+                                      "retry": False})
+        self.assertEqual(got, {})
+
+
+class LoopCacheTest(unittest.TestCase):
+    """⚠️ `_loop` decides what is remembered, and the two answers look alike."""
+
+    def _one_pass(self, f, answer):
+        """Run `_loop` for exactly one queued item.
+
+        ⚠️ Setting `_stop` BEFORE the call runs zero passes, not one -- the
+        `while` tests it first -- so the flag is set from inside `_resolve`,
+        after the body has done its work.
+        """
+        def resolve(*_a, **_k):
+            f._stop.set()
+            return answer
+
+        f._resolve = resolve
+        f._loop()
+
+    def run_once(self, answer):
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        key = "gimp\x0032\x00lower_left"
+        with f._lock:
+            f._queue.append(key)
+        self._one_pass(f, answer)
+        return f._overlays, key
+
+    def test_an_EMPTY_result_IS_remembered(self):
+        overlays, key = self.run_once({})
+        self.assertIn(key, overlays)
+
+    def test_a_DID_NOT_LOOK_result_is_NOT_remembered(self):
+        """So the next focus re-harvests instead of reading back a non-answer."""
+        overlays, key = self.run_once(None)
+        self.assertNotIn(key, overlays)
+
+    def test_a_DID_NOT_LOOK_result_still_clears_INFLIGHT(self):
+        """Or the app is wedged: `overlays_for` refuses to re-queue a key it
+        believes is already being worked on, so it would never ask again."""
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        key = "gimp\x0032\x00lower_left"
+        with f._lock:
+            f._queue.append(key)
+        self._one_pass(f, None)
+        self.assertEqual(f._inflight, set())
+
+    def test_a_DID_NOT_LOOK_result_does_not_fire_the_READY_callback(self):
+        ready = []
+        f = ShortcutIconFetcher(on_ready=ready.append)
+        self.addCleanup(f.stop)
+        with f._lock:
+            f._queue.append("gimp\x0032\x00lower_left")
+        self._one_pass(f, None)
+        self.assertEqual(ready, [])
+
+
 class ResolveTest(unittest.TestCase):
     """`_resolve` is the slow half; every failure in it must cost {} and a line."""
 

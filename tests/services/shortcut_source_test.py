@@ -261,17 +261,53 @@ class HarvestTest(unittest.TestCase):
 
     def test_a_backend_that_RAISES_harvests_nothing(self):
         boom = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app: (_ for _ in ()).throw(OSError("bus gone")))})()
+            lambda app, reason=None: (_ for _ in ()).throw(OSError("bus gone")))})()
         with patch.object(ss, "pick", return_value=boom):
             self.assertEqual(ss.harvest("mousepad"), [])
+
+    def test_a_backend_that_RAISES_past_its_guard_SAYS_so_and_asks_to_retry(self):
+        """⚠️ Not "the app exposes no accelerators". Every backend promises not
+        to raise, so reaching this handler is itself the finding — and it says
+        nothing about the app, so the empty answer must not be cached."""
+        boom = type("B", (), {"shortcuts_for_app": staticmethod(
+            lambda app, reason=None: (_ for _ in ()).throw(OSError("bus gone")))})()
+        reason = {}
+        with patch.object(ss, "pick", return_value=boom):
+            self.assertEqual(ss.harvest("mousepad", reason=reason), [])
+        self.assertIn("past its own guard", reason["why"])
+        self.assertIn("bus gone", reason["why"])
+        self.assertTrue(reason["retry"])
 
     def test_a_working_backend_is_passed_the_app_name(self):
         seen = []
         ok = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app: seen.append(app) or ["shortcut"])})()
+            lambda app, reason=None: seen.append(app) or ["shortcut"])})()
         with patch.object(ss, "pick", return_value=ok):
             self.assertEqual(ss.harvest("mousepad"), ["shortcut"])
         self.assertEqual(seen, ["mousepad"])
+
+    def test_the_reason_dict_reaches_the_backend(self):
+        """⚠️ The whole point, and a `lambda app:` fake hides it — the real
+        backends now take `reason`, so a fake that does not is a TypeError
+        swallowed by the guard above and every harvest silently returns []."""
+        seen = []
+        ok = type("B", (), {"shortcuts_for_app": staticmethod(
+            lambda app, reason=None: seen.append(reason) or [])})()
+        mine = {}
+        with patch.object(ss, "pick", return_value=ok):
+            ss.harvest("mousepad", reason=mine)
+        self.assertIs(seen[0], mine)
+
+    def test_ALL_THREE_backends_accept_the_reason_parameter(self):
+        """One signature, so `harvest()` needs no branch — and a backend that
+        lost the parameter would be a TypeError the guard turns into a silent
+        empty harvest on that platform only, which nothing else here would
+        catch."""
+        import inspect
+        from polyhost.services.shortcut_source import atspi, macos, uia
+        for mod in (atspi, macos, uia):
+            params = inspect.signature(mod.shortcuts_for_app).parameters
+            self.assertIn("reason", params, mod.__name__)
 
     def test_this_container_really_has_none(self):
         """Not a tautology: it is the state every other test here assumes, and
