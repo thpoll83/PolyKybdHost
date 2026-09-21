@@ -2793,7 +2793,24 @@ class PolyHost(QApplication):
         # Main-thread timer: the active-window poll (pywinctl) must stay on the
         # Qt main thread (macOS constraint, per the worker refactor); the core
         # does the switching decision and routes all HID through its worker.
-        self.core.tick_window_tracking(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
+        #
+        # ⚠️ The guard is NOT defensive dressing, and it costs a raise TWO
+        # things. An unhandled exception in a Qt slot goes to `sys.excepthook`
+        # and then PyQt5's `qFatal()` ABORTS the process (`util/crash_log`), and
+        # the re-arm below is skipped, so even surviving it would end window
+        # tracking for the rest of the session with no further log line. The
+        # core's own headless tick thread has carried this guard all along
+        # (`PolyCore._tick_loop`); the GUI path -- the one macOS uses -- did not.
+        #
+        # It is reachable: on macOS `MacOSWindow.title` and `getHandle()` shell
+        # out to `osascript` and `ast.literal_eval` its stdout, and the change
+        # test in `_decide_active_window` reads them OUTSIDE its own try, so a
+        # truncated or error reply raises straight through this slot.
+        try:
+            self.core.tick_window_tracking(UPDATE_CYCLE_MSEC,
+                                           NEW_WINDOW_ACCEPT_TIME_MSEC)
+        except Exception:  # noqa: BLE001 - one bad poll must not end polling
+            self.log.exception("Window-tracking tick failed")
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
 

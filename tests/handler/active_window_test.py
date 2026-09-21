@@ -16,7 +16,9 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 try:
-    from polyhost.handler.active_window import OverlayHandler
+    from polyhost.handler.active_window import (
+        OverlayHandler, _handle_identifies,
+    )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover - headless/no-display env
@@ -378,6 +380,81 @@ class LosingTheWindowTest(unittest.TestCase):
             handler._decide_active_window(10, 5)
             handler._decide_active_window(10, 5)
         self.assertEqual(handler.focused_app(), ("terminal", None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AnUntitledWindowStillNamesItsAppTest(unittest.TestCase):
+    """⚠️ On macOS an untitled window identifies NOTHING, so two different
+    apps look identical to the change test.
+
+    `MacOSWindow.getHandle()` derives the handle FROM the title: it returns
+    `("", "")` whenever `title` is empty, and `title` is empty for every window
+    `System Events` reports no `AXTitle` for. The change test compared handle and
+    title only, so switching between two such applications was not a change at
+    all -- the previous app's mark and its 48 shortcut icons stayed on the
+    keycaps and NOTHING was logged, which is the worst shape a bug can take: the
+    user reports "it is not even in the log" and there is nothing to act on
+    (field, 2026-09-21: VS Code, Maps and Chess in a row).
+
+    The app name is what tells them apart, and on macOS `getAppName()` is a
+    cached attribute read rather than another AppleScript round trip.
+    """
+
+    @staticmethod
+    def _win(app, title, handle):
+        win = MagicMock()
+        win.title = title
+        win.getHandle.return_value = handle
+        win.getAppName.return_value = app
+        return win
+
+    def _switch(self, first, second):
+        """Focus `first`, then `second`; return the app names that got reported.
+
+        Two ticks per window: the first notices `prev_win` moved and rearms the
+        accept timer, the second accepts it. Patched by STRING target so the
+        module is not imported a second way (`py/import-and-import-from`).
+        """
+        handler = OverlayHandler({})          # empty mapping: stop after log_win
+        mod = "polyhost.handler.active_window"
+        seen = []
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            for win in (first, first, second, second):
+                with patch(mod + ".pwc.getActiveWindow", return_value=win), \
+                     patch(mod + ".app_name_for",
+                           side_effect=lambda w: w.getAppName()):
+                    handler._decide_active_window(10, 5)
+        for line in captured.output:
+            if "Active App Changed" in line:
+                seen.append(line.split('"')[1])
+        return seen
+
+    def test_two_UNTITLED_apps_in_a_row_are_both_reported(self):
+        chess = self._win("Chess", "", ("", ""))
+        maps = self._win("Maps", "", ("", ""))
+        self.assertEqual(self._switch(chess, maps), ["Chess", "Maps"])
+
+    def test_the_SAME_untitled_app_is_still_reported_once(self):
+        # The fix must not turn every poll into a change: that would re-send the
+        # whole generic set, and `_maybe_send_generic_overlays` runs each tick.
+        chess = self._win("Chess", "", ("", ""))
+        self.assertEqual(self._switch(chess, chess), ["Chess"])
+
+    def test_a_TITLED_window_keeps_using_its_handle(self):
+        # The opposite mistake, and the reason the fallback is CONDITIONAL:
+        # the app name must not replace a handle that works. Two windows of one
+        # app sharing a title -- two untitled Notepads, both "Untitled - Notepad"
+        # -- are told apart by the handle and by nothing else, so substituting
+        # the app name here would merge them into one window that never changes.
+        a = self._win("Notepad", "Untitled - Notepad", 4321)
+        b = self._win("Notepad", "Untitled - Notepad", 8765)
+        self.assertEqual(self._switch(a, b), ["Notepad", "Notepad"])
+
+    def test_handle_identifies_answers_for_each_backend(self):
+        self.assertTrue(_handle_identifies(98765))            # Windows HWND
+        self.assertTrue(_handle_identifies(("Safari", "Docs")))  # macOS, titled
+        self.assertFalse(_handle_identifies(("", "")))        # macOS, untitled
+        self.assertFalse(_handle_identifies(None))
 
 
 if __name__ == "__main__":

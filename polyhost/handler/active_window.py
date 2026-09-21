@@ -27,6 +27,53 @@ else:
     import pywinctl as pwc
 
 
+def frontmost_app_hint():
+    """The focused application's name, best effort, for DIAGNOSTICS only.
+
+    Used on the one path where the window backend answers nothing: without it
+    "No active window" is the whole record, so a user reporting "the board went
+    blank and the app is not even in the log" leaves nothing to act on -- which
+    is exactly what happened (field, 2026-09-21). This names the app the backend
+    could not see.
+
+    macOS only, because that is where the backend goes blind: ``NSWorkspace``
+    answers from the running-application list and needs no Accessibility
+    permission, so it still works when the ``System Events`` AppleScript
+    ``pywinctl`` depends on does not. Returns None anywhere else, and never
+    raises -- a diagnostic that can kill the poll is worse than no diagnostic.
+    """
+    if platform.system() != "Darwin":
+        return None
+    try:
+        import AppKit
+        app = AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
+        return app.localizedName() if app else None
+    except Exception:  # noqa: BLE001 - reporting must never raise
+        return None
+
+
+def _handle_identifies(handle):
+    """True when ``handle`` names a particular window.
+
+    ⚠️ On macOS it often does NOT, and that is not a corner case.
+    pywinctl derives the handle FROM the title -- ``MacOSWindow.getHandle()``
+    returns ``("", "")`` whenever ``title`` is empty, and ``title`` is empty for
+    every window ``System Events`` reports no ``AXTitle`` for. So two *different*
+    untitled applications are byte-identical to the change test below, the switch
+    between them is never noticed, and the previous app's overlays stay on the
+    keycaps with nothing logged (field, 2026-09-21: VS Code, Maps and Chess in a
+    row, none of which appeared in the log at all).
+
+    Windows and the Linux reporters hand back an integer id that is never empty,
+    so they take the first branch and are unaffected.
+    """
+    if handle is None:
+        return False
+    if isinstance(handle, tuple):
+        return any(handle)
+    return True
+
+
 def log_env_info(log):
     """Log OS, desktop environment, session type, display vars, and the selected
     active-window backend. Call once at startup from any entry point that does
@@ -275,16 +322,29 @@ class OverlayHandler:
                 self.last_update_msec = 0
             if self.last_update_msec > accept_time_msec:
                 self.last_update_msec = accept_time_msec  * 2 #just to limit that
+                # ⚠️ Read each of these ONCE. On macOS every access is an
+                # `osascript` subprocess -- `MacOSWindow.title` re-runs
+                # `_getAppWindowsTitles` and `getHandle()` calls `title` again --
+                # so the old four accesses per changed tick cost four AppleScript
+                # round trips where two do.
+                handle = win.getHandle()
+                title = win.title
+                if not title and not _handle_identifies(handle):
+                    # The window identifies nothing, so fall back to the app the
+                    # window belongs to (see `_handle_identifies`). On macOS
+                    # `getAppName()` is a cached attribute read, not another
+                    # AppleScript call.
+                    handle = win.getAppName()
                 local_win_changed = (
                     self.win is None
-                    or win.getHandle() != self.handle
-                    or win.title != self.title
+                    or handle != self.handle
+                    or title != self.title
                 )
 
                 if local_win_changed:
                     # remember active window
-                    self.set_win(win, win.title, win.getHandle())
-                    if win.title == "PolyHost":
+                    self.set_win(win, title, handle)
+                    if title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
                         raw_app_name = app_name_for(self.win)
@@ -340,7 +400,14 @@ class OverlayHandler:
                             return None, OverlayCommand.DISABLE
         else:
             if self.win:
-                self.log.info("No active window")
+                hint = frontmost_app_hint()
+                if hint:
+                    self.log.info(
+                        "No active window: the window backend (%s) reports none "
+                        "while '%s' is frontmost, so nothing can be drawn for it",
+                        _BACKEND_NAME, hint)
+                else:
+                    self.log.info("No active window")
                 self.set_win()
                 # ⚠️ DISABLE whether or not a TEMPLATE was active. The guard
                 # used to be `if self.current_entry`, which asks "was a
