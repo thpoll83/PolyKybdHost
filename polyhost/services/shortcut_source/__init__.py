@@ -28,7 +28,7 @@ from polyhost.services.shortcut_source.model import (  # noqa: F401  (re-export)
 __all__ = ["Accel", "MOD_ALT", "MOD_CTRL", "MOD_GUI", "MOD_SHIFT", "Shortcut",
            "WINDOW_MANAGER_CHORDS", "displayable_hid", "is_window_manager_chord",
            "parse_accel", "parse_win_accel", "pick_binding", "pick_win_binding",
-           "backend_name", "pick", "harvest"]
+           "backend_name", "pick", "harvest", "unavailable_reason"]
 
 
 def backend_name() -> str:
@@ -59,6 +59,33 @@ def pick():
     except Exception:
         return None
     return backend if backend.available() else None
+
+
+def unavailable_reason() -> str | None:
+    """WHY no backend is usable here, or None when one is.
+
+    ⚠️ The caller's log line used to be a flat *"no accessibility backend on
+    this platform"*, which is right for macOS and wrong for every other cause --
+    and the commonest cause, an interpreter that cannot see the system
+    PyGObject, is the one that sentence explicitly denies. The three need
+    opposite fixes, so they are told apart here rather than flattened.
+    """
+    name = backend_name()
+    if not name:
+        return "this platform has no accessibility backend (macOS is not built)"
+    try:
+        if name == "uia":
+            from polyhost.services.shortcut_source import uia as backend
+        else:
+            from polyhost.services.shortcut_source import atspi as backend
+    except Exception as exc:
+        return "the %s backend could not be imported: %s" % (name, exc)
+    reason = getattr(backend, "unavailable_reason", None)
+    if reason is None:
+        # A backend that predates the reason API: fall back to the yes/no it
+        # does have, rather than reporting it as working.
+        return None if backend.available() else "the %s backend is unusable" % name
+    return reason()
 
 
 def harvest(app: str) -> list:

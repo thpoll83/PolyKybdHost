@@ -769,6 +769,102 @@ reachable today only from a direct API call.
 
 5 mutations, 5 caught by the intended test.
 
+### E13 — the "no backend" message named the wrong cause
+
+Reported from the probe: `AT-SPI unavailable: No module named 'gi'` followed by
+*"Needs python3-gi + gir1.2-atspi-2.0, and the a11y bus running"* — advice to
+install two packages that were **already installed**.
+
+**PyGObject is a distro package**, in `/usr/lib/python3/dist-packages`. A
+virtualenv built without `--system-site-packages` cannot import it however
+thoroughly it is installed, and `pip install PyGObject` builds from source and
+needs the gobject-introspection headers — so on a managed machine the answer is
+to let the venv see the system packages, or to run a different interpreter.
+Neither is "install python3-gi".
+
+`available()` swallowed every exception, so **three causes needing opposite
+fixes collapsed into one sentence** — and the app's own log line said *"no
+accessibility backend on this platform"*, which is true on macOS and actively
+denies the commonest cause. `unavailable_reason()` separates them:
+
+| cause | what it now says | the fix |
+|---|---|---|
+| venv without system site-packages | *"this virtualenv (…/pyvenv.cfg) cannot see the system PyGObject"* | one line in `pyvenv.cfg`, or another interpreter |
+| PyGObject built for another Python | *"installed for a DIFFERENT Python than …"* | run the interpreter it was built for |
+| genuinely absent | *"PyGObject is not installed"* | `python3-gi` |
+| typelib absent | *"the Atspi typelib is missing"* | `gir1.2-atspi-2.0` |
+| bus down | *"the accessibility bus is not running"* | start it |
+| macOS | *"this platform has no accessibility backend"* | nothing; not built |
+
+⚠️ **Saying "not installed" about a package that is on disk for a different
+interpreter would reproduce the same defect one level down**, so the reason
+looks before it says it (`glob` over `dist-packages`/`site-packages`).
+
+The **probe additionally goes and finds a working interpreter** and prints the
+command — a CLI a human runs once, so a handful of subprocesses is the right
+price for turning "it does not work" into a line that does. The app never does
+that: `unavailable_reason()` stays pure, because it runs on the harvest path.
+
+7 mutations, 7 caught by the intended test.
+
+### E14 — a venv is the standard way to run this app, and PyGObject cannot go in one
+
+Follow-up to E13, from *"I do use a .venv — maybe different from the app?"*.
+Same venv, and that is the point: the app runs from the same interpreter the
+probe does, so the diagnostic E13 added would have told the user the truth and
+left them stuck.
+
+**PyGObject cannot be installed into a venv.** It is a distro package
+(`python3-gi`, in `/usr/lib/python3/dist-packages`) and `pip install PyGObject`
+builds from source against the gobject-introspection headers, which a managed
+machine will not have. So `python -m venv .venv` silently costs the whole
+shortcut feature and the only remedy was knowing to edit `pyvenv.cfg`.
+
+`_import_gi()` now falls back to the distro directory when the plain import
+fails. ⚠️ **Guarded on the ABI TAG, and that guard is the entire safety
+argument**: `gi` is a compiled extension built for one Python minor version, so
+the directory is taken only when it holds a `_gi` built for *exactly* this
+interpreter — true precisely when the venv was made from the system python3,
+which is the case worth rescuing. The path goes on `sys.path` for that one
+import and comes off again, so a venv's own packages are never shadowed.
+
+Verified in both directions in a real venv built from `python3.12` with
+`include-system-site-packages = false`: plain `import gi` fails, the rescue
+imports it from `/usr/lib/python3/dist-packages`, `sys.path` is unchanged
+afterwards — and with the a11y bus up, `available()` is True and `harvest()`
+runs. On an ABI mismatch (this container: system `gi` is cpython-312, the
+interpreter is 3.11) the rescue correctly declines.
+
+⚠️ **THE RESCUE EXPOSED A LATENT PROCESS-KILLER, and the two had to land
+together.** `Atspi.get_desktop()` does not raise when the bus is down — it
+`g_error()`s, which calls `abort()`. **SIGTRAP, exit 133, and no Python
+exception to catch.** It runs on the fetcher's background thread inside the
+user's tray app. The hazard predates all of this and was simply unreachable:
+in a venv `import gi` failed long before anything reached AT-SPI, and the
+rescue is exactly what makes it reachable. `Atspi.init()` is the probe that
+does *not* abort — it returns 0 / 1 / 2 — so the bus is asked that way and the
+desktop is touched only after it says yes.
+
+⚠️ **`Atspi.init()` is not idempotent as a probe**, which is a second trap in
+the same place: the first call returns 2 when the bus is unreachable and a
+*second* returns 1 ("already initialised") even though it failed, so re-probing
+reports success and the next `get_desktop()` kills the process. Measured — the
+first `unavailable_reason()` answered correctly and the call right after it died
+with SIGTRAP. The verdict is cached per process.
+
+**The `include-system-site-packages` advice is gone from the message**, because
+the code now covers that case: reaching `_no_pygobject_reason()` means either
+PyGObject is absent entirely, or it is present and built for a different Python
+— which that advice would not have fixed. The message names both versions
+(*"built for 3.12, this is 3.11"*).
+
+8 mutations, 8 caught by the intended test. ⚠️ **Two escaped first**, and one of
+them was the crash guard: nothing asserted that `get_desktop` is unreachable
+when the bus is down. The other was a **vacuous fixture** — the sys.path test
+used `/usr/lib/python3/dist-packages`, which is already on `sys.path` in this
+container, so it compared a path against itself and passed with the cleanup
+deleted. It now uses a marker directory and asserts it is absent first.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is

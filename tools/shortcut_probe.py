@@ -276,13 +276,52 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
     }
 
 
+def _interpreter_with_pygobject() -> str | None:
+    """Another Python on this machine that CAN import gi + Atspi, or None.
+
+    A CLI a human runs once, so a handful of subprocesses is the right price for
+    turning "it does not work" into a command that does. The app never does this
+    -- see `shortcut_source.unavailable_reason`, which stays pure.
+    """
+    import glob
+    import subprocess
+    seen = {os.path.realpath(sys.executable)}
+    candidates = ["/usr/bin/python3"] + sorted(
+        glob.glob("/usr/bin/python3.[0-9]") + glob.glob("/usr/bin/python3.[0-9][0-9]"),
+        reverse=True)
+    for path in candidates:
+        real = os.path.realpath(path)
+        if real in seen or not os.path.exists(path):
+            continue
+        seen.add(real)
+        try:
+            done = subprocess.run(
+                [path, "-c", "import gi; gi.require_version('Atspi','2.0');"
+                             " from gi.repository import Atspi"],
+                capture_output=True, timeout=10)
+        except Exception:
+            continue
+        if done.returncode == 0:
+            return path
+    return None
+
+
 def main_atspi(args) -> list[dict] | None:
     try:
         atspi = _atspi()
     except Exception as exc:
+        # ⚠️ NAME THE CAUSE, and go looking for the fix. The old message was
+        # "Needs python3-gi + gir1.2-atspi-2.0, and the a11y bus running", which
+        # sends a reader who already HAS both to install them again -- PyGObject
+        # is a distro package in /usr/lib/python3/dist-packages, so a virtualenv
+        # without --system-site-packages cannot import it however thoroughly it
+        # is installed. Reported 2026-09-18 against `No module named 'gi'`.
+        from polyhost.services.shortcut_source import atspi as _backend
         print(f"AT-SPI unavailable: {exc}", file=sys.stderr)
-        print("Needs python3-gi + gir1.2-atspi-2.0, and the a11y bus running.",
-              file=sys.stderr)
+        print(f"  cause: {_backend.unavailable_reason()}", file=sys.stderr)
+        other = _interpreter_with_pygobject()
+        if other:
+            print(f"  this one can: {other} {' '.join(sys.argv)}", file=sys.stderr)
         return None
 
     atspi.init()
