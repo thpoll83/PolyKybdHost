@@ -445,5 +445,56 @@ class KeyNameTest(unittest.TestCase):
         self.assertEqual(so.pretty_key(0, KC_S), "S")
 
 
+class LexiconNamesByFace(unittest.TestCase):
+    """The stable icon set that makes the Material subset ONE cached file."""
+
+    def test_every_concept_the_lexicon_can_pick_is_in_the_floor(self):
+        """A concept missing here is one whose icon silently stops drawing on
+        an app that needs nothing else -- the union at the call site would then
+        be the floor exactly, so the stable font would be fetched WITHOUT it."""
+        floor = so.lexicon_names_by_face()
+        for concept in so.shortcut_icons.LEXICON:
+            qualified = so.shortcut_icons.icon_for(concept)
+            if not qualified:
+                continue
+            face, name = so.icon_catalog.split_face(qualified)
+            self.assertIn(name, floor.get(face, ()),
+                          "%s (%s) is not in the floor" % (concept, qualified))
+
+    def test_an_icon_hint_outside_the_lexicon_is_in_the_floor_too(self):
+        floor = so.lexicon_names_by_face({"whatever": "icon:rocket_launch",
+                                          "other": "icon:fluent:toolbox"})
+        self.assertIn("rocket_launch", floor["material"])
+        self.assertIn("toolbox", floor["fluent"])
+
+    def test_the_names_are_BARE_because_that_is_what_a_subset_request_takes(self):
+        floor = so.lexicon_names_by_face()
+        for names in floor.values():
+            for name in names:
+                self.assertNotIn(":", name, "%s carries a face prefix" % name)
+
+    def test_TWO_APPS_that_need_only_lexicon_icons_ask_for_the_SAME_SET(self):
+        """The property the whole thing exists for. `subset_path` keys its
+        cache on the set requested, so two apps asking for different sets are
+        two files and two HTTPS round-trips. Measured against Google's
+        endpoint: one app subset is 4,428 bytes and a fetch is 300-450 ms, paid
+        again on first sight of every application, forever."""
+        floor = so.lexicon_names_by_face()
+        material = floor["material"]
+        one = sorted(set(material[:1]) | set(material))
+        two = sorted(set(material[-1:]) | set(material))
+        self.assertEqual(one, two)
+        self.assertEqual(so.icon_catalog.subset_path(one, "/c"),
+                         so.icon_catalog.subset_path(two, "/c"))
+
+    def test_a_DERIVED_name_outside_the_floor_still_gets_its_own_font(self):
+        """The floor is a floor, not a ceiling: an app whose label derived a
+        catalog name the tables do not carry must still have it fetched."""
+        material = so.lexicon_names_by_face()["material"]
+        self.assertNotEqual(
+            so.icon_catalog.subset_path(sorted(set(material) | {"rocket_launch"}), "/c"),
+            so.icon_catalog.subset_path(material, "/c"))
+
+
 if __name__ == "__main__":
     unittest.main()

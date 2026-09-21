@@ -281,10 +281,19 @@ class ShortcutIconFetcher:
         # share a request. `render` therefore draws a single face and the
         # results merge here.
         by_face = shortcut_overlays.icon_names_by_face(slots)
+        # ⚠️ The Material request is the WHOLE LEXICON plus whatever this app
+        # derived, not just this app's names -- `subset_path` keys its cache on
+        # the set asked for, so a per-app set is a new cache file and a fresh
+        # HTTPS round-trip on first sight of every application, forever. The
+        # union keeps the common case on one stable file (an app that needs
+        # only lexicon names asks for exactly the lexicon) while an app that
+        # derived a name outside it still gets that name drawn.
+        floor = shortcut_overlays.lexicon_names_by_face()
         overlays: dict = {}
         for face, names in sorted(by_face.items()):
+            wanted = sorted(set(names) | set(floor.get(face, ())))
             try:
-                font = icon_catalog.fetch_subset(names, self._cache_dir, face=face)
+                font = icon_catalog.fetch_subset(wanted, self._cache_dir, face=face)
                 table = (codepoints if face == icon_catalog.MATERIAL
                          else icon_catalog.load_codepoints(self._cache_dir, face=face))
             except Exception:

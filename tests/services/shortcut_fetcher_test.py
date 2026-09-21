@@ -495,5 +495,46 @@ class ResolveTest(unittest.TestCase):
             render.assert_not_called()
 
 
+class TheSubsetRequestIsStableAcrossApps(unittest.TestCase):
+    """⚠️ `icon_catalog.subset_path` keys its cache on the SET of names asked
+    for, so asking for only the names one app needs is a new cache file and a
+    fresh HTTPS round-trip on first sight of every application, for the life of
+    the machine. `_resolve` therefore asks for the whole lexicon as well."""
+
+    def setUp(self):
+        self.fetcher = shortcut_fetcher.ShortcutIconFetcher(cache_dir="/tmp")
+
+    def _asked(self, icon):
+        from polyhost.services.shortcut_overlays import Plan, Slot
+        plan = Plan([Slot(modifier=1, keycode=0x16, concept="save", icon=icon,
+                          label="Save", confidence=1.0)], {})
+        seen = []
+        with patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=plan), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          side_effect=lambda names, *a, **kw:
+                              (seen.append((kw.get("face"), tuple(names))), "f.ttf")[1]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          return_value=MASKS):
+            self.fetcher._harvested["app"] = (_sc(),)
+            self.fetcher._resolve("app", 32, "lower_left")
+        return dict(seen)
+
+    def test_two_apps_with_DIFFERENT_lexicon_icons_ask_for_the_same_names(self):
+        from polyhost.services import shortcut_overlays as so
+        material = so.lexicon_names_by_face()["material"]
+        one = self._asked("material:" + material[0])
+        two = self._asked("material:" + material[-1])
+        self.assertEqual(one["material"], two["material"])
+        self.assertEqual(set(one["material"]), set(material))
+
+    def test_a_name_OUTSIDE_the_lexicon_is_still_requested(self):
+        """The floor must not swallow a derived name, or its icon never draws."""
+        asked = self._asked("material:rocket_launch")
+        self.assertIn("rocket_launch", asked["material"])
+
+
 if __name__ == "__main__":
     unittest.main()

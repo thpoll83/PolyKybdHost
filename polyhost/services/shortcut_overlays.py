@@ -291,6 +291,43 @@ def icon_names_by_face(slots) -> dict:
     return {face: sorted(names) for face, names in out.items()}
 
 
+def lexicon_names_by_face(hints: dict | None = None) -> dict:
+    """{face: [bare name, ...]} for EVERY icon the tables can ever ask for.
+
+    ⚠️ This exists to make the Material subset ONE cached file instead of one
+    per application. Material serves a server-side subset of exactly the names
+    requested, and `subset_path` keys the cache on that set -- so asking for
+    only the names *this* app needs means a new set, a new file and a fresh
+    HTTPS round-trip for every app the user has not focused before, for the
+    life of the machine. Measured against Google's endpoint: a 12-name app
+    subset is 4,768 bytes, the whole 52-name lexicon is 12,372 -- so the
+    per-app saving is one request (300-800 ms on first sight of each app) and
+    the price is 7.6 KB of cache, once.
+
+    Fluent ignores it: there is no subset endpoint, so one whole font already
+    serves every set and the path is already stable.
+
+    The union with the app's own names still happens at the call site, because
+    a label can derive a catalog name this table does not carry -- the stable
+    set is a floor, not a ceiling.
+    """
+    out: dict[str, set] = {}
+
+    def add(qualified: str):
+        if not qualified:
+            return
+        face, name = icon_catalog.split_face(qualified)
+        if name:
+            out.setdefault(face, set()).add(name)
+
+    for concept in shortcut_icons.LEXICON:
+        add(shortcut_icons.icon_for(concept))
+    table = shortcut_icons.load_hints() if hints is None else hints
+    for value in table.values():
+        add(shortcut_icons.resolve_hint_icon(value))
+    return {face: sorted(names) for face, names in out.items()}
+
+
 def source_name(concept: str, height: int, placement: str,
                 face: str = icon_catalog.DEFAULT_FACE) -> str:
     """The pseudo-filename a concept's mask is cached and mapped under.
