@@ -88,6 +88,19 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "fullscreen":  (0x1F5D6, "fullscreen", ("fullscreen", "full screen",
                                             "maximize", "maximise")),
     "minimize":    (0x1F5D5, "minimize", ("minimize", "minimise", "iconify")),
+    # ⚠️ "hide" earns an entry because WITHOUT one the derived-name fall-back
+    # answers from the WRONG WORD. Every macOS app puts "Hide <AppName>" on
+    # Cmd+H, `derive_names` offers the tail word once the head fails, and the
+    # app's own name is very often a catalog icon -- so Terminal drew a
+    # terminal, Notes a note and Chess a chess piece, each on a key whose
+    # entire meaning is the verb (field, 2026-09-21). A wrong keycap, not a
+    # missing one, and it repeated the program mark already on ESC.
+    #
+    # The lexicon answers BEFORE the derivation, so one entry closes the whole
+    # family -- "Hide Others", "Hide Folders", "Hide Alternative Screen" and
+    # "Hide Downloads" included, none of which drew anything before.
+    "hide":        (None,    "visibility_off", ("hide", "hide others",
+                                                "hide all")),
     # ⚠️ "close window" is NOT here — it is under `close`, with its two siblings.
     # A window frame on Ctrl+W says WINDOW where the action is CLOSE, and the
     # keycap then cannot be told from "New Window". Found by reading the
@@ -202,6 +215,7 @@ FLUENT_ICONS: dict[str, str] = {
     "find next": "search_square", "fullscreen": "full_screen_maximize",
     "go to": "location", "help": "question_circle",
     "indent": "text_indent_increase", "insert": "add", "italic": "text_italic",
+    "hide": "eye_off",
     "left": "arrow_left", "lock": "lock_closed", "minimize": "arrow_minimize",
     "new": "document_add", "open": "folder_open",
     "outdent": "text_indent_decrease", "paint": "paint_brush",

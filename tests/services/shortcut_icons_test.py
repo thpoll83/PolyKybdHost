@@ -400,5 +400,60 @@ class CloseFamilyTest(unittest.TestCase):
         self.assertEqual(hit.icon, "wrap_text")
 
 
+class HideIsTheVerbNotTheApp(unittest.TestCase):
+    """⚠️ Field, 2026-09-21. Every macOS app puts "Hide <AppName>" on Cmd+H.
+
+    With no `hide` concept the LEXICON missed, `derive_names` fell through to
+    the TAIL word, and the app's own name is very often a catalog icon -- so
+    Terminal drew a terminal, Notes a note and Chess a chess piece on a key
+    whose entire meaning is the verb. A WRONG keycap rather than a missing one,
+    and it repeated the program mark already sitting on ESC.
+    """
+
+    def test_hide_APPNAME_resolves_to_hide_on_every_app_that_regressed(self):
+        for label in ("Hide Terminal", "Hide Notes", "Hide Chess",
+                      "Hide Maps", "Hide Photos", "Hide Finder",
+                      "Hide Freeform", "Hide Safari"):
+            hit = si.match(label, allow_fuzzy=True)
+            self.assertIsNotNone(hit, label)
+            self.assertEqual(hit.concept, "hide", label)
+
+    def test_the_TAIL_WORD_no_longer_answers_for_these_labels(self):
+        """The regression itself, stated as the derivation that caused it.
+
+        `derive_names` is unchanged -- it still offers the tail -- so this
+        pins that the LEXICON answers first, which is the whole fix."""
+        known = {"terminal", "notes", "chess"}
+        for label, wrong in (("Hide Terminal", "terminal"),
+                             ("Hide Notes", "notes"),
+                             ("Hide Chess", "chess")):
+            derived = next((n for n in si.derive_names(label) if n in known), None)
+            self.assertEqual(derived, wrong,
+                             "the derivation that caused it has changed; "
+                             "re-read whether this test still pins anything")
+            self.assertEqual(si.match(label, allow_fuzzy=True).concept, "hide")
+
+    def test_it_also_rescues_the_ones_that_drew_NOTHING(self):
+        """Hide Others and friends matched no concept at all before."""
+        for label in ("Hide Others", "Hide Folders", "Hide Downloads",
+                      "Hide Alternative Screen"):
+            hit = si.match(label, allow_fuzzy=True)
+            self.assertIsNotNone(hit, label)
+            self.assertEqual(hit.concept, "hide", label)
+
+    def test_HIDDEN_is_not_hide(self):
+        """⚠️ The phrase is the word "hide". "Show Hidden Files" REVEALS, so a
+        substring rule would put an eye-with-a-slash on its exact opposite."""
+        self.assertNotEqual(
+            getattr(si.match("Show Hidden Files", allow_fuzzy=True), "concept", None),
+            "hide")
+
+    def test_both_faces_carry_the_icon(self):
+        face, name = icon_catalog.split_face(si.icon_for("hide"))
+        self.assertEqual(face, icon_catalog.FLUENT)
+        self.assertEqual(name, "eye_off")
+        self.assertEqual(si.LEXICON["hide"][1], "visibility_off")
+
+
 if __name__ == "__main__":
     unittest.main()
