@@ -303,5 +303,82 @@ class FocusedPidTest(unittest.TestCase):
         self.assertIsNone(self._handler(raises=True).focused_pid())
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class LosingTheWindowTest(unittest.TestCase):
+    """What happens when the backend stops reporting a window at all.
+
+    ⚠️ Field, 2026-09-21: switching to an application the window handler could
+    not see left the PREVIOUS app's mark on ESC and its shortcut icons on the
+    board. Two separate causes, one symptom, both pinned here.
+    """
+
+    @staticmethod
+    def _win():
+        win = MagicMock()
+        win.title = "Terminal"
+        win.getHandle.return_value = (1234, 5)
+        return win
+
+    def _handler_on_an_app(self):
+        """A handler that has accepted a window and named its app.
+
+        ⚠️ A NON-EMPTY mapping, and it has to be: `app_name` is assigned inside
+        `if self.mapping:`, so with `{}` it is never set at all and "the
+        handler stopped naming the app" passes whether or not the clear
+        exists. Caught by the regained-window test below, which is the only one
+        of the four that can fail on a vacuous fixture.
+        """
+        handler = OverlayHandler({"someotherapp": {}})   # present, never matches
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self._win()), \
+             patch(mod + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return handler
+
+    def _lose_the_window(self, handler):
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=None):
+            return handler._decide_active_window(10, 5)
+
+    def test_the_handler_stops_NAMING_the_app_it_can_no_longer_see(self):
+        """`focused_app()` drives the generic overlays, so a stale name is the
+        host re-affirming the icons of an app the user has already left."""
+        handler = self._handler_on_an_app()
+        self.assertEqual(handler.win.title, "Terminal")
+        self._lose_the_window(handler)
+        self.assertEqual(handler.focused_app(), (None, None))
+
+    def test_losing_the_window_DISABLES_even_with_no_template_active(self):
+        """⚠️ The guard was `if self.current_entry` -- "was a HAND-MADE overlay
+        set on the board?". A generically-drawn app has none, so the board kept
+        drawing it."""
+        handler = self._handler_on_an_app()
+        self.assertIsNone(handler.current_entry)
+        _, cmd = self._lose_the_window(handler)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+
+    def test_it_costs_NOTHING_when_the_board_is_already_blank(self):
+        """`_is_redundant_overlay_cmd` is what makes the unconditional DISABLE
+        safe: with overlays already off it is dropped before the bridge-sync."""
+        handler = self._handler_on_an_app()
+        handler.overlays_enabled = False
+        with patch("polyhost.handler.active_window.pwc.getActiveWindow",
+                   return_value=None):
+            _, cmd = handler.handle_active_window(10, 5)
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_a_REGAINED_window_names_its_app_again(self):
+        """The clear must not be a one-way door."""
+        handler = self._handler_on_an_app()
+        self._lose_the_window(handler)
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self._win()), \
+             patch(mod + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        self.assertEqual(handler.focused_app(), ("terminal", None))
+
+
 if __name__ == "__main__":
     unittest.main()

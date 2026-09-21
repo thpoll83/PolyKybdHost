@@ -140,10 +140,24 @@ class OverlayHandler:
         return result
 
     def set_win(self, win=None, title=None, handle=None):
-        """Set the active window"""
+        """Set the active window.
+
+        ⚠️ **Clears `app_name` too, and that is the point of it.** `set_win()`
+        with no arguments means "there is no focused window", and until
+        2026-09-21 it left `app_name` holding the LAST app -- so `focused_app()`
+        went on naming an application that was no longer in front of the user,
+        and `PolyCore._maybe_send_generic_overlays` kept re-affirming that app's
+        icons. The window path is re-derived a few lines below on every genuine
+        change, so nothing that needs the name loses it.
+
+        Same class of bug as the stale `NSWorkspace.frontmostApplication` on a
+        worker thread: a value that is right until focus moves and then silently
+        wrong, with nothing saying so.
+        """
         self.win = win
         self.title = title
         self.handle = handle
+        self.app_name = None
 
     def _active_os(self):
         """OS of the machine running the focused app, for the mapping's `os` branch.
@@ -328,9 +342,21 @@ class OverlayHandler:
             if self.win:
                 self.log.info("No active window")
                 self.set_win()
-                if self.current_entry:
-                    self.current_entry = None
-                    return None, OverlayCommand.DISABLE
+                # ⚠️ DISABLE whether or not a TEMPLATE was active. The guard
+                # used to be `if self.current_entry`, which asks "was a
+                # hand-made overlay set on the board?" -- a question that was
+                # the whole story before the generic path existed and is half
+                # of it now. A generically-drawn app has no `current_entry`, so
+                # losing the window left its mark and its 48 shortcut icons on
+                # the keycaps, describing an application the user had already
+                # left (field, 2026-09-21: switching to an app the window
+                # handler cannot see kept the previous app's mark on ESC).
+                #
+                # Safe to send unconditionally: `_is_redundant_overlay_cmd`
+                # drops a DISABLE while the device already has overlays off, so
+                # this costs a bridge-sync only when something really is drawn.
+                self.current_entry = None
+                return None, OverlayCommand.DISABLE
 
         # self.log.info("Nothing at all")
         return None, OverlayCommand.NONE
