@@ -216,6 +216,45 @@ class WindowsExeTest(unittest.TestCase):
                              "OpenProcess must declare its HANDLE restype")
         self.assertIsNotNone(fake._f["OpenProcess"].argtypes)
 
+    def test_a_process_it_cannot_OPEN_says_so_instead_of_going_quiet(self):
+        """⚠️ This returned "" silently, which becomes an empty AppIdentity and
+        renders as `OS names: <none>` -- "this OS has nothing to say about the
+        app", when the truth is "I could not open the process".
+
+        Measured 2026-09-21: 7zFM reported no names and no icon on a live
+        Windows host while `os_icon_probe.py` on the same binary read
+        `FileDescription: 7-Zip File Manager` and drew the icon. The E13 defect
+        again, one module over -- a message naming the wrong cause. The real
+        one is already in hand, since the DLL is loaded `use_last_error=True`.
+        """
+        import ctypes
+        logged = []
+
+        class FakeFunc:
+            def __init__(self, result):
+                self.result = result
+                self.argtypes = self.restype = None
+
+            def __call__(self, *args):
+                return self.result
+
+        class FakeKernel32:
+            def __getattr__(self, name):
+                return self.__dict__.setdefault(name, FakeFunc(0))   # 0 = failed
+
+        with mock.patch.object(ctypes, "WinDLL", create=True,
+                               side_effect=lambda *a, **k: FakeKernel32()), \
+             mock.patch.object(ctypes, "get_last_error", create=True,
+                               return_value=5), \
+             mock.patch.object(osi.log, "debug",
+                               side_effect=lambda f, *a: logged.append(f % a)):
+            self.assertEqual(osi._windows_exe(4242), "")
+
+        said = " ".join(logged)
+        self.assertIn("4242", said)          # which process
+        self.assertIn("5", said)             # and the real reason (ACCESS_DENIED)
+        self.assertIn("NOT the same", said)  # spelled out, because <none> misleads
+
 
 class AppIdentityTest(unittest.TestCase):
 
