@@ -814,20 +814,30 @@ class StaleGenericClearTest(unittest.TestCase):
     def test_a_FAILED_clear_is_retried_rather_than_forgotten(self):
         """⚠️ The signature is dropped BEFORE the submit so a tick landing
         mid-flight does not queue a second clear -- so a clear that raises has
-        to put it back, or the stale icons stay up and nothing will ever try
-        again. Mirrors the failed-send path one method above."""
+        to re-arm it, or the stale icons stay up and nothing will ever try
+        again.
+
+        ⚠️ Asserted as "armed", NOT as "the old signature came back". The first
+        version of this test pinned the restore itself, which is how the
+        partial-clear defect below got written: putting `previous` back is one
+        way to arm the retry and it also claims a set is on a keyboard that was
+        already cleared. A pinned behaviour is only as good as the reason it
+        was pinned."""
         core = make_core(mask=_mask(), shortcuts=_sc())
         events = []
         core.subscribe(lambda n, p: events.append(n))
         _tick(core)
-        signature = core._generic_on_device
         core._shortcut_icons.overlays_for.return_value = {}
         _tick(core)
         entry = core.device_mgr.all_entries[0]
         entry.device.send_overlays_mru.side_effect = RuntimeError("boom")
         core.worker.submit.call_args.args[1](threading.Event())
-        self.assertEqual(core._generic_on_device, signature)
+        self.assertIsNotNone(core._generic_on_device)     # the retry is armed
         self.assertIn("overlay_warning", events)
+
+        core.worker.submit.reset_mock()
+        _tick(core)                                       # …and it fires
+        self.assertEqual(core.worker.submit.call_count, 1)
 
     def test_a_FAILED_send_re_arms_the_handler_too(self):
         """`prepare_for_mru_send()` clears the firmware's use_overlay bits at the
@@ -868,6 +878,49 @@ class StaleGenericClearTest(unittest.TestCase):
         bare.overlay_handler.note_overlay_state.reset_mock()
         bare.worker.submit.call_args.args[1](threading.Event())
         bare.overlay_handler.note_overlay_state.assert_called_once_with(False)
+
+    def test_a_PARTIAL_clear_does_not_claim_the_old_set_is_still_up(self):
+        """⚠️ TWO KEYBOARDS, and the second one fails after the first cleared.
+
+        Restoring `previous` says "that set is on every device", which is now
+        false of the keyboard that DID clear. Switch back to that application
+        and the signature matches, the send is skipped, and the cleared
+        keyboard stays blank forever while the host believes it is decorated.
+
+        The send path has never had this hazard because it fails to `None` --
+        "claim nothing", so the next tick re-sends to everyone and a device
+        that already had the set takes it as a cache hit. The clear cannot use
+        `None`: that is also what arms it, so the retry would stop. Hence a
+        value that is neither -- it never equals a real signature, so a send
+        always proceeds, and it is not None, so the clear still retries.
+        (Greptile P1, #240.)
+        """
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        second = MagicMock()
+        from polyhost.device.device_settings import DeviceSettings
+        second.device.device_settings = DeviceSettings()
+        core.device_mgr.all_entries.append(second)
+        _tick(core)
+        signature = core._generic_on_device
+        core.worker.submit.call_args.args[1](threading.Event())   # the real send
+
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core)
+        ok, bad = core.device_mgr.all_entries
+        bad.device.send_overlays_mru.side_effect = RuntimeError("boom")
+        core.worker.submit.call_args.args[1](threading.Event())
+
+        # The first keyboard really was cleared, so the old signature is a lie.
+        self.assertNotEqual(core._generic_on_device, signature)
+        # ...and the clear is still armed, so the failed device is retried.
+        self.assertIsNotNone(core._generic_on_device)
+
+        # The decisive half: going back to that application must SEND again.
+        core.worker.submit.reset_mock()
+        core._shortcut_icons.overlays_for.return_value = _sc()
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1,
+                         "the cleared keyboard would stay blank")
 
     def test_a_CANCELLED_clear_leaves_the_board_to_whatever_superseded_it(self):
         """A cancel means a template send, another app's set or a DISABLE is

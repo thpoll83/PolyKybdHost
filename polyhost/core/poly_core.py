@@ -61,6 +61,16 @@ NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
 
+#: `PolyCore._generic_on_device` when a clear failed PART WAY through a
+#: multi-keyboard send: some devices were cleared and some were not, so neither
+#: the old signature nor `None` is true. It compares unequal to every real
+#: signature, so the next send always proceeds, and it is not `None`, so the
+#: clear stays armed and retries. A plain object() rather than a string: a
+#: signature is a tuple, but only identity makes "never equal to anything"
+#: structural rather than a coincidence of the current signature shape.
+GENERIC_STATE_UNKNOWN = object()
+
+
 def get_overlay_path(filepath):
     """Absolute path of a shipped overlay template (polyhost/res/overlays)."""
     return os.path.join(_RES_DIR, "overlays", filepath)
@@ -782,7 +792,15 @@ class PolyCore(Observable):
                     list(template_files), entry.cache, cancel, synthetic={})
             self._note_overlay_state(bool(template_files))
         except Exception as e:
-            self._generic_on_device = previous
+            # ⚠️ NOT `previous`, and not `None` either -- see
+            # GENERIC_STATE_UNKNOWN. With two keyboards attached the first can
+            # have cleared before the second raised, so `previous` would claim
+            # a set that is no longer on the cleared one: returning to that
+            # application matches the signature, the send is skipped, and that
+            # keyboard stays blank. `None` is what the SEND path uses and is
+            # wrong here for the opposite reason -- it is also what arms the
+            # clear, so the retry would stop.
+            self._generic_on_device = GENERIC_STATE_UNKNOWN
             msg = f"Failed to clear the generic overlays: {e}"
             self.log.warning(msg)
             self.emit("overlay_warning", msg)
