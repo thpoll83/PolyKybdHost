@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import tempfile
 import urllib.parse
 import urllib.request
 
@@ -363,15 +364,55 @@ def subset_path(names, cache_dir: str | None = None,
 
 
 def _store_font(path: str, data: bytes) -> str | None:
-    """Write a fetched font, refusing anything that is not a TTF."""
+    """Write a fetched font, refusing anything that is not a TTF.
+
+    ⚠️ **The temp name is unique per CALL, not `path + ".part"`.** Since E18 the
+    overlay generator renders through this module too, so the generator and the
+    running host really can fetch the Fluent font at the same moment -- and a
+    shared name means each truncates the other's file, the second `os.replace`
+    moves an incomplete TTF into the cache, and the first raises
+    FileNotFoundError because its `.part` is already gone. Exactly what
+    `PolySettings._save_merged` records one module over: "unique per SAVE, not
+    per process".
+    """
     if not _is_ttf(data):
         return None
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".part"
-    with open(tmp, "wb") as fh:
-        fh.write(data)
-    os.replace(tmp, path)          # never leave a half file under the real name
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=directory,
+                               prefix=os.path.basename(path) + ".", suffix=".part")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+        os.replace(tmp, path)      # never leave a half file under the real name
+    except OSError:
+        # The cache is a convenience, so a failed write is not fatal -- but it
+        # must not leave a stray `.part` behind for the next run to trip over.
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        return None
     return path
+
+
+def _cached_ttf(path: str) -> str | None:
+    """`path` if it holds a real TTF, else None.
+
+    ⚠️ **The MAGIC, not just the size.** `_is_ttf` exists so a proxy error page
+    or a woff2 cannot be cached under the font's name and "fail much later at
+    render time, where the cause is invisible" -- and the cache check next door
+    accepted anything over four bytes, which is the same reasoning with the
+    opposite conclusion four lines apart. A cache corrupted once stayed broken
+    for good, because nothing ever re-examined it. Refusing it here also
+    self-heals a file an older build left behind: the caller falls through to
+    the download.
+    """
+    try:
+        with open(path, "rb") as fh:
+            return path if _is_ttf(fh.read(8)) else None
+    except OSError:
+        return None
 
 
 def fetch_subset(names, cache_dir: str | None = None,
@@ -386,8 +427,9 @@ def fetch_subset(names, cache_dir: str | None = None,
     if not names:
         return None
     path = subset_path(names, cache_dir, face)
-    if os.path.exists(path) and os.path.getsize(path) > 4:
-        return path
+    cached = _cached_ttf(path)
+    if cached:
+        return cached
     if not allow_network:
         return None
     if face == FLUENT:

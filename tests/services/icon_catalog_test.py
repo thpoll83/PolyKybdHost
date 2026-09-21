@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from polyhost.services import icon_catalog as ic
 
@@ -62,6 +63,70 @@ class FormatValidationTest(unittest.TestCase):
         self.assertFalse(ic._is_ttf(b"wOF2rest"))
         self.assertFalse(ic._is_ttf(b"<!DOCTYPE html><html>"))
         self.assertFalse(ic._is_ttf(b""))
+
+
+class ConcurrentStoreTest(unittest.TestCase):
+    """⚠️ A SHARED temp name, and `generate_app_overlays.py` now renders through
+    this same module (E18) -- so the generator and the running host really can
+    fetch the Fluent font at once.
+
+    `_store_font` wrote `<path>.part` under a FIXED name: two processes then
+    truncate each other's file, and whichever replaces second moves an
+    incomplete TTF into the cache (or finds no `.part` at all and raises). Same
+    defect `PolySettings._save_merged` already records one module over -- "unique
+    per SAVE, not per process" (Greptile P2, #240).
+    """
+
+    def test_two_stores_do_not_share_a_temp_name(self):
+        moved = []
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "fluent-regular.ttf")
+            real = os.replace
+            with mock.patch.object(ic.os, "replace",
+                                   side_effect=lambda a, b: (moved.append(a), real(a, b))[1]):
+                ic._store_font(path, b"\x00\x01\x00\x00one")
+                ic._store_font(path, b"\x00\x01\x00\x00two")
+        self.assertEqual(len(moved), 2)
+        self.assertNotEqual(moved[0], moved[1], "both stores used one temp file")
+
+    def test_a_store_leaves_no_temp_behind_on_SUCCESS_or_FAILURE(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "f.ttf")
+            ic._store_font(path, b"\x00\x01\x00\x00ok")
+            with mock.patch.object(ic.os, "replace", side_effect=OSError("nope")):
+                self.assertIsNone(ic._store_font(path, b"\x00\x01\x00\x00bad"))
+            leftovers = [n for n in os.listdir(d) if n != "f.ttf"]
+            self.assertEqual(leftovers, [], leftovers)
+
+
+class CachedFontIsValidatedTest(unittest.TestCase):
+    """⚠️ The module refuses a non-TTF DOWNLOAD so the failure cannot surface
+    "much later, at render time, where the cause is invisible" -- and then
+    accepted any CACHED file over four bytes. Same reasoning, opposite
+    conclusion, four lines apart. A cache corrupted once stayed broken for good.
+    """
+
+    def test_a_corrupt_cached_font_is_refused_and_refetched(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = ic.subset_path(["save"], d, ic.FLUENT)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fh:
+                fh.write(b"<!DOCTYPE html>truncated rubbish")
+            # Offline, so there is no way to re-fetch: it must answer None
+            # rather than hand back the rubbish.
+            self.assertIsNone(ic.fetch_subset(["save"], cache_dir=d,
+                                              allow_network=False,
+                                              face=ic.FLUENT))
+
+    def test_a_VALID_cached_font_is_still_served_offline(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = ic.subset_path(["save"], d, ic.FLUENT)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fh:
+                fh.write(b"\x00\x01\x00\x00 a real sfnt header")
+            self.assertEqual(ic.fetch_subset(["save"], cache_dir=d,
+                                             allow_network=False,
+                                             face=ic.FLUENT), path)
 
 
 class OfflineTest(unittest.TestCase):
