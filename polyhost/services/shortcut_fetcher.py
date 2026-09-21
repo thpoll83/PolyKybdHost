@@ -61,19 +61,43 @@ class ShortcutIconFetcher:
         self._thread = None
         self._shutting_down = False
         self._told: set[tuple] = set()
+        # app -> shortcuts somebody ELSE harvested, for an application running
+        # on the forwarder's machine. Keyed on the app alone, deliberately
+        # unlike `_overlays`: what was harvested does not depend on the icon
+        # height or the corner, only what is DRAWN from it does. Survives
+        # `forget()` for the same reason -- a settings change invalidates the
+        # masks, never the other machine's answer about its own app.
+        self._harvested: dict[str, tuple] = {}
 
     # ------------------------------------------------------------------
 
-    def overlays_for(self, app: str) -> dict:
+    def overlays_for(self, app: str, harvested=None) -> dict:
         """{source_name: {(modifier, keycode): mask}} for an app; {} until known.
 
         ⚠️ Keyed on the app name AND the render settings, because a height or
         corner change has to invalidate what is cached here as well as what is
         cached on the keyboard -- the masks in this dict were drawn at the old
         size, and `source_name()` alone would not be consulted again.
+
+        `harvested` supplies the shortcuts instead of reading them here, for an
+        application running on the FORWARDER's machine: its accessibility tree
+        is only readable there, so the harvest is done on that machine and
+        relayed as text (`services.shortcut_relay`). Everything after the
+        harvest -- which concept a label means, which catalog subset to fetch,
+        what height and corner to raster at -- is unchanged, because all of it
+        is knowable only here.
+
+        ⚠️ Pass `()` for "the other machine looked and found nothing", never for
+        "it has not answered yet". This method CACHES an empty result, so a
+        not-yet-answered app fed in as `()` is cached as having no shortcuts and
+        the real answer is ignored for the life of the process. The caller holds
+        that distinction (`RemoteHandler.forwarded_shortcuts` answers None) and
+        must not call at all until it has one.
         """
         if not app or not enabled():
             return {}
+        if harvested is not None:
+            self._harvested[app] = tuple(harvested)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if key in self._overlays:
@@ -160,19 +184,31 @@ class ShortcutIconFetcher:
         this is macOS), the app exposes nothing (a modern toolkit — nothing to
         do), or nothing in what it exposes matched a concept (curation).
         """
-        unusable = shortcut_source.unavailable_reason()
-        if unusable is not None:
-            # ⚠️ The REASON, not a flat "no backend on this platform". That
-            # sentence is true on macOS and misleading everywhere else: the
-            # commonest cause is an interpreter that cannot see the system
-            # PyGObject, which the sentence rules out, so a user reading it goes
-            # and installs a package they already have.
-            self._say(app, unusable)
-            return {}
-        shortcuts = shortcut_source.harvest(app)
-        if not shortcuts:
-            self._say(app, "the app exposes no accelerators")
-            return {}
+        relayed = self._harvested.get(app)
+        if relayed is not None:
+            # A forwarded app: the harvest already happened on the machine
+            # running it. The local backend is not consulted at all -- asking it
+            # would walk THIS machine's tree, never find the app, and report
+            # "exposes no accelerators" for one that exposes sixteen.
+            shortcuts = relayed
+            if not shortcuts:
+                self._say(app, "the forwarder harvested it and it exposes no "
+                               "accelerators")
+                return {}
+        else:
+            unusable = shortcut_source.unavailable_reason()
+            if unusable is not None:
+                # ⚠️ The REASON, not a flat "no backend on this platform". That
+                # sentence is true on macOS and misleading everywhere else: the
+                # commonest cause is an interpreter that cannot see the system
+                # PyGObject, which the sentence rules out, so a user reading it
+                # goes and installs a package they already have.
+                self._say(app, unusable)
+                return {}
+            shortcuts = shortcut_source.harvest(app)
+            if not shortcuts:
+                self._say(app, "the app exposes no accelerators")
+                return {}
         # ⚠️ The codepoint table is loaded BEFORE planning, not after, because
         # the planner now uses it: a label the lexicon does not know falls back
         # to a name derived from the label, and the table is what rejects a

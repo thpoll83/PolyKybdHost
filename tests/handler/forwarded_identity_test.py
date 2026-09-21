@@ -8,22 +8,44 @@ when this side says it needs it.
 """
 import base64
 import unittest
+from unittest.mock import patch
 
 import polyhost.util.log_util  # noqa: F401 - installs Logger.debug_detailed
 
 from polyhost.handler.remote_window import MAX_FORWARDED_APPS, RemoteHandler
 from polyhost.server.window_report_server import (MAX_ICON_B64,
                                                   WindowReportServer)
+from polyhost.services import shortcut_fetcher
 
 ICON = b"\x89PNG\r\n\x1a\n-pretend-this-is-art"
 OTHER = b"\x89PNG\r\n\x1a\n-a-different-icon"
+# What `shortcut_relay.decode` hands the handler: already-validated triples.
+SHORTCUTS = ((1, 0x16, "Save"), (1, 0x06, "Copy"))
 
 
 def _handler():
     return RemoteHandler(mapping={})
 
 
-class WantIconTest(unittest.TestCase):
+class _ShortcutsOff:
+    """Pin ONE ask per class.
+
+    The reply now carries two independent asks, so a class asserting the whole
+    dict is otherwise coupled to whether the OTHER feature happens to be on --
+    and `shortcut_icons_enabled` defaults True, so every icon test would have to
+    spell out a shortcut expectation it does not care about. Turning it off here
+    keeps the icon contract readable; `WantShortcutsTest` pins the other ask and
+    `test_both_asks_can_ride_ONE_reply` pins that they compose.
+    """
+
+    def setUp(self):
+        off = patch.object(shortcut_fetcher, "enabled", return_value=False)
+        off.start()
+        self.addCleanup(off.stop)
+        super().setUp()
+
+
+class WantIconTest(_ShortcutsOff, unittest.TestCase):
 
     def test_the_first_sighting_of_an_app_ASKS_for_the_icon(self):
         h = _handler()
@@ -79,7 +101,7 @@ class WantIconTest(unittest.TestCase):
         self.assertIsNone(_handler().forwarded_identity("never-seen"))
 
 
-class ReceiverDecidesTest(unittest.TestCase):
+class ReceiverDecidesTest(_ShortcutsOff, unittest.TestCase):
     """The three ways a sender-side 'already sent it' flag goes stale."""
 
     def test_a_RESTARTED_daemon_asks_again(self):
@@ -148,11 +170,101 @@ class IconDecodeTest(unittest.TestCase):
             WindowReportServer._decode_icon(12345)
 
 
+class WantShortcutsTest(unittest.TestCase):
+    """The same receiver-decides contract, for the app's SHORTCUTS.
+
+    Its accelerators come out of an accessibility tree in a process on the
+    forwarder's machine, so this side cannot read them at all — asking the local
+    backend walks the wrong tree, finds nothing, and reports "exposes no
+    accelerators" for an app that exposes sixteen.
+    """
+
+    def setUp(self):
+        on = patch.object(shortcut_fetcher, "enabled", return_value=True)
+        on.start()
+        self.addCleanup(on.stop)
+
+    def test_the_first_sighting_of_an_app_ASKS(self):
+        self.assertEqual(_handler().report_window(1, "gimp", "GIMP"),
+                         {"want_shortcuts": True})
+
+    def test_once_they_ARRIVE_it_stops_asking(self):
+        h = _handler()
+        self.assertIsNone(h.report_window(1, "gimp", "GIMP", shortcuts=SHORTCUTS))
+        self.assertIsNone(h.report_window(1, "gimp", "GIMP"))
+        self.assertEqual(h.forwarded_shortcuts("gimp"), SHORTCUTS)
+
+    def test_an_EMPTY_harvest_is_an_answer_and_stops_the_asking(self):
+        # ⚠️ The one that would loop forever if `()` were read as "no answer":
+        # most applications expose nothing, so this is the COMMON case, and
+        # re-asking would re-walk a proven-empty tree on the other machine on
+        # every report.
+        h = _handler()
+        self.assertIsNone(h.report_window(1, "gedit", "gedit", shortcuts=()))
+        self.assertIsNone(h.report_window(1, "gedit", "gedit"))
+        self.assertEqual(h.forwarded_shortcuts("gedit"), ())
+
+    def test_UNASKED_and_EMPTY_are_different_answers(self):
+        h = _handler()
+        self.assertIsNone(h.forwarded_shortcuts("gimp"))
+        h.report_window(1, "gimp", "GIMP", shortcuts=())
+        self.assertEqual(h.forwarded_shortcuts("gimp"), ())
+
+    def test_the_SETTING_being_off_never_asks(self):
+        # Off means no application's accessibility tree is read ANYWHERE: the
+        # forwarder harvests only when asked, so not asking is what carries the
+        # privacy switch across the machine boundary.
+        with patch.object(shortcut_fetcher, "enabled", return_value=False):
+            self.assertIsNone(_handler().report_window(1, "gimp", "GIMP"))
+
+    def test_a_RESTARTED_daemon_asks_again(self):
+        # The sender cannot know this happened — the whole reason the answer
+        # comes from here rather than from a forwarder-side "already sent" flag.
+        _handler().report_window(1, "gimp", "GIMP", shortcuts=SHORTCUTS)
+        self.assertEqual(_handler().report_window(1, "gimp", "GIMP"),
+                         {"want_shortcuts": True})
+
+    def test_an_EVICTED_app_asks_again(self):
+        h = _handler()
+        h.report_window(1, "gimp", "GIMP", shortcuts=SHORTCUTS)
+        for i in range(MAX_FORWARDED_APPS + 1):
+            h.report_window(2, "app%d" % i, "t", shortcuts=())
+        self.assertEqual(h.report_window(1, "gimp", "GIMP"),
+                         {"want_shortcuts": True})
+
+    def test_the_cache_stays_BOUNDED(self):
+        # The app name is attacker-shaped on the network path, so an unbounded
+        # dict keyed on it is a slow memory leak against the process that owns
+        # the HID device.
+        h = _handler()
+        for i in range(MAX_FORWARDED_APPS * 3):
+            h.report_window(1, "app%d" % i, "t", shortcuts=SHORTCUTS)
+        self.assertLessEqual(len(h._forwarded_shortcuts), MAX_FORWARDED_APPS)
+
+    def test_shortcuts_do_NOT_make_an_empty_record_read_as_an_IDENTITY(self):
+        """⚠️ Why they live in their own dict rather than beside the identity.
+
+        `forwarded_identity` answers `known or None` precisely so an empty
+        record does not read as "the identity arrived" — a caller that latched
+        one would never look again, and the real identity 300 ms later would be
+        ignored for the life of the process. Putting a shortcut list in that
+        record would make every record non-empty and re-open exactly that bug.
+        """
+        h = _handler()
+        h.report_window(1, "gimp", "GIMP", shortcuts=SHORTCUTS)
+        self.assertIsNone(h.forwarded_identity("gimp"))
+
+    def test_both_asks_can_ride_ONE_reply(self):
+        self.assertEqual(
+            _handler().report_window(1, "gimp", "GIMP", icon_key="abc123"),
+            {"want_icon": True, "want_shortcuts": True})
+
+
 if __name__ == "__main__":
     unittest.main()
 
 
-class LruOrderTest(unittest.TestCase):
+class LruOrderTest(_ShortcutsOff, unittest.TestCase):
     """The cache must keep what is USED, not what arrived first."""
 
     def test_a_REPEATEDLY_seen_app_survives_pressure(self):
@@ -173,7 +285,7 @@ class LruOrderTest(unittest.TestCase):
                           "the icon should still be cached, so no re-ask")
 
 
-class NameKeyTest(unittest.TestCase):
+class NameKeyTest(_ShortcutsOff, unittest.TestCase):
     """The cache key and the lookup key must be the SAME normalisation."""
 
     def test_a_windows_exe_name_round_trips(self):
@@ -195,7 +307,7 @@ class NameKeyTest(unittest.TestCase):
         self.assertIsNone(h.report_window(1, "Code.exe", "t", icon_key="k1"))
 
 
-class EmptyRecordIsNotAnIdentityTest(unittest.TestCase):
+class EmptyRecordIsNotAnIdentityTest(_ShortcutsOff, unittest.TestCase):
     """The first report arrives BEFORE the forwarder has resolved anything.
 
     ⚠️ `_note_identity` creates the record on that first report, so

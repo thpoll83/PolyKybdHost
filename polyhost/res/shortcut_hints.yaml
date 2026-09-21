@@ -18,3 +18,10 @@
 hints:
   # "System" names the window menu, not an action. The word is the information.
   system: text
+  # A menu-bar TITLE, not a command -- gnome-terminal exposes its whole menu bar
+  # over AT-SPI, so Alt+F and Alt+V arrive as shortcuts like any other. The rules
+  # match no concept for either (measured on a real harvest, 2026-09-18: 14 of 16
+  # drawn, these two the refusals), and the owner's call is that all sixteen are
+  # worth drawing. Edit, Help, Search and Terminal already resolve on their own.
+  file: icon:description
+  view: icon:visibility

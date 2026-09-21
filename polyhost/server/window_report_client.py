@@ -38,7 +38,7 @@ class WindowReportClient:
             raise WindowReportError(why)
 
     def report(self, handle, name, title, os=None, url=None,
-               names=None, icon_key=None, icon=None):
+               names=None, icon_key=None, icon=None, shortcuts=None):
         """Send one window report; raise WindowReportError on failure/timeout.
 
         ``os`` (optional, an OsType value int) lets the forwarder forward its host
@@ -56,8 +56,15 @@ class WindowReportClient:
         `.desktop` files at all. Resolving on the receiving side reads the wrong
         computer's OS.
 
-        Returns the response result dict, whose ``want_icon`` tells the caller
-        whether to attach ``icon`` next time round."""
+        ``shortcuts`` is the same story for the app's KEYBOARD SHORTCUTS: they
+        come out of the accessibility tree of a process on the forwarder's
+        machine, so the keyboard machine cannot read them at all. It is a list
+        of ``[mods, hid, label]`` triples -- see `services.shortcut_relay` for
+        why the wire carries text and not rendered masks.
+
+        Returns the response result dict, whose ``want_icon`` / ``want_shortcuts``
+        tell the caller whether to attach ``icon`` / ``shortcuts`` next time
+        round."""
         req_id = self._next_id
         self._next_id += 1
         params = {"handle": str(handle), "name": str(name), "title": str(title)}
@@ -77,6 +84,12 @@ class WindowReportClient:
             params["icon_key"] = str(icon_key)
         if icon:
             params["icon"] = base64.b64encode(icon).decode("ascii")
+        # ⚠️ `is not None`, not truthiness: an EMPTY list is a real answer ("this
+        # app exposes no accelerators") and the one that stops the receiver
+        # asking on every report. Dropping it would re-ask forever.
+        if shortcuts is not None:
+            params["shortcuts"] = [[int(m), int(k), str(t)]
+                                   for m, k, t in shortcuts]
         p.send_message(self._conn, p.make_request(
             req_id, p.M_WINDOW_REPORT, params))
         while True:
@@ -125,7 +138,7 @@ class WindowReportSession:
         return self._host
 
     def report(self, host, handle, name, title, os=None, url=None,
-               names=None, icon_key=None, icon=None):
+               names=None, icon_key=None, icon=None, shortcuts=None):
         """Send one report to ``host``, (re)connecting as needed.
 
         Raises whatever the connect or the report raised, having closed the
@@ -139,7 +152,8 @@ class WindowReportSession:
                     host, self._port, self._authkey, self._timeout)
                 self._host = host
             return self._client.report(handle, name, title, os=os, url=url,
-                                       names=names, icon_key=icon_key, icon=icon)
+                                       names=names, icon_key=icon_key, icon=icon,
+                                       shortcuts=shortcuts)
         except Exception:
             self.close()
             raise

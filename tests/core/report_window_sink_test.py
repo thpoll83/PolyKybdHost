@@ -28,16 +28,22 @@ ICON = b"\x89PNG\r\n\x1a\n" + b"icon-bytes"
 class _FakeRemote:
     """Records the call; answers want_icon the way RemoteHandler does."""
 
-    def __init__(self, want_icon=False):
+    def __init__(self, want_icon=False, want_shortcuts=False):
         self.calls = []
         self._want_icon = want_icon
+        self._want_shortcuts = want_shortcuts
 
     def report_window(self, handle, name, title, os=None, url=None,
-                      names=(), icon_key=None, icon=None):
+                      names=(), icon_key=None, icon=None, shortcuts=None):
         self.calls.append(dict(handle=handle, name=name, title=title, os=os,
                                url=url, names=names, icon_key=icon_key,
-                               icon=icon))
-        return {"want_icon": True} if self._want_icon else None
+                               icon=icon, shortcuts=shortcuts))
+        reply = {}
+        if self._want_icon:
+            reply["want_icon"] = True
+        if self._want_shortcuts:
+            reply["want_shortcuts"] = True
+        return reply or None
 
 
 class _FakeHandler:
@@ -111,6 +117,55 @@ class DispatchReachesTheRealSinkTest(unittest.TestCase):
             None, 1, p.M_WINDOW_REPORT, _params(icon_key="k1"))
         self.assertTrue(resp["result"]["ok"])
         self.assertNotIn("want_icon", resp["result"])
+
+    def test_SHORTCUTS_reach_the_handler_DECODED(self):
+        # The server decodes at the boundary and the handler stores triples, so
+        # a raw wire list must never get past dispatch unexamined.
+        remote = _FakeRemote()
+        _server(_core(remote)).dispatch(
+            None, 1, p.M_WINDOW_REPORT,
+            _params(shortcuts=[[1, 0x16, "Save"], [1, 0x06, "Copy"]]))
+        got = remote.calls[0]["shortcuts"]
+        self.assertEqual([(s.mods, s.hid, s.label) for s in got],
+                         [(1, 0x16, "Save"), (1, 0x06, "Copy")])
+
+    def test_an_ABSENT_shortcuts_param_is_NOT_an_empty_harvest(self):
+        # ⚠️ None means "the forwarder has not answered", () means "it looked
+        # and found nothing". Collapsing them makes the receiver stop asking
+        # before anyone has harvested anything.
+        remote = _FakeRemote()
+        _server(_core(remote)).dispatch(None, 1, p.M_WINDOW_REPORT, _params())
+        self.assertIsNone(remote.calls[0]["shortcuts"])
+
+    def test_an_EMPTY_shortcuts_param_survives_as_an_empty_harvest(self):
+        remote = _FakeRemote()
+        _server(_core(remote)).dispatch(None, 1, p.M_WINDOW_REPORT,
+                                        _params(shortcuts=[]))
+        self.assertEqual(remote.calls[0]["shortcuts"], ())
+
+    def test_MALFORMED_shortcuts_do_NOT_fail_the_window_report(self):
+        """⚠️ The property that makes this field safe on the network endpoint.
+
+        Shortcuts ride the MAIN report frame, so a refusal here would stop the
+        keyboard tracking windows because a keycap decoration was malformed.
+        Every one of these has to leave `ok` true with the window delivered.
+        """
+        for junk in ("nonsense", 7, {"a": 1}, [["ctrl", "s", "Save"]],
+                     [None, [1, 0x16]], [[1, 0x16, "Save"]] * 100000):
+            with self.subTest(junk=type(junk).__name__):
+                remote = _FakeRemote()
+                resp = _server(_core(remote)).dispatch(
+                    None, 1, p.M_WINDOW_REPORT, _params(shortcuts=junk))
+                self.assertNotIn("error", resp, resp)
+                self.assertTrue(resp["result"]["ok"])
+                self.assertEqual(remote.calls[0]["name"], "code")
+
+    def test_want_shortcuts_survives_the_ok_payload_tuple(self):
+        # Same unwrap bug as want_icon: PolyCore answers (ok, payload), so a
+        # dict-only merge discards it and the forwarder never harvests.
+        resp = _server(_core(_FakeRemote(want_shortcuts=True))).dispatch(
+            None, 1, p.M_WINDOW_REPORT, _params())
+        self.assertTrue(resp["result"].get("want_shortcuts"))
 
     def test_a_sink_failure_is_still_surfaced_as_an_error(self):
         core = PolyCore.__new__(PolyCore)

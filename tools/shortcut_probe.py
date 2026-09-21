@@ -276,6 +276,15 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
     }
 
 
+# What a candidate interpreter is asked to do. ⚠️ Named rather than written
+# inline: two adjacent string literals INSIDE a list read as a missing comma,
+# which is a real bug shape and what CodeQL flags here (#328).
+_IMPORT_CHECK = (
+    "import gi; gi.require_version('Atspi', '2.0'); "
+    "from gi.repository import Atspi"
+)
+
+
 def _interpreter_with_pygobject() -> str | None:
     """Another Python on this machine that CAN import gi + Atspi, or None.
 
@@ -295,10 +304,8 @@ def _interpreter_with_pygobject() -> str | None:
             continue
         seen.add(real)
         try:
-            done = subprocess.run(
-                [path, "-c", "import gi; gi.require_version('Atspi','2.0');"
-                             " from gi.repository import Atspi"],
-                capture_output=True, timeout=10)
+            done = subprocess.run([path, "-c", _IMPORT_CHECK],
+                                  capture_output=True, timeout=10)
         except Exception:
             continue
         if done.returncode == 0:

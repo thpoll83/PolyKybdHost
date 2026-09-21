@@ -162,6 +162,9 @@ class PolyCore(Observable):
         self._app_icons = None
         self._shortcut_icons = None
         self._generic_on_device = None
+        # Apps already told they get no shortcut icons because they are
+        # forwarded -- one line each, not one per window change.
+        self._told_no_remote_shortcuts = set()
         # Last unicode input method pushed to the keyboard (an InputMethod, or
         # None). The WinCompose settle watcher re-probes after a connect and pushes
         # only on a real change; see _start_wincompose_settle.
@@ -611,10 +614,44 @@ class PolyCore(Observable):
         mask, slug = self._app_icons.overlay_for(name, identity=identity)
         if mask is None or not slug:
             slug = None
+        # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and
+        # asking anyway is worse than not asking.** The harvest reads the
+        # application's accessibility tree through a LOCAL backend -- AT-SPI on
+        # Linux, UI Automation on Windows -- and a forwarded app is running on
+        # the OTHER machine. So the lookup walks this machine's tree, never
+        # finds the app, and reports "the app exposes no accelerators", which is
+        # indistinguishable from an app that genuinely has none.
+        #
+        # Measured from a real log (2026-09-18): a Windows daemon with a Linux
+        # forwarder drew `mark 'si:gnometerminal' on ESC, 0 shortcut icon(s)`
+        # for a gnome-terminal whose own machine exposes SIXTEEN, every one
+        # displayable.
+        #
+        # So the harvest is RELAYED, exactly as the program mark's identity is:
+        # the forwarder harvests its own machine and sends the shortcuts as text
+        # (`services.shortcut_relay`), and everything after the harvest still
+        # happens here, because only this machine knows the icon catalog, the
+        # keycap height and the corner.
+        #
         # {source_name: {(modifier_value, keycode): mask}} -- one entry per
         # CONCEPT, shared across every key that concept lands on and across
         # applications, which is what makes Save cost one pool slot board-wide.
-        shortcuts = self._shortcut_icons.overlays_for(name)
+        if handler.is_remote_mapping_entry():
+            remote = getattr(handler, "remote_handler", None)
+            relayed = (remote.forwarded_shortcuts(name)
+                       if remote is not None else None)
+            if relayed is None:
+                # ⚠️ NOT `overlays_for(name, harvested=())`. An empty result is
+                # cached, so feeding in "has not answered yet" as "found
+                # nothing" would pin that answer for the life of the process and
+                # the relay would arrive to a cache that no longer asks.
+                self._say_no_remote_shortcuts(name)
+                shortcuts = {}
+            else:
+                shortcuts = self._shortcut_icons.overlays_for(
+                    name, harvested=relayed)
+        else:
+            shortcuts = self._shortcut_icons.overlays_for(name)
         signature = self._generic_signature(slug, shortcuts)
         if signature is None:
             # Both halves are normal on the first sighting (the fetches were
@@ -628,6 +665,25 @@ class PolyCore(Observable):
         if signature == self._generic_on_device:
             return
         self._send_generic_overlays(name, signature, slug, mask, shortcuts)
+
+    def _say_no_remote_shortcuts(self, name):
+        """Say it once per app, at INFO, because it is not a failure to debug.
+
+        The same level and shape as `ShortcutIconFetcher._say`: this feature
+        decides on its own what to draw on ~20 keycaps, so "it drew nothing"
+        needs a reason a user can read without developer mode. Bounded by how
+        many forwarded applications get focused, not by how long the session
+        runs.
+        """
+        if name in self._told_no_remote_shortcuts:
+            return
+        self._told_no_remote_shortcuts.add(name)
+        self.log.info(
+            "No shortcut icons for '%s' yet: it runs on the FORWARDER, so its "
+            "shortcuts have to be harvested there and relayed. Either the "
+            "answer is still in flight (it arrives on a later report) or that "
+            "forwarder predates the relay and will never send them -- the "
+            "program mark is unaffected either way.", name)
 
     @staticmethod
     def _generic_signature(slug, shortcuts):
@@ -947,7 +1003,7 @@ class PolyCore(Observable):
             self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None,
-                      names=(), icon_key=None, icon=None):
+                      names=(), icon_key=None, icon=None, shortcuts=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -966,13 +1022,18 @@ class PolyCore(Observable):
         until 2026-09-17; ``names``/``icon_key``/``icon`` raised TypeError at
         the forwarder, which is the louder half of the same omission.
 
+        ``shortcuts`` is the forwarded app's harvested accelerators, decoded by
+        `services.shortcut_relay`. Like ``names``/``icon`` it is resolved on the
+        forwarder because it cannot be resolved here -- the application's
+        accessibility tree lives on the machine running it.
+
         Returns the uniform ``(ok, payload)`` the RPC layer unwraps."""
         handler = self.overlay_handler
         if handler is None or getattr(handler, "remote_handler", None) is None:
             return False, "window tracking unavailable"
         ret = handler.remote_handler.report_window(
             handle, name, title, os=os, url=url,
-            names=names, icon_key=icon_key, icon=icon)
+            names=names, icon_key=icon_key, icon=icon, shortcuts=shortcuts)
         payload = {"reported": True}
         # The handler answers "send me the icon" here and nowhere else, so
         # dropping this makes the forwarder's follow-up unreachable and the app
