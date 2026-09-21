@@ -453,12 +453,27 @@ def _cached_ttf(path: str) -> str | None:
 
 def fetch_subset(names, cache_dir: str | None = None,
                  allow_network: bool = True,
-                 face: str = DEFAULT_FACE) -> str | None:
+                 face: str = DEFAULT_FACE,
+                 reasons: dict | None = None) -> str | None:
     """Path to a TTF that can draw `names`, downloading it once if needed.
 
     Returns None when it is neither cached nor reachable -- the caller then draws
     the label text, which is why nothing here raises.
+
+    ⚠️ `reasons` is how that None becomes diagnosable, and every path to it used
+    to be a bare `except: return None` with no logging at all. The caller can
+    only say "the <face> icons are neither cached nor reachable", which reads
+    the same for a refused download, an unwritable cache, a proxy page served
+    with a 200, and a CSS reply that carried no font url -- four causes with
+    four different remedies. Measured on macOS 2026-09-21: both faces failed on
+    a machine where both endpoints answer fine from elsewhere, and the log could
+    not narrow it at all. Same treatment as `app_icons.fetch_icon`.
     """
+    def why(text):
+        if reasons is not None:
+            reasons[face] = text
+        return None
+
     names = sorted(set(n for n in names if n))
     if not names:
         return None
@@ -467,25 +482,36 @@ def fetch_subset(names, cache_dir: str | None = None,
     if cached:
         return cached
     if not allow_network:
-        return None
+        return why("not cached, and the network was not allowed")
     if face == FLUENT:
         try:
-            return _store_font(path, _get(FLUENT_FONT_URL, TTF_USER_AGENT))
-        except Exception:
-            return None
+            data = _get(FLUENT_FONT_URL, TTF_USER_AGENT)
+        except Exception as exc:          # noqa: BLE001 - cosmetic lookup
+            return why("download failed: %s" % exc)
+        return (_store_font(path, data)
+                or why("the download was not a usable TTF (%d B) or could not "
+                       "be cached" % len(data)))
     try:
         family = f"{FAMILY}:{MATERIAL_AXES.format(wght=MATERIAL_WEIGHT)}"
         query = urllib.parse.urlencode({"family": family.replace(" ", "+"),
                                         "icon_names": ",".join(names)},
                                        safe="+,@")
         css = _get(f"{CSS_ENDPOINT}?{query}", TTF_USER_AGENT).decode("utf-8", "replace")
-        start = css.find("url(")
-        if start < 0:
-            return None
-        url = css[start + 4:css.find(")", start)].strip("'\" ")
-        return _store_font(path, _get(url, TTF_USER_AGENT))
-    except Exception:
-        return None
+    except Exception as exc:              # noqa: BLE001 - cosmetic lookup
+        return why("the stylesheet request failed: %s" % exc)
+    start = css.find("url(")
+    if start < 0:
+        # A 200 that is not the CSS we asked for -- a captive portal or a proxy
+        # notice. Silent before this, and indistinguishable from an outage.
+        return why("the stylesheet carried no font url (%d B)" % len(css))
+    url = css[start + 4:css.find(")", start)].strip("'\" ")
+    try:
+        data = _get(url, TTF_USER_AGENT)
+    except Exception as exc:              # noqa: BLE001 - cosmetic lookup
+        return why("the font download failed: %s" % exc)
+    return (_store_font(path, data)
+            or why("the download was not a usable TTF (%d B) or could not be "
+                   "cached" % len(data)))
 
 
 _COVERAGE: dict[str, frozenset] = {}

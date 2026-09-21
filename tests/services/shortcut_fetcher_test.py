@@ -8,6 +8,7 @@ queue with the slow half stubbed out.
 
 import threading
 import time
+import types
 import unittest
 from unittest.mock import patch
 
@@ -330,6 +331,75 @@ class ResolveTest(unittest.TestCase):
             # guard could be deleted and this would still pass. What must hold is
             # that nothing is asked to draw from a font that does not exist.
             render.assert_not_called()
+
+
+class UnreachableFontReasonTest(unittest.TestCase):
+    """⚠️ "the <face> icons are neither cached nor reachable" is FOUR causes.
+
+    A refused download, an unwritable cache, a proxy page served with a 200 and
+    a stylesheet carrying no font url all produced that one sentence, and they
+    need four different remedies. Nothing below INFO said anything at all.
+    Measured on macOS 2026-09-21: 65 shortcuts harvested, 20 matched a concept,
+    and NOTHING was drawn because both faces failed — with the log unable to
+    narrow it.
+    """
+
+    def _said(self, font=None, table=None, reason=None):
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        said = []
+        f._say = lambda app, why: said.append(why)
+
+        def fake_fetch(names, cache_dir, face=None, reasons=None, **kw):
+            if reason is not None and reasons is not None:
+                reasons[face] = reason
+            return font
+
+        report = types.SimpleNamespace(slots=["slot"])
+        f._report = lambda *a, **k: None
+        with patch.object(shortcut_fetcher.shortcut_source, "pick",
+                          return_value=object()), \
+             patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest",
+                          return_value=[object()]), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=report), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "icon_names_by_face",
+                          return_value={"material": ["save"]}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          side_effect=fake_fetch), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value=table):
+            f._resolve("gimp", 32, "lower_left")
+        return said
+
+    def test_the_REASON_reaches_the_line(self):
+        said = [w for w in self._said(reason="download failed: proxy refused")
+                if "neither cached" in w]
+        self.assertTrue(said, "no unreachable-font line at all")
+        self.assertIn("proxy refused", said[0])
+
+    def test_it_names_WHICH_HALF_is_missing(self):
+        """The font and the codepoint table are separate fetches from separate
+        URLs, so "neither cached nor reachable" was ambiguous even before the
+        reason: either one alone produces it."""
+        said = [w for w in self._said(font=None, table={"save": 1})
+                if "neither cached" in w]
+        self.assertTrue(said)
+        self.assertIn("the font is missing", said[0])
+
+    def test_a_missing_TABLE_is_named_as_the_TABLE(self):
+        said = [w for w in self._said(font="/tmp/f.ttf", table={})
+                if "neither cached" in w]
+        self.assertTrue(said)
+        self.assertIn("the codepoint table is missing", said[0])
+
+    def test_NO_reason_still_produces_a_usable_line(self):
+        """`reasons` is best effort — an empty one must not append "()"."""
+        said = [w for w in self._said(reason=None) if "neither cached" in w]
+        self.assertTrue(said)
+        self.assertNotIn("()", said[0])
 
 
 if __name__ == "__main__":
