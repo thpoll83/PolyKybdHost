@@ -18,6 +18,24 @@ and relative links were adjusted to suit a standalone file.
   logs bundle --since 1h`, then unzip and look. It is ~30 s and it has now caught
   two bugs in one PR that the tests could not see.
 
+- ⚠️ **A FAKE THAT IMPLEMENTS THE CONTRACT CANNOT TEST THE CONTRACT — and it is the
+  mutation escape this repo's fixture idiom produces most.** Two of them in one
+  session (2026-09-21), the same shape with different fixes:
+  - Every test patched `frontmost_app` *itself*, so the mutation *"`frontmost_app`
+    forgets the pid"* survived — nothing ever exercised the real function. Fake at
+    the **boundary the function crosses**, not the function: inject a fake module
+    into `sys.modules`, or patch `subprocess.run`, and let the real code run.
+  - Every test then faked the subprocess **output**, so *"reverse the two values
+    inside `_FRONTMOST_SCRIPT`"* survived too — the parser was exercised without the
+    script that feeds it. When two artifacts must agree on an ORDER, no fixture can
+    pin it, because the fixture asserts one side against itself. **Assert on the
+    artifact**: `_FRONTMOST_SCRIPT`'s single `return` line must place `procID`
+    before `procName`.
+
+  The question that catches both: *what would this test still pass with if the code
+  under test were deleted?* If the answer is "the fixture", the fixture is the thing
+  being tested.
+
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
   any forwarder logic worth testing in a Qt-free module instead.** It imports
   `pywinctl` at module load (the backend selection at the top), and pywinctl is

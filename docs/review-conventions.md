@@ -42,6 +42,19 @@ and relative links were adjusted to suit a standalone file.
   skill**, mirrored in both repos. Load it when you are actually triaging a PR;
   it is ~51 KB that does not belong in every session's context.
 
+- ⚠️ **A review pinned to a MERGE COMMIT reviews the BASE, not your diff — and the
+  `commit_id`-vs-head check above does NOT catch it.** That check finds a review of
+  an older version of *this branch*; this is a review of somebody else's code that
+  reached the branch through a `Merge remote-tracking branch 'origin/main'`. On
+  host#248 (2026-09-22) Greptile's header read *"should not merge until
+  recovery-copy naming prevents one preserved corrupt settings file from
+  overwriting another"* at confidence 4/5, last-reviewed commit `ec2710fc` — a merge
+  commit — while `polyhost/settings.py` was **not among the PR's changed files at
+  all**. The finding was real code and a real (if narrow) bug; it simply belonged to
+  `main` rather than to the PR it was blocking. **Read `pull_request_read`
+  `get_files` before acting on a finding**, not the sha alone: a severity label on a
+  file your branch never touched is an argument about a different PR.
+
 - ⚠️ **An image is INVISIBLE to the reviewers, so *"that asset is not present in the
   repository"* on a `.png` is structurally false — every time.** CodeRabbit names the
   filter outright in its own comment (`⛔ Files ignored due to path filters (1) …

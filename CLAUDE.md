@@ -211,6 +211,12 @@ inspect/extend dialogs, diagnostics, telemetry, icons and autostart. Each pointe
 keeps the parts of its subject that bind code *outside* it; if a rule is in a
 pointer, it applies to you even if you never open the file.
 
+⚠️ **Work that was deliberately NOT done — with the reason and with what would settle
+it — is [`docs/FUTURE_WORK.md`](docs/FUTURE_WORK.md).** Read it before designing
+something the file has already weighed. A deferral written only as a code comment is
+invisible: the macOS glyph-table note sat one line from the code it describes for the
+life of a branch and nothing surfaced it.
+
 ### Protocol, versions and the connect gate
 
 **Version handling is RANGE-connect + per-feature gating, not exact-match.**
