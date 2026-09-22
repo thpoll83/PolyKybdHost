@@ -8,7 +8,7 @@ from polyhost.lang.lang_compat import LangComp
 
 class LinuxPlasmaHelper(InputHelper):
     def __init__(self):
-        self.comp = LangComp()
+        self.comp = LangComp("linux")
         self.list = None
 
     def get_languages(self):

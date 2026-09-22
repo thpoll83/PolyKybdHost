@@ -7,7 +7,7 @@ from polyhost.lang.lang_compat import LangComp
 class LinuxGnomeInputHelper(InputHelper):
     def __init__(self):
         super().__init__()
-        self.comp = LangComp()
+        self.comp = LangComp("linux")
         self.list = None
 
     def get_languages(self):

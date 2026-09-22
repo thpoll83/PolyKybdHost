@@ -418,6 +418,19 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   doing its job at all** — and fix it rather than muting it. It is
   `TISSelectInputSource` (`input/macos_input_source.py`), which needs no privileges;
   `docs/architecture.md` → *Platform input abstraction* has the rest.
+- ⚠️ **The forced-layout compat map is ONE FILE PER PLATFORM**
+  (`res/forced_country_match_<platform>.txt`; `LangComp(platform)` REQUIRES the
+  argument, deliberately). Same question everywhere, but the answer is in the
+  vocabulary that platform matches on: Linux names xkb layout codes (`ara`,
+  `latam`, `gb`), macOS the IETF language tags its input sources report
+  (`ar-SA`, `en-GB`). ⚠️ **Reading the wrong one mostly WORKS** — `pf=fr` is a
+  valid language tag as well as an xkb code — so only `ara`, `latam` and the
+  region-specific entries break, which is why the argument has no default and
+  why a test drives a country only the macOS file answers for (`es`). The
+  macOS file also carries keys Linux never needed (`es`, `gb`, `ch`, `us`),
+  since there a layout whose own country code is installed resolves without a
+  fold. Key-set parity between the files is asserted; a fold added for Linux
+  and not mirrored goes QUIET rather than failing.
 - ⚠️ **An input helper's `get_current_language` and `set_language` must speak ONE
   namespace.** macOS answered the HIToolbox *"KeyboardLayout Name"* (`German`) to a
   caller comparing it with `de-DE`, so `PolyHost` read "the OS language differs" on

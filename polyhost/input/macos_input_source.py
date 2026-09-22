@@ -72,52 +72,6 @@ _ID_HINTS = {
     ("no", "NO"): ("Norwegian",),
 }
 
-#: What an xkb / ISO-3166 layout code means as a `(lang, country)` pair, so a
-#: code can re-enter the matcher below.
-#:
-#: Two callers, and they are why the table exists at all. macOS matches input
-#: sources on their LANGUAGE and knows nothing about country codes, while both
-#: the keyboard's own `xx-YY` code and `res/forced_country_match.txt` are
-#: written in the country vocabulary Linux uses. This translates back.
-#:
-#: **Membership rule**, so the table does not drift into guesswork: a code is
-#: here because it is a fold target in `forced_country_match.txt` (all 20 of
-#: them, covering its 88 entries — asserted by
-#: `test_every_fold_target_in_the_res_file_is_mapped`), or because a PolyKybd
-#: layout exists whose LANGUAGE macOS ships no input source for and whose
-#: country the file does not name. Only `ES` is in for the second reason
-#: (Basque `eu-ES` and Galician `gl-ES`, both typed on the Spanish layout).
-#: Add a country when a layout needs it, never on the chance it might.
-#:
-#: ⚠️ **Two entries are genuinely ambiguous** and take their most common
-#: reading: `in` serves both `in=us` (India, plain QWERTY) and `bd=in` (the
-#: India **Bengali** layout), and `ch` is Swiss German while `lu=ch,fr` wants
-#: the Swiss **French** one. A wrong guess costs nothing beyond that one
-#: candidate missing — the walk tries the next — because none of this is
-#: consulted until the language match has already failed.
-_LAYOUT_FOR_CODE = {
-    "ara": ("ar", "SA"),
-    "at": ("de", "AT"),
-    "ba": ("bs", "BA"),
-    "ch": ("de", "CH"),
-    "de": ("de", "DE"),
-    "dk": ("da", "DK"),
-    "es": ("es", "ES"),
-    "fi": ("fi", "FI"),
-    "fr": ("fr", "FR"),
-    "gb": ("en", "GB"),
-    "hr": ("hr", "HR"),
-    "in": ("hi", "IN"),
-    "latam": ("es", "MX"),
-    "me": ("sr", "ME"),
-    "mx": ("es", "MX"),
-    "no": ("nb", "NO"),
-    "pt": ("pt", "PT"),
-    "ru": ("ru", "RU"),
-    "se": ("sv", "SE"),
-    "si": ("sl", "SI"),
-    "us": ("en", "US"),
-}
 
 
 # ----------------------------------------------------------------------
@@ -149,28 +103,26 @@ def pick_input_source(sources, lang, country, alternatives=None):
     or None when no enabled source speaks the language or any of its
     compatible layouts.
 
-    ``alternatives`` is the compatible-layout list for this COUNTRY, as
-    `LangComp.get_compatible_lang_list` reads it out of
-    `res/forced_country_match.txt`. It matters more than the name suggests:
-    roughly 60 of the 156 PolyKybd layouts are folds onto another country's
-    layout — Tahitian types on French, Filipino and Swahili on US, Quechua on
-    Latin American, Basque and Galician on Spanish — and macOS ships an input
-    source for none of those languages. Without step 4 below they all report
-    "no enabled input source" on a Mac that has exactly the right layout
-    enabled.
+    ``alternatives`` is the compatible-layout list for this COUNTRY, which
+    `LangComp("macos")` reads out of `res/forced_country_match_macos.txt` as
+    IETF language tags. It matters more than the name suggests: roughly 60 of
+    the 156 PolyKybd layouts are folds onto another country's layout —
+    Tahitian types on French, Filipino and Swahili on US, Quechua on Latin
+    American, Basque and Galician on Spanish — and macOS ships an input source
+    for none of those languages. Without step 4 below they all report "no
+    enabled input source" on a Mac that has exactly the right layout enabled.
 
-    ⚠️ **The res file does not cover all of them**, because on Linux a layout
-    whose own country code is installed resolves without it — which is why the
-    file has no `gb=`, `ch=` or `es=` line. macOS has no country concept to
-    resolve through, so step 4 tries the keyboard's country as a layout in its
-    own right first; that is what gets Welsh onto British, Romansh onto Swiss
-    German and Basque onto Spanish.
+    ⚠️ **The tags are already in this matcher's vocabulary**, which is the
+    whole reason macOS has its own copy of that file rather than reading the
+    Linux one. Linux names xkb layout codes (`ara`, `latam`, `gb`); nothing on
+    macOS resolves those, and translating them here meant a second table that
+    had to be kept in step with a file edited for another platform.
 
     ⚠️ **It is a FALLBACK and must stay one**, below the language match.
-    `zh-TW` is the case that shows why — the file folds it onto `us` for Linux
-    (the xkb `tw` layout is not Latin), but macOS has a Zhuyin IME reporting
-    `zh-Hant`, and matching the language first picks the IME the user actually
-    installed."""
+    `zh-TW` is the case that shows why — it is folded onto the US layout
+    because the Taiwanese layout is not Latin, but macOS has a Zhuyin IME
+    reporting `zh-Hant`, and matching the language first picks the IME the
+    user actually installed."""
     lang = "".join(c for c in (lang or "") if c.isalpha()).lower()
     country = "".join(c for c in (country or "") if c.isalpha()).upper()
     if not lang:
@@ -205,22 +157,21 @@ def pick_input_source(sources, lang, country, alternatives=None):
         if any((l or "")[:2].lower() == lang for l in src.get("languages") or ()):
             return src
 
-    # 4. The layout the keyboard's own COUNTRY names, then the compatible
-    #    layouts the res file lists for it — in that order, because the file
-    #    says so: its folds are what to do when the country's own layout is
-    #    not there. Northern Sami is the case that shows the difference:
-    #    `se-NO` has no macOS source for `se`, the file folds NO onto `dk`,
-    #    and trying the country first gets the Norwegian layout the user
-    #    almost certainly has rather than the Danish one.
+    # 4. The compatible layouts `forced_country_match_macos.txt` lists for
+    #    this country, in the order it lists them — the country's own layout
+    #    first, the folds after it. That ordering is the file's, not a rule
+    #    here, which is the point of keeping a macOS copy: the tags it names
+    #    go straight into this same matcher with no translation step.
     #
-    #    Each candidate recurses WITHOUT alternatives, so a symmetric pair in
-    #    the file (`de=at` beside `at=de`, `fi=se` beside `se=fi`) cannot walk
-    #    in a circle.
-    for code in [country] + list(alternatives or ()):
-        target = _LAYOUT_FOR_CODE.get((code or "").lower())
-        if target is None or (target[0] == lang and target[1] == country):
+    #    Each candidate recurses WITHOUT alternatives, so the walk is one
+    #    level deep by construction and a symmetric pair in the file
+    #    (`de=…,de-AT` beside `at=…,de-DE`) cannot circle.
+    for tag in alternatives or ():
+        alt_lang, _, alt_country = (tag or "").partition("-")
+        if not alt_lang or (alt_lang.lower() == lang
+                            and alt_country.upper() == country):
             continue
-        found = pick_input_source(usable, target[0], target[1])
+        found = pick_input_source(usable, alt_lang, alt_country)
         if found is not None:
             return found
     return None

@@ -1,0 +1,232 @@
+# PolyKybd - forced keyboard-layout compatibility map, macOS.
+#
+# The macOS counterpart of forced_country_match_linux.txt. Same question --
+# "the PolyKybd layout whose country code is 'a' can also be typed on OS
+# layout 'b'" -- asked in the vocabulary the platform actually uses.
+#
+# Linux matches xkb LAYOUT CODES ("ara", "latam", "gb"). macOS has no such
+# thing: TISSelectInputSource picks an input source, and the only thing an
+# input source states about itself is its LANGUAGE. So the values here are
+# IETF language tags as Text Input Source Services reports them -- "fr-FR",
+# "en-GB", "es-MX" -- and macos_helper matches them the same way it matches
+# the keyboard's own language, region hints included. Keys stay PolyKybd
+# layout country codes, identical to the Linux file.
+#
+# ORDER MATTERS: the country's own layout comes first, the folds after it.
+# This file is only read once matching on the keyboard's own language has
+# failed, so the country's layout is always the better answer when it is
+# enabled. Northern Sami is the case that shows it -- se-NO has no macOS
+# source for "se", and "no=nb-NO,da-DK" gets the Norwegian layout the user
+# actually has rather than the Danish fold.
+#
+# Keys are normally PolyKybd layout countries. Values may be comma-separated
+# or repeated across lines with the same key. Lines starting with '#' (or
+# without '=') are ignored. Reverse entries are harmless.
+#
+# PARITY: every key in the Linux file must exist here too, or that language
+# silently reports "no enabled input source" on a Mac that has the right
+# layout. tests/input/macos_input_source_test.py asserts it. The reverse does
+# not hold -- see the macOS-only block at the bottom.
+
+# PolyKybd - forced keyboard-layout compatibility map.
+#
+# Each line "a=b[,c,...]" declares that, for the PolyKybd layout whose country
+# code is "a", the OS keyboard layout(s) "b","c",... are acceptable equivalents.
+# linux_kde_helper.set_language() consults this when the keyboard's own country
+# code is not installed as an OS layout and switches the OS to the first listed
+# alternative that is present. Keys are normally PolyKybd layout countries;
+# values are xkb / ISO-3166 alpha-2 codes (Arabic's xkb code is "ara"). Values
+# may be comma-separated or repeated across lines with the same key. Lines
+# starting with '#' (or without '=') are ignored. Reverse entries are harmless.
+
+# German keyboard <-> Austrian OS layout (identical QWERTZ).
+de=de-DE,de-AT
+at=de-AT,de-DE
+
+# Croatian keyboard covers the shared ex-Yugoslav Latin QWERTZ - the Bosnian,
+# Montenegrin and Slovenian OS layouts are identical to it (Slovenian, Bosnian
+# and Montenegrin are folded onto hr instead of getting their own entries).
+hr=hr-HR,bs-BA,sr-ME,sl-SI
+
+# Arabic: the PolyKybd entry is ar-SA, but every Arab state's OS layout uses the
+# single xkb code "ara" - map it so the Arabic layout matches everywhere.
+sa=ar-SA
+
+# Finnish and Swedish share one Fennoscandian layout.
+fi=fi-FI,sv-SE
+se=sv-SE,fi-FI
+
+# Norwegian and Danish share the same ae / o-slash / a-ring letter positions.
+no=nb-NO,da-DK
+dk=da-DK,nb-NO
+
+# Latin-American Spanish (PolyKybd es-MX) uses the xkb "latam" layout code -
+# there is no "mx" xkb layout, so map the Mexican country code onto it.
+mx=es-MX
+latam=es-MX
+
+# Taiwanese Bopomofo/Zhuyin (zh-TW) is entered via an IME that sits on a plain
+# US-QWERTY physical layout (the xkb "tw" layout is a different Latin/IPA map),
+# so fold the keyboard onto "us".
+tw=en-US
+
+# Indonesian (id-ID) is plain US QWERTY with no special characters and has no
+# dedicated xkb layout - fold it onto "us".
+id=en-US
+
+# Simplified-Chinese Pinyin (zh-CN) is entered via an IME on a plain US-QWERTY
+# physical layout (the xkb "cn" layout is a Tibetan map, not Latin), so fold the
+# keyboard onto "us" - the keycaps carry no Han glyphs, matching real mainland
+# Pinyin keyboards. (Shape-based Cangjie/Bopomofo live on zh-HK / zh-TW instead.)
+cn=en-US
+
+# Plain-US-QWERTY markets (2026-06 world batch): English locales typed on a US
+# board (en-AU/en-NZ/en-ZA/en-CA/en-PG), plain-Latin languages with no extra
+# letters (fj-FJ, tl-PH Filipino, sw-KE Swahili, ms-MY Malay) and IME-composed
+# scripts on a US base (am-ET Amharic phonetic input). The xkb country layouts,
+# where they exist (au/nz/za/ke/ng/ph/et), are preferred automatically because
+# set_language() matches the country code first - these folds are the fallback
+# when only "us" is installed.
+au=en-US
+nz=en-US
+fj=en-US
+ws=en-US
+ph=en-US
+za=en-US
+ke=en-US
+et=en-US
+ng=en-US
+my=en-US
+ca=en-US
+pg=en-US
+
+# French Polynesia (ty-PF): Tahitian is typed on the French AZERTY layout.
+pf=fr-FR
+
+# Maghreb / Mashreq Arabic locales (ar-EG / ar-MA / ar-IQ) use the common xkb
+# "ara" Arabic layout like ar-SA (Morocco's azerty variant keeps the same
+# Arabic letter positions).
+eg=ar-SA
+ma=ar-SA
+iq=ar-SA
+
+# Argentina (es-AR) types on the common Latin-American layout, xkb "latam".
+ar=es-MX
+
+# Uzbek Latin: the xkb "uz" default is Cyrillic; the Latin variant differs from
+# plain US only by the tutuq (ʻ) on the apostrophe key - fall back to "us".
+uz=en-US
+
+# ── 2026-06 compat easy-win batch (62 fold/clone languages) ──────────────────
+# Spanish Latin-American locales all type on the common "latam" layout (the same
+# layout es-MX / es-AR use); none have a dedicated country xkb code.
+co=es-MX
+pe=es-MX
+ve=es-MX
+cl=es-MX
+ec=es-MX
+gt=es-MX
+do=es-MX
+bo=es-MX
+py=es-MX
+cr=es-MX
+sv=es-MX
+hn=es-MX
+pa=es-MX
+uy=es-MX
+ni=es-MX
+
+# Arabic states (Levant / Gulf / Maghreb) use the shared xkb "ara" layout like
+# ar-SA. dz/sd/tn/ly are Maghreb/Sudan; the rest are the Arabian peninsula+Levant.
+ae=ar-SA
+sy=ar-SA
+jo=ar-SA
+lb=ar-SA
+ye=ar-SA
+kw=ar-SA
+om=ar-SA
+ps=ar-SA
+qa=ar-SA
+bh=ar-SA
+dz=ar-SA
+sd=ar-SA
+tn=ar-SA
+ly=ar-SA
+
+# Francophone Africa + New Caledonia type on the French AZERTY layout ("fr").
+cd=fr-FR
+ci=fr-FR
+cm=fr-FR
+sn=fr-FR
+mg=fr-FR
+nc=fr-FR
+
+# Lusophone Africa types on the Portuguese layout ("pt").
+ao=pt-PT
+mz=pt-PT
+
+# Kyrgyz / Tajik are Cyrillic; their own xkb codes (kg/tj) are preferred, with
+# Russian as the fallback (same Cyrillic base, a few letters differ).
+kg=ru-RU
+tj=ru-RU
+
+# Bengali Bangladesh: the "bd" xkb layout is preferred; India Bengali ("in") is
+# an acceptable fallback (same Bengali script, InScript-family positions).
+bd=hi-IN
+
+# European folds whose own country xkb code is normally present; these are the
+# last-resort fallbacks. Austrian->German already mapped above (at=de). Bosnian
+# and Slovenian share the ex-Yugoslav Latin QWERTZ (hr); Faroese shares the
+# Danish layout. (nl-BE=be, ca-ES=es and fr-CH=ch resolve via the country code.)
+ba=bs-BA,hr-HR
+si=sl-SI,hr-HR
+fo=da-DK
+
+# ── 2026-06 Europe + Americas minority/sibling batch ─────────────────────────
+# Basque (eu-ES) and Galician (gl-ES) use the Spanish layout; Romansh (rm-CH) the
+# Swiss German one; Welsh (cy-GB) the UK layout; Maltese (mt-MT) has its own "mt"
+# xkb layout; Northern Sami (se-NO) the Norwegian one; Irish (ga-IE) maps via the
+# existing ie=gb,us. All resolve through their own country code, so the only
+# Europe fold needed is Luxembourg, which has no dedicated xkb layout and uses the
+# Swiss (French) QWERTZ — fold onto "ch", French as the secondary fallback.
+lu=de-CH,fr-FR
+
+# Americas: Guarani (gn-PY), Quechua (qu-PE), Aymara (ay-BO) and Nahuatl (nh-MX)
+# all type on the common Latin-American layout ("latam"); their country folds
+# (py/pe/bo=latam, mx=latam) are already declared above. Navajo (nv-US) types on
+# a plain US base (us, resolves natively).
+
+# Plain-US-QWERTY English (and Swahili-TZ) markets without a distinct layout.
+# Where a national xkb layout exists it is matched first by country code; "us"
+# is the fold fallback. ie prefers the UK layout, then US.
+ie=en-GB,en-US
+gh=en-US
+ug=en-US
+zm=en-US
+tz=en-US
+in=hi-IN,en-US
+pk=en-US
+sg=en-US
+lk=en-US
+gu=en-US
+sb=en-US
+vu=en-US
+fm=en-US
+
+# ── macOS-only keys ──────────────────────────────────────────────────────────
+# Countries the Linux file does not name, because there a layout whose own
+# country code is installed resolves without any fold. macOS has no country
+# concept to resolve through, so the mapping has to be written down. Each one
+# carries a PolyKybd layout whose LANGUAGE macOS ships no input source for:
+#
+#   es  Basque (eu-ES) and Galician (gl-ES) type on the Spanish layout.
+#   gb  Welsh (cy-GB) types on the British layout.
+#   ch  Romansh (rm-CH) types on the Swiss German layout.
+#   us  Navajo (nv-US), Hawaiian (hw-US) and Cherokee (ck-US) type on the US
+#       layout. macOS does ship a Cherokee layout, but it reports "chr" while
+#       the keyboard sends the private pseudo-code "ck", so the language match
+#       cannot pair them.
+es=es-ES
+gb=en-GB
+ch=de-CH
+us=en-US

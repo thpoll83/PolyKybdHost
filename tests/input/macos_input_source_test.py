@@ -11,7 +11,7 @@ import importlib
 import unittest
 
 from polyhost.input.macos_input_source import (
-    _LAYOUT_FOR_CODE, normalize_tag, pick_input_source, tag_for_source)
+    normalize_tag, pick_input_source, tag_for_source)
 from polyhost.lang.lang_compat import LangComp
 
 
@@ -116,45 +116,77 @@ class CompatibleLayoutFallbackTest(unittest.TestCase):
     source" on a Mac that has exactly the right layout enabled."""
 
     def alternatives(self, country):
-        """The real `res/forced_country_match.txt`, through the real reader."""
-        return LangComp().get_compatible_lang_list(country)
+        """The real macOS file, through the real reader."""
+        return LangComp("macos").get_compatible_lang_list(country)
 
-    def test_every_fold_target_in_the_res_file_is_mapped(self):
-        """The coverage check no `cmp` can do.
+    def test_the_macos_file_covers_every_country_the_linux_one_does(self):
+        """The parity check no `cmp` can do — the two files are counterparts,
+        not copies, so only their KEY SETS line up.
 
-        `forced_country_match.txt` is edited for Linux, where its values are
-        xkb codes that need no translation. A new fold target added there is
-        invisible here — it would simply be skipped, and the language would
-        report no input source on macOS with nothing to say why."""
-        comp = LangComp()
-        targets = {alt for alts in comp.mapping.values() for alt in alts}
-        self.assertTrue(targets, "the res file parsed to nothing")
-        unmapped = sorted(t for t in targets if t not in _LAYOUT_FOR_CODE)
-        self.assertEqual(unmapped, [],
-                         f"forced_country_match.txt names layout codes that "
-                         f"_LAYOUT_FOR_CODE does not translate: {unmapped}")
+        A fold added to the Linux file for a new language and not mirrored
+        here is invisible: that language would report "no enabled input
+        source" on a Mac that has exactly the right layout, with nothing to
+        say why. macOS is allowed extra keys (`es`, `gb`, `ch`, `us` — the
+        countries Linux resolves natively through the country code), so the
+        check is one-directional."""
+        linux = set(LangComp("linux").mapping)
+        macos = set(LangComp("macos").mapping)
+        self.assertTrue(linux, "the Linux file parsed to nothing")
+        missing = sorted(linux - macos)
+        self.assertEqual(missing, [],
+                         f"forced_country_match_linux.txt has folds for "
+                         f"countries the macOS file does not: {missing}")
 
-    def test_the_table_is_closed_so_the_fold_walk_terminates(self):
-        """Each value's country either is absent from the table or maps back to
-        that same value — never onwards to a third.
+    def test_the_macos_file_states_language_tags_not_xkb_codes(self):
+        """The two vocabularies are the reason for two files, and nothing but
+        this notices if a Linux-shaped value is pasted into the macOS one.
 
-        That is what bounds step 4's recursion at one level: the inner call
-        looks up its own country and either finds nothing or finds the pair it
-        was already called with, which the guard skips. `ara -> ar-SA` takes
-        the first branch (no `sa` key), `latam -> es-MX` the second (`mx` maps
-        to the same pair). A value that pointed onwards would recurse further,
-        and a cycle would hang the thread that called it — which on macOS is
-        the Qt main thread, mid-keypress."""
-        for code, value in _LAYOUT_FOR_CODE.items():
-            with self.subTest(code=code):
-                onward = _LAYOUT_FOR_CODE.get(value[1].lower())
-                self.assertIn(onward, (None, value),
-                              f"{code} -> {value[0]}-{value[1]} -> {onward} "
-                              f"recurses past one level")
+        `ara` and `latam` are the tell: they are xkb layout names, not
+        languages, so they would match no input source and simply be skipped —
+        the fold would go quiet rather than fail."""
+        xkb_only = {"ara", "latam"}
+        for country, tags in LangComp("macos").mapping.items():
+            for tag in tags:
+                with self.subTest(country=country, tag=tag):
+                    self.assertNotIn(tag, xkb_only,
+                                     f"{country}={tag} is an xkb layout code, "
+                                     f"not a language tag")
+                    # LangComp lower-cases what it reads, so the region
+                    # arrives as "en-gb"; the matcher re-normalises it. The
+                    # file itself is written in proper IETF casing.
+                    self.assertRegex(tag, r"^[a-z]{2}(-[a-z]{2})?$")
+
+    def test_the_fold_walk_is_one_level_deep_by_construction(self):
+        """Step 4 recurses, and the bound is structural rather than a table
+        invariant: the inner call is made WITHOUT alternatives, so its own
+        step 4 has nothing to walk. A cycle would hang the thread that called
+        it — on macOS the Qt main thread, mid-keypress — so it is worth
+        pinning rather than reading off the code."""
+        depth = {"now": 0, "max": 0}
+        real = pick_input_source
+
+        def counting(sources, lang, country, alternatives=None):
+            depth["now"] += 1
+            depth["max"] = max(depth["max"], depth["now"])
+            try:
+                return real(sources, lang, country, alternatives)
+            finally:
+                depth["now"] -= 1
+
+        import polyhost.input.macos_input_source as mis
+        self.addCleanup(setattr, mis, "pick_input_source", real)
+        mis.pick_input_source = counting
+        # `se-NO` with NOTHING enabled, so the whole walk is explored: two
+        # alternatives, the first of which is the pair already in hand. A
+        # single-alternative country cannot tell the two shapes apart — its
+        # one candidate is skipped by the equality guard either way.
+        counting([], "se", "NO", self.alternatives("NO"))
+        self.assertLessEqual(depth["max"], 2,
+                             f"recursed {depth['max']} levels deep")
 
     def test_tahitian_folds_onto_french(self):
-        # ty-PF: no macOS source speaks Tahitian; the res file says pf=fr.
-        self.assertEqual(self.alternatives("PF"), ["fr"])
+        # ty-PF: no macOS source speaks Tahitian; the file says pf=fr-FR.
+        self.assertEqual(self.alternatives("PF"), ["fr-fr"])
         self.assertIs(pick_input_source([US, FRENCH], "ty", "PF",
                                         self.alternatives("PF")), FRENCH)
 
@@ -167,16 +199,17 @@ class CompatibleLayoutFallbackTest(unittest.TestCase):
                                         self.alternatives("PE")), LATAM)
 
     def test_basque_folds_onto_spanish_through_its_own_country(self):
-        """The res file has no `es=` line — on Linux ES resolves natively.
-
-        macOS has no country concept to resolve through, so this only works
-        because step 4 tries the keyboard's own country as a layout."""
-        self.assertIsNone(self.alternatives("ES"))
+        """The LINUX file has no `es=` line — there ES resolves natively
+        through the country code. macOS has no country concept to resolve
+        through, so its own file states the mapping outright."""
+        self.assertIsNone(LangComp("linux").get_compatible_lang_list("ES"))
+        self.assertEqual(self.alternatives("ES"), ["es-es"])
         self.assertIs(pick_input_source([US, SPANISH], "eu", "ES",
                                         self.alternatives("ES")), SPANISH)
 
     def test_welsh_folds_onto_british_through_its_own_country(self):
-        self.assertIsNone(self.alternatives("GB"))
+        self.assertIsNone(LangComp("linux").get_compatible_lang_list("GB"))
+        self.assertEqual(self.alternatives("GB"), ["en-gb"])
         self.assertIs(pick_input_source([US, BRITISH], "cy", "GB",
                                         self.alternatives("GB")), BRITISH)
 
@@ -188,7 +221,7 @@ class CompatibleLayoutFallbackTest(unittest.TestCase):
         """`se-NO`: the file folds NO onto `dk`, but the Norwegian layout is
         the one the user actually has. The country is tried first for exactly
         this case — the file's folds are what to do when it is absent."""
-        self.assertEqual(self.alternatives("NO"), ["dk"])
+        self.assertEqual(self.alternatives("NO"), ["nb-no", "da-dk"])
         self.assertIs(pick_input_source([DANISH, NORWEGIAN], "se", "NO",
                                         self.alternatives("NO")), NORWEGIAN)
         # …and the file's fold still applies when it really is absent.
@@ -199,7 +232,7 @@ class CompatibleLayoutFallbackTest(unittest.TestCase):
         """zh-TW is folded onto `us` for Linux, because the xkb `tw` layout is
         not Latin. macOS has a Zhuyin IME, and matching the language first is
         what picks the IME the user installed instead of a US QWERTY."""
-        self.assertEqual(self.alternatives("TW"), ["us"])
+        self.assertEqual(self.alternatives("TW"), ["en-us"])
         self.assertIs(pick_input_source([US, ZHUYIN], "zh", "TW",
                                         self.alternatives("TW")), ZHUYIN)
 
@@ -429,13 +462,27 @@ class HelperTest(unittest.TestCase):
     def test_set_language_folds_through_the_compat_file(self):
         """End to end through the real helper, not just the pure matcher: it
         must actually consult `LangComp`. Tahitian has no macOS input source;
-        `res/forced_country_match.txt` says `pf=fr`."""
+        `res/forced_country_match_macos.txt` says `pf=fr-FR`."""
         fake = FakeCoreFoundation([
             {"id": "com.apple.keylayout.French", "name": "French",
              "languages": ["fr"]},
         ])
         helper = self._helper(fake)
         ok, result = helper.set_language("ty", "PF")
+        self.assertTrue(ok, result)
+        self.assertEqual(len(fake.selected), 1)
+
+    def test_set_language_reads_the_MACOS_table_not_the_linux_one(self):
+        """Most folds survive reading the wrong file by coincidence — `pf=fr`
+        is a valid language tag as well as an xkb code — so the helper must be
+        checked on a country only the macOS file answers for. `es` is one:
+        the Linux file has no such key at all."""
+        fake = FakeCoreFoundation([
+            {"id": "com.apple.keylayout.Spanish-ISO", "name": "Spanish - ISO",
+             "languages": ["es"]},
+        ])
+        helper = self._helper(fake)
+        ok, result = helper.set_language("eu", "ES")   # Basque
         self.assertTrue(ok, result)
         self.assertEqual(len(fake.selected), 1)
 

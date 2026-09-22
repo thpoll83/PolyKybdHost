@@ -3,9 +3,22 @@ import pathlib
 
 
 class LangComp:
-    def __init__(self):
+    """The forced keyboard-layout compatibility map, for one platform.
+
+    ⚠️ **One file per platform, and `platform` is deliberately REQUIRED.** The
+    question is the same everywhere -- "which OS layouts can also type the
+    PolyKybd layout for country X" -- but the ANSWER is written in the
+    vocabulary that platform matches on, and the two do not overlap: Linux
+    names xkb layout codes (`ara`, `latam`, `gb`), macOS names the language
+    tags its input sources report (`ar-SA`, `es-MX`, `en-GB`). A default here
+    would hand whichever platform forgot to pass one a table of codes its
+    matcher cannot resolve, and the symptom is a language quietly reporting no
+    layout rather than an error."""
+
+    def __init__(self, platform):
         self.mapping = dict()
-        path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "forced_country_match.txt")
+        path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(),
+                            "res", f"forced_country_match_{platform}.txt")
         with open(path) as file:
             for line in file.readlines():
                 line = line.strip()

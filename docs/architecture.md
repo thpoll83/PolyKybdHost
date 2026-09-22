@@ -51,15 +51,30 @@ Abstract base `unicode_input.py` with per-platform implementations:
     answer**, because macOS ships an input source for none of those languages —
     Tahitian, Filipino, Swahili, Quechua, Basque. `pick_input_source` therefore
     ends with the same compatible-layout fallback the KDE helper uses
-    (`res/forced_country_match.txt` through `LangComp`), translated out of that
-    file's xkb/ISO country vocabulary by `_LAYOUT_FOR_CODE`.
-    - ⚠️ **The res file alone is not enough here.** On Linux a layout whose own
-      country code is installed resolves without the file, so it carries no
-      `gb=`, `ch=` or `es=` line; macOS has no country concept to resolve
-      through. The keyboard's own country is therefore tried as a layout first,
-      which is what gets Welsh onto British, Romansh onto Swiss German and
-      Basque onto Spanish — and, for `se-NO`, the Norwegian layout rather than
-      the Danish one the file's `no=dk` fold names.
+    — but out of its OWN copy of that table.
+    - ⚠️ **The compat map is ONE FILE PER PLATFORM**
+      (`res/forced_country_match_<platform>.txt`, chosen by `LangComp`'s
+      required `platform` argument). The question is identical on every
+      platform; the answer is written in the vocabulary that platform matches
+      on, and the two do not overlap. Linux names xkb layout codes (`ara`,
+      `latam`, `gb`); macOS names the IETF language tags its input sources
+      report (`ar-SA`, `es-MX`, `en-GB`), which go straight into
+      `pick_input_source` with no translation step. Reading the other
+      platform's file mostly *works*, which is the trap: a bare `pf=fr` is a
+      valid language tag as well as an xkb code, so only `ara`, `latam` and
+      the region-specific entries would break.
+    - ⚠️ **The macOS file has keys the Linux one does not** — `es`, `gb`, `ch`,
+      `us`. On Linux a layout whose own country code is installed resolves
+      without any fold, so the file never needed them; macOS has no country
+      concept to resolve through and has to state them. That is what gets
+      Welsh onto British, Romansh onto Swiss German, Basque onto Spanish and
+      Navajo onto U.S.
+    - ⚠️ **Order inside a line is load-bearing**: the country's own layout
+      first, the folds after. `no=nb-NO,da-DK` gets `se-NO` (Northern Sami)
+      onto the Norwegian layout the user actually has rather than the Danish
+      fold. The parity of the two files' key sets, and the vocabulary of the
+      macOS values, are both asserted by `tests/input/macos_input_source_test.py`
+      — a fold added for Linux and not mirrored goes quiet, it does not fail.
     - ⚠️ **It must stay BELOW the language match.** `zh-TW` is folded onto `us`
       for Linux (the xkb `tw` layout is not Latin), but macOS has a Zhuyin IME
       reporting `zh-Hant`; matching the language first picks the IME the user

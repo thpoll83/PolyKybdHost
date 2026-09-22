@@ -23,11 +23,13 @@ from polyhost.lang.lang_compat import LangComp
 class MacOSInputHelper(InputHelper):
     def __init__(self):
         super().__init__()   # sets self.log (the set_language/get_languages error paths use it)
-        # Same compatible-layout table the KDE helper consults, for the same
-        # reason: ~60 of the 156 PolyKybd layouts are folds onto another
-        # country's layout, and macOS has an input source for none of those
-        # languages. See `pick_input_source` for why it is a fallback.
-        self.comp = LangComp()
+        # The macOS half of the compatible-layout table the KDE helper also
+        # consults, for the same reason: ~60 of the 156 PolyKybd layouts are
+        # folds onto another country's layout and macOS has an input source
+        # for none of those languages. The macOS file states its answers as
+        # language tags, which is what this platform matches on; see
+        # `pick_input_source` for why it is a fallback.
+        self.comp = LangComp("macos")
         self.list = None
 
     def get_languages(self):
