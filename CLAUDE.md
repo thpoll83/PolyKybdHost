@@ -405,48 +405,19 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   is the guard.
 - ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
   are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
-- ⚠️ **A "the OS refuses / it prompts, so default it off" gate is a SILENT FEATURE
-  DELETION, and it outlives the reason for it.** macOS language switching was
-  turned off by default in 0.18.1 because `set_language` shelled out to
-  `languagesetup` with administrator rights and popped a password dialog on every
-  connect. The dialog stopped; so did the feature — for three months a language key
-  on the keyboard repainted the tray menu and left the OS alone, with `success,
-  msg = True, "OS-language auto-switch disabled"` reporting it as a success. The
-  quiet half was the real bug underneath: `languagesetup` sets the **system UI
-  language**, never the input source, so the switch had never once worked on macOS.
-  **When a platform path is disabled for being obnoxious, check first whether it was
-  doing its job at all** — and fix it rather than muting it. It is
-  `TISSelectInputSource` (`input/macos_input_source.py`), which needs no privileges;
-  `docs/architecture.md` → *Platform input abstraction* has the rest.
-- ⚠️ **The forced-layout compat map is ONE FILE PER PLATFORM**
-  (`res/forced_country_match_{linux,macos,windows}.txt`; `LangComp(platform)`
-  REQUIRES the argument, deliberately). Same question everywhere, but the
-  answer is in the vocabulary that platform matches on: Linux names xkb layout
-  codes (`ara`, `latam`, `gb`), macOS and Windows name IETF tags (`ar-SA`,
-  `en-GB`). ⚠️ **Reading the wrong one mostly WORKS** — `pf=fr` is a valid
-  language tag as well as an xkb code — so only `ara`, `latam` and the
-  region-specific entries break; hence no default argument, and hence
-  `LangComp.platform`, because the macOS and Windows maps hold identical values
-  today and nothing in the DATA would distinguish a mis-wired helper. The tag
-  files carry keys Linux never needed (`es`, `gb`, `ch`, `us`), since there a
-  layout whose own country code is installed resolves without a fold. Key-set
-  parity across all three is asserted; a fold added for Linux and not mirrored
-  goes QUIET rather than failing.
-- ⚠️ **`InputHelper.set_language` cycles the OS with REAL KEYPRESSES**
-  (Win/Super+Space through pynput), so a failed attempt is visible as the
-  language indicator flickering and anything added to that loop costs presses.
-  Windows and GNOME inherit it; KDE and macOS override it and never cycle.
-  ⚠️ Its two-character language fallback is what makes `de-AT` land on `de-DE`
-  and has been there since the start — **that is not the compat map**, which
-  Windows never consulted until 2026-09. Don't read one working as evidence of
-  the other.
-- ⚠️ **An input helper's `get_current_language` and `set_language` must speak ONE
-  namespace.** macOS answered the HIToolbox *"KeyboardLayout Name"* (`German`) to a
-  caller comparing it with `de-DE`, so `PolyHost` read "the OS language differs" on
-  every probe and re-fired the switch forever. Windows was bitten by the same shape
-  from the other end (a PowerShell table HEADER parsed as the current culture). The
-  tell is a sync that never settles, not an error.
-
+- ⚠️ **Defaulting a platform path OFF because it is obnoxious can hide that it
+  never worked.** macOS language switching was disabled in 0.18.1 to stop a
+  password dialog, and for three months a language key repainted the tray menu
+  and reported `True, "OS-language auto-switch disabled"`. The dialog came from
+  `languagesetup`, which sets the system UI language and had never once switched
+  an input source. **Check whether the path was doing its job before muting it.**
+- **The input helpers — the keystroke-cycling `set_language` every platform
+  inherits, the per-platform compat maps, and the four traps around them — are
+  [`docs/architecture.md`](docs/architecture.md) → *Platform input abstraction*.**
+  Two rules bind code outside it: `LangComp(platform)` REQUIRES its argument
+  (reading another platform's map mostly WORKS, which is the trap), and a
+  helper's `get_current_language` and `set_language` must answer in ONE
+  namespace or the sync re-fires on every probe forever.
 ### Updates, autostart and daemon mode
 
 Autostart registration and the post-update relaunch chain are

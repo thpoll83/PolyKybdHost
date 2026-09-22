@@ -37,6 +37,13 @@ select a layout outright. Both inherit it; KDE and macOS override it entirely
 a failed attempt is visible to the user as the language indicator flickering,
 and anything added to that loop is paid for in keypresses.
 
+⚠️ **Its two-character language fallback is NOT the compatibility map**, and
+the two are easy to confuse: the fallback is what lands `de-AT` on an installed
+`de-DE`, it has been there since the start, and it cannot cross languages.
+Windows never consulted the compat map until 2026-09 — checked across every
+commit, not assumed. So "layout switching works on Windows" is no evidence the
+map is wired, and a report of one working says nothing about the other.
+
 ⚠️ **The forced-layout compatibility map is ONE FILE PER PLATFORM** —
 `res/forced_country_match_{linux,macos,windows}.txt`, selected by `LangComp`'s
 REQUIRED `platform` argument. Same question everywhere, different vocabulary:
@@ -77,7 +84,10 @@ Per-platform implementations:
     takes.** It used to return the HIToolbox *"KeyboardLayout Name"* (`German`),
     which can never equal the `de-DE` it is compared against, so the host believed
     the OS language differed on every probe and re-fired the switch — and, back
-    when that meant osascript, the password dialog with it.
+    when that meant osascript, the password dialog with it. ⚠️ **This binds every
+    helper, not just this one**: Windows was bitten from the other end, parsing a
+    PowerShell table HEADER as the current culture. The tell is a sync that never
+    settles, not an error.
   - **`TISSelectInputSource` can only select a source the user has ENABLED** in
     System Settings. A miss is reported with the enabled list, because the fix is
     there and not in the app.
