@@ -199,7 +199,7 @@ class LoadRenderSettingsTest(unittest.TestCase):
         import tempfile
         from polyhost.services import fontpack_extend as e
         p = os.path.join(tempfile.mkdtemp(), "bad.json")
-        with open(p, "w") as f:
+        with open(p, "w", encoding="utf-8") as f:
             json.dump({"by_global_index": [1, 2, 3]}, f)   # not a dict
         self.assertEqual(e.load_render_settings(p), {})
 

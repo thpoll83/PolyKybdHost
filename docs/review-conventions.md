@@ -36,6 +36,16 @@ and relative links were adjusted to suit a standalone file.
   - **No check run answers this question.** A green `Sourcery review` /
     `Greptile Review` / CodeRabbit status has accompanied a PR that nothing read,
     measured, more than once.
+  - ⚠️ **A check run's CONCLUSION can say `success` while its TITLE reports an
+    open alert.** On #255 `CodeQL` read `completed / success / "1 new alert"`
+    with an error-severity finding outstanding; a rollup that reads only the
+    conclusion calls that commit green. **The alert count is in the title —
+    read it, not the conclusion.**
+  - ⚠️ **Sourcery stops reviewing mid-PR** with `conclusion: skipped`,
+    `"⏭️ Auto re-review limit reached"`, after enough pushes. It is an honest
+    state and easy to miss in a list of green rows: from that point every
+    further push is unreviewed by it. On a long PR, expect to lose Sourcery
+    partway and ask CodeRabbit by hand for the pushes that matter.
   **The full field guide — which bot goes quiet in which disguise, the sticky
   walkthrough, the Merge Risk sha, the false `✅ Addressed in <sha>` attribution,
   the quota shapes and the rate-limit arithmetic — is the `triage-pr-review`
