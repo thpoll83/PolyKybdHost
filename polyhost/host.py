@@ -2393,18 +2393,34 @@ class PolyHost(QApplication):
         the host dialog is still open and stacks a second dialog on top of it:
         the user answers them in reverse order, and accepting the host update
         can start an install-and-restart while a firmware flash is running.
-        Queue the second one and run it when the first closes."""
+        Queue the second one and run it when the first closes.
+
+        ⚠️ **A dialog the user ACCEPTED ends the drain.** Serializing the two
+        windows is only half of it: `_prompt_and_install` returns as soon as it
+        has STARTED the installer, so draining the queue behind it would open
+        the firmware prompt anyway and reach the same install-and-restart
+        racing a flash, one step later (CodeRabbit, #257). A declined dialog
+        starts nothing, so the next prompt runs normally. Whatever is dropped
+        here is still on the Updates row and in the menu."""
         if self._fallback_prompt_busy:
             self._fallback_prompt_queue.append((prompt, release))
             return
         self._fallback_prompt_busy = True
         try:
             prompt(release)
-            while self._fallback_prompt_queue:
+            while self._fallback_prompt_queue and not self._update_in_flight():
                 queued_prompt, queued_release = self._fallback_prompt_queue.pop(0)
                 queued_prompt(queued_release)
+            self._fallback_prompt_queue.clear()
         finally:
             self._fallback_prompt_busy = False
+
+    def _update_in_flight(self):
+        """True once an accepted dialog has started a download/install/flash.
+        Both progress dialogs are created by the run_* helpers the prompts call
+        and cleared at every terminal outcome, so they are the one signal that
+        says "work is already running"."""
+        return self._update_progress is not None or self._fw_up_progress is not None
 
     def _balloons_reach_user(self):
         """Whether ``show_balloon`` is seen at all. False on macOS unless we

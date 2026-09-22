@@ -116,6 +116,11 @@ class TestPolyHostModes(unittest.TestCase):
         # The firmware dialog must not stack on top of the open host one.
         self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER"),
                          "host-open:9.9.9,host-close:9.9.9,fw:8.8.8")
+        # Accepting the host update drops the queued firmware prompt rather
+        # than flashing while the app installs and restarts. The release is
+        # not lost — it stays on the Updates row and in the menu.
+        self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER_ACCEPTED"), "host:9.9.9")
+        self.assertEqual(_grab(proc.stdout, "QUEUE_DRAINED"), "True")
 
     def test_a_withdrawn_release_stops_being_advertised(self):
         """A successful check that now finds nothing must drop the release it
@@ -447,6 +452,25 @@ def _smoke_default():
         app._auto_prompted_host_version = None
         app._on_update_available(_Rel())
         print("PROMPT_ORDER", ",".join(order))
+
+        # ...but a dialog the user ACCEPTED starts work and returns, so the
+        # queued firmware prompt must NOT run: that would reach the same
+        # install-and-restart racing a flash, one step later.
+        accepted = []
+
+        def _host_prompt_accepted(rel):
+            accepted.append(f"host:{rel.version}")
+            app._on_fw_up_available(_FwRel())      # arrives mid-dialog
+            app._update_progress = object()        # the installer has started
+
+        app._prompt_and_install = _host_prompt_accepted
+        app._prompt_and_flash = lambda rel: accepted.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._auto_prompted_fw_version = None
+        app._on_update_available(_Rel())
+        print("PROMPT_ORDER_ACCEPTED", ",".join(accepted))
+        print("QUEUE_DRAINED", len(app._fallback_prompt_queue) == 0)
+        app._update_progress = None
 
         # A release reported earlier can be withdrawn. Install the real
         # per-check closures (the checker itself is stubbed, so nothing hits the
