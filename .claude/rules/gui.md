@@ -29,3 +29,9 @@ Full notes: `docs/tray-ui.md` · `docs/icons.md`.
   `tests/gui/icon_assets_test.py` is the only guard.
 - **Network I/O belongs on a thread too** — a menu handler starts one and opens a
   progress dialog, never calls `requests` itself.
+- ⚠️ **A self-re-arming `QTimer.singleShot` loop must guard INSIDE itself** — the
+  re-arm sits *after* the raise, and PyQt5 turns an exception in a slot into
+  `sys.excepthook` then `qFatal()`, so one bad tick ends the loop for the life of
+  the process. `PolyHost.active_window_reporter` called `tick_window_tracking()`
+  bare while the headless core (`core/poly_core.py`) had wrapped the **same call**
+  in `try/except` all along — one function, two paths, one guard.

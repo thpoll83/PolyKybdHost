@@ -20,3 +20,11 @@ Full notes: `docs/testing.md` · `docs/dev-environment.md`.
   RESTORING too, not only after editing.
 - **RUN the real entry point once before believing a mocked suite.**
 - **Use `.venv/bin/python`**, and `xvfb-run -a` for GUI tests (never two chained).
+- ⚠️ **A scripted slice edit can leave a SHADOWED duplicate and the suite stays
+  green** — Python keeps the LAST definition of a method name, so the earlier one is
+  simply dead. An edit anchored on the wrong line left two
+  `test_frontmost_app_answers_nothing_off_macOS` in one class; the dead copy also
+  used imports the same edit had removed, so it would have raised `NameError` had it
+  ever run. CodeQL caught it; the suite could not. The guard is
+  `tests/discovery_test.py::test_no_test_class_defines_a_method_name_TWICE` (AST,
+  repo-wide) — same family as the COUNT note above.

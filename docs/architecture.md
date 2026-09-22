@@ -38,6 +38,42 @@ Abstract base `unicode_input.py` with per-platform implementations:
 - `remote_window.py` — TCP-based window title relay for multi-machine setups
 - `kde_win_reporter.py` — KDE D-Bus integration for window events
 - **Active-window backend selection** (in both `active_window.py` and `forwarder.py`): `XDG_CURRENT_DESKTOP == "KDE"` → `kde_win_reporter` (KWin script → journal); else `XDG_SESSION_TYPE == "wayland"` → `gnome_wayland_reporter`; else → `pywinctl` (X11). `gnome_wayland_reporter.py` is **⚠️ UNTESTED on hardware** — pywinctl can't see native Wayland windows, so it queries our own purpose-built, **read-only** *PolyKybd Window Reporter* GNOME Shell extension (`org.polykybd.WindowReporter`, repo `thpoll83/gnome-wayland-winreader`) over `gdbus` via a single `GetFocusedWindow()` call (the extension exposes no window-modifying methods, unlike the general *Window Calls* extension it replaces); **without the extension it falls back to pywinctl (X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) under XWayland are still tracked, native Wayland windows are not — and warns **once** (instead of pywinctl's silent Wayland failure). The fallback imports pywinctl **lazily + guarded** (it can `sys.exit()` with no X server), so the module still loads with zero pywinctl/Qt at import (headless-safe). The fallback is only consulted when the extension is *unavailable* — an extension that's up but reports "no focused window" returns None directly (so a stale XWayland window can't mask it). The **X11 path is unaffected** (it never enters the Wayland branch); only the output parsing + fallback routing are unit-tested. Full GNOME-Wayland coverage still needs the extension or an Xorg login session.
+- ⚠️ **macOS: THREE things the window backend does not tell you** — all found in the
+  field (2026-09-21/22), each producing a confidently *wrong* keycap rather than a
+  missing one, and none of them visible from the code.
+  - ⚠️ **`NSWorkspace.frontmostApplication` is STALE off the main thread — ask
+    System Events instead.** It is a KVO property published through the main run
+    loop and the headless daemon has no NSApplication run loop, so it freezes on
+    whatever was frontmost when the property was last published. **Measured twice**:
+    earlier in this project a run of consecutive shortcut harvests all read
+    `Safari`, and when the property was trusted again it froze on `QuickTime
+    Player` — so Activity Monitor drew QuickTime's icon, and logged nothing wrong
+    while doing it. `frontmost_app()` (`handler/active_window.py`) runs `osascript`
+    against `System Events` (`first application process whose frontmost is true`)
+    The SCRIPT emits **procID first, then procName** — a process name may
+    contain anything including whitespace, while a pid is digits and ends at the
+    first newline — and `frontmost_app()` parses that into its `(name, pid)`
+    return. ⚠️ Those two orders are deliberately opposite; do not "align" them,
+    and do not read the script's order as the function's. ⚠️ The first
+    measurement was never written down, which is the whole reason it happened
+    twice — the property reads correctly often enough that one good log line
+    looks like evidence.
+  - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
+    `None` intermittently on macOS, and **the failing SET changes between runs** —
+    Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
+    same run; Chess had failed and Photos had worked earlier the same day;
+    QuickTime had no window at 00:02 and a real one (`Title: "Open"`) at 00:12.
+    That is what makes it a flaky call rather than a per-app property, and it
+    decides the fix SHAPE: fall back to the app NAME and draw, never special-case
+    apps. The path needs only the name and the pid, which the OS knows even when
+    the window backend does not. It still returns `DISABLE` and clears
+    `current_entry`, because with no window there is no TITLE and a template entry
+    cannot be evaluated.
+  - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
+    the handle **from the title** and returns `("", "")` when it is empty, so two
+    untitled apps are byte-identical to a handle-plus-title change test — the switch
+    was never noticed and never logged. Hence `_handle_identifies()`, and the
+    app-name fallback applying only when the handle identifies nothing.
 
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.
