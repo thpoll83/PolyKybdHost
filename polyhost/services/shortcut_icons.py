@@ -88,6 +88,19 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "fullscreen":  (0x1F5D6, "fullscreen", ("fullscreen", "full screen",
                                             "maximize", "maximise")),
     "minimize":    (0x1F5D5, "minimize", ("minimize", "minimise", "iconify")),
+    # ⚠️ "hide" earns an entry because WITHOUT one the derived-name fall-back
+    # answers from the WRONG WORD. Every macOS app puts "Hide <AppName>" on
+    # Cmd+H, `derive_names` offers the tail word once the head fails, and the
+    # app's own name is very often a catalog icon -- so Terminal drew a
+    # terminal, Notes a note and Chess a chess piece, each on a key whose
+    # entire meaning is the verb (field, 2026-09-21). A wrong keycap, not a
+    # missing one, and it repeated the program mark already on ESC.
+    #
+    # The lexicon answers BEFORE the derivation, so one entry closes the whole
+    # family -- "Hide Others", "Hide Folders", "Hide Alternative Screen" and
+    # "Hide Downloads" included, none of which drew anything before.
+    "hide":        (None,    "visibility_off", ("hide", "hide others",
+                                                "hide all")),
     # ⚠️ "close window" is NOT here — it is under `close`, with its two siblings.
     # A window frame on Ctrl+W says WINDOW where the action is CLOSE, and the
     # keycap then cannot be told from "New Window". Found by reading the
@@ -202,6 +215,7 @@ FLUENT_ICONS: dict[str, str] = {
     "find next": "search_square", "fullscreen": "full_screen_maximize",
     "go to": "location", "help": "question_circle",
     "indent": "text_indent_increase", "insert": "add", "italic": "text_italic",
+    "hide": "eye_off",
     "left": "arrow_left", "lock": "lock_closed", "minimize": "arrow_minimize",
     "new": "document_add", "open": "folder_open",
     "outdent": "text_indent_decrease", "paint": "paint_brush",
@@ -520,7 +534,6 @@ def _for(concept: str, confidence: float, rule: str) -> IconMatch:
 def _literal_rules(text: str, table=None) -> IconMatch | None:
     """Exact phrase, then contained phrase, then single keyword -- no scoring."""
     table = _PHRASES if table is None else table
-    words = set(text.split())
     for phrase, concept in table:
         if text == phrase:
             return _for(concept, 1.0, "exact")
@@ -528,9 +541,26 @@ def _literal_rules(text: str, table=None) -> IconMatch | None:
         parts = phrase.split()
         if len(parts) > 1 and _contains_sequence(text.split(), parts):
             return _for(concept, 0.9, "phrase")
+    # ⚠️ The EARLIEST matching word in the label wins, not the first matching
+    # phrase in the table. A menu label is imperative -- the verb leads and the
+    # rest is its object -- so "Hide App Store" is a hide, and taking the table's
+    # order instead made it a SAVE (the "store" phrase sorts ahead of "hide"
+    # because it is one character longer, which is as arbitrary a decider as the
+    # table order the sort comment set out to remove). Two DIFFERENT one-word
+    # phrases are two different words, so they can never share a position and
+    # there is no tie to break -- a label with one matching word is unaffected.
+    positions: dict[str, int] = {}
+    for index, word in enumerate(text.split()):
+        positions.setdefault(word, index)
+    best_at, best_concept = None, None
     for phrase, concept in table:
-        if " " not in phrase and phrase in words:
-            return _for(concept, 0.75, "keyword")
+        if " " in phrase:
+            continue
+        at = positions.get(phrase)
+        if at is not None and (best_at is None or at < best_at):
+            best_at, best_concept = at, concept
+    if best_concept is not None:
+        return _for(best_concept, 0.75, "keyword")
     return None
 
 
@@ -569,10 +599,24 @@ def _contains_sequence(haystack: list[str], needle: list[str]) -> bool:
 # labels, and these five prefixes take it to 33.
 NAME_PREFIXES = ("", "content_", "format_", "file_", "text_")
 
+# ⚠️ A QUOTED run in a menu label is the user's OBJECT, not part of the command.
+# macOS puts the selected item's name there -- `Quick Look "Chess"`,
+# `Slideshow "Holiday"` -- so deriving from it names whatever happens to be
+# selected: a folder called Chess drew a chess piece on Quick Look (field,
+# 2026-09-21). Only DOUBLE quotes, curly or straight: the curly single quote is
+# how macOS spells an apostrophe ("Don't Save"), so pairing on it would eat the
+# words between two ordinary contractions.
+_QUOTED_OBJECT = re.compile(r'[\u201c"][^\u201c\u201d"]{0,80}[\u201d"]')
+
 # Words that carry no icon of their own, dropped before the join. "Toggle" is
 # here because a toggle is not a picture: the icon belongs to what is toggled.
+# ⚠️ "hide" was here and must NOT come back: a word the LEXICON names as a
+# concept is by definition not filler. Stripping it made the app's own name the
+# HEAD word, so `derive_names("Hide Terminal")` answered `terminal` -- the thing
+# the key hides rather than the thing it does. "show" and "toggle" stay because
+# neither is a concept: "Show Sidebar" really is a sidebar.
 FILLER_WORDS = frozenset((
-    "this", "page", "the", "a", "as", "to", "toggle", "show", "hide", "all",
+    "this", "page", "the", "a", "as", "to", "toggle", "show", "all",
 ))
 
 # Where the catalog's word is simply a different word. Each target was checked
@@ -595,7 +639,19 @@ NAME_SYNONYMS = {
 }
 
 
-def derive_names(label: str) -> list[str]:
+def app_words(app: str | None) -> frozenset:
+    """The words of the focused application's own name.
+
+    ⚠️ A derivation must never answer with one. The ESC mark already carries
+    the app's icon, so drawing it again on a letter key says nothing about what
+    the key does -- and it is what the label's object usually IS on macOS, where
+    every app puts "Hide <AppName>" on Cmd+H. Terminal drew a terminal, App
+    Store a shop, Chess a chess piece (field, 2026-09-21).
+    """
+    return frozenset(w for w in normalize(app or "").split() if w)
+
+
+def derive_names(label: str, app: str | None = None) -> list[str]:
     """Candidate Material Symbols names for `label`, best guess first.
 
     Ordered most-specific to least: the whole label, then the label without
@@ -603,7 +659,14 @@ def derive_names(label: str) -> list[str]:
     then a single head or tail word. That tail is where a generic answer comes
     from (`Add Layer` -> `add`), so it sorts last and the lexicon gets to answer
     before any of it runs.
+
+    `app` is the focused application, and every candidate naming it is dropped
+    -- see `app_words`. That rejection is what lets the tail stay unconditional:
+    an earlier fix suppressed the tail whenever the head was a lexicon concept,
+    which blocked the app name but also cost `Show Previous Tab` its `tab` and
+    `Mark as Bookmark` its `bookmark`.
     """
+    label = _QUOTED_OBJECT.sub(" ", label)
     words = [w for w in normalize(label).split() if w]
     if not words:
         return []
@@ -627,4 +690,14 @@ def derive_names(label: str) -> list[str]:
     if len(kept) > 1:
         for prefix in NAME_PREFIXES:
             add(prefix + kept[-1])
+    # ⚠️ Filtered at the END rather than per candidate, so a PREFIXED form of the
+    # app's name goes too: `content_terminal` names the app exactly as much as
+    # `terminal` does. The head is offered before the tail, so on an ordinary
+    # label this drops nothing -- "New Mail" in Mail still derives `new`, which
+    # already outranks `mail`.
+    blocked = app_words(app)
+    if blocked:
+        out = [n for n in out
+               if not any(n == prefix + word
+                          for prefix in NAME_PREFIXES for word in blocked)]
     return out

@@ -291,6 +291,41 @@ class TestDerivedNameFallback(unittest.TestCase):
         a crash and not an unvalidated guess."""
         self.assertEqual(so.plan([sc("Export as PDF")]), [])
 
+    # --- the focused app reaches the derivation ------------------------------
+
+    APP_TABLE = {"terminal": 5, "file_export": 2}
+
+    # ⚠️ "Reveal Terminal", NOT "Hide Terminal". `hide` is itself a catalog name
+    # and the HEAD is offered before the tail, so on a Hide label the planner
+    # answers `hide` whether or not it passed the app -- the test would pass
+    # against the unwired planner and pin nothing. The label has to be one whose
+    # ONLY viable candidate is the app's name. Found by the mutation sweep,
+    # which is exactly the escape it exists to catch.
+    def test_a_derivation_in_the_PLANNER_never_names_the_app(self):
+        """⚠️ The WIRING, not the rule -- `derive_names` is tested directly in
+        shortcut_icons_test. What this pins is that `plan_report` actually HANDS
+        it the app, which is the half that was missing for three attempts."""
+        self.assertEqual(so.plan([sc("Reveal Terminal")],
+                                 known_names=self.APP_TABLE, app="Terminal"), [])
+
+    def test_the_app_name_really_is_on_offer_without_it(self):
+        """⚠️ Otherwise the test above passes for the wrong reason: `terminal`
+        must be BOTH derivable and in the table, or nothing is being rejected —
+        and without the app it must actually DRAW, or the planner is refusing
+        for some unrelated reason."""
+        self.assertIn("terminal",
+                      so.shortcut_icons.derive_names("Reveal Terminal"))
+        self.assertIn("terminal", self.APP_TABLE)
+        slots = so.plan([sc("Reveal Terminal")], known_names=self.APP_TABLE)
+        self.assertEqual(slots[0].icon,
+                         f"{so.icon_catalog.MATERIAL}:terminal")
+
+    def test_planning_without_an_app_is_unchanged(self):
+        """Every existing caller passes no app and must plan as it always did."""
+        slots = so.plan([sc("Export as PDF")], known_names=self.APP_TABLE)
+        self.assertEqual(slots[0].icon,
+                         f"{so.icon_catalog.MATERIAL}:file_export")
+
 
 
 
@@ -352,6 +387,73 @@ class PlanReportTest(unittest.TestCase):
         self.assertEqual(so.plan(shortcuts), so.plan_report(shortcuts).slots)
 
 
+class BareKeypressTest(unittest.TestCase):
+    """⚠️ A bare-key "shortcut" on a letter is always wrong on this keyboard.
+
+    The overlay for an unmodified chord is drawn on the UNMODIFIED layer — over
+    the letter the key actually types. Reported from the field (macOS Safari,
+    2026-09-21): `D`, `E` and `F` each drew an icon, and in a browser those keys
+    just type `d`, `e`, `f`. The menu items are real; their bindings need a
+    modifier this backend cannot see (fn/globe is absent from the Carbon mask,
+    so it decodes as no modifiers at all).
+    """
+
+    def test_the_FIELD_CASE_is_refused(self):
+        for hid, key in ((0x07, "D"), (0x08, "E"), (0x09, "F")):
+            with self.subTest(key=key):
+                self.assertTrue(so.needs_a_modifier(hid, 0))
+
+    def test_SHIFT_ALONE_is_not_a_modifier_for_this_purpose(self):
+        """Shift+E is a capital E — its overlay lands on the Shift layer of a
+        key that still types."""
+        self.assertTrue(so.needs_a_modifier(0x08, model.MOD_SHIFT))
+
+    def test_a_REAL_modifier_is_accepted(self):
+        for mod in (model.MOD_CTRL, model.MOD_ALT, model.MOD_GUI):
+            with self.subTest(mod=mod):
+                self.assertFalse(so.needs_a_modifier(0x08, mod))
+                self.assertFalse(so.needs_a_modifier(0x08,
+                                                     mod | model.MOD_SHIFT))
+
+    def test_a_key_that_TYPES_NOTHING_keeps_its_bare_shortcut(self):
+        """⚠️ The half that stops this being a blunt "drop every bare chord".
+        F5 refresh, bare Home, a bare arrow: those keys insert nothing, so an
+        icon on them is honest and must survive."""
+        for hid, key in ((0x3A, "F1"), (0x3E, "F5"), (0x4A, "Home"),
+                         (0x4F, "Right"), (0x52, "Up"), (0x29, "Esc")):
+            with self.subTest(key=key):
+                self.assertFalse(so.needs_a_modifier(hid, 0))
+
+    def test_SPACE_and_the_punctuation_are_typing_keys(self):
+        for hid, key in ((0x2C, "Space"), (0x2D, "-"), (0x38, "/"),
+                         (0x1E, "1"), (0x28, "Enter"), (0x2B, "Tab")):
+            with self.subTest(key=key):
+                self.assertTrue(so.needs_a_modifier(hid, 0))
+
+    def test_a_MISSING_hid_is_not_this_rule_s_business(self):
+        """`displayable_hid` refuses it first and says so with its own reason;
+        answering True here would relabel that refusal."""
+        self.assertFalse(so.needs_a_modifier(None, 0))
+
+    def test_the_PLANNER_refuses_it_and_names_the_reason(self):
+        report = so.plan_report([
+            NS(label="Emoji & Symbols", hid=0x08, mods=0),
+            NS(label="Copy", hid=0x06, mods=model.MOD_GUI),
+        ])
+        self.assertEqual([s.keycode for s in report.slots], [0x06])
+        self.assertIn(so.NO_MODIFIER, report.refused)
+        self.assertEqual(len(report.refused[so.NO_MODIFIER]), 1)
+
+    def test_it_is_refused_BEFORE_the_icon_lookup(self):
+        """⚠️ Whether the label happens to match a concept is irrelevant, and
+        refusing early also keeps it out of the MAX_SLOTS budget, where it would
+        displace a real shortcut."""
+        bare = [NS(label="Copy", hid=0x06, mods=0)]      # a label that DOES match
+        report = so.plan_report(bare)
+        self.assertEqual(report.slots, [])
+        self.assertIn(so.NO_MODIFIER, report.refused)
+
+
 class KeyNameTest(unittest.TestCase):
     """The log is only useful if the key it names is the key on the keyboard."""
 
@@ -376,6 +478,57 @@ class KeyNameTest(unittest.TestCase):
         """So two lines about the same chord read the same in a pasted log."""
         self.assertEqual(so.pretty_key(CTRL | SHIFT | ALT, KC_S), "Ctrl+Shift+Alt+S")
         self.assertEqual(so.pretty_key(0, KC_S), "S")
+
+
+class LexiconNamesByFace(unittest.TestCase):
+    """The stable icon set that makes the Material subset ONE cached file."""
+
+    def test_every_concept_the_lexicon_can_pick_is_in_the_floor(self):
+        """A concept missing here is one whose icon silently stops drawing on
+        an app that needs nothing else -- the union at the call site would then
+        be the floor exactly, so the stable font would be fetched WITHOUT it."""
+        floor = so.lexicon_names_by_face()
+        for concept in so.shortcut_icons.LEXICON:
+            qualified = so.shortcut_icons.icon_for(concept)
+            if not qualified:
+                continue
+            face, name = so.icon_catalog.split_face(qualified)
+            self.assertIn(name, floor.get(face, ()),
+                          "%s (%s) is not in the floor" % (concept, qualified))
+
+    def test_an_icon_hint_outside_the_lexicon_is_in_the_floor_too(self):
+        floor = so.lexicon_names_by_face({"whatever": "icon:rocket_launch",
+                                          "other": "icon:fluent:toolbox"})
+        self.assertIn("rocket_launch", floor["material"])
+        self.assertIn("toolbox", floor["fluent"])
+
+    def test_the_names_are_BARE_because_that_is_what_a_subset_request_takes(self):
+        floor = so.lexicon_names_by_face()
+        for names in floor.values():
+            for name in names:
+                self.assertNotIn(":", name, "%s carries a face prefix" % name)
+
+    def test_TWO_APPS_that_need_only_lexicon_icons_ask_for_the_SAME_SET(self):
+        """The property the whole thing exists for. `subset_path` keys its
+        cache on the set requested, so two apps asking for different sets are
+        two files and two HTTPS round-trips. Measured against Google's
+        endpoint: one app subset is 4,428 bytes and a fetch is 300-450 ms, paid
+        again on first sight of every application, forever."""
+        floor = so.lexicon_names_by_face()
+        material = floor["material"]
+        one = sorted(set(material[:1]) | set(material))
+        two = sorted(set(material[-1:]) | set(material))
+        self.assertEqual(one, two)
+        self.assertEqual(so.icon_catalog.subset_path(one, "/c"),
+                         so.icon_catalog.subset_path(two, "/c"))
+
+    def test_a_DERIVED_name_outside_the_floor_still_gets_its_own_font(self):
+        """The floor is a floor, not a ceiling: an app whose label derived a
+        catalog name the tables do not carry must still have it fetched."""
+        material = so.lexicon_names_by_face()["material"]
+        self.assertNotEqual(
+            so.icon_catalog.subset_path(sorted(set(material) | {"rocket_launch"}), "/c"),
+            so.icon_catalog.subset_path(material, "/c"))
 
 
 if __name__ == "__main__":

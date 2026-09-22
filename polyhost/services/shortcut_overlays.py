@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from polyhost.services import icon_catalog, shortcut_icons
-from polyhost.services.shortcut_source.model import displayable_hid
+from polyhost.services.shortcut_source.model import (
+    MOD_ALT, MOD_CTRL, MOD_GUI, displayable_hid)
 
 # ⚠️ A BOUND ON A LIST NOBODY CURATES. A classic menubar app measured 26
 # shortcuts, but an app is free to expose hundreds of ribbon controls and every
@@ -43,9 +44,49 @@ MIN_CONFIDENCE = 0.85
 # they are phrased as what the READER has to do about it — the three want
 # genuinely different fixes and a single "no icon" line cannot say which.
 NO_KEYCAP = "the keyboard has no keycap for that key"
+NO_MODIFIER = "a bare keypress on a key that types a character"
 NO_CONCEPT = "no icon concept matched the label"
 NO_CATALOG_ICON = "the concept has no catalog icon, only a font-pack glyph"
 OVER_CAP = f"over the {MAX_SLOTS}-icon cap for one app"
+
+# ⚠️ Keys that INSERT A CHARACTER, where a bare-keypress shortcut must not be
+# drawn: 0x04..0x38 is letters, digits, Enter, Backspace, Tab, Space and
+# punctuation, minus Esc. Anything above (F-keys, the nav cluster, the arrows,
+# the keypad) types nothing, so a bare shortcut there is real and is kept.
+#
+# ⚠️ Esc is excluded from the set for a second reason as well as typing
+# nothing: it is where the PROGRAM MARK goes, so it is spoken for anyway.
+_HID_ESC = 0x29
+_TYPING_HID = frozenset(range(0x04, 0x39)) - {_HID_ESC}
+
+# The modifiers that make a keypress a SHORTCUT rather than typing. ⚠️ Shift is
+# NOT one of them -- Shift+E is a capital E, so its overlay lands on the Shift
+# layer of a key that still types.
+_REAL_MODS = MOD_CTRL | MOD_ALT | MOD_GUI
+
+
+def needs_a_modifier(hid, mods) -> bool:
+    """Would drawing this shortcut promise an action the key will not perform?
+
+    ⚠️ **A bare-key "shortcut" on a letter is always wrong on this keyboard**,
+    and the reason is what the overlay REPLACES: an unmodified chord is drawn on
+    the unmodified layer, i.e. over the letter the key actually types. Reported
+    from the field (macOS Safari, 2026-09-21) — `D`, `E` and `F` each got an
+    icon from a menu item whose real binding needs a modifier this backend
+    cannot see (fn/globe is not in the Carbon mask, so it decodes as no
+    modifiers at all), and in a browser those keys just type `d`, `e`, `f`.
+
+    So the test is not "did the app claim a shortcut" but "does this key type
+    something". A bare F5, Home or arrow is left alone: those keys insert
+    nothing, and an icon on them is honest.
+
+    Pure, and separate from `plan_report`, so the rule can be exercised over
+    every HID usage without building a plan.
+    """
+    if hid is None or hid not in _TYPING_HID:
+        return False
+    return not (int(mods or 0) & _REAL_MODS)
+
 
 # HID usage -> the name a person would type, for the log only. Letters and
 # digits are derived; everything else that a shortcut realistically lands on is
@@ -114,14 +155,17 @@ class Slot:
 
 def plan(shortcuts, hints: dict | None = None,
          min_confidence: float = MIN_CONFIDENCE,
-         limit: int = MAX_SLOTS, known_names=None) -> list[Slot]:
+         limit: int = MAX_SLOTS, known_names=None,
+         app: str | None = None) -> list[Slot]:
     """The slots alone — see `plan_report` for what was refused and why."""
-    return plan_report(shortcuts, hints, min_confidence, limit, known_names).slots
+    return plan_report(shortcuts, hints, min_confidence, limit, known_names,
+                       app).slots
 
 
 def plan_report(shortcuts, hints: dict | None = None,
                 min_confidence: float = MIN_CONFIDENCE,
-                limit: int = MAX_SLOTS, known_names=None) -> "Plan":
+                limit: int = MAX_SLOTS, known_names=None,
+                app: str | None = None) -> "Plan":
     """Decide which harvested shortcuts get an icon, and on which key.
 
     Returns the REFUSALS as well as the slots, because a shortcut the keyboard
@@ -166,6 +210,13 @@ def plan_report(shortcuts, hints: dict | None = None,
         if not 0 <= mods <= 0x0F:
             refuse(NO_KEYCAP, sc)
             continue
+        if needs_a_modifier(hid, mods):
+            # ⚠️ Before the icon lookup, not after: a bare letter must be
+            # refused whether or not its label happens to match a concept, and
+            # refusing it here also keeps it out of the MAX_SLOTS budget, where
+            # it would displace a real shortcut.
+            refuse(NO_MODIFIER, sc)
+            continue
         # ⚠️ No empty-label guard here, deliberately: `match()` normalizes and
         # refuses "" on its own, so one would be dead code. Mutation-checked --
         # removing a guard that nothing can reach is the one mutation a suite
@@ -194,7 +245,12 @@ def plan_report(shortcuts, hints: dict | None = None,
             # disposes, exactly as `app_icons.candidates()` leaves a bad slug to
             # the 404. Without a table the fall-back is skipped entirely, which
             # is the behaviour before it existed.
-            derived = next((n for n in shortcut_icons.derive_names(label)
+            # ⚠️ `app` is what stops a derivation naming the focused
+            # application — the ESC mark already carries its icon, and on macOS
+            # the label's object usually IS the app ("Hide Terminal"). Passing
+            # None only loses that rejection, so a caller that does not know the
+            # app still plans exactly as before.
+            derived = next((n for n in shortcut_icons.derive_names(label, app)
                             if n in known_names), None)
             if derived:
                 # `known_names` is the MATERIAL table, so a derivation is a
@@ -240,6 +296,43 @@ def icon_names_by_face(slots) -> dict:
             continue
         face, name = icon_catalog.split_face(slot.icon)
         out.setdefault(face, set()).add(name)
+    return {face: sorted(names) for face, names in out.items()}
+
+
+def lexicon_names_by_face(hints: dict | None = None) -> dict:
+    """{face: [bare name, ...]} for EVERY icon the tables can ever ask for.
+
+    ⚠️ This exists to make the Material subset ONE cached file instead of one
+    per application. Material serves a server-side subset of exactly the names
+    requested, and `subset_path` keys the cache on that set -- so asking for
+    only the names *this* app needs means a new set, a new file and a fresh
+    HTTPS round-trip for every app the user has not focused before, for the
+    life of the machine. Measured against Google's endpoint: a 12-name app
+    subset is 4,768 bytes, the whole 52-name lexicon is 12,372 -- so the
+    per-app saving is one request (300-800 ms on first sight of each app) and
+    the price is 7.6 KB of cache, once.
+
+    Fluent ignores it: there is no subset endpoint, so one whole font already
+    serves every set and the path is already stable.
+
+    The union with the app's own names still happens at the call site, because
+    a label can derive a catalog name this table does not carry -- the stable
+    set is a floor, not a ceiling.
+    """
+    out: dict[str, set] = {}
+
+    def add(qualified: str):
+        if not qualified:
+            return
+        face, name = icon_catalog.split_face(qualified)
+        if name:
+            out.setdefault(face, set()).add(name)
+
+    for concept in shortcut_icons.LEXICON:
+        add(shortcut_icons.icon_for(concept))
+    table = shortcut_icons.load_hints() if hints is None else hints
+    for value in table.values():
+        add(shortcut_icons.resolve_hint_icon(value))
     return {face: sorted(names) for face, names in out.items()}
 
 

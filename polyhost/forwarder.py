@@ -24,7 +24,7 @@ from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
-from polyhost.gui.dialog_util import position_near_tray
+from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui.theme import apply_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
@@ -85,6 +85,14 @@ class PolyForwarder(QApplication):
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
+        # ⚠️ Directly after it, because it is the COST of the line above: an
+        # accessory app is never promoted to active by opening a window, so
+        # without this every dialog the tray opens lands behind whatever the
+        # user was in. One filter rather than a call at each `show()` -- there
+        # are a dozen sites across the two apps and `.exec_()` modals among
+        # them. See `gui.dialog_util.install_front_on_show`.
+        from polyhost.gui.dialog_util import install_front_on_show
+        install_front_on_show(self)
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
 
@@ -656,8 +664,7 @@ class PolyForwarder(QApplication):
             self.report_problem_dialog = ReportProblemDialog(
                 parent=None, diagnostics_cb=self._diagnostics_text)
         self.report_problem_dialog.show()
-        self.report_problem_dialog.raise_()
-        self.report_problem_dialog.activateWindow()
+        bring_to_front(self.report_problem_dialog)
 
     def open_log_bundle(self):
         """Log-collection dialog (retained instance — see PolyHost.open_log_bundle)."""
@@ -666,8 +673,7 @@ class PolyForwarder(QApplication):
             self.log_bundle_dialog = LogBundleDialog(
                 parent=None, diagnostics_cb=self._diagnostics_text)
         self.log_bundle_dialog.show()
-        self.log_bundle_dialog.raise_()
-        self.log_bundle_dialog.activateWindow()
+        bring_to_front(self.log_bundle_dialog)
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately

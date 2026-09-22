@@ -400,5 +400,202 @@ class CloseFamilyTest(unittest.TestCase):
         self.assertEqual(hit.icon, "wrap_text")
 
 
+class HideIsTheVerbNotTheApp(unittest.TestCase):
+    """⚠️ Field, 2026-09-21. Every macOS app puts "Hide <AppName>" on Cmd+H.
+
+    With no `hide` concept the LEXICON missed, `derive_names` fell through to
+    the TAIL word, and the app's own name is very often a catalog icon -- so
+    Terminal drew a terminal, Notes a note and Chess a chess piece on a key
+    whose entire meaning is the verb. A WRONG keycap rather than a missing one,
+    and it repeated the program mark already sitting on ESC.
+    """
+
+    def test_hide_APPNAME_resolves_to_hide_on_every_app_that_regressed(self):
+        for label in ("Hide Terminal", "Hide Notes", "Hide Chess",
+                      "Hide Maps", "Hide Photos", "Hide Finder",
+                      "Hide Freeform", "Hide Safari"):
+            hit = si.match(label, allow_fuzzy=True)
+            self.assertIsNotNone(hit, label)
+            self.assertEqual(hit.concept, "hide", label)
+
+    def test_the_TAIL_WORD_no_longer_answers_for_these_labels(self):
+        """INVERTED 2026-09-21, and its own guard is what asked for it.
+
+        It used to assert the derivation still produced the app name, because
+        the first fix left `derive_names` alone and made the LEXICON answer
+        first in the planner. That planner change was reverted (it cost the
+        board ten distinct icons -- see `TheTailIsTheObjectNotTheCommand`), so
+        the tail is now suppressed at the source and the derivation offers
+        nothing. The old assertion carried a message saying to re-read it if
+        the derivation ever changed; it fired, so here is the re-read."""
+        known = {"terminal", "notes", "chess"}
+        for label, app in (("Hide Terminal", "Terminal"),
+                           ("Hide Notes", "Notes"),
+                           ("Hide Chess", "Chess")):
+            derived = next((n for n in si.derive_names(label, app)
+                            if n in known), None)
+            self.assertIsNone(derived, label)
+            self.assertEqual(si.match(label, allow_fuzzy=True).concept, "hide")
+
+    def test_it_also_rescues_the_ones_that_drew_NOTHING(self):
+        """Hide Others and friends matched no concept at all before."""
+        for label in ("Hide Others", "Hide Folders", "Hide Downloads",
+                      "Hide Alternative Screen"):
+            hit = si.match(label, allow_fuzzy=True)
+            self.assertIsNotNone(hit, label)
+            self.assertEqual(hit.concept, "hide", label)
+
+    def test_HIDDEN_is_not_hide(self):
+        """⚠️ The phrase is the word "hide". "Show Hidden Files" REVEALS, so a
+        substring rule would put an eye-with-a-slash on its exact opposite."""
+        self.assertNotEqual(
+            getattr(si.match("Show Hidden Files", allow_fuzzy=True), "concept", None),
+            "hide")
+
+    def test_both_faces_carry_the_icon(self):
+        face, name = icon_catalog.split_face(si.icon_for("hide"))
+        self.assertEqual(face, icon_catalog.FLUENT)
+        self.assertEqual(name, "eye_off")
+        self.assertEqual(si.LEXICON["hide"][1], "visibility_off")
+
+
+class TheKeywordRuleTakesTheLEADINGWord(unittest.TestCase):
+    """⚠️ Among several one-word phrases in one label, the EARLIEST wins.
+
+    A menu label is imperative -- the verb leads and the rest is its object --
+    so the leading word is the one carrying the command. The table is sorted
+    longest-phrase-first, and that made "Hide App Store" match `store` -> SAVE,
+    because "store" is one character longer than "hide". That is exactly as
+    arbitrary a decider as the table order the sort comment exists to remove.
+    """
+
+    def test_hide_app_store_is_a_HIDE_and_not_a_SAVE(self):
+        self.assertEqual(si.match("Hide App Store", allow_fuzzy=True).concept,
+                         "hide")
+
+    def test_both_words_really_are_phrases_so_the_test_pins_a_CHOICE(self):
+        """⚠️ Without this the test above passes for the wrong reason -- if
+        "store" ever stops being a phrase there is nothing left to choose
+        between and the rule is no longer under test."""
+        singles = {phrase: concept for phrase, concept in si._PHRASES
+                   if " " not in phrase}
+        self.assertEqual(singles.get("store"), "save")
+        self.assertEqual(singles.get("hide"), "hide")
+
+    def test_the_trailing_word_still_answers_when_it_is_the_ONLY_match(self):
+        """The rule reorders; it does not narrow. A label whose only lexicon
+        word is at the end resolves exactly as before."""
+        self.assertEqual(si.match("Page Down", allow_fuzzy=True).concept,
+                         si.match("Down", allow_fuzzy=True).concept)
+
+
+class ADerivationMustNotNameTheAppOrTheFile(unittest.TestCase):
+    """⚠️ Field, 2026-09-21, and the THIRD attempt at the "Hide <AppName>" bug.
+
+    Attempt one reordered the PLANNER so a sub-threshold lexicon hit beat a
+    derivation. Measured on one app that turned 35 distinct icons into 25
+    repeated generics and pushed three keys off the 48-icon cap. Reverted.
+
+    Attempt two suppressed the label's TAIL whenever its head was a lexicon
+    concept. That blocked the app name, and also cost `Show Previous Tab` its
+    `tab` and `Mark as Bookmark` its `bookmark` -- the head was a concept with
+    no catalog name, so nothing was left. Withdrawn; its two casualties are
+    asserted below.
+
+    What was wrong is narrow, and it needed the one fact the planner was never
+    given: WHICH APP is focused. The ESC mark already carries that icon, so a
+    letter key repeating it says nothing -- and on macOS the label's object IS
+    the app, on every Cmd+H on the machine. The sibling case is a QUOTED run,
+    where macOS puts the selected file: `Quick Look "Chess"` drew a chess piece
+    because a folder happened to be called Chess.
+    """
+
+    def test_a_derivation_never_names_the_focused_app(self):
+        for app, label, named in (("Terminal", "Hide Terminal", "terminal"),
+                                  ("App Store", "Hide App Store", "store"),
+                                  ("Google Chrome", "Hide Google Chrome", "chrome"),
+                                  ("Finder", "Hide Finder", "finder"),
+                                  ("Chess", "Hide Chess", "chess")):
+            self.assertNotIn(named, si.derive_names(label, app), label)
+
+    def test_a_PREFIXED_form_of_the_app_name_goes_too(self):
+        """`content_terminal` names the app exactly as much as `terminal`, so
+        filtering only the bare word would leave the prefixed ones behind."""
+        got = si.derive_names("Hide Terminal", "Terminal")
+        self.assertEqual([n for n in got if n.endswith("terminal")
+                          and "hide" not in n], [])
+
+    def test_without_an_app_it_derives_exactly_as_before(self):
+        """⚠️ The rejection is the ONLY thing `app` adds, so a caller that does
+        not know the app plans unchanged -- which `plan_report` documents."""
+        for app in (None, ""):
+            self.assertIn("terminal", si.derive_names("Hide Terminal", app))
+        self.assertIn("terminal", si.derive_names("Hide Terminal"))
+
+    def test_a_MULTI_WORD_app_name_blocks_EACH_of_its_words(self):
+        self.assertEqual(sorted(si.app_words("Google Chrome")),
+                         ["chrome", "google"])
+        self.assertNotIn("chrome",
+                         si.derive_names("Close Chrome", "Google Chrome"))
+
+    def test_the_head_is_offered_first_so_an_ordinary_label_loses_NOTHING(self):
+        """"New Mail" in Mail derives `new`, which already outranked `mail` --
+        the rejection only bites where the head had nothing to say."""
+        self.assertIn("new", si.derive_names("New Mail", "Mail"))
+
+    # --- the quoted object, i.e. the file the user happens to have selected --
+
+    def test_a_QUOTED_run_is_the_users_FILE_not_the_command(self):
+        for label in ('Quick Look “Chess”',
+                      'Slideshow “Chess”',
+                      'Open "chess"'):
+            self.assertNotIn("chess", si.derive_names(label, "Finder"), label)
+
+    def test_the_command_AROUND_the_quotes_still_derives(self):
+        self.assertIn("slideshow",
+                      si.derive_names('Slideshow “Holiday”', "Finder"))
+
+    def test_an_APOSTROPHE_is_not_a_quote(self):
+        """⚠️ macOS spells an apostrophe with the curly SINGLE quote, so pairing
+        on it would eat every word between two ordinary contractions."""
+        label = "Don’t Save, isn’t Ready"
+        self.assertEqual(
+            si.normalize(si._QUOTED_OBJECT.sub(" ", label)),
+            "don t save isn t ready")
+        # ⚠️ Measured, not asserted by eye: a regex that also OPENED on the
+        # curly apostrophe reduces this label to "don t ready" -- it swallows
+        # "Save, isn" between the two contractions. So the line above is what
+        # separates the two, and a behavioural check cannot replace it:
+        # `derive_names` offers only the HEAD and TAIL words, never a middle
+        # one, so "save" is not a candidate either way.
+
+    # --- what attempt two cost, restored ------------------------------------
+
+    def test_the_TAIL_is_unconditional_again(self):
+        """All three were drawing before attempt two, and are why it went."""
+        self.assertIn("tab", si.derive_names("Show Previous Tab", "Terminal"))
+        self.assertIn("bookmark", si.derive_names("Mark as Bookmark", "Terminal"))
+        self.assertIn("bookmark", si.derive_names("Insert Bookmark", "Terminal"))
+
+    def test_the_verb_and_the_tail_BOTH_answer_where_they_should(self):
+        for label, want in (("Default Font Size", "format_size"),
+                            ("Use Selection for Find", "search"),
+                            ("Clear Scrollback", "clear"),
+                            ("Select Next Tab", "navigate_next")):
+            self.assertIn(want, si.derive_names(label, "Terminal"), label)
+
+    # --- kept from attempt two, which got this half right -------------------
+
+    def test_a_word_the_LEXICON_names_is_not_FILLER(self):
+        """⚠️ "hide" was filler, so it was stripped and the app became the HEAD
+        word -- `derive_names("Hide Terminal")` answered `terminal` outright."""
+        singles = {phrase for phrase, _ in si._PHRASES if " " not in phrase}
+        self.assertEqual(sorted(w for w in si.FILLER_WORDS if w in singles), [])
+
+    def test_SHOW_stays_filler_because_it_is_not_a_concept(self):
+        self.assertIn("show", si.FILLER_WORDS)
+        self.assertIn("side_navigation", si.derive_names("Show Sidebar"))
+
+
 if __name__ == "__main__":
     unittest.main()

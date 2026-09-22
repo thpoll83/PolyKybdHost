@@ -61,6 +61,7 @@ dimension it was never short of.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import re
@@ -125,6 +126,7 @@ _EXE_SUFFIX_RE = re.compile(r"\.(exe|app|bin)$")
 # docstring describes: the lookup finds bytes, this side renders them, and
 # the dependency runs one way only (see `tools/os_icon_probe.py`).
 from polyhost.services import icon_binarise
+from polyhost.util.https import ssl_context
 
 log = logging.getLogger("PolyHost")
 
@@ -261,6 +263,40 @@ def qualify(name: str) -> str:
     return name if ":" in name else f"{DEFAULT_SOURCE}:{name}"
 
 
+def os_slug(source: str, icon: bytes) -> str:
+    """The cache key for an OS-supplied mark: a name AND a content digest.
+
+    ⚠️ **THE SLUG IS THE MRU CACHE KEY, so it has to identify the ICON, not the
+    file it came out of** — `synthetic_overlay`'s docstring states that rule and
+    the basename alone does not satisfy it on macOS, where nearly every system
+    app ships its icon as literally `AppIcon.icns`:
+
+        /System/Applications/Maps.app/Contents/Resources/AppIcon.icns
+        /System/Applications/Photos.app/Contents/Resources/AppIcon.icns
+        /System/Applications/Notes.app/Contents/Resources/AppIcon.icns
+
+    All three used to slug to `os:AppIcon.icns`, so the MRU filed Maps' mark
+    under that key and then served it to Photos, Notes, Safari and every other
+    system app — an MRU HIT, no upload, nothing in the log to notice. Reported
+    from the field as "the maps icon kept showing for every following app"
+    (2026-09-21). Terminal was the one that looked right, purely because its
+    file happens to be called `Terminal.icns`.
+
+    ⚠️ The digest is of the ICON BYTES, not of the path, and that is the better
+    half of the fix: two apps that genuinely ship the same icon still share one
+    pool slot, and an icon that CHANGES under a fixed path — a theme switch —
+    gets a new slug and is redrawn instead of being served stale from the
+    cache. The forwarded path already keys this way for the same reason
+    (`app_icon_fetcher._as_identity`); this makes the local path match it.
+
+    The basename is kept in front of the digest so the log still says which
+    file was read.
+    """
+    name = os.path.basename(source) or "icon"
+    digest = hashlib.sha256(icon or b"").hexdigest()[:12]
+    return "os:%s@%s" % (name, digest)
+
+
 def split_name(qualified: str) -> tuple:
     source, _, name = qualify(qualified).partition(":")
     return source, name
@@ -326,7 +362,12 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
     url = SOURCES[source].format(name=name)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+        # ⚠️ `context=` is load-bearing, not tidiness: a python.org macOS build
+        # gives urllib no certificate store, so this died with
+        # CERTIFICATE_VERIFY_FAILED on every mark while `requests` worked in the
+        # same process. See `util.https`.
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT,
+                                    context=ssl_context()) as response:
             data = response.read()
     except urllib.error.HTTPError as exc:
         log.debug("No catalog mark for '%s' (HTTP %s)", slug, exc.code)
@@ -643,7 +684,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
             log.info("Program mark for %s from the OS: %s (%d B, %s, score "
                      "%.3f >= %.3f)", app_name, source or "<no path>",
                      len(icon), conversion, score, icon_binarise.MIN_SCORE)
-            return mask, "os:" + os.path.basename(source)
+            return mask, os_slug(source, icon)
         # ⚠️ INFO, not debug, and it names every number. "The icon does not
         # survive 1-bit" is true and useless: the questions a round of hardware
         # testing actually asks are WHICH file was read, what it scored and

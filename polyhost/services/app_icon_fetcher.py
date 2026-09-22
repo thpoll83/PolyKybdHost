@@ -85,14 +85,19 @@ def _as_identity(given, app_name=""):
         return given
     if isinstance(given, dict):
         # ⚠️ A STAND-IN PATH, because the real one is on the other machine and
-        # the path is what names the mark. `program_overlay` returns
-        # `"os:" + basename(icon_path)`, so an empty path makes the slug a bare
-        # `"os:"` -- IDENTICAL for every forwarded app. `_maybe_send_program_mark`
-        # skips a slug already on the device, so switching from VS Code to Text
-        # Editor would leave VS Code's mark up and send nothing.
+        # the path is what names the mark. `program_overlay` slugs from the
+        # basename, so an empty path used to make the slug a bare `"os:"` --
+        # IDENTICAL for every forwarded app. `_maybe_send_program_mark` skips a
+        # slug already on the device, so switching from VS Code to Text Editor
+        # would leave VS Code's mark up and send nothing.
         #
         # The key is a content hash of the icon, so the slug also changes when
         # the icon does -- a theme change re-draws instead of being deduped away.
+        #
+        # ⚠️ `app_icons.os_slug` now appends a digest of its own, so this path
+        # is belt and braces rather than the only guard -- but it still decides
+        # what the LOG says the mark came from, and "forwarded@<key>" beats an
+        # empty filename there.
         path = given.get("icon_path", "")
         if not path and given.get("icon"):
             key = given.get("icon_key") or ""

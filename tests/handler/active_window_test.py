@@ -12,11 +12,16 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
 
 try:
-    from polyhost.handler.active_window import OverlayHandler
+    from polyhost.handler.active_window import (
+        OverlayHandler, _handle_identifies,
+        frontmost_app as aw_frontmost_app,
+        _FRONTMOST_SCRIPT,
+    )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover - headless/no-display env
@@ -301,6 +306,380 @@ class FocusedPidTest(unittest.TestCase):
 
     def test_a_RAISING_backend_does_not_take_the_overlay_send_with_it(self):
         self.assertIsNone(self._handler(raises=True).focused_pid())
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class LosingTheWindowTest(unittest.TestCase):
+    """What happens when the backend stops reporting a window at all.
+
+    ⚠️ Field, 2026-09-21: switching to an application the window handler could
+    not see left the PREVIOUS app's mark on ESC and its shortcut icons on the
+    board. Two separate causes, one symptom, both pinned here.
+    """
+
+    @staticmethod
+    def _win():
+        win = MagicMock()
+        win.title = "Terminal"
+        win.getHandle.return_value = (1234, 5)
+        return win
+
+    def _handler_on_an_app(self):
+        """A handler that has accepted a window and named its app.
+
+        ⚠️ A NON-EMPTY mapping, and it has to be: `app_name` is assigned inside
+        `if self.mapping:`, so with `{}` it is never set at all and "the
+        handler stopped naming the app" passes whether or not the clear
+        exists. Caught by the regained-window test below, which is the only one
+        of the four that can fail on a vacuous fixture.
+        """
+        handler = OverlayHandler({"someotherapp": {}})   # present, never matches
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self._win()), \
+             patch(mod + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return handler
+
+    def _lose_the_window(self, handler):
+        """⚠️ `frontmost_app` is patched to answer NOTHING, deliberately.
+
+        Losing the window no longer means losing the app -- a windowless app the
+        OS can still name is drawn from the name alone (see
+        `AWindowlessAppIsStillAnAppTest`). These four cases are about the other
+        half, where nothing knows what is focused, and off macOS they would pass
+        for the wrong reason: `frontmost_app` returns `(None, None)` on any
+        non-Darwin host, so the premise would be the test machine's platform
+        rather than anything this file asserts.
+        """
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=(None, None)):
+            return handler._decide_active_window(10, 5)
+
+    def test_the_handler_stops_NAMING_the_app_it_can_no_longer_see(self):
+        """`focused_app()` drives the generic overlays, so a stale name is the
+        host re-affirming the icons of an app the user has already left."""
+        handler = self._handler_on_an_app()
+        self.assertEqual(handler.win.title, "Terminal")
+        self._lose_the_window(handler)
+        self.assertEqual(handler.focused_app(), (None, None))
+
+    def test_losing_the_window_DISABLES_even_with_no_template_active(self):
+        """⚠️ The guard was `if self.current_entry` -- "was a HAND-MADE overlay
+        set on the board?". A generically-drawn app has none, so the board kept
+        drawing it."""
+        handler = self._handler_on_an_app()
+        self.assertIsNone(handler.current_entry)
+        _, cmd = self._lose_the_window(handler)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+
+    def test_it_costs_NOTHING_when_the_board_is_already_blank(self):
+        """`_is_redundant_overlay_cmd` is what makes the unconditional DISABLE
+        safe: with overlays already off it is dropped before the bridge-sync."""
+        handler = self._handler_on_an_app()
+        handler.overlays_enabled = False
+        with patch("polyhost.handler.active_window.pwc.getActiveWindow",
+                   return_value=None):
+            _, cmd = handler.handle_active_window(10, 5)
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_a_REGAINED_window_names_its_app_again(self):
+        """The clear must not be a one-way door."""
+        handler = self._handler_on_an_app()
+        self._lose_the_window(handler)
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self._win()), \
+             patch(mod + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        self.assertEqual(handler.focused_app(), ("terminal", None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AnUntitledWindowStillNamesItsAppTest(unittest.TestCase):
+    """⚠️ On macOS an untitled window identifies NOTHING, so two different
+    apps look identical to the change test.
+
+    `MacOSWindow.getHandle()` derives the handle FROM the title: it returns
+    `("", "")` whenever `title` is empty, and `title` is empty for every window
+    `System Events` reports no `AXTitle` for. The change test compared handle and
+    title only, so switching between two such applications was not a change at
+    all -- the previous app's mark and its 48 shortcut icons stayed on the
+    keycaps and NOTHING was logged, which is the worst shape a bug can take: the
+    user reports "it is not even in the log" and there is nothing to act on
+    (field, 2026-09-21: VS Code, Maps and Chess in a row).
+
+    The app name is what tells them apart, and on macOS `getAppName()` is a
+    cached attribute read rather than another AppleScript round trip.
+    """
+
+    @staticmethod
+    def _win(app, title, handle):
+        win = MagicMock()
+        win.title = title
+        win.getHandle.return_value = handle
+        win.getAppName.return_value = app
+        return win
+
+    def _switch(self, first, second):
+        """Focus `first`, then `second`; return the app names that got reported.
+
+        Two ticks per window: the first notices `prev_win` moved and rearms the
+        accept timer, the second accepts it. Patched by STRING target so the
+        module is not imported a second way (`py/import-and-import-from`).
+        """
+        handler = OverlayHandler({})          # empty mapping: stop after log_win
+        mod = "polyhost.handler.active_window"
+        seen = []
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            for win in (first, first, second, second):
+                with patch(mod + ".pwc.getActiveWindow", return_value=win), \
+                     patch(mod + ".app_name_for",
+                           side_effect=lambda w: w.getAppName()):
+                    handler._decide_active_window(10, 5)
+        for line in captured.output:
+            if "Active App Changed" in line:
+                seen.append(line.split('"')[1])
+        return seen
+
+    def test_two_UNTITLED_apps_in_a_row_are_both_reported(self):
+        chess = self._win("Chess", "", ("", ""))
+        maps = self._win("Maps", "", ("", ""))
+        self.assertEqual(self._switch(chess, maps), ["Chess", "Maps"])
+
+    def test_the_SAME_untitled_app_is_still_reported_once(self):
+        # The fix must not turn every poll into a change: that would re-send the
+        # whole generic set, and `_maybe_send_generic_overlays` runs each tick.
+        chess = self._win("Chess", "", ("", ""))
+        self.assertEqual(self._switch(chess, chess), ["Chess"])
+
+    def test_a_TITLED_window_keeps_using_its_handle(self):
+        # The opposite mistake, and the reason the fallback is CONDITIONAL:
+        # the app name must not replace a handle that works. Two windows of one
+        # app sharing a title -- two untitled Notepads, both "Untitled - Notepad"
+        # -- are told apart by the handle and by nothing else, so substituting
+        # the app name here would merge them into one window that never changes.
+        a = self._win("Notepad", "Untitled - Notepad", 4321)
+        b = self._win("Notepad", "Untitled - Notepad", 8765)
+        self.assertEqual(self._switch(a, b), ["Notepad", "Notepad"])
+
+    def test_handle_identifies_answers_for_each_backend(self):
+        self.assertTrue(_handle_identifies(98765))            # Windows HWND
+        self.assertTrue(_handle_identifies(("Safari", "Docs")))  # macOS, titled
+        self.assertFalse(_handle_identifies(("", "")))        # macOS, untitled
+        self.assertFalse(_handle_identifies(None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
+    """⚠️ NO WINDOW IS NOT NO APPLICATION.
+
+    `pywinctl.getActiveWindow()` returns None for some macOS applications --
+    measured on Photos, Notes and Freeform, while Chess, Maps and Terminal on
+    the same desktop answered normally (field, 2026-09-21). The handler treated
+    that as "nothing is focused" and blanked the board, but the overlay path
+    never needed the window: it needs the app's NAME and PID, which
+    `NSWorkspace` knows without one.
+
+    What is genuinely lost is the TITLE, so a template entry that matches on one
+    cannot be evaluated -- hence the DISABLE these tests also pin. The generic
+    path draws; the template path correctly stands down.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _tick(self, handler, app, times=1):
+        """Poll `times` with no window while `app` = (name, pid) is frontmost."""
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=app):
+            for _ in range(times):
+                out = handler._decide_active_window(10, 5)
+        return out
+
+    def test_the_app_is_NAMED_even_with_no_window(self):
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self.assertEqual(handler.focused_app(), ("photos", None))
+
+    def test_the_PID_survives_too(self):
+        # Without it the OS icon and the macOS AX harvest are both unreachable,
+        # so the app would be named and still draw nothing.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self.assertEqual(handler.focused_pid(), 4242)
+
+    def test_it_DISABLES_so_a_stale_template_cannot_survive(self):
+        handler = OverlayHandler({})
+        _, cmd = self._tick(handler, ("Photos", 4242))
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(handler.current_entry)
+
+    def test_switching_between_two_WINDOWLESS_apps_is_noticed(self):
+        # Both are invisible to the backend, so the handle/title test that tells
+        # ordinary windows apart has nothing to compare -- the name is all there
+        # is, and without it Notes would keep showing Photos' icons.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self._tick(handler, ("Notes", 77))
+        self.assertEqual(handler.focused_app(), ("notes", None))
+        self.assertEqual(handler.focused_pid(), 77)
+
+    def test_the_SAME_windowless_app_does_not_refire_every_tick(self):
+        # `_maybe_send_generic_overlays` runs on every tick, so a DISABLE per
+        # tick would blank the board it has just drawn, forever.
+        handler = OverlayHandler({})
+        with self.assertLogs(handler.log, level="INFO") as caught:
+            self._tick(handler, ("Photos", 4242), times=4)
+        lines = [l for l in caught.output if "No active window" in l]
+        self.assertEqual(len(lines), 1, caught.output)
+        self.assertIn("Photos", lines[0])
+
+    def test_regaining_a_real_window_CLEARS_the_windowless_identity(self):
+        # The two are alternatives. A leftover windowless name would outrank
+        # nothing here, but it would answer for a forwarded window and for the
+        # next app the backend can see.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        win = MagicMock()
+        win.title = "Terminal"
+        win.getHandle.return_value = (1234, 5)
+        win.getAppName.return_value = "Terminal"
+        win.getPID.return_value = 5          # the pid, NOT the handle's tail
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=win), \
+             patch(self.MOD + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        self.assertIsNone(handler.windowless_app)
+        self.assertIsNone(handler.windowless_pid)
+        self.assertEqual(handler.focused_pid(), 5)
+
+    def test_an_app_the_OS_cannot_name_either_is_still_NOTHING(self):
+        handler = OverlayHandler({})
+        _, cmd = self._tick(handler, (None, None))
+        self.assertEqual(handler.focused_app(), (None, None))
+        self.assertIsNone(handler.focused_pid())
+        # NONE, not DISABLE: nothing was ever drawn, so there is nothing to take
+        # off the board. `LosingTheWindowTest` covers the transition that does
+        # need one.
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_LOSING_a_windowless_app_to_nothing_disables(self):
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        _, cmd = self._tick(handler, (None, None))
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertEqual(handler.focused_app(), (None, None))
+
+    @staticmethod
+    def _osascript(stdout):
+        """Stand in for the `osascript` subprocess `frontmost_app` shells out to."""
+        return MagicMock(return_value=MagicMock(stdout=stdout))
+
+    def test_frontmost_app_reads_the_name_AND_the_pid(self):
+        """⚠\ufe0f Every other test here patches `frontmost_app` itself, so none of
+        them can see what the real one returns -- a fake that implements the
+        contract cannot test it. Measured: dropping the pid from the real
+        function escaped the whole sweep until this case existed."""
+        run = self._osascript("4242\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), ("Photos", 4242))
+
+    def test_it_asks_SYSTEM_EVENTS_rather_than_the_AppKit_property(self):
+        """⚠\ufe0f The regression this function exists to prevent, pinned at the
+        one place it is visible: WHICH source is asked.
+
+        `NSWorkspace.frontmostApplication` is one line of Python away and is
+        STALE off the main thread -- twice now. The shortcut fetcher read
+        `Safari` for nine consecutive harvests over three minutes; this function
+        froze on `QuickTime Player`, so switching to Activity Monitor drew
+        QuickTime's mark and its shortcuts and logged nothing, because the name
+        never changed. A wrong app is worse than no app.
+
+        Asserting the RESULT cannot catch that -- a stale read returns a
+        perfectly well-formed name. Only the source can be asserted, so this
+        test reads the command and the script."""
+        run = self._osascript("1\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            aw_frontmost_app()
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[0], "osascript", argv)
+        script = run.call_args.kwargs["input"]
+        self.assertIn("System Events", script)
+        self.assertIn("frontmost is true", script)
+
+    def test_the_SCRIPT_and_the_PARSER_agree_on_the_order(self):
+        """\u26a0\ufe0f The script and the parser are two halves of one contract and
+        only the parser is under test -- every case here fakes the subprocess
+        OUTPUT, so swapping the two values inside the AppleScript escapes the
+        whole sweep. Measured: it did.
+
+        The pid leads because a process name may contain anything, spaces
+        included ("Activity Monitor", "QuickTime Player"); the pid is digits and
+        ends at the first newline. Reversed, every two-word app would lose its
+        tail -- and every one-word app would still pass.
+        """
+        ret = [l for l in _FRONTMOST_SCRIPT.splitlines()
+               if l.strip().startswith("return ")]
+        self.assertEqual(len(ret), 1, ret)
+        self.assertLess(ret[0].index("procID"), ret[0].index("procName"), ret[0])
+
+    def test_a_process_name_containing_SPACES_survives(self):
+        # "QuickTime Player", "Activity Monitor", "Visual Studio Code" -- the pid
+        # leads for exactly this reason, so the name is whatever is left.
+        run = self._osascript("77\nActivity Monitor\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), ("Activity Monitor", 77))
+
+    def test_a_name_with_NO_usable_pid_is_still_a_name(self):
+        # 0 is the AppleScript's own unresolved default, never a real pid. The
+        # pid only reaches the OS icon and the AX harvest; the name alone still
+        # picks a template and drives the lexicon.
+        run = self._osascript("0\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), ("Photos", None))
+
+    def test_frontmost_app_answers_nothing_when_no_app_is_frontmost(self):
+        # The AppleScript's own `try` leaves the defaults in place, so an empty
+        # name is how "could not resolve" arrives -- not an exception.
+        run = self._osascript("0\n\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+
+    def test_frontmost_app_answers_nothing_off_macOS(self):
+        """It is macOS-only on purpose: the other backends do not have this
+        failure mode, and a second opinion about which app is focused is a way
+        for two answers to disagree.
+
+        ⚠\ufe0f A WORKING osascript is faked, and without it this test passes for
+        the wrong reason -- on a Linux host the command is absent anyway, so the
+        platform guard could be deleted outright and nothing would notice."""
+        run = self._osascript("4242\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Linux"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+        run.assert_not_called()
+
+    def test_frontmost_app_never_raises(self):
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run",
+                   side_effect=RuntimeError("osascript is unwell")):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+
+    def test_a_HUNG_osascript_does_not_hang_the_tick(self):
+        # The window tick is a ~600 ms loop. An unbounded wait here would stop
+        # the board following the focus at all, which is worse than the fault
+        # this function exists to work around.
+        run = MagicMock(side_effect=subprocess.TimeoutExpired("osascript", 2.0))
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+        self.assertIsNotNone(run.call_args.kwargs.get("timeout"))
 
 
 if __name__ == "__main__":

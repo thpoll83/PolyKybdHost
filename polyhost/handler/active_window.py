@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import re
+import subprocess
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
@@ -25,6 +26,109 @@ elif _IS_WAYLAND:
 else:
     _BACKEND_NAME = "pywinctl"
     import pywinctl as pwc
+
+
+#: AppleScript is the LIVE answer on any thread. `System Events` is asked fresh
+#: every time, which is the whole reason it is used here instead of the AppKit
+#: property one line of Python away -- see `frontmost_app`. The `try` with no
+#: handler is AppleScript's, and mirrors pywinctl's own query: anything it cannot
+#: resolve leaves the two values at their defaults and the caller sees an empty
+#: name rather than an error.
+_FRONTMOST_SCRIPT = """on run
+    set procName to ""
+    set procID to 0
+    try
+        tell application "System Events"
+            set proc to first application process whose frontmost is true
+            set procName to name of proc
+            set procID to unix id of proc
+        end tell
+    end try
+    return (procID as text) & linefeed & procName
+end run"""
+
+#: Bounds the one blocking call this module adds. The tick is ~600 ms and
+#: `pywinctl` already spawns two or three `osascript` processes per poll with NO
+#: timeout at all, so this is stricter than the code beside it, not looser.
+_FRONTMOST_TIMEOUT_S = 2.0
+
+
+def frontmost_app():
+    """``(name, pid)`` for the focused application, or ``(None, None)``.
+
+    The window backend's fall-back, for the case where it answers NOTHING.
+    ``pywinctl.getActiveWindow()`` returns None for some macOS applications --
+    it asks `System Events` for the frontmost process, then for that window's
+    `AXTitle`, then matches the pid against `NSWorkspace.runningApplications()`,
+    and a failure in either of the last two yields None. The overlay path does
+    not need the window: it needs the app's NAME (to pick a template or draw a
+    generic set) and its PID (for the OS icon and the AX shortcut harvest).
+
+    ⚠️ **NOT `NSWorkspace.frontmostApplication`, which is STALE off the main
+    thread -- this is the second time that property has been trusted in this
+    codebase and the second time it was wrong.** The first was the shortcut
+    fetcher, where nine consecutive harvests over three minutes all read
+    `Safari`, so exactly one app could ever harvest. Here it froze on
+    `QuickTime Player`: switching to Activity Monitor drew QuickTime's icon and
+    logged nothing at all, because the name never changed (field, 2026-09-22).
+    It is a KVO property published through the main run loop, and the window
+    tick runs on the core's own thread -- in the headless daemon there is no
+    NSApplication run loop to publish it at all.
+
+    A wrong app is worse than no app: the board confidently draws another
+    program's mark and shortcuts, which reads as the feature working.
+
+    ⚠️ macOS only; ``(None, None)`` everywhere else. The Windows and Linux
+    backends do not have this failure mode, and a second opinion about which app
+    is focused is a way for two answers to disagree.
+
+    ⚠️ It never raises. A fall-back that can kill the poll is worse than no
+    fall-back.
+    """
+    try:
+        if platform.system() != "Darwin":
+            return None, None
+        out = subprocess.run(
+            ["osascript", "-"], input=_FRONTMOST_SCRIPT, text=True,
+            capture_output=True, timeout=_FRONTMOST_TIMEOUT_S).stdout
+        # `procID` first because a process NAME may contain anything, including
+        # whitespace; the pid is digits and ends at the first newline.
+        pid, _, name = (out or "").strip().partition("\n")
+        name = name.strip()
+        if not name:
+            return None, None
+        try:
+            # 0 is the script's own "not resolved" default, and is never a real
+            # application pid. A name without a usable pid still picks the
+            # template and drives the lexicon; only the OS icon and the AX
+            # harvest need the pid, and both already handle None.
+            return name, (int(pid) or None)
+        except ValueError:
+            return name, None
+    except Exception:  # noqa: BLE001 - a fall-back must never raise
+        return None, None
+
+
+def _handle_identifies(handle):
+    """True when ``handle`` names a particular window.
+
+    ⚠️ On macOS it often does NOT, and that is not a corner case.
+    pywinctl derives the handle FROM the title -- ``MacOSWindow.getHandle()``
+    returns ``("", "")`` whenever ``title`` is empty, and ``title`` is empty for
+    every window ``System Events`` reports no ``AXTitle`` for. So two *different*
+    untitled applications are byte-identical to the change test below, the switch
+    between them is never noticed, and the previous app's overlays stay on the
+    keycaps with nothing logged (field, 2026-09-21: VS Code, Maps and Chess in a
+    row, none of which appeared in the log at all).
+
+    Windows and the Linux reporters hand back an integer id that is never empty,
+    so they take the first branch and are unaffected.
+    """
+    if handle is None:
+        return False
+    if isinstance(handle, tuple):
+        return any(handle)
+    return True
 
 
 def log_env_info(log):
@@ -77,6 +181,11 @@ class OverlayHandler:
         # tested against -- re-deriving it there would be a second normaliser
         # free to disagree with this one.
         self.app_name = None
+        # The same two facts for an application the window backend cannot see at
+        # all -- name and pid straight from the OS, no window and so no title.
+        # See the no-window branch of `_decide_active_window`.
+        self.windowless_app = None
+        self.windowless_pid = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
         # same-app title change doesn't re-issue an ENABLE that's already in
@@ -140,10 +249,28 @@ class OverlayHandler:
         return result
 
     def set_win(self, win=None, title=None, handle=None):
-        """Set the active window"""
+        """Set the active window.
+
+        ⚠️ **Clears `app_name` too, and that is the point of it.** `set_win()`
+        with no arguments means "there is no focused window", and until
+        2026-09-21 it left `app_name` holding the LAST app -- so `focused_app()`
+        went on naming an application that was no longer in front of the user,
+        and `PolyCore._maybe_send_generic_overlays` kept re-affirming that app's
+        icons. The window path is re-derived a few lines below on every genuine
+        change, so nothing that needs the name loses it.
+
+        Same class of bug as the stale `NSWorkspace.frontmostApplication` on a
+        worker thread: a value that is right until focus moves and then silently
+        wrong, with nothing saying so.
+        """
         self.win = win
         self.title = title
         self.handle = handle
+        self.app_name = None
+        # The window path and the windowless one are alternatives, never both:
+        # whichever ran last is the answer, so entering one clears the other.
+        self.windowless_app = None
+        self.windowless_pid = None
 
     def _active_os(self):
         """OS of the machine running the focused app, for the mapping's `os` branch.
@@ -261,16 +388,29 @@ class OverlayHandler:
                 self.last_update_msec = 0
             if self.last_update_msec > accept_time_msec:
                 self.last_update_msec = accept_time_msec  * 2 #just to limit that
+                # ⚠️ Read each of these ONCE. On macOS every access is an
+                # `osascript` subprocess -- `MacOSWindow.title` re-runs
+                # `_getAppWindowsTitles` and `getHandle()` calls `title` again --
+                # so the old four accesses per changed tick cost four AppleScript
+                # round trips where two do.
+                handle = win.getHandle()
+                title = win.title
+                if not title and not _handle_identifies(handle):
+                    # The window identifies nothing, so fall back to the app the
+                    # window belongs to (see `_handle_identifies`). On macOS
+                    # `getAppName()` is a cached attribute read, not another
+                    # AppleScript call.
+                    handle = win.getAppName()
                 local_win_changed = (
                     self.win is None
-                    or win.getHandle() != self.handle
-                    or win.title != self.title
+                    or handle != self.handle
+                    or title != self.title
                 )
 
                 if local_win_changed:
                     # remember active window
-                    self.set_win(win, win.title, win.getHandle())
-                    if win.title == "PolyHost":
+                    self.set_win(win, title, handle)
+                    if title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
                         raw_app_name = app_name_for(self.win)
@@ -325,12 +465,45 @@ class OverlayHandler:
                         else:
                             return None, OverlayCommand.DISABLE
         else:
-            if self.win:
-                self.log.info("No active window")
+            # ⚠️ NO WINDOW IS NOT NO APPLICATION, and treating the two as the
+            # same left three apps with a blank board. `getActiveWindow()`
+            # returns None for some macOS apps -- Photos, Notes and Freeform,
+            # measured, while Chess and Maps on the same desktop answered fine
+            # -- and the overlay path never needed the window itself: it needs
+            # the app's name and pid, which `frontmost_app()` knows.
+            #
+            # What is lost without a window is the TITLE, so a template entry
+            # that matches on one cannot be evaluated. That is why this still
+            # returns DISABLE and leaves `current_entry` cleared: the generic
+            # path draws (`focused_app`/`focused_pid` answer from here), the
+            # template path correctly does not.
+            name, pid = frontmost_app()
+            app = name.lower() if name else None
+            if self.win is not None or app != self.windowless_app:
                 self.set_win()
-                if self.current_entry:
-                    self.current_entry = None
-                    return None, OverlayCommand.DISABLE
+                self.windowless_app, self.windowless_pid = app, pid
+                if app:
+                    self.log.info(
+                        "No active window: the window backend (%s) reports none "
+                        "while '%s' is frontmost -- drawing it from the app "
+                        "name, without a title", _BACKEND_NAME, name)
+                else:
+                    self.log.info("No active window")
+                # ⚠️ DISABLE whether or not a TEMPLATE was active. The guard
+                # used to be `if self.current_entry`, which asks "was a
+                # hand-made overlay set on the board?" -- a question that was
+                # the whole story before the generic path existed and is half
+                # of it now. A generically-drawn app has no `current_entry`, so
+                # losing the window left its mark and its 48 shortcut icons on
+                # the keycaps, describing an application the user had already
+                # left (field, 2026-09-21: switching to an app the window
+                # handler cannot see kept the previous app's mark on ESC).
+                #
+                # Safe to send unconditionally: `_is_redundant_overlay_cmd`
+                # drops a DISABLE while the device already has overlays off, so
+                # this costs a bridge-sync only when something really is drawn.
+                self.current_entry = None
+                return None, OverlayCommand.DISABLE
 
         # self.log.info("Nothing at all")
         return None, OverlayCommand.NONE
@@ -353,7 +526,12 @@ class OverlayHandler:
             if name:
                 return name, rh.forwarded_identity(name)
             return None, None
-        return self.app_name, None
+        # ⚠️ `windowless_app` is the SAME question answered without a window
+        # (see the no-window branch of `_decide_active_window`). It must be
+        # consulted here rather than at the caller, so "which app is focused"
+        # has one answer -- the mark and the shortcut harvest would otherwise be
+        # able to disagree about it.
+        return self.app_name or self.windowless_app, None
 
     def focused_pid(self):
         """The focused LOCAL window's process id, or None.
@@ -382,9 +560,14 @@ class OverlayHandler:
         if rh is not None and self.is_remote_mapping_entry():
             return None
         try:
-            return self.win.getPID() if self.win else None
+            if self.win:
+                return self.win.getPID()
         except Exception:
             return None
+        # No window, but possibly still an app -- and the pid is what makes the
+        # OS icon and the macOS AX harvest reachable, so losing it here would
+        # leave a windowless app with a name and nothing to draw.
+        return self.windowless_pid
 
     def is_remote_mapping_entry(self):
         return (

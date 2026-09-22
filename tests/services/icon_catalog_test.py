@@ -717,5 +717,69 @@ class CacheAndFetchTest(unittest.TestCase):
         self.assertFalse(os.path.exists(ic.subset_path(["save"], self.tmp, ic.FLUENT)))
 
 
+class WhyTheFontIsUnreachableTest(unittest.TestCase):
+    """⚠️ "neither cached nor reachable" reads the same for FOUR causes.
+
+    Every path to `fetch_subset`'s None was a bare `except: return None` with
+    no logging at any level, so a refused download, an unwritable cache, a
+    proxy page served with a 200 and a stylesheet carrying no font url all
+    produced one sentence — and they need four different remedies.
+
+    Measured on macOS 2026-09-21: both faces failed on a machine where both
+    endpoints answer fine from elsewhere, and the log could not narrow it at
+    all. Same treatment `app_icons.fetch_icon` already got.
+    """
+
+    def _reason(self, face=ic.DEFAULT_FACE, **kw):
+        reasons = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            ic.fetch_subset(["content_copy"], tmp, face=face,
+                            reasons=reasons, **kw)
+        return reasons.get(face)
+
+    def test_the_network_being_DISALLOWED_is_named(self):
+        for face in (ic.MATERIAL, ic.FLUENT):
+            self.assertIn("network was not allowed",
+                          self._reason(face=face, allow_network=False), face)
+
+    def test_a_REFUSED_download_is_named_for_BOTH_faces(self):
+        """⚠️ Both, because the two take completely different code paths — one
+        fetches a TTF directly, the other a stylesheet first."""
+        with mock.patch.object(ic, "_get", side_effect=OSError("proxy refused")):
+            self.assertIn("proxy refused", self._reason(face=ic.FLUENT))
+            self.assertIn("proxy refused", self._reason(face=ic.MATERIAL))
+
+    def test_a_200_THAT_IS_NOT_THE_STYLESHEET_is_named(self):
+        """A captive portal or a proxy notice. Silent before this, and
+        indistinguishable from an outage."""
+        with mock.patch.object(ic, "_get", return_value=b"<html>portal</html>"):
+            self.assertIn("carried no font url", self._reason(face=ic.MATERIAL))
+
+    def test_a_reply_THAT_IS_NOT_A_TTF_is_named(self):
+        with mock.patch.object(ic, "_get",
+                               return_value=b"@font-face{src:url(https://x/f.ttf)}"):
+            self.assertIn("not a usable TTF", self._reason(face=ic.MATERIAL))
+        with mock.patch.object(ic, "_get", return_value=b"<html>portal</html>"):
+            self.assertIn("not a usable TTF", self._reason(face=ic.FLUENT))
+
+    def test_the_reason_is_OPTIONAL_and_costs_callers_nothing(self):
+        """`reasons` defaults to None; every existing caller passes nothing."""
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(ic.fetch_subset(["content_copy"], tmp,
+                                              allow_network=False))
+
+    def test_a_CACHED_font_records_no_reason(self):
+        """Success must not leave a reason behind for the caller to report."""
+        reasons = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = ic.subset_path(["content_copy"], tmp, ic.MATERIAL)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fh:
+                fh.write(b"\x00\x01\x00\x00" + b"\x00" * 64)
+            got = ic.fetch_subset(["content_copy"], tmp, reasons=reasons)
+        self.assertEqual(got, path)
+        self.assertEqual(reasons, {})
+
+
 if __name__ == "__main__":
     unittest.main()

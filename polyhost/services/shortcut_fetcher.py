@@ -68,10 +68,15 @@ class ShortcutIconFetcher:
         # `forget()` for the same reason -- a settings change invalidates the
         # masks, never the other machine's answer about its own app.
         self._harvested: dict[str, tuple] = {}
+        # app -> the pid it was focused as. ⚠️ On macOS this is what decides
+        # whether the harvest reads the app the caller meant or whatever
+        # NSWorkspace last called frontmost -- a value frozen on this thread.
+        # See `shortcut_source.macos._frontmost_name`.
+        self._pids: dict[str, int] = {}
 
     # ------------------------------------------------------------------
 
-    def overlays_for(self, app: str, harvested=None) -> dict:
+    def overlays_for(self, app: str, harvested=None, pid: int | None = None) -> dict:
         """{source_name: {(modifier, keycode): mask}} for an app; {} until known.
 
         ⚠️ Keyed on the app name AND the render settings, because a height or
@@ -98,6 +103,13 @@ class ShortcutIconFetcher:
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
+        if pid is not None:
+            # ⚠️ Keyed on the app alone and deliberately NOT part of the cache
+            # key, exactly like `_harvested`: a pid says WHICH PROCESS to read,
+            # and the answer does not depend on it -- the same app restarted
+            # under a new pid exposes the same shortcuts. Putting it in the key
+            # would re-harvest every app on every restart for no new answer.
+            self._pids[app] = int(pid)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if key in self._overlays:
@@ -164,7 +176,16 @@ class ShortcutIconFetcher:
             app, height, placement = key.split("\x00")
             overlays = self._resolve(app, int(height), placement)
             with self._lock:
-                self._overlays[key] = overlays
+                # ⚠️ None means "this harvest never LOOKED" -- focus had already
+                # moved on, or the accessibility call failed outright -- and it
+                # must not be cached. An empty dict IS cached, deliberately (see
+                # the module docstring), so storing a did-not-look answer as one
+                # pins "this app has no shortcuts" for the life of the process
+                # and the app is never re-harvested however long it is focused.
+                # Exactly the distinction the relay path is warned about in
+                # `overlays_for`, one layer down.
+                if overlays is not None:
+                    self._overlays[key] = overlays
                 self._inflight.discard(key)
             if overlays and self._on_ready is not None:
                 try:
@@ -176,13 +197,21 @@ class ShortcutIconFetcher:
                     self.log.debug("shortcut-icon ready callback failed",
                                    exc_info=True)
 
-    def _resolve(self, app: str, height: int, placement: str) -> dict:
-        """Everything slow, on this thread. Returns {} for every failure.
+    def _resolve(self, app: str, height: int, placement: str) -> dict | None:
+        """Everything slow, on this thread. `{}` for a failure, None to retry.
 
         The three reasons a `{}` happens are told apart in the log, because they
-        need opposite fixes: no accessibility backend (install the bridge, or
-        this is macOS), the app exposes nothing (a modern toolkit — nothing to
-        do), or nothing in what it exposes matched a concept (curation).
+        need opposite fixes: the backend is unusable (install the bridge, or
+        grant Accessibility permission on macOS), the app exposes nothing (a
+        modern toolkit — nothing to do), or nothing in what it exposes matched a
+        concept (curation). On macOS the middle one splits further still — see
+        `shortcut_source.harvest`.
+
+        ⚠️ **None is not a failure, it is "did not look"**, and `_loop` must not
+        cache it. A harvest the backend abandoned -- focus moved before it ran,
+        or the API failed -- says nothing about the app, so caching it as an
+        empty result is indistinguishable from the app genuinely having no
+        shortcuts and just as permanent.
         """
         relayed = self._harvested.get(app)
         if relayed is not None:
@@ -198,17 +227,34 @@ class ShortcutIconFetcher:
         else:
             unusable = shortcut_source.unavailable_reason()
             if unusable is not None:
-                # ⚠️ The REASON, not a flat "no backend on this platform". That
-                # sentence is true on macOS and misleading everywhere else: the
-                # commonest cause is an interpreter that cannot see the system
-                # PyGObject, which the sentence rules out, so a user reading it
-                # goes and installs a package they already have.
+                # ⚠️ The REASON, not a flat "no backend on this platform".
+                # That sentence is now true on NO platform -- macOS has a
+                # backend since the AX one landed -- and it was always
+                # misleading everywhere else: the commonest cause is an
+                # interpreter that cannot see the system PyGObject, which the
+                # sentence rules out, so a user reading it goes and installs a
+                # package they already have. On macOS the likeliest cause is a
+                # permission nobody has granted yet, which reads as an app with
+                # no shortcuts unless the reason says otherwise.
                 self._say(app, unusable)
                 return {}
-            shortcuts = shortcut_source.harvest(app)
+            reason: dict = {}
+            shortcuts = shortcut_source.harvest(app, reason=reason,
+                                                pid=self._pids.get(app))
             if not shortcuts:
-                self._say(app, "the app exposes no accelerators")
-                return {}
+                # ⚠️ The backend's own sentence when it has one. *"The app
+                # exposes no accelerators"* is true of exactly ONE of the six
+                # ways the macOS backend returns [], and reads as settled fact
+                # for the other five -- a revoked permission, an app with no
+                # AXMenuBar, a focus race, an AX failure. Four macOS apps
+                # reported it on a machine where Chrome harvested 65, so the
+                # import and the permission were provably fine and the line
+                # narrowed nothing (field, 2026-09-21).
+                self._say(app, reason.get("why")
+                          or "the app exposes no accelerators")
+                # Nothing was learned about this app, so do not cache it;
+                # `_loop` reads the None, and its comment says why.
+                return None if reason.get("retry") else {}
         # ⚠️ The codepoint table is loaded BEFORE planning, not after, because
         # the planner now uses it: a label the lexicon does not know falls back
         # to a name derived from the label, and the table is what rejects a
@@ -221,7 +267,8 @@ class ShortcutIconFetcher:
             self.log.debug("shortcut codepoints unavailable for '%s'", app,
                            exc_info=True)
             codepoints = {}
-        report = shortcut_overlays.plan_report(shortcuts, known_names=codepoints)
+        report = shortcut_overlays.plan_report(shortcuts, known_names=codepoints,
+                                               app=app)
         slots = report.slots
         self._report(app, shortcuts, report)
         if not slots:
@@ -235,10 +282,21 @@ class ShortcutIconFetcher:
         # share a request. `render` therefore draws a single face and the
         # results merge here.
         by_face = shortcut_overlays.icon_names_by_face(slots)
+        # ⚠️ The Material request is the WHOLE LEXICON plus whatever this app
+        # derived, not just this app's names -- `subset_path` keys its cache on
+        # the set asked for, so a per-app set is a new cache file and a fresh
+        # HTTPS round-trip on first sight of every application, forever. The
+        # union keeps the common case on one stable file (an app that needs
+        # only lexicon names asks for exactly the lexicon) while an app that
+        # derived a name outside it still gets that name drawn.
+        floor = shortcut_overlays.lexicon_names_by_face()
         overlays: dict = {}
         for face, names in sorted(by_face.items()):
+            wanted = sorted(set(names) | set(floor.get(face, ())))
+            reasons: dict = {}
             try:
-                font = icon_catalog.fetch_subset(names, self._cache_dir, face=face)
+                font = icon_catalog.fetch_subset(wanted, self._cache_dir, face=face,
+                                                 reasons=reasons)
                 table = (codepoints if face == icon_catalog.MATERIAL
                          else icon_catalog.load_codepoints(self._cache_dir, face=face))
             except Exception:
@@ -248,7 +306,17 @@ class ShortcutIconFetcher:
             if not font or not table:
                 # ⚠️ Per face, not fatal: Fluent being unreachable must still
                 # leave the Material half drawn rather than blanking the app.
-                self._say(app, f"the {face} icons are neither cached nor reachable")
+                #
+                # ⚠️ And it names WHICH of the two is missing and WHY. The bare
+                # sentence reads the same for a refused download, an unwritable
+                # cache, a proxy page served with a 200 and a stylesheet that
+                # carried no url -- four causes with four different remedies,
+                # and nothing below INFO said anything at all (field, macOS,
+                # 2026-09-21: both faces failed and the log could not narrow it).
+                missing = ("the font" if not font else "the codepoint table")
+                self._say(app, f"the {face} icons are neither cached nor "
+                               f"reachable -- {missing} is missing"
+                               + (f" ({reasons[face]})" if reasons.get(face) else ""))
                 continue
             try:
                 overlays.update(shortcut_overlays.render(
