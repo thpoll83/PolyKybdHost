@@ -13,7 +13,9 @@ display — like the other GUI-adjacent tests.
 """
 import os
 import sys
+import ctypes
 import unittest
+from unittest.mock import MagicMock, patch
 
 # Importing win_helper pulls pynput, which needs an X server only on Linux. Skip
 # just that case — Windows/macOS (where DISPLAY is naturally absent) must keep
@@ -92,6 +94,87 @@ class ParseLanguageTagsTest(unittest.TestCase):
     def test_empty_output(self):
         self.assertEqual(_parse_tags(""), [])
 
+
+
+class ForegroundLayoutReadTest(unittest.TestCase):
+    """Reading the current input language off the FOREGROUND WINDOW.
+
+    ⚠️ The bug this replaces: `InputLanguage.CurrentInputLanguage` read in a
+    fresh PowerShell process reports the per-THREAD default, not what the
+    window in front is typing in. It returned the same `ko-KR` on eight
+    consecutive reads while eight Win+Space presses were landing, so
+    `set_language` never saw its target and called a working switch a
+    failure (field, Windows 11, 2026-09-22)."""
+
+    def _helper(self):
+        from polyhost.input.win_helper import WindowsInputHelper
+        return WindowsInputHelper()
+
+    @staticmethod
+    def _user32(hwnd=0x1234, thread_id=42, hkl=0x0C070C07):
+        """A fake user32. 0x0C07 is de-AT; an HKL's low word is its LANGID."""
+        u = MagicMock()
+        u.GetForegroundWindow.return_value = hwnd
+        u.GetWindowThreadProcessId.return_value = thread_id
+        u.GetKeyboardLayout.return_value = hkl
+        return u
+
+    def test_the_foreground_windows_layout_is_what_is_reported(self):
+        u = self._user32()
+        with patch.object(ctypes, "windll", MagicMock(user32=u), create=True):
+            ok, value = self._helper()._current_language_win32()
+        self.assertTrue(ok)
+        self.assertEqual(value, "de-AT")
+        # …and it asked about the FOREGROUND thread, not the calling one.
+        u.GetKeyboardLayout.assert_called_once_with(42)
+
+    def test_a_korean_layout_round_trips_too(self):
+        u = self._user32(hkl=0x04120412)
+        with patch.object(ctypes, "windll", MagicMock(user32=u), create=True):
+            ok, value = self._helper()._current_language_win32()
+        self.assertTrue(ok)
+        self.assertEqual(value, "ko-KR")
+
+    def test_no_foreground_window_REFUSES_rather_than_asking_thread_zero(self):
+        """⚠️ `GetKeyboardLayout(0)` means "the calling thread" — the exact
+        question whose answer was useless. Falling back to it here would
+        reintroduce the bug in a new place."""
+        u = self._user32(hwnd=0)
+        with patch.object(ctypes, "windll", MagicMock(user32=u), create=True):
+            ok, reason = self._helper()._current_language_win32()
+        self.assertFalse(ok)
+        self.assertIn("no foreground window", reason)
+        u.GetKeyboardLayout.assert_not_called()
+
+    def test_an_unknown_langid_is_a_miss_not_a_wrong_answer(self):
+        u = self._user32(hkl=0xFFFFFFFF)
+        with patch.object(ctypes, "windll", MagicMock(user32=u), create=True):
+            ok, reason = self._helper()._current_language_win32()
+        self.assertFalse(ok)
+        self.assertIn("LANGID", reason)
+
+    def test_get_current_language_falls_back_to_powershell(self):
+        """The fallback is what covers a process with no foreground window."""
+        h = self._helper()
+        u = self._user32(hwnd=0)
+        with patch.object(ctypes, "windll", MagicMock(user32=u), create=True), \
+             patch.object(type(h), "_current_language_powershell",
+                          return_value=(True, "en-US")) as ps:
+            ok, value = h.get_current_language()
+        self.assertTrue(ok)
+        self.assertEqual(value, "en-US")
+        ps.assert_called_once()
+
+    def test_win32_success_does_not_spawn_powershell(self):
+        """The read happens inside the cycling loop, once per press — it must
+        not be a process spawn."""
+        h = self._helper()
+        with patch.object(ctypes, "windll", MagicMock(user32=self._user32()), create=True), \
+             patch.object(type(h), "_current_language_powershell") as ps:
+            ok, value = h.get_current_language()
+        self.assertTrue(ok)
+        self.assertEqual(value, "de-AT")
+        ps.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

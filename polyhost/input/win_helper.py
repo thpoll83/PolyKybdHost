@@ -79,6 +79,67 @@ class WindowsInputHelper(InputHelper):
         return tags
 
     def get_current_language(self):
+        """The input language of the FOREGROUND WINDOW.
+
+        ⚠️ **Asking a fresh PowerShell process was the wrong question.**
+        `InputLanguage.CurrentInputLanguage` is per-THREAD, so a brand-new
+        process reports the system default, not what the window in front is
+        typing in. It therefore never followed a Win+Space switch: the field
+        log shows the same `ko-KR` on eight consecutive reads across eight
+        presses that were demonstrably landing (2026-09-22). `set_language`
+        compares against this value to decide when to stop cycling, so a
+        stuck read means it can never succeed — it presses N times, never
+        sees the target, and reports failure for a switch that worked.
+
+        `GetKeyboardLayout(<foreground thread>)` asks about the right thread.
+        PowerShell stays as the fallback for the case that has no answer: no
+        foreground window at all, which a headless or freshly-started process
+        can genuinely hit."""
+        ok, value = self._current_language_win32()
+        if ok:
+            return True, value
+        self.log.debug("Win32 layout read unavailable (%s); using PowerShell", value)
+        return self._current_language_powershell()
+
+    def _current_language_win32(self):
+        """`(True, "de-AT")` from the foreground window's keyboard layout."""
+        try:
+            user32 = ctypes.windll.user32
+        except AttributeError as ex:      # not Windows
+            return False, f"no user32 ({ex})"
+        try:
+            # Pin the signatures: HKL and HWND are pointer-sized, and the
+            # default `int` restype truncates them on 64-bit.
+            user32.GetForegroundWindow.restype = ctypes.c_void_p
+            user32.GetWindowThreadProcessId.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+            user32.GetWindowThreadProcessId.restype = ctypes.c_uint32
+            user32.GetKeyboardLayout.argtypes = [ctypes.c_uint32]
+            user32.GetKeyboardLayout.restype = ctypes.c_void_p
+
+            hwnd = user32.GetForegroundWindow()
+            if not hwnd:
+                # ⚠️ Do NOT fall through to GetKeyboardLayout(0) here — thread
+                # id 0 means "the calling thread", which is the very thing
+                # that made the PowerShell answer useless.
+                return False, "no foreground window"
+            thread_id = user32.GetWindowThreadProcessId(ctypes.c_void_p(hwnd), None)
+            hkl = user32.GetKeyboardLayout(thread_id)
+        except (AttributeError, OSError, ValueError) as ex:
+            return False, f"{type(ex).__name__}: {ex}"
+        if not hkl:
+            return False, "GetKeyboardLayout returned 0"
+        # The low word of an HKL is the LANGID, which is the LCID that
+        # `locale.windows_locale` is keyed by — the same table
+        # `_set_language_native` uses in the opposite direction.
+        langid = hkl & 0xFFFF
+        culture = locale.windows_locale.get(langid)
+        if not culture:
+            return False, f"no culture for LANGID 0x{langid:04x}"
+        self.log.debug("Foreground layout: HKL=0x%x LANGID=0x%04x -> %s",
+                       hkl, langid, culture)
+        return True, culture.replace("_", "-")
+
+    def _current_language_powershell(self):
         try:
             result = subprocess.run(
                 ['powershell', '-NoProfile', '-NonInteractive', '-Sta', '-WindowStyle', 'Hidden',

@@ -6,6 +6,7 @@ KDE and macOS have real selectors and override it entirely — they read the
 same `self.comp`, from their own code."""
 
 import unittest
+from unittest.mock import patch
 
 from polyhost.input.input_helper import InputHelper
 from polyhost.lang.lang_compat import LangComp
@@ -206,6 +207,68 @@ class NativeWindowsPathTest(unittest.TestCase):
         ok, got = h.set_language("ty", "PF")
         self.assertTrue(ok, got)
         self.assertEqual(got, "fr-FR")
+
+
+class StuckReadTest(unittest.TestCase):
+    """The field bug: the switch lands, the OBSERVATION does not follow.
+
+    Windows read the current language out of a fresh PowerShell process, where
+    `InputLanguage.CurrentInputLanguage` reports the per-thread default rather
+    than the foreground window's layout. It returned the same `ko-KR` on eight
+    consecutive reads while eight Win+Space presses were demonstrably landing,
+    so `set_language` could never see its target and reported failure for a
+    switch that had worked."""
+
+    class Frozen(InputHelper):
+        """An OS whose layout never appears to change, however many presses."""
+        def __init__(self, platform, installed, frozen_at):
+            super().__init__(platform)
+            self.installed = list(installed)
+            self.frozen_at = frozen_at
+            self.presses = 0
+        def get_languages(self):
+            return self.installed
+        def get_current_language(self):
+            return True, self.frozen_at
+
+    def test_a_language_that_never_moves_is_named_as_such(self):
+        h = self.Frozen("windows", ["en-US", "de-DE", "ko-KR", "fr-FR"], "ko-KR")
+        ok, msg = h.set_language("fr", "FR")
+        self.assertFalse(ok)
+        # Not just "could not switch" — which of the two faults it was.
+        self.assertIn("stayed on ko-KR", msg)
+        self.assertIn("read is stale", msg)
+
+    def test_a_cycling_failure_names_what_it_saw(self):
+        """The other shape: the OS DOES move, it just never reaches the
+        target. That is a different fault and must not claim a stuck read."""
+        class Cycling(InputHelper):
+            def __init__(self):
+                super().__init__("windows")
+                self.seq = ["ko-KR", "en-US", "de-DE", "ko-KR", "en-US"]
+                self.i = 0
+            def get_languages(self):
+                return ["en-US", "de-DE", "ko-KR"]
+            def get_current_language(self):
+                v = self.seq[min(self.i, len(self.seq) - 1)]
+                self.i += 1
+                return True, v
+        ok, msg = Cycling().set_language("ja", "JP")
+        self.assertFalse(ok)
+        self.assertNotIn("stayed on", msg)
+
+    def test_the_os_is_given_time_to_apply_the_switch(self):
+        """⚠️ The Windows read used to be a PowerShell spawn, whose few
+        hundred ms of latency doubled as settle time. A direct Win32 read
+        returns instantly and can beat the switch it is observing."""
+        from polyhost.input import input_helper
+        self.assertGreater(input_helper._SWITCH_SETTLE_S, 0)
+        waits = []
+        h = self.Frozen("windows", ["en-US", "de-DE"], "en-US")
+        with patch.object(input_helper.time, "sleep", waits.append):
+            h.set_language("de", "DE")
+        self.assertTrue(waits, "pressed Win+Space and re-read with no settle time")
+        self.assertTrue(all(w == input_helper._SWITCH_SETTLE_S for w in waits))
 
 
 class ThreeMapsTest(unittest.TestCase):
