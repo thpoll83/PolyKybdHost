@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 
 about = {}
-with open(os.path.join(here, "polyhost/_version.py")) as version_file:
+with open(os.path.join(here, "polyhost/_version.py"), encoding="utf-8") as version_file:
     exec(version_file.read(), about)
 
 

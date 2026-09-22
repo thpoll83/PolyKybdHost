@@ -506,10 +506,13 @@ outside those files:
   same tree ran **1982** tests with `hid`/`requests`/`pynput` absent and **2447** with
   them installed. Comparing a failure set against a baseline then comes back clean for a
   reason that has nothing to do with coverage. **Install the deps and read the count.**
-- ⚠️ **A text-mode `open()` without `encoding=` is a WINDOWS-ONLY crash, and this
-  repo has now paid for it TWICE.** Python decodes with the platform default —
-  the ANSI code page on Windows (cp1252), never UTF-8 — so any file of ours
-  carrying an em dash, a box-drawing rule or a ⚠️ is a grenade there.
+- ⚠️ **A text-mode `open()` without `encoding=` on a NON-ASCII file of ours is a
+  Windows crash, and this repo has now paid for it TWICE.** Python decodes with
+  the platform default — the ANSI code page on Windows (cp1252), never UTF-8 —
+  so any file of ours carrying an em dash, a box-drawing rule or a ⚠️ is a
+  grenade there. (Pure ASCII is safe under every codec, and `PYTHONUTF8=1` opts
+  a whole process out — neither is something we can assume about a user's
+  machine.)
   `lang_compat.py` took `PolyHost.__init__`, the tray and the daemon down with
   `UnicodeDecodeError: byte 0x8f` (field, Windows 11 / Python 3.13, 2026-09-22),
   three months after `publish_release.py` hit the identical codec on the
@@ -524,9 +527,13 @@ outside those files:
   `requirements.txt`, `bundles.json`) gets `encoding="utf-8"`. A file the USER
   owns (`--host-file`, a chosen `.poly.cmd`, KDE's `kxkbrc`) keeps the platform
   default until we define a fallback policy, because forcing UTF-8 there newly
-  REJECTS a legacy cp1252 file that reads fine today. Find every candidate with
-  an AST sweep for a call to `open` with no `encoding` keyword and no `b` in the
-  mode — 5 hits in 2026-09, 2 ours and fixed, 3 user-owned and left.
+  REJECTS a legacy cp1252 file that reads fine today. Find every candidate by
+  **re-running** the AST sweep — every tracked `.py`, calls to the BUILTIN `open`
+  only, no `encoding` keyword, no `b` in the mode — and classify each hit by
+  ownership. ⚠️ **Scope the sweep to the whole tree, not `polyhost/`**: the
+  2026-09 pass stopped there, reported 5, and missed four more of ours in
+  `setup.py`, `tools/` and `tests/` that a reviewer then found (2026-09-22).
+  Three hits remain today and all three are user-owned.
 - **Chromium is available headless — use it to LOOK at generated HTML/SVG** rather than
   reading the markup (`--headless --screenshot`, then Read the PNG; add
   `--blink-settings=preferredColorScheme=0` for dark). This caught a dashboard defect

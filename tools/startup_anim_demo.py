@@ -498,7 +498,7 @@ def emit_firmware_geom(r, geom, path):
     lines.append(",\n".join(f"    {{{cx},{cy},0x{cp:X}}}" for cx, cy, cp in targets))
     lines.append("};")
     lines.append("")
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"wrote {path}: board {W}x{H} (native px), {len(targets)} letter targets, scale {scale:.3f}")
 

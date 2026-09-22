@@ -17,7 +17,7 @@ RES = os.path.join(os.path.dirname(__file__), "..", "..", "polyhost", "res", "fo
 
 
 def _load_bundles():
-    with open(os.path.join(RES, "bundles.json")) as f:
+    with open(os.path.join(RES, "bundles.json"), encoding="utf-8") as f:
         return json.load(f)["bundles"]
 
 
