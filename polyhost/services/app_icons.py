@@ -77,6 +77,32 @@ SOURCES = {
 }
 DEFAULT_SOURCE = "si"
 
+# A THIRD source, and the only one that is not a catalog on the internet: marks
+# shipped in this repo, under `res/icons/program/`.
+#
+# ⚠️ It is a CATALOG, not a name->slug map, and the distinction is the one
+# `docs/generic-icons-plan.md` turns on. The file is named after the app's own
+# slug -- `terminal.svg` answers `poly:terminal` -- so there is no table to
+# groom and a user can drop their own mark in for an application we have never
+# heard of. That is the plan's own test for whether something belongs.
+#
+# It exists because four of the five marks a macOS desktop actually needs are
+# in NEITHER catalog under any name `candidates()` derives: Photos, Notes and
+# Terminal are 404 in both, and Finder only became reachable by adding the
+# `apple-` prefix to MDI_PREFIXES below.
+LOCAL_SOURCE = "poly"
+PROGRAM_ICON_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "res", "icons", "program")
+
+# ⚠️ A shipped mark may be a finished 72x40 MASK rather than an SVG, and the
+# two are read differently. A mark carrying a DITHER cannot be a vector at all
+# -- `svg_raster` has no patterns and no opacity, and the panel is one bit, so
+# a per-region grey has to be resolved to pixels when the icon is authored.
+# Such a mask is loaded VERBATIM: putting a halftone back through
+# `icon_binarise` is what turns it into mush.
+LOCAL_SUFFIXES = (".svg", ".png")
+
 # ⚠️ The prefixed mdi guesses are what reach Office at all -- an executable named
 # `word` has to become `microsoft-word`. They are safe because of what is IN the
 # prefix, measured rather than assumed: all 50 `microsoft-*` stems in mdi are
@@ -84,7 +110,18 @@ DEFAULT_SOURCE = "si"
 # and `adobe-*` has exactly one (`acrobat`). The only two stems that are also
 # Simple Icons slugs -- `dot-net` and `github` -- are resolved by Simple Icons
 # first and never reach this list. Re-run that check before adding a prefix.
-MDI_PREFIXES = ("microsoft-", "adobe-")
+#
+# ⚠️ `apple-` is the WEAKEST of the three and was added knowing that. Re-run
+# 2026-09-22 over mdi's full name list including aliases: 12 `apple-*` entries,
+# of which 7 are product names (finder, safari, icloud, ios, ipod, airplay,
+# mobileme) and 5 are NOT -- `apple-keyboard-{caps,command,control,option,
+# shift}` are modifier symbols. So unlike the other two the family is not all
+# brands, and the guard is that a stem has to match one: an application whose
+# executable stem is `ios` or `keyboard-caps` would collide. Measured as worth
+# it because `mdi:apple-finder` is the ONLY Finder mark in either catalog and
+# nothing could reach it -- `si:finder` is a 404 and a one-word display name is
+# refused the bare mdi form by the hyphen rule below.
+MDI_PREFIXES = ("microsoft-", "adobe-", "apple-")
 
 HTTP_TIMEOUT = 15
 
@@ -251,6 +288,16 @@ def candidates(app_name: str, names=()) -> list:
         # prefixed families are guessed; every stem behind them is a product name.
         for prefix in MDI_PREFIXES:
             offer(f"mdi:{prefix}{stem}")
+
+    # The shipped marks go LAST. With `program_overlay` ranking by legibility
+    # the order is only a tie-break, but the tie should go to a real brand mark
+    # over a generic one of ours.
+    for display in names:
+        slug = normalise(display)
+        if slug:
+            offer(f"{LOCAL_SOURCE}:{slug}")
+    if guess:
+        offer(f"{LOCAL_SOURCE}:{guess}")
     return out
 
 
@@ -313,11 +360,35 @@ def _is_svg(data: bytes) -> bool:
     return head.startswith(b"<?xml") or head.startswith(b"<svg")
 
 
+def local_icon_path(name: str) -> str | None:
+    """The shipped mark of that name, `.svg` before `.png`, or None.
+
+    Never touches the cache dir: these are repo content, not downloads, so an
+    unwritable or empty cache cannot make one disappear.
+    """
+    if not name or os.sep in name or (os.altsep and os.altsep in name) \
+            or name.startswith("."):
+        # A slug reaches here from an application's own reported name, so it is
+        # untrusted input on the way to a filesystem path. `normalise` already
+        # strips it to [a-z0-9], but `candidates()` is not the only caller.
+        return None
+    for suffix in LOCAL_SUFFIXES:
+        path = os.path.join(PROGRAM_ICON_DIR, name + suffix)
+        if os.path.exists(path):
+            return path
+    return None
+
+
 def icon_path(slug: str, cache_dir: str | None = None) -> str:
     """⚠️ The cache filename carries the SOURCE. The two catalogs share names
     (`mdi:slack` and `si:slack` are different drawings of the same brand), so a
     bare name would let whichever was fetched first answer for both."""
     source, name = split_name(slug)
+    if source == LOCAL_SOURCE:
+        # Not a cache entry at all. Returned anyway so a caller that only wants
+        # "which file answered this slug" (the fetcher's log line) still works.
+        return local_icon_path(name) or os.path.join(
+            PROGRAM_ICON_DIR, f"{name}{LOCAL_SUFFIXES[0]}")
     return os.path.join(cache_dir or default_cache_dir(), f"{source}-{name}.svg")
 
 
@@ -348,6 +419,10 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
     if not slug:
         return None
     source, name = split_name(slug)
+    if source == LOCAL_SOURCE:
+        # Shipped, so there is nothing to download and `allow_network` does not
+        # apply -- a mark of ours must draw on an offline machine.
+        return local_icon_path(name) or why("no shipped mark of that name")
     if source not in SOURCES:
         # Checked BEFORE the cache, not after: otherwise a file left under an
         # unknown source (a stale name, a hand-dropped file) is served as if the
@@ -486,6 +561,55 @@ def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
     y = max(0, (PANEL_H - height) // 2)
     mask[y:y + height, x:x + width] = np.array(ink) > INK_THRESHOLD
     return mask
+
+
+def load_mask(path: str):
+    """A finished 72x40 overlay mask read VERBATIM from a 1-bit PNG, or None.
+
+    ⚠️ Deliberately no binarisation, no fit and no scaling. This file is already
+    the thing `OverlayData` consumes -- it was authored at panel size precisely
+    because what it carries (a per-region dither) cannot survive being read as
+    a picture and re-thresholded. Anything that is not exactly panel-sized is
+    refused rather than resized, because a resize IS a re-threshold.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+        with Image.open(path) as image:
+            array = np.array(image.convert("L")) > 127
+    except Exception as exc:                # noqa: BLE001 - cosmetic lookup
+        log.debug("Could not read the mark mask %s: %s", path, exc)
+        return None
+    if array.shape != (PANEL_H, PANEL_W):
+        log.info("Ignoring the mark mask %s: it is %dx%d, not %dx%d",
+                 path, array.shape[1], array.shape[0], PANEL_W, PANEL_H)
+        return None
+    return array if array.any() else None
+
+
+def render_mark(path: str):
+    """The overlay mask for a catalog or shipped mark, whichever form it is in."""
+    if path.lower().endswith(".png"):
+        return load_mask(path)
+    return render_overlay(path)
+
+
+def mark_score(mask) -> float:
+    """`icon_binarise.score` of a mark, read over ITS OWN ink.
+
+    ⚠️ Cropping matters. The panel's left two thirds are blank by construction,
+    so scoring the whole 72x40 deflates every density term and ranks a big mark
+    above a legible one. `score()` is written for a mask fitted to its ink.
+    """
+    try:
+        import numpy as np
+    except Exception:                       # noqa: BLE001
+        return 0.0
+    if mask is None or not mask.any():
+        return -1.0
+    rows, cols = np.flatnonzero(mask.any(1)), np.flatnonzero(mask.any(0))
+    return icon_binarise.score(mask[rows[0]:rows[-1] + 1,
+                                    cols[0]:cols[-1] + 1])
 
 
 def _looks_like_svg(data: bytes) -> bool:
@@ -700,16 +824,54 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
                  conversion or "nothing rendered", score,
                  icon_binarise.MIN_SCORE)
 
+    # ⚠️ EVERY candidate is resolved and the BEST-SCORING one wins -- this is
+    # not first-match-wins any more. A fixed source preference cannot express
+    # the case it was changed for, and the per-app table that could is what
+    # `docs/generic-icons-plan.md` exists to refuse:
+    #
+    #   * GNOME Terminal reports the display name "Terminal" and the exe stem
+    #     `gnometerminal`. `si:gnometerminal` exists -- a heavy white plate,
+    #     1134 px of ink, 0.362 -- so first-match shipped it and the far more
+    #     legible `poly:terminal` (340 px, 0.415) was never reached.
+    #
+    # Ranking costs nothing per window switch: `app_icon_fetcher` resolves an
+    # app ONCE per process, on its own thread, and caches the misses too.
+    #
+    # ⚠️ IT DOES NOT FIX SAFARI, and the reason is a gap in `score()` rather
+    # than in the ordering here. `si:safari` is a near-solid disc with a
+    # hairline needle and reads badly on the panel, but it scores 0.610 against
+    # `mdi:apple-safari`'s 0.532 and therefore still wins. Its tight-bbox
+    # density is 0.727, just over `MAX_LIT`, so `score()` takes its
+    # polarity-inversion path and rates the INVERSE -- the path added for a
+    # white `>_` knocked out of a black terminal plate. That path is gated on
+    # an enclosed hole precisely to stop a filled silhouette being read as line
+    # art (its comment records a flat disc scoring 0.43 that way), and the
+    # needle IS an enclosed hole (share 0.188), so a mostly-filled disc with a
+    # small hole walks through a gate built to catch a disc with none. The
+    # separating term is that a real dark plate's inverse does not touch the
+    # bounding box border while a silhouette's inverse is the page around it
+    # and does -- untried, because `score()` is fitted to a judged 87-icon
+    # corpus and a new term has to be validated against it, not against one
+    # favourite mark. ⚠️ Do not "fix" this by reordering SOURCES: that is the
+    # fixed preference this block replaced, and it would take GNOME Terminal
+    # back with it.
     tried = candidates(app_name, names)
     reasons: dict = {}
+    best = None
     for name in tried:
         path = fetch_icon(name, cache_dir, allow_network, reasons=reasons)
         if not path:
             continue
-        mask = render_overlay(path)
-        if mask is not None:
-            log.info("Program mark for %s from the catalog: %s", app_name, name)
-            return mask, name
+        mask = render_mark(path)
+        if mask is None:
+            continue
+        value = mark_score(mask)
+        if best is None or value > best[0]:
+            best = (value, mask, name)
+    if best is not None:
+        log.info("Program mark for %s: %s (score %.3f, best of %s)",
+                 app_name, best[2], best[0], ", ".join(tried))
+        return best[1], best[2]
     # The names are the whole story when nothing draws -- they say whether the
     # OS gave us a usable display name or only an executable stem.
     log.info("No program mark for %s: the catalog carries none of %s "
