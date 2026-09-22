@@ -446,6 +446,12 @@ MAC_MOD_NO_COMMAND = 0x08
 # the key equivalent as a character, so there is no virtual key to read. Only
 # the ones a keycap can draw are listed; anything else yields no HID id and is
 # reported undisplayable rather than guessed at.
+#: The Unicode Private Use Area. A codepoint in here has no agreed meaning, so
+#: it is never a legend a keycap could draw and never a `KEYSYM_TO_HID` key --
+#: Cocoa uses the top of it for the function keys the tables below do not cover.
+PRIVATE_USE_FIRST = 0xE000
+PRIVATE_USE_LAST = 0xF8FF
+
 MAC_FUNCTION_KEY_TO_HID: dict[int, tuple[str, int]] = {
     0xF700: ("Up", 0x52), 0xF701: ("Down", 0x51),
     0xF702: ("Left", 0x50), 0xF703: ("Right", 0x4F),
@@ -549,11 +555,21 @@ def parse_mac_accel(cmd_char: str = "", virtual_key: int | None = None,
             name, hid = MAC_CONTROL_CHAR_TO_HID[code]
         elif code == 0x20:
             name, hid = "space", 0x2C
-        elif code > 0x20:
+        elif code > 0x20 and not (PRIVATE_USE_FIRST <= code <= PRIVATE_USE_LAST):
             # ⚠️ Case is DISPLAY, never Shift -- see (2). The HID usage is the
             # same key either way, and Shift rides in the mask.
             name = char[0]
             hid = KEYSYM_TO_HID.get(name) or KEYSYM_TO_HID.get(name.lower())
+        # ⚠️ An UNMAPPED private-use character must fall through to the virtual
+        # key, and the guard above is what lets it. Cocoa puts its function-key
+        # codes in the PUA (`NSF13FunctionKey` up, Help, Menu, Break, ...), and
+        # the two tables above cover 25 of them -- everything else in the block
+        # satisfied `code > 0x20` and became the keysym itself. The damage was
+        # not the mojibake name: it is that `name` was then set, and the
+        # virtual-key fallback below requires `not name`, so the ONE thing that
+        # could still identify the key never ran. Nothing draws either way
+        # (`displayable_hid(None)` is False), so this is a lost identification,
+        # not a wrong keycap.
     # ⚠️ `is None`, because kVK_ANSI_A is 0x00 -- see (3).
     if hid is None and not name and virtual_key is not None:
         entry = MAC_VIRTUAL_KEY_TO_HID.get(int(virtual_key))
