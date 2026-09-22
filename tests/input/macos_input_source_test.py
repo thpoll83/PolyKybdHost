@@ -173,7 +173,11 @@ class CompatibleLayoutFallbackTest(unittest.TestCase):
             finally:
                 depth["now"] -= 1
 
-        import polyhost.input.macos_input_source as mis
+        # importlib, not `import … as`: the module is already pulled in with
+        # `from … import` at the top, and having both forms is what CodeQL
+        # alert 358 named. The other fixtures here reach for the module the
+        # same way.
+        mis = importlib.import_module("polyhost.input.macos_input_source")
         self.addCleanup(setattr, mis, "pick_input_source", real)
         mis.pick_input_source = counting
         # `se-NO` with NOTHING enabled, so the whole walk is explored: two
