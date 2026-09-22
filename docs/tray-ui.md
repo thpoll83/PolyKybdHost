@@ -25,6 +25,32 @@ and relative links were adjusted to suit a standalone file.
   The language menu is built lazily and inserts itself at `self._lang_anchor`
   (Brightness), not at index 1.
 
+- ⚠️ **A tray balloon reaches NOBODY on macOS as we ship today, and nothing said
+  so.** `QSystemTrayIcon.showMessage` is Qt's Cocoa backend calling
+  `NSUserNotificationCenter`, which drops a notification whose calling process has no
+  bundle identifier of its own — no banner, no exception, and `messageClicked` never
+  fires, so the click-to-install path dies with it. PolyHost is always a bare
+  `python -m polyhost` there: the LaunchAgent's `ProgramArguments` is the shell wrapper,
+  and even `~/Applications/PolyHost.app` is a `/bin/sh` shim that `exec`s that same
+  wrapper, so `NSBundle.mainBundle` resolves to the Python framework. The user-visible
+  cost was the whole new-version announcement: the check ran, the balloon vanished, and
+  the only remaining signal was a row **inside** the Updates submenu. Two things replace
+  it (`gui/tray_notify.py`):
+    - `_balloons_reach_user()` decides, and it asks the question `NSBundle` asks — is
+      the running executable inside `<name>.app/Contents/MacOS/`? — **not**
+      `sys.platform == "darwin"`. Ship a real bundle one day and balloons come back with
+      nothing here to revert. When it is False the update flow opens its confirmation
+      dialog directly, which is what `forwarder.py` has always done on every platform,
+      and **once per version per session**: the 24 h timer re-reports the same release,
+      and a modal that reopens by itself is worse than the silence it replaced.
+    - The top-level **Updates** row carries the version (`Updates — host v1.1.6
+      available`), because the row that names it sits one submenu deeper than anyone
+      looks. ⚠️ The tray **tooltip** now has two writers, so `_refresh_tray_tooltip`
+      is the only caller of `setToolTip`: a font-pack flash borrows it for its
+      percentage and hands it back, where the old bare `setToolTip("")` at the end of
+      the flash would have wiped the update marker. Pinned by
+      `tests/gui/host_client_test.py` `test_update_is_visible_without_a_balloon`.
+
 - **A menu row that can answer its own question should — the font-pack row is the
   pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
   `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of

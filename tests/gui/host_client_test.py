@@ -89,6 +89,25 @@ class TestPolyHostModes(unittest.TestCase):
         # The newer-firmware row must not clutter the normal menu.
         self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
+    def test_update_is_visible_without_a_balloon(self):
+        """macOS never delivers `showMessage` (see `gui/tray_notify`), so the
+        two things that replace it are pinned here: the confirmation dialog
+        opens by itself, ONCE per version however often the timer re-reports
+        it, and the top-level tray row names the version."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        self.assertEqual(_grab(proc.stdout, "FALLBACK_PROMPTS"), "9.9.9")
+        self.assertEqual(_grab(proc.stdout, "UPDATES_ROW"),
+                         "Updates \u2014 host v9.9.9 available")
+        self.assertEqual(_grab(proc.stdout, "UPDATES_TIP"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+        # The tooltip has two writers; the flash borrows it and gives it back.
+        # A bare setToolTip("") at the end of the flash used to wipe the marker.
+        self.assertEqual(_grab(proc.stdout, "TIP_FLASHING"),
+                         "PolyKybd \u2014 updating font pack (42%)")
+        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_FLASH"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+
     def test_developer_mode_only_adds_a_submenu(self):
         """Developer mode must ADD, never rearrange — muscle memory has to survive
         the toggle, so the normal rows stay identical and in the same order."""
@@ -352,6 +371,28 @@ def _smoke_default():
         print("COLLECT_LOGS_REUSED", app.log_bundle_dialog is dlg)
         if dlg is not None:
             dlg.close()
+
+        # --- a new version where no balloon is delivered (macOS) ------------
+        class _Rel:
+            version = "9.9.9"
+            notes = ""
+            html_url = ""
+            name = ""
+            published_at = None
+
+        prompted = []
+        app._prompt_and_install = lambda rel: prompted.append(rel.version)
+        app._balloons_reach_user = lambda: False
+        app._on_update_available(_Rel())
+        app._on_update_available(_Rel())   # the 24 h timer re-reports it
+        print("FALLBACK_PROMPTS", ",".join(prompted))
+        print("UPDATES_ROW", app.updates_menu.menuAction().text())
+        print("UPDATES_TIP", app.tray.toolTip())
+        # A font-pack flash owns the tooltip while it runs and must hand it back.
+        app._on_fontpack_progress({"pct": 42})
+        print("TIP_FLASHING", app.tray.toolTip())
+        app._on_fontpack_done({"ok": True})
+        print("TIP_AFTER_FLASH", app.tray.toolTip())
         app.quit_app()
     print("SMOKE OK")
 

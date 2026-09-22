@@ -362,6 +362,18 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
 - ⚠️ **`managed_connection_status` blanket-disables every top-level action first**, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect.
+- ⚠️ **A tray balloon (`show_balloon` → `QSystemTrayIcon.showMessage`) reaches
+  NOBODY on macOS** — Qt's Cocoa backend routes it through `NSUserNotificationCenter`,
+  which silently drops a notification from a process with no bundle id of its own, and
+  we always run as a bare `python -m polyhost`. `messageClicked` dies with it, so
+  "click the tray icon to update" was an instruction to click something never shown.
+  **Never make a balloon the only carrier of anything.** `_balloons_reach_user()`
+  (`gui/tray_notify.py`) is the gate — it asks whether the executable sits inside
+  `<name>.app/Contents/MacOS/`, the rule `NSBundle` itself applies, so a real bundle
+  fixes it with nothing to revert — and the fallbacks are a directly-opened dialog
+  (once per version per session) plus the version on the **top-level** Updates row.
+  ⚠️ That marker shares the tray tooltip with the font-pack flash, so
+  `_refresh_tray_tooltip` is the ONLY caller of `setToolTip`.
 - **Developer mode (`--dev`) is SEPARATE from log verbosity**, and it is a persisted
   setting, not just a flag — under daemon-by-default the tray is launched by autostart
   with no flags, so a flag-only gate makes every developer tool unreachable.

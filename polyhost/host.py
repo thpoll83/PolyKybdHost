@@ -36,6 +36,8 @@ from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
+from polyhost.gui.tray_notify import (balloons_are_delivered, updates_menu_title,
+                                      updates_tooltip)
 
 # Tray labels for the Glyph Script submenu. Generic names (no franchise
 # branding — trademark caveat on the fictional scripts); the fonts themselves
@@ -627,6 +629,11 @@ class PolyHost(QApplication):
         self.update_action.triggered.connect(self._on_update_clicked)
         self.updates_menu.addAction(self.update_action)
         self._pending_release = None
+        # Versions already offered through the no-balloon fallback dialog this
+        # session. The 24 h timer re-reports the same release, and a modal that
+        # reopens on its own is worse than the silence it replaces.
+        self._auto_prompted_host_version = None
+        self._auto_prompted_fw_version = None
         self._update_checker = None
         self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
@@ -663,6 +670,11 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.updates_menu.aboutToShow.connect(self._refresh_fontpack_action)
         self._pending_fw_release = None
+        # The tray tooltip has TWO writers (a font-pack flash's percentage and
+        # the pending-update marker). This holds the flash's claim; see
+        # _refresh_tray_tooltip, which is the only place that calls setToolTip.
+        self._fontpack_flashing = False
+        self._fontpack_tooltip = ""
         self._fw_up_downloader = None
         self._fw_up_progress = None
         # Mutable one-element cancel flag shared with the firmware-download thread
@@ -799,6 +811,10 @@ class PolyHost(QApplication):
         self.tray.setContextMenu(self.menu)
         # noinspection PyUnresolvedReferences
         self.tray.messageClicked.connect(self._on_balloon_clicked)
+        if not self._balloons_reach_user():
+            self.log.info("Tray balloons are not delivered on this platform; "
+                          "update prompts open directly and the Updates menu "
+                          "row carries the version.")
         # Re-assert now that the icon has its menu; a no-op while the waiter is
         # still waiting, so this can never start a second retry chain.
         self._tray_waiter.start()
@@ -2125,16 +2141,24 @@ class PolyHost(QApplication):
     def _on_update_available(self, release):
         self._pending_release = release
         self.update_action.setText(f"Update to v{release.version} available")
+        self._refresh_updates_marker()
         self.log.info("Update available: %s", release.version)
         if self._await_manual_prompt:
             self._await_manual_prompt = False
             self._prompt_and_install(release)
-        else:
+        elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybdHost Update",
                 f"Version {release.version} is available. "
                 "Click the tray icon to update.",
             )
+        elif self._auto_prompted_host_version != release.version:
+            # No balloon here and no messageClicked either, so "click the tray
+            # icon to update" would be an instruction to click something that
+            # was never shown. Open the same dialog the click would have — what
+            # the forwarder has always done on every platform.
+            self._auto_prompted_host_version = release.version
+            self._prompt_and_install(release)
 
     def _on_update_clicked(self):
         if self._update_installer is not None and self._update_installer.is_alive():
@@ -2330,8 +2354,41 @@ class PolyHost(QApplication):
     # Balloon notifications
     # ------------------------------------------------------------------
 
+    def _balloons_reach_user(self):
+        """Whether ``show_balloon`` is seen at all. False on macOS unless we
+        are running from a real .app bundle — see `gui/tray_notify`."""
+        return QSystemTrayIcon.supportsMessages() and balloons_are_delivered()
+
     def show_balloon(self, title: str, message: str, msec: int = 8000):
+        if not self._balloons_reach_user():
+            # Still call showMessage (harmless, and correct the moment the
+            # platform starts delivering), but leave a trace: a log bundle
+            # otherwise has no way to show what the user was never told.
+            self.log.debug("Balloon not delivered on this platform: %s — %s",
+                           title, message)
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
+
+    def _refresh_updates_marker(self):
+        """Put the pending versions on the top-level ``Updates`` row.
+
+        The rows that name a new version live one submenu deeper, which is
+        where a user who was never shown a balloon will not look."""
+        self.updates_menu.setTitle(updates_menu_title(
+            getattr(self._pending_release, "version", None),
+            getattr(self._pending_fw_release, "version", None)))
+        self._refresh_tray_tooltip()
+
+    def _refresh_tray_tooltip(self):
+        """The ONLY caller of ``tray.setToolTip``. A font-pack flash wins while
+        it runs (it carries a live percentage); the pending-update text must
+        come back when it ends, which a bare ``setToolTip("")`` at the end of
+        the flash would have wiped."""
+        if self._fontpack_tooltip:
+            self.tray.setToolTip(self._fontpack_tooltip)
+            return
+        self.tray.setToolTip(updates_tooltip(
+            getattr(self._pending_release, "version", None),
+            getattr(self._pending_fw_release, "version", None)))
 
     # ------------------------------------------------------------------
     # Font-pack flash progress (auto on connect, or manual via polyctl)
@@ -2346,19 +2403,21 @@ class PolyHost(QApplication):
         events, so the wording comes from the payload's "kind"."""
         result = result or {}
         noun = flash_kind_label(result)
-        if not getattr(self, "_fontpack_flashing", False):
+        if not self._fontpack_flashing:
             self._fontpack_flashing = True
             self.show_balloon("PolyKybd",
                               f"Updating keyboard {noun} — please wait, do not unplug…", 5000)
         pct = result.get("pct")
         if pct is not None:
-            self.tray.setToolTip(f"PolyKybd — updating {noun} ({pct}%)")
+            self._fontpack_tooltip = f"PolyKybd — updating {noun} ({pct}%)"
+            self._refresh_tray_tooltip()
 
     def _on_fontpack_done(self, result):
         result = result or {}
         noun = flash_kind_label(result)
         self._fontpack_flashing = False
-        self.tray.setToolTip("")
+        self._fontpack_tooltip = ""
+        self._refresh_tray_tooltip()
         if result.get("ok"):
             self.show_balloon("PolyKybd", f"Keyboard {noun} is up to date.", 4000)
         else:
@@ -2382,17 +2441,21 @@ class PolyHost(QApplication):
         self._pending_fw_release = release
         self.firmware_update_action.setText(f"Update firmware to v{release.version}…")
         self.firmware_update_action.setVisible(True)
+        self._refresh_updates_marker()
         self.managed_connection_status()
         self.log.info("Firmware update available: %s", release.version)
         if self._await_manual_fw_prompt:
             self._await_manual_fw_prompt = False
             self._prompt_and_flash(release)
-        else:
+        elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybd Firmware Update",
                 f"New firmware v{release.version} is available. "
                 "Click the tray icon to update.",
             )
+        elif self._auto_prompted_fw_version != release.version:
+            self._auto_prompted_fw_version = release.version
+            self._prompt_and_flash(release)
 
     def _on_fw_up_clicked(self):
         if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():
@@ -2541,6 +2604,7 @@ class PolyHost(QApplication):
             # Queued OK: hide the "Update firmware to vX…" prompt while the daemon
             # flashes; the terminal event restores the action (see _on_flash_done).
             self._pending_fw_release = None
+            self._refresh_updates_marker()
             self.firmware_update_action.setVisible(False)
             self.managed_connection_status()
             return
@@ -2571,6 +2635,7 @@ class PolyHost(QApplication):
         self.firmware_update_action.setText("Check for firmware update…")
         self.firmware_update_action.setVisible(True)
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
+        self._refresh_updates_marker()
 
     def _cleanup_fw_release_tmp(self):
         """Remove the temp .bin (and its .sig) downloaded for the client-mode
