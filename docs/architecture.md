@@ -50,11 +50,14 @@ Abstract base `unicode_input.py` with per-platform implementations:
     Player` — so Activity Monitor drew QuickTime's icon, and logged nothing wrong
     while doing it. `frontmost_app()` (`handler/active_window.py`) runs `osascript`
     against `System Events` (`first application process whose frontmost is true`)
-    and returns **procID first, then the name**: a process name may contain
-    anything including whitespace, while the pid is digits and ends at the first
-    newline. ⚠️ The first measurement was never written down, which is the whole
-    reason it happened twice — the property reads correctly often enough that one
-    good log line looks like evidence.
+    The SCRIPT emits **procID first, then procName** — a process name may
+    contain anything including whitespace, while a pid is digits and ends at the
+    first newline — and `frontmost_app()` parses that into its `(name, pid)`
+    return. ⚠️ Those two orders are deliberately opposite; do not "align" them,
+    and do not read the script's order as the function's. ⚠️ The first
+    measurement was never written down, which is the whole reason it happened
+    twice — the property reads correctly often enough that one good log line
+    looks like evidence.
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the

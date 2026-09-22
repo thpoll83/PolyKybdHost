@@ -21,10 +21,13 @@ and passes it, so adding the table changes no call site.
 **When it fires.** Only for a menu item that gives nothing else — `AXMenuItemCmdChar`
 empty *and* `AXMenuItemCmdVirtualKey` absent. That is narrower than it sounds,
 because the parser already resolves printable characters, the control chars
-(⌫ Tab Return Escape), space, the whole NSFunctionKey PUA block (arrows,
+(⌫ Tab Return Escape), space, **25** NSFunctionKey PUA entries (arrows,
 Insert/Delete/Home/End/PageUp/PageDown/Print/ScrollLock/Pause, plus F1–F12 filled
 in by the loop under `MAC_FUNCTION_KEY_TO_HID`), and a 25-entry virtual-key
-fallback. So the glyph path covers Carbon-era apps that set a `kMenu*Glyph` number
+fallback. ⚠️ That is **not** the whole PUA block and the difference matters here,
+because this entry is an argument about how much is left over: measured, there are
+24 gaps inside `0xF700..0xF730` alone (F13 and up) and nothing above `0xF730` is
+covered at all. So the glyph path covers Carbon-era apps that set a `kMenu*Glyph` number
 where AppKit apps put a character.
 
 **What it would add.** Mostly a *second spelling* of keys already handled. On top of
