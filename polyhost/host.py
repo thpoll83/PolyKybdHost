@@ -2108,6 +2108,19 @@ class PolyHost(QApplication):
         def _host_no_update():
             if _error_seen[0]:
                 return  # error was already surfaced via on_check_error
+            if self._pending_release is not None:
+                # A release reported EARLIER this session is gone — withdrawn, or
+                # unpublished while a bad build was replaced. Drop it: the menu row
+                # would go on advertising a version that no longer exists, and
+                # clicking it would install from a URL that now 404s. Only a
+                # SUCCESSFUL check does this; a check error returns above, because
+                # an unreachable GitHub says nothing about the release.
+                self.log.info("Previously reported host update %s is no longer offered",
+                              self._pending_release.version)
+                self._pending_release = None
+                self._auto_prompted_host_version = None
+                self.update_action.setText("Check for updates...")
+                self._refresh_updates_marker()
             self.log.debug("No host update available")
             if on_no_update is not None:
                 on_no_update()
@@ -2116,6 +2129,16 @@ class PolyHost(QApplication):
             if blocked is not None:
                 self.log.warning("Firmware %s is newer but has no flashable .bin",
                                  getattr(blocked, "version", "?"))
+            elif self._pending_fw_release is not None:
+                # Same as the host side. Deliberately NOT in the `blocked` branch
+                # above: there the checker is telling us the newest release has no
+                # .bin, which says nothing about the older one we are holding —
+                # that one is still flashable and still worth offering.
+                self.log.info("Previously reported firmware update %s is no longer offered",
+                              self._pending_fw_release.version)
+                self._pending_fw_release = None
+                self._auto_prompted_fw_version = None
+                self._reset_fw_update_action()   # also refreshes the marker
             else:
                 self.log.debug("No firmware update available")
             if self._await_manual_fw_prompt:

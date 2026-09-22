@@ -108,6 +108,21 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(_grab(proc.stdout, "TIP_AFTER_FLASH"),
                          "PolyKybd \u2014 host v9.9.9 available")
 
+    def test_a_withdrawn_release_stops_being_advertised(self):
+        """A successful check that now finds nothing must drop the release it
+        reported earlier \u2014 otherwise the row advertises a version that no
+        longer exists and clicking it installs from a URL that 404s. A check
+        ERROR must not: an unreachable GitHub says nothing about the release."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        self.assertEqual(_grab(proc.stdout, "CHECK_STARTED"), "True")
+        self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_WITHDRAWN"), "True")
+        self.assertEqual(_grab(proc.stdout, "ROW_AFTER_WITHDRAWN"), "Updates")
+        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_WITHDRAWN"), "''")
+        self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_ERROR"), "True")
+        self.assertEqual(_grab(proc.stdout, "ROW_AFTER_ERROR"),
+                         "Updates \u2014 host v9.9.9 available")
+
     def test_developer_mode_only_adds_a_submenu(self):
         """Developer mode must ADD, never rearrange — muscle memory has to survive
         the toggle, so the normal rows stay identical and in the same order."""
@@ -393,6 +408,29 @@ def _smoke_default():
         print("TIP_FLASHING", app.tray.toolTip())
         app._on_fontpack_done({"ok": True})
         print("TIP_AFTER_FLASH", app.tray.toolTip())
+
+        # A release reported earlier can be withdrawn. Install the real
+        # per-check closures (the checker itself is stubbed, so nothing hits the
+        # network) and drive the no-update result through them.
+        with mock.patch("polyhost.host.UpdateChecker") as _UC:
+            _UC.return_value.is_alive.return_value = False
+            started = app._start_update_check(force=True)
+        print("CHECK_STARTED", started)
+        app._update_host_no_update()
+        print("ROW_AFTER_WITHDRAWN", app.updates_menu.menuAction().text())
+        print("TIP_AFTER_WITHDRAWN", repr(app.tray.toolTip()))
+        print("PENDING_AFTER_WITHDRAWN", app._pending_release is None)
+
+        # ...but a check that ERRORED says nothing about the release, and its
+        # no-update callback fires anyway. The pending release must survive.
+        app._on_update_available(_Rel())
+        with mock.patch("polyhost.host.UpdateChecker") as _UC:
+            _UC.return_value.is_alive.return_value = False
+            app._start_update_check(force=True)
+        app._update_check_error("GitHub is unreachable")
+        app._update_host_no_update()
+        print("PENDING_AFTER_ERROR", app._pending_release is not None)
+        print("ROW_AFTER_ERROR", app.updates_menu.menuAction().text())
         app.quit_app()
     print("SMOKE OK")
 
