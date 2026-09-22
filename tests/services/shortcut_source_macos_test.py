@@ -82,6 +82,39 @@ class KeyEquivalentTest(unittest.TestCase):
         self.assertEqual(accel.hid, 0x04)
         self.assertEqual(accel.keysym, "a")
 
+    def test_an_UNMAPPED_private_use_char_falls_through_to_the_virtual_key(self):
+        """⚠️ The two character tables cover 25 NSFunctionKey codes; the PUA
+        block is far larger (F13 and up, Help, Menu, Break, ...). An uncovered
+        one satisfied `code > 0x20` and became the keysym ITSELF -- and the
+        damage was not the mojibake name. `name` was then set, and the
+        virtual-key fallback requires `not name`, so the one thing that could
+        still identify the key never ran.
+
+        ⚠️ Be precise about what this buys, because it is NOT a resolved key:
+        `kVK_F13` (0x69) is not in `MAC_VIRTUAL_KEY_TO_HID` either, so the
+        fallback lands on its `"vk%02X"` arm. Neither form draws --
+        `displayable_hid(None)` is False both ways. What changes is that the
+        fallback RUNS, and that the probe now prints `vk69` instead of an
+        unprintable character: that number is exactly what somebody needs to
+        extend the VK table, and mojibake is not."""
+        got = parse_mac_accel(chr(0xF710), 0x69, 0)
+        self.assertEqual(got.keysym, "vk69")
+        self.assertIsNone(got.hid)      # still nothing to draw, and honest
+
+    def test_an_unmapped_PUA_char_with_NO_virtual_key_is_REFUSED(self):
+        """Nothing can identify it, so the honest answer is None -- the item is
+        skipped rather than carried as an entry whose keysym is unprintable.
+        That is also what leaves the door open for the AXMenuItemCmdGlyph table
+        (docs/FUTURE_WORK.md) to answer these later."""
+        self.assertIsNone(parse_mac_accel(chr(0xF710), None, 0))
+
+    def test_the_PUA_guard_does_not_reach_ORDINARY_characters(self):
+        """The blast radius, stated as a test: the guard is the PUA block and
+        nothing else. A letter, a digit and a symbol are unaffected."""
+        self.assertEqual(parse_mac_accel("S", None, 0).keysym, "S")
+        self.assertEqual(parse_mac_accel("7", None, 0).keysym, "7")
+        self.assertEqual(parse_mac_accel("/", None, 0).keysym, "/")
+
     def test_an_arrow_arrives_as_a_private_use_character(self):
         # Cocoa stores a key equivalent as a CHARACTER, so an arrow is
         # NSUpArrowFunctionKey (U+F700) rather than a virtual key.
