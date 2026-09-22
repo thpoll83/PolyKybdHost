@@ -251,6 +251,46 @@ class ConcurrentWriterTest(unittest.TestCase):
         # And the save still landed -- losing the write is not the alternative.
         self.assertEqual(settings.read_setting("browser_report_port"), 10001)
 
+    def test_a_SECOND_corruption_does_not_DESTROY_the_first_copy(self):
+        """⚠️ The kept name was `…unreadable-{strftime("%Y%m%d-%H%M%S")}`, i.e.
+        one-second resolution, and `os.replace` overwrites silently. Two
+        corruptions inside the same second therefore preserved the first copy
+        and then destroyed it with the second — the one outcome this whole
+        function exists to prevent (Greptile, #248, raised against the merge
+        commit rather than that PR's diff).
+
+        The stamp is pinned here rather than raced for: the collision is a
+        property of the NAME, and a test that hopes two constructions land in
+        the same wall-clock second is a test that passes for the wrong reason
+        most of the time.
+
+        Note the concurrent case was already safe and is not what this pins —
+        the loser's `os.replace` raises FileNotFoundError once the winner has
+        moved the file. This is two SEQUENTIAL corruptions."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+
+        first = "{{{ not yaml -- the FIRST corruption\n"
+        second = "{{{ not yaml -- the SECOND corruption, a moment later\n"
+        with mock.patch.object(settings.time, "strftime",
+                               return_value="20260101-000000"):
+            for corrupt in (first, second):
+                with open(a.path, "w", encoding="utf-8") as f:
+                    f.write(corrupt)
+                settings.PolySettings()      # preserves, then saves defaults
+
+        kept = sorted(n for n in os.listdir(self._tmp.name)
+                      if ".unreadable-" in n)
+        self.assertEqual(len(kept), 2,
+                         f"a copy was overwritten: {os.listdir(self._tmp.name)}")
+        bodies = set()
+        for name in kept:
+            with open(os.path.join(self._tmp.name, name), encoding="utf-8") as f:
+                bodies.add(f.read())
+        # BOTH are recoverable, byte-for-byte -- not just the newer one.
+        self.assertEqual(bodies, {first, second})
+
     def test_an_ABSENT_file_is_not_treated_as_unreadable(self):
         """The ordinary first save. Nothing is there to preserve, so preserving
         would leave a stray `.unreadable-` file on every clean first run --
@@ -357,11 +397,27 @@ class ConcurrentWriterTest(unittest.TestCase):
         with open(a.path, "w", encoding="utf-8") as f:
             f.write(corrupt)
 
-        # A real collision, not a patched-out helper: a DIRECTORY sitting on
-        # the exact name `_preserve_unreadable` will pick.
-        stamp = "20260921-000000"
-        os.mkdir(f"{a.path}.unreadable-{stamp}")
-        with mock.patch.object(settings.time, "strftime", return_value=stamp):
+        # ⚠️ This used to squat a DIRECTORY on the exact name
+        # `_preserve_unreadable` would pick. That worked only while the name
+        # was PREDICTABLE, and it is not any more -- it is reserved with
+        # `mkstemp` so two corruptions in one second cannot collide. The
+        # obstruction has to be the syscall now. (A read-only config dir would
+        # be the real-collision equivalent, but the suite runs as root here,
+        # where it is not an obstruction at all -- measured, not assumed.)
+        #
+        # It is scoped to the PRESERVATION's own call, so `_save_merged`'s
+        # temp-file write still works: with a blanket failure the save would
+        # abort on its own writer and this test would pass without the
+        # stand-down it exists to pin.
+        real_mkstemp = tempfile.mkstemp
+
+        def only_the_preservation_fails(*args, **kwargs):
+            if "unreadable" in kwargs.get("prefix", ""):
+                raise OSError(13, "Permission denied")
+            return real_mkstemp(*args, **kwargs)
+
+        with mock.patch.object(settings.tempfile, "mkstemp",
+                               side_effect=only_the_preservation_fails):
             a.collection["browser_report_port"] = 10004
             a.save()
 
