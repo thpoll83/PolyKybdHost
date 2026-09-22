@@ -367,13 +367,19 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   which silently drops a notification from a process with no bundle id of its own, and
   we always run as a bare `python -m polyhost`. `messageClicked` dies with it, so
   "click the tray icon to update" was an instruction to click something never shown.
-  **Never make a balloon the only carrier of anything.** `_balloons_reach_user()`
-  (`gui/tray_notify.py`) is the gate — it asks whether the executable sits inside
-  `<name>.app/Contents/MacOS/`, the rule `NSBundle` itself applies, so a real bundle
-  fixes it with nothing to revert — and the fallbacks are a directly-opened dialog
-  (once per version per session) plus the version on the **top-level** Updates row.
-  ⚠️ That marker shares the tray tooltip with the font-pack flash, so
-  `_refresh_tray_tooltip` is the ONLY caller of `setToolTip`.
+  **Never make a balloon the only carrier of anything.** `PolyHost._balloons_reach_user()`
+  (`host.py`) is the gate, over `balloons_are_delivered()` in `gui/tray_notify.py`: it
+  asks whether the executable sits inside `<name>.app/Contents/MacOS/`, the rule
+  `NSBundle` itself applies, so a real bundle re-enables delivery with nothing here to
+  revert (the USER still has to grant notification permission — bundling buys the
+  prompt, not the banner). The fallbacks are a directly-opened dialog (once per version
+  per session, serialized through `_fallback_prompt` because ONE check reports host then
+  firmware and a modal dispatches the second event while the first is open) plus the
+  version on the **top-level** Updates row. ⚠️ **`IconStateManager` owns the tray
+  tooltip** — it restores its OWN stored text when a warning expires, so a direct
+  `tray.setToolTip` survives only until the next `set_warning`. Anything with a
+  lifetime goes through `set_base_tooltip`, and `_refresh_tray_tooltip` is the one
+  place that decides what that text is.
 - **Developer mode (`--dev`) is SEPARATE from log verbosity**, and it is a persisted
   setting, not just a flag — under daemon-by-default the tray is launched by autostart
   with no flags, so a flag-only gate makes every developer tool unreachable.

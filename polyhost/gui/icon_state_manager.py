@@ -34,6 +34,21 @@ class IconStateManager:
         self.dirty_flag = True
         self.update()
 
+    def set_base_tooltip(self, tooltip):
+        """Replace the tray's RESTING tooltip — what it shows whenever no
+        warning is up.
+
+        This class owns the tray tooltip: it sets one at construction, swaps in
+        the warning text in `set_warning`, and puts `self.tooltip` back when the
+        warning expires. A caller that writes `tray.setToolTip` directly is
+        therefore correct only until the next warning, whose expiry silently
+        restores the STARTUP text over it — so anything with a lifetime (the
+        pending-update marker, a flash percentage) has to come through here.
+        """
+        self.tooltip = tooltip
+        if self.warning_timeout == 0 and not self.warning_msg:
+            self.parent.tray.setToolTip(tooltip)
+
     def set_connected(self):
         """ Set icon for connected state """
         if not self._is_connected:

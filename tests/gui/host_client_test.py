@@ -107,6 +107,15 @@ class TestPolyHostModes(unittest.TestCase):
                          "PolyKybd \u2014 updating font pack (42%)")
         self.assertEqual(_grab(proc.stdout, "TIP_AFTER_FLASH"),
                          "PolyKybd \u2014 host v9.9.9 available")
+        # IconStateManager owns the tooltip: a warning takes it, and its expiry
+        # restores the manager's STORED text — which must be the marker, not the
+        # startup line it was constructed with.
+        self.assertEqual(_grab(proc.stdout, "TIP_WARNING"), "something went wrong")
+        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_WARNING"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+        # The firmware dialog must not stack on top of the open host one.
+        self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER"),
+                         "host-open:9.9.9,host-close:9.9.9,fw:8.8.8")
 
     def test_a_withdrawn_release_stops_being_advertised(self):
         """A successful check that now finds nothing must drop the release it
@@ -117,8 +126,11 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
         self.assertEqual(_grab(proc.stdout, "CHECK_STARTED"), "True")
         self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_WITHDRAWN"), "True")
+        self.assertEqual(_grab(proc.stdout, "PENDING_FW_AFTER_WITHDRAWN"), "True")
         self.assertEqual(_grab(proc.stdout, "ROW_AFTER_WITHDRAWN"), "Updates")
-        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_WITHDRAWN"), "''")
+        tip = _grab(proc.stdout, "TIP_AFTER_WITHDRAWN")
+        self.assertTrue(tip.startswith("PolyKybdHost "), tip)
+        self.assertNotIn("available", tip)
         self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_ERROR"), "True")
         self.assertEqual(_grab(proc.stdout, "ROW_AFTER_ERROR"),
                          "Updates \u2014 host v9.9.9 available")
@@ -408,6 +420,33 @@ def _smoke_default():
         print("TIP_FLASHING", app.tray.toolTip())
         app._on_fontpack_done({"ok": True})
         print("TIP_AFTER_FLASH", app.tray.toolTip())
+        # A tray warning takes the tooltip and IconStateManager puts its OWN
+        # stored text back when the warning expires, so the marker has to be
+        # stored there rather than written straight to the tray.
+        app.icon_manager.set_warning("something went wrong", 5000)
+        print("TIP_WARNING", app.tray.toolTip())
+        app.icon_manager.warning_timeout = -1
+        app.icon_manager.update()
+        print("TIP_AFTER_WARNING", app.tray.toolTip())
+
+        # One check reports host THEN firmware, both queued; a modal dispatches
+        # the second while the first is open. Model that: the host prompt fires
+        # the firmware event from inside itself.
+        class _FwRel:
+            version = "8.8.8"
+
+        order = []
+
+        def _host_prompt(rel):
+            order.append(f"host-open:{rel.version}")
+            app._on_fw_up_available(_FwRel())     # arrives mid-dialog
+            order.append(f"host-close:{rel.version}")
+
+        app._prompt_and_install = _host_prompt
+        app._prompt_and_flash = lambda rel: order.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._on_update_available(_Rel())
+        print("PROMPT_ORDER", ",".join(order))
 
         # A release reported earlier can be withdrawn. Install the real
         # per-check closures (the checker itself is stubbed, so nothing hits the
@@ -417,12 +456,18 @@ def _smoke_default():
             started = app._start_update_check(force=True)
         print("CHECK_STARTED", started)
         app._update_host_no_update()
+        app._update_fw_no_update()     # the firmware side clears the same way
+        print("PENDING_FW_AFTER_WITHDRAWN", app._pending_fw_release is None)
         print("ROW_AFTER_WITHDRAWN", app.updates_menu.menuAction().text())
-        print("TIP_AFTER_WITHDRAWN", repr(app.tray.toolTip()))
+        print("TIP_AFTER_WITHDRAWN", app.tray.toolTip())
         print("PENDING_AFTER_WITHDRAWN", app._pending_release is None)
 
         # ...but a check that ERRORED says nothing about the release, and its
         # no-update callback fires anyway. The pending release must survive.
+        # (Plain stub: the order test's prompt raises a firmware event, and
+        # clearing a withdrawn release also clears the per-version guard, so
+        # the same release genuinely does prompt again here.)
+        app._prompt_and_install = lambda rel: None
         app._on_update_available(_Rel())
         with mock.patch("polyhost.host.UpdateChecker") as _UC:
             _UC.return_value.is_alive.return_value = False

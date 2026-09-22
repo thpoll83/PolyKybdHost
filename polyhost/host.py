@@ -291,7 +291,10 @@ class PolyHost(QApplication):
         # is lost for the WHOLE session (see gui/tray_wait.py). The waiter shows
         # it now when it can and retries when it can't.
         self.tray = QSystemTrayIcon(parent=self)
-        self.icon_manager = IconStateManager(self, False, f"PolyKybdHost {__version__}")
+        # The tray's resting tooltip, and what _refresh_tray_tooltip falls back
+        # to once a flash or a pending update stops claiming it.
+        self._idle_tooltip = f"PolyKybdHost {__version__}"
+        self.icon_manager = IconStateManager(self, False, self._idle_tooltip)
         self._tray_waiter = TrayVisibilityWaiter(
             show=lambda: self.tray.setVisible(True),
             is_available=QSystemTrayIcon.isSystemTrayAvailable,
@@ -634,6 +637,10 @@ class PolyHost(QApplication):
         # reopens on its own is worse than the silence it replaces.
         self._auto_prompted_host_version = None
         self._auto_prompted_fw_version = None
+        # One check reports host THEN firmware, and a modal dialog dispatches
+        # the second event while the first is open — see _fallback_prompt.
+        self._fallback_prompt_busy = False
+        self._fallback_prompt_queue = []
         self._update_checker = None
         self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
@@ -2181,7 +2188,7 @@ class PolyHost(QApplication):
             # was never shown. Open the same dialog the click would have — what
             # the forwarder has always done on every platform.
             self._auto_prompted_host_version = release.version
-            self._prompt_and_install(release)
+            self._fallback_prompt(self._prompt_and_install, release)
 
     def _on_update_clicked(self):
         if self._update_installer is not None and self._update_installer.is_alive():
@@ -2377,6 +2384,28 @@ class PolyHost(QApplication):
     # Balloon notifications
     # ------------------------------------------------------------------
 
+    def _fallback_prompt(self, prompt, release):
+        """Open a no-balloon fallback dialog, never two at once.
+
+        ⚠️ ONE check reports the host release and then the firmware release,
+        and both arrive as events QUEUED to the main thread. A modal dialog
+        spins a nested event loop, so the firmware event is dispatched while
+        the host dialog is still open and stacks a second dialog on top of it:
+        the user answers them in reverse order, and accepting the host update
+        can start an install-and-restart while a firmware flash is running.
+        Queue the second one and run it when the first closes."""
+        if self._fallback_prompt_busy:
+            self._fallback_prompt_queue.append((prompt, release))
+            return
+        self._fallback_prompt_busy = True
+        try:
+            prompt(release)
+            while self._fallback_prompt_queue:
+                queued_prompt, queued_release = self._fallback_prompt_queue.pop(0)
+                queued_prompt(queued_release)
+        finally:
+            self._fallback_prompt_busy = False
+
     def _balloons_reach_user(self):
         """Whether ``show_balloon`` is seen at all. False on macOS unless we
         are running from a real .app bundle — see `gui/tray_notify`."""
@@ -2402,16 +2431,20 @@ class PolyHost(QApplication):
         self._refresh_tray_tooltip()
 
     def _refresh_tray_tooltip(self):
-        """The ONLY caller of ``tray.setToolTip``. A font-pack flash wins while
-        it runs (it carries a live percentage); the pending-update text must
-        come back when it ends, which a bare ``setToolTip("")`` at the end of
-        the flash would have wiped."""
-        if self._fontpack_tooltip:
-            self.tray.setToolTip(self._fontpack_tooltip)
-            return
-        self.tray.setToolTip(updates_tooltip(
-            getattr(self._pending_release, "version", None),
-            getattr(self._pending_fw_release, "version", None)))
+        """Decide the tray's resting tooltip and hand it to ``IconStateManager``.
+
+        Three things want that one string: a font-pack flash (a live
+        percentage, so it wins while it runs), a pending update, and the idle
+        version line. ⚠️ It goes through ``set_base_tooltip`` rather than
+        ``tray.setToolTip`` because ``IconStateManager`` restores its OWN
+        stored tooltip when a warning expires — a direct write survives only
+        until the next `set_warning`, after which the marker is gone for good
+        (CodeRabbit, #257)."""
+        self.icon_manager.set_base_tooltip(
+            self._fontpack_tooltip
+            or updates_tooltip(getattr(self._pending_release, "version", None),
+                               getattr(self._pending_fw_release, "version", None))
+            or self._idle_tooltip)
 
     # ------------------------------------------------------------------
     # Font-pack flash progress (auto on connect, or manual via polyctl)
@@ -2478,7 +2511,7 @@ class PolyHost(QApplication):
             )
         elif self._auto_prompted_fw_version != release.version:
             self._auto_prompted_fw_version = release.version
-            self._prompt_and_flash(release)
+            self._fallback_prompt(self._prompt_and_flash, release)
 
     def _on_fw_up_clicked(self):
         if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():

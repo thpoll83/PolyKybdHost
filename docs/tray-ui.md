@@ -35,20 +35,34 @@ and relative links were adjusted to suit a standalone file.
   wrapper, so `NSBundle.mainBundle` resolves to the Python framework. The user-visible
   cost was the whole new-version announcement: the check ran, the balloon vanished, and
   the only remaining signal was a row **inside** the Updates submenu. Two things replace
-  it (`gui/tray_notify.py`):
-    - `_balloons_reach_user()` decides, and it asks the question `NSBundle` asks — is
-      the running executable inside `<name>.app/Contents/MacOS/`? — **not**
-      `sys.platform == "darwin"`. Ship a real bundle one day and balloons come back with
-      nothing here to revert. When it is False the update flow opens its confirmation
+  it:
+    - `PolyHost._balloons_reach_user()` (`host.py`) decides, over the Qt-free
+      `balloons_are_delivered()` in `gui/tray_notify.py`, and it asks the question
+      `NSBundle` asks — is the running executable inside
+      `<name>.app/Contents/MacOS/`? — **not** `sys.platform == "darwin"`. Ship a real
+      bundle one day and delivery is re-enabled with nothing here to revert, though the
+      user must still grant notification permission: bundling buys the prompt, not the
+      banner. When it is False the update flow opens its confirmation
       dialog directly, which is what `forwarder.py` has always done on every platform,
       and **once per version per session**: the 24 h timer re-reports the same release,
       and a modal that reopens by itself is worse than the silence it replaced.
+      ⚠️ Both fallback dialogs go through `_fallback_prompt`, which runs one at a
+      time. ONE check reports the host release and then the firmware release, both as
+      events QUEUED to the main thread, and a modal spins a nested event loop — so the
+      firmware dialog would open on top of the host one, the user would answer them in
+      reverse, and accepting the host update could start an install-and-restart while a
+      firmware flash was running (CodeRabbit, #257).
     - The top-level **Updates** row carries the version (`Updates — host v1.1.6
       available`), because the row that names it sits one submenu deeper than anyone
-      looks. ⚠️ The tray **tooltip** now has two writers, so `_refresh_tray_tooltip`
-      is the only caller of `setToolTip`: a font-pack flash borrows it for its
-      percentage and hands it back, where the old bare `setToolTip("")` at the end of
-      the flash would have wiped the update marker. Pinned by
+      looks. ⚠️ **`IconStateManager` owns the tray tooltip**, and
+      `_refresh_tray_tooltip` is the one place that decides its resting text — a
+      font-pack flash borrows it for a percentage, a pending update claims it next,
+      and the idle version line is the floor. It hands that text to
+      `set_base_tooltip` rather than calling `tray.setToolTip`, because
+      `IconStateManager` restores its OWN stored tooltip when a warning expires: a
+      direct write survives only until the next `set_warning`, after which the marker
+      is gone for good and nothing puts it back (CodeRabbit, #257). The old bare
+      `setToolTip("")` at the end of a flash wiped it outright. Pinned by
       `tests/gui/host_client_test.py` `test_update_is_visible_without_a_balloon`.
 
 - **A menu row that can answer its own question should — the font-pack row is the
