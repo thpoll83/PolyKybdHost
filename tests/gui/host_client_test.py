@@ -121,6 +121,9 @@ class TestPolyHostModes(unittest.TestCase):
         # not lost — it stays on the Updates row and in the menu.
         self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER_ACCEPTED"), "host:9.9.9")
         self.assertEqual(_grab(proc.stdout, "QUEUE_DRAINED"), "True")
+        # A manual check is the same hazard through a different door.
+        self.assertEqual(_grab(proc.stdout, "MANUAL_PROMPT_ORDER"),
+                         "host-open:9.9.9,host-close:9.9.9,fw:8.8.8")
 
     def test_a_withdrawn_release_stops_being_advertised(self):
         """A successful check that now finds nothing must drop the release it
@@ -471,6 +474,25 @@ def _smoke_default():
         print("PROMPT_ORDER_ACCEPTED", ",".join(accepted))
         print("QUEUE_DRAINED", len(app._fallback_prompt_queue) == 0)
         app._update_progress = None
+
+        # The MANUAL branch (the user's own "Check for update…" click) must be
+        # serialized too: it used to call the prompt directly, leaving
+        # _fallback_prompt_busy False, so the other check's event stacked a
+        # dialog anyway. `fw` after `host-close` proves it queued.
+        manual = []
+
+        def _manual_host_prompt(rel):
+            manual.append(f"host-open:{rel.version}")
+            app._on_fw_up_available(_FwRel())
+            manual.append(f"host-close:{rel.version}")
+
+        app._prompt_and_install = _manual_host_prompt
+        app._prompt_and_flash = lambda rel: manual.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._auto_prompted_fw_version = None
+        app._await_manual_prompt = True
+        app._on_update_available(_Rel())
+        print("MANUAL_PROMPT_ORDER", ",".join(manual))
 
         # A release reported earlier can be withdrawn. Install the real
         # per-check closures (the checker itself is stubbed, so nothing hits the

@@ -2175,7 +2175,7 @@ class PolyHost(QApplication):
         self.log.info("Update available: %s", release.version)
         if self._await_manual_prompt:
             self._await_manual_prompt = False
-            self._prompt_and_install(release)
+            self._fallback_prompt(self._prompt_and_install, release)
         elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybdHost Update",
@@ -2194,7 +2194,7 @@ class PolyHost(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
-            self._prompt_and_install(self._pending_release)
+            self._fallback_prompt(self._prompt_and_install, self._pending_release)
             return
         # Only switch the UI into "checking" mode if a run actually started —
         # otherwise an in-flight auto-check (with silent callbacks) would leave
@@ -2395,6 +2395,18 @@ class PolyHost(QApplication):
         can start an install-and-restart while a firmware flash is running.
         Queue the second one and run it when the first closes.
 
+        ⚠️ **EVERY update prompt goes through here — grep for
+        `_prompt_and_install(` / `_prompt_and_flash(` and the only callers left
+        should be this method.** The serialization was first applied only to the
+        automatic fallback, which left the MANUAL branches (`_await_manual_*`,
+        i.e. the user's own "Check for update…" click) opening a modal with
+        `_fallback_prompt_busy` still False — so the other check's event,
+        dispatched by that modal's nested loop, stacked a dialog anyway
+        (CodeRabbit, #257, the same defect for the third time). A per-call-site
+        wrapper is the shape that keeps missing one; one door does not. On a
+        platform that delivers balloons the queue is always empty, so wrapping
+        those paths changes nothing there.
+
         ⚠️ **A dialog the user ACCEPTED ends the drain.** Serializing the two
         windows is only half of it: `_prompt_and_install` returns as soon as it
         has STARTED the installer, so draining the queue behind it would open
@@ -2501,9 +2513,9 @@ class PolyHost(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
-            self._prompt_and_install(self._pending_release)
+            self._fallback_prompt(self._prompt_and_install, self._pending_release)
         elif self._pending_fw_release is not None:
-            self._prompt_and_flash(self._pending_fw_release)
+            self._fallback_prompt(self._prompt_and_flash, self._pending_fw_release)
 
     # ------------------------------------------------------------------
     # Firmware update
@@ -2518,7 +2530,7 @@ class PolyHost(QApplication):
         self.log.info("Firmware update available: %s", release.version)
         if self._await_manual_fw_prompt:
             self._await_manual_fw_prompt = False
-            self._prompt_and_flash(release)
+            self._fallback_prompt(self._prompt_and_flash, release)
         elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybd Firmware Update",
@@ -2533,7 +2545,7 @@ class PolyHost(QApplication):
         if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():
             return
         if self._pending_fw_release is not None:
-            self._prompt_and_flash(self._pending_fw_release)
+            self._fallback_prompt(self._prompt_and_flash, self._pending_fw_release)
             return
         # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
         # and the _fw_no_update closure in _start_update_check. Only flip the UI
