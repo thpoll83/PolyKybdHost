@@ -69,7 +69,38 @@ OS. Four rules around it:
   three, and that no xkb code has been pasted into a tag file (or vice versa).
 
 Per-platform implementations:
-- `win_helper.py` — Windows (pynput)
+- `win_helper.py` — Windows (pynput for the switch, Win32 for the read)
+  - ⚠️ **The current-language READ is the fragile half of this loop, not the
+    press — it has broken language switching TWICE.** `set_language` cycles
+    with keystrokes and compares each read against its target to decide when
+    to stop, so a read that is merely *wrong* makes every comparison fail:
+    switching never works, and the symptom is identical both times.
+    - 2026-06-19: PowerShell default-formatted the `InputLanguage` object as a
+      TABLE and the parser matched the *header*, returning the literal
+      `"Culture   Handle LayoutName"` as the current language.
+      `win_helper_parse_test.py` exists for this.
+    - 2026-09-22: `InputLanguage.CurrentInputLanguage` is per-THREAD, and it
+      was read in a fresh PowerShell process — which reports the system
+      default, not the foreground window's layout. It returned the same
+      `ko-KR` on eight reads while eight Win+Space presses were landing, so a
+      switch that visibly worked was reported as a failure.
+    ⚠️ **A "could not switch" report is therefore about the read until proven
+    otherwise.** The message now distinguishes the two: a current language
+    that never moves across N presses names itself, rather than looking like
+    a missing layout.
+  - ⚠️ **`GetKeyboardLayout(0)` is the trap to avoid** — thread 0 means the
+    CALLING thread, which is the useless question the PowerShell read was
+    already asking. With no foreground window the read refuses and falls back
+    to PowerShell rather than quietly asking it again.
+  - ⚠️ **The keypress needs settle time before the re-read.** The PowerShell
+    spawn's few hundred ms doubled as that wait; a Win32 read returns
+    instantly and can beat the switch it is observing
+    (`_SWITCH_SETTLE_S` in `input_helper.py`, which GNOME shares).
+  - **`dev_win_native_set_language` avoids the whole loop** —
+    `LoadKeyboardLayout` + `WM_INPUTLANGCHANGEREQUEST` switches directly, with
+    no cycling and no read. Still gated as experimental; it is the obvious
+    candidate for the Windows default if the cycling path keeps costing
+    rounds.
 - `macos_helper.py` — macOS (Text Input Source Services through `macos_input_source.py`)
   - ⚠️ **Selecting an input source and setting the SYSTEM LANGUAGE are different
     things, and this helper used to do the second one.** `set_language` ran
