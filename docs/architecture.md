@@ -47,6 +47,23 @@ Abstract base `unicode_input.py` with per-platform implementations:
   - **`TISSelectInputSource` can only select a source the user has ENABLED** in
     System Settings. A miss is reported with the enabled list, because the fix is
     there and not in the app.
+  - ⚠️ **Matching on the language alone leaves ~60 of the 156 layouts with no
+    answer**, because macOS ships an input source for none of those languages —
+    Tahitian, Filipino, Swahili, Quechua, Basque. `pick_input_source` therefore
+    ends with the same compatible-layout fallback the KDE helper uses
+    (`res/forced_country_match.txt` through `LangComp`), translated out of that
+    file's xkb/ISO country vocabulary by `_LAYOUT_FOR_CODE`.
+    - ⚠️ **The res file alone is not enough here.** On Linux a layout whose own
+      country code is installed resolves without the file, so it carries no
+      `gb=`, `ch=` or `es=` line; macOS has no country concept to resolve
+      through. The keyboard's own country is therefore tried as a layout first,
+      which is what gets Welsh onto British, Romansh onto Swiss German and
+      Basque onto Spanish — and, for `se-NO`, the Norwegian layout rather than
+      the Danish one the file's `no=dk` fold names.
+    - ⚠️ **It must stay BELOW the language match.** `zh-TW` is folded onto `us`
+      for Linux (the xkb `tw` layout is not Latin), but macOS has a Zhuyin IME
+      reporting `zh-Hant`; matching the language first picks the IME the user
+      installed.
 - `linux_gnome_helper.py` — GNOME/X11 (pynput + X11)
 - `linux_kde_helper.py` — KDE Plasma (D-Bus)
 

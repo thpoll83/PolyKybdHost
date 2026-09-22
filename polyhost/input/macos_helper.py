@@ -17,11 +17,17 @@ dialog) for the life of the process. Do not reintroduce a display name here."""
 
 from polyhost.input import macos_input_source as tis
 from polyhost.input.input_helper import InputHelper
+from polyhost.lang.lang_compat import LangComp
 
 
 class MacOSInputHelper(InputHelper):
     def __init__(self):
         super().__init__()   # sets self.log (the set_language/get_languages error paths use it)
+        # Same compatible-layout table the KDE helper consults, for the same
+        # reason: ~60 of the 156 PolyKybd layouts are folds onto another
+        # country's layout, and macOS has an input source for none of those
+        # languages. See `pick_input_source` for why it is a fallback.
+        self.comp = LangComp()
         self.list = None
 
     def get_languages(self):
@@ -64,7 +70,8 @@ class MacOSInputHelper(InputHelper):
             return False, error
 
         wanted = tis.normalize_tag(lang, country)
-        chosen = tis.pick_input_source(sources, lang, country)
+        chosen = tis.pick_input_source(
+            sources, lang, country, self.comp.get_compatible_lang_list(country))
         if chosen is None:
             available = ", ".join(
                 f"{s.get('name') or s.get('id')} ({'/'.join(s.get('languages') or []) or '?'})"

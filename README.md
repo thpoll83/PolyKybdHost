@@ -109,7 +109,11 @@ crash with an `ImportError` if a dependency slipped through.
   Services), which needs no password and takes effect immediately. It can only
   select a source you have already enabled, so add the layout under *System
   Settings → Keyboard → Input Sources* first; PolyKybd names the enabled sources
-  in the log when it finds no match. It does **not** change your macOS *system
+  in the log when it finds no match. A **compatible** layout is enough — many
+  keyboard languages have no input source of their own on macOS (Tahitian types
+  on French, Filipino and Swahili on U.S., Quechua on Latin American, Basque and
+  Galician on Spanish), and PolyKybd falls back to those the same way it does on
+  Linux. It does **not** change your macOS *system
   language* (the language of menus and dialogs) — that is a separate setting
   you own.
 
