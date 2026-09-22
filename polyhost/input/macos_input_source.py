@@ -279,17 +279,23 @@ def _is_true(cf, ptr):
 def list_input_sources():
     """Enumerate the ENABLED keyboard input sources.
 
-    Returns ``(True, [dict, ...])`` or ``(False, reason)``. ``False`` for the
-    second argument of `TISCreateInputSourceList` is what restricts the list to
-    what the user has enabled — passing True would offer every layout macOS
-    ships, and selecting one of those does nothing."""
+    Returns ``(sources, error)`` — the list is ALWAYS a list, empty when
+    `error` is set. ⚠️ Every entry point here answers in that shape rather than
+    the repo's usual ``(ok, value_or_reason)``, because a second element whose
+    TYPE depends on the first makes the caller's loop iterate a string on the
+    failure path if the flag is ever mis-read; CodeQL flagged exactly that
+    (alert 357). The value never changes type, so the bug cannot be written.
+
+    ``False`` for the second argument of `TISCreateInputSourceList` is what
+    restricts the list to what the user has enabled — passing True would offer
+    every layout macOS ships, and selecting one of those does nothing."""
     bridge = _load()
     if not bridge:
-        return False, f"Text Input Source Services unavailable ({_bridge_error})"
+        return [], f"Text Input Source Services unavailable ({_bridge_error})"
     cf, carbon = bridge
     arr = carbon.TISCreateInputSourceList(None, False)
     if not arr:
-        return False, "TISCreateInputSourceList returned no input sources"
+        return [], "TISCreateInputSourceList returned no input sources"
     try:
         sources = []
         for i in range(cf.CFArrayGetCount(ctypes.c_void_p(arr))):
@@ -303,7 +309,7 @@ def list_input_sources():
             info = _describe(cf, carbon, src)
             if info["id"]:
                 sources.append(info)
-        return True, sources
+        return sources, None
     finally:
         # TISCreateInputSourceList follows the CF **create** rule, so this call
         # owns the array. The per-source dicts above hold no pointers into it.
@@ -311,16 +317,18 @@ def list_input_sources():
 
 
 def current_input_source():
-    """The keyboard input source in effect right now, as a dict."""
+    """The keyboard input source in effect right now.
+
+    Returns ``(source, error)``: a dict, or None with the reason."""
     bridge = _load()
     if not bridge:
-        return False, f"Text Input Source Services unavailable ({_bridge_error})"
+        return None, f"Text Input Source Services unavailable ({_bridge_error})"
     cf, carbon = bridge
     src = carbon.TISCopyCurrentKeyboardInputSource()
     if not src:
-        return False, "TISCopyCurrentKeyboardInputSource returned nothing"
+        return None, "TISCopyCurrentKeyboardInputSource returned nothing"
     try:
-        return True, _describe(cf, carbon, src)
+        return _describe(cf, carbon, src), None
     finally:
         cf.CFRelease(ctypes.c_void_p(src))
 
@@ -330,7 +338,7 @@ def select_input_source(source_id):
 
     The source is re-found here rather than carried in from a previous
     enumeration, so no `TISInputSourceRef` ever outlives the CFArray that owns
-    it. Returns ``(True, source_id)`` or ``(False, reason)``."""
+    it. Returns ``(selected, error)``."""
     bridge = _load()
     if not bridge:
         return False, f"Text Input Source Services unavailable ({_bridge_error})"
@@ -349,7 +357,7 @@ def select_input_source(source_id):
             status = carbon.TISSelectInputSource(ctypes.c_void_p(src))
             if status != 0:
                 return False, f"TISSelectInputSource({source_id}) failed with OSStatus {status}"
-            return True, source_id
+            return True, None
         return False, f"Input source {source_id} is no longer enabled"
     finally:
         cf.CFRelease(ctypes.c_void_p(arr))

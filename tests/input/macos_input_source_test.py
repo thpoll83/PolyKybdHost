@@ -214,8 +214,8 @@ class BridgeFlowTest(unittest.TestCase):
     def test_only_keyboard_sources_are_listed(self):
         fake = FakeCoreFoundation(self.SOURCES)
         mis = self._install(fake)
-        ok, sources = mis.list_input_sources()
-        self.assertTrue(ok)
+        sources, error = mis.list_input_sources()
+        self.assertIsNone(error)
         # The emoji palette is a selectable input source but not a keyboard
         # layout; listing it would offer a "language" that types nothing.
         self.assertEqual([s["id"] for s in sources],
@@ -234,9 +234,9 @@ class BridgeFlowTest(unittest.TestCase):
     def test_select_finds_the_source_by_id(self):
         fake = FakeCoreFoundation(self.SOURCES)
         mis = self._install(fake)
-        ok, result = mis.select_input_source("com.apple.keylayout.German")
-        self.assertTrue(ok)
-        self.assertEqual(result, "com.apple.keylayout.German")
+        selected, error = mis.select_input_source("com.apple.keylayout.German")
+        self.assertTrue(selected)
+        self.assertIsNone(error)
         self.assertEqual(len(fake.selected), 1)
         self.assertIn(fake.list_ptr, fake.released)
 
@@ -244,17 +244,39 @@ class BridgeFlowTest(unittest.TestCase):
         fake = FakeCoreFoundation(self.SOURCES)
         fake.select_status = -50
         mis = self._install(fake)
-        ok, reason = mis.select_input_source("com.apple.keylayout.German")
-        self.assertFalse(ok)
+        selected, reason = mis.select_input_source("com.apple.keylayout.German")
+        self.assertFalse(selected)
         self.assertIn("-50", reason)
 
     def test_selecting_a_source_that_is_no_longer_enabled_fails(self):
         fake = FakeCoreFoundation(self.SOURCES)
         mis = self._install(fake)
-        ok, reason = mis.select_input_source("com.apple.keylayout.Greek")
-        self.assertFalse(ok)
+        selected, reason = mis.select_input_source("com.apple.keylayout.Greek")
+        self.assertFalse(selected)
         self.assertIn("Greek", reason)
         self.assertEqual(fake.selected, [])
+
+    def test_a_failure_returns_the_VALUE_TYPE_not_a_reason_string(self):
+        """Every entry point answers `(value, error)`, and the value's type
+        never depends on the error.
+
+        The repo's usual `(ok, value_or_reason)` tuple hands the caller a
+        STRING to iterate on the failure path the moment the flag is read
+        wrongly — CodeQL alert 357 against the first revision of this PR, on
+        `for source in result` in `get_languages`. Pinning the type here is
+        what stops the shape drifting back."""
+        mis = importlib.import_module("polyhost.input.macos_input_source")
+        self.addCleanup(setattr, mis, "_load", mis._load)
+        mis._load = lambda: None
+
+        sources, error = mis.list_input_sources()
+        self.assertIsInstance(sources, list)
+        self.assertEqual(sources, [])
+        self.assertIn("unavailable", error)
+
+        source, error = mis.current_input_source()
+        self.assertIsNone(source)
+        self.assertIn("unavailable", error)
 
     def test_current_input_source_reads_the_copied_source(self):
         fake = FakeCoreFoundation(
@@ -262,8 +284,8 @@ class BridgeFlowTest(unittest.TestCase):
             current={"id": "com.apple.keylayout.German", "name": "German",
                      "languages": ["de"]})
         mis = self._install(fake)
-        ok, source = mis.current_input_source()
-        self.assertTrue(ok)
+        source, error = mis.current_input_source()
+        self.assertIsNone(error)
         self.assertEqual(mis.tag_for_source(source), "de")
         self.assertIn(fake.current_ptr, fake.released)
 

@@ -31,12 +31,12 @@ class MacOSInputHelper(InputHelper):
         source the user has enabled, so offering the rest would list languages
         that cannot be switched to."""
         if self.list is None:   # None = not queried yet; [] is a valid cached result
-            ok, result = tis.list_input_sources()
-            if not ok:
-                self.log.warning("Could not enumerate macOS input sources: %s", result)
+            sources, error = tis.list_input_sources()
+            if error:
+                self.log.warning("Could not enumerate macOS input sources: %s", error)
                 return []
             tags = []
-            for source in result:
+            for source in sources:
                 tag = tis.tag_for_source(source)
                 if tag and tag not in tags:
                     tags.append(tag)
@@ -44,12 +44,12 @@ class MacOSInputHelper(InputHelper):
         return self.list
 
     def get_current_language(self):
-        ok, result = tis.current_input_source()
-        if not ok:
-            return False, result
-        tag = tis.tag_for_source(result)
+        source, error = tis.current_input_source()
+        if error:
+            return False, error
+        tag = tis.tag_for_source(source)
         if not tag:
-            return False, f"Input source {result.get('id')} reports no language"
+            return False, f"Input source {source.get('id')} reports no language"
         return True, tag
 
     def set_language(self, lang, country):
@@ -58,10 +58,10 @@ class MacOSInputHelper(InputHelper):
         Returns ``(False, reason)`` when no enabled source speaks it — naming
         the sources that were on offer, because the fix is in System Settings
         and not in the app."""
-        ok, sources = tis.list_input_sources()
-        if not ok:
-            self.log.warning("Could not enumerate macOS input sources: %s", sources)
-            return False, sources
+        sources, error = tis.list_input_sources()
+        if error:
+            self.log.warning("Could not enumerate macOS input sources: %s", error)
+            return False, error
 
         wanted = tis.normalize_tag(lang, country)
         chosen = tis.pick_input_source(sources, lang, country)
@@ -72,11 +72,11 @@ class MacOSInputHelper(InputHelper):
             return False, (f"No enabled macOS input source for {wanted}. "
                            f"Enabled: {available or 'none'}")
 
-        selected, result = tis.select_input_source(chosen["id"])
+        selected, error = tis.select_input_source(chosen["id"])
         if not selected:
             self.log.warning("Could not select macOS input source %s: %s",
-                             chosen.get("id"), result)
-            return False, result
+                             chosen.get("id"), error)
+            return False, error
         self.log.debug("Selected macOS input source %s (%s) for %s",
                        chosen.get("id"), chosen.get("name"), wanted)
         return True, tis.tag_for_source(chosen) or wanted
