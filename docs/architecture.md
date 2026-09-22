@@ -27,7 +27,41 @@ and relative links were adjusted to suit a standalone file.
 - `poly_kybd_mock.py` — drop-in mock device for running without hardware
 
 ### Platform input abstraction (`polyhost/input/`)
-Abstract base `unicode_input.py` with per-platform implementations:
+Abstract base `unicode_input.py` with per-platform implementations.
+
+⚠️ **`InputHelper.set_language` is a KEYSTROKE, not an API call** — it presses
+the OS's "next input language" shortcut and re-reads the current language until
+it matches, because neither Windows nor GNOME lets an unprivileged process
+select a layout outright. Both inherit it; KDE and macOS override it entirely
+(`qdbus … setLayout`, `TISSelectInputSource`) and never cycle. Two consequences:
+a failed attempt is visible to the user as the language indicator flickering,
+and anything added to that loop is paid for in keypresses.
+
+⚠️ **The forced-layout compatibility map is ONE FILE PER PLATFORM** —
+`res/forced_country_match_{linux,macos,windows}.txt`, selected by `LangComp`'s
+REQUIRED `platform` argument. Same question everywhere, different vocabulary:
+Linux matches xkb layout codes (`ara`, `latam`, `gb`), macOS and Windows match
+IETF tags (`ar-SA`, `en-GB`). The fallback runs only after the direct match
+fails, and it is what makes ~60 of the 156 PolyKybd layouts work at all —
+Tahitian, Filipino, Swahili, Quechua, Basque have no keyboard language on any
+OS. Four rules around it:
+- ⚠️ **Reading the wrong platform's file mostly WORKS**, which is the trap: a
+  bare `pf=fr` is a valid language tag as well as an xkb code, so only `ara`,
+  `latam` and the region-specific entries break. Hence no default argument, and
+  hence `LangComp.platform` — the macOS and Windows maps hold identical values
+  today, so nothing in the DATA distinguishes a mis-wired helper.
+- ⚠️ **Order inside a line is load-bearing**: the country's own layout first,
+  the folds after (`no=nb-NO,da-DK` puts Northern Sami on Norwegian, not the
+  Danish fold).
+- ⚠️ **The tag files carry keys Linux does not** — `es`, `gb`, `ch`, `us`.
+  There a layout whose own country code is installed resolves without a fold;
+  neither macOS nor Windows has a country concept to resolve through.
+- ⚠️ **A fold added for Linux and not mirrored goes QUIET** — that language
+  reports no compatible layout on a machine that has exactly the right one.
+  `tests/input/input_helper_fold_test.py` asserts key-set parity across all
+  three, and that no xkb code has been pasted into a tag file (or vice versa).
+
+Per-platform implementations:
 - `win_helper.py` — Windows (pynput)
 - `macos_helper.py` — macOS (Text Input Source Services through `macos_input_source.py`)
   - ⚠️ **Selecting an input source and setting the SYSTEM LANGUAGE are different

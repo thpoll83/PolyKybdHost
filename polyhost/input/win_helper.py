@@ -18,7 +18,7 @@ _KLF_ACTIVATE = 0x00000001
 
 class WindowsInputHelper(InputHelper):
     def __init__(self, poly_settings=None):
-        super().__init__()
+        super().__init__("windows")
         self.poly_settings = poly_settings
         self.list = None
         # Query the current input language inline (no Start-Job, which would

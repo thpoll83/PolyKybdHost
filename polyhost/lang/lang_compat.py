@@ -16,6 +16,11 @@ class LangComp:
     layout rather than an error."""
 
     def __init__(self, platform):
+        #: Which map this is. Recorded because macOS and Windows currently
+        #: hold the SAME values, so nothing in the data distinguishes them —
+        #: a helper wired to the wrong one would behave identically today and
+        #: diverge silently the first time the files differ.
+        self.platform = platform
         self.mapping = dict()
         path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(),
                             "res", f"forced_country_match_{platform}.txt")

@@ -419,18 +419,27 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   `TISSelectInputSource` (`input/macos_input_source.py`), which needs no privileges;
   `docs/architecture.md` → *Platform input abstraction* has the rest.
 - ⚠️ **The forced-layout compat map is ONE FILE PER PLATFORM**
-  (`res/forced_country_match_<platform>.txt`; `LangComp(platform)` REQUIRES the
-  argument, deliberately). Same question everywhere, but the answer is in the
-  vocabulary that platform matches on: Linux names xkb layout codes (`ara`,
-  `latam`, `gb`), macOS the IETF language tags its input sources report
-  (`ar-SA`, `en-GB`). ⚠️ **Reading the wrong one mostly WORKS** — `pf=fr` is a
-  valid language tag as well as an xkb code — so only `ara`, `latam` and the
-  region-specific entries break, which is why the argument has no default and
-  why a test drives a country only the macOS file answers for (`es`). The
-  macOS file also carries keys Linux never needed (`es`, `gb`, `ch`, `us`),
-  since there a layout whose own country code is installed resolves without a
-  fold. Key-set parity between the files is asserted; a fold added for Linux
-  and not mirrored goes QUIET rather than failing.
+  (`res/forced_country_match_{linux,macos,windows}.txt`; `LangComp(platform)`
+  REQUIRES the argument, deliberately). Same question everywhere, but the
+  answer is in the vocabulary that platform matches on: Linux names xkb layout
+  codes (`ara`, `latam`, `gb`), macOS and Windows name IETF tags (`ar-SA`,
+  `en-GB`). ⚠️ **Reading the wrong one mostly WORKS** — `pf=fr` is a valid
+  language tag as well as an xkb code — so only `ara`, `latam` and the
+  region-specific entries break; hence no default argument, and hence
+  `LangComp.platform`, because the macOS and Windows maps hold identical values
+  today and nothing in the DATA would distinguish a mis-wired helper. The tag
+  files carry keys Linux never needed (`es`, `gb`, `ch`, `us`), since there a
+  layout whose own country code is installed resolves without a fold. Key-set
+  parity across all three is asserted; a fold added for Linux and not mirrored
+  goes QUIET rather than failing.
+- ⚠️ **`InputHelper.set_language` cycles the OS with REAL KEYPRESSES**
+  (Win/Super+Space through pynput), so a failed attempt is visible as the
+  language indicator flickering and anything added to that loop costs presses.
+  Windows and GNOME inherit it; KDE and macOS override it and never cycle.
+  ⚠️ Its two-character language fallback is what makes `de-AT` land on `de-DE`
+  and has been there since the start — **that is not the compat map**, which
+  Windows never consulted until 2026-09. Don't read one working as evidence of
+  the other.
 - ⚠️ **An input helper's `get_current_language` and `set_language` must speak ONE
   namespace.** macOS answered the HIToolbox *"KeyboardLayout Name"* (`German`) to a
   caller comparing it with `de-DE`, so `PolyHost` read "the OS language differs" on
