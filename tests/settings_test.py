@@ -251,6 +251,46 @@ class ConcurrentWriterTest(unittest.TestCase):
         # And the save still landed -- losing the write is not the alternative.
         self.assertEqual(settings.read_setting("browser_report_port"), 10001)
 
+    def test_a_SECOND_corruption_does_not_DESTROY_the_first_copy(self):
+        """⚠️ The kept name was `…unreadable-{strftime("%Y%m%d-%H%M%S")}`, i.e.
+        one-second resolution, and `os.replace` overwrites silently. Two
+        corruptions inside the same second therefore preserved the first copy
+        and then destroyed it with the second — the one outcome this whole
+        function exists to prevent (Greptile, #248, raised against the merge
+        commit rather than that PR's diff).
+
+        The stamp is pinned here rather than raced for: the collision is a
+        property of the NAME, and a test that hopes two constructions land in
+        the same wall-clock second is a test that passes for the wrong reason
+        most of the time.
+
+        Note the concurrent case was already safe and is not what this pins —
+        the loser's `os.replace` raises FileNotFoundError once the winner has
+        moved the file. This is two SEQUENTIAL corruptions."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+
+        first = "{{{ not yaml -- the FIRST corruption\n"
+        second = "{{{ not yaml -- the SECOND corruption, a moment later\n"
+        with mock.patch.object(settings.time, "strftime",
+                               return_value="20260101-000000"):
+            for corrupt in (first, second):
+                with open(a.path, "w", encoding="utf-8") as f:
+                    f.write(corrupt)
+                settings.PolySettings()      # preserves, then saves defaults
+
+        kept = sorted(n for n in os.listdir(self._tmp.name)
+                      if ".unreadable-" in n)
+        self.assertEqual(len(kept), 2,
+                         f"a copy was overwritten: {os.listdir(self._tmp.name)}")
+        bodies = set()
+        for name in kept:
+            with open(os.path.join(self._tmp.name, name), encoding="utf-8") as f:
+                bodies.add(f.read())
+        # BOTH are recoverable, byte-for-byte -- not just the newer one.
+        self.assertEqual(bodies, {first, second})
+
     def test_an_ABSENT_file_is_not_treated_as_unreadable(self):
         """The ordinary first save. Nothing is there to preserve, so preserving
         would leave a stray `.unreadable-` file on every clean first run --
@@ -339,6 +379,41 @@ class ConcurrentWriterTest(unittest.TestCase):
         with open(os.path.join(self._tmp.name, kept[0]), "rb") as f:
             self.assertEqual(f.read(), corrupt)   # byte-for-byte, recoverable
 
+    @staticmethod
+    def _preservation_cannot_reserve_a_name():
+        """Obstruct ONLY `_preserve_unreadable`'s own `mkstemp` reservation.
+
+        ⚠️ Shared by both callers on purpose. Two tests obstructed the
+        preservation by squatting a DIRECTORY on the exact name it would pick,
+        and that worked only while the name was predictable; when it stopped
+        being, one of them was fixed and the other silently went vacuous
+        (Sourcery, #253). One helper means the next change to the mechanism
+        cannot fix half the callers.
+
+        Scoped to the preservation's own call, so `_save_merged`'s temp-file
+        write still works -- a blanket failure makes the save abort on its own
+        writer, and then the save-abort test passes without the stand-down it
+        exists to pin. (A read-only config dir would be the real-collision
+        equivalent, but this suite runs as root, where it is no obstruction at
+        all -- measured, not assumed.)
+
+        Returns ``(patcher, refused)``. ⚠️ **Assert `refused` is truthy.**
+        "No backup file appeared" does NOT prove the failure path ran -- it is
+        equally true when `_preserve_unreadable` is never CALLED, which is the
+        other half of what these tests cannot see on their own.
+        """
+        real_mkstemp = tempfile.mkstemp
+        refused = []
+
+        def side_effect(*args, **kwargs):
+            if "unreadable" in kwargs.get("prefix", ""):
+                refused.append(kwargs["prefix"])
+                raise OSError(13, "Permission denied")
+            return real_mkstemp(*args, **kwargs)
+
+        return (mock.patch.object(settings.tempfile, "mkstemp",
+                                  side_effect=side_effect), refused)
+
     def test_a_save_ABORTS_when_the_original_cannot_be_preserved(self):
         """⚠️ `_preserve_unreadable` swallows its OSError, so the save used to
         carry on and `os.replace` destroyed the very file the preservation
@@ -357,13 +432,23 @@ class ConcurrentWriterTest(unittest.TestCase):
         with open(a.path, "w", encoding="utf-8") as f:
             f.write(corrupt)
 
-        # A real collision, not a patched-out helper: a DIRECTORY sitting on
-        # the exact name `_preserve_unreadable` will pick.
-        stamp = "20260921-000000"
-        os.mkdir(f"{a.path}.unreadable-{stamp}")
-        with mock.patch.object(settings.time, "strftime", return_value=stamp):
+        # ⚠️ This used to squat a DIRECTORY on the exact name
+        # `_preserve_unreadable` would pick. That worked only while the name
+        # was PREDICTABLE, and it is not any more -- it is reserved with
+        # `mkstemp` so two corruptions in one second cannot collide. The
+        # obstruction has to be the syscall now. (A read-only config dir would
+        # be the real-collision equivalent, but the suite runs as root here,
+        # where it is not an obstruction at all -- measured, not assumed.)
+        #
+        # It is scoped to the PRESERVATION's own call, so `_save_merged`'s
+        # temp-file write still works: with a blanket failure the save would
+        # abort on its own writer and this test would pass without the
+        # stand-down it exists to pin.
+        obstruction, refused = self._preservation_cannot_reserve_a_name()
+        with obstruction:
             a.collection["browser_report_port"] = 10004
             a.save()
+        self.assertTrue(refused, "preservation was never attempted")
 
         with open(a.path, encoding="utf-8") as f:
             self.assertEqual(f.read(), corrupt, "the save destroyed the original")
@@ -377,12 +462,31 @@ class ConcurrentWriterTest(unittest.TestCase):
         a.save()
         with open(a.path, "w", encoding="utf-8") as f:
             f.write("{{{ not yaml")
-        stamp = "20260921-000001"
-        os.mkdir(f"{a.path}.unreadable-{stamp}")
-        with mock.patch.object(settings.time, "strftime", return_value=stamp):
+        obstruction, refused = self._preservation_cannot_reserve_a_name()
+        with obstruction:
             b = settings.PolySettings()      # must not raise
         self.assertEqual(b.get("hid_reconnect_retries"),
                          b.defaults["hid_reconnect_retries"])
+        # ⚠️ Without this the test is VACUOUS, which is exactly what it became
+        # when the kept name stopped being predictable: it used to obstruct by
+        # squatting a DIRECTORY on `{path}.unreadable-{stamp}`, `mkstemp` then
+        # picked a different random suffix, preservation SUCCEEDED, and "the
+        # constructor did not raise" held for a reason that had nothing to do
+        # with a failure it was no longer producing (Sourcery, #253). Assert
+        # the failure path was really taken, not just that startup survived.
+        # ⚠️ TWO, and counting them is the whole point: the constructor
+        # preserves, and then its own save preserves again (the corrupt file is
+        # still there, because startup does NOT stand down). A bare "at least
+        # one" is satisfied by the SAVE's call alone, so it passes even when the
+        # constructor skips preservation entirely -- the other half of what
+        # Sourcery flagged, and it is not visible from "no backup appeared"
+        # either. Mutation-checked: dropping the constructor's call makes this 1.
+        self.assertEqual(len(refused), 2,
+                         "expected the CONSTRUCTOR and its save to each attempt "
+                         f"preservation; got {len(refused)}")
+        self.assertEqual([n for n in os.listdir(self._tmp.name)
+                          if ".unreadable-" in n], [],
+                         "preservation SUCCEEDED -- this test proves nothing")
 
     def test_an_unknown_key_never_reaches_the_file(self):
         """`mine` is applied after _normalize, so without a re-filter a key

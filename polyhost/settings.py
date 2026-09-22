@@ -318,10 +318,33 @@ class PolySettings:
         cannot abort at all -- it has to hand back a usable PolySettings -- so
         it logs and continues, as it always has."""
         stamp = time.strftime("%Y%m%d-%H%M%S")
-        kept = f"{self.path}.unreadable-{stamp}"
+        kept = None
         try:
+            # ⚠️ The kept name must be unique by CONSTRUCTION, not by the
+            # timestamp. `strftime` resolves to one second and `os.replace`
+            # silently overwrites, so two corruptions inside the same second
+            # preserved the first copy and then destroyed it with the second --
+            # losing exactly the file this function exists to keep. `mkstemp`
+            # reserves the name atomically, which also closes the check-then-act
+            # a bare `os.path.exists` test would leave open.
+            #
+            # The concurrent case was already safe and stays that way: the
+            # second process's `os.replace` raises FileNotFoundError once the
+            # first has moved the file, and lands in the `except` below.
+            fd, kept = tempfile.mkstemp(
+                prefix=f"{os.path.basename(self.path)}.unreadable-{stamp}.",
+                dir=os.path.dirname(self.path) or ".")
+            os.close(fd)
             os.replace(self.path, kept)
         except OSError as e:
+            if kept is not None:
+                try:
+                    os.unlink(kept)
+                except OSError:
+                    # Best effort. The reservation is an empty file and the
+                    # error below is the one worth reporting; failing to tidy
+                    # it up must not mask that.
+                    pass
             # Could not move it; leave it alone rather than risk clobbering.
             # The save that follows will overwrite it, which is the outcome
             # this guards against — so say so loudly.
