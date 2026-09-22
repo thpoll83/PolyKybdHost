@@ -162,18 +162,22 @@ class NativeWindowsPathTest(unittest.TestCase):
         from polyhost.input.win_helper import WindowsInputHelper
 
         class Fake(WindowsInputHelper):
-            def __init__(s):
+            def __init__(self):
                 super().__init__({"dev_win_native_set_language": native})
-                s.i = list(installed)
-                s.c = s.i[0]
-                s.n = 0
-            def get_languages(s):
-                return s.i
-            def get_current_language(s):
-                s.n += 1
-                if s.n > 1:
-                    s.c = s.i[(s.i.index(s.c) + 1) % len(s.i)]
-                return True, s.c
+                self.installed = list(installed)
+                self.cur = self.installed[0]
+                self.reads = 0
+
+            def get_languages(self):
+                return self.installed
+
+            def get_current_language(self):
+                self.reads += 1
+                if self.reads > 1:
+                    i = self.installed.index(self.cur)
+                    self.cur = self.installed[(i + 1) % len(self.installed)]
+                return True, self.cur
+
         return Fake()
 
     def test_a_language_with_no_lcid_still_reaches_the_fallback(self):
