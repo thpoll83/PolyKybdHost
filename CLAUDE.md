@@ -405,7 +405,19 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   is the guard.
 - ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
   are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
-
+- ⚠️ **Defaulting a platform path OFF because it is obnoxious can hide that it
+  never worked.** macOS language switching was disabled in 0.18.1 to stop a
+  password dialog, and for three months a language key repainted the tray menu
+  and reported `True, "OS-language auto-switch disabled"`. The dialog came from
+  `languagesetup`, which sets the system UI language and had never once switched
+  an input source. **Check whether the path was doing its job before muting it.**
+- **The input helpers — the keystroke-cycling `set_language` every platform
+  inherits, the per-platform compat maps, and the four traps around them — are
+  [`docs/architecture.md`](docs/architecture.md) → *Platform input abstraction*.**
+  Two rules bind code outside it: `LangComp(platform)` REQUIRES its argument
+  (reading another platform's map mostly WORKS, which is the trap), and a
+  helper's `get_current_language` and `set_language` must answer in ONE
+  namespace or the sync re-fires on every probe forever.
 ### Updates, autostart and daemon mode
 
 Autostart registration and the post-update relaunch chain are

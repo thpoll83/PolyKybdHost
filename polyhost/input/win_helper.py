@@ -18,7 +18,7 @@ _KLF_ACTIVATE = 0x00000001
 
 class WindowsInputHelper(InputHelper):
     def __init__(self, poly_settings=None):
-        super().__init__()
+        super().__init__("windows")
         self.poly_settings = poly_settings
         self.list = None
         # Query the current input language inline (no Start-Job, which would
@@ -79,6 +79,67 @@ class WindowsInputHelper(InputHelper):
         return tags
 
     def get_current_language(self):
+        """The input language of the FOREGROUND WINDOW.
+
+        ⚠️ **Asking a fresh PowerShell process was the wrong question.**
+        `InputLanguage.CurrentInputLanguage` is per-THREAD, so a brand-new
+        process reports the system default, not what the window in front is
+        typing in. It therefore never followed a Win+Space switch: the field
+        log shows the same `ko-KR` on eight consecutive reads across eight
+        presses that were demonstrably landing (2026-09-22). `set_language`
+        compares against this value to decide when to stop cycling, so a
+        stuck read means it can never succeed — it presses N times, never
+        sees the target, and reports failure for a switch that worked.
+
+        `GetKeyboardLayout(<foreground thread>)` asks about the right thread.
+        PowerShell stays as the fallback for the case that has no answer: no
+        foreground window at all, which a headless or freshly-started process
+        can genuinely hit."""
+        ok, value = self._current_language_win32()
+        if ok:
+            return True, value
+        self.log.debug("Win32 layout read unavailable (%s); using PowerShell", value)
+        return self._current_language_powershell()
+
+    def _current_language_win32(self):
+        """`(True, "de-AT")` from the foreground window's keyboard layout."""
+        try:
+            user32 = ctypes.windll.user32
+        except AttributeError as ex:      # not Windows
+            return False, f"no user32 ({ex})"
+        try:
+            # Pin the signatures: HKL and HWND are pointer-sized, and the
+            # default `int` restype truncates them on 64-bit.
+            user32.GetForegroundWindow.restype = ctypes.c_void_p
+            user32.GetWindowThreadProcessId.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+            user32.GetWindowThreadProcessId.restype = ctypes.c_uint32
+            user32.GetKeyboardLayout.argtypes = [ctypes.c_uint32]
+            user32.GetKeyboardLayout.restype = ctypes.c_void_p
+
+            hwnd = user32.GetForegroundWindow()
+            if not hwnd:
+                # ⚠️ Do NOT fall through to GetKeyboardLayout(0) here — thread
+                # id 0 means "the calling thread", which is the very thing
+                # that made the PowerShell answer useless.
+                return False, "no foreground window"
+            thread_id = user32.GetWindowThreadProcessId(ctypes.c_void_p(hwnd), None)
+            hkl = user32.GetKeyboardLayout(thread_id)
+        except (AttributeError, OSError, ValueError) as ex:
+            return False, f"{type(ex).__name__}: {ex}"
+        if not hkl:
+            return False, "GetKeyboardLayout returned 0"
+        # The low word of an HKL is the LANGID, which is the LCID that
+        # `locale.windows_locale` is keyed by — the same table
+        # `_set_language_native` uses in the opposite direction.
+        langid = hkl & 0xFFFF
+        culture = locale.windows_locale.get(langid)
+        if not culture:
+            return False, f"no culture for LANGID 0x{langid:04x}"
+        self.log.debug("Foreground layout: HKL=0x%x LANGID=0x%04x -> %s",
+                       hkl, langid, culture)
+        return True, culture.replace("_", "-")
+
+    def _current_language_powershell(self):
         try:
             result = subprocess.run(
                 ['powershell', '-NoProfile', '-NonInteractive', '-Sta', '-WindowStyle', 'Hidden',
@@ -114,7 +175,16 @@ class WindowsInputHelper(InputHelper):
         return super().set_language(lang, country)
 
     def _set_language_native(self, lang, country):
-        """Experimental: switch input language via Win32 LoadKeyboardLayout + PostMessage."""
+        """Experimental: switch input language via Win32 LoadKeyboardLayout + PostMessage.
+
+        ⚠️ **Every failure here falls through to `InputHelper.set_language`**,
+        which is where the compatible-layout fallback lives. That matters most
+        for the first one: a fold language has no LCID *by construction* —
+        `locale.windows_locale` lists Windows cultures, and Tahitian, Filipino
+        and Quechua are not among them — so returning False there made this
+        setting silently switch off folds for the ~60 layouts that need them
+        most. The no-foreground-window branch below always worked this way;
+        the other two did not."""
         iso639 = f"{lang}-{country}"
 
         # Find LCID from Python's locale table (maps int LCID -> "lang_COUNTRY")
@@ -125,13 +195,17 @@ class WindowsInputHelper(InputHelper):
             None,
         )
         if lcid is None:
-            return False, f"No LCID found for {iso639}"
+            self.log.debug("Native set_language: no LCID for %s, falling back "
+                           "to cycling + the compatibility map", iso639)
+            return super().set_language(lang, country)
 
         klid = f"{lcid:08x}"
         user32 = ctypes.windll.user32
         hkl = user32.LoadKeyboardLayoutW(klid, _KLF_ACTIVATE)
         if not hkl:
-            return False, f"LoadKeyboardLayout failed for KLID {klid} ({iso639})"
+            self.log.warning("Native set_language: LoadKeyboardLayout failed for "
+                             "KLID %s (%s), falling back to cycling", klid, iso639)
+            return super().set_language(lang, country)
 
         hwnd = user32.GetForegroundWindow()
         if not hwnd:

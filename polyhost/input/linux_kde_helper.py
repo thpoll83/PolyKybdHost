@@ -3,12 +3,14 @@ import subprocess
 from pathlib import Path
 
 from polyhost.input.input_helper import InputHelper
-from polyhost.lang.lang_compat import LangComp
 
 
 class LinuxPlasmaHelper(InputHelper):
     def __init__(self):
-        self.comp = LangComp()
+        # ⚠️ This did not call super() at all, so `self.log` was unset and
+        # every `except` path below raised AttributeError instead of logging —
+        # the same defect fixed for MacOSInputHelper in 9d74546.
+        super().__init__("linux")
         self.list = None
 
     def get_languages(self):

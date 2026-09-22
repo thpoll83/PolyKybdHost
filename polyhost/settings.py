@@ -161,13 +161,6 @@ DEFAULT_SETTINGS = {
         # forwarder and understand the exposure. `dev_`-prefixed, so it is hidden
         # in the settings dialog unless developer mode is on.
         "dev_legacy_plaintext_relay": False,
-        # macOS: auto-switch the system input language to match the keyboard
-        # on (re)connect. Off by default because it runs `languagesetup` via
-        # osascript "with administrator privileges" — a password prompt on
-        # every launch (the keyboard lang code never equals macOS's layout
-        # name, so the sync re-fires each connect). Turn on only if you want
-        # PolyKybd to drive the macOS system language.
-        "macos_native_set_language": False,
         # Daemon-by-default (headless-core H4b): when True, a plain GUI
         # launch runs the operational core in a separate headless daemon and
         # attaches this GUI to it as a client (spawning the daemon if none is

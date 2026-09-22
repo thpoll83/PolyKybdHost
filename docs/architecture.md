@@ -27,9 +27,133 @@ and relative links were adjusted to suit a standalone file.
 - `poly_kybd_mock.py` — drop-in mock device for running without hardware
 
 ### Platform input abstraction (`polyhost/input/`)
-Abstract base `unicode_input.py` with per-platform implementations:
-- `win_helper.py` — Windows (pynput)
-- `macos_helper.py` — macOS (pynput)
+Abstract base `unicode_input.py` with per-platform implementations.
+
+⚠️ **`InputHelper.set_language` is a KEYSTROKE, not an API call** — it presses
+the OS's "next input language" shortcut and re-reads the current language until
+it matches, because neither Windows nor GNOME lets an unprivileged process
+select a layout outright. Both inherit it; KDE and macOS override it entirely
+(`qdbus … setLayout`, `TISSelectInputSource`) and never cycle. Two consequences:
+a failed attempt is visible to the user as the language indicator flickering,
+and anything added to that loop is paid for in keypresses.
+
+⚠️ **Its two-character language fallback is NOT the compatibility map**, and
+the two are easy to confuse: the fallback is what lands `de-AT` on an installed
+`de-DE`, it has been there since the start, and it cannot cross languages.
+Windows never consulted the compat map until 2026-09 — checked across every
+commit, not assumed. So "layout switching works on Windows" is no evidence the
+map is wired, and a report of one working says nothing about the other.
+
+⚠️ **The forced-layout compatibility map is ONE FILE PER PLATFORM** —
+`res/forced_country_match_{linux,macos,windows}.txt`, selected by `LangComp`'s
+REQUIRED `platform` argument. Same question everywhere, different vocabulary:
+Linux matches xkb layout codes (`ara`, `latam`, `gb`), macOS and Windows match
+IETF tags (`ar-SA`, `en-GB`). The fallback runs only after the direct match
+fails, and it is what makes ~60 of the 156 PolyKybd layouts work at all —
+Tahitian, Filipino, Swahili, Quechua, Basque have no keyboard language on any
+OS. Four rules around it:
+- ⚠️ **Reading the wrong platform's file mostly WORKS**, which is the trap: a
+  bare `pf=fr` is a valid language tag as well as an xkb code, so only `ara`,
+  `latam` and the region-specific entries break. Hence no default argument, and
+  hence `LangComp.platform` — the macOS and Windows maps hold identical values
+  today, so nothing in the DATA distinguishes a mis-wired helper.
+- ⚠️ **Order inside a line is load-bearing**: the country's own layout first,
+  the folds after (`no=nb-NO,da-DK` puts Northern Sami on Norwegian, not the
+  Danish fold).
+- ⚠️ **The tag files carry keys Linux does not** — `es`, `gb`, `ch`, `us`.
+  There a layout whose own country code is installed resolves without a fold;
+  neither macOS nor Windows has a country concept to resolve through.
+- ⚠️ **A fold added for Linux and not mirrored goes QUIET** — that language
+  reports no compatible layout on a machine that has exactly the right one.
+  `tests/input/input_helper_fold_test.py` asserts key-set parity across all
+  three, and that no xkb code has been pasted into a tag file (or vice versa).
+
+Per-platform implementations:
+- `win_helper.py` — Windows (pynput for the switch, Win32 for the read)
+  - ⚠️ **The current-language READ is the fragile half of this loop, not the
+    press — it has broken language switching TWICE.** `set_language` cycles
+    with keystrokes and compares each read against its target to decide when
+    to stop, so a read that is merely *wrong* makes every comparison fail:
+    switching never works, and the symptom is identical both times.
+    - 2026-06-19: PowerShell default-formatted the `InputLanguage` object as a
+      TABLE and the parser matched the *header*, returning the literal
+      `"Culture   Handle LayoutName"` as the current language.
+      `win_helper_parse_test.py` exists for this.
+    - 2026-09-22: `InputLanguage.CurrentInputLanguage` is per-THREAD, and it
+      was read in a fresh PowerShell process — which reports the system
+      default, not the foreground window's layout. It returned the same
+      `ko-KR` on eight reads while eight Win+Space presses were landing, so a
+      switch that visibly worked was reported as a failure.
+    ⚠️ **A "could not switch" report is therefore about the read until proven
+    otherwise.** The message now distinguishes the two: a current language
+    that never moves across N presses names itself, rather than looking like
+    a missing layout.
+  - ⚠️ **`GetKeyboardLayout(0)` is the trap to avoid** — thread 0 means the
+    CALLING thread, which is the useless question the PowerShell read was
+    already asking. With no foreground window the read refuses and falls back
+    to PowerShell rather than quietly asking it again.
+  - ⚠️ **The keypress needs settle time before the re-read.** The PowerShell
+    spawn's few hundred ms doubled as that wait; a Win32 read returns
+    instantly and can beat the switch it is observing
+    (`_SWITCH_SETTLE_S` in `input_helper.py`, which GNOME shares).
+  - **`dev_win_native_set_language` avoids the whole loop** —
+    `LoadKeyboardLayout` + `WM_INPUTLANGCHANGEREQUEST` switches directly, with
+    no cycling and no read. Still gated as experimental; it is the obvious
+    candidate for the Windows default if the cycling path keeps costing
+    rounds.
+- `macos_helper.py` — macOS (Text Input Source Services through `macos_input_source.py`)
+  - ⚠️ **Selecting an input source and setting the SYSTEM LANGUAGE are different
+    things, and this helper used to do the second one.** `set_language` ran
+    `sudo languagesetup -langspec xx-YY` through osascript *"with administrator
+    privileges"*: a password dialog per call, effective at the next login, and no
+    effect at all on which layout types. It therefore never did what a language key
+    on the keyboard asks for, and the per-launch dialog is what got the whole
+    auto-switch disabled on macOS in 0.18.1 — so from then on a keyboard-side
+    language press changed the tray menu and nothing else. `TISSelectInputSource`
+    is the right call: no privileges, no dialog, immediate.
+  - ⚠️ **`get_current_language` must answer in the SAME namespace `set_language`
+    takes.** It used to return the HIToolbox *"KeyboardLayout Name"* (`German`),
+    which can never equal the `de-DE` it is compared against, so the host believed
+    the OS language differed on every probe and re-fired the switch — and, back
+    when that meant osascript, the password dialog with it. ⚠️ **This binds every
+    helper, not just this one**: Windows was bitten from the other end, parsing a
+    PowerShell table HEADER as the current culture. The tell is a sync that never
+    settles, not an error.
+  - **`TISSelectInputSource` can only select a source the user has ENABLED** in
+    System Settings. A miss is reported with the enabled list, because the fix is
+    there and not in the app.
+  - ⚠️ **Matching on the language alone leaves ~60 of the 156 layouts with no
+    answer**, because macOS ships an input source for none of those languages —
+    Tahitian, Filipino, Swahili, Quechua, Basque. `pick_input_source` therefore
+    ends with the same compatible-layout fallback the KDE helper uses
+    — but out of its OWN copy of that table.
+    - ⚠️ **The compat map is ONE FILE PER PLATFORM**
+      (`res/forced_country_match_<platform>.txt`, chosen by `LangComp`'s
+      required `platform` argument). The question is identical on every
+      platform; the answer is written in the vocabulary that platform matches
+      on, and the two do not overlap. Linux names xkb layout codes (`ara`,
+      `latam`, `gb`); macOS names the IETF language tags its input sources
+      report (`ar-SA`, `es-MX`, `en-GB`), which go straight into
+      `pick_input_source` with no translation step. Reading the other
+      platform's file mostly *works*, which is the trap: a bare `pf=fr` is a
+      valid language tag as well as an xkb code, so only `ara`, `latam` and
+      the region-specific entries would break.
+    - ⚠️ **The macOS file has keys the Linux one does not** — `es`, `gb`, `ch`,
+      `us`. On Linux a layout whose own country code is installed resolves
+      without any fold, so the file never needed them; macOS has no country
+      concept to resolve through and has to state them. That is what gets
+      Welsh onto British, Romansh onto Swiss German, Basque onto Spanish and
+      Navajo onto U.S.
+    - ⚠️ **Order inside a line is load-bearing**: the country's own layout
+      first, the folds after. `no=nb-NO,da-DK` gets `se-NO` (Northern Sami)
+      onto the Norwegian layout the user actually has rather than the Danish
+      fold. The parity of the two files' key sets, and the vocabulary of the
+      macOS values, are both asserted by `tests/input/macos_input_source_test.py`
+      — a fold added for Linux and not mirrored goes quiet, it does not fail.
+    - ⚠️ **It must stay BELOW the language match.** `zh-TW` is folded onto `us`
+      for Linux (the xkb `tw` layout is not Latin), but macOS has a Zhuyin IME
+      reporting `zh-Hant`; matching the language first picks the IME the user
+      installed.
 - `linux_gnome_helper.py` — GNOME/X11 (pynput + X11)
 - `linux_kde_helper.py` — KDE Plasma (D-Bus)
 
