@@ -148,6 +148,62 @@ class HelperWiringTest(unittest.TestCase):
                 self.assertTrue(hasattr(helper, "log"))
 
 
+class NativeWindowsPathTest(unittest.TestCase):
+    """`WindowsInputHelper` OVERRIDES `set_language` when
+    `dev_win_native_set_language` is on, so the inherited fallback is not
+    reached unless the native path hands back to it.
+
+    ⚠️ The first case below is not an edge case: a fold language has no LCID
+    *by construction*. `locale.windows_locale` lists Windows cultures, and
+    Tahitian, Filipino and Quechua are not among them — so a hard return there
+    switched folds off for exactly the ~60 layouts that need them."""
+
+    def _helper(self, installed, native):
+        from polyhost.input.win_helper import WindowsInputHelper
+
+        class Fake(WindowsInputHelper):
+            def __init__(s):
+                super().__init__({"dev_win_native_set_language": native})
+                s.i = list(installed)
+                s.c = s.i[0]
+                s.n = 0
+            def get_languages(s):
+                return s.i
+            def get_current_language(s):
+                s.n += 1
+                if s.n > 1:
+                    s.c = s.i[(s.i.index(s.c) + 1) % len(s.i)]
+                return True, s.c
+        return Fake()
+
+    def test_a_language_with_no_lcid_still_reaches_the_fallback(self):
+        h = self._helper(["en-US", "fr-FR"], native=True)
+        ok, got = h.set_language("ty", "PF")        # no Windows culture "ty_pf"
+        self.assertTrue(ok, got)
+        self.assertEqual(got, "fr-FR")
+
+    def test_a_failed_LoadKeyboardLayout_still_reaches_the_fallback(self):
+        import ctypes
+        from unittest.mock import MagicMock, patch
+        user32 = MagicMock()
+        user32.LoadKeyboardLayoutW.return_value = 0      # the documented failure
+        windll = MagicMock(user32=user32)
+        h = self._helper(["en-US", "de-DE"], native=True)
+        # de-DE HAS an LCID, so this gets past the first branch and into the
+        # Win32 call — the branch that used to return False outright.
+        with patch.object(ctypes, "windll", windll, create=True):
+            ok, got = h.set_language("de", "DE")
+        self.assertTrue(ok, got)
+        self.assertEqual(got, "de-DE")
+        user32.LoadKeyboardLayoutW.assert_called_once()
+
+    def test_the_setting_off_takes_the_inherited_path(self):
+        h = self._helper(["en-US", "fr-FR"], native=False)
+        ok, got = h.set_language("ty", "PF")
+        self.assertTrue(ok, got)
+        self.assertEqual(got, "fr-FR")
+
+
 class ThreeMapsTest(unittest.TestCase):
     """The maps are counterparts, not copies — only their KEY SETS line up."""
 

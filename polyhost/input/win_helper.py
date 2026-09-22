@@ -114,7 +114,16 @@ class WindowsInputHelper(InputHelper):
         return super().set_language(lang, country)
 
     def _set_language_native(self, lang, country):
-        """Experimental: switch input language via Win32 LoadKeyboardLayout + PostMessage."""
+        """Experimental: switch input language via Win32 LoadKeyboardLayout + PostMessage.
+
+        ⚠️ **Every failure here falls through to `InputHelper.set_language`**,
+        which is where the compatible-layout fallback lives. That matters most
+        for the first one: a fold language has no LCID *by construction* —
+        `locale.windows_locale` lists Windows cultures, and Tahitian, Filipino
+        and Quechua are not among them — so returning False there made this
+        setting silently switch off folds for the ~60 layouts that need them
+        most. The no-foreground-window branch below always worked this way;
+        the other two did not."""
         iso639 = f"{lang}-{country}"
 
         # Find LCID from Python's locale table (maps int LCID -> "lang_COUNTRY")
@@ -125,13 +134,17 @@ class WindowsInputHelper(InputHelper):
             None,
         )
         if lcid is None:
-            return False, f"No LCID found for {iso639}"
+            self.log.debug("Native set_language: no LCID for %s, falling back "
+                           "to cycling + the compatibility map", iso639)
+            return super().set_language(lang, country)
 
         klid = f"{lcid:08x}"
         user32 = ctypes.windll.user32
         hkl = user32.LoadKeyboardLayoutW(klid, _KLF_ACTIVATE)
         if not hkl:
-            return False, f"LoadKeyboardLayout failed for KLID {klid} ({iso639})"
+            self.log.warning("Native set_language: LoadKeyboardLayout failed for "
+                             "KLID %s (%s), falling back to cycling", klid, iso639)
+            return super().set_language(lang, country)
 
         hwnd = user32.GetForegroundWindow()
         if not hwnd:
