@@ -506,6 +506,27 @@ outside those files:
   same tree ran **1982** tests with `hid`/`requests`/`pynput` absent and **2447** with
   them installed. Comparing a failure set against a baseline then comes back clean for a
   reason that has nothing to do with coverage. **Install the deps and read the count.**
+- ⚠️ **A text-mode `open()` without `encoding=` is a WINDOWS-ONLY crash, and this
+  repo has now paid for it TWICE.** Python decodes with the platform default —
+  the ANSI code page on Windows (cp1252), never UTF-8 — so any file of ours
+  carrying an em dash, a box-drawing rule or a ⚠️ is a grenade there.
+  `lang_compat.py` took `PolyHost.__init__`, the tray and the daemon down with
+  `UnicodeDecodeError: byte 0x8f` (field, Windows 11 / Python 3.13, 2026-09-22),
+  three months after `publish_release.py` hit the identical codec on the
+  identical trigger — and **that note went into `docs/releases.md`, scoped to
+  releases, where nobody reading an input helper would ever find it.**
+  ⚠️ **The crash is the LUCKY outcome.** Only five byte values are undefined in
+  cp1252, so most of our files decode to MOJIBAKE and parse on:
+  `forced_country_match_{linux,macos}.txt` do exactly that, harmless only
+  because their non-ASCII sits in comments. A non-ASCII character in a VALUE
+  would resolve to the wrong layout in silence, on every Windows machine.
+  **The rule is by FILE OWNERSHIP.** A file we ship and author (`res/` data,
+  `requirements.txt`, `bundles.json`) gets `encoding="utf-8"`. A file the USER
+  owns (`--host-file`, a chosen `.poly.cmd`, KDE's `kxkbrc`) keeps the platform
+  default until we define a fallback policy, because forcing UTF-8 there newly
+  REJECTS a legacy cp1252 file that reads fine today. Find every candidate with
+  an AST sweep for a call to `open` with no `encoding` keyword and no `b` in the
+  mode — 5 hits in 2026-09, 2 ours and fixed, 3 user-owned and left.
 - **Chromium is available headless — use it to LOOK at generated HTML/SVG** rather than
   reading the markup (`--headless --screenshot`, then Read the PNG; add
   `--blink-settings=preferredColorScheme=0` for dark). This caught a dashboard defect
@@ -547,6 +568,10 @@ headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem —
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment** (pywinctl at
   module load). Put forwarder logic worth testing in a Qt-free module; a test gated on
   both `DISPLAY` and pywinctl is permanently skipped, which reads as coverage.
+- ⚠️ **The suite cannot execute the platform input paths** — Win32, Carbon and
+  pynput keystrokes are mocked by necessity. All four field defects of
+  2026-09-22 lived in that region while 2949 tests stayed green, so a green
+  board says nothing about it: budget a hardware round.
 - **No unit-test CI**, but `codeql.yml` analyses every PR — the one automated reviewer
   here that cannot go quiet.
 
