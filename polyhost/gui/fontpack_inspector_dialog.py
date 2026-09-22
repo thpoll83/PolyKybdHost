@@ -112,7 +112,8 @@ def load_shipped_packs(res_dir: str | None = None):
     files = []
     manifest = os.path.join(res_dir, "bundles.json")
     if os.path.exists(manifest):
-        with open(manifest) as f:
+        # JSON is UTF-8 by specification; the platform default is not.
+        with open(manifest, encoding="utf-8") as f:
             for b in json.load(f).get("bundles", []):
                 files.append((b["id"], os.path.join(res_dir, b["file"])))
     else:

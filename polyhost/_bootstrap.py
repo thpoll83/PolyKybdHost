@@ -51,7 +51,9 @@ def missing_requirements(req_file: str) -> list:
     import importlib.metadata
     import re
     missing = []
-    with open(req_file) as fh:
+    # encoding= explicit: the platform default is the ANSI code page on
+    # Windows, and this runs before anything else could report a failure.
+    with open(req_file, encoding="utf-8") as fh:
         for raw in fh:
             line = raw.split("#", 1)[0].strip()
             if not line or line.startswith("-"):
