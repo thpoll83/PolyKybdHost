@@ -104,10 +104,15 @@ crash with an `ImportError` if a dependency slipped through.
     composition feature) and reads the active window to switch layouts; macOS
     requires Accessibility for both.
 
-  PolyKybd does **not** auto-change your macOS *system language* by default —
-  that path uses `languagesetup` with administrator rights and would prompt for
-  your password on every connect. Opt in with the `macos_native_set_language`
-  setting if you want it; otherwise use the keyboard's own language switching.
+  **Switching the input language from the keyboard.** A language key on the
+  PolyKybd selects the matching macOS **input source** (Text Input Source
+  Services), which needs no password and takes effect immediately. It can only
+  select a source you have already enabled, so add the layout under *System
+  Settings → Keyboard → Input Sources* first; PolyKybd names the enabled sources
+  in the log when it finds no match. It does **not** change your macOS *system
+  language* (the language of menus and dialogs) — that is a separate setting
+  you own.
+
   If macOS asks for permissions on *every* launch (not just once), make sure you
   always start the app the same way (e.g. via the installed autostart entry), as
   macOS ties each grant to the exact launching binary.

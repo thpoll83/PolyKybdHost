@@ -1249,10 +1249,7 @@ class PolyHost(QApplication):
             # so a keyboard-side switch would leave the tray menu stale.
             self.update_ui_on_lang_change(kb_lang)
             lang, country = get_lang_and_country(kb_lang)
-            if self._should_auto_switch_os_language():
-                success, msg = self.helper.set_language(lang, country)
-            else:
-                success, msg = True, "OS-language auto-switch disabled"
+            success, msg = self.helper.set_language(lang, country)
             if success:
                 data = self.overlay_handler.get_overlay_data()
                 if data:
@@ -1263,18 +1260,6 @@ class PolyHost(QApplication):
                 self.log.warning("%s (%s)", warning, msg)
             self.current_lang = kb_lang
             self.icon_manager.set_idle()
-
-    def _should_auto_switch_os_language(self):
-        """Whether to auto-switch the OS input language to match the keyboard on
-        (re)connect. On macOS this runs `languagesetup` via osascript `with
-        administrator privileges`, which pops a password dialog every time — and
-        the keyboard's lang code never equals macOS's KeyboardLayout Name, so the
-        sync re-fires on every launch. Default it off there (opt in via the
-        `macos_native_set_language` setting); the explicit "Change System Input
-        Language" debug action still works. Other platforms keep prior behavior."""
-        if platform.system() == "Darwin":
-            return bool(self.poly_settings.get("macos_native_set_language"))
-        return True
 
     # ------------------------------------------------------------------
     # Client mode (H4a): render from the daemon's status_changed events
@@ -1332,10 +1317,7 @@ class PolyHost(QApplication):
             self.icon_manager.set_thinking()
             self.update_ui_on_lang_change(lang)
             lng, country = get_lang_and_country(lang)
-            if self._should_auto_switch_os_language():
-                success, msg = self.helper.set_language(lng, country)
-            else:
-                success, msg = True, "OS-language auto-switch disabled"
+            success, msg = self.helper.set_language(lng, country)
             if not success:
                 warning = f"Could not change OS language {lang}."
                 self.icon_manager.set_warning(warning, 5000)

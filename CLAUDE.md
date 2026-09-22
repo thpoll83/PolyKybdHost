@@ -405,6 +405,25 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   is the guard.
 - ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
   are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
+- ⚠️ **A "the OS refuses / it prompts, so default it off" gate is a SILENT FEATURE
+  DELETION, and it outlives the reason for it.** macOS language switching was
+  turned off by default in 0.18.1 because `set_language` shelled out to
+  `languagesetup` with administrator rights and popped a password dialog on every
+  connect. The dialog stopped; so did the feature — for three months a language key
+  on the keyboard repainted the tray menu and left the OS alone, with `success,
+  msg = True, "OS-language auto-switch disabled"` reporting it as a success. The
+  quiet half was the real bug underneath: `languagesetup` sets the **system UI
+  language**, never the input source, so the switch had never once worked on macOS.
+  **When a platform path is disabled for being obnoxious, check first whether it was
+  doing its job at all** — and fix it rather than muting it. It is
+  `TISSelectInputSource` (`input/macos_input_source.py`), which needs no privileges;
+  `docs/architecture.md` → *Platform input abstraction* has the rest.
+- ⚠️ **An input helper's `get_current_language` and `set_language` must speak ONE
+  namespace.** macOS answered the HIToolbox *"KeyboardLayout Name"* (`German`) to a
+  caller comparing it with `de-DE`, so `PolyHost` read "the OS language differs" on
+  every probe and re-fired the switch forever. Windows was bitten by the same shape
+  from the other end (a PowerShell table HEADER parsed as the current culture). The
+  tell is a sync that never settles, not an error.
 
 ### Updates, autostart and daemon mode
 

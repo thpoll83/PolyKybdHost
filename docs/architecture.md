@@ -29,7 +29,24 @@ and relative links were adjusted to suit a standalone file.
 ### Platform input abstraction (`polyhost/input/`)
 Abstract base `unicode_input.py` with per-platform implementations:
 - `win_helper.py` — Windows (pynput)
-- `macos_helper.py` — macOS (pynput)
+- `macos_helper.py` — macOS (Text Input Source Services through `macos_input_source.py`)
+  - ⚠️ **Selecting an input source and setting the SYSTEM LANGUAGE are different
+    things, and this helper used to do the second one.** `set_language` ran
+    `sudo languagesetup -langspec xx-YY` through osascript *"with administrator
+    privileges"*: a password dialog per call, effective at the next login, and no
+    effect at all on which layout types. It therefore never did what a language key
+    on the keyboard asks for, and the per-launch dialog is what got the whole
+    auto-switch disabled on macOS in 0.18.1 — so from then on a keyboard-side
+    language press changed the tray menu and nothing else. `TISSelectInputSource`
+    is the right call: no privileges, no dialog, immediate.
+  - ⚠️ **`get_current_language` must answer in the SAME namespace `set_language`
+    takes.** It used to return the HIToolbox *"KeyboardLayout Name"* (`German`),
+    which can never equal the `de-DE` it is compared against, so the host believed
+    the OS language differed on every probe and re-fired the switch — and, back
+    when that meant osascript, the password dialog with it.
+  - **`TISSelectInputSource` can only select a source the user has ENABLED** in
+    System Settings. A miss is reported with the enabled list, because the fix is
+    there and not in the app.
 - `linux_gnome_helper.py` — GNOME/X11 (pynput + X11)
 - `linux_kde_helper.py` — KDE Plasma (D-Bus)
 
