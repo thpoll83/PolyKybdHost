@@ -18,11 +18,22 @@ try:
 except Exception as e:  # pragma: no cover
     _IMPORT_ERR = e
 
+# ⚠️ THE SAME CHECK THE DIALOG RUNS, not a subset of it, and the subset hung
+# the whole suite. `_build()` asks `fontpack_extend_dialog._missing_fontgen_deps()`
+# -- freetype, uharfbuzz, fontTools, numpy AND PIL -- while this guard imported
+# numpy and freetype only. On a machine carrying a partial set the guard said
+# RUN, `_build()` found a dep missing, and took its non-`auto` failure path: a
+# MODAL `QMessageBox.warning` with nobody under xvfb to dismiss it.
+#
+# The failure mode is the problem, not the disagreement. A missing dep normally
+# skips or errors; here the suite HANGS, silently and forever -- measured
+# 2026-09-22 with uharfbuzz absent: 48 minutes, no further output, the process
+# alive and idle. Only `scripts/run_tests.py`'s stall watchdog would have named
+# it; a plain `unittest discover` just sits there. Keep this derived from the
+# dialog's own function so the two cannot drift apart again.
 try:
-    import numpy  # noqa: F401
-    import freetype  # noqa: F401
-    _FONTGEN = True
-except Exception:
+    _FONTGEN = not fed._missing_fontgen_deps()
+except Exception:                       # Qt import failed, so `fed` is unbound
     _FONTGEN = False
 
 _FONT = next(iter(glob.glob("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")

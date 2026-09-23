@@ -45,6 +45,8 @@ def main(argv=None) -> int:
     parser.add_argument("--app", default="",
                         help="the app name the window tracker reports")
     parser.add_argument("--save", default="", help="write the keycap to this PNG")
+    parser.add_argument("--offline", action="store_true",
+                        help="do not fetch catalog marks; only what is cached")
     args = parser.parse_args(argv)
 
     if args.target and not str(args.target).isdigit():
@@ -80,6 +82,11 @@ def main(argv=None) -> int:
             return 1
 
     data = found
+    # ⚠️ Rebuilt here rather than reused from the pid branch: the file-path
+    # branch never makes one, and the real resolve below needs the SAME object
+    # shape `app_icon_fetcher` hands over.
+    identity = os_app_icon.AppIdentity(icon=data, icon_path=source, names=names)
+    probe_name = args.app or os.path.basename(source)
     print("source: %s (%d bytes)" % (source, len(data)))
     print("names:  %s" % (", ".join(names) or "(none)"))
     # ⚠️ ONE call, with the names in the NAMES slot -- not one call per name with
@@ -88,7 +95,7 @@ def main(argv=None) -> int:
     # rule admits a bare mdi name for a DISPLAY name and refuses it for an
     # executable, so probing name-by-name would silently hide the exact
     # mechanism this tool exists to verify.
-    tried = app_icons.candidates(args.app or os.path.basename(source), names)
+    tried = app_icons.candidates(probe_name, names)
     print("catalog order:")
     for name in tried:
         print("    %s" % name)
@@ -98,18 +105,28 @@ def main(argv=None) -> int:
     if mask is None:
         print("no 1-bit reading survived")
         return 1
-    verdict = "DRAWN" if score >= icon_binarise.MIN_SCORE else "REJECTED (too low)"
-    print("conversion: %s   score: %.2f   %s (gate %.2f)"
+    verdict = ("passes the floor" if score >= icon_binarise.MIN_SCORE
+               else "REJECTED (below the floor)")
+    print("conversion: %s   gate score: %.3f   %s (floor %.2f)"
           % (conversion, score, verdict, icon_binarise.MIN_SCORE))
-    # What the running app would actually do, which is the question E6 asks.
-    # The OS icon goes FIRST since E2, so a REJECTED reading here is not a
-    # failure -- it is the gate working, and the catalog gets its turn.
-    if score >= icon_binarise.MIN_SCORE:
-        print("=> the keycap would show THIS, the app's own icon")
-    elif tried:
-        print("=> the keycap would fall through to the catalog: %s" % tried[0])
+    print("rank score: %.3f   <- what it COMPETES on" % app_icons.mark_score(mask))
+
+    # ⚠️ The verdict is `program_overlay`'s OWN answer, not a rule restated
+    # here. The restated version went stale the moment the OS icon stopped
+    # winning outright by clearing the floor, and it had been printing
+    # "the keycap would show THIS" for every macOS system icon while the
+    # keyboard did something else.
+    print()
+    print("resolving for real (this is what the keycap shows):")
+    chosen_mask, chosen = app_icons.program_overlay(
+        probe_name, identity, allow_network=not args.offline)
+    if chosen_mask is None:
+        print("=> NOTHING -- no reading survived and no catalog name matched")
+    elif chosen.startswith("os:"):
+        print("=> the app's OWN icon wins (%s)" % chosen)
     else:
-        print("=> the keycap would show NOTHING (no OS reading, no catalog name)")
+        print("=> %s wins; the app's own icon is beaten on legibility" % chosen)
+        mask = chosen_mask
     for row in mask:
         print("".join("#" if value else "." for value in row))
     if args.save:

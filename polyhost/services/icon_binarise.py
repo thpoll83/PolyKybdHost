@@ -355,6 +355,36 @@ def fit(coverage, box: int):
     return np.array(ink) > 128
 
 
+def reads_inverted(mask) -> bool:
+    """True when `score()` will rate this mask's INVERSE rather than the mask.
+
+    A majority-lit render is usually the same picture with the polarity
+    flipped -- a white `>_` knocked out of a black terminal plate -- so the
+    side carrying the shape is the minority one. `score()` has always done
+    this; it is a named function so the SELECTION layer can ask the same
+    question without a second copy of the condition (`app_icons.mark_rank`).
+
+    ⚠️ Being inverted is NOT an error, and this is not a quality measure. It
+    says only that the art is mostly ink and we are reading its holes -- which
+    on a white-on-black keycap is exactly what "a big solid blob" looks like,
+    and is why the caller prefers a candidate that did not need it.
+
+    ⚠️ It CANNOT tell a dark plate from a filled silhouette, and no geometric
+    measure can: measured 2026-09-23 over synthetic plates and silhouettes, a
+    dark circular plate with a glyph knocked out (lit 0.723, enclosed 0.200)
+    and a filled disc with a hole (lit 0.737, enclosed 0.158) are the SAME
+    PICTURE, and si-safari sits between them at 0.727/0.188. An earlier idea --
+    that a plate's inverse stays clear of the bounding-box border while a
+    silhouette's does not -- was measured and REFUTED: 0.800 against 0.842 for
+    that pair. Do not re-propose it.
+    """
+    import numpy as np                                      # noqa: F401
+    if mask is None or not mask.size or not mask.any():
+        return False
+    return bool(float(mask.mean()) > MAX_LIT
+                and _enclosed_share(mask) >= ENCLOSED_MIN)
+
+
 def score(mask) -> float:
     """How legible this 1-bit render is. Higher is better; <= 0 is unusable.
 
@@ -416,7 +446,7 @@ def score(mask) -> float:
         return -1.0
     import numpy as np
     lit = float(mask.mean())
-    if lit > MAX_LIT and _enclosed_share(mask) >= ENCLOSED_MIN:
+    if reads_inverted(mask):
         # A majority-lit render is the SAME PICTURE with the polarity flipped --
         # a white `>_` knocked out of a black terminal plate, not a filled cell.
         # Every term below reads ink as the minority, so measure the side that

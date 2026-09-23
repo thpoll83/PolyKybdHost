@@ -17,6 +17,7 @@ import unittest
 import unittest.mock as mock
 
 from polyhost.services import app_icons as ai
+from polyhost.services import icon_binarise
 from polyhost.services import os_app_icon
 
 # The ESC glyph (U+238B) inks x 2..27 on the 72x40 panel, and
@@ -28,14 +29,44 @@ from polyhost.services import os_app_icon
 ESC_INK_RIGHT = 27
 COURTYARD = 3
 
-SQUARE = ('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-          '<rect x="0" y="0" width="24" height="24"/></svg>')
-WIDE = ('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-        '<rect x="0" y="10" width="24" height="4"/></svg>')
-TALL = ('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-        '<rect x="10" y="0" width="4" height="24"/></svg>')
-PADDED = ('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-          '<rect x="6" y="6" width="12" height="12"/></svg>')
+# ⚠️ `<path>`, NOT `<rect>`. `svg_raster` is the PRIMARY rasteriser and parses
+# path elements only -- it is deliberately narrow, because Simple Icons and mdi
+# are single-path icons and nothing else has to work. These fixtures were drawn
+# as `<rect>`, so they rendered under cairosvg and produced an EMPTY mask under
+# the rasteriser that actually ships on Windows. Nobody saw it because
+# `_needs_render` skipped the lot when cairosvg was missing.
+def _rect_path(x, y, w, h):
+    return f"M{x} {y} H{x + w} V{y + h} H{x} Z"
+
+
+def _fixture(d):
+    return ('<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+            f'<path d="{d}"/></svg>')
+
+
+SQUARE = _fixture(_rect_path(0, 0, 24, 24))
+WIDE = _fixture(_rect_path(0, 10, 24, 4))
+TALL = _fixture(_rect_path(10, 0, 4, 24))
+PADDED = _fixture(_rect_path(6, 6, 12, 12))
+# A ring: outer square plus a counter-wound inner one, which the NONZERO fill
+# rule turns into a hole. Scores well above a filled square, so it is what the
+# ranking tests lean on.
+FRAME = _fixture(_rect_path(0, 0, 24, 24) +
+                 " M4 4 V20 H20 V4 Z")
+# ⚠️ Both of these RENDER and score POSITIVE -- 0.235 against FRAME's 0.496.
+# That matters for the ranking tests: a solid shape scores -1.00 (fitted to its
+# ink it is 100% lit, over MAX_LIT, with no enclosed hole to invert), so pitting
+# SQUARE against FRAME would only prove "unusable loses", not that the better of
+# two usable marks wins.
+BARS = _fixture(" ".join((_rect_path(0, 2, 24, 4), _rect_path(0, 10, 24, 4),
+                          _rect_path(0, 18, 24, 4))))
+THIN_RING = _fixture(_rect_path(0, 0, 24, 24) + " M2 2 V22 H22 V2 Z")
+# A filled disc with a small counter-wound hole -- `si:safari` in miniature.
+# `score()` reads it INVERTED (rating its holes) and rates it 0.479, ABOVE
+# BARS' 0.235 read the right way up. That inversion is what the keycap shows
+# as a big solid blob.
+DISC_HOLE = _fixture("M0 12 A12 12 0 0 1 24 12 A12 12 0 0 1 0 12 Z "
+                     "M10 7 A2 2 0 0 0 14 7 A2 2 0 0 0 10 7 Z")
 
 
 def _svg(tmpdir, text, name="m.svg"):
@@ -46,12 +77,26 @@ def _svg(tmpdir, text, name="m.svg"):
 
 
 def _needs_render(case):
+    """⚠️ Gated on EITHER rasteriser, not on cairosvg alone.
+
+    `app_icons._alpha` makes `svg_raster` PRIMARY and keeps cairosvg only as a
+    fallback -- cairosvg publishes no Windows wheel, which is the whole reason
+    svg_raster exists. Requiring it here skipped 24 of this module's 62 tests on
+    any machine without it, i.e. on the platform most of these users are on, and
+    a skip reads exactly like a pass in the summary line.
+    """
     try:
-        import cairosvg          # noqa: F401
         import numpy             # noqa: F401
         from PIL import Image    # noqa: F401
     except Exception:
-        case.skipTest("cairosvg/Pillow/numpy not installed")
+        case.skipTest("Pillow/numpy not installed")
+    from polyhost.services import svg_raster
+    if svg_raster.available():
+        return
+    try:
+        import cairosvg          # noqa: F401
+    except Exception:
+        case.skipTest("neither svg_raster (fontTools+freetype) nor cairosvg")
 
 
 def _identity(icon=None, icon_path="", names=()):
@@ -462,17 +507,35 @@ class ProgramOverlayTest(unittest.TestCase):
             self.assertEqual(name, "mdi:microsoft-word")
             self.assertIsNotNone(mask)
 
-    def test_the_FIRST_catalog_wins_when_both_have_the_mark(self):
-        # Simple Icons is the real brand mark; mdi's is an interpretation of it.
-        # Driven through a DISPLAY name because that is the only route on which
-        # a bare mdi name is offered at all (the hyphen rule above).
+    def test_the_MOST_LEGIBLE_candidate_wins_not_the_first_source(self):
+        """⚠️ This REPLACED a test that pinned first-match-wins ("Simple Icons
+        is the real brand mark; mdi's is an interpretation of it").
+
+        A fixed source preference cannot express the case that motivated the
+        change: `si:gnometerminal` is a heavy white plate, 1134 px of ink and a
+        tight-bbox score of 0.362, while the shipped `poly:terminal` is 340 px
+        at 0.415 -- and Simple Icons being asked first shipped the worse one.
+        The per-app table that COULD express it is exactly what
+        `docs/generic-icons-plan.md` exists to refuse, so the tie-break is the
+        legibility measure instead.
+
+        Driven through a DISPLAY name because that is the only route on which a
+        bare mdi name is offered at all (the hyphen rule above), and with a
+        FRAME against a filled SQUARE because that is a real score gap rather
+        than a mocked one.
+        """
         _needs_render(self)
         with tempfile.TemporaryDirectory() as tmp:
-            _svg(tmp, SQUARE, "si-visualstudiocode.svg")
-            _svg(tmp, WIDE, "mdi-visual-studio-code.svg")
+            _svg(tmp, BARS, "si-visualstudiocode.svg")
+            _svg(tmp, FRAME, "mdi-visual-studio-code.svg")
+            bars = ai.mark_score(ai.render_overlay(_svg(tmp, BARS, "a.svg")))
+            ring = ai.mark_score(ai.render_overlay(_svg(tmp, FRAME, "b.svg")))
+            # BOTH usable, so this is a ranking and not a rejection.
+            self.assertGreater(bars, 0.0, "the losing fixture must still render")
+            self.assertGreater(ring, bars, "the fixtures do not differ in score")
             _, name = ai.program_overlay("code", _identity(names=("Visual Studio Code",)),
                                          tmp, allow_network=False)
-            self.assertEqual(name, "si:visualstudiocode")
+            self.assertEqual(name, "mdi:visual-studio-code")
 
     def test_TWO_APPS_WITH_THE_SAME_ICON_FILENAME_get_DIFFERENT_slugs(self):
         """⚠️ THE SLUG IS THE MRU CACHE KEY, and on macOS nearly every system
@@ -780,3 +843,182 @@ class WhyTheCatalogMissedTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ShippedMarkTest(unittest.TestCase):
+    """`poly:` -- the marks that ship in this repo rather than in a catalog."""
+
+    def test_a_shipped_mark_resolves_with_no_network_and_no_cache(self):
+        # The point of shipping them: an offline machine, and an empty cache
+        # dir, still draw. `allow_network=False` is the whole assertion.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = ai.fetch_icon("poly:terminal", tmp, allow_network=False)
+            self.assertIsNotNone(path, "the shipped terminal mark did not resolve")
+            self.assertTrue(path.endswith("terminal.svg"), path)
+            self.assertNotIn(tmp, path, "a shipped mark must not come from the cache")
+
+    def test_every_shipped_mark_resolves_and_draws(self):
+        """⚠️ The filename IS the slug, so a rename silently unhooks a mark --
+        nothing else in the tree names these files."""
+        _needs_render(self)
+        for slug in ("terminal", "notes", "photos", "finder"):
+            with self.subTest(slug=slug):
+                path = ai.fetch_icon("poly:" + slug, allow_network=False)
+                self.assertIsNotNone(path, slug)
+                mask = ai.render_mark(path)
+                self.assertIsNotNone(mask, slug)
+                self.assertTrue(mask.any(), slug)
+
+    def test_a_finished_mask_is_read_VERBATIM_not_re_binarised(self):
+        """⚠️ The reason `photos.png` is a mask and not an SVG: it carries a
+        per-petal DITHER, and re-thresholding a halftone is what turns it back
+        into mush. Asserted as pixel equality against the file itself."""
+        _needs_render(self)
+        import numpy as np
+        from PIL import Image
+        path = ai.fetch_icon("poly:photos", allow_network=False)
+        with Image.open(path) as image:
+            expected = np.array(image.convert("L")) > 127
+        self.assertTrue((ai.load_mask(path) == expected).all())
+
+    def test_a_mask_that_is_not_panel_sized_is_REFUSED_not_resized(self):
+        # A resize IS a re-threshold, so the only safe answer is to decline.
+        _needs_render(self)
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "wrong.png")
+            Image.new("1", (ai.PANEL_W, ai.PANEL_H - 1), 1).save(path)
+            self.assertIsNone(ai.load_mask(path))
+
+    def test_a_slug_cannot_escape_the_shipped_directory(self):
+        # The slug arrives from an application's own reported name.
+        for hostile in ("../secrets", "..", ".hidden", "a/b", ""):
+            with self.subTest(name=hostile):
+                self.assertIsNone(ai.local_icon_path(hostile))
+
+
+class AppleFamilyTest(unittest.TestCase):
+    """The `apple-` mdi prefix, and why a one-word display name needs it."""
+
+    def test_a_one_word_apple_app_reaches_the_mdi_apple_family(self):
+        # `si:finder` is a 404 and the hyphen rule refuses a bare `mdi:finder`,
+        # so before this prefix NOTHING in either catalog could answer Finder.
+        self.assertIn("mdi:apple-finder", ai.candidates("Finder", ("Finder",)))
+
+    def test_the_shipped_marks_are_offered_LAST(self):
+        # Only a tie-break under score ranking, but the tie should go to a real
+        # brand mark rather than a generic one of ours.
+        offered = ai.candidates("Finder", ("Finder",))
+        self.assertEqual(offered[-1], "poly:finder")
+        self.assertTrue(all(not n.startswith("poly:") for n in offered[:-1]), offered)
+
+
+def _plate(draw, size):
+    """A rounded plate with two knocked-out holes — the shape of most desktop
+    app icons, and the one that clears `MIN_SCORE` while still reading as mush
+    (gate 0.117 against a floor of 0.08)."""
+    draw.rounded_rectangle([2, 2, size - 2, size - 2], radius=size // 6,
+                           fill=(40, 40, 40, 255))
+    draw.ellipse([size * 0.25, size * 0.3, size * 0.4, size * 0.45],
+                 fill=(255, 255, 255, 255))
+    draw.ellipse([size * 0.6, size * 0.3, size * 0.75, size * 0.45],
+                 fill=(255, 255, 255, 255))
+
+
+class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
+    """⚠️ Reported from hardware (2026-09-23): on macOS EVERY system `.icns`
+    cleared `MIN_SCORE`, so the catalog and the shipped marks were never
+    reached and adding them changed nothing on the keyboard at all.
+
+    `MIN_SCORE` answers "may we draw this when there is nothing else". It must
+    not also decide a contest against something better.
+    """
+
+    def test_an_OS_icon_that_clears_the_floor_still_LOSES_to_a_better_mark(self):
+        _needs_render(self)
+        plate = _png(_plate)
+        gate = ai.render_os_overlay(plate)[2]
+        self.assertGreaterEqual(gate, icon_binarise.MIN_SCORE,
+                                "fixture must CLEAR the floor, or it proves nothing")
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, THIN_RING, "si-inkscape.svg")
+            mask, name = ai.program_overlay(
+                "Inkscape", _identity(icon=plate, icon_path="/x/AppIcon.icns"),
+                tmp, allow_network=False)
+            self.assertEqual(name, "si:inkscape", "the OS icon won anyway")
+            self.assertIsNotNone(mask)
+
+    def test_a_BETTER_OS_icon_keeps_the_win(self):
+        # The other half: the OS icon is exact by construction, so it must not
+        # be thrown away just for being the OS icon.
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, BARS, "si-inkscape.svg")
+            _, name = ai.program_overlay(
+                "Inkscape", _identity(icon=_png(_ring),
+                                      icon_path="/x/AppIcon.icns"),
+                tmp, allow_network=False)
+            self.assertTrue(name.startswith("os:"), name)
+
+    def test_the_OS_icon_keeps_a_TIE(self):
+        """Evaluated first and replaced only on a strict `>`, so identical
+        legibility goes to the application's own art."""
+        _needs_render(self)
+        import numpy as np
+        ring = _png(_ring)
+        with tempfile.TemporaryDirectory() as tmp:
+            os_mask = ai.render_os_overlay(ring)[0]
+            # the same picture offered by the catalog as well
+            from PIL import Image
+            path = os.path.join(tmp, "si-inkscape.png")
+            Image.fromarray((os_mask * 255).astype("uint8"), "L").convert(
+                "1").save(path)
+            with mock.patch.object(ai, "fetch_icon", return_value=path):
+                _, name = ai.program_overlay(
+                    "Inkscape", _identity(icon=ring,
+                                          icon_path="/x/AppIcon.icns"),
+                    tmp, allow_network=False)
+        self.assertTrue(name.startswith("os:"), name)
+
+
+class PolarityOutranksScoreTest(unittest.TestCase):
+    """⚠️ Reported from hardware (2026-09-23): Safari still drew the solid
+    disc after the OS icon stopped winning outright, because ranking on score
+    alone PREFERS it -- `si:safari` scores 0.610 read inside-out against
+    `mdi:apple-safari`'s 0.532 compass read normally.
+
+    An inverted reading means the art is mostly ink and `score()` is rating its
+    holes, which on a white-on-black keycap is the blob itself.
+    """
+
+    def test_a_NORMAL_reading_beats_an_inverted_one_that_scores_HIGHER(self):
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            blob = ai.render_overlay(_svg(tmp, DISC_HOLE, "blob.svg"))
+            bars = ai.render_overlay(_svg(tmp, BARS, "bars.svg"))
+            # The premise, asserted rather than assumed: without it this test
+            # would pass for the ordinary reason and pin nothing.
+            self.assertFalse(ai.mark_rank(blob)[0], "fixture must read inverted")
+            self.assertTrue(ai.mark_rank(bars)[0], "fixture must read normally")
+            self.assertGreater(ai.mark_score(blob), ai.mark_score(bars),
+                               "the inverted fixture must SCORE HIGHER")
+
+            _svg(tmp, DISC_HOLE, "si-inkscape.svg")
+            _svg(tmp, BARS, "mdi-inkscape-studio.svg")
+            with mock.patch.object(ai, "candidates",
+                                   return_value=["si:inkscape",
+                                                 "mdi:inkscape-studio"]):
+                _, name = ai.program_overlay("Inkscape", cache_dir=tmp,
+                                             allow_network=False)
+            self.assertEqual(name, "mdi:inkscape-studio")
+
+    def test_an_inverted_reading_still_wins_when_it_is_the_ONLY_one(self):
+        """A PREFERENCE, not a veto -- a genuine dark-plate app icon with no
+        alternative must still draw."""
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, DISC_HOLE, "si-inkscape.svg")
+            mask, name = ai.program_overlay("Inkscape", cache_dir=tmp,
+                                            allow_network=False)
+            self.assertEqual(name, "si:inkscape")
+            self.assertIsNotNone(mask)
