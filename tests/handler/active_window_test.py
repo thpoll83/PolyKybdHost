@@ -12,6 +12,7 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import os
 import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
@@ -680,6 +681,59 @@ class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
              patch(self.MOD + ".subprocess.run", run):
             self.assertEqual(aw_frontmost_app(), (None, None))
         self.assertIsNotNone(run.call_args.kwargs.get("timeout"))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class PolyHostsOwnWindowTest(unittest.TestCase):
+    """PolyHost runs as `python -m polyhost`, so its windows arrive named after
+    the interpreter. They are renamed `polyhost`, which is what draws the
+    PolyKybd mark on ESC instead of the Python logo."""
+
+    MOD = "polyhost.handler.active_window"
+
+    def _focus(self, pid, app="python3"):
+        # A non-empty mapping: `app_name` is only derived when there is one.
+        handler = OverlayHandler({"someapp": {}})
+        win = MagicMock()
+        win.title = "PolyKybd Settings"
+        win.getHandle.return_value = 777
+        win.getPID.return_value = pid
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=win), \
+             patch(self.MOD + ".app_name_for", return_value=app):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return handler
+
+    def test_a_polyhost_window_is_named_polyhost(self):
+        handler = self._focus(os.getpid())
+        self.assertEqual(handler.focused_app(), ("polyhost", None))
+
+    def test_another_python_window_keeps_the_interpreter_name(self):
+        with patch("polyhost.handler.own_process.process_argv",
+                   return_value=["python3", "other.py"]):
+            handler = self._focus(os.getpid() + 1)
+        self.assertEqual(handler.focused_app(), ("python3", None))
+
+    def test_macOS_own_front_window_skips_pywinctl(self):
+        """System Events cannot see our window on macOS (it answered
+        Terminal), so the window-server answer takes over."""
+        handler = OverlayHandler({})
+        with patch(self.MOD + ".own_front_app", return_value=("polyhost", 4242)), \
+             patch(self.MOD + ".pwc.getActiveWindow") as get_active, \
+             patch(self.MOD + ".frontmost_app") as frontmost:
+            handler._decide_active_window(10, 5)
+        get_active.assert_not_called()
+        frontmost.assert_not_called()
+        self.assertEqual(handler.focused_app(), ("polyhost", None))
+        self.assertEqual(handler.focused_pid(), 4242)
+
+    def test_a_windowless_polyhost_is_named_polyhost_too(self):
+        handler = OverlayHandler({})
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".frontmost_app",
+                   return_value=("Python", os.getpid())):
+            handler._decide_active_window(10, 5)
+        self.assertEqual(handler.focused_app(), ("polyhost", None))
 
 
 if __name__ == "__main__":

@@ -160,6 +160,7 @@ Per-platform implementations:
 ### Window/overlay handler (`polyhost/handler/`)
 - `active_window.py` — `OverlayHandler`: active-window tracking, triggers keymap/language/overlay switches on the device based on which app is focused
 - `remote_window.py` — TCP-based window title relay for multi-machine setups
+- `own_process.py` — tells PolyHost's own windows from other Python windows. Both run as the interpreter, so the tracker names them `python3`/`pythonw`/`Python`; `own_app_name()` reads the process command line (`/proc` on Linux, `NtQueryInformationProcess` on Windows, `KERN_PROCARGS2` on macOS) and renames a `-m polyhost` process to `polyhost`. The handler and the forwarder both call it, and `app_icons.program_overlay` draws the built-in PolyKybd mark for that name, ahead of the OS icon (which is Python's). ⚠️ The Windows and macOS readers are ctypes calls the suite cannot execute.
 - `kde_win_reporter.py` — KDE D-Bus integration for window events
 - **Active-window backend selection** (in both `active_window.py` and `forwarder.py`): `XDG_CURRENT_DESKTOP == "KDE"` → `kde_win_reporter` (KWin script → journal); else `XDG_SESSION_TYPE == "wayland"` → `gnome_wayland_reporter`; else → `pywinctl` (X11). `gnome_wayland_reporter.py` is **⚠️ UNTESTED on hardware** — pywinctl can't see native Wayland windows, so it queries our own purpose-built, **read-only** *PolyKybd Window Reporter* GNOME Shell extension (`org.polykybd.WindowReporter`, repo `thpoll83/gnome-wayland-winreader`) over `gdbus` via a single `GetFocusedWindow()` call (the extension exposes no window-modifying methods, unlike the general *Window Calls* extension it replaces); **without the extension it falls back to pywinctl (X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) under XWayland are still tracked, native Wayland windows are not — and warns **once** (instead of pywinctl's silent Wayland failure). The fallback imports pywinctl **lazily + guarded** (it can `sys.exit()` with no X server), so the module still loads with zero pywinctl/Qt at import (headless-safe). The fallback is only consulted when the extension is *unavailable* — an extension that's up but reports "no focused window" returns None directly (so a stale XWayland window can't mask it). The **X11 path is unaffected** (it never enters the Wayland branch); only the output parsing + fallback routing are unit-tested. Full GNOME-Wayland coverage still needs the extension or an Xorg login session.
 - ⚠️ **macOS: THREE things the window backend does not tell you** — all found in the
@@ -198,6 +199,24 @@ Per-platform implementations:
     untitled apps are byte-identical to a handle-plus-title change test — the switch
     was never noticed and never logged. Hence `_handle_identifies()`, and the
     app-name fallback applying only when the handle identifies nothing.
+- ⚠️ **macOS: System Events cannot see PolyHost's OWN windows** (2026-09-23,
+  #259). The bullet above sends the frontmost question to System Events, and for
+  every other app that is right. For a bare `python -m polyhost` it fails twice:
+  - **An accessory app (no Dock icon) is never frontmost at all**, so no source
+    can report it. `gui/dialog_util.py` switches to the regular activation policy
+    while a real PolyHost window is open, and back once the last one hides. The
+    Dock icon and menu bar that appear then are the fix, not a bug.
+  - **Even as a regular app, System Events answered `Terminal`** (the shell that
+    launched it) or failed with `Can't get {loginwindow, 156} whose frontmost =
+    true`. In the same second `lsappinfo front` and the Quartz window list
+    (`CGWindowListCopyWindowInfo`, first window at layer 0) both named `Python`
+    with our pid. `own_process.own_front_app()` asks those two and skips pywinctl
+    for that tick.
+
+  **When macOS names the wrong front app, put the three sources side by side**
+  (pywinctl, `lsappinfo info -only pid $(lsappinfo front)`, Quartz) before
+  changing code. Two hardware rounds went to guesses; the side-by-side printout
+  settled it in one.
 
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.

@@ -351,7 +351,7 @@ class AppIconFetcher:
         SVGs carry no `<title>` at all, so a bare `title or name` would print the
         name twice.
         """
-        if not resolved or resolved.startswith("os:"):
+        if not resolved or resolved.startswith(("os:", "res:")):
             return resolved or "?"
         try:
             path = app_icons.icon_path(resolved, self._cache_dir)

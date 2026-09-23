@@ -219,6 +219,16 @@ class GenericMarkTest(unittest.TestCase):
         core.worker.submit.assert_not_called()
         self.assertIsNone(core._generic_on_device)
 
+    def test_the_POLYKYBD_mark_on_our_own_window_IS_drawn_alone(self):
+        """The one exemption: our logo on our window promises nothing about
+        another program, and on macOS our windows expose no shortcuts."""
+        from polyhost.services.app_icons import POLYKYBD_SLUG
+        core = make_core(app=("polyhost", None), mask=_mask(),
+                         slug=POLYKYBD_SLUG, shortcuts={})
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+        self.assertEqual(core._generic_on_device[0], POLYKYBD_SLUG)
+
     def test_the_mark_IS_drawn_once_a_single_shortcut_resolves(self):
         """The control. Without it the test above passes for a mark that is
         never drawn at all."""
