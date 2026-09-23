@@ -210,6 +210,20 @@ Six rules bind code outside it:
   times, each fix uncovering the next call site (#257). Route every dialog a bridge
   event can open through ONE serializer; the worked example and the rule are in
   [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md) → *Threading model*.
+- ⚠️ **A COM object never crosses a thread, and every thread that calls COM
+  initializes it itself.** comtypes calls `CoInitializeEx` only on the thread that
+  FIRST imports it, and our background workers (the shortcut harvest, the relay)
+  exit when idle and are replaced. A cached COM object handed to the next thread
+  is used from a dead apartment with COM not initialized. It does not raise a
+  Python exception: it kills the headless daemon with a native access violation
+  and no log line, and the tray survives with a dead pipe while the keyboard keeps
+  working. This has happened TWICE with the same tell, a run of
+  `Windows fatal exception: code 0x80010108` (RPC_E_DISCONNECTED) dumps in
+  `crash_log.txt` ending in `access violation`: WMI in pywinctl's `getAppName`
+  (2026-09-14, see `handler/win_process.py`) and the UI Automation harvest
+  (2026-09-23, #264). `shortcut_source/uia.py` is the pattern: a per-thread
+  cache, COM initialized under `_IMPORT_LOCK`, and `release_thread()` called in
+  the worker's `finally`, dropping the object BEFORE `CoUninitialize`.
 
 ## Key notes
 
