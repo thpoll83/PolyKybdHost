@@ -27,8 +27,9 @@ def _set_activation_policy(policy) -> bool:
         app = NSApp() if callable(NSApp) else NSApp
         if app is None:
             app = NSApplication.sharedApplication()
-        app.setActivationPolicy_(policy)
-        return True
+        # AppKit answers whether the switch took; a refusal must reach the
+        # caller, which keeps its state and retries on the next window event.
+        return bool(app.setActivationPolicy_(policy))
     except Exception as exc:  # ImportError or any AppKit hiccup
         log.debug("Could not set macOS activation policy %s: %s", policy, exc)
         return False

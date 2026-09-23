@@ -128,8 +128,9 @@ class _FrontOnShow(QObject):
         if any_real_window_visible(QApplication.topLevelWidgets()):
             return
         from polyhost.util.macos_ui import hide_dock_icon
-        hide_dock_icon()
-        self._regular = False
+        # A refused switch leaves the app regular; the next Hide retries it.
+        if hide_dock_icon():
+            self._regular = False
 
 
 def install_front_on_show(app):

@@ -291,6 +291,31 @@ class DockIconWhileAWindowIsOpenTest(unittest.TestCase):
         self.flt.eventFilter(self._window(), QEvent(QEvent.Show))
         self.assertEqual(self.show.call_count, 2)
 
+    def test_a_REFUSED_switch_back_is_retried(self):
+        """AppKit can refuse the switch; the Dock icon must not be forgotten."""
+        from PyQt5.QtCore import QEvent
+        a = self._window()
+        self.flt.eventFilter(a, QEvent(QEvent.Show))
+        a.isVisible = lambda: False
+        self.hide.return_value = False
+        with mock.patch.object(dialog_util.QApplication, "topLevelWidgets",
+                               return_value=[a]):
+            self.flt._drop_dock_icon_if_idle()
+            self.hide.return_value = True
+            self.flt._drop_dock_icon_if_idle()
+        self.assertEqual(self.hide.call_count, 2)
+
+    def test_the_switch_reports_what_AppKit_answered(self):
+        from polyhost.util import macos_ui
+        app = mock.Mock()
+        appkit = mock.Mock(NSApp=lambda: app)
+        with mock.patch.object(macos_ui.platform, "system", return_value="Darwin"), \
+             mock.patch.dict("sys.modules", {"AppKit": appkit}):
+            app.setActivationPolicy_.return_value = False
+            self.assertFalse(macos_ui._set_activation_policy(macos_ui._NS_REGULAR))
+            app.setActivationPolicy_.return_value = True
+            self.assertTrue(macos_ui._set_activation_policy(macos_ui._NS_REGULAR))
+
     def test_hiding_a_window_defers_the_check_by_one_tick(self):
         """During Hide the window still reports itself visible."""
         from PyQt5.QtCore import QEvent
