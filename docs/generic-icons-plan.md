@@ -83,8 +83,15 @@ hardware, 2026-09-14). Left 34 px stay the legend's.
 
 ### A.3 The harvest ceiling is measured, not a bug
 
-Linux AT-SPI reaches **classic-menubar applications only** — GTK4 answers
-`<VoidSymbol>` for every keybinding it has. The Windows UIA backend is built and
+Linux AT-SPI reaches **classic-menubar applications only** on GTK4 before 4.18,
+which answers `<VoidSymbol>` for every keybinding it has (measured on Ubuntu
+24.04, GTK 4.14). That was an upstream stub, not a design decision: GTK 4.18
+(commit `b2a01696`) returns `mnemonic;;shortcut`, and a popover menu item reports
+the accel its action carries. GTK 4.18–4.20 sends `<Control>s`, GTK 4.22 sends
+the ARIA spelling `Control+S`; `parse_accel` reads both. A shortcut with no menu
+item is still exposed nowhere, and AT-SPI never carries an icon (GTK marks icons
+in buttons presentational), so the label is all we get to match against. Not yet
+measured on a live GTK ≥ 4.18 desktop. The Windows UIA backend is built and
 has **never run against a live application**. macOS has no backend. All three
 degrade to drawing nothing and logging which it was.
 

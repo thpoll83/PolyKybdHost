@@ -781,7 +781,7 @@ class PolyCore(Observable):
         ⚠️ Armed by `_generic_on_device`, so an application that resolves nothing
         costs no HID at all unless something is actually up there. Without that
         guard every tick on an unsupported app -- which is most of macOS and
-        every GTK4 application on Linux -- would queue a reset.
+        every GTK4 < 4.18 application on Linux -- would queue a reset.
         """
         if self._generic_on_device is None:
             return

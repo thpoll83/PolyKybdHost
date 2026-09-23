@@ -3,11 +3,19 @@
 Extracted from `tools/shortcut_probe.py` unchanged; see `model.py` for why the
 probe imports this rather than carrying its own copy.
 
-⚠️ MEASURED CEILING: this finds shortcuts for CLASSIC-MENUBAR apps only. An app
-whose menu lives in a hamburger popover exposes no accelerator at all -- gedit's
-real Ctrl+S is simply absent from its accessible tree, and GTK4 answers
-"<VoidSymbol>" for every keybinding it has. That is not a bug to fix here; it is
-the reason `services/shortcut_overlays.py` must degrade to drawing nothing.
+⚠️ MEASURED CEILING (Ubuntu 24.04, GTK 4.14): this finds shortcuts for
+CLASSIC-MENUBAR apps only. An app whose menu lives in a hamburger popover
+exposes no accelerator at all -- gedit's real Ctrl+S is simply absent from its
+accessible tree, and GTK 4.14 answers "<VoidSymbol>" for every keybinding it
+has. That is why `services/shortcut_overlays.py` must degrade to drawing nothing.
+
+⚠️ THE GTK4 HALF OF THAT CEILING WAS AN UPSTREAM STUB, fixed in GTK 4.18
+(commit b2a01696): `GetKeyBinding` now returns 'mnemonic;;shortcut', and a
+popover menu item (GtkModelButton) fills the shortcut from the accel its action
+carries. GTK 4.18-4.20 sends '<Control>s'; GTK 4.22 sends the ARIA spelling
+'Control+S', which `parse_accel` accepts. A shortcut with no menu item (a bare
+GtkShortcutController) is still exposed nowhere. Not yet measured on a live
+GTK >= 4.18 desktop.
 """
 
 from __future__ import annotations
