@@ -324,7 +324,14 @@ def own_front_app():
 
 
 def own_app_name(app_name, pid):
-    """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise."""
+    """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise.
+
+    ⚠️ The GNOME Wayland and KDE reporters have no pid and name a window by its
+    WM class, which `main_app` sets to `PolyHost`. That name is ours alone, so
+    it is accepted without a command-line read.
+    """
+    if app_name and app_name.strip().lower() == POLYHOST_APP:
+        return POLYHOST_APP
     if is_python_runtime(app_name) and is_polyhost_process(pid):
         return POLYHOST_APP
     return app_name

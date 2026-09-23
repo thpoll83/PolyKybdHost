@@ -99,6 +99,14 @@ class OwnAppNameTest(unittest.TestCase):
         with mock.patch.object(op, "process_argv", return_value=None):
             self.assertEqual(op.own_app_name("python3", 1234), "python3")
 
+    def test_our_wm_class_is_ours_without_a_pid(self):
+        # The GNOME Wayland reporter names a window by its WM class and has no
+        # pid; `main_app` sets that class to `PolyHost`.
+        with mock.patch.object(op, "process_argv") as argv:
+            self.assertEqual(op.own_app_name("PolyHost", None), op.POLYHOST_APP)
+            self.assertEqual(op.own_app_name("__main__.py", None), "__main__.py")
+        argv.assert_not_called()
+
     def test_window_pid_survives_a_backend_without_getPID(self):
         self.assertIsNone(op.window_pid(object()))
         self.assertIsNone(op.window_pid(None))

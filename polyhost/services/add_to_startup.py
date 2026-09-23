@@ -456,6 +456,7 @@ NoDisplay=false
 Icon={icon_path or ''}
 X-GNOME-Autostart-enabled=true
 Name={app_name}
+StartupWMClass={app_name}
 """
     desktop_file.write_text(content)
     desktop_file.chmod(0o755)
