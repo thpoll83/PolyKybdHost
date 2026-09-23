@@ -323,15 +323,31 @@ def own_front_app():
         return None
 
 
-def own_app_name(app_name, pid):
+def own_app_name(app_name, pid, own_window_active=False):
     """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise.
 
     ⚠️ The GNOME Wayland and KDE reporters have no pid and name a window by its
     WM class, which `main_app` sets to `PolyHost`. That name is ours alone, so
     it is accepted without a command-line read.
+
+    `own_window_active` is the calling process's own answer: Qt's
+    `activeWindow()` is set exactly while one of its windows has focus. It
+    needs no pid, and it is the check that caught the forwarder's Log Viewer,
+    which a GNOME forwarder reported as `python` with a pid that was neither
+    its own nor a `-m polyhost` command line (field, 2026-09-23). It is
+    honoured only for a name that could be ours, so a focus change caught
+    between the backend's read and Qt's cannot relabel another application.
     """
     if app_name and app_name.strip().lower() == POLYHOST_APP:
+        return POLYHOST_APP
+    if own_window_active and (not app_name or is_python_runtime(app_name)):
         return POLYHOST_APP
     if is_python_runtime(app_name) and is_polyhost_process(pid):
         return POLYHOST_APP
     return app_name
+
+
+def describe_python_owner(pid) -> str:
+    """Why a Python window was not taken for ours, for a one-off log line."""
+    return "pid %s, this process %s, argv %s" % (
+        pid, os.getpid(), process_argv(pid) if pid is not None else None)

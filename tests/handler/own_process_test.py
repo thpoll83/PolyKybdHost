@@ -107,6 +107,17 @@ class OwnAppNameTest(unittest.TestCase):
             self.assertEqual(op.own_app_name("__main__.py", None), "__main__.py")
         argv.assert_not_called()
 
+    def test_our_active_qt_window_is_ours_without_a_pid(self):
+        with mock.patch.object(op, "process_argv", return_value=None):
+            self.assertEqual(op.own_app_name("python", 999999, True),
+                             op.POLYHOST_APP)
+            self.assertEqual(op.own_app_name("", None, True), op.POLYHOST_APP)
+            self.assertEqual(op.own_app_name("python", 999999, False), "python")
+
+    def test_our_active_qt_window_never_relabels_another_app(self):
+        # A focus change caught between the backend's read and Qt's.
+        self.assertEqual(op.own_app_name("firefox", None, True), "firefox")
+
     def test_window_pid_survives_a_backend_without_getPID(self):
         self.assertIsNone(op.window_pid(object()))
         self.assertIsNone(op.window_pid(None))

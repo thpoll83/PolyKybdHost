@@ -36,7 +36,8 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
 from polyhost.handler.browser_url_source import BrowserUrlSource
 from polyhost.handler.browser_url_source import SETTING_DEFAULTS as _URL_SETTINGS
-from polyhost.handler.own_process import own_app_name, window_pid
+from polyhost.handler.own_process import (
+    describe_python_owner, is_python_runtime, own_app_name, window_pid)
 from polyhost.handler.win_process import app_name_for
 
 
@@ -200,6 +201,8 @@ class PolyForwarder(QApplication):
         # _identity_for. Unbounded is fine here: the keys are app names from
         # THIS machine's own window manager, not remote input.
         self._identity_cache = {}
+        # Python windows already explained in the log, by pid.
+        self._told_python_owner = set()
         # The shortcuts THIS machine's accessibility tree exposes, per app --
         # same one-lookup-per-app contract as `_identity_cache` and the same
         # reason it is resolved here rather than on the keyboard machine: a
@@ -926,7 +929,16 @@ class PolyForwarder(QApplication):
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
                     # PolyHost's own windows travel as `polyhost`, not as
                     # the interpreter, so the keyboard draws our mark for them.
-                    app_name = own_app_name(app_name_for(win), window_pid(win))
+                    # `activeWindow()` is Qt's own answer to "is one of OUR
+                    # windows focused" and needs no pid.
+                    pid = window_pid(win)
+                    app_name = own_app_name(app_name_for(win), pid,
+                                            self.activeWindow() is not None)
+                    if is_python_runtime(app_name) and pid not in self._told_python_owner:
+                        self._told_python_owner.add(pid)
+                        self.log.info("Window '%s' belongs to a Python process"
+                                      " that is not PolyHost (%s)", win.title,
+                                      describe_python_owner(pid))
                     # None for every non-browser app, and for a browser whose
                     # extension report is stale/unfocused — so a URL can never
                     # linger onto the wrong window.
