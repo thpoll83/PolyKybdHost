@@ -70,6 +70,26 @@ These are the ones that have produced wrong diagnoses:
   Only `FAILED:` names a real failure.
 - ⚠️ **A NEWER protocol/version in `diagnostics.txt` than the user's complaint
   implies** means they have restarted or updated since. Date every claim.
+- ⚠️ **`Windows fatal exception: code 0x80010108` is usually NOT a crash.**
+  `faulthandler` also dumps first-chance SEH exceptions that the owning DLL then
+  handles, so a COM error (RPC_E_DISCONNECTED) writes a full all-threads dump and
+  the process lives on. Such a dump often has **no `Current thread` line**: the
+  faulting thread is a native one with no Python state. The fatal one is a dump
+  that reads `access violation` and **breaks off mid-line**, followed by no
+  `clean exit` for that pid. A long run of `0x80010108` before it is the signature
+  of a COM object used across threads (see `CLAUDE.md` → *Threading model*):
+  35 of them in 92 minutes preceded the 2026-09-23 daemon death.
+- ⚠️ **A dead daemon logs nothing about its own death.** The evidence is on the
+  TRAY side, in `host.txt`: `RPC call … lost connection: [WinError 232] The pipe
+  is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
+  gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
+  then says `Keyboard: not connected` while the keyboard itself works fine.
+- **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
+  process appends `=== fault dump(s) above were written before this time | … ===`
+  after a dump once the file has been steady for ~60 s, so a dump is dated to
+  within ~2 minutes (often by the OTHER process, when the faulting one died).
+  For an older host, the crash log's modification time is the time of its
+  newest dump, since nothing else writes to it between session markers.
 
 ## 4. Check the settings for drift between runs
 
@@ -104,6 +124,13 @@ STILL OPEN: <anything the bundle cannot answer>
 
 ## Pitfalls
 
+- ⚠️ **A setting toggled mid-run is not an A/B test.** Switching a feature off
+  stops NEW use of it but leaves an already loaded component in place: on
+  2026-09-23 the UI Automation harvest was switched off 40 s into a run, the
+  dumps kept coming (6 in 27 min), and the run proved nothing either way. The
+  clean test was a restart with the setting off from the first second: 0 dumps
+  in 49 minutes. Check the setting in each process's startup dump, not only in
+  `settings.yaml`, which shows the value at collection time.
 - **Read to the END of the bundle before diagnosing.** A device that looks dead
   for 50 minutes may be working in the last three; concluding "permission
   denied" from the middle of a log and being contradicted by its tail is the
