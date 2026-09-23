@@ -118,6 +118,20 @@ class OwnAppNameTest(unittest.TestCase):
         # A focus change caught between the backend's read and Qt's.
         self.assertEqual(op.own_app_name("firefox", None, True), "firefox")
 
+    def test_describing_another_process_never_logs_its_arguments(self):
+        argv = ["/usr/bin/python3", "-X", "utf8", "tool.py", "--token", "s3cret"]
+        with mock.patch.object(op, "process_argv", return_value=argv):
+            text = op.describe_python_owner(1234)
+        self.assertIn("interpreter python3", text)
+        self.assertIn("runs tool.py", text)
+        self.assertNotIn("s3cret", text)
+        self.assertNotIn("--token", text)
+        with mock.patch.object(op, "process_argv",
+                               return_value=["python", "-m", "pkg", "--key=x"]):
+            text = op.describe_python_owner(1234)
+        self.assertIn("runs -m pkg", text)
+        self.assertNotIn("key", text)
+
     def test_window_pid_survives_a_backend_without_getPID(self):
         self.assertIsNone(op.window_pid(object()))
         self.assertIsNone(op.window_pid(None))
