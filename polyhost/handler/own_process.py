@@ -242,6 +242,76 @@ def window_pid(win):
         return None
 
 
+def _macos_top_window_pid():
+    """Owner pid of the topmost normal window, from the window server.
+
+    In-process and fresh on any thread, unlike `NSWorkspace`'s KVO
+    properties (see `active_window.frontmost_app`).
+    """
+    import Quartz
+    options = (Quartz.kCGWindowListOptionOnScreenOnly
+               | Quartz.kCGWindowListExcludeDesktopElements)
+    for info in Quartz.CGWindowListCopyWindowInfo(
+            options, Quartz.kCGNullWindowID) or ():
+        if info.get("kCGWindowLayer") == 0:
+            return int(info.get("kCGWindowOwnerPID"))
+    return None
+
+
+def parse_lsappinfo_pid(text):
+    """The pid out of `lsappinfo info -only pid` output (`"pid"=35938`)."""
+    match = re.search(r'"pid"\s*=\s*(\d+)', text or "")
+    return int(match.group(1)) if match else None
+
+
+def _macos_launchservices_front_pid():
+    """The front application's pid, as LaunchServices (the menu bar) sees it."""
+    import subprocess
+    # Audit: fixed argv, no shell, no user input; `lsappinfo` is a system
+    # binary. The second call takes the ASN the first one printed.
+    front = subprocess.run(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        ["lsappinfo", "front"], capture_output=True, text=True, timeout=2)
+    asn = (front.stdout or "").strip()
+    if not asn:
+        return None
+    info = subprocess.run(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        ["lsappinfo", "info", "-only", "pid", asn],
+        capture_output=True, text=True, timeout=2)
+    return parse_lsappinfo_pid(info.stdout)
+
+
+def own_front_app():
+    """`(POLYHOST_APP, pid)` when a PolyHost window is in front on macOS.
+
+    ⚠️ pywinctl cannot answer this on macOS. It asks System Events for the
+    process "whose frontmost is true", and with a PolyHost window focused
+    System Events answered Terminal, or failed outright ("Can't get
+    {loginwindow, 156} whose frontmost = true"), while LaunchServices and
+    the window server both named our Python process (measured 2026-09-23).
+
+    The window server is asked first because it is one in-process call per
+    tick. LaunchServices is asked only when the top window is ours, and it
+    must agree: a PolyHost window stays topmost when the user activates an
+    app that has no window of its own.
+
+    None everywhere else, and on any failure: the caller falls back to
+    pywinctl, which is today's behaviour.
+    """
+    if sys.platform != "darwin":
+        return None
+    try:
+        pid = _macos_top_window_pid()
+        if pid is None or not is_polyhost_process(pid):
+            return None
+        front = _macos_launchservices_front_pid()
+        if front is not None and front != pid:
+            return None
+        return POLYHOST_APP, pid
+    except Exception:
+        _log.debug("Could not read the macOS front window", exc_info=True)
+        return None
+
+
 def own_app_name(app_name, pid):
     """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise."""
     if is_python_runtime(app_name) and is_polyhost_process(pid):

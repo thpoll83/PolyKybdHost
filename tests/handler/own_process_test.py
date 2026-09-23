@@ -106,6 +106,56 @@ class OwnAppNameTest(unittest.TestCase):
         self.assertEqual(op.window_pid(win), 42)
 
 
+class OwnFrontAppTest(unittest.TestCase):
+    """macOS: pywinctl's System Events query cannot see our window, so the
+    window server and LaunchServices are asked instead."""
+
+    def _front(self, top=77, ours=True, launch=77, platform="darwin"):
+        with mock.patch.object(op.sys, "platform", platform), \
+             mock.patch.object(op, "_macos_top_window_pid", return_value=top), \
+             mock.patch.object(op, "is_polyhost_process", return_value=ours), \
+             mock.patch.object(op, "_macos_launchservices_front_pid",
+                               return_value=launch) as ls:
+            return op.own_front_app(), ls
+
+    def test_our_window_in_front_is_polyhost(self):
+        self.assertEqual(self._front()[0], (op.POLYHOST_APP, 77))
+
+    def test_another_app_on_top_is_not_ours_and_LaunchServices_is_not_asked(self):
+        found, ls = self._front(ours=False)
+        self.assertIsNone(found)
+        ls.assert_not_called()
+
+    def test_LaunchServices_must_agree(self):
+        """Our window stays topmost when a windowless app is activated."""
+        self.assertIsNone(self._front(launch=99)[0])
+
+    def test_an_unreadable_LaunchServices_trusts_the_window(self):
+        self.assertEqual(self._front(launch=None)[0], (op.POLYHOST_APP, 77))
+
+    def test_no_window_is_nothing(self):
+        self.assertIsNone(self._front(top=None)[0])
+
+    def test_off_macOS_it_asks_nothing(self):
+        with mock.patch.object(op.sys, "platform", "win32"), \
+             mock.patch.object(op, "_macos_top_window_pid") as top:
+            self.assertIsNone(op.own_front_app())
+        top.assert_not_called()
+
+    def test_a_failing_query_falls_back_to_pywinctl(self):
+        with mock.patch.object(op.sys, "platform", "darwin"), \
+             mock.patch.object(op, "_macos_top_window_pid",
+                               side_effect=ImportError("no Quartz")):
+            self.assertIsNone(op.own_front_app())
+
+    def test_lsappinfo_pid_parsing(self):
+        self.assertEqual(op.parse_lsappinfo_pid('"pid"=35938\n'), 35938)
+        self.assertEqual(op.parse_lsappinfo_pid('"LSDisplayName"="Python"\n'
+                                                '"pid" = 12'), 12)
+        self.assertIsNone(op.parse_lsappinfo_pid(""))
+        self.assertIsNone(op.parse_lsappinfo_pid(None))
+
+
 @unittest.skipUnless(sys.platform.startswith("linux"), "reads /proc")
 class RealProcessTest(unittest.TestCase):
     """The real reader against real child processes, not a mocked argv."""

@@ -10,7 +10,9 @@ from polyhost.handler.common import (
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
-from polyhost.handler.own_process import own_app_name, window_pid
+from polyhost.handler.own_process import (
+    own_app_name, own_front_app, window_pid,
+)
 from polyhost.handler.win_process import app_name_for
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -378,11 +380,16 @@ class OverlayHandler:
     def _decide_active_window(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
         win = None
-        try:
-            win = pwc.getActiveWindow()
-        except Exception as e:
-            self.log.warning("Failed retrieving active window: %s", e)
-            
+        # macOS only, None elsewhere: our own window, which pywinctl cannot
+        # see there (see `own_process.own_front_app`). It takes the
+        # windowless path below, named `polyhost`.
+        own = own_front_app()
+        if own is None:
+            try:
+                win = pwc.getActiveWindow()
+            except Exception as e:
+                self.log.warning("Failed retrieving active window: %s", e)
+
         if win:
             if self.prev_win != win:
                 self.prev_win = win
@@ -482,12 +489,15 @@ class OverlayHandler:
             # returns DISABLE and leaves `current_entry` cleared: the generic
             # path draws (`focused_app`/`focused_pid` answer from here), the
             # template path correctly does not.
-            name, pid = frontmost_app()
+            name, pid = own if own is not None else frontmost_app()
             app = own_app_name(name.lower(), pid) if name else None
             if self.win is not None or app != self.windowless_app:
                 self.set_win()
                 self.windowless_app, self.windowless_pid = app, pid
-                if app:
+                if own is not None:
+                    self.log.info("Active App Changed: PolyHost's own window "
+                                  "(pid %s)", pid)
+                elif app:
                     self.log.info(
                         "No active window: the window backend (%s) reports none "
                         "while '%s' is frontmost -- drawing it from the app "

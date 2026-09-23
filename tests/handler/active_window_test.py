@@ -714,6 +714,19 @@ class PolyHostsOwnWindowTest(unittest.TestCase):
             handler = self._focus(os.getpid() + 1)
         self.assertEqual(handler.focused_app(), ("python3", None))
 
+    def test_macOS_own_front_window_skips_pywinctl(self):
+        """System Events cannot see our window on macOS (it answered
+        Terminal), so the window-server answer takes over."""
+        handler = OverlayHandler({})
+        with patch(self.MOD + ".own_front_app", return_value=("polyhost", 4242)), \
+             patch(self.MOD + ".pwc.getActiveWindow") as get_active, \
+             patch(self.MOD + ".frontmost_app") as frontmost:
+            handler._decide_active_window(10, 5)
+        get_active.assert_not_called()
+        frontmost.assert_not_called()
+        self.assertEqual(handler.focused_app(), ("polyhost", None))
+        self.assertEqual(handler.focused_pid(), 4242)
+
     def test_a_windowless_polyhost_is_named_polyhost_too(self):
         handler = OverlayHandler({})
         with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
