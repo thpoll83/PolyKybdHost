@@ -61,6 +61,12 @@ FRAME = _fixture(_rect_path(0, 0, 24, 24) +
 BARS = _fixture(" ".join((_rect_path(0, 2, 24, 4), _rect_path(0, 10, 24, 4),
                           _rect_path(0, 18, 24, 4))))
 THIN_RING = _fixture(_rect_path(0, 0, 24, 24) + " M2 2 V22 H22 V2 Z")
+# A filled disc with a small counter-wound hole -- `si:safari` in miniature.
+# `score()` reads it INVERTED (rating its holes) and rates it 0.479, ABOVE
+# BARS' 0.235 read the right way up. That inversion is what the keycap shows
+# as a big solid blob.
+DISC_HOLE = _fixture("M0 12 A12 12 0 0 1 24 12 A12 12 0 0 1 0 12 Z "
+                     "M10 7 A2 2 0 0 0 14 7 A2 2 0 0 0 10 7 Z")
 
 
 def _svg(tmpdir, text, name="m.svg"):
@@ -973,3 +979,46 @@ class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
                                           icon_path="/x/AppIcon.icns"),
                     tmp, allow_network=False)
         self.assertTrue(name.startswith("os:"), name)
+
+
+class PolarityOutranksScoreTest(unittest.TestCase):
+    """⚠️ Reported from hardware (2026-09-23): Safari still drew the solid
+    disc after the OS icon stopped winning outright, because ranking on score
+    alone PREFERS it -- `si:safari` scores 0.610 read inside-out against
+    `mdi:apple-safari`'s 0.532 compass read normally.
+
+    An inverted reading means the art is mostly ink and `score()` is rating its
+    holes, which on a white-on-black keycap is the blob itself.
+    """
+
+    def test_a_NORMAL_reading_beats_an_inverted_one_that_scores_HIGHER(self):
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            blob = ai.render_overlay(_svg(tmp, DISC_HOLE, "blob.svg"))
+            bars = ai.render_overlay(_svg(tmp, BARS, "bars.svg"))
+            # The premise, asserted rather than assumed: without it this test
+            # would pass for the ordinary reason and pin nothing.
+            self.assertFalse(ai.mark_rank(blob)[0], "fixture must read inverted")
+            self.assertTrue(ai.mark_rank(bars)[0], "fixture must read normally")
+            self.assertGreater(ai.mark_score(blob), ai.mark_score(bars),
+                               "the inverted fixture must SCORE HIGHER")
+
+            _svg(tmp, DISC_HOLE, "si-inkscape.svg")
+            _svg(tmp, BARS, "mdi-inkscape-studio.svg")
+            with mock.patch.object(ai, "candidates",
+                                   return_value=["si:inkscape",
+                                                 "mdi:inkscape-studio"]):
+                _, name = ai.program_overlay("Inkscape", cache_dir=tmp,
+                                             allow_network=False)
+            self.assertEqual(name, "mdi:inkscape-studio")
+
+    def test_an_inverted_reading_still_wins_when_it_is_the_ONLY_one(self):
+        """A PREFERENCE, not a veto -- a genuine dark-plate app icon with no
+        alternative must still draw."""
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, DISC_HOLE, "si-inkscape.svg")
+            mask, name = ai.program_overlay("Inkscape", cache_dir=tmp,
+                                            allow_network=False)
+            self.assertEqual(name, "si:inkscape")
+            self.assertIsNotNone(mask)

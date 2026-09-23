@@ -594,6 +594,47 @@ def render_mark(path: str):
     return render_overlay(path)
 
 
+def mark_rank(mask):
+    """The sort key a candidate competes on: `(read_the_right_way_up, score)`.
+
+    ⚠️ POLARITY OUTRANKS SCORE, and that is the fix for "not the fully solid
+    icon" (reported from hardware 2026-09-23 after the OS icon stopped winning
+    outright). `icon_binarise.score` rates a mostly-ink mark by its HOLES, and
+    it rates them well: measured, `si:safari` -- a filled disc with a hairline
+    needle -- scores 0.610 inverted, ABOVE `mdi:apple-safari`'s 0.532 compass
+    read the right way up. Ranking on score alone therefore picks the blob, and
+    no amount of ranking fixes it.
+    #
+    An inverted reading is not wrong, it just means the art is mostly ink and
+    we are reading its holes -- which on a white-on-black keycap IS the big
+    solid blob. Measured over the real candidate set, the split is exact: the
+    only two marks read inverted are `si:safari` (0.727 lit) and
+    `si:gnometerminal` (0.785), the two that looked bad on hardware, while
+    every mark that reads well -- both catalogs' compasses, all four shipped
+    ones -- is read normally.
+    #
+    ⚠️ It is a PREFERENCE, not a veto: an inverted candidate still wins when it
+    is the only one, which keeps a genuine dark-plate app icon working. And it
+    deliberately does NOT try to tell a dark plate from a filled silhouette --
+    see `reads_inverted`, where that idea is measured and refuted.
+    """
+    return (not _reads_inverted(mask), mark_score(mask))
+
+
+def _reads_inverted(mask) -> bool:
+    """`icon_binarise.reads_inverted` over the mark's own ink (see `mark_score`
+    for why the crop matters)."""
+    try:
+        import numpy as np
+    except Exception:                       # noqa: BLE001
+        return False
+    if mask is None or not mask.any():
+        return False
+    rows, cols = np.flatnonzero(mask.any(1)), np.flatnonzero(mask.any(0))
+    return icon_binarise.reads_inverted(
+        mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1])
+
+
 def mark_score(mask) -> float:
     """`icon_binarise.score` of a mark, read over ITS OWN ink.
 
@@ -829,11 +870,11 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
             # OS icon keeps ties. That is the "exact by construction" argument
             # from `docs/generic-icons-plan.md` B.3 surviving in the one place
             # it still holds: equally legible, prefer the app's own art.
-            best = (mark_score(mask), mask, os_slug(source, icon))
+            best = (mark_rank(mask), mask, os_slug(source, icon))
             log.info("The OS icon for %s is a CANDIDATE: %s (%d B, %s, gate "
                      "%.3f >= %.3f, rank %.3f)", app_name, source or "<no path>",
                      len(icon), conversion, score, icon_binarise.MIN_SCORE,
-                     best[0])
+                     best[0][1])
         # ⚠️ INFO, not debug, and it names every number. "The icon does not
         # survive 1-bit" is true and useless: the questions a round of hardware
         # testing actually asks are WHICH file was read, what it scored and
@@ -889,12 +930,13 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         mask = render_mark(path)
         if mask is None:
             continue
-        value = mark_score(mask)
+        value = mark_rank(mask)
         if best is None or value > best[0]:
             best = (value, mask, name)
     if best is not None:
-        log.info("Program mark for %s: %s (rank %.3f, best of %s)",
-                 app_name, best[2], best[0],
+        log.info("Program mark for %s: %s (rank %.3f%s, best of %s)",
+                 app_name, best[2], best[0][1],
+                 "" if best[0][0] else ", read INVERTED",
                  ", ".join((["the OS icon"] if icon else []) + tried))
         return best[1], best[2]
     # The names are the whole story when nothing draws -- they say whether the
