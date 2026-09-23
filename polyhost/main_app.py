@@ -391,6 +391,15 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # Important for XWayland icon matching
     if sys.platform.startswith('linux'):
         QApplication.setDesktopFileName('PolyHost')
+        # ⚠️ The X11 WM_CLASS is built from the application NAME, not from the
+        # desktop file name, and Qt reads it when the first window is created.
+        # Unset, it falls back to argv[0] -- `__main__.py` under `python -m
+        # polyhost` -- and GNOME, which matches an XWayland window to its
+        # `.desktop` entry by WM_CLASS, showed a grey gear for every forwarder
+        # dialog. The GNOME Wayland reporter hands the same class to the window
+        # tracker as the app name, so the keyboard lost the ESC mark too.
+        # `PolyHost.__init__` sets the same name; the forwarder never did.
+        QApplication.setApplicationName('PolyHost')
         # On KDE, route native file dialogs through xdg-desktop-portal so the
         # picker is the modern Plasma dialog (our pip Qt has no KDE plugin).
         # Must run before the QApplication instance below reads the env.

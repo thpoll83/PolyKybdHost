@@ -574,5 +574,22 @@ class MacAutostartIdempotencyTest(unittest.TestCase):
             run.assert_not_called()
 
 
+
+class LinuxDesktopEntryTest(unittest.TestCase):
+    """GNOME ties an XWayland window to its launcher by WM_CLASS. `main_app`
+    sets the class to `PolyHost`; the entry must name it, or every dialog shows
+    a grey gear."""
+
+    def test_entry_names_the_wm_class(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            add_to_startup.create_linux_shortcut_desktop(
+                "PolyHost", folder, folder / "start.sh", "/x/pcolor.png")
+            text = (folder / "PolyHost.desktop").read_text()
+        self.assertIn("\nStartupWMClass=PolyHost\n", text)
+        self.assertIn("\nIcon=/x/pcolor.png\n", text)
+
+
 if __name__ == "__main__":
     unittest.main()

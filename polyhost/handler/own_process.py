@@ -323,8 +323,61 @@ def own_front_app():
         return None
 
 
-def own_app_name(app_name, pid):
-    """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise."""
+def own_app_name(app_name, pid, own_window_active=False):
+    """`POLYHOST_APP` for a PolyHost window, `app_name` unchanged otherwise.
+
+    ⚠️ The GNOME Wayland and KDE reporters have no pid and name a window by its
+    WM class, which `main_app` sets to `PolyHost`. That name is ours alone, so
+    it is accepted without a command-line read.
+
+    `own_window_active` is the calling process's own answer: Qt's
+    `activeWindow()` is set exactly while one of its windows has focus. It
+    needs no pid, and it is the check that caught the forwarder's Log Viewer,
+    which a GNOME forwarder reported as `python` with a pid that was neither
+    its own nor a `-m polyhost` command line (field, 2026-09-23). It is
+    honoured only for a name that could be ours, so a focus change caught
+    between the backend's read and Qt's cannot relabel another application.
+    """
+    if app_name and app_name.strip().lower() == POLYHOST_APP:
+        return POLYHOST_APP
+    if own_window_active and (not app_name or is_python_runtime(app_name)):
+        return POLYHOST_APP
     if is_python_runtime(app_name) and is_polyhost_process(pid):
         return POLYHOST_APP
     return app_name
+
+
+def _entry_point(argv):
+    """What an interpreter command line runs: `-m <module>`, a script's file
+    name, or None. Never an argument after it."""
+    args = list(argv or ())[1:]
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "-m":
+            return "-m " + (args[i + 1] if i + 1 < len(args) else "")
+        if arg.startswith("-m"):
+            return "-m " + arg[2:]
+        if arg in _OPTS_WITH_ARG:
+            i += 2
+            continue
+        if arg == "-c" or arg == "-":
+            return arg
+        if arg.startswith("-"):
+            i += 1
+            continue
+        return re.split(r"[\\/]", arg)[-1]
+    return None
+
+
+def describe_python_owner(pid) -> str:
+    """Why a Python window was not taken for ours, for a one-off log line.
+
+    ⚠️ Names the interpreter and what it runs, NEVER the rest of the command
+    line: it describes ANOTHER user process, whose arguments can carry a token
+    or a private URL, and the forwarder log travels in support bundles.
+    """
+    argv = process_argv(pid) if pid is not None else None
+    exe = re.split(r"[\\/]", argv[0])[-1] if argv else None
+    return "pid %s, this process %s, interpreter %s, runs %s" % (
+        pid, os.getpid(), exe, _entry_point(argv))
