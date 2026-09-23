@@ -111,9 +111,9 @@ python -m polyhost --portable             # no autostart registration
 ### Run tests
 ```bash
 # Use the project venv — system python3 is missing numpy and other deps
-# ⚠️ Use the RUNNER for a whole-suite run. `unittest discover -s ./tests` puts
-#    tests/ on sys.path instead of the repo root and reports failures that do
-#    not exist — see the Tests section.
+# ⚠️ Use the RUNNER for a whole-suite run. `unittest discover -s ./tests`
+#    prepends tests/ to sys.path, where tests/tools/ SHADOWS the repo's own
+#    tools/, and reports 25 failures that do not exist — see the Tests section.
 xvfb-run -a .venv/bin/python scripts/run_tests.py                     # all tests
 .venv/bin/python -m unittest tests.device.cmd_composer_test           # single module
 ```

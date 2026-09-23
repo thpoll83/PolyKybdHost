@@ -15,8 +15,11 @@ Constraints every mark here is drawn under, all from polyhost/services/svg_raste
   * `<path d=...>` only -- no strokes, no <rect>/<circle>, NO TRANSFORMS, no
     groups, filled with the NONZERO winding rule. A hole is a sub-path wound the
     opposite way to the shape around it.
-  * ⚠️ A zero-radius arc (`A0 0 0 0 0`) is DEGENERATE and FreeType drops it
-    silently, filling the shape solid.
+  * ⚠️ A zero-radius arc degrades to a LINE (SVG 1.1 F.6.2; `_arc_to_cubics`
+    returns [("L", x1, y1)] when rx == 0, ry == 0, or the endpoints coincide),
+    so an arc back to the point you are already on is a NO-OP segment: the
+    sub-path never traces the outline and the winding fills the shape solid.
+    An arc also takes SEVEN parameters (rx ry rot large-arc sweep x y).
   * ⚠️ Aspect ratio decides rendered SIZE: `render_overlay` fits the LONGEST
     side to the 38 px box, so a portrait icon comes out narrow.
   * ⚠️ Stroke widths are viewBox units and the scale is 38/24 = 1.583, so
