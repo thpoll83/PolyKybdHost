@@ -36,6 +36,34 @@ and relative links were adjusted to suit a standalone file.
   under test were deleted?* If the answer is "the fixture", the fixture is the thing
   being tested.
 
+- ⚠️ **A MODAL's re-entrancy can only be MODELLED, never executed — and the
+  model still earns its keep.** The suite cannot open a real dialog, so the thing
+  `_fallback_prompt` exists to prevent (`QDialog.exec_()` spinning a nested event
+  loop that dispatches the rest of the queued `job_done` batch — see
+  `hid-worker-refactor.md`) cannot be reproduced directly. What works is to
+  make a STUB prompt raise the other event from inside itself, then assert on the
+  ORDERING rather than on any flag:
+
+  ```python
+  def _host_prompt(rel):
+      order.append(f"host-open:{rel.version}")
+      app._on_fw_up_available(_FwRel())     # arrives mid-dialog
+      order.append(f"host-close:{rel.version}")
+  # serialized  -> host-open, host-close, fw
+  # re-entrant  -> host-open, fw, host-close
+  ```
+
+  Cover BOTH outcomes of the dialog, because they differ: a **declined** prompt
+  starts nothing and the next queued prompt must still run; an **accepted** one
+  starts work, and the queue must then be dropped (set `app._update_progress` to
+  a sentinel to model that).
+  ⚠️ **Read the limit honestly.** Across #257 this suite was green and
+  mutation-checked at every round, and still shipped three successive versions of
+  the same defect — each one at a call site the previous fix had not covered. The
+  model tests the serializer you wrote; it cannot tell you which doors bypass it.
+  For that, make the invariant **greppable** (one entry point, so
+  `grep '_prompt_and_install('` finds only the definition) and check the grep.
+
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
   any forwarder logic worth testing in a Qt-free module instead.** It imports
   `pywinctl` at module load (the backend selection at the top), and pywinctl is

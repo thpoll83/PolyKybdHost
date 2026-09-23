@@ -322,5 +322,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   sentinel (`NO_INSTALLER`) so the caller can branch without a second code path.
 - `PolyCore` periodics/jobs publish results as core events (`emit(name, payload)`); the Qt client's observer (`PolyHost._on_core_event`) forwards them into `WorkerBridge.job_done` (`polyhost/gui/worker_bridge.py`), a queued Qt signal dispatched in `PolyHost._on_job_done`. **Worker-/core-side code must never touch Qt objects** — go through the event seam. `decide_reconnect_apply` lives in `polyhost/core/decisions.py` (re-exported from `worker_bridge`), unit-tested in `tests/gui/worker_bridge_test.py`.
 - Reconnect is split three ways: `PolyCore._reconnect_probe` (worker, device I/O → plain snapshot dict; pops the firmware fresh-boot marker on every successful probe), `PolyCore.apply_reconnect` (operational half — state, decision tree, post-connect jobs, cache resets; emits `status_changed`; tested in `tests/core/poly_core_apply_test.py`), and `PolyHost._apply_reconnect_result` (Qt rendering: status entry, language menu, OS-language switch). `active_window_reporter` keeps the pywinctl poll on the main thread but delegates the switching decision to `PolyCore.tick_window_tracking`.
+- ⚠️ **A MODAL DIALOG OPENED FROM A `job_done` HANDLER RE-ENTERS
+  `_on_job_done`.** `QDialog.exec_()` spins a nested Qt event loop, and that loop
+  dispatches every other event already queued on the main thread — including the
+  rest of the batch the same worker just emitted. The handler has not returned,
+  so any "am I busy" flag it would have set is still False.
+  `UpdateChecker.run()` makes this concrete: it fires `on_update_available` and
+  then `on_fw_up_available`, both marshalled through `WorkerBridge.job_done`, so
+  the firmware dialog opened *on top of* the host one — the user answered them in
+  reverse order, and accepting the host update could start an install-and-restart
+  while a firmware flash was running.
+  ⚠️ **It took THREE fixes (#257), each uncovering the next call site**, which is
+  the real lesson: (1) serialize the two dialogs — but `_prompt_and_install`
+  returns as soon as it has STARTED the installer, so the queue drained straight
+  into the second dialog anyway; (2) stop draining once work is in flight — but
+  the MANUAL branches (`_await_manual_*`, the user's own "Check for update…")
+  still called the prompt directly with the busy flag False; (3) route **all
+  seven** call sites through `_fallback_prompt`, so `grep '_prompt_and_install('`
+  finds only the definition. **A per-call-site guard is the shape that keeps
+  missing one; one door does not.** Applies to any future dialog a bridge event
+  can open (flash, font pack, crash alert), not just updates.
+  Testing it: the suite cannot open a real modal, so the re-entrancy is *modelled*
+  — a stub prompt raises the other event from inside itself and the assertion is
+  on the ordering (see `testing.md`). A green, mutation-checked suite still
+  missed all three.
 - **The probe is debounced** (`decide_probe_publish`, 3 strikes): the keyboard goes deaf for hundreds of ms after a large overlay transfer while it syncs images to the slave half over UART, so a single failed probe must NOT flap the connection state — that resets the MRU cache, wipes the overlays, and forces a resend that keeps the keyboard busy for the next probe (self-sustaining wipe-and-resend oscillation, seen in the field 2026-06-10). For the same reason the probe drains stale late replies first, never queries version/languages when the lang probe already failed (a stale GET_ID reply can fake a fresh connect), and `query_id`/`GET_LANG` use generous read timeouts (250/150 ms — fine on the worker, forbidden back when this ran on the UI thread).
 
