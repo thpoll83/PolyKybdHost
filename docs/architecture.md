@@ -199,6 +199,24 @@ Per-platform implementations:
     untitled apps are byte-identical to a handle-plus-title change test — the switch
     was never noticed and never logged. Hence `_handle_identifies()`, and the
     app-name fallback applying only when the handle identifies nothing.
+- ⚠️ **macOS: System Events cannot see PolyHost's OWN windows** (2026-09-23,
+  #259). The bullet above sends the frontmost question to System Events, and for
+  every other app that is right. For a bare `python -m polyhost` it fails twice:
+  - **An accessory app (no Dock icon) is never frontmost at all**, so no source
+    can report it. `gui/dialog_util.py` switches to the regular activation policy
+    while a real PolyHost window is open, and back once the last one hides. The
+    Dock icon and menu bar that appear then are the fix, not a bug.
+  - **Even as a regular app, System Events answered `Terminal`** (the shell that
+    launched it) or failed with `Can't get {loginwindow, 156} whose frontmost =
+    true`. In the same second `lsappinfo front` and the Quartz window list
+    (`CGWindowListCopyWindowInfo`, first window at layer 0) both named `Python`
+    with our pid. `own_process.own_front_app()` asks those two and skips pywinctl
+    for that tick.
+
+  **When macOS names the wrong front app, put the three sources side by side**
+  (pywinctl, `lsappinfo info -only pid $(lsappinfo front)`, Quartz) before
+  changing code. Two hardware rounds went to guesses; the side-by-side printout
+  settled it in one.
 
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.
