@@ -201,6 +201,12 @@ Six rules bind code outside it:
 - **The no-blocking-the-main-thread rule covers NETWORK I/O too.** Every GitHub call
   the GUI makes runs on its own thread; a menu handler starts one and opens a progress
   dialog, never calls `requests` itself.
+- ⚠️ **A MODAL opened from a bridge handler dispatches the OTHER queued bridge
+  events**, re-entering `_on_job_done` before it returns. One update check reports
+  host then firmware, so the firmware dialog opened on top of the host one — three
+  times, each fix uncovering the next call site (#257). Route every dialog a bridge
+  event can open through ONE serializer; the worked example and the rule are in
+  [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md) → *Threading model*.
 
 ## Key notes
 

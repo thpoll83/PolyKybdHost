@@ -41,6 +41,16 @@ and relative links were adjusted to suit a standalone file.
     with an error-severity finding outstanding; a rollup that reads only the
     conclusion calls that commit green. **The alert count is in the title —
     read it, not the conclusion.**
+  - ⚠️ **A CodeRabbit "✅ Confirmed as addressed" reply is a review OBJECT
+    carrying the head sha — and is NOT a review of that commit.** When it accepts
+    your fix on a thread it posts a `COMMENTED` review pinned to the new head, so
+    `get_reviews` shows a fresh row with `commit_id == head`, passing the sha test
+    above. It has read the THREAD, not the diff. On #257 that row (16:28 on
+    `80eeaf6`) sat there while the commit went unreviewed; asking for the review
+    explicitly, an hour later, produced a **Major** finding in the very fix it had
+    just confirmed. **A thread-level confirmation never substitutes for a review of
+    the commit** — check the summary comment's `📥 Commits` range, which still
+    named the PREVIOUS head.
   - ⚠️ **Sourcery stops reviewing mid-PR** with `conclusion: skipped`,
     `"⏭️ Auto re-review limit reached"`, after enough pushes. It is an honest
     state and easy to miss in a list of green rows: from that point every
