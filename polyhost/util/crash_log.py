@@ -178,9 +178,23 @@ _clean_exit_noted = False
 
 
 _crash_path = None
-_watch_offset = 0
-_watch_stop = None
-_watch_thread = None
+
+
+class _DumpWatchState:
+    """The dump watch's mutable state, held on one object.
+
+    Attributes rather than module globals because each is written in one
+    function and read in another, which CodeQL's per-function
+    py/unused-global-variable check reports as a dead store.
+    """
+
+    def __init__(self):
+        self.offset = 0          # bytes of the file already examined
+        self.stop = None         # threading.Event that ends the loop
+        self.thread = None
+
+
+_watch = _DumpWatchState()
 
 
 def _stamp(what):
@@ -220,27 +234,26 @@ def check_for_undated_dump():
 
     Returns True if a marker was written.
     """
-    global _watch_offset
     if _crash_file is None:
         return False
     try:
         size = _file_size()
         if size is None:
             return False
-        if size < _watch_offset:
+        if size < _watch.offset:
             # Trimmed by a starting process (trim_if_oversized): start over.
-            _watch_offset = size
+            _watch.offset = size
             return False
-        if size == _watch_offset:
+        if size == _watch.offset:
             return False
         with open(_crash_path, "rb") as fh:
-            fh.seek(_watch_offset)
-            new = fh.read(size - _watch_offset)
+            fh.seek(_watch.offset)
+            new = fh.read(size - _watch.offset)
         if _file_size() != size:
             # Still being written, possibly a dump in progress: a marker now
             # could land inside it. Look again next time, from the same place.
             return False
-        _watch_offset = size
+        _watch.offset = size
         undated = False
         for line in new.decode("utf-8", "replace").splitlines():
             if line.startswith(DUMP_START_PREFIXES):
@@ -250,7 +263,7 @@ def check_for_undated_dump():
         if not undated:
             return False
         _stamp(DUMP_DATED)
-        _watch_offset = _file_size() or _watch_offset
+        _watch.offset = _file_size() or _watch.offset
         return True
     except Exception:  # noqa: BLE001 — reporting must never raise
         return False
@@ -262,24 +275,22 @@ def _watch_loop(stop, interval):
 
 
 def _start_dump_watch(interval=DUMP_WATCH_SECONDS):
-    global _watch_offset, _watch_stop, _watch_thread
-    _watch_offset = _file_size() or 0
-    _watch_stop = threading.Event()
-    _watch_thread = threading.Thread(
-        target=_watch_loop, args=(_watch_stop, interval),
+    _watch.offset = _file_size() or 0
+    _watch.stop = threading.Event()
+    _watch.thread = threading.Thread(
+        target=_watch_loop, args=(_watch.stop, interval),
         name="poly-crash-watch", daemon=True)
-    _watch_thread.start()
+    _watch.thread.start()
 
 
 def stop_dump_watch():
     """Stop the dump watch. Safe to call when it never started."""
-    global _watch_stop, _watch_thread
-    if _watch_stop is not None:
-        _watch_stop.set()
-    if _watch_thread is not None:
-        _watch_thread.join(timeout=2)
-    _watch_stop = None
-    _watch_thread = None
+    if _watch.stop is not None:
+        _watch.stop.set()
+    if _watch.thread is not None:
+        _watch.thread.join(timeout=2)
+    _watch.stop = None
+    _watch.thread = None
 
 
 def _flush_logging():

@@ -50,7 +50,7 @@ def on_thread(fn):
     def run():
         try:
             out["value"] = fn()
-        except BaseException as exc:  # noqa: BLE001 -- re-raised below
+        except Exception as exc:  # noqa: BLE001 -- re-raised below
             out["error"] = exc
 
     t = threading.Thread(target=run)
@@ -91,11 +91,10 @@ class UiaThreadLifecycleTest(unittest.TestCase):
         self.calls.append("uninit(alive=%d)" % len(alive))
 
     def test_each_thread_builds_its_OWN_automation_object(self):
-        first = on_thread(lambda: id(uia._uia()[1]))
-        second = on_thread(lambda: id(uia._uia()[1]))
+        on_thread(uia._uia)
+        on_thread(uia._uia)
         self.assertEqual(len(self.created), 2)
         self.assertEqual(self.calls, ["init", "init"])
-        del first, second
 
     def test_the_object_is_cached_within_one_thread(self):
         same = on_thread(lambda: uia._uia()[1] is uia._uia()[1])
