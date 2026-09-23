@@ -56,6 +56,29 @@ your own screen.
 
 ---
 
+## Ship a real macOS `.app` bundle
+
+**Status:** deferred, and the reason it is worth writing down is that a workaround
+already shipped without it. macOS drops every tray balloon we send because the running
+process has no bundle identifier of its own (see `docs/tray-ui.md`), and the fix in
+place is a fallback — the update dialog opens directly and the Updates row carries the
+version. Balloons themselves stay dead, so a font-pack flash still starts with no
+warning on a Mac, and any future balloon is born broken there.
+
+The real fix is a bundle whose `CFBundleExecutable` is an actual binary under
+`Contents/MacOS/`, so `NSBundle.mainBundle` is ours. What we write today is a `/bin/sh`
+shim that `exec`s the venv wrapper (`create_macos_app_bundle`), which is enough for
+Launchpad and not for `NSBundle`.
+
+**Cost:** a packaging step we do not have (py2app / PyInstaller), a second artifact per
+release, and code signing + notarization if the bundle is ever to be distributed rather
+than generated on the user's own machine. It also still needs the user to grant
+notification permission, so it buys a prompt, not a guarantee.
+
+**What would settle it:** a user asking for the flash-in-progress warning on macOS, or
+the first release that ships a `.dmg` — at which point the bundle exists anyway and
+`balloons_are_delivered()` starts returning True on its own.
+
 ## Let a 0.75 keyword hit draw on its own
 
 **Status:** measured, not proposed. Lowering the icon-planner's confidence floor so a

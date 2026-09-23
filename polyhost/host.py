@@ -36,6 +36,8 @@ from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
+from polyhost.gui.tray_notify import (balloons_are_delivered, updates_menu_title,
+                                      updates_tooltip)
 
 # Tray labels for the Glyph Script submenu. Generic names (no franchise
 # branding — trademark caveat on the fictional scripts); the fonts themselves
@@ -289,7 +291,10 @@ class PolyHost(QApplication):
         # is lost for the WHOLE session (see gui/tray_wait.py). The waiter shows
         # it now when it can and retries when it can't.
         self.tray = QSystemTrayIcon(parent=self)
-        self.icon_manager = IconStateManager(self, False, f"PolyKybdHost {__version__}")
+        # The tray's resting tooltip, and what _refresh_tray_tooltip falls back
+        # to once a flash or a pending update stops claiming it.
+        self._idle_tooltip = f"PolyKybdHost {__version__}"
+        self.icon_manager = IconStateManager(self, False, self._idle_tooltip)
         self._tray_waiter = TrayVisibilityWaiter(
             show=lambda: self.tray.setVisible(True),
             is_available=QSystemTrayIcon.isSystemTrayAvailable,
@@ -627,6 +632,15 @@ class PolyHost(QApplication):
         self.update_action.triggered.connect(self._on_update_clicked)
         self.updates_menu.addAction(self.update_action)
         self._pending_release = None
+        # Versions already offered through the no-balloon fallback dialog this
+        # session. The 24 h timer re-reports the same release, and a modal that
+        # reopens on its own is worse than the silence it replaces.
+        self._auto_prompted_host_version = None
+        self._auto_prompted_fw_version = None
+        # One check reports host THEN firmware, and a modal dialog dispatches
+        # the second event while the first is open — see _fallback_prompt.
+        self._fallback_prompt_busy = False
+        self._fallback_prompt_queue = []
         self._update_checker = None
         self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
@@ -663,6 +677,11 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.updates_menu.aboutToShow.connect(self._refresh_fontpack_action)
         self._pending_fw_release = None
+        # The tray tooltip has TWO writers (a font-pack flash's percentage and
+        # the pending-update marker). This holds the flash's claim; see
+        # _refresh_tray_tooltip, which is the only place that calls setToolTip.
+        self._fontpack_flashing = False
+        self._fontpack_tooltip = ""
         self._fw_up_downloader = None
         self._fw_up_progress = None
         # Mutable one-element cancel flag shared with the firmware-download thread
@@ -799,6 +818,10 @@ class PolyHost(QApplication):
         self.tray.setContextMenu(self.menu)
         # noinspection PyUnresolvedReferences
         self.tray.messageClicked.connect(self._on_balloon_clicked)
+        if not self._balloons_reach_user():
+            self.log.info("Tray balloons are not delivered on this platform; "
+                          "update prompts open directly and the Updates menu "
+                          "row carries the version.")
         # Re-assert now that the icon has its menu; a no-op while the waiter is
         # still waiting, so this can never start a second retry chain.
         self._tray_waiter.start()
@@ -2092,6 +2115,19 @@ class PolyHost(QApplication):
         def _host_no_update():
             if _error_seen[0]:
                 return  # error was already surfaced via on_check_error
+            if self._pending_release is not None:
+                # A release reported EARLIER this session is gone — withdrawn, or
+                # unpublished while a bad build was replaced. Drop it: the menu row
+                # would go on advertising a version that no longer exists, and
+                # clicking it would install from a URL that now 404s. Only a
+                # SUCCESSFUL check does this; a check error returns above, because
+                # an unreachable GitHub says nothing about the release.
+                self.log.info("Previously reported host update %s is no longer offered",
+                              self._pending_release.version)
+                self._pending_release = None
+                self._auto_prompted_host_version = None
+                self.update_action.setText("Check for updates...")
+                self._refresh_updates_marker()
             self.log.debug("No host update available")
             if on_no_update is not None:
                 on_no_update()
@@ -2100,6 +2136,16 @@ class PolyHost(QApplication):
             if blocked is not None:
                 self.log.warning("Firmware %s is newer but has no flashable .bin",
                                  getattr(blocked, "version", "?"))
+            elif self._pending_fw_release is not None:
+                # Same as the host side. Deliberately NOT in the `blocked` branch
+                # above: there the checker is telling us the newest release has no
+                # .bin, which says nothing about the older one we are holding —
+                # that one is still flashable and still worth offering.
+                self.log.info("Previously reported firmware update %s is no longer offered",
+                              self._pending_fw_release.version)
+                self._pending_fw_release = None
+                self._auto_prompted_fw_version = None
+                self._reset_fw_update_action()   # also refreshes the marker
             else:
                 self.log.debug("No firmware update available")
             if self._await_manual_fw_prompt:
@@ -2125,22 +2171,30 @@ class PolyHost(QApplication):
     def _on_update_available(self, release):
         self._pending_release = release
         self.update_action.setText(f"Update to v{release.version} available")
+        self._refresh_updates_marker()
         self.log.info("Update available: %s", release.version)
         if self._await_manual_prompt:
             self._await_manual_prompt = False
-            self._prompt_and_install(release)
-        else:
+            self._fallback_prompt(self._prompt_and_install, release)
+        elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybdHost Update",
                 f"Version {release.version} is available. "
                 "Click the tray icon to update.",
             )
+        elif self._auto_prompted_host_version != release.version:
+            # No balloon here and no messageClicked either, so "click the tray
+            # icon to update" would be an instruction to click something that
+            # was never shown. Open the same dialog the click would have — what
+            # the forwarder has always done on every platform.
+            self._auto_prompted_host_version = release.version
+            self._fallback_prompt(self._prompt_and_install, release)
 
     def _on_update_clicked(self):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
-            self._prompt_and_install(self._pending_release)
+            self._fallback_prompt(self._prompt_and_install, self._pending_release)
             return
         # Only switch the UI into "checking" mode if a run actually started —
         # otherwise an in-flight auto-check (with silent callbacks) would leave
@@ -2330,8 +2384,95 @@ class PolyHost(QApplication):
     # Balloon notifications
     # ------------------------------------------------------------------
 
+    def _fallback_prompt(self, prompt, release):
+        """Open a no-balloon fallback dialog, never two at once.
+
+        ⚠️ ONE check reports the host release and then the firmware release,
+        and both arrive as events QUEUED to the main thread. A modal dialog
+        spins a nested event loop, so the firmware event is dispatched while
+        the host dialog is still open and stacks a second dialog on top of it:
+        the user answers them in reverse order, and accepting the host update
+        can start an install-and-restart while a firmware flash is running.
+        Queue the second one and run it when the first closes.
+
+        ⚠️ **EVERY update prompt goes through here — grep for
+        `_prompt_and_install(` / `_prompt_and_flash(` and the only callers left
+        should be this method.** The serialization was first applied only to the
+        automatic fallback, which left the MANUAL branches (`_await_manual_*`,
+        i.e. the user's own "Check for update…" click) opening a modal with
+        `_fallback_prompt_busy` still False — so the other check's event,
+        dispatched by that modal's nested loop, stacked a dialog anyway
+        (CodeRabbit, #257, the same defect for the third time). A per-call-site
+        wrapper is the shape that keeps missing one; one door does not. On a
+        platform that delivers balloons the queue is always empty, so wrapping
+        those paths changes nothing there.
+
+        ⚠️ **A dialog the user ACCEPTED ends the drain.** Serializing the two
+        windows is only half of it: `_prompt_and_install` returns as soon as it
+        has STARTED the installer, so draining the queue behind it would open
+        the firmware prompt anyway and reach the same install-and-restart
+        racing a flash, one step later (CodeRabbit, #257). A declined dialog
+        starts nothing, so the next prompt runs normally. Whatever is dropped
+        here is still on the Updates row and in the menu."""
+        if self._fallback_prompt_busy:
+            self._fallback_prompt_queue.append((prompt, release))
+            return
+        self._fallback_prompt_busy = True
+        try:
+            prompt(release)
+            while self._fallback_prompt_queue and not self._update_in_flight():
+                queued_prompt, queued_release = self._fallback_prompt_queue.pop(0)
+                queued_prompt(queued_release)
+            self._fallback_prompt_queue.clear()
+        finally:
+            self._fallback_prompt_busy = False
+
+    def _update_in_flight(self):
+        """True once an accepted dialog has started a download/install/flash.
+        Both progress dialogs are created by the run_* helpers the prompts call
+        and cleared at every terminal outcome, so they are the one signal that
+        says "work is already running"."""
+        return self._update_progress is not None or self._fw_up_progress is not None
+
+    def _balloons_reach_user(self):
+        """Whether ``show_balloon`` is seen at all. False on macOS unless we
+        are running from a real .app bundle — see `gui/tray_notify`."""
+        return QSystemTrayIcon.supportsMessages() and balloons_are_delivered()
+
     def show_balloon(self, title: str, message: str, msec: int = 8000):
+        if not self._balloons_reach_user():
+            # Still call showMessage (harmless, and correct the moment the
+            # platform starts delivering), but leave a trace: a log bundle
+            # otherwise has no way to show what the user was never told.
+            self.log.debug("Balloon not delivered on this platform: %s — %s",
+                           title, message)
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
+
+    def _refresh_updates_marker(self):
+        """Put the pending versions on the top-level ``Updates`` row.
+
+        The rows that name a new version live one submenu deeper, which is
+        where a user who was never shown a balloon will not look."""
+        self.updates_menu.setTitle(updates_menu_title(
+            getattr(self._pending_release, "version", None),
+            getattr(self._pending_fw_release, "version", None)))
+        self._refresh_tray_tooltip()
+
+    def _refresh_tray_tooltip(self):
+        """Decide the tray's resting tooltip and hand it to ``IconStateManager``.
+
+        Three things want that one string: a font-pack flash (a live
+        percentage, so it wins while it runs), a pending update, and the idle
+        version line. ⚠️ It goes through ``set_base_tooltip`` rather than
+        ``tray.setToolTip`` because ``IconStateManager`` restores its OWN
+        stored tooltip when a warning expires — a direct write survives only
+        until the next `set_warning`, after which the marker is gone for good
+        (CodeRabbit, #257)."""
+        self.icon_manager.set_base_tooltip(
+            self._fontpack_tooltip
+            or updates_tooltip(getattr(self._pending_release, "version", None),
+                               getattr(self._pending_fw_release, "version", None))
+            or self._idle_tooltip)
 
     # ------------------------------------------------------------------
     # Font-pack flash progress (auto on connect, or manual via polyctl)
@@ -2346,19 +2487,21 @@ class PolyHost(QApplication):
         events, so the wording comes from the payload's "kind"."""
         result = result or {}
         noun = flash_kind_label(result)
-        if not getattr(self, "_fontpack_flashing", False):
+        if not self._fontpack_flashing:
             self._fontpack_flashing = True
             self.show_balloon("PolyKybd",
                               f"Updating keyboard {noun} — please wait, do not unplug…", 5000)
         pct = result.get("pct")
         if pct is not None:
-            self.tray.setToolTip(f"PolyKybd — updating {noun} ({pct}%)")
+            self._fontpack_tooltip = f"PolyKybd — updating {noun} ({pct}%)"
+            self._refresh_tray_tooltip()
 
     def _on_fontpack_done(self, result):
         result = result or {}
         noun = flash_kind_label(result)
         self._fontpack_flashing = False
-        self.tray.setToolTip("")
+        self._fontpack_tooltip = ""
+        self._refresh_tray_tooltip()
         if result.get("ok"):
             self.show_balloon("PolyKybd", f"Keyboard {noun} is up to date.", 4000)
         else:
@@ -2370,9 +2513,9 @@ class PolyHost(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
-            self._prompt_and_install(self._pending_release)
+            self._fallback_prompt(self._prompt_and_install, self._pending_release)
         elif self._pending_fw_release is not None:
-            self._prompt_and_flash(self._pending_fw_release)
+            self._fallback_prompt(self._prompt_and_flash, self._pending_fw_release)
 
     # ------------------------------------------------------------------
     # Firmware update
@@ -2382,23 +2525,27 @@ class PolyHost(QApplication):
         self._pending_fw_release = release
         self.firmware_update_action.setText(f"Update firmware to v{release.version}…")
         self.firmware_update_action.setVisible(True)
+        self._refresh_updates_marker()
         self.managed_connection_status()
         self.log.info("Firmware update available: %s", release.version)
         if self._await_manual_fw_prompt:
             self._await_manual_fw_prompt = False
-            self._prompt_and_flash(release)
-        else:
+            self._fallback_prompt(self._prompt_and_flash, release)
+        elif self._balloons_reach_user():
             self.show_balloon(
                 "PolyKybd Firmware Update",
                 f"New firmware v{release.version} is available. "
                 "Click the tray icon to update.",
             )
+        elif self._auto_prompted_fw_version != release.version:
+            self._auto_prompted_fw_version = release.version
+            self._fallback_prompt(self._prompt_and_flash, release)
 
     def _on_fw_up_clicked(self):
         if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():
             return
         if self._pending_fw_release is not None:
-            self._prompt_and_flash(self._pending_fw_release)
+            self._fallback_prompt(self._prompt_and_flash, self._pending_fw_release)
             return
         # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
         # and the _fw_no_update closure in _start_update_check. Only flip the UI
@@ -2541,6 +2688,7 @@ class PolyHost(QApplication):
             # Queued OK: hide the "Update firmware to vX…" prompt while the daemon
             # flashes; the terminal event restores the action (see _on_flash_done).
             self._pending_fw_release = None
+            self._refresh_updates_marker()
             self.firmware_update_action.setVisible(False)
             self.managed_connection_status()
             return
@@ -2571,6 +2719,7 @@ class PolyHost(QApplication):
         self.firmware_update_action.setText("Check for firmware update…")
         self.firmware_update_action.setVisible(True)
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
+        self._refresh_updates_marker()
 
     def _cleanup_fw_release_tmp(self):
         """Remove the temp .bin (and its .sig) downloaded for the client-mode

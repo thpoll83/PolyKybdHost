@@ -89,6 +89,60 @@ class TestPolyHostModes(unittest.TestCase):
         # The newer-firmware row must not clutter the normal menu.
         self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
+    def test_update_is_visible_without_a_balloon(self):
+        """macOS never delivers `showMessage` (see `gui/tray_notify`), so the
+        two things that replace it are pinned here: the confirmation dialog
+        opens by itself, ONCE per version however often the timer re-reports
+        it, and the top-level tray row names the version."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        self.assertEqual(_grab(proc.stdout, "FALLBACK_PROMPTS"), "9.9.9")
+        self.assertEqual(_grab(proc.stdout, "UPDATES_ROW"),
+                         "Updates \u2014 host v9.9.9 available")
+        self.assertEqual(_grab(proc.stdout, "UPDATES_TIP"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+        # The tooltip has two writers; the flash borrows it and gives it back.
+        # A bare setToolTip("") at the end of the flash used to wipe the marker.
+        self.assertEqual(_grab(proc.stdout, "TIP_FLASHING"),
+                         "PolyKybd \u2014 updating font pack (42%)")
+        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_FLASH"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+        # IconStateManager owns the tooltip: a warning takes it, and its expiry
+        # restores the manager's STORED text — which must be the marker, not the
+        # startup line it was constructed with.
+        self.assertEqual(_grab(proc.stdout, "TIP_WARNING"), "something went wrong")
+        self.assertEqual(_grab(proc.stdout, "TIP_AFTER_WARNING"),
+                         "PolyKybd \u2014 host v9.9.9 available")
+        # The firmware dialog must not stack on top of the open host one.
+        self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER"),
+                         "host-open:9.9.9,host-close:9.9.9,fw:8.8.8")
+        # Accepting the host update drops the queued firmware prompt rather
+        # than flashing while the app installs and restarts. The release is
+        # not lost — it stays on the Updates row and in the menu.
+        self.assertEqual(_grab(proc.stdout, "PROMPT_ORDER_ACCEPTED"), "host:9.9.9")
+        self.assertEqual(_grab(proc.stdout, "QUEUE_DRAINED"), "True")
+        # A manual check is the same hazard through a different door.
+        self.assertEqual(_grab(proc.stdout, "MANUAL_PROMPT_ORDER"),
+                         "host-open:9.9.9,host-close:9.9.9,fw:8.8.8")
+
+    def test_a_withdrawn_release_stops_being_advertised(self):
+        """A successful check that now finds nothing must drop the release it
+        reported earlier \u2014 otherwise the row advertises a version that no
+        longer exists and clicking it installs from a URL that 404s. A check
+        ERROR must not: an unreachable GitHub says nothing about the release."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        self.assertEqual(_grab(proc.stdout, "CHECK_STARTED"), "True")
+        self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_WITHDRAWN"), "True")
+        self.assertEqual(_grab(proc.stdout, "PENDING_FW_AFTER_WITHDRAWN"), "True")
+        self.assertEqual(_grab(proc.stdout, "ROW_AFTER_WITHDRAWN"), "Updates")
+        tip = _grab(proc.stdout, "TIP_AFTER_WITHDRAWN")
+        self.assertTrue(tip.startswith("PolyKybdHost "), tip)
+        self.assertNotIn("available", tip)
+        self.assertEqual(_grab(proc.stdout, "PENDING_AFTER_ERROR"), "True")
+        self.assertEqual(_grab(proc.stdout, "ROW_AFTER_ERROR"),
+                         "Updates \u2014 host v9.9.9 available")
+
     def test_developer_mode_only_adds_a_submenu(self):
         """Developer mode must ADD, never rearrange — muscle memory has to survive
         the toggle, so the normal rows stay identical and in the same order."""
@@ -352,6 +406,122 @@ def _smoke_default():
         print("COLLECT_LOGS_REUSED", app.log_bundle_dialog is dlg)
         if dlg is not None:
             dlg.close()
+
+        # --- a new version where no balloon is delivered (macOS) ------------
+        class _Rel:
+            version = "9.9.9"
+            notes = ""
+            html_url = ""
+            name = ""
+            published_at = None
+
+        prompted = []
+        app._prompt_and_install = lambda rel: prompted.append(rel.version)
+        app._balloons_reach_user = lambda: False
+        app._on_update_available(_Rel())
+        app._on_update_available(_Rel())   # the 24 h timer re-reports it
+        print("FALLBACK_PROMPTS", ",".join(prompted))
+        print("UPDATES_ROW", app.updates_menu.menuAction().text())
+        print("UPDATES_TIP", app.tray.toolTip())
+        # A font-pack flash owns the tooltip while it runs and must hand it back.
+        app._on_fontpack_progress({"pct": 42})
+        print("TIP_FLASHING", app.tray.toolTip())
+        app._on_fontpack_done({"ok": True})
+        print("TIP_AFTER_FLASH", app.tray.toolTip())
+        # A tray warning takes the tooltip and IconStateManager puts its OWN
+        # stored text back when the warning expires, so the marker has to be
+        # stored there rather than written straight to the tray.
+        app.icon_manager.set_warning("something went wrong", 5000)
+        print("TIP_WARNING", app.tray.toolTip())
+        app.icon_manager.warning_timeout = -1
+        app.icon_manager.update()
+        print("TIP_AFTER_WARNING", app.tray.toolTip())
+
+        # One check reports host THEN firmware, both queued; a modal dispatches
+        # the second while the first is open. Model that: the host prompt fires
+        # the firmware event from inside itself.
+        class _FwRel:
+            version = "8.8.8"
+
+        order = []
+
+        def _host_prompt(rel):
+            order.append(f"host-open:{rel.version}")
+            app._on_fw_up_available(_FwRel())     # arrives mid-dialog
+            order.append(f"host-close:{rel.version}")
+
+        app._prompt_and_install = _host_prompt
+        app._prompt_and_flash = lambda rel: order.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._on_update_available(_Rel())
+        print("PROMPT_ORDER", ",".join(order))
+
+        # ...but a dialog the user ACCEPTED starts work and returns, so the
+        # queued firmware prompt must NOT run: that would reach the same
+        # install-and-restart racing a flash, one step later.
+        accepted = []
+
+        def _host_prompt_accepted(rel):
+            accepted.append(f"host:{rel.version}")
+            app._on_fw_up_available(_FwRel())      # arrives mid-dialog
+            app._update_progress = object()        # the installer has started
+
+        app._prompt_and_install = _host_prompt_accepted
+        app._prompt_and_flash = lambda rel: accepted.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._auto_prompted_fw_version = None
+        app._on_update_available(_Rel())
+        print("PROMPT_ORDER_ACCEPTED", ",".join(accepted))
+        print("QUEUE_DRAINED", len(app._fallback_prompt_queue) == 0)
+        app._update_progress = None
+
+        # The MANUAL branch (the user's own "Check for update…" click) must be
+        # serialized too: it used to call the prompt directly, leaving
+        # _fallback_prompt_busy False, so the other check's event stacked a
+        # dialog anyway. `fw` after `host-close` proves it queued.
+        manual = []
+
+        def _manual_host_prompt(rel):
+            manual.append(f"host-open:{rel.version}")
+            app._on_fw_up_available(_FwRel())
+            manual.append(f"host-close:{rel.version}")
+
+        app._prompt_and_install = _manual_host_prompt
+        app._prompt_and_flash = lambda rel: manual.append(f"fw:{rel.version}")
+        app._auto_prompted_host_version = None
+        app._auto_prompted_fw_version = None
+        app._await_manual_prompt = True
+        app._on_update_available(_Rel())
+        print("MANUAL_PROMPT_ORDER", ",".join(manual))
+
+        # A release reported earlier can be withdrawn. Install the real
+        # per-check closures (the checker itself is stubbed, so nothing hits the
+        # network) and drive the no-update result through them.
+        with mock.patch("polyhost.host.UpdateChecker") as _UC:
+            _UC.return_value.is_alive.return_value = False
+            started = app._start_update_check(force=True)
+        print("CHECK_STARTED", started)
+        app._update_host_no_update()
+        app._update_fw_no_update()     # the firmware side clears the same way
+        print("PENDING_FW_AFTER_WITHDRAWN", app._pending_fw_release is None)
+        print("ROW_AFTER_WITHDRAWN", app.updates_menu.menuAction().text())
+        print("TIP_AFTER_WITHDRAWN", app.tray.toolTip())
+        print("PENDING_AFTER_WITHDRAWN", app._pending_release is None)
+
+        # ...but a check that ERRORED says nothing about the release, and its
+        # no-update callback fires anyway. The pending release must survive.
+        # (Plain stub: the order test's prompt raises a firmware event, and
+        # clearing a withdrawn release also clears the per-version guard, so
+        # the same release genuinely does prompt again here.)
+        app._prompt_and_install = lambda rel: None
+        app._on_update_available(_Rel())
+        with mock.patch("polyhost.host.UpdateChecker") as _UC:
+            _UC.return_value.is_alive.return_value = False
+            app._start_update_check(force=True)
+        app._update_check_error("GitHub is unreachable")
+        app._update_host_no_update()
+        print("PENDING_AFTER_ERROR", app._pending_release is not None)
+        print("ROW_AFTER_ERROR", app.updates_menu.menuAction().text())
         app.quit_app()
     print("SMOKE OK")
 
