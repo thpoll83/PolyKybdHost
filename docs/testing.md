@@ -175,6 +175,77 @@ and relative links were adjusted to suit a standalone file.
         `--compare` exists and why the docs figure is a close-up rather than three
         whole boards.
 
+- ⚠️ **`unittest discover -s ./tests` IS NOT THE SAME RUN as `scripts/run_tests.py`,
+  and the difference is 25 failures that do not exist.** `-s ./tests` makes
+  `tests/` the discovery start dir, so `unittest` PREPENDS it to `sys.path`.
+  ⚠️ **The repo root is not removed** — it is still there, second — so the cause
+  is not a missing root but a **package collision**: `tests/tools/` is a real
+  package (it has `__init__.py`) while the repo's own `tools/` is a *namespace*
+  package (it has none), so whichever directory is found first wins, and
+  `import tools` resolves into the test tree:
+
+  ```
+  discover -s ./tests   sys.path[:2] = ['…/PolyKybdHost/tests', '…/PolyKybdHost']
+                        tools.__path__ -> ['…/PolyKybdHost/tests/tools']
+                        import tools.gfx_font -> ModuleNotFoundError
+  run_tests.py          sys.path[:2] = ['…/PolyKybdHost', '…/PolyKybdHost/scripts']
+                        tools.__path__ -> _NamespacePath(['…/PolyKybdHost/tools'])
+                        import tools.gfx_font -> OK
+  ```
+
+  The runner passes the repo root as `top_level_dir`, which is what keeps the
+  real `tools/` reachable. The casualties are the modules that reach it
+  *indirectly* — `polyhost/services/macro_label.py` imports `tools.gfx_font` for
+  the header parser — which is why the failures surface in the macro/keycap
+  tests rather than anywhere near `tools/`.
+
+  Measured on one unchanged tree, 2026-09-23:
+
+  | invocation | tests | result |
+  |---|---|---|
+  | `unittest discover -s ./tests -p "*_test.py"` | 3418 | 5 failures, 21 errors |
+  | `scripts/run_tests.py` | 3441 | **1 error** (`import cairosvg`, genuinely absent) |
+
+  The 25 extras cluster in `macro_keycap_editor`, `macro_tab`, `macro_label` and
+  `shortcut_source_macos`, which reads exactly like a real regression in the area
+  you just touched. A whole baseline cycle went into attributing them to a branch
+  that had not caused any of them. **Use the runner for a whole-suite run**; the
+  `-m unittest tests.some.module` form is fine for one module.
+
+- ⚠️ **Baseline a branch IN PLACE — a `git worktree` baseline is FAIL-OPEN.**
+  Comparing your branch against its parent by checking the parent out into a
+  worktree under `/tmp` looks careful and is not: every test gated on a sibling
+  checkout (`../qmk_firmware` — the firmware fonts, the preview data) silently
+  **skips** there, because the sibling is not beside the worktree. Measured:
+  **129 skips in the worktree vs 44 in the real checkout**, which presents as
+  your change un-skipping 85 tests. Instead, in the real checkout:
+
+  ```bash
+  git checkout HEAD~1 -- <the files your change touched>
+  mv <any added asset dirs> /tmp/aside            # untracked adds, moved not deleted
+  find . -name __pycache__ -type d -prune -exec rm -rf {} +
+  xvfb-run -a .venv/bin/python scripts/run_tests.py > /tmp/before.log 2>&1
+  # ...then restore, and diff the SORTED failure IDs, not just the counts
+  grep -E "^(FAIL|ERROR):" /tmp/before.log | sort -u > /tmp/before.ids
+  ```
+  ⚠️ Clear `__pycache__` after **restoring** too, not only after checking out —
+  see the stale-`.pyc` entry above.
+
+- ⚠️ **A `skipUnless` guard that checks a SUBSET of what the code checks turns a
+  missing dependency into an INFINITE HANG.** `tests/gui/fontpack_extend_dialog_test.py`
+  set `_FONTGEN` by importing numpy + freetype, while the dialog's `_build()` asks
+  `_missing_fontgen_deps()` — freetype, uharfbuzz, fontTools, numpy **and** PIL. On
+  a machine carrying a partial set the guard said run, `_build()` found a dep
+  missing, and took its non-`auto` error path: a **modal** `QMessageBox.warning`
+  with nobody under xvfb to dismiss it. Measured 2026-09-23 with uharfbuzz absent:
+  48 minutes, no output after the first two seconds, the process alive and idle.
+  Fixed by deriving the guard from the dialog's own function.
+  - **The failure mode is the lesson, not the mismatch.** A missing dep normally
+    skips or errors; this class *hangs silently*. Any modal in a test does.
+  - The two things that name it: `scripts/run_tests.py`'s watchdog, or
+    `py-spy dump --pid <pid>` on the wedged process (`pip install py-spy`), which
+    printed the exact frame in seconds.
+
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
   all** — and a bare `timeout` kill discards exactly the information you need. The

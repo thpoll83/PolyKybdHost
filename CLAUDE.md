@@ -111,7 +111,10 @@ python -m polyhost --portable             # no autostart registration
 ### Run tests
 ```bash
 # Use the project venv — system python3 is missing numpy and other deps
-.venv/bin/python -m unittest discover -v -s ./tests -p "*_test.py"   # all tests
+# ⚠️ Use the RUNNER for a whole-suite run. `unittest discover -s ./tests` puts
+#    tests/ on sys.path instead of the repo root and reports failures that do
+#    not exist — see the Tests section.
+xvfb-run -a .venv/bin/python scripts/run_tests.py                     # all tests
 .venv/bin/python -m unittest tests.device.cmd_composer_test           # single module
 ```
 
@@ -427,6 +430,20 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
 - ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent path
   returns an empty icon and the row renders without a picture. `tests/gui/icon_assets_test.py`
   is the guard.
+- **The brand mark and the menu/tray icon rules are [`docs/icons.md`](docs/icons.md);
+  the ESC program mark — the per-application icon, its three sources and the
+  rule that governs them — is
+  [`docs/generic-icons-plan.md`](docs/generic-icons-plan.md).** ⚠️ Read the
+  second before adding any per-application anything: its rule is **no
+  per-application configuration**, and it reverses an earlier 70-entry
+  name→slug map. Both files were unreachable from this file until 2026-09-23
+  even though the Key notes intro named "icons" as a pointer — the plan's rule
+  was found by grep, one step from being broken.
+- ⚠️ **A FLOOR MUST NOT DECIDE A CONTEST.** `MIN_SCORE` answers "may we draw
+  this when there is nothing else"; clearing it used to END icon resolution, so
+  every macOS `.icns` (measured 0.117 against a floor of 0.08) won outright and
+  four newly shipped marks were inert on hardware — shipped, tested, changed
+  nothing. Candidates are ranked now; the floor only gates usability.
 - ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
   are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
 - ⚠️ **Defaulting a platform path OFF because it is obnoxious can hide that it
@@ -575,6 +592,25 @@ GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and
 headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in
 [`docs/testing.md`](docs/testing.md).
 
+- ⚠️ **HOW YOU INVOKE THE SUITE CHANGES THE ANSWER, and both wrong ways look
+  like results.** `unittest discover -s ./tests` PREPENDS `tests/` to
+  `sys.path`, and `tests/tools/` then SHADOWS the repo's own `tools/`, so
+  anything reaching `tools.gfx_font` blows up: measured on one tree,
+  **3418 tests / 5 failures + 21 errors** against
+  `scripts/run_tests.py`'s **3441 / 1 error**. And a baseline taken in a
+  `git worktree` under `/tmp` silently skips every test gated on
+  `../qmk_firmware` (129 skips vs 44), so the comparison reads as your branch
+  un-skipping 85 tests. **Run the runner, and baseline IN PLACE** — check the
+  two commits' files back out in the real checkout. Both cost a full cycle in
+  2026-09-23. Details in [`docs/testing.md`](docs/testing.md).
+- ⚠️ **A `skipUnless` guard that checks a SUBSET of what the code checks turns a
+  missing dependency into an infinite HANG.** `_FONTGEN` imported numpy+freetype
+  while `_build()` also needs uharfbuzz/fontTools/PIL, so on a partial set the
+  guard said run, the dialog took its error path — a **modal** `QMessageBox`
+  with nobody under xvfb to dismiss it — and the suite sat for 48 minutes with
+  no output. Derive such a guard from the function the code itself calls. A
+  missing dep normally skips or errors; this class hangs, and only
+  `scripts/run_tests.py`'s watchdog (or `py-spy dump --pid`) names it.
 - ⚠️ **A change to CONCURRENT FILE ACCESS is not done when the tests pass.** The
   per-key settings merge took four review rounds and produced two regressions
   *while fixing the previous one* — merging against `{}` on a read failure reset

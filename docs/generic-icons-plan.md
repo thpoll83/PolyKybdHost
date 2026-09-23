@@ -29,6 +29,42 @@ config and it does not belong.
 
 ---
 
+## ⚠️ A floor must not decide a contest (2026-09-23, from hardware)
+
+`icon_binarise.MIN_SCORE` (0.08) answers one question: *may we draw this when
+there is nothing else?* For a while it also **ended** resolution — the OS icon
+was read first and clearing the floor returned it immediately.
+
+On macOS that meant the catalogs and the shipped marks were **unreachable**.
+Every system `.icns` clears 0.08 comfortably while still reading as mush on the
+panel: a representative rounded plate measures **0.117**. Four new marks were
+drawn, previewed, reviewed, merged and flashed, and the keyboard looked
+identical — the change was inert, and only a hardware round said so.
+
+`program_overlay` now ranks every candidate, the OS icon included, and the floor
+only gates usability. Two things that fall out of it:
+
+- **Ranking by score alone is still not enough.** `score()` rates a majority-ink
+  mark by its *holes*, and rates them well: `si:safari` scores **0.610** read
+  inside-out against `mdi:apple-safari`'s **0.532** compass read normally, so
+  score-ranking picks the solid disc. The sort key is
+  `(read_the_right_way_up, score)` — polarity outranks score, as a preference
+  rather than a veto, so an inverted mark still wins when it is the only one.
+- ⚠️ **This module carries TWO crop conventions and they are not comparable.**
+  `choose()` scores a mask fitted to its ink; the SVG silhouette path scores a
+  padded panel slice. `si:safari` reads **0.192 padded / 0.610 tight**, because
+  the padding drops it under `MAX_LIT` so `score()` stops inverting it. Any
+  cross-source comparison must re-score through one of them (`mark_score`).
+
+⚠️ **Measured and REFUTED — do not re-propose:** that a dark plate's inverse
+stays clear of the bounding-box border while a filled silhouette's does not.
+A dark circular plate with a glyph knocked out (lit 0.723 / enclosed 0.200 /
+border 0.800) and a filled disc with a hole (0.737 / 0.158 / 0.842) are the
+**same picture**, with `si-safari` between them at 0.727 / 0.188 / 0.812. No
+geometric measure separates them, because semantically there is nothing to
+separate.
+
+
 ## What changed from v1, and why
 
 v1 treated the program mark's coverage problem as a curation problem: the
