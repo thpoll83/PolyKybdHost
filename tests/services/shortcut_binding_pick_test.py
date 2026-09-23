@@ -17,8 +17,8 @@ nothing downstream can tell a wrong answer from a right one.
 import unittest
 
 from polyhost.services.shortcut_source.model import (
-    MOD_ALT, MOD_CTRL, MOD_SHIFT, UIA_MENU_TYPES, Accel,
-    pick_binding, pick_win_binding)
+    MOD_ALT, MOD_CTRL, MOD_GUI, MOD_SHIFT, UIA_MENU_TYPES, Accel,
+    parse_accel, pick_binding, pick_win_binding)
 
 
 class AtspiPickTest(unittest.TestCase):
@@ -115,6 +115,69 @@ class AccelDisplayTest(unittest.TestCase):
 
     def test_pretty_of_a_BARE_key_has_no_separator(self):
         self.assertEqual(Accel(mods=0, keysym="F5", hid=62).pretty(), "F5")
+
+
+class AriaAccelTest(unittest.TestCase):
+    """GTK 4.22 answers GetKeyBinding with 'S;;Control+S' -- the WAI-ARIA
+    spelling from gtk_accelerator_get_accessible_label() -- where 4.18-4.20
+    sent 'S;;<Control>s'. Both must land on the same key, or the icon lookup
+    and the dedupe see two different shortcuts."""
+
+    def _key(self, text):
+        a = parse_accel(text)
+        return None if a is None else (a.mods, a.keysym, a.hid)
+
+    def test_part_three_is_picked_in_the_aria_form(self):
+        self.assertEqual(pick_binding("S;;Control+S", role="menu item"),
+                         ("Control+S", "accelerator"))
+
+    def test_the_two_gtk_spellings_are_the_same_key(self):
+        pairs = [
+            ("Control+S", "<Control>s"),
+            ("Control+Shift+Z", "<Control><Shift>z"),
+            ("Alt+ArrowLeft", "<Alt>Left"),
+            ("Control+PageDown", "<Control>Page_Down"),
+            ("Control+Enter", "<Control>Return"),
+            ("Control+Space", "<Control>space"),
+            ("Control+/", "<Control>slash"),
+            ("Control+,", "<Control>comma"),
+            ("Super+L", "<Super>l"),
+            ("F11", "F11"),
+            ("Shift+F10", "<Shift>F10"),
+            ("Delete", "Delete"),
+            ("Escape", "Escape"),
+            ("Control+1", "<Control>1"),
+        ]
+        for aria, gtk in pairs:
+            with self.subTest(aria=aria):
+                self.assertIsNotNone(self._key(gtk))
+                self.assertEqual(self._key(aria), self._key(gtk))
+
+    def test_the_plus_KEY_is_the_trailing_plus(self):
+        """Zoom-in is genuinely Ctrl and '+', so a split on '+' alone would
+        leave an empty key."""
+        self.assertEqual(self._key("Control++"), (MOD_CTRL, "plus", 0x2E))
+
+    def test_modifiers_fold_onto_one_nibble(self):
+        self.assertEqual(parse_accel("Control+Alt+Shift+Meta+X").mods,
+                         MOD_CTRL | MOD_ALT | MOD_SHIFT | MOD_GUI)
+
+    def test_only_the_first_of_several_shortcuts_is_read(self):
+        # aria-keyshortcuts allows a space-separated list.
+        self.assertEqual(self._key("Control+S Control+Shift+S"),
+                         self._key("Control+S"))
+
+    def test_no_key_or_unknown_modifier_is_refused(self):
+        self.assertIsNone(parse_accel("Control+Shift"))
+        self.assertIsNone(parse_accel("Control+"))
+        self.assertIsNone(parse_accel("Wibble+S"))
+
+    def test_an_undrawable_key_parses_without_a_hid(self):
+        """GTK writes 'Unidentified' for a key it cannot name; that is a
+        shortcut the keycaps cannot show, not a parse error."""
+        accel = parse_accel("Control+Unidentified")
+        self.assertIsNotNone(accel)
+        self.assertFalse(accel.displayable)
 
 
 if __name__ == "__main__":
