@@ -9,7 +9,6 @@ the network).
 
 import logging
 import threading
-import time
 import unittest
 from unittest.mock import Mock, patch
 
@@ -300,12 +299,27 @@ class RelayThreadReleaseTest(unittest.TestCase):
     keyboard-side fetcher does (CodeRabbit, #264)."""
 
     def _run_on_default_thread(self, source):
+        """Run one harvest and JOIN its thread before returning.
+
+        ⚠️ `_run` fills the cache BEFORE it releases the backend, so waiting
+        for the cached answer let the test leave its `patch` block while the
+        worker was still about to call `release_thread` -- a race that
+        passes almost always and fails for no visible reason (CodeRabbit,
+        #264). Joining the thread keeps the patches in force to the end."""
+        threads = []
+
+        def spawn(fn, name):
+            # Same shape as RelaySource._thread, but keeps the handle.
+            t = threading.Thread(target=fn, name=name, daemon=True)
+            threads.append(t)
+            t.start()
+
+        source._spawn = spawn
         self.assertIsNone(source.shortcuts_for("gedit"))
-        end = time.monotonic() + 3
-        while source.shortcuts_for("gedit") is None:
-            if time.monotonic() > end:
-                self.fail("relay harvest never answered")
-            time.sleep(0.01)
+        self.assertEqual(len(threads), 1)
+        threads[0].join(3)
+        self.assertFalse(threads[0].is_alive(), "relay harvest never finished")
+        self.assertIsNotNone(source.shortcuts_for("gedit"))
 
     def test_the_REAL_backend_is_released_ON_the_harvest_thread(self):
         from polyhost.services import shortcut_source

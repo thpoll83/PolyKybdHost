@@ -61,7 +61,8 @@ def on_thread(fn):
     return out.get("value")
 
 
-class UiaThreadLifecycleTest(unittest.TestCase):
+class _UiaFakes(unittest.TestCase):
+    """Fake comtypes and ole32, recording init/uninit calls."""
 
     def setUp(self):
         uia._local = threading.local()
@@ -89,6 +90,9 @@ class UiaThreadLifecycleTest(unittest.TestCase):
         # a call into a torn-down apartment.
         alive = [ref for ref in self.created if ref() is not None]
         self.calls.append("uninit(alive=%d)" % len(alive))
+
+
+class UiaThreadLifecycleTest(_UiaFakes):
 
     def test_each_thread_builds_its_OWN_automation_object(self):
         on_thread(uia._uia)
@@ -158,6 +162,36 @@ class UiaThreadLifecycleTest(unittest.TestCase):
                               side_effect=OSError("boom")):
                 uia.release_thread()
         on_thread(use_then_release)     # must not raise
+
+
+class FirstImportRaceTest(_UiaFakes):
+    """Two relay threads reaching the FIRST comtypes import together: the one
+    that does not run the import must initialize COM itself (CodeRabbit,
+    #264). Without the lock both see comtypes missing and neither calls
+    CoInitializeEx, so the second thread uses COM uninitialized."""
+
+    def test_the_thread_that_does_NOT_import_initializes_COM_itself(self):
+        self.loaded = False
+        entered = threading.Event()
+        release = threading.Event()
+
+        def slow_import(_name):
+            entered.set()
+            release.wait(2)          # the second thread arrives meanwhile
+            self.loaded = True
+
+        with patch.object(uia.importlib, "import_module",
+                          side_effect=slow_import):
+            first = threading.Thread(target=uia._enter_apartment)
+            first.start()
+            entered.wait(2)
+            second = threading.Thread(target=uia._enter_apartment)
+            second.start()
+            second.join(0.2)          # blocked on the lock, not on import
+            release.set()
+            first.join(2)
+            second.join(2)
+        self.assertEqual(self.calls, ["init"])
 
 
 class ReleaseDispatchTest(unittest.TestCase):

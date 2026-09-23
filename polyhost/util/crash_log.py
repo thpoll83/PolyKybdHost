@@ -190,6 +190,7 @@ class _DumpWatchState:
 
     def __init__(self):
         self.offset = 0          # bytes of the file already examined
+        self.pending = None      # file size when an undated dump was seen
         self.stop = None         # threading.Event that ends the loop
         self.thread = None
 
@@ -197,15 +198,20 @@ class _DumpWatchState:
 _watch = _DumpWatchState()
 
 
-def _stamp(what):
-    """Append one pid-stamped marker line to the crash file (best effort)."""
+def _stamp(what, lead=""):
+    """Append one pid-stamped marker line to the crash file (best effort).
+
+    Returns True if the line was written. ``lead`` goes in front of it, for a
+    marker that must start on a fresh line after an unterminated one.
+    """
     if _crash_file is None:
-        return
+        return False
     try:
-        _crash_file.write(format_marker(what, os.getpid()) + "\n")
+        _crash_file.write(lead + format_marker(what, os.getpid()) + "\n")
         _crash_file.flush()
+        return True
     except Exception:  # noqa: BLE001 — reporting must never raise
-        pass
+        return False
 
 
 def _file_size():
@@ -232,6 +238,17 @@ def check_for_undated_dump():
     That also dates the dump a FATAL fault leaves behind: the faulting process
     is gone, but the other one sees the dump on its next look.
 
+    ⚠️ A dump is stamped only once the file has not grown for one whole watch
+    interval. faulthandler writes a dump in many small writes, so a size that
+    is steady for the microseconds of one read can still be a dump mid-write,
+    and a marker there would split it. So the first look that finds an
+    undated dump only records the size (``pending``), and the next look
+    stamps if the size is unchanged. That costs one interval of precision,
+    not correctness. The data is deliberately NOT required to end in a
+    newline: the fatal dump in the 2026-09-23 field bundle stopped mid-line,
+    and that is the dump this exists to date. Instead the marker starts with
+    a newline of its own when the file does not end in one.
+
     Returns True if a marker was written.
     """
     if _crash_file is None:
@@ -241,19 +258,18 @@ def check_for_undated_dump():
         if size is None:
             return False
         if size < _watch.offset:
-            # Trimmed by a starting process (trim_if_oversized): start over.
-            _watch.offset = size
-            return False
+            # Truncated, by a starting process (trim_if_oversized) or a
+            # "clear logs". Rescan what is left from the top rather than
+            # jumping to the new end, or a dump written after the cut is
+            # skipped for good. Dated dumps stay dated: their markers are in
+            # what is rescanned.
+            _watch.offset = 0
+            _watch.pending = None
         if size == _watch.offset:
             return False
         with open(_crash_path, "rb") as fh:
             fh.seek(_watch.offset)
             new = fh.read(size - _watch.offset)
-        if _file_size() != size:
-            # Still being written, possibly a dump in progress: a marker now
-            # could land inside it. Look again next time, from the same place.
-            return False
-        _watch.offset = size
         undated = False
         for line in new.decode("utf-8", "replace").splitlines():
             if line.startswith(DUMP_START_PREFIXES):
@@ -261,9 +277,19 @@ def check_for_undated_dump():
             elif MARKER_RE.match(line):
                 undated = False
         if not undated:
+            _watch.offset = size
+            _watch.pending = None
             return False
-        _stamp(DUMP_DATED)
-        _watch.offset = _file_size() or _watch.offset
+        if _watch.pending != size:
+            # Found, or still growing: wait one interval for it to settle.
+            # The offset stays put, so the next look reads the whole dump.
+            _watch.pending = size
+            return False
+        lead = "" if new.endswith(b"\n") else "\n"
+        if not _stamp(DUMP_DATED, lead):
+            return False      # keep offset and pending: retry next time
+        _watch.offset = _file_size() or size
+        _watch.pending = None
         return True
     except Exception:  # noqa: BLE001 — reporting must never raise
         return False
@@ -276,6 +302,7 @@ def _watch_loop(stop, interval):
 
 def _start_dump_watch(interval=DUMP_WATCH_SECONDS):
     _watch.offset = _file_size() or 0
+    _watch.pending = None
     _watch.stop = threading.Event()
     _watch.thread = threading.Thread(
         target=_watch_loop, args=(_watch.stop, interval),

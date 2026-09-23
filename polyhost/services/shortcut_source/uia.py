@@ -39,6 +39,14 @@ from polyhost.services.shortcut_source.model import (
 # `release_thread()` before it exits.
 _local = threading.local()
 
+# Serializes the "is comtypes imported yet" check with the import itself. The
+# forwarder's relay starts one harvest thread per application, so two can
+# reach a FIRST import together: both would see comtypes missing, one import
+# would initialize COM on its own thread only, and the other would get the
+# cached module back with COM never initialized, yet record that it owns an
+# apartment (CodeRabbit, #264).
+_IMPORT_LOCK = threading.Lock()
+
 # COINIT_APARTMENTTHREADED: what comtypes itself uses at import, so the first
 # thread and every later one land in the same kind of apartment.
 _COINIT_APARTMENTTHREADED = 0x2
@@ -76,12 +84,13 @@ def _enter_apartment() -> None:
     """
     if getattr(_local, "com_entered", False):
         return
-    if _comtypes_loaded():
-        owned = _co_initialize()
-    else:
-        # Imported for its side effect: it initializes COM on this thread.
-        importlib.import_module("comtypes")
-        owned = True
+    with _IMPORT_LOCK:
+        if _comtypes_loaded():
+            owned = _co_initialize()
+        else:
+            # Imported for its side effect: it initializes COM on this thread.
+            importlib.import_module("comtypes")
+            owned = True
     _local.com_entered = True
     _local.com_owned = owned
 

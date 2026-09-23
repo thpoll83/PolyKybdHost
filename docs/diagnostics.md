@@ -138,8 +138,10 @@ purpose is proving whether the app crashed, shipped into none of them.
     - **The dump watch dates them.** `crash_log.check_for_undated_dump()` runs
       every 60 s in both processes and appends one
       `=== fault dump(s) above were written before this time | pid N | … ===`
-      marker after any dump no marker follows yet. It writes nothing while the
-      file is quiet. A marker line is never answered, so the GUI and the daemon
+      marker after any dump no marker follows yet, once the file has not grown
+      for one whole interval (faulthandler writes a dump in many small writes,
+      and a marker must not split one), so a dump is dated to within ~2 minutes.
+      It writes nothing while the file is quiet. A marker line is never answered, so the GUI and the daemon
       cannot ping-pong, and the surviving process dates the dump a fatal fault
       leaves behind.
     - **`crash_summary` counts each `Windows fatal exception` line as its own

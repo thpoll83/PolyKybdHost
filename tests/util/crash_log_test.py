@@ -232,7 +232,8 @@ class DumpWatchTest(CrashLogTestBase):
         self.other("Windows fatal exception: code 0x80010108", "",
                    "Thread 0x00002430 (most recent call first):",
                    '  File "x.py", line 1 in f')
-        self.assertTrue(crash_log.check_for_undated_dump())
+        self.assertFalse(crash_log.check_for_undated_dump())   # found: settle
+        self.assertTrue(crash_log.check_for_undated_dump())    # steady: stamp
         self.assertFalse(crash_log.check_for_undated_dump())
         markers = self.dated_markers()
         self.assertEqual(len(markers), 1)
@@ -271,6 +272,54 @@ class DumpWatchTest(CrashLogTestBase):
     def test_the_dated_marker_is_not_counted_as_an_exception(self):
         """crash_summary counts every marker containing 'exception'."""
         self.assertNotIn("exception", crash_log.DUMP_DATED)
+
+    def test_a_dump_still_being_WRITTEN_is_not_split_by_a_marker(self):
+        """faulthandler writes a dump in many small writes; a pause between
+        the header and the thread list must not get a marker between them."""
+        self.other("Windows fatal exception: code 0x80010108")
+        self.assertFalse(crash_log.check_for_undated_dump())
+        self.other("", "Thread 0x00002430 (most recent call first):")
+        self.assertFalse(crash_log.check_for_undated_dump())   # grew: wait
+        self.other('  File "x.py", line 1 in f')
+        self.assertFalse(crash_log.check_for_undated_dump())   # grew: wait
+        self.assertTrue(crash_log.check_for_undated_dump())    # steady
+        lines = self.text().splitlines()
+        self.assertIn(crash_log.DUMP_DATED, lines[-1])
+        self.assertEqual(lines[-2], '  File "x.py", line 1 in f')
+
+    def test_a_dump_cut_off_MID_LINE_is_still_dated_on_a_line_of_its_own(self):
+        """The fatal dump in the 2026-09-23 field bundle stopped mid-line;
+        a newline requirement would never date it."""
+        with open(self.path, "a", encoding="utf-8") as fh:
+            fh.write("Windows fatal exception: access violation\n\n  File ")
+        self.assertFalse(crash_log.check_for_undated_dump())
+        self.assertTrue(crash_log.check_for_undated_dump())
+        last = self.text().splitlines()[-1]
+        self.assertIsNotNone(crash_log.parse_marker(last))
+
+    def test_a_dump_written_after_a_TRUNCATION_is_still_found(self):
+        """Another process trims the shared file and a dump lands before
+        this process looks again; jumping to the new end would skip it."""
+        self.other("x" * 4000)
+        crash_log.check_for_undated_dump()
+        with open(self.path, "w", encoding="utf-8") as fh:
+            fh.write(crash_log.format_marker("session start", 999) + "\n"
+                     "Windows fatal exception: code 0x80010108\n")
+        self.assertFalse(crash_log.check_for_undated_dump())
+        self.assertTrue(crash_log.check_for_undated_dump())
+        self.assertEqual(len(self.dated_markers()), 1)
+
+    def test_a_FAILED_stamp_is_retried(self):
+        self.other("Windows fatal exception: code 0x80010108")
+        crash_log.check_for_undated_dump()
+        real = crash_log._stamp
+        crash_log._stamp = lambda *_a, **_k: False
+        try:
+            self.assertFalse(crash_log.check_for_undated_dump())
+        finally:
+            crash_log._stamp = real
+        self.assertTrue(crash_log.check_for_undated_dump())
+        self.assertEqual(len(self.dated_markers()), 1)
 
     def test_stop_ends_the_thread(self):
         crash_log.stop_dump_watch()
