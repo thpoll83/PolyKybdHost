@@ -593,9 +593,10 @@ headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem —
 [`docs/testing.md`](docs/testing.md).
 
 - ⚠️ **HOW YOU INVOKE THE SUITE CHANGES THE ANSWER, and both wrong ways look
-  like results.** `unittest discover -s ./tests` puts `tests/` on `sys.path`
-  instead of the repo root, so modules importing `tools.gfx_font` and friends
-  blow up: measured on one tree, **3418 tests / 5 failures + 21 errors** against
+  like results.** `unittest discover -s ./tests` PREPENDS `tests/` to
+  `sys.path`, and `tests/tools/` then SHADOWS the repo's own `tools/`, so
+  anything reaching `tools.gfx_font` blows up: measured on one tree,
+  **3418 tests / 5 failures + 21 errors** against
   `scripts/run_tests.py`'s **3441 / 1 error**. And a baseline taken in a
   `git worktree` under `/tmp` silently skips every test gated on
   `../qmk_firmware` (129 skips vs 44), so the comparison reads as your branch

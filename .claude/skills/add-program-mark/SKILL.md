@@ -51,8 +51,13 @@ Windows-less fallback). It is deliberately narrow:
   **no transforms**, no groups, no opacity, no patterns.
 - Filled with the **nonzero** winding rule — a hole is a sub-path wound the
   opposite way to the shape around it.
-- ⚠️ **A zero-radius arc (`A0 0 0 0 0`) is DEGENERATE and FreeType drops it
-  silently**, filling the shape solid. Use plain lines for a straight hole.
+- ⚠️ **A zero-radius arc degrades to a LINE, so `A0 0 0 0 0 <x> <y>` back to
+  the point you are already on is a NO-OP segment** — the sub-path then does not
+  trace the outline you meant and the winding fills the shape solid. That is
+  spec behaviour, not a bug: `_arc_to_cubics` returns `[("L", x1, y1)]` when
+  `rx == 0 or ry == 0 or the endpoints coincide` (SVG 1.1 F.6.2). Use plain
+  lines for a straight hole. ⚠️ Note an arc takes SEVEN parameters
+  (`rx ry rot large-arc sweep x y`); a five-token `A0 0 0 0 0` is malformed.
 - ⚠️ **A `transform="rotate(...)"` is parsed away**, so every rotated copy lands
   on top of the first. Compute rotated coordinates in Python and bake them in.
 

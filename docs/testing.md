@@ -177,9 +177,29 @@ and relative links were adjusted to suit a standalone file.
 
 - ⚠️ **`unittest discover -s ./tests` IS NOT THE SAME RUN as `scripts/run_tests.py`,
   and the difference is 25 failures that do not exist.** `-s ./tests` makes
-  `tests/` the discovery start dir, which puts *it* on `sys.path` instead of the
-  repo root — so every module reaching for `tools.gfx_font`, `polyhost.res.*` and
-  friends fails to import. Measured on one unchanged tree, 2026-09-23:
+  `tests/` the discovery start dir, so `unittest` PREPENDS it to `sys.path`.
+  ⚠️ **The repo root is not removed** — it is still there, second — so the cause
+  is not a missing root but a **package collision**: `tests/tools/` is a real
+  package (it has `__init__.py`) while the repo's own `tools/` is a *namespace*
+  package (it has none), so whichever directory is found first wins, and
+  `import tools` resolves into the test tree:
+
+  ```
+  discover -s ./tests   sys.path[:2] = ['…/PolyKybdHost/tests', '…/PolyKybdHost']
+                        tools.__path__ -> ['…/PolyKybdHost/tests/tools']
+                        import tools.gfx_font -> ModuleNotFoundError
+  run_tests.py          sys.path[:2] = ['…/PolyKybdHost', '…/PolyKybdHost/scripts']
+                        tools.__path__ -> _NamespacePath(['…/PolyKybdHost/tools'])
+                        import tools.gfx_font -> OK
+  ```
+
+  The runner passes the repo root as `top_level_dir`, which is what keeps the
+  real `tools/` reachable. The casualties are the modules that reach it
+  *indirectly* — `polyhost/services/macro_label.py` imports `tools.gfx_font` for
+  the header parser — which is why the failures surface in the macro/keycap
+  tests rather than anywhere near `tools/`.
+
+  Measured on one unchanged tree, 2026-09-23:
 
   | invocation | tests | result |
   |---|---|---|
