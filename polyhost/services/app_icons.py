@@ -801,14 +801,39 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
                         "convert a forwarded identity with _as_identity()")
     names = getattr(identity, "names", ()) or ()
     icon = getattr(identity, "icon", None)
+    best = None
     if icon:
         mask, conversion, score = render_os_overlay(icon)
         source = getattr(identity, "icon_path", "") or ""
         if mask is not None and score >= icon_binarise.MIN_SCORE:
-            log.info("Program mark for %s from the OS: %s (%d B, %s, score "
-                     "%.3f >= %.3f)", app_name, source or "<no path>",
-                     len(icon), conversion, score, icon_binarise.MIN_SCORE)
-            return mask, os_slug(source, icon)
+            # ⚠️ A CANDIDATE, not the answer. Clearing `MIN_SCORE` used to end
+            # the search, and that is what a macOS desktop actually looks like
+            # reported from hardware (2026-09-23): every system `.icns` clears
+            # a floor of 0.08 comfortably while still reading as mush on the
+            # panel, so the catalog and the shipped marks were never reached
+            # and shipping them changed nothing at all.
+            #
+            # `MIN_SCORE` still gates, in its own units, the question it was
+            # tuned for -- "is this usable AT ALL", i.e. may we draw it when
+            # there is nothing else. What it must not do is decide a contest.
+            #
+            # ⚠️ RE-SCORED with `mark_score` for the ranking, deliberately, and
+            # the returned `score` is NOT reused: this module carries two crop
+            # conventions -- `choose()` scores a mask fitted to its ink, the SVG
+            # silhouette path scores a padded panel slice -- and comparing
+            # across sources needs one. The gap is not cosmetic: si:safari reads
+            # 0.192 padded and 0.610 tight, because the padding drops it under
+            # `MAX_LIT` and `score()` stops inverting it.
+            #
+            # It is evaluated FIRST and replacement below is strict `>`, so the
+            # OS icon keeps ties. That is the "exact by construction" argument
+            # from `docs/generic-icons-plan.md` B.3 surviving in the one place
+            # it still holds: equally legible, prefer the app's own art.
+            best = (mark_score(mask), mask, os_slug(source, icon))
+            log.info("The OS icon for %s is a CANDIDATE: %s (%d B, %s, gate "
+                     "%.3f >= %.3f, rank %.3f)", app_name, source or "<no path>",
+                     len(icon), conversion, score, icon_binarise.MIN_SCORE,
+                     best[0])
         # ⚠️ INFO, not debug, and it names every number. "The icon does not
         # survive 1-bit" is true and useless: the questions a round of hardware
         # testing actually asks are WHICH file was read, what it scored and
@@ -857,7 +882,6 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     # back with it.
     tried = candidates(app_name, names)
     reasons: dict = {}
-    best = None
     for name in tried:
         path = fetch_icon(name, cache_dir, allow_network, reasons=reasons)
         if not path:
@@ -869,8 +893,9 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         if best is None or value > best[0]:
             best = (value, mask, name)
     if best is not None:
-        log.info("Program mark for %s: %s (score %.3f, best of %s)",
-                 app_name, best[2], best[0], ", ".join(tried))
+        log.info("Program mark for %s: %s (rank %.3f, best of %s)",
+                 app_name, best[2], best[0],
+                 ", ".join((["the OS icon"] if icon else []) + tried))
         return best[1], best[2]
     # The names are the whole story when nothing draws -- they say whether the
     # OS gave us a usable display name or only an executable stem.

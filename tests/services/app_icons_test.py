@@ -17,6 +17,7 @@ import unittest
 import unittest.mock as mock
 
 from polyhost.services import app_icons as ai
+from polyhost.services import icon_binarise
 from polyhost.services import os_app_icon
 
 # The ESC glyph (U+238B) inks x 2..27 on the 72x40 panel, and
@@ -52,6 +53,14 @@ PADDED = _fixture(_rect_path(6, 6, 12, 12))
 # ranking tests lean on.
 FRAME = _fixture(_rect_path(0, 0, 24, 24) +
                  " M4 4 V20 H20 V4 Z")
+# ⚠️ Both of these RENDER and score POSITIVE -- 0.235 against FRAME's 0.496.
+# That matters for the ranking tests: a solid shape scores -1.00 (fitted to its
+# ink it is 100% lit, over MAX_LIT, with no enclosed hole to invert), so pitting
+# SQUARE against FRAME would only prove "unusable loses", not that the better of
+# two usable marks wins.
+BARS = _fixture(" ".join((_rect_path(0, 2, 24, 4), _rect_path(0, 10, 24, 4),
+                          _rect_path(0, 18, 24, 4))))
+THIN_RING = _fixture(_rect_path(0, 0, 24, 24) + " M2 2 V22 H22 V2 Z")
 
 
 def _svg(tmpdir, text, name="m.svg"):
@@ -511,11 +520,13 @@ class ProgramOverlayTest(unittest.TestCase):
         """
         _needs_render(self)
         with tempfile.TemporaryDirectory() as tmp:
-            _svg(tmp, SQUARE, "si-visualstudiocode.svg")
+            _svg(tmp, BARS, "si-visualstudiocode.svg")
             _svg(tmp, FRAME, "mdi-visual-studio-code.svg")
-            square = ai.mark_score(ai.render_overlay(_svg(tmp, SQUARE, "a.svg")))
+            bars = ai.mark_score(ai.render_overlay(_svg(tmp, BARS, "a.svg")))
             ring = ai.mark_score(ai.render_overlay(_svg(tmp, FRAME, "b.svg")))
-            self.assertGreater(ring, square, "the fixtures do not differ in score")
+            # BOTH usable, so this is a ranking and not a rejection.
+            self.assertGreater(bars, 0.0, "the losing fixture must still render")
+            self.assertGreater(ring, bars, "the fixtures do not differ in score")
             _, name = ai.program_overlay("code", _identity(names=("Visual Studio Code",)),
                                          tmp, allow_network=False)
             self.assertEqual(name, "mdi:visual-studio-code")
@@ -894,3 +905,71 @@ class AppleFamilyTest(unittest.TestCase):
         offered = ai.candidates("Finder", ("Finder",))
         self.assertEqual(offered[-1], "poly:finder")
         self.assertTrue(all(not n.startswith("poly:") for n in offered[:-1]), offered)
+
+
+def _plate(draw, size):
+    """A rounded plate with two knocked-out holes — the shape of most desktop
+    app icons, and the one that clears `MIN_SCORE` while still reading as mush
+    (gate 0.117 against a floor of 0.08)."""
+    draw.rounded_rectangle([2, 2, size - 2, size - 2], radius=size // 6,
+                           fill=(40, 40, 40, 255))
+    draw.ellipse([size * 0.25, size * 0.3, size * 0.4, size * 0.45],
+                 fill=(255, 255, 255, 255))
+    draw.ellipse([size * 0.6, size * 0.3, size * 0.75, size * 0.45],
+                 fill=(255, 255, 255, 255))
+
+
+class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
+    """⚠️ Reported from hardware (2026-09-23): on macOS EVERY system `.icns`
+    cleared `MIN_SCORE`, so the catalog and the shipped marks were never
+    reached and adding them changed nothing on the keyboard at all.
+
+    `MIN_SCORE` answers "may we draw this when there is nothing else". It must
+    not also decide a contest against something better.
+    """
+
+    def test_an_OS_icon_that_clears_the_floor_still_LOSES_to_a_better_mark(self):
+        _needs_render(self)
+        plate = _png(_plate)
+        gate = ai.render_os_overlay(plate)[2]
+        self.assertGreaterEqual(gate, icon_binarise.MIN_SCORE,
+                                "fixture must CLEAR the floor, or it proves nothing")
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, THIN_RING, "si-inkscape.svg")
+            mask, name = ai.program_overlay(
+                "Inkscape", _identity(icon=plate, icon_path="/x/AppIcon.icns"),
+                tmp, allow_network=False)
+            self.assertEqual(name, "si:inkscape", "the OS icon won anyway")
+            self.assertIsNotNone(mask)
+
+    def test_a_BETTER_OS_icon_keeps_the_win(self):
+        # The other half: the OS icon is exact by construction, so it must not
+        # be thrown away just for being the OS icon.
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, BARS, "si-inkscape.svg")
+            _, name = ai.program_overlay(
+                "Inkscape", _identity(icon=_png(_ring),
+                                      icon_path="/x/AppIcon.icns"),
+                tmp, allow_network=False)
+            self.assertTrue(name.startswith("os:"), name)
+
+    def test_the_OS_icon_keeps_a_TIE(self):
+        """Evaluated first and replaced only on a strict `>`, so identical
+        legibility goes to the application's own art."""
+        _needs_render(self)
+        import numpy as np
+        ring = _png(_ring)
+        with tempfile.TemporaryDirectory() as tmp:
+            os_mask = ai.render_os_overlay(ring)[0]
+            # the same picture offered by the catalog as well
+            from PIL import Image
+            path = os.path.join(tmp, "si-inkscape.png")
+            Image.fromarray((os_mask * 255).astype("uint8"), "L").convert(
+                "1").save(path)
+            with mock.patch.object(ai, "fetch_icon", return_value=path):
+                _, name = ai.program_overlay(
+                    "Inkscape", _identity(icon=ring,
+                                          icon_path="/x/AppIcon.icns"),
+                    tmp, allow_network=False)
+        self.assertTrue(name.startswith("os:"), name)
