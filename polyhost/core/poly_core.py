@@ -888,7 +888,13 @@ class PolyCore(Observable):
         cache keys on, and that is correct there for exactly the opposite reason:
         the PIXELS do not depend on the key.
         """
-        if not shortcuts:
+        # The ONE mark exempt from the rule below: PolyHost's own logo on
+        # PolyHost's own windows. It is not a claim about another program's
+        # shortcuts, and on macOS our Qt windows expose none to the harvest, so
+        # under the rule it could never be drawn there (measured 2026-09-23:
+        # `mask=True slug=res:polykybd@1 shortcuts=0`, nothing sent).
+        from polyhost.services.app_icons import POLYKYBD_SLUG
+        if not shortcuts and slug != POLYKYBD_SLUG:
             # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
             # the one case where "what we could resolve" and "what is worth
             # drawing" come apart.
