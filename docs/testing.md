@@ -77,6 +77,15 @@ and relative links were adjusted to suit a standalone file.
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
 
+- ⚠️ **Run a baseline IN the checkout beside `qmk_firmware/`, never in a worktree
+  elsewhere.** About 65 tests read `../qmk_firmware` and SKIP when it is absent. A
+  `main` baseline in a worktree under the scratchpad (2026-09-23) reported
+  `errors=3, skipped=104`; the same commit in place reported `failures=8,
+  errors=23, skipped=39`. The worktree run looked greener, and diffing a branch
+  against it reported 28 new failures that `main` had too. Check out the base
+  in place (clear `__pycache__` both ways), and compare the `skipped=` counts
+  before the failure sets.
+
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
   - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already
     BOUND that method** — and the repo's own fixture idiom is what creates the
