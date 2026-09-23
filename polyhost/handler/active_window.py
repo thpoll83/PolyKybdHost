@@ -10,6 +10,7 @@ from polyhost.handler.common import (
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
+from polyhost.handler.own_process import own_app_name, window_pid
 from polyhost.handler.win_process import app_name_for
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -421,6 +422,10 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            # PolyHost's own windows report the interpreter
+                            # (`pythonw`, `python3`); name them as ours so the
+                            # ESC mark is the PolyKybd logo, not Python's.
+                            app_name = own_app_name(app_name, self._win_pid())
                             self.app_name = app_name
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
@@ -478,7 +483,7 @@ class OverlayHandler:
             # path draws (`focused_app`/`focused_pid` answer from here), the
             # template path correctly does not.
             name, pid = frontmost_app()
-            app = name.lower() if name else None
+            app = own_app_name(name.lower(), pid) if name else None
             if self.win is not None or app != self.windowless_app:
                 self.set_win()
                 self.windowless_app, self.windowless_pid = app, pid
@@ -559,15 +564,16 @@ class OverlayHandler:
         rh = getattr(self, "remote_handler", None)
         if rh is not None and self.is_remote_mapping_entry():
             return None
-        try:
-            if self.win:
-                return self.win.getPID()
-        except Exception:
-            return None
+        if self.win:
+            return self._win_pid()
         # No window, but possibly still an app -- and the pid is what makes the
         # OS icon and the macOS AX harvest reachable, so losing it here would
         # leave a windowless app with a name and nothing to draw.
         return self.windowless_pid
+
+    def _win_pid(self):
+        """The focused local window's pid, or None if it cannot be read."""
+        return window_pid(self.win) if self.win else None
 
     def is_remote_mapping_entry(self):
         return (

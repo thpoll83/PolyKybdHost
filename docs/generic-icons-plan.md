@@ -220,6 +220,8 @@ generic sample, not as a solved problem.
 ### B.3 The resolution order
 
 ```
+built-in PolyKybd mark                 only for PolyHost's own windows
+  ↓ (any other app)
 OS icon for the pid                    exact, no matching, no network
   ↓ (no icon, or it binarises below MIN_SCORE)
 catalog match on the OS display name   fuzzy, network, cached
@@ -232,6 +234,13 @@ is monochrome by design while an OS icon must survive thresholding. That
 reasoning still holds for *legibility* — so the OS icon going first is only
 correct because `icon_binarise` can now refuse a bad reading and fall through.
 The `MIN_SCORE` gate is what makes the reordering safe; do not remove it.
+
+The first rung is not per-application config in the sense of the rule above:
+it covers exactly one app, ours, whose OS icon is by construction the Python
+interpreter's. `handler/own_process.py` decides which windows are ours from the
+process command line (`-m polyhost`), and `app_icons.POLYKYBD_KEYS` draws the
+mark from the tray icon's key grid, checked against `res/icons/pcolor.svg` by
+`tests/services/app_icons_test.py`.
 
 ---
 

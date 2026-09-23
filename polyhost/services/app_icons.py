@@ -162,6 +162,7 @@ _EXE_SUFFIX_RE = re.compile(r"\.(exe|app|bin)$")
 # that module at all -- which is the sharper form of the boundary the
 # docstring describes: the lookup finds bytes, this side renders them, and
 # the dependency runs one way only (see `tools/os_icon_probe.py`).
+from polyhost.handler.own_process import POLYHOST_APP
 from polyhost.services import icon_binarise
 from polyhost.util.https import ssl_context
 
@@ -752,6 +753,44 @@ def _place_ink(ink):
     return mask
 
 
+# PolyHost's own windows get the PolyKybd mark: the lit keys of the 6x6 grid
+# in `res/icons/pcolor.svg`, row by row. The unlit keys spell the P.
+#
+# Drawn here rather than rasterised from that SVG, because the SVG does not
+# survive 1-bit: its dark body plate thresholds into a frame and the key
+# gradients dither. 5 px keys on a 6 px pitch give 35 px, inside the 38 px box,
+# with a clean 1 px gap between keys. `tests/services/app_icons_test.py` checks
+# this table against the SVG.
+POLYKYBD_KEYS = (
+    "######",
+    "#....#",
+    "#.##.#",
+    "#....#",
+    "#.####",
+    "######",
+)
+POLYKYBD_KEY_PX = 5
+POLYKYBD_KEY_PITCH = 6
+# The slug is the MRU cache key; bump the suffix if the drawing changes.
+POLYKYBD_SLUG = "res:polykybd@1"
+
+
+def polykybd_mark():
+    """The PolyKybd mark seated in the 72x40 panel, like any program mark."""
+    import numpy as np
+    rows = len(POLYKYBD_KEYS)
+    cols = len(POLYKYBD_KEYS[0])
+    ink = np.zeros((POLYKYBD_KEY_PITCH * (rows - 1) + POLYKYBD_KEY_PX,
+                    POLYKYBD_KEY_PITCH * (cols - 1) + POLYKYBD_KEY_PX),
+                   dtype=bool)
+    for r, row in enumerate(POLYKYBD_KEYS):
+        for c, cell in enumerate(row):
+            if cell == "#":
+                y, x = r * POLYKYBD_KEY_PITCH, c * POLYKYBD_KEY_PITCH
+                ink[y:y + POLYKYBD_KEY_PX, x:x + POLYKYBD_KEY_PX] = True
+    return _place_ink(ink)
+
+
 def _svg_colour_candidate(data: bytes, box: int):
     """(mask, conversion, score) for an SVG read as COLOUR ART, or a miss.
 
@@ -840,6 +879,11 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     if isinstance(identity, dict):
         raise TypeError("program_overlay takes an AppIdentity, not a dict -- "
                         "convert a forwarded identity with _as_identity()")
+    # ⚠️ Before the OS icon, because for PolyHost that icon is the Python
+    # interpreter's (see `own_process`).
+    if app_name == POLYHOST_APP:
+        log.info("Program mark for %s: the built-in PolyKybd mark", app_name)
+        return polykybd_mark(), POLYKYBD_SLUG
     names = getattr(identity, "names", ()) or ()
     icon = getattr(identity, "icon", None)
     best = None

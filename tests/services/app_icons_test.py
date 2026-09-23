@@ -841,6 +841,47 @@ class WhyTheCatalogMissedTest(unittest.TestCase):
         self.assertIn("auto-fetch is off", line)
 
 
+class PolyKybdMarkTest(unittest.TestCase):
+    """PolyHost's own windows draw the PolyKybd mark, never Python's."""
+
+    def test_the_mark_wins_over_the_interpreters_OS_icon(self):
+        _needs_render(self)
+        python_icon = _png(_disc)
+        mask, name = ai.program_overlay(
+            "polyhost", _identity(python_icon, "/usr/bin/python3", ("Python",)),
+            allow_network=False)
+        self.assertEqual(name, ai.POLYKYBD_SLUG)
+        self.assertTrue((mask == ai.polykybd_mark()).all())
+
+    def test_the_mark_clears_the_ESC_courtyard_and_fits_the_box(self):
+        import numpy as np
+        mask = ai.polykybd_mark()
+        self.assertEqual(mask.shape, (40, 72))
+        cols = np.nonzero(mask.any(axis=0))[0]
+        rows = np.nonzero(mask.any(axis=1))[0]
+        self.assertGreaterEqual(cols[0], ESC_INK_RIGHT + COURTYARD + 1)
+        self.assertLessEqual(cols[-1] - cols[0] + 1, ai.PROGRAM_ICON_BOX)
+        self.assertLessEqual(rows[-1] - rows[0] + 1, ai.PROGRAM_ICON_BOX)
+
+    def test_the_key_table_matches_the_tray_icon(self):
+        """`POLYKYBD_KEYS` is a hand copy of the lit keys in pcolor.svg; this is
+        what stops the two drifting apart."""
+        import re
+        svg = os.path.join(os.path.dirname(ai.__file__), os.pardir,
+                           "res", "icons", "pcolor.svg")
+        with open(svg, encoding="utf-8") as fh:
+            text = fh.read()
+        lit = re.findall(r'<rect x="([\d.]+)" y="([\d.]+)"[^>]*'
+                         r'fill="url\(#keys\)"', text)
+        self.assertTrue(lit)
+        xs = sorted({float(x) for x, _ in lit})
+        ys = sorted({float(y) for _, y in lit})
+        grid = [["." for _ in xs] for _ in ys]
+        for x, y in lit:
+            grid[ys.index(float(y))][xs.index(float(x))] = "#"
+        self.assertEqual(tuple("".join(row) for row in grid), ai.POLYKYBD_KEYS)
+
+
 if __name__ == "__main__":
     unittest.main()
 
