@@ -605,5 +605,49 @@ class UnreachableFontReasonTest(unittest.TestCase):
         self.assertNotIn("()", said[0])
 
 
+
+class ThreadReleaseTest(unittest.TestCase):
+    """⚠️ The harvest thread must release the backend's per-thread state on its
+    way out. On Windows that is a COM apartment plus an IUIAutomation object,
+    and leaving them for the next thread crashed the daemon (2026-09-23)."""
+
+    def setUp(self):
+        self.released = []
+        p = patch.object(shortcut_fetcher.shortcut_source, "release_thread",
+                         side_effect=lambda: self.released.append(
+                             threading.current_thread().name))
+        p.start()
+        self.addCleanup(p.stop)
+        idle = patch.object(shortcut_fetcher, "IDLE_SECONDS", 0.05)
+        idle.start()
+        self.addCleanup(idle.stop)
+        self.fetcher = ShortcutIconFetcher()
+        self.addCleanup(self.fetcher.stop)
+
+    def _wait_for_exit(self):
+        end = time.monotonic() + 3
+        while time.monotonic() < end:
+            thread = self.fetcher._thread
+            if thread is None or not thread.is_alive():
+                return
+            time.sleep(0.01)
+        self.fail("fetcher thread did not exit")
+
+    def test_an_idle_exit_releases_ON_the_harvest_thread(self):
+        with patch.object(self.fetcher, "_resolve", side_effect=lambda *a: MASKS):
+            self.assertEqual(settled(self.fetcher, "gedit"), MASKS)
+            self._wait_for_exit()
+        self.assertEqual(self.released, ["poly-shortcut-icons"])
+
+    def test_a_harvest_that_raises_still_releases(self):
+        def boom(*_a):
+            raise RuntimeError("backend blew up")
+        with patch.object(self.fetcher, "_resolve", side_effect=boom), \
+             patch.object(threading, "excepthook", lambda _args: None):
+            self.fetcher.overlays_for("gedit")
+            self._wait_for_exit()
+        self.assertEqual(self.released, ["poly-shortcut-icons"])
+
+
 if __name__ == "__main__":
     unittest.main()

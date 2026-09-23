@@ -82,6 +82,23 @@ def format_marker(what, pid, when=None):
         what, pid, time.strftime(_MARKER_TIME, when or time.localtime()))
 
 
+# The first line of a faulthandler dump, per platform: a POSIX signal prints
+# "Fatal Python error", a Windows SEH exception prints "Windows fatal exception"
+# (and, when the faulting thread has no Python state, NO "Current thread" line
+# at all), and a bare dump starts at "Current thread". Readers import this
+# rather than restating it, for the reason MARKER_RE is imported.
+DUMP_START_PREFIXES = ("Fatal Python error", "Windows fatal exception",
+                       "Current thread 0x")
+
+# What the dump watch stamps after a dump it found. ⚠️ Must NOT contain the
+# word "exception": services/log_bundle.crash_summary counts every marker
+# containing it as an unhandled Python exception.
+DUMP_DATED = "fault dump(s) above were written before this time"
+
+# How often the watch looks. A dump is dated to within this many seconds.
+DUMP_WATCH_SECONDS = 60.0
+
+
 def parse_marker(line):
     """``(what, pid, timestamp_text)`` for a marker line, else None."""
     m = MARKER_RE.match(line)
@@ -160,6 +177,12 @@ _installed = False
 _clean_exit_noted = False
 
 
+_crash_path = None
+_watch_offset = 0
+_watch_stop = None
+_watch_thread = None
+
+
 def _stamp(what):
     """Append one pid-stamped marker line to the crash file (best effort)."""
     if _crash_file is None:
@@ -169,6 +192,94 @@ def _stamp(what):
         _crash_file.flush()
     except Exception:  # noqa: BLE001 — reporting must never raise
         pass
+
+
+def _file_size():
+    try:
+        return os.path.getsize(_crash_path)
+    except (OSError, TypeError):
+        return None
+
+
+def check_for_undated_dump():
+    """Stamp a timed marker after any faulthandler dump that has none. Best effort.
+
+    A faulthandler dump carries no timestamp, and a non-fatal one (a Windows
+    SEH exception the owning DLL then handles, such as RPC_E_DISCONNECTED) can
+    repeat for hours with nothing between the dumps to say when each one
+    happened. This looks at what was appended since the last call and, if a
+    dump starts after the newest marker, appends one ``DUMP_DATED`` marker.
+
+    ⚠️ Why this cannot ping-pong between the GUI and the daemon, which share
+    the file and both run it: a marker line is never a dump start, and any
+    marker after the dump means it is already dated. So the first process to
+    look stamps, and the second sees that stamp and does nothing. Growth made
+    of marker lines alone is never answered, so quiet processes write nothing.
+    That also dates the dump a FATAL fault leaves behind: the faulting process
+    is gone, but the other one sees the dump on its next look.
+
+    Returns True if a marker was written.
+    """
+    global _watch_offset
+    if _crash_file is None:
+        return False
+    try:
+        size = _file_size()
+        if size is None:
+            return False
+        if size < _watch_offset:
+            # Trimmed by a starting process (trim_if_oversized): start over.
+            _watch_offset = size
+            return False
+        if size == _watch_offset:
+            return False
+        with open(_crash_path, "rb") as fh:
+            fh.seek(_watch_offset)
+            new = fh.read(size - _watch_offset)
+        if _file_size() != size:
+            # Still being written, possibly a dump in progress: a marker now
+            # could land inside it. Look again next time, from the same place.
+            return False
+        _watch_offset = size
+        undated = False
+        for line in new.decode("utf-8", "replace").splitlines():
+            if line.startswith(DUMP_START_PREFIXES):
+                undated = True
+            elif MARKER_RE.match(line):
+                undated = False
+        if not undated:
+            return False
+        _stamp(DUMP_DATED)
+        _watch_offset = _file_size() or _watch_offset
+        return True
+    except Exception:  # noqa: BLE001 — reporting must never raise
+        return False
+
+
+def _watch_loop(stop, interval):
+    while not stop.wait(interval):
+        check_for_undated_dump()
+
+
+def _start_dump_watch(interval=DUMP_WATCH_SECONDS):
+    global _watch_offset, _watch_stop, _watch_thread
+    _watch_offset = _file_size() or 0
+    _watch_stop = threading.Event()
+    _watch_thread = threading.Thread(
+        target=_watch_loop, args=(_watch_stop, interval),
+        name="poly-crash-watch", daemon=True)
+    _watch_thread.start()
+
+
+def stop_dump_watch():
+    """Stop the dump watch. Safe to call when it never started."""
+    global _watch_stop, _watch_thread
+    if _watch_stop is not None:
+        _watch_stop.set()
+    if _watch_thread is not None:
+        _watch_thread.join(timeout=2)
+    _watch_stop = None
+    _watch_thread = None
 
 
 def _flush_logging():
@@ -192,7 +303,7 @@ def install(log=None, filename=CRASH_LOG):
     place or installation failed. ``log`` is the logger tracebacks are reported
     through (the startup logger, so a crash during construction is captured too).
     """
-    global _crash_file, _installed
+    global _crash_file, _crash_path, _installed
     if _installed:
         return False
     log = log or logging.getLogger("PolyHost")
@@ -204,6 +315,7 @@ def install(log=None, filename=CRASH_LOG):
     try:
         # line buffering: a dump must reach disk before the process dies.
         _crash_file = open(filename, "a", buffering=1, encoding="utf-8")
+        _crash_path = os.path.abspath(filename)
     except OSError as e:
         # A read-only cwd shouldn't stop the app from launching (same stance as
         # the startup log). Carry on with the hooks; they still reach the logger.
@@ -232,6 +344,14 @@ def install(log=None, filename=CRASH_LOG):
     # stay unmarked.
     atexit.register(_atexit_marker)
     _stamp("session start")
+    if _crash_file is not None:
+        # After the session marker, so everything already in the file counts
+        # as seen: a dump left by a previous run is dated by that marker.
+        try:
+            _start_dump_watch()
+        except Exception as e:  # noqa: BLE001
+            log.warning("Crash dump watch not started (%s: %s).",
+                        type(e).__name__, e)
     _installed = True
     return True
 
