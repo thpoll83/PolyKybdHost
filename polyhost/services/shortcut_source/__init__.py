@@ -35,7 +35,8 @@ from polyhost.services.shortcut_source.model import (  # noqa: F401  (re-export)
 __all__ = ["Accel", "MOD_ALT", "MOD_CTRL", "MOD_GUI", "MOD_SHIFT", "Shortcut",
            "WINDOW_MANAGER_CHORDS", "displayable_hid", "is_window_manager_chord",
            "parse_accel", "parse_win_accel", "pick_binding", "pick_win_binding",
-           "backend_name", "pick", "harvest", "unavailable_reason"]
+           "backend_name", "pick", "harvest", "release_thread",
+           "unavailable_reason"]
 
 
 def backend_name() -> str:
@@ -82,6 +83,27 @@ def pick():
     except Exception:
         return None
     return backend if backend.available() else None
+
+
+def release_thread() -> None:
+    """Let the backend free what THIS thread holds, before the thread exits.
+
+    Only the Windows backend has anything to free (its COM apartment and the
+    IUIAutomation object built in it -- see `uia.release_thread`). A backend
+    that was never imported is not imported here: nothing on this thread can
+    be holding its objects. Never raises.
+    """
+    module = sys.modules.get(f"{__name__}.{backend_name()}")
+    release = getattr(module, "release_thread", None)
+    if release is None:
+        return
+    try:
+        release()
+    except Exception:
+        # The module docstring's rule: nothing here raises. This runs in the
+        # harvest thread's `finally`, where an escape would reach
+        # threading.excepthook and read as a crash.
+        pass
 
 
 def unavailable_reason() -> str | None:

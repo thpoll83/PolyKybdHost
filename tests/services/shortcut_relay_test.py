@@ -8,7 +8,9 @@ the network).
 """
 
 import logging
+import threading
 import unittest
+from unittest.mock import Mock, patch
 
 from polyhost.services import shortcut_overlays, shortcut_relay
 from polyhost.services.shortcut_source.model import Shortcut
@@ -289,6 +291,69 @@ class DisabledHarvestIsNotCachedTest(unittest.TestCase):
         src = self._source(allowed)
         src._cache["gimp"] = [[1, 22, "Save"]]
         self.assertEqual(src.shortcuts_for("gimp"), [[1, 22, "Save"]])
+
+
+class RelayThreadReleaseTest(unittest.TestCase):
+    """⚠️ Each relay harvest runs on its own thread, and on Windows the backend
+    builds COM state there. The thread must release it before it ends, as the
+    keyboard-side fetcher does (CodeRabbit, #264)."""
+
+    def _run_on_default_thread(self, source):
+        """Run one harvest and JOIN its thread before returning.
+
+        ⚠️ `_run` fills the cache BEFORE it releases the backend, so waiting
+        for the cached answer let the test leave its `patch` block while the
+        worker was still about to call `release_thread` -- a race that
+        passes almost always and fails for no visible reason (CodeRabbit,
+        #264). Joining the thread keeps the patches in force to the end."""
+        threads = []
+
+        def spawn(fn, name):
+            # Same shape as RelaySource._thread, but keeps the handle.
+            t = threading.Thread(target=fn, name=name, daemon=True)
+            threads.append(t)
+            t.start()
+
+        source._spawn = spawn
+        self.assertIsNone(source.shortcuts_for("gedit"))
+        self.assertEqual(len(threads), 1)
+        threads[0].join(3)
+        self.assertFalse(threads[0].is_alive(), "relay harvest never finished")
+        self.assertIsNotNone(source.shortcuts_for("gedit"))
+
+    def test_the_REAL_backend_is_released_ON_the_harvest_thread(self):
+        from polyhost.services import shortcut_source
+        released = []
+        with patch.object(shortcut_source, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_source, "harvest", return_value=[]), \
+             patch.object(shortcut_source, "release_thread",
+                          side_effect=lambda: released.append(
+                              threading.current_thread().name)):
+            self._run_on_default_thread(
+                shortcut_relay.RelaySource(Mock(), allowed=lambda: True))
+        self.assertEqual(released, ["poly-fwd-shortcuts"])
+
+    def test_a_RAISING_harvest_still_releases(self):
+        from polyhost.services import shortcut_source
+        released = []
+        with patch.object(shortcut_source, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_source, "harvest",
+                          side_effect=RuntimeError("boom")), \
+             patch.object(shortcut_source, "release_thread",
+                          side_effect=lambda: released.append(1)):
+            self._run_on_default_thread(
+                shortcut_relay.RelaySource(Mock(), allowed=lambda: True))
+        self.assertEqual(released, [1])
+
+    def test_an_INJECTED_harvest_releases_nothing(self):
+        from polyhost.services import shortcut_source
+        with patch.object(shortcut_source, "release_thread") as release:
+            self._run_on_default_thread(shortcut_relay.RelaySource(
+                Mock(), harvest=lambda app: [], reason=lambda: None,
+                allowed=lambda: True))
+        release.assert_not_called()
 
 
 if __name__ == "__main__":

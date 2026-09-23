@@ -189,6 +189,7 @@ class RelaySource:
         finally:
             self._cache[name] = wire
             self._inflight.discard(name)
+            self._release_backend()
         if wire and self._on_ready is not None:
             try:
                 self._on_ready(name)
@@ -198,6 +199,25 @@ class RelaySource:
                 # spurious crash in every later problem report.
                 self.log.debug("shortcut relay ready callback failed",
                                exc_info=True)
+
+    def _release_backend(self):
+        """Free what the harvest backend built on THIS thread, before it ends.
+
+        ⚠️ Every harvest runs on a fresh thread (`_thread`), and on Windows the
+        backend builds a COM apartment plus an IUIAutomation object on it. Left
+        behind, those outlive their thread -- the lifecycle that crashed the
+        keyboard-side daemon (see `shortcut_source.uia`). An injected
+        `harvest` never touched the real backend, so there is nothing to free.
+        """
+        if self._harvest is not None:
+            return
+        try:
+            from polyhost.services import shortcut_source
+            shortcut_source.release_thread()
+        except Exception:
+            # Never raises, for the reason `_run` swallows its own failures:
+            # an escape here would reach threading.excepthook as a crash.
+            self.log.debug("shortcut backend release failed", exc_info=True)
 
     def _backend(self):
         """(unavailable_reason, harvest), imported late.

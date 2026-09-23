@@ -14,6 +14,11 @@ AcceleratorKey on toolbar and ribbon controls, not only on menus.
 
 from __future__ import annotations
 
+import gc
+import importlib
+import sys
+import threading
+
 from polyhost.services.shortcut_source.model import (
     Shortcut, TREESCOPE_SUBTREE, UIA_CONTROL_TYPES, UIA_PROP_ACCELERATOR,
     UIA_PROP_ACCESS_KEY, UIA_PROP_CONTROL_TYPE, UIA_PROP_NAME,
@@ -21,26 +26,117 @@ from polyhost.services.shortcut_source.model import (
     pick_win_binding)
 
 
-_UIA_CACHE = None
+# ⚠️ PER THREAD, never module-global. The harvest thread
+# (`ShortcutIconFetcher._loop`) exits after 30 s idle and the next window change
+# starts a new one. A module-global cache handed the FIRST thread's COM object to
+# every later thread, and comtypes initializes COM only on the thread that first
+# imports it -- so each later thread called into an object whose apartment had
+# died with its thread, from a thread with COM not initialized at all. On
+# Windows 11 / 1.1.7 that raised RPC_E_DISCONNECTED (0x80010108) every few
+# minutes and, after 92 minutes, an access violation that took the headless
+# daemon down with no log line (field, 2026-09-23). Each thread now initializes
+# COM itself, builds its own IUIAutomation, and releases both through
+# `release_thread()` before it exits.
+_local = threading.local()
+
+# Serializes the "is comtypes imported yet" check with the import itself. The
+# forwarder's relay starts one harvest thread per application, so two can
+# reach a FIRST import together: both would see comtypes missing, one import
+# would initialize COM on its own thread only, and the other would get the
+# cached module back with COM never initialized, yet record that it owns an
+# apartment (CodeRabbit, #264).
+_IMPORT_LOCK = threading.Lock()
+
+# COINIT_APARTMENTTHREADED: what comtypes itself uses at import, so the first
+# thread and every later one land in the same kind of apartment.
+_COINIT_APARTMENTTHREADED = 0x2
+
+
+def _comtypes_loaded() -> bool:
+    """Whether comtypes has been imported (its import initializes COM)."""
+    return "comtypes" in sys.modules
+
+
+def _co_initialize() -> bool:
+    """CoInitializeEx on this thread; True if the call must be balanced.
+
+    S_OK and S_FALSE both take a reference that CoUninitialize must drop.
+    Anything else (RPC_E_CHANGED_MODE: the thread is already in another
+    apartment) took none, so there is nothing to undo.
+    """
+    import ctypes
+    hr = ctypes.windll.ole32.CoInitializeEx(None, _COINIT_APARTMENTTHREADED)
+    return hr in (0, 1)
+
+
+def _co_uninitialize() -> None:
+    import ctypes
+    ctypes.windll.ole32.CoUninitialize()
+
+
+def _enter_apartment() -> None:
+    """Initialize COM on this thread, once, and remember whether we own it.
+
+    ⚠️ The FIRST import of comtypes calls CoInitializeEx on the importing thread
+    itself. Calling it again there would take a second reference that nothing
+    drops, leaving the dead thread's apartment counted as live. So on the
+    importing thread the import IS the initialization, and we own it.
+    """
+    if getattr(_local, "com_entered", False):
+        return
+    with _IMPORT_LOCK:
+        if _comtypes_loaded():
+            owned = _co_initialize()
+        else:
+            # Imported for its side effect: it initializes COM on this thread.
+            importlib.import_module("comtypes")
+            owned = True
+    _local.com_entered = True
+    _local.com_owned = owned
 
 
 def _uia():
-    """The IUIAutomation instance, created once.
+    """This thread's IUIAutomation instance, created once per thread.
 
     Cached because watch mode polls the focused element every interval, and
     building the COM object per poll is pure overhead.
     """
-    global _UIA_CACHE
-    if _UIA_CACHE is not None:
-        return _UIA_CACHE
+    cached = getattr(_local, "uia", None)
+    if cached is not None:
+        return cached
+    _enter_apartment()
     import comtypes.client
     module = comtypes.client.GetModule("UIAutomationCore.dll")
     iuia = comtypes.client.CreateObject(
         "{ff48dba4-60ef-4201-aa87-54103eef594e}",  # CLSID_CUIAutomation
         interface=module.IUIAutomation,
     )
-    _UIA_CACHE = (module, iuia)
-    return _UIA_CACHE
+    _local.uia = (module, iuia)
+    return _local.uia
+
+
+def release_thread() -> None:
+    """Drop this thread's COM objects, then leave its apartment.
+
+    Call it on the thread that used the backend, before that thread exits.
+    The order matters: a COM pointer released AFTER CoUninitialize calls into a
+    torn-down apartment, which is the crash this exists to prevent. Hence the
+    `gc.collect()` between the two, for any pointer a reference cycle still
+    holds. Never raises.
+    """
+    try:
+        if getattr(_local, "uia", None) is not None:
+            _local.uia = None
+            gc.collect()
+        if getattr(_local, "com_owned", False):
+            _co_uninitialize()
+    except Exception:
+        # Runs on a thread's way out, for a cosmetic feature: a failure here
+        # must not become a thread exception in crash_log.txt.
+        pass
+    finally:
+        _local.com_entered = False
+        _local.com_owned = False
 
 
 def _cached(element, prop_id, default=""):

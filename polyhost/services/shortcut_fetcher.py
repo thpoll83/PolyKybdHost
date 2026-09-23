@@ -163,6 +163,17 @@ class ShortcutIconFetcher:
             self._thread.start()
 
     def _loop(self):
+        # ⚠️ This thread ends after IDLE_SECONDS and a new one replaces it, so
+        # whatever the harvest backend built here must be released HERE, on
+        # the way out. On Windows that is a COM apartment plus the
+        # IUIAutomation object inside it; handing them to the next thread is
+        # what crashed the daemon (see `shortcut_source.uia`).
+        try:
+            self._run_queue()
+        finally:
+            shortcut_source.release_thread()
+
+    def _run_queue(self):
         while not self._stop.is_set():
             with self._lock:
                 key = self._queue.pop(0) if self._queue else None

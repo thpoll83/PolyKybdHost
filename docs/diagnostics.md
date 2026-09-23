@@ -128,6 +128,25 @@ purpose is proving whether the app crashed, shipped into none of them.
     Size matters here beyond disk: this is the one source the bundle carries
     **whole** (`sliced=False`), so its size is *bundle* size, and a bundle is
     what gets attached to a public issue.
+  - ⚠️ **A faulthandler dump carries NO timestamp, and on Windows it can be
+    NON-FATAL.** `faulthandler` sees first-chance SEH exceptions, so a COM error
+    the owning DLL then handles (`0x80010108`, RPC_E_DISCONNECTED) still writes a
+    full `Windows fatal exception` dump, and the process lives on. Such a dump
+    often has no `Current thread` line either: the faulting thread is a native
+    one with no Python state. The 2026-09-23 bundle held 35 of them over 92
+    minutes before the one real access violation, all undated. Two things follow:
+    - **The dump watch dates them.** `crash_log.check_for_undated_dump()` runs
+      every 60 s in both processes and appends one
+      `=== fault dump(s) above were written before this time | pid N | … ===`
+      marker after any dump no marker follows yet, once the file has not grown
+      for one whole interval (faulthandler writes a dump in many small writes,
+      and a marker must not split one), so a dump is dated to within ~2 minutes.
+      It writes nothing while the file is quiet. A marker line is never answered, so the GUI and the daemon
+      cannot ping-pong, and the surviving process dates the dump a fatal fault
+      leaves behind.
+    - **`crash_summary` counts each `Windows fatal exception` line as its own
+      dump.** It used to count only `Fatal Python error` / `Current thread`, so
+      those 36 dumps summarised as no faults at all.
   - **Redaction is anchored on the log message's own wording, not "anything in
     quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
     are kept, since that is what overlay-matching support rounds actually need.

@@ -652,5 +652,36 @@ class MultilineMarkerTest(unittest.TestCase):
         self.assertIn("1 unhandled exception(s)", lb.crash_summary(d))
 
 
+
+class WindowsDumpSummaryTest(unittest.TestCase):
+    """A Windows SEH dump starts 'Windows fatal exception' and, when the
+    faulting thread has no Python state, has no 'Current thread' line. 36 of
+    them once summarised as no faults at all (field, 2026-09-23)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.t = datetime(2026, 9, 23, 8, 25, 15)
+
+    def _write(self, *lines):
+        (self.dir / "crash_log.txt").write_text("\n".join(lines) + "\n",
+                                                encoding="utf-8")
+
+    def test_back_to_back_windows_dumps_are_each_counted(self):
+        dump = ["Windows fatal exception: code 0x80010108", "",
+                "Thread 0x00002430 (most recent call first):",
+                '  File "x.py", line 1 in f', ""]
+        self._write(_marker("session start", 1, self.t), *(dump * 3))
+        self.assertIn("3 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_a_windows_dump_with_a_current_thread_line_counts_once(self):
+        self._write(_marker("session start", 1, self.t),
+                    "Windows fatal exception: access violation", "",
+                    "Current thread 0x00002430 (most recent call first):",
+                    '  File "x.py", line 1 in f')
+        self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
+
+
 if __name__ == "__main__":
     unittest.main()

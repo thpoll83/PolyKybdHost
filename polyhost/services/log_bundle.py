@@ -238,10 +238,18 @@ def crash_summary(log_dir: Path | str | None = None) -> str | None:
     # signal prints "Fatal Python error: …" AND then "Current thread 0x…", while
     # a bare dump prints only the latter. Counting both lines reports one crash
     # as two, so a dump runs from its first such line until the next marker.
+    # ⚠️ A Windows SEH dump starts "Windows fatal exception" and, when the
+    # faulting thread has no Python state, carries no "Current thread" line at
+    # all. Before that prefix was counted, 36 such dumps (35 of them handled
+    # RPC_E_DISCONNECTED, one a fatal access violation) summarised as no
+    # faults whatsoever (field, 2026-09-23).
+    # A Windows process can survive its dump, so several can follow each other
+    # with no marker between them; each header line is therefore a new dump,
+    # and only a bare "Current thread" line defers to the header before it.
     in_dump = False
     for line in _read_chain(chain):
-        if line.startswith("Fatal Python error") or line.startswith("Current thread 0x"):
-            if not in_dump:
+        if line.startswith(crash_log.DUMP_START_PREFIXES):
+            if not in_dump or line.startswith("Windows fatal exception"):
                 faults += 1
                 in_dump = True
             continue
