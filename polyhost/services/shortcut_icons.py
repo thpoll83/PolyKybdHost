@@ -116,6 +116,14 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "zoom out":    (0x1F5DB, "zoom_out", ("zoom out", "decrease font", "smaller",
                                           "decrease font size", "shrink font",
                                           "smaller font")),
+    # Ctrl+0 in GTK apps and browsers. Fluent draws a boxed "1:1", which reads as
+    # 100% at 36 px; Material has no such mark, so its fallback is the magnifier
+    # with a reset arrow (named `youtube_searched_for`, drawn generically).
+    # Found by the probe's unmatched log on gnome-terminal (2026-09-23).
+    "zoom reset":  (None, "youtube_searched_for", ("zoom reset", "reset zoom",
+                                                   "normal size", "actual size",
+                                                   "original size", "reset size",
+                                                   "default zoom", "restore zoom")),
     # --- navigation (the codepoints are RESIDENT -- no font pack needed) -----
     "up":          (ICON_UP,    "arrow_upward", ("up", "line up", "one line up",
                                                  "scroll up", "move up",
@@ -225,7 +233,7 @@ FLUENT_ICONS: dict[str, str] = {
     "settings": "settings", "share": "share", "styles": "color",
     "underline": "text_underline", "undo": "arrow_undo", "up": "arrow_up",
     "window": "window", "wrap text": "text_wrap", "zoom in": "zoom_in",
-    "zoom out": "zoom_out",
+    "zoom out": "zoom_out", "zoom reset": "ratio_one_to_one",
 }
 
 
