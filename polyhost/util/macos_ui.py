@@ -14,14 +14,10 @@ log = logging.getLogger(__name__)
 # is what turns a plain QApplication into a proper "tray/menu-bar only" agent
 # app. (Regular=0, Accessory=1, Prohibited=2.)
 _NS_ACCESSORY = 1
+_NS_REGULAR = 0
 
 
-def hide_dock_icon() -> bool:
-    """Make this process a background/accessory app on macOS (no Dock icon).
-
-    Returns True if the policy was applied, False otherwise (non-macOS, or
-    AppKit/PyObjC unavailable). Safe to call unconditionally.
-    """
+def _set_activation_policy(policy) -> bool:
     if platform.system() != "Darwin":
         return False
     try:
@@ -31,11 +27,35 @@ def hide_dock_icon() -> bool:
         app = NSApp() if callable(NSApp) else NSApp
         if app is None:
             app = NSApplication.sharedApplication()
-        app.setActivationPolicy_(_NS_ACCESSORY)
-        return True
+        # AppKit answers whether the switch took; a refusal must reach the
+        # caller, which keeps its state and retries on the next window event.
+        return bool(app.setActivationPolicy_(policy))
     except Exception as exc:  # ImportError or any AppKit hiccup
-        log.debug("Could not set macOS accessory activation policy: %s", exc)
+        log.debug("Could not set macOS activation policy %s: %s", policy, exc)
         return False
+
+
+def hide_dock_icon() -> bool:
+    """Make this process a background/accessory app on macOS (no Dock icon).
+
+    Returns True if the policy was applied, False otherwise (non-macOS, or
+    AppKit/PyObjC unavailable). Safe to call unconditionally.
+    """
+    return _set_activation_policy(_NS_ACCESSORY)
+
+
+def show_dock_icon() -> bool:
+    """Make this process a REGULAR app on macOS (Dock icon and menu bar).
+
+    Used only while one of our windows is open. An accessory app is never
+    reported as the frontmost application: with a PolyHost window focused,
+    both System Events and pywinctl answered with the app behind it
+    (Terminal, measured 2026-09-23), so the window tracker could not see our
+    windows at all and the ESC mark stayed on the previous app's.
+    `dialog_util.install_front_on_show` switches back once the last window
+    closes.
+    """
+    return _set_activation_policy(_NS_REGULAR)
 
 
 def activate_app() -> bool:
