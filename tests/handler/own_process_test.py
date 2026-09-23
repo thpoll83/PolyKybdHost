@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import unittest.mock as mock
 
@@ -110,13 +111,27 @@ class OwnFrontAppTest(unittest.TestCase):
     """macOS: pywinctl's System Events query cannot see our window, so the
     window server and LaunchServices are asked instead."""
 
-    def _front(self, top=77, ours=True, launch=77, platform="darwin"):
+    def _front(self, top=(77, "Python"), ours=True, launch=77,
+               platform="darwin"):
         with mock.patch.object(op.sys, "platform", platform), \
-             mock.patch.object(op, "_macos_top_window_pid", return_value=top), \
-             mock.patch.object(op, "is_polyhost_process", return_value=ours), \
+             mock.patch.object(op, "_macos_top_window", return_value=top), \
+             mock.patch.object(op, "is_polyhost_process",
+                               return_value=ours) as check, \
              mock.patch.object(op, "_macos_launchservices_front_pid",
                                return_value=launch) as ls:
+            self.checked = check
             return op.own_front_app(), ls
+
+    def test_a_non_python_owner_never_pays_for_a_command_line_read(self):
+        """Every tick; each macOS read allocates about 1 MiB."""
+        found, ls = self._front(top=(77, "Safari"))
+        self.assertIsNone(found)
+        self.checked.assert_not_called()
+        ls.assert_not_called()
+
+    def test_our_own_pid_is_accepted_whatever_its_owner_name(self):
+        found, _ = self._front(top=(os.getpid(), "PolyHost"), launch=None)
+        self.assertEqual(found, (op.POLYHOST_APP, os.getpid()))
 
     def test_our_window_in_front_is_polyhost(self):
         self.assertEqual(self._front()[0], (op.POLYHOST_APP, 77))
@@ -138,13 +153,13 @@ class OwnFrontAppTest(unittest.TestCase):
 
     def test_off_macOS_it_asks_nothing(self):
         with mock.patch.object(op.sys, "platform", "win32"), \
-             mock.patch.object(op, "_macos_top_window_pid") as top:
+             mock.patch.object(op, "_macos_top_window") as top:
             self.assertIsNone(op.own_front_app())
         top.assert_not_called()
 
     def test_a_failing_query_falls_back_to_pywinctl(self):
         with mock.patch.object(op.sys, "platform", "darwin"), \
-             mock.patch.object(op, "_macos_top_window_pid",
+             mock.patch.object(op, "_macos_top_window",
                                side_effect=ImportError("no Quartz")):
             self.assertIsNone(op.own_front_app())
 
@@ -166,6 +181,13 @@ class RealProcessTest(unittest.TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
         self.addCleanup(proc.wait)
         self.addCleanup(proc.stdin.close)
+        # ⚠️ Popen returns once the exec has STARTED, and for a moment after
+        # that `/proc/<pid>/cmdline` reads empty -- measured as 4 in 200
+        # launches, which failed this suite intermittently. A real PolyHost
+        # window belongs to a long-running process, so only the test waits.
+        deadline = time.monotonic() + 5
+        while not op.process_argv(proc.pid) and time.monotonic() < deadline:
+            time.sleep(0.005)
         return proc
 
     def test_a_child_started_as_polyhost_is_ours(self):
@@ -180,7 +202,6 @@ class RealProcessTest(unittest.TestCase):
             with open(os.path.join(tmp, "polyhost", name), "w",
                       encoding="utf-8") as fh:
                 fh.write(body)
-        # Popen returns after the exec, so the command line is already set.
         proc = self._child("-m", "polyhost", "--headless", cwd=tmp)
         self.assertTrue(op.is_polyhost_process(proc.pid))
         self.assertEqual(op.own_app_name("python3", proc.pid), op.POLYHOST_APP)

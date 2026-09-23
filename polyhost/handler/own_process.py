@@ -128,7 +128,8 @@ def _macos_argv(pid):
     mib = (ctypes.c_int * 3)(ctl_kern, kern_procargs2, int(pid))
     if libc.sysctl(mib, 3, buf, ctypes.byref(size), None, 0):
         return None
-    return parse_procargs2(buf.raw[:size.value])
+    # Only the filled bytes: `buf.raw` would copy the whole argmax buffer first.
+    return parse_procargs2(ctypes.string_at(buf, size.value))
 
 
 def _windows_argv(pid):
@@ -242,11 +243,11 @@ def window_pid(win):
         return None
 
 
-def _macos_top_window_pid():
-    """Owner pid of the topmost normal window, from the window server.
+def _macos_top_window():
+    """`(owner pid, owner name)` of the topmost normal window, or None.
 
-    In-process and fresh on any thread, unlike `NSWorkspace`'s KVO
-    properties (see `active_window.frontmost_app`).
+    From the window server: in-process and fresh on any thread, unlike
+    `NSWorkspace`'s KVO properties (see `active_window.frontmost_app`).
     """
     import Quartz
     options = (Quartz.kCGWindowListOptionOnScreenOnly
@@ -254,7 +255,8 @@ def _macos_top_window_pid():
     for info in Quartz.CGWindowListCopyWindowInfo(
             options, Quartz.kCGNullWindowID) or ():
         if info.get("kCGWindowLayer") == 0:
-            return int(info.get("kCGWindowOwnerPID"))
+            return (int(info.get("kCGWindowOwnerPID")),
+                    info.get("kCGWindowOwnerName") or "")
     return None
 
 
@@ -300,8 +302,17 @@ def own_front_app():
     if sys.platform != "darwin":
         return None
     try:
-        pid = _macos_top_window_pid()
-        if pid is None or not is_polyhost_process(pid):
+        top = _macos_top_window()
+        if top is None:
+            return None
+        pid, owner = top
+        # ⚠️ The owner NAME gates the command-line read, as it does in
+        # `own_app_name`: this runs every tick, and each macOS read allocates
+        # a `kern.argmax`-sized buffer (about 1 MiB). Only a Python runtime
+        # can be PolyHost; our own pid is accepted whatever it is called.
+        if pid != os.getpid() and not is_python_runtime(owner):
+            return None
+        if not is_polyhost_process(pid):
             return None
         front = _macos_launchservices_front_pid()
         if front is not None and front != pid:
