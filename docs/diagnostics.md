@@ -382,6 +382,15 @@ purpose is proving whether the app crashed, shipped into none of them.
     is **part of the window's identity on both ends**, because an SPA route change
     moves neither handle nor title — the forwarder re-sends on a URL change rather
     than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
+  - ⚠️ **A feature drawn for a forwarded window has two halves on two machines,
+    and each can be the old one.** The forwarder decides the NAME it reports; the
+    keyboard machine decides what to DRAW for it. The PolyKybd mark for PolyHost's
+    own windows needed both: the forwarder to report `polyhost`, and a keyboard-side
+    host carrying 4b7866a4 + 7e6745f9, which v0.23.2 did not. Neither log shows the
+    other machine's version, so establish both before blaming either. Check the
+    forwarder side with the `Active App: '<title>' <name> <handle>` line (the name
+    must be the one the receiver keys on). Check the receiving side with its
+    `Program mark for <name>` / `Nothing drawn for '<name>'` lines.
 
 - **Telemetry — the client, the Cloudflare collector and its traps — is
   [`docs/telemetry-internals.md`](telemetry-internals.md).** One small JSON POST

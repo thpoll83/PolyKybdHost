@@ -421,6 +421,13 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   (`FORWARDER_SETTING_KEYS`) — `SettingsDialog` renders whatever dict it is handed, so
   the whole `settings.yaml` would put brightness and font-pack rows on a machine with no
   keyboard, every one a control that writes a value and changes nothing.
+  ⚠️ **Process-wide Qt identity is "wired separately" too.** `PolyHost.__init__` set
+  the application name and the forwarder never did, so its windows carried the X11
+  WM_CLASS `__main__.py` (Qt falls back to the script name). Two things read that one
+  string: GNOME's `.desktop` matching, which drew a grey gear on every forwarder dialog,
+  and the GNOME Wayland reporter, which uses the class as the app name, so the keyboard
+  drew no ESC mark either (#265). `main_app` now sets it before either app is built.
+  Put anything process-wide there, not in one app's constructor.
 - ⚠️ **The forwarder's tray mark spells an F, not a P** (`IconStateManager(prefix=)`),
   because both apps can sit in one notification area. It tracks whether reports are
   **landing** (`relay_ok`, set by the `send_to_host` wrapper around `_send_to_host`) —

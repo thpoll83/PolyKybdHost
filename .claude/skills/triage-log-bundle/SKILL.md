@@ -70,6 +70,19 @@ These are the ones that have produced wrong diagnoses:
   Only `FAILED:` names a real failure.
 - ⚠️ **A NEWER protocol/version in `diagnostics.txt` than the user's complaint
   implies** means they have restarted or updated since. Date every claim.
+- **The `{file.py:NNN}` on every line identifies the code that wrote it** — use it
+  when a pasted log has no `diagnostics.txt`, or when the user may be running a
+  branch rather than a release. Print that line at each candidate ref and see which
+  one holds the logging call:
+
+  ```bash
+  for ref in origin/main v0.23.2; do echo "== $ref"
+    git show "$ref:polyhost/forwarder.py" | awk 'NR==953'; done
+  ```
+
+  Two or three lines from different files settle it. This proved a forwarder ran
+  current `main` rather than the last release (2026-09-23), which moved the search
+  from "old code" to the pid path in one step.
 
 ## 4. Check the settings for drift between runs
 
