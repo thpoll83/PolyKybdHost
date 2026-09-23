@@ -2,7 +2,7 @@
 
 import sys
 
-from PyQt5.QtCore import QEvent, QObject, Qt
+from PyQt5.QtCore import QEvent, QObject, Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QWidget
 
 
@@ -86,13 +86,50 @@ def bring_to_front(widget):
     widget.activateWindow()
 
 
+def any_real_window_visible(widgets) -> bool:
+    """Is any of `widgets` a user-facing window that is still on screen?"""
+    return any(wants_front(w) and w.isVisible() for w in widgets)
+
+
 class _FrontOnShow(QObject):
-    """Brings the app forward the first time any real window is shown."""
+    """Brings the app forward when a real window is shown, and gives it a Dock
+    icon for as long as one is open.
+
+    ⚠️ The Dock icon is not decoration. An ACCESSORY app is never reported as
+    the frontmost application, so the window tracker saw the app behind our
+    window instead (Terminal, measured 2026-09-23) and PolyHost's own windows
+    could never get their ESC mark. As a REGULAR app the process is frontmost
+    like any other, and `handler.own_process` names it. See
+    `macos_ui.show_dock_icon`.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._regular = False
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Show and wants_front(obj):
+        kind = event.type()
+        if kind == QEvent.Show and wants_front(obj):
+            if not self._regular:
+                from polyhost.util.macos_ui import show_dock_icon
+                self._regular = show_dock_icon()
             bring_to_front(obj)
+        elif kind in (QEvent.Hide, QEvent.Close) and self._regular \
+                and wants_front(obj):
+            # Deferred one tick: during Hide the window still reports itself
+            # visible, and a dialog that closes as another opens must not
+            # flicker the Dock icon.
+            QTimer.singleShot(0, self._drop_dock_icon_if_idle)
         return False
+
+    def _drop_dock_icon_if_idle(self):
+        if not self._regular:
+            return
+        if any_real_window_visible(QApplication.topLevelWidgets()):
+            return
+        from polyhost.util.macos_ui import hide_dock_icon
+        hide_dock_icon()
+        self._regular = False
 
 
 def install_front_on_show(app):

@@ -244,5 +244,76 @@ class InstallFrontOnShowTest(unittest.TestCase):
             self.assertFalse(_FrontOnShow().eventFilter(w, QEvent(QEvent.Show)))
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class DockIconWhileAWindowIsOpenTest(unittest.TestCase):
+    """macOS: a REGULAR app while a window is open, an accessory otherwise.
+
+    An accessory app is never reported as frontmost, so the window tracker saw
+    the app behind our window (Terminal, measured 2026-09-23) and PolyHost's
+    own windows never got their ESC mark."""
+
+    def setUp(self):
+        from polyhost.util import macos_ui
+        show = mock.patch.object(macos_ui, "show_dock_icon", return_value=True)
+        hide = mock.patch.object(macos_ui, "hide_dock_icon", return_value=True)
+        front = mock.patch.object(dialog_util, "bring_to_front")
+        self.show, self.hide = show.start(), hide.start()
+        front.start()
+        for p in (show, hide, front):
+            self.addCleanup(p.stop)
+        self.flt = dialog_util._FrontOnShow()
+
+    def _window(self):
+        w = QWidget()
+        self.addCleanup(w.deleteLater)
+        return w
+
+    def test_showing_a_window_makes_the_app_REGULAR_once(self):
+        from PyQt5.QtCore import QEvent
+        a, b = self._window(), self._window()
+        self.flt.eventFilter(a, QEvent(QEvent.Show))
+        self.flt.eventFilter(b, QEvent(QEvent.Show))
+        self.show.assert_called_once_with()
+
+    def test_the_dock_icon_goes_when_the_LAST_window_closes(self):
+        from PyQt5.QtCore import QEvent
+        a = self._window()
+        self.flt.eventFilter(a, QEvent(QEvent.Show))
+        with mock.patch.object(dialog_util.QApplication, "topLevelWidgets",
+                               return_value=[a]):
+            a.isVisible = lambda: True
+            self.flt._drop_dock_icon_if_idle()
+            self.hide.assert_not_called()          # still open
+            a.isVisible = lambda: False
+            self.flt._drop_dock_icon_if_idle()
+        self.hide.assert_called_once_with()
+        # A later window makes it regular again.
+        self.flt.eventFilter(self._window(), QEvent(QEvent.Show))
+        self.assertEqual(self.show.call_count, 2)
+
+    def test_hiding_a_window_defers_the_check_by_one_tick(self):
+        """During Hide the window still reports itself visible."""
+        from PyQt5.QtCore import QEvent
+        a = self._window()
+        self.flt.eventFilter(a, QEvent(QEvent.Show))
+        with mock.patch.object(dialog_util.QTimer, "singleShot") as later:
+            self.flt.eventFilter(a, QEvent(QEvent.Hide))
+        later.assert_called_once_with(0, self.flt._drop_dock_icon_if_idle)
+
+    def test_a_popup_never_touches_the_policy(self):
+        from PyQt5.QtCore import QEvent
+        popup = self._window()
+        popup.setWindowFlags(Qt.Popup)
+        self.flt.eventFilter(popup, QEvent(QEvent.Show))
+        self.show.assert_not_called()
+
+    def test_the_policy_switch_is_a_NO_OP_off_macOS(self):
+        # The public pair is patched in setUp; both go through this one call.
+        from polyhost.util import macos_ui
+        with mock.patch.object(macos_ui.platform, "system", return_value="Linux"):
+            self.assertFalse(macos_ui._set_activation_policy(macos_ui._NS_REGULAR))
+            self.assertFalse(macos_ui._set_activation_policy(macos_ui._NS_ACCESSORY))
+
+
 if __name__ == "__main__":
     unittest.main()
