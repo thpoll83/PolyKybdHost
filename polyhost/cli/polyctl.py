@@ -321,6 +321,35 @@ def _cmd_idle_timeout(client, args):
     return 0
 
 
+def _cmd_handedness(client, args):
+    """Assign which half is left. The side named is the CONNECTED (master) one.
+
+    A HID command only ever reaches the half holding the USB cable, so the
+    assignment has to be expressed relative to it — `left` means "the half I am
+    talking to is the left one", and the other half becomes the right. Getting
+    this backwards swaps both sides, which is why the argument is mandatory and
+    the confirmation line below names both halves.
+
+    There is no `--yes`: unlike the tray menu, where the risk is a mis-click,
+    typing the side is already deliberate. What the user cannot see from the
+    command line is which half the cable is in, so say what is about to happen.
+
+    Both halves reboot onto the new assignment (~10 s, no replug). The keyboard
+    resets right after receiving cmd 25 and sends no reliable reply, so the RPC
+    only queues — a returned {"queued": True} means sent, never applied. Confirm
+    from the firmware's own boot banner (`hand: LEFT (flash stamp)`) rather than
+    from this command's exit code.
+    """
+    master_is_left = args.side == "left"
+    other = "RIGHT" if master_is_left else "LEFT"
+    print(f"setting the connected half to {args.side.upper()} "
+          f"(the other half becomes {other})…")
+    client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
+    print("sent; both halves save the new side and reboot onto it (about 10 s, "
+          "no replug needed)")
+    return 0
+
+
 def _cmd_newer_policy(client, args):
     client.call(protocol.M_SET_NEWER_FW_POLICY, {"choice": args.choice})
     print(f"newer-firmware policy set to {args.choice}")
@@ -991,6 +1020,14 @@ def build_parser():
     p_unicode.add_argument("unicode_action", nargs="?", choices=["refresh"],
                            default="refresh", help="refresh (the default)")
     p_unicode.set_defaults(func=_cmd_unicode_mode)
+
+    p_hand = sub.add_parser(
+        "handedness",
+        help="assign which half is left — the side given is the CONNECTED half, "
+             "the other becomes the opposite (both reboot onto it, ~10 s)")
+    p_hand.add_argument("side", choices=["left", "right"],
+                        help="the side of the half the USB cable is plugged into")
+    p_hand.set_defaults(func=_cmd_handedness)
 
     p_newer = sub.add_parser(
         "newer-policy",
