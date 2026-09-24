@@ -84,6 +84,7 @@ from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
     AUTO_CHECK_INTERVAL_S, claim_automatic_check)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
+from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui import about_dialog
 from polyhost.gui.worker_bridge import WorkerBridge
@@ -202,7 +203,7 @@ def _msgbox(icon, title: str, text: str,
 
 
 def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QProgressDialog:
-    dlg = QProgressDialog(label, None, 0, 100, None)
+    dlg = StableProgressDialog(label, None, 0, 100, None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
     dlg.setMinimumDuration(0)
@@ -217,9 +218,6 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
         dlg.setCancelButton(None)
     dlg.setValue(0)
     dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
-    lbl = dlg.findChild(QLabel)
-    if lbl:
-        lbl.setWordWrap(True)
     layout = dlg.layout()
     if layout is not None:
         m = layout.contentsMargins()
