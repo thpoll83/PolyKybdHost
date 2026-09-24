@@ -11,14 +11,17 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+# Only a missing PyQt5 skips. An error in the module under test must fail.
 try:
     from PyQt5.QtCore import QEvent, QObject
     from PyQt5.QtWidgets import QApplication, QLabel, QProgressDialog
+    _IMPORT_ERR = None
+except ImportError as e:  # pragma: no cover - PyQt5 not installed
+    _IMPORT_ERR = e
+
+if _IMPORT_ERR is None:
     from polyhost.gui.progress_dialog import StableProgressDialog
     _APP = QApplication.instance() or QApplication([])
-    _IMPORT_ERR = None
-except Exception as e:  # pragma: no cover - no Qt platform available
-    _IMPORT_ERR = e
 
 _LONG = "Installing requirements into the virtual environment, this can take a minute… " * 2
 
