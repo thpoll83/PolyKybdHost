@@ -349,6 +349,63 @@ class TestLastCheckTime(unittest.TestCase):
         self.assertEqual(updater.get_last_check_time(), 0.0)
 
 
+class TestClaimAutomaticCheck(unittest.TestCase):
+    """The automatic-check throttle keeps a separate stamp for firmware.
+
+    Field report, 2026-09-24: the first automatic check of a session ran before
+    the keyboard's firmware version was known, so it asked only about the host,
+    and its stamp throttled the on-connect check that would have asked about
+    firmware. The keyboard sat on 0.25.0 while 0.27.1 and 0.28.0 were out.
+    """
+
+    T0 = 1_700_000_000.0
+    H = 3600.0
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._cache = Path(self._tmp.name) / "update_etags.json"
+        self._patch = mock.patch.object(updater, "_ETAG_CACHE", self._cache)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self._tmp.cleanup()
+
+    def test_the_first_check_ever_runs(self):
+        self.assertTrue(updater.claim_automatic_check(self.T0, include_fw=False))
+
+    def test_a_second_host_only_check_inside_the_window_is_throttled(self):
+        updater.claim_automatic_check(self.T0, include_fw=False)
+        self.assertFalse(updater.claim_automatic_check(self.T0 + self.H, include_fw=False))
+
+    def test_a_host_only_check_does_NOT_throttle_the_firmware_check(self):
+        # The field bug: startup check without the version, then on-connect.
+        self.assertTrue(updater.claim_automatic_check(self.T0, include_fw=False))
+        self.assertTrue(updater.claim_automatic_check(self.T0 + 10, include_fw=True))
+
+    def test_the_firmware_window_survives_a_restart(self):
+        # A restart inside the window re-reads the file; nothing is in memory.
+        updater.claim_automatic_check(self.T0, include_fw=True)
+        self.assertFalse(updater.claim_automatic_check(self.T0 + self.H, include_fw=False))
+        self.assertFalse(updater.claim_automatic_check(self.T0 + self.H, include_fw=True))
+
+    def test_both_run_again_once_the_window_has_passed(self):
+        updater.claim_automatic_check(self.T0, include_fw=True)
+        later = self.T0 + updater.AUTO_CHECK_INTERVAL_S
+        self.assertTrue(updater.claim_automatic_check(later, include_fw=True))
+
+    def test_a_throttled_call_does_not_move_the_stamps(self):
+        updater.claim_automatic_check(self.T0, include_fw=True)
+        updater.claim_automatic_check(self.T0 + self.H, include_fw=True)
+        self.assertEqual(updater.get_last_check_time(), self.T0)
+        self.assertEqual(updater.get_last_check_time("fw_checked_at"), self.T0)
+
+    def test_a_stamp_in_the_future_counts_as_stale(self):
+        # The clock was set back: do not suppress checks until it catches up.
+        updater.claim_automatic_check(self.T0 + 100 * self.H, include_fw=True)
+        self.assertTrue(updater.claim_automatic_check(self.T0, include_fw=True))
+
+
 class TestVersionFromTag(unittest.TestCase):
 
     def test_plain_version(self):

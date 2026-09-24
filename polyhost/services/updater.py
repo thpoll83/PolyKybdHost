@@ -65,7 +65,11 @@ def _save_etag_cache(data: dict) -> None:
         log.debug("Could not save update ETag cache: %s", e)
 
 
-def get_last_check_time() -> float:
+#: Minimum gap between two AUTOMATIC update checks, persisted across restarts.
+AUTO_CHECK_INTERVAL_S = 6 * 3600
+
+
+def get_last_check_time(key: str = "checked_at") -> float:
     """Unix time of the last automatic update check (0.0 if never checked).
 
     Persisted (in the ETag cache file) so the check throttle survives restarts.
@@ -73,9 +77,12 @@ def get_last_check_time() -> float:
     fired a check — and ETag/304 responses still count against GitHub's
     unauthenticated 60-requests/hour-per-IP limit, so that exhausted it
     (especially behind a shared office IP). Persisting the timestamp means a
-    restart within the throttle window makes no request at all."""
+    restart within the throttle window makes no request at all.
+
+    ``key`` is ``"checked_at"`` for any check and ``"fw_checked_at"`` for one
+    that also asked about firmware (see `claim_automatic_check`)."""
     try:
-        ts = float(_load_etag_cache().get("checked_at", 0.0))
+        ts = float(_load_etag_cache().get(key, 0.0))
     except (TypeError, ValueError):
         return 0.0
     # Reject Infinity/NaN/negative — a corrupt value could otherwise suppress
@@ -85,11 +92,43 @@ def get_last_check_time() -> float:
     return ts
 
 
-def set_last_check_time(ts: float) -> None:
+def set_last_check_time(ts: float, key: str = "checked_at") -> None:
     """Persist the unix time of the most recent automatic update check."""
     cache = _load_etag_cache()
-    cache["checked_at"] = float(ts)
+    cache[key] = float(ts)
     _save_etag_cache(cache)
+
+
+def claim_automatic_check(now: float, include_fw: bool,
+                          interval: float = AUTO_CHECK_INTERVAL_S) -> bool:
+    """Decide whether an AUTOMATIC check may run now, and record it if so.
+
+    ⚠️ **A check that could not ask about firmware must not spend the
+    firmware's window.** The checker asks about firmware only when the
+    keyboard's version is already known, and the first automatic check of a
+    session (15 s after start, or on connect) can run before it is. With one
+    shared timestamp that host-only check throttled the on-connect check that
+    WOULD have asked, for 6 h and across restarts, so a keyboard sat two
+    releases behind with no prompt (field, 2026-09-24: host 1.2.4 on firmware
+    0.25.0 while 0.27.1 and 0.28.0 were published).
+
+    So firmware keeps its own stamp. A check with a known firmware version
+    runs when EITHER stamp is stale. That costs at most one extra host request
+    per window, which is what the throttle budgets for.
+
+    A stamp in the FUTURE (the clock was set back) counts as stale. Treating
+    it as recent would suppress every automatic check until the clock caught
+    up.
+    """
+    host_due = not (0 <= now - get_last_check_time() < interval)
+    fw_due = include_fw and not (
+        0 <= now - get_last_check_time("fw_checked_at") < interval)
+    if not (host_due or fw_due):
+        return False
+    set_last_check_time(now)
+    if include_fw:
+        set_last_check_time(now, "fw_checked_at")
+    return True
 
 
 DOWNLOAD_CHUNK = 64 * 1024
