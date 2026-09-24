@@ -566,6 +566,34 @@ class PolyCore(Observable):
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+            if (cmd == OverlayCommand.DISABLE
+                    and self._generic_on_device is not None
+                    and self.poly_settings.get("generic_overlays_enabled")
+                    and handler.focused_app()[0]):
+                # ⚠️ A GENERIC SET IS UP, SO THE GENERIC PATH BELOW OWNS THE
+                # BOARD, and a DISABLE here only blanks it for a moment. The
+                # handler answers DISABLE on every title change of a window no
+                # template matches, so a terminal whose title animates (an AI
+                # agent's spinner, once a second) blanked all 36 keycaps and
+                # re-sent the identical set on every frame: the ESC mark
+                # flickered (field, 2026-09-24, over a forwarder -- 135 cycles
+                # in 15 minutes). Dropping it is safe because the generic path
+                # runs on this same tick and settles every case itself: the
+                # same signature sends nothing, a different one re-sends
+                # (`prepare_for_mru_send` resets the mapping), and nothing to
+                # draw runs `_clear_generic_overlays`. A template-only board
+                # has `_generic_on_device` None, so its DISABLE still goes out.
+                #
+                # ⚠️ Only while the handler can NAME the focused app. With no
+                # name (no window and no frontmost app) the generic path
+                # returns before its clear, so the DISABLE is the only thing
+                # that takes the last app's icons down (CodeRabbit, #271).
+                #
+                # The handler already recorded the DISABLE as sent, so tell it
+                # the board is still on, or its redundancy guard would swallow
+                # the next real ENABLE.
+                self._note_overlay_state(True)
+                cmd = OverlayCommand.NONE
             if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
                 if cmd == OverlayCommand.DISABLE:
                     # ⚠️ A DISABLE blanks the keycaps, so whatever generic set we

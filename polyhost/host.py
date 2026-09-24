@@ -82,7 +82,7 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
-    get_last_check_time, set_last_check_time)
+    AUTO_CHECK_INTERVAL_S, claim_automatic_check)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui import about_dialog
@@ -642,7 +642,9 @@ class PolyHost(QApplication):
         self._fallback_prompt_busy = False
         self._fallback_prompt_queue = []
         self._update_checker = None
-        self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
+        # A firmware check asked for while a host-only check was in flight;
+        # `_on_update_check_finished` runs it once that check ends.
+        self._update_check_fw_retry = False
         self._update_installer = None
         self._update_ui = UpdateProgressController(self.log)
         self._await_manual_prompt = False
@@ -830,7 +832,10 @@ class PolyHost(QApplication):
         self._update_timer = QTimer(self)
         # noinspection PyUnresolvedReferences
         self._update_timer.timeout.connect(self._start_update_check)
-        self._update_timer.start(24 * 60 * 60 * 1000)
+        # The same interval as the throttle, so a session that stays up learns
+        # of a release within 6 h rather than 24. The throttle keeps a restart
+        # or a reconnect in between from costing a request.
+        self._update_timer.start(int(AUTO_CHECK_INTERVAL_S * 1000))
 
         # Device-owning startup is in-process only. In CLIENT mode the daemon
         # owns the worker, the active-window poll, and the control socket — the
@@ -2052,7 +2057,7 @@ class PolyHost(QApplication):
         Both are None for the automatic periodic check (silent failure).
         ``force`` bypasses the throttle for user-initiated (menu) checks.
         """
-        # Throttle AUTOMATIC checks (startup / 24h timer / on-connect). GitHub's
+        # Throttle AUTOMATIC checks (startup / 6 h timer / on-connect). GitHub's
         # unauthenticated API allows only ~60 requests/hour per IP, and a connect
         # triggers a check — so reconnects (every firmware flash reboots the
         # keyboard) and several machines behind one office IP exhaust it
@@ -2063,24 +2068,7 @@ class PolyHost(QApplication):
         # automatic check when one ran in the last 6 h. The timestamp is recorded
         # before the request, so a 403 also backs off for 6 h instead of
         # retrying. A MANUAL menu check passes force=True and always runs.
-        if not force:
-            now = time.time()
-            last = self._update_check_last
-            if last is None:
-                last = get_last_check_time()    # persisted across restarts
-            if last and now - last < 6 * 3600:
-                self.log.debug("Update check throttled (%.0f min since last automatic check)",
-                               (now - last) / 60)
-                return False
-            self._update_check_last = now
-            set_last_check_time(now)
-        if self._update_checker is not None and self._update_checker.is_alive():
-            # A check is already in flight with its own (auto) callbacks — do
-            # NOT start a second. Returns False so a manual caller knows its
-            # on_no_update/on_error closures were not installed and can avoid
-            # switching the UI into a "checking…" state it can't clear.
-            return False
-        self.log.debug("Starting update check...")
+        #
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
         # Read it via the core-backed property (self.kb_sw_version works in both
@@ -2088,6 +2076,30 @@ class PolyHost(QApplication):
         # The firmware check runs in both modes now: the client downloads the
         # release and flashes it via the daemon's fw.flash RPC.
         fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
+        if self._update_checker is not None and self._update_checker.is_alive():
+            # A check is already in flight with its own (auto) callbacks — do
+            # NOT start a second. Returns False so a manual caller knows its
+            # on_no_update/on_error closures were not installed and can avoid
+            # switching the UI into a "checking…" state it can't clear.
+            #
+            # ⚠️ Tested BEFORE the throttle claims anything, and a firmware ask
+            # that lands here is REMEMBERED. The usual case is the 15 s startup
+            # check still running host-only when the keyboard connects: claiming
+            # first stamped `fw_checked_at` for a firmware check that never
+            # started, and dropping the ask left firmware unchecked for the
+            # whole throttle window (CodeRabbit, #271).
+            if fw_version and not force and not self._update_checker.checks_firmware:
+                self._update_check_fw_retry = True
+            return False
+        # ⚠️ The throttle is decided AFTER the firmware version is read, and
+        # keeps a separate firmware stamp: a check that runs before the
+        # keyboard's version is known must not throttle the one that can ask
+        # about firmware (see `claim_automatic_check`).
+        if not force and not claim_automatic_check(time.time(), bool(fw_version)):
+            self.log.debug("Update check throttled (firmware %s)",
+                           "known" if fw_version else "not known yet")
+            return False
+        self.log.debug("Starting update check (firmware %s)...", fw_version or "not known")
 
         # Track whether the error event fires before host_no_update so we can
         # suppress the "no update" callback and show the real failure reason.
@@ -2164,9 +2176,24 @@ class PolyHost(QApplication):
             on_host_no_update=lambda: b.job_done.emit("update_host_no_update", None),
             on_fw_no_update=lambda blocked=None: b.job_done.emit("update_fw_no_update", blocked),
             on_error=lambda msg: b.job_done.emit("update_check_error", msg),
+            on_finished=lambda: b.job_done.emit("update_check_finished", None),
         )
         self._update_checker.start()
         return True
+
+    def _on_update_check_finished(self):
+        """Run the firmware check that arrived while a host-only one was busy.
+
+        The finished event is emitted from inside the checker's `run()`, so the
+        thread can still read alive here; it has nothing left to do but return,
+        which is why a short join is enough.
+        """
+        if not self._update_check_fw_retry:
+            return
+        self._update_check_fw_retry = False
+        if self._update_checker is not None:
+            self._update_checker.join(timeout=2)
+        self._start_update_check()
 
     def _on_update_available(self, release):
         self._pending_release = release
@@ -3013,6 +3040,8 @@ class PolyHost(QApplication):
         elif name == "update_check_error":
             if self._update_check_error is not None:
                 self._update_check_error(result)
+        elif name == "update_check_finished":
+            self._on_update_check_finished()
         elif name == "update_progress":
             # Local UpdateInstaller emits a (pct, msg) tuple; the daemon's core
             # event (client mode) carries a {"pct","msg"} dict — accept both.
