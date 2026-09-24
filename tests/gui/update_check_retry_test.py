@@ -11,7 +11,7 @@ importing `polyhost.host` still needs an X server (pynput), hence the guard.
 """
 import os
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 
 @unittest.skipUnless(os.environ.get("DISPLAY"),
