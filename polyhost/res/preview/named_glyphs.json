@@ -1,5 +1,5 @@
 {
- "fw_version": "0.26.0",
+ "fw_version": "0.28.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -3331,6 +3331,12 @@
   "ICON_LAYER": [
    128
   ],
+  "ICON_LAYER_ONESHOT": [
+   160
+  ],
+  "ICON_LAYER_SWITCH": [
+   127
+  ],
   "ICON_LEFT": [
    131
   ],
@@ -4277,6 +4283,12 @@
   ],
   "LATIN_1EF9": [
    7929
+  ],
+  "LAYER_ONESHOT": [
+   160
+  ],
+  "LAYER_SWITCH": [
+   127
   ],
   "LCORNER_BRKT": [
    12300
