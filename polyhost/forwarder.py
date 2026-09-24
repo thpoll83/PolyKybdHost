@@ -15,13 +15,13 @@ from PyQt5.QtWidgets import (
     QDialog,
     QMenu,
     QAction,
-    QMessageBox,
-    QProgressDialog)
+    QMessageBox)
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
 from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
 from polyhost.gui.dialog_util import bring_to_front, position_near_tray
@@ -841,10 +841,13 @@ class PolyForwarder(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         self.update_action.setEnabled(False)
-        dlg = QProgressDialog(f"Downloading v{release.version}…", "", 0, 100)
+        dlg = StableProgressDialog(f"Downloading v{release.version}…", "", 0, 100)
         dlg.setWindowTitle("PolyKybdHost Update")
         dlg.setCancelButton(None)
         dlg.setMinimumDuration(0)
+        # Same size as the tray's update dialog. The label no longer resizes
+        # the dialog, so it needs room for the longest message up front.
+        dlg.setFixedSize(400, 160)
         dlg.show()
         self._update_ui.attach(dlg)
         ub = self._update_bridge
