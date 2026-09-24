@@ -1007,5 +1007,74 @@ class StaleGenericClearTest(unittest.TestCase):
         entry.device.send_overlays_mru.assert_not_called()
 
 
+class TitleTickDoesNotFlickerTest(unittest.TestCase):
+    """A DISABLE while a generic set is up is left to the generic path.
+
+    Field report, 2026-09-24: an AI agent in a forwarded gnome-terminal spun a
+    spinner in the window title once a second. Every frame made the handler
+    answer DISABLE (the title changed and no template matches), which blanked
+    the board, and the generic path then re-sent the identical set -- so the
+    ESC mark flickered on every frame.
+    """
+
+    def _core_with_generic_set_up(self, **kw):
+        core = make_core(mask=_mask(), shortcuts=_sc(), **kw)
+        core.submit_overlay_cmd = MagicMock()
+        _tick(core)                                    # the terminal's set
+        self.assertIsNotNone(core._generic_on_device)
+        core.worker.submit.reset_mock()
+        core.overlay_handler.note_overlay_state.reset_mock()
+        return core
+
+    def test_a_title_tick_on_the_SAME_app_sends_nothing(self):
+        core = self._core_with_generic_set_up()
+        before = core._generic_on_device
+        for _ in range(5):
+            _tick(core, cmd=OverlayCommand.DISABLE)    # spinner frames
+        core.submit_overlay_cmd.assert_not_called()
+        core.worker.submit.assert_not_called()
+        self.assertEqual(core._generic_on_device, before)
+
+    def test_the_handler_is_told_the_board_is_STILL_ON(self):
+        # It recorded the DISABLE as sent; left alone, its redundancy guard
+        # would believe the board is off and swallow the next real ENABLE.
+        core = self._core_with_generic_set_up()
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.overlay_handler.note_overlay_state.assert_called_once_with(True)
+
+    def test_moving_to_an_app_with_NOTHING_generic_still_clears(self):
+        core = self._core_with_generic_set_up()
+        core._app_icons.overlay_for.return_value = (None, None)
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.submit_overlay_cmd.assert_not_called()
+        self.assertEqual(core.worker.submit.call_count, 1, "the clear")
+        self.assertIsNone(core._generic_on_device)
+
+    def test_moving_to_an_app_with_a_DIFFERENT_set_sends_it_once(self):
+        core = self._core_with_generic_set_up()
+        core._app_icons.overlay_for.return_value = (_mask(), "si:inkscape")
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.submit_overlay_cmd.assert_not_called()
+        self.assertEqual(core.worker.submit.call_count, 1)
+        self.assertEqual(core._generic_on_device[0], "si:inkscape")
+
+    def test_a_board_with_NO_generic_set_still_gets_its_DISABLE(self):
+        # Leaving a template-only app: nothing generic is up, so the generic
+        # path would not touch the board and the DISABLE is what clears it.
+        core = make_core(mask=None, slug=None, shortcuts={})
+        core.submit_overlay_cmd = MagicMock()
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
+
+    def test_with_the_generic_path_OFF_the_DISABLE_still_goes_out(self):
+        core = self._core_with_generic_set_up()
+        core.poly_settings.get.side_effect = (
+            lambda k: False if k == "generic_overlays_enabled"
+            else DEFAULT_SETTINGS.get(k, False))
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
+
+
 if __name__ == "__main__":
     unittest.main()
