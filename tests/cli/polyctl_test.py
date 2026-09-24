@@ -107,6 +107,43 @@ class PolyctlTest(unittest.TestCase):
                          {"choice": "ignore"})
         self.assertIn("newer-firmware policy set to ignore", out)
 
+    def test_handedness_left_means_the_connected_half(self):
+        """`handedness left` must send master_is_left=True, not the other way.
+
+        The wire field is relative to the half holding the USB cable, so a
+        flipped mapping here silently swaps BOTH sides on the keyboard and
+        nothing downstream can tell. Pin the direction, not just the call.
+        """
+        rc, out, err, server = run_main(
+            ["handedness", "left"], {protocol.M_SET_HANDEDNESS: {"queued": True}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_SET_HANDEDNESS],
+                         {"master_is_left": True})
+        # Both halves named, so the operator can catch a wrong cable before rebooting.
+        self.assertIn("connected half to LEFT", out)
+        self.assertIn("other half becomes RIGHT", out)
+
+    def test_handedness_right_means_the_connected_half(self):
+        rc, out, err, server = run_main(
+            ["handedness", "right"], {protocol.M_SET_HANDEDNESS: {"queued": True}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_SET_HANDEDNESS],
+                         {"master_is_left": False})
+        self.assertIn("connected half to RIGHT", out)
+        self.assertIn("other half becomes LEFT", out)
+
+    def test_handedness_rejects_a_missing_or_bogus_side(self):
+        """argparse must refuse rather than defaulting to a side.
+
+        There is no safe default: picking one would stamp a side the user never
+        asked for, and the stamp survives a reflash.
+        """
+        for argv in (["handedness"], ["handedness", "middle"]):
+            with self.subTest(argv=argv):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit):
+                        polyctl.build_parser().parse_args(argv)
+
     def test_status_shows_safe_mode_and_capabilities(self):
         status = {"connected": True, "safe_mode": True, "newer_fw_pending": True,
                   "capabilities": {"idle_style": False, "glyph_script": False}}
