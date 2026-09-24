@@ -568,7 +568,8 @@ class PolyCore(Observable):
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
-                    and self.poly_settings.get("generic_overlays_enabled")):
+                    and self.poly_settings.get("generic_overlays_enabled")
+                    and handler.focused_app()[0]):
                 # ⚠️ A GENERIC SET IS UP, SO THE GENERIC PATH BELOW OWNS THE
                 # BOARD, and a DISABLE here only blanks it for a moment. The
                 # handler answers DISABLE on every title change of a window no
@@ -582,6 +583,11 @@ class PolyCore(Observable):
                 # (`prepare_for_mru_send` resets the mapping), and nothing to
                 # draw runs `_clear_generic_overlays`. A template-only board
                 # has `_generic_on_device` None, so its DISABLE still goes out.
+                #
+                # ⚠️ Only while the handler can NAME the focused app. With no
+                # name (no window and no frontmost app) the generic path
+                # returns before its clear, so the DISABLE is the only thing
+                # that takes the last app's icons down (CodeRabbit, #271).
                 #
                 # The handler already recorded the DISABLE as sent, so tell it
                 # the board is still on, or its redundancy guard would swallow

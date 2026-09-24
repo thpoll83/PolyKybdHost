@@ -406,6 +406,52 @@ class TestClaimAutomaticCheck(unittest.TestCase):
         self.assertTrue(updater.claim_automatic_check(self.T0, include_fw=True))
 
 
+class TestCheckerFinished(unittest.TestCase):
+    """`on_finished` fires once, last, whatever the run found.
+
+    The host uses it to start a firmware check that was asked for while a
+    host-only check was still in flight.
+    """
+
+    def _run(self, fw_version=None, host_side_effect=None):
+        events = []
+        with mock.patch.object(updater, "check_latest",
+                               side_effect=host_side_effect, return_value=None), \
+                mock.patch.object(updater, "check_fw_latest", return_value=None):
+            checker = updater.UpdateChecker(
+                fw_version,
+                on_host_no_update=lambda: events.append("host_no_update"),
+                on_fw_no_update=lambda b: events.append("fw_no_update"),
+                on_error=lambda m: events.append("error"),
+                on_finished=lambda: events.append("finished"))
+            checker.run()
+        return checker, events
+
+    def test_fires_last_after_a_host_only_run(self):
+        checker, events = self._run()
+        self.assertEqual(events, ["host_no_update", "finished"])
+        self.assertFalse(checker.checks_firmware)
+
+    def test_fires_last_after_a_firmware_run(self):
+        checker, events = self._run(fw_version="0.25.0")
+        self.assertEqual(events, ["host_no_update", "fw_no_update", "finished"])
+        self.assertTrue(checker.checks_firmware)
+
+    def test_fires_even_when_a_callback_raises(self):
+        events = []
+
+        def boom():
+            raise RuntimeError("callback failed")
+
+        with mock.patch.object(updater, "check_latest", return_value=None):
+            checker = updater.UpdateChecker(
+                on_host_no_update=boom,
+                on_finished=lambda: events.append("finished"))
+            with self.assertRaises(RuntimeError):
+                checker.run()
+        self.assertEqual(events, ["finished"])
+
+
 class TestVersionFromTag(unittest.TestCase):
 
     def test_plain_version(self):

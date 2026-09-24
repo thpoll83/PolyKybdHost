@@ -1003,11 +1003,13 @@ class UpdateChecker(threading.Thread):
       None when the keyboard is genuinely current, or a ``FwUpBlocked`` when a
       newer release exists but has no .bin to flash.
     - ``on_error(str)`` — host/firmware check failed (network/API)
+    - ``on_finished()`` — the run is over, whatever it found. Fires last, once.
     """
 
     def __init__(self, current_fw_version: str = None, *,
                  on_update_available=None, on_fw_up_available=None,
-                 on_host_no_update=None, on_fw_no_update=None, on_error=None):
+                 on_host_no_update=None, on_fw_no_update=None, on_error=None,
+                 on_finished=None):
         super().__init__(daemon=True)
         self._current_fw_version = current_fw_version
         self._on_update_available = on_update_available
@@ -1015,8 +1017,20 @@ class UpdateChecker(threading.Thread):
         self._on_host_no_update = on_host_no_update
         self._on_fw_no_update = on_fw_no_update
         self._on_error = on_error
+        self._on_finished = on_finished
+
+    @property
+    def checks_firmware(self):
+        """Whether this run asks about firmware (it had a version to compare)."""
+        return bool(self._current_fw_version)
 
     def run(self):
+        try:
+            self._check()
+        finally:
+            _fire(self._on_finished)
+
+    def _check(self):
         host_release = None
         fw_release   = None
 

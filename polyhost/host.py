@@ -642,6 +642,9 @@ class PolyHost(QApplication):
         self._fallback_prompt_busy = False
         self._fallback_prompt_queue = []
         self._update_checker = None
+        # A firmware check asked for while a host-only check was in flight;
+        # `_on_update_check_finished` runs it once that check ends.
+        self._update_check_fw_retry = False
         self._update_installer = None
         self._update_ui = UpdateProgressController(self.log)
         self._await_manual_prompt = False
@@ -2073,6 +2076,21 @@ class PolyHost(QApplication):
         # The firmware check runs in both modes now: the client downloads the
         # release and flashes it via the daemon's fw.flash RPC.
         fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
+        if self._update_checker is not None and self._update_checker.is_alive():
+            # A check is already in flight with its own (auto) callbacks — do
+            # NOT start a second. Returns False so a manual caller knows its
+            # on_no_update/on_error closures were not installed and can avoid
+            # switching the UI into a "checking…" state it can't clear.
+            #
+            # ⚠️ Tested BEFORE the throttle claims anything, and a firmware ask
+            # that lands here is REMEMBERED. The usual case is the 15 s startup
+            # check still running host-only when the keyboard connects: claiming
+            # first stamped `fw_checked_at` for a firmware check that never
+            # started, and dropping the ask left firmware unchecked for the
+            # whole throttle window (CodeRabbit, #271).
+            if fw_version and not force and not self._update_checker.checks_firmware:
+                self._update_check_fw_retry = True
+            return False
         # ⚠️ The throttle is decided AFTER the firmware version is read, and
         # keeps a separate firmware stamp: a check that runs before the
         # keyboard's version is known must not throttle the one that can ask
@@ -2080,12 +2098,6 @@ class PolyHost(QApplication):
         if not force and not claim_automatic_check(time.time(), bool(fw_version)):
             self.log.debug("Update check throttled (firmware %s)",
                            "known" if fw_version else "not known yet")
-            return False
-        if self._update_checker is not None and self._update_checker.is_alive():
-            # A check is already in flight with its own (auto) callbacks — do
-            # NOT start a second. Returns False so a manual caller knows its
-            # on_no_update/on_error closures were not installed and can avoid
-            # switching the UI into a "checking…" state it can't clear.
             return False
         self.log.debug("Starting update check (firmware %s)...", fw_version or "not known")
 
@@ -2164,9 +2176,24 @@ class PolyHost(QApplication):
             on_host_no_update=lambda: b.job_done.emit("update_host_no_update", None),
             on_fw_no_update=lambda blocked=None: b.job_done.emit("update_fw_no_update", blocked),
             on_error=lambda msg: b.job_done.emit("update_check_error", msg),
+            on_finished=lambda: b.job_done.emit("update_check_finished", None),
         )
         self._update_checker.start()
         return True
+
+    def _on_update_check_finished(self):
+        """Run the firmware check that arrived while a host-only one was busy.
+
+        The finished event is emitted from inside the checker's `run()`, so the
+        thread can still read alive here; it has nothing left to do but return,
+        which is why a short join is enough.
+        """
+        if not self._update_check_fw_retry:
+            return
+        self._update_check_fw_retry = False
+        if self._update_checker is not None:
+            self._update_checker.join(timeout=2)
+        self._start_update_check()
 
     def _on_update_available(self, release):
         self._pending_release = release
@@ -3013,6 +3040,8 @@ class PolyHost(QApplication):
         elif name == "update_check_error":
             if self._update_check_error is not None:
                 self._update_check_error(result)
+        elif name == "update_check_finished":
+            self._on_update_check_finished()
         elif name == "update_progress":
             # Local UpdateInstaller emits a (pct, msg) tuple; the daemon's core
             # event (client mode) carries a {"pct","msg"} dict — accept both.

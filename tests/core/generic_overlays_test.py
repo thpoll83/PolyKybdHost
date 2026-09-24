@@ -1067,6 +1067,15 @@ class TitleTickDoesNotFlickerTest(unittest.TestCase):
         _tick(core, cmd=OverlayCommand.DISABLE)
         core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
 
+    def test_losing_the_focused_app_ENTIRELY_still_gets_its_DISABLE(self):
+        # No window and no frontmost app: the generic path cannot name an app,
+        # returns before its clear, and only the DISABLE takes the icons down.
+        core = self._core_with_generic_set_up()
+        core.overlay_handler.focused_app.return_value = (None, None)
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
+        self.assertIsNone(core._generic_on_device)
+
     def test_with_the_generic_path_OFF_the_DISABLE_still_goes_out(self):
         core = self._core_with_generic_set_up()
         core.poly_settings.get.side_effect = (
