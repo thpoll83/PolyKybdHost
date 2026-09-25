@@ -210,9 +210,20 @@ def rot_half_extent(w, h, step):
         ys.append(_asr8(sx * st + sy * ct))
     x0, x1 = min(xs), max(xs)
     y0, y1 = min(ys), max(ys)
+    # Steps 25..48 are the same turn at one THIRD (KDISP_ROT_THIRD_STEP, firmware
+    # base/font_lookup.h); 1..24 halve.
+    n = rot_scale(step)
     return (ct, st, cx, cy, x0, y0,
-            ((_asr8(x1 - x0) + 1) + 1) // 2,
-            ((_asr8(y1 - y0) + 1) + 1) // 2)
+            ((_asr8(x1 - x0) + 1) + n - 1) // n,
+            ((_asr8(y1 - y0) + 1) + n - 1) // n)
+
+
+ROT_THIRD_STEP = 24
+
+
+def rot_scale(step):
+    """The ROT op's downscale: 2 for steps 1..24, 3 for 25..48."""
+    return 3 if step > ROT_THIRD_STEP else 2
 
 
 def _int8(v):
@@ -386,12 +397,25 @@ def parse_function_macros(*texts: str) -> dict:
     return out
 
 
-def expand_function_macros(expr: str, macros: dict, depth: int = 6) -> str:
+# The expanded text is bounded as well as the step count: a macro that repeats its
+# argument doubles the text on every step, so 64 steps alone could grow a crafted
+# checkout's legend without limit and stall the editor. Real legends stay far below
+# this (the ten-call context-menu icon expands to a few hundred characters).
+MAX_EXPANDED_LEN = 4096
+
+
+def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
     """Expand `SETTING_LBL("IDLE:", "Pulse")` down to its literals.
 
     ⚠️ Bounded rather than recursive-until-stable: these nest (SETTING_LBL wraps
     MID_TWO_LINE) but a macro that expanded to itself would otherwise hang the editor
     while it painted a key.
+
+    ⚠️ The bound counts EXPANSIONS, not nesting depth, so it has to cover the widest
+    legend as well as the deepest one. It was 6, and the context-menu legend of
+    firmware 1.0.0 makes TEN calls (five HINT_MOVE, four HINT_BADGE, one HINT_ROT):
+    the expander gave up on every pass, the loader left the macro out, and the key
+    fell back to drawing its own name. 64 still stops a self-referencing macro at once.
     """
     for _ in range(depth):
         m = _find_macro_call(expr, macros)
@@ -414,6 +438,8 @@ def expand_function_macros(expr: str, macros: dict, depth: int = 6) -> str:
             body = re.sub(r"\b" + re.escape(param) + r"\b",
                           lambda _m, r=arg: r, body)
         expr = expr[:start] + body + expr[end:]
+        if len(expr) > MAX_EXPANDED_LEN:
+            return expr                      # runaway growth: give up, as for depth
     return expr
 
 
@@ -734,14 +760,15 @@ class Renderer:
         cb = (h + 7) >> 3
         bo = g['bitmapOffset']
         ct, st, cx, cy, x0, y0, ow, oh = rot_half_extent(w, h, step)
+        n = rot_scale(step)
         for dy in range(oh):
             for dx in range(ow):
                 lit = False
-                for o in range(4):
-                    # The full-resolution destination pixel this quarter stands for,
+                for o in range(n * n):
+                    # The full-resolution destination pixel this sub-cell stands for,
                     # centre-relative so the inverse rotation is a pure rotate.
-                    fx = ((dx * 2 + (o & 1)) << 8) + x0
-                    fy = ((dy * 2 + (o >> 1)) << 8) + y0
+                    fx = ((dx * n + (o % n)) << 8) + x0
+                    fy = ((dy * n + (o // n)) << 8) + y0
                     sx = _asr8(fx * ct + fy * st) + cx
                     sy = _asr8(-fx * st + fy * ct) + cy
                     ix, iy = _asr8(sx + 128), _asr8(sy + 128)
@@ -924,12 +951,16 @@ class Renderer:
                 continue
             if cp == 0x13:
                 if args:
-                    # style 2 = solid (engaged); anything else strokes the released
-                    # ring. The radius is FIXED, not an argument: the whole point is
-                    # to match the baked ICON_CAPSLOCK_* corners.
+                    # style 2 = solid (engaged), 3 = a 1px outline (the context-menu
+                    # frame), 4 = a SQUARE solid (its bars); anything else strokes the
+                    # released ring. The radius is FIXED (0 only for style 4), not an
+                    # argument: the whole point is to match the baked ICON_CAPSLOCK_*
+                    # corners.
+                    style = args[2]
                     draw_badge_rect(plot, xc, yc, _int8(args[0]), _int8(args[1]),
-                                    KDISP_BADGE_RADIUS,
-                                    0 if args[2] == 2 else KDISP_BADGE_BORDER)
+                                    0 if style == 4 else KDISP_BADGE_RADIUS,
+                                    0 if style in (2, 4) else 1 if style == 3
+                                    else KDISP_BADGE_BORDER)
                 continue
             if cp == 0x0F:
                 if args: self._draw_glyph_half(plot, xc, yc, args[0])
