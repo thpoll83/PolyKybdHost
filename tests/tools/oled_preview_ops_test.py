@@ -204,6 +204,15 @@ class RotExtentTest(unittest.TestCase):
         *_, w, h = op.rot_half_extent(20, 10, 0)
         self.assertEqual((w, h), (10, 5))
 
+    def test_steps_past_24_draw_the_same_turn_at_one_third(self):
+        """Steps 25..48 are the firmware's KDISP_ROT_THIRD_STEP band: the same
+        angle, downscaled by 3. Known answers by arithmetic, as for the half."""
+        *_, w, h = op.rot_half_extent(20, 10, 48)     # 0 deg, third
+        self.assertEqual((w, h), (7, 4))              # ceil(20/3), ceil(10/3)
+        *_, w, h = op.rot_half_extent(20, 10, 30)     # 6 + 24: 90 deg, third
+        self.assertEqual((w, h), (4, 7))
+        self.assertEqual((op.rot_scale(24), op.rot_scale(25)), (2, 3))
+
     def test_a_diagonal_turn_grows_the_box(self):
         """A rotated box is wider than the original — the reason the extent comes
         from forward-rotating the four corners rather than from w and h."""

@@ -210,9 +210,20 @@ def rot_half_extent(w, h, step):
         ys.append(_asr8(sx * st + sy * ct))
     x0, x1 = min(xs), max(xs)
     y0, y1 = min(ys), max(ys)
+    # Steps 25..48 are the same turn at one THIRD (KDISP_ROT_THIRD_STEP, firmware
+    # base/font_lookup.h); 1..24 halve.
+    n = rot_scale(step)
     return (ct, st, cx, cy, x0, y0,
-            ((_asr8(x1 - x0) + 1) + 1) // 2,
-            ((_asr8(y1 - y0) + 1) + 1) // 2)
+            ((_asr8(x1 - x0) + 1) + n - 1) // n,
+            ((_asr8(y1 - y0) + 1) + n - 1) // n)
+
+
+ROT_THIRD_STEP = 24
+
+
+def rot_scale(step):
+    """The ROT op's downscale: 2 for steps 1..24, 3 for 25..48."""
+    return 3 if step > ROT_THIRD_STEP else 2
 
 
 def _int8(v):
@@ -734,14 +745,15 @@ class Renderer:
         cb = (h + 7) >> 3
         bo = g['bitmapOffset']
         ct, st, cx, cy, x0, y0, ow, oh = rot_half_extent(w, h, step)
+        n = rot_scale(step)
         for dy in range(oh):
             for dx in range(ow):
                 lit = False
-                for o in range(4):
-                    # The full-resolution destination pixel this quarter stands for,
+                for o in range(n * n):
+                    # The full-resolution destination pixel this sub-cell stands for,
                     # centre-relative so the inverse rotation is a pure rotate.
-                    fx = ((dx * 2 + (o & 1)) << 8) + x0
-                    fy = ((dy * 2 + (o >> 1)) << 8) + y0
+                    fx = ((dx * n + (o % n)) << 8) + x0
+                    fy = ((dy * n + (o // n)) << 8) + y0
                     sx = _asr8(fx * ct + fy * st) + cx
                     sy = _asr8(-fx * st + fy * ct) + cy
                     ix, iy = _asr8(sx + 128), _asr8(sy + 128)
@@ -924,12 +936,14 @@ class Renderer:
                 continue
             if cp == 0x13:
                 if args:
-                    # style 2 = solid (engaged); anything else strokes the released
-                    # ring. The radius is FIXED, not an argument: the whole point is
-                    # to match the baked ICON_CAPSLOCK_* corners.
+                    # style 2 = solid (engaged), 3 = a 1px outline (the context-menu
+                    # frame); anything else strokes the released ring. The radius is
+                    # FIXED, not an argument: the whole point is to match the baked
+                    # ICON_CAPSLOCK_* corners.
                     draw_badge_rect(plot, xc, yc, _int8(args[0]), _int8(args[1]),
                                     KDISP_BADGE_RADIUS,
-                                    0 if args[2] == 2 else KDISP_BADGE_BORDER)
+                                    0 if args[2] == 2 else 1 if args[2] == 3
+                                    else KDISP_BADGE_BORDER)
                 continue
             if cp == 0x0F:
                 if args: self._draw_glyph_half(plot, xc, yc, args[0])
