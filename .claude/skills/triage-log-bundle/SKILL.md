@@ -79,6 +79,14 @@ These are the ones that have produced wrong diagnoses:
   `clean exit` for that pid. A long run of `0x80010108` before it is the signature
   of a COM object used across threads (see `CLAUDE.md` → *Threading model*):
   35 of them in 92 minutes preceded the 2026-09-23 daemon death.
+  ⚠️ **Check WHERE the `access violation` sits.** When it appears INSIDE a
+  first-chance dump, cutting off a thread's `File "…"` line, the dump itself
+  crashed: on hosts before the fix it walked the other threads' running stacks
+  (2026-09-25, one handled COM error after three hours, broke off in
+  `active_window.py`). Blame that thread's code only when the violation is its
+  own dump. Current hosts dump only the faulting thread on Windows
+  (`crash_log.dump_all_threads()`), so a Windows dump no longer lists the other
+  threads.
 - ⚠️ **A dead daemon logs nothing about its own death.** The evidence is on the
   TRAY side, in `host.txt`: `RPC call … lost connection: [WinError 232] The pipe
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
