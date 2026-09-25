@@ -1,107 +1,195 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
+    <!-- Header: drawn here rather than by the system title bar, so it looks the
+         same on every phone. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@color/brand_blue"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="18dp">
 
-        <TextView
-            android:id="@+id/device"
-            android:layout_width="match_parent"
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_stat_flash" />
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="16sp" />
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Check keyboard" />
-
-        <Button
-            android:id="@+id/latest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Get latest release (signed)" />
-
-        <Button
-            android:id="@+id/pick"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Choose a .bin file (unsigned)" />
-
-        <TextView
-            android:id="@+id/files"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-        <TextView
-            android:id="@+id/sig"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
-
-        <CheckBox
-            android:id="@+id/apply"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Apply after it is verified (reboots the keyboard)" />
-
-        <RadioGroup
-            android:id="@+id/mode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
-
-            <RadioButton
-                android:id="@+id/mode_in_app"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Keep this app open (no notification)" />
+                android:text="@string/app_name"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-            <RadioButton
-                android:id="@+id/mode_background"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Run in the background (shows a progress notification)" />
-        </RadioGroup>
-
-        <Button
-            android:id="@+id/flash"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Flash" />
-
-        <ProgressBar
-            android:id="@+id/progress"
-            style="@android:style/Widget.DeviceDefault.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:max="100"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textIsSelectable="true" />
-
-        <Button
-            android:id="@+id/cancel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Cancel"
-            android:visibility="gone" />
+                android:text="Firmware updates over USB-C"
+                android:textColor="@color/header_sub"
+                android:textSize="14sp" />
+        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Keyboard -->
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="Keyboard" />
+
+                <TextView
+                    android:id="@+id/device"
+                    style="@style/Body" />
+
+                <Button
+                    android:id="@+id/refresh"
+                    style="@style/Button.Outline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="Check keyboard" />
+            </LinearLayout>
+
+            <!-- Firmware -->
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="Firmware" />
+
+                <Button
+                    android:id="@+id/latest"
+                    style="@style/Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Get latest release (signed)" />
+
+                <Button
+                    android:id="@+id/pick"
+                    style="@style/Button.Outline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="Choose a .bin file (unsigned)" />
+
+                <TextView
+                    android:id="@+id/files"
+                    style="@style/Body"
+                    android:layout_marginTop="14dp" />
+
+                <TextView
+                    android:id="@+id/sig"
+                    style="@style/Body.Dim"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <!-- Update -->
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/CardTitle"
+                    android:text="Update" />
+
+                <CheckBox
+                    android:id="@+id/apply"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Apply after it is verified (reboots the keyboard)"
+                    android:textColor="@color/text" />
+
+                <RadioGroup
+                    android:id="@+id/mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp">
+
+                    <RadioButton
+                        android:id="@+id/mode_in_app"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Keep this app open (no notification)"
+                        android:textColor="@color/text" />
+
+                    <RadioButton
+                        android:id="@+id/mode_background"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Run in the background (shows a progress notification)"
+                        android:textColor="@color/text" />
+                </RadioGroup>
+
+                <Button
+                    android:id="@+id/flash"
+                    style="@style/Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:minHeight="56dp"
+                    android:text="Flash"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/progress"
+                    style="@android:style/Widget.Material.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:max="100"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/status"
+                    style="@style/Body"
+                    android:layout_marginTop="8dp"
+                    android:textIsSelectable="true" />
+
+                <!-- Not a dialog's OK/Cancel pair: it stops a running transfer and only
+                     shows then, under the progress text. -->
+                <Button
+                    android:id="@+id/cancel"
+                    tools:ignore="ButtonOrder"
+                    style="@style/Button.Outline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="Cancel"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

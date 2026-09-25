@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.Light.DarkActionBar">
+    <!-- One dark look on every phone. The header is part of the layout, not the
+         system title bar: phones that draw their own title bar (Samsung) ignore
+         the theme colours, so a themed title bar stayed white there. -->
+    <style name="AppTheme.Base" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/brand_blue</item>
+        <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:colorPrimary">@color/brand_blue</item>
-        <item name="android:colorPrimaryDark">@color/brand_blue_dark</item>
-        <item name="android:colorAccent">@color/brand_accent</item>
-        <item name="android:statusBarColor">@color/brand_blue_dark</item>
-        <item name="android:actionBarStyle">@style/BrandActionBar</item>
+        <item name="android:colorPrimaryDark">@color/brand_blue</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorControlNormal">@color/control</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
+        <item name="android:alertDialogTheme">@style/AppDialog</item>
     </style>
+
+    <style name="AppTheme" parent="AppTheme.Base" />
 </resources>

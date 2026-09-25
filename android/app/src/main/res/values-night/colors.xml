@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- brand_blue is 2.8:1 on a dark (#121212) background; this lighter blue is 7.4:1. -->
-    <color name="brand_accent">#60A5FA</color>
-</resources>

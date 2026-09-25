@@ -254,17 +254,18 @@ class MainActivity : Activity() {
     private fun render() {
         val dev = UsbHidTransport.findKeyboard(usb)
         deviceText.text = when {
-            dev == null -> "Keyboard: not connected"
-            else -> "Keyboard: ${dev.productName ?: "PolyKybd"} (%04x:%04x)".format(dev.vendorId, dev.productId) +
+            dev == null -> "Not connected. Plug the master half into the phone."
+            else -> "${dev.productName ?: "PolyKybd"} (%04x:%04x)".format(dev.vendorId, dev.productId) +
                 if (usb.hasPermission(dev)) "" else " — USB access not granted yet"
         }
 
         val fw = FlashState.fw
-        filesText.text = if (fw == null) "No firmware chosen." else "Firmware: ${FlashState.fwName} (${fw.size / 1024} KB)" +
+        filesText.text = if (fw == null) "No firmware chosen." else "${FlashState.fwName} (${fw.size / 1024} KB)" +
             (FwImage.validate(fw)?.let { "\n⚠ $it" } ?: "")
         val (signed, advice) = FwImage.describeSignature(FlashState.sig)
         sigText.text = if (fw == null) "" else if (signed) "Signed release. The keyboard checks the signature " +
             "(${FlashState.sigName}) and installs it without asking." else advice
+        sigText.visibility = if (sigText.text.isEmpty()) View.GONE else View.VISIBLE
 
         val running = FlashState.running
         flashButton.isEnabled = !running && !fetching && fw != null && dev != null

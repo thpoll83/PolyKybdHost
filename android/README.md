@@ -69,6 +69,22 @@ python3 android/tools/gen_launcher_icon.py                # rewrite the drawable
 python3 android/tools/gen_launcher_icon.py --sheet x.png  # preview under launcher masks
 ```
 
+## Look
+
+One dark design on every phone: the icon's navy (`#0B1220`) as background, a blue
+(`#1D4ED8`) header drawn in the layout itself, and cards for Keyboard, Firmware and
+Update. The header is not the system title bar, because phones that draw their own
+title bar (Samsung) ignore theme colours there. The colours and their measured
+contrast are in `res/values/colors.xml`.
+
+`ScreenshotTest` renders the screen with Paparazzi (layoutlib), so a UI change can be
+checked without a phone or an emulator:
+
+```bash
+./gradlew recordPaparazziDebug   # writes app/src/test/snapshots/images/*.png
+./gradlew verifyPaparazziDebug   # fails when the rendering no longer matches
+```
+
 ## Build
 
 Needs JDK 17+ and the Android SDK (platform 35, build-tools 35).
