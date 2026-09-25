@@ -55,5 +55,17 @@ class ParseFunctionMacrosTest(unittest.TestCase):
         self.assertIn('U"Pulse"', got)
 
 
+class WideLegendExpansionTest(unittest.TestCase):
+    def test_ten_calls_in_one_body_all_expand(self):
+        """⚠️ The bound counts EXPANSIONS, not depth. Firmware 1.0.0's context-menu
+        legend makes ten calls, and a bound of 6 left four of them unexpanded, so the
+        glyph loader dropped the macro and the key drew its own name."""
+        macros = parse_function_macros('#define MV(p) U"\\x0E" p\n')
+        expr = " ".join(['MV(U"a")'] * 10)
+        got = expand_function_macros(expr, macros)
+        self.assertNotIn("MV(", got)
+        self.assertEqual(got.count('U"\\x0E"'), 10)
+
+
 if __name__ == "__main__":
     unittest.main()

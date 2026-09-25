@@ -397,12 +397,18 @@ def parse_function_macros(*texts: str) -> dict:
     return out
 
 
-def expand_function_macros(expr: str, macros: dict, depth: int = 6) -> str:
+def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
     """Expand `SETTING_LBL("IDLE:", "Pulse")` down to its literals.
 
     ⚠️ Bounded rather than recursive-until-stable: these nest (SETTING_LBL wraps
     MID_TWO_LINE) but a macro that expanded to itself would otherwise hang the editor
     while it painted a key.
+
+    ⚠️ The bound counts EXPANSIONS, not nesting depth, so it has to cover the widest
+    legend as well as the deepest one. It was 6, and the context-menu legend of
+    firmware 1.0.0 makes TEN calls (five HINT_MOVE, four HINT_BADGE, one HINT_ROT):
+    the expander gave up on every pass, the loader left the macro out, and the key
+    fell back to drawing its own name. 64 still stops a self-referencing macro at once.
     """
     for _ in range(depth):
         m = _find_macro_call(expr, macros)
@@ -937,12 +943,14 @@ class Renderer:
             if cp == 0x13:
                 if args:
                     # style 2 = solid (engaged), 3 = a 1px outline (the context-menu
-                    # frame); anything else strokes the released ring. The radius is
-                    # FIXED, not an argument: the whole point is to match the baked
-                    # ICON_CAPSLOCK_* corners.
+                    # frame), 4 = a SQUARE solid (its bars); anything else strokes the
+                    # released ring. The radius is FIXED (0 only for style 4), not an
+                    # argument: the whole point is to match the baked ICON_CAPSLOCK_*
+                    # corners.
+                    style = args[2]
                     draw_badge_rect(plot, xc, yc, _int8(args[0]), _int8(args[1]),
-                                    KDISP_BADGE_RADIUS,
-                                    0 if args[2] == 2 else 1 if args[2] == 3
+                                    0 if style == 4 else KDISP_BADGE_RADIUS,
+                                    0 if style in (2, 4) else 1 if style == 3
                                     else KDISP_BADGE_BORDER)
                 continue
             if cp == 0x0F:
