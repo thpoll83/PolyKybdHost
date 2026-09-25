@@ -169,6 +169,11 @@ def categorize(key_name: str) -> str:
     """Categorize a key_name into a functional group."""
     name = key_name[3:] if key_name.startswith("KC_") else key_name
 
+    # QMK 0.0.9 keycodes (2026q3) grew steno from 4 codes to 83, plus 88
+    # `ST_*` aliases. Checked first: the aliases carry no `QK` prefix, so without
+    # this they fell through to "Additional", the second tab.
+    if key_name.startswith(("QK_STENO", "ST_")):
+        return "Steno"
     if name.startswith(("LEFT", "RIGHT")):
         return "Modifiers"
     if name.startswith(("MEDIA", "VOL", "MUTE", "PLAY", "STOP", "SYSTEM", "WWW")) or "MUSIC" in name or "AUDIO" in name or "BLUETOOTH" in name or "OUTPUT" in name:
@@ -239,7 +244,7 @@ def last_key_in_standard_category() -> str:
 def category_order() -> list[str]:
     return ["Standard", "Additional", "Modifiers", "Media / System", "RGB", "Unicode / International",
             "Mouse / Joystick",
-            "Midi", "Haptic", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum"]
+            "Midi", "Haptic", "Steno", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum"]
 
 
 # 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
