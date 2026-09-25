@@ -99,3 +99,14 @@ POLYKYBD_RELEASE_BIN=path/to.bin ./gradlew testDebugUnitTest # + check a real re
 
 Install the debug APK with `adb install app-debug.apk`, or copy it to the phone and
 open it (allow installs from that source).
+
+## Distribution
+
+For now the APK is attached by hand to a PolyKybdHost release as
+`polykybd-flasher-v<versionName>.apk`, the version from `app/build.gradle.kts`. There
+is no workflow for it.
+
+⚠️ That APK is debug-signed. Android installs an update only over an app signed with
+the same key, so moving to a proper release key later means users uninstall once.
+A release key belongs in repo secrets together with a build workflow, and it must be
+backed up: a lost key means every user has to uninstall again.
