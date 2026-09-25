@@ -5,8 +5,8 @@ master half over USB-C. It uses the HID update path the desktop host uses. The
 master relays the image to the slave half over the split cable, so one cable updates
 both halves.
 
-Status: builds, and the protocol logic passes its unit tests. It has not run against
-a real keyboard yet.
+Status: builds, and the protocol logic passes its unit tests. One flash on a real
+keyboard succeeded (2026-09-25).
 
 ## Use
 
