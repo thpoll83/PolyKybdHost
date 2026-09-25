@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The title bar: brand blue with white text, in light and dark mode alike. -->
+    <style name="BrandActionBar" parent="@android:style/Widget.Material.ActionBar.Solid">
+        <item name="android:background">@color/brand_blue</item>
+        <item name="android:titleTextStyle">@style/BrandActionBarTitle</item>
+    </style>
+
+    <style name="BrandActionBarTitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+</resources>

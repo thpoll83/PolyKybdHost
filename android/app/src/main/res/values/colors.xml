@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand mark's key blue (tools/gen_brand_icons.py, colour variant). -->
+    <color name="brand_blue">#1D4ED8</color>
+    <!-- A darker blue for the status bar above it. -->
+    <color name="brand_blue_dark">#1E3A8A</color>
+    <!-- Checkboxes, radio buttons, progress bar. brand_blue is 6.7:1 on white. -->
+    <color name="brand_accent">#1D4ED8</color>
+</resources>

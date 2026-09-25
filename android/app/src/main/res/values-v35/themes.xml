@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Follows the system light/dark setting (API 29+). -->
+    <!-- As values-v29. Targeting API 35 makes Android 15 draw the app edge to edge and
+         ignore statusBarColor, which leaves a white strip above the blue title bar.
+         Opting out keeps the coloured status bar; revisit before targeting API 36,
+         where the opt-out is removed. -->
     <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
         <item name="android:colorPrimary">@color/brand_blue</item>
         <item name="android:colorPrimaryDark">@color/brand_blue_dark</item>
         <item name="android:colorAccent">@color/brand_accent</item>
         <item name="android:statusBarColor">@color/brand_blue_dark</item>
         <item name="android:actionBarStyle">@style/BrandActionBar</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 </resources>
