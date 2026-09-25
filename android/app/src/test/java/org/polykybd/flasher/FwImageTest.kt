@@ -67,6 +67,23 @@ class FwImageTest {
         assertTrue(FwImage.validate(fw)!!.contains("not appear to be built for PolyKybd"))
     }
 
+    @Test fun detectsVariantAndRefusesTheOtherBoard() {
+        val fw = validImage()   // carries "PolyKybd Split72"
+        assertEquals(FwImage.Variant.SPLIT72, FwImage.variantOf(fw))
+        assertNull(FwImage.checkVariant(fw, 0x2007))
+        assertTrue(FwImage.checkVariant(fw, 0x2008)!!.contains("PolyKybd Split42"))
+        assertNull(FwImage.checkVariant(fw, 0x1234))   // unknown device: no opinion
+    }
+
+    @Test fun imageNamingNoVariantPasses() {
+        val fw = validImage()
+        fw.fill(0, 600, 640)
+        val id = "PolyTasten".toByteArray(Charsets.UTF_16LE)
+        System.arraycopy(id, 0, fw, 600, id.size)
+        assertNull(FwImage.variantOf(fw))
+        assertNull(FwImage.checkVariant(fw, 0x2008))
+    }
+
     @Test fun describesSignature() {
         assertFalse(FwImage.describeSignature(null).first)
         assertFalse(FwImage.describeSignature(ByteArray(63)).first)

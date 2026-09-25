@@ -13,11 +13,17 @@ a real keyboard yet.
 1. Connect the keyboard's master half to the phone (USB-C to USB-C, or an OTG adapter).
    Android offers to open PolyKybd Flasher. Tick "always". The keyboard re-enumerates
    during an update, and "always" grants USB access again without a dialog each time.
-2. Tap **Choose .bin (and its .sig)** and select both files in one go. The `.sig` is
-   optional:
-   - with a matching `.sig` (a release), the keyboard accepts the image by itself;
-   - without one (your own build), the keycaps turn into an A/R prompt, and you press
-     A on the left half within 60 s.
+2. Choose the firmware:
+   - **Get latest release (signed)** downloads the newest release from
+     `thpoll83/qmk_firmware`: the `.bin` for the connected keyboard and its `.bin.sig`.
+     Both must match the size and SHA-256 that GitHub lists. The keyboard verifies the
+     signature and installs the image without asking.
+   - **Choose a .bin file (unsigned)** takes a file from the phone, such as your own
+     build. It is always sent without a signature, so the keycaps turn into an A/R
+     prompt, and you press A on the left half within 60 s.
+
+   Either way, the app refuses an image built for the other keyboard (split72 vs
+   split42). The image carries its USB product string, and the keyboard reports its PID.
 3. Tap **Flash**. Staging takes a few minutes. With **Apply after it is verified**
    ticked, the keyboard then copies the image over its running firmware and reboots.
 
@@ -44,6 +50,7 @@ until COMMIT has verified the CRC and the signature.
 | `UsbHidTransport.kt` | Finds VID `0x2021` / PID `0x2007` (split72) or `0x2008` (split42), claims the raw-HID interface (usage page `0xFF61`) and exchanges 64-byte reports. |
 | `FlashJob.kt` | One update run on a worker thread with a wake lock. Both run modes use it. |
 | `FlashService.kt` | Background mode: `FlashJob` inside a foreground service, plus its progress notification. |
+| `Releases.kt` | Finds the latest release's `.bin` + `.bin.sig` for a variant, downloads both, checks size and SHA-256. |
 | `MainActivity.kt` | File picker, battery and device checks, run-mode choice, progress. |
 | `tools/gen_launcher_icon.py` | Writes the launcher, themed and notification icons as vector drawables. |
 
@@ -69,6 +76,8 @@ Needs JDK 17+ and the Android SDK (platform 35, build-tools 35).
 ```bash
 echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew testDebugUnitTest      # protocol tests against a fake keyboard, no device needed
+POLYKYBD_LIVE=1 ./gradlew testDebugUnitTest                  # + fetch the live latest release
+POLYKYBD_RELEASE_BIN=path/to.bin ./gradlew testDebugUnitTest # + check a real release image
 ./gradlew assembleDebug          # app/build/outputs/apk/debug/app-debug.apk
 ```
 

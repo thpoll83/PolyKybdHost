@@ -23,11 +23,17 @@
             android:text="Check keyboard" />
 
         <Button
-            android:id="@+id/pick"
+            android:id="@+id/latest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Choose .bin (and its .sig)" />
+            android:text="Get latest release (signed)" />
+
+        <Button
+            android:id="@+id/pick"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Choose a .bin file (unsigned)" />
 
         <TextView
             android:id="@+id/files"

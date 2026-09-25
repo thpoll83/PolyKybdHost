@@ -87,14 +87,44 @@ object FwImage {
      */
     fun describeSignature(sig: ByteArray?): Pair<Boolean, String> = when {
         sig == null -> false to
-            "No signature file chosen. The keyboard will ask you to confirm the image: every " +
-            "keycap goes dark except a big A (accept) on the left half and R (reject) on the " +
-            "right. That is expected for a firmware you built yourself. To flash a release, " +
-            "pick its .sig file together with the .bin."
+            "Not signed. The keyboard will ask you to confirm the image: every keycap goes " +
+            "dark except a big A (accept) on the left half and R (reject) on the right. That " +
+            "is expected for a firmware you built yourself. Signed firmware comes from " +
+            "\"Get latest release\"."
         sig.size != SIG_LEN -> false to
             "The signature file is ${sig.size} bytes, but a signature is exactly $SIG_LEN. " +
             "It will be ignored and the keyboard will ask you to confirm the image physically."
         else -> true to ""
+    }
+
+    /** The two keyboards. The image carries its product string, the device its PID. */
+    enum class Variant(val slug: String, val pid: Int) {
+        SPLIT72("split72", 0x2007),
+        SPLIT42("split42", 0x2008);
+
+        /** The USB product string QMK embeds in the image, from keyboard.json `keyboard_name`. */
+        val productString: String get() = "PolyKybd " + slug.replaceFirstChar { it.uppercase() }
+
+        companion object {
+            fun forPid(pid: Int): Variant? = entries.firstOrNull { it.pid == pid }
+        }
+    }
+
+    /** Which keyboard [fw] was built for, or null when it names neither. */
+    fun variantOf(fw: ByteArray): Variant? =
+        Variant.entries.firstOrNull { indexOf(fw, it.productString.toByteArray(Charsets.UTF_16LE)) >= 0 }
+
+    /**
+     * Null when [fw] may go onto the keyboard with USB product id [pid], else why not.
+     * An image that names neither variant passes: [validate] has already found the
+     * PolyKybd manufacturer string, and refusing it would block a renamed custom build.
+     */
+    fun checkVariant(fw: ByteArray, pid: Int): String? {
+        val image = variantOf(fw) ?: return null
+        val device = Variant.forPid(pid) ?: return null
+        if (image == device) return null
+        return "This firmware is for the ${image.productString}, but the connected keyboard is a " +
+            "${device.productString}. The two boards are wired differently, so it would not work on this one."
     }
 
     private fun indexOf(hay: ByteArray, needle: ByteArray): Int {

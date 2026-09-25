@@ -49,6 +49,9 @@ class MainActivity : Activity() {
 
     private val listener: () -> Unit = { render() }
 
+    /** True while [getLatest] downloads; the buttons that change the firmware wait for it. */
+    @Volatile private var fetching = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -63,7 +66,8 @@ class MainActivity : Activity() {
         progressBar = findViewById(R.id.progress)
         statusText = findViewById(R.id.status)
 
-        findViewById<Button>(R.id.pick).setOnClickListener { pickFiles() }
+        findViewById<Button>(R.id.pick).setOnClickListener { pickBin() }
+        findViewById<Button>(R.id.latest).setOnClickListener { getLatest() }
         findViewById<Button>(R.id.refresh).setOnClickListener { render() }
         applyBox.isChecked = FlashState.applyAfterFlash
         applyBox.setOnCheckedChangeListener { _, checked -> FlashState.applyAfterFlash = checked }
@@ -134,50 +138,69 @@ class MainActivity : Activity() {
         render()   // USB_DEVICE_ATTACHED while open
     }
 
-    private fun pickFiles() {
+    private fun pickBin() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .setType("*/*")
-            .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         startActivityForResult(intent, PICK_FILES)
     }
 
+    /**
+     * A file the user picks is always flashed UNSIGNED, so the keyboard asks for the
+     * A/R keypress. A signature only ever comes with a release, from [getLatest].
+     */
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != PICK_FILES || resultCode != RESULT_OK || data == null) return
-        val uris = buildList {
-            data.clipData?.let { clip -> for (i in 0 until clip.itemCount) add(clip.getItemAt(i).uri) }
-            if (isEmpty()) data.data?.let { add(it) }
-        }
-        var fw: Pair<String, ByteArray>? = null
-        var sig: Pair<String, ByteArray>? = null
-        for (uri in uris) {
-            val name = displayName(uri)
-            val bytes = try {
-                contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            } catch (e: Exception) {
-                null
-            }
-            if (bytes == null) {
-                statusText.text = "Could not read $name."
-                continue
-            }
-            // A .sig is 64 raw bytes; anything else is taken as the image.
-            if (name.endsWith(".sig", ignoreCase = true) || bytes.size == FwImage.SIG_LEN) sig = name to bytes
-            else fw = name to bytes
-        }
-        if (fw != null) {
-            FlashState.fw = fw.second
-            FlashState.fwName = fw.first
-            FlashState.sig = sig?.second
-            FlashState.sigName = sig?.first
-        } else if (sig != null) {
-            FlashState.sig = sig.second
-            FlashState.sigName = sig.first
+        if (requestCode != PICK_FILES || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        val name = displayName(uri)
+        val bytes = try {
+            contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        } catch (e: Exception) {
+            null
         }
         FlashState.result = null
+        if (bytes == null) {
+            FlashState.update(0, "Could not read $name.")
+            return
+        }
+        setFirmware(bytes, name, null, null)
         FlashState.update(0, "")
+    }
+
+    private fun setFirmware(fw: ByteArray, name: String, sig: ByteArray?, sigName: String?) {
+        FlashState.fw = fw
+        FlashState.fwName = name
+        FlashState.sig = sig
+        FlashState.sigName = sigName
+    }
+
+    /** Downloads the newest release's .bin and .sig for the connected keyboard. */
+    private fun getLatest() {
+        val dev = UsbHidTransport.findKeyboard(usb)
+        val variant = dev?.let { FwImage.Variant.forPid(it.productId) } ?: FwImage.Variant.SPLIT72
+        fetching = true
+        FlashState.result = null
+        FlashState.update(0, "Checking GitHub for the latest ${variant.productString} release…")
+        Thread({
+            try {
+                val rel = Releases.fetchLatest(variant)
+                FlashState.update(0, "Downloading ${rel.bin.name}…")
+                val bin = Releases.download(rel.bin)
+                val sig = Releases.download(rel.sig)
+                FwImage.validate(bin)?.let { throw Releases.ReleaseException(it) }
+                setFirmware(bin, "${rel.bin.name} (release ${rel.version})", sig, rel.sig.name)
+                FlashState.update(0, "Release ${rel.version} downloaded and checked. Tap Flash to install it.")
+            } catch (e: Releases.ReleaseException) {
+                FlashState.update(0, "Could not get the latest release: ${e.message}")
+            } catch (e: Exception) {
+                FlashState.update(0, "Could not reach GitHub: ${e.message ?: e.javaClass.simpleName}")
+            } finally {
+                fetching = false
+                FlashState.notifyChanged()
+            }
+        }, "fw-release").start()
     }
 
     private fun displayName(uri: Uri): String {
@@ -205,6 +228,10 @@ class MainActivity : Activity() {
         val dev = UsbHidTransport.findKeyboard(usb)
         if (dev == null) {
             statusText.text = "No PolyKybd found. Connect the keyboard's master half to the phone."
+            return
+        }
+        FwImage.checkVariant(fw, dev.productId)?.let {
+            statusText.text = it
             return
         }
         if (!usb.hasPermission(dev)) {
@@ -236,10 +263,13 @@ class MainActivity : Activity() {
         filesText.text = if (fw == null) "No firmware chosen." else "Firmware: ${FlashState.fwName} (${fw.size / 1024} KB)" +
             (FwImage.validate(fw)?.let { "\n⚠ $it" } ?: "")
         val (signed, advice) = FwImage.describeSignature(FlashState.sig)
-        sigText.text = if (fw == null) "" else if (signed) "Signature: ${FlashState.sigName}" else advice
+        sigText.text = if (fw == null) "" else if (signed) "Signed release. The keyboard checks the signature " +
+            "(${FlashState.sigName}) and installs it without asking." else advice
 
         val running = FlashState.running
-        flashButton.isEnabled = !running && fw != null && dev != null
+        flashButton.isEnabled = !running && !fetching && fw != null && dev != null
+        findViewById<Button>(R.id.latest).isEnabled = !running && !fetching
+        findViewById<Button>(R.id.pick).isEnabled = !running && !fetching
         cancelButton.visibility = if (running && FlashState.cancellable) View.VISIBLE else View.GONE
         applyBox.isEnabled = !running
         for (i in 0 until modeGroup.childCount) modeGroup.getChildAt(i).isEnabled = !running
