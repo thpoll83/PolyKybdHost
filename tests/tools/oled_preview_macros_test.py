@@ -11,6 +11,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "tools"))
 from oled_preview import (                                       # noqa: E402
+    MAX_EXPANDED_LEN,
     expand_function_macros,
     parse_function_macros,
 )
@@ -65,6 +66,14 @@ class WideLegendExpansionTest(unittest.TestCase):
         got = expand_function_macros(expr, macros)
         self.assertNotIn("MV(", got)
         self.assertEqual(got.count('U"\\x0E"'), 10)
+
+    def test_doubling_macro_stops_at_the_length_cap(self):
+        """A macro that repeats its argument doubles the text every step, so the step
+        bound alone lets a crafted checkout grow a legend to megabytes. The length
+        cap stops it within one step of the limit."""
+        macros = parse_function_macros('#define D(x) D(x x)\n')
+        got = expand_function_macros('D(U"a")', macros)
+        self.assertLessEqual(len(got), 2 * MAX_EXPANDED_LEN + 64)
 
 
 if __name__ == "__main__":

@@ -397,6 +397,13 @@ def parse_function_macros(*texts: str) -> dict:
     return out
 
 
+# The expanded text is bounded as well as the step count: a macro that repeats its
+# argument doubles the text on every step, so 64 steps alone could grow a crafted
+# checkout's legend without limit and stall the editor. Real legends stay far below
+# this (the ten-call context-menu icon expands to a few hundred characters).
+MAX_EXPANDED_LEN = 4096
+
+
 def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
     """Expand `SETTING_LBL("IDLE:", "Pulse")` down to its literals.
 
@@ -431,6 +438,8 @@ def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
             body = re.sub(r"\b" + re.escape(param) + r"\b",
                           lambda _m, r=arg: r, body)
         expr = expr[:start] + body + expr[end:]
+        if len(expr) > MAX_EXPANDED_LEN:
+            return expr                      # runaway growth: give up, as for depth
     return expr
 
 
