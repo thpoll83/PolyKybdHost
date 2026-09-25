@@ -8,6 +8,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, describe_keycode, decode_for_composer,
     build_keycode_to_name, mod_stack_name, DISPLAY_NAME_OVERRIDE,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD, BADGE_COLOR_FW,
+    HEADER_FILE, parse_qmk_keycodes, categorize, category_order,
 )
 
 # Minimal code->name mapping for the inner keys used in the tests.
@@ -344,6 +345,33 @@ class TestDisplayNameOverride(unittest.TestCase):
         for label in DISPLAY_NAME_OVERRIDE.values():
             self.assertNotIn(label, names)
 
+
+
+class TestStenoCategory(unittest.TestCase):
+    """QMK keycodes 0.0.9 grew steno from 4 codes to 83, plus 88 ST_* aliases.
+
+    The aliases carry no QK prefix, so before the Steno tab they landed in
+    "Additional" (88 tiles) and the 83 QK_STENO_* names in "Quantum".
+    """
+
+    def test_steno_names_and_aliases(self):
+        for name in ("QK_STENO_FUNCTION", "QK_STENO_MODE_BOLT", "ST_FN", "ST_BOLT", "ST_X26"):
+            self.assertEqual(categorize(name), "Steno", name)
+
+    def test_neighbours_unaffected(self):
+        self.assertEqual(categorize("KC_STOP"), "Media / System")
+        self.assertEqual(categorize("QK_BOOTLOADER"), "Quantum")
+
+    def test_steno_tab_is_ordered(self):
+        self.assertIn("Steno", category_order())
+
+    def test_shipped_header_is_keycodes_0_0_9(self):
+        # res/keycodes.h is a copy of qmk quantum/keycodes.h; these values moved in
+        # 0.0.9 (QK_STENO_BOLT was 0x74F0, which is now QK_STENO_X7).
+        kc = parse_qmk_keycodes(HEADER_FILE)
+        self.assertEqual(kc["QK_STENO_MODE_BOLT"], 0x751C)
+        self.assertEqual(kc["ST_BOLT"], 0x751C)
+        self.assertNotIn("QK_STENO_COMB_MAX", kc)
 
 
 if __name__ == "__main__":
