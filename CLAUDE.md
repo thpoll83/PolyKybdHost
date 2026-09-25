@@ -423,6 +423,11 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   against `{}` fills every unchanged key with a DEFAULT and silently resets the user's
   settings), and the lock is **best effort** — a save that cannot take it still writes,
   because losing the write outright is worse than the rare interleaving.
+  ⚠️ **`save()` never raises**: the constructor saves on every start, and on
+  Windows `os.replace` fails with `WinError 5` while any process has the file open
+  (Python's `open()` never shares delete). That killed the tray at startup twice
+  in a row (2026-09-25). The replace is retried for ~1 s on Windows, and a save
+  that still fails is logged and kept pending in memory.
 - ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired

@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import tempfile
 import time
 
@@ -15,6 +16,35 @@ CONFIG_FILENAME = "settings.yaml"
 #: contended for the length of one read + replace, so a wait this long means the
 #: holder is wedged rather than slow.
 SAVE_LOCK_TIMEOUT_S = 2.0
+
+#: How often, and how far apart, a save retries the final ``os.replace`` on
+#: Windows. ⚠️ Windows refuses to replace a file that ANY process has open
+#: without delete sharing, and Python's ``open()`` never grants it -- so the
+#: daemon's unlocked ``read_setting()`` calls, a virus scanner or the search
+#: indexer opening the fresh file is enough to fail it with ``WinError 5``.
+#: That killed the tray at startup twice in a row (field, 2026-09-25). Those
+#: holders let go within milliseconds, so ~1 s of retries covers them.
+REPLACE_ATTEMPTS = 10
+REPLACE_RETRY_S = 0.1
+
+
+def _replace(src, dst, platform=None, sleep=time.sleep):
+    """``os.replace``, retried on Windows while another process holds ``dst``.
+
+    Only ``PermissionError`` on Windows is retried: there it means "open
+    elsewhere right now", which passes. Everywhere else it means the
+    permissions really are wrong, so retrying would only delay the error."""
+    if platform is None:
+        platform = sys.platform
+    attempts = REPLACE_ATTEMPTS if platform == "win32" else 1
+    for attempt in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            sleep(REPLACE_RETRY_S)
 
 # Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
 # + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
@@ -456,7 +486,20 @@ class PolySettings:
         with filelock.exclusive(f"{self.path}.lock", timeout=SAVE_LOCK_TIMEOUT_S) as locked:
             if not locked:
                 self.log.debug("Settings lock busy; saving unsynchronised.")
-            self._save_merged()
+            try:
+                self._save_merged()
+            except OSError as e:
+                # ⚠️ Never let a save that did not land take the process with
+                # it. The constructor saves on every start, so a raise here
+                # killed the tray before it had a window (WinError 5, field,
+                # 2026-09-25), and a raise from a settings dialog slot is a Qt
+                # abort. The values stay in `collection`, and `_baseline` is
+                # untouched, so the next save still sees them as this process's
+                # changes and writes them.
+                self.log.error("Could not save settings to %s (%s: %s). The "
+                               "change is kept in memory and will be saved "
+                               "with the next change.",
+                               self.path, type(e).__name__, e)
 
     def _save_merged(self):
         """Merge against the file and replace it. Call under the settings lock."""
@@ -511,7 +554,7 @@ class PolySettings:
                 yaml.safe_dump(merged, f)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp, self.path)
+            _replace(tmp, self.path)
         except OSError:
             try:
                 os.unlink(tmp)

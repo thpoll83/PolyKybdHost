@@ -553,5 +553,80 @@ class ConcurrentWriterTest(unittest.TestCase):
 
 
 
+class ReplaceRetryTest(unittest.TestCase):
+    """Windows refuses to replace a file another process has open, and the
+    daemon, a virus scanner or the indexer can hold settings.yaml for a moment.
+    That surfaced as `PermissionError: [WinError 5]` from the constructor's save
+    and killed the tray at startup twice in a row (field, 2026-09-25)."""
+
+    def test_windows_retries_until_the_holder_lets_go(self):
+        calls = []
+
+        def flaky(src, dst):
+            calls.append((src, dst))
+            if len(calls) < 3:
+                raise PermissionError(13, "Access is denied")
+
+        slept = []
+        with mock.patch.object(settings.os, "replace", side_effect=flaky):
+            settings._replace("a", "b", platform="win32", sleep=slept.append)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(len(slept), 2)
+
+    def test_windows_gives_up_after_the_last_attempt(self):
+        with mock.patch.object(settings.os, "replace",
+                               side_effect=PermissionError(13, "denied")) as rep:
+            with self.assertRaises(PermissionError):
+                settings._replace("a", "b", platform="win32", sleep=lambda _s: None)
+        self.assertEqual(rep.call_count, settings.REPLACE_ATTEMPTS)
+
+    def test_other_platforms_do_not_retry(self):
+        """There a PermissionError means the permissions are wrong, which no
+        amount of waiting fixes."""
+        with mock.patch.object(settings.os, "replace",
+                               side_effect=PermissionError(13, "denied")) as rep:
+            with self.assertRaises(PermissionError):
+                settings._replace("a", "b", platform="linux",
+                                  sleep=lambda _s: self.fail("slept"))
+        self.assertEqual(rep.call_count, 1)
+
+
+class SaveFailureTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.object(
+            settings, "user_config_dir", return_value=self._tmp.name)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _replace_refused(self):
+        return mock.patch.object(settings, "_replace",
+                                 side_effect=PermissionError(13, "Access is denied"))
+
+    def test_the_CONSTRUCTOR_survives_a_save_that_cannot_land(self):
+        """The field crash: PolySettings() raised out of PolyHost.__init__."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with self._replace_refused() as refused:
+            b = settings.PolySettings()          # must not raise
+        self.assertTrue(refused.called, "the failing replace was never reached")
+        self.assertEqual(b.get("hid_reconnect_retries"), 9)
+
+    def test_a_failed_save_keeps_the_change_for_the_next_one(self):
+        a = settings.PolySettings()
+        with self._replace_refused() as refused:
+            a.collection["browser_report_port"] = 10004
+            a.save()                             # must not raise
+        self.assertTrue(refused.called)
+        with open(a.path, encoding="utf-8") as f:
+            self.assertNotIn("10004", f.read(), "the refused save landed anyway")
+
+        a.save()                                 # the holder has let go
+        with open(a.path, encoding="utf-8") as f:
+            self.assertIn("browser_report_port: 10004", f.read())
+
+
 if __name__ == "__main__":
     unittest.main()
