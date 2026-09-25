@@ -48,6 +48,25 @@
             android:layout_marginTop="16dp"
             android:text="Apply after it is verified (reboots the keyboard)" />
 
+        <RadioGroup
+            android:id="@+id/mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/mode_in_app"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Keep this app open (no notification)" />
+
+            <RadioButton
+                android:id="@+id/mode_background"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Run in the background (shows a progress notification)" />
+        </RadioGroup>
+
         <Button
             android:id="@+id/flash"
             android:layout_width="match_parent"

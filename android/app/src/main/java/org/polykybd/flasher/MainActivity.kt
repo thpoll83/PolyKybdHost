@@ -2,6 +2,8 @@ package org.polykybd.flasher
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbManager
@@ -15,19 +17,31 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ProgressBar
+import android.widget.RadioGroup
 import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : Activity() {
     companion object {
         private const val PICK_FILES = 1
         private const val MIN_BATTERY_PCT = 20
+        private const val PREFS = "settings"
+        private const val PREF_MODE = "run_mode"
+        private const val MODE_BACKGROUND = "background"
+        private const val MODE_IN_APP = "in_app"
     }
+
+    /** How an update runs: [MODE_BACKGROUND] (service + notification), [MODE_IN_APP], or null = not chosen yet. */
+    private var runMode: String?
+        get() = getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PREF_MODE, null)
+        set(v) { getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(PREF_MODE, v).apply() }
 
     private lateinit var usb: UsbManager
     private lateinit var deviceText: TextView
     private lateinit var filesText: TextView
     private lateinit var sigText: TextView
     private lateinit var applyBox: CheckBox
+    private lateinit var modeGroup: RadioGroup
     private lateinit var flashButton: Button
     private lateinit var cancelButton: Button
     private lateinit var progressBar: ProgressBar
@@ -43,6 +57,7 @@ class MainActivity : Activity() {
         filesText = findViewById(R.id.files)
         sigText = findViewById(R.id.sig)
         applyBox = findViewById(R.id.apply)
+        modeGroup = findViewById(R.id.mode)
         flashButton = findViewById(R.id.flash)
         cancelButton = findViewById(R.id.cancel)
         progressBar = findViewById(R.id.progress)
@@ -58,11 +73,45 @@ class MainActivity : Activity() {
             FlashState.update(message = "Cancelling after the current chunk…")
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        when (runMode) {
+            MODE_BACKGROUND -> modeGroup.check(R.id.mode_background)
+            MODE_IN_APP -> modeGroup.check(R.id.mode_in_app)
+        }
+        modeGroup.setOnCheckedChangeListener { _, id ->
+            chooseRunMode(if (id == R.id.mode_background) MODE_BACKGROUND else MODE_IN_APP)
+        }
+    }
+
+    private fun chooseRunMode(mode: String) {
+        runMode = mode
+        // Only background mode shows a notification, so only it asks for the permission.
+        // Declining is fine: the update still runs, Android just hides the notification.
+        if (mode == MODE_BACKGROUND && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
         }
+    }
+
+    /** Asked once, on the first Flash; the radio buttons change it later. */
+    private fun askRunMode(then: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle("How should the update run?")
+            .setMessage("The transfer takes a few minutes.\n\n" +
+                "Keep this app open: no notification. The screen stays on, and the update " +
+                "can stop if you leave the app.\n\n" +
+                "Run in the background: you can lock the phone or switch apps. Android requires " +
+                "a progress notification while it runs.\n\n" +
+                "You can change this later on the main screen.")
+            .setPositiveButton("Run in background") { _, _ ->
+                modeGroup.check(R.id.mode_background)
+                then()
+            }
+            .setNegativeButton("Keep app open") { _, _ ->
+                modeGroup.check(R.id.mode_in_app)
+                then()
+            }
+            .show()
     }
 
     override fun onStart() {
@@ -72,6 +121,10 @@ class MainActivity : Activity() {
     }
 
     override fun onStop() {
+        if (FlashState.running && runMode == MODE_IN_APP && !isChangingConfigurations) {
+            Toast.makeText(this, "The firmware update needs this app open. Leaving it can stop the update.",
+                Toast.LENGTH_LONG).show()
+        }
         FlashState.removeListener(listener)
         super.onStop()
     }
@@ -159,8 +212,16 @@ class MainActivity : Activity() {
             statusText.text = "Allow USB access to the keyboard, then tap Flash again."
             return
         }
+        if (runMode == null) askRunMode { launch() } else launch()
+    }
+
+    private fun launch() {
         FlashState.result = null
-        startForegroundService(Intent(this, FlashService::class.java))
+        if (runMode == MODE_BACKGROUND) {
+            startForegroundService(Intent(this, FlashService::class.java))
+        } else {
+            FlashJob.start(this)
+        }
     }
 
     private fun render() {
@@ -181,6 +242,7 @@ class MainActivity : Activity() {
         flashButton.isEnabled = !running && fw != null && dev != null
         cancelButton.visibility = if (running && FlashState.cancellable) View.VISIBLE else View.GONE
         applyBox.isEnabled = !running
+        for (i in 0 until modeGroup.childCount) modeGroup.getChildAt(i).isEnabled = !running
         progressBar.progress = FlashState.pct
         progressBar.visibility = if (running || FlashState.result != null) View.VISIBLE else View.GONE
         val result = FlashState.result
