@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Targeting API 35 makes Android 15 draw the app edge to edge and ignore
+         statusBarColor, leaving the status bar above the blue header uncoloured.
+         Opting out keeps it blue; revisit before targeting API 36, where the
+         opt-out is removed and the header has to pad itself by the status-bar inset. -->
+    <style name="AppTheme" parent="AppTheme.Base">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
