@@ -73,7 +73,16 @@ class WideLegendExpansionTest(unittest.TestCase):
         cap stops it within one step of the limit."""
         macros = parse_function_macros('#define D(x) D(x x)\n')
         got = expand_function_macros('D(U"a")', macros)
-        self.assertLessEqual(len(got), 2 * MAX_EXPANDED_LEN + 64)
+        self.assertLessEqual(len(got), MAX_EXPANDED_LEN)
+
+    def test_one_oversized_step_is_not_taken(self):
+        """A single expansion can overshoot the cap on its own: a body naming its
+        parameter 200 times, fed a 100-character argument, would build ~20 KB in one
+        step. The step is measured first and refused, so the text never grows."""
+        macros = parse_function_macros("#define W(x) " + " ".join(["x"] * 200) + "\n")
+        expr = 'W(U"' + "a" * 96 + '")'
+        got = expand_function_macros(expr, macros)
+        self.assertEqual(got, expr)
 
 
 if __name__ == "__main__":

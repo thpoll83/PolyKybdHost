@@ -425,6 +425,15 @@ def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
         params, body = macros[name]
         if len(args) != len(params):
             return expr                      # arity mismatch: leave it alone
+        # Measure the step BEFORE building it: one body that names its parameter a
+        # thousand times would otherwise build a string far past the cap before the
+        # check below could see it. An over-budget step is not taken at all, so the
+        # caller gets the last in-budget text, still unexpanded, and drops the legend.
+        grown = len(body)
+        for param, arg in zip(params, args):
+            grown += len(re.findall(r"\b" + re.escape(param) + r"\b", body)) * (len(arg) + 1)
+        if len(expr) - (end - start) + grown > MAX_EXPANDED_LEN:
+            return expr
         for param, arg in zip(params, args):
             # ⚠️ The replacement is a FUNCTION, not a string. `re.sub` reads a string
             # replacement as a TEMPLATE, so an argument carrying a C escape --
@@ -438,8 +447,6 @@ def expand_function_macros(expr: str, macros: dict, depth: int = 64) -> str:
             body = re.sub(r"\b" + re.escape(param) + r"\b",
                           lambda _m, r=arg: r, body)
         expr = expr[:start] + body + expr[end:]
-        if len(expr) > MAX_EXPANDED_LEN:
-            return expr                      # runaway growth: give up, as for depth
     return expr
 
 
