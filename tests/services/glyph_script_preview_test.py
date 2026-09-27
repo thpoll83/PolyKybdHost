@@ -116,7 +116,11 @@ class TestShippedBundle(unittest.TestCase):
         font = gsp.font_for_script(self.pack, GlyphScript.BRAILLE.value)
         glyph = font.glyphs[0]                      # the 'a' cell
         img = gsp.script_preview(GlyphScript.BRAILLE.value, "a")
-        self.assertGreater(img.height, 4 * glyph["height"])
+        # A cell is three dot rows, so the alphabet's box is at least three dots
+        # tall; measured on the 'a' dot alone it would be one. This was `> 4x`,
+        # which the round dots of fantasy v6 (8 px dot, 12 px pitch: 8+12+12 = 32
+        # = exactly 4x) sat on the boundary of.
+        self.assertGreaterEqual(img.height, 3 * glyph["height"])
         top_half = img.crop((0, 0, img.width, img.height // 2))
         self.assertEqual(lit(img), lit(top_half))   # the dot keeps its place too
 

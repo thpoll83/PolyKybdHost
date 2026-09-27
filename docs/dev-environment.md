@@ -11,11 +11,14 @@ and relative links were adjusted to suit a standalone file.
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
   - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl cairosvg openpyxl`
-    (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl cairosvg`
+    (pip) **and** `xvfb x11-xserver-utils` (apt), plus `pip install -r tools/requirements.txt` for
+    `scripts/export_preview_data.py` and the preview tools (it needs `openpyxl`, which is a dev
+    dependency and not in `requirements.txt` — the export dies with `ModuleNotFoundError:
+    openpyxl` without it; measured 2026-09-27 on a freshly reset container), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, `res/icon_fetch` (cairosvg,
-    added to the list 2026-09-23 after it cost a full run 8 tests; `openpyxl`, added 2026-09-27: without it the keycap
+    added to the list 2026-09-23 after it cost a full run 8 tests; `openpyxl` from `tools/requirements.txt`, 2026-09-27: without it the keycap
     previews lose their letter legends and 10 preview/editor tests fail) and the `host_client`
     GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
     env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
