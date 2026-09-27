@@ -405,6 +405,16 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
       the `altgrhalf` settings rows (which renumber every row under them) and the
       2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
       parity test above is what says the result is right.
+    - ⚠️ **A firmware change to RESIDENT ICON codepoints is a same-release host
+      follow-up, and it is data PLUS code.** Four host constants name IconsFont
+      codepoints: `status_screen.ICON_LAYER` / `ICON_NUMLOCK_OFF` /
+      `ICON_CAPSLOCK_OFF`, `shortcut_icons.ICON_UP/DOWN/LEFT/RIGHT`, the icon-face
+      probe in `keycap_preview` (now `ss.ICON_LAYER`, so one number to keep) and
+      `tools/preview_doctor.py`'s brightness-family check. They select glyphs out of
+      the export, so they move in the SAME PR as the re-export, never alone. Firmware
+      1.0.0 moved every icon out of the C1 band into plane-16 PUA; the host previews
+      stayed at 0.28.0 and three shipped-vs-checkout tests sat red on `main` until
+      #277. **After every firmware release, run `export_preview_data.py --check`.**
 
   - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
     comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
