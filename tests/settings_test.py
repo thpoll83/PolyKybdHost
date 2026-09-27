@@ -591,7 +591,9 @@ class ReplaceRetryTest(unittest.TestCase):
         self.assertEqual(rep.call_count, 1)
 
 
-class SaveFailureTest(unittest.TestCase):
+class _TempConfigDirCase(unittest.TestCase):
+    """A config dir of its own, plus a way to make the final replace fail."""
+
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
@@ -604,6 +606,8 @@ class SaveFailureTest(unittest.TestCase):
         return mock.patch.object(settings, "_replace",
                                  side_effect=PermissionError(13, "Access is denied"))
 
+
+class SaveFailureTest(_TempConfigDirCase):
     def test_the_CONSTRUCTOR_survives_a_save_that_cannot_land(self):
         """The field crash: PolySettings() raised out of PolyHost.__init__."""
         a = settings.PolySettings()
@@ -626,6 +630,62 @@ class SaveFailureTest(unittest.TestCase):
         a.save()                                 # the holder has let go
         with open(a.path, encoding="utf-8") as f:
             self.assertIn("browser_report_port: 10004", f.read())
+
+
+class SaveReportsFailureTest(_TempConfigDirCase):
+    """save() never raises, so it must SAY when it did not write: a privacy
+    switch turned off in the dialog is read back from the FILE by other
+    components, and an unsaved change there is not in effect (CodeRabbit, #278)."""
+
+    def test_save_and_set_all_report_whether_they_wrote(self):
+        a = settings.PolySettings()
+        self.assertTrue(a.save())
+        with self._replace_refused():
+            self.assertFalse(a.set_all(dict(a.collection, browser_report_port=10005)))
+        self.assertTrue(a.save())
+
+    def test_a_config_dir_that_cannot_be_created_does_not_raise(self):
+        """filelock.exclusive created the directory OUTSIDE its try, so this one
+        failure still escaped save()."""
+        a = settings.PolySettings()
+        with mock.patch.object(settings.filelock.os, "makedirs",
+                               side_effect=PermissionError(13, "denied")) as mk, \
+                self._replace_refused():
+            self.assertFalse(a.save())               # must not raise
+        self.assertTrue(mk.called, "the directory was never created")
+
+
+class FilelockDirectoryTest(unittest.TestCase):
+    def test_an_uncreatable_directory_yields_false_instead_of_raising(self):
+        from polyhost.util import filelock
+        with mock.patch.object(filelock.os, "makedirs",
+                               side_effect=PermissionError(13, "denied")):
+            with filelock.exclusive("/nonexistent-dir/x.lock") as locked:
+                self.assertFalse(locked)
+
+
+class SettingsSetReportsFailureTest(unittest.TestCase):
+    """polyctl and the client-mode dialog get the save result through
+    PolyCore.settings_set's (ok, msg)."""
+
+    def _core(self, saved):
+        from polyhost.core.poly_core import PolyCore
+        stub = mock.Mock()
+        stub.poly_settings.get_all.return_value = {"shortcut_icons_enabled": True}
+        stub.poly_settings.set_all.return_value = saved
+        return PolyCore, stub
+
+    def test_a_failed_save_is_reported_but_still_applied(self):
+        core, stub = self._core(saved=False)
+        ok, msg = core.settings_set(stub, "shortcut_icons_enabled", False)
+        self.assertFalse(ok)
+        self.assertIn("could not be saved", msg)
+        stub.note_settings_changed.assert_called_once_with(["shortcut_icons_enabled"])
+
+    def test_a_saved_change_is_ok(self):
+        core, stub = self._core(saved=True)
+        self.assertEqual(core.settings_set(stub, "shortcut_icons_enabled", False),
+                         (True, "shortcut_icons_enabled"))
 
 
 if __name__ == "__main__":

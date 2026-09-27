@@ -427,7 +427,10 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   Windows `os.replace` fails with `WinError 5` while any process has the file open
   (Python's `open()` never shares delete). That killed the tray at startup twice
   in a row (2026-09-25). The replace is retried for ~1 s on Windows, and a save
-  that still fails is logged and kept pending in memory.
+  that still fails is logged and kept pending in memory. ⚠️ It **returns whether
+  it wrote**, and a caller that tells the user a change was saved must check it:
+  `read_setting()` readers (the shortcut harvest's privacy switch among them) see
+  the file, not the in-memory value.
 - ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired

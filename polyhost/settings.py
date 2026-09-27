@@ -311,8 +311,9 @@ class PolySettings:
         return self.collection
 
     def set_all(self, new_settings):
+        """Replace the settings and persist them. Returns whether they reached disk."""
         self.collection = new_settings
-        self.save()
+        return self.save()
 
     def load(self):
         # At load there is no prior state to protect, so an unreadable file
@@ -487,7 +488,7 @@ class PolySettings:
             if not locked:
                 self.log.debug("Settings lock busy; saving unsynchronised.")
             try:
-                self._save_merged()
+                return self._save_merged()
             except OSError as e:
                 # ⚠️ Never let a save that did not land take the process with
                 # it. The constructor saves on every start, so a raise here
@@ -500,6 +501,12 @@ class PolySettings:
                                "change is kept in memory and will be saved "
                                "with the next change.",
                                self.path, type(e).__name__, e)
+                # ⚠️ Reported, not raised: a caller that tells the user a
+                # setting was saved must be able to say it was not. The value
+                # is live in THIS process only; `read_setting()` readers (the
+                # shortcut harvest's privacy switch among them) still see the
+                # file (CodeRabbit, #278).
+                return False
 
     def _save_merged(self):
         """Merge against the file and replace it. Call under the settings lock."""
@@ -533,7 +540,7 @@ class PolySettings:
                     "moved aside, so writing would destroy it. The change is "
                     "kept in memory and will be saved once that is resolved.",
                     self.path)
-                return
+                return False
             merged = self._normalize(self.collection)
         else:
             merged = self._normalize(on_disk)
@@ -568,4 +575,5 @@ class PolySettings:
         self.collection = merged
         self._baseline = dict(merged)
         self.log.info("Saved settings to %s", self.path)
+        return True
 
