@@ -25,6 +25,23 @@ and two rounds were spent inferring that from the symptoms instead of asking.
 
 ---
 
+## Where the keycode NAMES come from
+
+The keycode browser's tiles and every keycode label in the editor come from
+`polyhost/res/keycodes.h`, a verbatim copy of the firmware's `quantum/keycodes.h`.
+`parse_qmk_keycodes()` reads it at startup, and `categorize()` files each name into a
+tab by prefix. A name that matches no rule lands in "Additional", the second tab.
+
+- ⚠️ **The copy goes stale on every upstream QMK merge that bumps
+  `QMK_KEYCODES_VERSION`, and nothing fails.** The editor keeps working with the old
+  names and values. `check-mirrored-artifacts` compares the two files; the firmware's
+  `merge-upstream-into-branch` skill (step 6c) refreshes the copy.
+- **After a refresh, check the tab counts.** Keycodes 0.0.9 (2026-09-25) added 79 steno
+  codes (83 in all) and 88 `ST_*` aliases. Copied without a `categorize()` rule, the 88
+  aliases fell into "Additional" and the 83 `QK_STENO_*` names into "Quantum". They have a "Steno" tab now.
+- The tabs list every QMK keycode, including features the PolyKybd firmware does not
+  enable (steno, MIDI, haptic, joystick). Those keys can be assigned and do nothing.
+
 ## Where the key GEOMETRY comes from
 
 - ⚠️ **The editor's key GEOMETRY comes from `polyhost/res/polykybd-split72.json`
