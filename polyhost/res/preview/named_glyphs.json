@@ -1,5 +1,5 @@
 {
- "fw_version": "0.28.0",
+ "fw_version": "1.0.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -838,11 +838,17 @@
   "BACKSLASH": [
    92
   ],
+  "BADGE_LINE": [
+   3
+  ],
   "BADGE_OFF": [
    1
   ],
   "BADGE_ON": [
    2
+  ],
+  "BADGE_SQUARE": [
+   4
   ],
   "BENGALI_0985": [
    2437
@@ -2891,10 +2897,6 @@
   "HINT_MID": [
    22
   ],
-  "HINT_POS_CTXPTR": [
-   66,
-   12
-  ],
   "HINT_POS_IDLECLK": [
    76,
    1
@@ -3228,44 +3230,41 @@
   "ICON_APP_SWITCH": [
    128468
   ],
-  "ICON_BACKSPACE": [
-   139
-  ],
   "ICON_BRIGHT_0": [
-   137
+   1048590
   ],
   "ICON_BRIGHT_1": [
-   138
+   1048591
   ],
   "ICON_BRIGHT_2": [
-   139
+   1048592
   ],
   "ICON_BRIGHT_3": [
-   147
+   1048600
   ],
   "ICON_BRIGHT_4": [
-   154
+   1048607
   ],
   "ICON_BRIGHT_AUTO": [
-   158
+   1048611
   ],
   "ICON_BRIGHT_DOWN": [
-   155
+   1048608
   ],
   "ICON_BRIGHT_MAN": [
-   159
+   1048612
   ],
   "ICON_BRIGHT_UP": [
-   157
+   1048610
   ],
   "ICON_CANCEL_X": [
    128473
   ],
   "ICON_CAPSLOCK_OFF": [
-   142
+   1048595
   ],
   "ICON_CAPSLOCK_ON": [
-   143
+   1048596
   ],
   "ICON_CAST": [
    128246
@@ -3280,14 +3279,7 @@
    8864
   ],
   "ICON_CONTEXT_MENU": [
-   32,
-   9776,
-   14,
-   66,
-   12,
-   21,
-   8,
-   10148
+   1048576
   ],
   "ICON_COPILOT": [
    129302
@@ -3296,10 +3288,10 @@
    128483
   ],
   "ICON_DOWN": [
-   130
+   1048583
   ],
   "ICON_EXPLORER": [
-   156
+   1048609
   ],
   "ICON_FEEDBACK": [
    128227
@@ -3325,29 +3317,38 @@
   "ICON_GIF": [
    127916
   ],
+  "ICON_HOLD_DOWN": [
+   1048579
+  ],
+  "ICON_HOLD_UP": [
+   1048578
+  ],
+  "ICON_INTL_PICKER_SMALL": [
+   1048577
+  ],
   "ICON_LAUNCHER": [
    9776
   ],
   "ICON_LAYER": [
-   128
+   1048581
   ],
   "ICON_LAYER_ONESHOT": [
-   160
+   1048613
   ],
   "ICON_LAYER_SWITCH": [
-   127
+   1048580
   ],
   "ICON_LEFT": [
-   131
+   1048584
   ],
   "ICON_LIGHTNING": [
    9889
   ],
   "ICON_LMB": [
-   134
+   1048587
   ],
   "ICON_MAC_CONTROL": [
-   151
+   1048604
   ],
   "ICON_MAGNIFIER": [
    128269
@@ -3362,7 +3363,7 @@
    2
   ],
   "ICON_MMB": [
-   135
+   1048588
   ],
   "ICON_MUTE": [
    128360,
@@ -3377,25 +3378,25 @@
    128423
   ],
   "ICON_NUMLOCK_OFF": [
-   140
+   1048593
   ],
   "ICON_NUMLOCK_ON": [
-   141
+   1048594
   ],
   "ICON_OS_ANDROID": [
-   150
+   1048603
   ],
   "ICON_OS_GNOME": [
-   152
+   1048605
   ],
   "ICON_OS_KDE": [
-   153
+   1048606
   ],
   "ICON_OS_LINUX": [
-   149
+   1048602
   ],
   "ICON_OS_WINDOWS": [
-   148
+   1048601
   ],
   "ICON_PAUSE_TEXT": [
    32,
@@ -3427,10 +3428,10 @@
    9728
   ],
   "ICON_RIGHT": [
-   132
+   1048585
   ],
   "ICON_RMB": [
-   136
+   1048589
   ],
   "ICON_SCREENSHOT": [
    128247
@@ -3477,7 +3478,7 @@
    9881
   ],
   "ICON_SHIFT": [
-   144
+   1048597
   ],
   "ICON_SLIDERS": [
    127899
@@ -3492,16 +3493,16 @@
    128248
   ],
   "ICON_SPACE": [
-   133
+   1048586
   ],
   "ICON_SPEECH_REC": [
    127908
   ],
   "ICON_SWITCH_OFF": [
-   146
+   1048599
   ],
   "ICON_SWITCH_ON": [
-   145
+   1048598
   ],
   "ICON_TASK_CYCLE": [
    128260
@@ -3510,7 +3511,7 @@
    128292
   ],
   "ICON_UP": [
-   129
+   1048582
   ],
   "ICON_VOLUME_MIXER": [
    128266
@@ -4285,10 +4286,10 @@
    7929
   ],
   "LAYER_ONESHOT": [
-   160
+   1048613
   ],
   "LAYER_SWITCH": [
-   127
+   1048580
   ],
   "LCORNER_BRKT": [
    12300
@@ -5136,6 +5137,9 @@
   ],
   "ROT_CCW_120": [
    8
+  ],
+  "ROT_CCW_120_THIRD": [
+   32
   ],
   "RUBLE_SIGN": [
    8381

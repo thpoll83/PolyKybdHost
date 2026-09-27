@@ -32,10 +32,11 @@ import difflib
 import re
 from dataclasses import dataclass
 
-# Resident PolyKybd icons (gfx_icons.h, the C1 band). These need NO font pack --
-# they are compiled into the firmware -- so a shortcut that lands on one of these
-# renders on a keyboard that has never been flashed with a bundle.
-ICON_UP, ICON_DOWN, ICON_LEFT, ICON_RIGHT = 0x81, 0x82, 0x83, 0x84
+# Resident PolyKybd icons (gfx_icons.h, plane-16 PUA since firmware 1.0.0; they sat
+# in the C1 band 0x80..0x84 before). These need NO font pack -- they are compiled
+# into the firmware -- so a shortcut that lands on one of these renders on a
+# keyboard that has never been flashed with a bundle.
+ICON_UP, ICON_DOWN, ICON_LEFT, ICON_RIGHT = 0x100006, 0x100007, 0x100008, 0x100009
 
 # concept -> (codepoint, phrases). Phrases are matched longest-first, so a
 # compound ("save as") wins over the word it contains ("save").
