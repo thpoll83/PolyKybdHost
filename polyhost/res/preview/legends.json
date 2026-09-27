@@ -589,6 +589,94 @@
   "SQ_TMPD": "QK_SEQUENCER_TEMPO_DOWN",
   "SQ_TMPU": "QK_SEQUENCER_TEMPO_UP",
   "SQ_TOGG": "QK_SEQUENCER_TOGGLE",
+  "ST_A": "QK_STENO_A",
+  "ST_AO": "QK_STENO_AO",
+  "ST_BOLT": "QK_STENO_MODE_BOLT",
+  "ST_BR": "QK_STENO_BR",
+  "ST_DR": "QK_STENO_DR",
+  "ST_DZR": "QK_STENO_DZR",
+  "ST_E": "QK_STENO_E",
+  "ST_EU": "QK_STENO_EU",
+  "ST_FN": "QK_STENO_FUNCTION",
+  "ST_FR": "QK_STENO_FR",
+  "ST_FRR": "QK_STENO_FRR",
+  "ST_GEMI": "QK_STENO_MODE_GEMINI",
+  "ST_GR": "QK_STENO_GR",
+  "ST_HL": "QK_STENO_HL",
+  "ST_HRL": "QK_STENO_HRL",
+  "ST_KL": "QK_STENO_KL",
+  "ST_LGR": "QK_STENO_LGR",
+  "ST_LR": "QK_STENO_LR",
+  "ST_N1": "QK_STENO_N1",
+  "ST_N2": "QK_STENO_N2",
+  "ST_N3": "QK_STENO_N3",
+  "ST_N4": "QK_STENO_N4",
+  "ST_N5": "QK_STENO_N5",
+  "ST_N6": "QK_STENO_N6",
+  "ST_N7": "QK_STENO_N7",
+  "ST_N8": "QK_STENO_N8",
+  "ST_N9": "QK_STENO_N9",
+  "ST_NA": "QK_STENO_NA",
+  "ST_NB": "QK_STENO_NB",
+  "ST_NC": "QK_STENO_NC",
+  "ST_NEXT": "QK_STENO_MODE_NEXT",
+  "ST_NUM": "QK_STENO_N1",
+  "ST_O": "QK_STENO_O",
+  "ST_PBR": "QK_STENO_PBR",
+  "ST_PL": "QK_STENO_PL",
+  "ST_PR": "QK_STENO_PR",
+  "ST_PREV": "QK_STENO_MODE_PREVIOUS",
+  "ST_PWL": "QK_STENO_PWL",
+  "ST_PWR": "QK_STENO_POWER",
+  "ST_RE1": "QK_STENO_RESET1",
+  "ST_RE2": "QK_STENO_RESET2",
+  "ST_RES1": "QK_STENO_RESET1",
+  "ST_RES2": "QK_STENO_RESET2",
+  "ST_RL": "QK_STENO_RL",
+  "ST_RR": "QK_STENO_RR",
+  "ST_S1": "QK_STENO_S1",
+  "ST_S2": "QK_STENO_S2",
+  "ST_S3": "QK_STENO_S3",
+  "ST_SL": "QK_STENO_S1",
+  "ST_SR": "QK_STENO_SR",
+  "ST_ST1": "QK_STENO_ST1",
+  "ST_ST2": "QK_STENO_ST2",
+  "ST_ST3": "QK_STENO_ST3",
+  "ST_ST4": "QK_STENO_ST4",
+  "ST_STR": "QK_STENO_ST1",
+  "ST_TKL": "QK_STENO_TKL",
+  "ST_TL": "QK_STENO_TL",
+  "ST_TR": "QK_STENO_TR",
+  "ST_TSR": "QK_STENO_TSR",
+  "ST_U": "QK_STENO_U",
+  "ST_WL": "QK_STENO_WL",
+  "ST_X1": "QK_STENO_X1",
+  "ST_X10": "QK_STENO_X10",
+  "ST_X11": "QK_STENO_X11",
+  "ST_X12": "QK_STENO_X12",
+  "ST_X13": "QK_STENO_X13",
+  "ST_X14": "QK_STENO_X14",
+  "ST_X15": "QK_STENO_X15",
+  "ST_X16": "QK_STENO_X16",
+  "ST_X17": "QK_STENO_X17",
+  "ST_X18": "QK_STENO_X18",
+  "ST_X19": "QK_STENO_X19",
+  "ST_X2": "QK_STENO_X2",
+  "ST_X20": "QK_STENO_X20",
+  "ST_X21": "QK_STENO_X21",
+  "ST_X22": "QK_STENO_X22",
+  "ST_X23": "QK_STENO_X23",
+  "ST_X24": "QK_STENO_X24",
+  "ST_X25": "QK_STENO_X25",
+  "ST_X26": "QK_STENO_X26",
+  "ST_X3": "QK_STENO_X3",
+  "ST_X4": "QK_STENO_X4",
+  "ST_X5": "QK_STENO_X5",
+  "ST_X6": "QK_STENO_X6",
+  "ST_X7": "QK_STENO_X7",
+  "ST_X8": "QK_STENO_X8",
+  "ST_X9": "QK_STENO_X9",
+  "ST_ZR": "QK_STENO_ZR",
   "TL_LOWR": "QK_TRI_LAYER_LOWER",
   "TL_UPPR": "QK_TRI_LAYER_UPPER",
   "UC_BSD": "QK_UNICODE_MODE_BSD",
@@ -861,7 +949,7 @@
   "32676": "KC_MACRO_REC",
   "32677": "KC_IDLE_TIMEOUT"
  },
- "fw_version": "0.28.0",
+ "fw_version": "1.0.0",
  "legends": {
   "DE_GRV": [
    96
@@ -880,14 +968,7 @@
    111
   ],
   "KC_APP": [
-   32,
-   9776,
-   14,
-   66,
-   12,
-   21,
-   8,
-   10148
+   1048576
   ],
   "KC_AUDIO_MUTE": [
    128360,
@@ -916,8 +997,8 @@
    13,
    11,
    9,
-   128,
-   127
+   1048581,
+   1048580
   ],
   "KC_CALCULATOR": [
    32,
@@ -929,7 +1010,7 @@
    67,
    97,
    112,
-   142
+   1048595
   ],
   "KC_COPY": [
    67,
@@ -964,19 +1045,19 @@
    116
   ],
   "KC_D1Q": [
-   138
+   1048591
   ],
   "KC_D3Q": [
-   147
+   1048600
   ],
   "KC_DAUTO": [
-   159
+   1048612
   ],
   "KC_DBRI": [
-   157
+   1048610
   ],
   "KC_DDIM": [
-   155
+   1048608
   ],
   "KC_DEADKEY": [
    87,
@@ -985,24 +1066,24 @@
    101,
    13,
    11,
-   146
+   1048599
   ],
   "KC_DELETE": [
    8998
   ],
   "KC_DHLF": [
-   139
+   1048592
   ],
   "KC_DMAX": [
-   154
+   1048607
   ],
   "KC_DMIN": [
-   137
+   1048590
   ],
   "KC_DOWN": [
    32,
    32,
-   130
+   1048583
   ],
   "KC_EDEN": [
    22,
@@ -1311,7 +1392,7 @@
    32,
    32,
    32,
-   130
+   1048583
   ],
   "KC_KP_3": [
    11123
@@ -1319,12 +1400,12 @@
   "KC_KP_4": [
    32,
    32,
-   131
+   1048584
   ],
   "KC_KP_6": [
    32,
    32,
-   132
+   1048585
   ],
   "KC_KP_7": [
    11120
@@ -1333,7 +1414,7 @@
    32,
    32,
    32,
-   129
+   1048582
   ],
   "KC_KP_9": [
    11121
@@ -1383,7 +1464,7 @@
    5,
    5,
    5,
-   145
+   1048598
   ],
   "KC_L1": [
    22,
@@ -1402,7 +1483,7 @@
    5,
    5,
    5,
-   146
+   1048599
   ],
   "KC_L2": [
    22,
@@ -1422,7 +1503,7 @@
    5,
    5,
    5,
-   146
+   1048599
   ],
   "KC_L3": [
    22,
@@ -1439,7 +1520,7 @@
    5,
    5,
    5,
-   146
+   1048599
   ],
   "KC_L4": [
    22,
@@ -1458,7 +1539,7 @@
    5,
    5,
    5,
-   146
+   1048599
   ],
   "KC_LANG": [
    127760
@@ -1471,7 +1552,7 @@
   "KC_LEFT": [
    32,
    32,
-   131
+   1048584
   ],
   "KC_LEFT_ALT": [
    9095
@@ -1491,7 +1572,7 @@
   ],
   "KC_LSFT": [
    32,
-   144
+   1048597
   ],
   "KC_MACRO_REC": [
    22,
@@ -1516,17 +1597,17 @@
    111
   ],
   "KC_MEDIA_NEXT_TRACK": [
-   132,
-   132
+   1048585,
+   1048585
   ],
   "KC_MEDIA_PLAY_PAUSE": [
    32,
    32,
-   132
+   1048585
   ],
   "KC_MEDIA_PREV_TRACK": [
-   131,
-   131
+   1048584,
+   1048584
   ],
   "KC_MEDIA_STOP": [
    14,
@@ -1549,7 +1630,7 @@
   "KC_NUM_LOCK": [
    78,
    109,
-   140
+   1048593
   ],
   "KC_OPER": [
    16,
@@ -1640,14 +1721,14 @@
    105,
    110,
    101,
-   132
+   1048585
   ],
   "KC_OS_LINE_HOME": [
    76,
    105,
    110,
    101,
-   131
+   1048584
   ],
   "KC_OS_LOCK": [
    76,
@@ -1695,7 +1776,7 @@
    111,
    13,
    11,
-   146
+   1048599
   ],
   "KC_OS_UNDO": [
    85,
@@ -1727,14 +1808,14 @@
    111,
    114,
    100,
-   131
+   1048584
   ],
   "KC_OS_WORD_RIGHT": [
    87,
    111,
    114,
    100,
-   132
+   1048585
   ],
   "KC_PAGE_DOWN": [
    32,
@@ -1775,7 +1856,7 @@
    66,
    13,
    11,
-   146
+   1048599
   ],
   "KC_RGUI": [
    10070
@@ -1783,7 +1864,7 @@
   "KC_RIGHT": [
    32,
    32,
-   132
+   1048585
   ],
   "KC_RIGHT_ALT": [
    9095
@@ -1793,7 +1874,7 @@
   ],
   "KC_RSFT": [
    32,
-   144
+   1048597
   ],
   "KC_SCROLL_LOCK": [
    83,
@@ -1841,7 +1922,7 @@
    101
   ],
   "KC_SPACE": [
-   133
+   1048586
   ],
   "KC_STORE_EE": [
    16,
@@ -1919,7 +2000,7 @@
   "KC_UP": [
    32,
    32,
-   129
+   1048582
   ],
   "MO(_ADDLANG1)": [
    304,
@@ -1933,7 +2014,7 @@
    13,
    11,
    9,
-   128
+   1048581
   ],
   "MO(_NL)": [
    78,
@@ -1941,7 +2022,7 @@
    13,
    11,
    9,
-   128
+   1048581
   ],
   "MO(_UL)": [
    85,
@@ -1951,7 +2032,7 @@
    13,
    11,
    9,
-   128
+   1048581
   ],
   "MS_ACL0": [
    62,
@@ -1971,37 +2052,37 @@
   "MS_BTN1": [
    32,
    32,
-   134
+   1048587
   ],
   "MS_BTN2": [
    32,
    32,
-   136
+   1048589
   ],
   "MS_BTN3": [
    32,
    32,
-   135
+   1048588
   ],
   "MS_DOWN": [
    32,
    32,
-   130
+   1048583
   ],
   "MS_LEFT": [
    32,
    32,
-   131
+   1048584
   ],
   "MS_RGHT": [
    32,
    32,
-   132
+   1048585
   ],
   "MS_UP": [
    32,
    32,
-   129
+   1048582
   ],
   "OSL(_UL)": [
    85,
@@ -2011,8 +2092,8 @@
    13,
    11,
    9,
-   128,
-   160
+   1048581,
+   1048613
   ],
   "POLY_OS_ANDROID": [
    65,
@@ -2020,7 +2101,7 @@
    100,
    13,
    11,
-   146
+   1048599
   ],
   "POLY_OS_LINUX": [
    76,
@@ -2028,7 +2109,7 @@
    120,
    13,
    11,
-   146
+   1048599
   ],
   "POLY_OS_LINUX_GNOME": [
    16,
@@ -2076,7 +2157,7 @@
    99,
    13,
    11,
-   146
+   1048599
   ],
   "POLY_OS_UNKNOWN": [
    65,
@@ -2085,7 +2166,7 @@
    111,
    13,
    11,
-   146
+   1048599
   ],
   "POLY_OS_WINDOWS": [
    87,
@@ -2093,7 +2174,7 @@
    110,
    13,
    11,
-   146
+   1048599
   ],
   "QK_BOOTLOADER": [
    66,
@@ -2107,7 +2188,7 @@
    103,
    13,
    11,
-   146
+   1048599
   ],
   "QK_LEAD": [
    76,
@@ -2131,7 +2212,7 @@
    68,
    13,
    11,
-   146
+   1048599
   ],
   "QK_UNICODE_MODE_EMACS": [
    69,
@@ -2140,7 +2221,7 @@
    115,
    13,
    11,
-   146
+   1048599
   ],
   "QK_UNICODE_MODE_LINUX": [
    76,
@@ -2148,7 +2229,7 @@
    120,
    13,
    11,
-   146
+   1048599
   ],
   "QK_UNICODE_MODE_MACOS": [
    77,
@@ -2156,7 +2237,7 @@
    99,
    13,
    11,
-   146
+   1048599
   ],
   "QK_UNICODE_MODE_WINCOMPOSE": [
    87,
@@ -2165,7 +2246,7 @@
    67,
    13,
    11,
-   146
+   1048599
   ],
   "QK_UNICODE_MODE_WINDOWS": [
    87,
@@ -2173,7 +2254,7 @@
    110,
    13,
    11,
-   146
+   1048599
   ],
   "RGB_MODE_BREATHE": [
    12,
@@ -2399,11 +2480,11 @@
   ],
   "RM_NEXT": [
    128161,
-   132
+   1048585
   ],
   "RM_PREV": [
    32,
-   131,
+   1048584,
    128161
   ],
   "RM_SATD": [
@@ -2619,7 +2700,7 @@
    32,
    32,
    32,
-   144
+   1048597
   ],
   "SC_RAPC": [
    41,
@@ -2648,13 +2729,13 @@
    32,
    32,
    32,
-   144
+   1048597
   ],
   "SC_SENT": [
    11168,
    32,
    32,
-   144
+   1048597
   ],
   "SH_TOGG": [
    83,
@@ -2670,15 +2751,15 @@
    13,
    11,
    9,
-   128,
-   127
+   1048581,
+   1048580
   ],
   "TO(_EMJ)": [
    32,
    128512,
    11,
-   128,
-   127
+   1048581,
+   1048580
   ],
   "TO(_NL)": [
    78,
@@ -2686,14 +2767,14 @@
    13,
    11,
    9,
-   128,
-   127
+   1048581,
+   1048580
   ],
   "TO(_SL)": [
    128295,
    11,
-   128,
-   127
+   1048581,
+   1048580
   ],
   "TO(_UL)": [
    85,
@@ -2703,8 +2784,8 @@
    13,
    11,
    9,
-   128,
-   127
+   1048581,
+   1048580
   ]
  },
  "ui_fonts": [

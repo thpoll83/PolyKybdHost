@@ -45,6 +45,7 @@ from PyQt5.QtGui import QImage
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
 from polyhost.services import preview_data as pdata
+from polyhost.services import status_screen as ss
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 
 # The editor's tile shows the resting legend, so no modifier is held.
@@ -194,7 +195,7 @@ def _status_faces_from(pool, mid, small, tiny):
 
     Two of them are found by COVERAGE rather than by name, which is how the firmware
     tool picks the icon face and how the renderer picks the globe: IconsFont is
-    `g_all_fonts[0]` and the C1 band is its alone, and the World face is the only
+    `g_all_fonts[0]` and its plane-16 PUA range is its alone, and the World face is the only
     resident font covering U+1F310, so the first pool font covering each is it -- and
     a renamed header cannot quietly cost the panel its layer icon. A face that will
     not load is left None; the renderer then draws what it can rather than nothing.
@@ -202,7 +203,7 @@ def _status_faces_from(pool, mid, small, tiny):
     def covering(cp):
         return next((f for f in (pool or []) if f.first <= cp <= f.last), None)
 
-    return {"icons": covering(0x80), "globe": covering(0x1F310),
+    return {"icons": covering(ss.ICON_LAYER), "globe": covering(0x1F310),
             "mid": mid, "small": small, "tiny": tiny}
 
 
