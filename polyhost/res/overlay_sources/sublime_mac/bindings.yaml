@@ -89,9 +89,9 @@ bindings:
   - { key: UP,   mods: [CTRL, SHIFT], icon: cursorabove.png,    label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
   - { key: DOWN, mods: [CTRL, SHIFT], icon: cursorbelow.png,    label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
 
-  # --- Cmd+Option+Shift -> the fourth `gui` tier, G channel.
-  # The second case from #131; nothing could address this variant before v12.
-  # show_scope_name is Cmd+Option+P (and Ctrl+Shift+P); Cmd+Option+Shift+P binds nothing.
+  # --- Cmd+Option -> the `extra` tier, B channel.
+  # show_scope_name is Cmd+Option+P (and Ctrl+Shift+P). It sat on
+  # Cmd+Option+Shift+P (the `gui` tier, #131) until 2026-09-28; that chord binds nothing.
   - { key: P, mods: [GUI, ALT], icon: syntaxinfo.png, label: "Syntax context info", source: "ms-fluent/Info (MIT)" }
 
   # --- no modifier ---

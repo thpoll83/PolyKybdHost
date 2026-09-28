@@ -53,8 +53,10 @@ All five specs serve Windows/Linux **and** macOS from one file each. The
 generator writes a second `<output>_mac.*` set, in which `CMDCTRL` resolves to
 Cmd. Every one of these apps is a Cmd-for-Ctrl app, so almost every Ctrl chord
 became `CMDCTRL`. Chords with no Ctrl (GitHub `t`/`s`/`/`, GitLab `j`/`k`,
-Confluence `e` and `Alt+Shift+Z`, Notion `Tab`) are the same on every platform
-and were left alone.
+Confluence `e`, Notion `Tab`) are the same on every platform and were left
+alone. Confluence Quick search is the exception: `Alt+Shift+Z` on Windows/Linux
+and `Ctrl+Option+Z` on the Mac (Atlassian's page, via search snippets), so it is
+two lines with disjoint `only:`.
 
 | Set | macOS source | Result |
 |---|---|---|

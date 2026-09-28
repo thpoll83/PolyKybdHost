@@ -52,5 +52,6 @@ bindings:
   - { key: "2", mods: [CMDCTRL, ALT], icon: heading2.png, label: "Heading 2", source: "ms-fluent/Text Header 2 (MIT)" }
   - { key: "3", mods: [CMDCTRL, ALT], icon: heading3.png, label: "Heading 3", source: "ms-fluent/Text Header 3 (MIT)" }
 
-  # --- Alt+Shift ---
-  - { key: Z, mods: [ALT, SHIFT], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
+  # --- Quick search: Alt+Shift+Z, but Ctrl+Option+Z on the Mac ---
+  - { key: Z, mods: [ALT, SHIFT], only: [windows, linux], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
+  - { key: Z, mods: [CTRL, ALT],  only: [macos],          icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }

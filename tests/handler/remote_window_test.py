@@ -50,6 +50,25 @@ class TestReportWindow(unittest.TestCase):
         self.assertTrue(rh.remote_changed({}))
         self.assertEqual(rh.get_overlay_data(), "ps")
 
+    def test_a_dotted_linux_app_id_matches_its_whole_key(self):
+        # `org.gimp.GIMP` from a Linux forwarder used to be cut at the first dot
+        # to `org`, so the GIMP entry's own key could never match.
+        mapping = {"org.gimp.gimp": {"overlay": "gimp",
+                                     "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "org.gimp.GIMP", "Untitled - GIMP")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "gimp")
+
+    def test_a_windows_executable_still_matches_its_dot_cut_key(self):
+        # The whole-name attempt must not stop `gimp-2.10.exe` reaching `gimp-2`.
+        mapping = {"gimp-2": {"overlay": "gimp",
+                              "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "gimp-2.10.exe", "Untitled - GIMP")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "gimp")
+
     def test_report_window_handles_empty_and_does_not_raise(self):
         rh = self._handler(_annotated())
         rh.report_window(0, "", "")                  # must not raise (debug_detailed)

@@ -69,9 +69,14 @@ nominatively, to identify the app the overlay set is for). It replaced a drawn
 `S` letter tile. The macOS set (`sublime_mac`) shares this file deliberately: it
 is the same application.
 
-## Correction (verified against the default keymap)
+## Earlier correction (superseded)
 
-**Join lines is `Ctrl+J`, not `Ctrl+Shift+J`.** It shipped on `Ctrl+Shift+J`,
+⚠️ **Superseded by *Linux, and the Sublime Text 4 keymap* below**, which puts
+Join lines back on `Ctrl+Shift+J`. The keymap quoted here is the Sublime Text 3
+one; Sublime Text 4 swapped the two chords. The section stays because the
+lesson in its last paragraph still holds.
+
+**Join lines is `Ctrl+J`, not `Ctrl+Shift+J`** (Sublime Text 3). It shipped on `Ctrl+Shift+J`,
 which in Sublime's stock keymap is `expand_selection` to indentation — a
 different command entirely.
 
