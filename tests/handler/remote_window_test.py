@@ -40,6 +40,16 @@ class TestReportWindow(unittest.TestCase):
         self.assertTrue(rh.remote_changed({}))       # window changed...
         self.assertFalse(rh.has_overlay())           # ...but nothing matched
 
+    def test_a_year_suffixed_macOS_name_matches_its_plain_key(self):
+        # A Mac forwarding `Adobe Photoshop 2025` must reach the `adobe photoshop`
+        # entry; an exact lookup missed it, so the app loaded nothing.
+        mapping = {"adobe photoshop": {"overlay": "ps",
+                                       "flags": [True, False, False, False, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "Adobe Photoshop 2025", "Untitled-1")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "ps")
+
     def test_report_window_handles_empty_and_does_not_raise(self):
         rh = self._handler(_annotated())
         rh.report_window(0, "", "")                  # must not raise (debug_detailed)

@@ -9,7 +9,8 @@ urls_contains, os] plus the matching sub-maps.
 import unittest
 
 from polyhost.device.command_ids import OsType
-from polyhost.handler.common import find_matching_entry, normalize_os, os_match_keys
+from polyhost.handler.common import (
+    find_matching_entry, mapping_key, normalize_os, os_match_keys)
 
 
 def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
@@ -291,6 +292,30 @@ class TestOsBranchDesktopEnvironments(unittest.TestCase):
         e = self._entry("linux")
         for os_v in (OsType.LINUX, OsType.LINUX_GNOME, OsType.LINUX_KDE):
             self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "linux", os_v)
+
+
+class TestMappingKey(unittest.TestCase):
+    """macOS reports Adobe apps with a release year, `Adobe Photoshop 2025`."""
+
+    M = {"adobe photoshop": 1, "code": 1, "photoshop 2": 1}
+
+    def test_exact_name_wins(self):
+        self.assertEqual(mapping_key("code", self.M), "code")
+
+    def test_a_trailing_release_year_is_dropped(self):
+        self.assertEqual(mapping_key("adobe photoshop 2025", self.M), "adobe photoshop")
+        self.assertEqual(mapping_key("adobe photoshop 2031", self.M), "adobe photoshop")
+
+    def test_only_a_trailing_four_digit_year_is_dropped(self):
+        # A version that is not a year, or a year mid-name, is part of the name.
+        self.assertIsNone(mapping_key("adobe photoshop 25", self.M))
+        self.assertIsNone(mapping_key("adobe 2025 photoshop", self.M))
+        self.assertEqual(mapping_key("photoshop 2", self.M), "photoshop 2")
+
+    def test_unknown_and_empty_names_resolve_to_none(self):
+        self.assertIsNone(mapping_key("notepad", self.M))
+        self.assertIsNone(mapping_key("", self.M))
+        self.assertIsNone(mapping_key(None, self.M))
 
 
 if __name__ == "__main__":

@@ -59,9 +59,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
 nxplayer:
   remote: true
   title: .*NoMachine.*
-gimp-2.0,gimp-2.8,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
+# GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
+# to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
+gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
   overlay: gimp_template.mods.png
-zoom:
+# macOS reports Zoom's display name, `zoom.us`.
+zoom,zoom.us:
   overlay: zoom_template.mods.png
   title: Zoom Meeting
 discord:
@@ -172,11 +175,13 @@ winscp:
   overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
 putty:
   overlay: putty_template.mods.png
-winword:
+# Office on macOS reports its display name, `Microsoft Word` and so on.
+winword,microsoft word:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
-excel:
+excel,microsoft excel:
   overlay: [excel_template.mods.png, excel_template.combo.mods.png]
-outlook:
+# `olk` is the new Outlook for Windows.
+outlook,olk,microsoft outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
 # ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
 # Notes and NOT about OneNote -- hence the title constraint, which lets a real
@@ -188,22 +193,24 @@ onenote:
   title: "^Sticky Notes"
   icon: mdi:sticker-text
   overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
-powerpnt:
+powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
 # Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
 # curated generic (`photos: mdi:image-multiple`) resolves from the process name,
 # confirmed in the field log that prompted this batch.
 photos:
   overlay: photos_template.mods.png
-photoshop:
+# macOS reports Adobe apps with a release year (`Adobe Photoshop 2025`);
+# `mapping_key` drops a trailing year, so the plain name covers every release.
+photoshop,adobe photoshop:
   overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
-illustrator:
+illustrator,adobe illustrator:
   overlay: [illustrator_template.mods.png, illustrator_template.combo.mods.png]
 figma:
   overlay: [figma_template.mods.png, figma_template.combo.mods.png]
 krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
-ms-teams,teams:
+ms-teams,teams,microsoft teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
@@ -217,7 +224,9 @@ afterfx,adobe after effects:
 # 12), everyone else falls through to the entry's own overlay. The OS is the one
 # running the focused app — a forwarded window uses the FORWARDER's OS, so a Mac
 # forwarding to a Windows keyboard host still gets the Mac artwork.
-sublime_text:
+# `sublime text` is the macOS display name. Without it the macOS branch below
+# was unreachable: a Mac reports `Sublime Text`, never `sublime_text`.
+sublime_text,sublime text:
   overlay: [sublime_template.mods.png, sublime_template.combo.mods.png]
   os:
     macos:

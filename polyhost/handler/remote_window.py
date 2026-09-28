@@ -4,7 +4,7 @@ import re
 import socket
 import threading
 
-from polyhost.handler.common import Flags, find_matching_entry
+from polyhost.handler.common import Flags, find_matching_entry, mapping_key
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
@@ -321,18 +321,19 @@ class RemoteHandler:
     def _match_remote(self):
         """Match the current remote window's app/title against the mapping using
         the shared matcher, updating current/last_entry. Returns True on match."""
-        if self.name not in self.mapping:
+        key = mapping_key(self.name, self.mapping)
+        if key is None:
             return False
         try:
             # The forwarder's OS, not ours: the remote app's keymap is a property
             # of the machine it runs on.
-            matched = find_matching_entry(self.title, self.mapping[self.name],
+            matched = find_matching_entry(self.title, self.mapping[key],
                                           getattr(self, "forwarded_url", None),
                                           getattr(self, "forwarded_os", None))
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
-                self.name, self.mapping[self.name], e.msg, e.pos, e.pattern,
+                self.name, self.mapping[key], e.msg, e.pos, e.pattern,
             )
             return False
         if matched is None:

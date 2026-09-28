@@ -245,5 +245,46 @@ class JetBrainsPerOsTest(unittest.TestCase):
         self.assertEqual([], self._overlay("java", "linux", "Minecraft"))
 
 
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AppNamesPerPlatformTest(unittest.TestCase):
+    """Names each OS reports that the mapping used to miss, so the app loaded no
+    overlay at all. Windows cuts the executable at its first dot; macOS reports
+    the display name."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def _overlay(self, name, os_name, title=""):
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(name, self.handler.mapping)
+        self.assertIsNotNone(key, f"{name!r} resolves to no mapping key")
+        hit = find_matching_entry(title, self.handler.mapping[key], None, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_sublime_on_macOS_reaches_its_Cmd_set(self):
+        self.assertIn("sublime_mac_template.mods.png", self._overlay("sublime text", "macos"))
+
+    def test_office_and_teams_macOS_names_resolve(self):
+        for name in ("microsoft word", "microsoft excel", "microsoft outlook",
+                     "microsoft powerpoint", "microsoft teams"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_adobe_macOS_names_resolve_whatever_the_year(self):
+        for name in ("adobe photoshop 2025", "adobe illustrator 2026",
+                     "adobe premiere pro 2025", "adobe after effects 2024"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_zoom_macOS_name_resolves(self):
+        self.assertTrue(self._overlay("zoom.us", "macos", "Zoom Meeting"))
+
+    def test_gimp_2_10_and_new_outlook_resolve(self):
+        self.assertTrue(self._overlay("gimp-2", "windows"))
+        self.assertTrue(self._overlay("gimp-2.10", "linux"))
+        self.assertTrue(self._overlay("olk", "windows"))
+
+
 if __name__ == "__main__":
     unittest.main()

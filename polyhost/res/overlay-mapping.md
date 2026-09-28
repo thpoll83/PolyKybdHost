@@ -26,7 +26,12 @@ catch must be listed:
   `adobe premiere pro`. ⚠️ On Windows JetBrains ships `idea64.exe` /
   `pycharm64.exe` / `studio64.exe`, which are *not* the same names as their
   Linux launchers.
-- **Linux / macOS** — the reported application name, lowercased.
+- **Linux / macOS** — the reported application name, lowercased. On macOS that is
+  the display name (`Microsoft Word`, `Sublime Text`, `zoom.us`), which rarely
+  matches the Windows executable.
+- **A trailing release year is dropped** when the exact name is not a key, so
+  `adobe photoshop` also matches macOS's `Adobe Photoshop 2025` and every later
+  release. Only a final four-digit `19xx`/`20xx` token is dropped.
 
 Because it is an exact lookup, **one app name can appear in only one entry**. Two
 entries keyed on `soffice` do not both apply; the later simply wins. Split by

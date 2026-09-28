@@ -6,7 +6,7 @@ import subprocess
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
-    OverlayCommand, Flags, find_matching_entry, OS,
+    OverlayCommand, Flags, find_matching_entry, mapping_key, OS,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
@@ -452,9 +452,10 @@ class OverlayHandler:
                                     "Browser URL for %s: %s://%s", app_name,
                                     origin.scheme, origin.netloc)
                             # self.log.debug("App lookup: raw='%s' normalized='%s' in_mapping=%s", raw_app_name, app_name, app_name in self.mapping)
-                            if app_name in self.mapping.keys():
+                            key = mapping_key(app_name, self.mapping)
+                            if key is not None:
                                 found, cmd = self.try_to_match_window(
-                                    app_name, self.mapping[app_name]
+                                    app_name, self.mapping[key]
                                 )
                                 if found:
                                     self.log.info("Changing to %s", app_name)

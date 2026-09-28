@@ -90,6 +90,28 @@ def os_match_keys(value):
     return [exact, family] if family else [exact]
 
 
+# A trailing release year, as macOS reports Adobe's apps: `Adobe Photoshop 2025`.
+_TRAILING_YEAR = re.compile(r"\s+(?:19|20)\d\d$")
+
+
+def mapping_key(app_name, mapping):
+    """The mapping key that `app_name` resolves to, or None.
+
+    An exact match wins. Failing that, a trailing release year is dropped, so one
+    `adobe photoshop` key covers `adobe photoshop 2025` and every later release.
+    ⚠️ Without it the key would have to be re-added every year, and a missed
+    year fails silently: the app simply loads no overlay on macOS.
+    """
+    if not app_name:
+        return None
+    if app_name in mapping:
+        return app_name
+    stripped = _TRAILING_YEAR.sub("", app_name)
+    if stripped != app_name and stripped in mapping:
+        return stripped
+    return None
+
+
 class OverlayCommand(Enum):
     """Command for overlay to turn on or off"""
 
