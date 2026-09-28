@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Fetch + render the JetBrains IDE shortcut icons (reproducible source step).
 
-This folder serves all THREE JetBrains artwork sets — Windows, macOS and Linux
-(GNOME keymap). `bindings.yaml` scopes each chord to the platforms whose keymap
-binds it, so one spec generates `jetbrains_template.*`, `jetbrains_mac_template.*`
-and `jetbrains_linux_template.*` from these same icons. See SOURCES.md.
+This folder serves all FIVE JetBrains artwork sets — Windows, macOS, and Linux
+as GNOME, KDE and every other desktop. `bindings.yaml` scopes each chord to the
+platforms whose keymap binds it, so one spec generates every set from these same
+icons. See SOURCES.md.
 
 Two kinds of icon live in `icons/`:
 

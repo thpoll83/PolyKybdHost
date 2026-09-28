@@ -1,18 +1,19 @@
 # JetBrains IDE shortcut overlays for PolyKybd (IntelliJ IDEA, PyCharm, CLion, …).
 #
-# ONE spec, FOUR artwork sets, because JetBrains ships four different default
+# ONE spec, FIVE artwork sets, because JetBrains ships five different default
 # keymaps and picks one by platform and desktop:
 #
-#   jetbrains_template.*        Windows   -> keymap "$default"
-#   jetbrains_mac_template.*    macOS     -> keymap "Mac OS X 10.5+"
-#   jetbrains_linux_template.*  Linux     -> keymap "Default for GNOME"
-#   jetbrains_kde_template.*    KDE       -> keymap "Default for KDE"
+#   jetbrains_template.*        Windows        -> keymap "$default"
+#   jetbrains_mac_template.*    macOS          -> keymap "Mac OS X 10.5+"
+#   jetbrains_gnome_template.*  GNOME          -> keymap "Default for GNOME"
+#   jetbrains_kde_template.*    KDE            -> keymap "Default for KDE"
+#   jetbrains_linux_template.*  other desktops -> keymap "Default for XWin"
 #
 # ⚠️ The previously shipped set was the GNOME keymap drawn for EVERY platform:
 # Find Usages on Alt+Shift+7, Back/Forward on Alt+Shift+Left/Right. On Windows
 # those chords do nothing (Find Usages is Alt+F7, Back is Ctrl+Alt+Left), and on
 # macOS almost every chord is a Cmd chord. That set survives unchanged as the
-# Linux set; its artwork is reclaimed pixel-for-pixel below.
+# GNOME set; its artwork is reclaimed pixel-for-pixel below.
 #
 # How to read a binding:
 #   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS — used only where the
@@ -20,8 +21,11 @@
 #   only: [...]      the chord exists only in those keymaps. An action whose
 #                    chord differs per platform is written once per chord, with
 #                    disjoint `only:` lists.
-#   only: [linux]    covers KDE too; `except: [linux_kde]` carves KDE out.
-#   no scope         the same literal chord in all four keymaps.
+#   only: [linux]    covers every Linux desktop, GNOME and KDE included.
+#                    `except: [linux_gnome]` / `[linux_kde]` carves one out, so
+#                    `only: [linux], except: [linux_gnome, linux_kde]` is the
+#                    XWin keymap alone.
+#   no scope         the same literal chord in all five keymaps.
 #
 # Every chord was resolved from the keymap XML in JetBrains/intellij-community,
 # including the parent chain (GNOME/KDE -> XWin -> $default) and the Ctrl<->Cmd
@@ -36,6 +40,7 @@ match: [idea64, pycharm64]
 output: jetbrains_template
 output_macos: jetbrains_mac_template
 output_linux: jetbrains_linux_template
+output_gnome: jetbrains_gnome_template
 output_kde: jetbrains_kde_template
 icon_dir: icons
 fit: contain
@@ -96,9 +101,9 @@ bindings:
   - { key: ",",  mods: [GUI],         only: [macos],          icon: settings.png, <<: *reclaimed, label: Settings, source: reclaimed }
   - { key: HOME, mods: [CTRL, ALT],   only: [windows, linux], icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
   - { key: UP,   mods: [GUI, CTRL],   only: [macos],          icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
-  # Find Usages: Alt+F7 in $default and on macOS; GNOME/KDE move it to Alt+Shift+7.
-  - { key: F7,   mods: [ALT],         only: [windows, macos], icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
-  - { key: "7",  mods: [ALT, SHIFT],  only: [linux],          icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
+  # Find Usages: Alt+F7 in $default, XWin and on macOS; GNOME/KDE move it to Alt+Shift+7.
+  - { key: F7,   mods: [ALT],         only: [windows, macos, linux], except: [linux_gnome, linux_kde], icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
+  - { key: "7",  mods: [ALT, SHIFT],  only: [linux_gnome, linux_kde],       icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
   # Global editor font size: Alt+Shift+,/. everywhere but macOS (Ctrl+Shift+,/.).
   - { key: ",",  mods: [ALT, SHIFT],  only: [windows, linux], icon: fontsmaller.png, <<: *reclaimed, label: "Decrease font size", source: reclaimed }
   - { key: ".",  mods: [ALT, SHIFT],  only: [windows, linux], icon: fontlarger.png,  <<: *reclaimed, label: "Increase font size", source: reclaimed }
@@ -106,12 +111,13 @@ bindings:
   - { key: ".",  mods: [CTRL, SHIFT], only: [macos],          icon: fontlarger.png,  <<: *reclaimed, label: "Increase font size", source: reclaimed }
   - { key: F9,   mods: [ALT, SHIFT],  only: [windows, linux], icon: choosedebug.png, <<: *reclaimed, label: "Debug…", source: reclaimed }
   - { key: D,    mods: [CTRL, ALT],   only: [macos],          icon: choosedebug.png, <<: *reclaimed, label: "Debug…", source: reclaimed }
-  # Back / Forward: Ctrl+Alt+Left/Right in $default, Alt+Shift+Left/Right on GNOME
-  # (GNOME takes Ctrl+Alt+arrows for workspaces), Cmd+[ / Cmd+] on macOS.
-  - { key: LEFT,  mods: [CTRL, ALT],  only: [windows, linux_kde],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
-  - { key: RIGHT, mods: [CTRL, ALT],  only: [windows, linux_kde],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
-  - { key: LEFT,  mods: [ALT, SHIFT], only: [linux], except: [linux_kde],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
-  - { key: RIGHT, mods: [ALT, SHIFT], only: [linux], except: [linux_kde],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  # Back / Forward: Ctrl+Alt+Left/Right in $default, XWin and KDE, Alt+Shift+
+  # Left/Right on GNOME (GNOME takes Ctrl+Alt+arrows for workspaces), Cmd+[ /
+  # Cmd+] on macOS.
+  - { key: LEFT,  mods: [CTRL, ALT],  only: [windows, linux], except: [linux_gnome],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [CTRL, ALT],  only: [windows, linux], except: [linux_gnome],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: LEFT,  mods: [ALT, SHIFT], only: [linux_gnome],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [ALT, SHIFT], only: [linux_gnome],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
   - { key: "[",   mods: [GUI],        only: [macos],          icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
   - { key: "]",   mods: [GUI],        only: [macos],          icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
   - { key: J,      mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: selectalloccurrences.png, <<: *reclaimed, label: "Select all occurrences", source: reclaimed }
@@ -162,7 +168,7 @@ bindings:
   - { key: F11, mods: [SHIFT], only: [windows, linux], icon: showbookmarks.png,  label: "Show bookmarks" }
   - { key: F3,  mods: [GUI],   only: [macos],          icon: showbookmarks.png,  label: "Show bookmarks" }
   # GNOME keeps Alt+F1 for Select In and adds Alt+Shift+1.
-  - { key: "1", mods: [ALT, SHIFT], only: [linux], icon: selectin.png, <<: *reclaimed, label: "Select in", source: reclaimed }
+  - { key: "1", mods: [ALT, SHIFT], only: [linux_gnome, linux_kde], icon: selectin.png, <<: *reclaimed, label: "Select in", source: reclaimed }
 
   # -- search / replace --
   # Drawn by the shared concept renderer (the arrow-swap every app uses for Replace).
@@ -183,9 +189,8 @@ bindings:
   - { key: UP,   mods: [CMDCTRL, SHIFT], icon: moveup.png,   label: "Move statement up" }
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: movedown.png, label: "Move statement down" }
   # Move Line: GNOME unbinds it and gives Alt+Shift+Up/Down to Next/Previous Occurrence.
-  # KDE keeps it.
-  - { key: UP,   mods: [ALT, SHIFT], only: [windows, macos, linux_kde], icon: moveup.png,   label: "Move line up" }
-  - { key: DOWN, mods: [ALT, SHIFT], only: [windows, macos, linux_kde], icon: movedown.png, label: "Move line down" }
+  - { key: UP,   mods: [ALT, SHIFT], except: [linux_gnome], icon: moveup.png,   label: "Move line up" }
+  - { key: DOWN, mods: [ALT, SHIFT], except: [linux_gnome], icon: movedown.png, label: "Move line down" }
   - { key: ENTER, mods: [ALT],  icon: intentions.png, label: "Show context actions" }
   - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Basic completion" }
   # Surround With: Ctrl+Alt+T in $default, but GNOME opens a terminal on it, so the
@@ -218,13 +223,14 @@ bindings:
   # ⌘R is Replace on macOS, so Rerun is drawn where it does not collide.
   - { key: F5,  mods: [CTRL], only: [windows, linux], except: [linux_kde], icon: rerun.png, label: "Rerun" }
   # Evaluate / Run to cursor / Show execution point: Alt+F8/F9/F10 in $default and
-  # on macOS; the XWin/GNOME keymaps move them to Alt+Shift+8/9/0.
-  - { key: F8,  mods: [ALT], only: [windows, macos], icon: evaluate.png,       label: "Evaluate expression" }
+  # on macOS. XWin (and so GNOME and KDE) moves Run to cursor to Alt+Shift+9;
+  # GNOME and KDE also move the other two to Alt+Shift+8/0.
+  - { key: F8,  mods: [ALT], only: [windows, macos, linux], except: [linux_gnome, linux_kde], icon: evaluate.png,       label: "Evaluate expression" }
   - { key: F9,  mods: [ALT], only: [windows, macos], icon: runtocursor.png,    label: "Run to cursor" }
-  - { key: F10, mods: [ALT], only: [windows, macos], icon: executionpoint.png, label: "Show execution point" }
-  - { key: "8", mods: [ALT, SHIFT], only: [linux],   icon: evaluate.png,       label: "Evaluate expression" }
+  - { key: F10, mods: [ALT], only: [windows, macos, linux], except: [linux_gnome, linux_kde], icon: executionpoint.png, label: "Show execution point" }
+  - { key: "8", mods: [ALT, SHIFT], only: [linux_gnome, linux_kde], icon: evaluate.png,       label: "Evaluate expression" }
   - { key: "9", mods: [ALT, SHIFT], only: [linux],   icon: runtocursor.png,    label: "Run to cursor" }
-  - { key: "0", mods: [ALT, SHIFT], only: [linux],   icon: executionpoint.png, label: "Show execution point" }
+  - { key: "0", mods: [ALT, SHIFT], only: [linux_gnome, linux_kde], icon: executionpoint.png, label: "Show execution point" }
 
   # -- version control --
   - { key: K, mods: [CMDCTRL],        icon: win_commit.png, label: "Commit" }

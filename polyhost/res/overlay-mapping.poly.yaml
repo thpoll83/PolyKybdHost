@@ -99,11 +99,11 @@ code:
       title: .* Visual Studio Code
 # JetBrains IDEs. Generated from overlay_sources/jetbrains/bindings.yaml.
 # One set per default keymap JetBrains ships: $default (Windows), "Mac OS X
-# 10.5+" (macOS), "Default for GNOME" (Linux) and "Default for KDE". The Linux set is the
+# 10.5+" (macOS), "Default for GNOME", "Default for KDE" and "Default for XWin"
+# (every other Linux desktop, the plain `linux` branch). The GNOME set is the
 # one that used to be shown everywhere -- Find Usages on Alt+Shift+7 and Back on
 # Alt+Shift+Left are GNOME chords that do nothing on Windows.
-# KDE runs JetBrains' "Default for KDE" keymap, so it gets a fourth set: the
-# matcher tries `linux_kde` before `linux` on a KDE desktop.
+# The matcher tries `linux_gnome` / `linux_kde` before `linux` on those desktops.
 # Launchers running under a bare `java` process (old Linux installs):
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
@@ -116,6 +116,10 @@ java:
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
+      title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+    linux_gnome:
+      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
+                jetbrains_gnome_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
@@ -132,6 +136,9 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
+    linux_gnome:
+      overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
+                jetbrains_gnome_template.extra.mods.png]
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]

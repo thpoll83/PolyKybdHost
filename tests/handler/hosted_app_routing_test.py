@@ -221,13 +221,17 @@ class JetBrainsPerOsTest(unittest.TestCase):
         self.assertIn("jetbrains_mac_template.mods.png", self._overlay("intellij idea", "macos"))
         self.assertIn("jetbrains_linux_template.mods.png", self._overlay("jetbrains-idea", "linux"))
 
-    def test_KDE_gets_its_own_keymap_and_GNOME_keeps_the_linux_one(self):
-        """JetBrains' "Default for KDE" moves Stop, Reformat, Back/Forward and
-        the breakpoint keys, so KDE must not fall back to the GNOME set."""
+    def test_each_Linux_desktop_gets_ITS_keymap(self):
+        """JetBrains picks "Default for GNOME", "Default for KDE" or, on any other
+        desktop, "Default for XWin". They disagree on Back/Forward, Find Usages,
+        Stop, Reformat and the breakpoint keys, so no desktop may borrow
+        another's set, and plain `linux` must NOT be the GNOME set."""
         self.assertIn("jetbrains_kde_template.mods.png", self._overlay("idea", "linux_kde"))
-        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("idea", "linux_gnome"))
-        self.assertIn("jetbrains_kde_template.mods.png",
-                      self._overlay("java", "linux_kde", "project – Main.java"))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("idea", "linux_gnome"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("idea", "linux"))
+        title = "project – Main.java"
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("java", "linux_kde", title))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("java", "linux_gnome", title))
 
     def test_the_WINDOWS_executables_are_keys(self):
         for name in ("idea64", "pycharm64", "clion64", "webstorm64", "rider64", "studio64"):

@@ -1,14 +1,15 @@
 # JetBrains overlay sources
 
-`bindings.yaml` generates four artwork sets, one per default keymap JetBrains
+`bindings.yaml` generates five artwork sets, one per default keymap JetBrains
 ships:
 
 | Set | Platform | JetBrains keymap |
 |---|---|---|
 | `jetbrains_template.*` | Windows | `$default` |
 | `jetbrains_mac_template.*` | macOS | `Mac OS X 10.5+` |
-| `jetbrains_linux_template.*` | Linux | `Default for GNOME` |
-| `jetbrains_kde_template.*` | Linux, KDE desktop | `Default for KDE` |
+| `jetbrains_gnome_template.*` | Linux, GNOME | `Default for GNOME` |
+| `jetbrains_kde_template.*` | Linux, KDE | `Default for KDE` |
+| `jetbrains_linux_template.*` | Linux, any other desktop | `Default for XWin` |
 
 ```bash
 PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/jetbrains/fetch_icons.py
@@ -60,7 +61,7 @@ drawn on, KDE included, and each set's cells were checked for collisions
 
 - **Reclaimed (37)**: the 36 shortcut icons and the ESC mark of the old set, cut
   pixel-for-pixel out of the old PNGs as 72×40 white-on-transparent cells. They
-  render 1:1 (`region: [72, 40]`, `anchor: center`), so the Linux set is
+  render 1:1 (`region: [72, 40]`, `anchor: center`), so the GNOME set is
   byte-identical to the old overlay on every old cell. There is no other source
   for them. Restore them from git if lost. The five Ctrl+Alt+Shift icons came
   from the shared `overlay_sources/icons/` set via the retired
@@ -92,10 +93,17 @@ GNOME chords, mostly off the F-keys and Ctrl+Alt chords KDE Plasma claims:
 In `bindings.yaml` each GNOME chord carries `except: [linux_kde]` and the KDE
 chord `only: [linux_kde]`. See `overlay_specification.md` § KDE.
 
+## Other Linux desktops
+
+XFCE, Cinnamon, MATE and the rest run `Default for XWin`, which is `$default`
+plus a few Linux-safe moves (Run to Cursor on Alt+Shift+9, Surround With on
+Ctrl+Alt+Shift+B). Against GNOME it keeps Find Usages (Alt+F7), Select In
+(Alt+F1), Evaluate (Alt+F8), Show Execution Point (Alt+F10), Back/Forward
+(Ctrl+Alt+←/→) and Move Line (Alt+Shift+↑/↓). The plain `linux` set draws that
+keymap; `bindings.yaml` gives GNOME's chords `only: [linux_gnome]`.
+
 ## Known gaps
 
-- **Other Linux desktops** run `Default for XWin`. It matches GNOME except Back,
-  Forward, Find Usages and Select In, which stay on the `$default` chords there.
 - **Rerun** (Ctrl+F5) is not drawn on macOS. Its chord there is ⌘R, which the
   editor gives to Replace.
 - Two-stroke chords and double-Shift (Search Everywhere) cannot be drawn on a

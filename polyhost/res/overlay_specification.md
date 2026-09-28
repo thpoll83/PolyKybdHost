@@ -72,22 +72,22 @@ The rule of thumb: **write the token when the macOS keymap is the Windows keymap
 - { key: "-",  mods: [CTRL, ALT], icon: goback.png, label: "Go back", only: [linux] }
 ```
 
-Valid platforms are `windows`, `macos`, `linux` and `linux_kde`. A binding may set `only:` **or** `except:`, but not both, with one exception covered below. The two keys express the same thing and can contradict each other outright, which would make the binding's platform set depend on evaluation order.
+Valid platforms are `windows`, `macos`, `linux`, `linux_gnome` and `linux_kde`. A binding may set `only:` **or** `except:`, but not both, with one exception covered below. The two keys express the same thing and can contradict each other outright, which would make the binding's platform set depend on evaluation order.
 
-### KDE (`linux_kde`)
+### Linux desktops (`linux_gnome`, `linux_kde`)
 
-`linux_kde` is a member of the Linux family, not a peer of it. `only: [linux]` covers KDE and `except: [linux]` removes it, so a spec that scopes on `linux` means all of Linux. Name `linux_kde` only for an app that ships a separate KDE keymap. JetBrains does: its "Default for KDE" moves Stop to `Ctrl+2`, Reformat to `Alt+Shift+L` and Back/Forward to `Ctrl+Alt+←/→`.
+`linux_gnome` and `linux_kde` are members of the Linux family, not peers of it. `only: [linux]` covers both and `except: [linux]` removes both, so a spec that scopes on `linux` means all of Linux. Name a desktop only for an app that ships a keymap per desktop. JetBrains does: "Default for GNOME", "Default for KDE", and "Default for XWin" for every other desktop. Plain `linux` is then the fallback for XFCE, Cinnamon, MATE and the rest.
 
 ```yaml
-# The GNOME chord: all of Linux except KDE. This is the one allowed use of both keys.
-- { key: LEFT, mods: [ALT, SHIFT], icon: back.png, label: Back, only: [linux], except: [linux_kde] }
-# KDE shares the Windows chord.
-- { key: LEFT, mods: [CTRL, ALT],  icon: back.png, label: Back, only: [windows, linux_kde] }
+# GNOME's own chord.
+- { key: LEFT, mods: [ALT, SHIFT], icon: back.png, label: Back, only: [linux_gnome] }
+# Windows and every other Linux desktop, KDE included, share this one.
+- { key: LEFT, mods: [CTRL, ALT],  icon: back.png, label: Back, only: [windows, linux], except: [linux_gnome] }
 ```
 
-`only:` and `except:` may be combined only when every `except:` entry is a member of a family that `only:` lists. Any other combination is refused, because it either contradicts itself or makes `except:` a no-op.
+`only:` and `except:` may be combined only when every `except:` entry is a member of a family that `only:` lists. That is how a scope says "Linux except GNOME", or `only: [linux], except: [linux_gnome, linux_kde]` for the fallback alone. Any other combination is refused, because it either contradicts itself or makes `except:` a no-op.
 
-The generator writes a KDE set (`<output>_kde.*`, override with `output_kde:`) and an `os: linux_kde:` branch only when a binding makes KDE differ from Linux. On a KDE desktop the matcher tries `linux_kde` before `linux`, so without that branch KDE uses the Linux set.
+The generator writes a desktop set (`<output>_gnome.*` / `<output>_kde.*`, override with `output_gnome:` / `output_kde:`) and its `os: linux_gnome:` / `os: linux_kde:` branch only when a binding makes that desktop differ from Linux. On those desktops the matcher tries the desktop key before `linux`, so without a branch the desktop uses the Linux set. The host detects the desktop from `$XDG_CURRENT_DESKTOP`.
 
 Scoping is deliberately the **only** primitive: omission is `except:`, and re-chording is the same icon under disjoint `only:` lists. A dedicated "override the chord on platform X" key would have to answer what happens when the override collides with another binding's cell, which the ordinary duplicate-cell path already handles.
 
