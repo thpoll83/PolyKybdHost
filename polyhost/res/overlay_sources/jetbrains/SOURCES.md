@@ -90,8 +90,9 @@ GNOME chords, mostly off the F-keys and Ctrl+Alt chords KDE Plasma claims:
 | Select in | Alt+F1, Alt+Shift+1 | Alt+Shift+1 |
 | Move line up/down | (unbound) | Alt+Shift+↑/↓ |
 
-In `bindings.yaml` each GNOME chord carries `except: [linux_kde]` and the KDE
-chord `only: [linux_kde]`. See `overlay_specification.md` § KDE.
+In `bindings.yaml` the chord KDE moves away from carries `except: [linux_kde]`
+and the KDE chord `only: [linux_kde]`. See `overlay_specification.md` § Linux
+desktops.
 
 ## Other Linux desktops
 

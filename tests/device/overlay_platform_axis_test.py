@@ -133,7 +133,7 @@ class BindingAppliesTest(unittest.TestCase):
         # (only: [linux] + except: [linux]); silently picking one would make the
         # binding's platform set depend on evaluation order. The one allowed
         # combination -- carving a family member out, `except: [linux_kde]` -- is
-        # pinned in overlay_kde_axis_test.
+        # pinned in overlay_linux_desktop_axis_test.
         for excl in (["macos"], ["linux"]):
             with self.assertRaisesRegex(ValueError, "family member"):
                 self.gen.binding_applies({"only": ["linux"], "except": excl},
