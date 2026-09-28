@@ -56,6 +56,42 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: web_outlook_template.mods.png
     Jira:
       overlay: jira_template.mods.png
+  # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
+  # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
+  # REPLACES the entry, so the whole URL and title routing is repeated inside it,
+  # in the same order (first hit wins). Jira draws bare keys only, so it has no
+  # separate Mac set.
+  os:
+    macos:
+      overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
+      urls-contains:
+        miro.com:
+          overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        outlook.office.com:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        outlook.live.com:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        github.com:
+          overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        gitlab.com:
+          overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        atlassian.net/wiki:
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+        atlassian.net:
+          overlay: jira_template.mods.png
+        bitbucket.org:
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+        docs.google.com/document:
+          overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        notion.so:
+          overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+      titles-contains:
+        Miro:
+          overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        Outlook:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        Jira:
+          overlay: jira_template.mods.png
 nxplayer:
   remote: true
   title: .*NoMachine.*

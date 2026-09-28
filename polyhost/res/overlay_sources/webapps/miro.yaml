@@ -1,0 +1,38 @@
+# Miro overlay for PolyKybd (shown while a browser has a Miro board open).
+#
+# All artwork is RECLAIMED: the previously hand-drawn set, cut pixel-for-pixel
+# out of the old PNGs and rendered 1:1, so the Windows/Linux set is unchanged.
+# Bold/italic/underline are Cmd on macOS (CMDCTRL); the tool keys are bare keys.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/webapps/miro.yaml --preview /tmp/miro_preview
+app: miro
+match: [chrome]
+output: miro_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: miro_mark.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+
+bindings:
+  - { key: B, mods: [CMDCTRL], icon: miro_bold.png, <<: *r, label: "Bold" }
+  - { key: I, mods: [CMDCTRL], icon: miro_italic.png, <<: *r, label: "Italic" }
+  - { key: U, mods: [CMDCTRL], icon: miro_underline.png, <<: *r, label: "Underline" }
+  - { key: C, mods: [], icon: miro_comment.png, <<: *r, label: "Comment" }
+  - { key: F, mods: [], icon: miro_frame.png, <<: *r, label: "Frame" }
+  - { key: N, mods: [], icon: miro_sticky.png, <<: *r, label: "Sticky note" }
+  - { key: P, mods: [], icon: miro_pen.png, <<: *r, label: "Pen" }
+  - { key: T, mods: [], icon: miro_text.png, <<: *r, label: "Text" }
+  - { key: V, mods: [], icon: miro_select.png, <<: *r, label: "Select" }

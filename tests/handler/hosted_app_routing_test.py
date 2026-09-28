@@ -295,6 +295,27 @@ class AppNamesPerPlatformTest(unittest.TestCase):
             self.assertIn(f"{stem}.mods.png", self._overlay(name, "macos"), name)
         self.assertIn("word_template.mods.png", self._overlay("winword", "windows"))
 
+    def _chrome(self, os_name, url=None, title="New Tab"):
+        from polyhost.handler.common import find_matching_entry
+        hit = find_matching_entry(title, self.handler.mapping["google chrome"], url, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_chrome_on_macOS_keeps_its_web_app_routing(self):
+        """The `os:` branch replaces the entry, so the URL routing is repeated
+        inside it. Without that, every web app on a Mac showed Chrome's set."""
+        self.assertIn("chrome_template_mac.mods.png", self._chrome("macos"))
+        self.assertIn("github_template_mac.mods.png",
+                      self._chrome("macos", "https://github.com/x/y/pull/1"))
+        self.assertIn("confluence_template_mac.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/wiki/spaces/X"))
+        self.assertIn("jira_template.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/browse/X-1"))
+        self.assertIn("miro_template_mac.mods.png", self._chrome("macos", None, "Board - Miro"))
+        self.assertIn("github_template.mods.png",
+                      self._chrome("windows", "https://github.com/x/y/pull/1"))
+        self.assertIn("chrome_template.mods.png", self._chrome("linux"))
+
     def test_libreoffice_keeps_its_title_routing_on_macOS(self):
         self.assertIn("libreoffice_calc_template_mac.mods.png",
                       self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))

@@ -1,0 +1,37 @@
+# Jira overlay for PolyKybd (shown while a browser has a Jira issue open).
+#
+# All artwork is RECLAIMED: the previously hand-drawn set, cut pixel-for-pixel
+# out of the old PNGs and rendered 1:1, so the Windows/Linux set is unchanged.
+# Every binding is a bare key, identical on macOS, so no macOS set is generated.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/webapps/jira.yaml --preview /tmp/jira_preview
+app: jira
+match: [chrome]
+output: jira_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: jira_mark.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+
+bindings:
+  - { key: S, mods: [SHIFT], icon: jira_share.png, <<: *r, label: "Share" }
+  - { key: A, mods: [], icon: jira_assign.png, <<: *r, label: "Assign" }
+  - { key: D, mods: [], icon: jira_devstatus.png, <<: *r, label: "Development status" }
+  - { key: I, mods: [], icon: jira_assigntome.png, <<: *r, label: "Assign to me" }
+  - { key: L, mods: [], icon: jira_label.png, <<: *r, label: "Edit labels" }
+  - { key: M, mods: [], icon: jira_comment.png, <<: *r, label: "Comment" }
+  - { key: W, mods: [], icon: jira_watch.png, <<: *r, label: "Watch" }
+  - { key: ".", mods: [], icon: jira_actions.png, <<: *r, label: "Actions" }
