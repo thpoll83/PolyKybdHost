@@ -1,4 +1,14 @@
-# Microsoft Excel shortcut overlays for PolyKybd.
+# Microsoft Excel shortcut overlays for PolyKybd (Windows and macOS).
+#
+# ONE spec, TWO artwork sets: Windows/Linux (`output`) and macOS (`<output>_mac`).
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS -- only where the Mac
+#                    app's chord really is the Cmd version of the Windows one.
+#   CTRL (literal)   stays Control on macOS too (the Mac app binds Control).
+#   only: / except:  Office for Mac is a REMAP, not a clean Ctrl->Cmd swap: a
+#                    re-chorded action is written twice with disjoint `only:`
+#                    lists, and one with no Mac equivalent carries
+#                    `except: [macos]`. Every Mac chord and its source is in
+#                    SOURCES.md -> "macOS".
 #
 # Icons: Microsoft Fluent UI System Icons (MIT); % and $ are rendered as text
 # (clearest for number-format shortcuts). Program icon (ESC): a generic drawn
@@ -27,45 +37,49 @@ program_icon_margin: 0
 
 bindings:
   # --- file (Ctrl -> R channel of primary) ---
-  - { key: N, mods: [CTRL], icon: new.png,   label: New,    source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,  label: Open,   source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,  label: Save,   source: "ms-fluent/Save (MIT)" }
-  - { key: P, mods: [CTRL], icon: print.png, label: Print,  source: "ms-fluent/Print (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,   label: New,    source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,  label: Open,   source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,  label: Save,   source: "ms-fluent/Save (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png, label: Print,  source: "ms-fluent/Print (MIT)" }
 
   # --- edit (Ctrl) ---
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: Y, mods: [CTRL], icon: redo.png,      label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
 
   # --- format (Ctrl) ---
-  - { key: B, mods: [CTRL], icon: bold.png,        label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,      label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
-  - { key: U, mods: [CTRL], icon: underline.png,   label: Underline, source: "ms-fluent/Text Underline (MIT)" }
-  - { key: K, mods: [CTRL], icon: hyperlink.png,   label: Hyperlink, source: "ms-fluent/Link (MIT)" }
-  - { key: "1", mods: [CTRL], icon: formatcells.png, label: "Format cells", source: "ms-fluent/Table Settings (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,        label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,      label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png,   label: Underline, source: "ms-fluent/Text Underline (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: hyperlink.png,   label: Hyperlink, source: "ms-fluent/Link (MIT)" }
+  - { key: "1", mods: [CMDCTRL], icon: formatcells.png, label: "Format cells", source: "ms-fluent/Table Settings (MIT)" }
 
   # --- search / nav (Ctrl) ---
-  - { key: F, mods: [CTRL], icon: find.png,    label: Find,    source: "ms-fluent/Search (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,    label: Find,    source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [CTRL], icon: replace.png, label: Replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: G, mods: [CTRL], icon: goto.png,    label: "Go to", source: "ms-fluent/Target (MIT)" }
 
   # --- data / cells (Ctrl) ---
-  - { key: W, mods: [CTRL], icon: close.png,      label: Close,        source: "ms-fluent/Document Dismiss (MIT)" }
-  - { key: E, mods: [CTRL], icon: flashfill.png,  label: "Flash fill", source: "ms-fluent/Flash (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: close.png,      label: Close,        source: "ms-fluent/Document Dismiss (MIT)" }
+  - { key: E, mods: [CTRL], icon: flashfill.png,  label: "Flash fill", source: "ms-fluent/Flash (MIT)", except: [macos] }
   - { key: T, mods: [CTRL], icon: tableadd.png,   label: "New table",  source: "ms-fluent/Table Add (MIT)" }
-  - { key: L, mods: [CTRL], icon: table.png,      label: Table,        source: "ms-fluent/Table (MIT)" }
+  - { key: L, mods: [CTRL], icon: table.png,      label: Table,        source: "ms-fluent/Table (MIT)", except: [macos] }
   - { key: MINUS, mods: [CTRL], icon: delcells.png,  label: "Delete cells", source: "ms-fluent/Table Delete Row (MIT)" }
   - { key: "]", mods: [CTRL], icon: dependents.png, label: Dependents,   source: "ms-fluent/Arrow Bidirectional Up Down (MIT)" }
   - { key: "[", mods: [CTRL], icon: precedents.png, label: Precedents,   source: "ms-fluent/Arrow Bidirectional Left Right (MIT)" }
   - { key: D, mods: [CTRL], icon: filldown.png,  label: "Fill down",  source: "ms-fluent/Arrow Down (MIT)" }
   - { key: R, mods: [CTRL], icon: fillright.png, label: "Fill right", source: "ms-fluent/Arrow Right (MIT)" }
-  - { key: "5", mods: [CTRL], icon: strike.png,  label: Strikethrough, source: "ms-fluent/Text Strikethrough (MIT)" }
+  - { key: "5", mods: [CTRL], icon: strike.png,  label: Strikethrough, source: "ms-fluent/Text Strikethrough (MIT)", only: [windows, linux] }
+  # macOS: Strikethrough is Cmd+Shift+X
+  - { key: X, mods: [GUI, SHIFT], icon: strike.png,  label: Strikethrough, source: "ms-fluent/Text Strikethrough (MIT)", only: [macos] }
 
   # --- Alt -> G channel of primary ---
-  - { key: EQUAL, mods: [ALT], icon: autosum.png, label: AutoSum, source: "ms-fluent/Math Formula (MIT)" }
+  - { key: EQUAL, mods: [ALT], icon: autosum.png, label: AutoSum, source: "ms-fluent/Math Formula (MIT)", only: [windows, linux] }
+  # macOS: AutoSum is Cmd+Shift+T
+  - { key: T, mods: [GUI, SHIFT], icon: autosum.png, label: AutoSum, source: "ms-fluent/Math Formula (MIT)", only: [macos] }
 
   # --- Ctrl+Shift -> R channel of combo ---
   - { key: L, mods: [CTRL, SHIFT], icon: filter.png,   label: Filter,   source: "ms-fluent/Filter (MIT)" }

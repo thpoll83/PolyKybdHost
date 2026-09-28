@@ -40,3 +40,37 @@ with text lines. Drawn by `_draw_powerpoint_logo()` in `fetch_icons.py`
 `anchor: bottom-right`; program icon bottom-right `[40, 36]`, `mode: alpha`.
 Fluent `.svg` → cairosvg 96px in `fetch_icons.py`. Pin branch→SHA for byte-exact
 reproducibility; committed `icons/` freeze the render.
+
+## macOS
+
+This spec also renders a macOS set (`powerpoint_template_mac.*`, 2026-09-28). Most bindings
+are `CMDCTRL` (Ctrl on Windows/Linux, Cmd on macOS); the rest are listed below.
+
+**Sources.** The official page is "Use keyboard shortcuts to create PowerPoint presentations" (Mac tab, <https://support.microsoft.com/office/use-keyboard-shortcuts-to-create-powerpoint-presentations-ebb3d20e-dcd4-444f-a38e-bb5c5ed180f4>). `support.microsoft.com` (and
+`support.office.com`, `web.archive.org`, every third-party mirror tried) is
+**blocked by this environment's egress proxy**, so both WebFetch and curl fail;
+WebSearch snippets were too thin to quote. The chords were therefore read from
+verbatim scrapes of the official Mac article kept on GitHub (raw.githubusercontent.com):
+- `amiechen/pretzel` `shortcuts/Microsoft PowerPoint.yml` (the MS PowerPoint-for-Mac article's tables)
+- Copy format ⌘⇧C: WebSearch snippet (indezine.com "Keyboard Shortcuts for PowerPoint 2016 for Mac": "Command+Shift+C copies object attributes")
+Where two scrapes disagreed or neither listed a chord, the binding is dropped on
+macOS rather than guessed (marked *uncertain*). Re-check those against the live
+Microsoft page when it is reachable.
+
+⚠️ `match:` lists the Windows process name. Whether the macOS active-window
+name (`Microsoft PowerPoint`) resolves to this stanza is decided by
+`overlay-mapping.poly.yaml`, which this change does not touch.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| New slide | Ctrl+M | ⌘⇧N | remapped; ⌘M is the system Minimize |
+| Group | Ctrl+G | ⌘⌥G | remapped |
+| Ungroup | Ctrl+Shift+G | ⌘⌥⇧G | remapped |
+| Font + | Ctrl+] | ⌘⇧> (on the `.` key) | remapped |
+| Font - | Ctrl+[ | ⌘⇧< (on the `,` key) | remapped |
+| From current | Shift+F5 | ⌘Return | remapped |
+| Slideshow | F5 | ⌘⇧Return | remapped |
+| Save as | F12 | ⌘⇧S | remapped |
+| Replace | Ctrl+H | — | dropped, *uncertain*: not in the scrape; ⌘H is the system Hide |
+| Subscript | Ctrl+= | — | dropped, *uncertain*: not in the scrape |
+| Spelling | F7 | — | dropped, *uncertain*: F7 not listed for PowerPoint for Mac |

@@ -1,4 +1,14 @@
-# Microsoft Outlook shortcut overlays for PolyKybd.
+# Microsoft Outlook shortcut overlays for PolyKybd (Windows and macOS).
+#
+# ONE spec, TWO artwork sets: Windows/Linux (`output`) and macOS (`<output>_mac`).
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS -- only where the Mac
+#                    app's chord really is the Cmd version of the Windows one.
+#   CTRL (literal)   stays Control on macOS too (the Mac app binds Control).
+#   only: / except:  Office for Mac is a REMAP, not a clean Ctrl->Cmd swap: a
+#                    re-chorded action is written twice with disjoint `only:`
+#                    lists, and one with no Mac equivalent carries
+#                    `except: [macos]`. Every Mac chord and its source is in
+#                    SOURCES.md -> "macOS".
 #
 # Icons: Microsoft Fluent UI System Icons (MIT). Program icon (ESC): a generic
 # drawn mark (no MS logo). Shortcuts: Outlook defaults (note: Ctrl+F = Forward,
@@ -27,43 +37,63 @@ program_icon_margin: 0
 
 bindings:
   # --- mail actions (Ctrl -> R channel of primary) ---
-  - { key: N, mods: [CTRL], icon: new.png,     label: "New mail", source: "ms-fluent/Mail Add (MIT)" }
-  - { key: R, mods: [CTRL], icon: reply.png,   label: Reply,      source: "ms-fluent/Arrow Reply (MIT)" }
-  - { key: F, mods: [CTRL], icon: forward.png, label: Forward,    source: "ms-fluent/Arrow Forward (MIT)" }
-  - { key: ENTER, mods: [CTRL], icon: send.png, label: Send,      source: "ms-fluent/Send (MIT)" }
-  - { key: P, mods: [CTRL], icon: print.png,   label: Print,      source: "ms-fluent/Print (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,    label: Save,       source: "ms-fluent/Save (MIT)" }
-  - { key: E, mods: [CTRL], icon: search.png,  label: Search,     source: "ms-fluent/Search (MIT)" }
-  - { key: Q, mods: [CTRL], icon: markread.png,   label: "Mark read",   source: "ms-fluent/Mail Read (MIT)" }
-  - { key: U, mods: [CTRL], icon: markunread.png, label: "Mark unread", source: "ms-fluent/Mail Unread (MIT)" }
-  - { key: K, mods: [CTRL], icon: hyperlink.png,  label: Hyperlink,     source: "ms-fluent/Link (MIT)" }
-  - { key: B, mods: [CTRL], icon: bold.png,    label: Bold,   source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,  label: Italic, source: "ms-fluent/Text Italic (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,     label: "New mail", source: "ms-fluent/Mail Add (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: reply.png,   label: Reply,      source: "ms-fluent/Arrow Reply (MIT)" }
+  - { key: F, mods: [CTRL], icon: forward.png, label: Forward,    source: "ms-fluent/Arrow Forward (MIT)", only: [windows, linux] }
+  # macOS: Forward is Cmd+J
+  - { key: J, mods: [GUI], icon: forward.png, label: Forward,    source: "ms-fluent/Arrow Forward (MIT)", only: [macos] }
+  - { key: ENTER, mods: [CMDCTRL], icon: send.png, label: Send,      source: "ms-fluent/Send (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,   label: Print,      source: "ms-fluent/Print (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,    label: Save,       source: "ms-fluent/Save (MIT)" }
+  - { key: E, mods: [CTRL], icon: search.png,  label: Search,     source: "ms-fluent/Search (MIT)", only: [windows, linux] }
+  # macOS: search current folder is Cmd+Option+F (Cmd+E adds an attachment)
+  - { key: F, mods: [GUI, ALT], icon: search.png,  label: Search,     source: "ms-fluent/Search (MIT)", only: [macos] }
+  - { key: Q, mods: [CTRL], icon: markread.png,   label: "Mark read",   source: "ms-fluent/Mail Read (MIT)", only: [windows, linux] }
+  # macOS: Mark as read is Cmd+T
+  - { key: T, mods: [GUI], icon: markread.png,   label: "Mark read",   source: "ms-fluent/Mail Read (MIT)", only: [macos] }
+  - { key: U, mods: [CTRL], icon: markunread.png, label: "Mark unread", source: "ms-fluent/Mail Unread (MIT)", only: [windows, linux] }
+  # macOS: Mark as unread is Cmd+Shift+T
+  - { key: T, mods: [GUI, SHIFT], icon: markunread.png, label: "Mark unread", source: "ms-fluent/Mail Unread (MIT)", only: [macos] }
+  - { key: K, mods: [CTRL], icon: hyperlink.png,  label: Hyperlink,     source: "ms-fluent/Link (MIT)", only: [windows, linux] }
+  # macOS: Insert hyperlink is Control+Cmd+K (Cmd+K is Send/Receive)
+  - { key: K, mods: [CTRL, GUI], icon: hyperlink.png,  label: Hyperlink,     source: "ms-fluent/Link (MIT)", only: [macos] }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,    label: Bold,   source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,  label: Italic, source: "ms-fluent/Text Italic (MIT)" }
 
   # --- module switch (Ctrl + number) ---
-  - { key: "1", mods: [CTRL], icon: mailview.png,   label: Mail,     source: "ms-fluent/Mail Inbox (MIT)" }
-  - { key: "2", mods: [CTRL], icon: calview.png,    label: Calendar, source: "ms-fluent/Calendar (MIT)" }
-  - { key: "3", mods: [CTRL], icon: peopleview.png, label: People,   source: "ms-fluent/People (MIT)" }
-  - { key: "4", mods: [CTRL], icon: tasksview.png,  label: Tasks,    source: "ms-fluent/Tasks App (MIT)" }
-  - { key: "5", mods: [CTRL], icon: notes.png,      label: Notes,    source: "ms-fluent/Note (MIT)" }
-  - { key: "6", mods: [CTRL], icon: folderlist.png, label: "Folder list", source: "ms-fluent/Apps List (MIT)" }
-  - { key: "7", mods: [CTRL], icon: shortcuts.png,  label: Shortcuts, source: "ms-fluent/Star (MIT)" }
+  - { key: "1", mods: [CMDCTRL], icon: mailview.png,   label: Mail,     source: "ms-fluent/Mail Inbox (MIT)" }
+  - { key: "2", mods: [CMDCTRL], icon: calview.png,    label: Calendar, source: "ms-fluent/Calendar (MIT)" }
+  - { key: "3", mods: [CMDCTRL], icon: peopleview.png, label: People,   source: "ms-fluent/People (MIT)" }
+  - { key: "4", mods: [CMDCTRL], icon: tasksview.png,  label: Tasks,    source: "ms-fluent/Tasks App (MIT)" }
+  - { key: "5", mods: [CMDCTRL], icon: notes.png,      label: Notes,    source: "ms-fluent/Note (MIT)" }
+  - { key: "6", mods: [CTRL], icon: folderlist.png, label: "Folder list", source: "ms-fluent/Apps List (MIT)", except: [macos] }
+  - { key: "7", mods: [CTRL], icon: shortcuts.png,  label: Shortcuts, source: "ms-fluent/Star (MIT)", except: [macos] }
 
   # --- navigation (Ctrl) ---
-  - { key: G, mods: [CTRL],     icon: gotodate.png, label: "Go to date", source: "ms-fluent/Calendar Arrow Right (MIT)" }
-  - { key: DOT, mods: [CTRL],   icon: nextmsg.png,  label: "Next msg",   source: "ms-fluent/Arrow Down (MIT)" }
-  - { key: COMMA, mods: [CTRL], icon: prevmsg.png,  label: "Prev msg",   source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: G, mods: [CTRL],     icon: gotodate.png, label: "Go to date", source: "ms-fluent/Calendar Arrow Right (MIT)", except: [macos] }
+  - { key: DOT, mods: [CTRL],   icon: nextmsg.png,  label: "Next msg",   source: "ms-fluent/Arrow Down (MIT)", only: [windows, linux] }
+  # macOS: next message is Control+]
+  - { key: "]", mods: [CTRL],   icon: nextmsg.png,  label: "Next msg",   source: "ms-fluent/Arrow Down (MIT)", only: [macos] }
+  - { key: COMMA, mods: [CTRL], icon: prevmsg.png,  label: "Prev msg",   source: "ms-fluent/Arrow Up (MIT)", only: [windows, linux] }
+  # macOS: previous message is Control+[
+  - { key: "[", mods: [CTRL], icon: prevmsg.png,  label: "Prev msg",   source: "ms-fluent/Arrow Up (MIT)", only: [macos] }
   # Compose-window (Word engine) formatting:
-  - { key: T, mods: [CTRL],     icon: hangindent.png, label: "Hang indent", source: "ms-fluent/Text Indent Increase (MIT)" }
-  - { key: MINUS, mods: [CTRL], icon: hyphen.png,     label: "Opt hyphen",  source: "ms-fluent/Subtract (MIT)" }
+  - { key: T, mods: [CTRL],     icon: hangindent.png, label: "Hang indent", source: "ms-fluent/Text Indent Increase (MIT)", except: [macos] }
+  - { key: MINUS, mods: [CTRL], icon: hyphen.png,     label: "Opt hyphen",  source: "ms-fluent/Subtract (MIT)", except: [macos] }
 
   # --- Ctrl+Shift -> R channel of combo ---
-  - { key: R, mods: [CTRL, SHIFT], icon: replyall.png,   label: "Reply all",  source: "ms-fluent/Arrow Reply All (MIT)" }
-  - { key: A, mods: [CTRL, SHIFT], icon: newappt.png,    label: "New appt",   source: "ms-fluent/Calendar Add (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: newcontact.png, label: "New contact", source: "ms-fluent/Person Add (MIT)" }
-  - { key: K, mods: [CTRL, SHIFT], icon: newtask.png,    label: "New task",   source: "ms-fluent/Task List Add (MIT)" }
-  - { key: G, mods: [CTRL, SHIFT], icon: flag.png,       label: Flag,         source: "ms-fluent/Flag (MIT)" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: replyall.png,   label: "Reply all",  source: "ms-fluent/Arrow Reply All (MIT)" }
+  - { key: A, mods: [CTRL, SHIFT], icon: newappt.png,    label: "New appt",   source: "ms-fluent/Calendar Add (MIT)", except: [macos] }
+  - { key: C, mods: [CTRL, SHIFT], icon: newcontact.png, label: "New contact", source: "ms-fluent/Person Add (MIT)", except: [macos] }
+  - { key: K, mods: [CTRL, SHIFT], icon: newtask.png,    label: "New task",   source: "ms-fluent/Task List Add (MIT)", except: [macos] }
+  - { key: G, mods: [CTRL, SHIFT], icon: flag.png,       label: Flag,         source: "ms-fluent/Flag (MIT)", only: [windows, linux] }
+  # macOS: Control+6 flags for follow-up with a custom due date
+  - { key: "6", mods: [CTRL], icon: flag.png,       label: Flag,         source: "ms-fluent/Flag (MIT)", only: [macos] }
 
   # --- plain keys (no-mod -> A channel) ---
-  - { key: DELETE, mods: [], icon: delete.png,   label: Delete,     source: "ms-fluent/Delete (MIT)" }
-  - { key: F9, mods: [],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: DELETE, mods: [], icon: delete.png,   label: Delete,     source: "ms-fluent/Delete (MIT)", only: [windows, linux] }
+  # macOS: the Mac 'delete' key (Backspace) deletes the message
+  - { key: BACKSPACE, mods: [], icon: delete.png,   label: Delete,     source: "ms-fluent/Delete (MIT)", only: [macos] }
+  - { key: F9, mods: [],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [windows, linux] }
+  # macOS: Send/Receive All is Cmd+K
+  - { key: K, mods: [GUI],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [macos] }

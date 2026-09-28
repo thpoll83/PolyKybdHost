@@ -43,3 +43,39 @@ feel). Drawn by `_draw_excel_logo()` in `fetch_icons.py` (white-on-transparent �
 `anchor: bottom-right`; program icon bottom-right `[40, 36]`, `mode: alpha`.
 Fluent `.svg` → cairosvg 96px in `fetch_icons.py`. Pin branch→SHA for byte-exact
 reproducibility; committed `icons/` freeze the render.
+
+## macOS
+
+This spec also renders a macOS set (`excel_template_mac.*`, 2026-09-28). Most bindings
+are `CMDCTRL` (Ctrl on Windows/Linux, Cmd on macOS); the rest are listed below.
+
+**Sources.** The official page is "Keyboard shortcuts in Excel" (Mac tab / "Keyboard shortcuts in Excel for Mac", <https://support.microsoft.com/office/keyboard-shortcuts-in-excel-1798d9d5-842a-42b8-9c99-9b7213f0040f>). `support.microsoft.com` (and
+`support.office.com`, `web.archive.org`, every third-party mirror tried) is
+**blocked by this environment's egress proxy**, so both WebFetch and curl fail;
+WebSearch snippets were too thin to quote. The chords were therefore read from
+verbatim scrapes of the official Mac article kept on GitHub (raw.githubusercontent.com):
+- `amiechen/pretzel` `shortcuts/Microsoft Excel.yml` (the MS Excel-for-Mac article's tables)
+- `mutdmour/alfred-workflow-cheatsheet` `src/apps/microsoftExcel.py`
+Where two scrapes disagreed or neither listed a chord, the binding is dropped on
+macOS rather than guessed (marked *uncertain*). Re-check those against the live
+Microsoft page when it is reachable.
+
+⚠️ `match:` lists the Windows process name. Whether the macOS active-window
+name (`Microsoft Excel`) resolves to this stanza is decided by
+`overlay-mapping.poly.yaml`, which this change does not touch.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Replace | Ctrl+H | ⌃H (literal CTRL, unchanged) | both scrapes list Control+H (pretzel also ⌘⇧H) |
+| Go to | Ctrl+G | ⌃G (unchanged) | both scrapes; also F5 |
+| New table | Ctrl+T | ⌃T (unchanged) | both scrapes list Control+T; ⌘T toggles absolute refs while editing |
+| Delete cells | Ctrl+- | ⌃- (unchanged) | both scrapes list Control+Hyphen |
+| Dependents / Precedents | Ctrl+] / Ctrl+[ | ⌃] / ⌃[ (unchanged) | alfred lists ⌃[ and ⌃]; pretzel lists ⌃] |
+| Fill down / Fill right | Ctrl+D / Ctrl+R | ⌃D / ⌃R (unchanged) | both scrapes list Control (pretzel also ⌘) |
+| Filter | Ctrl+Shift+L | ⌃⇧L (unchanged) | pretzel: "Cmd+Shift+F or Ctrl+Shift+L"; ⌘⇧L is Modify Cell Style, so CMDCTRL would be WRONG |
+| Currency / % | Ctrl+Shift+4 / 5 | ⌃⇧$ / ⌃⇧% (unchanged) | pretzel lists Control; note ⌘⇧4 would be the system screenshot |
+| Strikethrough | Ctrl+5 | ⌘⇧X | remapped |
+| AutoSum | Alt+= | ⌘⇧T | remapped |
+| Flash fill | Ctrl+E | — | dropped, *uncertain*: not in either scrape; ⌘E is Align center |
+| Table | Ctrl+L | — | dropped: on Mac Control+L is Define Name (pretzel); Mac's create-table chord is ⌃T/⌘T, already drawn |
+| F2 / F4 / F9 / F12 | same | same | unchanged (all listed in the Mac function-key table) |

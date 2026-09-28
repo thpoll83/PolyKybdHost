@@ -1,4 +1,14 @@
-# Microsoft PowerPoint shortcut overlays for PolyKybd.
+# Microsoft PowerPoint shortcut overlays for PolyKybd (Windows and macOS).
+#
+# ONE spec, TWO artwork sets: Windows/Linux (`output`) and macOS (`<output>_mac`).
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS -- only where the Mac
+#                    app's chord really is the Cmd version of the Windows one.
+#   CTRL (literal)   stays Control on macOS too (the Mac app binds Control).
+#   only: / except:  Office for Mac is a REMAP, not a clean Ctrl->Cmd swap: a
+#                    re-chorded action is written twice with disjoint `only:`
+#                    lists, and one with no Mac equivalent carries
+#                    `except: [macos]`. Every Mac chord and its source is in
+#                    SOURCES.md -> "macOS".
 #
 # Icons: Microsoft Fluent UI System Icons (MIT). Program icon (ESC): a generic
 # drawn mark (no MS logo). Shortcuts: PowerPoint defaults. See SOURCES.md.
@@ -26,49 +36,65 @@ program_icon_margin: 0
 
 bindings:
   # --- file / slides (Ctrl -> R channel of primary) ---
-  - { key: N, mods: [CTRL], icon: new.png,       label: New,        source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,      label: Open,       source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,      label: Save,       source: "ms-fluent/Save (MIT)" }
-  - { key: P, mods: [CTRL], icon: print.png,     label: Print,      source: "ms-fluent/Print (MIT)" }
-  - { key: M, mods: [CTRL], icon: newslide.png,  label: "New slide", source: "ms-fluent/Slide Add (MIT)" }
-  - { key: D, mods: [CTRL], icon: duplicate.png, label: Duplicate,  source: "ms-fluent/Square Multiple (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,       label: New,        source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,      label: Open,       source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,      label: Save,       source: "ms-fluent/Save (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,     label: Print,      source: "ms-fluent/Print (MIT)" }
+  - { key: M, mods: [CTRL], icon: newslide.png,  label: "New slide", source: "ms-fluent/Slide Add (MIT)", only: [windows, linux] }
+  # macOS: New slide is Cmd+Shift+N (Cmd+M is the system Minimize)
+  - { key: N, mods: [GUI, SHIFT], icon: newslide.png,  label: "New slide", source: "ms-fluent/Slide Add (MIT)", only: [macos] }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate,  source: "ms-fluent/Square Multiple (MIT)" }
 
   # --- edit (Ctrl) ---
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: Y, mods: [CTRL], icon: redo.png,      label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
 
   # --- format (Ctrl) ---
-  - { key: B, mods: [CTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
-  - { key: U, mods: [CTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
-  - { key: K, mods: [CTRL], icon: hyperlink.png, label: Hyperlink, source: "ms-fluent/Link (MIT)" }
-  - { key: G, mods: [CTRL], icon: group.png,     label: Group,     region: [40, 36], margin: 0, source: "ms-fluent/Group (MIT)" }
-  - { key: F, mods: [CTRL], icon: find.png,      label: Find,      source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], icon: replace.png,   label: Replace,   source: "ms-fluent/Arrow Swap (MIT)" }
-  - { key: W, mods: [CTRL], icon: close.png,     label: Close,     source: "ms-fluent/Document Dismiss (MIT)" }
-  - { key: T, mods: [CTRL], icon: font.png,      label: "Font dialog", source: "ms-fluent/Text Font (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: hyperlink.png, label: Hyperlink, source: "ms-fluent/Link (MIT)" }
+  - { key: G, mods: [CTRL], icon: group.png,     label: Group,     region: [40, 36], margin: 0, source: "ms-fluent/Group (MIT)", only: [windows, linux] }
+  # macOS: Group is Cmd+Option+G
+  - { key: G, mods: [GUI, ALT], icon: group.png,     label: Group,     region: [40, 36], margin: 0, source: "ms-fluent/Group (MIT)", only: [macos] }
+  - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find,      source: "ms-fluent/Search (MIT)" }
+  - { key: H, mods: [CTRL], icon: replace.png,   label: Replace,   source: "ms-fluent/Arrow Swap (MIT)", except: [macos] }
+  - { key: W, mods: [CMDCTRL], icon: close.png,     label: Close,     source: "ms-fluent/Document Dismiss (MIT)" }
+  - { key: T, mods: [CMDCTRL], icon: font.png,      label: "Font dialog", source: "ms-fluent/Text Font (MIT)" }
 
   # --- text align + size (Ctrl) ---
-  - { key: L, mods: [CTRL], icon: left.png,    label: "Align left",   source: "ms-fluent/Text Align Left (MIT)" }
-  - { key: E, mods: [CTRL], icon: center.png,  label: "Align center", source: "ms-fluent/Text Align Center (MIT)" }
-  - { key: R, mods: [CTRL], icon: right.png,   label: "Align right",  source: "ms-fluent/Text Align Right (MIT)" }
-  - { key: J, mods: [CTRL], icon: justify.png, label: Justify,        source: "ms-fluent/Text Align Justify (MIT)" }
-  - { key: "]", mods: [CTRL], icon: fontinc.png, label: "Font +",     source: "ms-fluent/Font Increase (MIT)" }
-  - { key: "[", mods: [CTRL], icon: fontdec.png, label: "Font -",     source: "ms-fluent/Font Decrease (MIT)" }
-  - { key: EQUAL, mods: [CTRL], icon: subscript.png, label: Subscript, source: "ms-fluent/Text Subscript (MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: left.png,    label: "Align left",   source: "ms-fluent/Text Align Left (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: center.png,  label: "Align center", source: "ms-fluent/Text Align Center (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: right.png,   label: "Align right",  source: "ms-fluent/Text Align Right (MIT)" }
+  - { key: J, mods: [CMDCTRL], icon: justify.png, label: Justify,        source: "ms-fluent/Text Align Justify (MIT)" }
+  - { key: "]", mods: [CTRL], icon: fontinc.png, label: "Font +",     source: "ms-fluent/Font Increase (MIT)", only: [windows, linux] }
+  # macOS: increase font size is Cmd+Shift+> (on the . key)
+  - { key: DOT, mods: [GUI, SHIFT], icon: fontinc.png, label: "Font +",     source: "ms-fluent/Font Increase (MIT)", only: [macos] }
+  - { key: "[", mods: [CTRL], icon: fontdec.png, label: "Font -",     source: "ms-fluent/Font Decrease (MIT)", only: [windows, linux] }
+  # macOS: decrease font size is Cmd+Shift+< (on the , key)
+  - { key: COMMA, mods: [GUI, SHIFT], icon: fontdec.png, label: "Font -",     source: "ms-fluent/Font Decrease (MIT)", only: [macos] }
+  - { key: EQUAL, mods: [CTRL], icon: subscript.png, label: Subscript, source: "ms-fluent/Text Subscript (MIT)", except: [macos] }
 
   # --- Shift -> B channel of primary ---
-  - { key: F5, mods: [SHIFT], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT)" }
+  - { key: F5, mods: [SHIFT], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT)", only: [windows, linux] }
+  # macOS: play from the current slide is Cmd+Return
+  - { key: ENTER, mods: [GUI], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT)", only: [macos] }
 
   # --- Ctrl+Shift -> R channel of combo ---
-  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,    label: Ungroup,       region: [40, 36], margin: 0, source: "ms-fluent/Group Dismiss (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: copyformat.png, label: "Copy format", source: "ms-fluent/Paint Brush (MIT)" }
+  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,    label: Ungroup,       region: [40, 36], margin: 0, source: "ms-fluent/Group Dismiss (MIT)", only: [windows, linux] }
+  # macOS: Ungroup is Cmd+Option+Shift+G
+  - { key: G, mods: [GUI, ALT, SHIFT], icon: ungroup.png,    label: Ungroup,       region: [40, 36], margin: 0, source: "ms-fluent/Group Dismiss (MIT)", only: [macos] }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copyformat.png, label: "Copy format", source: "ms-fluent/Paint Brush (MIT)" }
 
   # --- plain keys (no-mod -> A channel) ---
-  - { key: F5,  mods: [], icon: slideshow.png, label: "Slideshow", source: "ms-fluent/Play (MIT)" }
-  - { key: F7,  mods: [], icon: spelling.png,  label: Spelling,    source: "ms-fluent/Text Grammar Checkmark (MIT)" }
-  - { key: F12, mods: [], icon: saveas.png,    label: "Save as",   source: "ms-fluent/Save Edit (MIT)" }
+  - { key: F5,  mods: [], icon: slideshow.png, label: "Slideshow", source: "ms-fluent/Play (MIT)", only: [windows, linux] }
+  # macOS: play from the first slide is Cmd+Shift+Return
+  - { key: ENTER, mods: [GUI, SHIFT], icon: slideshow.png, label: "Slideshow", source: "ms-fluent/Play (MIT)", only: [macos] }
+  - { key: F7,  mods: [], icon: spelling.png,  label: Spelling,    source: "ms-fluent/Text Grammar Checkmark (MIT)", except: [macos] }
+  - { key: F12, mods: [], icon: saveas.png,    label: "Save as",   source: "ms-fluent/Save Edit (MIT)", only: [windows, linux] }
+  # macOS: Save As is Cmd+Shift+S
+  - { key: S, mods: [GUI, SHIFT], icon: saveas.png,    label: "Save as",   source: "ms-fluent/Save Edit (MIT)", only: [macos] }

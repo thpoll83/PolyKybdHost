@@ -77,3 +77,32 @@ Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.
+
+## macOS
+
+The spec serves Windows/Linux and macOS from one file (`CMDCTRL` → Ctrl / Cmd;
+see `overlay_specification.md` → *The `CMDCTRL` modifier*); the generator writes
+a second set `*_mac.*` for the `os: macos:` branch.
+
+Sources. Adobe's official pages list the Windows and macOS columns side by side:
+
+- https://helpx.adobe.com/premiere-pro/using/keyboard-shortcuts.html
+
+`helpx.adobe.com` is blocked by this environment's egress proxy (WebFetch and curl
+both 403), so the macOS column was confirmed from web-search result snippets of
+those pages and of reputable mirrors (academyclass.com, focalcrafters.com (ripple delete), defkey.com Premiere Pro (Mac), robertcumminsfilm.com Mac shortcuts). Each chord below
+was cross-checked against at least one of them; the rest follow Adobe's documented
+convention for these apps (Ctrl -> Cmd, Alt -> Option, Shift unchanged).
+
+Every `CTRL` binding (19, including `CTRL+SHIFT` and `CTRL+ALT`) is now `CMDCTRL`
+(e.g. New project `Ctrl+Alt+N` → ⌥⌘N, Speed/duration ⌘R, Add edit ⌘K). Tool
+letters, J/K/L, `=`/`-`/`\` and the `Shift+1`…`Shift+7` panel keys are identical.
+Ripple delete is `Shift+Delete` on Windows and `Shift+Forward Delete` on macOS —
+the same HID key (`DELETE`), so it stays untouched.
+
+Remapped on macOS: **none**. Dropped on macOS: **none**.
+
+| Action | macOS chord | Note |
+|---|---|---|
+| Export media | ⌘M | **macOS reserved (Minimize)**, but Premiere documents and claims ⌘M. Drawn as ⌘M. |
+| New project | ⌥⌘N | Swap assumed from Adobe's convention; not individually confirmed by a snippet (low risk). |

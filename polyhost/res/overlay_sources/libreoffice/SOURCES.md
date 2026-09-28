@@ -46,6 +46,57 @@ so that would put wrong legends on the keycaps:
 - Omitted throughout: numeric-keypad bindings (`*`, `/` zoom in Impress) — no
   overlay cell; and arrow/Home/End navigation, which needs no legend.
 
+## macOS
+
+The three specs serve Windows/Linux **and** macOS from one file each. The
+generator writes a second set, `libreoffice_{writer,calc,impress}_template_mac.*`,
+in which `CMDCTRL` resolves to Cmd.
+
+**Source.** LibreOffice's help pages (above) mark the Mac variant inline with
+`<switchinline select="sys"><caseinline select="MAC">Command…`. They are
+incomplete, and in two places they are wrong about what ships. So the authority
+used here is the **shipped keymap**,
+[`officecfg/registry/data/org/openoffice/Office/Accelerators.xcu`](https://github.com/LibreOffice/core/blob/master/officecfg/registry/data/org/openoffice/Office/Accelerators.xcu)
+(LibreOffice core, `master`, read 2026-09-28). In it, `MOD1` is Ctrl on
+Windows/Linux and Cmd on macOS, `MOD2` is Alt/Option, and `MOD3` is the literal
+Control key on macOS. An entry tagged `install:module="unxwnt"` exists only on
+Windows/Linux; one tagged `"macosx"` exists only on macOS. The help pages were
+read from the [LibreOffice/help](https://github.com/LibreOffice/help) mirror
+(`source/text/{shared,swriter,scalc,simpress}/04/*.xhp`), because
+help.libreoffice.org was unreachable from the build container.
+
+**Rule applied.** A `MOD1` chord that is the same command on both platforms
+became `CMDCTRL`. That covers every Ctrl binding in the three specs except the
+ones in the table below.
+
+| Spec | Action | Windows/Linux | macOS | Why |
+|---|---|---|---|---|
+| all three | Find & replace | `Ctrl+H` | `⌘⌥F` (remapped) | `H_MOD1` is `unxwnt`-only, because ⌘H is the system Hide. The Mac entry is `F_MOD1_MOD2`. |
+| Writer, Impress | Spelling | `F7` | `⌘⇧;` (remapped) | `F7` is `unxwnt`-only. The Mac entry is `SEMICOLON_SHIFT_MOD1`. |
+| Calc | Spelling | `F7` | — (dropped, `except: [macos]`) | `F7` is `unxwnt`-only, and Calc has no Mac spelling chord: its `⌘⇧;` is Insert Current Time. |
+| Calc, Impress | Styles deck | `F11` | `⌘T` (remapped) | `F11` is `unxwnt`-only (macOS uses F11 for Show Desktop). The Mac entry is `T_MOD1` → `.uno:DesignerDialog`. |
+| Writer | Styles deck | `F11` | — (dropped, `except: [macos]`) | The help page says `⌘T`, but Writer's shipped `T_MOD1` is **Insert Table** on both platforms, and Writer has no Mac DesignerDialog chord. **Uncertain**; dropped rather than guessed. |
+| all three | Ctrl+M (Clear direct formatting; in Impress the shipped command is New Slide) | `Ctrl+M` | `⌃M`, unchanged | Kept as literal `CTRL`. The Mac entry is `M_MOD3` (real Control) because ⌘M is the system Minimize. The help page's `Command+M` is wrong. |
+| Calc | Select column | `Ctrl+Space` | `⌃Space`, unchanged | Literal `CTRL` (`SPACE_MOD3`). ⚠️ macOS reserves ⌃Space to switch input source when more than one is enabled, so this cell may be dead there. |
+| Calc | Select all cells | `Ctrl+Shift+Space` | `⌃⇧Space`, unchanged | Literal `CTRL` (`SPACE_SHIFT_MOD3`). |
+| Calc | Show formulas | ``Ctrl+` `` | ``⌃` ``, unchanged | Literal `CTRL` (`QUOTELEFT_MOD3`). The help page's `Command` is wrong. |
+| Calc | Number formats 2 dec / exp / date / currency / percent | `Ctrl+Shift+1…5` | `⌃⇧1…5`, unchanged | Literal `CTRL` (`1…5_SHIFT_MOD3`). ⌘⇧3/4/5 would have collided with the macOS screenshot chords. |
+
+Writer's `Ctrl+Q` → `⌘Q` (Quit) is drawn deliberately: it is the application's
+own Quit, which is exactly what the system chord does.
+
+**Discrepancies spotted in the Windows set, left as they are** (see the review
+note in the Representation notes above):
+
+- Impress **`Ctrl+M`** is labelled "Clear direct formatting", but the Impress
+  module's `M_MOD1` (and the Mac `M_MOD3`) is `.uno:InsertPage`, i.e. New Slide.
+  The shared help page's Clear-Direct-Formatting row describes the other modules.
+- Impress **Ungroup `Ctrl+Alt+Shift+A`**: the help page agrees
+  (Mac `⌘⌥⇧A`, drawn via `CMDCTRL`). The `.xcu`, however, binds `.uno:FormatUngroup` to
+  `G_SHIFT_MOD1_MOD2` and has no `A_SHIFT_MOD1_MOD2` in any module. The key
+  may be hard-coded in the Impress/Draw view, so this is recorded rather than
+  changed.
+
 ## Icons
 
 | File(s) | Source | License |

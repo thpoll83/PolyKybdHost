@@ -44,3 +44,36 @@ fully reproducible and carries no trademark/licence risk.
 `anchor: bottom-right`; program icon bottom-right `[40, 36]`, `threshold: 160`.
 Fluent `.svg` → cairosvg 96px in `fetch_icons.py`. Pin branch→SHA for byte-exact
 reproducibility; committed `icons/` freeze the render.
+
+## macOS
+
+This spec also renders a macOS set (`word_template_mac.*`, 2026-09-28). Most bindings
+are `CMDCTRL` (Ctrl on Windows/Linux, Cmd on macOS); the rest are listed below.
+
+**Sources.** The official page is "Keyboard shortcuts in Word" (Mac tab / "Keyboard shortcuts in Word for Mac", <https://support.microsoft.com/office/keyboard-shortcuts-in-word-95ef89dd-7142-4b50-afb2-f762f663ceb2>, Mac article id `3256d48a-7967-475d-be81-a6e3e1284b25`). `support.microsoft.com` (and
+`support.office.com`, `web.archive.org`, every third-party mirror tried) is
+**blocked by this environment's egress proxy**, so both WebFetch and curl fail;
+WebSearch snippets were too thin to quote. The chords were therefore read from
+verbatim scrapes of the official Mac article kept on GitHub (raw.githubusercontent.com):
+- `amiechen/pretzel` `shortcuts/Microsoft Word.yml` (the MS article's tables, incl. its Mission Control notes)
+- `mutdmour/alfred-workflow-cheatsheet` `src/apps/microsoftWord.py`
+- ⌘N/⌘O/⌘S/⌘W/⌘K/⌘A (not in either scrape) follow the standard Mac/Office-for-Mac file chords ("Common Office for Mac keyboard shortcuts")
+Where two scrapes disagreed or neither listed a chord, the binding is dropped on
+macOS rather than guessed (marked *uncertain*). Re-check those against the live
+Microsoft page when it is reachable.
+
+⚠️ `match:` lists the Windows process name. Whether the macOS active-window
+name (`Microsoft Word`) resolves to this stanza is decided by
+`overlay-mapping.poly.yaml`, which this change does not touch.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Find | Ctrl+F | ⌃F (literal CTRL, unchanged) | both scrapes list Control+F ("places the focus in the Search box") |
+| Replace | Ctrl+H | ⌃H (literal CTRL, unchanged) | both scrapes: Control+H; ⌘H is the system Hide |
+| Indent | Ctrl+M | ⌃⇧M | remapped; ⌘M is the system Minimize (⌘⇧M *removes* the indent) |
+| Go to | Ctrl+G | ⌘⌥G | remapped (also F5) |
+| Save as | F12 | ⌘⇧S | remapped; F12 is not a Word-for-Mac chord |
+| Opt hyphen | Ctrl+- | — | dropped, *uncertain*: neither scrape lists an optional-hyphen chord (⌘⇧- is the NON-breaking hyphen) |
+| Clear fmt | Ctrl+Q | — | dropped, *uncertain*: not in either scrape; ⌘Q quits Word |
+| Change case | Shift+F3 | ⇧F3 | unchanged (listed on Mac) |
+| Spelling | F7 | F7 | unchanged (listed in the Mac function-key table; also ⌘⌥L) |

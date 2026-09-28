@@ -178,11 +178,20 @@ putty:
 # Office on macOS reports its display name, `Microsoft Word` and so on.
 winword,microsoft word:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [word_template_mac.mods.png, word_template_mac.combo.mods.png, word_template_mac.extra.mods.png]
 excel,microsoft excel:
   overlay: [excel_template.mods.png, excel_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [excel_template_mac.mods.png, excel_template_mac.combo.mods.png, excel_template_mac.extra.mods.png]
 # `olk` is the new Outlook for Windows.
 outlook,olk,microsoft outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [outlook_template_mac.mods.png, outlook_template_mac.combo.mods.png, outlook_template_mac.extra.mods.png]
 # ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
 # Notes and NOT about OneNote -- hence the title constraint, which lets a real
 # OneNote window fall through unmatched rather than showing sticky-note keycaps.
@@ -195,6 +204,9 @@ onenote:
   overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
 powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [powerpoint_template_mac.mods.png, powerpoint_template_mac.combo.mods.png, powerpoint_template_mac.extra.mods.png, powerpoint_template_mac.gui.mods.png]
 # Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
 # curated generic (`photos: mdi:image-multiple`) resolves from the process name,
 # confirmed in the field log that prompted this batch.
@@ -204,20 +216,35 @@ photos:
 # `mapping_key` drops a trailing year, so the plain name covers every release.
 photoshop,adobe photoshop:
   overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [photoshop_template_mac.mods.png, photoshop_template_mac.combo.mods.png, photoshop_template_mac.extra.mods.png]
 illustrator,adobe illustrator:
   overlay: [illustrator_template.mods.png, illustrator_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [illustrator_template_mac.mods.png, illustrator_template_mac.combo.mods.png, illustrator_template_mac.extra.mods.png]
 figma:
   overlay: [figma_template.mods.png, figma_template.combo.mods.png]
 krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
 ms-teams,teams,microsoft teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
 adobe premiere pro:
   overlay: [premiere_template.mods.png, premiere_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [premiere_template_mac.mods.png, premiere_template_mac.combo.mods.png, premiere_template_mac.extra.mods.png]
 afterfx,adobe after effects:
   overlay: [aftereffects_template.mods.png, aftereffects_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [aftereffects_template_mac.mods.png, aftereffects_template_mac.combo.mods.png, aftereffects_template_mac.extra.mods.png]
 # Sublime binds Cmd on macOS where it binds Ctrl on Windows/Linux, so the two
 # platforms need different artwork for the same app name. The `os:` branch picks
 # it: macOS gets the Cmd set (which uses the GUI-combo tiers unlocked by protocol
@@ -237,6 +264,9 @@ obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
 # Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
 # why it is one mode and not both).
 #
@@ -313,3 +343,15 @@ soffice,soffice.bin,libreoffice,startcenter:
     Impress:
       overlay: [libreoffice_impress_template.mods.png, libreoffice_impress_template.combo.mods.png,
                 libreoffice_impress_template.extra.mods.png]
+  # macOS: the same title routing onto the Cmd sets. A matched `os:` branch
+  # replaces the entry, so the title sub-map is repeated inside it.
+  os:
+    macos:
+      overlay: [libreoffice_writer_template_mac.mods.png, libreoffice_writer_template_mac.combo.mods.png, libreoffice_writer_template_mac.extra.mods.png]
+      titles-endswith:
+        Writer:
+          overlay: [libreoffice_writer_template_mac.mods.png, libreoffice_writer_template_mac.combo.mods.png, libreoffice_writer_template_mac.extra.mods.png]
+        Calc:
+          overlay: [libreoffice_calc_template_mac.mods.png, libreoffice_calc_template_mac.combo.mods.png, libreoffice_calc_template_mac.extra.mods.png]
+        Impress:
+          overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]

@@ -159,3 +159,33 @@ Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.
+
+## macOS
+
+The spec serves Windows/Linux and macOS from one file (`CMDCTRL` → Ctrl / Cmd;
+see `overlay_specification.md` → *The `CMDCTRL` modifier*); the generator writes
+a second set `*_mac.*` for the `os: macos:` branch.
+
+Sources. Adobe's official pages list the Windows and macOS columns side by side:
+
+- https://helpx.adobe.com/photoshop/using/default-keyboard-shortcuts.html
+
+`helpx.adobe.com` is blocked by this environment's egress proxy (WebFetch and curl
+both 403), so the macOS column was confirmed from web-search result snippets of
+those pages and of reputable mirrors (community.adobe.com threads on Cmd+H; jkost.com (Fill); nobledesktop.com Photoshop Mac shortcuts; suffolk.edu Photoshop Mac/PC cheat sheet). Each chord below
+was cross-checked against at least one of them; the rest follow Adobe's documented
+convention for these apps (Ctrl -> Cmd, Alt -> Option, Shift unchanged).
+
+Every `CTRL` binding (36, including `CTRL+SHIFT` and `CTRL+ALT`) is now `CMDCTRL`:
+the macOS chord is the same key with Cmd for Ctrl and Option for Alt.
+Backspace is the Mac's Delete key (same HID key), so `Ctrl+Backspace` → `Cmd+Delete`
+(Fill BG) and `Alt+Backspace` → `Option+Delete` (Fill FG) need no remap. Tool
+letters, `[`/`]`, `Shift+F5`/`Shift+F6` are identical on macOS (F-keys may need
+`fn` depending on the user's keyboard setting).
+
+Remapped on macOS: **none**. Dropped on macOS: **none**.
+
+| Action | macOS chord | Note |
+|---|---|---|
+| Hide extras | ⌘H | **macOS reserved (Hide app).** Adobe documents ⌘H; on first use Photoshop asks whether ⌘H should hide Photoshop or Hide Extras. ⌃⌘H is the alternate if the user chose the Mac standard. Drawn as ⌘H. |
+| Curves | ⌘M | **macOS reserved (Minimize)**, but Photoshop claims ⌘M for Curves by default. Drawn as ⌘M. |

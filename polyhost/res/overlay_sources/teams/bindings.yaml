@@ -1,9 +1,19 @@
-# Microsoft Teams (new Teams desktop app) shortcut overlays for PolyKybd.
+# Microsoft Teams (new Teams desktop app) shortcut overlays for PolyKybd (Windows and macOS).
+#
+# ONE spec, TWO artwork sets: Windows/Linux (`output`) and macOS (`<output>_mac`).
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS -- only where the Mac
+#                    app's chord really is the Cmd version of the Windows one.
+#   CTRL (literal)   stays Control on macOS too (the Mac app binds Control).
+#   only: / except:  Office for Mac is a REMAP, not a clean Ctrl->Cmd swap: a
+#                    re-chorded action is written twice with disjoint `only:`
+#                    lists, and one with no Mac equivalent carries
+#                    `except: [macos]`. Every Mac chord and its source is in
+#                    SOURCES.md -> "macOS".
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) — native style for a MS app.
 # Program icon (ESC): a generic drawn chat-bubble + "T" (no Microsoft logo;
 # drop a real Teams logo as icons/teams.png to override). See SOURCES.md.
-# Shortcuts: NEW Teams defaults (Windows). See SOURCES.md for the reference.
+# Shortcuts: NEW Teams defaults (Windows + macOS). See SOURCES.md for the reference.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/teams/fetch_icons.py
@@ -28,40 +38,40 @@ program_icon_margin: 0
 
 bindings:
   # --- general (Ctrl -> R channel of primary) ---
-  - { key: E, mods: [CTRL], icon: search.png,    label: "Search / command bar", source: "ms-fluent/Search (MIT)" }
-  - { key: N, mods: [CTRL], icon: newchat.png,   label: "New chat",   source: "ms-fluent/Chat Add (MIT)" }
-  - { key: COMMA, mods: [CTRL], icon: settings.png, label: Settings,  source: "ms-fluent/Settings (MIT)" }
-  - { key: SLASH, mods: [CTRL], icon: commands.png, label: "Show commands", source: "ms-fluent/Slash Forward (MIT)" }
-  - { key: DOT, mods: [CTRL], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
-  - { key: O, mods: [CTRL], icon: attach.png,    label: "Attach file", source: "ms-fluent/Attach (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: search.png,    label: "Search / command bar", source: "ms-fluent/Search (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: newchat.png,   label: "New chat",   source: "ms-fluent/Chat Add (MIT)" }
+  - { key: COMMA, mods: [CMDCTRL], icon: settings.png, label: Settings,  source: "ms-fluent/Settings (MIT)" }
+  - { key: SLASH, mods: [CMDCTRL], icon: commands.png, label: "Show commands", source: "ms-fluent/Slash Forward (MIT)" }
+  - { key: DOT, mods: [CMDCTRL], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: attach.png,    label: "Attach file", source: "ms-fluent/Attach (MIT)" }
 
   # --- zoom (Ctrl) ---
-  - { key: EQUAL, mods: [CTRL], icon: zoomin.png,   label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
-  - { key: MINUS, mods: [CTRL], icon: zoomout.png,  label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
-  - { key: "0", mods: [CTRL], icon: resetzoom.png,  label: "Reset zoom", source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,   label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png,  label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: "0", mods: [CMDCTRL], icon: resetzoom.png,  label: "Reset zoom", source: "ms-fluent/Full Screen Maximize (MIT)" }
 
   # --- app-bar navigation (Ctrl 1..6, default app order) ---
-  - { key: "1", mods: [CTRL], icon: activity.png,  label: Activity,  source: "ms-fluent/Alert (MIT)" }
-  - { key: "2", mods: [CTRL], icon: chat.png,      label: Chat,      source: "ms-fluent/Chat (MIT)" }
-  - { key: "3", mods: [CTRL], icon: teams.png,     mode: alpha, label: "Teams / Communities", source: "ms-fluent/People Team (MIT)" }
-  - { key: "4", mods: [CTRL], icon: calendar.png,  label: Calendar,  source: "ms-fluent/Calendar LTR (MIT)" }
-  - { key: "5", mods: [CTRL], icon: calls.png,     label: Calls,     source: "ms-fluent/Call (MIT)" }
-  - { key: "6", mods: [CTRL], icon: files.png,     label: Files,     source: "ms-fluent/Document (MIT)" }
+  - { key: "1", mods: [CMDCTRL], icon: activity.png,  label: Activity,  source: "ms-fluent/Alert (MIT)" }
+  - { key: "2", mods: [CMDCTRL], icon: chat.png,      label: Chat,      source: "ms-fluent/Chat (MIT)" }
+  - { key: "3", mods: [CMDCTRL], icon: teams.png,     mode: alpha, label: "Teams / Communities", source: "ms-fluent/People Team (MIT)" }
+  - { key: "4", mods: [CMDCTRL], icon: calendar.png,  label: Calendar,  source: "ms-fluent/Calendar LTR (MIT)" }
+  - { key: "5", mods: [CMDCTRL], icon: calls.png,     label: Calls,     source: "ms-fluent/Call (MIT)" }
+  - { key: "6", mods: [CMDCTRL], icon: files.png,     label: Files,     source: "ms-fluent/Document (MIT)" }
 
   # --- call / meeting controls (Ctrl+Shift -> R channel of combo) ---
-  - { key: M, mods: [CTRL, SHIFT], icon: mute.png,        label: "Mute / unmute", source: "ms-fluent/Mic Off (MIT)" }
-  - { key: O, mods: [CTRL, SHIFT], icon: camera.png,      label: "Camera toggle", source: "ms-fluent/Video (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: sharescreen.png, label: "Share screen",  source: "ms-fluent/Share Screen Start (MIT)" }
-  - { key: A, mods: [CTRL, SHIFT], icon: acceptvideo.png, label: "Accept video call", source: "ms-fluent/Video Person (MIT)" }
-  - { key: S, mods: [CTRL, SHIFT], icon: acceptaudio.png, label: "Accept audio call", source: "ms-fluent/Call (MIT)" }
-  - { key: D, mods: [CTRL, SHIFT], icon: decline.png,     label: "Decline call",  source: "ms-fluent/Call End (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: startaudio.png,  label: "Start audio call", source: "ms-fluent/Call Add (MIT)" }
-  - { key: U, mods: [CTRL, SHIFT], icon: startvideo.png,  label: "Start video call", source: "ms-fluent/Video Add (MIT)" }
-  - { key: K, mods: [CTRL, SHIFT], icon: raisehand.png,   label: "Raise hand",    source: "ms-fluent/Hand Right (MIT)" }
-  - { key: P, mods: [CTRL, SHIFT], icon: background.png,  label: "Background blur", source: "ms-fluent/Blur (MIT)" }
-  - { key: X, mods: [CTRL, SHIFT], icon: expand.png,      label: "Expand compose box", source: "ms-fluent/Arrow Expand (MIT)" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: mute.png,        label: "Mute / unmute", source: "ms-fluent/Mic Off (MIT)" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: camera.png,      label: "Camera toggle", source: "ms-fluent/Video (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: sharescreen.png, label: "Share screen",  source: "ms-fluent/Share Screen Start (MIT)" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: acceptvideo.png, label: "Accept video call", source: "ms-fluent/Video Person (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: acceptaudio.png, label: "Accept audio call", source: "ms-fluent/Call (MIT)" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: decline.png,     label: "Decline call",  source: "ms-fluent/Call End (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: startaudio.png,  label: "Start audio call", source: "ms-fluent/Call Add (MIT)" }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: startvideo.png,  label: "Start video call", source: "ms-fluent/Video Add (MIT)" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: raisehand.png,   label: "Raise hand",    source: "ms-fluent/Hand Right (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: background.png,  label: "Background blur", source: "ms-fluent/Blur (MIT)" }
+  - { key: X, mods: [CTRL, SHIFT], icon: expand.png,      label: "Expand compose box", source: "ms-fluent/Arrow Expand (MIT)", except: [macos] }
 
   # --- added: coverage audit 2026-06 ---
-  - { key: F, mods: [CTRL, SHIFT], icon: filter.png,    label: "Filter",          source: "ms-fluent/Filter (MIT)" }
-  - { key: I, mods: [CTRL, SHIFT], icon: important.png, label: "Mark important",  source: "ms-fluent/Important (MIT)" }
-  - { key: R, mods: [ALT, SHIFT],  icon: reply.png,     label: "Reply to thread", source: "ms-fluent/Arrow Reply (MIT)" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: filter.png,    label: "Filter",          source: "ms-fluent/Filter (MIT)" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: important.png, label: "Mark important",  source: "ms-fluent/Important (MIT)" }
+  - { key: R, mods: [ALT, SHIFT],  icon: reply.png,     label: "Reply to thread", source: "ms-fluent/Arrow Reply (MIT)", except: [macos] }

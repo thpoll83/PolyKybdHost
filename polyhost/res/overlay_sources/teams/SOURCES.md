@@ -102,3 +102,37 @@ Added 3 high-confidence defaults that were missing (26 → 29): `Ctrl+Shift+F`
 filter (Filter), `Ctrl+Shift+I` mark important (Important), `Alt+Shift+R` reply to
 thread (Arrow Reply). All Fluent (MIT). (Lower-confidence call/compose variants —
 e.g. Ctrl+Shift+B, Alt+Shift+C — were left out pending in-app confirmation.)
+
+## macOS
+
+This spec also renders a macOS set (`teams_template_mac.*`, 2026-09-28). Most bindings
+are `CMDCTRL` (Ctrl on Windows/Linux, Cmd on macOS); the rest are listed below.
+
+**Sources.** The official page is "Keyboard shortcuts for Microsoft Teams" (macOS column, <https://support.microsoft.com/office/keyboard-shortcuts-for-microsoft-teams-2e8e2a70-e8d8-4a19-949b-4c36dd5292d2>). `support.microsoft.com` (and
+`support.office.com`, `web.archive.org`, every third-party mirror tried) is
+**blocked by this environment's egress proxy**, so both WebFetch and curl fail;
+WebSearch snippets were too thin to quote. The chords were therefore read from
+verbatim scrapes of the official Mac article kept on GitHub (raw.githubusercontent.com):
+- `solomkinmv/hotkys` `shortcuts-disco-site/shortcuts-data/microsoft-teams.json` (macOS keymap; cites the MS page above)
+- `michelvanheest/shortcuts-design-data` `data/Productivity/toolspage-microsoftteams-mac.html`
+- `from-wednesday/keyboard-warriors` `data/shortcuts_msTeams.json` (paired pc/mac columns, new Teams)
+Where two scrapes disagreed or neither listed a chord, the binding is dropped on
+macOS rather than guessed (marked *uncertain*). Re-check those against the live
+Microsoft page when it is reachable.
+
+⚠️ `match:` lists the Windows process name. Whether the macOS active-window
+name (`Microsoft Teams`) resolves to this stanza is decided by
+`overlay-mapping.poly.yaml`, which this change does not touch.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Expand compose box | Ctrl+Shift+X | — | dropped, *uncertain*: hotkys + michelvanheest say ⌥⇧X, keyboard-warriors says ⌘⇧X |
+| Reply to thread | Alt+Shift+R | — | dropped, *uncertain*: no source gives a Mac chord (keyboard-warriors: none) |
+
+Everything else is a straight `CMDCTRL` swap, confirmed by at least two of the
+three datasets (⌘E, ⌘N, ⌘,, ⌘/, ⌘., ⌘O, ⌘=, ⌘-, ⌘0, ⌘1–⌘6, and ⌘⇧ M/O/E/A/S/D/C/U/K/P/F/I).
+
+⚠️ *Suspected Windows drift (not changed):* keyboard-warriors' newer new-Teams
+list gives **Start audio call = Alt+Shift+A, Start video call = Alt+Shift+V**,
+with Ctrl+Shift+C = toggle recording / inline code and Ctrl+Shift+U = toggle
+speaker. hotkys still lists Ctrl+Shift+C/U. Re-verify on current new Teams.

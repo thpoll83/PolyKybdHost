@@ -280,6 +280,27 @@ class AppNamesPerPlatformTest(unittest.TestCase):
     def test_zoom_macOS_name_resolves(self):
         self.assertTrue(self._overlay("zoom.us", "macos", "Zoom Meeting"))
 
+    def test_macOS_names_reach_the_Cmd_sets(self):
+        """A Mac must get the macOS artwork, not the Windows Ctrl set."""
+        for name, stem in (("microsoft word", "word_template_mac"),
+                           ("microsoft excel", "excel_template_mac"),
+                           ("microsoft outlook", "outlook_template_mac"),
+                           ("microsoft powerpoint", "powerpoint_template_mac"),
+                           ("microsoft teams", "teams_template_mac"),
+                           ("adobe photoshop 2025", "photoshop_template_mac"),
+                           ("adobe illustrator 2025", "illustrator_template_mac"),
+                           ("adobe premiere pro 2025", "premiere_template_mac"),
+                           ("adobe after effects 2025", "aftereffects_template_mac"),
+                           ("notion", "notion_template_mac")):
+            self.assertIn(f"{stem}.mods.png", self._overlay(name, "macos"), name)
+        self.assertIn("word_template.mods.png", self._overlay("winword", "windows"))
+
+    def test_libreoffice_keeps_its_title_routing_on_macOS(self):
+        self.assertIn("libreoffice_calc_template_mac.mods.png",
+                      self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))
+        self.assertIn("libreoffice_calc_template.mods.png",
+                      self._overlay("soffice", "windows", "Untitled 1 - LibreOffice Calc"))
+
     def test_gimp_2_10_and_new_outlook_resolve(self):
         self.assertTrue(self._overlay("gimp-2", "windows"))
         self.assertTrue(self._overlay("gimp-2.10", "linux"))

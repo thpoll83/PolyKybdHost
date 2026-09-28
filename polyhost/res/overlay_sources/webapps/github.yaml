@@ -1,5 +1,10 @@
 # GitHub (in-browser) shortcut overlays for PolyKybd.
 #
+# Serves Windows/Linux AND macOS from this one file: `CMDCTRL` is Ctrl on
+# Windows/Linux and Cmd on macOS (the generator also writes <output>_mac.*);
+# a chord macOS moves is written twice under disjoint `only:` lists, and one
+# with no macOS equivalent carries `except: [macos]`. See SOURCES.md -> macOS.
+#
 # Icons: Microsoft Fluent UI System Icons (MIT); ESC program mark drawn
 # GitHub's own monochrome mark via Simple Icons (CC0, ../brand_marks.py).
 # Shortcuts: GitHub's own docs.
@@ -53,10 +58,10 @@ bindings:
   - { key: ".", mods: [SHIFT], icon: webide.png,    label: "github.dev (new tab)", source: "ms-fluent/Code (MIT)" }
 
   # --- Ctrl: the comment editor ---
-  - { key: B, mods: [CTRL], icon: bold.png,   label: "Bold (comment)",   source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png, label: "Italic (comment)", source: "ms-fluent/Text Italic (MIT)" }
-  - { key: K, mods: [CTRL], icon: link.png,   label: "Link (comment)",   source: "ms-fluent/Link (MIT)" }
-  - { key: ENTER, mods: [CTRL], icon: submit.png, label: "Submit comment", source: "ms-fluent/Send (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,   label: "Bold (comment)",   source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png, label: "Italic (comment)", source: "ms-fluent/Text Italic (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: link.png,   label: "Link (comment)",   source: "ms-fluent/Link (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: submit.png, label: "Submit comment", source: "ms-fluent/Send (MIT)" }
 
   # --- Ctrl+Shift ---
-  - { key: P, mods: [CTRL, SHIFT], icon: preview.png, label: "Toggle Write / Preview", source: "ms-fluent/Eye (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: preview.png, label: "Toggle Write / Preview", source: "ms-fluent/Eye (MIT)" }

@@ -1,5 +1,10 @@
 # GitLab (in-browser) shortcut overlays for PolyKybd. See SOURCES.md.
 #
+# Serves Windows/Linux AND macOS from this one file: `CMDCTRL` is Ctrl on
+# Windows/Linux and Cmd on macOS (the generator also writes <output>_mac.*);
+# a chord macOS moves is written twice under disjoint `only:` lists, and one
+# with no macOS equivalent carries `except: [macos]`. See SOURCES.md -> macOS.
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/webapps/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -45,7 +50,7 @@ bindings:
   - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Show shortcuts",      source: "ms-fluent/Keyboard (MIT)" }
 
   # --- Ctrl ---
-  - { key: ENTER, mods: [CTRL], icon: submit.png, label: "Submit / save changes", source: "ms-fluent/Send (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: submit.png, label: "Submit / save changes", source: "ms-fluent/Send (MIT)" }
 
   # --- Ctrl+Shift ---
-  - { key: P, mods: [CTRL, SHIFT], icon: preview.png, label: "Toggle Markdown preview", source: "ms-fluent/Eye (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: preview.png, label: "Toggle Markdown preview", source: "ms-fluent/Eye (MIT)" }

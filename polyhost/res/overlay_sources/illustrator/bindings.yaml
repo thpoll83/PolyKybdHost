@@ -6,6 +6,12 @@
 # Adobe's own icons are proprietary and are NOT used. Program mark (ESC) is a
 # generic license-clean "Ai" monogram. Shortcuts: Illustrator defaults (SOURCES.md).
 #
+# ONE spec, TWO artwork sets (Windows/Linux and macOS). Every Ctrl chord is
+# written CMDCTRL (Ctrl on Windows/Linux, Cmd on macOS), so the generator emits
+# illustrator_template.* and illustrator_template_mac.*. No action is remapped;
+# Cmd+H (Hide edges) shadows macOS Hide. macOS chords and the
+# reserved-chord notes are in SOURCES.md -> "macOS".
+#
 # A key's no-mod TOOL letter and its Ctrl MENU meaning coexist on the same cell in
 # different channels (A vs R) - this is correct and intended.
 #
@@ -58,41 +64,41 @@ bindings:
   - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "custom (drawn: default swatch)" }
 
   # ===== File (Ctrl -> R channel of primary) =====
-  - { key: N, mods: [CTRL], icon: new.png,    label: New,    source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,   label: Open,   source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,   label: Save,   source: "ms-fluent/Save (MIT)" }
-  - { key: P, mods: [CTRL], icon: print.png,  label: Print,  source: "ms-fluent/Print (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,    label: New,    source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,   label: Open,   source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,   label: Save,   source: "ms-fluent/Save (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,  label: Print,  source: "ms-fluent/Print (MIT)" }
 
   # ===== Edit (Ctrl) =====
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,         source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,         source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,          source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,        source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
-  - { key: D, mods: [CTRL], icon: transformagain.png, label: "Transform again", source: "ms-fluent/Arrow Repeat All (MIT)" }
-  - { key: F, mods: [CTRL], icon: forward.png,   label: "Paste in front", source: "ms-fluent/Arrow Up (MIT)" }
-  - { key: B, mods: [CTRL], icon: backward.png,  label: "Paste in back",  source: "ms-fluent/Arrow Down (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,         source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,         source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,          source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,        source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+  - { key: D, mods: [CMDCTRL], icon: transformagain.png, label: "Transform again", source: "ms-fluent/Arrow Repeat All (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: forward.png,   label: "Paste in front", source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: backward.png,  label: "Paste in back",  source: "ms-fluent/Arrow Down (MIT)" }
 
   # ===== Object (Ctrl) =====
-  - { key: G, mods: [CTRL], icon: group.png,    label: Group,            source: "ms-fluent/Group (MIT)" }
-  - { key: "2", mods: [CTRL], icon: lock.png,   label: Lock,             source: "ms-fluent/Lock Closed (MIT)" }
-  - { key: "7", mods: [CTRL], icon: clipmask.png, label: "Clip mask",    source: "ms-fluent/Crop (MIT)" }
-  - { key: "8", mods: [CTRL], icon: compound.png, label: "Compound path", source: "ms-fluent/Shape Subtract (MIT)" }
-  - { key: "]", mods: [CTRL], icon: tofront.png, label: "Bring forward", source: "ms-fluent/Position To Front (MIT)" }
-  - { key: "[", mods: [CTRL], icon: toback.png,  label: "Send backward", source: "ms-fluent/Position To Back (MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,    label: Group,            source: "ms-fluent/Group (MIT)" }
+  - { key: "2", mods: [CMDCTRL], icon: lock.png,   label: Lock,             source: "ms-fluent/Lock Closed (MIT)" }
+  - { key: "7", mods: [CMDCTRL], icon: clipmask.png, label: "Clip mask",    source: "ms-fluent/Crop (MIT)" }
+  - { key: "8", mods: [CMDCTRL], icon: compound.png, label: "Compound path", source: "ms-fluent/Shape Subtract (MIT)" }
+  - { key: "]", mods: [CMDCTRL], icon: tofront.png, label: "Bring forward", source: "ms-fluent/Position To Front (MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: toback.png,  label: "Send backward", source: "ms-fluent/Position To Back (MIT)" }
 
   # ===== View (Ctrl) =====
-  - { key: EQUAL, mods: [CTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
-  - { key: MINUS, mods: [CTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
 
   # ===== Ctrl+Shift -> R channel of combo =====
-  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,   label: "Save as",         source: "ms-fluent/Save Edit (MIT)" }
-  - { key: O, mods: [CTRL, SHIFT], icon: outlines.png, label: "Create outlines", source: "ms-fluent/Text Effects (MIT)" }
-  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,  label: Ungroup,           source: "ms-fluent/Group Dismiss (MIT)" }
-  - { key: V, mods: [CTRL, SHIFT], icon: paste.png,    label: "Paste in place",  source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: P, mods: [CTRL, SHIFT], icon: place.png,    label: Place,             source: "ms-fluent/Image Add (MIT)" }
-  - { key: "]", mods: [CTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
-  - { key: "[", mods: [CTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,   label: "Save as",         source: "ms-fluent/Save Edit (MIT)" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png, label: "Create outlines", source: "ms-fluent/Text Effects (MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,  label: Ungroup,           source: "ms-fluent/Group Dismiss (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: paste.png,    label: "Paste in place",  source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: place.png,    label: Place,             source: "ms-fluent/Image Add (MIT)" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
 
   # ===== Shift -> B channel of primary =====
   - { key: E, mods: [SHIFT], icon: eraser.png,     label: Eraser,           source: "ms-fluent/Eraser (MIT)" }
@@ -101,15 +107,15 @@ bindings:
   - { key: L, mods: [SHIFT], icon: livepaint.png,  label: "Live paint select", source: "ms-fluent/Paint Bucket (MIT)" }
 
   # ===== added: coverage audit 2026-06 =====
-  - { key: Y, mods: [CTRL], icon: outline.png, mode: alpha, label: "Outline mode", source: "custom (drawn: wireframe + handles)" }
-  - { key: J, mods: [CTRL], icon: join.png,    label: "Join paths", source: "ms-fluent/Link (MIT)" }
-  - { key: R, mods: [CTRL], icon: rulers.png,  label: "Rulers", source: "ms-fluent/Ruler (MIT)" }
-  - { key: ";", mods: [CTRL], icon: guides.png, mode: alpha, label: "Guides", source: "custom (drawn: dashed cross)" }
-  - { key: U, mods: [CTRL], icon: smartguides.png, mode: alpha, label: "Smart guides", source: "custom (drawn: diag align + sparkle)" }
-  - { key: H, mods: [CTRL], icon: hideedges.png, label: "Hide edges", source: "ms-fluent/Eye Off (MIT)" }
-  - { key: L, mods: [CTRL], icon: newlayer.png, label: "New layer", source: "ms-fluent/Add Square (MIT)" }
-  - { key: K, mods: [CTRL], icon: prefs.png,   label: "Preferences", source: "ms-fluent/Settings (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: applyeffect.png, label: "Apply last effect", source: "ms-fluent/Sparkle (MIT)" }
-  - { key: J, mods: [CTRL, ALT], icon: average.png, mode: alpha, label: "Average points", source: "custom (drawn: points to centre)" }
-  - { key: B, mods: [CTRL, ALT], icon: blend.png, mode: alpha, label: "Make blend", source: "custom (drawn: shrinking shapes)" }
-  - { key: "3", mods: [CTRL, ALT], icon: showall.png, label: "Show all", source: "ms-fluent/Eye (MIT)" }
+  - { key: Y, mods: [CMDCTRL], icon: outline.png, mode: alpha, label: "Outline mode", source: "custom (drawn: wireframe + handles)" }
+  - { key: J, mods: [CMDCTRL], icon: join.png,    label: "Join paths", source: "ms-fluent/Link (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png,  label: "Rulers", source: "ms-fluent/Ruler (MIT)" }
+  - { key: ";", mods: [CMDCTRL], icon: guides.png, mode: alpha, label: "Guides", source: "custom (drawn: dashed cross)" }
+  - { key: U, mods: [CMDCTRL], icon: smartguides.png, mode: alpha, label: "Smart guides", source: "custom (drawn: diag align + sparkle)" }
+  - { key: H, mods: [CMDCTRL], icon: hideedges.png, label: "Hide edges", source: "ms-fluent/Eye Off (MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: newlayer.png, label: "New layer", source: "ms-fluent/Add Square (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: prefs.png,   label: "Preferences", source: "ms-fluent/Settings (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: applyeffect.png, label: "Apply last effect", source: "ms-fluent/Sparkle (MIT)" }
+  - { key: J, mods: [CMDCTRL, ALT], icon: average.png, mode: alpha, label: "Average points", source: "custom (drawn: points to centre)" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: blend.png, mode: alpha, label: "Make blend", source: "custom (drawn: shrinking shapes)" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: showall.png, label: "Show all", source: "ms-fluent/Eye (MIT)" }
