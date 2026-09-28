@@ -194,5 +194,56 @@ class MacOSNamesAndTitlesTest(unittest.TestCase):
         self.assertIsNone(self._code("linux", "Welcome — PolyKybdHost"))
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class JetBrainsPerOsTest(unittest.TestCase):
+    """JetBrains ships three DIFFERENT default keymaps, one per platform.
+
+    The single set shipped before was the GNOME keymap drawn everywhere: Find
+    Usages on Alt+Shift+7 and Back on Alt+Shift+Left, chords that do nothing on
+    Windows (Alt+F7, Ctrl+Alt+Left) or macOS. And the entry was keyed on none of
+    the Windows executables but `clion64`, so IntelliJ (`idea64.exe`) got no
+    overlay on Windows at all.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def _overlay(self, app, os_name, title="Main.java"):
+        from polyhost.handler.common import find_matching_entry
+        entry = self.handler.mapping.get(app)
+        self.assertIsNotNone(entry, f"{app!r} is not a mapping key")
+        hit = find_matching_entry(title, entry, None, os_name)
+        return (hit or {}).get("overlay") or []
+
+    def test_each_platform_gets_ITS_keymap(self):
+        self.assertIn("jetbrains_template.mods.png", self._overlay("idea64", "windows"))
+        self.assertIn("jetbrains_mac_template.mods.png", self._overlay("intellij idea", "macos"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("jetbrains-idea", "linux"))
+
+    def test_each_Linux_desktop_gets_ITS_keymap(self):
+        """JetBrains picks "Default for GNOME", "Default for KDE" or, on any other
+        desktop, "Default for XWin". They disagree on Back/Forward, Find Usages,
+        Stop, Reformat and the breakpoint keys, so no desktop may borrow
+        another's set, and plain `linux` must NOT be the GNOME set."""
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("idea", "linux_kde"))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("idea", "linux_gnome"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("idea", "linux"))
+        title = "project – Main.java"
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("java", "linux_kde", title))
+        self.assertIn("jetbrains_gnome_template.mods.png", self._overlay("java", "linux_gnome", title))
+
+    def test_the_WINDOWS_executables_are_keys(self):
+        for name in ("idea64", "pycharm64", "clion64", "webstorm64", "rider64", "studio64"):
+            self.assertIn(name, self.handler.mapping, name)
+
+    def test_the_bare_java_launcher_keeps_its_title_gate_per_OS(self):
+        """A matched `os:` branch replaces the outer entry, so the title regex is
+        repeated inside it; without it any Java app would get IDE keycaps."""
+        title = "project – Main.java"
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("java", "linux", title))
+        self.assertEqual([], self._overlay("java", "linux", "Minecraft"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -98,7 +98,16 @@ CMDCTRL_ALIASES = {"CMDCTRL", "CMD_OR_CTRL", "CMDORCTRL"}
 # — unless a binding says otherwise — Linux renders from it too, which is why so
 # much of this file talks about "Windows/Linux" as one thing: they share a PNG.
 PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX = "windows", "macos", "linux"
-PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX)
+# GNOME and KDE are MEMBERS of the Linux family, not peers of it. The names are
+# the overlay-mapping `os:` keys the matcher tries before `linux` on those
+# desktops, so a spec that never mentions them renders both exactly as Linux and
+# emits nothing extra. They exist because an app can ship a keymap per desktop:
+# JetBrains has "Default for GNOME", "Default for KDE" and, for every other
+# desktop, "Default for XWin" -- which is what a plain `linux` set then means.
+PLAT_LINUX_GNOME, PLAT_LINUX_KDE = "linux_gnome", "linux_kde"
+PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX, PLAT_LINUX_GNOME, PLAT_LINUX_KDE)
+# member -> family. A scope list naming the family covers its members too.
+PLATFORM_FAMILY = {PLAT_LINUX_GNOME: PLAT_LINUX, PLAT_LINUX_KDE: PLAT_LINUX}
 
 # Resolved value of CMDCTRL per platform. Linux resolves it exactly as Windows
 # does; the two diverge only where a binding is explicitly scoped (see
@@ -106,12 +115,18 @@ PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX)
 # and the `os: linux:` branch from appearing — for the vast majority of apps.
 CMDCTRL_BIT = {PLAT_WINDOWS: MOD_BIT["CTRL"],
                PLAT_LINUX: MOD_BIT["CTRL"],
+               PLAT_LINUX_GNOME: MOD_BIT["CTRL"],
+               PLAT_LINUX_KDE: MOD_BIT["CTRL"],
                PLAT_MACOS: MOD_BIT["GUI"]}
 
 # Suffix for the generated macOS artwork set (`<output>_mac.mods.png`, ...).
 MACOS_OUTPUT_SUFFIX = "_mac"
 # ...and for the Linux one, emitted only when a binding actually distinguishes it.
 LINUX_OUTPUT_SUFFIX = "_linux"
+# ...and per desktop, each emitted only when a binding distinguishes that desktop
+# from Linux. Member -> (stem suffix, spec key overriding the stem).
+LINUX_MEMBERS = {PLAT_LINUX_GNOME: ("_gnome", "output_gnome"),
+                 PLAT_LINUX_KDE: ("_kde", "output_kde")}
 
 # Per-binding platform scoping keys. `only:` restricts a binding to the listed
 # platforms, `except:` removes it from them.
@@ -217,21 +232,39 @@ def _platform_list(b: dict, key: str) -> list[str] | None:
     return out
 
 
+def _names_for(platform: str) -> set[str]:
+    """The scope names that cover `platform`: itself plus its family, if any."""
+    names = {platform}
+    if platform in PLATFORM_FAMILY:
+        names.add(PLATFORM_FAMILY[platform])
+    return names
+
+
 def binding_applies(b: dict, platform: str) -> bool:
     """True if this binding should be drawn in `platform`'s artwork set.
 
     A binding with neither `only:` nor `except:` applies everywhere, so every
-    existing spec keeps rendering exactly as it did."""
+    existing spec keeps rendering exactly as it did.
+
+    A family name covers its members: `only: [linux]` includes GNOME and KDE and
+    `except: [linux]` excludes them. To scope to Linux WITHOUT KDE, carve the
+    member out of the family: `only: [linux], except: [linux_kde]`. That is the one case
+    where both keys may be combined; anywhere else they would either contradict
+    each other or make `except` a no-op, so it is refused."""
     only = _platform_list(b, ONLY_KEY)
     excl = _platform_list(b, EXCEPT_KEY)
     if only is not None and excl is not None:
-        raise ValueError(
-            f"binding sets both {ONLY_KEY!r} and {EXCEPT_KEY!r}; use one — "
-            f"they express the same thing and can contradict each other")
-    if only is not None:
-        return platform in only
-    if excl is not None:
-        return platform not in excl
+        for e in excl:
+            if e in only or PLATFORM_FAMILY.get(e) not in only:
+                raise ValueError(
+                    f"binding sets both {ONLY_KEY!r} and {EXCEPT_KEY!r}; that is "
+                    f"only allowed to remove a family member from a listed family "
+                    f"(only: [linux], except: [linux_kde]) — {e!r} is not one")
+    names = _names_for(platform)
+    if only is not None and not names & set(only):
+        return False
+    if excl is not None and names & set(excl):
+        return False
     return True
 
 
@@ -243,6 +276,20 @@ def spec_needs_linux_set(spec: dict) -> bool:
     `os: linux:` branch is produced for them."""
     for b in spec.get("bindings", []):
         if binding_applies(b, PLAT_WINDOWS) != binding_applies(b, PLAT_LINUX):
+            return True
+    return False
+
+
+def spec_needs_member_set(spec: dict, member: str) -> bool:
+    """True if any binding makes a Linux desktop (`linux_gnome`, `linux_kde`)
+    differ from the Linux set.
+
+    Without its own set the matcher falls back from the desktop to `linux` (and
+    on to the default), so a desktop only needs artwork where a binding names it.
+    Comparing against Linux is enough: when no Linux set exists, Linux already
+    renders identically to the default."""
+    for b in spec.get("bindings", []):
+        if binding_applies(b, PLAT_LINUX) != binding_applies(b, member):
             return True
     return False
 
@@ -584,6 +631,34 @@ def linux_output(spec: dict) -> str:
     return name
 
 
+def _member_stem(spec: dict, member: str) -> tuple[str, str]:
+    suffix, key = LINUX_MEMBERS[member]
+    return spec.get(key) or f"{spec['output']}{suffix}", key
+
+
+def member_output(spec: dict, member: str) -> str:
+    """Filename stem for a Linux desktop's artwork set (`linux_gnome`,
+    `linux_kde`). It must differ from every other stem, for the same
+    written-second-wins reason as `linux_output`."""
+    name, key = _member_stem(spec, member)
+    clash = {spec["output"]: "output"}
+    for other_key, stem in (("output_macos", macos_output), ("output_linux", linux_output)):
+        try:
+            clash.setdefault(stem(spec), other_key)
+        except ValueError:
+            # Already invalid; that error is reported on its own path.
+            pass
+    for other in LINUX_MEMBERS:
+        if other != member:
+            other_name, other_key = _member_stem(spec, other)
+            clash.setdefault(other_name, other_key)
+    if name in clash:
+        raise ValueError(
+            f"{key} must differ from {clash[name]} (both {name!r}) — the "
+            f"{member} artwork would overwrite that set")
+    return name
+
+
 def generate(spec: dict, base_dir: Path, macos: bool | None = None,
              platform: str | None = None) -> dict:
     """Render one complete artwork set for `platform`.
@@ -841,12 +916,17 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     lnx = spec.get("_result_linux")
     mac_files = overlay_files(macos_output(spec), mac) if mac else []
     lnx_files = overlay_files(linux_output(spec), lnx) if lnx else []
-    if mac_files or lnx_files:
+    member_files = [(m, overlay_files(member_output(spec, m), spec["_result_" + m]))
+                    for m in LINUX_MEMBERS if spec.get("_result_" + m)]
+    if mac_files or lnx_files or member_files:
         # `os:` is the runtime half of CMDCTRL (added in the per-OS selection
         # work); the token itself is authoring-time sugar that fills this branch
         # in, so one binding file yields both artwork sets.
         lines.append("  os:")
-        for branch, branch_files in ((PLAT_MACOS, mac_files), (PLAT_LINUX, lnx_files)):
+        # The matcher tries `linux_gnome` / `linux_kde` before `linux` on those
+        # desktops, so the branch order here is cosmetic.
+        for branch, branch_files in ((PLAT_MACOS, mac_files), (PLAT_LINUX, lnx_files),
+                                     *member_files):
             if not branch_files:
                 continue
             lines.append(f"    {branch}:")
@@ -892,7 +972,17 @@ def main() -> int:
     lnx_result = generate(spec, base_dir, platform=PLAT_LINUX) if spec_needs_linux_set(spec) else None
     spec["_result_linux"] = lnx_result
 
+    # Same rule one level down: a desktop gets its own set only when a binding
+    # names it; otherwise the matcher's desktop -> Linux fallback already fits.
+    member_results = {}
+    for m in LINUX_MEMBERS:
+        res = generate(spec, base_dir, platform=m) if spec_needs_member_set(spec, m) else None
+        spec["_result_" + m] = res
+        if res:
+            member_results[m] = res
+
     mac_output = lnx_output = None
+    member_outputs = {}
     # Resolve BOTH stems before anything is written: a colliding `output_macos` /
     # `output_linux` must abort with the tree untouched, not half-overwritten.
     try:
@@ -900,6 +990,8 @@ def main() -> int:
             mac_output = macos_output(spec)
         if lnx_result:
             lnx_output = linux_output(spec)
+        for m in member_results:
+            member_outputs[m] = member_output(spec, m)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
@@ -916,12 +1008,15 @@ def main() -> int:
         report(mac_result, " (macOS, CMDCTRL -> Cmd)")
     if lnx_result:
         report(lnx_result, " (Linux)")
+    for m, res in member_results.items():
+        report(res, f" ({m})")
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
         for res, output in ((result, spec["output"]),
                             *([(mac_result, mac_output)] if mac_result else ()),
-                            *([(lnx_result, lnx_output)] if lnx_result else ())):
+                            *([(lnx_result, lnx_output)] if lnx_result else ()),
+                            *((res, member_outputs[m]) for m, res in member_results.items())):
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"
@@ -936,6 +1031,9 @@ def main() -> int:
                 print(f"Preview {p}")
         if lnx_result:
             for p in write_preview(lnx_result, args.preview, name="overlay_preview_linux.png"):
+                print(f"Preview {p}")
+        for m, res in member_results.items():
+            for p in write_preview(res, args.preview, name=f"overlay_preview_{m}.png"):
                 print(f"Preview {p}")
 
     print("\n--- paste into polyhost/res/overlay-mapping.poly.yaml ---")

@@ -131,10 +131,13 @@ class BindingAppliesTest(unittest.TestCase):
     def test_only_and_except_together_are_refused(self):
         # They express the same thing and can contradict each other outright
         # (only: [linux] + except: [linux]); silently picking one would make the
-        # binding's platform set depend on evaluation order.
-        with self.assertRaisesRegex(ValueError, "use one"):
-            self.gen.binding_applies({"only": ["linux"], "except": ["macos"]},
-                                     self.gen.PLAT_LINUX)
+        # binding's platform set depend on evaluation order. The one allowed
+        # combination -- carving a family member out, `except: [linux_kde]` -- is
+        # pinned in overlay_linux_desktop_axis_test.
+        for excl in (["macos"], ["linux"]):
+            with self.assertRaisesRegex(ValueError, "family member"):
+                self.gen.binding_applies({"only": ["linux"], "except": excl},
+                                         self.gen.PLAT_LINUX)
 
     def test_unknown_platform_is_refused(self):
         with self.assertRaisesRegex(ValueError, "unknown platform"):
