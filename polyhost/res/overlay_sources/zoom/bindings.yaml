@@ -87,7 +87,7 @@ bindings:
   - { key: F,  mods: [ALT],         <<: *wl,  icon: fullscreen.png,  label: "Full screen" }
   - { key: F,  mods: [GUI, SHIFT],  <<: *mac, icon: fullscreen.png,  label: "Full screen" }
   - { key: Q,  mods: [ALT],         <<: *wl,  icon: endmeeting.png,  label: "End meeting" }
-  - { key: W,  mods: [GUI],         <<: *mac, icon: endmeeting.png,  label: "End meeting" }
+  # No Mac line: Zoom's current article lists ⌘W only as "Close current window".
   - { key: T,  mods: [ALT, SHIFT],  <<: *wl,  icon: screenshot.png,  label: Screenshot }
   - { key: T,  mods: [GUI],         <<: *mac, icon: screenshot.png,  label: Screenshot }
   # Windows/Linux has one key per view; the Mac toggles between them.

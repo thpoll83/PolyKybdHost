@@ -34,7 +34,7 @@ set. Note GNOME binds Alt+F1/Alt+F2 itself, which may shadow Zoom's view keys th
 | `invite.png` | Alt+I | Alt+I | ⌘I |
 | `participants.png` | Alt+U | Alt+U | ⌘U |
 | `raisehand.png` | Alt+Y | Alt+Y | ⌥Y (same) |
-| `closechat.png` | Ctrl+W | Ctrl+W | — (⌘W ends the meeting) |
+| `closechat.png` | Ctrl+W | Ctrl+W | — (⌘W closes the window) |
 | `showcontrols.png` | Ctrl+\ | **removed** | ⌃\ |
 
 **Deliberate change:** Ctrl+\ ("Always show meeting controls") is the macOS
@@ -47,7 +47,7 @@ The old PNG drew it on Windows, so it is now `only: [macos]`.
 |---|---|---|---|
 | Chat panel | Alt+H | ⌘⇧H | Fluent Chat Multiple |
 | Full screen | Alt+F | ⌘⇧F | Fluent Full Screen Maximize |
-| End / leave meeting | Alt+Q | ⌘W | Fluent Call End |
+| End / leave meeting | Alt+Q | — (see below) | Fluent Call End |
 | Screenshot | Alt+Shift+T | ⌘T | Fluent Screenshot |
 | Speaker view | Alt+F1 | — | Material `record_voice_over` |
 | Gallery view | Alt+F2 | — | Fluent Grid |
@@ -60,12 +60,17 @@ Material Symbols: Apache-2.0 (https://github.com/google/material-design-icons).
 ## macOS is a REMAP, not a CMDCTRL swap
 
 Every macOS line is written with literal mods and `only: [macos]`; every
-Windows/Linux line with `only: [windows, linux]`. ⚠️ Because the spec uses no
-`CMDCTRL`, the generator currently renders NO macOS set for it
-(`spec_uses_cmdctrl` gates the macOS pass), so the macOS lines are inert until
-the generator also emits a macOS set when a binding is scoped to macOS.
-Reserved-chord check: ⌘W and ⌘T are Zoom's own in-meeting bindings; no ⌘H, ⌘M,
-⌘Q, ⌘Tab or ⌘Space.
+Windows/Linux line with `only: [windows, linux]`. The spec uses no `CMDCTRL`, so
+the generator renders its macOS set because bindings name `macos` in `only:`
+(`spec_needs_macos_set`).
+
+**End / leave meeting has no Mac cell.** Older third-party copies of Zoom's list
+put "Prompt to End or Leave Meeting" on ⌘W, but the current Zoom article
+(KB0067050) lists ⌘W only under *General*, as "Close current window", and names
+no Mac chord for the end/leave prompt. A chord the current source does not
+confirm is not drawn.
+Reserved-chord check: ⌘T is Zoom's own in-meeting binding; no ⌘H, ⌘M, ⌘Q, ⌘W,
+⌘Tab or ⌘Space.
 
 ## Skipped
 
