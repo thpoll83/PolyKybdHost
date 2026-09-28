@@ -98,7 +98,10 @@ nxplayer:
 # GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
 # to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
 gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
-  overlay: gimp_template.mods.png
+  overlay: [gimp_template.mods.png, gimp_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gimp_mac_template.mods.png, gimp_mac_template.combo.mods.png, gimp_mac_template.extra.mods.png]
 # macOS reports Zoom's display name, `zoom.us`.
 zoom,zoom.us:
   overlay: [zoom_template.mods.png, zoom_template.combo.mods.png]
@@ -189,7 +192,7 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
 devenv:
-  overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
+  overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png, visualstudio_template.extra.mods.png]
 lockapp:
   overlay: windows_lockscreen_template.png
 slack:
