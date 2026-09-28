@@ -19,6 +19,27 @@ from PyQt5.QtWidgets import (
 )
 
 
+# Release notes run to a few screens of markdown, so the notes pane gets most
+# of the screen: 60 % x 70 % of the available area, capped at 1100 x 900.
+# The 540 x 480 minimum alone left ~15 visible lines of notes.
+_SCREEN_FRACTION_W = 0.60
+_SCREEN_FRACTION_H = 0.70
+_MAX_W, _MAX_H = 1100, 900
+
+
+def _size_to_screen(dlg) -> None:
+    """Resize ``dlg`` to a share of the primary screen's available area."""
+    from PyQt5.QtWidgets import QApplication
+    screen = QApplication.primaryScreen()
+    if screen is None:
+        return
+    avail = screen.availableGeometry()
+    min_size = dlg.minimumSize()
+    w = min(_MAX_W, max(min_size.width(), int(avail.width() * _SCREEN_FRACTION_W)))
+    h = min(_MAX_H, max(min_size.height(), int(avail.height() * _SCREEN_FRACTION_H)))
+    dlg.resize(w, h)
+
+
 def confirm_update(title: str, message: str, notes: str = "", html_url: str = "",
                    release_name: str = "", question: str = "") -> bool:
     """Ask the user to confirm an update, showing release notes when available.
@@ -50,6 +71,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
     dlg.setMinimumSize(540, 480)
+    _size_to_screen(dlg)
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)

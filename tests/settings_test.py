@@ -553,5 +553,67 @@ class ConcurrentWriterTest(unittest.TestCase):
 
 
 
+class SharingViolationTest(unittest.TestCase):
+    """Windows refuses `os.replace` onto a file another handle holds open, and
+    the post-update relaunch died on it: the tray's constructor save raised
+    `PermissionError: [WinError 5]` and the app never came back (field,
+    2026-09-28, 1.3.4)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.object(
+            settings, "user_config_dir", return_value=self._tmp.name)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_replace_retries_until_the_holder_lets_go(self):
+        real = os.replace
+        calls = []
+
+        def flaky(src, dst):
+            calls.append(src)
+            if len(calls) < 3:
+                raise PermissionError(13, "Access is denied")
+            real(src, dst)
+
+        src = os.path.join(self._tmp.name, "a.tmp")
+        dst = os.path.join(self._tmp.name, "a.yaml")
+        with open(src, "w", encoding="utf-8") as f:
+            f.write("x: 1\n")
+        with mock.patch.object(settings.os, "replace", side_effect=flaky):
+            settings.replace_with_retry(src, dst, sleep=lambda _s: None)
+        self.assertEqual(len(calls), 3)
+        self.assertTrue(os.path.exists(dst))
+
+    def test_replace_gives_up_after_the_last_delay(self):
+        with mock.patch.object(settings.os, "replace",
+                               side_effect=PermissionError(13, "denied")) as rep:
+            with self.assertRaises(PermissionError):
+                settings.replace_with_retry("a", "b", delays=(0, 0),
+                                            sleep=lambda _s: None)
+        self.assertEqual(rep.call_count, 3)
+
+    def test_a_failed_startup_save_does_not_kill_the_constructor(self):
+        settings.PolySettings()  # create the file
+        with mock.patch.object(settings, "replace_with_retry",
+                               side_effect=PermissionError(13, "denied")):
+            s = settings.PolySettings()
+        self.assertIn("developer_mode", s.get_all())
+        # The temp file of the failed save is cleaned up.
+        leftovers = [n for n in os.listdir(self._tmp.name) if n.endswith(".tmp")]
+        self.assertEqual(leftovers, [])
+
+    def test_a_failed_later_save_still_raises(self):
+        """Only the constructor's normalising save is forgiven; a user's
+        change that did not land must not be reported as saved."""
+        s = settings.PolySettings()
+        s.collection["hid_reconnect_retries"] = 7
+        with mock.patch.object(settings, "replace_with_retry",
+                               side_effect=PermissionError(13, "denied")):
+            with self.assertRaises(PermissionError):
+                s.save()
+
+
 if __name__ == "__main__":
     unittest.main()

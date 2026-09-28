@@ -16,6 +16,26 @@ CONFIG_FILENAME = "settings.yaml"
 #: holder is wedged rather than slow.
 SAVE_LOCK_TIMEOUT_S = 2.0
 
+# Windows refuses `os.replace` onto a file another handle holds open without
+# FILE_SHARE_DELETE, and Python's own `open()` never passes that flag. So a
+# reader in the other host process, a virus scanner or the search indexer
+# holding settings.yaml for a few ms turns a save into
+# `PermissionError: [WinError 5] Access is denied`. The post-update relaunch
+# died on exactly that in the tray's constructor (2026-09-28, 1.3.4). The
+# holder lets go within milliseconds, so retry for up to ~2 s before failing.
+REPLACE_RETRY_DELAYS_S = (0.02, 0.05, 0.1, 0.1, 0.2, 0.25, 0.25, 0.5, 0.5)
+
+
+def replace_with_retry(src, dst, delays=REPLACE_RETRY_DELAYS_S, sleep=time.sleep):
+    """`os.replace(src, dst)`, retried while Windows reports a sharing violation."""
+    for delay in delays:
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            sleep(delay)
+    os.replace(src, dst)
+
 # Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
 # + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
 # which is the escape hatch if the collector ever has to be taken down: blank this
@@ -269,7 +289,16 @@ class PolySettings:
             # `collection` mutate the defaults table this process compares
             # against, including save()'s merge.
             self.collection = dict(self.defaults)
-        self.save()
+        try:
+            self.save()
+        except OSError as e:
+            # This first save only normalises the file (drops unknown keys,
+            # fills new defaults), so failing it costs nothing the process
+            # needs: `collection` already holds the values, and the next save
+            # retries the write. Raising here killed the tray at startup,
+            # which after an update reads as "it did not come back".
+            self.log.warning("Could not save settings at startup (%s); "
+                             "continuing with the loaded values.", e)
 
         self.log.info("\nCurrent settings:\n====================================\n%s", yaml.dump(
             self.collection, default_flow_style=False))
@@ -511,7 +540,7 @@ class PolySettings:
                 yaml.safe_dump(merged, f)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp, self.path)
+            replace_with_retry(tmp, self.path)
         except OSError:
             try:
                 os.unlink(tmp)
