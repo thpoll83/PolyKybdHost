@@ -152,12 +152,10 @@ class DesktopSetsRoundTripTest(unittest.TestCase):
         tmp = pathlib.Path(cls._tmp.name)
         bindings = [
             "  - { key: A, mods: [CMDCTRL], icon: A.png, label: A }",
-            "  - { key: B, mods: [CTRL, ALT], icon: B.png, label: B,"
-            " only: [windows, linux], except: [linux_gnome] }",
+            "  - { key: B, mods: [CTRL, ALT], icon: B.png, label: B, only: [windows, linux], except: [linux_gnome] }",
             "  - { key: B, mods: [ALT, SHIFT], icon: B.png, label: B, only: [linux_gnome] }",
             "  - { key: C, mods: [CTRL, SHIFT], icon: C.png, label: C, except: [linux_kde] }",
-            "  - { key: D, mods: [ALT], icon: D.png, label: D,"
-            " only: [linux], except: [linux_gnome, linux_kde] }",
+            "  - { key: D, mods: [ALT], icon: D.png, label: D, only: [linux], except: [linux_gnome, linux_kde] }",
         ]
         cls.proc = _run_generator(tmp, bindings, "desk")
         cls.out = tmp / "out"
