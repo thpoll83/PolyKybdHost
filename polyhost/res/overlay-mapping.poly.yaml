@@ -230,8 +230,9 @@ sublime_text,sublime text:
   overlay: [sublime_template.mods.png, sublime_template.combo.mods.png]
   os:
     macos:
-      overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png,
-                sublime_mac_template.extra.mods.png, sublime_mac_template.gui.mods.png]
+      overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png, sublime_mac_template.extra.mods.png]
+    linux:
+      overlay: [sublime_linux_template.mods.png, sublime_linux_template.combo.mods.png]
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
 notion:

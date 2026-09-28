@@ -19,6 +19,8 @@ differ in ways that would put wrong legends on keycaps if merged:
 | Block comment | `Ctrl+Shift+/` | **`Cmd+Option+/`** |
 | Replace | `Ctrl+H` | **`Cmd+Option+F`** |
 | Fold / unfold | `Ctrl+Shift+[` / `]` | **`Cmd+Option+[` / `]`** |
+| Join lines | `Ctrl+Shift+J` | `Cmd+Shift+J` |
+| Syntax context info | `Ctrl+Alt+Shift+P` | **`Cmd+Option+P`** (or `Ctrl+Shift+P`) |
 
 Note especially that `Ctrl+Shift+Up/Down` means *add cursor* on macOS and *swap
 line* on Windows — the same chord, opposite commands. A blind Ctrl→Cmd copy
@@ -27,8 +29,16 @@ would have shipped that backwards.
 ## Shortcuts
 
 - <https://docs.sublimetext.io/reference/keyboard_shortcuts_osx.html> — the macOS
-  keymap, the same community reference used for the Windows set (Sublime is
-  closed source, so the shipped `Default (OSX).sublime-keymap` is not fetchable).
+  keymap, the same community reference used for the Windows set.
+- The shipped keymap itself, `Default (OSX).sublime-keymap` from Sublime Text 4's
+  Default package, as mirrored at
+  <https://github.com/twolfson/sublime-files/tree/master/Packages/Default>
+  (checked 2026-09-28; the file carries ST4-only commands such as the `Ctrl+J`
+  tab-selection chords). Two cells were corrected against it:
+  - **Join lines** was drawn on `Cmd+J`, which Sublime Text 4 binds to nothing;
+    it is `Cmd+Shift+J`.
+  - **Syntax context info** was drawn on `Cmd+Option+Shift+P`, which binds
+    nothing; `show_scope_name` is `Cmd+Option+P` (and `Ctrl+Shift+P`).
 
 Two bindings are **not** on that page and are marked here rather than passed off
 as sourced: `Cmd+W` (close tab) and `Cmd+B` (build). Both have direct
@@ -46,7 +56,7 @@ near-identical glyphs.
 ## The GUI tiers
 
 This is the first set to use the modifier variants unlocked by protocol 12
-(PolyKybdHost#131 → #134). It exercises all four files:
+(PolyKybdHost#131 → #134). It exercised all four files until 2026-09-28:
 
 | Chord | Variant | File · channel |
 |---|---|---|
@@ -54,10 +64,13 @@ This is the first set to use the modifier variants unlocked by protocol 12
 | **`Cmd+Shift+P`** | 10 | `extra` · G |
 | `Cmd+Option+/` | 12 | `extra` · B |
 | `Cmd+Ctrl+Up` | 9 | `extra` · A |
-| **`Cmd+Option+Shift+P`** | 14 | `gui` · G |
+| ~~`Cmd+Option+Shift+P`~~ | 14 | `gui` · G |
 
-The two bolded rows are the exact cases reported in #131. Before v12 both drew
-the plain `Cmd` overlay.
+The two bolded rows are the cases reported in #131. Before v12 both drew the
+plain `Cmd` overlay. The `Cmd+Option+Shift+P` row turned out to bind nothing in
+Sublime's own keymap (see *Shortcuts*), so Syntax context info now sits on
+`Cmd+Option+P` and this set no longer writes a `gui` file. The tier itself is
+covered by the generator and loader tests, not by this app.
 
 ## Icons
 

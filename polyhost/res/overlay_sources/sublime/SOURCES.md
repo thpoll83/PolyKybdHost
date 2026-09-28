@@ -89,3 +89,24 @@ And the **macOS set had it right all along** (`Cmd+J`). When two platform sets
 cover the same app, a chord that differs by more than the platform's own
 modifier convention is a smell worth chasing — that mismatch is what surfaced
 this one.
+
+## Linux, and the Sublime Text 4 keymap
+
+Checked 2026-09-28 against the shipped keymaps from Sublime Text 4's Default
+package, as mirrored at
+<https://github.com/twolfson/sublime-files/tree/master/Packages/Default>
+(`Default (Windows).sublime-keymap` and `Default (Linux).sublime-keymap`). Every
+binding in this set resolves to the same command on both platforms except:
+
+| Action | Windows | Linux |
+|---|---|---|
+| Add cursor above / below | `Ctrl+Alt+Up/Down` | `Alt+Shift+Up/Down` |
+
+Those two are scoped `only: [windows]` / `only: [linux]`, so the generator
+writes a Linux set, `sublime_linux_template.*`, selected by the mapping's
+`os: linux:` branch.
+
+One cell was wrong on both platforms: **Join lines** was drawn on `Ctrl+J`.
+Sublime Text 4 moved it to `Ctrl+Shift+J`, and `Ctrl+J` is now the prefix of
+two-stroke tab-selection chords.
+
