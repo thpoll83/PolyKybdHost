@@ -1,6 +1,6 @@
 # JetBrains overlay sources
 
-`bindings.yaml` generates three artwork sets, one per default keymap JetBrains
+`bindings.yaml` generates four artwork sets, one per default keymap JetBrains
 ships:
 
 | Set | Platform | JetBrains keymap |
@@ -8,6 +8,7 @@ ships:
 | `jetbrains_template.*` | Windows | `$default` |
 | `jetbrains_mac_template.*` | macOS | `Mac OS X 10.5+` |
 | `jetbrains_linux_template.*` | Linux | `Default for GNOME` |
+| `jetbrains_kde_template.*` | Linux, KDE desktop | `Default for KDE` |
 
 ```bash
 PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/jetbrains/fetch_icons.py
@@ -41,7 +42,8 @@ Every chord comes from the keymap XML in
 
 - `$default.xml`, `Mac OS X 10.5+.xml`, `Default for XWin.xml`,
   `Default for GNOME.xml`, `Default for KDE.xml`.
-- The parent chain is applied (GNOME → XWin → `$default`). A child `<action>`
+- The parent chain is applied (GNOME → XWin → `$default`, and KDE → XWin →
+  `$default`). A child `<action>`
   replaces the parent's shortcuts for that action.
 - macOS inherits from `$default` through the Ctrl↔Cmd swap in
   `platform/platform-impl/.../keymap/impl/MacOSDefaultKeymap.kt`, then applies
@@ -51,8 +53,8 @@ Every chord comes from the keymap XML in
   from `platform/dvcs-impl/resources/intellij.platform.vcs.dvcs.impl.xml`.
 
 Each binding was checked against the resolved keymap for every platform it is
-drawn on, and each platform's cells were checked for collisions (2026-09-28,
-intellij-community `master`).
+drawn on, KDE included, and each set's cells were checked for collisions
+(2026-09-28, intellij-community `master`).
 
 ## Icons
 
@@ -69,14 +71,29 @@ intellij-community `master`).
   carry no icon. The generator draws them with the shared concept renderer, so
   they are the same bytes as in every other app's overlay.
 
+## KDE
+
+JetBrains' `Default for KDE` keymap moves 14 of the drawn actions away from the
+GNOME chords, mostly off the F-keys and Ctrl+Alt chords KDE Plasma claims:
+
+| Action | GNOME set | KDE set |
+|---|---|---|
+| Stop | Ctrl+F2 | Ctrl+2 |
+| Close tab / Rerun | Ctrl+F4 / Ctrl+F5 | Ctrl+4 / Ctrl+5 |
+| Toggle breakpoint / Build | Ctrl+F8 / Ctrl+F9 | Ctrl+8 / Ctrl+9 |
+| View breakpoints | Ctrl+Shift+F8 | Ctrl+Shift+8 |
+| File structure | Ctrl+F12 | Ctrl+0 |
+| Reformat code | Ctrl+Alt+L | Alt+Shift+L |
+| Introduce variable | Ctrl+Alt+V | Alt+Shift+V |
+| Back / Forward | Alt+Shift+←/→ | Ctrl+Alt+←/→ |
+| Select in | Alt+F1, Alt+Shift+1 | Alt+Shift+1 |
+| Move line up/down | (unbound) | Alt+Shift+↑/↓ |
+
+In `bindings.yaml` each GNOME chord carries `except: [linux_kde]` and the KDE
+chord `only: [linux_kde]`. See `overlay_specification.md` § KDE.
+
 ## Known gaps
 
-- **KDE** runs JetBrains' `Default for KDE` keymap, but the host has one Linux
-  set. KDE shares GNOME's Find Usages, Select In, Evaluate and Execution Point
-  chords. It differs on Back/Forward (Ctrl+Alt+←/→), Reformat (Alt+Shift+L),
-  Stop (Ctrl+2), Toggle Breakpoint (Ctrl+8), View Breakpoints (Ctrl+Shift+8) and
-  File Structure (Ctrl+0). A `linux_kde:` mapping branch would need the
-  generator to emit a fourth set.
 - **Other Linux desktops** run `Default for XWin`. It matches GNOME except Back,
   Forward, Find Usages and Select In, which stay on the `$default` chords there.
 - **Rerun** (Ctrl+F5) is not drawn on macOS. Its chord there is ⌘R, which the

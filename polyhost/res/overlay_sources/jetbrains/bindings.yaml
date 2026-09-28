@@ -1,11 +1,12 @@
 # JetBrains IDE shortcut overlays for PolyKybd (IntelliJ IDEA, PyCharm, CLion, …).
 #
-# ONE spec, THREE artwork sets, because JetBrains ships three different default
-# keymaps and picks one by platform:
+# ONE spec, FOUR artwork sets, because JetBrains ships four different default
+# keymaps and picks one by platform and desktop:
 #
 #   jetbrains_template.*        Windows   -> keymap "$default"
 #   jetbrains_mac_template.*    macOS     -> keymap "Mac OS X 10.5+"
 #   jetbrains_linux_template.*  Linux     -> keymap "Default for GNOME"
+#   jetbrains_kde_template.*    KDE       -> keymap "Default for KDE"
 #
 # ⚠️ The previously shipped set was the GNOME keymap drawn for EVERY platform:
 # Find Usages on Alt+Shift+7, Back/Forward on Alt+Shift+Left/Right. On Windows
@@ -19,10 +20,11 @@
 #   only: [...]      the chord exists only in those keymaps. An action whose
 #                    chord differs per platform is written once per chord, with
 #                    disjoint `only:` lists.
-#   no scope         the same literal chord in all three keymaps.
+#   only: [linux]    covers KDE too; `except: [linux_kde]` carves KDE out.
+#   no scope         the same literal chord in all four keymaps.
 #
 # Every chord was resolved from the keymap XML in JetBrains/intellij-community,
-# including the parent chain (GNOME -> XWin -> $default) and the Ctrl<->Cmd
+# including the parent chain (GNOME/KDE -> XWin -> $default) and the Ctrl<->Cmd
 # conversion macOS applies to inherited shortcuts. See SOURCES.md.
 #
 # Regenerate (from the repo root, with the project venv):
@@ -34,6 +36,7 @@ match: [idea64, pycharm64]
 output: jetbrains_template
 output_macos: jetbrains_mac_template
 output_linux: jetbrains_linux_template
+output_kde: jetbrains_kde_template
 icon_dir: icons
 fit: contain
 anchor: bottom-right
@@ -60,18 +63,18 @@ bindings:
   - { key: B,  mods: [CMDCTRL],        icon: gotodeclaration.png, <<: *reclaimed, label: "Go to declaration", source: reclaimed }
   - { key: F,  mods: [CMDCTRL],        icon: find.png,            <<: *reclaimed, label: Find,                source: reclaimed }
   - { key: U,  mods: [CMDCTRL],        icon: gotosuper.png,       <<: *reclaimed, label: "Go to super method", source: reclaimed }
-  - { key: F2, mods: [CMDCTRL],        icon: stop.png,            <<: *reclaimed, label: Stop,                source: reclaimed }
+  - { key: F2, mods: [CMDCTRL],        except: [linux_kde], icon: stop.png,            <<: *reclaimed, label: Stop,                source: reclaimed }
   - { key: B,  mods: [CMDCTRL, SHIFT], icon: gototypedecl.png,    <<: *reclaimed, label: "Go to type declaration", source: reclaimed }
   - { key: F,  mods: [CMDCTRL, SHIFT], icon: findinpath.png,      <<: *reclaimed, label: "Find in files",     source: reclaimed }
-  - { key: F8, mods: [CMDCTRL, SHIFT], icon: viewbreakpoints.png, <<: *reclaimed, label: "View breakpoints",  source: reclaimed }
+  - { key: F8, mods: [CMDCTRL, SHIFT], except: [linux_kde], icon: viewbreakpoints.png, <<: *reclaimed, label: "View breakpoints",  source: reclaimed }
   - { key: B,  mods: [CMDCTRL, ALT],   icon: gotoimpl.png,        <<: *reclaimed, label: "Go to implementation", source: reclaimed }
-  - { key: L,  mods: [CMDCTRL, ALT],   icon: reformat.png,        <<: *reclaimed, label: "Reformat code",     source: reclaimed }
+  - { key: L,  mods: [CMDCTRL, ALT],   except: [linux_kde], icon: reformat.png,        <<: *reclaimed, label: "Reformat code",     source: reclaimed }
   - { key: Y,  mods: [CMDCTRL, ALT],   icon: synchronize.png,     <<: *reclaimed, label: Synchronize,         source: reclaimed }
   - { key: C,  mods: [CMDCTRL, ALT, SHIFT], icon: copyreference.png, <<: *reclaimed, label: "Copy reference", source: reclaimed }
   - { key: V,  mods: [CMDCTRL, ALT, SHIFT], icon: pastesimple.png,   <<: *reclaimed, label: "Paste as plain text", source: reclaimed }
 
   # -- same literal chord on every platform --
-  - { key: F1,   mods: [ALT],        icon: selectin.png,      <<: *reclaimed, label: "Select in",          source: reclaimed }
+  - { key: F1,   mods: [ALT],        except: [linux_kde], icon: selectin.png,      <<: *reclaimed, label: "Select in",          source: reclaimed }
   - { key: HOME, mods: [ALT],        icon: navbar.png,        <<: *reclaimed, label: "Navigation bar",     source: reclaimed }
   - { key: F6,   mods: [SHIFT],      icon: rename.png,        <<: *reclaimed, label: Rename,               source: reclaimed }
   - { key: F7,   mods: [SHIFT],      icon: smartstepinto.png, <<: *reclaimed, label: "Smart step into",    source: reclaimed }
@@ -105,10 +108,10 @@ bindings:
   - { key: D,    mods: [CTRL, ALT],   only: [macos],          icon: choosedebug.png, <<: *reclaimed, label: "Debug…", source: reclaimed }
   # Back / Forward: Ctrl+Alt+Left/Right in $default, Alt+Shift+Left/Right on GNOME
   # (GNOME takes Ctrl+Alt+arrows for workspaces), Cmd+[ / Cmd+] on macOS.
-  - { key: LEFT,  mods: [CTRL, ALT],  only: [windows],        icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
-  - { key: RIGHT, mods: [CTRL, ALT],  only: [windows],        icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
-  - { key: LEFT,  mods: [ALT, SHIFT], only: [linux],          icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
-  - { key: RIGHT, mods: [ALT, SHIFT], only: [linux],          icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: LEFT,  mods: [CTRL, ALT],  only: [windows, linux_kde],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [CTRL, ALT],  only: [windows, linux_kde],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: LEFT,  mods: [ALT, SHIFT], only: [linux], except: [linux_kde],     icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [ALT, SHIFT], only: [linux], except: [linux_kde],     icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
   - { key: "[",   mods: [GUI],        only: [macos],          icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
   - { key: "]",   mods: [GUI],        only: [macos],          icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
   - { key: J,      mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: selectalloccurrences.png, <<: *reclaimed, label: "Select all occurrences", source: reclaimed }
@@ -153,7 +156,7 @@ bindings:
   - { key: L,   mods: [GUI],  only: [macos],          icon: gotoline.png, label: "Go to line" }
   - { key: A,   mods: [CMDCTRL, SHIFT], icon: findaction.png, label: "Find action" }
   - { key: T,   mods: [CMDCTRL, SHIFT], icon: gototest.png,   label: "Go to test" }
-  - { key: F12, mods: [CMDCTRL],        icon: win_structure.png, label: "File structure" }
+  - { key: F12, mods: [CMDCTRL],        except: [linux_kde], icon: win_structure.png, label: "File structure" }
   - { key: F11, mods: [],      only: [windows, linux], icon: togglebookmark.png, label: "Toggle bookmark" }
   - { key: F3,  mods: [],      only: [macos],          icon: togglebookmark.png, label: "Toggle bookmark" }
   - { key: F11, mods: [SHIFT], only: [windows, linux], icon: showbookmarks.png,  label: "Show bookmarks" }
@@ -180,8 +183,9 @@ bindings:
   - { key: UP,   mods: [CMDCTRL, SHIFT], icon: moveup.png,   label: "Move statement up" }
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: movedown.png, label: "Move statement down" }
   # Move Line: GNOME unbinds it and gives Alt+Shift+Up/Down to Next/Previous Occurrence.
-  - { key: UP,   mods: [ALT, SHIFT], except: [linux], icon: moveup.png,   label: "Move line up" }
-  - { key: DOWN, mods: [ALT, SHIFT], except: [linux], icon: movedown.png, label: "Move line down" }
+  # KDE keeps it.
+  - { key: UP,   mods: [ALT, SHIFT], only: [windows, macos, linux_kde], icon: moveup.png,   label: "Move line up" }
+  - { key: DOWN, mods: [ALT, SHIFT], only: [windows, macos, linux_kde], icon: movedown.png, label: "Move line down" }
   - { key: ENTER, mods: [ALT],  icon: intentions.png, label: "Show context actions" }
   - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Basic completion" }
   # Surround With: Ctrl+Alt+T in $default, but GNOME opens a terminal on it, so the
@@ -203,16 +207,16 @@ bindings:
   - { key: T, mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: refactorthis.png, label: "Refactor this" }
   - { key: T, mods: [CTRL],             only: [macos],          icon: refactorthis.png, label: "Refactor this" }
   - { key: M, mods: [CMDCTRL, ALT], icon: extractmethod.png,     label: "Extract method" }
-  - { key: V, mods: [CMDCTRL, ALT], icon: introducevariable.png, label: "Introduce variable" }
+  - { key: V, mods: [CMDCTRL, ALT], except: [linux_kde], icon: introducevariable.png, label: "Introduce variable" }
   - { key: N, mods: [CMDCTRL, ALT], icon: inline.png,            label: "Inline" }
   - { key: DELETE, mods: [ALT], only: [windows, linux], icon: safedelete.png, label: "Safe delete" }
   - { key: DELETE, mods: [GUI], only: [macos],          icon: safedelete.png, label: "Safe delete" }
 
   # -- run / debug / build --
-  - { key: F8,  mods: [CMDCTRL], icon: togglebreakpoint.png, label: "Toggle breakpoint" }
-  - { key: F9,  mods: [CMDCTRL], icon: build.png,            label: "Build project" }
+  - { key: F8,  mods: [CMDCTRL], except: [linux_kde], icon: togglebreakpoint.png, label: "Toggle breakpoint" }
+  - { key: F9,  mods: [CMDCTRL], except: [linux_kde], icon: build.png,            label: "Build project" }
   # ⌘R is Replace on macOS, so Rerun is drawn where it does not collide.
-  - { key: F5,  mods: [CTRL], only: [windows, linux], icon: rerun.png, label: "Rerun" }
+  - { key: F5,  mods: [CTRL], only: [windows, linux], except: [linux_kde], icon: rerun.png, label: "Rerun" }
   # Evaluate / Run to cursor / Show execution point: Alt+F8/F9/F10 in $default and
   # on macOS; the XWin/GNOME keymaps move them to Alt+Shift+8/9/0.
   - { key: F8,  mods: [ALT], only: [windows, macos], icon: evaluate.png,       label: "Evaluate expression" }
@@ -228,7 +232,7 @@ bindings:
   - { key: T, mods: [CMDCTRL],        icon: update.png,     label: "Update project" }
 
   # -- files / project --
-  - { key: F4, mods: [CTRL], only: [windows, linux], icon: closetab.png, label: "Close tab" }
+  - { key: F4, mods: [CTRL], only: [windows, linux], except: [linux_kde], icon: closetab.png, label: "Close tab" }
   - { key: W,  mods: [GUI],  only: [macos],          icon: closetab.png, label: "Close tab" }
   - { key: V,  mods: [CMDCTRL, SHIFT], icon: pastehistory.png, label: "Paste from history" }
   - { key: S,         mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: projectstructure.png, label: "Project structure" }
@@ -242,3 +246,17 @@ bindings:
   - { key: X, mods: [CMDCTRL],        label: Cut }
   - { key: V, mods: [CMDCTRL],        label: Paste }
   - { key: A, mods: [CMDCTRL],        label: "Select all" }
+
+  # ================================================= KDE keymap (linux_kde) ==
+  # JetBrains' "Default for KDE" moves these off the F-keys and Ctrl+Alt chords
+  # that KDE Plasma claims. Each one replaces a binding above that carries
+  # `except: [linux_kde]`. Back/Forward and Move Line are handled inline above.
+  - { key: "2", mods: [CTRL],        only: [linux_kde], icon: stop.png,            <<: *reclaimed, label: Stop,               source: reclaimed }
+  - { key: "8", mods: [CTRL, SHIFT], only: [linux_kde], icon: viewbreakpoints.png, <<: *reclaimed, label: "View breakpoints", source: reclaimed }
+  - { key: L,   mods: [ALT, SHIFT],  only: [linux_kde], icon: reformat.png,        <<: *reclaimed, label: "Reformat code",    source: reclaimed }
+  - { key: "0", mods: [CTRL],        only: [linux_kde], icon: win_structure.png,     label: "File structure" }
+  - { key: V,   mods: [ALT, SHIFT],  only: [linux_kde], icon: introducevariable.png, label: "Introduce variable" }
+  - { key: "8", mods: [CTRL],        only: [linux_kde], icon: togglebreakpoint.png,  label: "Toggle breakpoint" }
+  - { key: "9", mods: [CTRL],        only: [linux_kde], icon: build.png,             label: "Build project" }
+  - { key: "5", mods: [CTRL],        only: [linux_kde], icon: rerun.png,             label: "Rerun" }
+  - { key: "4", mods: [CTRL],        only: [linux_kde], icon: closetab.png,          label: "Close tab" }

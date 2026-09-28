@@ -221,6 +221,14 @@ class JetBrainsPerOsTest(unittest.TestCase):
         self.assertIn("jetbrains_mac_template.mods.png", self._overlay("intellij idea", "macos"))
         self.assertIn("jetbrains_linux_template.mods.png", self._overlay("jetbrains-idea", "linux"))
 
+    def test_KDE_gets_its_own_keymap_and_GNOME_keeps_the_linux_one(self):
+        """JetBrains' "Default for KDE" moves Stop, Reformat, Back/Forward and
+        the breakpoint keys, so KDE must not fall back to the GNOME set."""
+        self.assertIn("jetbrains_kde_template.mods.png", self._overlay("idea", "linux_kde"))
+        self.assertIn("jetbrains_linux_template.mods.png", self._overlay("idea", "linux_gnome"))
+        self.assertIn("jetbrains_kde_template.mods.png",
+                      self._overlay("java", "linux_kde", "project – Main.java"))
+
     def test_the_WINDOWS_executables_are_keys(self):
         for name in ("idea64", "pycharm64", "clion64", "webstorm64", "rider64", "studio64"):
             self.assertIn(name, self.handler.mapping, name)
