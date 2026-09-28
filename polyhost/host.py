@@ -1539,12 +1539,14 @@ class PolyHost(QApplication):
         dlg.setup(current, self.developer_mode, reset_glyph_script=reset_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
+            saved = True
             if self.client_mode:
                 for key, value in updated.items():
                     if current.get(key) != value:
-                        self.core.settings_set(key, value)
+                        ok, _msg = self.core.settings_set(key, value)
+                        saved = saved and ok
             else:
-                self.poly_settings.set_all(updated)
+                saved = self.poly_settings.set_all(updated)
                 # In-process mode writes settings directly (bypassing
                 # core.settings_set), so the core has to be told: it owns every
                 # side effect a setting has on the live device — the daylight
@@ -1554,6 +1556,16 @@ class PolyHost(QApplication):
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self._refresh_theme()
+            if not saved:
+                # save() no longer raises, so this is the only place the user
+                # can learn the change is live now but will not survive a
+                # restart -- which matters for a privacy switch that other
+                # components read from the file.
+                QMessageBox.warning(
+                    None, "PolyHost settings",
+                    "The settings are applied, but they could not be saved to "
+                    "the settings file. Another program may be holding it open. "
+                    "Change a setting again later to retry, or see the log.")
         dlg.close()
 
     def open_log(self):

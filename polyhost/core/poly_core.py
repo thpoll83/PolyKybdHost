@@ -2223,8 +2223,14 @@ class PolyCore(Observable):
         if key not in alls:
             return False, f"Unknown setting '{key}'"
         alls[key] = value
-        self.poly_settings.set_all(alls)
+        saved = self.poly_settings.set_all(alls)
         self.note_settings_changed([key])
+        if not saved:
+            # Applied in this process, but anything reading the FILE (the
+            # tray's own read_setting() calls, the next start) still sees the
+            # old value, so the caller must not report it as saved.
+            return False, (f"'{key}' is applied but could not be saved to the "
+                           "settings file; see the log")
         return True, key
 
     def note_settings_changed(self, keys=None):
