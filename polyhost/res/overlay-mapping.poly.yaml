@@ -262,8 +262,14 @@ illustrator,adobe illustrator:
       overlay: [illustrator_template_mac.mods.png, illustrator_template_mac.combo.mods.png, illustrator_template_mac.extra.mods.png]
 figma:
   overlay: [figma_template.mods.png, figma_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [figma_template_mac.mods.png, figma_template_mac.combo.mods.png, figma_template_mac.extra.mods.png]
 krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
 ms-teams,teams,microsoft teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
   os:
@@ -271,6 +277,9 @@ ms-teams,teams,microsoft teams:
       overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [resolve_template_mac.mods.png, resolve_template_mac.combo.mods.png, resolve_template_mac.extra.mods.png]
 adobe premiere pro:
   overlay: [premiere_template.mods.png, premiere_template.combo.mods.png]
   os:
@@ -298,6 +307,9 @@ sublime_text,sublime text:
       overlay: [sublime_linux_template.mods.png, sublime_linux_template.combo.mods.png]
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
   os:

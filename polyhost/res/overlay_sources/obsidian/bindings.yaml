@@ -3,6 +3,14 @@
 # Icons: Microsoft Fluent UI System Icons (MIT); ESC program mark drawn
 # (../geo_marks.py) - an irregular faceted stone, NOT the Obsidian logo. See SOURCES.md.
 #
+# ONE spec, TWO artwork sets: obsidian_template.* for Windows/Linux and
+# obsidian_template_mac.* for macOS. Obsidian registers its hotkeys as "Mod"
+# (Ctrl on Windows/Linux, Cmd on macOS), which is exactly CMDCTRL here.
+#   only: [...]     an action Obsidian binds to a different chord on macOS,
+#                   written once per platform (Find and replace is Cmd+Option+F
+#                   because Cmd+H hides the app; Navigate back/forward).
+#   except: [macos] no default hotkey to draw on macOS. See SOURCES.md -> "macOS".
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/obsidian/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -26,26 +34,29 @@ program_icon_margin: 0
 
 bindings:
   # --- Ctrl ---
-  - { key: N, mods: [CTRL], icon: newnote.png,       label: "New note",        source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: quickswitcher.png, label: "Quick switcher",  source: "ms-fluent/Directions (MIT)" }
-  - { key: P, mods: [CTRL], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
-  - { key: G, mods: [CTRL], icon: graph.png,         label: "Graph view",      source: "ms-fluent/Branch Fork (MIT)" }
-  - { key: E, mods: [CTRL], icon: editpreview.png,   label: "Toggle edit / reading view", source: "ms-fluent/Eye (MIT)" }
-  - { key: F, mods: [CTRL], icon: find.png,          label: "Find in file",    source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], icon: findreplace.png,   label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)" }
-  - { key: B, mods: [CTRL], icon: bold.png,          label: Bold,              source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,        label: Italic,            source: "ms-fluent/Text Italic (MIT)" }
-  - { key: K, mods: [CTRL], icon: link.png,          label: "Insert link",     source: "ms-fluent/Link (MIT)" }
-  - { key: W, mods: [CTRL], icon: closetab.png,      label: "Close tab",       source: "ms-fluent/Dismiss (MIT)" }
-  - { key: ",", mods: [CTRL], icon: settings.png,    label: Settings,          source: "ms-fluent/Settings (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: newnote.png,       label: "New note",        source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: quickswitcher.png, label: "Quick switcher",  source: "ms-fluent/Directions (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: graph.png,         label: "Graph view",      source: "ms-fluent/Branch Fork (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: editpreview.png,   label: "Toggle edit / reading view", source: "ms-fluent/Eye (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,          label: "Find in file",    source: "ms-fluent/Search (MIT)" }
+  - { key: H, mods: [CTRL], only: [windows, linux], icon: findreplace.png,   label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: F, mods: [GUI, ALT], only: [macos], icon: findreplace.png,   label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,          label: Bold,              source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,        label: Italic,            source: "ms-fluent/Text Italic (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: link.png,          label: "Insert link",     source: "ms-fluent/Link (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: closetab.png,      label: "Close tab",       source: "ms-fluent/Dismiss (MIT)" }
+  - { key: ",", mods: [CMDCTRL], icon: settings.png,    label: Settings,          source: "ms-fluent/Settings (MIT)" }
 
   # --- Ctrl+Shift ---
-  - { key: F, mods: [CTRL, SHIFT], icon: searchall.png,     label: "Search all files",   source: "ms-fluent/Document Search (MIT)" }
-  - { key: L, mods: [CTRL, SHIFT], icon: leftsidebar.png,   label: "Toggle left sidebar", source: "ms-fluent/Panel Left (MIT)" }
-  - { key: R, mods: [CTRL, SHIFT], icon: rightsidebar.png,  label: "Toggle right sidebar", source: "ms-fluent/Panel Right (MIT)" }
-  - { key: X, mods: [CTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,        source: "ms-fluent/Text Strikethrough (MIT)" }
-  - { key: V, mods: [CTRL, SHIFT], icon: pasteplain.png,    label: "Paste without formatting", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: searchall.png,     label: "Search all files",   source: "ms-fluent/Document Search (MIT)" }
+  - { key: L, mods: [CTRL, SHIFT], except: [macos], icon: leftsidebar.png,   label: "Toggle left sidebar", source: "ms-fluent/Panel Left (MIT)" }
+  - { key: R, mods: [CTRL, SHIFT], except: [macos], icon: rightsidebar.png,  label: "Toggle right sidebar", source: "ms-fluent/Panel Right (MIT)" }
+  - { key: X, mods: [CTRL, SHIFT], except: [macos], icon: strikethrough.png, label: Strikethrough,        source: "ms-fluent/Text Strikethrough (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png,    label: "Paste without formatting", source: "ms-fluent/Clipboard Paste (MIT)" }
 
   # --- Alt ---
-  - { key: LEFT,  mods: [ALT], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
-  - { key: RIGHT, mods: [ALT], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: LEFT,  mods: [GUI, ALT], only: [macos], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: RIGHT, mods: [GUI, ALT], only: [macos], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }

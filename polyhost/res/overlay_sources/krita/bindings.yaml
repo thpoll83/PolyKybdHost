@@ -11,6 +11,14 @@
 # default (Print, Reset-zoom, Wrap-around, color sampler) are intentionally
 # dropped, not invented.
 #
+# ONE spec, TWO artwork sets: krita_template.* for Windows/Linux and
+# krita_template_mac.* for macOS. Krita's shortcuts are Qt key sequences, and Qt
+# reads "Ctrl" as Command on macOS, so every Ctrl chord is CMDCTRL here.
+#   only: [...]  Krita's action files carry one macOS override among these
+#                bindings: Fill with Background Color is Backspace elsewhere and
+#                Del (forward delete) on macOS, where Backspace is Clear.
+# The macOS table is in SOURCES.md -> "macOS".
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/krita/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -34,28 +42,28 @@ program_icon_margin: 0
 
 bindings:
   # --- file (Ctrl -> R channel of primary) ---
-  - { key: N, mods: [CTRL], icon: new.png,   label: New,    source: "breeze-icons/document-new (LGPLv3)" }
-  - { key: O, mods: [CTRL], icon: open.png,  label: Open,   source: "breeze-icons/document-open (LGPLv3)" }
-  - { key: S, mods: [CTRL], icon: save.png,  label: Save,   source: "breeze-icons/document-save (LGPLv3)" }
-  - { key: W, mods: [CTRL], icon: close.png, label: Close,  source: "breeze-icons/document-close (LGPLv3)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,   label: New,    source: "breeze-icons/document-new (LGPLv3)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,  label: Open,   source: "breeze-icons/document-open (LGPLv3)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,  label: Save,   source: "breeze-icons/document-save (LGPLv3)" }
+  - { key: W, mods: [CMDCTRL], icon: close.png, label: Close,  source: "breeze-icons/document-close (LGPLv3)" }
 
   # --- edit (Ctrl) ---
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,         source: "breeze-icons/edit-undo (LGPLv3)" }
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,         source: "breeze-icons/edit-copy (LGPLv3)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,          source: "breeze-icons/edit-cut (LGPLv3)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,        source: "breeze-icons/edit-paste (LGPLv3)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "breeze-icons/edit-select-all (LGPLv3)" }
-  - { key: T, mods: [CTRL], icon: transform.png, label: Transform,    source: "breeze-icons/transform-scale (LGPLv3)" }
-  - { key: E, mods: [CTRL], icon: mergedown.png, label: "Merge down", source: "breeze-icons/layer-bottom (LGPLv3)" }
-  - { key: G, mods: [CTRL], icon: group.png,     label: "Group",      source: "breeze-icons/object-group (LGPLv3)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,         source: "breeze-icons/edit-undo (LGPLv3)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,         source: "breeze-icons/edit-copy (LGPLv3)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,          source: "breeze-icons/edit-cut (LGPLv3)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,        source: "breeze-icons/edit-paste (LGPLv3)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "breeze-icons/edit-select-all (LGPLv3)" }
+  - { key: T, mods: [CMDCTRL], icon: transform.png, label: Transform,    source: "breeze-icons/transform-scale (LGPLv3)" }
+  - { key: E, mods: [CMDCTRL], icon: mergedown.png, label: "Merge down", source: "breeze-icons/layer-bottom (LGPLv3)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,     label: "Group",      source: "breeze-icons/object-group (LGPLv3)" }
 
   # --- Ctrl+Shift -> R channel of combo ---
-  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,       label: Redo,             source: "breeze-icons/edit-redo (LGPLv3)" }
-  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,     label: "Save as",        source: "breeze-icons/document-save-as (LGPLv3)" }
-  - { key: A, mods: [CTRL, SHIFT], icon: deselect.png,   label: Deselect,         source: "breeze-icons/edit-select-none (LGPLv3)" }
-  - { key: I, mods: [CTRL, SHIFT], icon: invertsel.png,  label: "Invert sel",     source: "breeze-icons/edit-select-invert (LGPLv3)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",    source: "ms-fluent/Layer Diagonal (MIT) — no readable Breeze glyph" }
-  - { key: E, mods: [CTRL, SHIFT], icon: flatten.png,    label: "Flatten image",  source: "breeze-icons/layer-visible-on (LGPLv3)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,       label: Redo,             source: "breeze-icons/edit-redo (LGPLv3)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,     label: "Save as",        source: "breeze-icons/document-save-as (LGPLv3)" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png,   label: Deselect,         source: "breeze-icons/edit-select-none (LGPLv3)" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: invertsel.png,  label: "Invert sel",     source: "breeze-icons/edit-select-invert (LGPLv3)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copymerged.png, label: "Copy merged",    source: "ms-fluent/Layer Diagonal (MIT) — no readable Breeze glyph" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: flatten.png,    label: "Flatten image",  source: "breeze-icons/layer-visible-on (LGPLv3)" }
 
   # --- plain keys / tools (no-mod -> A channel) ---
   - { key: B, mods: [], icon: brush.png,    label: "Brush",     source: "breeze-icons/draw-brush (LGPLv3)" }
@@ -76,8 +84,9 @@ bindings:
   - { key: V, mods: [], icon: linetool.png,   label: "Line tool",    source: "breeze-icons/draw-line (LGPLv3)" }
   - { key: R, mods: [SHIFT], icon: rectangle.png, label: "Rectangle", source: "breeze-icons/draw-rectangle (LGPLv3)" }
   - { key: J, mods: [SHIFT], icon: ellipse.png,   label: "Ellipse",   source: "breeze-icons/draw-ellipse (LGPLv3)" }
-  - { key: BACKSPACE, mods: [],      icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: solid square)" }
+  - { key: BACKSPACE, mods: [], only: [windows, linux], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: solid square)" }
+  - { key: DELETE,    mods: [], only: [macos],          icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: solid square)" }
   - { key: BACKSPACE, mods: [SHIFT], icon: fillfg.png, mode: alpha, label: "Fill FG color", source: "custom (drawn: framed square)" }
-  - { key: I, mods: [CTRL], icon: invert.png, mode: alpha, label: "Invert", source: "custom (drawn: half-filled circle)" }
-  - { key: D, mods: [CTRL, SHIFT], icon: reselect.png, mode: alpha, label: "Reselect", source: "custom (drawn: dashed box + arrow)" }
+  - { key: I, mods: [CMDCTRL], icon: invert.png, mode: alpha, label: "Invert", source: "custom (drawn: half-filled circle)" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: reselect.png, mode: alpha, label: "Reselect", source: "custom (drawn: dashed box + arrow)" }
   - { key: INSERT, mods: [], icon: newlayer.png, label: "New layer", source: "breeze-icons/list-add (LGPLv3)" }

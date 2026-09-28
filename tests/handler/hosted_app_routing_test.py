@@ -291,7 +291,11 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                            ("adobe illustrator 2025", "illustrator_template_mac"),
                            ("adobe premiere pro 2025", "premiere_template_mac"),
                            ("adobe after effects 2025", "aftereffects_template_mac"),
-                           ("notion", "notion_template_mac")):
+                           ("notion", "notion_template_mac"),
+                           ("figma", "figma_template_mac"),
+                           ("obsidian", "obsidian_template_mac"),
+                           ("davinci resolve", "resolve_template_mac"),
+                           ("krita", "krita_template_mac")):
             self.assertIn(f"{stem}.mods.png", self._overlay(name, "macos"), name)
         self.assertIn("word_template.mods.png", self._overlay("winword", "windows"))
 
