@@ -1,0 +1,244 @@
+# JetBrains IDE shortcut overlays for PolyKybd (IntelliJ IDEA, PyCharm, CLion, …).
+#
+# ONE spec, THREE artwork sets, because JetBrains ships three different default
+# keymaps and picks one by platform:
+#
+#   jetbrains_template.*        Windows   -> keymap "$default"
+#   jetbrains_mac_template.*    macOS     -> keymap "Mac OS X 10.5+"
+#   jetbrains_linux_template.*  Linux     -> keymap "Default for GNOME"
+#
+# ⚠️ The previously shipped set was the GNOME keymap drawn for EVERY platform:
+# Find Usages on Alt+Shift+7, Back/Forward on Alt+Shift+Left/Right. On Windows
+# those chords do nothing (Find Usages is Alt+F7, Back is Ctrl+Alt+Left), and on
+# macOS almost every chord is a Cmd chord. That set survives unchanged as the
+# Linux set; its artwork is reclaimed pixel-for-pixel below.
+#
+# How to read a binding:
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS — used only where the
+#                    macOS keymap really is the Ctrl->Cmd conversion of $default.
+#   only: [...]      the chord exists only in those keymaps. An action whose
+#                    chord differs per platform is written once per chord, with
+#                    disjoint `only:` lists.
+#   no scope         the same literal chord in all three keymaps.
+#
+# Every chord was resolved from the keymap XML in JetBrains/intellij-community,
+# including the parent chain (GNOME -> XWin -> $default) and the Ctrl<->Cmd
+# conversion macOS applies to inherited shortcuts. See SOURCES.md.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/jetbrains/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/jetbrains/bindings.yaml --preview /tmp/jetbrains_preview
+app: jetbrains
+match: [idea64, pycharm64]
+output: jetbrains_template
+output_macos: jetbrains_mac_template
+output_linux: jetbrains_linux_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+# The mark shipped with the old hand-drawn set, lifted pixel-for-pixel.
+program_icon: jetbrains.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+# Reclaimed artwork renders 1:1 — the old cell IS the icon, so no fit/anchor.
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
+
+bindings:
+  # ============================ RECLAIMED from the previously shipped set =====
+  # Same drawing as before. The chord is now the one each keymap really binds.
+
+  # -- same Ctrl->Cmd chord on every platform --
+  - { key: B,  mods: [CMDCTRL],        icon: gotodeclaration.png, <<: *reclaimed, label: "Go to declaration", source: reclaimed }
+  - { key: F,  mods: [CMDCTRL],        icon: find.png,            <<: *reclaimed, label: Find,                source: reclaimed }
+  - { key: U,  mods: [CMDCTRL],        icon: gotosuper.png,       <<: *reclaimed, label: "Go to super method", source: reclaimed }
+  - { key: F2, mods: [CMDCTRL],        icon: stop.png,            <<: *reclaimed, label: Stop,                source: reclaimed }
+  - { key: B,  mods: [CMDCTRL, SHIFT], icon: gototypedecl.png,    <<: *reclaimed, label: "Go to type declaration", source: reclaimed }
+  - { key: F,  mods: [CMDCTRL, SHIFT], icon: findinpath.png,      <<: *reclaimed, label: "Find in files",     source: reclaimed }
+  - { key: F8, mods: [CMDCTRL, SHIFT], icon: viewbreakpoints.png, <<: *reclaimed, label: "View breakpoints",  source: reclaimed }
+  - { key: B,  mods: [CMDCTRL, ALT],   icon: gotoimpl.png,        <<: *reclaimed, label: "Go to implementation", source: reclaimed }
+  - { key: L,  mods: [CMDCTRL, ALT],   icon: reformat.png,        <<: *reclaimed, label: "Reformat code",     source: reclaimed }
+  - { key: Y,  mods: [CMDCTRL, ALT],   icon: synchronize.png,     <<: *reclaimed, label: Synchronize,         source: reclaimed }
+  - { key: C,  mods: [CMDCTRL, ALT, SHIFT], icon: copyreference.png, <<: *reclaimed, label: "Copy reference", source: reclaimed }
+  - { key: V,  mods: [CMDCTRL, ALT, SHIFT], icon: pastesimple.png,   <<: *reclaimed, label: "Paste as plain text", source: reclaimed }
+
+  # -- same literal chord on every platform --
+  - { key: F1,   mods: [ALT],        icon: selectin.png,      <<: *reclaimed, label: "Select in",          source: reclaimed }
+  - { key: HOME, mods: [ALT],        icon: navbar.png,        <<: *reclaimed, label: "Navigation bar",     source: reclaimed }
+  - { key: F6,   mods: [SHIFT],      icon: rename.png,        <<: *reclaimed, label: Rename,               source: reclaimed }
+  - { key: F7,   mods: [SHIFT],      icon: smartstepinto.png, <<: *reclaimed, label: "Smart step into",    source: reclaimed }
+  - { key: F8,   mods: [SHIFT],      icon: stepout.png,       <<: *reclaimed, label: "Step out",           source: reclaimed }
+  - { key: F7,   mods: [],           icon: stepinto.png,      <<: *reclaimed, label: "Step into",          source: reclaimed }
+  - { key: F8,   mods: [],           icon: stepover.png,      <<: *reclaimed, label: "Step over",          source: reclaimed }
+  - { key: F9,   mods: [],           icon: resume.png,        <<: *reclaimed, label: "Resume program",     source: reclaimed }
+  - { key: F7,   mods: [ALT, SHIFT], icon: forcestepinto.png, <<: *reclaimed, label: "Force step into",    source: reclaimed }
+  - { key: F8,   mods: [ALT, SHIFT], icon: forcestepover.png, <<: *reclaimed, label: "Force step over",    source: reclaimed }
+
+  # -- chord differs per platform --
+  - { key: F9,   mods: [SHIFT],       only: [windows, linux], icon: debug.png, <<: *reclaimed, label: Debug, source: reclaimed }
+  - { key: D,    mods: [CTRL],        only: [macos],          icon: debug.png, <<: *reclaimed, label: Debug, source: reclaimed }
+  - { key: F10,  mods: [SHIFT],       only: [windows, linux], icon: run.png,   <<: *reclaimed, label: Run,   source: reclaimed }
+  - { key: R,    mods: [CTRL],        only: [macos],          icon: run.png,   <<: *reclaimed, label: Run,   source: reclaimed }
+  - { key: N,    mods: [CTRL, SHIFT], only: [windows, linux], icon: gotofile.png, <<: *reclaimed, label: "Go to file", source: reclaimed }
+  - { key: O,    mods: [GUI, SHIFT],  only: [macos],          icon: gotofile.png, <<: *reclaimed, label: "Go to file", source: reclaimed }
+  - { key: S,    mods: [CTRL, ALT],   only: [windows, linux], icon: settings.png, <<: *reclaimed, label: Settings, source: reclaimed }
+  - { key: ",",  mods: [GUI],         only: [macos],          icon: settings.png, <<: *reclaimed, label: Settings, source: reclaimed }
+  - { key: HOME, mods: [CTRL, ALT],   only: [windows, linux], icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
+  - { key: UP,   mods: [GUI, CTRL],   only: [macos],          icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
+  # Find Usages: Alt+F7 in $default and on macOS; GNOME/KDE move it to Alt+Shift+7.
+  - { key: F7,   mods: [ALT],         only: [windows, macos], icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
+  - { key: "7",  mods: [ALT, SHIFT],  only: [linux],          icon: findusages.png, <<: *reclaimed, label: "Find usages", source: reclaimed }
+  # Global editor font size: Alt+Shift+,/. everywhere but macOS (Ctrl+Shift+,/.).
+  - { key: ",",  mods: [ALT, SHIFT],  only: [windows, linux], icon: fontsmaller.png, <<: *reclaimed, label: "Decrease font size", source: reclaimed }
+  - { key: ".",  mods: [ALT, SHIFT],  only: [windows, linux], icon: fontlarger.png,  <<: *reclaimed, label: "Increase font size", source: reclaimed }
+  - { key: ",",  mods: [CTRL, SHIFT], only: [macos],          icon: fontsmaller.png, <<: *reclaimed, label: "Decrease font size", source: reclaimed }
+  - { key: ".",  mods: [CTRL, SHIFT], only: [macos],          icon: fontlarger.png,  <<: *reclaimed, label: "Increase font size", source: reclaimed }
+  - { key: F9,   mods: [ALT, SHIFT],  only: [windows, linux], icon: choosedebug.png, <<: *reclaimed, label: "Debug…", source: reclaimed }
+  - { key: D,    mods: [CTRL, ALT],   only: [macos],          icon: choosedebug.png, <<: *reclaimed, label: "Debug…", source: reclaimed }
+  # Back / Forward: Ctrl+Alt+Left/Right in $default, Alt+Shift+Left/Right on GNOME
+  # (GNOME takes Ctrl+Alt+arrows for workspaces), Cmd+[ / Cmd+] on macOS.
+  - { key: LEFT,  mods: [CTRL, ALT],  only: [windows],        icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [CTRL, ALT],  only: [windows],        icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: LEFT,  mods: [ALT, SHIFT], only: [linux],          icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: RIGHT, mods: [ALT, SHIFT], only: [linux],          icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: "[",   mods: [GUI],        only: [macos],          icon: back.png,    <<: *reclaimed, label: Back,    source: reclaimed }
+  - { key: "]",   mods: [GUI],        only: [macos],          icon: forward.png, <<: *reclaimed, label: Forward, source: reclaimed }
+  - { key: J,      mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: selectalloccurrences.png, <<: *reclaimed, label: "Select all occurrences", source: reclaimed }
+  - { key: G,      mods: [GUI, CTRL],        only: [macos],          icon: selectalloccurrences.png, <<: *reclaimed, label: "Select all occurrences", source: reclaimed }
+  - { key: N,      mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: gotosymbol.png,  <<: *reclaimed, label: "Go to symbol", source: reclaimed }
+  - { key: O,      mods: [GUI, ALT],         only: [macos],          icon: gotosymbol.png,  <<: *reclaimed, label: "Go to symbol", source: reclaimed }
+  - { key: INSERT, mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: scratchfile.png, <<: *reclaimed, label: "New scratch file", source: reclaimed }
+  - { key: N,      mods: [GUI, SHIFT],       only: [macos],          icon: scratchfile.png, <<: *reclaimed, label: "New scratch file", source: reclaimed }
+
+  # ==================================================== NEW coverage ==========
+  # Fluent (MIT) or Material Symbols (Apache-2.0); fetch_icons.py names each one.
+
+  # -- tool windows: Alt+digit on Windows/Linux, Cmd+digit on macOS --
+  - { key: "1", mods: [ALT], only: [windows, linux], icon: win_project.png,   label: "Project window" }
+  - { key: "2", mods: [ALT], only: [windows, linux], icon: win_bookmarks.png, label: "Bookmarks window" }
+  - { key: "3", mods: [ALT], only: [windows, linux], icon: win_find.png,      label: "Find window" }
+  - { key: "4", mods: [ALT], only: [windows, linux], icon: win_run.png,       label: "Run window" }
+  - { key: "5", mods: [ALT], only: [windows, linux], icon: win_debug.png,     label: "Debug window" }
+  - { key: "6", mods: [ALT], only: [windows, linux], icon: win_problems.png,  label: "Problems window" }
+  - { key: "7", mods: [ALT], only: [windows, linux], icon: win_structure.png, label: "Structure window" }
+  - { key: "8", mods: [ALT], only: [windows, linux], icon: win_services.png,  label: "Services window" }
+  - { key: "9", mods: [ALT], only: [windows, linux], icon: win_git.png,       label: "Git window" }
+  - { key: "0", mods: [ALT], only: [windows, linux], icon: win_commit.png,    label: "Commit window" }
+  - { key: "1", mods: [GUI], only: [macos], icon: win_project.png,   label: "Project window" }
+  - { key: "2", mods: [GUI], only: [macos], icon: win_bookmarks.png, label: "Bookmarks window" }
+  - { key: "3", mods: [GUI], only: [macos], icon: win_find.png,      label: "Find window" }
+  - { key: "4", mods: [GUI], only: [macos], icon: win_run.png,       label: "Run window" }
+  - { key: "5", mods: [GUI], only: [macos], icon: win_debug.png,     label: "Debug window" }
+  - { key: "6", mods: [GUI], only: [macos], icon: win_problems.png,  label: "Problems window" }
+  - { key: "7", mods: [GUI], only: [macos], icon: win_structure.png, label: "Structure window" }
+  - { key: "8", mods: [GUI], only: [macos], icon: win_services.png,  label: "Services window" }
+  - { key: "9", mods: [GUI], only: [macos], icon: win_git.png,       label: "Git window" }
+  - { key: "0", mods: [GUI], only: [macos], icon: win_commit.png,    label: "Commit window" }
+  - { key: F12, mods: [ALT], icon: terminal.png, label: "Terminal window" }
+
+  # -- navigation --
+  - { key: N,   mods: [CTRL], only: [windows, linux], icon: gotoclass.png, label: "Go to class" }
+  - { key: O,   mods: [GUI],  only: [macos],          icon: gotoclass.png, label: "Go to class" }
+  - { key: E,   mods: [CMDCTRL],        icon: recentfiles.png,     label: "Recent files" }
+  - { key: E,   mods: [CMDCTRL, SHIFT], icon: recentlocations.png, label: "Recent locations" }
+  - { key: G,   mods: [CTRL], only: [windows, linux], icon: gotoline.png, label: "Go to line" }
+  - { key: L,   mods: [GUI],  only: [macos],          icon: gotoline.png, label: "Go to line" }
+  - { key: A,   mods: [CMDCTRL, SHIFT], icon: findaction.png, label: "Find action" }
+  - { key: T,   mods: [CMDCTRL, SHIFT], icon: gototest.png,   label: "Go to test" }
+  - { key: F12, mods: [CMDCTRL],        icon: win_structure.png, label: "File structure" }
+  - { key: F11, mods: [],      only: [windows, linux], icon: togglebookmark.png, label: "Toggle bookmark" }
+  - { key: F3,  mods: [],      only: [macos],          icon: togglebookmark.png, label: "Toggle bookmark" }
+  - { key: F11, mods: [SHIFT], only: [windows, linux], icon: showbookmarks.png,  label: "Show bookmarks" }
+  - { key: F3,  mods: [GUI],   only: [macos],          icon: showbookmarks.png,  label: "Show bookmarks" }
+  # GNOME keeps Alt+F1 for Select In and adds Alt+Shift+1.
+  - { key: "1", mods: [ALT, SHIFT], only: [linux], icon: selectin.png, <<: *reclaimed, label: "Select in", source: reclaimed }
+
+  # -- search / replace --
+  # Drawn by the shared concept renderer (the arrow-swap every app uses for Replace).
+  - { key: R, mods: [CMDCTRL],        label: Replace }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: replaceinpath.png, label: "Replace in files" }
+
+  # -- editing --
+  - { key: "/",       mods: [CMDCTRL],         icon: comment.png,      label: "Line comment" }
+  - { key: "/",       mods: [CTRL, SHIFT], only: [windows, linux], icon: blockcomment.png, label: "Block comment" }
+  - { key: "/",       mods: [GUI, ALT],    only: [macos],          icon: blockcomment.png, label: "Block comment" }
+  - { key: D,         mods: [CMDCTRL],         icon: duplicateline.png, label: "Duplicate line" }
+  - { key: Y,         mods: [CTRL],        only: [windows, linux], icon: deleteline.png, label: "Delete line" }
+  - { key: BACKSPACE, mods: [GUI],         only: [macos],          icon: deleteline.png, label: "Delete line" }
+  - { key: W,    mods: [CTRL],        only: [windows, linux], icon: extendselection.png, label: "Extend selection" }
+  - { key: W,    mods: [CTRL, SHIFT], only: [windows, linux], icon: shrinkselection.png, label: "Shrink selection" }
+  - { key: UP,   mods: [ALT],         only: [macos],          icon: extendselection.png, label: "Extend selection" }
+  - { key: DOWN, mods: [ALT],         only: [macos],          icon: shrinkselection.png, label: "Shrink selection" }
+  - { key: UP,   mods: [CMDCTRL, SHIFT], icon: moveup.png,   label: "Move statement up" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: movedown.png, label: "Move statement down" }
+  # Move Line: GNOME unbinds it and gives Alt+Shift+Up/Down to Next/Previous Occurrence.
+  - { key: UP,   mods: [ALT, SHIFT], except: [linux], icon: moveup.png,   label: "Move line up" }
+  - { key: DOWN, mods: [ALT, SHIFT], except: [linux], icon: movedown.png, label: "Move line down" }
+  - { key: ENTER, mods: [ALT],  icon: intentions.png, label: "Show context actions" }
+  - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Basic completion" }
+  # Surround With: Ctrl+Alt+T in $default, but GNOME opens a terminal on it, so the
+  # XWin/GNOME keymaps add Ctrl+Alt+Shift+B.
+  - { key: T, mods: [CTRL, ALT],        only: [windows], icon: surroundwith.png, label: "Surround with" }
+  - { key: B, mods: [CTRL, ALT, SHIFT], only: [linux],   icon: surroundwith.png, label: "Surround with" }
+  - { key: T, mods: [GUI, ALT],         only: [macos],   icon: surroundwith.png, label: "Surround with" }
+  - { key: J,      mods: [CMDCTRL], icon: livetemplate.png, label: "Insert live template" }
+  - { key: INSERT, mods: [ALT], only: [windows, linux], icon: generate.png, label: "Generate" }
+  - { key: N,      mods: [GUI], only: [macos],          icon: generate.png, label: "Generate" }
+  - { key: O, mods: [CTRL, ALT], icon: optimizeimports.png, label: "Optimize imports" }
+  - { key: Q,  mods: [CTRL], only: [windows, linux], icon: quickdoc.png, label: "Quick documentation" }
+  - { key: F1, mods: [],     only: [macos],          icon: quickdoc.png, label: "Quick documentation" }
+  - { key: P, mods: [CMDCTRL], icon: paraminfo.png, label: "Parameter info" }
+  - { key: H, mods: [CTRL],      icon: typehierarchy.png, label: "Type hierarchy" }
+  - { key: H, mods: [CTRL, ALT], icon: callhierarchy.png, label: "Call hierarchy" }
+
+  # -- refactoring --
+  - { key: T, mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: refactorthis.png, label: "Refactor this" }
+  - { key: T, mods: [CTRL],             only: [macos],          icon: refactorthis.png, label: "Refactor this" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: extractmethod.png,     label: "Extract method" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: introducevariable.png, label: "Introduce variable" }
+  - { key: N, mods: [CMDCTRL, ALT], icon: inline.png,            label: "Inline" }
+  - { key: DELETE, mods: [ALT], only: [windows, linux], icon: safedelete.png, label: "Safe delete" }
+  - { key: DELETE, mods: [GUI], only: [macos],          icon: safedelete.png, label: "Safe delete" }
+
+  # -- run / debug / build --
+  - { key: F8,  mods: [CMDCTRL], icon: togglebreakpoint.png, label: "Toggle breakpoint" }
+  - { key: F9,  mods: [CMDCTRL], icon: build.png,            label: "Build project" }
+  # ⌘R is Replace on macOS, so Rerun is drawn where it does not collide.
+  - { key: F5,  mods: [CTRL], only: [windows, linux], icon: rerun.png, label: "Rerun" }
+  # Evaluate / Run to cursor / Show execution point: Alt+F8/F9/F10 in $default and
+  # on macOS; the XWin/GNOME keymaps move them to Alt+Shift+8/9/0.
+  - { key: F8,  mods: [ALT], only: [windows, macos], icon: evaluate.png,       label: "Evaluate expression" }
+  - { key: F9,  mods: [ALT], only: [windows, macos], icon: runtocursor.png,    label: "Run to cursor" }
+  - { key: F10, mods: [ALT], only: [windows, macos], icon: executionpoint.png, label: "Show execution point" }
+  - { key: "8", mods: [ALT, SHIFT], only: [linux],   icon: evaluate.png,       label: "Evaluate expression" }
+  - { key: "9", mods: [ALT, SHIFT], only: [linux],   icon: runtocursor.png,    label: "Run to cursor" }
+  - { key: "0", mods: [ALT, SHIFT], only: [linux],   icon: executionpoint.png, label: "Show execution point" }
+
+  # -- version control --
+  - { key: K, mods: [CMDCTRL],        icon: win_commit.png, label: "Commit" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: push.png,       label: "Push" }
+  - { key: T, mods: [CMDCTRL],        icon: update.png,     label: "Update project" }
+
+  # -- files / project --
+  - { key: F4, mods: [CTRL], only: [windows, linux], icon: closetab.png, label: "Close tab" }
+  - { key: W,  mods: [GUI],  only: [macos],          icon: closetab.png, label: "Close tab" }
+  - { key: V,  mods: [CMDCTRL, SHIFT], icon: pastehistory.png, label: "Paste from history" }
+  - { key: S,         mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: projectstructure.png, label: "Project structure" }
+  - { key: ";",       mods: [GUI],              only: [macos],          icon: projectstructure.png, label: "Project structure" }
+
+  # -- the generic clipboard/undo row: drawn by the shared concept renderer --
+  - { key: S, mods: [CMDCTRL],        label: Save }
+  - { key: Z, mods: [CMDCTRL],        label: Undo }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo }
+  - { key: C, mods: [CMDCTRL],        label: Copy }
+  - { key: X, mods: [CMDCTRL],        label: Cut }
+  - { key: V, mods: [CMDCTRL],        label: Paste }
+  - { key: A, mods: [CMDCTRL],        label: "Select all" }
