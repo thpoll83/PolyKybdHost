@@ -1,0 +1,80 @@
+# Discord desktop shortcut overlays for PolyKybd.
+#
+# ONE spec, TWO artwork sets:
+#   discord_template.*      Windows / Linux  ("[Windows] Discord Hotkeys"; the
+#                                             Linux client uses the same keymap)
+#   discord_mac_template.*  macOS            ("[macOS] Discord Hotkeys")
+#
+# Discord's Mac keymap is its Windows keymap with Cmd for Ctrl, so the Ctrl
+# chords are CMDCTRL. Alt/Option chords (channel and unread navigation) are
+# literal ALT on every platform, and chords with no confirmed Mac form are
+# `except: [macos]`. See SOURCES.md.
+#
+# The RECLAIMED block is the previously shipped hand-drawn set, cut
+# pixel-for-pixel out of the old PNGs and rendered 1:1.
+#
+# ⚠️ Two deliberate changes from the old PNG:
+#   * The Discord logo sat on TAB in all four layers -- a program mark on a
+#     shortcut key. It is now `program_icon:` on ESC, the house convention, and
+#     TAB carries nothing (Tab only focuses the text box).
+#   * That puts the mark on ESC in every layer, so the old Esc (mark channel
+#     read) and Shift+Esc (mark server read) drawings cannot stay -- the
+#     generator ORs a binding into the mark. Their art is kept in icons/
+#     (markread.png, markserverread.png) but not bound.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/discord/bindings.yaml --preview /tmp/discord_preview
+app: discord
+match: [discord]
+output: discord_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: discord.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+# Reclaimed artwork renders 1:1: the old cell IS the icon.
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+
+bindings:
+  # ============================ RECLAIMED from the previously shipped set =====
+  - { key: E,    mods: [CMDCTRL], icon: emoji.png,   <<: *r, label: "Emoji picker" }
+  - { key: P,    mods: [CMDCTRL], icon: pins.png,    <<: *r, label: "Pinned messages" }
+  - { key: U,    mods: [CMDCTRL], icon: members.png, <<: *r, label: "Member list" }
+  - { key: "/",  mods: [CMDCTRL], icon: hotkeys.png, <<: *r, label: "Hotkey list" }
+  # Option+arrow on the Mac too.
+  - { key: UP,   mods: [ALT],     icon: channel.png, <<: *r, label: "Previous channel" }
+  - { key: DOWN, mods: [ALT],     icon: channel.png, <<: *r, label: "Next channel" }
+  - { key: PAGEUP,   mods: [SHIFT], icon: oldestunread.png, <<: *r, label: "Oldest unread" }
+  - { key: PAGEUP,   mods: [],      icon: scrollchat.png,   <<: *r, label: "Scroll chat up" }
+  - { key: PAGEDOWN, mods: [],      icon: scrollchat.png,   <<: *r, label: "Scroll chat down" }
+
+  # ============================ ADDED from Discord's hotkey reference =========
+  # -- navigation --
+  - { key: K,    mods: [CMDCTRL],              icon: quickswitcher.png, label: "Quick switcher" }
+  - { key: I,    mods: [CMDCTRL],              icon: inbox.png,         label: Inbox }
+  - { key: UP,   mods: [CMDCTRL, ALT],         icon: server.png,  label: "Previous server" }
+  - { key: DOWN, mods: [CMDCTRL, ALT],         icon: server.png,  label: "Next server" }
+  - { key: UP,   mods: [ALT, SHIFT],           icon: unread.png,  label: "Previous unread channel" }
+  - { key: DOWN, mods: [ALT, SHIFT],           icon: unread.png,  label: "Next unread channel" }
+  - { key: UP,   mods: [CMDCTRL, ALT, SHIFT],  icon: mention.png, label: "Previous unread mention" }
+  - { key: DOWN, mods: [CMDCTRL, ALT, SHIFT],  icon: mention.png, label: "Next unread mention" }
+
+  # -- messages --
+  - { key: U,    mods: [CMDCTRL, SHIFT],       icon: upload.png,  label: "Upload file" }
+
+  # -- voice --
+  - { key: M,    mods: [CMDCTRL, SHIFT],       icon: mute.png,    label: "Toggle mute" }
+  - { key: D,    mods: [CMDCTRL, SHIFT],       icon: deafen.png,  label: "Toggle deafen" }
+  # Windows chords with no confirmed Mac form.
+  - { key: "'",  mods: [CTRL],      except: [macos], icon: call.png,         label: "Start call" }
+  - { key: A,    mods: [CTRL, ALT], except: [macos], icon: voicechannel.png, label: "Return to voice channel" }

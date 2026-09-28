@@ -1,0 +1,98 @@
+# Zoom Workplace in-meeting shortcut overlays for PolyKybd.
+#
+# ONE spec, TWO artwork sets:
+#   zoom_template.*      Windows / Linux  (Zoom's Windows and Linux columns
+#                                          agree: Alt+letter)
+#   zoom_mac_template.*  macOS            (Zoom's macOS column)
+#
+# The mapping entry is title-gated to "Zoom Meeting" windows, so these are the
+# MEETING shortcuts only.
+#
+# ⚠️ Zoom's macOS keymap is a REMAP, not a Ctrl->Cmd swap: Alt+A becomes
+# Cmd+Shift+A, Alt+M becomes Cmd+Ctrl+M, Alt+Q becomes Cmd+W, and so on. CMDCTRL
+# cannot express that, so each action is written twice with disjoint `only:`
+# lists and literal modifiers. Alt+Y (raise hand) is Option+Y on the Mac too,
+# so it is one literal-ALT line. See SOURCES.md for the full remap table.
+#
+# The RECLAIMED lines are the previously shipped hand-drawn set, cut
+# pixel-for-pixel out of the old PNGs and rendered 1:1.
+#
+# ⚠️ One deliberate change from the old PNG: Ctrl+\ ("Always show meeting
+# controls") is Zoom's MAC chord -- on Windows/Linux the same toggle is a bare
+# Alt press, which has no keycap cell. The old overlay drew it on Windows; it is
+# now scoped to macOS (Control+\, literal CTRL).
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/zoom/bindings.yaml --preview /tmp/zoom_preview
+app: zoom
+match: [zoom, zoom.us]
+title: Zoom Meeting
+output: zoom_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: zoom.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+# Reclaimed artwork renders 1:1: the old cell IS the icon.
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+_wl: &wl { only: [windows, linux] }
+_mac: &mac { only: [macos] }
+
+bindings:
+  # ============================ RECLAIMED from the previously shipped set =====
+  # -- Windows / Linux (the old artwork, unchanged) --
+  - { key: A, mods: [ALT], <<: [*r, *wl], icon: mute.png,         label: "Mute / unmute" }
+  - { key: V, mods: [ALT], <<: [*r, *wl], icon: video.png,        label: "Start / stop video" }
+  - { key: S, mods: [ALT], <<: [*r, *wl], icon: sharescreen.png,  label: "Share screen" }
+  - { key: T, mods: [ALT], <<: [*r, *wl], icon: pauseshare.png,   label: "Pause / resume share" }
+  - { key: R, mods: [ALT], <<: [*r, *wl], icon: localrecord.png,  label: "Local recording" }
+  - { key: C, mods: [ALT], <<: [*r, *wl], icon: cloudrecord.png,  label: "Cloud recording" }
+  - { key: P, mods: [ALT], <<: [*r, *wl], icon: pauserecord.png,  label: "Pause / resume recording" }
+  - { key: N, mods: [ALT], <<: [*r, *wl], icon: switchcamera.png, label: "Switch camera" }
+  - { key: M, mods: [ALT], <<: [*r, *wl], icon: muteall.png,      label: "Mute all except host" }
+  - { key: I, mods: [ALT], <<: [*r, *wl], icon: invite.png,       label: Invite }
+  - { key: U, mods: [ALT], <<: [*r, *wl], icon: participants.png, label: Participants }
+  - { key: W, mods: [CTRL], <<: [*r, *wl], icon: closechat.png,   label: "Close chat" }
+  # Option+Y on the Mac: the one chord that is the same on all three.
+  - { key: Y, mods: [ALT], <<: *r, icon: raisehand.png, label: "Raise / lower hand" }
+  # Mac-only; see the header.
+  - { key: BACKSLASH, mods: [CTRL], <<: [*r, *mac], icon: showcontrols.png, label: "Always show controls" }
+
+  # -- macOS: the same drawings on Zoom's Mac chords --
+  - { key: A, mods: [GUI, SHIFT], <<: [*r, *mac], icon: mute.png,         label: "Mute / unmute" }
+  - { key: V, mods: [GUI, SHIFT], <<: [*r, *mac], icon: video.png,        label: "Start / stop video" }
+  - { key: S, mods: [GUI, SHIFT], <<: [*r, *mac], icon: sharescreen.png,  label: "Share screen" }
+  - { key: T, mods: [GUI, SHIFT], <<: [*r, *mac], icon: pauseshare.png,   label: "Pause / resume share" }
+  - { key: R, mods: [GUI, SHIFT], <<: [*r, *mac], icon: localrecord.png,  label: "Local recording" }
+  - { key: C, mods: [GUI, SHIFT], <<: [*r, *mac], icon: cloudrecord.png,  label: "Cloud recording" }
+  - { key: P, mods: [GUI, SHIFT], <<: [*r, *mac], icon: pauserecord.png,  label: "Pause / resume recording" }
+  - { key: N, mods: [GUI, SHIFT], <<: [*r, *mac], icon: switchcamera.png, label: "Switch camera" }
+  - { key: M, mods: [GUI, CTRL],  <<: [*r, *mac], icon: muteall.png,      label: "Mute all except host" }
+  - { key: I, mods: [GUI],        <<: [*r, *mac], icon: invite.png,       label: Invite }
+  - { key: U, mods: [GUI],        <<: [*r, *mac], icon: participants.png, label: Participants }
+
+  # ============================ ADDED from Zoom's hot-key reference ===========
+  - { key: H,  mods: [ALT],         <<: *wl,  icon: chatpanel.png,   label: "Chat panel" }
+  - { key: H,  mods: [GUI, SHIFT],  <<: *mac, icon: chatpanel.png,   label: "Chat panel" }
+  - { key: F,  mods: [ALT],         <<: *wl,  icon: fullscreen.png,  label: "Full screen" }
+  - { key: F,  mods: [GUI, SHIFT],  <<: *mac, icon: fullscreen.png,  label: "Full screen" }
+  - { key: Q,  mods: [ALT],         <<: *wl,  icon: endmeeting.png,  label: "End meeting" }
+  - { key: W,  mods: [GUI],         <<: *mac, icon: endmeeting.png,  label: "End meeting" }
+  - { key: T,  mods: [ALT, SHIFT],  <<: *wl,  icon: screenshot.png,  label: Screenshot }
+  - { key: T,  mods: [GUI],         <<: *mac, icon: screenshot.png,  label: Screenshot }
+  # Windows/Linux has one key per view; the Mac toggles between them.
+  - { key: F1, mods: [ALT],         <<: *wl,  icon: speakerview.png, label: "Speaker view" }
+  - { key: F2, mods: [ALT],         <<: *wl,  icon: galleryview.png, label: "Gallery view" }
+  - { key: W,  mods: [GUI, SHIFT],  <<: *mac, icon: galleryview.png, label: "Speaker / gallery view" }
+  # Windows/Linux toggles both with Alt+M; the Mac splits them.
+  - { key: U,  mods: [GUI, CTRL],   <<: *mac, icon: unmuteall.png,   label: "Unmute all" }

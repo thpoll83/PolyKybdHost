@@ -594,6 +594,24 @@ def spec_uses_cmdctrl(spec: dict) -> bool:
     return any(uses_cmdctrl(b.get("mods", [])) for b in spec.get("bindings", []))
 
 
+def spec_needs_macos_set(spec: dict) -> bool:
+    """True if the spec describes a macOS set that differs from the default.
+
+    CMDCTRL is one way; the other is a binding whose `only:` or `except:` NAMES
+    macos. ⚠️ Zoom is the case that needed it: its Mac keymap is a pure remap
+    (Alt+A becomes Cmd+Shift+A), so no binding uses CMDCTRL, and every
+    `only: [macos]` line was silently dropped along with the `os: macos:` branch.
+
+    ⚠️ It must NAME macos, not merely differ on it: Sublime's Windows spec scopes
+    a line `only: [windows]` to split it from Linux, and its Mac artwork lives in
+    a separate spec, so treating that as a macOS set would ship a second, wrong
+    one."""
+    if spec_uses_cmdctrl(spec):
+        return True
+    return any(PLAT_MACOS in (_platform_list(b, ONLY_KEY) or []) + (_platform_list(b, EXCEPT_KEY) or [])
+               for b in spec.get("bindings", []))
+
+
 def macos_output(spec: dict) -> str:
     """Filename stem for the macOS artwork set.
 
@@ -958,11 +976,11 @@ def main() -> int:
     result = generate(spec, base_dir)
     spec["_result"] = result
 
-    # A CMDCTRL binding means "Ctrl here, Cmd on macOS", so the spec describes TWO
-    # artwork sets. Render the second one only when the token is actually used —
-    # an app with no CMDCTRL binding keeps emitting exactly the files it did
-    # before, with no `os:` branch to keep in sync.
-    mac_result = generate(spec, base_dir, platform=PLAT_MACOS) if spec_uses_cmdctrl(spec) else None
+    # A CMDCTRL binding means "Ctrl here, Cmd on macOS", and a binding scoped on
+    # or off macOS means the same, so the spec describes TWO artwork sets. Render
+    # the second one only then: an app that does neither keeps emitting exactly
+    # the files it did before, with no `os:` branch to keep in sync.
+    mac_result = generate(spec, base_dir, platform=PLAT_MACOS) if spec_needs_macos_set(spec) else None
     spec["_result_macos"] = mac_result
 
     # The Linux set is rendered only when a binding actually distinguishes Linux

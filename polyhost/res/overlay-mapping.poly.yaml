@@ -101,10 +101,17 @@ gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
   overlay: gimp_template.mods.png
 # macOS reports Zoom's display name, `zoom.us`.
 zoom,zoom.us:
-  overlay: zoom_template.mods.png
+  overlay: [zoom_template.mods.png, zoom_template.combo.mods.png]
   title: Zoom Meeting
+  os:
+    macos:
+      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png]
+      title: Zoom Meeting
 discord:
-  overlay: discord_template.mods.png
+  overlay: [discord_template.mods.png, discord_template.combo.mods.png, discord_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 kicad:
@@ -187,6 +194,9 @@ lockapp:
   overlay: windows_lockscreen_template.png
 slack:
   overlay: [slack_template.mods.png, slack_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
 notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
