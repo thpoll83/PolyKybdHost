@@ -18,7 +18,8 @@ and relative links were adjusted to suit a standalone file.
     openpyxl` without it; measured 2026-09-27 on a freshly reset container), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, `res/icon_fetch` (cairosvg,
-    added to the list 2026-09-23 after it cost a full run 8 tests) and the `host_client`
+    added to the list 2026-09-23 after it cost a full run 8 tests; `openpyxl` from `tools/requirements.txt`, 2026-09-27: without it the keycap
+    previews lose their letter legends and 10 preview/editor tests fail) and the `host_client`
     GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
     env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.

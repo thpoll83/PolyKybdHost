@@ -11,8 +11,9 @@ disk:
 * **a hard fault** (SIGSEGV/SIGABRT from Qt or a C extension). Nothing Python
   ever runs again, so no ``logging`` call can report it.
 
-:func:`install` closes both holes: ``faulthandler`` writes native tracebacks for
-every thread into ``crash_log.txt``, and the two ``excepthook``s route Python
+:func:`install` closes both holes: ``faulthandler`` writes native tracebacks
+into ``crash_log.txt`` (every thread's, except on Windows; see
+:func:`dump_all_threads`), and the two ``excepthook``s route Python
 tracebacks into the caller's logger *and* that file. Both are best-effort — a
 failure to install crash reporting must never stop the app from starting.
 
@@ -334,6 +335,30 @@ def _flush_logging():
             pass
 
 
+def dump_all_threads(platform=None):
+    """Whether faulthandler should walk EVERY thread's stack in a dump.
+
+    ⚠️ **Not on Windows: there the walk itself killed the daemon.** Windows
+    faulthandler hooks SEH with a vectored handler, so it also dumps FIRST-CHANCE
+    exceptions the owning DLL then handles, such as a COM ``0x80010108``
+    (RPC_E_DISCONNECTED) raised on a native RPC thread. With ``all_threads`` it
+    then reads every other thread's frames while those threads keep running,
+    which CPython documents as unsafe. On 2026-09-25 a daemon that had run for
+    three hours took one such handled COM error, and the dump broke off mid-line
+    in the window-polling thread's frame with ``Windows fatal exception: access
+    violation``. The process the dump was written to protect died from the dump.
+
+    With ``all_threads=False`` a dump covers only the faulting thread, which is
+    the thread running the handler, so there is no cross-thread read. A real
+    fault on a Python thread still records its full stack. What is lost is the
+    other threads' stacks, and a handled COM error on a native thread now leaves
+    a short record instead of a full census.
+    """
+    if platform is None:
+        platform = sys.platform
+    return platform != "win32"
+
+
 def install(log=None, filename=CRASH_LOG):
     """Install faulthandler + the exception hooks. Idempotent.
 
@@ -366,7 +391,8 @@ def install(log=None, filename=CRASH_LOG):
             import faulthandler
             # `file=` is REQUIRED here, not a nicety: the default is sys.stderr,
             # which is None under pythonw, and faulthandler.enable() then raises.
-            faulthandler.enable(file=_crash_file, all_threads=True)
+            faulthandler.enable(file=_crash_file,
+                                all_threads=dump_all_threads())
         except Exception as e:  # noqa: BLE001
             log.warning("faulthandler not enabled (%s: %s).", type(e).__name__, e)
 

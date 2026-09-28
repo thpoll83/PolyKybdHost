@@ -11,6 +11,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from polyhost.util import crash_log
 
@@ -74,6 +75,26 @@ class InstallTest(CrashLogTestBase):
         would raise, leaving no native-fault capture at all."""
         crash_log.install(self.log, str(self.path))
         self.assertTrue(faulthandler.is_enabled())
+
+    def test_faulthandler_walks_all_threads_except_on_windows(self):
+        """On Windows faulthandler also dumps HANDLED first-chance exceptions,
+        and walking the other threads' running stacks during such a dump
+        crashed the daemon (2026-09-25). Elsewhere the full census stays."""
+        self.assertFalse(crash_log.dump_all_threads("win32"))
+        self.assertTrue(crash_log.dump_all_threads("linux"))
+        self.assertTrue(crash_log.dump_all_threads("darwin"))
+
+    def test_install_passes_the_platform_choice_to_faulthandler(self):
+        for platform, expected in (("win32", False), ("linux", True)):
+            with self.subTest(platform=platform), \
+                    mock.patch.object(crash_log.sys, "platform", platform), \
+                    mock.patch("faulthandler.enable") as enable:
+                crash_log._installed = False
+                crash_log.install(self.log, str(self.path))
+                self.assertEqual(enable.call_args.kwargs["all_threads"], expected)
+                crash_log.stop_dump_watch()
+                crash_log._crash_file.close()
+                crash_log._crash_file = None
 
     def test_unwritable_path_still_installs_the_hooks(self):
         before = sys.excepthook

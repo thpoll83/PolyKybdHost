@@ -70,9 +70,12 @@ def exclusive(path, timeout=2.0):
     The lock file is never unlinked: removing it would race another process
     that already has it open, and an empty file costs nothing."""
     directory = os.path.dirname(path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
     try:
+        # Inside the try, like the open: a directory that cannot be created is
+        # one more way of not getting the lock, and raising here would break
+        # the never-raise contract of `PolySettings.save()` (CodeRabbit, #278).
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     except OSError:
         # Can't even create the lock file (read-only dir, exhausted handles).

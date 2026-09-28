@@ -144,6 +144,16 @@ purpose is proving whether the app crashed, shipped into none of them.
       It writes nothing while the file is quiet. A marker line is never answered, so the GUI and the daemon
       cannot ping-pong, and the surviving process dates the dump a fatal fault
       leaves behind.
+    - ⚠️ **On Windows a dump covers the faulting thread only**
+      (`crash_log.dump_all_threads()`). With `all_threads=True`, the dump for a
+      handled `0x80010108` walked the other threads' stacks while they ran, and
+      that walk killed the daemon (2026-09-25): the dump broke off mid-line in
+      the window-polling thread's frame with `Windows fatal exception: access
+      violation`, after three hours and ONE handled COM error. Do not turn the
+      full census back on for Windows to get more context from a dump; the
+      handled errors that trigger it are exactly the ones that must stay
+      harmless. A dump from an older host that breaks off mid-line *during* a
+      first-chance dump is this crash, not the COM error's.
     - **`crash_summary` counts each `Windows fatal exception` line as its own
       dump.** It used to count only `Fatal Python error` / `Current thread`, so
       those 36 dumps summarised as no faults at all.

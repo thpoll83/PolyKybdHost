@@ -728,9 +728,19 @@ class PolyForwarder(QApplication):
                 # set_all over the FULL dict: the dialog only saw a slice, so
                 # writing `updated` alone would drop every key it was not shown.
                 current.update(changed)
-                settings.set_all(current)
-                self.log.info("Forwarder settings changed: %s",
-                              ", ".join(sorted(changed)))
+                if settings.set_all(current):
+                    self.log.info("Forwarder settings changed: %s",
+                                  ", ".join(sorted(changed)))
+                else:
+                    # This PolySettings is thrown away when the dialog closes,
+                    # and the forwarder reads everything back from the file, so
+                    # an unsaved change here is simply lost. save() no longer
+                    # raises, so say so rather than close as if it worked.
+                    QMessageBox.warning(
+                        None, "PolyForwarder settings",
+                        "The settings could not be saved to the settings file, "
+                        "so they will not take effect. Another program may be "
+                        "holding it open. Try again, or see the log.")
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self.set_style()
