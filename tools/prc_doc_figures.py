@@ -4,9 +4,9 @@ Writes three SVGs, every number taken from the real table and encoder:
 
 - ``prc-stencil.svg``: the 10 neighbours that predict a pixel.
 - ``prc-square-costs.svg``: a solid 10 x 10 square, each pixel labelled with
-  what it cost in bits.
+  its code length in bits.
 - ``prc-quick-open-costs.svg``: VS Code's Quick Open icon, each pixel coloured
-  by its cost, with three pixels called out.
+  by its code length, with three pixels called out.
 
     python tools/prc_doc_figures.py ../polykybd-docs/src/assets/reference
 
@@ -45,21 +45,21 @@ def cost_colour(bits: float) -> str:
 
 
 def costs(roi):
-    """Per-pixel cost in bits and P(ink), as 2-D lists, for a ROI coded with table v1."""
+    """Per-pixel code length (bits) and P(set), as 2-D lists, for a ROI coded with table v1."""
     tbl = prc_codec.table()
     h, w = len(roi), len(roi[0])
     ctx = prc_codec.contexts(roi)
-    cost, pink = [], []
+    cost, pset = [], []
     for y in range(h):
         crow, prow = [], []
         for x in range(w):
             p0 = tbl[ctx[y * w + x]] / 256
-            ink = bool(roi[y][x])
-            crow.append(-math.log2(1 - p0 if ink else p0))
+            is_set = bool(roi[y][x])
+            crow.append(-math.log2(1 - p0 if is_set else p0))
             prow.append(1 - p0)
         cost.append(crow)
-        pink.append(prow)
-    return cost, pink
+        pset.append(prow)
+    return cost, pset
 
 
 def svg(width, height, body):
@@ -69,7 +69,7 @@ def svg(width, height, body):
 
 
 def legend(x, y, width):
-    """Horizontal cost scale with tick labels."""
+    """Horizontal code-length scale with tick labels."""
     parts = [f'<defs><linearGradient id="scale">']
     for t, c in STOPS:
         parts.append(f'<stop offset="{t}" stop-color="rgb{c}"/>')
@@ -82,7 +82,7 @@ def legend(x, y, width):
         parts.append(f'<text x="{tx:.1f}" y="{y + 30}" fill="{MUTED}" font-size="12" text-anchor="middle" {FONT}>'
                      f'{bits:g} bit{"s" if bits != 1 else ""}</text>')
     parts.append(f'<text x="{x}" y="{y - 8}" fill="{MUTED}" font-size="12" {FONT}>'
-                 f'cost of a pixel (bits): predicted = cheap, surprise = expensive</text>')
+                 f'code length per pixel (bits): predicted = short, mispredicted = long</text>')
     return "\n".join(parts)
 
 
@@ -91,7 +91,7 @@ def stencil():
     ox, oy = 40, 50
     known = {(dy, dx): i + 1 for i, (dy, dx) in enumerate(prc_codec.TEMPLATE)}
     parts = [f'<text x="{ox}" y="30" fill="{TEXT}" font-size="15" {FONT}>'
-             f'The 10 neighbours that predict pixel ?</text>']
+             f'Causal context template: the 10 pixels that predict pixel ?</text>']
     for dy in range(-2, 1):
         for dx in range(-3, 4):
             x, y = ox + (dx + 3) * c, oy + (dy + 2) * c
@@ -116,7 +116,7 @@ def stencil():
         parts.append(f'<text x="{ox + 22}" y="{y}" fill="{MUTED}" font-size="13" {FONT}>{label}</text>')
     y = ly + len(chips) * 22 + 6
     parts.append(f'<text x="{ox}" y="{y}" fill="{TEXT}" font-size="13" {FONT}>'
-                 f'The table maps each context to a probability. Outside the box counts as empty.</text>')
+                 f'The table maps each context to P(clear). Pixels outside the ROI count as clear.</text>')
     return svg(ox * 2 + 7 * c + 80, y + 20, "\n".join(parts))
 
 
@@ -128,7 +128,7 @@ def square():
     c = 52
     ox, oy = 30, 50
     parts = [f'<text x="{ox}" y="30" fill="{TEXT}" font-size="15" {FONT}>'
-             f'A solid 10 × 10 square: bits spent on each pixel</text>']
+             f'A solid 10 × 10 square: code length of each pixel (bits)</text>']
     for y in range(10):
         for x in range(10):
             px, py = ox + x * c, oy + y * c
@@ -139,7 +139,7 @@ def square():
                          f'text-anchor="middle" {FONT}>{label}</text>')
     by = oy + 10 * c + 30
     parts.append(f'<text x="{ox}" y="{by}" fill="{TEXT}" font-size="14" {FONT}>'
-                 f'Total {total:.1f} bits for 100 pixels. Payload {payload} bytes; the raw box takes 13.</text>')
+                 f'{total:.1f} bits of information for 100 pixels. Payload {payload} bytes; uncoded, 13.</text>')
     parts.append(legend(ox, by + 40, 10 * c))
     return svg(ox * 2 + 10 * c, by + 90, "\n".join(parts))
 
@@ -156,14 +156,14 @@ def quick_open():
     img = np.unpackbits(np.frombuffer(ov.all_bytes, dtype=np.uint8)).reshape(40, 72).astype(bool)
     top, left, h, w = prc_codec.roi_box(img)
     roi = img[top:top + h, left:left + w].astype(int).tolist()
-    cost, pink = costs(roi)
+    cost, pset = costs(roi)
     total = sum(map(sum, cost))
     payload = len(prc_codec.encode(roi))
     flat = sorted((cost[y][x], y, x) for y in range(h) for x in range(w))
     cheap = [v for v, _, _ in flat if v < 0.1]
     dear = [v for v, _, _ in flat if v >= 1]
 
-    # Three call-outs: the dearest ink pixel, the dearest empty pixel, a cheap ink pixel.
+    # Three call-outs: the longest set pixel, the longest clear pixel, a short set pixel.
     def first(pred):
         return next((y, x) for v, y, x in reversed(flat) if pred(y, x, v))
     a = first(lambda y, x, v: roi[y][x])
@@ -174,7 +174,7 @@ def quick_open():
     c = 18
     ox, oy = 30, 50
     parts = [f'<text x="{ox}" y="30" fill="{TEXT}" font-size="15" {FONT}>'
-             f'VS Code Quick Open ({w} × {h} box): bits spent on each pixel</text>']
+             f'VS Code Quick Open ({w} × {h} px ROI): code length of each pixel</text>']
     for y in range(h):
         for x in range(w):
             px, py = ox + x * c, oy + y * c
@@ -191,18 +191,18 @@ def quick_open():
         parts.append(f'<text x="{px + c + 6}" y="{py - c}" fill="{ACCENT}" font-size="15" font-weight="bold" '
                      f'text-anchor="middle" {FONT}>{name}</text>')
     for name, (y, x) in calls:
-        what = "ink" if roi[y][x] else "empty"
-        lines = [f'{name}: {what}, table said P(ink) = {100 * pink[y][x]:.1f}%',
-                 f'   cost {cost[y][x]:.2f} bits']
+        what = "set" if roi[y][x] else "clear"
+        lines = [f'{name}: {what}, table gave P(set) = {100 * pset[y][x]:.1f}%',
+                 f'   code length {cost[y][x]:.2f} bits']
         for i, line in enumerate(lines):
             parts.append(f'<text x="{tx}" y="{ty + i * 18}" fill="{ACCENT if i == 0 else TEXT}" font-size="14" '
                          f'xml:space="preserve" {FONT}>{line}</text>')
         ty += 52
-    stats = [f'{h * w} pixels, {total:.1f} bits in total',
+    stats = [f'{h * w} pixels, {total:.1f} bits of information',
              f'payload {payload} bytes (+ 6-byte header)',
-             f'{len(cheap)} pixels ({100 * len(cheap) / (h * w):.0f}%) cost &lt; 0.1 bit: {sum(cheap):.0f} bits in all',
-             f'{len(dear)} pixels ({100 * len(dear) / (h * w):.0f}%) cost ≥ 1 bit: {100 * sum(dear) / total:.0f}% of all bits',
-             'white outline = ink']
+             f'{len(cheap)} pixels ({100 * len(cheap) / (h * w):.0f}%) code &lt; 0.1 bit: {sum(cheap):.0f} bits in total',
+             f'{len(dear)} pixels ({100 * len(dear) / (h * w):.0f}%) code ≥ 1 bit: {100 * sum(dear) / total:.0f}% of all bits',
+             'white outline = set pixel']
     for i, line in enumerate(stats):
         parts.append(f'<text x="{tx}" y="{ty + 10 + i * 20}" fill="{TEXT if i < 4 else MUTED}" font-size="14" {FONT}>{line}</text>')
     by = oy + h * c + 40
