@@ -144,10 +144,17 @@ def parse(data: bytes) -> tuple[int, list[bytes]]:
         if first != nxt or last < first:
             raise IconLibraryError("records are not contiguous from id 0")
         for k in range(last - first + 1):
+            # Bounds first, so a short bundle raises IconLibraryError (a
+            # ValueError the callers catch), not struct.error or IndexError.
+            if glyph_off + (k + 1) * GLYPH_SIZE > len(data):
+                raise IconLibraryError(f"icon {first + k}: glyph table out of range")
             bofs, w, h, _xa, x0, y0 = struct.unpack_from(_GLYPH, data, glyph_off + k * GLYPH_SIZE)
             if w <= 0 or h <= 0 or x0 < 0 or y0 < 0 or x0 + w > FRAME_W or y0 + h > FRAME_H:
                 raise IconLibraryError(f"icon {first + k}: box outside the keycap")
-            bits = data[bitmap_off + bofs:bitmap_off + bofs + (w * h + 7) // 8]
+            end = bitmap_off + bofs + (w * h + 7) // 8
+            if end > len(data):
+                raise IconLibraryError(f"icon {first + k}: bitmap out of range")
+            bits = data[bitmap_off + bofs:end]
             frame = bytearray(FRAME_BYTES)
             src = 0
             for y in range(h):

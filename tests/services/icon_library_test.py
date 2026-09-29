@@ -90,6 +90,25 @@ class FormatTest(unittest.TestCase):
         with self.assertRaises(il.IconLibraryError):
             il.parse(bytes(data))
 
+    def _recrc(self, data):
+        struct.pack_into("<I", data, 24, binascii.crc32(bytes(data[32:])) & 0xFFFFFFFF)
+        return bytes(data)
+
+    def test_a_glyph_table_past_the_end_is_refused_not_crashed(self):
+        """CodeRabbit on #291: a CRC-valid bundle whose offsets overrun it
+        raised struct.error, which the send path does not catch."""
+        data = bytearray(il.build([box(40, 2, 3, 3)], 1))
+        struct.pack_into("<I", data, 32 + 4, len(data) - 2)     # glyph_off
+        with self.assertRaises(il.IconLibraryError):
+            il.parse(self._recrc(data))
+
+    def test_a_bitmap_past_the_end_is_refused_not_crashed(self):
+        data = bytearray(il.build([box(40, 2, 3, 3)], 1))
+        glyph_off = struct.unpack_from("<I", data, 32 + 4)[0]
+        struct.pack_into("<H", data, glyph_off, 0xFFFF)          # bitmapOffset
+        with self.assertRaises(il.IconLibraryError):
+            il.parse(self._recrc(data))
+
     def test_frame_index_maps_pixels_to_the_first_id(self):
         frames = [box(40, 2, 3, 3), box(50, 2, 3, 3), box(40, 2, 3, 3)]
         _, index = il.frame_index(il.build(frames, 1))

@@ -1561,10 +1561,15 @@ class PolyKybd:
             for slot, (_, _, _, ov) in pending.items():
                 if slot not in refused:
                     self._count_alternatives(ov)
-            for slot in refused:
+            for i, slot in enumerate(refused):
                 _, kc, mod, ov = pending[slot]
                 more = upload(slot, kc, mod, ov)
                 if more < 0:
+                    # `pending` is out of `fills` already, so discard_all()
+                    # cannot see these: forget this slot and the ones after it,
+                    # whose images never reached the keyboard.
+                    for s in reversed(refused[i:]):
+                        cache.forget_slot(s)
                     return -1
                 sent += more
             return sent

@@ -124,6 +124,30 @@ class IconFillTest(unittest.TestCase):
         self.assertEqual(keeb.stat_chosen["fill"], 1)
         self.assertTrue(IMAGE_CMDS & set(_cmds(dev)), "the refused two must be uploaded")
 
+    def test_a_FAILED_fallback_upload_forgets_the_slots_it_never_sent(self):
+        """CodeRabbit on #291: a refused pair whose fallback upload then fails
+        left its slot in the MRU cache, a stale hit the next switch never
+        re-sends."""
+        keeb, dev = _keeb(self.version)
+        read, write = dev.read, dev.write
+
+        def refuse_at_1(size, timeout=0):
+            if dev.last_payload()[:2] == bytes([0x50, Cmd.FILL_POOL_FROM_ICON.value]):
+                return pad(b"P" + bytes([Cmd.FILL_POOL_FROM_ICON.value]) + b"!" + bytes([1]))
+            return read(size, timeout)
+
+        def image_writes_fail(report):
+            if report[1] == 0x50 and report[2] in IMAGE_CMDS:
+                raise OSError("unplugged mid-send")
+            return write(report)
+        dev.read, dev.write = refuse_at_1, image_writes_fail
+        cache = OverlayMRUCache(600)
+        conv = syn.SyntheticConverter({Modifier.NO_MOD: {
+            kc: OverlayData(DS, m) for kc, m in zip(KEYS, self.masks)}})
+        self.assertFalse(keeb.send_overlays_mru(["syn"], cache, synthetic={"syn": conv}))
+        self.assertEqual(len(cache.get_occupied_slots()), 1,
+                         "only the one applied fill may stay cached")
+
     def test_NO_REPLY_uploads_the_whole_report(self):
         """A frozen keyboard (DOOM) drops cmd 42 without answering."""
         keeb, dev = _keeb(self.version)
