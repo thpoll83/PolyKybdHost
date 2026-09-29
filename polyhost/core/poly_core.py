@@ -922,7 +922,12 @@ class PolyCore(Observable):
         # under the rule it could never be drawn there (measured 2026-09-23:
         # `mask=True slug=res:polykybd@1 shortcuts=0`, nothing sent).
         from polyhost.services.app_icons import POLYKYBD_SLUG
-        if not shortcuts and slug != POLYKYBD_SLUG:
+        # ⚠️ A TEMPLATE counts as the icons the rule asks for. Its keycaps are
+        # the promise the mark confirms, so dropping the mark there leaves ESC
+        # blank on exactly the apps a template covers -- a template that leaves
+        # ESC to the program mark (Chrome, JetBrains) showed no mark at all
+        # whenever the harvest found no accelerators (field, CLion, 2026-09-29).
+        if not shortcuts and slug != POLYKYBD_SLUG and not (slug and template_files):
             # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
             # the one case where "what we could resolve" and "what is worth
             # drawing" come apart.

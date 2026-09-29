@@ -687,6 +687,28 @@ class TemplateGapFillTest(unittest.TestCase):
         _tick(core)
         core.worker.submit.assert_not_called()
 
+    def test_a_template_with_a_MARK_and_no_shortcuts_still_sends_the_mark(self):
+        """⚠️ Field, CLion 2026-09-29: the JetBrains template leaves ESC to the
+        program mark, the UIA harvest found no accelerators, and the
+        mark-needs-shortcuts rule dropped the mark -- so ESC stayed blank. The
+        template's own keycaps are the shortcuts that rule asks for."""
+        core = make_core(mask=_mask(), shortcuts={})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "jetbrains_template.mods.png"
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+        self.assertEqual(core._told_mark_dropped, set())
+        entry = core.device_mgr.all_entries[0]
+        core.worker.submit.call_args.args[1](threading.Event())
+        filenames, synthetic = (entry.device.send_overlays_mru.call_args.args[0],
+                                entry.device.send_overlays_mru.call_args.kwargs["synthetic"])
+        self.assertTrue(filenames[0].endswith("jetbrains_template.mods.png"))
+        self.assertEqual(len(synthetic), 1, "the mark, and nothing else")
+
+    def test_NO_template_a_mark_and_no_shortcuts_is_still_dropped(self):
+        """The rule itself stands where no template covers the app."""
+        self.assertIsNone(PolyCore._generic_signature("si:gimp", {}, ()))
+
     def test_the_signature_separates_two_apps_with_the_SAME_generic_half(self):
         """Same mark, same shortcuts, different template: the second must still
         send, or its template never reaches the device."""
