@@ -66,7 +66,7 @@ bindings:
 
   # -- same Ctrl->Cmd chord on every platform --
   - { key: B,  mods: [CMDCTRL],        icon: gotodeclaration.png, <<: *reclaimed, label: "Go to declaration", source: reclaimed }
-  - { key: F,  mods: [CMDCTRL],        icon: find.png,            <<: *reclaimed, label: Find,                source: reclaimed }
+  - { key: F,  mods: [CMDCTRL],        icon: find.png,            label: Find,                source: "shared concept (lexicon)" }
   - { key: U,  mods: [CMDCTRL],        icon: gotosuper.png,       <<: *reclaimed, label: "Go to super method", source: reclaimed }
   - { key: F2, mods: [CMDCTRL],        except: [linux_kde], icon: stop.png,            <<: *reclaimed, label: Stop,                source: reclaimed }
   - { key: B,  mods: [CMDCTRL, SHIFT], icon: gototypedecl.png,    <<: *reclaimed, label: "Go to type declaration", source: reclaimed }
@@ -97,8 +97,8 @@ bindings:
   - { key: R,    mods: [CTRL],        only: [macos],          icon: run.png,   <<: *reclaimed, label: Run,   source: reclaimed }
   - { key: N,    mods: [CTRL, SHIFT], only: [windows, linux], icon: gotofile.png, <<: *reclaimed, label: "Go to file", source: reclaimed }
   - { key: O,    mods: [GUI, SHIFT],  only: [macos],          icon: gotofile.png, <<: *reclaimed, label: "Go to file", source: reclaimed }
-  - { key: S,    mods: [CTRL, ALT],   only: [windows, linux], icon: settings.png, <<: *reclaimed, label: Settings, source: reclaimed }
-  - { key: ",",  mods: [GUI],         only: [macos],          icon: settings.png, <<: *reclaimed, label: Settings, source: reclaimed }
+  - { key: S,    mods: [CTRL, ALT],   only: [windows, linux], icon: settings.png, label: Settings, source: "shared concept (lexicon)" }
+  - { key: ",",  mods: [GUI],         only: [macos],          icon: settings.png, label: Settings, source: "shared concept (lexicon)" }
   - { key: HOME, mods: [CTRL, ALT],   only: [windows, linux], icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
   - { key: UP,   mods: [GUI, CTRL],   only: [macos],          icon: gotorelated.png, <<: *reclaimed, label: "Go to related symbol", source: reclaimed }
   # Find Usages: Alt+F7 in $default, XWin and on macOS; GNOME/KDE move it to Alt+Shift+7.
@@ -218,7 +218,7 @@ bindings:
   - { key: DELETE, mods: [GUI], only: [macos],          icon: safedelete.png, label: "Safe delete" }
 
   # -- run / debug / build --
-  - { key: F8,  mods: [CMDCTRL], except: [linux_kde], icon: togglebreakpoint.png, label: "Toggle breakpoint" }
+  - { key: F8,  mods: [CMDCTRL], except: [linux_kde], icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: "reclaimed (VS Code breakpoint, shared)" }
   - { key: F9,  mods: [CMDCTRL], except: [linux_kde], icon: build.png,            label: "Build project" }
   # ⌘R is Replace on macOS, so Rerun is drawn where it does not collide.
   - { key: F5,  mods: [CTRL], only: [windows, linux], except: [linux_kde], icon: rerun.png, label: "Rerun" }
@@ -262,7 +262,7 @@ bindings:
   - { key: L,   mods: [ALT, SHIFT],  only: [linux_kde], icon: reformat.png,        <<: *reclaimed, label: "Reformat code",    source: reclaimed }
   - { key: "0", mods: [CTRL],        only: [linux_kde], icon: win_structure.png,     label: "File structure" }
   - { key: V,   mods: [ALT, SHIFT],  only: [linux_kde], icon: introducevariable.png, label: "Introduce variable" }
-  - { key: "8", mods: [CTRL],        only: [linux_kde], icon: togglebreakpoint.png,  label: "Toggle breakpoint" }
+  - { key: "8", mods: [CTRL],        only: [linux_kde], icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: "reclaimed (VS Code breakpoint, shared)" }
   - { key: "9", mods: [CTRL],        only: [linux_kde], icon: build.png,             label: "Build project" }
   - { key: "5", mods: [CTRL],        only: [linux_kde], icon: rerun.png,             label: "Rerun" }
   - { key: "4", mods: [CTRL],        only: [linux_kde], icon: closetab.png,          label: "Close tab" }

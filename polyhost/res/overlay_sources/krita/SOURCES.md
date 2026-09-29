@@ -95,6 +95,9 @@ which stays visually distinct from `edit-copy` (Copy).
 
 For painting actions with no clean Fluent match (drawn in `fetch_icons.py`):
 
+- `brushdec.png`, `brushinc.png`, `fillbg.png`, `fillfg.png` are Photoshop's drawings,
+  shared pixel-for-pixel. Fill FG = solid square, fill BG = framed square (Krita
+  had them the other way round). `fetch_icons.py` leaves these committed files as-is.
 - `brushdec.png` — a small filled dot (decrease brush size).
 - `brushinc.png` — a large filled dot (increase brush size). The two read as a
   size pair side by side on `[` / `]`.

@@ -34,7 +34,7 @@ GPL-3.0 toolbar icons — switched to all-MIT deliberately.)
 | close | Document Dismiss | goto (Go to line) | Arrow Down |
 | copy | Copy | findnext | Chevron Right |
 | cut | Cut | findfiles | Document Search |
-| paste | Clipboard Paste | run (F5) | Play |
+| paste | Clipboard Paste | run (F5) | IDE run triangle (committed, shared with JetBrains/VS Code) |
 | undo | Arrow Undo | redo | Arrow Redo |
 
 Line/row-specific glyphs are chosen where a generic one would mislead
