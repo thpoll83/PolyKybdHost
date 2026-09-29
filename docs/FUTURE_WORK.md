@@ -102,3 +102,23 @@ lexicon also draws** (`settings`).
 **The tell, if it ever happens:** that app, and only that app, loses icons it should
 have. **The fix** is to exempt words the lexicon itself names, rather than to special-
 case the app.
+
+---
+
+## Shorten the overlay rate-limit pause for cmd 41/42 reports
+
+**Status:** measured, not proposed. `send_overlays_mru` sleeps
+`delay_time_after_max_hid_messages` (0.2 s) after every
+`max_hid_message_before_delay` (15) image reports. **The pause exists to keep the
+keyboard responsive to typing while a burst of images arrives.** In perf run 1156
+(2026-09-29) it was 3.6 s of a 5.3 s cold switch (68%) and 1.2 of 2.1 s on a smaller
+set. The firmware spent about 3.4 ms per report, with 2 main-loop iterations of
+10 ms or more across the 208-report burst. With icon fills (cmd 42) and PRC (cmd 41)
+a large cold switch is 32 reports, so two pauses are 0.4 s of an 0.8 s switch.
+
+**Why it is deferred.** None of the numbers above measure what the pause is for.
+Report counts and main-loop iteration histograms say nothing about whether a key
+pressed mid-burst is seen promptly, and the perf replay fixtures were recorded
+before PRC with the pauses in. **What would settle it:** a perf workload that
+presses a key (or injects a matrix event) during a burst without pauses and measures
+the time until the host sees it, compared against the same burst with them.

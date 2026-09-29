@@ -1451,6 +1451,10 @@ class PolyKybd:
         pause_s = 0.0
         hid_msg_counter = 0
         hid_msg_counter_old = 0
+        # The rate-limit pause (every MAX_MSG_BEFORE_DELAY image reports, sleep
+        # DELAY_TIME_AFTER_MAX_MSG) keeps the keyboard responsive to typing
+        # while a burst of images arrives. It is most of a cold switch's wall
+        # time; see docs/FUTURE_WORK.md before shortening or skipping it.
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
         DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
 
