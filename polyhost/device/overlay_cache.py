@@ -153,7 +153,7 @@ class OverlayMRUCache:
         reached the device.
 
         ``forget`` alone is not enough for an upload that is queued rather than
-        sent at once (a context-coded image waiting for its report to fill): a
+        sent at once (a PRC-coded image waiting for its report to fill): a
         later key with the same bytes dedups onto the slot in the meantime, and
         forgetting only the first key would leave that alias as a stale hit."""
         for key in [k for k, s in self._cache.items() if s == slot]:

@@ -1,13 +1,13 @@
-"""Packing context-coded overlay images into cmd 41 reports (protocol v19+).
+"""Packing PRC overlay images into cmd 41 reports (protocol v19+).
 
-A context-coded image averages ~28 bytes, so most fit one report and small ones
-share it. :class:`CtxReportPacker` collects records until the next one would not
+A PRC-coded image averages ~28 bytes, so most fit one report and small ones
+share it. :class:`PrcReportPacker` collects records until the next one would not
 fit, then sends the report. The firmware parses records until a keycode byte of
 0, so the zero padding the HID layer adds ends the list.
 
 ⚠️ A queued image is NOT on the device yet, but the MRU cache already records
-its slot. Every path that gives up before :meth:`CtxReportPacker.flush` succeeds
-must call :meth:`CtxReportPacker.discard`, or those slots become permanent stale
+its slot. Every path that gives up before :meth:`PrcReportPacker.flush` succeeds
+must call :meth:`PrcReportPacker.discard`, or those slots become permanent stale
 cache hits: the keycap shows whatever really occupies the slot and the image is
 never re-sent.
 """
@@ -15,29 +15,29 @@ from __future__ import annotations
 
 from typing import Callable
 
-from polyhost.util import ctx_codec
+from polyhost.util import prc_codec
 
 
-def ctx_record(overlay, keycode: int, modifier: int, capacity: int) -> bytes | None:
+def prc_record(overlay, keycode: int, modifier: int, capacity: int) -> bytes | None:
     """The cmd 41 record for ``overlay``, or None if it does not fit one report.
 
     ``overlay`` is an OverlayData. The payload is computed once and cached on the
     object, since the same image is offered again on every cache miss."""
-    payload = getattr(overlay, "_ctx_payload", None)
+    payload = getattr(overlay, "_prc_payload", None)
     if payload is None:
         import numpy as np
         mask = np.unpackbits(np.frombuffer(overlay.all_bytes, dtype=np.uint8)).reshape(40, 72)
         roi = mask[overlay.top:overlay.bottom, overlay.left:overlay.right]
-        payload = ctx_codec.encode(roi)
-        overlay._ctx_payload = payload
-    if ctx_codec.RECORD_HDR + len(payload) > capacity or len(payload) > ctx_codec.MAX_RECORD_PAYLOAD:
+        payload = prc_codec.encode(roi)
+        overlay._prc_payload = payload
+    if prc_codec.RECORD_HDR + len(payload) > capacity or len(payload) > prc_codec.MAX_RECORD_PAYLOAD:
         return None
-    return ctx_codec.pack_record(keycode, modifier, overlay.top, overlay.left,
+    return prc_codec.pack_record(keycode, modifier, overlay.top, overlay.left,
                                  overlay.bottom - overlay.top, overlay.right - overlay.left,
                                  payload)
 
 
-class CtxReportPacker:
+class PrcReportPacker:
     """Fills cmd 41 reports with records and sends each one when it is full.
 
     ``send(payload) -> bool`` transmits one report's records (the caller adds

@@ -21,7 +21,7 @@ from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
 from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
-from polyhost.device.ctx_packing import CtxReportPacker, ctx_record
+from polyhost.device.prc_packing import PrcReportPacker, prc_record
 from polyhost.services import iso_lang_country
 
 # Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
@@ -82,10 +82,10 @@ UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
 # this the delay is the firmware's old compile-time constant (2 minutes) and there
 # is nothing to read or set, so the menu greys out rather than NACKing at runtime.
 IDLE_TIMEOUT_MIN_PROTOCOL = 18
-# Minimum firmware PROTOCOL_VERSION for context-coded overlay images (cmd 41).
+# Minimum firmware PROTOCOL_VERSION for PRC overlay images (cmd 41).
 # Below it the four older encodings are all the firmware understands; the send
 # path simply never offers the fifth, so nothing greys out.
-CTX_OVERLAY_MIN_PROTOCOL = 19
+PRC_OVERLAY_MIN_PROTOCOL = 19
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -107,7 +107,7 @@ FEATURE_MIN_PROTOCOL = {
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
     "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
     "idle_timeout": IDLE_TIMEOUT_MIN_PROTOCOL,
-    "ctx_overlay": CTX_OVERLAY_MIN_PROTOCOL,
+    "prc_overlay": PRC_OVERLAY_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1224,11 +1224,11 @@ class PolyKybd:
                 "send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
-    def _send_ctx_report(self, records: bytes) -> bool:
-        """One cmd 41 report carrying ``records`` (see device/ctx_packing.py)."""
-        result, msg = self.hid.send_multiple(compose_cmd(Cmd.SEND_CTX_OVERLAY) + records)
+    def _send_prc_report(self, records: bytes) -> bool:
+        """One cmd 41 report carrying ``records`` (see device/prc_packing.py)."""
+        result, msg = self.hid.send_multiple(compose_cmd(Cmd.SEND_PRC_OVERLAY) + records)
         if not result:
-            self.log.error("Error sending context-coded overlay report (%s)", msg)
+            self.log.error("Error sending PRC-coded overlay report (%s)", msg)
         return result
 
     def send_overlay_roi_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, compressed: bool) -> int:
@@ -1377,13 +1377,13 @@ class PolyKybd:
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
-        # Context-coded images (protocol v19+): an image whose record fits one
+        # PRC-coded images (protocol v19+): an image whose record fits one
         # report goes into a shared cmd 41 report instead of its own upload. That
         # is never more reports than the best older encoding (at least one), and
         # two small images share one. Larger images keep the old encodings.
         packer = None
-        if self.supports("ctx_overlay"):
-            packer = CtxReportPacker(self._send_ctx_report,
+        if self.supports("prc_overlay"):
+            packer = PrcReportPacker(self._send_prc_report,
                                      self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
         with cache.batch():
             # zip, not `for converter in converters`: the cache key below names
@@ -1445,7 +1445,7 @@ class PolyKybd:
                                 keycode, modifier, pool_slot, pool_kc, pool_mod)
                             record = None
                             if packer is not None:
-                                record = ctx_record(overlay_data, pool_kc, pool_mod.value,
+                                record = prc_record(overlay_data, pool_kc, pool_mod.value,
                                                     self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
                             if record is not None:
                                 sent = packer.add(record, pool_slot)
@@ -1490,19 +1490,19 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        # The last, partly filled context report. Before the cancel re-check
+        # The last, partly filled PRC report. Before the cancel re-check
         # below, so a cancel there leaves every allocated slot really uploaded.
         if packer is not None:
             if cancel is not None and cancel.is_set():
                 packer.discard()
-                self.log.debug_detailed("send_overlays_mru cancelled before the last context report")
+                self.log.debug_detailed("send_overlays_mru cancelled before the last PRC report")
                 return False
             flushed = packer.flush()
             if flushed < 0:
                 return False
             hid_msg_counter += flushed
             if packer.images:
-                self.log.debug("MRU: %d image(s) context-coded in %d report(s)",
+                self.log.debug("MRU: %d image(s) PRC-coded in %d report(s)",
                                packer.images, packer.reports)
 
         # hid_msg_counter counts HID MESSAGES, and only those carrying image

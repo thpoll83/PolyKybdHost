@@ -1,4 +1,11 @@
-"""Context-coded overlay images (HID cmd 41, protocol v19).
+"""PRC overlay images (HID cmd 41, protocol v19).
+
+PRC = Predictive Range Coding. "Predictive": before a pixel is coded, its 10
+already-coded neighbours predict how likely it is to be 0. "Range coding": an
+arithmetic coder spends few bits on a pixel that matches the prediction and more
+on one that does not. Keycap icons are mostly empty space and clean edges, so the
+predictions are nearly always right. The idea is JBIG's (the fax standard); the
+format is our own and is not JBIG-compatible.
 
 A 1-bit overlay is sent as its region of interest (ROI), coded pixel by pixel.
 Each pixel's probability comes from a FIXED table indexed by its 10 already
@@ -7,12 +14,12 @@ those probabilities into bytes. Measured on the shipped templates this needs
 ~26-30 bytes per icon against ~87 for the best of the four older encodings, so
 nearly every icon fits one HID report and two usually share one.
 
-⚠️ This file, ``polyhost/res/ctx_table_v1.bin`` and the firmware's
-``keyboards/polykybd/base/ctx_codec.c`` + ``ctx_table.h`` are ONE format. The
+⚠️ This file, ``polyhost/res/prc_table_v1.bin`` and the firmware's
+``keyboards/polykybd/base/prc_codec.c`` + ``prc_table.h`` are ONE format. The
 firmware decodes exactly what this encodes, bit for bit: the template order, the
 zero padding outside the ROI, the probability scale and every step of the range
-coder must stay identical. ``tests/util/ctx_codec_test.py`` pins golden vectors
-that the firmware's ``make test:polykybd_ctx_codec`` checks too.
+coder must stay identical. ``tests/util/prc_codec_test.py`` pins golden vectors
+that the firmware's ``make test:polykybd_prc_codec`` checks too.
 
 ⚠️ Table v1 is FROZEN. A retrained table is a new table id, never an edit to
 this one: a keyboard that decodes with a different table than the host encoded
@@ -30,10 +37,10 @@ TEMPLATE = ((-1, -1), (-1, 0), (-1, 1), (0, -2), (0, -1),
 CONTEXTS = 1 << len(TEMPLATE)          # 1024
 TABLE_ID = 1
 TABLE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                          "res", f"ctx_table_v{TABLE_ID}.bin")
+                          "res", f"prc_table_v{TABLE_ID}.bin")
 
 # One image inside a cmd 41 report: a 6-byte big-endian bit field, then the
-# payload. Mirrors ctx_parse_record() in the firmware's base/ctx_codec.c.
+# payload. Mirrors prc_parse_record() in the firmware's base/prc_codec.c.
 #   keycode 8 | modifier 4 | top 6 | left 7 | height-1 6 | width-1 7 | len 6 | 0 4
 RECORD_HDR = 6
 MAX_RECORD_PAYLOAD = 63   # the 6-bit length field
@@ -127,7 +134,7 @@ def encode(roi, tbl: bytes | None = None) -> bytes:
 
 
 def decode(payload: bytes, height: int, width: int, tbl: bytes | None = None):
-    """Reference decoder, step for step what ``base/ctx_codec.c`` does."""
+    """Reference decoder, step for step what ``base/prc_codec.c`` does."""
     import numpy as np
     tbl = tbl or table()
     pos = 0
@@ -226,7 +233,7 @@ def roi_box(mask):
 
 def parse_records(report: bytes):
     """Yield (keycode, modifier, top, left, height, width, payload) for each record
-    in a cmd 41 report payload, the way the firmware's ctx_parse_record() walks it:
+    in a cmd 41 report payload, the way the firmware's prc_parse_record() walks it:
     a keycode of 0, too few bytes for a header, or a malformed record ends it."""
     pos = 0
     while len(report) - pos >= RECORD_HDR and report[pos] != 0:

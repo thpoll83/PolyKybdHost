@@ -485,18 +485,18 @@ class TestPolyKybdMockMRUFlow(unittest.TestCase):
         self.assertIsNone(mock.get_display_bitmap(kc_b, mod))
 
 
-class TestPolyKybdMockCtxOverlays(unittest.TestCase):
+class TestPolyKybdMockPrcOverlays(unittest.TestCase):
     """A mock standing in for a protocol v19+ keyboard packs small images into
     cmd 41 reports and stores what the firmware would DECODE, so a codec fault
     shows up as a wrong keycap image here."""
 
-    def _send(self, ctx: bool):
+    def _send(self, prc: bool):
         from unittest import mock as um
         from polyhost.device.overlay_cache import OverlayMRUCache
         overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
                     KeyCode.KC_B.value: _make_overlay("dot"),
                     KeyCode.KC_C.value: _make_overlay("stripe")}
-        kb = PolyKybdMock(DeviceSettings(), "0.7.1", ctx_overlays=ctx)
+        kb = PolyKybdMock(DeviceSettings(), "0.7.1", prc_overlays=prc)
         with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv:
             conv.return_value.open.return_value = True
             conv.return_value.extract_overlays.side_effect = (
@@ -505,18 +505,18 @@ class TestPolyKybdMockCtxOverlays(unittest.TestCase):
         return kb
 
     def test_keycaps_show_the_decoded_images(self):
-        kb = self._send(ctx=True)
-        self.assertEqual(len(kb.ctx_reports), 1)       # rect + dot share a report
+        kb = self._send(prc=True)
+        self.assertEqual(len(kb.prc_reports), 1)       # rect + dot share a report
         for kc, pattern in ((KeyCode.KC_A, "rect"), (KeyCode.KC_B, "dot"), (KeyCode.KC_C, "stripe")):
             np.testing.assert_array_equal(kb.get_display_image(kc.value, Modifier.NO_MOD),
                                           _make_image(pattern), pattern)
 
     def test_fewer_reports_than_the_older_encodings(self):
-        self.assertLess(self._send(ctx=True).hid_image_sends,
-                        self._send(ctx=False).hid_image_sends)
+        self.assertLess(self._send(prc=True).hid_image_sends,
+                        self._send(prc=False).hid_image_sends)
 
     def test_off_by_default(self):
-        self.assertEqual(self._send(ctx=False).ctx_reports, [])
+        self.assertEqual(self._send(prc=False).prc_reports, [])
 
 
 class TestSaveAsPng(unittest.TestCase):

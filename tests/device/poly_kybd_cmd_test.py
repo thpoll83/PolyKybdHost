@@ -19,8 +19,8 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
-from polyhost.device.poly_kybd import PolyKybd, CTX_OVERLAY_MIN_PROTOCOL
-from polyhost.util import ctx_codec
+from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL
+from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
 
@@ -683,12 +683,12 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         # MRU uploads in MIRROR mode, so the upload's "keycode" byte carries the
         # POOL SLOT, not the keycode — images can no longer be located by keycode.
         # Both images are small, so a v19 keyboard gets them as two records in
-        # ONE context-coded report (cmd 41).
+        # ONE PRC-coded report (cmd 41).
         img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18, 41)]
         map_idx = [i for i, p in enumerate(payloads) if p[1] in (21, 33)]
         self.assertTrue(map_idx, "a mapping report must be sent")
-        self.assertEqual(len(img_idx), 1, "both images in one context report")
-        self.assertEqual(len(list(ctx_codec.parse_records(payloads[img_idx[0]][2:]))), 2)
+        self.assertEqual(len(img_idx), 1, "both images in one PRC report")
+        self.assertEqual(len(list(prc_codec.parse_records(payloads[img_idx[0]][2:]))), 2)
         # Images, then the mapping that makes them addressable, then one enable.
         # A v12 send can emit SEVERAL mapping reports (one per width group), so
         # gate on the LAST one — checking only the first would pass even if a
@@ -713,9 +713,9 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         settings = StubPolySettings(max_hid_message_before_delay=0,
                                     delay_time_after_max_hid_messages=0.123)
         keeb, device = make_keeb(auto_ack=True, settings=settings)
-        # The pause follows a report sent inside the loop. A context-coded image
+        # The pause follows a report sent inside the loop. A PRC-coded image
         # is only queued there, so pin the older encodings for this test.
-        keeb.protocol_version = CTX_OVERLAY_MIN_PROTOCOL - 1
+        keeb.protocol_version = PRC_OVERLAY_MIN_PROTOCOL - 1
         self.assertTrue(keeb.send_overlays(["fake.png"]))
         sleep.assert_called_with(0.123)
 
@@ -781,8 +781,8 @@ class TestSendOverlaysMruFailure(unittest.TestCase, LockCheckMixin):
         self.assert_lock_free(keeb)
 
 
-class TestSendOverlaysCtx(unittest.TestCase, LockCheckMixin):
-    """Context-coded images (cmd 41, protocol v19+) on the MRU send path."""
+class TestSendOverlaysPrc(unittest.TestCase, LockCheckMixin):
+    """PRC-coded images (cmd 41, protocol v19+) on the MRU send path."""
 
     def _converter(self, overlay_map):
         converter = MagicMock()
@@ -809,13 +809,13 @@ class TestSendOverlaysCtx(unittest.TestCase, LockCheckMixin):
         reports = [p for p in device.payloads() if p[1] == 41]
         self.assertEqual(len(reports), 1)
         self.assertEqual(reports[0][0], POLY)
-        records = list(ctx_codec.parse_records(reports[0][2:]))
+        records = list(prc_codec.parse_records(reports[0][2:]))
         self.assertEqual(len(records), 2)
         for (kc, mod, top, left, h, w, payload), key in zip(records, (a, esc)):
             slot = cache.get_or_allocate(("fake.png", Modifier.NO_MOD.value, key))[0]
             self.assertEqual((kc, Modifier(mod)), cache.pool_slot_to_firmware_address(slot))
             frame = np.zeros((40, 72), dtype=bool)
-            frame[top:top + h, left:left + w] = ctx_codec.decode(payload, h, w)
+            frame[top:top + h, left:left + w] = prc_codec.decode(payload, h, w)
             self.assertEqual(np.packbits(frame).tobytes(), overlays[key].all_bytes)
         self.assert_lock_free(keeb)
 
@@ -824,7 +824,7 @@ class TestSendOverlaysCtx(unittest.TestCase, LockCheckMixin):
         MockConverter.return_value = self._converter(
             {KeyCode.KC_A.value: _overlay("rect"), KeyCode.KC_ESCAPE.value: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
-        keeb.protocol_version = CTX_OVERLAY_MIN_PROTOCOL - 1
+        keeb.protocol_version = PRC_OVERLAY_MIN_PROTOCOL - 1
         self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(20)))
         images = self._images(device.payloads())
         self.assertEqual(len(images), 2)
@@ -833,7 +833,7 @@ class TestSendOverlaysCtx(unittest.TestCase, LockCheckMixin):
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_an_image_too_big_for_a_record_takes_the_old_path(self, MockConverter):
         noisy = _overlay("noisy")
-        self.assertIsNone(__import__("polyhost.device.ctx_packing", fromlist=["x"]).ctx_record(
+        self.assertIsNone(__import__("polyhost.device.prc_packing", fromlist=["x"]).prc_record(
             noisy, 4, 0, keeb_payload()))
         MockConverter.return_value = self._converter(
             {KeyCode.KC_A.value: noisy, KeyCode.KC_ESCAPE.value: _overlay("dot")})
@@ -857,7 +857,7 @@ class TestSendOverlaysCtx(unittest.TestCase, LockCheckMixin):
         keeb, device = make_keeb(auto_ack=True)
         self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(20)))
         reports = [p[2:] for p in device.payloads() if p[1] == 41]
-        sizes = [[ctx_codec.RECORD_HDR + len(r[-1]) for r in ctx_codec.parse_records(rep)]
+        sizes = [[prc_codec.RECORD_HDR + len(r[-1]) for r in prc_codec.parse_records(rep)]
                  for rep in reports]
         self.assertEqual(sum(len(x) for x in sizes), 6)
         self.assertLess(len(reports), 6)

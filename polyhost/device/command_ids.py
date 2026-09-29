@@ -80,9 +80,9 @@ class Cmd(Enum):
     # seconds (see IdleTimeout.label_for), so a host older than a firmware that adds
     # a preset can still name what it reads back.
     IDLE_TIMEOUT = 40
-    # Context-coded overlay images (protocol v19+): whole images packed as records,
-    # each range-coded against a fixed table (polyhost/util/ctx_codec.py). No reply.
-    SEND_CTX_OVERLAY = 41
+    # PRC overlay images (protocol v19+): whole images packed as records,
+    # each range-coded against a fixed table (polyhost/util/prc_codec.py). No reply.
+    SEND_PRC_OVERLAY = 41
 
 
 
