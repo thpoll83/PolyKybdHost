@@ -1242,6 +1242,15 @@ class PolyKybd:
                 "send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
+    def _count_alternatives(self, ov) -> None:
+        """What one image WOULD have cost in each older encoding. Counted for
+        every image sent, however it went out (PRC and icon fills included), so
+        the "if plain / rle / roi / rle-roi" figures compare like with like."""
+        self.stat_plain += ov.all_msgs
+        self.stat_comp += ov.compressed_msgs
+        self.stat_roi += ov.roi_msgs
+        self.stat_croi += ov.compressed_roi_msgs
+
     def _count_encoding(self, ov, smallest: int) -> None:
         """Add one image to the encoding statistics.
 
@@ -1249,10 +1258,7 @@ class PolyKybd:
         the chosen-encoding counts match what actually went out. An ROI image
         with no ROI falls back to RLE in send_overlay_roi_for_keycode; that
         case is counted as RLE here too."""
-        self.stat_plain += ov.all_msgs
-        self.stat_comp += ov.compressed_msgs
-        self.stat_roi += ov.roi_msgs
-        self.stat_croi += ov.compressed_roi_msgs
+        self._count_alternatives(ov)
         self.stat_best += smallest
         # getattr: statistics must never break a send, whatever object the
         # caller hands in.
@@ -1529,6 +1535,7 @@ class PolyKybd:
                 added = packer.add(record, pool_slot)
                 if added >= 0:
                     self.stat_chosen["prc"] += 1
+                    self._count_alternatives(overlay_data)
                 return -1 if added < 0 else sent + added
             if packer is not None and packer.holds(pool_slot):
                 flushed = packer.flush()
@@ -1551,6 +1558,9 @@ class PolyKybd:
                     cache.forget_slot(slot)
                 return -1
             self.stat_chosen["fill"] += len(pending) - len(refused)
+            for slot, (_, _, _, ov) in pending.items():
+                if slot not in refused:
+                    self._count_alternatives(ov)
             for slot in refused:
                 _, kc, mod, ov = pending[slot]
                 more = upload(slot, kc, mod, ov)
@@ -1717,6 +1727,10 @@ class PolyKybd:
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
         self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
+        # stat_best counts IMAGE REPORTS sent. send_smallest_overlay adds the
+        # older encodings' per image, but the PRC and fill reports only exist in
+        # hid_msg_counter, which is every image report of this switch.
+        self.stat_best = stats_before[4] + hid_msg_counter
         self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
                                len(display_to_pool), pauses, pause_s,
                                time.perf_counter() - t_start)

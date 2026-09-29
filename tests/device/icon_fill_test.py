@@ -81,6 +81,16 @@ class IconFillTest(unittest.TestCase):
         self.assertFalse(IMAGE_CMDS & set(cmds), cmds)
         self.assertEqual(keeb.stat_chosen["fill"], 3)
 
+    def test_the_stats_count_fill_reports_and_their_alternatives(self):
+        """Field log, 2026-09-29: a cold Word switch of 24 fills + 5 PRC images
+        logged `image reports sent 8` and `if plain: 0` -- only the older
+        encodings were counted."""
+        keeb, dev = _keeb(self.version)
+        _send(keeb, self.masks)
+        self.assertEqual(keeb.stat_best, 1, "one fill report")
+        self.assertGreater(keeb.stat_plain, keeb.stat_best)
+        self.assertGreater(keeb.stat_croi, 0)
+
     def test_the_pairs_name_the_icon_ids(self):
         keeb, dev = _keeb(self.version)
         _send(keeb, self.masks)
