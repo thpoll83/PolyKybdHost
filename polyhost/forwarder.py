@@ -39,6 +39,7 @@ from polyhost.handler.browser_url_source import SETTING_DEFAULTS as _URL_SETTING
 from polyhost.handler.own_process import (
     describe_python_owner, is_python_runtime, own_app_name, window_pid)
 from polyhost.handler.win_process import app_name_for
+from polyhost.handler.win_shell import shell_app_name
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -947,6 +948,9 @@ class PolyForwarder(QApplication):
                     pid = window_pid(win)
                     app_name = own_app_name(app_name_for(win), pid,
                                             self.activeWindow() is not None)
+                    # Same rename as the handler: the taskbar and desktop are
+                    # explorer.exe but must not get File Explorer's keycaps.
+                    app_name = shell_app_name(app_name, win.getHandle())
                     if is_python_runtime(app_name) and pid not in self._told_python_owner:
                         self._told_python_owner.add(pid)
                         self.log.info("Window '%s' belongs to a Python process"

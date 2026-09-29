@@ -14,6 +14,7 @@ from polyhost.handler.own_process import (
     own_app_name, own_front_app, window_pid,
 )
 from polyhost.handler.win_process import app_name_for
+from polyhost.handler.win_shell import shell_app_name
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
@@ -433,6 +434,9 @@ class OverlayHandler:
                             # (`pythonw`, `python3`); name them as ours so the
                             # ESC mark is the PolyKybd logo, not Python's.
                             app_name = own_app_name(app_name, self._win_pid())
+                            # The taskbar and desktop are explorer.exe too, and
+                            # File Explorer's keycaps do nothing there.
+                            app_name = shell_app_name(app_name, handle)
                             self.app_name = app_name
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
