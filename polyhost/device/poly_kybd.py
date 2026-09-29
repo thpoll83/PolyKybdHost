@@ -1519,16 +1519,64 @@ class PolyKybd:
         # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
         # and "it lost the bare ESC to the template" is exactly the question a
         # reader has when that keycap shows the hand-made design.
+        deferred = deferred or {}
         self.log.info("  drawn: %s | deferred to the template: %s",
-                      self._describe_sources(per_source),
-                      self._describe_sources(deferred or {}))
+                      self._describe_sources(per_source, deferred),
+                      self._describe_sources(deferred, per_source, is_deferred=True))
 
-    def _describe_sources(self, sources: dict) -> str:
-        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`."""
+    def _describe_sources(self, sources: dict, other: dict | None = None,
+                          is_deferred: bool = False) -> str:
+        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`.
+
+        `other` is the opposite half of the summary line: a source whose ONE key
+        is split between the halves goes through `_describe_split` instead.
+        """
         if not sources:
             return "none"
-        return ", ".join("%s=%s" % (self._short_source(f), self._describe_keys(k))
-                         for f, k in sources.items())
+        other = other or {}
+        parts = []
+        for f, keys in sources.items():
+            key = self._one_key(keys)
+            rest = other.get(f)
+            if key is not None and rest and self._one_key(rest) == key:
+                text = self._describe_split(keys, rest, is_deferred)
+            else:
+                text = self._describe_keys(keys)
+            parts.append("%s=%s" % (self._short_source(f), text))
+        return ", ".join(parts)
+
+    @staticmethod
+    def _one_key(keys: list):
+        """The keycode when every entry is the same key, else None."""
+        distinct = {kc for kc, _ in keys}
+        return next(iter(distinct)) if len(distinct) == 1 else None
+
+    def _describe_split(self, keys: list, rest: list, is_deferred: bool) -> str:
+        """One key whose modifier variants are shared between drawn and deferred.
+
+        ⚠️ Both halves used to read `ESC on 8 modifier variant(s)`, which looks
+        like the same 8 twice (hardware round, 2026-09-29, Chrome and Edge). It
+        is 8 + 8 = 16: the template draws ESC on eight variants and the mark
+        takes the other eight. So exactly ONE side names its variants -- the
+        smaller one, and on a tie the one holding the bare key, which is what
+        the keycap shows with no modifier held (then the deferred side) -- and
+        the other gives its share of the total.
+        """
+        def bare(ks):
+            return any(not getattr(m, "value", m) for _, m in ks)
+
+        if len(keys) != len(rest):
+            name_this = len(keys) < len(rest)
+        elif bare(keys) != bare(rest):
+            name_this = bare(keys)
+        else:
+            name_this = is_deferred
+        if name_this and len(keys) <= self.NAME_KEYS_UP_TO:
+            return ", ".join(describe_key(kc, mod) for kc, mod in
+                             sorted(keys, key=lambda k: getattr(k[1], "value", k[1])))
+        return "%s on %d of %d modifier variant(s)" % (
+            describe_key(keys[0][0], Modifier.NO_MOD), len(keys),
+            len(keys) + len(rest))
 
     @staticmethod
     def _short_source(filename: str) -> str:

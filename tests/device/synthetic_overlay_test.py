@@ -240,6 +240,38 @@ class SummaryLogTest(unittest.TestCase):
         self.assertTrue(any("deferred to the template" in line for line in self.lines),
                         self.lines)
 
+    def _split_line(self, drawn_mods, deferred_mods):
+        name = syn.program_name("chrome")
+        self.keeb._log_overlay_summary(
+            per_source={name: [(ESC, m) for m in drawn_mods]},
+            uploaded=0, mapped=len(drawn_mods),
+            deferred={name: [(ESC, m) for m in deferred_mods]})
+        drawn, _, deferred = self.lines[1].partition(" | ")
+        return drawn, deferred
+
+    def test_an_EVEN_split_does_not_read_as_the_same_variants_twice(self):
+        """⚠️ Both halves read `ESC on 8 modifier variant(s)` for Chrome and
+        Edge (hardware round, 2026-09-29): 8 + 8 = 16, not the same 8 twice.
+        The side holding the bare key names its variants."""
+        mods = sorted(Modifier, key=lambda m: m.value)
+        template, mark = mods[:8], mods[8:]          # template has bare ESC
+        drawn, deferred = self._split_line(mark, template)
+        self.assertIn("mark chrome=ESC on 8 of 16 modifier variant(s)", drawn)
+        self.assertIn("mark chrome=ESC, Ctrl+ESC, Shift+ESC", deferred)
+        self.assertNotIn("of 16", deferred)
+
+    def test_the_SMALLER_side_names_its_variants(self):
+        mods = sorted(Modifier, key=lambda m: m.value)
+        drawn, deferred = self._split_line(mods[1:], mods[:1])
+        self.assertIn("mark chrome=ESC on 15 of 16 modifier variant(s)", drawn)
+        self.assertTrue(deferred.endswith("mark chrome=ESC"), deferred)
+
+    def test_exactly_ONE_side_names_on_a_tie_without_the_bare_key(self):
+        mods = sorted(Modifier, key=lambda m: m.value)[1:9]   # no bare ESC
+        drawn, deferred = self._split_line(mods[:4], mods[4:])
+        self.assertIn("of 8 modifier variant(s)", drawn)
+        self.assertNotIn("of 8", deferred)
+
     def test_a_source_that_drew_NOTHING_is_still_named(self):
         # Its silent absence reads as "the icon was never fetched" (field, 2026-09-10).
         name = syn.program_name("word")
