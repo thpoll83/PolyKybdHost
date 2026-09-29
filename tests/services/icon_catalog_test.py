@@ -781,5 +781,79 @@ class WhyTheFontIsUnreachableTest(unittest.TestCase):
         self.assertEqual(reasons, {})
 
 
+def _tiny_font(path, pad_post=0):
+    """A one-glyph TTF (U+E000) with a format-2 `post` table, optionally padded.
+
+    `pad_post` appends bytes after the glyph-name strings -- what the pinned
+    Fluent System Icons font does, and what makes fontTools warn
+    "N extra bytes in post.stringData array".
+    """
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    from fontTools.ttLib import TTFont
+    from fontTools.ttLib.tables.DefaultTable import DefaultTable
+
+    fb = FontBuilder(1000, isTTF=True)
+    fb.setupGlyphOrder([".notdef", "box"])
+    fb.setupCharacterMap({0xE000: "box"})
+    pen = TTGlyphPen(None)
+    pen.moveTo((100, 100)); pen.lineTo((100, 600)); pen.lineTo((600, 600))
+    pen.lineTo((600, 100)); pen.closePath()
+    glyph = pen.glyph()
+    fb.setupGlyf({".notdef": glyph, "box": glyph})
+    fb.setupHorizontalMetrics({".notdef": (700, 100), "box": (700, 100)})
+    fb.setupHorizontalHeader(ascent=800, descent=-200)
+    fb.setupOS2()
+    fb.setupPost(keepGlyphNames=True)
+    fb.save(path)
+    if pad_post:
+        # A DefaultTable compiles back to exactly the bytes it holds.
+        font = TTFont(path)
+        raw = DefaultTable("post")
+        raw.data = font.getTableData("post") + b"\0" * pad_post
+        font["post"] = raw
+        font.save(path)
+        font.close()
+    return path
+
+
+class PaddedPostTableTest(unittest.TestCase):
+    """The coverage check must not log for a padded glyph-name table.
+
+    The pinned Fluent font pads `post` by 2 bytes. Read with fontTools, every
+    run logged `WARNING 2 extra bytes in post.stringData array` with no hint of
+    which library or font it was about (hardware round, 2026-09-29).
+    """
+
+    def setUp(self):
+        try:
+            import fontTools.fontBuilder  # noqa: F401
+            import freetype  # noqa: F401
+        except ImportError:
+            self.skipTest("fontTools/freetype-py not installed")
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        ic._COVERAGE.clear()
+        self.addCleanup(ic._COVERAGE.clear)
+        self.path = _tiny_font(os.path.join(self.tmp, "padded.ttf"), pad_post=2)
+
+    def test_fixture_really_trips_the_fonttools_warning(self):
+        """Without this the test below could pass on a font that is not padded."""
+        from fontTools.ttLib import TTFont
+        with self.assertLogs("fontTools", "WARNING") as cm:
+            with TTFont(self.path, lazy=True) as f:
+                f.getBestCmap()
+        self.assertIn("2 extra bytes in post.stringData array", cm.output[0])
+
+    def test_coverage_is_read_without_a_warning(self):
+        with self.assertNoLogs(level="WARNING"):
+            self.assertTrue(ic.font_covers(self.path, 0xE000))
+            self.assertFalse(ic.font_covers(self.path, 0xE001))
+
+    def test_the_end_marker_is_not_a_codepoint(self):
+        """FreeType's walk ends on (0, 0); U+0000 is not in this font."""
+        self.assertFalse(ic.font_covers(self.path, 0))
+
+
 if __name__ == "__main__":
     unittest.main()
