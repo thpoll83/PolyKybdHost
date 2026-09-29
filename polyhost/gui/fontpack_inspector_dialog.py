@@ -115,6 +115,8 @@ def load_shipped_packs(res_dir: str | None = None):
         # JSON is UTF-8 by specification; the platform default is not.
         with open(manifest, encoding="utf-8") as f:
             for b in json.load(f).get("bundles", []):
+                if b.get("kind", "fonts") != "fonts":
+                    continue      # the icon library (PlyI) holds no fonts to inspect
                 files.append((b["id"], os.path.join(res_dir, b["file"])))
     else:
         files = [(fpr._stem(p), p) for p in sorted(glob.glob(os.path.join(res_dir, "*.plyf")))]

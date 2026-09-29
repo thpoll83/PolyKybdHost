@@ -57,7 +57,7 @@ bindings:
   - { key: F, mods: [], icon: bucket.png,     label: "Paint bucket",     source: "ms-fluent/Paint Bucket (MIT)" }
   - { key: G, mods: [], icon: gradient.png,   label: Gradient,           source: "drawn (see fetch_icons.py)", mode: alpha }
   - { key: K, mods: [], icon: picker.png,     label: "Colour picker",    source: "ms-fluent/Eyedropper (MIT)" }
-  - { key: L, mods: [], icon: clonestamp.png, label: "Clone stamp",      source: "drawn (see fetch_icons.py)", mode: alpha }
+  - { key: L, mods: [], icon: clonestamp.png, label: "Clone stamp",      source: "custom (drawn: rubber stamp), shared with photoshop", mode: alpha, region: [36, 32] }
   - { key: R, mods: [], icon: recolor.png,    label: Recolor,            source: "ms-fluent/Color Line (MIT)" }
   - { key: T, mods: [], icon: text.png,       label: "Text tool",        source: "ms-fluent/Text T (MIT)" }
   - { key: O, mods: [], icon: linecurve.png,  label: "Line / curve",     source: "ms-fluent/Line (MIT)" }
