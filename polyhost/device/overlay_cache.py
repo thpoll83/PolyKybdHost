@@ -148,6 +148,17 @@ class OverlayMRUCache:
         if slot == self._next_free - 1:
             self._next_free -= 1
 
+    def forget_slot(self, slot: int) -> None:
+        """Forget EVERY key that maps to ``slot``: the image queued for it never
+        reached the device.
+
+        ``forget`` alone is not enough for an upload that is queued rather than
+        sent at once (a PRC-coded image waiting for its report to fill): a
+        later key with the same bytes dedups onto the slot in the meantime, and
+        forgetting only the first key would leave that alias as a stale hit."""
+        for key in [k for k, s in self._cache.items() if s == slot]:
+            self.forget(key)
+
     def _evict_oldest_slot(self) -> int:
         """Pick a victim slot. Prefer the smallest batch that is not the current
         batch; only fall back to the current batch when nothing older remains."""

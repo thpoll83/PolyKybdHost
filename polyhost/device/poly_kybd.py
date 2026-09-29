@@ -21,6 +21,7 @@ from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
 from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
+from polyhost.device.prc_packing import PrcReportPacker, prc_record
 from polyhost.services import iso_lang_country
 
 # Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
@@ -81,6 +82,10 @@ UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
 # this the delay is the firmware's old compile-time constant (2 minutes) and there
 # is nothing to read or set, so the menu greys out rather than NACKing at runtime.
 IDLE_TIMEOUT_MIN_PROTOCOL = 18
+# Minimum firmware PROTOCOL_VERSION for PRC overlay images (cmd 41).
+# Below it the four older encodings are all the firmware understands; the send
+# path simply never offers the fifth, so nothing greys out.
+PRC_OVERLAY_MIN_PROTOCOL = 19
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -102,6 +107,7 @@ FEATURE_MIN_PROTOCOL = {
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
     "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
     "idle_timeout": IDLE_TIMEOUT_MIN_PROTOCOL,
+    "prc_overlay": PRC_OVERLAY_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1255,6 +1261,13 @@ class PolyKybd:
             kind = "plain"
         self.stat_chosen[kind] += 1
 
+    def _send_prc_report(self, records: bytes) -> bool:
+        """One cmd 41 report carrying ``records`` (see device/prc_packing.py)."""
+        result, msg = self.hid.send_multiple(compose_cmd(Cmd.SEND_PRC_OVERLAY) + records)
+        if not result:
+            self.log.error("Error sending PRC-coded overlay report (%s)", msg)
+        return result
+
     def send_overlay_roi_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, compressed: bool) -> int:
         overlay = mapping[keycode]
         if not overlay.roi:
@@ -1406,6 +1419,14 @@ class PolyKybd:
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
+        # PRC-coded images (protocol v19+): an image whose record fits one
+        # report goes into a shared cmd 41 report instead of its own upload. That
+        # is never more reports than the best older encoding (at least one), and
+        # two small images share one. Larger images keep the old encodings.
+        packer = None
+        if self.supports("prc_overlay"):
+            packer = PrcReportPacker(self._send_prc_report,
+                                     self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
         with cache.batch():
             # zip, not `for converter in converters`: the cache key below names
             # the file an image came from, and a bare loop leaves `filename` at
@@ -1445,6 +1466,8 @@ class PolyKybd:
                     for keycode, overlay_data in overlay_map.items():
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays_mru cancelled")
+                            if packer is not None:
+                                packer.discard()
                             return False
                         if source_is_synthetic and (modifier.value, keycode) in covered:
                             self.log.debug_detailed(
@@ -1462,8 +1485,20 @@ class PolyKybd:
                             self.log.debug_detailed(
                                 "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
                                 keycode, modifier, pool_slot, pool_kc, pool_mod)
-                            sent = self.send_smallest_overlay(
-                                pool_kc, pool_mod, {pool_kc: overlay_data})
+                            record = None
+                            if packer is not None:
+                                record = prc_record(overlay_data, pool_kc, pool_mod.value,
+                                                    self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+                            if record is not None:
+                                sent = packer.add(record, pool_slot)
+                            else:
+                                sent = 0
+                                if packer is not None and packer.holds(pool_slot):
+                                    sent = packer.flush()
+                                if sent >= 0:
+                                    old = self.send_smallest_overlay(
+                                        pool_kc, pool_mod, {pool_kc: overlay_data})
+                                    sent = -1 if old < 0 else sent + old
                             if sent < 0:
                                 # Roll back the slot get_or_allocate just
                                 # recorded: its image never reached the keyboard,
@@ -1472,6 +1507,8 @@ class PolyKybd:
                                 # occupies that slot, and the image is never
                                 # re-sent). Then abort before the mapping commit.
                                 cache.forget(content_key)
+                                if packer is not None:
+                                    packer.discard()
                                 return False
                             hid_msg_counter += sent
                         else:
@@ -1491,10 +1528,27 @@ class PolyKybd:
                             if cancel is not None:
                                 if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
                                     self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
+                                    if packer is not None:
+                                        packer.discard()
                                     return False
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
                             pause_s += time.perf_counter() - t_pause
+
+        # The last, partly filled PRC report. Before the cancel re-check
+        # below, so a cancel there leaves every allocated slot really uploaded.
+        if packer is not None:
+            if cancel is not None and cancel.is_set():
+                packer.discard()
+                self.log.debug_detailed("send_overlays_mru cancelled before the last PRC report")
+                return False
+            flushed = packer.flush()
+            if flushed < 0:
+                return False
+            hid_msg_counter += flushed
+            if packer.images:
+                self.log.debug("MRU: %d image(s) PRC-coded in %d report(s)",
+                               packer.images, packer.reports)
 
         # hid_msg_counter counts HID MESSAGES, and only those carrying image
         # data (cache misses) — one image is several. A full cache hit is 0 here
@@ -1598,16 +1652,64 @@ class PolyKybd:
         # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
         # and "it lost the bare ESC to the template" is exactly the question a
         # reader has when that keycap shows the hand-made design.
+        deferred = deferred or {}
         self.log.info("  drawn: %s | deferred to the template: %s",
-                      self._describe_sources(per_source),
-                      self._describe_sources(deferred or {}))
+                      self._describe_sources(per_source, deferred),
+                      self._describe_sources(deferred, per_source, is_deferred=True))
 
-    def _describe_sources(self, sources: dict) -> str:
-        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`."""
+    def _describe_sources(self, sources: dict, other: dict | None = None,
+                          is_deferred: bool = False) -> str:
+        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`.
+
+        `other` is the opposite half of the summary line: a source whose ONE key
+        is split between the halves goes through `_describe_split` instead.
+        """
         if not sources:
             return "none"
-        return ", ".join("%s=%s" % (self._short_source(f), self._describe_keys(k))
-                         for f, k in sources.items())
+        other = other or {}
+        parts = []
+        for f, keys in sources.items():
+            key = self._one_key(keys)
+            rest = other.get(f)
+            if key is not None and rest and self._one_key(rest) == key:
+                text = self._describe_split(keys, rest, is_deferred)
+            else:
+                text = self._describe_keys(keys)
+            parts.append("%s=%s" % (self._short_source(f), text))
+        return ", ".join(parts)
+
+    @staticmethod
+    def _one_key(keys: list):
+        """The keycode when every entry is the same key, else None."""
+        distinct = {kc for kc, _ in keys}
+        return next(iter(distinct)) if len(distinct) == 1 else None
+
+    def _describe_split(self, keys: list, rest: list, is_deferred: bool) -> str:
+        """One key whose modifier variants are shared between drawn and deferred.
+
+        ⚠️ Both halves used to read `ESC on 8 modifier variant(s)`, which looks
+        like the same 8 twice (hardware round, 2026-09-29, Chrome and Edge). It
+        is 8 + 8 = 16: the template draws ESC on eight variants and the mark
+        takes the other eight. So exactly ONE side names its variants -- the
+        smaller one, and on a tie the one holding the bare key, which is what
+        the keycap shows with no modifier held (then the deferred side) -- and
+        the other gives its share of the total.
+        """
+        def bare(ks):
+            return any(not getattr(m, "value", m) for _, m in ks)
+
+        if len(keys) != len(rest):
+            name_this = len(keys) < len(rest)
+        elif bare(keys) != bare(rest):
+            name_this = bare(keys)
+        else:
+            name_this = is_deferred
+        if name_this and len(keys) <= self.NAME_KEYS_UP_TO:
+            return ", ".join(describe_key(kc, mod) for kc, mod in
+                             sorted(keys, key=lambda k: getattr(k[1], "value", k[1])))
+        return "%s on %d of %d modifier variant(s)" % (
+            describe_key(keys[0][0], Modifier.NO_MOD), len(keys),
+            len(keys) + len(rest))
 
     @staticmethod
     def _short_source(filename: str) -> str:

@@ -12,7 +12,7 @@ application reporting that name gets it, including one nobody here has heard of.
 Regenerate with `python tools/gen_program_icons.py`; preview on a real keycap
 with `python tools/esc_mark_preview.py`.
 
-## Why four of these are PNG and not SVG
+## Why these are PNG and not SVG
 
 | file | form | why |
 |---|---|---|
@@ -20,6 +20,16 @@ with `python tools/esc_mark_preview.py`.
 | `notes.png` | mask | rendered at box **34** so it is smaller than 38 in *both* axes |
 | `photos.png` | mask | carries a per-petal **dither** |
 | `finder.png` | mask | a thinned raster of mdi's art |
+| `clion.png`, `datagrip.png`, `goland.png`, `intellijidea.png`, `phpstorm.png`, `pycharm.png`, `rider.png`, `rubymine.png`, `webstorm.png` | mask | Simple Icons' filled plate, inverted inside the square plus a 2 px frame |
+
+⚠️ **Why the JetBrains marks are not simply `si:`.** Simple Icons draws each
+IDE as a filled square with its letters cut out. On this panel that is a
+38 × 38 lit block, which `mark_rank` reads inside-out (`False`, about 0.21), so
+the OS icon won instead: CLion showed its dithered colour icon (hardware,
+2026-09-29). Hollowing the plate lights the letters and underline, which is
+what the real product logos show (white letters in a black square), and ranks
+0.66–0.82. The sources are vendored in `src/si-<ide>.svg`, so the generator
+does not depend on the CDN pin.
 
 ⚠️ `render_overlay` fits an icon's **longest side** to the 38 px box, so one
 dimension is always exactly 38. "Narrower *and* shorter" is unreachable by
@@ -43,6 +53,12 @@ It is that mark's own geometry with every stroke thinned 0.75 px per side (see
 `tools/gen_program_icons.py`). Redrawing it by hand was tried and lost what makes
 it recognisable — the asymmetric "Picasso" face — so the retrace is deliberate
 and the attribution is required. Keep this note with the file.
+
+The JetBrains IDE marks (`clion.png` … `webstorm.png`) are derived from
+[Simple Icons](https://simpleicons.org/) (CC0-1.0) by inverting the plate and
+adding a frame; the vendored sources are `src/si-<ide>.svg`. The product names
+and logos are trademarks of JetBrains s.r.o.; Simple Icons' own disclaimer on
+brand marks applies.
 
 None of these reproduce Apple's own artwork. `photos.png` is a generic eight-petal
 rosette, not Apple's asset.

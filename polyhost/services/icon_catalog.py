@@ -542,15 +542,29 @@ def font_covers(font_path: str, codepoint: int) -> bool:
     subset of whatever it recognised, so one renamed or mistyped name comes back
     silently absent while every other icon in the same file is fine.
 
-    fontTools is already a runtime dependency; the cmap is cached per file, so
-    this costs one parse per subset rather than one per keycap.
+    The map is read with FreeType, the engine Pillow renders with, so "covered"
+    means what the draw below will actually find. It was fontTools until
+    2026-09-29, and fontTools resolves every glyph NAME to build its cmap: the
+    pinned Fluent System Icons font pads its glyph-name (`post`) table by 2
+    bytes, so each run logged a bare `WARNING 2 extra bytes in post.stringData
+    array` that named neither the library nor the font, and read as a fault
+    during a hardware round. FreeType does not read glyph names for this. Both
+    give the same set -- measured on Fluent (9754 codepoints) and DejaVu Sans.
+    The result is cached per file: one read per font, not one per keycap.
     """
     try:
         have = _COVERAGE.get(font_path)
         if have is None:
-            from fontTools.ttLib import TTFont
-            with TTFont(font_path, lazy=True) as f:
-                have = frozenset(f.getBestCmap())
+            import freetype
+            # A stream, not the path: FreeType opens a path with the C
+            # library's narrow `fopen`, which cannot reach a Windows cache dir
+            # under a non-ASCII user name -- and a failed read here answers
+            # "covered", switching the `.notdef` guard off without a word.
+            with open(font_path, "rb") as fh:
+                face = freetype.Face(fh)
+            # `get_chars()` ends with a (0, 0) pair that only marks the end;
+            # without the filter every font would "cover" U+0000.
+            have = frozenset(c for c, g in face.get_chars() if g)
             _COVERAGE[font_path] = have
     except Exception:
         return True     # unreadable: let the render try and fail on its own
