@@ -880,9 +880,10 @@ class PolyCore(Observable):
     def _say_mark_dropped(self, name, slug):
         """Say ONCE per app that a resolved mark was dropped, and why.
 
-        The rule it reports is deliberate: no shortcuts means no send, INCLUDING
-        the mark, because a mark alone reads as "this app has icons" and the
-        next glance disproves it. But the rule was invisible from the log --
+        The rule it reports is deliberate: no shortcuts AND no template means no
+        send, INCLUDING the mark, because a mark alone reads as "this app has
+        icons" and the next glance disproves it. A template's keycaps count as
+        those icons, so a templated app keeps its mark (see _generic_signature). But the rule was invisible from the log --
         the only INFO line was the fetcher announcing a mark it had built, so
         the user saw a success and a blank keyboard and nothing joining them.
 
@@ -894,7 +895,8 @@ class PolyCore(Observable):
         self._told_mark_dropped.add(name)
         self.log.info(
             "Nothing drawn for '%s': its program mark resolved (%s) but the "
-            "app exposes no shortcut icons, and a mark is not sent on its own "
+            "app exposes no shortcut icons and no template covers it, and a "
+            "mark is not sent on its own "
             "-- it would promise keycaps that are not there. The mark appears "
             "as soon as any shortcut does.", name, slug or "no name")
 
@@ -928,9 +930,9 @@ class PolyCore(Observable):
         # ESC to the program mark (Chrome, JetBrains) showed no mark at all
         # whenever the harvest found no accelerators (field, CLion, 2026-09-29).
         if not shortcuts and slug != POLYKYBD_SLUG and not (slug and template_files):
-            # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
-            # the one case where "what we could resolve" and "what is worth
-            # drawing" come apart.
+            # ⚠️ NO SHORTCUTS AND NO TEMPLATE MEANS NO SEND -- **including the
+            # mark**, which is the one case where "what we could resolve" and
+            # "what is worth drawing" come apart.
             #
             # The mark alone says only "this app was recognised", and the person
             # reading the board takes it for "this app has icons": it is the
