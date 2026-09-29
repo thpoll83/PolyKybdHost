@@ -563,10 +563,11 @@ class ProgramOverlayTest(unittest.TestCase):
                 tmp, allow_network=False)[1]
             # ⚠️ Another SCOREABLE shape, not just different bytes: a mark
             # that fails the 1-bit gate falls through to the catalog and
-            # returns `si:photos`, so the test would assert nothing about the
-            # slug. A ring at a different size is both.
-            photos = ai.program_overlay("Photos", _identity(
-                icon=_png(_ring, 96), icon_path=icns % "Photos"),
+            # returns `si:freeform`, so the test would assert nothing about the
+            # slug. A ring at a different size is both. (Not Photos: its
+            # shipped `poly:photos` now outranks any OS icon.)
+            photos = ai.program_overlay("Freeform", _identity(
+                icon=_png(_ring, 96), icon_path=icns % "Freeform"),
                 tmp, allow_network=False)[1]
             self.assertTrue(maps.startswith("os:AppIcon.icns@"), maps)
             self.assertTrue(photos.startswith("os:AppIcon.icns@"), photos)
@@ -1023,7 +1024,10 @@ class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
             path = os.path.join(tmp, "si-inkscape.png")
             Image.fromarray((os_mask * 255).astype("uint8"), "L").convert(
                 "1").save(path)
-            with mock.patch.object(ai, "fetch_icon", return_value=path):
+            # Catalog names only: a shipped `poly:` mark outranks both on
+            # purpose (ShippedMarkOutranksCatalogTest), which is not this tie.
+            with mock.patch.object(ai, "fetch_icon", side_effect=lambda name, *a, **k:
+                                   None if name.startswith("poly:") else path):
                 _, name = ai.program_overlay(
                     "Inkscape", _identity(icon=ring,
                                           icon_path="/x/AppIcon.icns"),
@@ -1120,6 +1124,44 @@ class JetBrainsOutlineMarksTest(unittest.TestCase):
                                                    tmp, allow_network=False)
                     self.assertEqual(want, got)
                     self.assertIsNotNone(mask)
+
+
+class ShippedMarkOutranksCatalogTest(unittest.TestCase):
+    """A `poly:` mark someone shipped beats a higher-SCORING catalog mark.
+
+    Chrome, 2026-09-29: the solid Simple Icons logo reads best on the keycap but
+    scores 0.24 against `mdi:google-chrome`'s 0.61, because `score()` rewards
+    thin line art. Shipping it as `poly:chrome` must be enough to get it drawn.
+    """
+
+    def test_a_shipped_mark_beats_a_higher_scoring_catalog_mark(self):
+        self.assertGreater(ai.contest_key((True, 0.24), "poly:chrome"),
+                           ai.contest_key((True, 0.61), "mdi:google-chrome"))
+
+    def test_it_beats_the_OS_icon_too(self):
+        self.assertGreater(ai.contest_key((True, 0.24), "poly:chrome"),
+                           ai.contest_key((True, 0.61), "os:chrome.exe@abc"))
+
+    def test_an_INVERTED_shipped_mark_gets_no_precedence(self):
+        """Polarity still outranks everything, as `mark_rank` documents."""
+        self.assertLess(ai.contest_key((False, 0.9), "poly:chrome"),
+                        ai.contest_key((True, 0.1), "mdi:google-chrome"))
+
+    def test_between_two_catalog_marks_the_score_still_decides(self):
+        self.assertGreater(ai.contest_key((True, 0.6), "mdi:a"),
+                           ai.contest_key((True, 0.5), "si:a"))
+
+    def test_the_shipped_chrome_mark_reads_the_right_way_up(self):
+        _needs_render(self)
+        mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, "chrome.svg"))
+        self.assertIsNotNone(mark)
+        self.assertTrue(ai.mark_rank(mark)[0])
+        self.assertFalse(mark[:, :34].any(), "ink would reach the ESC legend")
+
+    def test_only_the_chrome_executable_asks_for_it(self):
+        """No table: Edge and Brave derive other slugs and keep their marks."""
+        self.assertIn("poly:chrome", ai.candidates("chrome", ("Google Chrome",)))
+        self.assertNotIn("poly:chrome", ai.candidates("msedge", ("Microsoft Edge",)))
 
 
 class PolarityOutranksScoreTest(unittest.TestCase):
