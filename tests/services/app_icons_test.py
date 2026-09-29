@@ -1088,6 +1088,26 @@ class JetBrainsOutlineMarksTest(unittest.TestCase):
                 self.assertGreater(ai.mark_rank(mark), ai.mark_rank(plate))
                 self.assertFalse(mark[:, :34].any(), "ink would reach the ESC legend")
 
+    def test_no_stray_pixels_inside_the_frame(self):
+        """Hardware preview (2026-09-29): GoLand's O touched the frame through
+        one stray gutter pixel, and PyCharm's P and IntelliJ's underline each
+        carried a one-pixel spur. Letters must clear the frame by 1 px, and no
+        set pixel may have exactly one set 4-neighbour."""
+        _needs_render(self)
+        import numpy as np
+        for ide in self.IDES:
+            with self.subTest(ide):
+                mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, ide + ".png"))
+                rows, cols = np.flatnonzero(mark.any(1)), np.flatnonzero(mark.any(0))
+                y0, y1, x0, x1 = rows[0] + 2, rows[-1] - 2, cols[0] + 2, cols[-1] - 2
+                inner = mark[y0:y1 + 1, x0:x1 + 1]
+                ring = np.concatenate((inner[0], inner[-1], inner[:, 0], inner[:, -1]))
+                self.assertFalse(ring.any(), "a letter touches the frame's gutter")
+                pad = np.pad(inner, 1)
+                n = (pad[:-2, 1:-1].astype(int) + pad[2:, 1:-1]
+                     + pad[1:-1, :-2] + pad[1:-1, 2:])
+                self.assertEqual([], np.argwhere(inner & (n == 1)).tolist())
+
     def test_the_resolver_picks_them_by_exe_and_display_name(self):
         _needs_render(self)
         cases = (("clion64", "CLion", "poly:clion"),

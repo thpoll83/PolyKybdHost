@@ -306,6 +306,20 @@ def plate_outline_mask(svg_path, frame=PLATE_FRAME):
     y0, y1, x0, x1 = rows[0], rows[-1] + 1, cols[0], cols[-1] + 1
     out = np.zeros_like(plate)
     out[y0:y1, x0:x1] = ~plate[y0:y1, x0:x1]
+    # The plate's anti-aliased edges leave single-pixel artefacts at 38 px.
+    # Clear the 1 px gutter inside the frame (a stray there fused GoLand's O to
+    # the frame), then drop spur pixels: a set pixel with exactly one set
+    # 4-neighbour. Strokes here are >= 3 px thick, so only artefacts qualify
+    # (PyCharm's P stem and IntelliJ's underline each carried one).
+    g0, g1 = y0 + frame, y1 - frame - 1
+    h0, h1 = x0 + frame, x1 - frame - 1
+    out[g0, h0:h1 + 1] = out[g1, h0:h1 + 1] = False
+    out[g0:g1 + 1, h0] = out[g0:g1 + 1, h1] = False
+    inner = out[g0:g1 + 1, h0:h1 + 1]
+    pad = np.pad(inner, 1)
+    neighbours = (pad[:-2, 1:-1].astype(int) + pad[2:, 1:-1]
+                  + pad[1:-1, :-2] + pad[1:-1, 2:])
+    inner[inner & (neighbours == 1)] = False
     out[y0:y0 + frame, x0:x1] = out[y1 - frame:y1, x0:x1] = True
     out[y0:y1, x0:x0 + frame] = out[y0:y1, x1 - frame:x1] = True
     return out
