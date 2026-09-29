@@ -2747,9 +2747,11 @@ class PolyCore(Observable):
             stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
             stale_idx = {b["index"] for b in stale}
             # Re-add anything a previous pass failed on even though its version now
-            # reads current — see the docstring above.
+            # reads current — see the docstring above. The slot check applies
+            # here too: a keyboard flashed back below protocol 20 has no slot 8.
             retry = [b for b in manifest["bundles"]
-                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx]
+                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx
+                     and hid_fontpack.device_has_slot(device_versions, b)]
             targets = sorted(stale + retry, key=lambda b: b["index"])
         if not targets:
             self.log.info("Font pack auto-check: all %d bundle(s) up to date.",
