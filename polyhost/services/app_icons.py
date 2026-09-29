@@ -622,6 +622,25 @@ def mark_rank(mask):
     return (not _reads_inverted(mask), mark_score(mask))
 
 
+def contest_key(rank, slug):
+    """What candidates are compared on: `mark_rank` with a SHIPPED mark ahead.
+
+    `(read_the_right_way_up, is_a_shipped_poly_mark, score)`. A `poly:` mark
+    exists only because somebody put that file there after looking at the
+    catalog and OS candidates on a real keycap, so when it reads the right way
+    up it beats them whatever `score()` says. The score cannot make that call:
+    it rewards thin line art, so `mdi:google-chrome`'s 1-2 px segment strokes
+    (0.61) beat the solid Simple Icons logo (0.24) that reads better on the
+    panel (user judgement at a keycap preview, 2026-09-29).
+
+    Still no per-application configuration: the filename is the slug, and an
+    inverted `poly:` mark gets no precedence, so polarity keeps outranking
+    everything as `mark_rank` documents.
+    """
+    shipped = bool(rank[0]) and str(slug).startswith(LOCAL_SOURCE + ":")
+    return (rank[0], shipped, rank[1])
+
+
 def _reads_inverted(mask) -> bool:
     """`icon_binarise.reads_inverted` over the mark's own ink (see `mark_score`
     for why the crop matters)."""
@@ -941,8 +960,9 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
                      conversion or "nothing rendered", score,
                      icon_binarise.MIN_SCORE)
 
-    # ⚠️ EVERY candidate is resolved and the BEST-SCORING one wins -- this is
-    # not first-match-wins any more. A fixed source preference cannot express
+    # ⚠️ EVERY candidate is resolved and the BEST-RANKED one wins
+    # (`contest_key`: polarity, then a shipped `poly:` mark, then score) -- this
+    # is not first-match-wins any more. A fixed source preference cannot express
     # the case it was changed for, and the per-app table that could is what
     # `docs/generic-icons-plan.md` exists to refuse:
     #
@@ -982,7 +1002,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         if mask is None:
             continue
         value = mark_rank(mask)
-        if best is None or value > best[0]:
+        if best is None or contest_key(value, name) > contest_key(best[0], best[2]):
             best = (value, mask, name)
     if best is not None:
         log.info("Program mark for %s: %s (rank %.3f%s, best of %s)",

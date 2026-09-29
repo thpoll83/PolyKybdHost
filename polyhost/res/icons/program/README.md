@@ -17,6 +17,7 @@ with `python tools/esc_mark_preview.py`.
 | file | form | why |
 |---|---|---|
 | `terminal.svg` | vector | plain line work, nothing stops it being an SVG |
+| `chrome.svg` | vector | Simple Icons' `googlechrome`, unchanged (see below) |
 | `notes.png` | mask | rendered at box **34** so it is smaller than 38 in *both* axes |
 | `photos.png` | mask | carries a per-petal **dither** |
 | `finder.png` | mask | a thinned raster of mdi's art |
@@ -62,3 +63,15 @@ brand marks applies.
 
 None of these reproduce Apple's own artwork. `photos.png` is a generic eight-petal
 rosette, not Apple's asset.
+
+## `chrome.svg`: a shipped copy of a catalog mark
+
+`chrome.svg` is Simple Icons' `googlechrome` (15.22.0, CC0-1.0; "Google Chrome"
+is a Google trademark), byte for byte. It ships because the ranking would never
+pick it from the catalog: `mark_score` rewards thin line art, so
+`mdi:google-chrome`'s 1-2 px segment strokes score 0.61 against this logo's
+0.24, while on the keycap the solid logo is the one that reads (keycap preview,
+2026-09-29). A shipped `poly:` mark that reads the right way up outranks every
+catalog and OS candidate (`app_icons.contest_key`), so dropping the file here is
+the whole fix. It answers `poly:chrome`, i.e. the `chrome` executable only; Edge,
+Brave and the other Chromium browsers keep their own marks.
