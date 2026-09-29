@@ -15,7 +15,7 @@ from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
     MACRO_MIN_PROTOCOL, UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
-    IDLE_TIMEOUT_MIN_PROTOCOL,
+    IDLE_TIMEOUT_MIN_PROTOCOL, PRC_OVERLAY_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize, IdleTimeout
@@ -270,6 +270,31 @@ class TestIdleTimeoutGate(unittest.TestCase):
         self.assertEqual(IdleTimeout.label_for(6, 90), "90 sec")
         # With no seconds to go on there is nothing to name it with.
         self.assertEqual(IdleTimeout.label_for(6), "preset 6")
+
+
+class TestPrcOverlayGate(unittest.TestCase):
+    """PRC overlays (cmd 41) are protocol v19+. There is no menu to grey
+    out: below the threshold the send path simply never offers the encoding, which
+    tests/device/poly_kybd_cmd_test.py TestSendOverlaysPrc checks on the wire."""
+
+    def test_threshold(self):
+        self.assertEqual(PRC_OVERLAY_MIN_PROTOCOL, 19)
+        self.assertEqual(FEATURE_MIN_PROTOCOL["prc_overlay"], PRC_OVERLAY_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(PRC_OVERLAY_MIN_PROTOCOL - 1, "prc_overlay"))
+        self.assertTrue(protocol_supports(PRC_OVERLAY_MIN_PROTOCOL, "prc_overlay"))
+
+    def test_command_id_and_report_header(self):
+        self.assertEqual(Cmd.SEND_PRC_OVERLAY.value, 41)
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.hid = MagicMock()
+        keeb.hid.send_multiple.return_value = (True, "")
+        self.assertTrue(keeb._send_prc_report(b"\x04\x01\x02"))
+        report = keeb.hid.send_multiple.call_args.args[0]
+        self.assertEqual(bytes(report[:5]), bytes([HidId.ID_POLYKYBD.value, 41, 0x04, 0x01, 0x02]))
+
+    def test_host_knows_the_protocol(self):
+        from polyhost._version import __protocol__
+        self.assertGreaterEqual(__protocol__, PRC_OVERLAY_MIN_PROTOCOL)
 
 
 if __name__ == "__main__":

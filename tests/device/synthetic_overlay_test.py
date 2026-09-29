@@ -107,6 +107,16 @@ class OnePoolSlotTest(unittest.TestCase):
             return real(keycode, modifier, mapping)
 
         keeb.send_smallest_overlay = counting
+        # A protocol v19+ keyboard gets small images as PRC-coded records
+        # packed into cmd 41 reports; each record is one upload too.
+        real_prc = keeb._send_prc_report
+
+        def counting_prc(records):
+            from polyhost.util import prc_codec
+            uploads.extend((kc, mod) for kc, mod, *_ in prc_codec.parse_records(records))
+            return real_prc(records)
+
+        keeb._send_prc_report = counting_prc
         mapping_sent = {}
         keeb.send_overlay_mapping = lambda m: (mapping_sent.update(m), (True, ""))[1]
         keeb.prepare_for_mru_send = lambda: (True, "")
