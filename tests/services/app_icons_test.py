@@ -1022,6 +1022,36 @@ class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
         self.assertTrue(name.startswith("os:"), name)
 
 
+class OsIconLogLineTest(unittest.TestCase):
+    """Exactly one verdict line per OS icon, and it matches the gate.
+
+    The "does not survive 1-bit" line used to print for EVERY icon, right after
+    the CANDIDATE line for one that passed: "gate 0.215 >= 0.080" and then
+    "score 0.215 < 0.080" (hardware round, 2026-09-29).
+    """
+
+    def _lines(self, icon):
+        with tempfile.TemporaryDirectory() as tmp, \
+                self.assertLogs("PolyHost", "INFO") as cm:
+            ai.program_overlay("Inkscape",
+                               _identity(icon=icon, icon_path="/t/inkscape.png"),
+                               tmp, allow_network=False)
+        return [r.getMessage() for r in cm.records
+                if r.getMessage().startswith("The OS icon for")]
+
+    def test_a_passing_icon_is_only_a_CANDIDATE(self):
+        _needs_render(self)
+        lines = self._lines(_png(_ring))
+        self.assertEqual(1, len(lines), lines)
+        self.assertIn("is a CANDIDATE", lines[0])
+
+    def test_a_failing_icon_only_does_not_survive(self):
+        _needs_render(self)
+        lines = self._lines(_png(_disc))
+        self.assertEqual(1, len(lines), lines)
+        self.assertIn("does not survive 1-bit", lines[0])
+
+
 class PolarityOutranksScoreTest(unittest.TestCase):
     """⚠️ Reported from hardware (2026-09-23): Safari still drew the solid
     disc after the OS icon stopped winning outright, because ranking on score
