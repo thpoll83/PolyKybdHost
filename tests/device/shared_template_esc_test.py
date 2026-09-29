@@ -49,7 +49,9 @@ class ChromiumTemplateLeavesEscTest(unittest.TestCase):
 
     def test_no_ESC_variant_in_the_shared_template(self):
         from polyhost.device.im_converter import ImageConverter
-        logging.getLogger("PolyHost").setLevel(logging.ERROR)
+        logger = logging.getLogger("PolyHost")
+        self.addCleanup(logger.setLevel, logger.level)
+        logger.setLevel(logging.ERROR)
         esc = KeyCode.KC_ESCAPE.value
         overlays = self.entry["overlay"]
         self.assertEqual(2, len(overlays), overlays)
