@@ -199,12 +199,21 @@ class PolyKybd:
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
 
-        # Statistics
+        # Statistics, cumulative since this object was created. The stat_*
+        # counters sum what EACH encoding would have cost in reports for every
+        # image uploaded; stat_best is what was actually sent. The per-switch
+        # summary is logged by send_overlays_mru ("Overlay switch stats").
         self.stat_plain = 0
         self.stat_comp = 0
         self.stat_roi = 0  # region of interest
         self.stat_croi = 0  # compressed region of interest
         self.stat_best = 0
+        # Images uploaded per chosen encoding (cumulative).
+        self.stat_chosen = {"plain": 0, "rle": 0, "roi": 0, "rle-roi": 0}
+        self.stat_switches = 0
+        self.stat_reports_total = 0
+        # Reports the last send_overlay_mapping call wrote (read by the summary).
+        self._last_mapping_msgs = 0
 
     def _open_interfaces(self) -> bool:
         """(Re-)open the HID and serial interfaces.
@@ -1130,6 +1139,7 @@ class PolyKybd:
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
                       num_msgs, len(from_to))
+        self._last_mapping_msgs = num_msgs
         return True, "Mapping sent"
 
     def _send_overlay_mapping_legacy(self, from_to: dict) -> tuple[bool, str]:
@@ -1158,6 +1168,7 @@ class PolyKybd:
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs, legacy 10-bit)",
                       num_msgs, len(pairs))
+        self._last_mapping_msgs = num_msgs
         # SEND_OVERLAY_MAPPING (cmd 21) is silent since protocol v3 — like the
         # other bulk overlay commands there is no per-chunk ACK, so nothing to
         # read or drain here. (The old per-chunk ACK arrived only after the
@@ -1200,6 +1211,7 @@ class PolyKybd:
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs,
                        ov.roi_msgs, ov.compressed_roi_msgs)
+        self._count_encoding(ov, smallest)
 
         if smallest == ov.roi_msgs:
             self.log.debug_detailed(
@@ -1217,6 +1229,31 @@ class PolyKybd:
             self.log.debug_detailed(
                 "send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
+
+    def _count_encoding(self, ov, smallest: int) -> None:
+        """Add one image to the encoding statistics.
+
+        Mirrors send_smallest_overlay's tie order (ROI, RLE, RLE-ROI, plain) so
+        the chosen-encoding counts match what actually went out. An ROI image
+        with no ROI falls back to RLE in send_overlay_roi_for_keycode; that
+        case is counted as RLE here too."""
+        self.stat_plain += ov.all_msgs
+        self.stat_comp += ov.compressed_msgs
+        self.stat_roi += ov.roi_msgs
+        self.stat_croi += ov.compressed_roi_msgs
+        self.stat_best += smallest
+        # getattr: statistics must never break a send, whatever object the
+        # caller hands in.
+        has_roi = bool(getattr(ov, "roi", True))
+        if smallest == ov.roi_msgs:
+            kind = "roi" if has_roi else "rle"
+        elif smallest == ov.compressed_msgs:
+            kind = "rle"
+        elif smallest == ov.compressed_roi_msgs:
+            kind = "rle-roi" if has_roi else "rle"
+        else:
+            kind = "plain"
+        self.stat_chosen[kind] += 1
 
     def send_overlay_roi_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, compressed: bool) -> int:
         overlay = mapping[keycode]
@@ -1318,6 +1355,11 @@ class PolyKybd:
         the network and this method runs on the HID worker.
         """
         import os
+        t_start = time.perf_counter()
+        stats_before = (self.stat_plain, self.stat_comp, self.stat_roi,
+                        self.stat_croi, self.stat_best, dict(self.stat_chosen))
+        pauses = 0
+        pause_s = 0.0
         hid_msg_counter = 0
         hid_msg_counter_old = 0
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
@@ -1444,12 +1486,15 @@ class PolyKybd:
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
+                            pauses += 1
+                            t_pause = time.perf_counter()
                             if cancel is not None:
                                 if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
                                     self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
                                     return False
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                            pause_s += time.perf_counter() - t_pause
 
         # hid_msg_counter counts HID MESSAGES, and only those carrying image
         # data (cache misses) — one image is several. A full cache hit is 0 here
@@ -1477,7 +1522,41 @@ class PolyKybd:
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
         self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
+        self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
+                               len(display_to_pool), pauses, pause_s,
+                               time.perf_counter() - t_start)
         return True
+
+    def _log_switch_stats(self, before: tuple, uploaded: int, image_msgs: int,
+                          positions: int, pauses: int, pause_s: float,
+                          wall_s: float) -> None:
+        """One INFO line per overlay send, with every report it cost.
+
+        control = the two replied requests every send makes: prepare
+        (OVERLAY_FLAGS_ON mirror+reset) and enable. "if plain" is what the
+        same images would have cost as uncompressed cmd 10 overlays."""
+        plain0, comp0, roi0, croi0, best0, chosen0 = before
+        chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
+        mapping = self._last_mapping_msgs
+        control = 2
+        total = image_msgs + mapping + control
+        self.stat_switches += 1
+        self.stat_reports_total += total
+        self.log.info(
+            "Overlay switch stats: %d image(s) uploaded [roi %d, rle-roi %d, rle %d, plain %d], "
+            "%d position(s) mapped | reports: image %d + mapping %d + control %d = %d "
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | %d rate-limit pause(s) = %.1f s | "
+            "wall %.0f ms (%.0f ms without pauses)",
+            uploaded, chosen["roi"], chosen["rle-roi"], chosen["rle"], chosen["plain"],
+            positions, image_msgs, mapping, control, total,
+            self.stat_plain - plain0, self.stat_comp - comp0,
+            self.stat_roi - roi0, self.stat_croi - croi0,
+            pauses, pause_s, wall_s * 1000.0, (wall_s - pause_s) * 1000.0)
+        self.log.info(
+            "Overlay stats since start: %d switch(es), %d report(s); image reports sent %d "
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d)",
+            self.stat_switches, self.stat_reports_total, self.stat_best,
+            self.stat_plain, self.stat_comp, self.stat_roi, self.stat_croi)
 
     # How many keys a source may contribute before the summary stops naming
     # them. A template covers most of the board and listing it would bury the
