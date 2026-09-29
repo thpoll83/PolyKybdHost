@@ -1063,6 +1063,45 @@ class OsIconLogLineTest(unittest.TestCase):
         self.assertIn("does not survive 1-bit", lines[0])
 
 
+class JetBrainsOutlineMarksTest(unittest.TestCase):
+    """The shipped JetBrains IDE marks: the Simple Icons plate, hollowed out.
+
+    Simple Icons draws each IDE as a filled square with the letters cut out,
+    which `mark_rank` reads inside-out; CLion's dithered OS icon beat it on
+    hardware (2026-09-29). The shipped outline must read the right way up, beat
+    the plate it came from, and be what the resolver picks by EXE name.
+    """
+
+    IDES = ("clion", "datagrip", "goland", "intellijidea", "phpstorm",
+            "pycharm", "rider", "rubymine", "webstorm")
+
+    def test_each_mark_reads_the_right_way_up_and_beats_its_plate(self):
+        _needs_render(self)
+        for ide in self.IDES:
+            with self.subTest(ide):
+                mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, ide + ".png"))
+                plate = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, "src",
+                                                    "si-%s.svg" % ide))
+                self.assertIsNotNone(mark)
+                self.assertTrue(ai.mark_rank(mark)[0], "read inside-out")
+                self.assertFalse(ai.mark_rank(plate)[0], "premise: the plate is inside-out")
+                self.assertGreater(ai.mark_rank(mark), ai.mark_rank(plate))
+                self.assertFalse(mark[:, :34].any(), "ink would reach the ESC legend")
+
+    def test_the_resolver_picks_them_by_exe_and_display_name(self):
+        _needs_render(self)
+        cases = (("clion64", "CLion", "poly:clion"),
+                 ("pycharm64", "PyCharm", "poly:pycharm"),
+                 ("idea64", "IntelliJ IDEA", "poly:intellijidea"))
+        with tempfile.TemporaryDirectory() as tmp:
+            for exe, name, want in cases:
+                with self.subTest(exe):
+                    mask, got = ai.program_overlay(exe, _identity(names=(name,)),
+                                                   tmp, allow_network=False)
+                    self.assertEqual(want, got)
+                    self.assertIsNotNone(mask)
+
+
 class PolarityOutranksScoreTest(unittest.TestCase):
     """⚠️ Reported from hardware (2026-09-23): Safari still drew the solid
     disc after the OS icon stopped winning outright, because ranking on score

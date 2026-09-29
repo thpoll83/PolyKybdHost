@@ -1,4 +1,4 @@
-"""A template shared by several browsers must leave ESC to each one's mark.
+"""A template shared by several apps must leave ESC to each one's own mark.
 
 Chrome, Chromium, Brave, Edge, Vivaldi, Opera and Arc share `chrome_template`
 because Chromium browsers share their shortcuts. The template used to carry the
@@ -9,6 +9,10 @@ Ctrl+GUI+ESC (hardware round, 2026-09-29, Edge).
 
 With ESC left blank, each browser's own mark -- Chrome's too -- takes the key on
 all sixteen variants.
+
+The JetBrains template had the same fault: a "JB" logo on ESC in twelve
+variants across its three files, so IDEA, PyCharm, CLion and the rest all
+showed the family logo instead of their own mark.
 """
 
 import logging
@@ -31,7 +35,12 @@ def _needs_pil(case):
         case.skipTest("Pillow/numpy not installed")
 
 
-class ChromiumTemplateLeavesEscTest(unittest.TestCase):
+class _SharedTemplateLeavesEsc:
+    """Mixin: `ANCHOR` names the mapping entry, `SHARED` must all share it."""
+
+    ANCHOR = ""
+    SHARED: set = set()
+    FILES = 0
 
     def setUp(self):
         _needs_pil(self)
@@ -39,13 +48,13 @@ class ChromiumTemplateLeavesEscTest(unittest.TestCase):
             (RES / "overlay-mapping.poly.yaml").read_text(encoding="utf-8"))
         self.key, self.entry = next(
             (k, v) for k, v in mapping.items()
-            if "chrome" in [n.strip() for n in str(k).split(",")])
+            if self.ANCHOR in [n.strip() for n in str(k).split(",")])
 
-    def test_the_entry_is_shared_by_more_than_one_browser(self):
-        """The premise: if Chrome ever gets an entry of its own, a logo on its
-        template's ESC is harmless again and this file can go."""
+    def test_the_entry_is_shared_by_more_than_one_app(self):
+        """The premise: if the anchor app ever gets an entry of its own, a logo
+        on its template's ESC is harmless again and this test can go."""
         names = {n.strip() for n in self.key.split(",")}
-        self.assertTrue({"msedge", "brave", "vivaldi"} <= names, names)
+        self.assertTrue(self.SHARED <= names, names)
 
     def test_no_ESC_variant_in_the_shared_template(self):
         from polyhost.device.im_converter import ImageConverter
@@ -54,7 +63,7 @@ class ChromiumTemplateLeavesEscTest(unittest.TestCase):
         logger.setLevel(logging.ERROR)
         esc = KeyCode.KC_ESCAPE.value
         overlays = self.entry["overlay"]
-        self.assertEqual(2, len(overlays), overlays)
+        self.assertEqual(self.FILES, len(overlays), overlays)
         for name in overlays:
             conv = ImageConverter(DeviceSettings())
             self.assertIsNot(conv.open(str(RES / "overlays" / name)), False, name)
@@ -62,6 +71,17 @@ class ChromiumTemplateLeavesEscTest(unittest.TestCase):
                 with self.subTest(file=name, modifier=mod.name):
                     self.assertNotIn(esc, conv.extract_overlays(mod) or {})
 
+
+class ChromiumTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase):
+    ANCHOR = "chrome"
+    SHARED = {"msedge", "brave", "vivaldi"}
+    FILES = 2
+
+
+class JetBrainsTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase):
+    ANCHOR = "clion64"
+    SHARED = {"idea64", "pycharm64", "webstorm64", "rider64"}
+    FILES = 3
 
 if __name__ == "__main__":
     unittest.main()
