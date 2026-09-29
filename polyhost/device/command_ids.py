@@ -83,6 +83,10 @@ class Cmd(Enum):
     # PRC overlay images (protocol v19+): whole images packed as records,
     # each range-coded against a fixed table (polyhost/util/prc_codec.py). No reply.
     SEND_PRC_OVERLAY = 41
+    # Icon library fills (protocol v20+): (pool slot, icon id) pairs in cmd 33's
+    # packing, drawn by each half from its own flash (services/icon_library.py).
+    # Replied: '.' all applied, '!' + index of the first pair to upload instead.
+    FILL_POOL_FROM_ICON = 42
 
 
 

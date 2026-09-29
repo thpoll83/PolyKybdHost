@@ -77,6 +77,7 @@ DOOMPACK_MAX_SIZE  = 0x3E000        # the 248 KB engine-pack slot (flash 0x7C000
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
+ICONPACK_MAGIC        = b"PlyI"         # the overlay icon library (bundle 8): same layout
 FONTPACK_ABI_VERSION  = 2            # must match FONTPACK_ABI_VERSION in the firmware (v2 = column-native glyphs)
 _HEADER_FMT           = "<4sHHIIIIII"  # magic, abi, flags, content_version, font_count, font_table_off, total_size, crc32, reserved
 _HEADER_SIZE          = struct.calcsize(_HEADER_FMT)   # 32
@@ -102,8 +103,9 @@ def parse_fontpack_header(pack_bytes) -> tuple[bool, dict]:
         return False, {"error": f"too small ({len(data)} bytes) to be a font pack"}
     (magic, abi, flags, content_version, font_count,
      font_table_off, total_size, crc32, _reserved) = struct.unpack_from(_HEADER_FMT, data, 0)
-    if magic != FONTPACK_MAGIC:
-        return False, {"error": f"bad magic {magic!r} (expected {FONTPACK_MAGIC!r}); not a PlyF font pack"}
+    if magic not in (FONTPACK_MAGIC, ICONPACK_MAGIC):
+        return False, {"error": f"bad magic {magic!r} (expected {FONTPACK_MAGIC!r} or "
+                                f"{ICONPACK_MAGIC!r}); not a PolyKybd font or icon pack"}
     if abi != FONTPACK_ABI_VERSION:
         return False, {"error": f"pack ABI v{abi} != host/firmware ABI v{FONTPACK_ABI_VERSION}; rebuild the pack"}
     if total_size != len(data):
@@ -112,6 +114,7 @@ def parse_fontpack_header(pack_bytes) -> tuple[bool, dict]:
     if body_crc != crc32:
         return False, {"error": f"internal CRC32 mismatch (header 0x{crc32:08X}, computed 0x{body_crc:08X}); corrupt pack"}
     return True, {
+        "magic": magic.decode("ascii"),
         "abi_version": abi,
         "flags": flags,
         "content_version": content_version,
@@ -247,6 +250,19 @@ def parse_id_state_generation(reply):
     return int.from_bytes(raw[p:p + 2], "little")
 
 
+def device_has_slot(device_versions: dict, bundle: dict) -> bool:
+    """Does the keyboard have a flash slot for ``bundle``?
+
+    The version block lists EVERY slot the firmware has, absent bundles as 0, so
+    an index it does not list is a slot that firmware lacks: icons.plyi (slot 8)
+    on anything before protocol 20. Flashing there would be refused on every
+    connect. An empty block (pre-v6 firmware) keeps the old behaviour for the
+    font bundles; the icon bundle is never assumed."""
+    if bundle["index"] in device_versions:
+        return True
+    return not device_versions and bundle.get("kind", "fonts") != "icons"
+
+
 def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     """Pick which shipped bundles to (re)flash: those the device is behind on.
 
@@ -256,6 +272,8 @@ def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     Returns the subset of `shipped` whose content_version > the device's, in order."""
     out = []
     for b in shipped:
+        if not device_has_slot(device_versions, b):
+            continue
         dev = device_versions.get(b["index"], 0)
         if b["content_version"] > dev:
             out.append(b)
@@ -472,8 +490,9 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         return False, reason, "validate"
     _, info = parse_fontpack_header(pack_bytes)
 
+    what = "icon record(s)" if info.get("magic") == "PlyI" else "fonts"
     report(0, f"Sending FONTPACK_BEGIN — {len(pack_bytes) // 1024} KB, "
-              f"content v{info['content_version']}, {info['font_count']} fonts…")
+              f"content v{info['content_version']}, {info['font_count']} {what}…")
     ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
     if not ok:
         return False, err, status
@@ -481,7 +500,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
     cver = struct.unpack_from('<H', bytes(reply), 3)[0] if len(reply) >= 5 else info['content_version']
     report(100, f"Done. Font pack v{cver} loaded on both halves.")
     return True, (
-        f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} fonts).\n\n"
+        f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} {what}).\n\n"
         "Both halves reloaded the new glyphs immediately — no reboot needed."
     ), status
 

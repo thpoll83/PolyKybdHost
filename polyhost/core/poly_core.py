@@ -2670,7 +2670,8 @@ class PolyCore(Observable):
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": b["content_version"] > dev.get(b["index"], 0),
+                    "stale": (b["content_version"] > dev.get(b["index"], 0)
+                              and hid_fontpack.device_has_slot(dev, b)),
                     "retry": b["index"] in self._fontpack_failed,
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
@@ -2733,7 +2734,8 @@ class PolyCore(Observable):
             return   # a flash is already running (connection flapped) — don't double-flash
         device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
         if force_all:
-            targets = list(manifest["bundles"])
+            targets = [b for b in manifest["bundles"]
+                       if hid_fontpack.device_has_slot(device_versions, b)]
         else:
             stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
             stale_idx = {b["index"] for b in stale}
