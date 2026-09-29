@@ -85,11 +85,7 @@ def _needs_render(case):
     any machine without it, i.e. on the platform most of these users are on, and
     a skip reads exactly like a pass in the summary line.
     """
-    try:
-        import numpy             # noqa: F401
-        from PIL import Image    # noqa: F401
-    except Exception:
-        case.skipTest("Pillow/numpy not installed")
+    _needs_pil(case)
     from polyhost.services import svg_raster
     if svg_raster.available():
         return
@@ -97,6 +93,19 @@ def _needs_render(case):
         import cairosvg          # noqa: F401
     except Exception:
         case.skipTest("neither svg_raster (fontTools+freetype) nor cairosvg")
+
+
+def _needs_pil(case):
+    """What the PNG path of `render_os_overlay` needs, and nothing more.
+
+    A test that feeds a PNG and draws no SVG must not also wait for an SVG
+    rasteriser: `_needs_render` would skip it on a machine that lacks one.
+    """
+    try:
+        import numpy             # noqa: F401
+        from PIL import Image    # noqa: F401
+    except Exception:
+        case.skipTest("Pillow/numpy not installed")
 
 
 def _identity(icon=None, icon_path="", names=()):
@@ -1030,6 +1039,8 @@ class OsIconLogLineTest(unittest.TestCase):
     "score 0.215 < 0.080" (hardware round, 2026-09-29).
     """
 
+    # ⚠️ `_needs_pil`, not `_needs_render`: the icon is a PNG, the cache dir is
+    # empty and the network is off, so no SVG is drawn on either path.
     def _lines(self, icon):
         with tempfile.TemporaryDirectory() as tmp, \
                 self.assertLogs("PolyHost", "INFO") as cm:
@@ -1040,13 +1051,13 @@ class OsIconLogLineTest(unittest.TestCase):
                 if r.getMessage().startswith("The OS icon for")]
 
     def test_a_passing_icon_is_only_a_CANDIDATE(self):
-        _needs_render(self)
+        _needs_pil(self)
         lines = self._lines(_png(_ring))
         self.assertEqual(1, len(lines), lines)
         self.assertIn("is a CANDIDATE", lines[0])
 
     def test_a_failing_icon_only_does_not_survive(self):
-        _needs_render(self)
+        _needs_pil(self)
         lines = self._lines(_png(_disc))
         self.assertEqual(1, len(lines), lines)
         self.assertIn("does not survive 1-bit", lines[0])
