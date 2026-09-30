@@ -751,7 +751,7 @@ class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
     """
 
     MAPPING = {
-        "nxplayer": {"remote": True, "title": ".*NoMachine.*"},
+        "nxplayer": {"remote": True, "title": " - NoMachine$"},
         "notepad": {"overlay": "notepad_template.mods.png"},
     }
 
@@ -774,7 +774,7 @@ class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
     def test_a_remote_entry_with_NO_forwarder_report_DISABLES(self):
         handler = OverlayHandler(self.MAPPING)
         self.addCleanup(handler.close)
-        data, cmd = self._focus(handler, self._win("nxplayer", "NoMachine", 11))
+        data, cmd = self._focus(handler, self._win("nxplayer", "myhost - NoMachine", 11))
         self.assertIsNone(data)
         self.assertEqual(cmd, OverlayCommand.DISABLE)
         # Still the current entry, so a later forwarder report switches through
@@ -788,3 +788,40 @@ class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
         data, cmd = self._focus(handler, self._win("notepad", "a.txt", 12))
         self.assertEqual(cmd, OverlayCommand.OFF_ON)
         self.assertIn("notepad_template.mods.png", data)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class NoMachineChooserIsNotASessionTest(unittest.TestCase):
+    """The SHIPPED `nxplayer` entry matches a session window only.
+
+    On Windows a NoMachine session window is titled `<host> - NoMachine`; the
+    connection chooser is titled `NoMachine` alone. The old `.*NoMachine.*`
+    made the chooser a remote session (field, 2026-09-30).
+    """
+
+    def _handler(self):
+        import pathlib
+        import yaml
+        res = pathlib.Path(__file__).resolve().parents[2] / "polyhost" / "res"
+        with open(res / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            shipped = yaml.safe_load(f)
+        handler = OverlayHandler({"nxplayer": shipped["nxplayer"]})
+        self.addCleanup(handler.close)
+        return handler
+
+    def _focus(self, handler, title):
+        return AMatchWithNothingToDrawDisablesTest._focus(
+            self, handler,
+            AMatchWithNothingToDrawDisablesTest._win("nxplayer", title, 21))
+
+    def test_a_SESSION_window_is_the_remote_entry(self):
+        handler = self._handler()
+        self._focus(handler, "myhost - NoMachine")
+        self.assertTrue(handler.is_remote_mapping_entry())
+
+    def test_the_connection_CHOOSER_is_not(self):
+        handler = self._handler()
+        data, cmd = self._focus(handler, "NoMachine")
+        self.assertFalse(handler.is_remote_mapping_entry())
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+
