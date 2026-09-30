@@ -1431,7 +1431,8 @@ class PolyKybd:
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
                           cancel: threading.Event | None = None,
-                          synthetic: dict | None = None) -> bool:
+                          synthetic: dict | None = None,
+                          early_base_commit: bool = False) -> bool:
         """
         Send only overlay images not already in the keyboard's MRU pool, then
         update the display-position → pool-slot mapping in one command.
@@ -1597,89 +1598,114 @@ class PolyKybd:
             per_source: dict[str, list] = {}
             deferred: dict[str, list] = {}
             uploaded = 0
-            for filename, converter in zip(filenames, converters):
-                source_is_synthetic = filename in synthetic
-                # An image that is the SAME under every modifier is keyed ONCE,
-                # so the variants after the first are cache hits that upload
-                # nothing -- see synthetic_overlay.program_converter.
-                invariant = getattr(converter, "modifier_invariant", False)
-                for modifier in Modifier:
-                    # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
-                    # variant and has no flat index space above 90*9, so an
-                    # image staged for one of those variants could never be
-                    # addressed. Skip them rather than upload into nowhere.
-                    if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
-                        continue
-                    overlay_map = converter.extract_overlays(modifier)
-                    if not overlay_map:
-                        continue
-
-                    for keycode, overlay_data in overlay_map.items():
-                        if cancel is not None and cancel.is_set():
-                            self.log.debug_detailed("send_overlays_mru cancelled")
-                            discard_all()
-                            return False
-                        if source_is_synthetic and (modifier.value, keycode) in covered:
-                            self.log.debug_detailed(
-                                "%s: 0x%x/%s is drawn by a template already",
-                                filename, keycode, modifier)
-                            deferred.setdefault(filename, []).append((keycode, modifier))
+            # early_base_commit (study): all sources' NO_MOD images first, then a
+            # mapping + enable for just those, so the plain layer shows while the
+            # modifier layers are still uploading. Only when that first pass
+            # had a cache miss (upload or fill): a warm switch keeps its single commit.
+            passes = ([[Modifier.NO_MOD], [m for m in Modifier if m != Modifier.NO_MOD]]
+                      if early_base_commit else [list(Modifier)])
+            committed: dict[int, int] = {}
+            for pass_no, pass_mods in enumerate(passes):
+                for filename, converter in zip(filenames, converters):
+                    source_is_synthetic = filename in synthetic
+                    # An image that is the SAME under every modifier is keyed ONCE,
+                    # so the variants after the first are cache hits that upload
+                    # nothing -- see synthetic_overlay.program_converter.
+                    invariant = getattr(converter, "modifier_invariant", False)
+                    for modifier in pass_mods:
+                        # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
+                        # variant and has no flat index space above 90*9, so an
+                        # image staged for one of those variants could never be
+                        # addressed. Skip them rather than upload into nowhere.
+                        if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
                             continue
-                        covered.add((modifier.value, keycode))
-                        key_modifier = MODIFIER_ANY if invariant else modifier.value
-                        content_key = (os.path.basename(filename), key_modifier, keycode)
-                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                        overlay_map = converter.extract_overlays(modifier)
+                        if not overlay_map:
+                            continue
 
-                        if not is_hit:
-                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
-                            self.log.debug_detailed(
-                                "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
-                                keycode, modifier, pool_slot, pool_kc, pool_mod)
-                            icon_id = (icon_index.get(bytes(overlay_data.all_bytes))
-                                       if icon_index else None)
-                            if icon_id is not None:
-                                # A queued PRC record for a REUSED slot must land
-                                # before this fill, or the older image wins.
-                                sent = 0
-                                if packer is not None and packer.holds(pool_slot):
-                                    sent = packer.flush()
-                                if sent >= 0:
-                                    fills[pool_slot] = (icon_id, pool_kc, pool_mod, overlay_data)
-                            else:
-                                sent = upload(pool_slot, pool_kc, pool_mod, overlay_data)
-                            if sent < 0:
-                                # Roll back the slot get_or_allocate just
-                                # recorded: its image never reached the keyboard,
-                                # so leaving the entry would be a permanent stale
-                                # MRU hit (the keycap shows whatever really
-                                # occupies that slot, and the image is never
-                                # re-sent). Then abort before the mapping commit.
-                                cache.forget(content_key)
+                        for keycode, overlay_data in overlay_map.items():
+                            if cancel is not None and cancel.is_set():
+                                self.log.debug_detailed("send_overlays_mru cancelled")
                                 discard_all()
                                 return False
-                            hid_msg_counter += sent
-                        else:
-                            self.log.debug_detailed(
-                                "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
+                            if source_is_synthetic and (modifier.value, keycode) in covered:
+                                self.log.debug_detailed(
+                                    "%s: 0x%x/%s is drawn by a template already",
+                                    filename, keycode, modifier)
+                                deferred.setdefault(filename, []).append((keycode, modifier))
+                                continue
+                            covered.add((modifier.value, keycode))
+                            key_modifier = MODIFIER_ANY if invariant else modifier.value
+                            content_key = (os.path.basename(filename), key_modifier, keycode)
+                            pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
-                        display_idx = cache.display_flat_idx(keycode, modifier)
-                        display_to_pool[display_idx] = pool_slot
-                        per_source.setdefault(filename, []).append((keycode, modifier))
-                        if not is_hit:
-                            uploaded += 1
-
-                        if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
-                            hid_msg_counter_old = hid_msg_counter
-                            pauses += 1
-                            t_pause = time.perf_counter()
-                            if cancel is not None:
-                                if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
-                                    self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
+                            if not is_hit:
+                                pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                                self.log.debug_detailed(
+                                    "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
+                                    keycode, modifier, pool_slot, pool_kc, pool_mod)
+                                icon_id = (icon_index.get(bytes(overlay_data.all_bytes))
+                                           if icon_index else None)
+                                if icon_id is not None:
+                                    # A queued PRC record for a REUSED slot must land
+                                    # before this fill, or the older image wins.
+                                    sent = 0
+                                    if packer is not None and packer.holds(pool_slot):
+                                        sent = packer.flush()
+                                    if sent >= 0:
+                                        fills[pool_slot] = (icon_id, pool_kc, pool_mod, overlay_data)
+                                else:
+                                    sent = upload(pool_slot, pool_kc, pool_mod, overlay_data)
+                                if sent < 0:
+                                    # Roll back the slot get_or_allocate just
+                                    # recorded: its image never reached the keyboard,
+                                    # so leaving the entry would be a permanent stale
+                                    # MRU hit (the keycap shows whatever really
+                                    # occupies that slot, and the image is never
+                                    # re-sent). Then abort before the mapping commit.
+                                    cache.forget(content_key)
                                     discard_all()
                                     return False
+                                hid_msg_counter += sent
                             else:
-                                time.sleep(DELAY_TIME_AFTER_MAX_MSG)
-                            pause_s += time.perf_counter() - t_pause
+                                self.log.debug_detailed(
+                                    "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
+
+                            display_idx = cache.display_flat_idx(keycode, modifier)
+                            display_to_pool[display_idx] = pool_slot
+                            per_source.setdefault(filename, []).append((keycode, modifier))
+                            if not is_hit:
+                                uploaded += 1
+
+                            if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
+                                hid_msg_counter_old = hid_msg_counter
+                                pauses += 1
+                                t_pause = time.perf_counter()
+                                if cancel is not None:
+                                    if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
+                                        self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
+                                        discard_all()
+                                        return False
+                                else:
+                                    time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                                pause_s += time.perf_counter() - t_pause
+                if early_base_commit and pass_no == 0 and uploaded > 0:
+                    flushed = flush_fills() if fills else 0
+                    if flushed < 0:
+                        discard_all()
+                        return False
+                    hid_msg_counter += flushed
+                    if packer is not None:
+                        flushed = packer.flush()
+                        if flushed < 0:
+                            return False
+                        hid_msg_counter += flushed
+                    ok, msg = self.send_overlay_mapping(dict(display_to_pool))
+                    if not ok:
+                        self.log.warning("send_overlays_mru: early mapping failed: %s", msg)
+                        return False
+                    self.enable_overlays()
+                    committed = dict(display_to_pool)
 
         # The queued icon fills, then the last, partly filled PRC report. Before
         # the cancel re-check below, so a cancel there leaves every allocated
@@ -1729,7 +1755,8 @@ class PolyKybd:
             self.log.debug_detailed("send_overlays_mru cancelled before mapping commit")
             return False
 
-        ok, msg = self.send_overlay_mapping(display_to_pool)
+        ok, msg = self.send_overlay_mapping(
+            {k: v for k, v in display_to_pool.items() if committed.get(k) != v})
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
             return False
