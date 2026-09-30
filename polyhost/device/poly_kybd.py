@@ -91,6 +91,14 @@ PRC_OVERLAY_MIN_PROTOCOL = 19
 # upload. Below it, and whenever the keyboard's icon bundle is not the shipped
 # one, every image is uploaded as before, so nothing greys out.
 OVERLAY_ICONS_MIN_PROTOCOL = 20
+# Minimum firmware PROTOCOL_VERSION for the cmd 33 flag bits: the width byte's
+# 0x40 runs the prepare step before the pairs and 0x20 the enable step after, so
+# a warm app switch is its mapping reports alone. Older firmware reads a flagged
+# byte as a width above 16 and drops the report, so below it the host sends the
+# separate cmd 11 reports as before.
+MAPPING_FLAGS_MIN_PROTOCOL = 21
+MAPPING_FLAG_SHOW = 0x20
+MAPPING_FLAG_RESET = 0x40
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -114,6 +122,7 @@ FEATURE_MIN_PROTOCOL = {
     "idle_timeout": IDLE_TIMEOUT_MIN_PROTOCOL,
     "prc_overlay": PRC_OVERLAY_MIN_PROTOCOL,
     "overlay_icons": OVERLAY_ICONS_MIN_PROTOCOL,
+    "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1117,7 +1126,8 @@ class PolyKybd:
         self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
 
-    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
+    def send_overlay_mapping(self, from_to: dict, reset: bool = False,
+                             show: bool = False) -> tuple[bool, str]:
         """Program the display-position -> pool-slot table on the keyboard.
 
         Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
@@ -1130,17 +1140,26 @@ class PolyKybd:
         Older firmware gets the fixed-10-bit SEND_OVERLAY_MAPPING (cmd 21) it has
         always understood, with the GUI-combo positions dropped (it cannot
         address them at all — see GUI_COMBO_MODIFIERS_MIN_PROTOCOL).
+
+        ``reset`` / ``show`` (protocol v21+, the "mapping_flags" gate) set the
+        width byte's flag bits: reset on the first report runs the prepare step
+        before its pairs, show on the last runs the enable step after.
         """
+        if (reset or show) and not (self.supports("mapping_flags") and from_to):
+            return False, "mapping flags need protocol v21 and at least one pair"
         if self.supports("gui_combo_modifiers"):
-            return self._send_overlay_mapping_sized(from_to)
+            return self._send_overlay_mapping_sized(from_to, reset, show)
         return self._send_overlay_mapping_legacy(from_to)
 
-    def _send_overlay_mapping_sized(self, from_to: dict) -> tuple[bool, str]:
+    def _send_overlay_mapping_sized(self, from_to: dict, reset: bool = False,
+                                    show: bool = False) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
         reports = plan_mapping_reports(from_to, data_bytes)
         num_msgs = 0
-        for width, pairs in reports:
-            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width)
+        for r, (width, pairs) in enumerate(reports):
+            flags = ((MAPPING_FLAG_RESET if reset and r == 0 else 0)
+                     | (MAPPING_FLAG_SHOW if show and r == len(reports) - 1 else 0))
+            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
             msg = cmd + pack_report(pairs, data_bytes, width)
             result, err = self.hid.send_multiple(msg)
             num_msgs += 1
@@ -1484,18 +1503,39 @@ class PolyKybd:
             self.log.debug_detailed("send_overlays_mru cancelled before prepare")
             return False
 
-        ok, msg = self.prepare_for_mru_send()
-        if not ok:
-            # Without the mirror+reset the firmware may still hold the previous
-            # program's mapping/usage bits — sending against that state would
-            # redirect display positions to the wrong pool slots.
-            self.log.warning("send_overlays_mru: prepare failed: %s", msg)
+        # The prepare step (mirror + mapping/usage reset) must reach the keyboard
+        # before the first IMAGE: an upload into a slot the old mapping still
+        # shows would appear on the old key. On v21+ it is sent lazily, right
+        # before the first image report, and a switch that uploads nothing (a
+        # warm one) never sends it at all: the reset rides on its first mapping
+        # report instead (MAPPING_FLAG_RESET).
+        mapping_flags = self.supports("mapping_flags")
+        prepared = False
+        control = 0
+
+        def ensure_prepared() -> bool:
+            nonlocal prepared, control
+            if prepared:
+                return True
+            ok, msg = self.prepare_for_mru_send()
+            control += 1
+            if not ok:
+                # Without the mirror+reset the firmware may still hold the previous
+                # program's mapping/usage bits — sending against that state would
+                # redirect display positions to the wrong pool slots.
+                self.log.warning("send_overlays_mru: prepare failed: %s", msg)
+                return False
+            prepared = True
+            return True
+
+        if not mapping_flags and not ensure_prepared():
             return False
 
         # On cancel we bail before send_overlay_mapping / record_transferred_mapping
-        # / enable_overlays. The firmware was reset to identity by
-        # prepare_for_mru_send(), so an aborted send leaves overlays disabled —
-        # safe, because the superseding send immediately follows. Slots already
+        # / enable_overlays. Once the prepare step has run, the firmware is reset
+        # to identity, so an aborted send leaves overlays disabled — safe, because
+        # the superseding send immediately follows. On v21+ a cancel before the
+        # first image leaves the previous app's overlays as they were. Slots already
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
@@ -1505,7 +1545,7 @@ class PolyKybd:
         # two small images share one. Larger images keep the old encodings.
         packer = None
         if self.supports("prc_overlay"):
-            packer = PrcReportPacker(self._send_prc_report,
+            packer = PrcReportPacker(lambda records: ensure_prepared() and self._send_prc_report(records),
                                      self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
         # Icon library fills (protocol v20+): an image whose exact pixels are an
         # icon in the keyboard's library goes out as a (pool slot, icon id) pair,
@@ -1546,6 +1586,8 @@ class PolyKybd:
                 if flushed < 0:
                     return -1
                 sent += flushed
+            if not ensure_prepared():
+                return -1
             old = self.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: overlay_data})
             return -1 if old < 0 else sent + old
 
@@ -1556,7 +1598,8 @@ class PolyKybd:
                 return 0
             pending = dict(fills)
             fills.clear()
-            sent, refused = self._send_icon_fills({slot: v[0] for slot, v in pending.items()})
+            sent, refused = (self._send_icon_fills({slot: v[0] for slot, v in pending.items()})
+                             if ensure_prepared() else (-1, []))
             if sent < 0:
                 for slot in reversed(list(pending)):
                     cache.forget_slot(slot)
@@ -1729,12 +1772,23 @@ class PolyKybd:
             self.log.debug_detailed("send_overlays_mru cancelled before mapping commit")
             return False
 
-        ok, msg = self.send_overlay_mapping(display_to_pool)
+        # v21+: the enable rides on the last mapping report, and the reset on the
+        # first one when no image needed it earlier. An empty mapping has no
+        # report to carry them, so it takes the separate cmd 11 reports.
+        flagged = mapping_flags and bool(display_to_pool)
+        if flagged:
+            ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True)
+        elif ensure_prepared():
+            ok, msg = self.send_overlay_mapping(display_to_pool)
+        else:
+            return False
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
             return False
         cache.record_transferred_mapping(display_to_pool)
-        self.enable_overlays()
+        if not flagged:
+            self.enable_overlays()
+            control += 1
         self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
         # stat_best counts IMAGE REPORTS sent. send_smallest_overlay adds the
         # older encodings' per image, but the PRC and fill reports only exist in
@@ -1742,21 +1796,21 @@ class PolyKybd:
         self.stat_best = stats_before[4] + hid_msg_counter
         self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
                                len(display_to_pool), pauses, pause_s,
-                               time.perf_counter() - t_start)
+                               time.perf_counter() - t_start, control)
         return True
 
     def _log_switch_stats(self, before: tuple, uploaded: int, image_msgs: int,
                           positions: int, pauses: int, pause_s: float,
-                          wall_s: float) -> None:
+                          wall_s: float, control: int = 2) -> None:
         """One INFO line per overlay send, with every report it cost.
 
-        control = the two replied requests every send makes: prepare
-        (OVERLAY_FLAGS_ON mirror+reset) and enable. "if plain" is what the
+        control = the separate cmd 11 reports this send made: prepare
+        (OVERLAY_FLAGS_ON mirror+reset) and enable, two before protocol v21 and
+        none on a warm v21 switch, where both ride on the mapping. "if plain" is what the
         same images would have cost as uncompressed cmd 10 overlays."""
         plain0, comp0, roi0, croi0, best0, chosen0 = before
         chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
         mapping = self._last_mapping_msgs
-        control = 2
         total = image_msgs + mapping + control
         self.stat_switches += 1
         self.stat_reports_total += total

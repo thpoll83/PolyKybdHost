@@ -268,6 +268,14 @@ and the state-generation counter are in [`docs/protocol-gate.md`](docs/protocol-
   exactly `nul + 1`), so anything the firmware adds to the GET_ID reply must go
   **after** it. Prepending makes every deployed host read "no bundles on the device"
   and re-flash all eight on every connect.
+- **v21: prepare and enable ride on cmd 33** as flag bits in its width byte (0x40
+  reset before the pairs, 0x20 show after; `send_overlay_mapping(reset=, show=)`).
+  ⚠️ **The prepare step is sent LAZILY on v21**, right before the first image report
+  (`ensure_prepared()` in `send_overlays_mru`), because an upload into a slot the old
+  mapping still shows would appear on the old key. A warm switch sends no image, so
+  its reset rides on the first mapping report and the switch is its mapping reports
+  alone (warm 249 → 129 reports over all 60 sets). An empty mapping has no report
+  to carry the flags and keeps the separate cmd 11 reports.
 - ⚠️ **The raw channel is strictly request/response**, and `send_and_read_validate`'s
   drain depends on it: since protocol v3 the firmware sends no unsolicited replies, so
   a stale reply means one thing only. Making push work means framing plus routing in
