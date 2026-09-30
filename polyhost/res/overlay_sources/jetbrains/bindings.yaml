@@ -50,12 +50,12 @@ margin: 0
 mode: alpha
 threshold: 150
 
-# The mark shipped with the old hand-drawn set, lifted pixel-for-pixel.
-program_icon: jetbrains.png
-program_icon_mode: alpha
-program_icon_region: [72, 40]
-program_icon_anchor: center
-program_icon_margin: 0
+# No `program_icon`, deliberately. This one spec serves every JetBrains IDE, so a
+# mark here drew the shared "JB" logo on ESC for IDEA, PyCharm, CLion and the
+# rest, and a template cell outranks the program mark. With ESC left blank each
+# IDE gets its own `poly:` mark (res/icons/program/). `icons/jetbrains.png` stays
+# as the reclaimed original. #289 cleared the cell in the Windows PNGs only, so
+# a forwarded Linux or macOS IDE kept showing the logo until this was removed.
 
 # Reclaimed artwork renders 1:1 — the old cell IS the icon, so no fit/anchor.
 _reclaimed: &reclaimed { region: [72, 40], anchor: center }

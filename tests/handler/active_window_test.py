@@ -67,6 +67,32 @@ class TestCoveredByTemplate(unittest.TestCase):
         h.remote_handler.has_overlay = lambda: False
         self.assertFalse(h.covered_by_template())
 
+    def test_a_forwarder_overlay_covers_a_REMOTE_entry(self):
+        h = self._handler()
+        h.current_entry = self._entry(overlay=False, remote=True)
+        h.remote_handler.has_overlay = lambda: True
+        h.remote_handler.get_overlay_data = lambda: ["jetbrains_linux_template.mods.png"]
+        self.assertTrue(h.covered_by_template())
+        self.assertEqual(h.get_overlay_data(), ["jetbrains_linux_template.mods.png"])
+
+    def test_a_STALE_forwarder_overlay_covers_no_LOCAL_window(self):
+        # ⚠️ The forwarder still reports CLion after the local focus moved to
+        # the taskbar. That report must not cover a window no entry matched,
+        # or the core re-sends CLion's template there (field, 2026-09-30).
+        h = self._handler()
+        h.current_entry = None
+        h.remote_handler.has_overlay = lambda: True
+        h.remote_handler.get_overlay_data = lambda: ["jetbrains_linux_template.mods.png"]
+        self.assertFalse(h.covered_by_template())
+        self.assertIsNone(h.get_overlay_data())
+
+    def test_nor_a_LOCAL_entry_with_no_overlay(self):
+        h = self._handler()
+        h.current_entry = self._entry(overlay=False)
+        h.remote_handler.has_overlay = lambda: True
+        h.remote_handler.get_overlay_data = lambda: ["jetbrains_linux_template.mods.png"]
+        self.assertFalse(h.covered_by_template())
+
     def test_it_survives_the_tick_that_reports_NO_change(self):
         # ⚠️ The regression this exists for. `handle_active_window` returns the
         # filenames only on the tick the window CHANGES; the caller must still be

@@ -1126,6 +1126,25 @@ class JetBrainsOutlineMarksTest(unittest.TestCase):
                     self.assertIsNotNone(mask)
 
 
+    def test_the_resolver_picks_them_by_exe_name_ALONE(self):
+        """A forwarded IDE from a Linux install with no desktop entry arrives
+        with its executable name and no display name (field, 2026-09-30):
+        CLion drew its mark, IntelliJ (`idea`) drew nothing."""
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            for exe, want in (("clion", "poly:clion"), ("idea", "poly:idea"),
+                              ("idea64", "poly:idea")):
+                with self.subTest(exe):
+                    mask, got = ai.program_overlay(exe, _identity(names=()),
+                                                   tmp, allow_network=False)
+                    self.assertEqual(want, got)
+                    self.assertIsNotNone(mask)
+
+    def test_the_exe_slug_is_the_SAME_mark(self):
+        with open(os.path.join(ai.PROGRAM_ICON_DIR, "idea.png"), "rb") as a, \
+                open(os.path.join(ai.PROGRAM_ICON_DIR, "intellijidea.png"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
 class ShippedMarkOutranksCatalogTest(unittest.TestCase):
     """A `poly:` mark someone shipped beats a higher-SCORING catalog mark.
 

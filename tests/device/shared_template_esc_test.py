@@ -12,7 +12,10 @@ all sixteen variants.
 
 The JetBrains template had the same fault: a "JB" logo on ESC in twelve
 variants across its three files, so IDEA, PyCharm, CLion and the rest all
-showed the family logo instead of their own mark.
+showed the family logo instead of their own mark. The first fix cleared only the
+three Windows files: the `os:` branches (macOS, Linux, GNOME, KDE) kept the logo,
+so a CLion window forwarded from Linux still showed "JB" while a local Windows
+CLion showed its own mark. The check therefore walks every `os:` branch too.
 """
 
 import logging
@@ -56,13 +59,21 @@ class _SharedTemplateLeavesEsc:
         names = {n.strip() for n in self.key.split(",")}
         self.assertTrue(self.SHARED <= names, names)
 
+    def _overlay_files(self):
+        """The entry's own files plus every `os:` branch's, in mapping order."""
+        files = list(self.entry["overlay"])
+        for branch in (self.entry.get("os") or {}).values():
+            files += [f for f in (branch or {}).get("overlay") or []
+                      if f not in files]
+        return files
+
     def test_no_ESC_variant_in_the_shared_template(self):
         from polyhost.device.im_converter import ImageConverter
         logger = logging.getLogger("PolyHost")
         self.addCleanup(logger.setLevel, logger.level)
         logger.setLevel(logging.ERROR)
         esc = KeyCode.KC_ESCAPE.value
-        overlays = self.entry["overlay"]
+        overlays = self._overlay_files()
         self.assertEqual(self.FILES, len(overlays), overlays)
         for name in overlays:
             conv = ImageConverter(DeviceSettings())
@@ -80,8 +91,9 @@ class ChromiumTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase)
 
 class JetBrainsTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase):
     ANCHOR = "clion64"
-    SHARED = {"idea64", "pycharm64", "webstorm64", "rider64"}
-    FILES = 3
+    SHARED = {"idea64", "pycharm64", "webstorm64", "rider64", "jetbrains-clion"}
+    # Windows 3, macOS 4, Linux 3, GNOME 3, KDE 3.
+    FILES = 16
 
 if __name__ == "__main__":
     unittest.main()

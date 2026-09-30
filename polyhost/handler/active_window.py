@@ -619,7 +619,14 @@ class OverlayHandler:
             and self.current_entry[FLAGS][Flags.HAS_OVERLAY.value]
         ):  # 0 for overlay
             return self.current_entry[OVERLAY]
-        elif self.remote_handler.has_overlay():
+        # ⚠️ Only while a `remote:` entry is focused. The forwarder keeps
+        # reporting its own focused app after the local focus moves on, so an
+        # ungated fallback answered for EVERY unmatched local window: leaving a
+        # forwarded CLion for the Windows taskbar kept CLion's whole Linux
+        # template on the board, because `covered_by_template()` said the
+        # taskbar was covered and the core re-sent that template instead of
+        # clearing (field, 2026-09-30). A language switch re-sent it too.
+        elif self.is_remote_mapping_entry() and self.remote_handler.has_overlay():
             return self.remote_handler.get_overlay_data()
         return None
 

@@ -22,6 +22,7 @@ with `python tools/esc_mark_preview.py`.
 | `photos.png` | mask | carries a per-petal **dither** |
 | `finder.png` | mask | a thinned raster of mdi's art |
 | `clion.png`, `datagrip.png`, `goland.png`, `intellijidea.png`, `phpstorm.png`, `pycharm.png`, `rider.png`, `rubymine.png`, `webstorm.png` | mask | Simple Icons' filled plate, inverted inside the square plus a 2 px frame |
+| `idea.png` | mask | `intellijidea.png` again, under the executable's slug (see below) |
 
 ⚠️ **Why the JetBrains marks are not simply `si:`.** Simple Icons draws each
 IDE as a filled square with its letters cut out. On this panel that is a
@@ -31,6 +32,14 @@ the OS icon won instead: CLion showed its dithered colour icon (hardware,
 what the real product logos show (white letters in a black square), and ranks
 0.66–0.82. The sources are vendored in `src/si-<ide>.svg`, so the generator
 does not depend on the CDN pin.
+
+⚠️ **Why `idea.png` duplicates `intellijidea.png`.** Every other JetBrains IDE's
+executable is its product name (`clion`, `pycharm64`), so the exe alone reaches
+its mark. IntelliJ's is `idea`, and `poly:intellijidea` is reached only through
+the display name "IntelliJ IDEA". A Linux install with no desktop entry gives
+the forwarder no display name, so a forwarded IntelliJ drew no mark while CLion
+did (field, 2026-09-30). `tools/gen_program_icons.py` writes the same mask under
+both names (`JETBRAINS_EXE_SLUGS`).
 
 ⚠️ `render_overlay` fits an icon's **longest side** to the 38 px box, so one
 dimension is always exactly 38. "Narrower *and* shorter" is unreachable by
