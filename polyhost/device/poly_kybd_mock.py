@@ -391,7 +391,11 @@ class PolyKybdMock:
         self._current_lang = lang
         return True, lang
 
-    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
+    def send_overlay_mapping(self, from_to: dict, reset: bool = False,
+                             show: bool = False) -> tuple[bool, str]:
+        # reset/show are the v21 flag bits; the mock has no prepare/enable state
+        # of its own to change, so they are recorded and otherwise ignored.
+        self.last_mapping_flags = (reset, show)
         self.hid_mapping_sends += 1
         self.last_mapping = from_to
         self._overlay_mapping.update(from_to)

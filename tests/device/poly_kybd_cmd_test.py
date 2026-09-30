@@ -19,7 +19,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
-from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL
+from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL
 from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
@@ -675,6 +675,9 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         MockConverter.return_value = self._converter(
             {key_a: _overlay("rect"), esc: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
+        # The separate cmd 11 enable is the pre-v21 sequence; v21's flagged
+        # mapping is pinned by mapping_flags_test.
+        keeb.protocol_version = MAPPING_FLAGS_MIN_PROTOCOL - 1
         self.assertTrue(keeb.send_overlays(["fake.png"]))
 
         payloads = device.payloads()
@@ -702,6 +705,7 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
     def test_enable_sent_even_without_esc_overlay(self, MockConverter):
         MockConverter.return_value = self._converter({KeyCode.KC_A.value: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
+        keeb.protocol_version = MAPPING_FLAGS_MIN_PROTOCOL - 1   # see above
         self.assertTrue(keeb.send_overlays(["fake.png"]))
         enables = [p for p in device.payloads() if p[:3] == bytes([POLY, 11, 0x01])]
         self.assertEqual(len(enables), 1)

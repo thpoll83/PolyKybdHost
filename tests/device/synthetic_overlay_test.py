@@ -118,7 +118,7 @@ class OnePoolSlotTest(unittest.TestCase):
 
         keeb._send_prc_report = counting_prc
         mapping_sent = {}
-        keeb.send_overlay_mapping = lambda m: (mapping_sent.update(m), (True, ""))[1]
+        keeb.send_overlay_mapping = lambda m, **_flags: (mapping_sent.update(m), (True, ""))[1]
         keeb.prepare_for_mru_send = lambda: (True, "")
         keeb.enable_overlays = lambda: True
         cache.record_transferred_mapping = lambda m: None
@@ -322,7 +322,7 @@ class CacheKeyPairingTest(unittest.TestCase):
         cache = OverlayMRUCache(600)
         a = _template({Modifier.NO_MOD: {KeyCode.KC_A.value: OverlayData(DeviceSettings(), _mask(1))}})
         b = _template({Modifier.NO_MOD: {KeyCode.KC_B.value: OverlayData(DeviceSettings(), _mask(2))}})
-        keeb.send_overlay_mapping = lambda m: (True, "")
+        keeb.send_overlay_mapping = lambda m, **_flags: (True, "")
         keeb.prepare_for_mru_send = lambda: (True, "")
         keeb.enable_overlays = lambda: True
         cache.record_transferred_mapping = lambda m: None
