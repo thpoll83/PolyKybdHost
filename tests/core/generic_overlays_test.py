@@ -1107,5 +1107,114 @@ class TitleTickDoesNotFlickerTest(unittest.TestCase):
         core.submit_overlay_cmd.assert_called_once_with(OverlayCommand.DISABLE)
 
 
+class OneSendOnATemplateSwitchTest(unittest.TestCase):
+    """⚠️ A switch to a template app sends ONCE when the gap fill is known.
+
+    Field log, 2026-09-30: every switch to Chrome, Slack or Outlook sent the
+    template alone on the change tick and the template plus the ESC mark on
+    the next, 200-400 ms later -- two full mapping rebuilds per switch, even
+    with the mark cached for minutes.
+    """
+
+    TEMPLATE = "chrome_template.mods.png"
+
+    def _switch(self, core):
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = self.TEMPLATE
+        core.send_overlay_data = MagicMock()
+        _tick(core, data=self.TEMPLATE, cmd=OverlayCommand.OFF_ON)
+        return core
+
+    def _sent(self, core):
+        entry = core.device_mgr.all_entries[0]
+        core.worker.submit.call_args.args[1](threading.Event())
+        sent = entry.device.send_overlays_mru.call_args
+        return sent.args[0], sent.kwargs["synthetic"]
+
+    def test_a_CACHED_mark_rides_the_switch_in_ONE_send(self):
+        core = self._switch(make_core(mask=_mask(), shortcuts={}))
+        core.send_overlay_data.assert_not_called()
+        self.assertEqual(core.worker.submit.call_count, 1)
+        filenames, synthetic = self._sent(core)
+        self.assertTrue(filenames[0].endswith(self.TEMPLATE))
+        self.assertEqual(len(synthetic), 1, "the mark, and nothing else")
+
+    def test_the_NEXT_tick_sends_nothing_more(self):
+        core = self._switch(make_core(mask=_mask(), shortcuts=_sc()))
+        _tick(core)                            # the tick after the switch
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_it_sends_even_when_the_SAME_set_was_on_the_device(self):
+        """Coming back to an app re-sends: the template OFF_ON re-programs the
+        pool, so a dedupe against the old signature would send nothing."""
+        from polyhost.core.poly_core import get_overlay_path
+        core = make_core(mask=_mask(), shortcuts={})
+        core._generic_on_device = PolyCore._generic_signature(
+            "si:gimp", {}, (get_overlay_path(self.TEMPLATE),))
+        self._switch(core)
+        core.send_overlay_data.assert_not_called()
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_an_UNRESOLVED_fill_sends_the_template_alone(self):
+        """First sighting: the mark is still being fetched. The template must
+        not wait for it."""
+        core = self._switch(make_core(mask=None, slug=None, shortcuts={}))
+        core.send_overlay_data.assert_called_once_with(self.TEMPLATE)
+        core.worker.submit.assert_not_called()
+
+    def test_fill_gaps_OFF_sends_the_template_alone(self):
+        core = self._switch(make_core(
+            mask=_mask(), shortcuts=_sc(),
+            settings={"generic_overlays_fill_gaps": False}))
+        core.send_overlay_data.assert_called_once_with(self.TEMPLATE)
+        core.worker.submit.assert_not_called()
+
+
+class _FakeClock:
+    """Stands in for the `time` module inside poly_core: `monotonic()` answers
+    from a list, so a test states exactly how long each part of a tick took."""
+
+    def __init__(self, *readings):
+        self._readings = list(readings)
+
+    def monotonic(self):
+        return self._readings.pop(0)
+
+
+class SlowTickWarningTest(unittest.TestCase):
+    """The only log line that can tell "the tick thread was stuck" from "no
+    window changed" (field, 2026-09-30: 87 s with no window detected while the
+    user switched between several windows)."""
+
+    def _tick_at(self, core, *readings):
+        from unittest.mock import patch
+        with patch("polyhost.core.poly_core.time", _FakeClock(*readings)):
+            _tick(core)
+
+    def test_a_SLOW_tick_is_logged_with_its_split(self):
+        core = make_core()
+        # start, query start, query end, end
+        with self.assertLogs(core.log, level="WARNING") as captured:
+            self._tick_at(core, 100.0, 100.0, 102.5, 103.0)
+        self.assertIn("took 3.0 s", captured.output[0])
+        self.assertIn("query and match 2.5 s", captured.output[0])
+        self.assertIn("overlay decision 0.5 s", captured.output[0])
+
+    def test_a_GAP_between_ticks_is_logged(self):
+        core = make_core()
+        core._tick_ended_at = 100.0
+        with self.assertLogs(core.log, level="WARNING") as captured:
+            self._tick_at(core, 190.0, 190.0, 190.0, 190.1)
+        self.assertEqual(len(captured.output), 1)
+        self.assertIn("90.0 s after the previous one", captured.output[0])
+
+    def test_a_NORMAL_tick_logs_nothing(self):
+        core = make_core()
+        core._tick_ended_at = 100.0
+        with self.assertNoLogs(core.log, level="WARNING"):
+            self._tick_at(core, 100.25, 100.25, 100.26, 100.3)
+        self.assertEqual(core._tick_ended_at, 100.3)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -462,7 +462,25 @@ class OverlayHandler:
                                 )
                                 if found:
                                     self.log.info("Changing to %s", app_name)
-                                    return self.get_overlay_data(), cmd
+                                    data = self.get_overlay_data()
+                                    if data is None:
+                                        # ⚠️ A MATCH WITH NOTHING TO DRAW must
+                                        # not leave the last app's keycaps up.
+                                        # A `remote:` entry whose forwarder has
+                                        # not reported (NoMachine's connection
+                                        # chooser) returned OFF_ON with no
+                                        # data, so nothing was sent and
+                                        # Chrome's overlays stayed on the board
+                                        # (field, 2026-09-30). `current_entry`
+                                        # stays set, so a later forwarder
+                                        # report still switches through the
+                                        # remote branch below; `last_entry` is
+                                        # dropped so returning here is a full
+                                        # OFF_ON, never an ENABLE of whatever
+                                        # mapping another app left behind.
+                                        self.last_entry = None
+                                        return None, OverlayCommand.DISABLE
+                                    return data, cmd
                                 self.log.debug("App '%s' in mapping but title did not match (title='%s')", app_name, self.title)
                             if self.current_entry and not found:
                                 self.current_entry = None

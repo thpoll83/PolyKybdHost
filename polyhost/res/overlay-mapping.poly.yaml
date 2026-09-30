@@ -58,7 +58,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: jira_template.mods.png
 nxplayer:
   remote: true
-  title: .*NoMachine.*
+  # A session window is titled '<host> - NoMachine'. The connection chooser
+  # is titled 'NoMachine' alone and is not a remote session.
+  title: ' - NoMachine$'
 gimp-2.0,gimp-2.8,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
   overlay: gimp_template.mods.png
 zoom:
