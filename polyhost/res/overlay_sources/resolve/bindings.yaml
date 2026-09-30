@@ -3,7 +3,16 @@
 # Icons: Microsoft Fluent UI System Icons (MIT) + shared custom-drawn NLE glyphs
 # (../nle_glyphs.py). Program mark (ESC, all layers): drawn substitute, NOT the
 # Blackmagic trademark. See SOURCES.md.
-# Shortcuts: DaVinci Resolve 18/19/20 Windows defaults (see SOURCES.md).
+# Shortcuts: DaVinci Resolve 18/19/20 defaults (see SOURCES.md).
+#
+# ONE spec, TWO artwork sets: resolve_template.* for Windows/Linux and
+# resolve_template_mac.* for macOS. Resolve's macOS keymap is its Windows one
+# with Ctrl->Command and Alt->Option, so almost every chord is CMDCTRL.
+#   only: [...]     Ripple delete: Shift+Backspace on Windows, Forward Delete on
+#                   macOS (Blackmagic reference manual), written once per platform.
+#   except: [macos] Ctrl+R / Ctrl+Shift+R: on macOS those chords are documented as
+#                   Retime Controls / Resolve Live Freeze, not render - left blank.
+# The macOS table is in SOURCES.md -> "macOS".
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/resolve/fetch_icons.py
@@ -43,23 +52,23 @@ bindings:
   - { key: F10, mods: [], icon: overwrite.png, label: "Overwrite edit", source: "custom/nle_glyphs", mode: alpha }
 
   # --- Ctrl (R channel of the primary file) ---
-  - { key: N, mods: [CTRL], icon: newtimeline.png, label: "New timeline", source: "ms-fluent/Add Square (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,        label: "Save project", source: "ms-fluent/Save (MIT)" }
-  - { key: I, mods: [CTRL], icon: import.png,      label: "Import media", source: "ms-fluent/Arrow Import (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,        label: Undo,           source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,         label: Cut,            source: "ms-fluent/Cut (MIT)" }
-  - { key: C, mods: [CTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
-  - { key: B, mods: [CTRL], icon: blade.png,       label: "Blade / split clip", source: "custom/nle_glyphs", mode: alpha }
-  - { key: G, mods: [CTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
-  - { key: R, mods: [CTRL], icon: render.png,      label: "Start render", source: "ms-fluent/Arrow Export (MIT)" }
-  - { key: "\\", mods: [CTRL], icon: addedit.png,  label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
-  - { key: "=", mods: [CTRL], icon: zoomin.png,    label: "Zoom in",      source: "ms-fluent/Zoom In (MIT)" }
-  - { key: "-", mods: [CTRL], icon: zoomout.png,   label: "Zoom out",     source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: newtimeline.png, label: "New timeline", source: "ms-fluent/Add Square (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,        label: "Save project", source: "ms-fluent/Save (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: import.png,      label: "Import media", source: "ms-fluent/Arrow Import (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,        label: Undo,           source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,         label: Cut,            source: "ms-fluent/Cut (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: blade.png,       label: "Blade / split clip", source: "custom/nle_glyphs", mode: alpha }
+  - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
+  - { key: "\\", mods: [CMDCTRL], icon: addedit.png,  label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
+  - { key: "=", mods: [CMDCTRL], icon: zoomin.png,    label: "Zoom in",      source: "ms-fluent/Zoom In (MIT)" }
+  - { key: "-", mods: [CMDCTRL], icon: zoomout.png,   label: "Zoom out",     source: "ms-fluent/Zoom Out (MIT)" }
 
   # --- Shift (B channel of the primary file) ---
-  - { key: BACKSPACE, mods: [SHIFT], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
+  - { key: BACKSPACE, mods: [SHIFT], only: [windows, linux], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
+  - { key: DELETE, mods: [], only: [macos], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
   - { key: F12, mods: [SHIFT], icon: append.png,        label: "Append to timeline", source: "custom/nle_glyphs", mode: alpha }
   - { key: "3", mods: [SHIFT], icon: pagecut.png,       label: "Cut page",       source: "ms-fluent/Filmstrip (MIT)" }
   - { key: "4", mods: [SHIFT], icon: pageedit.png,      label: "Edit page",      source: "ms-fluent/Timeline (MIT)" }
@@ -69,9 +78,9 @@ bindings:
   - { key: "8", mods: [SHIFT], icon: pagedeliver.png,   label: "Deliver page",   source: "ms-fluent/Cloud Arrow Up (MIT)" }
 
   # --- Ctrl+Shift (R channel of the combo file) ---
-  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,        label: Redo,           source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,     label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
-  - { key: R, mods: [CTRL, SHIFT], icon: renderqueue.png, label: "Render queue", source: "ms-fluent/List (MIT)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,        label: Redo,           source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,     label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
+  - { key: R, mods: [CTRL, SHIFT], except: [macos], icon: renderqueue.png, label: "Render queue", source: "ms-fluent/List (MIT)" }
 
   # --- Ctrl+Alt (G channel of the combo file) ---
-  - { key: L, mods: [CTRL, ALT], icon: link.png, label: "Link / unlink clips", source: "ms-fluent/Link (MIT)" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: link.png, label: "Link / unlink clips", source: "ms-fluent/Link (MIT)" }

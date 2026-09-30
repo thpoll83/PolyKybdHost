@@ -1,5 +1,10 @@
 # Confluence Cloud (in-browser) shortcut overlays for PolyKybd. See SOURCES.md.
 #
+# Serves Windows/Linux AND macOS from this one file: `CMDCTRL` is Ctrl on
+# Windows/Linux and Cmd on macOS (the generator also writes <output>_mac.*);
+# a chord macOS moves is written twice under disjoint `only:` lists, and one
+# with no macOS equivalent carries `except: [macos]`. See SOURCES.md -> macOS.
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/webapps/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -26,26 +31,27 @@ bindings:
   - { key: E, mods: [], icon: edit.png, label: "Edit page", source: "ms-fluent/Document Edit (MIT)" }
 
   # --- Ctrl: the editor ---
-  - { key: B, mods: [CTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
-  - { key: U, mods: [CTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
-  - { key: K, mods: [CTRL], icon: link.png,      label: Link,      source: "ms-fluent/Link (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,      source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: Y, mods: [CTRL], icon: redo.png,      label: Redo,      source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: ENTER, mods: [CTRL], icon: publish.png, label: Publish, source: "ms-fluent/Rocket (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: link.png,      label: Link,      source: "ms-fluent/Link (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,      source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo,      source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: publish.png, label: Publish, source: "ms-fluent/Rocket (MIT)" }
 
   # --- Ctrl+Shift ---
-  - { key: S, mods: [CTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
-  - { key: M, mods: [CTRL, SHIFT], icon: codeblock.png,     label: "Code block",   source: "ms-fluent/Code Block (MIT)" }
-  - { key: I, mods: [CTRL, SHIFT], icon: table.png,         label: "Insert table", source: "ms-fluent/Table Simple (MIT)" }
-  - { key: "7", mods: [CTRL, SHIFT], icon: numberlist.png,  label: "Numbered list", source: "material-symbols/format_list_numbered (Apache-2.0)" }
-  - { key: "8", mods: [CTRL, SHIFT], icon: bulletlist.png,  label: "Bullet list",  source: "ms-fluent/Text Bullet List (MIT)" }
-  - { key: "9", mods: [CTRL, SHIFT], icon: quote.png,       label: "Block quote",  source: "ms-fluent/Text Quote (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: code.png,          label: "Inline code",  source: "ms-fluent/Code (MIT)" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: table.png,         label: "Insert table", source: "ms-fluent/Table Simple (MIT)" }
+  - { key: "7", mods: [CMDCTRL, SHIFT], icon: numberlist.png,  label: "Numbered list", source: "material-symbols/format_list_numbered (Apache-2.0)" }
+  - { key: "8", mods: [CMDCTRL, SHIFT], icon: bulletlist.png,  label: "Bullet list",  source: "ms-fluent/Text Bullet List (MIT)" }
+  - { key: "9", mods: [CMDCTRL, SHIFT], icon: quote.png,       label: "Block quote",  source: "ms-fluent/Text Quote (MIT)" }
 
   # --- Ctrl+Alt: headings ---
-  - { key: "1", mods: [CTRL, ALT], icon: heading1.png, label: "Heading 1", source: "ms-fluent/Text Header 1 (MIT)" }
-  - { key: "2", mods: [CTRL, ALT], icon: heading2.png, label: "Heading 2", source: "ms-fluent/Text Header 2 (MIT)" }
-  - { key: "3", mods: [CTRL, ALT], icon: heading3.png, label: "Heading 3", source: "ms-fluent/Text Header 3 (MIT)" }
+  - { key: "1", mods: [CMDCTRL, ALT], icon: heading1.png, label: "Heading 1", source: "ms-fluent/Text Header 1 (MIT)" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: heading2.png, label: "Heading 2", source: "ms-fluent/Text Header 2 (MIT)" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: heading3.png, label: "Heading 3", source: "ms-fluent/Text Header 3 (MIT)" }
 
-  # --- Alt+Shift ---
-  - { key: Z, mods: [ALT, SHIFT], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
+  # --- Quick search: Alt+Shift+Z, but Ctrl+Option+Z on the Mac ---
+  - { key: Z, mods: [ALT, SHIFT], only: [windows, linux], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
+  - { key: Z, mods: [CTRL, ALT],  only: [macos],          icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }

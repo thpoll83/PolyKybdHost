@@ -6,6 +6,13 @@
 # Shortcuts: Premiere Pro Windows defaults. Ambiguous keys (M, T, Q, W, F) are
 # deliberately OMITTED - see SOURCES.md "Deliberately excluded".
 #
+# ONE spec, TWO artwork sets (Windows/Linux and macOS). Every Ctrl chord is
+# written CMDCTRL (Ctrl on Windows/Linux, Cmd on macOS), so the generator emits
+# premiere_template.* and premiere_template_mac.*. No action is remapped;
+# Cmd+M (Export media) shadows macOS Minimize. Shift+DELETE (Ripple delete) is
+# Shift+Forward-Delete on a Mac keyboard, the same key. macOS chords and the
+# reserved-chord notes are in SOURCES.md -> "macOS".
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/premiere/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -54,20 +61,20 @@ bindings:
   - { key: "\\", mods: [], icon: zoomfit.png, label: "Zoom to sequence", source: "ms-fluent/Arrow Expand (MIT)" }
 
   # --- Ctrl (R channel of the primary file) ---
-  - { key: N, mods: [CTRL], icon: newsequence.png, label: "New sequence", source: "ms-fluent/Add Square (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,        label: "Open project", source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,        label: Save,           source: "ms-fluent/Save (MIT)" }
-  - { key: I, mods: [CTRL], icon: import.png,      label: Import,         source: "ms-fluent/Arrow Import (MIT)" }
-  - { key: M, mods: [CTRL], icon: export.png,      label: "Export media", source: "ms-fluent/Arrow Export (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,        label: Undo,           source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,         label: Cut,            source: "ms-fluent/Cut (MIT)" }
-  - { key: C, mods: [CTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
-  - { key: K, mods: [CTRL], icon: addedit.png,     label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
-  - { key: L, mods: [CTRL], icon: link.png,        label: "Link / unlink", source: "ms-fluent/Link (MIT)" }
-  - { key: G, mods: [CTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
-  - { key: R, mods: [CTRL], icon: speed.png,       label: "Speed / duration", source: "ms-fluent/Arrow Autofit Width (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: newsequence.png, label: "New sequence", source: "ms-fluent/Add Square (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,        label: "Open project", source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,        label: Save,           source: "ms-fluent/Save (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: import.png,      label: Import,         source: "ms-fluent/Arrow Import (MIT)" }
+  - { key: M, mods: [CMDCTRL], icon: export.png,      label: "Export media", source: "ms-fluent/Arrow Export (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,        label: Undo,           source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,         label: Cut,            source: "ms-fluent/Cut (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: addedit.png,     label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: link.png,        label: "Link / unlink", source: "ms-fluent/Link (MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: speed.png,       label: "Speed / duration", source: "ms-fluent/Arrow Autofit Width (MIT)" }
 
   # --- Shift (B channel of the primary file): the panel row ---
   - { key: DELETE, mods: [SHIFT], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
@@ -80,10 +87,10 @@ bindings:
   - { key: "7", mods: [SHIFT], icon: paneleffects.png,   label: "Effects panel",   source: "ms-fluent/Wand (MIT)" }
 
   # --- Ctrl+Shift (R channel of the combo file) ---
-  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,        label: Redo,          source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,      label: "Save as",     source: "ms-fluent/Save Multiple (MIT)" }
-  - { key: V, mods: [CTRL, SHIFT], icon: pasteinsert.png, label: "Paste insert", source: "ms-fluent/Arrow Between Down (MIT)" }
-  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,     label: Ungroup,       source: "ms-fluent/Group Dismiss (MIT)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,        label: Redo,          source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,      label: "Save as",     source: "ms-fluent/Save Multiple (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinsert.png, label: "Paste insert", source: "ms-fluent/Arrow Between Down (MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,     label: Ungroup,       source: "ms-fluent/Group Dismiss (MIT)" }
 
   # --- Ctrl+Alt (G channel of the combo file) ---
-  - { key: N, mods: [CTRL, ALT], icon: newproject.png, label: "New project", source: "ms-fluent/Document Add (MIT)" }
+  - { key: N, mods: [CMDCTRL, ALT], icon: newproject.png, label: "New project", source: "ms-fluent/Document Add (MIT)" }

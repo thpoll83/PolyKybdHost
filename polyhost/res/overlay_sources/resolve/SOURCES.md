@@ -58,3 +58,38 @@ python polyhost/res/overlay_sources/resolve/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/resolve/bindings.yaml --preview /tmp/resolve_preview
 ```
+
+## macOS
+
+The spec serves Windows and macOS from one file: `resolve_template.*`
+(Windows/Linux) and `resolve_template_mac.*` (macOS). Resolve's Mac keymap is the
+Windows one with Ctrl→Command and Alt→Option, so 16 bindings are `CMDCTRL`.
+
+Sources:
+
+- **Blackmagic's DaVinci Resolve 18 Reference Manual** (official; its shortcuts are
+  written in Mac form), mirrored at
+  <https://github.com/ltbits/davinci-resolve-manuals> (`DR18/DR18-RM05-Edit.pdf`,
+  `RM03-IngestAndOrganizeMedia`, `RM01`, `RM02`, `RM06`). Confirms: Command-N new
+  timeline, Command-S, Command-I import media, Command-Z / Command-Shift-Z,
+  Command-X/C/V, Command-A, Command-Backslash split, Command-Equals / Command-Minus
+  zoom, Option-Command-L link, Shift-2…8 pages, F9 / F10 / Shift-F12, and
+  **Forward Delete = ripple delete**. `documents.blackmagicdesign.com` itself was
+  egress-blocked.
+- Web-search snippets (davinciresolveclub.com, motionarray.com, evercast.us) for
+  the three chords the manual does not list: Cmd+B (razor at playhead), Cmd+G /
+  Cmd+Shift+G (group / ungroup). These follow the uniform Ctrl→Cmd pattern.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Ripple delete | `Shift+Backspace` | `Forward Delete` (the DELETE key) | Reference manual: "Forward Delete — Ripple delete". Written twice with `only:`. |
+| Start render | — (dropped) | — (dropped) | The manual documents Command-R as **Retime Controls** (Edit page) / Resolve Live (Color page), not render. |
+| Render queue | `Ctrl+Shift+R` | — (dropped) | The manual documents Shift-Command-R as Resolve Live Freeze; no confirmed render-queue chord. |
+
+No macOS chord drawn here is system-reserved (`Shift+3/4/5` carry no Cmd, so they
+do not collide with the ⌘⇧3/4/5 screenshot keys).
+
+Fixed 2026-09-30: the Windows `Ctrl+R` "Start render" cell is gone, because
+`Ctrl+R` is Retime Controls (manual, see above). ⚠️ `Ctrl+Shift+R` "Render queue"
+is still drawn on Windows but unconfirmed: the manual gives Shift-Command-R as
+Resolve Live Freeze.

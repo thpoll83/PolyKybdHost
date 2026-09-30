@@ -4,7 +4,7 @@ import re
 import socket
 import threading
 
-from polyhost.handler.common import Flags, find_matching_entry
+from polyhost.handler.common import Flags, find_matching_entry, mapping_key
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
@@ -89,6 +89,8 @@ class RemoteHandler:
         self.handle = None
         self.title = None
         self.name = None
+        # The reported name, lower-cased but NOT cut at a dot. See _match_remote.
+        self.full_name = None
         self.current_entry = None
         self.last_entry = None
         self.connections = {}
@@ -321,18 +323,25 @@ class RemoteHandler:
     def _match_remote(self):
         """Match the current remote window's app/title against the mapping using
         the shared matcher, updating current/last_entry. Returns True on match."""
-        if self.name not in self.mapping:
+        # The whole name first, then the dot-cut one. The cut is right for a
+        # Windows executable (`Code.exe` -> `code`), but a Linux app id keeps its
+        # dots: `org.gimp.GIMP` cut to `org` would match nothing. The local path
+        # cuts on Windows only; trying both answers the same without knowing
+        # which OS the forwarder runs.
+        key = (mapping_key(getattr(self, "full_name", None), self.mapping)
+               or mapping_key(self.name, self.mapping))
+        if key is None:
             return False
         try:
             # The forwarder's OS, not ours: the remote app's keymap is a property
             # of the machine it runs on.
-            matched = find_matching_entry(self.title, self.mapping[self.name],
+            matched = find_matching_entry(self.title, self.mapping[key],
                                           getattr(self, "forwarded_url", None),
                                           getattr(self, "forwarded_os", None))
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
-                self.name, self.mapping[self.name], e.msg, e.pos, e.pattern,
+                self.name, self.mapping[key], e.msg, e.pos, e.pattern,
             )
             return False
         if matched is None:
@@ -371,6 +380,7 @@ class RemoteHandler:
             self.handle = data["handle"]
             self.title = data["title"]
             self.name = normalise_app_name(data["name"])
+            self.full_name = str(data["name"] or "").lower()
             self._matched_os = self.forwarded_os
             self._matched_url = self.forwarded_url
             self.log.info(

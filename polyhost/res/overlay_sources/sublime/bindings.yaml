@@ -16,6 +16,9 @@
 app: sublime_text
 match: [sublime_text]
 output: sublime_template
+# Sublime ships a separate Linux keymap; the one chord it moves is drawn from
+# the Linux set (see "Add cursor above/below" below).
+output_linux: sublime_linux_template
 icon_dir: icons
 fit: contain
 anchor: bottom-right
@@ -56,7 +59,9 @@ bindings:
   - { key: P, mods: [CTRL, SHIFT], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
   - { key: D, mods: [CTRL, SHIFT], icon: duplicate.png,   label: "Duplicate line",  source: "ms-fluent/Row Triple (MIT)" }
   - { key: K, mods: [CTRL, SHIFT], icon: deleteline.png,  label: "Delete line",     source: "custom/editor_glyphs", mode: alpha }
-  - { key: J, mods: [CTRL], icon: joinlines.png,          label: "Join lines",      source: "ms-fluent/Text Wrap Off (MIT)" }
+  # Sublime Text 4 moved Join Lines to Ctrl+Shift+J; plain Ctrl+J is now the
+  # prefix of two-stroke chords, which a keycap cannot draw.
+  - { key: J, mods: [CTRL, SHIFT], icon: joinlines.png,   label: "Join lines",      source: "ms-fluent/Text Wrap Off (MIT)" }
   - { key: "/", mods: [CTRL, SHIFT], icon: blockcomment.png, label: "Block comment", source: "ms-fluent/Comment Multiple (MIT)" }
   - { key: F, mods: [CTRL, SHIFT], icon: findinfiles.png, label: "Find in files",   source: "ms-fluent/Folder Open (MIT)" }
   - { key: T, mods: [CTRL, SHIFT], icon: reopentab.png,   label: "Reopen closed tab", source: "ms-fluent/Tab Desktop (MIT)" }
@@ -69,8 +74,12 @@ bindings:
   - { key: ENTER, mods: [CTRL, SHIFT], icon: insertbefore.png, label: "Insert line before", source: "ms-fluent/Arrow Enter (MIT)" }
 
   # --- Ctrl+Alt (G channel of the combo file): multiple cursors ---
-  - { key: UP,   mods: [CTRL, ALT], icon: cursorabove.png, label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
-  - { key: DOWN, mods: [CTRL, ALT], icon: cursorbelow.png, label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
+  # Default (Linux).sublime-keymap binds these to Alt+Shift+Up/Down instead
+  # (Ctrl+Alt+arrows are commonly taken by the desktop for workspaces).
+  - { key: UP,   mods: [CTRL, ALT], only: [windows], icon: cursorabove.png, label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
+  - { key: DOWN, mods: [CTRL, ALT], only: [windows], icon: cursorbelow.png, label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
+  - { key: UP,   mods: [ALT, SHIFT], only: [linux],  icon: cursorabove.png, label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
+  - { key: DOWN, mods: [ALT, SHIFT], only: [linux],  icon: cursorbelow.png, label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
 
   # --- Alt (G channel of the primary file) ---
   - { key: F3, mods: [ALT], icon: selectalloccur.png, label: "Select all occurrences", source: "ms-fluent/Select All On (MIT)" }

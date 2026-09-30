@@ -47,6 +47,58 @@ combination is not one of the nine representable modifier variants.
   shortcut page does not list them, and this batch's rule is that an unsourced
   binding does not ship.
 
+## macOS
+
+All five specs serve Windows/Linux **and** macOS from one file each. The
+generator writes a second `<output>_mac.*` set, in which `CMDCTRL` resolves to
+Cmd. Every one of these apps is a Cmd-for-Ctrl app, so almost every Ctrl chord
+became `CMDCTRL`. Chords with no Ctrl (GitHub `t`/`s`/`/`, GitLab `j`/`k`,
+Confluence `e`, Notion `Tab`) are the same on every platform and were left
+alone. Confluence Quick search is the exception: `Alt+Shift+Z` on Windows/Linux
+and `Ctrl+Option+Z` on the Mac (Atlassian's page, via search snippets), so it is
+two lines with disjoint `only:`.
+
+| Set | macOS source | Result |
+|---|---|---|
+| GitHub | [`github/docs` → `content/get-started/accessibility/keyboard-shortcuts.md`](https://github.com/github/docs/blob/main/content/get-started/accessibility/keyboard-shortcuts.md). This is the source of the docs page above, and it gives a "Command … (Mac) or Ctrl … (Windows/Linux)" row for every chord. | 5 → `CMDCTRL` |
+| GitLab | [`gitlab-org/gitlab` → `doc/user/shortcuts.md`](https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/user/shortcuts.md). This is the source of the docs page, with its "macOS shortcut / Windows shortcut" columns. | 2 → `CMDCTRL` |
+| Confluence Cloud | The Atlassian page above (Mac = ⌘ for Ctrl, ⌥ for Alt, via search snippets; the page itself was unreachable). The editor's own keymap source, [`@atlaskit/editor-common` 126.1.3 `keymaps/index.js`](https://www.npmjs.com/package/@atlaskit/editor-common), declares each chord as `Mod-…`, which it renders as Ctrl on Windows and Cmd on Mac. | 16 → `CMDCTRL` |
+| Google Docs | [Answer 179738, Mac tab](https://support.google.com/docs/answer/179738?hl=en&co=GENIE.Platform%3DDesktop), read through search snippets because the page was unreachable from the build container. | 36 → `CMDCTRL`, 2 remapped |
+| Notion | The [Notion help page](https://www.notion.com/help/keyboard-shortcuts) writes every chord as `cmd/ctrl + …`, read through search snippets. | 20 → `CMDCTRL` |
+
+**Remapped on macOS** (written twice under disjoint `only:` lists):
+
+| Set | Action | Windows/Linux | macOS | Why |
+|---|---|---|---|---|
+| Google Docs | Find and replace | `Ctrl+H` | `⌘⇧H` | Google's Mac column. ⌘H is the system Hide. |
+| Google Docs | Strikethrough | `Alt+Shift+5` | `⌘⇧X` | Google's Mac column. |
+
+Nothing was dropped on macOS.
+
+**Notes and uncertainties**
+
+- **Confluence `Ctrl+Shift+I` (Insert table)**: a search snippet of Atlassian's
+  page gives `⌘+Shift+I`, so it is `CMDCTRL`. The Atlaskit editor source binds
+  *Table* to `Shift+Alt+T` instead, so the Windows chord itself is unconfirmed.
+- **Confluence `Ctrl+Shift+M`** was labelled "Code block". In the Atlaskit
+  editor, `Mod-Shift-m` is *inline code*; a code block comes from typing
+  ```` ``` ````. Relabelled "Inline code" with the Fluent `Code` icon on
+  2026-09-30. The Mac form is `⌘⇧M`.
+- **Confluence Redo `Ctrl+Y`**: the Atlaskit editor binds Redo to `Ctrl-y` on
+  Windows and `Cmd-Shift-z` on Mac, and additionally `Mod-y` (⌘Y) on both, so
+  `⌘Y` is correct.
+- **Browser-reserved chords.** These are drawn on macOS exactly as their Ctrl
+  twins already are on Windows:
+  - Notion ⌘N (New page), ⌘⇧N (New window) and ⌘L (Copy page URL) are taken
+    by the browser (new window, incognito window, address bar) when Notion runs
+    in a tab. They are correct in the Notion **desktop app**, which the same
+    set also serves.
+  - ⌘P (Print / Search) and ⌘O (Open) are intercepted by the web apps
+    themselves.
+- **No macOS system-reserved chord is drawn** in these five sets: no ⌘H, ⌘M,
+  ⌘Q, ⌘Tab, ⌘Space, ⌃Space, ⌃-arrows or ⌘⇧3/4/5. Notion's ⌘⇧↑/↓ (move
+  block) uses Cmd, not the Mission-Control ⌃ arrows.
+
 ## Icons
 
 | File(s) | Source | License |

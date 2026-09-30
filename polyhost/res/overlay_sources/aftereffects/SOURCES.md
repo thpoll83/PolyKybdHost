@@ -71,3 +71,30 @@ Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.
+
+## macOS
+
+The spec serves Windows/Linux and macOS from one file (`CMDCTRL` → Ctrl / Cmd;
+see `overlay_specification.md` → *The `CMDCTRL` modifier*); the generator writes
+a second set `*_mac.*` for the `os: macos:` branch.
+
+Sources. Adobe's official pages list the Windows and macOS columns side by side:
+
+- https://helpx.adobe.com/after-effects/using/keyboard-shortcuts-reference.html
+- https://helpx.adobe.com/after-effects/desktop/get-started/keyboard-shortcuts/keyboard-shortcuts-reference.html
+
+`helpx.adobe.com` is blocked by this environment's egress proxy (WebFetch and curl
+both 403), so the macOS column was confirmed from web-search result snippets of
+those pages and of reputable mirrors (schoolofmotion.com, academyclass.com, creativecow.net threads on ⌘M, nobledesktop.com After Effects Mac shortcuts). Each chord below
+was cross-checked against at least one of them; the rest follow Adobe's documented
+convention for these apps (Ctrl -> Cmd, Alt -> Option, Shift unchanged).
+
+Every `CTRL` binding but one (16, including `CTRL+SHIFT`) is now `CMDCTRL`
+(New solid ⌘Y, Composition settings ⌘K, Split layer ⇧⌘D, Precompose ⇧⌘C
+confirmed). Property letters, tool letters, I/O and Space are identical on macOS.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Add to render queue | Ctrl+M | ⇧⌘/ (remapped, `only:` split) | ⌘M is the macOS Minimize chord; After Effects hands it to the system when *Use System Shortcut Keys* is on (Creative COW: "Command M no longer adds to Render Queue"). Adobe documents ⇧⌘/ as the equivalent command, which cannot collide. |
+
+Dropped on macOS: **none**.

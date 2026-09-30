@@ -56,18 +56,67 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: web_outlook_template.mods.png
     Jira:
       overlay: jira_template.mods.png
+  # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
+  # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
+  # REPLACES the entry, so the whole URL and title routing is repeated inside it,
+  # in the same order (first hit wins). Jira draws bare keys only, so it has no
+  # separate Mac set.
+  os:
+    macos:
+      overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
+      urls-contains:
+        miro.com:
+          overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        outlook.office.com:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        outlook.live.com:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        github.com:
+          overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        gitlab.com:
+          overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        atlassian.net/wiki:
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+        atlassian.net:
+          overlay: jira_template.mods.png
+        bitbucket.org:
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+        docs.google.com/document:
+          overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        notion.so:
+          overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+      titles-contains:
+        Miro:
+          overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        Outlook:
+          overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
+        Jira:
+          overlay: jira_template.mods.png
 nxplayer:
   remote: true
   # A session window is titled '<host> - NoMachine'. The connection chooser
   # is titled 'NoMachine' alone and is not a remote session.
   title: ' - NoMachine$'
-gimp-2.0,gimp-2.8,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
-  overlay: gimp_template.mods.png
-zoom:
-  overlay: zoom_template.mods.png
+# GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
+# to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
+gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
+  overlay: [gimp_template.mods.png, gimp_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gimp_mac_template.mods.png, gimp_mac_template.combo.mods.png, gimp_mac_template.extra.mods.png]
+# macOS reports Zoom's display name, `zoom.us`.
+zoom,zoom.us:
+  overlay: [zoom_template.mods.png, zoom_template.combo.mods.png]
   title: Zoom Meeting
+  os:
+    macos:
+      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png]
+      title: Zoom Meeting
 discord:
-  overlay: discord_template.mods.png
+  overlay: [discord_template.mods.png, discord_template.combo.mods.png, discord_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 kicad:
@@ -145,11 +194,14 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
 devenv:
-  overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
+  overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png, visualstudio_template.extra.mods.png]
 lockapp:
   overlay: windows_lockscreen_template.png
 slack:
   overlay: [slack_template.mods.png, slack_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
 notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
@@ -174,12 +226,23 @@ winscp:
   overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
 putty:
   overlay: putty_template.mods.png
-winword:
+# Office on macOS reports its display name, `Microsoft Word` and so on.
+winword,microsoft word:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
-excel:
+  os:
+    macos:
+      overlay: [word_template_mac.mods.png, word_template_mac.combo.mods.png, word_template_mac.extra.mods.png]
+excel,microsoft excel:
   overlay: [excel_template.mods.png, excel_template.combo.mods.png]
-outlook:
+  os:
+    macos:
+      overlay: [excel_template_mac.mods.png, excel_template_mac.combo.mods.png, excel_template_mac.extra.mods.png]
+# `olk` is the new Outlook for Windows.
+outlook,olk,microsoft outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [outlook_template_mac.mods.png, outlook_template_mac.combo.mods.png, outlook_template_mac.extra.mods.png]
 # ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
 # Notes and NOT about OneNote -- hence the title constraint, which lets a real
 # OneNote window fall through unmatched rather than showing sticky-note keycaps.
@@ -190,45 +253,83 @@ onenote:
   title: "^Sticky Notes"
   icon: mdi:sticker-text
   overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
-powerpnt:
+powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [powerpoint_template_mac.mods.png, powerpoint_template_mac.combo.mods.png, powerpoint_template_mac.extra.mods.png, powerpoint_template_mac.gui.mods.png]
 # Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
 # curated generic (`photos: mdi:image-multiple`) resolves from the process name,
 # confirmed in the field log that prompted this batch.
 photos:
   overlay: photos_template.mods.png
-photoshop:
+# macOS reports Adobe apps with a release year (`Adobe Photoshop 2025`);
+# `mapping_key` drops a trailing year, so the plain name covers every release.
+photoshop,adobe photoshop:
   overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
-illustrator:
+  os:
+    macos:
+      overlay: [photoshop_template_mac.mods.png, photoshop_template_mac.combo.mods.png, photoshop_template_mac.extra.mods.png]
+illustrator,adobe illustrator:
   overlay: [illustrator_template.mods.png, illustrator_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [illustrator_template_mac.mods.png, illustrator_template_mac.combo.mods.png, illustrator_template_mac.extra.mods.png]
 figma:
   overlay: [figma_template.mods.png, figma_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [figma_template_mac.mods.png, figma_template_mac.combo.mods.png, figma_template_mac.extra.mods.png]
 krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
-ms-teams,teams:
+  os:
+    macos:
+      overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
+ms-teams,teams,microsoft teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [resolve_template_mac.mods.png, resolve_template_mac.combo.mods.png, resolve_template_mac.extra.mods.png]
 adobe premiere pro:
   overlay: [premiere_template.mods.png, premiere_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [premiere_template_mac.mods.png, premiere_template_mac.combo.mods.png, premiere_template_mac.extra.mods.png]
 afterfx,adobe after effects:
   overlay: [aftereffects_template.mods.png, aftereffects_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [aftereffects_template_mac.mods.png, aftereffects_template_mac.combo.mods.png, aftereffects_template_mac.extra.mods.png]
 # Sublime binds Cmd on macOS where it binds Ctrl on Windows/Linux, so the two
 # platforms need different artwork for the same app name. The `os:` branch picks
 # it: macOS gets the Cmd set (which uses the GUI-combo tiers unlocked by protocol
 # 12), everyone else falls through to the entry's own overlay. The OS is the one
 # running the focused app — a forwarded window uses the FORWARDER's OS, so a Mac
 # forwarding to a Windows keyboard host still gets the Mac artwork.
-sublime_text:
+# `sublime text` is the macOS display name. Without it the macOS branch below
+# was unreachable: a Mac reports `Sublime Text`, never `sublime_text`.
+sublime_text,sublime text:
   overlay: [sublime_template.mods.png, sublime_template.combo.mods.png]
   os:
     macos:
-      overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png,
-                sublime_mac_template.extra.mods.png, sublime_mac_template.gui.mods.png]
+      overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png, sublime_mac_template.extra.mods.png]
+    linux:
+      overlay: [sublime_linux_template.mods.png, sublime_linux_template.combo.mods.png]
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
 # Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
 # why it is one mode and not both).
 #
@@ -305,3 +406,15 @@ soffice,soffice.bin,libreoffice,startcenter:
     Impress:
       overlay: [libreoffice_impress_template.mods.png, libreoffice_impress_template.combo.mods.png,
                 libreoffice_impress_template.extra.mods.png]
+  # macOS: the same title routing onto the Cmd sets. A matched `os:` branch
+  # replaces the entry, so the title sub-map is repeated inside it.
+  os:
+    macos:
+      overlay: [libreoffice_writer_template_mac.mods.png, libreoffice_writer_template_mac.combo.mods.png, libreoffice_writer_template_mac.extra.mods.png]
+      titles-endswith:
+        Writer:
+          overlay: [libreoffice_writer_template_mac.mods.png, libreoffice_writer_template_mac.combo.mods.png, libreoffice_writer_template_mac.extra.mods.png]
+        Calc:
+          overlay: [libreoffice_calc_template_mac.mods.png, libreoffice_calc_template_mac.combo.mods.png, libreoffice_calc_template_mac.extra.mods.png]
+        Impress:
+          overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]

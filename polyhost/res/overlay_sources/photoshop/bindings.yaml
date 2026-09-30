@@ -7,6 +7,12 @@
 # clean rounded-square "Ps" monogram (NOT Adobe's logo). Shortcuts: Photoshop
 # defaults. See SOURCES.md.
 #
+# ONE spec, TWO artwork sets (Windows/Linux and macOS). Every Ctrl chord is
+# written CMDCTRL (Ctrl on Windows/Linux, Cmd on macOS), so the generator emits
+# photoshop_template.* and photoshop_template_mac.*. No action is remapped;
+# Cmd+H (Hide extras) and Cmd+M (Curves) shadow macOS Hide/Minimize. macOS chords and the
+# reserved-chord notes are in SOURCES.md -> "macOS".
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/photoshop/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -59,46 +65,46 @@ bindings:
   # CTRL  (-> R channel of primary)                              #
   # ============================================================= #
   # --- file ---
-  - { key: N, mods: [CTRL], icon: new.png,    label: "New",    source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,   label: "Open",   source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,   label: "Save",   source: "ms-fluent/Save (MIT)" }
-  - { key: W, mods: [CTRL], icon: close.png,  label: "Close",  source: "ms-fluent/Document Dismiss (MIT)" }
-  - { key: P, mods: [CTRL], icon: print.png,  label: "Print",  source: "ms-fluent/Print (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: new.png,    label: "New",    source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,   label: "Open",   source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,   label: "Save",   source: "ms-fluent/Save (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: close.png,  label: "Close",  source: "ms-fluent/Document Dismiss (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,  label: "Print",  source: "ms-fluent/Print (MIT)" }
   # --- edit ---
-  - { key: Z, mods: [CTRL], icon: undo.png,   label: "Undo",   source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: C, mods: [CTRL], icon: copy.png,   label: "Copy",   source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,    label: "Cut",    source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,  label: "Paste",  source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
-  - { key: D, mods: [CTRL], icon: deselect.png,  label: "Deselect",   source: "ms-fluent/Select All Off (MIT)" }
-  - { key: T, mods: [CTRL], icon: freetransform.png, label: "Free transform", source: "ms-fluent/Resize (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,   label: "Undo",   source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,   label: "Copy",   source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,    label: "Cut",    source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,  label: "Paste",  source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+  - { key: D, mods: [CMDCTRL], icon: deselect.png,  label: "Deselect",   source: "ms-fluent/Select All Off (MIT)" }
+  - { key: T, mods: [CMDCTRL], icon: freetransform.png, label: "Free transform", source: "ms-fluent/Resize (MIT)" }
   # --- layer ---
-  - { key: J, mods: [CTRL], icon: duplayer.png,  label: "Duplicate layer", source: "ms-fluent/Layer (MIT)" }
-  - { key: E, mods: [CTRL], icon: mergedown.png, label: "Merge down",      source: "ms-fluent/Layer Diagonal (MIT)" }
-  - { key: G, mods: [CTRL], icon: group.png,     label: "Group layers",    source: "ms-fluent/Group (MIT)" }
+  - { key: J, mods: [CMDCTRL], icon: duplayer.png,  label: "Duplicate layer", source: "ms-fluent/Layer (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: mergedown.png, label: "Merge down",      source: "ms-fluent/Layer Diagonal (MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,     label: "Group layers",    source: "ms-fluent/Group (MIT)" }
   # --- image adjustments ---
-  - { key: L, mods: [CTRL], icon: levels.png,       label: "Levels",        source: "ms-fluent/Data Histogram (MIT)" }
-  - { key: M, mods: [CTRL], icon: curves.png,       label: "Curves",        source: "ms-fluent/Data Line (MIT)" }
-  - { key: U, mods: [CTRL], icon: huesat.png,       label: "Hue / Saturation", source: "ms-fluent/Color (MIT)" }
-  - { key: B, mods: [CTRL], icon: colorbalance.png, label: "Color balance", source: "ms-fluent/Color Fill (MIT)" }
-  - { key: I, mods: [CTRL], icon: invert.png,       label: "Invert",        source: "ms-fluent/Color Background (MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: levels.png,       label: "Levels",        source: "ms-fluent/Data Histogram (MIT)" }
+  - { key: M, mods: [CMDCTRL], icon: curves.png,       label: "Curves",        source: "ms-fluent/Data Line (MIT)" }
+  - { key: U, mods: [CMDCTRL], icon: huesat.png,       label: "Hue / Saturation", source: "ms-fluent/Color (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: colorbalance.png, label: "Color balance", source: "ms-fluent/Color Fill (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: invert.png,       label: "Invert",        source: "ms-fluent/Color Background (MIT)" }
   # --- view ---
-  - { key: R, mods: [CTRL], icon: rulers.png, label: "Rulers",      source: "ms-fluent/Ruler (MIT)" }
-  - { key: H, mods: [CTRL], icon: extras.png, label: "Hide extras", source: "ms-fluent/Eye Off (MIT)" }
-  - { key: "0", mods: [CTRL], icon: fitscreen.png, label: "Fit on screen", source: "ms-fluent/Full Screen Maximize (MIT)" }
-  - { key: EQUAL, mods: [CTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
-  - { key: MINUS, mods: [CTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png, label: "Rulers",      source: "ms-fluent/Ruler (MIT)" }
+  - { key: H, mods: [CMDCTRL], icon: extras.png, label: "Hide extras", source: "ms-fluent/Eye Off (MIT)" }
+  - { key: "0", mods: [CMDCTRL], icon: fitscreen.png, label: "Fit on screen", source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
 
   # ============================================================= #
   # CTRL+SHIFT  (-> R channel of combo)                          #
   # ============================================================= #
-  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,     label: "Save as",          source: "ms-fluent/Save Edit (MIT)" }
-  - { key: N, mods: [CTRL, SHIFT], icon: newlayer.png,   label: "New layer",        source: "ms-fluent/Add Square (MIT)" }
-  - { key: I, mods: [CTRL, SHIFT], icon: invertsel.png,  label: "Inverse selection", source: "ms-fluent/Arrow Swap (MIT)" }
-  - { key: U, mods: [CTRL, SHIFT], icon: desaturate.png, label: "Desaturate",       source: "ms-fluent/Color Line (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: mergedown.png,  label: "Merge visible",    source: "ms-fluent/Layer Diagonal (MIT)" }
-  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,       label: "Redo / Step fwd",  source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",      source: "ms-fluent/Copy Select (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,     label: "Save as",          source: "ms-fluent/Save Edit (MIT)" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: newlayer.png,   label: "New layer",        source: "ms-fluent/Add Square (MIT)" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: invertsel.png,  label: "Inverse selection", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: desaturate.png, label: "Desaturate",       source: "ms-fluent/Color Line (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: mergedown.png,  label: "Merge visible",    source: "ms-fluent/Layer Diagonal (MIT)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,       label: "Redo / Step fwd",  source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copymerged.png, label: "Copy merged",      source: "ms-fluent/Copy Select (MIT)" }
 
   # ============================================================= #
   # SHIFT  (-> B channel of primary)                             #
@@ -116,7 +122,7 @@ bindings:
   - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +", source: "custom (drawn: large dot)" }
   - { key: F, mods: [], icon: screenmode.png, label: "Screen mode", source: "ms-fluent/Full Screen Maximize (MIT)" }
   - { key: BACKSPACE, mods: [ALT], icon: fillfg.png, mode: alpha, label: "Fill FG color", source: "custom (drawn: solid square)" }
-  - { key: BACKSPACE, mods: [CTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: framed square)" }
-  - { key: Z, mods: [CTRL, ALT], icon: stepback.png, label: "Step backward", source: "ms-fluent/History (MIT)" }
-  - { key: "1", mods: [CTRL], icon: zoom1to1.png, label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
-  - { key: J, mods: [CTRL, SHIFT], icon: newlayer.png, label: "New layer via cut", source: "ms-fluent/Add Square (MIT)" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: framed square)" }
+  - { key: Z, mods: [CMDCTRL, ALT], icon: stepback.png, label: "Step backward", source: "ms-fluent/History (MIT)" }
+  - { key: "1", mods: [CMDCTRL], icon: zoom1to1.png, label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: newlayer.png, label: "New layer via cut", source: "ms-fluent/Add Square (MIT)" }

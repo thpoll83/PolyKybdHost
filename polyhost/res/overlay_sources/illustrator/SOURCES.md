@@ -166,3 +166,30 @@ Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.
+
+## macOS
+
+The spec serves Windows/Linux and macOS from one file (`CMDCTRL` → Ctrl / Cmd;
+see `overlay_specification.md` → *The `CMDCTRL` modifier*); the generator writes
+a second set `*_mac.*` for the `os: macos:` branch.
+
+Sources. Adobe's official pages list the Windows and macOS columns side by side:
+
+- https://helpx.adobe.com/illustrator/using/default-keyboard-shortcuts.html
+
+`helpx.adobe.com` is blocked by this environment's egress proxy (WebFetch and curl
+both 403), so the macOS column was confirmed from web-search result snippets of
+those pages and of reputable mirrors (community.adobe.com and illustrator.uservoice.com threads on ⌘H; academyclass.com and keycombiner.com Illustrator cheat sheets). Each chord below
+was cross-checked against at least one of them; the rest follow Adobe's documented
+convention for these apps (Ctrl -> Cmd, Alt -> Option, Shift unchanged).
+
+Every `CTRL` binding (39, including `CTRL+SHIFT` and `CTRL+ALT`) is now `CMDCTRL`:
+the macOS chord is the same key with Cmd for Ctrl and Option for Alt (Average
+⌥⌘J, Make blend ⌥⌘B, Show all ⌥⌘3 confirmed). Tool letters and `Shift+`tool
+letters are identical on macOS.
+
+Remapped on macOS: **none**. Dropped on macOS: **none**.
+
+| Action | macOS chord | Note |
+|---|---|---|
+| Hide edges | ⌘H | **macOS reserved (Hide app).** Illustrator's default ⌘H is Hide Edges (a long-standing complaint on Adobe's forums; users can move it to ⇧⌘H). Drawn as ⌘H, the documented default. |

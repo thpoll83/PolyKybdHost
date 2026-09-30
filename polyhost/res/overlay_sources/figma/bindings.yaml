@@ -2,8 +2,16 @@
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) + a few drawn glyphs (slice,
 # frame-selection). Program icon (ESC): a generic license-clean rounded-square
-# "F" mark drawn in code (NOT Figma's logo). Shortcuts: Figma Windows defaults
-# (Ctrl == Cmd on macOS). See SOURCES.md.
+# "F" mark drawn in code (NOT Figma's logo). See SOURCES.md.
+#
+# ONE spec, TWO artwork sets: figma_template.* for Windows/Linux and
+# figma_template_mac.* for macOS.
+#   CMDCTRL        Ctrl on Windows/Linux, Cmd on macOS (Figma's own Ctrl->Cmd,
+#                  Alt->Option convention).
+#   only: [...]    an action Figma binds to a different chord on macOS, written
+#                  once per platform (Use as mask, Bring to front, Send to back).
+#   except: [macos] no confirmed macOS chord - left blank rather than guessed.
+# The macOS table is in SOURCES.md -> "macOS".
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/figma/fetch_icons.py
@@ -42,21 +50,21 @@ bindings:
   - { key: S, mods: [], icon: slice.png, mode: alpha, label: Slice, source: "custom (drawn: dashed export region)" }
 
   # --- edit (Ctrl -> R channel of primary) ---
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: D, mods: [CTRL], icon: duplicate.png, label: Duplicate,   source: "ms-fluent/Document Copy (MIT)" }
-  - { key: G, mods: [CTRL], icon: group.png,     label: Group,       source: "ms-fluent/Group (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,      label: Save,        source: "ms-fluent/Save (MIT)" }
-  - { key: N, mods: [CTRL], icon: newfile.png,   label: "New file",  source: "ms-fluent/Document Add (MIT)" }
-  - { key: R, mods: [CTRL], icon: rename.png,    label: Rename,      source: "ms-fluent/Rename (MIT)" }
-  - { key: E, mods: [CTRL], icon: flatten.png,   label: Flatten,     source: "ms-fluent/Layer (MIT)" }
-  - { key: F, mods: [CTRL], icon: find.png,      label: Find,        source: "ms-fluent/Search (MIT)" }
-  - { key: B, mods: [CTRL], icon: bold.png,      label: Bold,        source: "ms-fluent/Text Bold (MIT)" }
-  - { key: I, mods: [CTRL], icon: italic.png,    label: Italic,      source: "ms-fluent/Text Italic (MIT)" }
-  - { key: U, mods: [CTRL], icon: underline.png, label: Underline,   source: "ms-fluent/Text Underline (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate,   source: "ms-fluent/Document Copy (MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,     label: Group,       source: "ms-fluent/Group (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,      label: Save,        source: "ms-fluent/Save (MIT)" }
+  - { key: N, mods: [CMDCTRL], icon: newfile.png,   label: "New file",  source: "ms-fluent/Document Add (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: rename.png,    label: Rename,      source: "ms-fluent/Rename (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: flatten.png,   label: Flatten,     source: "ms-fluent/Layer (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find,        source: "ms-fluent/Search (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,        source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,      source: "ms-fluent/Text Italic (MIT)" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline,   source: "ms-fluent/Text Underline (MIT)" }
 
   # --- Shift -> B channel of primary ---
   - { key: P, mods: [SHIFT], icon: pencil.png,      label: Pencil,        source: "ms-fluent/Inking Tool (MIT)" }
@@ -68,27 +76,30 @@ bindings:
   - { key: "2", mods: [SHIFT], icon: zoomsel.png,   label: "Zoom sel",    source: "ms-fluent/Select Object (MIT)" }
 
   # --- Ctrl+Shift -> R channel of combo ---
-  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,       label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
-  - { key: V, mods: [CTRL, SHIFT], icon: pasteover.png,     label: "Paste over",   source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: K, mods: [CTRL, SHIFT], icon: placeimage.png,    label: "Place image",  source: "ms-fluent/Image Add (MIT)" }
-  - { key: O, mods: [CTRL, SHIFT], icon: outlinestroke.png, label: "Outline stroke", source: "ms-fluent/Pen Sparkle (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: export.png,        label: Export,         source: "ms-fluent/Arrow Export (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: copypng.png,       label: "Copy as PNG",  source: "ms-fluent/Image Copy (MIT)" }
-  - { key: X, mods: [CTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,       label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteover.png,     label: "Paste over",   source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: placeimage.png,    label: "Place image",  source: "ms-fluent/Image Add (MIT)" }
+  - { key: O, mods: [CMDCTRL, ALT], icon: outlinestroke.png, label: "Outline stroke", source: "ms-fluent/Pen Sparkle (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: export.png,        label: Export,         source: "ms-fluent/Arrow Export (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copypng.png,       label: "Copy as PNG",  source: "ms-fluent/Image Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
 
   # --- Ctrl+Alt -> G channel of combo ---
-  - { key: G, mods: [CTRL, ALT], icon: frameselection.png, mode: alpha, label: "Frame sel", source: "custom (drawn: frame brackets + object)" }
-  - { key: K, mods: [CTRL, ALT], icon: component.png,      label: Component,    source: "ms-fluent/Cube Add (MIT)" }
-  - { key: B, mods: [CTRL, ALT], icon: detach.png,         label: "Detach inst", source: "ms-fluent/Plug Disconnected (MIT)" }
-  - { key: C, mods: [CTRL, ALT], icon: copy.png,  label: "Copy properties",  source: "ms-fluent/Copy (MIT)" }
-  - { key: V, mods: [CTRL, ALT], icon: paste.png, label: "Paste properties", source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: M, mods: [CTRL, ALT], icon: mask.png,  label: "Use as mask",      source: "ms-fluent/Crop (MIT)" }
-  - { key: A, mods: [CTRL, ALT], icon: selinverse.png, label: "Select inverse", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: frameselection.png, mode: alpha, label: "Frame sel", source: "custom (drawn: frame brackets + object)" }
+  - { key: K, mods: [CMDCTRL, ALT], icon: component.png,      label: Component,    source: "ms-fluent/Cube Add (MIT)" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: detach.png,         label: "Detach inst", source: "ms-fluent/Plug Disconnected (MIT)" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: copy.png,  label: "Copy properties",  source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: paste.png, label: "Paste properties", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: M, mods: [CTRL, ALT], only: [windows, linux], icon: mask.png,  label: "Use as mask",      source: "ms-fluent/Crop (MIT)" }
+  - { key: M, mods: [CTRL, GUI], only: [macos],          icon: mask.png,  label: "Use as mask",      source: "ms-fluent/Crop (MIT)" }
+  - { key: A, mods: [CTRL, ALT], except: [macos], icon: selinverse.png, label: "Select inverse", source: "ms-fluent/Arrow Swap (MIT)" }
 
   # --- added: coverage audit 2026-06 ---
-  - { key: "/", mods: [CTRL], icon: find.png,    label: "Search",        source: "ms-fluent/Search (MIT)" }
-  - { key: "'", mods: [CTRL], icon: grid.png,    label: "Pixel grid",    source: "ms-fluent/Grid (MIT)" }
-  - { key: "]", mods: [CTRL], icon: forward.png, label: "Bring forward", source: "ms-fluent/Arrow Up (MIT)" }
-  - { key: "[", mods: [CTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Arrow Down (MIT)" }
-  - { key: "]", mods: [CTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
-  - { key: "[", mods: [CTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
+  - { key: "/", mods: [CMDCTRL], icon: find.png,    label: "Search",        source: "ms-fluent/Search (MIT)" }
+  - { key: "'", mods: [CTRL], except: [macos], icon: grid.png,    label: "Pixel grid",    source: "ms-fluent/Grid (MIT)" }
+  - { key: "]", mods: [CMDCTRL], icon: forward.png, label: "Bring forward", source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Arrow Down (MIT)" }
+  - { key: "]", mods: [CTRL, SHIFT], only: [windows, linux], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
+  - { key: "]", mods: [GUI, ALT],     only: [macos],          icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
+  - { key: "[", mods: [CTRL, SHIFT], only: [windows, linux], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
+  - { key: "[", mods: [GUI, ALT],     only: [macos],          icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }

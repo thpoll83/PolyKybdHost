@@ -86,7 +86,8 @@ class _SharedTemplateLeavesEsc:
 class ChromiumTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase):
     ANCHOR = "chrome"
     SHARED = {"msedge", "brave", "vivaldi"}
-    FILES = 2
+    # Windows/Linux 2, macOS 3.
+    FILES = 5
 
 
 class JetBrainsTemplateLeavesEscTest(_SharedTemplateLeavesEsc, unittest.TestCase):

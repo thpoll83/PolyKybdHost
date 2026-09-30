@@ -245,5 +245,92 @@ class JetBrainsPerOsTest(unittest.TestCase):
         self.assertEqual([], self._overlay("java", "linux", "Minecraft"))
 
 
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AppNamesPerPlatformTest(unittest.TestCase):
+    """Names each OS reports that the mapping used to miss, so the app loaded no
+    overlay at all. Windows cuts the executable at its first dot; macOS reports
+    the display name."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def _overlay(self, name, os_name, title=""):
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(name, self.handler.mapping)
+        self.assertIsNotNone(key, f"{name!r} resolves to no mapping key")
+        hit = find_matching_entry(title, self.handler.mapping[key], None, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_sublime_on_macOS_reaches_its_Cmd_set(self):
+        self.assertIn("sublime_mac_template.mods.png", self._overlay("sublime text", "macos"))
+
+    def test_office_and_teams_macOS_names_resolve(self):
+        for name in ("microsoft word", "microsoft excel", "microsoft outlook",
+                     "microsoft powerpoint", "microsoft teams"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_adobe_macOS_names_resolve_whatever_the_year(self):
+        for name in ("adobe photoshop 2025", "adobe illustrator 2026",
+                     "adobe premiere pro 2025", "adobe after effects 2024"):
+            self.assertTrue(self._overlay(name, "macos"), name)
+
+    def test_zoom_macOS_name_resolves(self):
+        self.assertTrue(self._overlay("zoom.us", "macos", "Zoom Meeting"))
+
+    def test_macOS_names_reach_the_Cmd_sets(self):
+        """A Mac must get the macOS artwork, not the Windows Ctrl set."""
+        for name, stem in (("microsoft word", "word_template_mac"),
+                           ("microsoft excel", "excel_template_mac"),
+                           ("microsoft outlook", "outlook_template_mac"),
+                           ("microsoft powerpoint", "powerpoint_template_mac"),
+                           ("microsoft teams", "teams_template_mac"),
+                           ("adobe photoshop 2025", "photoshop_template_mac"),
+                           ("adobe illustrator 2025", "illustrator_template_mac"),
+                           ("adobe premiere pro 2025", "premiere_template_mac"),
+                           ("adobe after effects 2025", "aftereffects_template_mac"),
+                           ("notion", "notion_template_mac"),
+                           ("figma", "figma_template_mac"),
+                           ("obsidian", "obsidian_template_mac"),
+                           ("davinci resolve", "resolve_template_mac"),
+                           ("krita", "krita_template_mac")):
+            self.assertIn(f"{stem}.mods.png", self._overlay(name, "macos"), name)
+        self.assertIn("word_template.mods.png", self._overlay("winword", "windows"))
+
+    def _chrome(self, os_name, url=None, title="New Tab"):
+        from polyhost.handler.common import find_matching_entry
+        hit = find_matching_entry(title, self.handler.mapping["google chrome"], url, os_name)
+        overlay = (hit or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_chrome_on_macOS_keeps_its_web_app_routing(self):
+        """The `os:` branch replaces the entry, so the URL routing is repeated
+        inside it. Without that, every web app on a Mac showed Chrome's set."""
+        self.assertIn("chrome_template_mac.mods.png", self._chrome("macos"))
+        self.assertIn("github_template_mac.mods.png",
+                      self._chrome("macos", "https://github.com/x/y/pull/1"))
+        self.assertIn("confluence_template_mac.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/wiki/spaces/X"))
+        self.assertIn("jira_template.mods.png",
+                      self._chrome("macos", "https://a.atlassian.net/browse/X-1"))
+        self.assertIn("miro_template_mac.mods.png", self._chrome("macos", None, "Board - Miro"))
+        self.assertIn("github_template.mods.png",
+                      self._chrome("windows", "https://github.com/x/y/pull/1"))
+        self.assertIn("chrome_template.mods.png", self._chrome("linux"))
+
+    def test_libreoffice_keeps_its_title_routing_on_macOS(self):
+        self.assertIn("libreoffice_calc_template_mac.mods.png",
+                      self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))
+        self.assertIn("libreoffice_calc_template.mods.png",
+                      self._overlay("soffice", "windows", "Untitled 1 - LibreOffice Calc"))
+
+    def test_gimp_2_10_and_new_outlook_resolve(self):
+        self.assertTrue(self._overlay("gimp-2", "windows"))
+        self.assertTrue(self._overlay("gimp-2.10", "linux"))
+        self.assertTrue(self._overlay("olk", "windows"))
+
+
 if __name__ == "__main__":
     unittest.main()

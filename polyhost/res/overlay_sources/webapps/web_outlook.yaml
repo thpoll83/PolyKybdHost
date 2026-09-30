@@ -1,0 +1,37 @@
+# Outlook on the web overlay for PolyKybd (shown while a browser has outlook.office.com or outlook.live.com open).
+#
+# All artwork is RECLAIMED: the previously hand-drawn set, cut pixel-for-pixel
+# out of the old PNGs and rendered 1:1, so the Windows/Linux set is unchanged.
+# Ctrl chords are Cmd on macOS (CMDCTRL). Alt+Q (search) is left off macOS: no confirmed Mac chord.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/webapps/web_outlook.yaml --preview /tmp/web_outlook_preview
+app: web_outlook
+match: [chrome]
+output: web_outlook_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: owa_mark.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+
+bindings:
+  - { key: R, mods: [CMDCTRL], icon: owa_reply.png, <<: *r, label: "Reply" }
+  - { key: ENTER, mods: [CMDCTRL], icon: owa_send.png, <<: *r, label: "Send" }
+  - { key: Q, mods: [ALT], icon: owa_search.png, <<: *r, label: "Search", except: [macos] }
+  - { key: F, mods: [SHIFT], icon: owa_forward.png, <<: *r, label: "Forward" }
+  - { key: R, mods: [SHIFT], icon: owa_replyall.png, <<: *r, label: "Reply all" }
+  - { key: E, mods: [], icon: owa_archive.png, <<: *r, label: "Archive" }
+  - { key: N, mods: [], icon: owa_new.png, <<: *r, label: "New message" }
+  - { key: R, mods: [], icon: owa_reply_r.png, <<: *r, label: "Reply" }

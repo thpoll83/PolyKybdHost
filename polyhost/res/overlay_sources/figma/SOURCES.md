@@ -75,7 +75,7 @@ drawn, below):
 
 - **Scale (K)** → `Resize Large` (reads as a maximize/expand glyph).
 - **Outline view (O)** → `Eye Off` (hide-render proxy).
-- **Outline stroke (Ctrl+Shift+O)** → `Pen Sparkle`.
+- **Outline stroke (Ctrl+Alt+O)** → `Pen Sparkle`.
 - **Ellipse (O)** → `Circle`; **Rectangle (R)** → `Rectangle Landscape`.
 - **Zoom to selection (Shift+2)** → `Select Object`; **Zoom to fit (Shift+1)** →
   `Full Screen Maximize`.
@@ -116,3 +116,42 @@ bring-forward / send-backward (Arrow Up/Down), `Ctrl+Shift+]`/`[` to-front /
 to-back (Position To Front/Back), `Ctrl+Alt+C`/`V` copy / paste properties (reuse
 Copy / Paste), `Ctrl+Alt+M` use as mask (Crop), `Ctrl+Alt+A` select inverse
 (Arrow Swap). All Fluent (MIT); sources per binding `source:`.
+
+## macOS
+
+The spec serves Windows and macOS from one file: `figma_template.*` (Windows/Linux)
+and `figma_template_mac.*` (macOS, emitted because the spec uses `CMDCTRL`).
+Figma's keymap follows the Ctrl→Cmd, Alt→Option convention for almost every
+chord, so 30 bindings are `CMDCTRL`; three actions move to a different modifier
+set and two are left blank on macOS.
+
+Sources (2026-09): the official page
+<https://help.figma.com/hc/en-us/articles/360040328653-Use-Figma-products-with-a-keyboard>
+and the topic pages <https://help.figma.com/hc/en-us/articles/360040450253-Masks>
+and <https://help.figma.com/hc/en-us/articles/33052305733015-Convert-strokes-to-vector-paths>
+could not be fetched from the build environment (egress-blocked; Figma also 403s
+scrapers). The Mac chords were therefore taken from web-search snippets of those
+pages and of the community references already listed above (usethekeyboard,
+nobledesktop `/shortcuts/figma/mac`, domestika). **Verify in-app** (Help →
+Keyboard shortcuts on a Mac) before shipping.
+
+| Action | Windows | macOS | Why |
+|---|---|---|---|
+| Use as mask | `Ctrl+Alt+M` | `Ctrl+Cmd+M` (⌃⌘M) | Figma's Mac chord keeps Control and adds Cmd; `CMDCTRL` would draw ⌥⌘M. Written twice with `only:`. |
+| Bring to front | `Ctrl+Shift+]` | `Cmd+Option+]` (⌥⌘]) | Mac uses Option, not Shift. Written twice with `only:`. |
+| Send to back | `Ctrl+Shift+[` | `Cmd+Option+[` (⌥⌘[) | Same as above. |
+| Select inverse | `Ctrl+Alt+A` | — (dropped, `except: [macos]`) | No confirmed Mac chord; references give `Ctrl+Shift+A` / ⇧⌘A, which disagrees with the Windows chord here. Left blank rather than guessed. |
+| Pixel grid | `Ctrl+'` | — (dropped, `except: [macos]`) | References disagree (⌃' vs ⇧'); not confirmed. |
+
+No macOS chord drawn here is system-reserved (⌘H/⌘M/⌘Q/⌘Space/⌘⇧3-5 are all unused).
+
+Fixed 2026-09-30: **Outline stroke** moved from `Ctrl+Shift+O` / ⇧⌘O, the
+*legacy* chord (Figma → Preferences → "Use old shortcuts for outlines"), to the
+current default `Ctrl+Alt+O` / ⌥⌘O.
+
+⚠️ Windows chords that look wrong against the same references — **not changed**,
+recorded for a follow-up:
+
+- **Save `Ctrl+S`**: Figma saves automatically; "Save to version history" is
+  `Ctrl+Alt+S` / ⌥⌘S.
+- **Select inverse `Ctrl+Alt+A`** and **Pixel grid `Ctrl+'`**: see the table.

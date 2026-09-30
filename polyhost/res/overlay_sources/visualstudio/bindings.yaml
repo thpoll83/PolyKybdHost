@@ -1,0 +1,124 @@
+# Visual Studio (Windows, `devenv`) shortcut overlays for PolyKybd.
+#
+# ONE artwork set, Windows only. Visual Studio for Mac was retired, so there is
+# no macOS keymap to draw and nothing here uses CMDCTRL: every chord is the
+# literal Windows chord of the "General" profile.
+#
+# Every chord was checked against Microsoft Learn, "Keyboard shortcuts in
+# Visual Studio" (the default General profile), read from its source in
+# MicrosoftDocs/visualstudio-docs. Two-stroke chords (Ctrl+K, Ctrl+C;
+# Ctrl+R, Ctrl+R; Ctrl+M, Ctrl+O; ...) cannot be drawn on one keycap and are
+# left out. See SOURCES.md.
+#
+# The 11 debug/build cells of the previously shipped hand-drawn set are
+# RECLAIMED pixel-for-pixel and render 1:1. One of them moved: the "step out
+# current process" drawing sat on Ctrl+Shift+F11, which Visual Studio binds to
+# IntelliTrace's "Go to previous call"; the command it draws is
+# Ctrl+Shift+Alt+F11 (see SOURCES.md).
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/visualstudio/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/visualstudio/bindings.yaml --preview /tmp/vs_preview
+app: visualstudio
+match: [devenv]
+output: visualstudio_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+# The mark shipped with the old hand-drawn set, lifted pixel-for-pixel.
+program_icon: visualstudio.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_anchor: center
+program_icon_margin: 0
+
+# Reclaimed artwork renders 1:1: the old cell IS the icon.
+_r: &r { region: [72, 40], anchor: center, source: reclaimed }
+
+bindings:
+  # ============================ RECLAIMED from the previously shipped set =====
+  - { key: F5,  mods: [],                   icon: startdebug.png,             <<: *r, label: "Start debugging" }
+  - { key: F5,  mods: [CTRL],               icon: startnodebug.png,           <<: *r, label: "Start without debugging" }
+  - { key: F9,  mods: [],                   icon: togglebreakpoint.png,       <<: *r, label: "Toggle breakpoint" }
+  - { key: F10, mods: [],                   icon: stepover.png,               <<: *r, label: "Step over" }
+  - { key: F11, mods: [],                   icon: stepinto.png,               <<: *r, label: "Step into" }
+  - { key: F11, mods: [SHIFT],              icon: stepout.png,                <<: *r, label: "Step out" }
+  - { key: F7,  mods: [CTRL],               icon: compile.png,                <<: *r, label: Compile }
+  - { key: B,   mods: [CTRL, SHIFT],        icon: buildsolution.png,          <<: *r, label: "Build solution" }
+  - { key: F10, mods: [CTRL, ALT],          icon: stepovercurrentprocess.png, <<: *r, label: "Step over current process" }
+  - { key: F11, mods: [CTRL, ALT],          icon: stepintocurrentprocess.png, <<: *r, label: "Step into current process" }
+  # Was on Ctrl+Shift+F11 (= Debug.GoToPreviousCallorIntelliTraceEvent).
+  - { key: F11, mods: [CTRL, ALT, SHIFT],   icon: stepoutcurrentprocess.png,  <<: *r, label: "Step out current process" }
+
+  # ============================ debug ==========================================
+  - { key: F5,  mods: [SHIFT],              icon: stopdebug.png,            label: "Stop debugging",          source: "ms-fluent/Stop (MIT)" }
+  - { key: F5,  mods: [CTRL, SHIFT],        icon: restart.png,              label: "Restart",                 source: "ms-fluent/Arrow Clockwise (MIT)" }
+  - { key: F10, mods: [CTRL],               icon: runtocursor.png,          label: "Run to cursor",           source: "ms-fluent/Arrow Step In Right (MIT)" }
+  - { key: F10, mods: [CTRL, SHIFT],        icon: setnextstatement.png,     label: "Set next statement",      source: "ms-fluent/Target Arrow (MIT)" }
+  - { key: F9,  mods: [CTRL, SHIFT],        icon: deleteallbreakpoints.png, label: "Delete all breakpoints",  source: "ms-fluent/Dismiss Circle (MIT)" }
+  - { key: F9,  mods: [SHIFT],              icon: quickwatch.png,           label: "QuickWatch",              source: "ms-fluent/Glasses (MIT)" }
+  - { key: B,   mods: [CTRL, ALT],          icon: breakpoints.png,          label: "Breakpoints window",      source: "ms-fluent/Record (MIT)" }
+  - { key: P,   mods: [CTRL, ALT],          icon: attach.png,               label: "Attach to process",       source: "ms-fluent/Plug Connected (MIT)" }
+  - { key: F10, mods: [ALT],                icon: hotreload.png,            label: "Apply code changes",      source: "ms-fluent/Fire (MIT)" }
+
+  # ============================ navigation =====================================
+  - { key: F12, mods: [],                   icon: gotodefinition.png,       label: "Go to definition",        source: "material-symbols/jump_to_element (Apache-2.0)" }
+  - { key: F12, mods: [CTRL],               icon: gotodeclaration.png,      label: "Go to declaration",       source: "material-symbols/data_object (Apache-2.0)" }
+  - { key: F12, mods: [ALT],                icon: peekdefinition.png,       label: "Peek definition",         source: "ms-fluent/Eye (MIT)" }
+  - { key: F12, mods: [SHIFT],              icon: findallreferences.png,    label: "Find all references",     source: "material-symbols/manage_search (Apache-2.0)" }
+  - { key: T,   mods: [CTRL],               icon: gotoall.png,              label: "Go to all",               source: "material-symbols/frame_inspect (Apache-2.0)" }
+  - { key: ",", mods: [CTRL],               icon: gotoall.png,              label: "Go to all",               source: "material-symbols/frame_inspect (Apache-2.0)" }
+  - { key: G,   mods: [CTRL],               label: "Go to" }
+  - { key: Q,   mods: [CTRL],               icon: featuresearch.png,        label: "Feature search",          source: "ms-fluent/Search Sparkle (MIT)" }
+  - { key: "-", mods: [CTRL],               icon: navback.png,              label: "Navigate backward",       source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: "-", mods: [CTRL, SHIFT],        icon: navforward.png,           label: "Navigate forward",        source: "ms-fluent/Arrow Right (MIT)" }
+
+  # ============================ search =========================================
+  - { key: F,   mods: [CTRL],               label: Find }
+  - { key: H,   mods: [CTRL],               label: Replace }
+  - { key: F3,  mods: [],                   label: "Find next" }
+  - { key: F,   mods: [CTRL, SHIFT],        icon: findinfiles.png,          label: "Find in files",           source: "ms-fluent/Folder Search (MIT)" }
+  - { key: H,   mods: [CTRL, SHIFT],        icon: replaceinfiles.png,       label: "Replace in files",        source: "ms-fluent/Folder Swap (MIT)" }
+
+  # ============================ editing ========================================
+  - { key: ".", mods: [CTRL],               icon: quickactions.png,         label: "Quick actions",           source: "ms-fluent/Lightbulb (MIT)" }
+  # Ctrl+/ exists from Visual Studio 2022 17.11; older releases have only the
+  # two-stroke Ctrl+K, Ctrl+/.
+  - { key: "/", mods: [CTRL],               label: Comment }
+  - { key: D,   mods: [CTRL],               icon: duplicate.png,            label: "Duplicate",               source: "ms-fluent/Row Triple (MIT)" }
+  - { key: UP,  mods: [ALT],                icon: movelineup.png,           label: "Move lines up",           source: "material-symbols/move_up (Apache-2.0)" }
+  - { key: DOWN, mods: [ALT],               icon: movelinedown.png,         label: "Move lines down",         source: "material-symbols/move_down (Apache-2.0)" }
+  - { key: ENTER, mods: [CTRL],             icon: lineopenabove.png,        label: "Open line above",         source: "material-symbols/add_row_above (Apache-2.0)" }
+  - { key: ENTER, mods: [CTRL, SHIFT],      icon: lineopenbelow.png,        label: "Open line below",         source: "material-symbols/add_row_below (Apache-2.0)" }
+  - { key: L,   mods: [CTRL, SHIFT],        icon: deleteline.png,           label: "Delete line",             source: "ms-fluent/Delete Lines (MIT)" }
+  - { key: Z,   mods: [CTRL],               label: Undo }
+  - { key: Y,   mods: [CTRL],               label: Redo }
+  - { key: X,   mods: [CTRL],               label: Cut }
+  - { key: C,   mods: [CTRL],               label: Copy }
+  - { key: V,   mods: [CTRL],               label: Paste }
+  - { key: A,   mods: [CTRL],               label: "Select all" }
+  - { key: V,   mods: [CTRL, SHIFT],        icon: clipboardring.png,        label: "Cycle clipboard ring",    source: "ms-fluent/Clipboard Multiple (MIT)" }
+
+  # ============================ files / windows ================================
+  - { key: N,   mods: [CTRL],               label: New }
+  - { key: N,   mods: [CTRL, SHIFT],        icon: newproject.png,           label: "New project",             source: "ms-fluent/Folder Add (MIT)" }
+  - { key: O,   mods: [CTRL],               label: Open }
+  - { key: S,   mods: [CTRL],               label: Save }
+  - { key: S,   mods: [CTRL, SHIFT],        icon: saveall.png,              label: "Save all",                source: "ms-fluent/Save Multiple (MIT)" }
+  - { key: A,   mods: [CTRL, SHIFT],        icon: addnewitem.png,           label: "Add new item",            source: "material-symbols/library_add (Apache-2.0)" }
+  - { key: W,   mods: [CTRL],               label: Close }
+  - { key: F4,  mods: [CTRL],               label: Close }
+  - { key: TAB, mods: [CTRL],               icon: nextdocument.png,         label: "Next document window",    source: "ms-fluent/Tabs (MIT)" }
+  - { key: L,   mods: [CTRL, ALT],          icon: solutionexplorer.png,     label: "Solution Explorer",       source: "material-symbols/account_tree (Apache-2.0)" }
+  - { key: O,   mods: [CTRL, ALT],          icon: output.png,               label: "Output window",           source: "ms-fluent/Window Text (MIT)" }
+  - { key: F4,  mods: [],                   icon: properties.png,           label: "Properties window",       source: "ms-fluent/Wrench (MIT)" }
+  - { key: ENTER, mods: [ALT, SHIFT],       label: Fullscreen }
+  - { key: ".", mods: [CTRL, SHIFT],        label: "Zoom in" }
+  - { key: ",", mods: [CTRL, SHIFT],        label: "Zoom out" }
+  - { key: F1,  mods: [],                   label: Help }

@@ -47,7 +47,8 @@ bindings:
   - { key: "]", mods: [GUI], icon: indent.png,     label: Indent,           source: "ms-fluent/Text Indent Increase (MIT)" }
   - { key: "[", mods: [GUI], icon: unindent.png,   label: Un-indent,        source: "ms-fluent/Text Indent Decrease (MIT)" }
   - { key: "/", mods: [GUI], icon: comment.png,    label: "Toggle comment", source: "ms-fluent/Comment (MIT)" }
-  - { key: J, mods: [GUI], icon: joinlines.png,    label: "Join lines",     source: "ms-fluent/Text Wrap Off (MIT)" }
+  # Sublime Text 4: Join Lines is Cmd+Shift+J (plain Cmd+J binds nothing).
+  - { key: J, mods: [GUI, SHIFT], icon: joinlines.png, label: "Join lines",     source: "ms-fluent/Text Wrap Off (MIT)" }
   - { key: Y, mods: [GUI], icon: redo.png,         label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: U, mods: [GUI], icon: softundo.png,     label: "Soft undo",      source: "ms-fluent/Arrow Undo (MIT)" }
   - { key: ENTER, mods: [GUI], icon: insertafter.png, label: "Insert line after", source: "ms-fluent/Arrow Enter (MIT)" }
@@ -88,9 +89,10 @@ bindings:
   - { key: UP,   mods: [CTRL, SHIFT], icon: cursorabove.png,    label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
   - { key: DOWN, mods: [CTRL, SHIFT], icon: cursorbelow.png,    label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
 
-  # --- Cmd+Option+Shift -> the fourth `gui` tier, G channel.
-  # The second case from #131; nothing could address this variant before v12.
-  - { key: P, mods: [GUI, ALT, SHIFT], icon: syntaxinfo.png, label: "Syntax context info", source: "ms-fluent/Info (MIT)" }
+  # --- Cmd+Option -> the `extra` tier, B channel.
+  # show_scope_name is Cmd+Option+P (and Ctrl+Shift+P). It sat on
+  # Cmd+Option+Shift+P (the `gui` tier, #131) until 2026-09-28; that chord binds nothing.
+  - { key: P, mods: [GUI, ALT], icon: syntaxinfo.png, label: "Syntax context info", source: "ms-fluent/Info (MIT)" }
 
   # --- no modifier ---
   - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
