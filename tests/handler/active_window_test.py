@@ -738,3 +738,90 @@ class PolyHostsOwnWindowTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
+    """⚠️ A mapped window with no overlay must not leave the last app's keycaps up.
+
+    Field, 2026-09-30: NoMachine's connection chooser matches the `remote:`
+    entry `nxplayer`, but no forwarder had reported, so the match returned
+    OFF_ON with no data. Nothing was sent, and Chrome's overlays stayed on the
+    board while the chooser was in front.
+    """
+
+    MAPPING = {
+        "nxplayer": {"remote": True, "title": " - NoMachine$"},
+        "notepad": {"overlay": "notepad_template.mods.png"},
+    }
+
+    @staticmethod
+    def _win(app, title, handle):
+        win = MagicMock()
+        win.title = title
+        win.getHandle.return_value = handle
+        win.getAppName.return_value = app
+        return win
+
+    def _focus(self, handler, win):
+        """Two ticks: the first rearms the accept timer, the second decides."""
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=win), \
+             patch(mod + ".app_name_for", side_effect=lambda w: w.getAppName()):
+            handler._decide_active_window(10, 5)
+            return handler._decide_active_window(10, 5)
+
+    def test_a_remote_entry_with_NO_forwarder_report_DISABLES(self):
+        handler = OverlayHandler(self.MAPPING)
+        self.addCleanup(handler.close)
+        data, cmd = self._focus(handler, self._win("nxplayer", "myhost - NoMachine", 11))
+        self.assertIsNone(data)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        # Still the current entry, so a later forwarder report switches through
+        # the remote branch; not the LAST entry, so coming back is a full OFF_ON.
+        self.assertTrue(handler.is_remote_mapping_entry())
+        self.assertIsNone(handler.last_entry)
+
+    def test_a_template_entry_still_switches_with_its_files(self):
+        handler = OverlayHandler(self.MAPPING)
+        self.addCleanup(handler.close)
+        data, cmd = self._focus(handler, self._win("notepad", "a.txt", 12))
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        self.assertIn("notepad_template.mods.png", data)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class NoMachineChooserIsNotASessionTest(unittest.TestCase):
+    """The SHIPPED `nxplayer` entry matches a session window only.
+
+    On Windows a NoMachine session window is titled `<host> - NoMachine`; the
+    connection chooser is titled `NoMachine` alone. The old `.*NoMachine.*`
+    made the chooser a remote session (field, 2026-09-30).
+    """
+
+    def _handler(self):
+        import pathlib
+        import yaml
+        res = pathlib.Path(__file__).resolve().parents[2] / "polyhost" / "res"
+        with open(res / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            shipped = yaml.safe_load(f)
+        handler = OverlayHandler({"nxplayer": shipped["nxplayer"]})
+        self.addCleanup(handler.close)
+        return handler
+
+    def _focus(self, handler, title):
+        return AMatchWithNothingToDrawDisablesTest._focus(
+            self, handler,
+            AMatchWithNothingToDrawDisablesTest._win("nxplayer", title, 21))
+
+    def test_a_SESSION_window_is_the_remote_entry(self):
+        handler = self._handler()
+        self._focus(handler, "myhost - NoMachine")
+        self.assertTrue(handler.is_remote_mapping_entry())
+
+    def test_the_connection_CHOOSER_is_not(self):
+        handler = self._handler()
+        data, cmd = self._focus(handler, "NoMachine")
+        self.assertFalse(handler.is_remote_mapping_entry())
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+

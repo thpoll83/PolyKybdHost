@@ -57,6 +57,11 @@ OVERLAY_PROBE_COOLDOWN_S = 1.0
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
+# A window-tracking tick slower than this, or a pause this long between two
+# ticks, is logged as a warning. Nothing else in the log can tell "the tick
+# thread was stuck" from "no window change happened" (field, 2026-09-30: 87 s
+# with no window detected while the user switched between several windows).
+SLOW_TICK_WARN_S = 2.0
 
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
@@ -296,6 +301,9 @@ class PolyCore(Observable):
         self._tick_thread = None
         self._tick_stop = threading.Event()
         self._tick_lock = threading.Lock()
+        # When the previous window-tracking tick ended, for the slow-tick and
+        # tick-gap warnings (see `tick_window_tracking`). None until one ran.
+        self._tick_ended_at = None
 
         # Anonymous usage census. Created unconditionally (so `polyctl telemetry
         # status/preview` answers even when it is off) but only *started* by
@@ -559,13 +567,43 @@ class PolyCore(Observable):
         worker refactor); headless mode calls it from the core's own tick
         thread (H3). When there is no window handler (no display) this is a
         no-op — explicit overlay sends via the API still work."""
+        started = time.monotonic()
+        self._tick_query_s = 0.0
+        ended_at = getattr(self, "_tick_ended_at", None)
+        if ended_at is not None and started - ended_at > SLOW_TICK_WARN_S:
+            # The caller sleeps one cycle between ticks, so anything much
+            # longer means the thread (or the Qt main loop) was not scheduled.
+            self.log.warning(
+                "Window-tracking tick started %.1f s after the previous one "
+                "ended (expected %.2f s): the tick thread was not scheduled.",
+                started - ended_at, update_cycle_msec / 1000)
+        try:
+            self._tick_window_tracking(update_cycle_msec, new_window_accept_msec)
+        finally:
+            ended = time.monotonic()
+            self._tick_ended_at = ended
+            took = ended - started
+            if took > SLOW_TICK_WARN_S:
+                # Split in two because they block on different things: the
+                # query talks to the window system (pywinctl), the rest is
+                # matching and the generic-overlay lookups.
+                query = getattr(self, "_tick_query_s", 0.0)
+                self.log.warning(
+                    "Window-tracking tick took %.1f s (active-window query and "
+                    "match %.1f s, overlay decision %.1f s).",
+                    took, query, took - query)
+
+    def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
+        """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
         if handler is None:
             return
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+            self._tick_query_s = time.monotonic() - query_started
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")
@@ -605,10 +643,19 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
-                self.send_overlay_data(data)
                 # A template send re-programs the whole pool, so whatever
-                # generic overlays were on the device are gone with it.
+                # generic overlays were on the device are gone with it. Cleared
+                # BEFORE the send so the gap fill below cannot dedupe against
+                # the set this send replaces.
                 self._generic_on_device = None
+                # ⚠️ ONE send when the gap fill is already known. Sending the
+                # template alone here and letting the next tick add the fill
+                # re-mapped every keycap twice, 200-400 ms apart, on every
+                # switch to Chrome/Slack/Outlook -- even when the mark had
+                # been cached for minutes (field log, 2026-09-30). The fill's
+                # own send carries the templates first, so it is a superset.
+                if not self._send_template_with_fill(handler):
+                    self.send_overlay_data(data)
             elif not self.poly_settings.get("generic_overlays_enabled"):
                 pass                      # the whole generic path is switched off
             elif handler.covered_by_template():
@@ -640,6 +687,22 @@ class PolyCore(Observable):
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
+    def _send_template_with_fill(self, handler):
+        """Send the focused window's templates WITH the generic gap fill.
+
+        True when that send was queued. False when the fill is switched off,
+        no template covers the window, or the fill has nothing resolved yet
+        (first sighting: the mark and the harvest are still being fetched) --
+        the caller then sends the templates alone and the tick that resolves
+        the fill sends the combined set, as before.
+        """
+        if not (self.poly_settings.get("generic_overlays_enabled")
+                and self.poly_settings.get("generic_overlays_fill_gaps")
+                and handler.covered_by_template()):
+            return False
+        return self._maybe_send_generic_overlays(
+            handler, template_files=self._template_files(handler))
+
     def _maybe_send_generic_overlays(self, handler, template_files=()):
         """Draw the focused app's OWN icon on ESC, and an icon per shortcut key.
 
@@ -654,6 +717,9 @@ class PolyCore(Observable):
         (modifier, keycode) a real one already drew -- so a template keeps every
         key it draws and the generic icons reach only the ones it leaves blank.
         Empty (no template covers this window) is the original behaviour.
+
+        Returns True when the set is on the device or a send for it was
+        queued, False when nothing was sent (nothing resolved, or a clear).
 
         ⚠️ **ONE send, not two, and that is forced rather than tidy.**
         `send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the
@@ -690,7 +756,7 @@ class PolyCore(Observable):
             self.log.debug_detailed(
                 "No generic overlays: the handler names no focused app "
                 "(remote=%s)", handler.is_remote_mapping_entry())
-            return
+            return False
         # `identity` is set only for a FORWARDED window, where the other machine
         # already resolved it — see AppAwareHandler.focused_app.
         # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
@@ -769,11 +835,11 @@ class PolyCore(Observable):
             # icons up on Calculator and on Videos, both of which relayed none
             # (field, 2026-09-21).
             self._clear_generic_overlays(name, template_files)
-            return
+            return False
         if signature == self._generic_on_device:
-            return
-        self._send_generic_overlays(name, signature, slug, mask, shortcuts,
-                                    template_files)
+            return True
+        return self._send_generic_overlays(name, signature, slug, mask,
+                                           shortcuts, template_files)
 
     def _note_overlay_state(self, enabled):
         """Tell the window handler what the DEVICE is showing, if there is one.
@@ -1000,7 +1066,7 @@ class PolyCore(Observable):
             if sources:
                 built.append((entry, sources))
         if not built:
-            return
+            return False
         drawn = sum(len(keys) for keys in shortcuts.values())
         # ⚠️ Say which mode this was. The two differ in what the keycaps end up
         # showing AND in what the send costs, and a log that reads the same for
@@ -1033,6 +1099,7 @@ class PolyCore(Observable):
             lambda cancel: self._generic_overlay_job(built, cancel, template_files),
             coalesce_key="overlay",
             on_done=self.emit)
+        return True
 
     def _generic_overlay_job(self, built, cancel, template_files=()):
         """Worker-thread send of the generic set. Mirrors _overlay_send_job.
@@ -1067,6 +1134,9 @@ class PolyCore(Observable):
             self.log.warning(msg)
             self.emit("overlay_warning", msg)
         self.keeb.set_idle(False)
+        # Same as `_overlay_send_job`: this send now also carries the
+        # templates on a window switch, so it must mark the deaf window too.
+        self._last_overlay_activity = time.monotonic()
 
     def _track_active_os(self, handler):
         """Keep the keyboard's OS in sync with the machine currently driving the
