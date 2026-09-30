@@ -292,6 +292,12 @@ def thinned_mask(svg_path, shave=FINDER_SHAVE, box=PROGRAM_ICON_BOX):
 JETBRAINS_IDES = ("clion", "datagrip", "goland", "intellijidea", "phpstorm",
                   "pycharm", "rider", "rubymine", "webstorm")
 PLATE_FRAME = 2                 # px; 1 px ranked 0.42-0.50 and read as a hairline
+# ⚠️ IntelliJ IDEA is the one IDE whose EXECUTABLE is not its product name
+# (`idea`, `idea64`). The display name reaches `poly:intellijidea` only when the
+# OS supplies one, and a Linux install with no desktop entry supplies none, so a
+# forwarded IDEA drew no mark while CLion (exe `clion`) did (field, 2026-09-30).
+# The same mark ships a second time under the exe's slug.
+JETBRAINS_EXE_SLUGS = {"idea": "intellijidea"}
 
 
 def plate_outline_mask(svg_path, frame=PLATE_FRAME):
@@ -341,6 +347,8 @@ def main(argv=None) -> int:
     for ide in JETBRAINS_IDES:
         src = os.path.join(PROGRAM_ICON_DIR, "src", "si-%s.svg" % ide)
         products["%s.png" % ide] = _png_bytes(plate_outline_mask(src))
+    for exe, ide in JETBRAINS_EXE_SLUGS.items():
+        products["%s.png" % exe] = products["%s.png" % ide]
 
     drifted = []
     for name, payload in products.items():
