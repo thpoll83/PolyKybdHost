@@ -10,7 +10,7 @@ from polyhost.device.command_ids import IdleTimeout
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier, MODIFIER_ANY
+from polyhost.device.keys import Modifier, MODIFIER_ANY
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
 from polyhost.input.unicode_input import InputMethod
