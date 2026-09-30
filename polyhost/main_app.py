@@ -175,6 +175,11 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # with our lines) since overlay decode moved to Pillow. Cap the PIL logger
     # so our DEBUG output stays readable. Harmless when not debugging.
     logging.getLogger("PIL").setLevel(logging.INFO)
+    # comtypes logs every COM pointer it releases at DEBUG: one line per UI
+    # Automation element, ~150 per shortcut harvest on Windows, and nothing
+    # in them says what the harvest found. The shortcut fetcher logs the
+    # outcome itself ("Shortcut icons for 'firefox': 8 shortcut(s) ...").
+    logging.getLogger("comtypes").setLevel(logging.INFO)
 
     # Diagnostic log for the pre-GUI launch phase (works under pythonw, where
     # print() is a silent no-op). Captures the daemon decision, autostart, and
