@@ -499,5 +499,29 @@ class TestPolyKybdMockIdleTimeout(unittest.TestCase):
         self.assertEqual(preset, IdleTimeout.SEC_30.value)
 
 
+class TestPolyKybdMockSignatureParity(unittest.TestCase):
+    """Every parameter a real `PolyKybd` method takes, the mock's method of the
+    same name must accept too. A caller written against the real device passes
+    the new keyword, and a mock that lacks it raises TypeError at runtime only
+    while the mock is enabled -- `send_overlays_mru(synthetic=)` did exactly
+    that on every window report."""
+
+    def test_mock_accepts_every_parameter_of_the_real_method(self):
+        import inspect
+        from polyhost.device.poly_kybd import PolyKybd
+        skip = (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+        drift = {}
+        for name, fn in inspect.getmembers(PolyKybdMock, inspect.isfunction):
+            real = getattr(PolyKybd, name, None)
+            if name.startswith("_") or real is None:
+                continue
+            mock_params = inspect.signature(fn).parameters
+            missing = [p.name for p in list(inspect.signature(real).parameters.values())[1:]
+                       if p.kind not in skip and p.name not in mock_params]
+            if missing:
+                drift[name] = missing
+        self.assertEqual(drift, {})
+
+
 if __name__ == "__main__":
     unittest.main()
