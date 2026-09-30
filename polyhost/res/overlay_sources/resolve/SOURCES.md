@@ -83,11 +83,13 @@ Sources:
 | Action | Windows | macOS | Why |
 |---|---|---|---|
 | Ripple delete | `Shift+Backspace` | `Forward Delete` (the DELETE key) | Reference manual: "Forward Delete — Ripple delete". Written twice with `only:`. |
-| Start render | `Ctrl+R` | — (dropped, `except: [macos]`) | The manual documents Command-R as **Retime Controls** (Edit page) / Resolve Live (Color page), not render. |
+| Start render | — (dropped) | — (dropped) | The manual documents Command-R as **Retime Controls** (Edit page) / Resolve Live (Color page), not render. |
 | Render queue | `Ctrl+Shift+R` | — (dropped) | The manual documents Shift-Command-R as Resolve Live Freeze; no confirmed render-queue chord. |
 
 No macOS chord drawn here is system-reserved (`Shift+3/4/5` carry no Cmd, so they
 do not collide with the ⌘⇧3/4/5 screenshot keys).
 
-⚠️ Suspected Windows errors — **not changed**: `Ctrl+R` is Retime Controls, not
-"Start render" (manual, see above); `Ctrl+Shift+R` "Render queue" is unconfirmed.
+Fixed 2026-09-30: the Windows `Ctrl+R` "Start render" cell is gone, because
+`Ctrl+R` is Retime Controls (manual, see above). ⚠️ `Ctrl+Shift+R` "Render queue"
+is still drawn on Windows but unconfirmed: the manual gives Shift-Command-R as
+Resolve Live Freeze.

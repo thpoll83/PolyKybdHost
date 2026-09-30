@@ -88,17 +88,16 @@ Sources:
 | Action | Windows / Linux | macOS | Why |
 |---|---|---|---|
 | Find and replace | `Ctrl+H` | `Cmd+Option+F` | Obsidian's source: `isMac ? Mod+Alt+F : Mod+H` (⌘H is macOS "Hide"). Written twice with `only:`. |
-| Navigate back | `Alt+Left` (as drawn) | `Cmd+Option+Left` | App default is `Mod+Alt+ArrowLeft`. Written twice with `only:`. |
-| Navigate forward | `Alt+Right` (as drawn) | `Cmd+Option+Right` | App default is `Mod+Alt+ArrowRight`. |
-| Toggle left sidebar | `Ctrl+Shift+L` | — (dropped, `except: [macos]`) | No default hotkey in Obsidian at all. |
-| Toggle right sidebar | `Ctrl+Shift+R` | — (dropped) | No default hotkey in Obsidian at all. |
-| Strikethrough | `Ctrl+Shift+X` | — (dropped) | No default hotkey in Obsidian at all. |
+| Navigate back | `Ctrl+Alt+Left` | `Cmd+Option+Left` | App default is `Mod+Alt+ArrowLeft`. Written twice with `only:`. |
+| Navigate forward | `Ctrl+Alt+Right` | `Cmd+Option+Right` | App default is `Mod+Alt+ArrowRight`. |
+| Toggle left sidebar | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
+| Toggle right sidebar | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
+| Strikethrough | — (dropped) | — (dropped) | No default hotkey in Obsidian at all. |
 
 No macOS chord drawn here is system-reserved; the ⌘H clash is exactly why
 Obsidian moves Find & replace off `H`.
 
-⚠️ Windows chords the app's default table contradicts — **not changed** (the
-Windows set must stay byte-identical), recorded for a follow-up: Navigate
-back/forward is `Ctrl+Alt+Left/Right`, not `Alt+Left/Right`; and Toggle
-left/right sidebar and Strikethrough have no default hotkey, so the Windows
-`Ctrl+Shift+L/R/X` cells describe nothing in a clean install.
+Windows/Linux fixed against the app's default table (2026-09-30): Navigate
+back/forward moved from `Alt+Left/Right` to `Ctrl+Alt+Left/Right`, and the
+`Ctrl+Shift+L/R/X` cells (Toggle left/right sidebar, Strikethrough) are gone,
+because Obsidian binds none of them in a clean install.

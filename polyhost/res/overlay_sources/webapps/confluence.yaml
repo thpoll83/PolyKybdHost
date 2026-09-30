@@ -41,7 +41,7 @@ bindings:
 
   # --- Ctrl+Shift ---
   - { key: S, mods: [CMDCTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
-  - { key: M, mods: [CMDCTRL, SHIFT], icon: codeblock.png,     label: "Code block",   source: "ms-fluent/Code Block (MIT)" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: code.png,          label: "Inline code",  source: "ms-fluent/Code (MIT)" }
   - { key: I, mods: [CMDCTRL, SHIFT], icon: table.png,         label: "Insert table", source: "ms-fluent/Table Simple (MIT)" }
   - { key: "7", mods: [CMDCTRL, SHIFT], icon: numberlist.png,  label: "Numbered list", source: "material-symbols/format_list_numbered (Apache-2.0)" }
   - { key: "8", mods: [CMDCTRL, SHIFT], icon: bulletlist.png,  label: "Bullet list",  source: "ms-fluent/Text Bullet List (MIT)" }

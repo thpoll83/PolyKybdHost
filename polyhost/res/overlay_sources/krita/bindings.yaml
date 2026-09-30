@@ -80,8 +80,7 @@ bindings:
   - { key: F, mods: [], icon: filltool.png,   label: "Fill tool",    source: "breeze-icons/fill-color (LGPLv3)" }
   - { key: T, mods: [], icon: move.png,       label: "Move tool",    source: "breeze-icons/transform-move (LGPLv3)" }
   - { key: P, mods: [], icon: picker.png,     label: "Color picker", source: "breeze-icons/color-picker (LGPLv3)" }
-  - { key: R, mods: [], icon: rectselect.png, label: "Rect select",  source: "breeze-icons/select-rectangular (LGPLv3)" }
-  - { key: V, mods: [], icon: linetool.png,   label: "Line tool",    source: "breeze-icons/draw-line (LGPLv3)" }
+  - { key: R, mods: [CMDCTRL], icon: rectselect.png, label: "Rect select",  source: "breeze-icons/select-rectangular (LGPLv3)" }
   - { key: R, mods: [SHIFT], icon: rectangle.png, label: "Rectangle", source: "breeze-icons/draw-rectangle (LGPLv3)" }
   - { key: J, mods: [SHIFT], icon: ellipse.png,   label: "Ellipse",   source: "breeze-icons/draw-ellipse (LGPLv3)" }
   - { key: BACKSPACE, mods: [], only: [windows, linux], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: framed square), shared with photoshop" }

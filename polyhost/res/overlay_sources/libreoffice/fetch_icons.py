@@ -83,6 +83,7 @@ FLUENT = {
     # --- Impress ---
     "slideshow": "Slide Play",
     "duplicateslide": "Slide Multiple",
+    "newslide": "Slide Add",
     "edittext": "Text T",
     "group": "Group",
     "ungroup": "Group Dismiss",

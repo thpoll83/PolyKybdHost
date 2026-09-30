@@ -50,13 +50,10 @@ bindings:
 
   # --- Ctrl+Shift ---
   - { key: F, mods: [CMDCTRL, SHIFT], icon: searchall.png,     label: "Search all files",   source: "ms-fluent/Document Search (MIT)" }
-  - { key: L, mods: [CTRL, SHIFT], except: [macos], icon: leftsidebar.png,   label: "Toggle left sidebar", source: "ms-fluent/Panel Left (MIT)" }
-  - { key: R, mods: [CTRL, SHIFT], except: [macos], icon: rightsidebar.png,  label: "Toggle right sidebar", source: "ms-fluent/Panel Right (MIT)" }
-  - { key: X, mods: [CTRL, SHIFT], except: [macos], icon: strikethrough.png, label: Strikethrough,        source: "ms-fluent/Text Strikethrough (MIT)" }
   - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png,    label: "Paste without formatting", source: "ms-fluent/Clipboard Paste (MIT)" }
 
   # --- Alt ---
-  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: LEFT,  mods: [CTRL, ALT], only: [windows, linux], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
   - { key: LEFT,  mods: [GUI, ALT], only: [macos], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
-  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: RIGHT, mods: [CTRL, ALT], only: [windows, linux], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
   - { key: RIGHT, mods: [GUI, ALT], only: [macos], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }

@@ -62,7 +62,6 @@ bindings:
   - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
   - { key: B, mods: [CMDCTRL], icon: blade.png,       label: "Blade / split clip", source: "custom/nle_glyphs", mode: alpha }
   - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
-  - { key: R, mods: [CTRL], except: [macos], icon: render.png,      label: "Start render", source: "ms-fluent/Arrow Export (MIT)" }
   - { key: "\\", mods: [CMDCTRL], icon: addedit.png,  label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
   - { key: "=", mods: [CMDCTRL], icon: zoomin.png,    label: "Zoom in",      source: "ms-fluent/Zoom In (MIT)" }
   - { key: "-", mods: [CMDCTRL], icon: zoomout.png,   label: "Zoom out",     source: "ms-fluent/Zoom Out (MIT)" }

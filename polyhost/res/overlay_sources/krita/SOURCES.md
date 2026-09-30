@@ -165,6 +165,7 @@ Nothing is dropped. No macOS chord drawn here is system-reserved.
 file, but Mac keyboards have no Insert key and macOS reports the HID Insert usage
 as the Help key, so the Mac cell may never fire. Left as-is; verify on hardware.
 
-⚠️ Suspected Windows errors — **not changed**: `R` "Rect select" (Krita's default
-is `Ctrl+R`; bare `R` is bound to nothing) and `V` "Line tool" (no default shortcut
-in current `krita.action`).
+Fixed 2026-09-30 against Krita's tool action files: "Rect select" moved from
+bare `R` to `Ctrl+R` (⌘R on the Mac; `KisToolSelectRectangular.action`), and
+bare `V` "Line tool" is gone (`KritaShape/KisToolLine` has no default shortcut in
+`tools.action`).

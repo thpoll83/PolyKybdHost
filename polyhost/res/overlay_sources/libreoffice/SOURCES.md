@@ -76,7 +76,7 @@ ones in the table below.
 | Calc | Spelling | `F7` | — (dropped, `except: [macos]`) | `F7` is `unxwnt`-only, and Calc has no Mac spelling chord: its `⌘⇧;` is Insert Current Time. |
 | Calc, Impress | Styles deck | `F11` | `⌘T` (remapped) | `F11` is `unxwnt`-only (macOS uses F11 for Show Desktop). The Mac entry is `T_MOD1` → `.uno:DesignerDialog`. |
 | Writer | Styles deck | `F11` | — (dropped, `except: [macos]`) | The help page says `⌘T`, but Writer's shipped `T_MOD1` is **Insert Table** on both platforms, and Writer has no Mac DesignerDialog chord. **Uncertain**; dropped rather than guessed. |
-| all three | Ctrl+M (Clear direct formatting; in Impress the shipped command is New Slide) | `Ctrl+M` | `⌃M`, unchanged | Kept as literal `CTRL`. The Mac entry is `M_MOD3` (real Control) because ⌘M is the system Minimize. The help page's `Command+M` is wrong. |
+| all three | Ctrl+M (Clear direct formatting in Writer/Calc; New slide in Impress) | `Ctrl+M` | `⌃M`, unchanged | Kept as literal `CTRL`. The Mac entry is `M_MOD3` (real Control) because ⌘M is the system Minimize. The help page's `Command+M` is wrong. |
 | Calc | Select column | `Ctrl+Space` | `⌃Space`, unchanged | Literal `CTRL` (`SPACE_MOD3`). ⚠️ macOS reserves ⌃Space to switch input source when more than one is enabled, so this cell may be dead there. |
 | Calc | Select all cells | `Ctrl+Shift+Space` | `⌃⇧Space`, unchanged | Literal `CTRL` (`SPACE_SHIFT_MOD3`). |
 | Calc | Show formulas | ``Ctrl+` `` | ``⌃` ``, unchanged | Literal `CTRL` (`QUOTELEFT_MOD3`). The help page's `Command` is wrong. |
@@ -85,12 +85,14 @@ ones in the table below.
 Writer's `Ctrl+Q` → `⌘Q` (Quit) is drawn deliberately: it is the application's
 own Quit, which is exactly what the system chord does.
 
+Fixed 2026-09-30: Impress **`Ctrl+M`** was labelled "Clear direct formatting",
+but the Impress module's `M_MOD1` (and the Mac `M_MOD3`) is `.uno:InsertPage`. It
+is now "New slide", drawn with Fluent `Slide Add` (`newslide.png`). The shared help
+page's Clear-Direct-Formatting row describes the other modules.
+
 **Discrepancies spotted in the Windows set, left as they are** (see the review
 note in the Representation notes above):
 
-- Impress **`Ctrl+M`** is labelled "Clear direct formatting", but the Impress
-  module's `M_MOD1` (and the Mac `M_MOD3`) is `.uno:InsertPage`, i.e. New Slide.
-  The shared help page's Clear-Direct-Formatting row describes the other modules.
 - Impress **Ungroup `Ctrl+Alt+Shift+A`**: the help page agrees
   (Mac `⌘⌥⇧A`, drawn via `CMDCTRL`). The `.xcu`, however, binds `.uno:FormatUngroup` to
   `G_SHIFT_MOD1_MOD2` and has no `A_SHIFT_MOD1_MOD2` in any module. The key

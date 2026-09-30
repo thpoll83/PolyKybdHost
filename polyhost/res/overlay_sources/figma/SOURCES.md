@@ -75,7 +75,7 @@ drawn, below):
 
 - **Scale (K)** → `Resize Large` (reads as a maximize/expand glyph).
 - **Outline view (O)** → `Eye Off` (hide-render proxy).
-- **Outline stroke (Ctrl+Shift+O)** → `Pen Sparkle`.
+- **Outline stroke (Ctrl+Alt+O)** → `Pen Sparkle`.
 - **Ellipse (O)** → `Circle`; **Rectangle (R)** → `Rectangle Landscape`.
 - **Zoom to selection (Shift+2)** → `Select Object`; **Zoom to fit (Shift+1)** →
   `Full Screen Maximize`.
@@ -145,12 +145,13 @@ Keyboard shortcuts on a Mac) before shipping.
 
 No macOS chord drawn here is system-reserved (⌘H/⌘M/⌘Q/⌘Space/⌘⇧3-5 are all unused).
 
-⚠️ Windows chords that look wrong against the same references — **not changed**
-(the Windows set must stay byte-identical), recorded for a follow-up:
+Fixed 2026-09-30: **Outline stroke** moved from `Ctrl+Shift+O` / ⇧⌘O, the
+*legacy* chord (Figma → Preferences → "Use old shortcuts for outlines"), to the
+current default `Ctrl+Alt+O` / ⌥⌘O.
 
-- **Outline stroke `Ctrl+Shift+O`** is the *legacy* chord (Figma → Preferences →
-  "Use old shortcuts for outlines"); the current default is `Ctrl+Alt+O` / ⌥⌘O.
-  The Mac set keeps parity with the Windows line (⇧⌘O), so both are "old shortcuts".
+⚠️ Windows chords that look wrong against the same references — **not changed**,
+recorded for a follow-up:
+
 - **Save `Ctrl+S`**: Figma saves automatically; "Save to version history" is
   `Ctrl+Alt+S` / ⌥⌘S.
 - **Select inverse `Ctrl+Alt+A`** and **Pixel grid `Ctrl+'`**: see the table.

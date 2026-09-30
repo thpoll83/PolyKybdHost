@@ -80,9 +80,10 @@ Nothing was dropped on macOS.
 - **Confluence `Ctrl+Shift+I` (Insert table)**: a search snippet of Atlassian's
   page gives `⌘+Shift+I`, so it is `CMDCTRL`. The Atlaskit editor source binds
   *Table* to `Shift+Alt+T` instead, so the Windows chord itself is unconfirmed.
-- **Confluence `Ctrl+Shift+M`** is labelled "Code block". In the Atlaskit editor,
-  `Mod-Shift-m` is *inline code*; a code block comes from typing ```` ``` ````.
-  The Mac form, `⌘⇧M`, is the same either way.
+- **Confluence `Ctrl+Shift+M`** was labelled "Code block". In the Atlaskit
+  editor, `Mod-Shift-m` is *inline code*; a code block comes from typing
+  ```` ``` ````. Relabelled "Inline code" with the Fluent `Code` icon on
+  2026-09-30. The Mac form is `⌘⇧M`.
 - **Confluence Redo `Ctrl+Y`**: the Atlaskit editor binds Redo to `Ctrl-y` on
   Windows and `Cmd-Shift-z` on Mac, and additionally `Mod-y` (⌘Y) on both, so
   `⌘Y` is correct.

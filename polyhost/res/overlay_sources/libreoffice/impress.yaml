@@ -51,7 +51,7 @@ bindings:
   - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,       source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,     source: "ms-fluent/Text Italic (MIT)" }
   - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline,  source: "ms-fluent/Text Underline (MIT)" }
-  - { key: M, mods: [CTRL], icon: clearfmt.png,  label: "Clear direct formatting", source: "ms-fluent/Text Clear Formatting (MIT)" }
+  - { key: M, mods: [CTRL], icon: newslide.png,  label: "New slide", source: "ms-fluent/Slide Add (MIT)" }
   - { key: "-", mods: [CMDCTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Position Backward (MIT)" }
 
   # --- Shift ---

@@ -79,7 +79,7 @@ bindings:
   - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,       label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
   - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteover.png,     label: "Paste over",   source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: placeimage.png,    label: "Place image",  source: "ms-fluent/Image Add (MIT)" }
-  - { key: O, mods: [CMDCTRL, SHIFT], icon: outlinestroke.png, label: "Outline stroke", source: "ms-fluent/Pen Sparkle (MIT)" }
+  - { key: O, mods: [CMDCTRL, ALT], icon: outlinestroke.png, label: "Outline stroke", source: "ms-fluent/Pen Sparkle (MIT)" }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: export.png,        label: Export,         source: "ms-fluent/Arrow Export (MIT)" }
   - { key: C, mods: [CMDCTRL, SHIFT], icon: copypng.png,       label: "Copy as PNG",  source: "ms-fluent/Image Copy (MIT)" }
   - { key: X, mods: [CMDCTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,  source: "ms-fluent/Text Strikethrough (MIT)" }
