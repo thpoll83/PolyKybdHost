@@ -14,6 +14,7 @@ from polyhost.handler.own_process import (
     own_app_name, own_front_app, window_pid,
 )
 from polyhost.handler.win_process import app_name_for
+from polyhost.handler.win_shell import shell_app_name
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
@@ -433,6 +434,9 @@ class OverlayHandler:
                             # (`pythonw`, `python3`); name them as ours so the
                             # ESC mark is the PolyKybd logo, not Python's.
                             app_name = own_app_name(app_name, self._win_pid())
+                            # The taskbar and desktop are explorer.exe too, and
+                            # File Explorer's keycaps do nothing there.
+                            app_name = shell_app_name(app_name, handle)
                             self.app_name = app_name
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
@@ -459,7 +463,25 @@ class OverlayHandler:
                                 )
                                 if found:
                                     self.log.info("Changing to %s", app_name)
-                                    return self.get_overlay_data(), cmd
+                                    data = self.get_overlay_data()
+                                    if data is None:
+                                        # ⚠️ A MATCH WITH NOTHING TO DRAW must
+                                        # not leave the last app's keycaps up.
+                                        # A `remote:` entry whose forwarder has
+                                        # not reported (NoMachine's connection
+                                        # chooser) returned OFF_ON with no
+                                        # data, so nothing was sent and
+                                        # Chrome's overlays stayed on the board
+                                        # (field, 2026-09-30). `current_entry`
+                                        # stays set, so a later forwarder
+                                        # report still switches through the
+                                        # remote branch below; `last_entry` is
+                                        # dropped so returning here is a full
+                                        # OFF_ON, never an ENABLE of whatever
+                                        # mapping another app left behind.
+                                        self.last_entry = None
+                                        return None, OverlayCommand.DISABLE
+                                    return data, cmd
                                 self.log.debug("App '%s' in mapping but title did not match (title='%s')", app_name, self.title)
                             if self.current_entry and not found:
                                 self.current_entry = None
@@ -598,7 +620,14 @@ class OverlayHandler:
             and self.current_entry[FLAGS][Flags.HAS_OVERLAY.value]
         ):  # 0 for overlay
             return self.current_entry[OVERLAY]
-        elif self.remote_handler.has_overlay():
+        # ⚠️ Only while a `remote:` entry is focused. The forwarder keeps
+        # reporting its own focused app after the local focus moves on, so an
+        # ungated fallback answered for EVERY unmatched local window: leaving a
+        # forwarded CLion for the Windows taskbar kept CLion's whole Linux
+        # template on the board, because `covered_by_template()` said the
+        # taskbar was covered and the core re-sent that template instead of
+        # clearing (field, 2026-09-30). A language switch re-sent it too.
+        elif self.is_remote_mapping_entry() and self.remote_handler.has_overlay():
             return self.remote_handler.get_overlay_data()
         return None
 

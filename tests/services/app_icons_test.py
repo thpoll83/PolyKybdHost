@@ -85,11 +85,7 @@ def _needs_render(case):
     any machine without it, i.e. on the platform most of these users are on, and
     a skip reads exactly like a pass in the summary line.
     """
-    try:
-        import numpy             # noqa: F401
-        from PIL import Image    # noqa: F401
-    except Exception:
-        case.skipTest("Pillow/numpy not installed")
+    _needs_pil(case)
     from polyhost.services import svg_raster
     if svg_raster.available():
         return
@@ -97,6 +93,19 @@ def _needs_render(case):
         import cairosvg          # noqa: F401
     except Exception:
         case.skipTest("neither svg_raster (fontTools+freetype) nor cairosvg")
+
+
+def _needs_pil(case):
+    """What the PNG path of `render_os_overlay` needs, and nothing more.
+
+    A test that feeds a PNG and draws no SVG must not also wait for an SVG
+    rasteriser: `_needs_render` would skip it on a machine that lacks one.
+    """
+    try:
+        import numpy             # noqa: F401
+        from PIL import Image    # noqa: F401
+    except Exception:
+        case.skipTest("Pillow/numpy not installed")
 
 
 def _identity(icon=None, icon_path="", names=()):
@@ -554,10 +563,11 @@ class ProgramOverlayTest(unittest.TestCase):
                 tmp, allow_network=False)[1]
             # ⚠️ Another SCOREABLE shape, not just different bytes: a mark
             # that fails the 1-bit gate falls through to the catalog and
-            # returns `si:photos`, so the test would assert nothing about the
-            # slug. A ring at a different size is both.
-            photos = ai.program_overlay("Photos", _identity(
-                icon=_png(_ring, 96), icon_path=icns % "Photos"),
+            # returns `si:freeform`, so the test would assert nothing about the
+            # slug. A ring at a different size is both. (Not Photos: its
+            # shipped `poly:photos` now outranks any OS icon.)
+            photos = ai.program_overlay("Freeform", _identity(
+                icon=_png(_ring, 96), icon_path=icns % "Freeform"),
                 tmp, allow_network=False)[1]
             self.assertTrue(maps.startswith("os:AppIcon.icns@"), maps)
             self.assertTrue(photos.startswith("os:AppIcon.icns@"), photos)
@@ -1014,12 +1024,163 @@ class OsIconCompetesRatherThanWinsTest(unittest.TestCase):
             path = os.path.join(tmp, "si-inkscape.png")
             Image.fromarray((os_mask * 255).astype("uint8"), "L").convert(
                 "1").save(path)
-            with mock.patch.object(ai, "fetch_icon", return_value=path):
+            # Catalog names only: a shipped `poly:` mark outranks both on
+            # purpose (ShippedMarkOutranksCatalogTest), which is not this tie.
+            with mock.patch.object(ai, "fetch_icon", side_effect=lambda name, *a, **k:
+                                   None if name.startswith("poly:") else path):
                 _, name = ai.program_overlay(
                     "Inkscape", _identity(icon=ring,
                                           icon_path="/x/AppIcon.icns"),
                     tmp, allow_network=False)
         self.assertTrue(name.startswith("os:"), name)
+
+
+class OsIconLogLineTest(unittest.TestCase):
+    """Exactly one verdict line per OS icon, and it matches the gate.
+
+    The "does not survive 1-bit" line used to print for EVERY icon, right after
+    the CANDIDATE line for one that passed: "gate 0.215 >= 0.080" and then
+    "score 0.215 < 0.080" (hardware round, 2026-09-29).
+    """
+
+    # ⚠️ `_needs_pil`, not `_needs_render`: the icon is a PNG, the cache dir is
+    # empty and the network is off, so no SVG is drawn on either path.
+    def _lines(self, icon):
+        with tempfile.TemporaryDirectory() as tmp, \
+                self.assertLogs("PolyHost", "INFO") as cm:
+            ai.program_overlay("Inkscape",
+                               _identity(icon=icon, icon_path="/t/inkscape.png"),
+                               tmp, allow_network=False)
+        return [r.getMessage() for r in cm.records
+                if r.getMessage().startswith("The OS icon for")]
+
+    def test_a_passing_icon_is_only_a_CANDIDATE(self):
+        _needs_pil(self)
+        lines = self._lines(_png(_ring))
+        self.assertEqual(1, len(lines), lines)
+        self.assertIn("is a CANDIDATE", lines[0])
+
+    def test_a_failing_icon_only_does_not_survive(self):
+        _needs_pil(self)
+        lines = self._lines(_png(_disc))
+        self.assertEqual(1, len(lines), lines)
+        self.assertIn("does not survive 1-bit", lines[0])
+
+
+class JetBrainsOutlineMarksTest(unittest.TestCase):
+    """The shipped JetBrains IDE marks: the Simple Icons plate, hollowed out.
+
+    Simple Icons draws each IDE as a filled square with the letters cut out,
+    which `mark_rank` reads inside-out; CLion's dithered OS icon beat it on
+    hardware (2026-09-29). The shipped outline must read the right way up, beat
+    the plate it came from, and be what the resolver picks by EXE name.
+    """
+
+    IDES = ("clion", "datagrip", "goland", "intellijidea", "phpstorm",
+            "pycharm", "rider", "rubymine", "webstorm")
+
+    def test_each_mark_reads_the_right_way_up_and_beats_its_plate(self):
+        _needs_render(self)
+        for ide in self.IDES:
+            with self.subTest(ide):
+                mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, ide + ".png"))
+                plate = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, "src",
+                                                    "si-%s.svg" % ide))
+                self.assertIsNotNone(mark)
+                self.assertTrue(ai.mark_rank(mark)[0], "read inside-out")
+                self.assertFalse(ai.mark_rank(plate)[0], "premise: the plate is inside-out")
+                self.assertGreater(ai.mark_rank(mark), ai.mark_rank(plate))
+                self.assertFalse(mark[:, :34].any(), "ink would reach the ESC legend")
+
+    def test_no_stray_pixels_inside_the_frame(self):
+        """Hardware preview (2026-09-29): GoLand's O touched the frame through
+        one stray gutter pixel, and PyCharm's P and IntelliJ's underline each
+        carried a one-pixel spur. Letters must clear the frame by 1 px, and no
+        set pixel may have exactly one set 4-neighbour."""
+        _needs_render(self)
+        import numpy as np
+        for ide in self.IDES:
+            with self.subTest(ide):
+                mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, ide + ".png"))
+                rows, cols = np.flatnonzero(mark.any(1)), np.flatnonzero(mark.any(0))
+                y0, y1, x0, x1 = rows[0] + 2, rows[-1] - 2, cols[0] + 2, cols[-1] - 2
+                inner = mark[y0:y1 + 1, x0:x1 + 1]
+                ring = np.concatenate((inner[0], inner[-1], inner[:, 0], inner[:, -1]))
+                self.assertFalse(ring.any(), "a letter touches the frame's gutter")
+                pad = np.pad(inner, 1)
+                n = (pad[:-2, 1:-1].astype(int) + pad[2:, 1:-1]
+                     + pad[1:-1, :-2] + pad[1:-1, 2:])
+                self.assertEqual([], np.argwhere(inner & (n == 1)).tolist())
+
+    def test_the_resolver_picks_them_by_exe_and_display_name(self):
+        _needs_render(self)
+        cases = (("clion64", "CLion", "poly:clion"),
+                 ("pycharm64", "PyCharm", "poly:pycharm"),
+                 ("idea64", "IntelliJ IDEA", "poly:intellijidea"))
+        with tempfile.TemporaryDirectory() as tmp:
+            for exe, name, want in cases:
+                with self.subTest(exe):
+                    mask, got = ai.program_overlay(exe, _identity(names=(name,)),
+                                                   tmp, allow_network=False)
+                    self.assertEqual(want, got)
+                    self.assertIsNotNone(mask)
+
+
+    def test_the_resolver_picks_them_by_exe_name_ALONE(self):
+        """A forwarded IDE from a Linux install with no desktop entry arrives
+        with its executable name and no display name (field, 2026-09-30):
+        CLion drew its mark, IntelliJ (`idea`) drew nothing."""
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            for exe, want in (("clion", "poly:clion"), ("idea", "poly:idea"),
+                              ("idea64", "poly:idea")):
+                with self.subTest(exe):
+                    mask, got = ai.program_overlay(exe, _identity(names=()),
+                                                   tmp, allow_network=False)
+                    self.assertEqual(want, got)
+                    self.assertIsNotNone(mask)
+
+    def test_the_exe_slug_is_the_SAME_mark(self):
+        with open(os.path.join(ai.PROGRAM_ICON_DIR, "idea.png"), "rb") as a, \
+                open(os.path.join(ai.PROGRAM_ICON_DIR, "intellijidea.png"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
+class ShippedMarkOutranksCatalogTest(unittest.TestCase):
+    """A `poly:` mark someone shipped beats a higher-SCORING catalog mark.
+
+    Chrome, 2026-09-29: the solid Simple Icons logo reads best on the keycap but
+    scores 0.24 against `mdi:google-chrome`'s 0.61, because `score()` rewards
+    thin line art. Shipping it as `poly:chrome` must be enough to get it drawn.
+    """
+
+    def test_a_shipped_mark_beats_a_higher_scoring_catalog_mark(self):
+        self.assertGreater(ai.contest_key((True, 0.24), "poly:chrome"),
+                           ai.contest_key((True, 0.61), "mdi:google-chrome"))
+
+    def test_it_beats_the_OS_icon_too(self):
+        self.assertGreater(ai.contest_key((True, 0.24), "poly:chrome"),
+                           ai.contest_key((True, 0.61), "os:chrome.exe@abc"))
+
+    def test_an_INVERTED_shipped_mark_gets_no_precedence(self):
+        """Polarity still outranks everything, as `mark_rank` documents."""
+        self.assertLess(ai.contest_key((False, 0.9), "poly:chrome"),
+                        ai.contest_key((True, 0.1), "mdi:google-chrome"))
+
+    def test_between_two_catalog_marks_the_score_still_decides(self):
+        self.assertGreater(ai.contest_key((True, 0.6), "mdi:a"),
+                           ai.contest_key((True, 0.5), "si:a"))
+
+    def test_the_shipped_chrome_mark_reads_the_right_way_up(self):
+        _needs_render(self)
+        mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, "chrome.svg"))
+        self.assertIsNotNone(mark)
+        self.assertTrue(ai.mark_rank(mark)[0])
+        self.assertFalse(mark[:, :34].any(), "ink would reach the ESC legend")
+
+    def test_only_the_chrome_executable_asks_for_it(self):
+        """No table: Edge and Brave derive other slugs and keep their marks."""
+        self.assertIn("poly:chrome", ai.candidates("chrome", ("Google Chrome",)))
+        self.assertNotIn("poly:chrome", ai.candidates("msedge", ("Microsoft Edge",)))
 
 
 class PolarityOutranksScoreTest(unittest.TestCase):

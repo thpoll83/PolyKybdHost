@@ -68,4 +68,4 @@ bindings:
   - { key: F, mods: [CTRL, SHIFT], icon: findfiles.png, label: "Find files", source: "ms-fluent/Document Search (MIT)" }
 
   # --- run (plain F-key) ---
-  - { key: F5, mods: [], icon: run.png, label: Run, source: "ms-fluent/Play (MIT)" }
+  - { key: F5, mods: [], icon: run.png, region: [72, 40], anchor: center, mode: alpha, label: Run, source: "reclaimed (JetBrains/VS Code run, shared)" }

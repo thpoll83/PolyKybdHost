@@ -145,6 +145,17 @@ class TestAutocheckJob(unittest.TestCase):
         self.assertEqual(ff.call_args.kwargs["bundle_id"], 0)
         self.assertEqual(core._fontpack_failed, {})   # cleared once it succeeds
 
+    def test_a_remembered_failure_is_NOT_retried_on_a_keyboard_without_its_slot(self):
+        """CodeRabbit on #291: a keyboard flashed back to protocol 19 no longer
+        lists slot 8, and the retry list skipped the slot check the stale list
+        applies, so icons.plyi was re-sent (and refused) on every connect."""
+        manifest = {"layout_version": 2, "bundles": _MANIFEST["bundles"] + [
+            {"id": "icons", "index": 8, "content_version": 1, "kind": "icons",
+             "file": "icons.plyi", "path": "/x/icons.plyi"}]}
+        core = _fake_core(device_versions={0: 2, 5: 3}, failed={8: "rejected"})
+        ff = self._run(core, manifest)
+        ff.assert_not_called()
+
     def test_lost_ack_is_verified_against_the_device_and_not_a_failure(self):
         # 'slave-unconfirmed' + the device now reporting the shipped version = the
         # data is stored; report it as done-with-a-caveat instead of a failure, and

@@ -72,7 +72,7 @@ bindings:
   - { key: T, mods: [CMDCTRL], icon: symbols.png,  <<: *reclaimed, label: "Show all symbols", source: reclaimed }
   - { key: "-", mods: [CMDCTRL], icon: zoomout.png, <<: *reclaimed, label: "Zoom out",        source: reclaimed }
   - { key: "=", mods: [CMDCTRL], icon: zoomin.png,  <<: *reclaimed, label: "Zoom in",         source: reclaimed }
-  - { key: ",", mods: [CMDCTRL], icon: settings.png, <<: *reclaimed, label: Settings,         source: reclaimed }
+  - { key: ",", mods: [CMDCTRL], icon: settings.png, label: Settings,         source: "shared concept (lexicon)" }
   - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png, <<: *reclaimed, label: "Command palette", source: reclaimed }
   - { key: "\\", mods: [CMDCTRL, SHIFT], icon: matchbracket.png, <<: *reclaimed, label: "Jump to matching bracket", source: reclaimed }
 
@@ -86,15 +86,15 @@ bindings:
   - { key: "-", mods: [CTRL, SHIFT], icon: goforward.png, <<: *reclaimed, label: "Go forward", source: reclaimed }
   - { key: "-", mods: [CTRL, ALT],   icon: goback.png,    <<: *reclaimed, label: "Go back",    source: reclaimed }
   - { key: F6, mods: [CTRL], icon: pause.png,   <<: *reclaimed, label: "Pause (debug)", source: reclaimed }
-  - { key: H,  mods: [ALT],  icon: history.png, <<: *reclaimed, label: "History / recent", source: reclaimed }
+  - { key: H,  mods: [ALT],  icon: history.png, label: "History / recent", source: "ms-fluent/History (MIT), shared with calc" }
 
   # -- identical on both platforms --
-  - { key: F5,  mods: [],      icon: run.png,        <<: *reclaimed, label: "Start debugging",   source: reclaimed }
-  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: reclaimed }
+  - { key: F5,  mods: [],      icon: rundebug.png,   <<: *reclaimed, label: "Start debugging",   source: reclaimed }
+  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: "reclaimed (JetBrains stop, shared)" }
   - { key: F9,  mods: [],      icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: reclaimed }
-  - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: reclaimed }
-  - { key: F11, mods: [],      icon: stepinto.png,   <<: *reclaimed, label: "Step into",         source: reclaimed }
-  - { key: F11, mods: [SHIFT], icon: stepout.png,    <<: *reclaimed, label: "Step out",          source: reclaimed }
+  - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: "reclaimed (JetBrains, shared)" }
+  - { key: F11, mods: [],      icon: stepinto.png,   <<: *reclaimed, label: "Step into",         source: "reclaimed (JetBrains, shared)" }
+  - { key: F11, mods: [SHIFT], icon: stepout.png,    <<: *reclaimed, label: "Step out",          source: "reclaimed (JetBrains, shared)" }
 
   # ==================================================== NEW coverage ==========
   # Fluent glyphs (MIT). None of these had artwork before.

@@ -28,11 +28,9 @@ margin: 0
 mode: alpha
 threshold: 150
 
-program_icon: chrome.png
-program_icon_mode: alpha
-program_icon_region: [72, 40]
-program_icon_anchor: center
-program_icon_margin: 0
+# No program_icon. This template is shared by every Chromium browser, so ESC is
+# left blank and each browser's own mark takes it (main 6b7a0d24,
+# tests/device/shared_template_esc_test.py).
 
 # Reclaimed artwork renders 1:1: the old cell IS the icon.
 _r: &r { region: [72, 40], anchor: center, source: reclaimed }

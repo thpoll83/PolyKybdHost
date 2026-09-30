@@ -71,6 +71,11 @@ drawn on, KDE included, and each set's cells were checked for collisions
 - **Shared concepts**: Save, Undo, Redo, Copy, Cut, Paste, Select all and Replace
   carry no icon. The generator draws them with the shared concept renderer, so
   they are the same bytes as in every other app's overlay.
+- **Shared with other apps (2026-09-29)**: Find and Settings now use the shared
+  concept renderer too (they were reclaimed art). Toggle breakpoint uses VS Code's
+  `breakpoint.png` in place of Fluent Record, so both IDEs show one breakpoint.
+  Run, Debug, Stop and the three step icons are the drawings VS Code now uses as
+  well, and Notepad++'s Run uses the same triangle.
 
 ## KDE
 

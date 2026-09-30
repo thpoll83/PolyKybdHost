@@ -72,7 +72,7 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `bucket.png` | Fluent `Paint Bucket` | MIT |
 | `gradient.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `picker.png` | Fluent `Eyedropper` | MIT |
-| `clonestamp.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
+| `clonestamp.png` | Photoshop's rubber stamp, shared (`region: [36, 32]` to match) | ours (GPL-3.0-or-later, with the repo) |
 | `recolor.png` | Fluent `Color Line` | MIT |
 | `text.png` | Fluent `Text T` | MIT |
 | `linecurve.png` | Fluent `Line` | MIT |

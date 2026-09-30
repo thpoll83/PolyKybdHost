@@ -37,6 +37,7 @@ RECLAIMED = {
     "navbar.png", "rename.png", "smartstepinto.png", "stepout.png", "debug.png",
     "run.png", "stepinto.png", "stepover.png", "resume.png", "gototypedecl.png",
     "findinpath.png", "gotofile.png", "viewbreakpoints.png", "gotoimpl.png",
+    "breakpoint.png",  # VS Code's breakpoint, shared pixel-for-pixel
     "reformat.png", "settings.png", "synchronize.png", "gotorelated.png",
     "findusages.png", "fontsmaller.png", "fontlarger.png", "forcestepinto.png",
     "forcestepover.png", "choosedebug.png", "forward.png", "back.png",
@@ -92,7 +93,6 @@ FLUENT = {
     "inline": "ms:compress",
     "safedelete": "Delete",
     # --- run / debug / build ---
-    "togglebreakpoint": "Record",
     "evaluate": "Calculator",
     "runtocursor": "Arrow Step In Right",
     "executionpoint": "Target Arrow",

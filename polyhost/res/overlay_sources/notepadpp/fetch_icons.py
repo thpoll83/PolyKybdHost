@@ -50,7 +50,8 @@ MS_ICONS = {
     "goto": "Arrow Down/SVG/ic_fluent_arrow_down_24_regular.svg",
     "findnext": "Chevron Right/SVG/ic_fluent_chevron_right_24_regular.svg",
     "findfiles": "Document Search/SVG/ic_fluent_document_search_24_regular.svg",
-    "run": "Play/SVG/ic_fluent_play_24_regular.svg",
+    # "run" is NOT fetched: F5 uses the committed run.png, the IDE run triangle
+    # shared pixel-for-pixel with JetBrains and VS Code (see bindings.yaml).
     "split": "Split Horizontal/SVG/ic_fluent_split_horizontal_24_regular.svg",
     "swapline": "Arrow Sort Up/SVG/ic_fluent_arrow_sort_up_24_regular.svg",
     "braces": "Braces/SVG/ic_fluent_braces_24_regular.svg",

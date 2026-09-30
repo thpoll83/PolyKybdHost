@@ -57,6 +57,11 @@ OVERLAY_PROBE_COOLDOWN_S = 1.0
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
+# A window-tracking tick slower than this, or a pause this long between two
+# ticks, is logged as a warning. Nothing else in the log can tell "the tick
+# thread was stuck" from "no window change happened" (field, 2026-09-30: 87 s
+# with no window detected while the user switched between several windows).
+SLOW_TICK_WARN_S = 2.0
 
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
@@ -296,6 +301,9 @@ class PolyCore(Observable):
         self._tick_thread = None
         self._tick_stop = threading.Event()
         self._tick_lock = threading.Lock()
+        # When the previous window-tracking tick ended, for the slow-tick and
+        # tick-gap warnings (see `tick_window_tracking`). None until one ran.
+        self._tick_ended_at = None
 
         # Anonymous usage census. Created unconditionally (so `polyctl telemetry
         # status/preview` answers even when it is off) but only *started* by
@@ -559,13 +567,43 @@ class PolyCore(Observable):
         worker refactor); headless mode calls it from the core's own tick
         thread (H3). When there is no window handler (no display) this is a
         no-op — explicit overlay sends via the API still work."""
+        started = time.monotonic()
+        self._tick_query_s = 0.0
+        ended_at = getattr(self, "_tick_ended_at", None)
+        if ended_at is not None and started - ended_at > SLOW_TICK_WARN_S:
+            # The caller sleeps one cycle between ticks, so anything much
+            # longer means the thread (or the Qt main loop) was not scheduled.
+            self.log.warning(
+                "Window-tracking tick started %.1f s after the previous one "
+                "ended (expected %.2f s): the tick thread was not scheduled.",
+                started - ended_at, update_cycle_msec / 1000)
+        try:
+            self._tick_window_tracking(update_cycle_msec, new_window_accept_msec)
+        finally:
+            ended = time.monotonic()
+            self._tick_ended_at = ended
+            took = ended - started
+            if took > SLOW_TICK_WARN_S:
+                # Split in two because they block on different things: the
+                # query talks to the window system (pywinctl), the rest is
+                # matching and the generic-overlay lookups.
+                query = getattr(self, "_tick_query_s", 0.0)
+                self.log.warning(
+                    "Window-tracking tick took %.1f s (active-window query and "
+                    "match %.1f s, overlay decision %.1f s).",
+                    took, query, took - query)
+
+    def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
+        """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
         if handler is None:
             return
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+            self._tick_query_s = time.monotonic() - query_started
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")
@@ -605,10 +643,19 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
-                self.send_overlay_data(data)
                 # A template send re-programs the whole pool, so whatever
-                # generic overlays were on the device are gone with it.
+                # generic overlays were on the device are gone with it. Cleared
+                # BEFORE the send so the gap fill below cannot dedupe against
+                # the set this send replaces.
                 self._generic_on_device = None
+                # ⚠️ ONE send when the gap fill is already known. Sending the
+                # template alone here and letting the next tick add the fill
+                # re-mapped every keycap twice, 200-400 ms apart, on every
+                # switch to Chrome/Slack/Outlook -- even when the mark had
+                # been cached for minutes (field log, 2026-09-30). The fill's
+                # own send carries the templates first, so it is a superset.
+                if not self._send_template_with_fill(handler):
+                    self.send_overlay_data(data)
             elif not self.poly_settings.get("generic_overlays_enabled"):
                 pass                      # the whole generic path is switched off
             elif handler.covered_by_template():
@@ -640,6 +687,22 @@ class PolyCore(Observable):
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
+    def _send_template_with_fill(self, handler):
+        """Send the focused window's templates WITH the generic gap fill.
+
+        True when that send was queued. False when the fill is switched off,
+        no template covers the window, or the fill has nothing resolved yet
+        (first sighting: the mark and the harvest are still being fetched) --
+        the caller then sends the templates alone and the tick that resolves
+        the fill sends the combined set, as before.
+        """
+        if not (self.poly_settings.get("generic_overlays_enabled")
+                and self.poly_settings.get("generic_overlays_fill_gaps")
+                and handler.covered_by_template()):
+            return False
+        return self._maybe_send_generic_overlays(
+            handler, template_files=self._template_files(handler))
+
     def _maybe_send_generic_overlays(self, handler, template_files=()):
         """Draw the focused app's OWN icon on ESC, and an icon per shortcut key.
 
@@ -654,6 +717,9 @@ class PolyCore(Observable):
         (modifier, keycode) a real one already drew -- so a template keeps every
         key it draws and the generic icons reach only the ones it leaves blank.
         Empty (no template covers this window) is the original behaviour.
+
+        Returns True when the set is on the device or a send for it was
+        queued, False when nothing was sent (nothing resolved, or a clear).
 
         ⚠️ **ONE send, not two, and that is forced rather than tidy.**
         `send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the
@@ -690,7 +756,7 @@ class PolyCore(Observable):
             self.log.debug_detailed(
                 "No generic overlays: the handler names no focused app "
                 "(remote=%s)", handler.is_remote_mapping_entry())
-            return
+            return False
         # `identity` is set only for a FORWARDED window, where the other machine
         # already resolved it — see AppAwareHandler.focused_app.
         # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
@@ -769,11 +835,11 @@ class PolyCore(Observable):
             # icons up on Calculator and on Videos, both of which relayed none
             # (field, 2026-09-21).
             self._clear_generic_overlays(name, template_files)
-            return
+            return False
         if signature == self._generic_on_device:
-            return
-        self._send_generic_overlays(name, signature, slug, mask, shortcuts,
-                                    template_files)
+            return True
+        return self._send_generic_overlays(name, signature, slug, mask,
+                                           shortcuts, template_files)
 
     def _note_overlay_state(self, enabled):
         """Tell the window handler what the DEVICE is showing, if there is one.
@@ -880,9 +946,10 @@ class PolyCore(Observable):
     def _say_mark_dropped(self, name, slug):
         """Say ONCE per app that a resolved mark was dropped, and why.
 
-        The rule it reports is deliberate: no shortcuts means no send, INCLUDING
-        the mark, because a mark alone reads as "this app has icons" and the
-        next glance disproves it. But the rule was invisible from the log --
+        The rule it reports is deliberate: no shortcuts AND no template means no
+        send, INCLUDING the mark, because a mark alone reads as "this app has
+        icons" and the next glance disproves it. A template's keycaps count as
+        those icons, so a templated app keeps its mark (see _generic_signature). But the rule was invisible from the log --
         the only INFO line was the fetcher announcing a mark it had built, so
         the user saw a success and a blank keyboard and nothing joining them.
 
@@ -894,7 +961,8 @@ class PolyCore(Observable):
         self._told_mark_dropped.add(name)
         self.log.info(
             "Nothing drawn for '%s': its program mark resolved (%s) but the "
-            "app exposes no shortcut icons, and a mark is not sent on its own "
+            "app exposes no shortcut icons and no template covers it, and a "
+            "mark is not sent on its own "
             "-- it would promise keycaps that are not there. The mark appears "
             "as soon as any shortcut does.", name, slug or "no name")
 
@@ -922,10 +990,15 @@ class PolyCore(Observable):
         # under the rule it could never be drawn there (measured 2026-09-23:
         # `mask=True slug=res:polykybd@1 shortcuts=0`, nothing sent).
         from polyhost.services.app_icons import POLYKYBD_SLUG
-        if not shortcuts and slug != POLYKYBD_SLUG:
-            # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
-            # the one case where "what we could resolve" and "what is worth
-            # drawing" come apart.
+        # ⚠️ A TEMPLATE counts as the icons the rule asks for. Its keycaps are
+        # the promise the mark confirms, so dropping the mark there leaves ESC
+        # blank on exactly the apps a template covers -- a template that leaves
+        # ESC to the program mark (Chrome, JetBrains) showed no mark at all
+        # whenever the harvest found no accelerators (field, CLion, 2026-09-29).
+        if not shortcuts and slug != POLYKYBD_SLUG and not (slug and template_files):
+            # ⚠️ NO SHORTCUTS AND NO TEMPLATE MEANS NO SEND -- **including the
+            # mark**, which is the one case where "what we could resolve" and
+            # "what is worth drawing" come apart.
             #
             # The mark alone says only "this app was recognised", and the person
             # reading the board takes it for "this app has icons": it is the
@@ -993,7 +1066,7 @@ class PolyCore(Observable):
             if sources:
                 built.append((entry, sources))
         if not built:
-            return
+            return False
         drawn = sum(len(keys) for keys in shortcuts.values())
         # ⚠️ Say which mode this was. The two differ in what the keycaps end up
         # showing AND in what the send costs, and a log that reads the same for
@@ -1026,6 +1099,7 @@ class PolyCore(Observable):
             lambda cancel: self._generic_overlay_job(built, cancel, template_files),
             coalesce_key="overlay",
             on_done=self.emit)
+        return True
 
     def _generic_overlay_job(self, built, cancel, template_files=()):
         """Worker-thread send of the generic set. Mirrors _overlay_send_job.
@@ -1060,6 +1134,9 @@ class PolyCore(Observable):
             self.log.warning(msg)
             self.emit("overlay_warning", msg)
         self.keeb.set_idle(False)
+        # Same as `_overlay_send_job`: this send now also carries the
+        # templates on a window switch, so it must mark the deaf window too.
+        self._last_overlay_activity = time.monotonic()
 
     def _track_active_os(self, handler):
         """Keep the keyboard's OS in sync with the machine currently driving the
@@ -2670,7 +2747,8 @@ class PolyCore(Observable):
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": b["content_version"] > dev.get(b["index"], 0),
+                    "stale": (b["content_version"] > dev.get(b["index"], 0)
+                              and hid_fontpack.device_has_slot(dev, b)),
                     "retry": b["index"] in self._fontpack_failed,
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
@@ -2733,14 +2811,17 @@ class PolyCore(Observable):
             return   # a flash is already running (connection flapped) — don't double-flash
         device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
         if force_all:
-            targets = list(manifest["bundles"])
+            targets = [b for b in manifest["bundles"]
+                       if hid_fontpack.device_has_slot(device_versions, b)]
         else:
             stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
             stale_idx = {b["index"] for b in stale}
             # Re-add anything a previous pass failed on even though its version now
-            # reads current — see the docstring above.
+            # reads current — see the docstring above. The slot check applies
+            # here too: a keyboard flashed back below protocol 20 has no slot 8.
             retry = [b for b in manifest["bundles"]
-                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx]
+                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx
+                     and hid_fontpack.device_has_slot(device_versions, b)]
             targets = sorted(stale + retry, key=lambda b: b["index"])
         if not targets:
             self.log.info("Font pack auto-check: all %d bundle(s) up to date.",

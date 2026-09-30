@@ -102,3 +102,52 @@ lexicon also draws** (`settings`).
 **The tell, if it ever happens:** that app, and only that app, loses icons it should
 have. **The fix** is to exempt words the lexicon itself names, rather than to special-
 case the app.
+
+---
+
+## Shorten the overlay rate-limit pause for cmd 41/42 reports
+
+**Status:** measured, not proposed. `send_overlays_mru` sleeps
+`delay_time_after_max_hid_messages` (0.2 s) after every
+`max_hid_message_before_delay` (15) image reports. **The pause exists to keep the
+keyboard responsive to typing while a burst of images arrives.** In perf run 1156
+(2026-09-29) it was 3.6 s of a 5.3 s cold switch (68%) and 1.2 of 2.1 s on a smaller
+set. The firmware spent about 3.4 ms per report, with 2 main-loop iterations of
+10 ms or more across the 208-report burst. With icon fills (cmd 42) and PRC (cmd 41)
+a large cold switch is 32 reports, so two pauses are 0.4 s of an 0.8 s switch.
+
+**Why it is deferred.** None of the numbers above measure what the pause is for.
+Report counts and main-loop iteration histograms say nothing about whether a key
+pressed mid-burst is seen promptly, and the perf replay fixtures were recorded
+before PRC with the pauses in. **What would settle it:** a perf workload that
+presses a key (or injects a matrix event) during a burst without pauses and measures
+the time until the host sees it, compared against the same burst with them.
+
+---
+
+## A bigger PRC context than 10 pixels
+
+**Status:** measured, not worth it (2026-09-29). PRC (cmd 41) predicts each pixel
+from 10 coded neighbours through a frozen 1 KB table. `tools/prc_context_study.py`
+trains tables for 12, 14 and 16 neighbours on the shipped templates and measures
+them held out by app:
+
+| context | table | cold reports, 118 templates | of those, not filled from the icon library |
+|---:|---:|---:|---:|
+| 10 px (v1) | 1 KB | 2114 | 819 |
+| 12 px | 4 KB | 2037 | 812 |
+| 14 px | 16 KB | 1976 | 801 |
+| 16 px | 64 KB | 1932 | 783 |
+
+With icon fills in place, 16 pixels saves 36 reports over 118 cold switches, about
+0.3 per switch, and nothing on a warm switch (the MRU pool already holds the
+images). Gains stop at 16–17 pixels: beyond that the table memorises the training
+apps. The best extra pixels (`--greedy`) are in the row three above and two to the
+left, which suits long vertical strokes.
+
+**Why it is deferred.** The cost is a new table id (v1 is frozen), a new protocol
+version and a 64 KB table that could not fit in RAM. In XIP flash its random
+lookups would miss the 16 KB cache, so decoding could get slower. **What would
+change the answer:** a template set that looks very different from today's, or
+cold switches becoming frequent. The larger levers are the rate-limit pause (above)
+and how often a real session misses the pool.

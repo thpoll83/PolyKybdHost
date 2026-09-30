@@ -19,7 +19,8 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
-from polyhost.device.poly_kybd import PolyKybd
+from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL
+from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
 
@@ -674,6 +675,9 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         MockConverter.return_value = self._converter(
             {key_a: _overlay("rect"), esc: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
+        # The separate cmd 11 enable is the pre-v21 sequence; v21's flagged
+        # mapping is pinned by mapping_flags_test.
+        keeb.protocol_version = MAPPING_FLAGS_MIN_PROTOCOL - 1
         self.assertTrue(keeb.send_overlays(["fake.png"]))
 
         payloads = device.payloads()
@@ -681,10 +685,13 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
                           if p[:3] == bytes([POLY, 11, 0x01]))
         # MRU uploads in MIRROR mode, so the upload's "keycode" byte carries the
         # POOL SLOT, not the keycode — images can no longer be located by keycode.
-        img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18)]
+        # Both images are small, so a v19 keyboard gets them as two records in
+        # ONE PRC-coded report (cmd 41).
+        img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18, 41)]
         map_idx = [i for i, p in enumerate(payloads) if p[1] in (21, 33)]
         self.assertTrue(map_idx, "a mapping report must be sent")
-        self.assertEqual(len(img_idx), 2, "both images uploaded")
+        self.assertEqual(len(img_idx), 1, "both images in one PRC report")
+        self.assertEqual(len(list(prc_codec.parse_records(payloads[img_idx[0]][2:]))), 2)
         # Images, then the mapping that makes them addressable, then one enable.
         # A v12 send can emit SEVERAL mapping reports (one per width group), so
         # gate on the LAST one — checking only the first would pass even if a
@@ -698,6 +705,7 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
     def test_enable_sent_even_without_esc_overlay(self, MockConverter):
         MockConverter.return_value = self._converter({KeyCode.KC_A.value: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
+        keeb.protocol_version = MAPPING_FLAGS_MIN_PROTOCOL - 1   # see above
         self.assertTrue(keeb.send_overlays(["fake.png"]))
         enables = [p for p in device.payloads() if p[:3] == bytes([POLY, 11, 0x01])]
         self.assertEqual(len(enables), 1)
@@ -709,6 +717,9 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         settings = StubPolySettings(max_hid_message_before_delay=0,
                                     delay_time_after_max_hid_messages=0.123)
         keeb, device = make_keeb(auto_ack=True, settings=settings)
+        # The pause follows a report sent inside the loop. A PRC-coded image
+        # is only queued there, so pin the older encodings for this test.
+        keeb.protocol_version = PRC_OVERLAY_MIN_PROTOCOL - 1
         self.assertTrue(keeb.send_overlays(["fake.png"]))
         sleep.assert_called_with(0.123)
 
@@ -772,6 +783,201 @@ class TestSendOverlaysMruFailure(unittest.TestCase, LockCheckMixin):
         self.assertNotIn(21, [p[1] for p in device.payloads()])   # no mapping cmd
         self.assertNotIn(bytes([POLY, 11, 0x01]), device.payloads())  # no enable
         self.assert_lock_free(keeb)
+
+
+class TestSendOverlaysPrc(unittest.TestCase, LockCheckMixin):
+    """PRC-coded images (cmd 41, protocol v19+) on the MRU send path."""
+
+    def _converter(self, overlay_map):
+        converter = MagicMock()
+        converter.open.return_value = True
+        # A bare MagicMock attribute is truthy, which would key every image once
+        # for all modifiers and make the cache lookups below miss.
+        converter.modifier_invariant = False
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == Modifier.NO_MOD else None)
+        return converter
+
+    def _images(self, payloads):
+        return [p for p in payloads if p[1] in (10, 16, 17, 18, 19, 41)]
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_records_decode_to_the_source_images_at_their_pool_addresses(self, MockConverter):
+        a, esc = KeyCode.KC_A.value, KeyCode.KC_ESCAPE.value
+        overlays = {a: _overlay("rect"), esc: _overlay("dot")}
+        MockConverter.return_value = self._converter(overlays)
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        self.assertTrue(keeb.send_overlays_mru(["fake.png"], cache))
+
+        reports = [p for p in device.payloads() if p[1] == 41]
+        self.assertEqual(len(reports), 1)
+        self.assertEqual(reports[0][0], POLY)
+        records = list(prc_codec.parse_records(reports[0][2:]))
+        self.assertEqual(len(records), 2)
+        for (kc, mod, top, left, h, w, payload), key in zip(records, (a, esc)):
+            slot = cache.get_or_allocate(("fake.png", Modifier.NO_MOD.value, key))[0]
+            self.assertEqual((kc, Modifier(mod)), cache.pool_slot_to_firmware_address(slot))
+            frame = np.zeros((40, 72), dtype=bool)
+            frame[top:top + h, left:left + w] = prc_codec.decode(payload, h, w)
+            self.assertEqual(np.packbits(frame).tobytes(), overlays[key].all_bytes)
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_an_older_keyboard_never_sees_cmd_41(self, MockConverter):
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("rect"), KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        keeb.protocol_version = PRC_OVERLAY_MIN_PROTOCOL - 1
+        self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(20)))
+        images = self._images(device.payloads())
+        self.assertEqual(len(images), 2)
+        self.assertNotIn(41, [p[1] for p in images])
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_an_image_too_big_for_a_record_takes_the_old_path(self, MockConverter):
+        noisy = _overlay("noisy")
+        self.assertIsNone(__import__("polyhost.device.prc_packing", fromlist=["x"]).prc_record(
+            noisy, 4, 0, keeb_payload()))
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: noisy, KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(20)))
+        cmds = [p[1] for p in self._images(device.payloads())]
+        self.assertEqual(cmds.count(41), 1)
+        self.assertTrue(set(cmds) - {41}, "the noisy image went out the old way")
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_every_report_is_full_before_the_next_starts(self, MockConverter):
+        # Six distinct small images: records are packed until the next one would
+        # not fit, so no report could have taken the following record.
+        overlays = {}
+        for i, key in enumerate(range(KeyCode.KC_A.value, KeyCode.KC_A.value + 6)):
+            img = np.zeros((40, 72), dtype=bool)
+            img[2 + i:12 + i, 5 + 3 * i:20 + 4 * i] = True
+            img[20, 1 + i] = True
+            overlays[key] = OverlayData(DeviceSettings(), img)
+        MockConverter.return_value = self._converter(overlays)
+        keeb, device = make_keeb(auto_ack=True)
+        self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(20)))
+        reports = [p[2:] for p in device.payloads() if p[1] == 41]
+        sizes = [[prc_codec.RECORD_HDR + len(r[-1]) for r in prc_codec.parse_records(rep)]
+                 for rep in reports]
+        self.assertEqual(sum(len(x) for x in sizes), 6)
+        self.assertLess(len(reports), 6)
+        for this, following in zip(sizes, sizes[1:]):
+            self.assertGreater(sum(this) + following[0], keeb_payload())
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_failed_context_report_aborts_and_forgets_its_slots(self, MockConverter):
+        a, esc = KeyCode.KC_A.value, KeyCode.KC_ESCAPE.value
+        MockConverter.return_value = self._converter({a: _overlay("rect"), esc: _overlay("dot")})
+        keeb, device = make_keeb(replies=[ack(11)])
+        original_write = device.write
+        state = {"writes": 0}
+
+        def write_fails_after_prepare(report):
+            state["writes"] += 1
+            if state["writes"] > 1:
+                raise RuntimeError("USB gone")
+            return original_write(report)
+        device.write = write_fails_after_prepare
+        cache = OverlayMRUCache(20)
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache))
+        self.assertNotIn(21, [p[1] for p in device.payloads()])
+        # Neither image reached the keyboard, so neither may be a cache hit next time.
+        for key in (a, esc):
+            self.assertFalse(cache.get_or_allocate(("fake.png", Modifier.NO_MOD.value, key))[1])
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_cancel_with_records_queued_forgets_their_slots(self, MockConverter):
+        import threading
+        a = KeyCode.KC_A.value
+        MockConverter.return_value = self._converter({a: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        cancel = threading.Event()
+        cache = OverlayMRUCache(20)
+        # The per-key cancel check runs BEFORE allocation, so a cancel raised by
+        # the allocation itself leaves the record queued and is seen at the flush.
+        orig_alloc = cache.get_or_allocate
+
+        def alloc_then_cancel(*args, **kwargs):
+            result = orig_alloc(*args, **kwargs)
+            cancel.set()
+            return result
+        cache.get_or_allocate = alloc_then_cancel
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache, cancel))
+        cache.get_or_allocate = orig_alloc
+        self.assertNotIn(41, [p[1] for p in device.payloads()])
+        self.assertFalse(orig_alloc(("fake.png", Modifier.NO_MOD.value, a))[1])
+
+    def _fail_writes(self, device, cmds):
+        """Make every write whose command byte is in ``cmds`` raise."""
+        original_write = device.write
+
+        def write(report):
+            if report[2] in cmds:     # report[0] is the HID report id
+                raise RuntimeError("USB gone")
+            return original_write(report)
+        device.write = write
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_failed_LAST_context_report_skips_the_mapping_commit(self, MockConverter):
+        a, esc = KeyCode.KC_A.value, KeyCode.KC_ESCAPE.value
+        MockConverter.return_value = self._converter({a: _overlay("rect"), esc: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        self._fail_writes(device, {41})     # the mapping itself would go through
+        cache = OverlayMRUCache(20)
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache))
+        self.assertNotIn(21, [p[1] for p in device.payloads()])
+        self.assertNotIn(33, [p[1] for p in device.payloads()])
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_an_old_path_failure_forgets_the_records_still_queued(self, MockConverter):
+        a, b = KeyCode.KC_A.value, KeyCode.KC_B.value
+        # A small image is queued first, then a big one fails on the old path.
+        MockConverter.return_value = self._converter({a: _overlay("dot"), b: _overlay("noisy")})
+        keeb, device = make_keeb(auto_ack=True)
+        self._fail_writes(device, {10, 16, 17, 18, 19})
+        cache = OverlayMRUCache(20)
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache))
+        self.assertNotIn(41, [p[1] for p in device.payloads()])
+        self.assertFalse(cache.get_or_allocate(("fake.png", Modifier.NO_MOD.value, a))[1])
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_cancel_in_the_rate_limit_pause_forgets_the_records_still_queued(self, MockConverter):
+        a, b = KeyCode.KC_A.value, KeyCode.KC_B.value
+        MockConverter.return_value = self._converter({a: _overlay("dot"), b: _overlay("noisy")})
+        settings = StubPolySettings(max_hid_message_before_delay=0,
+                                    delay_time_after_max_hid_messages=0.01)
+        keeb, device = make_keeb(auto_ack=True, settings=settings)
+        cancel = MagicMock()
+        cancel.is_set.return_value = False
+        cancel.wait.return_value = True     # the pause is where the cancel lands
+        cache = OverlayMRUCache(20)
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache, cancel))
+        cancel.wait.assert_called()
+        self.assertNotIn(41, [p[1] for p in device.payloads()])
+        self.assertFalse(cache.get_or_allocate(("fake.png", Modifier.NO_MOD.value, a))[1])
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_reused_slot_gets_the_queued_image_BEFORE_the_new_one(self, MockConverter):
+        # A one-slot pool: the big image evicts the queued small one's slot. The
+        # queued record must reach the keyboard first, or it overwrites the newer
+        # image the mapping now points at.
+        a, b = KeyCode.KC_A.value, KeyCode.KC_B.value
+        MockConverter.return_value = self._converter({a: _overlay("dot"), b: _overlay("noisy")})
+        keeb, device = make_keeb(auto_ack=True)
+        self.assertTrue(keeb.send_overlays_mru(["fake.png"], OverlayMRUCache(1)))
+        cmds = [p[1] for p in self._images(device.payloads())]
+        self.assertEqual(cmds[0], 41)
+        self.assertNotIn(41, cmds[1:])
+
+
+def keeb_payload() -> int:
+    return DeviceSettings().MAX_PAYLOAD_BYTES_PER_REPORT
 
 
 # ---------------------------------------------------------------------------

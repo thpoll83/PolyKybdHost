@@ -30,7 +30,8 @@ class PolyKybdMock:
                  version: str = "1.0.0",
                  lang: str = "enUS",
                  langs: str = "enUSdeATkoKRfrFRitITesES",
-                 num_layers: int = 4):
+                 num_layers: int = 4,
+                 prc_overlays: bool = False):
         self.device_settings = device_settings
         self.poly_settings = poly_settings
         self.log = logging.getLogger('PolyHost')
@@ -40,6 +41,11 @@ class PolyKybdMock:
         self.lang = lang
         self.langs = langs
         self.hid_image_sends: int = 0
+        # Parity with a protocol v19+ keyboard: pack PRC-coded images into
+        # cmd 41 reports (device/prc_packing.py). Off by default so the report
+        # counts of existing tests keep describing the older encodings.
+        self.prc_overlays = prc_overlays
+        self.prc_reports: list[bytes] = []
         self.hid_mapping_sends: int = 0
         self.last_mapping: dict = {}
         self._sim = OverlayFirmwareSim()
@@ -385,7 +391,11 @@ class PolyKybdMock:
         self._current_lang = lang
         return True, lang
 
-    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
+    def send_overlay_mapping(self, from_to: dict, reset: bool = False,
+                             show: bool = False) -> tuple[bool, str]:
+        # reset/show are the v21 flag bits; the mock has no prepare/enable state
+        # of its own to change, so they are recorded and otherwise ignored.
+        self.last_mapping_flags = (reset, show)
         self.hid_mapping_sends += 1
         self.last_mapping = from_to
         self._overlay_mapping.update(from_to)
@@ -442,6 +452,11 @@ class PolyKybdMock:
         # Parity with the real device path; see PolyKybd.send_overlays_mru.
         self.prepare_for_mru_send()
 
+        packer = None
+        if self.prc_overlays:
+            from polyhost.device.prc_packing import PrcReportPacker
+            packer = PrcReportPacker(self._receive_prc_report,
+                                     self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
         with cache.batch():
             for filename in filenames:
                 self.log.info("Send Overlay MRU (mock) '%s'...", filename)
@@ -461,11 +476,24 @@ class PolyKybdMock:
 
                         if not is_hit:
                             pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
-                            self.hid_image_sends += self.send_smallest_overlay(
-                                pool_kc, pool_mod, {pool_kc: overlay_data})
+                            record = None
+                            if packer is not None:
+                                from polyhost.device.prc_packing import prc_record
+                                record = prc_record(overlay_data, pool_kc, pool_mod.value,
+                                                    self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+                            if record is not None:
+                                self.hid_image_sends += packer.add(record, pool_slot)
+                            else:
+                                if packer is not None and packer.holds(pool_slot):
+                                    self.hid_image_sends += packer.flush()
+                                self.hid_image_sends += self.send_smallest_overlay(
+                                    pool_kc, pool_mod, {pool_kc: overlay_data})
 
                         disp_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[disp_idx] = pool_slot
+
+        if packer is not None:
+            self.hid_image_sends += packer.flush()
 
         # Parity with PolyKybd.send_overlays_mru — clears any upload-time
         # use_overlay contamination before the mapping send establishes the
@@ -474,6 +502,18 @@ class PolyKybdMock:
         self.send_overlay_mapping(display_to_pool)
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
+        return True
+
+    def _receive_prc_report(self, records: bytes) -> bool:
+        """Decode a cmd 41 report the way the firmware does and store each image,
+        so the simulated pool holds what the codec produced, not the source."""
+        import numpy as np
+        from polyhost.util import prc_codec
+        self.prc_reports.append(bytes(records))
+        for kc, mod, top, left, h, w, payload in prc_codec.parse_records(records):
+            frame = np.zeros((40, 72), dtype=bool)
+            frame[top:top + h, left:left + w] = prc_codec.decode(payload, h, w)
+            self._sim.store_image(display_flat_idx(kc, Modifier(mod)), np.packbits(frame).tobytes())
         return True
 
     def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:

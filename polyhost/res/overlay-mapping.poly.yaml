@@ -94,7 +94,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: jira_template.mods.png
 nxplayer:
   remote: true
-  title: .*NoMachine.*
+  # A session window is titled '<host> - NoMachine'. The connection chooser
+  # is titled 'NoMachine' alone and is not a remote session.
+  title: ' - NoMachine$'
 # GIMP 2.10 is `gimp-2.10.exe` on Windows, which the host cuts at the first dot
 # to `gimp-2`, and `gimp-2.10` on Linux. Neither was listed, so 2.10 loaded nothing.
 gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:

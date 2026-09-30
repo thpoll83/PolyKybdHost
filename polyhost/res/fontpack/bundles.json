@@ -1,6 +1,6 @@
 {
-  "layout_version": 1,
-  "bundle_count": 8,
+  "layout_version": 2,
+  "bundle_count": 9,
   "bundles": [
     {
       "id": "symbol",
@@ -81,6 +81,17 @@
       "slot_offset": 1478656,
       "slot_size": 618496,
       "sha256": "59f9e85ad666b842"
+    },
+    {
+      "id": "icons",
+      "index": 8,
+      "file": "icons.plyi",
+      "kind": "icons",
+      "content_version": 2,
+      "size": 63492,
+      "slot_offset": 1835008,
+      "slot_size": 262144,
+      "sha256": "15f2bda45d4e58eb"
     }
   ]
 }

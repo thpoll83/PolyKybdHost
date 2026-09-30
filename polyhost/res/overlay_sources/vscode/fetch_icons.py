@@ -40,7 +40,7 @@ import icon_fetch  # noqa: E402
 RECLAIMED = {
     "vscode.png", "gotoline.png", "newfile.png", "symbols.png", "runnodebug.png",
     "pause.png", "zoomout.png", "zoomin.png", "settings.png", "history.png",
-    "stopdebug.png", "stepout.png", "run.png", "breakpoint.png", "stepover.png",
+    "stopdebug.png", "stepout.png", "rundebug.png", "breakpoint.png", "stepover.png",
     "stepinto.png", "palette.png", "goforward.png", "matchbracket.png", "goback.png",
 }
 
