@@ -156,26 +156,37 @@ and how often a real session misses the pool.
 
 ## Two suspected firmware bugs the mock's emulator found
 
-**Status:** reproduced only in the emulator (`MockFirmware`, a Python copy of
-`fill_overlay.c`), not on hardware, and not fixed. `FirmwareQuirkTest`
-(`tests/device/mock_firmware_test.py`) pins both as CURRENT behaviour, so a
-firmware fix must flip those tests too. Found while building #301 (2026-10-01).
+**Status:** both confirmed by reading the firmware source and reproduced in the
+emulator (`MockFirmware`), not yet seen on hardware. Found while building #301
+(2026-10-01).
 
-1. **A reused pool slot shows the evicted image around a new one.**
-   `fill_roi_overlay_buffer` writes only its rectangle, and a plain upload skips
-   all-zero segments, so nothing clears a slot the MRU pool hands out again. On an
-   emulated v18 keyboard whose pool wrapped, 1347 stray pixels surrounded the new
-   image. The PRC decoder (v19+) clears the slot first, so it avoids this for every
-   image that fits a PRC record; ROI and plain uploads still do not.
-2. **`translate_a_to_z` runs on the WRITE path.** The firmware re-addresses A..Z
-   by the active language when it stores an upload, as well as when it draws one.
-   Under a layout that moves letters (de-DE Y/Z, fr-FR A/Q and Z/W), an upload
-   addressed to one letter's pool slot lands in another's, and the host does not
-   compensate.
+1. **FIXED in the host: a reused pool slot showed the evicted image around a new
+   one.** `fill_roi_overlay_buffer` writes only its rectangle and a plain upload
+   skips all-zero segments, so nothing cleared a slot the MRU pool handed out
+   again (989–1034 stray pixels in the emulator on v18, v19 and v21). Over the 91
+   shipped sets, 92% of uploads to a v18 keyboard took one of those encodings,
+   and 30 of 3252 to a v21 one (images too busy for one PRC record). The host now
+   tracks written slots (`OverlayMRUCache.slot_is_clean`) and sends only
+   full-frame encodings into a reused one, which works for every firmware in the
+   field; a clean slot keeps ROI, since dropping it everywhere would cost a v18
+   keyboard 25% more reports.
+2. **Fixed in the firmware: `translate_a_to_z` ran on the WRITE path.** The
+   firmware re-addressed A..Z by the active language when it stored an upload, but
+   not when it drew one (`copy_overlay_to_buffer()` reads the physical keycode).
+   That made sense when uploads were addressed by letter. Since the MRU pool the
+   address names a pool slot, so under a layout that swaps letters (de, at, ch,
+   cs, sk, hu for Y/Z; fr, be for A/Q and Z/W) an image addressed to one
+   letter-address slot landed in another: in the emulator the O and P keycaps
+   showed each other's images. The firmware now skips the translation while
+   `MIRROR_OVERLAYS` (MRU mode) is set. A keyboard on older firmware keeps the
+   bug until it is flashed; a host-side workaround would need every language's
+   letter map, so there is none.
 
-**Why it is deferred.** Both are firmware changes, and the emulator copies the
-firmware's code, so it cannot tell whether the keyboard really behaves this way.
-**What would settle it:** for 1, a v18 image on hardware driven through enough app
-switches to wrap the 600-slot pool with ROI uploads, then a look at the reused keycaps;
-for 2, an app switch on hardware with de-DE active, checking the Y and Z keycaps.
+**Still open.** Neither has been seen on hardware. **What would confirm them:**
+for 1, a v18 image driven through enough app switches to wrap the 600-slot pool,
+on a host without this fix; for 2, an app switch with de-DE active on old
+firmware, checking the keycaps whose pool slots sit at the Y and Z addresses. And
+the letter move itself (Ctrl+Z's image on the key that types z under QWERTZ)
+no longer happens with the MRU pool; if it is wanted, the host would do it in the
+display mapping it already sends.
 
