@@ -11,7 +11,6 @@ import unittest
 
 import numpy as np
 
-import polyhost.util.log_util  # noqa: F401 -- registers Logger.debug_detailed
 from polyhost.device import synthetic_overlay as syn
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.hid_fontpack import parse_id_state_generation, parse_id_version_block

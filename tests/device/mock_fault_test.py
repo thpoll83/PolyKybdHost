@@ -12,11 +12,10 @@ import struct
 import tempfile
 import threading
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 import numpy as np
 
-import polyhost.util.log_util  # noqa: F401 -- registers Logger.debug_detailed
 from polyhost.core.poly_core import PolyCore
 from polyhost.device import hid_fontpack, hid_fw_up
 from polyhost.device import synthetic_overlay as syn

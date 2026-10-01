@@ -150,11 +150,17 @@ class HidHelper:
         if hasattr(self, 'interface') and self.interface:
             self.interface.close()
 
+    @staticmethod
+    def _enumerate(vid):
+        """The USB enumeration the constructor opens from. MockHidHelper
+        returns nothing here, so it runs this constructor with no device."""
+        return hid.enumerate(vid, 0)
+
     def __init__(self, settings):
         self.settings = settings
         self.lock = threading.Lock()
 
-        device_interfaces = [i for i in hid.enumerate(self.settings.VID, 0)
+        device_interfaces = [i for i in self._enumerate(self.settings.VID)
                              if i['product_id'] in self.settings.KNOWN_PIDS]
         raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE and i['usage'] == self.settings.HID_RAW_USAGE]
 

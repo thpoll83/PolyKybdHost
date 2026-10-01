@@ -19,7 +19,6 @@ import unittest
 
 import numpy as np
 
-import polyhost.util.log_util  # noqa: F401 -- registers Logger.debug_detailed
 from polyhost._version import __protocol__
 from polyhost.device import synthetic_overlay as syn
 from polyhost.device.command_ids import Cmd, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, OsType

@@ -143,10 +143,6 @@ GUI_COMBO_MIN = 12
 MAPPING_FLAGS_MIN = 21
 ICON_BUNDLE_MIN = 20
 
-_BULK_SILENT = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
-                Cmd.SEND_COMPRESSED_OVERLAY.value, Cmd.START_ROI_OVERLAY.value,
-                Cmd.SEND_ROI_OVERLAY.value, Cmd.SEND_OVERLAY_MAPPING.value,
-                Cmd.SEND_OVERLAY_MAPPING_W.value, Cmd.SEND_PRC_OVERLAY.value}
 _IMAGE_CMDS = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
                Cmd.SEND_COMPRESSED_OVERLAY.value, Cmd.START_ROI_OVERLAY.value,
                Cmd.SEND_ROI_OVERLAY.value, Cmd.SEND_PRC_OVERLAY.value}
@@ -915,13 +911,14 @@ class MockHidHelper(HidHelper):
     two methods that enumerate USB are replaced: a reconnect re-attaches the
     same emulated keyboard (rebooting it when an APPLY is pending)."""
 
+    @staticmethod
+    def _enumerate(vid):
+        return []      # the emulator is attached directly, below
+
     def __init__(self, firmware: MockFirmware, settings: DeviceSettings | None = None):
-        # No super().__init__(): it enumerates USB.
-        self.settings = settings or firmware.settings
-        self.lock = threading.Lock()
+        super().__init__(settings or firmware.settings)   # finds nothing: no console
         self.firmware = firmware
         self.interface = firmware
-        self.remote_console = None
 
     def reattach(self) -> None:
         self.interface = self.firmware

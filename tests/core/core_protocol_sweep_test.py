@@ -17,7 +17,7 @@ import ast
 import inspect
 import threading
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost._version import __protocol__
 from polyhost.core.poly_core import PolyCore

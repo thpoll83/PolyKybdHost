@@ -2,7 +2,7 @@
 import base64
 import threading
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 import numpy as np
 

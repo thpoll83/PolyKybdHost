@@ -3,7 +3,7 @@ import base64
 import os
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -11,8 +11,6 @@ from PyQt5.QtCore import Qt  # noqa: E402
 from PyQt5.QtWidgets import QApplication  # noqa: E402
 
 from polyhost.device.keys import KeyCode, Modifier  # noqa: E402
-
-_app = QApplication.instance() or QApplication([])
 
 from polyhost.gui.mock_board_dialog import MockBoardDialog, bitmap_to_image, held_variant  # noqa: E402
 
@@ -41,6 +39,10 @@ def _with_keycap(dialog):
 
 
 class MockBoardDialogTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
 
     def _dialog(self, core):
         dlg = MockBoardDialog(core)
