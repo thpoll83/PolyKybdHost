@@ -911,14 +911,18 @@ class MockHidHelper(HidHelper):
     two methods that enumerate USB are replaced: a reconnect re-attaches the
     same emulated keyboard (rebooting it when an APPLY is pending)."""
 
-    @staticmethod
-    def _enumerate(vid):
-        return []      # the emulator is attached directly, below
+    def _enumerate(self, vid):
+        # One raw-HID interface and no console.
+        s = self.settings
+        return [{"product_id": next(iter(s.KNOWN_PIDS)), "usage_page": s.HID_RAW_USAGE_PAGE,
+                 "usage": s.HID_RAW_USAGE, "path": b"mock"}]
+
+    def _open(self, info):
+        return self.firmware
 
     def __init__(self, firmware: MockFirmware, settings: DeviceSettings | None = None):
-        super().__init__(settings or firmware.settings)   # finds nothing: no console
         self.firmware = firmware
-        self.interface = firmware
+        super().__init__(settings or firmware.settings)
 
     def reattach(self) -> None:
         self.interface = self.firmware

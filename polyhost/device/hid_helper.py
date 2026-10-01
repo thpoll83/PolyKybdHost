@@ -150,11 +150,13 @@ class HidHelper:
         if hasattr(self, 'interface') and self.interface:
             self.interface.close()
 
-    @staticmethod
-    def _enumerate(vid):
-        """The USB enumeration the constructor opens from. MockHidHelper
-        returns nothing here, so it runs this constructor with no device."""
+    # The two USB touch points. MockHidHelper overrides both, so it runs the
+    # real constructor and opens the emulator as its raw interface.
+    def _enumerate(self, vid):
         return hid.enumerate(vid, 0)
+
+    def _open(self, info):
+        return hid.Device(path=info['path'])
 
     def __init__(self, settings):
         self.settings = settings
@@ -166,7 +168,7 @@ class HidHelper:
 
         if len(raw_hid_interfaces) != 0:
             try:
-                self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
+                self.interface = self._open(raw_hid_interfaces[0])
             except hid.HIDException as e:
                 print(PERMISSION_MSG)
                 raise e
@@ -178,7 +180,7 @@ class HidHelper:
                                                                     
         if len(console_hid_interfaces) != 0:
             try:
-                self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
+                self.remote_console = self._open(console_hid_interfaces[0])
             except hid.HIDException as e:
                 print(PERMISSION_MSG)
                 raise e
@@ -219,7 +221,7 @@ class HidHelper:
                                       if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE
                                       and j['usage'] == self.settings.HID_CONSOLE_USAGE]
             if console_hid_interfaces:
-                self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
+                self.remote_console = self._open(console_hid_interfaces[0])
         except Exception as e:
             log.debug("Console reopen failed (enumerate/open): %s", e)
             self.remote_console = None
@@ -414,7 +416,7 @@ class HidHelper:
             if raw:
                 try:
                     with self.lock:
-                        self.interface = hid.Device(path=raw[0]['path'])
+                        self.interface = self._open(raw[0])
                     return True
                 except Exception:
                     pass
