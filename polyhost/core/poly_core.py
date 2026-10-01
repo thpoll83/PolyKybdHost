@@ -221,11 +221,24 @@ class PolyCore(Observable):
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
-        self.keeb = PolyKybd(self.device_settings, self.poly_settings)
+        mock_primary = bool(self.poly_settings.get("dev_mock_primary"))
+        if mock_primary:
+            # No hardware at all: the mock IS the keyboard. Imported here for the
+            # same reason as the secondary below (numpy on the startup path).
+            from polyhost.device.poly_kybd_mock import PolyKybdMock
+            self.keeb = PolyKybdMock(
+                self.device_settings, self.poly_settings, version=__version__,
+                protocol=int(self.poly_settings.get("dev_mock_protocol") or 0) or None,
+                keymap="board")
+            self.log.warning("dev_mock_primary: no keyboard is used; the mock emulates "
+                             "a protocol-%d keyboard.", self.keeb.protocol_version)
+        else:
+            self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
         self.device_mgr = DeviceManager(self.device_settings)
-        self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
-        if self.poly_settings.get("dev_mock_enabled"):
+        self.device_mgr.add(self.keeb, "PolyKybdMock" if mock_primary else "PolyKybd",
+                            is_primary=True)
+        if self.poly_settings.get("dev_mock_enabled") and not mock_primary:
             # Imported here, not at module top: the mock pulls in overlay_sim ->
             # numpy, which is otherwise dead weight on the daemon's startup import
             # path (the mock is only used when dev_mock_enabled is set).
