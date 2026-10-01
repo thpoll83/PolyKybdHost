@@ -260,6 +260,53 @@ purpose is proving whether the app crashed, shipped into none of them.
 
 ---
 
+## The problem scan
+
+`services/problem_scan.py` watches for failures that otherwise reach only a log file,
+and the tray offers *Report a Problem* the first time one appears in a session. It was
+added after the status OLED's `oled_render offset command failed` (an I2C write that
+did not land) turned up once in a rig probe and was seen nowhere else. Nothing is sent
+by itself: the dialog leads to the same GitHub issue flow as the crash dialog.
+
+Two sources, each behind its own setting, and one level for both:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `problem_scan_keyboard_console` | on | Match whole firmware console lines against `CONSOLE_PATTERNS`. |
+| `problem_scan_host_logs` | on | A root-logger handler passes on this app's WARNING/ERROR records. |
+| `problem_scan_level` | `errors` | `errors_and_warnings` also reports warning-severity patterns and WARNING records. |
+
+- ⚠️ **Firmware lines carry no severity, so the console side is a CURATED list,
+  never a keyword match.** Healthy output contains the words: the split-link stats
+  line prints `transport_fail=0 … giveup=0` every few seconds. Each entry has its own
+  regex, severity and a sentence a user can read. A new firmware failure message
+  needs an entry in `CONSOLE_PATTERNS`, and a pattern that fires on a healthy board
+  trains people to dismiss the dialog, so `problem_scan_test` pins the healthy
+  stats line as a non-match. Crash records stay with `crash_report.py`.
+- **Both scanners share `services/console_lines.LineAssembler`**: a console read is
+  a report-sized fragment, and the crash scanner already reassembled lines by hand.
+- **Once per process and source key.** A console pattern is keyed by its id; a host
+  record by logger + UNFORMATTED message, so one call site logging different values
+  is one problem. A repeat raises its count, and the raised count is re-sent as an
+  update of the same problem at most once per `UPDATE_INTERVAL_S` (10 s), which the
+  dialog merges by key. So a stuck line costs one event per 10 s, not one per
+  line, and the count shown can lag by the last interval's repeats.
+- ⚠️ **The handler sits on the ROOT logger, and the process that owns it decides
+  what it covers.** The core installs one (`PolyCore.__init__`, removed in
+  `shutdown()`); in-process mode that covers the GUI too. A daemon CLIENT tray is a
+  separate process, so `host.py` installs its own and reads the two settings from
+  the file per record. The forwarder installs none.
+- ⚠️ **The handler must never feed itself.** Its callback emits an event, and a
+  failing event observer is logged at ERROR. A per-thread guard drops every record
+  logged while the callback runs; `PolyKybdConsole` (relayed console chunks) is
+  ignored outright.
+- **The dialog pops up ONCE per session.** Later problems are appended without
+  raising it, so a condition that repeats a line cannot keep stealing focus.
+- A problem seen while no tray is attached to the daemon is not replayed when one
+  connects; the line is still in the logs.
+
+---
+
 ## Two things that read as a crash and are not
 
 - ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the

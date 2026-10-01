@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.services.os_theme import THEMES
+from polyhost.services.problem_scan import LEVELS as PROBLEM_SCAN_LEVELS
 
 # Settings whose value is one of a fixed set get a dropdown rather than the
 # free-text fallback: `ui_theme` is the first one a normal user is expected to
@@ -16,6 +17,7 @@ from polyhost.services.os_theme import THEMES
 # they asked.
 CHOICES = {
     "ui_theme": THEMES,
+    "problem_scan_level": PROBLEM_SCAN_LEVELS,
 }
 
 

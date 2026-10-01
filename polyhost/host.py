@@ -448,6 +448,14 @@ class PolyHost(QApplication):
         self.report_problem_action.triggered.connect(self.open_report_problem)
         self.report_problem_dialog = None
         self.crash_alert_dialog = None
+        self.problem_alert_dialog = None
+        self._client_problem_handler = None
+        if self.client_mode:
+            # The daemon's core watches ITS process's log; this tray is a
+            # separate process, so its own errors need a handler of their own.
+            # In-process mode needs none: the core's handler is on the same
+            # root logger and already covers the GUI.
+            self._install_client_problem_handler()
 
         # "Send me your log" is otherwise a request nobody can satisfy: the logs
         # are five rotating files in the working directory, and in daemon mode
@@ -1626,6 +1634,48 @@ class PolyHost(QApplication):
         self.crash_alert_dialog.add_record(rec)
         self.crash_alert_dialog.show()
         bring_to_front(self.crash_alert_dialog)
+
+    def _install_client_problem_handler(self):
+        """Watch this client process's own log for the problem scan.
+
+        Settings are read from the file per record (only for WARNING and up), so
+        a change made in the daemon or by polyctl applies here too."""
+        from polyhost.services import problem_scan
+        from polyhost.settings import read_setting
+        self._client_problem_handler = problem_scan.HostLogProblemHandler(
+            lambda prob: self.bridge.job_done.emit("problem_detected", prob.to_dict()),
+            level_cb=lambda: read_setting("problem_scan_level", problem_scan.LEVEL_ERRORS),
+            enabled_cb=lambda: bool(read_setting("problem_scan_host_logs", True)),
+            origin="tray")
+        logging.getLogger().addHandler(self._client_problem_handler)
+
+    def _on_problem_detected(self, payload):
+        """The problem scan saw something worth reporting.
+
+        One modeless dialog per session: it pops up for the FIRST problem only.
+        Later problems are appended to it without raising it again, so a
+        condition that keeps repeating cannot keep stealing focus; Report a
+        Problem still carries all of them."""
+        from polyhost.services.problem_scan import Problem
+        from polyhost.gui.problem_alert_dialog import ProblemAlertDialog
+        try:
+            prob = Problem.from_dict(payload or {})
+        except Exception:  # noqa: BLE001 — a malformed payload must not take the tray down
+            self.log.info("Ignoring an unreadable problem report: %r", payload)
+            return
+        first = self.problem_alert_dialog is None
+        if first:
+            self.problem_alert_dialog = ProblemAlertDialog(
+                parent=None, report_cb=self._open_report_with_problems)
+        self.problem_alert_dialog.add_problem(prob)
+        if first:
+            self.problem_alert_dialog.show()
+            bring_to_front(self.problem_alert_dialog)
+
+    def _open_report_with_problems(self, description: str, title: str) -> None:
+        """Open Report-a-Problem with the detected problems in the description."""
+        self.open_report_problem()
+        self.report_problem_dialog.set_description(description, title)
 
     def _open_report_with_crash(self, description: str, title: str) -> None:
         """Open Report-a-Problem with the crash written into the description."""
@@ -2938,6 +2988,8 @@ class PolyHost(QApplication):
         # both best-effort, never block on failure.
         if getattr(self, "control_server", None) is not None:
             self.control_server.stop()
+        if getattr(self, "_client_problem_handler", None) is not None:
+            logging.getLogger().removeHandler(self._client_problem_handler)
         self.core.shutdown()
         self.quit()
 
@@ -3010,6 +3062,8 @@ class PolyHost(QApplication):
             self.quit_app()
         elif name == "crash_detected":
             self._on_crash_detected(result)
+        elif name == "problem_detected":
+            self._on_problem_detected(result)
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:

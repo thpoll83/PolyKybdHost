@@ -118,7 +118,7 @@ class ScannerTest(unittest.TestCase):
     def test_a_runaway_fragment_is_bounded(self):
         s = cr.CrashScanner()
         s.feed("x" * (cr.CrashScanner.MAX_PENDING * 3))
-        self.assertLessEqual(len(s._pending), cr.CrashScanner.MAX_PENDING)
+        self.assertLessEqual(len(s._lines._pending), cr.CrashScanner.MAX_PENDING)
 
 
 class TextTest(unittest.TestCase):

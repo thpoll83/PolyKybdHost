@@ -96,3 +96,10 @@ FW_DOWNLOAD_DONE = "fw_download_done"
 # parsed fields plus the raw line. Emitted once per distinct record; the GUI
 # raises the crash alert dialog, polyctl watch prints it.
 CRASH_DETECTED = "crash_detected"
+
+# The problem scan (services/problem_scan.py) saw something worth a report: a
+# known-bad keyboard console line, or a WARNING/ERROR in the host's own log.
+# Payload: problem_scan.Problem.to_dict(). Emitted once per distinct problem per
+# process; the GUI raises the problem dialog (once per session, later ones are
+# appended).
+PROBLEM_DETECTED = "problem_detected"
