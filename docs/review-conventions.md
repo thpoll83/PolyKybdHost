@@ -41,6 +41,13 @@ and relative links were adjusted to suit a standalone file.
     with an error-severity finding outstanding; a rollup that reads only the
     conclusion calls that commit green. **The alert count is in the title —
     read it, not the conclusion.**
+  - ⚠️ **A STACKED PR gets no CodeQL at all.** `codeql.yml` runs only on
+    `pull_request: branches: [main]`, so a PR based on another PR's branch shows
+    no CodeQL check for as long as it is stacked — and with the other bots
+    refusing, it can look finished having been read by nothing. #301
+    (2026-10-01) carried no CodeQL check while stacked; ten alerts, one of them
+    error severity and failing the check, arrived minutes after it was
+    retargeted to `main`. Treat the retarget as the start of review, not the end.
   - ⚠️ **A CodeRabbit "✅ Confirmed as addressed" reply is a review OBJECT
     carrying the head sha — and is NOT a review of that commit.** When it accepts
     your fix on a thread it posts a `COMMENTED` review pinned to the new head, so
