@@ -70,6 +70,17 @@ class ConsoleScannerTest(unittest.TestCase):
         now[0] = 200.0
         self.assertEqual(s.feed("healthy\n"), [])                # no repeat, no update
 
+    def test_a_narrowed_level_stops_warning_updates(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(update_interval=10, clock=lambda: now[0])
+        wide = ps.LEVEL_ERRORS_AND_WARNINGS
+        self.assertEqual([p.key for p in s.feed(EDEN + "\n", wide)], ["eden_core1_timeout"])
+        now[0] = 20.0
+        self.assertEqual(s.feed(EDEN + "\n", ps.LEVEL_ERRORS), [])
+        self.assertEqual(s.problems()[0].count, 2)          # still counted
+        now[0] = 40.0
+        self.assertEqual([p.count for p in s.feed(EDEN + "\n", wide)], [3])
+
     def test_one_chunk_publishes_a_problem_once_with_its_total(self):
         s = ps.ConsoleProblemScanner(update_interval=0)
         found = s.feed(f"{OLED}\n{OLED}\n{OLED}\n")

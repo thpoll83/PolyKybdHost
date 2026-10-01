@@ -162,7 +162,11 @@ class ConsoleProblemScanner:
                 if prior is not None:
                     prior.count += 1
                     sent_count, sent_at = self._sent.get(pat.id, (0, now))
-                    if (pat.id not in out and prior.count != sent_count
+                    # Counted at any level, re-sent only at the CURRENT one: a
+                    # warning first seen under errors_and_warnings goes quiet
+                    # once the user narrows the level to errors.
+                    if (severity_wanted(prior.severity, level)
+                            and pat.id not in out and prior.count != sent_count
                             and now - sent_at >= self._update_interval):
                         out[pat.id] = prior
                 elif severity_wanted(pat.severity, level):
