@@ -11,6 +11,23 @@ KEY_RADIUS = 0.1
 BADGE_BOTTOM_GAP = 20  # px from tile bottom to the badge's top edge
 
 
+def key_transform(info, minx, miny, scale) -> QTransform:
+    """Where a KLE key sits in the scene: its position relative to the board's
+    top-left, rotated about the KLE rotation origin (rx, ry) when it has one --
+    the split72 thumb keys run up to 20 degrees off axis."""
+    x, y = info["x"] - minx, info["y"] - miny
+    r = info.get("r", 0)
+    transform = QTransform()
+    if r:
+        rx, ry = info.get("rx", 0) - minx, info.get("ry", 0) - miny
+        transform.translate(rx * scale, ry * scale)
+        transform.rotate(r)
+        transform.translate((x - rx) * scale, (y - ry) * scale)
+    else:
+        transform.translate(x * scale, y * scale)
+    return transform
+
+
 class RenderableKey(QGraphicsObject):
     pressed = pyqtSignal(object)
 

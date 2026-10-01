@@ -2214,6 +2214,44 @@ class PolyCore(Observable):
         """Empty one macro's body and its whole keycap look."""
         return self.macro_set(macro_id, text="", label="", style=0, icon=0)
 
+    def mock_keycaps(self, modifier=0):
+        """What the mock keyboard shows on its keycaps under ``modifier``, for the
+        developer board view (gui/mock_board_dialog.py).
+
+        The mock is the primary device (``dev_mock_primary``) or the secondary one
+        (``dev_mock_enabled``). JSON-serializable, so a ``--connect`` client gets the
+        same answer over RPC; read on the worker, so a send in progress is never
+        seen half done. ``(False, msg)`` when no mock is running."""
+        mock = next((e.device for e in self.device_mgr.all_entries
+                     if hasattr(e.device, "firmware")), None)
+        if mock is None:
+            return False, ("No mock keyboard is running. Enable dev_mock_enabled "
+                           "(beside the keyboard) or dev_mock_primary (instead of it).")
+
+        def read(cancel):
+            import base64
+            from polyhost.device.keys import Modifier
+            mod = Modifier(int(modifier))
+            images = {}
+            for kc in list(range(0x04, 0x66)) + list(range(0xE0, 0xE8)):
+                bitmap = mock.get_display_bitmap(kc, mod)
+                if bitmap:
+                    images[str(kc)] = base64.b64encode(bitmap).decode("ascii")
+            fw = mock.firmware
+            return True, {
+                "primary": mock is self.keeb,
+                "protocol": mock.protocol_version,
+                "overlays_enabled": fw.overlays_enabled,
+                "modifier": mod.value,
+                "images": images,
+                "base_layer": mock.base_layer(),
+                "stats": {"image_reports": fw.image_reports, "fill_reports": fw.fill_reports,
+                          "mapping_reports": fw.mapping_reports,
+                          "control_reports": fw.control_reports},
+                "refused": [r.reason for r in fw.refused][-20:],
+            }
+        return self._device_call("mock_keycaps", read)
+
     def replay_startup_anim(self):
         return self._device_call(
             "replay_startup_anim", lambda c: self.keeb.replay_startup_anim())

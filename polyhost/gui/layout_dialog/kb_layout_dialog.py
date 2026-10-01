@@ -3,7 +3,7 @@ import logging
 import pathlib
 import traceback
 
-from PyQt5.QtGui import QTransform, QGuiApplication, QCursor, QPixmap
+from PyQt5.QtGui import QGuiApplication, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
@@ -23,7 +23,7 @@ from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.board_plate import add_board, set_screen_images
 from polyhost.gui.layout_dialog import status_screen_render as ssr
 from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
-from polyhost.gui.layout_dialog.renderable_key import RenderableKey
+from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
 from polyhost.kle.kle_praser import parse_kle
@@ -635,41 +635,11 @@ class KbLayoutDialog(QMainWindow):
         self._add_board(minx, miny)
 
         for name, info in self.key_matrix.items():
-            # Get key properties
-            x = info['x'] - minx
-            y = info['y'] - miny
-            r = info.get('r', 0)
-            rx = info.get('rx', 0) - minx
-            ry = info.get('ry', 0) - miny
-            
-            # Create key item
             index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
             item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
             item.pressed.connect(self.mouseClickEvent)
             self.keys[index] = item
-            
-            # Apply transformations for rotation
-            # 1. Translate to position
-            # 2. Translate to rotation origin
-            # 3. Rotate
-            # 4. Translate back
-            
-            transform = QTransform()
-            
-            if r != 0:
-                # Position relative to rotation origin
-                rel_x = (x - rx) * KEY_SCALE
-                rel_y = (y - ry) * KEY_SCALE
-                
-                # Move to rotation origin, rotate, then offset
-                transform.translate(rx * KEY_SCALE, ry * KEY_SCALE)
-                transform.rotate(r)
-                transform.translate(rel_x, rel_y)
-            else:
-                # Without rotation
-                transform.translate(x * KEY_SCALE, y * KEY_SCALE)
-            
-            item.setTransform(transform)
+            item.setTransform(key_transform(info, minx, miny, KEY_SCALE))
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())

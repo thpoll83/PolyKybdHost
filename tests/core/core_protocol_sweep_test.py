@@ -47,6 +47,7 @@ CORE_CALLS = {
     "enable_overlays": (), "disable_overlays": (),
     "save_mru": (),
     "set_brightness": (10,),
+    "mock_keycaps": (0,),
 }
 
 # The font-pack and firmware-update transports are dispatched independently of
