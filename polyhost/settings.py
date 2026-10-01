@@ -263,6 +263,14 @@ DEFAULT_SETTINGS = {
         # become a new install; it is stored here rather than hidden in a
         # cache file precisely so it is visible and erasable.
         "telemetry_install_id": "",
+        # Problem scan (polyhost/services/problem_scan.py): watch the keyboard's
+        # console and this app's own log for errors, and offer the guided
+        # Report a Problem the first time one appears in a session. Nothing is
+        # sent by itself. The two switches pick the sources; the level picks
+        # what counts ("errors", or "errors_and_warnings" for both).
+        "problem_scan_keyboard_console": True,
+        "problem_scan_host_logs": True,
+        "problem_scan_level": "errors",
 }
 
 

@@ -17,6 +17,7 @@ This module (and everything it imports) must stay importable without
 PyQt5 and without a display: window tracking (pywinctl) is imported
 lazily and degrades to "off" with a warning (plan §5.4).
 """
+import logging
 import os
 import pathlib
 import sys
@@ -44,6 +45,7 @@ from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashScanner
+from polyhost.services import problem_scan
 from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
@@ -298,6 +300,17 @@ class PolyCore(Observable):
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
+        # Known-bad console lines, and this process's own WARNING/ERROR records
+        # (services/problem_scan.py). The handler sits on the ROOT logger, so in
+        # in-process mode it covers the GUI's logging too; a daemon client GUI
+        # installs its own (host.py).
+        self._problem_scanner = problem_scan.ConsoleProblemScanner()
+        self._problem_log_handler = problem_scan.HostLogProblemHandler(
+            self._report_problem,
+            level_cb=lambda: self._problem_setting("problem_scan_level",
+                                                   problem_scan.LEVEL_ERRORS),
+            enabled_cb=lambda: bool(self._problem_setting("problem_scan_host_logs", True)))
+        logging.getLogger().addHandler(self._problem_log_handler)
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
@@ -430,6 +443,9 @@ class PolyCore(Observable):
         covers a clean quit/logout where USB suspend may not fire. Run it
         synchronously (short bounded wait) BEFORE stopping the worker, but
         never let it block shutdown."""
+        handler = getattr(self, "_problem_log_handler", None)
+        if handler is not None:
+            logging.getLogger().removeHandler(handler)
         self._tick_stop.set()
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
@@ -1814,6 +1830,7 @@ class PolyCore(Observable):
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
             self._scan_console_for_crashes(kb_log)
+            self._scan_console_for_problems(kb_log)
 
     def _scan_console_for_crashes(self, chunk):
         """Watch the console stream for the firmware's crash line and alert once.
@@ -1832,6 +1849,35 @@ class PolyCore(Observable):
         for rec in records:
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
+
+    def _problem_setting(self, key, default):
+        try:
+            return self.poly_settings.get(key)
+        except Exception:  # noqa: BLE001 — a settings file without the key yet
+            return default
+
+    def _scan_console_for_problems(self, chunk):
+        """Match whole console lines against the known-bad patterns.
+
+        The scanner always runs so its line buffer stays in step with the stream;
+        the switch decides only whether a match is reported."""
+        scanner = getattr(self, "_problem_scanner", None)
+        if scanner is None:
+            return
+        try:
+            found = scanner.feed(chunk, self._problem_setting(
+                "problem_scan_level", problem_scan.LEVEL_ERRORS))
+        except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
+            self.log.debug("Problem scan failed", exc_info=True)
+            return
+        if found and self._problem_setting("problem_scan_keyboard_console", True):
+            for prob in found:
+                self._report_problem(prob)
+
+    def _report_problem(self, prob):
+        """Publish one problem. Called from the console scan and from the log
+        handler (on whatever thread logged), so it only emits."""
+        self.emit("problem_detected", prob.to_dict())
 
     # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
     # On older firmware the flags byte is ignored (plain persisted set), so we

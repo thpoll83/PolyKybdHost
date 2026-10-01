@@ -556,7 +556,7 @@ Autostart registration and the post-update relaunch chain are
 Logs, crash reporting and the guided problem report are
 [`docs/diagnostics.md`](docs/diagnostics.md); the three silent failure modes of
 multi-machine forwarding are in the same file; the telemetry client and its collector
-are [`docs/telemetry-internals.md`](docs/telemetry-internals.md). Six rules bind code
+are [`docs/telemetry-internals.md`](docs/telemetry-internals.md). Eight rules bind code
 outside those files:
 
 - ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That one
@@ -580,6 +580,12 @@ outside those files:
   process collides with the handle it is replacing. **Reading a bundle is the
   `triage-log-bundle` skill**, which carries these and the rest of the lines
   that lie.
+- ⚠️ **The problem scan matches firmware console lines against a CURATED list
+  (`problem_scan.CONSOLE_PATTERNS`), never keywords** — healthy output says
+  `transport_fail=0 giveup=0`. A new firmware failure message needs an entry there
+  to reach the user. Its log handler is on the root logger of whichever process
+  installs it (the core, or a daemon-client tray), and must not log from its own
+  callback. Details: [`docs/diagnostics.md`](docs/diagnostics.md) → *The problem scan*.
 - ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — under daemon-by-default the
   daemon still owns the device with no GUI attached. Check the process list, in PAIRS.
 - ⚠️ **The telemetry payload is an ALLOW-LIST at both ends — a privacy guarantee.**

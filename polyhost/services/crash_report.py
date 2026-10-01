@@ -30,6 +30,8 @@ import re
 import struct
 from dataclasses import dataclass
 
+from polyhost.services.console_lines import LineAssembler
+
 # Wire layout of poly_crash_record_t (base/crash_record.h), little-endian:
 #   u32 magic, u8 kind, u8 core, u8 consecutive, u8 reset_reason,
 #   u32 pc, lr, sp, xpsr, icsr, uptime_ms, u16 phase, u16 phase_arg,
@@ -195,22 +197,15 @@ class CrashScanner:
     boot banner re-emits for ~30 s, and the same line arriving again is noise.
     """
 
-    MAX_PENDING = 4096   # a fragment that never terminates must not grow forever
+    MAX_PENDING = LineAssembler.MAX_PENDING
 
     def __init__(self):
-        self._pending = ""
+        self._lines = LineAssembler()
         self._seen: set[str] = set()
 
     def feed(self, chunk: str) -> list[CrashRecord]:
-        if not chunk:
-            return []
-        buf = self._pending + chunk
-        parts = buf.split("\n")
-        self._pending = parts.pop()
-        if len(self._pending) > self.MAX_PENDING:
-            self._pending = self._pending[-self.MAX_PENDING:]
         out = []
-        for line in parts:
+        for line in self._lines.feed(chunk):
             if "crash: side=" not in line:
                 continue
             rec = parse_crash_line(line)
