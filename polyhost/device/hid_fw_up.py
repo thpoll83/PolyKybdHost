@@ -3,6 +3,8 @@ import os
 import struct
 import time
 
+from polyhost.device.split_link import split_link_timeout_message
+
 HID_POLYKYBD          = 0x50   # ord('P')
 CMD_FW_UP_GET_VERSION = 0x43
 CMD_FW_UP_BEGIN       = 0x40
@@ -290,6 +292,10 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases ~6 s)
     begin_ready = False
+    # True while the latest BEGIN reply was '~': the USB half is answering and
+    # waiting on the other half. Still True at the deadline means the other half
+    # never confirmed — see device/split_link.py.
+    polling     = False
     erase_start = time.monotonic()
     # The staging erase (2 MB region) takes ~10–20 s and the firmware reports no
     # fine-grained progress, so show elapsed seconds (mirrors the font-pack flash)
@@ -301,6 +307,9 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     while not begin_ready:
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
+            if polling:
+                return False, split_link_timeout_message("FW_UP_BEGIN timed out",
+                                                         "staging area")
             return False, ("FW_UP_BEGIN timed out — keyboard did not finish erasing "
                            "within 90 s.  Check the USB cable and try again.")
 
@@ -310,6 +319,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         if not ok or len(reply) < 3:
             # USB dropout (or Windows empty-bytes disconnect) — master may be
             # rebooting after its synchronous flash erase.
+            polling = False
             _erasing("Erasing staging area — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("FW_UP_BEGIN failed — keyboard did not reconnect "
@@ -319,6 +329,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         elif reply[2] == ord('.'):
             begin_ready = True
         elif reply[2] == ord('~'):
+            polling = True
             # Slave half still erasing (deferred sector-by-sector).  Sleep briefly
             # so the QMK main loop runs and keeps the split transport alive.
             _erasing("Erasing staging area (both halves)")

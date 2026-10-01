@@ -1306,3 +1306,74 @@ class FwUpDownloader(threading.Thread):
             log.warning("Firmware release %s advertises no .bin.sig — the keyboard "
                         "will ask for on-key confirmation.", self.release.tag)
         _fire(self._on_finished, True, "", tmp_path)
+
+
+UF2_MAGIC_START0 = 0x0A324655   # "UF2\n", the first word of every UF2 block
+
+
+def default_download_dir() -> Path:
+    """Where a file meant for the user goes: ``~/Downloads`` when it exists.
+
+    The recovery ``.uf2`` must land somewhere the user can drag it from, so not
+    the temp dir the update flow uses."""
+    downloads = Path.home() / "Downloads"
+    return downloads if downloads.is_dir() else Path.home()
+
+
+class FwUf2Downloader(threading.Thread):
+    """Download the newest firmware release's ``.uf2`` for a manual BOOTSEL flash.
+
+    The recovery path for a half that cannot be updated over HID (see
+    ``device/split_link.py``): such a half may be on any firmware, or none, so
+    this takes the newest release whatever the keyboard reports.
+
+    Callbacks fire on this thread:
+
+    - ``on_finished(bool, str, str, str)`` — (ok, error_or_empty, uf2_path,
+      release_page_url). The page URL is set whenever the release was found, so a
+      failed download can still send the user there.
+    """
+
+    def __init__(self, dest_dir: Optional[Path] = None, *, on_finished=None):
+        super().__init__(daemon=True)
+        self._dest_dir = Path(dest_dir) if dest_dir else default_download_dir()
+        self._on_finished = on_finished
+
+    def run(self):
+        page = f"https://github.com/{FW_REPO}/releases/latest"
+        try:
+            # check_fw_latest() answers "is there something newer than X", so ask
+            # against 0: every published release is newer. Its log line will read
+            # "0 -> <version>"; this one says why.
+            log.info("Firmware recovery: looking up the newest release's .uf2.")
+            release = check_fw_latest("0")
+            if release is None:
+                raise UpdateCheckError("no firmware release found")
+            page = getattr(release, "html_url", "") or page
+            url = getattr(release, "uf2_url", "")
+            if not url:
+                raise UpdateCheckError(
+                    f"release {release.version} has no firmware .uf2")
+            name = os.path.basename(url.split("?", 1)[0]) or f"polykybd-{release.version}.uf2"
+            dest = self._dest_dir / name
+            part = dest.with_name(dest.name + ".part")
+            with requests.get(url, headers={"User-Agent": USER_AGENT},
+                              timeout=HTTP_TIMEOUT * 6) as r:
+                r.raise_for_status()
+                data = r.content
+            # A proxy error page saved as .uf2 would be silently ignored by the
+            # boot ROM, which is exactly the "half stays dark" state this is
+            # meant to fix. Check the container before handing it over.
+            if len(data) < 512 or len(data) % 512 or \
+                    int.from_bytes(data[:4], "little") != UF2_MAGIC_START0:
+                raise ValueError(f"the download is not a UF2 file ({len(data)} bytes)")
+            self._dest_dir.mkdir(parents=True, exist_ok=True)
+            with open(part, "wb") as f:
+                f.write(data)
+            os.replace(part, dest)
+        except Exception as e:  # noqa: BLE001 — reported to the dialog, not raised
+            log.warning("Firmware .uf2 download failed: %s", e)
+            _fire(self._on_finished, False, str(e), "", page)
+            return
+        log.info("Firmware recovery: saved %s (%d bytes).", dest, len(data))
+        _fire(self._on_finished, True, "", str(dest), page)
