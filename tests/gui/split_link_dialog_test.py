@@ -41,7 +41,7 @@ class SplitLinkHandOffTest(unittest.TestCase):
         help_dlg = fn()
         self.addCleanup(help_dlg.close)
         self.assertIs(help_dlg, split_link_dialog._instance)
-        self.assertEqual(help_dlg._detail.text(), msg)
+        self.assertEqual(help_dlg._body.toolTip(), msg)
 
     def test_any_other_failure_keeps_the_close_button(self):
         dlg = self._dlg()
@@ -55,7 +55,7 @@ class SplitLinkHandOffTest(unittest.TestCase):
         self.addCleanup(a.close)
         b = split_link_dialog.show_split_link_help("second")
         self.assertIs(a, b)
-        self.assertEqual(b._detail.text(), "second")
+        self.assertEqual(b._body.toolTip(), "second")
 
     def test_download_result_lands_in_the_dialog(self):
         d = split_link_dialog.show_split_link_help("x")

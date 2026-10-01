@@ -32,22 +32,11 @@ UF2_GUIDE_URL = "https://www.polykybd.org/setup/flashing/#fallback-uf2-bootloade
 # Plain paragraphs, not <ol>/<ul>: QLabel's height-for-width undercounts nested
 # lists, which clipped the steps mid-sentence in the first render.
 _TEXT = (
-    "<p>The half plugged into USB answered, but the other half did not. Firmware "
-    "updates and font installs need both halves, so they stop here.</p>"
-    "<p><b>1.</b> Unplug the keyboard. Reseat the cable between the two halves at "
-    "both ends, then plug the keyboard back in and try again.</p>"
-    "<p><b>2.</b> If the other half stays dark (no lights, blank keycaps), it is not "
-    "running firmware. Copy the firmware .uf2 onto it by hand:</p>"
-    "<p style='margin-left:18px'>Unplug both halves. Hold the <b>BOOT</b> button on "
-    "the dark half and connect it to the computer by USB, then release the button. "
-    "A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it. The drive "
-    "disappears when the copy is done.</p>"
-    "<p><b>3.</b> Reconnect both halves and run the update again.</p>"
-    "<p>Copy the firmware .uf2 only. The small left/right handedness .uf2 files "
-    "that came with releases 0.23 to 0.27 are ignored by the chip and leave the "
-    "half dark.</p>"
+    "<p>The USB half answered, but the other half did not.</p>"
+    "<p><b>1.</b> Reseat the cable between the halves and try again.</p>"
+    "<p><b>2.</b> Other half still dark? Hold its <b>BOOT</b> button while you plug "
+    "it in by USB, then drag the .uf2 onto the <b>RPI-RP2</b> drive.</p>"
 )
-
 
 # Text column width. Each wrapped label gets this as a fixed width and its own
 # heightForWidth() as its height: a top-level QLayout does not ask for
@@ -72,7 +61,7 @@ class SplitLinkHelpDialog(QDialog):
         self._uf2_path = ""
         self._release_page = ""
 
-        self.setWindowTitle("The other keyboard half is not answering")
+        self.setWindowTitle("Other keyboard half not answering")
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         layout = QVBoxLayout(self)
@@ -81,12 +70,7 @@ class SplitLinkHelpDialog(QDialog):
         body.setTextFormat(Qt.RichText)
         _fit(body)
         layout.addWidget(body)
-
-        self._detail = QLabel()
-        self._detail.setWordWrap(True)
-        self._detail.setStyleSheet("color: gray;")
-        self._detail.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        layout.addWidget(self._detail)
+        self._body = body
         self.set_detail(detail)
 
         self._status = QLabel("")
@@ -114,10 +98,9 @@ class SplitLinkHelpDialog(QDialog):
         self._downloaded.connect(self._on_downloaded)
 
     def set_detail(self, detail: str):
-        """The failure message that led here, so a screenshot carries it."""
-        self._detail.setText(detail or "")
-        self._detail.setVisible(bool(detail))
-        _fit(self._detail)
+        """The failure message that led here, as a tooltip: it is also in the
+        log, and shown in full it repeated the steps."""
+        self._body.setToolTip(detail or "")
 
     def _start_download(self):
         if self._downloader is not None and self._downloader.is_alive():
