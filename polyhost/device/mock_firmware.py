@@ -276,6 +276,7 @@ class MockFirmware:
                  languages: list[str] | None = None, lang: str = "enUS",
                  bundle_versions: dict[int, int] | None = None,
                  letter_map: dict[int, int] | None = None,
+                 mru_letter_translate: bool = False,
                  clock=time.monotonic):
         self.protocol = protocol
         self.settings = settings or DeviceSettings()
@@ -285,8 +286,13 @@ class MockFirmware:
         self.languages = list(languages or ["enUS", "deAT", "koKR", "frFR", "itIT", "esES"])
         self.lang = lang
         # translate_a_to_z(): the firmware re-addresses A..Z by the active
-        # language on every overlay WRITE path. Identity for enUS.
+        # language on the overlay WRITE paths, for letter-addressed uploads only:
+        # under MIRROR_OVERLAYS (MRU mode) the address is a pool slot and
+        # upload_keycode() leaves it alone (qmk_firmware#327). Identity for enUS.
+        # mru_letter_translate=True reproduces the firmware before that fix,
+        # which translated MRU uploads too and swapped letter-address slots.
         self.letter_map = dict(letter_map or {})
+        self.mru_letter_translate = mru_letter_translate
         self.clock = clock
         self.lock = threading.Lock()
 
@@ -579,11 +585,12 @@ class MockFirmware:
 
     def _upload_slot(self, keycode: int, modifier: int) -> int | None:
         """The pool slot an upload addressed to (keycode, modifier) lands in:
-        translate_a_to_z, then the slot index, the variant, and the CURRENT
-        mapping table (get_display_pool_slot) -- all as fill_overlay.c does."""
+        upload_keycode (translate_a_to_z outside MRU mode), then the slot index,
+        the variant, and the CURRENT mapping table (get_display_pool_slot) --
+        all as fill_overlay.c does."""
         if keycode < KC_A or keycode > KC_RGUI:
             return None
-        if KC_A <= keycode <= KC_Z:
+        if KC_A <= keycode <= KC_Z and (not self.mirror or self.mru_letter_translate):
             keycode = self.letter_map.get(keycode, keycode)
         if keycode > KC_APP:
             idx = keycode - KC_LCTRL + 82

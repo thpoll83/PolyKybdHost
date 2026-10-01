@@ -89,8 +89,8 @@ Sources are paths in `qmk_firmware/keyboards/polykybd/`.
   prepare/enable bits (v21, which read as a width above 16 before that, so the
   report is dropped). They are recorded as refusals too.
 - **The overlay write paths** (`fill_overlay.c`, `base/overlay.c`). An upload
-  lands at `translate_a_to_z(keycode)`, then the slot index and the variant, then
-  the CURRENT mapping table. Its usage bit is set only when the image completes,
+  lands at `upload_keycode(keycode)` (`translate_a_to_z` outside MRU mode),
+  then the slot index and the variant, then the CURRENT mapping table. Its usage bit is set only when the image completes,
   and never while `MIRROR_OVERLAYS` is on. Plain, RLE, ROI, RLE-ROI and PRC are
   decoded, the mapping by `set_packed_overlay_mapping`'s rules, the icon fills
   from the icon library the keyboard holds in slot 8, and the cmd 11 flag
@@ -113,10 +113,11 @@ emulator draws is only evidence if the keyboard would draw the same.
   segments. A REUSED pool slot (the MRU pool wrapped) therefore keeps the evicted
   image's pixels around the new one. The PRC decoder clears the slot first, so a
   v19+ keyboard avoids this for every image that fits a PRC record.
-- `translate_a_to_z` re-addresses A..Z by the active language on the write path
-  too. Under a layout that moves letters, an upload addressed to one letter's pool
-  slot lands in another's. `MockFirmware(letter_map=...)` reproduces it; the
-  default is enUS (identity).
+- `translate_a_to_z` re-addresses A..Z by the active language on a
+  letter-addressed upload, but not under `MIRROR_OVERLAYS` (MRU mode), where the
+  address names a pool slot (qmk_firmware#327). `MockFirmware(letter_map=...)`
+  models the layout (default enUS, identity), and `mru_letter_translate=True`
+  reproduces the firmware before that fix, which swapped the letter-address slots.
 
 ## Fault injection (`FaultPlan`)
 
