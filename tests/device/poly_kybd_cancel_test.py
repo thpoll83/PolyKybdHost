@@ -112,7 +112,7 @@ class TestSendOverlaysCancel(unittest.TestCase, LockCheckMixin):
         real_send = keeb.send_smallest_overlay
         sent_keycodes = []
 
-        def tracking_send(keycode, modifier, mapping):
+        def tracking_send(keycode, modifier, mapping, clean_slot=True):
             sent_keycodes.append(keycode)
             count = real_send(keycode, modifier, mapping)
             cancel.set()
@@ -161,7 +161,7 @@ class TestSendOverlaysCancel(unittest.TestCase, LockCheckMixin):
 
         real_send = keeb.send_smallest_overlay
 
-        def tracking_send(keycode, modifier, mapping):
+        def tracking_send(keycode, modifier, mapping, clean_slot=True):
             count = real_send(keycode, modifier, mapping)
             cancel.set()
             return count
@@ -250,7 +250,7 @@ class TestSendOverlaysMruCancel(unittest.TestCase, LockCheckMixin):
         real_send = keeb.send_smallest_overlay
         sent = []
 
-        def tracking_send(keycode, modifier, mapping):
+        def tracking_send(keycode, modifier, mapping, clean_slot=True):
             sent.append(keycode)
             count = real_send(keycode, modifier, mapping)
             cancel.set()   # cancel right after the first image is transferred
@@ -278,7 +278,7 @@ class TestSendOverlaysMruCancel(unittest.TestCase, LockCheckMixin):
 
         real_send = keeb.send_smallest_overlay
 
-        def tracking_send(keycode, modifier, mapping):
+        def tracking_send(keycode, modifier, mapping, clean_slot=True):
             count = real_send(keycode, modifier, mapping)
             cancel.set()
             return count

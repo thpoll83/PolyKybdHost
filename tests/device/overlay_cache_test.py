@@ -142,6 +142,44 @@ class TestForgetRollback(unittest.TestCase):
         self.assertEqual(cache.used_slots(), 0)
 
 
+class TestSlotIsClean(unittest.TestCase):
+    """A reused slot still holds its old image; the sender reads this to keep
+    the encodings that write only part of a frame off it."""
+
+    def test_a_slot_is_clean_until_written(self):
+        cache = OverlayMRUCache(capacity=2)
+        slot, _ = cache.get_or_allocate(("a.png", 0, 4))
+        self.assertTrue(cache.slot_is_clean(slot))
+        cache.mark_written(slot)
+        self.assertFalse(cache.slot_is_clean(slot))
+
+    def test_an_evicted_slot_stays_dirty(self):
+        cache = OverlayMRUCache(capacity=1)
+        slot, _ = cache.get_or_allocate(("a.png", 0, 4))
+        cache.mark_written(slot)
+        again, hit = cache.get_or_allocate(("b.png", 0, 5))
+        self.assertFalse(hit)
+        self.assertEqual(again, slot)
+        self.assertFalse(cache.slot_is_clean(again))
+
+    def test_forget_does_not_make_a_slot_clean(self):
+        # A failed upload may have written part of the slot before it failed.
+        cache = OverlayMRUCache(capacity=2)
+        slot, _ = cache.get_or_allocate(("a.png", 0, 4))
+        cache.mark_written(slot)
+        cache.forget(("a.png", 0, 4))
+        again, _ = cache.get_or_allocate(("b.png", 0, 5))
+        self.assertEqual(again, slot)
+        self.assertFalse(cache.slot_is_clean(again))
+
+    def test_reset_means_a_cleared_pool(self):
+        cache = OverlayMRUCache(capacity=2)
+        slot, _ = cache.get_or_allocate(("a.png", 0, 4))
+        cache.mark_written(slot)
+        cache.reset()
+        self.assertTrue(cache.slot_is_clean(slot))
+
+
 class TestPoolSlotToFirmwareAddress(unittest.TestCase):
 
     def test_slot_0_is_kc_a_no_mod(self):

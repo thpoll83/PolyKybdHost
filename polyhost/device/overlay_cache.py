@@ -43,6 +43,10 @@ class OverlayMRUCache:
         self._in_batch: bool = False
         self._version: int = 0                       # bumps on every state change
         self._transferred_mapping: dict[int, int] = {}  # accumulated display_idx → pool_slot
+        # Slots that have held an image since the pool was last cleared. A new
+        # cache stands for a cleared pool (the connect path clears it, and a
+        # reboot empties it), so this starts empty. See slot_is_clean.
+        self._written: set[int] = set()
 
     @property
     def version(self) -> int:
@@ -120,6 +124,22 @@ class OverlayMRUCache:
             self._slot_to_info[slot] = (full_path, modifier_value, keycode)
         self._version += 1
         return slot, False
+
+    def slot_is_clean(self, slot: int) -> bool:
+        """True while ``slot`` has never been written since the pool was cleared.
+
+        ⚠️ A REUSED slot still holds the image it was evicted from, and two of
+        the older encodings write only part of a frame: an ROI upload writes its
+        rectangle (``copy_rectangle_to_overlay_xy``) and a plain upload skips
+        all-zero segments. Into a reused slot they leave the old image around the
+        new one, so the sender keeps them for clean slots only. ``forget`` does
+        not make a slot clean again: an upload that failed may have written part
+        of it."""
+        return slot not in self._written
+
+    def mark_written(self, slot: int) -> None:
+        """Record that an upload into ``slot`` has started."""
+        self._written.add(slot)
 
     def forget(self, content_key: tuple) -> None:
         """Undo a just-recorded allocation whose image never reached the device.
@@ -233,6 +253,7 @@ class OverlayMRUCache:
         self._slot_to_bytes.clear()
         self._slot_batch.clear()
         self._transferred_mapping.clear()
+        self._written.clear()
         self._next_free = 0
         self._current_batch = 0
         self._in_batch = False

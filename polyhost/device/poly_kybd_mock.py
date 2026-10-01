@@ -619,8 +619,9 @@ class PolyKybdMock:
         self._wire.fontpack_bundle_versions = self.firmware.reported_bundle_versions()
         return self._wire.send_overlays_mru(filenames, cache, cancel, synthetic=synthetic)
 
-    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
-        return self._wire.send_smallest_overlay(keycode, modifier, mapping)
+    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict,
+                              clean_slot: bool = True) -> int:
+        return self._wire.send_smallest_overlay(keycode, modifier, mapping, clean_slot=clean_slot)
 
     # -------------------------------------------------------------------------
     # Device commands -- the real PolyKybd over the emulated keyboard

@@ -1248,9 +1248,27 @@ class PolyKybd:
         return self.send_overlays_mru(
             filenames, OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY), cancel)
 
-    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
-        """Returns the number of HID messages sent, or -1 on a send failure."""
+    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict,
+                              clean_slot: bool = True) -> int:
+        """Returns the number of HID messages sent, or -1 on a send failure.
+
+        ``clean_slot`` False means the destination still holds an older image
+        (a reused MRU pool slot, see OverlayMRUCache.slot_is_clean). Only the
+        encodings that write the whole frame are used then: RLE, or plain with
+        every segment sent. ROI writes only its rectangle and plain skips
+        all-zero segments, so either would leave the old image showing around
+        the new one."""
         ov = mapping[keycode]
+        if not clean_slot:
+            plain_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
+            self._count_alternatives(ov)
+            if ov.compressed_msgs <= plain_msgs:
+                self.stat_best += ov.compressed_msgs
+                self.stat_chosen["rle"] += 1
+                return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+            self.stat_best += plain_msgs
+            self.stat_chosen["plain"] += 1
+            return self.send_overlay_for_keycode(keycode, modifier, mapping, skip_empty=False)
         smallest = min(ov.all_msgs, ov.compressed_msgs,
                        ov.roi_msgs, ov.compressed_roi_msgs)
         self._count_encoding(ov, smallest)
@@ -1574,6 +1592,8 @@ class PolyKybd:
                 cache.forget_slot(slot)
             fills.clear()
 
+        clean_slots: dict[int, bool] = {}   # pool slot -> never written before this upload
+
         def upload(pool_slot, pool_kc, pool_mod, overlay_data) -> int:
             """One image the old way: a PRC record, or the smallest older
             encoding. Returns the reports sent, or -1."""
@@ -1599,7 +1619,8 @@ class PolyKybd:
                 sent += flushed
             if not ensure_prepared():
                 return -1
-            old = self.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: overlay_data})
+            old = self.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: overlay_data},
+                                             clean_slot=clean_slots.get(pool_slot, False))
             return -1 if old < 0 else sent + old
 
         def flush_fills() -> int:
@@ -1685,6 +1706,10 @@ class PolyKybd:
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
                         if not is_hit:
+                            # Read before the upload marks it: a slot reused
+                            # within this switch is dirty by then too.
+                            clean_slots[pool_slot] = cache.slot_is_clean(pool_slot)
+                            cache.mark_written(pool_slot)
                             pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
                             self.log.debug_detailed(
                                 "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",

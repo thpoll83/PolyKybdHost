@@ -110,9 +110,11 @@ emulator draws is only evidence if the keyboard would draw the same.
 `FirmwareQuirkTest` pins two of them:
 
 - A ROI upload writes only its rectangle, and a plain upload skips all-zero
-  segments. A REUSED pool slot (the MRU pool wrapped) therefore keeps the evicted
-  image's pixels around the new one. The PRC decoder clears the slot first, so a
-  v19+ keyboard avoids this for every image that fits a PRC record.
+  segments. Into a REUSED pool slot (the MRU pool wrapped) either would leave the
+  evicted image's pixels around the new one. The host therefore sends only
+  full-frame encodings (PRC, RLE, plain with every segment) into a slot that
+  `OverlayMRUCache.slot_is_clean()` reports as written; `ReusedSlotTest` checks
+  the result and the quirk test pins the firmware side at the wire level.
 - `translate_a_to_z` re-addresses A..Z by the active language on a
   letter-addressed upload, but not under `MIRROR_OVERLAYS` (MRU mode), where the
   address names a pool slot (qmk_firmware#327). `MockFirmware(letter_map=...)`

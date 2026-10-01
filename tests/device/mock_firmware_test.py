@@ -172,16 +172,18 @@ class FirmwareQuirkTest(unittest.TestCase):
     """The emulator copies the firmware's behaviour, quirks included. These pin
     the two that matter to anyone reading a keycap the emulator produced."""
 
-    def test_an_roi_upload_into_a_reused_slot_keeps_the_old_pixels_outside_it(self):
+    def test_an_roi_upload_into_a_used_slot_keeps_the_old_pixels_outside_it(self):
         # fill_roi_overlay_buffer writes only its rectangle, and nothing clears
-        # the slot first. A v18 keyboard (no PRC, whose decoder does clear) whose
-        # MRU pool wrapped therefore shows the evicted image around the new one.
+        # the slot first. The host therefore keeps ROI off a reused slot (see
+        # ReusedSlotTest); this pins the firmware behaviour that makes it necessary.
         kb, fw = _keyboard(18)
-        cache = OverlayMRUCache(1)
-        _send(kb, {KeyCode.KC_A.value: _image("noise", 7)}, cache, "@first")
-        small = _image("small", 8)
-        _send(kb, {KeyCode.KC_B.value: small}, cache, "@second")
-        shown = fw.sim.get_display_image(KeyCode.KC_B.value, Modifier.NO_MOD)
+        kb.prepare_for_mru_send()
+        kc = KeyCode.KC_B.value
+        noise, small = _image("noise", 7), _image("small", 8)
+        kb.send_overlay_for_keycode_compressed(kc, Modifier.NO_MOD, {kc: OverlayData(kb.device_settings, noise)})
+        kb.send_overlay_roi_for_keycode(kc, Modifier.NO_MOD, {kc: OverlayData(kb.device_settings, small)}, False)
+        kb.send_overlay_mapping({kc - KeyCode.KC_A.value: kc - KeyCode.KC_A.value})
+        shown = fw.sim.get_display_image(kc, Modifier.NO_MOD)
         self.assertGreater(int((shown & ~small).sum()), 0)
 
     def test_prc_clears_the_slot_so_a_v19_keyboard_does_not(self):
@@ -239,6 +241,44 @@ class FirmwareQuirkTest(unittest.TestCase):
 
         self.assertEqual(wrong(), [])
         self.assertEqual(wrong(mru_letter_translate=True), ["KC_O", "KC_P"])
+
+
+class ReusedSlotTest(unittest.TestCase):
+    """An image sent into a REUSED pool slot replaces the old one completely."""
+
+    @staticmethod
+    def _busy_box(seed):
+        # Too busy for one PRC record, so even v19+ takes an older encoding,
+        # and smaller than the frame, so ROI is the smallest of those.
+        a = np.zeros((40, 72), dtype=bool)
+        a[10:30, 15:57] = np.random.default_rng(seed).random((20, 42)) > 0.5
+        return a
+
+    def test_no_old_pixels_survive_at_any_generation(self):
+        for protocol in (2, 10, 18, 19, 21):
+            with self.subTest(protocol=protocol):
+                kb, fw = _keyboard(protocol)
+                cache = OverlayMRUCache(1)
+                _send(kb, {KeyCode.KC_A.value: _image("noise", 7)}, cache, "@first")
+                box = self._busy_box(5)
+                _send(kb, {KeyCode.KC_B.value: box}, cache, "@second")
+                np.testing.assert_array_equal(
+                    fw.sim.get_display_image(KeyCode.KC_B.value, Modifier.NO_MOD), box)
+
+    def test_a_clean_slot_still_gets_the_cheaper_roi(self):
+        kb, fw = _keyboard(18)
+        _send(kb, {KeyCode.KC_B.value: self._busy_box(5)})
+        self.assertEqual(kb.stat_chosen["roi"], 1)
+
+    def test_a_reused_slot_gets_a_full_frame_encoding(self):
+        kb, fw = _keyboard(18)
+        cache = OverlayMRUCache(1)
+        _send(kb, {KeyCode.KC_A.value: _image("noise", 7)}, cache, "@first")
+        before = dict(kb.stat_chosen)
+        _send(kb, {KeyCode.KC_B.value: self._busy_box(5)}, cache, "@second")
+        self.assertEqual(kb.stat_chosen["roi"], before["roi"])
+        self.assertEqual(kb.stat_chosen["rle"] + kb.stat_chosen["plain"],
+                         before["rle"] + before["plain"] + 1)
 
 
 class IdentityTest(unittest.TestCase):

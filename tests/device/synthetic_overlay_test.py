@@ -102,9 +102,9 @@ class OnePoolSlotTest(unittest.TestCase):
         uploads = []
         real = keeb.send_smallest_overlay
 
-        def counting(keycode, modifier, mapping):
+        def counting(keycode, modifier, mapping, **kwargs):
             uploads.append((keycode, modifier))
-            return real(keycode, modifier, mapping)
+            return real(keycode, modifier, mapping, **kwargs)
 
         keeb.send_smallest_overlay = counting
         # A protocol v19+ keyboard gets small images as PRC-coded records
