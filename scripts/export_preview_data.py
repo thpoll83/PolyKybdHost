@@ -161,7 +161,76 @@ def build(pk: pathlib.Path) -> dict:
                                                op.shift_suppressed_pairs(L)]},
         "named_glyphs.json": {"fw_version": version,
                               "named": {k: list(v) for k, v in named.items()}},
+        "board.json": {"fw_version": version, **_board(pk, custom, aliases)},
     }
+
+
+BOARD_LAYOUT = "LAYOUT_left_right_stacked"
+
+
+def _layout_args(src: str, layer: str) -> list[str]:
+    """The comma-separated arguments of `[<layer>] = LAYOUT_...(...)`, split at
+    the top level only, so `MO(_FL)` stays one token."""
+    m = re.search(r"\[" + re.escape(layer) + r"\]\s*=\s*" + BOARD_LAYOUT + r"\s*\(", src)
+    if not m:
+        raise RuntimeError(f"no {layer} = {BOARD_LAYOUT}(...) in keymap.c")
+    depth, start, args = 1, m.end(), []
+    for i in range(m.end(), len(src)):
+        ch = src[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                args.append(src[start:i])
+                break
+        elif ch == "," and depth == 1:
+            args.append(src[start:i])
+            start = i + 1
+    return [a.strip() for a in args if a.strip()]
+
+
+def _board(pk: pathlib.Path, custom: dict, aliases: dict) -> dict:
+    """split72's base layer laid on the matrix: what each physical key types
+    before any layer or modifier.
+
+    The order of `LAYOUT_left_right_stacked(...)`'s arguments in keymap.c is the
+    order of keyboard.json's layout list, which carries each key's matrix
+    position -- so argument i is the key at layout[i]["matrix"]. That is how the
+    mock keyboard starts with a real keymap, and how its board view knows which
+    overlay each key shows (overlays are addressed by keycode, not position).
+    A token that does not resolve (a modifier macro such as KC_HYPR) is kept as
+    its name with keycode null; none of those carries an overlay.
+    """
+    split = pk / "split72"
+    layout = json.loads((split / "keyboard.json").read_text(encoding="utf-8"))[
+        "layouts"][BOARD_LAYOUT]["layout"]
+    src = re.sub(r"/\*.*?\*/|//[^\n]*", "", (split / "keymaps" / "default" / "keymap.c")
+                 .read_text(encoding="utf-8", errors="ignore"), flags=re.S)
+    tokens = _layout_args(src, "_L0")
+    if len(tokens) != len(layout):
+        raise RuntimeError(f"_L0 has {len(tokens)} keys, keyboard.json {len(layout)}")
+
+    names = qh.parse_qmk_keycodes(pathlib.Path(__file__).resolve().parent.parent
+                                  / "polyhost" / "res" / "keycodes.h")
+    by_name = {v: k for k, v in custom.items()}
+    tags = {f"_{tag}": idx for idx, tag in qh.parse_layers_h(pk / "layers.h").items()}
+
+    def resolve(token: str):
+        token = aliases.get(token, token)
+        if token in names:
+            return names[token]
+        if token in by_name:
+            return by_name[token]
+        m = re.fullmatch(r"(MO|TO|TG|DF|TT|OSL)\((_\w+)\)", token)
+        if m and m.group(2) in tags:
+            return qh.encode_layer_switch(m.group(1), tags[m.group(2)])
+        return None
+
+    return {"layout": BOARD_LAYOUT,
+            "keys": [{"matrix": entry["matrix"], "label": entry.get("label", ""),
+                      "token": token, "keycode": resolve(token)}
+                     for entry, token in zip(layout, tokens)]}
 
 
 def _ui_pack(fonts_dir: str) -> bytes:
