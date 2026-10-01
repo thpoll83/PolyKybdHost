@@ -57,6 +57,24 @@ class ConsoleScannerTest(unittest.TestCase):
             self.assertIn(p.severity, (ps.SEVERITY_ERROR, ps.SEVERITY_WARNING), p.id)
             self.assertTrue(p.summary.endswith("."), p.id)
 
+    def test_a_raised_count_is_resent_once_the_interval_has_passed(self):
+        now = [100.0]
+        s = ps.ConsoleProblemScanner(update_interval=10, clock=lambda: now[0])
+        self.assertEqual([p.count for p in s.feed(f"{OLED}\n")], [1])
+        now[0] = 105.0
+        self.assertEqual(s.feed(f"{OLED}\n{OLED}\n"), [])       # inside the interval
+        now[0] = 111.0
+        found = s.feed(f"{OLED}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("oled_i2c", 4)])
+        self.assertEqual(s.feed(f"{OLED}\n"), [])                # interval restarts
+        now[0] = 200.0
+        self.assertEqual(s.feed("healthy\n"), [])                # no repeat, no update
+
+    def test_one_chunk_publishes_a_problem_once_with_its_total(self):
+        s = ps.ConsoleProblemScanner(update_interval=0)
+        found = s.feed(f"{OLED}\n{OLED}\n{OLED}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("oled_i2c", 3)])
+
     def test_a_long_line_is_clipped(self):
         s = ps.ConsoleProblemScanner()
         found = s.feed(OLED + " " + "x" * 1000 + "\n")
@@ -87,6 +105,21 @@ class HostLogHandlerTest(unittest.TestCase):
         self.assertEqual(self.got[0].line, "could not open a")
         self.assertEqual(self.got[0].count, 2)
         self.assertIn("tray", self.got[0].summary)
+
+    def test_a_repeat_is_resent_with_its_count_after_the_interval(self):
+        now = [0.0]
+        self.handler._clock = lambda: now[0]
+        self.handler._update_interval = 10
+        self.log.error("could not open %s", "a")
+        now[0] = 5.0
+        self.log.error("could not open %s", "b")
+        self.assertEqual(len(self.got), 1)
+        now[0] = 10.0
+        self.log.error("could not open %s", "c")
+        self.assertEqual(len(self.got), 2)
+        self.assertIs(self.got[1], self.got[0])     # an update of the same problem
+        self.assertEqual(self.got[1].count, 3)
+        self.assertEqual(self.got[1].line, "could not open a")
 
     def test_warnings_only_at_the_wider_level(self):
         self.log.warning("slow")

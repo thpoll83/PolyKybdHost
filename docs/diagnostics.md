@@ -287,7 +287,10 @@ Two sources, each behind its own setting, and one level for both:
   a report-sized fragment, and the crash scanner already reassembled lines by hand.
 - **Once per process and source key.** A console pattern is keyed by its id; a host
   record by logger + UNFORMATTED message, so one call site logging different values
-  is one problem. Repeats only raise the count shown in the dialog and the report.
+  is one problem. A repeat raises its count, and the raised count is re-sent as an
+  update of the same problem at most once per `UPDATE_INTERVAL_S` (10 s), which the
+  dialog merges by key. So a stuck line costs one event per 10 s, not one per
+  line, and the count shown can lag by the last interval's repeats.
 - ⚠️ **The handler sits on the ROOT logger, and the process that owns it decides
   what it covers.** The core installs one (`PolyCore.__init__`, removed in
   `shutdown()`); in-process mode that covers the GUI too. A daemon CLIENT tray is a

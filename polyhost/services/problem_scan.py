@@ -18,9 +18,12 @@ Two sources, each behind its own setting:
   handler on the root logger that passes on WARNING and ERROR records.
 
 ``problem_scan_level`` picks what counts: ``"errors"`` (the default) or
-``"errors_and_warnings"``. Each problem is reported ONCE per process and source
-key; repeats only raise its count, because the boot banner and a stuck condition
-both repeat a line for as long as they last.
+``"errors_and_warnings"``. Each problem is NEW once per process and source key;
+repeats raise its count, because the boot banner and a stuck condition both
+repeat a line for as long as they last. A raised count is re-sent as an UPDATE of
+the same problem at most once per :data:`UPDATE_INTERVAL_S`, so the dialog and
+the report follow it without a stuck line flooding the event stream. The count
+they show can therefore lag by the repeats of the last interval.
 
 Qt-free: the console scanner runs on the HID worker thread inside PolyCore, and the
 handler on whatever thread logged.
@@ -30,6 +33,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import time
 from dataclasses import dataclass, field
 
 from polyhost.services.console_lines import LineAssembler
@@ -45,6 +49,7 @@ SOURCE_KEYBOARD = "keyboard"
 SOURCE_HOST = "host"
 
 MAX_LINE = 300   # a payload carries one line, not a traceback
+UPDATE_INTERVAL_S = 10.0   # min gap between two count updates of one problem
 
 
 def severity_wanted(severity: str, level: str) -> bool:
@@ -132,16 +137,23 @@ def _clip(text: str) -> str:
 class ConsoleProblemScanner:
     """Reassemble console fragments and match whole lines against the patterns.
 
-    ``feed`` returns the problems seen for the FIRST time; a repeat only raises
-    the stored count (readable through :meth:`problems`)."""
+    ``feed`` returns the problems to publish: those seen for the FIRST time, and
+    known ones whose count rose and whose last publish is at least
+    ``update_interval`` seconds old. Serialize them before the next ``feed``,
+    which may raise the count again."""
 
-    def __init__(self, patterns=CONSOLE_PATTERNS):
+    def __init__(self, patterns=CONSOLE_PATTERNS, update_interval=UPDATE_INTERVAL_S,
+                 clock=time.monotonic):
         self._patterns = tuple(patterns)
         self._lines = LineAssembler()
         self._seen: dict[str, Problem] = {}
+        self._update_interval = update_interval
+        self._clock = clock
+        self._sent: dict[str, tuple[int, float]] = {}   # id -> (count, when) last published
 
     def feed(self, chunk: str, level: str = LEVEL_ERRORS) -> list[Problem]:
-        new = []
+        out: dict[str, Problem] = {}
+        now = self._clock()
         for line in self._lines.feed(chunk):
             for pat in self._patterns:
                 if not pat.regex.search(line):
@@ -149,13 +161,19 @@ class ConsoleProblemScanner:
                 prior = self._seen.get(pat.id)
                 if prior is not None:
                     prior.count += 1
+                    sent_count, sent_at = self._sent.get(pat.id, (0, now))
+                    if (pat.id not in out and prior.count != sent_count
+                            and now - sent_at >= self._update_interval):
+                        out[pat.id] = prior
                 elif severity_wanted(pat.severity, level):
                     prob = Problem(SOURCE_KEYBOARD, pat.id, pat.severity, pat.summary,
                                    _clip(line))
                     self._seen[pat.id] = prob
-                    new.append(prob)
+                    out[pat.id] = prob
                 break   # one line, one problem
-        return new
+        for pid, prob in out.items():
+            self._sent[pid] = (prob.count, now)
+        return list(out.values())
 
     def problems(self) -> list[Problem]:
         return list(self._seen.values())
@@ -168,7 +186,8 @@ class HostLogProblemHandler(logging.Handler):
     the ``problem_scan_host_logs`` switch; both are read per record, so a settings
     change takes effect without reinstalling the handler. Records are grouped by
     logger and UNFORMATTED message, so one call site logging the same thing with
-    different values is one problem.
+    different values is one problem. A repeat re-sends that problem with its
+    raised count at most once per ``update_interval`` seconds.
 
     ⚠️ ``on_problem`` usually emits an event, and an event observer that fails is
     logged at ERROR, which would land back here. A per-thread guard drops every
@@ -180,8 +199,12 @@ class HostLogProblemHandler(logging.Handler):
     IGNORED_LOGGERS = frozenset({"PolyKybdConsole"})
 
     def __init__(self, on_problem, level_cb=lambda: LEVEL_ERRORS,
-                 enabled_cb=lambda: True, origin=""):
+                 enabled_cb=lambda: True, origin="",
+                 update_interval=UPDATE_INTERVAL_S, clock=time.monotonic):
         super().__init__(level=logging.WARNING)
+        self._update_interval = update_interval
+        self._clock = clock
+        self._sent_at: dict[str, float] = {}
         self._on_problem = on_problem
         self._level_cb = level_cb
         self._enabled_cb = enabled_cb
@@ -201,22 +224,28 @@ class HostLogProblemHandler(logging.Handler):
             if not severity_wanted(severity, self._level_cb()):
                 return
             key = f"{record.name}:{record.msg}"
+            now = self._clock()
             with self._seen_lock:
                 prior = self._seen.get(key)
                 if prior is not None:
                     prior.count += 1
-                    return
-                try:
-                    text = record.getMessage()
-                except Exception:  # noqa: BLE001 — a bad format arg is not our problem to raise
-                    text = str(record.msg)
-                prob = Problem(SOURCE_HOST, key, severity,
-                               f"The {self._origin or 'host'} app logged "
-                               f"{'an error' if severity == SEVERITY_ERROR else 'a warning'}.",
-                               _clip(text.splitlines()[0] if text else ""),
-                               extra={"logger": record.name})
-                self._seen[key] = prob
-            self._on_problem(prob)
+                    if now - self._sent_at.get(key, now) < self._update_interval:
+                        return
+                    payload = prior
+                else:
+                    try:
+                        text = record.getMessage()
+                    except Exception:  # noqa: BLE001 — a bad format arg is not our problem to raise
+                        text = str(record.msg)
+                    payload = Problem(
+                        SOURCE_HOST, key, severity,
+                        f"The {self._origin or 'host'} app logged "
+                        f"{'an error' if severity == SEVERITY_ERROR else 'a warning'}.",
+                        _clip(text.splitlines()[0] if text else ""),
+                        extra={"logger": record.name})
+                    self._seen[key] = payload
+                self._sent_at[key] = now
+            self._on_problem(payload)
         except Exception:  # noqa: BLE001 — logging must never raise into the caller
             pass
         finally:
