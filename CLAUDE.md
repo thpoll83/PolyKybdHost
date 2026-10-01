@@ -82,8 +82,12 @@ The measurements behind all of this are in
   content is nowhere (2026-09-19, #244 at 15:37:09 and #245 at 15:37:17 — none of
   #245 reached `main`). So run the same ancestry check on a **merged PR's head**,
   and confirm by content (`git cat-file -e origin/main:<a file it added>`), before
-  believing the badge. Merge the base, wait for the stacked PR's `base.ref` to
-  become `main`, then merge it. Recovery is the `re-land-orphaned-pr` skill — and
+  believing the badge. Merge the base, then **retarget the stacked PR yourself**
+  (`update_pull_request base=main`) and merge it once `base.ref` reads `main`.
+  ⚠️ Do not wait for GitHub to do it: it retargets only when the base BRANCH is
+  deleted, and merged branches are kept here, so the wait never ends (#301 still
+  read its merged base minutes after #300 merged, 2026-10-01). Recovery is the
+  `re-land-orphaned-pr` skill — and
   it is a re-land, never a second merge, because by then the branch is stale
   enough that merging it reverts whatever landed in between.
 - ⚠️ **A CLAUDE.md conflict is one of TWO kinds** — *addition beside addition* (keep
@@ -634,9 +638,11 @@ outside those files:
 
 `*_test.py` under `tests/` mirroring `polyhost/`; **unittest, not pytest**. Use
 `scripts/run_tests.py` when a run might hang — it arms a stall watchdog that prints every
-thread's stack (`--timeout 240`, and set it **below** whatever will kill the shell).
-⚠️ **The suite is ~2350 tests and 65–90 s under xvfb**, so a 60 s timeout fires on a
-healthy run: check the wall clock before reading a watchdog dump as evidence of a stall.
+thread's stack. ⚠️ **`--timeout` bounds ONE test, not the run** (it re-arms per test),
+so it needs no tuning as the suite grows. Do not write the suite's length or test count
+down anywhere: every figure this file has carried went stale, and a whole-run budget set
+from one fired on a healthy run. Run the full suite backgrounded, or under a tool timeout
+well past it, since an outer kill throws the dump away.
 GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and**
 `QT_QPA_PLATFORM=offscreen`, for opposite reasons. The rest — the fixture traps, the
 headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in

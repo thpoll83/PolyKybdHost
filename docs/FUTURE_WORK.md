@@ -151,3 +151,31 @@ lookups would miss the 16 KB cache, so decoding could get slower. **What would
 change the answer:** a template set that looks very different from today's, or
 cold switches becoming frequent. The larger levers are the rate-limit pause (above)
 and how often a real session misses the pool.
+
+---
+
+## Two suspected firmware bugs the mock's emulator found
+
+**Status:** reproduced only in the emulator (`MockFirmware`, a Python copy of
+`fill_overlay.c`), not on hardware, and not fixed. `FirmwareQuirkTest`
+(`tests/device/mock_firmware_test.py`) pins both as CURRENT behaviour, so a
+firmware fix must flip those tests too. Found while building #301 (2026-10-01).
+
+1. **A reused pool slot shows the evicted image around a new one.**
+   `fill_roi_overlay_buffer` writes only its rectangle, and a plain upload skips
+   all-zero segments, so nothing clears a slot the MRU pool hands out again. On an
+   emulated v18 keyboard whose pool wrapped, 1347 stray pixels surrounded the new
+   image. The PRC decoder (v19+) clears the slot first, so it avoids this for every
+   image that fits a PRC record; ROI and plain uploads still do not.
+2. **`translate_a_to_z` runs on the WRITE path.** The firmware re-addresses A..Z
+   by the active language when it stores an upload, as well as when it draws one.
+   Under a layout that moves letters (de-DE Y/Z, fr-FR A/Q and Z/W), an upload
+   addressed to one letter's pool slot lands in another's, and the host does not
+   compensate.
+
+**Why it is deferred.** Both are firmware changes, and the emulator copies the
+firmware's code, so it cannot tell whether the keyboard really behaves this way.
+**What would settle it:** for 1, a v18 image on hardware driven through enough app
+switches to wrap the 600-slot pool with ROI uploads, then a look at the reused keycaps;
+for 2, an app switch on hardware with de-DE active, checking the Y and Z keycaps.
+

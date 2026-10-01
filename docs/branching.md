@@ -73,7 +73,8 @@ Two stacked PRs, eight seconds apart:
 ```
 
 #245 was based on #244's branch. GitHub retargets a stacked PR to the base's own
-base when the base merges — but not within eight seconds, so #245 merged into a
+base only when the base BRANCH is deleted (see Preventing it) — not on the merge,
+and not within eight seconds, so #245 merged into a
 branch that was itself already merged and closed. **Both PRs read "merged".**
 Neither GitHub nor git reported anything wrong. None of #245's work was on
 `main`:
@@ -125,6 +126,18 @@ not merged, is the **`re-land-orphaned-pr`** skill.
 
 ### Preventing it
 
-Merge the base. Wait for the stacked PR's `base.ref` to change to the default
-branch. Then merge the stacked one. Merging both inside a minute is the whole
-bug.
+Merge the base. Retarget the stacked PR to the default branch yourself
+(`update_pull_request base=main`, or *Edit* next to the PR title). Check that its
+`base.ref` reads the default branch, then merge it. Merging both inside a minute
+is the whole bug.
+
+⚠️ **Do not wait for GitHub to retarget it.** GitHub moves a PR off its base
+only when the base BRANCH is deleted, and this repo keeps merged branches (the
+web session's git proxy cannot delete one either). On 2026-10-01 #300 merged at
+13:48, and #301 still read `feature/brave-einstein-p706yi` minutes later; it was
+retargeted by hand. A rule that says "wait for `base.ref` to change" waits
+forever here.
+
+⚠️ **A stacked PR also gets no CodeQL until it targets `main`** — see
+`review-conventions.md`. Expect a first round of findings right after the
+retarget, and budget for it before the merge.

@@ -137,6 +137,24 @@ and relative links were adjusted to suit a standalone file.
   one automated reviewer here that cannot go quiet — see the CodeQL note in the
   code-review conventions above. So a PR gets static analysis and no unit-test run;
   the suite is yours to run locally (`scripts/run_tests.py`).
+  - ⚠️ **Five CodeQL Python rules new code here keeps tripping, and the fix for
+    each** (#301, 2026-10-01: ten alerts in one scan, then one more from the fix):
+    - `import unittest` beside `from unittest import mock` → write
+      `import unittest.mock as mock`.
+    - A side-effect import such as `import polyhost.util.log_util  # noqa: F401`
+      is still "unused" — **`noqa` silences pyflakes, not CodeQL.** Drop it when
+      the module under test already loads it, and prove that by running the test
+      FILE on its own (a whole-suite run has it loaded by some other module).
+    - A module global that only keeps a `QApplication` alive is "unused" → create
+      it in `setUpClass` and keep it on the class.
+    - A subclass that skips `super().__init__()` is **error** severity and fails
+      the check.
+    - ⚠️ Calling `super().__init__()` and then reassigning an attribute the base
+      set raises a SECOND alert ("overwriting attribute in super-class"), which is
+      what the first fix for the rule above did. What settles both is a hook: the
+      base class does its I/O through an overridable method, the subclass
+      overrides the method, and the base constructor sets every attribute itself
+      (`HidHelper._enumerate()` / `_open()`, overridden by `MockHidHelper`).
 
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
@@ -260,17 +278,20 @@ and relative links were adjusted to suit a standalone file.
   all** — and a bare `timeout` kill discards exactly the information you need. The
   runner arms `faulthandler.dump_traceback_later(..., exit=True)`, so a stall
   prints every thread's stack and fails the command:
-  `python scripts/run_tests.py [--timeout 240] [-s tests/device]`.
-  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost** —
-  under a 120 s tool timeout an outer kill lands first: SIGTERM, exit 143, **no
-  traceback**. Raise the Bash tool's own timeout past it (`timeout: 400000`).
+  `python scripts/run_tests.py [--timeout 120] [-s tests/device]`.
+  ⚠️ **`--timeout` is PER TEST** — the watchdog re-arms as each test starts, so a
+  stall means one test (with its fixtures) ran past it. The WHOLE run still has to
+  finish before whatever kills the shell, or the dump is lost — under a 120 s tool
+  timeout an outer kill lands first: SIGTERM, exit 143, **no traceback**. Run it
+  backgrounded, or raise the Bash tool's own timeout well past the run.
   Redirect to a file (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not**
   pipe it through `tail`, which has eaten the dump before.
-  - ⚠️ **The suite is NOT ~25 s any more, and this note used to say it was — it is
-    2354 tests and 65–90 s under xvfb, so the `--timeout 60` this file recommended
-    now fires on a HEALTHY run.** Measured 2026-09-08 across three runs (65 s,
-    75 s, 90 s) in the same container; the figure drifts with load, so treat 240 as
-    the floor rather than tuning it down. Worse than a wasted run: at 60 s the dump
+  - ⚠️ **Why the watchdog is per test (2026-10-01): every whole-run figure went
+    stale.** This note said ~25 s, then 2354 tests and 65–90 s under xvfb
+    (2026-09-08), and on 2026-10-01 the suite was 3755 tests and 125–131 s with
+    offscreen Qt — past the old 180 s default's comfort and moving. Do not write a
+    new figure down; the per-test window is what stays true. Worse than a wasted
+    run, a whole-run budget below the real length fired with a misleading dump: at 60 s the dump
     lands wherever teardown happens to be, and on the run that produced this note
     that was the main thread in `PolyCore.shutdown` → `worker.run_sync` — i.e. an
     almost exact match for the `ControlServer.stop()` deadlock documented as FIXED
