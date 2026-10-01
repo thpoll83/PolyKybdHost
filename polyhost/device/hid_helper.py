@@ -439,3 +439,26 @@ class HidHelper:
             return False, bytearray(f"Exception: {e}", 'utf-8')
 
         return True, response_report
+
+
+class DisconnectedHid(HidHelper):
+    """What ``PolyKybd.hid`` holds after an open FAILED: a helper with no device.
+
+    It used to be None, and roughly sixty call sites dereference ``keeb.hid``
+    without a check. A job queued before the reconnect probe noticed the
+    keyboard was gone then raised ``AttributeError: 'NoneType' object has no
+    attribute 'send_and_read_validate'`` -- every time the device vanished
+    while the firmware rebooted after a flash (field, 2026-10-01). This one
+    finds nothing to open, so every call takes HidHelper's own
+    ``interface is None`` branch and answers "No Interface", the same answer a
+    device with no raw interface gives."""
+
+    def _enumerate(self, vid):
+        return []
+
+    def reopen_console(self) -> bool:
+        return False
+
+    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
+        return False
+

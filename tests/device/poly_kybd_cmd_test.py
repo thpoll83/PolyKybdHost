@@ -16,6 +16,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.device.hid_helper import DisconnectedHid
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
@@ -1000,8 +1001,38 @@ class TestConnect(unittest.TestCase):
         MockHid.side_effect = RuntimeError("no permission")
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
         self.assertFalse(keeb.connect())
-        self.assertIsNone(keeb.hid)
+        self.assertIsInstance(keeb.hid, DisconnectedHid)
+        self.assertFalse(keeb.hid.interface_acquired())
         self.assertIsNone(keeb.serial)
+
+    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
+    @mock.patch("polyhost.device.poly_kybd.HidHelper")
+    def test_a_job_after_a_failed_open_fails_instead_of_raising(self, MockHid, MockSerial):
+        # The field case (2026-10-01): the device vanished while the firmware
+        # rebooted after a flash, re-enumeration found nothing, and an overlay
+        # job already queued called set_idle on a None handle.
+        MockHid.side_effect = RuntimeError("open_device: The system cannot find the file specified.")
+        keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        self.assertFalse(keeb.connect())
+        ok, reply = keeb.set_idle(False)
+        self.assertFalse(ok)
+        self.assertEqual(bytes(reply), b"No Interface")
+        ok, _ = keeb.hid.send_multiple(bytearray(4))
+        self.assertFalse(ok)
+        self.assertEqual(keeb.get_console_output(), "")
+
+    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
+    @mock.patch("polyhost.device.poly_kybd.HidHelper")
+    def test_after_a_failed_open_the_next_connect_opens_afresh(self, MockHid, MockSerial):
+        # No GET_ID retry loop against a handle that has no device behind it.
+        MockHid.side_effect = RuntimeError("gone")
+        keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        self.assertFalse(keeb.connect())
+        MockHid.side_effect = None
+        keeb.query_id = MagicMock(return_value=(False, "No Interface"))
+        self.assertTrue(keeb.connect())
+        keeb.query_id.assert_not_called()
+        self.assertEqual(MockHid.call_count, 2)
 
     def test_reconnect_succeeds_when_device_answers(self):
         keeb, device = make_keeb(auto_ack=True)

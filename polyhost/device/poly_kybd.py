@@ -14,7 +14,7 @@ from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
-from polyhost.device.hid_helper import HidHelper
+from polyhost.device.hid_helper import DisconnectedHid, HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
@@ -246,9 +246,11 @@ class PolyKybd:
     def _open_interfaces(self) -> bool:
         """(Re-)open the HID and serial interfaces.
 
-        Returns True on success. On failure both handles are reset to None so
-        the device is left in a clean, fully-disconnected state and the next
-        reconnect attempt starts from scratch. HidHelper re-raises
+        Returns True on success. On failure the HID handle becomes a
+        DisconnectedHid (every call answers "No Interface") and the serial one
+        None, so the device is left in a clean, fully-disconnected state, a job
+        that still runs gets a failure instead of an AttributeError, and the
+        next reconnect attempt starts from scratch. HidHelper re-raises
         hid.HIDException when the device shows up in enumeration but can't be
         opened yet — a race that happens while the firmware comes back up after
         a flash — so this must never propagate out of connect()."""
@@ -258,13 +260,13 @@ class PolyKybd:
             return True
         except Exception as e:
             self.log.warning("Failed to open HID device: %s", e)
-            self.hid = None
+            self.hid = DisconnectedHid(self.device_settings)
             self.serial = None
             return False
 
     def connect(self):
         """Connect to PolyKybd"""
-        if not self.hid:
+        if not self.hid or isinstance(self.hid, DisconnectedHid):
             self.log.debug("Connecting to PolyKybd for the first time...")
             return self._open_interfaces()
         else:
