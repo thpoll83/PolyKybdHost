@@ -195,17 +195,52 @@ class FirmwareQuirkTest(unittest.TestCase):
         np.testing.assert_array_equal(
             fw.sim.get_display_image(KeyCode.KC_B.value, Modifier.NO_MOD), small)
 
-    def test_uploads_to_letter_slots_follow_the_language(self):
-        # translate_a_to_z runs on the WRITE path too, so under a layout that
-        # swaps Y and Z an upload addressed to the Y slot lands in the Z slot.
+    def _stored_after_y_upload(self, **kw):
+        y, z = KeyCode.KC_Y.value, KeyCode.KC_Z.value
+        kb, fw = _keyboard(21, letter_map={y: z, z: y}, **kw)
+        kb.prepare_for_mru_send()                        # sets MIRROR_OVERLAYS
+        image = _image("small", 9)
+        kb.send_overlay_for_keycode_compressed(y, Modifier.NO_MOD, {y: OverlayData(kb.device_settings, image)})
+        return fw.sim.stored_slots(), y - KeyCode.KC_A.value, z - KeyCode.KC_A.value
+
+    def test_an_mru_upload_lands_at_its_pool_address(self):
+        # Under MIRROR_OVERLAYS the address names a pool slot: no letter move.
+        stored, y_slot, z_slot = self._stored_after_y_upload()
+        self.assertIn(y_slot, stored)
+        self.assertNotIn(z_slot, stored)
+
+    def test_a_letter_addressed_upload_still_follows_the_language(self):
+        # Outside MRU mode the firmware moves a letter's image to the key that
+        # types that letter, so under a Y/Z swap the Y upload lands in Z.
         y, z = KeyCode.KC_Y.value, KeyCode.KC_Z.value
         kb, fw = _keyboard(21, letter_map={y: z, z: y})
-        kb.prepare_for_mru_send()
         image = _image("small", 9)
         kb.send_overlay_for_keycode_compressed(y, Modifier.NO_MOD, {y: OverlayData(kb.device_settings, image)})
         stored = fw.sim.stored_slots()
         self.assertIn(z - KeyCode.KC_A.value, stored)
         self.assertNotIn(y - KeyCode.KC_A.value, stored)
+
+    def test_firmware_before_the_fix_moved_mru_uploads_too(self):
+        stored, y_slot, z_slot = self._stored_after_y_upload(mru_letter_translate=True)
+        self.assertIn(z_slot, stored)
+        self.assertNotIn(y_slot, stored)
+
+    def test_a_whole_switch_under_a_letter_swapping_layout(self):
+        # Digits first, so letter images land on non-letter addresses and the
+        # Y- and Z-address slots hold other keys' images (O and P here).
+        y, z = KeyCode.KC_Y.value, KeyCode.KC_Z.value
+        digits = [KeyCode[f"KC_{d}"].value for d in "1234567890"]
+        letters = list(range(KeyCode.KC_A.value, z + 1))
+        images = {kc: _image("small", kc) for kc in digits + letters}
+
+        def wrong(**kw):
+            kb, fw = _keyboard(21, letter_map={y: z, z: y}, **kw)
+            _send(kb, images)
+            return sorted(KeyCode(kc).name for kc, img in images.items()
+                          if not np.array_equal(fw.sim.get_display_image(kc, Modifier.NO_MOD), img))
+
+        self.assertEqual(wrong(), [])
+        self.assertEqual(wrong(mru_letter_translate=True), ["KC_O", "KC_P"])
 
 
 class ReusedSlotTest(unittest.TestCase):
