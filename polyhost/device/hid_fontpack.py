@@ -15,6 +15,8 @@ import binascii
 import struct
 import time
 
+from polyhost.device.split_link import split_link_timeout_message
+
 HID_POLYKYBD        = 0x50   # ord('P')
 CMD_FONTPACK_BEGIN  = 0x50   # data[2..5]=pack_size, data[6..9]=pack_crc32, data[10]=bundle_id
 CMD_FONTPACK_CHUNK  = 0x51   # data[2..5]=offset, data[6..]=FONTPACK_CHUNK_SIZE bytes
@@ -40,6 +42,11 @@ COMMIT_REJECTED  = "rejected"
 COMMIT_NO_SLAVE  = "slave-unconfirmed"
 COMMIT_UNSPEC    = "unspecified"
 COMMIT_NO_REPLY  = "no-reply"
+# Not a COMMIT outcome: BEGIN timed out while the USB half kept answering '~',
+# so the other half never confirmed its erase (device/split_link.py). Every
+# bundle after it would wait out the same 90 s, which is why the font-pack pass
+# stops on it.
+STATUS_SPLIT_LINK = "split-link"
 
 # A lost/failed COMMIT ACK is retried rather than re-streamed: re-running the
 # firmware's finalize is free (it leaves the staged CRC and the write cursor
@@ -326,7 +333,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     (ok, error_msg, commit_reply, status) — on success error_msg is "" and commit_reply
     is the raw COMMIT reply (the fontpack caller parses content_version out of it).
     `status` is a COMMIT_* outcome, or the stage that failed earlier
-    ("cancelled"/"begin"/"chunk"), so a caller can tell a data failure from a
+    ("cancelled"/"begin"/"chunk", or STATUS_SPLIT_LINK), so a caller can tell a data failure from a
     link failure without re-parsing the message.
     """
     pack_size = len(pack_bytes)
@@ -339,6 +346,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases the slot region)
     begin_ready = False
+    polling     = False   # latest reply was '~' — see device/split_link.py
     erase_start = time.monotonic()
     # The slot erase reports no fine-grained progress, so creep the bar 1->2 %
     # and show elapsed seconds instead of sitting frozen at a single 1 %.
@@ -352,6 +360,9 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
             return False, "Flash cancelled by user.", None, "cancelled"
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
+            if polling:
+                return False, split_link_timeout_message(
+                    "BEGIN timed out", f"{what} region"), None, STATUS_SPLIT_LINK
             return False, (f"BEGIN timed out — keyboard did not finish erasing the {what} "
                            "region within 90 s.  Check the USB cable and try again."), None, "begin"
 
@@ -359,6 +370,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         timeout_ms = 5000
 
         if not ok or len(reply) < 3:
+            polling = False
             _erasing(f"Erasing the {what} region — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("BEGIN failed — keyboard did not reconnect "
@@ -367,6 +379,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         elif reply[2] == ord('.'):
             begin_ready = True
         elif reply[2] == ord('~'):
+            polling = True
             _erasing(f"Erasing the {what} region (both halves)")
             time.sleep(0.3)
         else:

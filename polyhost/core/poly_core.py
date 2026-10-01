@@ -2887,6 +2887,8 @@ class PolyCore(Observable):
         try:
             n = len(targets)
             done, failed, caveats = [], [], []
+            skipped = []        # not attempted: the split link was found dead
+            split_link = False
             for i, b in enumerate(targets):
                 dev = device_versions.get(b["index"], 0)
                 self.log.info("Font pack flash: bundle %s (slot %d) device v%d -> v%d "
@@ -2924,7 +2926,21 @@ class PolyCore(Observable):
                 if cancel_flag[0]:
                     self.log.info("Font pack flash cancelled after bundle %s.", b["id"])
                     break
-            self._emit_fontpack_summary(done, failed, caveats, auto)
+                if fstatus == hid_fontpack.STATUS_SPLIT_LINK:
+                    split_link = True
+                    # Unlike a bundle's own failure, this says the NEXT bundle will
+                    # fail too: its BEGIN waits on the same silent half for another
+                    # 90 s, with the keyboard busy the whole time. The tester's
+                    # board (2026-10-01) spent nine minutes failing seven bundles
+                    # this way. The skipped ones stay behind on version, so the
+                    # next connect retries them.
+                    skipped = [t["id"] for t in targets[i + 1:]]
+                    self.log.warning("Font pack flash stopped: the other keyboard half "
+                                     "is not answering; %d bundle(s) not attempted.",
+                                     len(skipped))
+                    break
+            self._emit_fontpack_summary(done, failed, caveats, auto,
+                                        skipped=skipped, split_link=split_link)
         finally:
             self._fontpack_flash_in_progress = False
 
@@ -2969,7 +2985,8 @@ class PolyCore(Observable):
                          dev, msg)
         return True, note
 
-    def _emit_fontpack_summary(self, done, failed, caveats, auto):
+    def _emit_fontpack_summary(self, done, failed, caveats, auto, skipped=(),
+                               split_link=False):
         """One terminal ``fontpack_flash_done`` for the whole pass, naming every
         bundle that failed — a per-bundle abort used to hide the rest."""
         parts = []
@@ -2980,14 +2997,21 @@ class PolyCore(Observable):
         if failed:
             parts.append(f"Failed: {', '.join(failed)} — retried automatically on the "
                          f"next connect, or from Updates → Retry keyboard fonts.")
+        if skipped:
+            parts.append(f"Not attempted, because the other keyboard half is not "
+                         f"answering: {', '.join(skipped)}.")
         msg = " ".join(parts) or "Nothing to flash."
         if failed:
             self.log.warning("Font pack flash finished with failures: %s", msg)
         else:
             self.log.info("Font pack flash complete: %s", msg)
+        # split_link_down lets the GUI offer the .uf2 recovery: the summary text
+        # no longer carries the per-bundle message that is_split_link_failure()
+        # would recognise.
         self.emit("fontpack_flash_done",
                   {"ok": not failed, "msg": msg, "auto": auto,
-                   "kind": events.FLASH_KIND_FONTPACK})
+                   "kind": events.FLASH_KIND_FONTPACK,
+                   "split_link_down": bool(split_link)})
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on

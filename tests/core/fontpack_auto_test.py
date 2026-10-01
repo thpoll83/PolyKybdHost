@@ -36,7 +36,7 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None):
     core._fontpack_flash_bundles_job = lambda cancel, **kw: PolyCore._fontpack_flash_bundles_job(
         core, cancel, **kw)
     core._verify_flashed_bundle = lambda b, st, m: PolyCore._verify_flashed_bundle(core, b, st, m)
-    core._emit_fontpack_summary = lambda *a: PolyCore._emit_fontpack_summary(core, *a)
+    core._emit_fontpack_summary = lambda *a, **kw: PolyCore._emit_fontpack_summary(core, *a, **kw)
     core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
     core._fontpack_autocheck_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted

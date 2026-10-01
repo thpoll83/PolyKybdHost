@@ -1,3 +1,4 @@
+import functools
 import logging
 import time
 
@@ -7,6 +8,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
+from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
 
 
@@ -403,6 +405,19 @@ class HidFwUpDialog(QDialog):
             # don't touch the window flags/size (the old re-show grew the frame).
             self._cancel_btn.setVisible(False)
             QTimer.singleShot(self._SUCCESS_AUTOCLOSE_MS, self.accept)
+            return
+
+        if is_split_link_failure(msg):
+            # The other half never answered, so retrying here cannot work. Hand
+            # over to the recovery dialog instead of a Close button. It opens
+            # AFTER this one closes: in-process this dialog runs under exec_(),
+            # which is application-modal and would leave a window opened beside
+            # it unclickable.
+            self.log.warning("FW_UP: the other keyboard half did not confirm; "
+                             "opening the .uf2 recovery help.")
+            from polyhost.gui.split_link_dialog import show_split_link_help
+            QTimer.singleShot(0, functools.partial(show_split_link_help, msg))
+            self.reject()
             return
 
         # Failure: keep a Close button so the error stays readable. Repurpose the

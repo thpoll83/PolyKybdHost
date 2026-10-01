@@ -1,3 +1,4 @@
+import functools
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -27,6 +28,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.core.events import flash_kind_label
 from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
+from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
@@ -84,6 +86,7 @@ from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
     AUTO_CHECK_INTERVAL_S, claim_automatic_check)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
+from polyhost.gui.split_link_dialog import show_split_link_help
 from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.gui.dialog_util import bring_to_front, position_near_tray
 from polyhost.gui import about_dialog
@@ -681,6 +684,7 @@ class PolyHost(QApplication):
         # the pending-update marker). This holds the flash's claim; see
         # _refresh_tray_tooltip, which is the only place that calls setToolTip.
         self._fontpack_flashing = False
+        self._split_link_help_shown = False   # see _maybe_show_split_link_help
         self._fontpack_tooltip = ""
         self._fw_up_downloader = None
         self._fw_up_progress = None
@@ -2517,6 +2521,27 @@ class PolyHost(QApplication):
             self.tray.showMessage("PolyKybd",
                                   f"{noun.capitalize()} update failed: {result.get('msg', '')}",
                                   QSystemTrayIcon.Warning, 6000)
+            self._maybe_show_split_link_help(result)
+
+    def _maybe_show_split_link_help(self, result):
+        """Open the .uf2 recovery help when a flash found the other half silent.
+
+        The font-pack pass runs by itself on every connect, so the dialog opens
+        on its own only once per session; a user who closed it is not nagged on
+        each replug. A firmware update the user started opens it every time
+        (HidFwUpDialog._finalize). ⚠️ The tray message above is NOT enough on its
+        own: it never reaches a macOS user (_balloons_reach_user), and the tester
+        who hit this (2026-10-01) was on macOS."""
+        msg = result.get("msg", "")
+        if not (result.get("split_link_down") or is_split_link_failure(msg)):
+            return
+        if self._split_link_help_shown:
+            return
+        self._split_link_help_shown = True
+        self.log.warning("Font pack flash: the other keyboard half did not confirm; "
+                         "opening the .uf2 recovery help.")
+        # Deferred a tick: this runs from a bridge event, see split_link_dialog.
+        QTimer.singleShot(0, functools.partial(show_split_link_help, msg))
 
     def _on_balloon_clicked(self):
         if self._update_installer is not None and self._update_installer.is_alive():
