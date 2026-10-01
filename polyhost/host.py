@@ -732,15 +732,17 @@ class PolyHost(QApplication):
             # available in both modes — kept behind developer mode.
             debug_menu.addAction(self.fontpack_inspector_action)
             if not self.client_mode:
-                # MRU inspector + mock dump read the in-process device_mgr.
+                # The MRU inspector reads the in-process device_mgr.
                 mru_action = QAction(get_icon("history.svg"), "Inspect MRU Cache...", parent=self)
                 # noinspection PyUnresolvedReferences
                 mru_action.triggered.connect(self.open_mru_inspector)
                 debug_menu.addAction(mru_action)
-                dump_action = QAction(get_icon("image.svg"), "Dump Mock Bitmaps...", parent=self)
-                # noinspection PyUnresolvedReferences
-                dump_action.triggered.connect(self.dump_mock_bitmaps)
-                debug_menu.addAction(dump_action)
+            # The mock keyboard's keycaps, over core.mock_keycaps -- so, unlike the
+            # bitmap dump it replaced, it works as a --connect client too.
+            mock_action = QAction(get_icon("image.svg"), "Mock Keyboard...", parent=self)
+            # noinspection PyUnresolvedReferences
+            mock_action.triggered.connect(self.open_mock_board)
+            debug_menu.addAction(mock_action)
             # Re-run the two things the app normally does by itself, for when the
             # environment changed under it (a fresh WinCompose install; an MRU
             # cache you want on disk before pulling the plug).
@@ -1666,45 +1668,15 @@ class PolyHost(QApplication):
         dlg = MRUInspectorDialog(caches, self.device_settings)
         dlg.exec_()
 
-    def dump_mock_bitmaps(self):
-        import subprocess
-        import tempfile
-        import numpy as np
-
-        mock_entry = next((e for e in self.device_mgr.all_entries if not e.is_primary), None)
-        if mock_entry is None:
-            QMessageBox.information(None, "Mock Dump", "No mock device active.\nEnable dev_mock_enabled in settings.")
+    def open_mock_board(self):
+        from polyhost.gui.mock_board_dialog import MockBoardDialog
+        ok, payload = self.core.mock_keycaps(0)
+        if not ok:
+            QMessageBox.information(None, "Mock keyboard", str(payload))
             return
-
-        store = mock_entry.device._sim._store
-        if not store:
-            QMessageBox.information(None, "Mock Dump", "Mock has no stored bitmaps yet.\nSwitch to an app to trigger an overlay send.")
-            return
-
-        out_dir = tempfile.mkdtemp(prefix="polykybd_mock_")
-        from polyhost.device.overlay_sim import _write_png_gray8
-        for pool_slot, bitmap in sorted(store.items()):
-            keycode_slot = pool_slot % 90
-            modifier_var = pool_slot // 90
-            if keycode_slot < 80:
-                kc = keycode_slot + 0x04        # KC_A base
-            elif keycode_slot < 82:
-                kc = keycode_slot - 80 + 0x64   # KC_NONUS_BACKSLASH base
-            else:
-                kc = keycode_slot - 82 + 0xE0   # KC_LEFT_CTRL base
-            fname = f"slot{pool_slot:03d}_kc0x{kc:02x}_mod{modifier_var}.png"
-            bits = np.unpackbits(np.frombuffer(bitmap, dtype=np.uint8))
-            pixels = (bits[:40 * 72].reshape(40, 72) * 255).astype(np.uint8)
-            _write_png_gray8(os.path.join(out_dir, fname), pixels)
-
-        self.log.info("Mock bitmaps dumped to %s", out_dir)
-        if platform.system() == "Windows":
-            os.startfile(out_dir)
-        elif platform.system() == "Darwin":
-            subprocess.Popen(["open", out_dir])
-        else:
-            subprocess.Popen(["xdg-open", out_dir])
-        QMessageBox.information(None, "Mock Dump", f"Saved {len(store)} bitmaps to:\n{out_dir}")
+        self._mock_board = MockBoardDialog(self.core)
+        self._mock_board.show()
+        bring_to_front(self._mock_board)
 
     def _format_uptime(self) -> str:
         """Human-readable time since this process started (for the About dialog)."""

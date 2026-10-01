@@ -256,7 +256,12 @@ and the state-generation counter are in [`docs/protocol-gate.md`](docs/protocol-
   `PROTOCOL_VERSION` in the same change. An **ungated** command silently connects and
   then NACKs at runtime on an older keyboard instead of cleanly disabling — the exact
   failure the range-connect model exists to prevent, and a gate that "has been forgotten
-  twice". The `add-gated-hid-command` skill drives the whole job.
+  twice". The `add-gated-hid-command` skill drives the whole job. **Two tests now
+  enforce it** against an emulated keyboard of every protocol
+  (`tests/device/protocol_gate_sweep_test.py`, `tests/core/core_protocol_sweep_test.py`):
+  a new `Cmd` needs its introducing protocol in `device/mock_firmware.py`
+  `CMD_MIN_PROTOCOL`, and a new `PolyKybd` method a `CALLS` entry. On their first
+  run they found cmd 31 (`replay_startup_anim`), a v11 command, sent ungated to v2–v10.
 - **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
   `PROTOCOL_VERSION`.** It now defines the host's *newest-known* protocol, not a hard
   connect gate, so forgetting it only downgrades the status and disables that one
@@ -637,6 +642,11 @@ GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and
 headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in
 [`docs/testing.md`](docs/testing.md).
 
+- **No keyboard needed: `dev_mock_primary` (+ `dev_mock_protocol`) makes the mock the
+  device**, and its overlay path is the real `PolyKybd` over `MockFirmware`, a Python
+  copy of the firmware's side of the HID channel with a `FaultPlan` for the recovery
+  paths. ⚠️ It copies the firmware's QUIRKS too, on purpose. What it models, what it
+  does not, the board view and the sweeps: [`docs/mock-device.md`](docs/mock-device.md).
 - ⚠️ **HOW YOU INVOKE THE SUITE CHANGES THE ANSWER, and both wrong ways look
   like results.** `unittest discover -s ./tests` PREPENDS `tests/` to
   `sys.path`, and `tests/tools/` then SHADOWS the repo's own `tools/`, so

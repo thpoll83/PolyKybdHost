@@ -366,6 +366,9 @@ class RemoteCore(Observable):
     def replay_startup_anim(self):
         return self._device(p.M_REPLAY_ANIM)
 
+    def mock_keycaps(self, modifier=0):
+        return self._device(p.M_MOCK_KEYCAPS, {"modifier": int(modifier)})
+
     def get_crash_record(self, which=0):
         return self._device(p.M_CRASH_GET, {"which": which})
 

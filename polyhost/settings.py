@@ -181,6 +181,15 @@ DEFAULT_SETTINGS = {
         "ui_theme": "auto",
         "developer_mode": False,
         "dev_mock_enabled": False,
+        # Run with NO keyboard: the mock (device/poly_kybd_mock.py over the
+        # firmware emulator in device/mock_firmware.py) becomes the primary
+        # device, so the tray, polyctl, the editors and the font-pack and
+        # firmware-update flows all work without hardware. dev_mock_protocol
+        # picks the firmware generation it emulates (0 = the newest this host
+        # knows), which is how to see what an older keyboard gets: the gated
+        # menus grey out and the wire carries that protocol's encodings.
+        "dev_mock_primary": False,
+        "dev_mock_protocol": 0,
         "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
         "dev_win_native_set_language": False,
         # Legacy cross-machine window relay (remote_window.receive_from_forwarder,

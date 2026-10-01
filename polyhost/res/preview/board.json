@@ -1,0 +1,672 @@
+{
+ "fw_version": "1.3.2",
+ "keys": [
+  {
+   "keycode": 41,
+   "label": "ESC",
+   "matrix": [
+    0,
+    0
+   ],
+   "token": "KC_ESC"
+  },
+  {
+   "keycode": 30,
+   "label": "1",
+   "matrix": [
+    0,
+    1
+   ],
+   "token": "KC_1"
+  },
+  {
+   "keycode": 31,
+   "label": "2",
+   "matrix": [
+    0,
+    2
+   ],
+   "token": "KC_2"
+  },
+  {
+   "keycode": 32,
+   "label": "3",
+   "matrix": [
+    0,
+    3
+   ],
+   "token": "KC_3"
+  },
+  {
+   "keycode": 33,
+   "label": "4",
+   "matrix": [
+    0,
+    4
+   ],
+   "token": "KC_4"
+  },
+  {
+   "keycode": 34,
+   "label": "5",
+   "matrix": [
+    0,
+    5
+   ],
+   "token": "KC_5"
+  },
+  {
+   "keycode": 100,
+   "label": "6",
+   "matrix": [
+    0,
+    6
+   ],
+   "token": "KC_NUBS"
+  },
+  {
+   "keycode": 43,
+   "label": "Tab",
+   "matrix": [
+    1,
+    0
+   ],
+   "token": "KC_TAB"
+  },
+  {
+   "keycode": 20,
+   "label": "q",
+   "matrix": [
+    1,
+    1
+   ],
+   "token": "KC_Q"
+  },
+  {
+   "keycode": 26,
+   "label": "w",
+   "matrix": [
+    1,
+    2
+   ],
+   "token": "KC_W"
+  },
+  {
+   "keycode": 8,
+   "label": "e",
+   "matrix": [
+    1,
+    3
+   ],
+   "token": "KC_E"
+  },
+  {
+   "keycode": 21,
+   "label": "r",
+   "matrix": [
+    1,
+    4
+   ],
+   "token": "KC_R"
+  },
+  {
+   "keycode": 23,
+   "label": "t",
+   "matrix": [
+    1,
+    5
+   ],
+   "token": "KC_T"
+  },
+  {
+   "keycode": 53,
+   "label": "`",
+   "matrix": [
+    1,
+    6
+   ],
+   "token": "KC_GRAVE"
+  },
+  {
+   "keycode": 21029,
+   "label": "Fn",
+   "matrix": [
+    2,
+    0
+   ],
+   "token": "MO(_FL)"
+  },
+  {
+   "keycode": 4,
+   "label": "a",
+   "matrix": [
+    2,
+    1
+   ],
+   "token": "KC_A"
+  },
+  {
+   "keycode": 22,
+   "label": "s",
+   "matrix": [
+    2,
+    2
+   ],
+   "token": "KC_S"
+  },
+  {
+   "keycode": 7,
+   "label": "d",
+   "matrix": [
+    2,
+    3
+   ],
+   "token": "KC_D"
+  },
+  {
+   "keycode": 9,
+   "label": "f",
+   "matrix": [
+    2,
+    4
+   ],
+   "token": "KC_F"
+  },
+  {
+   "keycode": 10,
+   "label": "g",
+   "matrix": [
+    2,
+    5
+   ],
+   "token": "KC_G"
+  },
+  {
+   "keycode": 52,
+   "label": "'",
+   "matrix": [
+    2,
+    6
+   ],
+   "token": "KC_QUOTE"
+  },
+  {
+   "keycode": 209,
+   "label": "MB1",
+   "matrix": [
+    3,
+    7
+   ],
+   "token": "MS_BTN1"
+  },
+  {
+   "keycode": 225,
+   "label": "Shift",
+   "matrix": [
+    3,
+    0
+   ],
+   "token": "KC_LSFT"
+  },
+  {
+   "keycode": 29,
+   "label": "\\",
+   "matrix": [
+    3,
+    1
+   ],
+   "token": "KC_Z"
+  },
+  {
+   "keycode": 27,
+   "label": "z",
+   "matrix": [
+    3,
+    2
+   ],
+   "token": "KC_X"
+  },
+  {
+   "keycode": 6,
+   "label": "x",
+   "matrix": [
+    3,
+    3
+   ],
+   "token": "KC_C"
+  },
+  {
+   "keycode": 25,
+   "label": "c",
+   "matrix": [
+    3,
+    4
+   ],
+   "token": "KC_V"
+  },
+  {
+   "keycode": 5,
+   "label": "v",
+   "matrix": [
+    3,
+    5
+   ],
+   "token": "KC_B"
+  },
+  {
+   "keycode": 21003,
+   "label": "b",
+   "matrix": [
+    3,
+    6
+   ],
+   "token": "TO(_EMJ)"
+  },
+  {
+   "keycode": 21030,
+   "label": "Lang",
+   "matrix": [
+    4,
+    7
+   ],
+   "token": "MO(_NL)"
+  },
+  {
+   "keycode": 224,
+   "label": "Ctrl",
+   "matrix": [
+    4,
+    0
+   ],
+   "token": "KC_LCTL"
+  },
+  {
+   "keycode": 227,
+   "label": "OS",
+   "matrix": [
+    4,
+    1
+   ],
+   "token": "KC_LWIN"
+  },
+  {
+   "keycode": 226,
+   "label": "Alt",
+   "matrix": [
+    4,
+    2
+   ],
+   "token": "KC_LALT"
+  },
+  {
+   "keycode": 101,
+   "label": "Ctx",
+   "matrix": [
+    4,
+    3
+   ],
+   "token": "KC_APP"
+  },
+  {
+   "keycode": 44,
+   "label": "_",
+   "matrix": [
+    4,
+    4
+   ],
+   "token": "KC_SPACE"
+  },
+  {
+   "keycode": 76,
+   "label": "Del",
+   "matrix": [
+    4,
+    5
+   ],
+   "token": "KC_DEL"
+  },
+  {
+   "keycode": 40,
+   "label": "Home",
+   "matrix": [
+    4,
+    6
+   ],
+   "token": "KC_ENTER"
+  },
+  {
+   "keycode": 35,
+   "label": "7",
+   "matrix": [
+    5,
+    1
+   ],
+   "token": "KC_6"
+  },
+  {
+   "keycode": 36,
+   "label": "8",
+   "matrix": [
+    5,
+    2
+   ],
+   "token": "KC_7"
+  },
+  {
+   "keycode": 37,
+   "label": "9",
+   "matrix": [
+    5,
+    3
+   ],
+   "token": "KC_8"
+  },
+  {
+   "keycode": 38,
+   "label": "0",
+   "matrix": [
+    5,
+    4
+   ],
+   "token": "KC_9"
+  },
+  {
+   "keycode": 39,
+   "label": "-",
+   "matrix": [
+    5,
+    5
+   ],
+   "token": "KC_0"
+  },
+  {
+   "keycode": 45,
+   "label": "=",
+   "matrix": [
+    5,
+    6
+   ],
+   "token": "KC_MINUS"
+  },
+  {
+   "keycode": 42,
+   "label": "BS",
+   "matrix": [
+    5,
+    7
+   ],
+   "token": "KC_BSPC"
+  },
+  {
+   "keycode": null,
+   "label": "y",
+   "matrix": [
+    6,
+    1
+   ],
+   "token": "KC_HYPR"
+  },
+  {
+   "keycode": 28,
+   "label": "u",
+   "matrix": [
+    6,
+    2
+   ],
+   "token": "KC_Y"
+  },
+  {
+   "keycode": 24,
+   "label": "i",
+   "matrix": [
+    6,
+    3
+   ],
+   "token": "KC_U"
+  },
+  {
+   "keycode": 12,
+   "label": "o",
+   "matrix": [
+    6,
+    4
+   ],
+   "token": "KC_I"
+  },
+  {
+   "keycode": 18,
+   "label": "p",
+   "matrix": [
+    6,
+    5
+   ],
+   "token": "KC_O"
+  },
+  {
+   "keycode": 19,
+   "label": "[",
+   "matrix": [
+    6,
+    6
+   ],
+   "token": "KC_P"
+  },
+  {
+   "keycode": 49,
+   "label": "\\",
+   "matrix": [
+    6,
+    7
+   ],
+   "token": "KC_BSLS"
+  },
+  {
+   "keycode": 0,
+   "label": "MB1",
+   "matrix": [
+    8,
+    0
+   ],
+   "token": "KC_NO"
+  },
+  {
+   "keycode": 21034,
+   "label": "h",
+   "matrix": [
+    7,
+    1
+   ],
+   "token": "MO(_ADDLANG1)"
+  },
+  {
+   "keycode": 11,
+   "label": "j",
+   "matrix": [
+    7,
+    2
+   ],
+   "token": "KC_H"
+  },
+  {
+   "keycode": 13,
+   "label": "k",
+   "matrix": [
+    7,
+    3
+   ],
+   "token": "KC_J"
+  },
+  {
+   "keycode": 14,
+   "label": "l",
+   "matrix": [
+    7,
+    4
+   ],
+   "token": "KC_K"
+  },
+  {
+   "keycode": 15,
+   "label": ";",
+   "matrix": [
+    7,
+    5
+   ],
+   "token": "KC_L"
+  },
+  {
+   "keycode": 46,
+   "label": "]",
+   "matrix": [
+    7,
+    6
+   ],
+   "token": "KC_EQUAL"
+  },
+  {
+   "keycode": 40,
+   "label": "Enter",
+   "matrix": [
+    7,
+    7
+   ],
+   "token": "KC_ENTER"
+  },
+  {
+   "keycode": 47,
+   "label": "PgDn",
+   "matrix": [
+    9,
+    0
+   ],
+   "token": "KC_LBRC"
+  },
+  {
+   "keycode": 48,
+   "label": "PgUp",
+   "matrix": [
+    8,
+    1
+   ],
+   "token": "KC_RBRC"
+  },
+  {
+   "keycode": 17,
+   "label": "n",
+   "matrix": [
+    8,
+    2
+   ],
+   "token": "KC_N"
+  },
+  {
+   "keycode": 16,
+   "label": "m",
+   "matrix": [
+    8,
+    3
+   ],
+   "token": "KC_M"
+  },
+  {
+   "keycode": 54,
+   "label": ",",
+   "matrix": [
+    8,
+    4
+   ],
+   "token": "KC_COMMA"
+  },
+  {
+   "keycode": 51,
+   "label": ".",
+   "matrix": [
+    8,
+    5
+   ],
+   "token": "KC_SCLN"
+  },
+  {
+   "keycode": 82,
+   "label": "/",
+   "matrix": [
+    8,
+    6
+   ],
+   "token": "KC_UP"
+  },
+  {
+   "keycode": 229,
+   "label": "Shift",
+   "matrix": [
+    8,
+    7
+   ],
+   "token": "KC_RSFT"
+  },
+  {
+   "keycode": 32256,
+   "label": "End",
+   "matrix": [
+    9,
+    1
+   ],
+   "token": "KC_LANG"
+  },
+  {
+   "keycode": 56,
+   "label": "BS",
+   "matrix": [
+    9,
+    2
+   ],
+   "token": "KC_SLASH"
+  },
+  {
+   "keycode": 44,
+   "label": "_",
+   "matrix": [
+    9,
+    3
+   ],
+   "token": "KC_SPC"
+  },
+  {
+   "keycode": 55,
+   "label": "Left",
+   "matrix": [
+    9,
+    4
+   ],
+   "token": "KC_DOT"
+  },
+  {
+   "keycode": 80,
+   "label": "Up",
+   "matrix": [
+    9,
+    5
+   ],
+   "token": "KC_LEFT"
+  },
+  {
+   "keycode": 81,
+   "label": "Down",
+   "matrix": [
+    9,
+    6
+   ],
+   "token": "KC_DOWN"
+  },
+  {
+   "keycode": 79,
+   "label": "Right",
+   "matrix": [
+    9,
+    7
+   ],
+   "token": "KC_RIGHT"
+  }
+ ],
+ "layout": "LAYOUT_left_right_stacked"
+}

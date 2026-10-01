@@ -39,6 +39,10 @@ class FakeCore:
     def list_languages(self):
         return ["enUS", "deDE"]
 
+    def mock_keycaps(self, modifier=0):
+        self.calls.append(("mock_keycaps", modifier))
+        return True, {"modifier": modifier, "images": {"4": "AAA="}, "base_layer": {"0,0": 41}}
+
     def set_language(self, lang):
         self.calls.append(("set_language", lang))
         return (True, lang)
@@ -187,6 +191,15 @@ class TestRemoteCore(unittest.TestCase):
         ok, value = self.rc.get_idle_timeout()
         self.assertTrue(ok)
         self.assertEqual(list(value), [5, 300])
+
+    def test_the_mock_board_view_works_as_a_client(self):
+        """The board view replaced an in-process-only bitmap dump; under
+        daemon-by-default it must reach the daemon's mock over RPC."""
+        ok, payload = self.rc.mock_keycaps(2)
+        self.assertTrue(ok)
+        self.assertIn(("mock_keycaps", 2), self.core.calls)
+        self.assertEqual(payload["images"], {"4": "AAA="})
+        self.assertEqual(payload["base_layer"], {"0,0": 41})
 
     def test_back_to_automatic_brightness_reaches_the_daemon(self):
         """The tray's way out of a manual preset. It MUST run in the daemon: the

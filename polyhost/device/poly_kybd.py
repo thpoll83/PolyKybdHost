@@ -64,6 +64,12 @@ OVERLAY_PACKED_HEADER_MIN_PROTOCOL = 11
 # SEND_OVERLAY_MAPPING_W (the width-carrying mapping command) does not exist.
 GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 
+# Minimum firmware PROTOCOL_VERSION for the startup-animation replay (cmd 31). It
+# shipped without a protocol bump while the firmware was at 11, so a v2..v10
+# keyboard answers it with the unknown-command NACK -- found by the protocol
+# sweep (tests/device/protocol_gate_sweep_test.py), years after it was added.
+REPLAY_ANIM_MIN_PROTOCOL = 11
+
 # Minimum firmware PROTOCOL_VERSION for the keycap legend-size command (cmd 34).
 GLYPH_SIZE_MIN_PROTOCOL = 13
 MACRO_MIN_PROTOCOL = 15
@@ -114,6 +120,7 @@ FEATURE_MIN_PROTOCOL = {
     "glyph_script": GLYPH_SCRIPT_MIN_PROTOCOL,
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
     "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
+    "replay_anim": REPLAY_ANIM_MIN_PROTOCOL,
     "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
     "layer_names": LAYER_NAMES_MIN_PROTOCOL,
     "macros": MACRO_MIN_PROTOCOL,
@@ -942,6 +949,10 @@ class PolyKybd:
         The firmware plays it once on first boot; this re-triggers it without a
         power cycle. The master starts it locally and syncs a nonce so the slave
         half replays too."""
+        if not self.supports("replay_anim"):
+            return False, (
+                f"Firmware protocol too old to replay the startup animation "
+                f"(need v{REPLAY_ANIM_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
         self.log.info("Replaying startup animation...")
         return self.hid.send_and_read_validate(
             compose_cmd(Cmd.REPLAY_ANIM), 100, expect(Cmd.REPLAY_ANIM))

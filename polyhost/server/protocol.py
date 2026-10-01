@@ -71,6 +71,8 @@ M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 M_GLYPH_SIZE_SET = "glyph.size.set"      # {"value": 0|1|2} -> (ok, payload)
 M_GLYPH_SIZE_GET = "glyph.size.get"      # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation
+# Developer: what the mock keyboard shows on its keycaps (PolyCore.mock_keycaps).
+M_MOCK_KEYCAPS = "mock.keycaps"          # {"modifier": 0..15} -> (ok, {images, base_layer, ...})
 # Firmware crash records (protocol v16+). GET returns the archived record of one half
 # as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
 M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)

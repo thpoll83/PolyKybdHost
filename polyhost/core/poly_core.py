@@ -221,11 +221,24 @@ class PolyCore(Observable):
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
-        self.keeb = PolyKybd(self.device_settings, self.poly_settings)
+        mock_primary = bool(self.poly_settings.get("dev_mock_primary"))
+        if mock_primary:
+            # No hardware at all: the mock IS the keyboard. Imported here for the
+            # same reason as the secondary below (numpy on the startup path).
+            from polyhost.device.poly_kybd_mock import PolyKybdMock
+            self.keeb = PolyKybdMock(
+                self.device_settings, self.poly_settings, version=__version__,
+                protocol=int(self.poly_settings.get("dev_mock_protocol") or 0) or None,
+                keymap="board")
+            self.log.warning("dev_mock_primary: no keyboard is used; the mock emulates "
+                             "a protocol-%d keyboard.", self.keeb.protocol_version)
+        else:
+            self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
         self.device_mgr = DeviceManager(self.device_settings)
-        self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
-        if self.poly_settings.get("dev_mock_enabled"):
+        self.device_mgr.add(self.keeb, "PolyKybdMock" if mock_primary else "PolyKybd",
+                            is_primary=True)
+        if self.poly_settings.get("dev_mock_enabled") and not mock_primary:
             # Imported here, not at module top: the mock pulls in overlay_sim ->
             # numpy, which is otherwise dead weight on the daemon's startup import
             # path (the mock is only used when dev_mock_enabled is set).
@@ -2200,6 +2213,44 @@ class PolyCore(Observable):
     def macro_clear(self, macro_id):
         """Empty one macro's body and its whole keycap look."""
         return self.macro_set(macro_id, text="", label="", style=0, icon=0)
+
+    def mock_keycaps(self, modifier=0):
+        """What the mock keyboard shows on its keycaps under ``modifier``, for the
+        developer board view (gui/mock_board_dialog.py).
+
+        The mock is the primary device (``dev_mock_primary``) or the secondary one
+        (``dev_mock_enabled``). JSON-serializable, so a ``--connect`` client gets the
+        same answer over RPC; read on the worker, so a send in progress is never
+        seen half done. ``(False, msg)`` when no mock is running."""
+        mock = next((e.device for e in self.device_mgr.all_entries
+                     if hasattr(e.device, "firmware")), None)
+        if mock is None:
+            return False, ("No mock keyboard is running. Enable dev_mock_enabled "
+                           "(beside the keyboard) or dev_mock_primary (instead of it).")
+
+        def read(cancel):
+            import base64
+            from polyhost.device.keys import Modifier
+            mod = Modifier(int(modifier))
+            images = {}
+            for kc in list(range(0x04, 0x66)) + list(range(0xE0, 0xE8)):
+                bitmap = mock.get_display_bitmap(kc, mod)
+                if bitmap:
+                    images[str(kc)] = base64.b64encode(bitmap).decode("ascii")
+            fw = mock.firmware
+            return True, {
+                "primary": mock is self.keeb,
+                "protocol": mock.protocol_version,
+                "overlays_enabled": fw.overlays_enabled,
+                "modifier": mod.value,
+                "images": images,
+                "base_layer": mock.base_layer(),
+                "stats": {"image_reports": fw.image_reports, "fill_reports": fw.fill_reports,
+                          "mapping_reports": fw.mapping_reports,
+                          "control_reports": fw.control_reports},
+                "refused": [r.reason for r in fw.refused][-20:],
+            }
+        return self._device_call("mock_keycaps", read)
 
     def replay_startup_anim(self):
         return self._device_call(
