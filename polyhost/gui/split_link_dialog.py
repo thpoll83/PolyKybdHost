@@ -32,10 +32,15 @@ UF2_GUIDE_URL = "https://www.polykybd.org/setup/flashing/#fallback-uf2-bootloade
 # Plain paragraphs, not <ol>/<ul>: QLabel's height-for-width undercounts nested
 # lists, which clipped the steps mid-sentence in the first render.
 _TEXT = (
-    "<p>The USB half answered, but the other half did not.</p>"
-    "<p><b>1.</b> Reseat the cable between the halves and try again.</p>"
-    "<p><b>2.</b> Other half still dark? Hold its <b>BOOT</b> button while you plug "
-    "it in by USB, then drag the .uf2 onto the <b>RPI-RP2</b> drive.</p>"
+    "<p>The half connected by USB answered, but the other half did not. Updates "
+    "and font installs need both halves, so this one stopped.</p>"
+    "<p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at "
+    "both ends. Then try the update again.</p>"
+    "<p><b>2.</b> If the other half still shows no lights and blank keycaps, it is "
+    "not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that "
+    "half while you connect it to the computer by USB. A drive named "
+    "<b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the "
+    "copy is done. Then reconnect both halves.</p>"
 )
 
 # Text column width. Each wrapped label gets this as a fixed width and its own
