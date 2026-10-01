@@ -230,7 +230,8 @@ class PolyCore(Observable):
             # numpy, which is otherwise dead weight on the daemon's startup import
             # path (the mock is only used when dev_mock_enabled is set).
             from polyhost.device.poly_kybd_mock import PolyKybdMock
-            mock = PolyKybdMock(self.device_settings, f"{__version__}")
+            mock = PolyKybdMock(self.device_settings, self.poly_settings,
+                                version=__version__)
             self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
             self.log.info("Mock device added as secondary.")
 
