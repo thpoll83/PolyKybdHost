@@ -9,19 +9,30 @@ instead of after a hardware round.
 Reads `core.mock_keycaps()`, so it works the same in-process and as a
 `--connect` client over RPC. The geometry is the layout editor's (the KLE);
 which keycode each key shows comes from the mock's layer 0, so an edit made in
-the layout editor moves the picture too.
+the layout editor moves the picture too. The board outline under the keys is the
+layout editor's too (`board_plate.add_board`), and fails soft the same way.
+
+"Follow modifiers" polls the modifiers held on the computer's keyboard and picks
+that variant, so holding Ctrl shows the Ctrl overlays the way the real board
+would. `QGuiApplication.queryKeyboardModifiers()` reads the system state on
+Windows, macOS and X11 whichever window has focus; under Wayland it only sees
+keys pressed while this dialog is focused.
 """
 from __future__ import annotations
 
 import base64
 import os
+import sys
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QCoreApplication, Qt, QTimer
+from PyQt5.QtGui import QGuiApplication, QImage, QPixmap
 from PyQt5.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QGraphicsScene,
                              QHBoxLayout, QLabel, QPushButton, QVBoxLayout)
 
-from polyhost.device.keys import Modifier
+from polyhost.device.keys import LEGACY_MAX_MODIFIER_VALUE, Modifier
+from polyhost.device.poly_kybd import GUI_COMBO_MODIFIERS_MIN_PROTOCOL
+from polyhost.gui import theme as gui_theme
+from polyhost.gui.layout_dialog.board_plate import add_board
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (HEADER_FILE, build_keycode_to_name,
                                                            describe_keycode, parse_qmk_keycodes)
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
@@ -30,6 +41,7 @@ from polyhost.services.board_layout import physical_keys
 
 KEY_SCALE = 80.0
 REFRESH_MS = 500
+FOLLOW_MS = 40
 FRAME_W, FRAME_H = 72, 40
 
 
@@ -41,6 +53,32 @@ def bitmap_to_image(packed: bytes, lit: bool = True) -> QImage:
     pixels = (bits.reshape(FRAME_H, FRAME_W) * (255 if lit else 90)).astype(np.uint8)
     data = pixels.tobytes()
     return QImage(data, FRAME_W, FRAME_H, FRAME_W, QImage.Format_Grayscale8).copy()
+
+
+def held_variant(qt_mods, protocol=None, mac_swapped=False) -> int:
+    """The overlay variant (`Modifier` value) the board shows while `qt_mods`
+    are held.
+
+    `mac_swapped` is Qt's default on macOS: `ControlModifier` is Cmd and
+    `MetaModifier` the Control key. Cmd is the firmware's GUI. A keyboard
+    older than `GUI_COMBO_MODIFIERS_MIN_PROTOCOL` folds every GUI chord onto
+    the bare GUI variant, so this does too.
+    """
+    ctrl, gui = ((Qt.MetaModifier, Qt.ControlModifier) if mac_swapped
+                 else (Qt.ControlModifier, Qt.MetaModifier))
+    value = ((Modifier.CTRL.value if qt_mods & ctrl else 0)
+             | (Modifier.SHIFT.value if qt_mods & Qt.ShiftModifier else 0)
+             | (Modifier.ALT.value if qt_mods & Qt.AltModifier else 0)
+             | (Modifier.GUI_KEY.value if qt_mods & gui else 0))
+    if (protocol is not None and protocol < GUI_COMBO_MODIFIERS_MIN_PROTOCOL
+            and value & Modifier.GUI_KEY.value):
+        value = LEGACY_MAX_MODIFIER_VALUE
+    return value
+
+
+def _qt_swaps_ctrl_and_meta() -> bool:
+    return (sys.platform == "darwin"
+            and not QCoreApplication.testAttribute(Qt.AA_MacDontSwapCtrlAndMeta))
 
 
 class MockBoardDialog(QDialog):
@@ -61,6 +99,10 @@ class MockBoardDialog(QDialog):
         self.modifier.currentIndexChanged.connect(self.refresh)
         self.live = QCheckBox("Live")
         self.live.setChecked(True)
+        self.follow = QCheckBox("Follow modifiers")
+        self.follow.setToolTip("Show the variant for the modifiers held on this computer's keyboard")
+        # noinspection PyUnresolvedReferences
+        self.follow.toggled.connect(self._on_follow_toggled)
         save = QPushButton("Save PNGs…")
         # noinspection PyUnresolvedReferences
         save.clicked.connect(self.save_pngs)
@@ -68,6 +110,7 @@ class MockBoardDialog(QDialog):
         top = QHBoxLayout()
         top.addWidget(QLabel("Modifier:"))
         top.addWidget(self.modifier)
+        top.addWidget(self.follow)
         top.addWidget(self.live)
         top.addStretch(1)
         top.addWidget(save)
@@ -85,6 +128,10 @@ class MockBoardDialog(QDialog):
         # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(lambda: self.live.isChecked() and self.refresh())
         self.timer.start(REFRESH_MS)
+        self.follow_timer = QTimer(self)
+        # noinspection PyUnresolvedReferences
+        self.follow_timer.timeout.connect(self.follow_modifiers)
+        self._protocol = None
         self.refresh()
 
     def _build_board(self):
@@ -93,6 +140,12 @@ class MockBoardDialog(QDialog):
             return
         minx = min(k["x"] for k in keys)
         miny = min(k["y"] for k in keys)
+        # The board the keys sit on, under them. Decoration: a missing outline
+        # leaves the keys floating, as before.
+        try:
+            add_board(self.scene, KEY_SCALE, minx, miny, dark=gui_theme.is_dark(self.palette()))
+        except Exception:   # noqa: BLE001 -- decoration only
+            pass
         for k in keys:
             item = RenderableKey("", {"w": k["w"] or 1, "h": k["h"] or 1}, KEY_SCALE)
             item.setTransform(key_transform(k, minx, miny, KEY_SCALE))
@@ -100,6 +153,27 @@ class MockBoardDialog(QDialog):
             self.scene.addItem(item)
             self.keys.append((k, item))
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+
+    def _on_follow_toggled(self, on):
+        # The picker shows the held variant while following; a click on it
+        # would be overwritten 40 ms later.
+        self.modifier.setEnabled(not on)
+        if on:
+            self.follow_timer.start(FOLLOW_MS)
+            self.follow_modifiers()
+        else:
+            self.follow_timer.stop()
+
+    def follow_modifiers(self, qt_mods=None):
+        """Select the variant for the modifiers held now. Qt emits
+        currentIndexChanged only on a change, so only a change refreshes and
+        holding a key costs nothing."""
+        if qt_mods is None:
+            qt_mods = QGuiApplication.queryKeyboardModifiers()
+        value = held_variant(int(qt_mods), self._protocol, _qt_swaps_ctrl_and_meta())
+        index = self.modifier.findData(value)
+        if index >= 0:
+            self.modifier.setCurrentIndex(index)    # refreshes via currentIndexChanged
 
     def refresh(self):
         # Runs from a repeating QTimer: PyQt5 turns an exception in a slot into
@@ -117,6 +191,7 @@ class MockBoardDialog(QDialog):
             self.status.setText(str(payload))
             return
         self._last = payload
+        self._protocol = payload["protocol"]
         lit = payload["overlays_enabled"]
         images = payload["images"]
         base = payload["base_layer"]
@@ -159,7 +234,8 @@ class MockBoardDialog(QDialog):
 
     def closeEvent(self, event):
         self.timer.stop()
+        self.follow_timer.stop()
         super().closeEvent(event)
 
 
-__all__ = ["MockBoardDialog", "bitmap_to_image"]
+__all__ = ["MockBoardDialog", "bitmap_to_image", "held_variant"]

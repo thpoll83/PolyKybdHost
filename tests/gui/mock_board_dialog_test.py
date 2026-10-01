@@ -7,13 +7,14 @@ from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PyQt5.QtCore import Qt  # noqa: E402
 from PyQt5.QtWidgets import QApplication  # noqa: E402
 
-from polyhost.device.keys import KeyCode  # noqa: E402
+from polyhost.device.keys import KeyCode, Modifier  # noqa: E402
 
 _app = QApplication.instance() or QApplication([])
 
-from polyhost.gui.mock_board_dialog import MockBoardDialog, bitmap_to_image  # noqa: E402
+from polyhost.gui.mock_board_dialog import MockBoardDialog, bitmap_to_image, held_variant  # noqa: E402
 
 _FULL = base64.b64encode(bytes([0xFF]) * 360).decode()
 
@@ -81,6 +82,29 @@ class MockBoardDialogTest(unittest.TestCase):
         dlg = self._dialog(_Core(images={str(KeyCode.KC_Q.value): _FULL}, enabled=False))
         self.assertIn("overlays OFF", dlg.status.text())
 
+    def test_the_board_outline_is_drawn_under_the_keys(self):
+        dlg = self._dialog(_Core())
+        under = [i for i in dlg.scene.items() if i.zValue() < 0]
+        self.assertTrue(under, "no plate drawn")
+        self.assertTrue(all(item.zValue() >= 0 for _, item in dlg.keys))
+
+    def test_following_selects_the_held_variant(self):
+        core = _Core()
+        dlg = self._dialog(core)
+        dlg.follow.setChecked(True)
+        dlg.follow_timer.stop()
+        self.assertFalse(dlg.modifier.isEnabled())
+        dlg.follow_modifiers(int(Qt.ControlModifier))
+        self.assertEqual(core.calls[-1], Modifier.CTRL.value)
+        asked = len(core.calls)
+        dlg.follow_modifiers(int(Qt.ControlModifier))      # still held: no refresh
+        self.assertEqual(len(core.calls), asked)
+        dlg.follow_modifiers(0)                             # released
+        self.assertEqual(core.calls[-1], Modifier.NO_MOD.value)
+        dlg.follow.setChecked(False)
+        self.assertTrue(dlg.modifier.isEnabled())
+        self.assertFalse(dlg.follow_timer.isActive())
+
     def test_save_writes_one_png_per_keycode(self):
         dlg = self._dialog(_Core(images={str(KeyCode.KC_Q.value): _FULL,
                                          str(KeyCode.KC_A.value): _FULL}))
@@ -89,6 +113,28 @@ class MockBoardDialogTest(unittest.TestCase):
                            return_value=out):
             dlg.save_pngs()
             self.assertEqual(sorted(os.listdir(out)), ["kc0x04_mod0.png", "kc0x14_mod0.png"])
+
+
+class HeldVariantTest(unittest.TestCase):
+
+    def test_each_modifier_sets_its_bit(self):
+        self.assertEqual(held_variant(0), Modifier.NO_MOD.value)
+        self.assertEqual(held_variant(int(Qt.ControlModifier | Qt.ShiftModifier)),
+                         Modifier.CTRL_SHIFT.value)
+        self.assertEqual(held_variant(int(Qt.AltModifier)), Modifier.ALT.value)
+        self.assertEqual(held_variant(int(Qt.MetaModifier)), Modifier.GUI_KEY.value)
+
+    def test_on_macos_cmd_is_the_gui_key(self):
+        # Qt reports Cmd as ControlModifier and Control as MetaModifier there.
+        self.assertEqual(held_variant(int(Qt.ControlModifier), mac_swapped=True),
+                         Modifier.GUI_KEY.value)
+        self.assertEqual(held_variant(int(Qt.MetaModifier), mac_swapped=True),
+                         Modifier.CTRL.value)
+
+    def test_a_pre_v12_keyboard_folds_gui_chords(self):
+        chord = int(Qt.MetaModifier | Qt.ShiftModifier)
+        self.assertEqual(held_variant(chord, protocol=11), Modifier.GUI_KEY.value)
+        self.assertEqual(held_variant(chord, protocol=12), Modifier.GUI_SHIFT.value)
 
 
 if __name__ == "__main__":

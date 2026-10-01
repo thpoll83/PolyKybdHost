@@ -50,7 +50,17 @@ prepare and enable reports below v21, the pre-v11 plain header).
 the emulated keyboard holds for the keycode that key types, under the modifier
 picked at the top. It reads `core.mock_keycaps()` and refreshes every 500 ms, so
 it works in-process and as a `--connect` client over RPC (`mock.keycaps`). The
-"Save PNGs…" button writes one file per keycode. It replaced "Dump Mock Bitmaps",
+"Save PNGs…" button writes one file per keycode.
+
+The board outline and the two status panels sit under the keys
+(`board_plate.add_board`, the layout editor's drawing). "Follow modifiers"
+polls `QGuiApplication.queryKeyboardModifiers()` every 40 ms and selects the
+variant for the modifiers held on the computer's keyboard, so holding Ctrl
+shows the Ctrl overlays at once. `held_variant()` does the mapping: Cmd is the
+GUI key on macOS (Qt reports it as `ControlModifier` there), and below protocol
+v12 every GUI chord folds onto bare GUI, as the firmware does. Qt reads the
+system-wide state on Windows, macOS and X11; under Wayland it sees only keys
+pressed while the dialog has focus. It replaced "Dump Mock Bitmaps",
 which read the in-process device manager and wrote raw pool slots.
 
 Which keycode a key types comes from the mock's layer 0, so an edit made in the
