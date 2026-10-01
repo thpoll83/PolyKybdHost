@@ -56,10 +56,11 @@ class TestPolyKybdMockOverlayFlags(unittest.TestCase):
         self.assertFalse(self.mock._overlays_enabled)
 
     def test_reset_overlay_mapping_clears_mapping(self):
-        self.mock._overlay_mapping = {1: 2}
+        self.mock.send_overlay_mapping({1: 2})
+        self.assertTrue(self.mock.firmware.sim.is_mapped(1))
         ok, _ = self.mock.reset_overlay_mapping()
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping, {})
+        self.assertFalse(self.mock.firmware.sim.is_mapped(1))
 
     def test_reset_overlays_clears_sent_list(self):
         self.mock._sent_overlays = ["some_file.png"]
@@ -258,20 +259,22 @@ class TestPolyKybdMockOverlayMapping(unittest.TestCase):
         self.mock = make_mock()
 
     def test_send_overlay_mapping_accumulates(self):
+        # Read back from the emulated keyboard: the pairs went over the wire.
+        sim = self.mock.firmware.sim
         ok, _ = self.mock.send_overlay_mapping({1: 10, 2: 20})
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping[1], 10)
+        self.assertEqual(sim.get_pool_slot_for(1), 10)
         ok, _ = self.mock.send_overlay_mapping({3: 30})
         self.assertTrue(ok)
-        self.assertEqual(self.mock._overlay_mapping[2], 20)
-        self.assertEqual(self.mock._overlay_mapping[3], 30)
+        self.assertEqual(sim.get_pool_slot_for(2), 20)
+        self.assertEqual(sim.get_pool_slot_for(3), 30)
 
 
 class TestPolyKybdMockSendOverlays(unittest.TestCase):
     def setUp(self):
         self.mock = make_mock()
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_success_updates_state(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = True
@@ -284,7 +287,7 @@ class TestPolyKybdMockSendOverlays(unittest.TestCase):
         self.assertEqual(self.mock._sent_overlays, filenames)
         self.assertTrue(self.mock._overlays_enabled)
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_open_failure_returns_false(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = False
@@ -295,7 +298,7 @@ class TestPolyKybdMockSendOverlays(unittest.TestCase):
         self.assertEqual(self.mock._sent_overlays, [])
         self.assertFalse(self.mock._overlays_enabled)
 
-    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_send_overlays_call_logged(self, MockImageConverter):
         converter = MockImageConverter.return_value
         converter.open.return_value = True

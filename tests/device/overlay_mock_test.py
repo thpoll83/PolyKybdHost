@@ -496,8 +496,8 @@ class TestPolyKybdMockPrcOverlays(unittest.TestCase):
         overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
                     KeyCode.KC_B.value: _make_overlay("dot"),
                     KeyCode.KC_C.value: _make_overlay("stripe")}
-        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", prc_overlays=prc)
-        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv:
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", protocol=19 if prc else 18)
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv:
             conv.return_value.open.return_value = True
             conv.return_value.extract_overlays.side_effect = (
                 lambda m: dict(overlays) if m == Modifier.NO_MOD else None)
@@ -515,7 +515,7 @@ class TestPolyKybdMockPrcOverlays(unittest.TestCase):
         self.assertLess(self._send(prc=True).hid_image_sends,
                         self._send(prc=False).hid_image_sends)
 
-    def test_off_by_default(self):
+    def test_a_pre_v19_keyboard_gets_no_prc(self):
         self.assertEqual(self._send(prc=False).prc_reports, [])
 
 
@@ -563,7 +563,7 @@ class TestPolyKybdMockSyntheticSources(unittest.TestCase):
         conv = syn.SyntheticConverter(
             {Modifier.NO_MOD: {esc: _make_overlay("full"), b: _make_overlay("dot")}})
         kb = _make_mock()
-        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as real:
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as real:
             real.return_value.open.return_value = True
             real.return_value.extract_overlays.side_effect = (
                 lambda m: dict(template) if m == Modifier.NO_MOD else None)
@@ -587,7 +587,7 @@ class TestPolyKybdMockCancellation(unittest.TestCase):
         overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
                     KeyCode.KC_B.value: _make_overlay("dot"),
                     KeyCode.KC_C.value: _make_overlay("stripe")}
-        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", prc_overlays=prc)
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", protocol=19 if prc else 18)
         cache = OverlayMRUCache(20)
         cancel = threading.Event()
         real_get = cache.get_or_allocate
@@ -597,7 +597,7 @@ class TestPolyKybdMockCancellation(unittest.TestCase):
             cancel.set()          # superseded right after the first image
             return result
 
-        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv, \
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv, \
                 um.patch.object(cache, "get_or_allocate", side_effect=get_then_cancel):
             conv.return_value.open.return_value = True
             conv.return_value.extract_overlays.side_effect = (
@@ -622,7 +622,7 @@ class TestPolyKybdMockCancellation(unittest.TestCase):
         from unittest import mock as um
         from polyhost.device.overlay_cache import OverlayMRUCache
         kb = _make_mock()
-        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv:
+        with um.patch("polyhost.device.poly_kybd.ImageConverter") as conv:
             conv.return_value.open.return_value = True
             conv.return_value.extract_overlays.side_effect = (
                 lambda m: {KeyCode.KC_A.value: _make_overlay()} if m == Modifier.NO_MOD else None)
