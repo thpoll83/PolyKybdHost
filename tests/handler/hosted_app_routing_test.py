@@ -331,6 +331,27 @@ class AppNamesPerPlatformTest(unittest.TestCase):
         self.assertTrue(self._overlay("gimp-2.10", "linux"))
         self.assertTrue(self._overlay("olk", "windows"))
 
+    def test_ai_assistant_desktop_apps_reach_their_sets(self):
+        for name, stem in (("claude", "claude_desktop_template"),
+                           ("chatgpt", "chatgpt_template"),
+                           ("codex", "codex_template")):
+            self.assertIn(f"{stem}.mods.png", self._overlay(name, "windows"), name)
+            self.assertIn(f"{stem}_mac.mods.png", self._overlay(name, "macos"), name)
+
+    def test_ai_assistant_web_apps_route_by_url(self):
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            self.assertIn(f"claude_web_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://claude.ai/chat/abc"))
+            self.assertIn(f"chatgpt_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://chatgpt.com/c/abc"))
+
+    def test_codex_in_a_tab_does_NOT_get_the_chatgpt_set(self):
+        """chatgpt.com/codex contains chatgpt.com, and the first hit wins."""
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            overlay = self._chrome(os_name, "https://chatgpt.com/codex/tasks/1")
+            self.assertIn(f"chrome_template{sfx}.mods.png", overlay)
+            self.assertNotIn(f"chatgpt_template{sfx}.mods.png", overlay)
+
 
 if __name__ == "__main__":
     unittest.main()

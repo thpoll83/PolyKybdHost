@@ -49,6 +49,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
                 googledocs_template.extra.mods.png]
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    claude.ai:
+      overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
+    # Codex in a tab has no overlay of its own. MUST stay above chatgpt.com,
+    # which it contains: without it the ChatGPT set would load for Codex.
+    chatgpt.com/codex:
+      overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
+    chatgpt.com:
+      overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
   titles-contains:
     Miro:
       overlay: miro_template.mods.png
@@ -85,6 +93,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        claude.ai:
+          overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
+        chatgpt.com/codex:
+          overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
+        chatgpt.com:
+          overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
       titles-contains:
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -92,6 +106,27 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         Jira:
           overlay: jira_template.mods.png
+# AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
+# forms are under the browser entry above (claude.ai, chatgpt.com). The Claude
+# desktop app shows its Chat and Code tabs in one window of one process, so one
+# set serves both; it draws the Code tab's chords. `claude` is also the Claude
+# Code CLI's process name, but a CLI session's focused window is the terminal,
+# so the terminal's name is what arrives here.
+claude:
+  overlay: [claude_desktop_template.mods.png, claude_desktop_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [claude_desktop_template_mac.mods.png, claude_desktop_template_mac.combo.mods.png, claude_desktop_template_mac.extra.mods.png]
+chatgpt:
+  overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+codex:
+  overlay: [codex_template.mods.png, codex_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [codex_template_mac.mods.png, codex_template_mac.combo.mods.png, codex_template_mac.extra.mods.png]
 nxplayer:
   remote: true
   # A session window is titled '<host> - NoMachine'. The connection chooser
