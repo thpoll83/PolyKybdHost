@@ -141,3 +141,20 @@ forever here.
 ⚠️ **A stacked PR also gets no CodeQL until it targets `main`** — see
 `review-conventions.md`. Expect a first round of findings right after the
 retarget, and budget for it before the merge.
+
+### After a squash-merged base: merging `main` into the stacked branch
+
+Squashing the base PR puts unrelated history on `main`, so merging `main` into the
+stacked branch conflicts in every file the base PR touched. The stacked branch already
+contains the base PR's last head, so decide each file by what ELSE landed in it:
+
+```bash
+git diff <base PR's last head> origin/main -- <file>   # empty => keep ours
+```
+
+Empty means only the base PR changed the file and the branch's version is right
+(`git checkout --ours`); anything else is the part to carry over by hand. Then check
+that `git diff --stat origin/main` shows exactly the stacked PR's own
+additions/deletions before pushing. Seen on the firmware's #324 → #325 (2026-10-01):
+seven conflicted files, of which only `config.h` differed, by the version auto-bump,
+and the result matched the PR's +374/−104.
