@@ -547,5 +547,33 @@ class TestSaveAsPng(unittest.TestCase):
             self.assertEqual(sig, b"\x89PNG\r\n\x1a\n")
 
 
+class TestPolyKybdMockSyntheticSources(unittest.TestCase):
+    """The generic-overlay job hands `send_overlays_mru` a `synthetic=` map
+    (device/synthetic_overlay.py). The mock must take it as the real device
+    does: without it the daemon logged "unexpected keyword argument
+    'synthetic'" on every window report while the mock was enabled."""
+
+    def test_synthetic_source_fills_gaps_and_defers_to_the_template(self):
+        from unittest import mock as um
+        from polyhost.device import synthetic_overlay as syn
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        esc, a, b = KeyCode.KC_ESCAPE.value, KeyCode.KC_A.value, KeyCode.KC_B.value
+        template = {esc: _make_overlay("rect"), a: _make_overlay("stripe")}
+        mark = syn.program_name("mdi:test")
+        conv = syn.SyntheticConverter(
+            {Modifier.NO_MOD: {esc: _make_overlay("full"), b: _make_overlay("dot")}})
+        kb = _make_mock()
+        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as real:
+            real.return_value.open.return_value = True
+            real.return_value.extract_overlays.side_effect = (
+                lambda m: dict(template) if m == Modifier.NO_MOD else None)
+            self.assertTrue(kb.send_overlays_mru(
+                ["t.png", mark], OverlayMRUCache(20), synthetic={mark: conv}))
+        # ESC stays the template's image; B comes from the synthetic source.
+        for kc, pattern in ((esc, "rect"), (a, "stripe"), (b, "dot")):
+            np.testing.assert_array_equal(kb.get_display_image(kc, Modifier.NO_MOD),
+                                          _make_image(pattern), pattern)
+
+
 if __name__ == "__main__":
     unittest.main()
