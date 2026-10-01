@@ -478,6 +478,18 @@ class PolyKybdMock:
             from polyhost.device.prc_packing import PrcReportPacker
             packer = PrcReportPacker(self._receive_prc_report,
                                      self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, cache)
+        def cancelled() -> bool:
+            """Parity with the real device: a superseded send stops before the
+            next image and never commits its mapping. Images already stored
+            stay cached (they reached the "keyboard"); records still queued in
+            the packer never did, so their slots are forgotten."""
+            if cancel is None or not cancel.is_set():
+                return False
+            if packer is not None:
+                packer.discard()
+            self.log.info("Send Overlay MRU (mock) cancelled")
+            return True
+
         # A synthetic source skips a (modifier, keycode) a real template
         # already draws, and a modifier-invariant one is keyed once.
         covered: set[tuple[int, int]] = set()
@@ -491,6 +503,8 @@ class PolyKybdMock:
                         continue
 
                     for keycode, overlay_data in overlay_map.items():
+                        if cancelled():
+                            return False
                         if source_is_synthetic and (modifier.value, keycode) in covered:
                             continue
                         covered.add((modifier.value, keycode))
@@ -516,6 +530,8 @@ class PolyKybdMock:
                         disp_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[disp_idx] = pool_slot
 
+        if cancelled():
+            return False
         if packer is not None:
             self.hid_image_sends += packer.flush()
 

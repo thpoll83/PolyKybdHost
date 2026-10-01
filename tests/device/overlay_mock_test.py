@@ -575,5 +575,59 @@ class TestPolyKybdMockSyntheticSources(unittest.TestCase):
                                           _make_image(pattern), pattern)
 
 
+
+class TestPolyKybdMockCancellation(unittest.TestCase):
+    """A superseded send must stop before the next image and never commit its
+    mapping, as `PolyKybd.send_overlays_mru` does."""
+
+    def _send_cancelled_after_first_image(self, prc: bool):
+        import threading
+        from unittest import mock as um
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
+                    KeyCode.KC_B.value: _make_overlay("dot"),
+                    KeyCode.KC_C.value: _make_overlay("stripe")}
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", prc_overlays=prc)
+        cache = OverlayMRUCache(20)
+        cancel = threading.Event()
+        real_get = cache.get_or_allocate
+
+        def get_then_cancel(*args, **kwargs):
+            result = real_get(*args, **kwargs)
+            cancel.set()          # superseded right after the first image
+            return result
+
+        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv, \
+                um.patch.object(cache, "get_or_allocate", side_effect=get_then_cancel):
+            conv.return_value.open.return_value = True
+            conv.return_value.extract_overlays.side_effect = (
+                lambda m: dict(overlays) if m == Modifier.NO_MOD else None)
+            ok = kb.send_overlays_mru(["t.png"], cache, cancel)
+        return kb, cache, ok
+
+    def test_cancel_stops_before_the_next_image_and_skips_the_mapping(self):
+        kb, cache, ok = self._send_cancelled_after_first_image(prc=False)
+        self.assertFalse(ok)
+        self.assertEqual(kb.hid_mapping_sends, 0)
+        self.assertEqual(len(cache._cache), 1)       # only the first image got a slot
+
+    def test_cancel_forgets_records_still_queued_in_the_packer(self):
+        kb, cache, ok = self._send_cancelled_after_first_image(prc=True)
+        self.assertFalse(ok)
+        self.assertEqual(kb.prc_reports, [])          # the queued record never went out
+        self.assertEqual(len(cache._cache), 0)        # so its slot is not a stale hit
+
+    def test_an_uncancelled_send_still_commits(self):
+        import threading
+        from unittest import mock as um
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        kb = _make_mock()
+        with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv:
+            conv.return_value.open.return_value = True
+            conv.return_value.extract_overlays.side_effect = (
+                lambda m: {KeyCode.KC_A.value: _make_overlay()} if m == Modifier.NO_MOD else None)
+            self.assertTrue(kb.send_overlays_mru(["t.png"], OverlayMRUCache(20), threading.Event()))
+        self.assertEqual(kb.hid_mapping_sends, 1)
+
 if __name__ == "__main__":
     unittest.main()
