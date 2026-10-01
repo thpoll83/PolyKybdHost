@@ -1,7 +1,7 @@
 """The .uf2 recovery hand-off from a failed firmware update (gui/split_link_dialog.py)."""
 import os
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -14,6 +14,13 @@ try:
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover - no Qt platform available
     _IMPORT_ERR = e
+
+
+def setUpModule():
+    """Pin the QApplication for the module: `_APP` looks unused but must outlive
+    every widget, or the next widget construction segfaults."""
+    if _IMPORT_ERR is None:
+        assert _APP is not None
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
