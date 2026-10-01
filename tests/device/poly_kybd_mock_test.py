@@ -523,5 +523,29 @@ class TestPolyKybdMockSignatureParity(unittest.TestCase):
         self.assertEqual(drift, {})
 
 
+
+class TestPolyKybdMockVersion(unittest.TestCase):
+    def test_a_positional_version_string_is_rejected(self):
+        # `version` is keyword-only; a string in the poly_settings slot used to
+        # leave the mock reporting the default "1.0.0" with no error.
+        with self.assertRaises(TypeError):
+            PolyKybdMock(DeviceSettings(), "1.2.3")
+
+    def test_poly_core_gives_the_mock_the_host_version(self):
+        from polyhost._version import __version__
+        from polyhost.core.poly_core import PolyCore
+        from polyhost.settings import PolySettings
+        real_get = PolySettings.get
+
+        def get(settings, name):
+            return True if name == "dev_mock_enabled" else real_get(settings, name)
+
+        with mock.patch.object(PolySettings, "get", get):
+            core = PolyCore(mock.MagicMock(), start_worker=False)
+        secondary = [e.device for e in core.device_mgr.all_entries if not e.is_primary]
+        self.assertEqual(len(secondary), 1)
+        self.assertEqual(secondary[0].get_sw_version(), __version__)
+        self.assertIs(secondary[0].poly_settings, core.poly_settings)
+
 if __name__ == "__main__":
     unittest.main()

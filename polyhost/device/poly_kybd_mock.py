@@ -32,6 +32,11 @@ class PolyKybdMock:
                  langs: str = "enUSdeATkoKRfrFRitITesES",
                  num_layers: int = 4,
                  prc_overlays: bool = False):
+        if isinstance(poly_settings, str):
+            # `version` is keyword-only. A version string passed positionally
+            # lands here and the mock silently reports the default "1.0.0".
+            raise TypeError("poly_settings must be a settings object; "
+                            "pass the version as version=...")
         self.device_settings = device_settings
         self.poly_settings = poly_settings
         self.log = logging.getLogger('PolyHost')

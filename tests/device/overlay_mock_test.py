@@ -35,7 +35,7 @@ def _make_overlay(pattern: str = "rect") -> OverlayData:
 
 
 def _make_mock() -> PolyKybdMock:
-    return PolyKybdMock(DeviceSettings(), "0.7.1")
+    return PolyKybdMock(DeviceSettings(), version="0.7.1")
 
 
 def _slot(kc_value: int, mod: Modifier) -> int:
@@ -496,7 +496,7 @@ class TestPolyKybdMockPrcOverlays(unittest.TestCase):
         overlays = {KeyCode.KC_A.value: _make_overlay("rect"),
                     KeyCode.KC_B.value: _make_overlay("dot"),
                     KeyCode.KC_C.value: _make_overlay("stripe")}
-        kb = PolyKybdMock(DeviceSettings(), "0.7.1", prc_overlays=prc)
+        kb = PolyKybdMock(DeviceSettings(), version="0.7.1", prc_overlays=prc)
         with um.patch("polyhost.device.poly_kybd_mock.ImageConverter") as conv:
             conv.return_value.open.return_value = True
             conv.return_value.extract_overlays.side_effect = (
