@@ -2041,23 +2041,26 @@
   key: 7feffd879a95ca0074e9
   name: effort.png
 - id: 680
+  key: 3f1f59a7e265e794b885
+  name: files.png
+- id: 681
   key: 85aca7c033d70cd5efb5
   name: instructions.png
-- id: 681
+- id: 682
   key: 580169bafa4b2ecc5742
   name: model.png
-- id: 682
+- id: 683
   key: a8902a064197fa74de5f
   name: newchat.png
-- id: 683
+- id: 684
   key: 6af0f417c79f191a343e
   name: next.png
-- id: 684
+- id: 685
   key: c9c83a97f34022eaa5e7
   name: permission.png
-- id: 685
+- id: 686
   key: b5f6f0a13165c2736efb
   name: pick.png
-- id: 686
+- id: 687
   key: f94032b79ae2d094a9f3
   name: prev.png

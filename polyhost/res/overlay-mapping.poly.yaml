@@ -49,6 +49,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
                 googledocs_template.extra.mods.png]
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # Claude Code on the web. MUST stay above claude.ai, which it contains.
+    claude.ai/code:
+      overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
     claude.ai:
       overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
     # Codex in a tab has no overlay of its own. MUST stay above chatgpt.com,
@@ -93,6 +96,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        claude.ai/code:
+          overlay: claude_code_web_template_mac.mods.png
         claude.ai:
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
         chatgpt.com/codex:

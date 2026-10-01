@@ -345,6 +345,13 @@ class AppNamesPerPlatformTest(unittest.TestCase):
             self.assertIn(f"chatgpt_template{sfx}.mods.png",
                           self._chrome(os_name, "https://chatgpt.com/c/abc"))
 
+    def test_claude_code_on_the_web_does_NOT_get_the_chat_set(self):
+        """claude.ai/code contains claude.ai, and the first hit wins."""
+        for os_name, sfx in (("windows", ""), ("macos", "_mac")):
+            overlay = self._chrome(os_name, "https://claude.ai/code/session_1")
+            self.assertIn(f"claude_code_web_template{sfx}.mods.png", overlay)
+            self.assertNotIn(f"claude_web_template{sfx}.mods.png", overlay)
+
     def test_codex_in_a_tab_does_NOT_get_the_chatgpt_set(self):
         """chatgpt.com/codex contains chatgpt.com, and the first hit wins."""
         for os_name, sfx in (("windows", ""), ("macos", "_mac")):

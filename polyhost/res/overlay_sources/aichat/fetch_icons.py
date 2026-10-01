@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the AI assistant overlays.
 
-One icon folder serves four sets: `claude_desktop.yaml` (the Claude desktop
-app, Code tab), `claude_web.yaml` (claude.ai in a browser), `chatgpt.yaml`
+One icon folder serves five sets: `claude_desktop.yaml` (the Claude desktop
+app, Code tab), `claude_web.yaml` (claude.ai in a browser),
+`claude_code_web.yaml` (Claude Code on the web, claude.ai/code), `chatgpt.yaml`
 (ChatGPT desktop app and chatgpt.com) and `codex.yaml` (the Codex desktop
 app). They share most of their vocabulary (new chat, search, sidebar,
 terminal, settings), so the icons live in one place.
@@ -60,6 +61,8 @@ FLUENT = {
     "find": "Search",
     "findfile": "Document Search",
     "archive": "Archive",
+    # --- Claude Code on the web ---
+    "files": "Document Multiple",
 }
 
 BRAND = {"claude.png": "claude"}

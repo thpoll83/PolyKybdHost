@@ -88,10 +88,10 @@
       "file": "icons.plyi",
       "kind": "icons",
       "content_version": 3,
-      "size": 64944,
+      "size": 65044,
       "slot_offset": 1835008,
       "slot_size": 262144,
-      "sha256": "b7ef324ebc55638a"
+      "sha256": "afc028d09fef726c"
     }
   ]
 }
