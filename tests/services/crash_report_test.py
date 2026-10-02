@@ -121,6 +121,71 @@ class ScannerTest(unittest.TestCase):
         self.assertLessEqual(len(s._lines._pending), cr.CrashScanner.MAX_PENDING)
 
 
+class KeyTest(unittest.TestCase):
+    """The console copy and the cmd 39 copy of one crash must be ONE record."""
+
+    def test_console_and_hid_copies_of_one_crash_share_a_key(self):
+        console = cr.parse_crash_line("   " + LINE)
+        hid = cr.decode_record(bytes([cr.HID_FLAG_PRESENT | cr.HID_FLAG_FRESH])
+                               + _record_bytes(), "master")
+        self.assertEqual(hid.line, "")
+        self.assertEqual(console.key(), hid.key())
+        self.assertEqual(console.key(), LINE)
+
+    def test_the_key_ignores_whatever_surrounded_the_console_line(self):
+        rec = cr.parse_crash_line("[12.345] " + LINE)
+        self.assertEqual(rec.key(), LINE)
+
+    def test_a_different_half_is_a_different_key(self):
+        body = bytes([cr.HID_FLAG_PRESENT]) + _record_bytes()
+        self.assertNotEqual(cr.decode_record(body, "master").key(),
+                            cr.decode_record(body, "slave").key())
+
+    def test_note_dedupes_across_sources(self):
+        s = cr.CrashScanner()
+        hid = cr.decode_record(bytes([cr.HID_FLAG_PRESENT | cr.HID_FLAG_FRESH])
+                               + _record_bytes(), "master")
+        self.assertTrue(s.note(hid))
+        self.assertFalse(s.note(hid))
+        # The banner line for the same crash, arriving after the HID read.
+        self.assertEqual(s.feed(LINE + "\n"), [])
+
+    def test_a_console_record_blocks_the_later_hid_copy(self):
+        s = cr.CrashScanner()
+        self.assertEqual(len(s.feed(LINE + "\n")), 1)
+        hid = cr.decode_record(bytes([cr.HID_FLAG_PRESENT | cr.HID_FLAG_FRESH])
+                               + _record_bytes(), "master")
+        self.assertFalse(s.note(hid))
+
+
+class BootBreadcrumbTest(unittest.TestCase):
+    def test_the_field_record_reads_as_the_75_percent_panel_paint(self):
+        # fw 1.3.2, 2026-10-02: the screen froze at "63%, 4 / 4".
+        self.assertEqual(cr.boot_breadcrumb_text(0x16E1),
+                         "boot step 6, status panel paint did not finish (before its first "
+                         "render call on firmware with per-call marks); core1 running")
+
+    def test_each_range(self):
+        self.assertEqual(cr.boot_breadcrumb_text(0x0005), "boot step 5")
+        self.assertEqual(cr.boot_breadcrumb_text(0x0504),
+                         "boot step 5, sub-step or render key 4")
+        self.assertEqual(cr.boot_breadcrumb_text(0x15B3),
+                         "boot step 5, sub-step 4 status panel paint, render call 4; core1 running")
+        self.assertEqual(cr.boot_breadcrumb_text(0x16C2),
+                         "boot step 6 status panel paint, render call 3; core1 running")
+        self.assertEqual(cr.boot_breadcrumb_text(0x05E2),
+                         "boot step 5, keycap logo draw did not finish; core1 not yet running")
+        self.assertEqual(cr.boot_breadcrumb_text(0x06F0), "boot step 6, breadcrumb 0x06f0")
+        # Unassigned, and NOT a render key: keys are 1..40.
+        self.assertEqual(cr.boot_breadcrumb_text(0x16D2), "boot step 6, breadcrumb 0x16d2")
+
+    def test_the_summary_carries_it(self):
+        rec = cr.parse_crash_line(LINE.replace("kind=hardfault", "kind=watchdog")
+                                  .replace("phase=3:0x0015", "phase=1:0x16e1"))
+        self.assertIn("boot (boot step 6, status panel paint did not finish",
+                      cr.summarize(rec))
+
+
 class TextTest(unittest.TestCase):
     def test_summary_is_readable_and_names_the_phase_and_command(self):
         text = cr.summarize(cr.parse_crash_line(LINE))

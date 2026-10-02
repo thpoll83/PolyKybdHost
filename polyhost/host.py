@@ -466,6 +466,17 @@ class PolyHost(QApplication):
         self.collect_logs_action.triggered.connect(self.open_log_bundle)
         self.log_bundle_dialog = None
 
+        # The crash alert fires only when a FRESH record reaches the host. This
+        # reads both halves on demand (cmd 39) and copies the text, for a record
+        # the alert missed or an older one. Gated in managed_connection_status.
+        self.crash_record_action = QAction(get_icon("bug_report.svg"),
+                                           "Read keyboard crash record", parent=self)
+        self.crash_record_action.setToolTip(
+            "Read the keyboard's last crash record from both halves and copy it "
+            "to the clipboard.")
+        # noinspection PyUnresolvedReferences
+        self.crash_record_action.triggered.connect(self.read_crash_records)
+
         self.fontpack_inspector_action = QAction(get_icon("frame_inspect.svg"), "Inspect Font Packs...", parent=self)
         # noinspection PyUnresolvedReferences
         self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
@@ -782,6 +793,7 @@ class PolyHost(QApplication):
         self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
         self.help_menu.addAction(self.collect_logs_action)
+        self.help_menu.addAction(self.crash_record_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
         # nobody can guess; editing a mapping meant reading it out of About first.
         self.open_config_action = QAction(get_icon("file_open.svg"),
@@ -1190,6 +1202,13 @@ class PolyHost(QApplication):
         # the log file are read-only and always valid).
         self.updates_menu.menuAction().setEnabled(True)
         self.help_menu.menuAction().setEnabled(True)
+        # Inside Help & About, so the blanket loop never reaches it. Needs the
+        # device and cmd 39 (protocol v16+). Live in safe mode too: it is read-only
+        # debugging, and safe mode means firmware NEWER than this host, which has
+        # cmd 39 even though every capability is reported False there.
+        self.crash_record_action.setEnabled(
+            self.connected and not self.paused
+            and (bool(self.safe_mode) or self.supports("crash_record")))
         self.pause_action.setEnabled(True)
         # Only meaningful while the core is actually holding the keyboard at
         # arm's length; it disappears again once the situation is resolved.
@@ -1617,13 +1636,20 @@ class PolyHost(QApplication):
         the report dialog; a further record (the other half, or a second crash)
         is appended to the open one rather than stacking windows."""
         from polyhost.services.crash_report import CrashRecord
-        from polyhost.gui.crash_alert_dialog import CrashAlertDialog
         try:
             rec = CrashRecord.from_dict(payload or {})
         except Exception:  # noqa: BLE001 — a malformed payload must not take the tray down
             self.log.warning("Ignoring an unreadable crash record: %r", payload, exc_info=True)
             return
         self.log.warning("Keyboard crash record: %s", rec.as_console_line())
+        dialog = self._crash_dialog()
+        dialog.add_record(rec)
+        dialog.show()
+        bring_to_front(dialog)
+
+    def _crash_dialog(self):
+        """The one retained crash dialog, shared by the alert and the manual readout."""
+        from polyhost.gui.crash_alert_dialog import CrashAlertDialog
         if self.crash_alert_dialog is None:
             self.crash_alert_dialog = CrashAlertDialog(
                 parent=None,
@@ -1631,9 +1657,45 @@ class PolyHost(QApplication):
                 report_cb=self._open_report_with_crash,
                 host_version=__version__,
                 clear_cb=self.core.clear_crash_record)
-        self.crash_alert_dialog.add_record(rec)
-        self.crash_alert_dialog.show()
-        bring_to_front(self.crash_alert_dialog)
+        return self.crash_alert_dialog
+
+    def read_crash_records(self):
+        """Help & About > "Read keyboard crash record": cmd 39 for both halves.
+
+        Shows whatever the keyboard has archived, fresh or older, and copies the
+        report text to the clipboard at once. The alert only fires for a FRESH
+        record; this is the way to reach an older one, or one the alert missed,
+        without a terminal. Runs through the core (a worker job in-process, an
+        RPC in client mode), the same brief block on a deliberate click that the
+        device menus accept."""
+        from polyhost.services.crash_report import CrashRecord
+        records, errors = [], []
+        for which, side in ((0, "master"), (1, "slave")):
+            try:
+                ok, payload = self.core.get_crash_record(which)
+            except Exception as e:  # noqa: BLE001 — an exception in a slot aborts the tray
+                ok, payload = False, f"{type(e).__name__}: {e}"
+            if not ok:
+                errors.append(f"{side}: {payload}")
+            elif payload:
+                try:
+                    records.append(CrashRecord.from_dict(payload))
+                except Exception:  # noqa: BLE001 — same reason
+                    errors.append(f"{side}: unreadable record {payload!r}")
+        if not records:
+            text = "Neither keyboard half holds a crash record."
+            if errors:
+                text = "Could not read the crash record.\n\n" + "\n".join(errors)
+            QMessageBox.information(None, "Keyboard crash record", text)
+            return
+        dialog = self._crash_dialog()
+        for rec in records:
+            dialog.add_record(rec)
+        dialog.show()
+        bring_to_front(dialog)
+        dialog.copy_to_clipboard()
+        if errors:
+            dialog.status.setText("Copied to the clipboard. Not read: " + "; ".join(errors))
 
     def _install_client_problem_handler(self):
         """Watch this client process's own log for the problem scan.

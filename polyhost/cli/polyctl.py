@@ -534,12 +534,12 @@ def _cmd_crash(client, args):
     if args.json:
         print(json.dumps(rec, indent=2))
         return 0
-    from polyhost.services.crash_report import CrashRecord, summarize  # stdlib-only module
+    from polyhost.services.crash_report import CrashRecord, freshness_text, summarize  # stdlib-only module
     r = CrashRecord.from_dict(rec)
     print(summarize(r))
     print(f"  {r.as_console_line()}")
     print(f"  reset reason: {r.reset_reason_text}; exception vector: {r.vector}; "
-          f"{'fresh (from the boot before this one)' if r.fresh else 'archived (older)'}")
+          f"{freshness_text(r)}")
     return 0
 
 
