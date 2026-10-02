@@ -82,8 +82,10 @@ class ProblemAlertDialog(QDialog):
             if known.source == prob.source and known.key == prob.key:
                 known.count = max(known.count, prob.count)
                 # A warning that escalated (problem_scan escalate_after) arrives
-                # again as an error with its own sentence.
-                if prob.severity != known.severity:
+                # again as an error with its own sentence. Never the other way:
+                # a late warning must not turn a shown error back into one.
+                if (prob.severity == problem_scan.SEVERITY_ERROR
+                        and known.severity != problem_scan.SEVERITY_ERROR):
                     known.severity, known.summary = prob.severity, prob.summary
                     known.line = prob.line
                 self._render()
