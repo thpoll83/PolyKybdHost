@@ -329,6 +329,10 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                             ("Home - Space - Confluence - Google Chrome", "confluence_template"),
                             ("Roadmap | Notion - Google Chrome", "notion_template"),
                             ("New chat - Claude - Google Chrome", "claude_web_template"),
+                            ("Fix the build - Claude Code - Google Chrome",
+                             "claude_code_web_template"),
+                            # "Code" without "Claude" beside it is a chat topic.
+                            ("Review my Code - Claude - Google Chrome", "claude_web_template"),
                             ("ChatGPT - Google Chrome", "chatgpt_template")):
             self.assertIn(f"{stem}.mods.png", self._chrome("windows", None, title), title)
             self.assertIn(f"{stem}_mac.mods.png", self._chrome("macos", None, title), title)

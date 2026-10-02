@@ -62,8 +62,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand word are listed. Google
   # Docs ("Name - Google Docs") would need the word "Docs", which is too
-  # generic. Claude Code and Codex cannot be told apart from Claude and ChatGPT
-  # by title, so without a URL they get the Claude / ChatGPT set.
+  # generic. Codex cannot be told apart from ChatGPT by title, so without a URL
+  # it gets the ChatGPT set.
+  # Claude: a chat is titled "<conversation> - Claude", a Claude Code session
+  # carries "Claude Code". Keys are single words, so "Code" is nested under
+  # "Claude" and gated on the two words being adjacent. A chat that merely
+  # mentions "code" fails the gate and keeps the chat set.
   titles-contains:
     Miro:
       overlay: miro_template.mods.png
@@ -83,6 +87,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     Claude:
       overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
+      titles-contains:
+        Code:
+          overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
+          title: '\bClaude Code\b'
     ChatGPT:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
@@ -141,6 +149,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         Claude:
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
+          titles-contains:
+            Code:
+              overlay: claude_code_web_template_mac.mods.png
+              title: '\bClaude Code\b'
         ChatGPT:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
 # AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
