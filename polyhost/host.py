@@ -448,6 +448,7 @@ class PolyHost(QApplication):
         self.report_problem_action.triggered.connect(self.open_report_problem)
         self.report_problem_dialog = None
         self.crash_alert_dialog = None
+        self.boot_loop_dialog = None
         self.problem_alert_dialog = None
         self._client_problem_handler = None
         if self.client_mode:
@@ -1209,6 +1210,10 @@ class PolyHost(QApplication):
         self.crash_record_action.setEnabled(
             self.connected and not self.paused
             and (bool(self.safe_mode) or self.supports("crash_record")))
+        # Developer > Firmware > Boot-loop test: needs cmd 43 (v22+). Inside a
+        # submenu, so the blanket loop above never reaches it.
+        if self.cmdMenu.boot_loop_action is not None:
+            self.cmdMenu.boot_loop_action.setEnabled(enabled and self.supports("reboot"))
         self.pause_action.setEnabled(True)
         # Only meaningful while the core is actually holding the keyboard at
         # arm's length; it disappears again once the situation is resolved.
@@ -1628,6 +1633,14 @@ class PolyHost(QApplication):
                 diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
         self.report_problem_dialog.show()
         bring_to_front(self.report_problem_dialog)
+
+    def open_boot_loop_dialog(self):
+        """Developer > Firmware > "Boot-loop test…" (modeless, retained)."""
+        from polyhost.gui.boot_loop_dialog import BootLoopDialog
+        if self.boot_loop_dialog is None:
+            self.boot_loop_dialog = BootLoopDialog(self.core)
+        self.boot_loop_dialog.show()
+        bring_to_front(self.boot_loop_dialog)
 
     def _on_crash_detected(self, payload):
         """The core found a firmware crash record in the keyboard's console.
@@ -3124,6 +3137,12 @@ class PolyHost(QApplication):
             self.quit_app()
         elif name == "crash_detected":
             self._on_crash_detected(result)
+        elif name in ("boot_loop_progress", "boot_loop_done"):
+            if self.boot_loop_dialog is not None:
+                if name == "boot_loop_progress":
+                    self.boot_loop_dialog.feed_progress(result)
+                else:
+                    self.boot_loop_dialog.feed_done(result)
         elif name == "problem_detected":
             self._on_problem_detected(result)
         elif name == "console":

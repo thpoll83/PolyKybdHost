@@ -77,6 +77,10 @@ M_MOCK_KEYCAPS = "mock.keycaps"          # {"modifier": 0..15} -> (ok, {images, 
 # as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
 M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
 M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
+M_REBOOT = "device.reboot"               # {} -> "rebooting" (cmd 43, protocol v22+)
+# Boot-loop diagnostic: progress and the verdict arrive as boot_loop_* events.
+M_BOOT_LOOP_START = "bootloop.start"     # {"rounds": 1..50} -> {"rounds": n}
+M_BOOT_LOOP_CANCEL = "bootloop.cancel"   # {} -> "cancelling"
 # Re-detect the host unicode input method (WinCompose vs native) and push it to the
 # keyboard. Normally sent once per connect; needed when WinCompose is installed or
 # quit mid-session. {} -> (ok, {"mode": "WinCompose"|"Windows"|...})

@@ -106,6 +106,11 @@ MAPPING_FLAGS_MIN_PROTOCOL = 21
 MAPPING_FLAG_SHOW = 0x20
 MAPPING_FLAG_RESET = 0x40
 
+# Minimum firmware PROTOCOL_VERSION for cmd 43, a plain reboot of both halves that
+# persists nothing. The boot-loop diagnostic issues it up to 50 times; cmd 25
+# (set handedness) also reboots but rewrites EEPROM and the handedness flash stamp.
+REBOOT_MIN_PROTOCOL = 22
+
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
 # of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
@@ -130,6 +135,7 @@ FEATURE_MIN_PROTOCOL = {
     "prc_overlay": PRC_OVERLAY_MIN_PROTOCOL,
     "overlay_icons": OVERLAY_ICONS_MIN_PROTOCOL,
     "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
+    "reboot": REBOOT_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -555,6 +561,32 @@ class PolyKybd:
         # and resets without sending a reply, so we only send — there is no ACK to
         # wait for (doing so would just time out against the disconnected device).
         return self.hid.send(compose_cmd(Cmd.ENTER_BOOTLOADER))
+
+    def reboot(self) -> tuple[bool, Any]:
+        """Reboot both halves (cmd 43, protocol v22+). Nothing is persisted.
+
+        The firmware ACKs before it resets, so a True here means the command was
+        taken; the keyboard then drops off USB and comes back with the GET_ID
+        fresh-boot marker set."""
+        if not self.supports("reboot"):
+            return False, (
+                f"Firmware protocol too old to reboot on request "
+                f"(need v{REBOOT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Rebooting the keyboard...")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.REBOOT), 100, expect(Cmd.REBOOT))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Reboot request failed: {e}"
+        if result and len(reply) >= 3 and reply[2:3] == b'.':
+            return True, "rebooting"
+        # The prefix check alone accepts a NACK (`P\x2b!`); that is a refusal.
+        if result:
+            return False, "The keyboard refused the reboot request."
+        # No reply at all: the ACK is lost, or the reset beat it out. That is not a
+        # failure by itself; the caller's wait for the fresh-boot marker decides.
+        # Reporting it as one stopped the boot loop on a keyboard that WAS rebooting.
+        return True, "sent; no ACK (the reset may have come first)"
 
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",

@@ -305,6 +305,7 @@ class PolyCore(Observable):
         self._crash_checks = []
         self._crash_checks_lock = threading.Lock()
         self.worker.add_periodic("crash_autocheck", 1.0, self._crash_autocheck_periodic)
+        self._init_boot_loop_state()
         # Known-bad console lines, and this process's own WARNING/ERROR records
         # (services/problem_scan.py). The handler sits on the ROOT logger, so in
         # in-process mode it covers the GUI's logging too; a daemon client GUI
@@ -1800,6 +1801,10 @@ class PolyCore(Observable):
                 # _arm_crash_autocheck for why that makes it "new crashes only".
                 if self.keeb.supports("crash_record"):
                     self._arm_crash_autocheck()
+                # The boot-loop diagnostic waits on exactly this: the keyboard came
+                # back from a reboot (the GET_ID marker, not a reconnect, which a
+                # fast reboot may never show as a disconnect).
+                self._boot_seen.set()
 
         self.emit("status_changed", {
             "connected": self.connected,
@@ -2240,6 +2245,205 @@ class PolyCore(Observable):
         if ok:
             self._crash_scanner.forget()
         return ok, payload
+
+    # --- boot-loop diagnostic ---------------------------------------------
+    #
+    # Reboot (cmd 43), wait for the keyboard to come back, read cmd 39 on both
+    # halves, repeat. It looks for the intermittent boot stall that the late-boot
+    # watchdog guard recovers from: such a boot resets once and archives a FRESH
+    # `kind=watchdog phase=boot` record, which a deliberate reboot never does
+    # (shutdown_user() disarms the watchdog first). Runs on its own thread, not as
+    # a worker job: the reconnect probe that notices the keyboard coming back runs
+    # on the worker too, so one long job would block the very thing it waits for.
+
+    BOOT_LOOP_DEFAULT_ROUNDS = 50
+    # Long soak runs are the point once a fix is in: a hang at 1 in 100 boots needs
+    # ~300 rounds to rule out.
+    BOOT_LOOP_MAX_ROUNDS = 9999
+    # A boot plus one watchdog recovery (8 s) fits easily; longer means the board
+    # wedged where the guard does not reach, or did not re-enumerate.
+    BOOT_LOOP_RECONNECT_TIMEOUT_S = 60.0
+    # The master pulls the slave's record over the split link a few seconds after
+    # link-up (three tries, 2 s apart), so its record is polled for this long.
+    BOOT_LOOP_SLAVE_WAIT_S = 8.0
+    BOOT_LOOP_POLL_S = 1.0
+
+    def _init_boot_loop_state(self):
+        self._boot_seen = threading.Event()
+        self._boot_loop_thread = None
+        self._boot_loop_cancel = threading.Event()
+        self._boot_loop_crashes = []      # fresh records reported while a round runs
+        self._boot_loop_listening = False
+
+    def reboot_keyboard(self):
+        """Reboot both halves (cmd 43, protocol v22+); nothing is persisted."""
+        return self._device_call("reboot", lambda c: self.keeb.reboot())
+
+    def boot_loop_running(self):
+        t = self._boot_loop_thread
+        return bool(t is not None and t.is_alive())
+
+    def start_boot_loop(self, rounds=BOOT_LOOP_DEFAULT_ROUNDS):
+        """Start the boot-loop diagnostic; progress and the verdict arrive as events.
+
+        Stops at the first fresh crash record, when the keyboard does not come back
+        within BOOT_LOOP_RECONNECT_TIMEOUT_S, on cancel_boot_loop(), on a failed
+        reboot request, or after ``rounds`` clean reboots (1..BOOT_LOOP_MAX_ROUNDS)."""
+        try:
+            rounds = int(rounds)
+        except (TypeError, ValueError):
+            return False, f"Invalid round count: {rounds!r}"
+        if not 1 <= rounds <= self.BOOT_LOOP_MAX_ROUNDS:
+            return False, f"Rounds must be 1..{self.BOOT_LOOP_MAX_ROUNDS}, got {rounds}"
+        if not self.connected or self.paused:
+            return False, "No PolyKybd connected (or paused)."
+        # Pure check: this runs off the worker, and keeb.supports() may do I/O.
+        if not protocol_supports(self.keeb.protocol_version, "reboot"):
+            return False, ("Firmware protocol too old to reboot on request "
+                           "(need v22+). Please update the PolyKybd firmware.")
+        if self.boot_loop_running():
+            return False, "A boot-loop test is already running."
+        if not self._boot_loop_listening:
+            # Observable has no unsubscribe, so one listener for the core's life;
+            # it only collects while a round is running.
+            self.subscribe(self._boot_loop_on_event)
+            self._boot_loop_listening = True
+        self._boot_loop_cancel = threading.Event()
+        self._boot_loop_thread = threading.Thread(
+            target=self._boot_loop_run, args=(rounds, self._boot_loop_cancel),
+            name="boot-loop", daemon=True)
+        self._boot_loop_thread.start()
+        return True, {"rounds": rounds}
+
+    def cancel_boot_loop(self):
+        if not self.boot_loop_running():
+            return False, "No boot-loop test is running."
+        self._boot_loop_cancel.set()
+        return True, "cancelling"
+
+    def _boot_loop_on_event(self, name, payload):
+        # The console path and any other reader of cmd 39 may report the crash
+        # first, and a read of the slave's record can retire its FRESH bit for
+        # later readers, so the loop listens as well as reads.
+        if name == events.CRASH_DETECTED and self.boot_loop_running() and payload:
+            if payload.get("fresh", True):
+                self._boot_loop_crashes.append(dict(payload))
+
+    def _boot_loop_progress(self, n, rounds, msg, **extra):
+        self.log.info("Boot loop %d/%d: %s", n, rounds, msg)
+        self.emit(events.BOOT_LOOP_PROGRESS, dict({"round": n, "rounds": rounds, "msg": msg}, **extra))
+
+    def _boot_loop_finish(self, result, msg, rounds_done, boot_times, record=None):
+        level = logging.WARNING if result in ("crash", "timeout", "error") else logging.INFO
+        self.log.log(level, "Boot loop finished (%s): %s", result, msg)
+        self.emit(events.BOOT_LOOP_DONE, {
+            "ok": result == "clean", "result": result, "msg": msg,
+            "rounds_done": rounds_done, "boot_times": [round(t, 2) for t in boot_times],
+            "record": record})
+
+    # Failed cmd 39 reads tolerated per half before the round is an error. Right
+    # after a boot the keyboard can miss a read; a read that never succeeds means
+    # the round proved nothing, which must not be reported as clean.
+    BOOT_LOOP_READ_ATTEMPTS = 3
+
+    def _boot_loop_fresh_record(self, cancel):
+        """(read_ok, record): the first fresh crash record on either half after a
+        reboot (or None), or (False, message) when a half could not be read."""
+        if self._boot_loop_crashes:
+            return True, self._boot_loop_crashes[0]
+        err = None
+        for _ in range(self.BOOT_LOOP_READ_ATTEMPTS):
+            ok, payload = self._device_call(
+                "crash_get", lambda c: self.keeb.get_crash_record(0))
+            if ok:
+                break
+            err = payload
+            if cancel.wait(self.BOOT_LOOP_POLL_S):
+                return True, None
+        else:
+            return False, f"master crash record unreadable: {err}"
+        if payload and payload.get("fresh"):
+            return True, payload
+        deadline = time.monotonic() + self.BOOT_LOOP_SLAVE_WAIT_S
+        failures, slave_read = 0, False
+        while True:
+            if self._boot_loop_crashes:
+                return True, self._boot_loop_crashes[0]
+            ok, payload = self._device_call(
+                "crash_get", lambda c: self.keeb.get_crash_record(1))
+            if ok:
+                slave_read = True
+                if payload:
+                    # Present means the master has pulled it this link-up; fresh or
+                    # not, waiting longer cannot change the answer.
+                    return True, (payload if payload.get("fresh") else None)
+            else:
+                failures, err = failures + 1, payload
+            if time.monotonic() >= deadline or cancel.wait(self.BOOT_LOOP_POLL_S):
+                if self._boot_loop_crashes:
+                    return True, self._boot_loop_crashes[0]
+                if not slave_read and failures:
+                    return False, f"slave crash record unreadable: {err}"
+                return True, None
+
+    def _boot_loop_run(self, rounds, cancel):
+        boot_times = []
+        try:
+            for n in range(1, rounds + 1):
+                if cancel.is_set():
+                    self._boot_loop_finish("cancelled", f"Cancelled after {n - 1} reboot(s).",
+                                           n - 1, boot_times)
+                    return
+                self._boot_loop_crashes.clear()
+                self._boot_seen.clear()
+                self._boot_loop_progress(n, rounds, "rebooting")
+                ok, msg = self.reboot_keyboard()
+                if not ok:
+                    self._boot_loop_finish("error", f"Round {n}: the reboot request failed: {msg}",
+                                           n - 1, boot_times)
+                    return
+                t0 = time.monotonic()
+                deadline = t0 + self.BOOT_LOOP_RECONNECT_TIMEOUT_S
+                while not self._boot_seen.is_set():
+                    if cancel.is_set():
+                        self._boot_loop_finish(
+                            "cancelled", f"Cancelled in round {n}, while the keyboard was rebooting.",
+                            n - 1, boot_times)
+                        return
+                    if time.monotonic() >= deadline:
+                        self._boot_loop_finish(
+                            "timeout",
+                            f"Round {n}: the keyboard did not come back within "
+                            f"{self.BOOT_LOOP_RECONNECT_TIMEOUT_S:.0f} s. A boot hang the "
+                            f"watchdog did not reset: note the status panel's percentage, then "
+                            f"unplug and replug, and read the crash record afterwards.",
+                            n - 1, boot_times)
+                        return
+                    self._boot_seen.wait(0.25)
+                boot_times.append(time.monotonic() - t0)
+                read_ok, record = self._boot_loop_fresh_record(cancel)
+                if not read_ok:
+                    self._boot_loop_finish(
+                        "error", f"Round {n}: {record}. The round proves nothing, so "
+                                 f"it is not counted as clean.", n - 1, boot_times)
+                    return
+                if record:
+                    self._boot_loop_finish(
+                        "crash", f"Round {n}: a boot problem was recorded (fresh "
+                                 f"{record.get('kind', '?')} record on the "
+                                 f"{record.get('side', '?')} half).",
+                        n, boot_times, record=record)
+                    return
+                self._boot_loop_progress(n, rounds, f"clean boot in {boot_times[-1]:.1f} s",
+                                         boot_s=round(boot_times[-1], 2))
+            self._boot_loop_finish(
+                "clean", f"{rounds} reboot(s), no boot problem. Boot took "
+                         f"{min(boot_times):.1f}–{max(boot_times):.1f} s.",
+                rounds, boot_times)
+        except Exception as e:  # noqa: BLE001 — a bug here must still end the run visibly
+            self.log.exception("Boot loop failed")
+            self._boot_loop_finish("error", f"Boot loop failed: {type(e).__name__}: {e}",
+                                   len(boot_times), boot_times)
 
     # --- dynamic macros ---------------------------------------------------
     #

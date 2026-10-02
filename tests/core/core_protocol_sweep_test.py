@@ -48,6 +48,7 @@ CORE_CALLS = {
     "save_mru": (),
     "set_brightness": (10,),
     "mock_keycaps": (0,),
+    "reboot_keyboard": (),
 }
 
 # The font-pack and firmware-update transports are dispatched independently of
@@ -68,6 +69,8 @@ EXEMPT = {
     "macro_set": "whole-buffer read-modify-write over the macro accessors, which are swept",
     "set_newer_firmware_policy": "reads the cached protocol only",
     "shutdown": "tears the core down",
+    "start_boot_loop": "a thread over reboot_keyboard + get_crash_record, both swept; "
+                       "gated on the cached protocol; driven in boot_loop_test.py",
     "submit_overlay_cmd": "queues _overlay_cmd_job: enable/disable, swept directly",
     "tick_window_tracking": "the window loop; its overlay sends are covered by the device sweep",
 }

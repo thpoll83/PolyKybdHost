@@ -118,6 +118,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.IDLE_TIMEOUT.value: 18,
     Cmd.SEND_PRC_OVERLAY.value: 19,
     Cmd.FILL_POOL_FROM_ICON.value: 20,
+    Cmd.REBOOT.value: 22,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -168,6 +169,15 @@ def _pad(data: bytes) -> bytes:
 
 def _reply(cmd: int, ok: bool = True, body: bytes = b"") -> bytes:
     return _pad(bytes([ord("P"), cmd, ord("." if ok else "!")]) + bytes(body))
+
+
+def _watchdog_boot_record(fw_version: str) -> bytes:
+    """A poly_crash_record_t for a boot stall the late-boot guard recovered:
+    kind=watchdog, phase=boot 0x16e1 (the 75% panel paint, core1 running)."""
+    from polyhost.services.crash_report import RECORD_MAGIC, RECORD_STRUCT
+    fw = str(fw_version).encode()[:8].ljust(8, b"\x00")
+    return RECORD_STRUCT.pack(RECORD_MAGIC, 3, 0, 1, 0x11, 0, 0, 0, 0, 0, 0,
+                              1, 0x16E1, fw, 0)
 
 
 def _read_values(data: bytes, width: int):
@@ -228,6 +238,11 @@ class FaultPlan:
                      the keyboard unanswering for that long (the window the
                      reconnect probe's 3-strike debounce exists for)
       disconnected   every write raises, as an unplugged device does
+      boot_crash_on_reboot  the Nth cmd 43 reboot (1-based) stalls in boot, the
+                     late-boot guard resets it, and it comes back with a FRESH
+                     watchdog record on the master (phase=1:0x16e1, the field one)
+      boot_hang_on_reboot   the Nth cmd 43 reboot never comes back: every write
+                     afterwards raises, as a board wedged outside the guard does
 
     API level (PolyKybdMock, by method name):
       fail           {method: n}  return a failure without doing anything
@@ -243,6 +258,8 @@ class FaultPlan:
     fw_signature_valid: bool = True
     deaf_after_images: tuple | None = None
     disconnected: bool = False
+    boot_crash_on_reboot: int | None = None
+    boot_hang_on_reboot: int | None = None
     fail: dict = field(default_factory=dict)
     raises: dict = field(default_factory=dict)
 
@@ -297,6 +314,9 @@ class MockFirmware:
         self.lock = threading.Lock()
 
         self.fresh_boot = True
+        self.reboot_count = 0     # cmd 43 reboots taken (the boot-loop diagnostic)
+        self.crash_record = None  # the master's archived 48-byte record (cmd 39)
+        self.crash_fresh = False
         self.state_generation = 0
         self.overlay_flags = 0
         self.bootloader_requested = False
@@ -500,6 +520,34 @@ class MockFirmware:
     def _bootloader(self, p):
         self.bootloader_requested = True
         return _reply(p[1])
+
+    def _reboot(self, p):
+        # The firmware ACKs first and then resets; the reply is built before the
+        # reset here for the same reason.
+        reply = _reply(p[1])
+        self.reboot_count += 1
+        self.reboot()
+        # A deliberate reboot is never archived (shutdown_user() disarms the
+        # watchdog), so a record from an earlier crash is no longer fresh...
+        self.crash_fresh = False
+        # ...unless THIS boot stalled and the late-boot guard reset it.
+        if self.faults.boot_crash_on_reboot == self.reboot_count:
+            self.crash_record = _watchdog_boot_record(self.version)
+            self.crash_fresh = True
+        if self.faults.boot_hang_on_reboot == self.reboot_count:
+            self.faults.disconnected = True
+        return reply
+
+    def _crash_record(self, p):
+        which = p[2]
+        if which == 2:
+            self.crash_record, self.crash_fresh = None, False
+            return _reply(p[1], body=bytes(49))
+        if which > 2:
+            return _reply(p[1], False)
+        present = which == 0 and self.crash_record is not None
+        flags = (1 if present else 0) | (2 if present and self.crash_fresh else 0)
+        return _reply(p[1], body=bytes([flags]) + (self.crash_record if present else bytes(48)))
 
     def _handedness(self, p):
         self.handedness_left = bool(p[2])
@@ -884,6 +932,8 @@ class MockFirmware:
         Cmd.IDLE_TIMEOUT.value: _get_or_set,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
+        Cmd.REBOOT.value: _reboot,
+        Cmd.CRASH_RECORD.value: _crash_record,
         Cmd.SET_HANDEDNESS.value: _handedness,
         Cmd.GET_LAYER_NAMES.value: _layer_names,
         Cmd.OVERLAY_FLAGS_ON.value: _flags_on,

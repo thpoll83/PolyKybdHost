@@ -88,6 +88,7 @@ class CommandsSubMenu:
         # Menu action of the Maintenance root, gated as a whole in update_enabled.
         self._maintenance_action = None
         self._auto_brightness_action = None
+        self.boot_loop_action = None   # built only in developer mode
 
     @property
     def _core(self):
@@ -257,6 +258,12 @@ class CommandsSubMenu:
                                     firmware=True))
         fw_menu.addAction(self._act("arrow_circle_down.svg", "Apply staged firmware\u2026",
                                     self.apply_staged_firmware_action, firmware=True))
+        fw_menu.addSeparator()
+        # Gated per feature (cmd 43, v22+) in PolyHost.managed_connection_status,
+        # so it is deliberately in neither action list here.
+        self.boot_loop_action = self._act("sync_problem.svg", "Boot-loop test\u2026",
+                                          lambda: self.parent.open_boot_loop_dialog())
+        fw_menu.addAction(self.boot_loop_action)
         self._fw_actions.append(fw_menu.menuAction())
 
         dev_menu.addSeparator()

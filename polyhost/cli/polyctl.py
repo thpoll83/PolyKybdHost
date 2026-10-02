@@ -543,6 +543,40 @@ def _cmd_crash(client, args):
     return 0
 
 
+def _cmd_reboot(client, args):
+    client.call(protocol.M_REBOOT, {})
+    print("rebooting the keyboard (both halves)")
+    return 0
+
+
+def _cmd_bootloop(client, args):
+    """Reboot repeatedly until a boot problem shows up (cmd 43 + cmd 39, v22+)."""
+    if args.cancel:
+        client.call(protocol.M_BOOT_LOOP_CANCEL, {})
+        print("cancelling the boot-loop test")
+        return 0
+    # Subscribe BEFORE starting so no progress event is missed.
+    client.subscribe_events()
+    client.call(protocol.M_BOOT_LOOP_START, {"rounds": args.rounds})
+    print(f"boot-loop test: up to {args.rounds} reboot(s); Ctrl+C leaves it running, "
+          f"`polyctl bootloop --cancel` stops it")
+    for name, payload in client.events():
+        payload = payload or {}
+        if name == "boot_loop_progress":
+            print(f"  [{payload.get('round')}/{payload.get('rounds')}] {payload.get('msg')}")
+        elif name == "boot_loop_done":
+            print(payload.get("msg"))
+            rec = payload.get("record")
+            if rec:
+                from polyhost.services.crash_report import CrashRecord, summarize  # stdlib-only module
+                r = CrashRecord.from_dict(rec)
+                print(summarize(r))
+                print(f"  {r.as_console_line()}")
+            return 0 if payload.get("result") in ("clean", "cancelled") else 1
+    print("error: connection closed before the boot-loop test finished", file=sys.stderr)
+    return 1
+
+
 def _cmd_replay_anim(client, args):
     client.call(protocol.M_REPLAY_ANIM, {})
     print("replaying startup animation")
@@ -1039,6 +1073,17 @@ def build_parser():
     sub.add_parser(
         "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"
     ).set_defaults(func=_cmd_replay_anim)
+    sub.add_parser(
+        "reboot", help="reboot both keyboard halves; nothing is saved (firmware v22+)"
+    ).set_defaults(func=_cmd_reboot)
+    p_bootloop = sub.add_parser(
+        "bootloop", help="reboot repeatedly and stop at the first boot that left a crash "
+                         "record, or a boot that never came back (firmware v22+)")
+    p_bootloop.add_argument("--rounds", type=int, default=50,
+                            help="reboots to try, 1..9999 (default 50)")
+    p_bootloop.add_argument("--cancel", action="store_true",
+                            help="stop a running boot-loop test")
+    p_bootloop.set_defaults(func=_cmd_bootloop)
 
     p_crash = sub.add_parser(
         "crash", help="show or clear the keyboard's last firmware crash record (firmware v16+)")
