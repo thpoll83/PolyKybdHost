@@ -34,6 +34,7 @@ import logging
 import re
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field
 
 from polyhost.services.console_lines import LineAssembler
@@ -61,22 +62,47 @@ def severity_wanted(severity: str, level: str) -> bool:
 
 @dataclass(frozen=True)
 class ConsolePattern:
+    """One known-bad console line.
+
+    ``escalate_after`` > 0 makes a WARNING pattern an ERROR once it matches that
+    many times within ``escalate_window_s`` seconds, with ``escalated_summary`` as
+    its sentence. That is for a line where one occurrence is a glitch the board
+    recovers from and a burst is a fault."""
     id: str
     regex: re.Pattern
     severity: str
     summary: str
+    escalate_after: int = 0
+    escalate_window_s: float = 0.0
+    escalated_summary: str = ""
 
 
-def _p(pid, regex, severity, summary):
-    return ConsolePattern(pid, re.compile(regex), severity, summary)
+def _p(pid, regex, severity, summary, escalate_after=0, escalate_window_s=0.0,
+       escalated_summary=""):
+    return ConsolePattern(pid, re.compile(regex), severity, summary,
+                          escalate_after, escalate_window_s, escalated_summary)
 
 
 # ⚠️ Match the firmware's own wording, and keep each pattern narrow: a broad one
 # fires on healthy boards and teaches people to dismiss the dialog. Crash
 # records (`crash: side=…`) are NOT here; services/crash_report.py owns them.
 CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
-    _p("oled_i2c", r"oled_render offset command failed", SEVERITY_ERROR,
-       "The status display did not accept an update (I2C write failed)."),
+    # The status OLED. One failed write costs one frame and the next frame
+    # repaints it (field report 2026-10-02: one failure in ~7300 idle frames), so a
+    # single one is a warning and only a burst is an error. `oled_render … failed`
+    # is stock QMK's line; firmware with keyboards/polykybd/oled_i2c.c retries
+    # the write first, so there it means the retry failed too, and adds its own
+    # `oled_i2c:` lines (wording in base/oled_i2c_diag.c).
+    _p("oled_i2c", r"oled_render(90)? (offset command|data) failed", SEVERITY_WARNING,
+       "The status display missed one update (I2C write failed).",
+       escalate_after=3, escalate_window_s=60.0,
+       escalated_summary="The status display keeps rejecting updates (repeated I2C write failures)."),
+    _p("oled_i2c_retried", r"oled_i2c: \w+ write failed #\d+ .* - retry ok", SEVERITY_WARNING,
+       "The status display rejected an update; the keyboard's retry landed.",
+       escalate_after=10, escalate_window_s=60.0,
+       escalated_summary="The status display keeps rejecting updates (the keyboard's retries land)."),
+    _p("oled_i2c_stuck", r"oled_i2c: status display not responding", SEVERITY_ERROR,
+       "The status display stopped responding (I2C writes fail even after a retry)."),
     _p("slave_unresponsive", r"RPC FAILED .* slave unresponsive", SEVERITY_ERROR,
        "The second keyboard half stopped answering over the split link."),
     _p("slave_refused", r"slave REFUSED \(ack=", SEVERITY_ERROR,
@@ -150,6 +176,8 @@ class ConsoleProblemScanner:
         self._update_interval = update_interval
         self._clock = clock
         self._sent: dict[str, tuple[int, float]] = {}   # id -> (count, when) last published
+        self._totals: dict[str, int] = {}                # id -> matches, at any level
+        self._hits: dict[str, deque] = {}                # id -> match times, escalating patterns only
 
     def feed(self, chunk: str, level: str = LEVEL_ERRORS) -> list[Problem]:
         out: dict[str, Problem] = {}
@@ -158,9 +186,17 @@ class ConsoleProblemScanner:
             for pat in self._patterns:
                 if not pat.regex.search(line):
                     continue
+                self._totals[pat.id] = self._totals.get(pat.id, 0) + 1
+                severity, summary = self._severity_for(pat, now)
                 prior = self._seen.get(pat.id)
                 if prior is not None:
                     prior.count += 1
+                    if severity == SEVERITY_ERROR and prior.severity != SEVERITY_ERROR:
+                        # Escalated: publish at once, whatever the interval says.
+                        prior.severity, prior.summary = severity, summary
+                        prior.line = _clip(line)
+                        out[pat.id] = prior
+                        break
                     sent_count, sent_at = self._sent.get(pat.id, (0, now))
                     # Counted at any level, re-sent only at the CURRENT one: a
                     # warning first seen under errors_and_warnings goes quiet
@@ -169,9 +205,11 @@ class ConsoleProblemScanner:
                             and pat.id not in out and prior.count != sent_count
                             and now - sent_at >= self._update_interval):
                         out[pat.id] = prior
-                elif severity_wanted(pat.severity, level):
-                    prob = Problem(SOURCE_KEYBOARD, pat.id, pat.severity, pat.summary,
-                                   _clip(line))
+                elif severity_wanted(severity, level):
+                    # Counted from the first match, including the warnings the
+                    # current level did not publish.
+                    prob = Problem(SOURCE_KEYBOARD, pat.id, severity, summary,
+                                   _clip(line), count=self._totals[pat.id])
                     self._seen[pat.id] = prob
                     out[pat.id] = prob
                 break   # one line, one problem
@@ -181,6 +219,18 @@ class ConsoleProblemScanner:
 
     def problems(self) -> list[Problem]:
         return list(self._seen.values())
+
+    def _severity_for(self, pat: ConsolePattern, now: float) -> tuple[str, str]:
+        """Record a match of ``pat`` at ``now``; (severity, summary) it counts as."""
+        if pat.escalate_after <= 0:
+            return pat.severity, pat.summary
+        hits = self._hits.setdefault(pat.id, deque())
+        hits.append(now)
+        while hits and now - hits[0] > pat.escalate_window_s:
+            hits.popleft()
+        if len(hits) >= pat.escalate_after:
+            return SEVERITY_ERROR, pat.escalated_summary or pat.summary
+        return pat.severity, pat.summary
 
 
 class HostLogProblemHandler(logging.Handler):

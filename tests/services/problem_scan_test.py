@@ -11,26 +11,101 @@ import unittest
 from polyhost.services import problem_scan as ps
 
 OLED = "oled_render offset command failed"
+SLAVE = "RPC FAILED id=3 after 10 tries: slave unresponsive"
+RETRY_OK = ("oled_i2c: cmd write failed #1 (nack, flags=0x00, sda=1 scl=1, len=7, "
+            "66 ms after the last good write) - retry ok")
+RETRY_FAIL = ("oled_i2c: cmd write failed #2 (timeout, flags=0x00, sda=0 scl=1, len=7, "
+              "12 ms after the last good write) - retry failed (timeout)")
+STUCK = "oled_i2c: status display not responding: 3 writes in a row failed after a retry"
 SPLIT_OK = "Split link: 1200 tx crc_err=0 nack=0 transport_fail=0 giveup=0 err=0.0%"
 SPLIT_LOST = "Split link: 1200 tx crc_err=1 nack=0 transport_fail=2 giveup=3 err=0.4%"
 EDEN = "Eden idle: core1 job for key 7 timed out - rendering on core0"
 
 
 class ConsoleScannerTest(unittest.TestCase):
-    def test_the_oled_i2c_line_is_an_error_reported_once(self):
+    def test_an_error_line_is_reported_once(self):
         s = ps.ConsoleProblemScanner()
-        found = s.feed(f"boot\n{OLED}\n")
-        self.assertEqual([p.key for p in found], ["oled_i2c"])
+        found = s.feed(f"boot\n{SLAVE}\n")
+        self.assertEqual([p.key for p in found], ["slave_unresponsive"])
         self.assertEqual(found[0].severity, ps.SEVERITY_ERROR)
         self.assertEqual(found[0].source, ps.SOURCE_KEYBOARD)
-        self.assertEqual(found[0].line, OLED)
-        self.assertEqual(s.feed(f"{OLED}\n{OLED}\n"), [])     # repeats only count
+        self.assertEqual(found[0].line, SLAVE)
+        self.assertEqual(s.feed(f"{SLAVE}\n{SLAVE}\n"), [])     # repeats only count
         self.assertEqual(s.problems()[0].count, 3)
 
     def test_a_line_split_across_reads_matches_after_the_second(self):
         s = ps.ConsoleProblemScanner()
-        self.assertEqual(s.feed(OLED[:10]), [])
-        self.assertEqual([p.key for p in s.feed(OLED[10:] + "\n")], ["oled_i2c"])
+        self.assertEqual(s.feed(SLAVE[:10]), [])
+        self.assertEqual([p.key for p in s.feed(SLAVE[10:] + "\n")], ["slave_unresponsive"])
+
+    # -- the status OLED: one failure is a glitch, a burst is a fault ------------
+    def test_one_oled_failure_is_a_warning_that_the_default_level_does_not_raise(self):
+        s = ps.ConsoleProblemScanner()
+        self.assertEqual(s.feed(f"{OLED}\n"), [])
+        found = ps.ConsoleProblemScanner().feed(f"{OLED}\n", ps.LEVEL_ERRORS_AND_WARNINGS)
+        self.assertEqual([(p.key, p.severity) for p in found],
+                         [("oled_i2c", ps.SEVERITY_WARNING)])
+
+    def test_three_oled_failures_within_a_minute_escalate_to_an_error(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        self.assertEqual(s.feed(f"{OLED}\n"), [])
+        now[0] = 30.0
+        self.assertEqual(s.feed(f"{OLED}\n"), [])
+        now[0] = 59.0
+        found = s.feed(f"{OLED}\n")
+        self.assertEqual([(p.key, p.severity, p.count) for p in found],
+                         [("oled_i2c", ps.SEVERITY_ERROR, 3)])
+        self.assertIn("keeps rejecting", found[0].summary)
+
+    def test_oled_failures_spread_out_never_escalate(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        for _ in range(5):
+            self.assertEqual(s.feed(f"{OLED}\n"), [])
+            now[0] += 61.0
+
+    def test_an_oled_warning_already_shown_is_resent_as_an_error_when_it_escalates(self):
+        now = [0.0]
+        wide = ps.LEVEL_ERRORS_AND_WARNINGS
+        s = ps.ConsoleProblemScanner(update_interval=600, clock=lambda: now[0])
+        self.assertEqual([p.severity for p in s.feed(f"{OLED}\n", wide)], [ps.SEVERITY_WARNING])
+        now[0] = 1.0
+        self.assertEqual(s.feed(f"{OLED}\n", wide), [])          # inside the interval
+        now[0] = 2.0
+        found = s.feed(f"{OLED}\n", wide)                          # escalation skips it
+        self.assertEqual([(p.severity, p.count) for p in found], [(ps.SEVERITY_ERROR, 3)])
+
+    def test_the_stock_qmk_render_variants_all_match(self):
+        for line in ("oled_render offset command failed", "oled_render data failed",
+                     "oled_render90 data failed"):
+            found = ps.ConsoleProblemScanner().feed(line + "\n", ps.LEVEL_ERRORS_AND_WARNINGS)
+            self.assertEqual([p.key for p in found], ["oled_i2c"], line)
+
+    def test_a_retried_oled_write_is_a_warning_until_it_keeps_happening(self):
+        s = ps.ConsoleProblemScanner(clock=lambda: 0.0)
+        found = ps.ConsoleProblemScanner().feed(RETRY_OK + "\n", ps.LEVEL_ERRORS_AND_WARNINGS)
+        self.assertEqual([(p.key, p.severity) for p in found],
+                         [("oled_i2c_retried", ps.SEVERITY_WARNING)])
+        self.assertEqual(s.feed((RETRY_OK + "\n") * 9), [])
+        found = s.feed(RETRY_OK + "\n")
+        self.assertEqual([(p.key, p.severity, p.count) for p in found],
+                         [("oled_i2c_retried", ps.SEVERITY_ERROR, 10)])
+
+    def test_a_failed_retry_detail_line_is_not_a_retry_ok(self):
+        s = ps.ConsoleProblemScanner()
+        self.assertEqual(s.feed(RETRY_FAIL + "\n", ps.LEVEL_ERRORS_AND_WARNINGS), [])
+
+    def test_a_stuck_status_display_is_an_error_at_once(self):
+        found = ps.ConsoleProblemScanner().feed(STUCK + "\n")
+        self.assertEqual([(p.key, p.severity) for p in found],
+                         [("oled_i2c_stuck", ps.SEVERITY_ERROR)])
+
+    def test_the_recovery_and_summary_lines_are_not_problems(self):
+        s = ps.ConsoleProblemScanner()
+        lines = ("oled_i2c: status display responding again after 4 failed write(s)\n"
+                 "oled_i2c: 7 more failed write(s) not printed in the last 10 s (10 since boot)\n")
+        self.assertEqual(s.feed(lines, ps.LEVEL_ERRORS_AND_WARNINGS), [])
 
     def test_healthy_split_link_stats_are_not_a_problem(self):
         s = ps.ConsoleProblemScanner()
@@ -56,17 +131,22 @@ class ConsoleScannerTest(unittest.TestCase):
         for p in ps.CONSOLE_PATTERNS:
             self.assertIn(p.severity, (ps.SEVERITY_ERROR, ps.SEVERITY_WARNING), p.id)
             self.assertTrue(p.summary.endswith("."), p.id)
+            if p.escalate_after:
+                # Escalation turns a warning into an error; an error has nowhere to go.
+                self.assertEqual(p.severity, ps.SEVERITY_WARNING, p.id)
+                self.assertGreater(p.escalate_window_s, 0, p.id)
+                self.assertTrue(p.escalated_summary.endswith("."), p.id)
 
     def test_a_raised_count_is_resent_once_the_interval_has_passed(self):
         now = [100.0]
         s = ps.ConsoleProblemScanner(update_interval=10, clock=lambda: now[0])
-        self.assertEqual([p.count for p in s.feed(f"{OLED}\n")], [1])
+        self.assertEqual([p.count for p in s.feed(f"{SLAVE}\n")], [1])
         now[0] = 105.0
-        self.assertEqual(s.feed(f"{OLED}\n{OLED}\n"), [])       # inside the interval
+        self.assertEqual(s.feed(f"{SLAVE}\n{SLAVE}\n"), [])       # inside the interval
         now[0] = 111.0
-        found = s.feed(f"{OLED}\n")
-        self.assertEqual([(p.key, p.count) for p in found], [("oled_i2c", 4)])
-        self.assertEqual(s.feed(f"{OLED}\n"), [])                # interval restarts
+        found = s.feed(f"{SLAVE}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("slave_unresponsive", 4)])
+        self.assertEqual(s.feed(f"{SLAVE}\n"), [])                # interval restarts
         now[0] = 200.0
         self.assertEqual(s.feed("healthy\n"), [])                # no repeat, no update
 
@@ -83,12 +163,12 @@ class ConsoleScannerTest(unittest.TestCase):
 
     def test_one_chunk_publishes_a_problem_once_with_its_total(self):
         s = ps.ConsoleProblemScanner(update_interval=0)
-        found = s.feed(f"{OLED}\n{OLED}\n{OLED}\n")
-        self.assertEqual([(p.key, p.count) for p in found], [("oled_i2c", 3)])
+        found = s.feed(f"{SLAVE}\n{SLAVE}\n{SLAVE}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("slave_unresponsive", 3)])
 
     def test_a_long_line_is_clipped(self):
         s = ps.ConsoleProblemScanner()
-        found = s.feed(OLED + " " + "x" * 1000 + "\n")
+        found = s.feed(SLAVE + " " + "x" * 1000 + "\n")
         self.assertLessEqual(len(found[0].line), ps.MAX_LINE)
 
 
