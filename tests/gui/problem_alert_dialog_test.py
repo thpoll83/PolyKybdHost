@@ -40,6 +40,28 @@ class ProblemAlertDialogTest(unittest.TestCase):
         self.assertIn("seen 4×", d.detail.toPlainText())
         self.assertIn("1 problem", d.headline.text())
 
+    def test_an_escalated_warning_takes_the_error_severity_and_sentence(self):
+        d = ProblemAlertDialog()
+        d.add_problem(ps.Problem(ps.SOURCE_KEYBOARD, "oled_i2c", ps.SEVERITY_WARNING,
+                                 "Missed one update.", "oled_render offset command failed", 1))
+        d.add_problem(ps.Problem(ps.SOURCE_KEYBOARD, "oled_i2c", ps.SEVERITY_ERROR,
+                                 "Keeps rejecting updates.", "oled_render data failed", 3))
+        self.assertEqual(len(d.problems), 1)
+        self.assertEqual(d.problems[0].severity, ps.SEVERITY_ERROR)
+        self.assertIn("[Keyboard, error] Keeps rejecting updates. (seen 3×)", d.detail.toPlainText())
+        self.assertIn("oled_render data failed", d.detail.toPlainText())
+
+    def test_a_late_warning_does_not_downgrade_an_error(self):
+        d = ProblemAlertDialog()
+        d.add_problem(ps.Problem(ps.SOURCE_KEYBOARD, "oled_i2c", ps.SEVERITY_ERROR,
+                                 "Keeps rejecting updates.", "oled_render data failed", 3))
+        d.add_problem(ps.Problem(ps.SOURCE_KEYBOARD, "oled_i2c", ps.SEVERITY_WARNING,
+                                 "Missed one update.", "oled_render offset command failed", 1))
+        self.assertEqual(d.problems[0].severity, ps.SEVERITY_ERROR)
+        self.assertEqual(d.problems[0].summary, "Keeps rejecting updates.")
+        self.assertEqual(d.problems[0].line, "oled_render data failed")
+        self.assertEqual(d.problems[0].count, 3)
+
     def test_report_passes_the_composed_description_and_title(self):
         got = []
         d = ProblemAlertDialog(report_cb=lambda desc, title: got.append((desc, title)))

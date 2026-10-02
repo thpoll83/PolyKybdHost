@@ -283,6 +283,17 @@ Two sources, each behind its own setting, and one level for both:
   needs an entry in `CONSOLE_PATTERNS`, and a pattern that fires on a healthy board
   trains people to dismiss the dialog, so `problem_scan_test` pins the healthy
   stats line as a non-match. Crash records stay with `crash_report.py`.
+- **A pattern can ESCALATE** (`escalate_after`, `escalate_window_s`,
+  `escalated_summary`): a warning becomes an error once it matches that many times
+  in the window, and is published at once with the new sentence, whatever the update
+  interval says. The status OLED uses it. One failed I2C write costs one frame, and
+  the next frame repaints it, so a single `oled_render … failed` is a warning and 3
+  in 60 s are an error. Through 1.12.0 one occurrence was an error, and its dialog
+  took focus and ended the idle animation over a frame the board had already
+  repainted (field report, 2026-10-02). Firmware with `oled_i2c.c` retries a failed
+  write and prints `oled_i2c:` detail lines (`oled_i2c_retried`, 10 in 60 s
+  escalate). It also prints a `status display not responding` line, which is an
+  error at once (`oled_i2c_stuck`).
 - **Both scanners share `services/console_lines.LineAssembler`**: a console read is
   a report-sized fragment, and the crash scanner already reassembled lines by hand.
 - **Once per process and source key.** A console pattern is keyed by its id; a host
