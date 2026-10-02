@@ -212,7 +212,7 @@ class ControlServer(MpcListenerServer):
             p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
             p.M_REBOOT: lambda conn, params: _unwrap(c.reboot_keyboard()),
             p.M_BOOT_LOOP_START: lambda conn, params: _unwrap(
-                c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_MAX_ROUNDS))),
+                c.start_boot_loop(params.get("rounds", c.BOOT_LOOP_DEFAULT_ROUNDS))),
             p.M_BOOT_LOOP_CANCEL: lambda conn, params: _unwrap(c.cancel_boot_loop()),
             p.M_UNICODE_MODE_REFRESH: lambda conn, params: _unwrap(c.refresh_unicode_mode()),
             p.M_DAYLIGHT_REFRESH: lambda conn, params: _unwrap(c.refresh_daylight_brightness()),

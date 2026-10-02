@@ -2256,7 +2256,10 @@ class PolyCore(Observable):
     # a worker job: the reconnect probe that notices the keyboard coming back runs
     # on the worker too, so one long job would block the very thing it waits for.
 
-    BOOT_LOOP_MAX_ROUNDS = 50
+    BOOT_LOOP_DEFAULT_ROUNDS = 50
+    # Long soak runs are the point once a fix is in: a hang at 1 in 100 boots needs
+    # ~300 rounds to rule out.
+    BOOT_LOOP_MAX_ROUNDS = 9999
     # A boot plus one watchdog recovery (8 s) fits easily; longer means the board
     # wedged where the guard does not reach, or did not re-enumerate.
     BOOT_LOOP_RECONNECT_TIMEOUT_S = 60.0
@@ -2280,12 +2283,12 @@ class PolyCore(Observable):
         t = self._boot_loop_thread
         return bool(t is not None and t.is_alive())
 
-    def start_boot_loop(self, rounds=BOOT_LOOP_MAX_ROUNDS):
+    def start_boot_loop(self, rounds=BOOT_LOOP_DEFAULT_ROUNDS):
         """Start the boot-loop diagnostic; progress and the verdict arrive as events.
 
         Stops at the first fresh crash record, when the keyboard does not come back
         within BOOT_LOOP_RECONNECT_TIMEOUT_S, on cancel_boot_loop(), on a failed
-        reboot request, or after ``rounds`` clean reboots (at most 50)."""
+        reboot request, or after ``rounds`` clean reboots (1..BOOT_LOOP_MAX_ROUNDS)."""
         try:
             rounds = int(rounds)
         except (TypeError, ValueError):

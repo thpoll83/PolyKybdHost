@@ -47,9 +47,9 @@ class BootLoopDialogTest(unittest.TestCase):
         self.assertFalse(self.d.start_btn.isEnabled())
         self.assertTrue(self.d.cancel_btn.isEnabled())
 
-    def test_the_default_and_the_limit_are_50(self):
+    def test_the_default_is_50_and_the_limit_9999(self):
         self.assertEqual(self.d.rounds.value(), 50)
-        self.assertEqual(self.d.rounds.maximum(), 50)
+        self.assertEqual(self.d.rounds.maximum(), 9999)
 
     def test_a_refused_start_says_why_and_stays_idle(self):
         self.core.start_boot_loop.return_value = (False, "need v22+")

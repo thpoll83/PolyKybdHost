@@ -135,7 +135,7 @@ class BootLoopTest(unittest.TestCase):
     def test_one_loop_at_a_time_and_the_limits(self):
         core = self._core()
         self.assertFalse(core.start_boot_loop(0)[0])
-        self.assertFalse(core.start_boot_loop(51)[0])
+        self.assertFalse(core.start_boot_loop(10000)[0])
         self.assertFalse(core.start_boot_loop("x")[0])
         self.assertFalse(core.cancel_boot_loop()[0])
         core.keeb.firmware.faults.boot_hang_on_reboot = 1

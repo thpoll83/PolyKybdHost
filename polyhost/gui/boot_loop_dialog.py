@@ -17,7 +17,8 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel, QPlainT
 
 from polyhost.services import crash_report
 
-MAX_ROUNDS = 50
+DEFAULT_ROUNDS = 50
+MAX_ROUNDS = 9999
 
 _INTRO = (
     "Reboots the keyboard again and again to catch an intermittent boot hang. "
@@ -45,7 +46,7 @@ class BootLoopDialog(QDialog):
         row.addWidget(QLabel("Reboots:"))
         self.rounds = QSpinBox(self)
         self.rounds.setRange(1, MAX_ROUNDS)
-        self.rounds.setValue(MAX_ROUNDS)
+        self.rounds.setValue(DEFAULT_ROUNDS)
         row.addWidget(self.rounds)
         row.addStretch(1)
         layout.addLayout(row)

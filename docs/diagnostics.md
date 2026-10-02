@@ -205,7 +205,7 @@ purpose is proving whether the app crashed, shipped into none of them.
 firmware's late-boot watchdog guard recovers from: reboot (cmd 43), wait for the
 GET_ID fresh-boot marker, read cmd 39 on both halves, repeat. It stops at the first
 FRESH crash record, at a reboot that does not come back within 60 s, on cancel, on a
-failed reboot request, or after 1..50 rounds. Progress and the verdict are the
+failed reboot request, or after 1..9999 rounds (default 50). Progress and the verdict are the
 `boot_loop_progress` / `boot_loop_done` events, so the tray works the same as a
 daemon client.
 

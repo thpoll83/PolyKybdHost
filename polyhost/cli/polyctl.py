@@ -1080,7 +1080,7 @@ def build_parser():
         "bootloop", help="reboot repeatedly and stop at the first boot that left a crash "
                          "record, or a boot that never came back (firmware v22+)")
     p_bootloop.add_argument("--rounds", type=int, default=50,
-                            help="reboots to try, 1..50 (default 50)")
+                            help="reboots to try, 1..9999 (default 50)")
     p_bootloop.add_argument("--cancel", action="store_true",
                             help="stop a running boot-loop test")
     p_bootloop.set_defaults(func=_cmd_bootloop)
