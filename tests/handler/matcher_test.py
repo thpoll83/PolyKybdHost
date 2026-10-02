@@ -97,7 +97,7 @@ class TestFindMatchingEntry(unittest.TestCase):
         self.assertIs(find_matching_entry("My Docs here", e), e)  # parent, not leaf
 
     def test_contains_matches_a_multi_word_needle(self):
-        # Up to host 1.12.0 a needle with a space could never equal a single
+        # Up to host 1.12.x a needle with a space could never equal a single
         # word, so a multi-word key looked reasonable and silently never fired.
         # It now matches the words adjacent; TestPhraseKeys covers the rules.
         leaf = entry()

@@ -135,7 +135,7 @@ When keys of different lengths fit at the same place, the longest wins, whatever
 the YAML order, so `Claude Code` beats `Claude`. `titles-contains` scans the title
 from left to right, so the key found earliest in the title wins.
 
-(Up to host 1.12.0 a key was one word only, and a multi-word key like
+(Up to host 1.12.x a key was one word only, and a multi-word key like
 `LibreOffice Writer` silently never matched.)
 
 A `titles-contains` entry needs no companion key — it matches on its own. (Up to
