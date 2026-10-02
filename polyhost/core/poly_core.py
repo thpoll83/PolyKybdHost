@@ -2338,26 +2338,50 @@ class PolyCore(Observable):
             "rounds_done": rounds_done, "boot_times": [round(t, 2) for t in boot_times],
             "record": record})
 
+    # Failed cmd 39 reads tolerated per half before the round is an error. Right
+    # after a boot the keyboard can miss a read; a read that never succeeds means
+    # the round proved nothing, which must not be reported as clean.
+    BOOT_LOOP_READ_ATTEMPTS = 3
+
     def _boot_loop_fresh_record(self, cancel):
-        """The first fresh crash record on either half after a reboot, or None."""
+        """(read_ok, record): the first fresh crash record on either half after a
+        reboot (or None), or (False, message) when a half could not be read."""
         if self._boot_loop_crashes:
-            return self._boot_loop_crashes[0]
-        ok, payload = self._device_call(
-            "crash_get", lambda c: self.keeb.get_crash_record(0))
-        if ok and payload and payload.get("fresh"):
-            return payload
+            return True, self._boot_loop_crashes[0]
+        err = None
+        for _ in range(self.BOOT_LOOP_READ_ATTEMPTS):
+            ok, payload = self._device_call(
+                "crash_get", lambda c: self.keeb.get_crash_record(0))
+            if ok:
+                break
+            err = payload
+            if cancel.wait(self.BOOT_LOOP_POLL_S):
+                return True, None
+        else:
+            return False, f"master crash record unreadable: {err}"
+        if payload and payload.get("fresh"):
+            return True, payload
         deadline = time.monotonic() + self.BOOT_LOOP_SLAVE_WAIT_S
+        failures, slave_read = 0, False
         while True:
             if self._boot_loop_crashes:
-                return self._boot_loop_crashes[0]
+                return True, self._boot_loop_crashes[0]
             ok, payload = self._device_call(
                 "crash_get", lambda c: self.keeb.get_crash_record(1))
-            if ok and payload:
-                # Present means the master has pulled it this link-up; fresh or not,
-                # waiting longer cannot change the answer.
-                return payload if payload.get("fresh") else None
+            if ok:
+                slave_read = True
+                if payload:
+                    # Present means the master has pulled it this link-up; fresh or
+                    # not, waiting longer cannot change the answer.
+                    return True, (payload if payload.get("fresh") else None)
+            else:
+                failures, err = failures + 1, payload
             if time.monotonic() >= deadline or cancel.wait(self.BOOT_LOOP_POLL_S):
-                return self._boot_loop_crashes[0] if self._boot_loop_crashes else None
+                if self._boot_loop_crashes:
+                    return True, self._boot_loop_crashes[0]
+                if not slave_read and failures:
+                    return False, f"slave crash record unreadable: {err}"
+                return True, None
 
     def _boot_loop_run(self, rounds, cancel):
         boot_times = []
@@ -2394,7 +2418,12 @@ class PolyCore(Observable):
                         return
                     self._boot_seen.wait(0.25)
                 boot_times.append(time.monotonic() - t0)
-                record = self._boot_loop_fresh_record(cancel)
+                read_ok, record = self._boot_loop_fresh_record(cancel)
+                if not read_ok:
+                    self._boot_loop_finish(
+                        "error", f"Round {n}: {record}. The round proves nothing, so "
+                                 f"it is not counted as clean.", n - 1, boot_times)
+                    return
                 if record:
                     self._boot_loop_finish(
                         "crash", f"Round {n}: a boot problem was recorded (fresh "

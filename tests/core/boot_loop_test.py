@@ -94,6 +94,20 @@ class BootLoopTest(unittest.TestCase):
         self.assertEqual(done["result"], "error", done)
         self.assertIn("refused", done["msg"])
 
+    def test_an_unreadable_crash_record_is_an_error_not_clean(self):
+        from polyhost.device.command_ids import Cmd
+        core = self._core(nack={Cmd.CRASH_RECORD.value: 99})
+        done = self._run(core, 3)
+        self.assertEqual(done["result"], "error", done)
+        self.assertIn("master crash record unreadable", done["msg"])
+        self.assertEqual(done["rounds_done"], 0)
+
+    def test_one_missed_read_is_retried(self):
+        from polyhost.device.command_ids import Cmd
+        core = self._core(nack={Cmd.CRASH_RECORD.value: 1})
+        done = self._run(core, 2)
+        self.assertEqual(done["result"], "clean", done)
+
     def test_an_old_record_does_not_stop_it(self):
         core = self._core()
         fw = core.keeb.firmware
