@@ -96,21 +96,63 @@ class TestFindMatchingEntry(unittest.TestCase):
         self.assertIs(find_matching_entry("My Doc here", e), leaf)
         self.assertIs(find_matching_entry("My Docs here", e), e)  # parent, not leaf
 
-    def test_contains_never_matches_a_multi_word_needle(self):
-        # Corollary of the whitespace split, and the sharper edge of it: a needle
-        # containing a space cannot equal any single word, so it can never match
-        # however much of it appears in the title. Worth its own test because
-        # "contains" reads like a substring match, so a multi-word key looks
-        # reasonable when writing a mapping and then silently never fires.
+    def test_contains_matches_a_multi_word_needle(self):
+        # Up to host 1.12.0 a needle with a space could never equal a single
+        # word, so a multi-word key looked reasonable and silently never fired.
+        # It now matches the words adjacent; TestPhraseKeys covers the rules.
         leaf = entry()
         e = entry(contains={"My Doc": leaf})
-        self.assertIs(find_matching_entry("My Doc here", e), e)   # parent, not leaf
-        self.assertIs(find_matching_entry("My Doc", e), e)        # even as the whole title
+        self.assertIs(find_matching_entry("My Doc here", e), leaf)
+        self.assertIs(find_matching_entry("My Doc", e), leaf)
+        self.assertIs(find_matching_entry("My Docs", e), e)       # whole words only
 
     def test_bad_regex_raises(self):
         import re as _re
         with self.assertRaises(_re.error):
             find_matching_entry("x", entry(title="("))
+
+
+class TestPhraseKeys(unittest.TestCase):
+    """A title sub-map key may be several words, matched as adjacent whole words."""
+
+    def test_contains_phrase_needs_adjacent_words(self):
+        leaf = entry()
+        e = entry(contains={"Claude Code": leaf})
+        self.assertIs(find_matching_entry("Fix it - Claude Code - Chrome", e), leaf)
+        self.assertIs(find_matching_entry("Claude wrote Code", e), e)
+        self.assertIs(find_matching_entry("Claude Coder", e), e)
+
+    def test_longest_phrase_wins_whatever_the_yaml_order(self):
+        short, long_ = entry(), entry()
+        for order in (("Claude", "Claude Code"), ("Claude Code", "Claude")):
+            subs = {"Claude": short, "Claude Code": long_}
+            e = entry(contains={k: subs[k] for k in order})
+            self.assertIs(find_matching_entry("x - Claude Code", e), long_, order)
+            self.assertIs(find_matching_entry("chat - Claude", e), short, order)
+
+    def test_earliest_key_in_the_title_still_wins(self):
+        miro, jira = entry(), entry()
+        e = entry(contains={"Jira": jira, "Google Docs": miro})
+        self.assertIs(find_matching_entry("Google Docs about Jira", e), miro)
+        self.assertIs(find_matching_entry("Jira notes in Google Docs", e), jira)
+
+    def test_a_failed_phrase_falls_back_to_the_shorter_key(self):
+        short = entry()
+        gated = entry(title="never")
+        e = entry(contains={"Claude": short, "Claude Code": gated})
+        self.assertIs(find_matching_entry("x - Claude Code", e), short)
+
+    def test_starts_and_ends_with_take_phrases(self):
+        head, tail = entry(), entry()
+        e = entry(sw={"Untitled Document": head}, ew={"LibreOffice Writer": tail})
+        self.assertIs(find_matching_entry("Untitled Document 1", e), head)
+        self.assertIs(find_matching_entry("Untitled 1 - LibreOffice Writer", e), tail)
+        self.assertIs(find_matching_entry("Writer", e), e)
+
+    def test_extra_whitespace_in_key_or_title_is_ignored(self):
+        leaf = entry()
+        e = entry(contains={" Google  Docs ": leaf})
+        self.assertIs(find_matching_entry("a -  Google\tDocs", e), leaf)
 
 
 class TestUrlMatching(unittest.TestCase):

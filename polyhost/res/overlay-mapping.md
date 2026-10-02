@@ -44,9 +44,9 @@ window title (or OS) instead — see below.
 | `overlay` | file or list | The overlay PNG(s) to load, relative to `res/overlays/`. |
 | `remote` | bool | This entry is a forwarded window rather than a local one. |
 | `title` | regex | Hard gate: `re.search` against the **whole** window title. |
-| `titles-startswith` | sub-map | Keyed on the title's **first word**. |
-| `titles-endswith` | sub-map | Keyed on the title's **last word**. |
-| `titles-contains` | sub-map | Keyed on **any one word** of the title. |
+| `titles-startswith` | sub-map | Keyed on the title's **first word(s)**. |
+| `titles-endswith` | sub-map | Keyed on the title's **last word(s)**. |
+| `titles-contains` | sub-map | Keyed on **one word or an adjacent run of words** anywhere in the title. |
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
@@ -129,8 +129,14 @@ still gets the Mac artwork. This mirrors `PolyCore._track_active_os`.
 ## Title sub-maps: word matching, not substring
 
 All three title sub-maps match **whole words** of the title, split on whitespace.
-A multi-word key like `LibreOffice Writer` can therefore never match — use the
-distinguishing single word (`Writer`).
+A key may be several words: `Claude Code` matches when those two words stand next
+to each other in the title, and never matches "Claude" alone or "Claude Coder".
+When keys of different lengths fit at the same place, the longest wins, whatever
+the YAML order, so `Claude Code` beats `Claude`. `titles-contains` scans the title
+from left to right, so the key found earliest in the title wins.
+
+(Up to host 1.12.0 a key was one word only, and a multi-word key like
+`LibreOffice Writer` silently never matched.)
 
 A `titles-contains` entry needs no companion key — it matches on its own. (Up to
 host 0.11.11 it did not: the matcher only split the title into words when the
