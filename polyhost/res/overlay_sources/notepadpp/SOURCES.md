@@ -40,10 +40,10 @@ GPL-3.0 toolbar icons — switched to all-MIT deliberately.)
 Line/row-specific glyphs are chosen where a generic one would mislead
 (duplicate → Row Triple, not "Document Copy").
 
-### 1 custom-drawn (CC0 / project-owned)
-- deleteline (Del line) — text rows with a strike-through, drawn by
-  `_draw_deleteline()` in `fetch_icons.py` (white-on-transparent, `mode: alpha`).
-  A generic trash glyph reads as delete-*file*.
+### 1 shared
+- deleteline (Del line) — JetBrains' Fluent `Delete Lines` (MIT), copied from
+  `../jetbrains/icons` by `icon_fetch.borrow` (`mode: alpha` to match), so the
+  editors share one icon.
 
 ## Program icon (ESC, all layers)
 

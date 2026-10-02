@@ -61,7 +61,7 @@ bindings:
   - { key: R, mods: [], icon: recolor.png,    label: Recolor,            source: "ms-fluent/Color Line (MIT)" }
   - { key: T, mods: [], icon: text.png,       label: "Text tool",        source: "ms-fluent/Text T (MIT)" }
   - { key: O, mods: [], icon: linecurve.png,  label: "Line / curve",     source: "ms-fluent/Line (MIT)" }
-  - { key: X, mods: [], icon: swapcolors.png, label: "Swap colours",     source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: X, mods: [], icon: swapcolors.png, mode: alpha, region: [72, 40], anchor: center, label: "Swap colours", source: "gimp (borrowed: shared swap-colours glyph)" }
   - { key: LEFT_BRACKET,  mods: [], icon: brushdec1.png, label: "Brush width -1", source: "drawn (thin bar + -1)", mode: alpha }
   - { key: RIGHT_BRACKET, mods: [], icon: brushinc1.png, label: "Brush width +1", source: "drawn (thick bar + +1)", mode: alpha }
   # window toggles

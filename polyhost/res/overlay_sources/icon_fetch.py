@@ -152,3 +152,23 @@ def fluent(mapping: dict[str, str], out_dir: Path, render_px: int = RENDER_PX) -
         label = asset if source == "material-symbols" else asset.split("/")[0]
         print(f"  {stem}.png  <- {source}/{label}")
     return len(mapping)
+
+
+def borrow(mapping: dict[str, str], out_dir: Path) -> int:
+    """Copy each ``{file name: sibling app folder}`` icon from that app's icons/.
+
+    For one drawing several apps share: the copy is byte-identical, so with the
+    same placement keys every app renders the same cell, and the overlay icon
+    library stores it once. Guarded like the other drawn assets: a committed
+    file is left as-is.
+    """
+    import shutil
+    here = Path(__file__).resolve().parent
+    for name, app in sorted(mapping.items()):
+        dest = out_dir / name
+        if dest.exists():
+            print(f"  {name}  <- committed asset (left as-is)")
+        else:
+            shutil.copyfile(here / app / "icons" / name, dest)
+            print(f"  {name}  <- copied from {app}/icons")
+    return len(mapping)

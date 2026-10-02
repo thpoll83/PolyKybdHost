@@ -1,10 +1,19 @@
 # Claude desktop app overlays for PolyKybd. See SOURCES.md.
 #
-# Covers the Code tab (Claude Code in the desktop app). Every chord here is
-# from the official list at code.claude.com/docs/en/desktop#keyboard-shortcuts.
-# Chat and Code share one window and one process, so this set loads in the
-# Chat tab too; the Chat tab's own chords are not officially published and are
-# left out of this set (see claude_web.yaml).
+# Covers both tabs. Chat and Code share one window and one process, so one set
+# serves both. Three sources, by authority:
+#   - the macOS app's own shortcut list, read off by the owner (2026-10-02),
+#     the newest and fullest list;
+#   - the Windows app's own list (2026-10-02), app version unknown;
+#   - the official docs, code.claude.com/docs/en/desktop#keyboard-shortcuts.
+# A chord both app lists show (Cmd on macOS, Ctrl on Windows) is one CMDCTRL
+# binding. A chord only the macOS list shows is `only: [macos]`, and one only
+# the Windows list shows is `except: [macos]`, until the Windows app is checked
+# against the macOS list.
+# On Windows two Chat chords clash with the Code tab and are left out:
+# Ctrl+Shift+E (Chat: toggle thinking, Code: effort menu) and Ctrl+Shift+I
+# (Chat: incognito chat, Code: model menu). The macOS list has only the Code
+# meanings, so the clash may belong to an older Windows build.
 #
 # CMDCTRL is Cmd on macOS and Ctrl on Windows (the doc: "On Windows, use Ctrl in
 # place of Cmd"). Session cycling and the terminal toggle use Ctrl on every
@@ -33,20 +42,71 @@ program_icon_region: [37, 32]
 program_icon_margin: 0
 
 bindings:
-  - { key: "/",  mods: [CMDCTRL],        icon: shortcuts.png, label: "Keyboard shortcuts" }
-  - { key: N,    mods: [CMDCTRL],        icon: newchat.png,   label: "New session" }
-  - { key: W,    mods: [CMDCTRL],        icon: close.png,     label: "Close session" }
-  - { key: TAB,  mods: [CTRL],           icon: next.png,      label: "Next session" }
-  - { key: TAB,  mods: [CTRL, SHIFT],    icon: prev.png,      label: "Previous session" }
-  - { key: "]",  mods: [CMDCTRL, SHIFT], icon: next.png,      label: "Next session" }
-  - { key: "[",  mods: [CMDCTRL, SHIFT], icon: prev.png,      label: "Previous session" }
-  - { key: D,    mods: [CMDCTRL, SHIFT], icon: diff.png,      label: "Toggle diff pane" }
-  - { key: B,    mods: [CMDCTRL, SHIFT], icon: browser.png,   label: "Toggle browser pane" }
-  - { key: S,    mods: [CMDCTRL, SHIFT], icon: pick.png,      label: "Select element in browser" }
-  - { key: "`",  mods: [CTRL],           icon: terminal.png,  label: "Toggle terminal pane" }
-  - { key: "\\", mods: [CMDCTRL],        icon: closepane.png, label: "Close focused pane" }
-  - { key: ";",  mods: [CMDCTRL],        icon: sidechat.png,  label: "Open side chat" }
-  - { key: O,    mods: [CTRL],           icon: viewmode.png,  label: "Cycle view modes" }
-  - { key: M,    mods: [CMDCTRL, SHIFT], icon: permission.png, label: "Permission mode menu" }
-  - { key: I,    mods: [CMDCTRL, SHIFT], icon: model.png,     label: "Model menu" }
-  - { key: E,    mods: [CMDCTRL, SHIFT], icon: effort.png,    label: "Effort menu" }
+  # --- both platforms (docs, confirmed by the macOS list unless noted) ---
+  - { key: "/",   mods: [CMDCTRL],        icon: shortcuts.png,  label: "Keyboard shortcuts" }
+  - { key: N,     mods: [CMDCTRL],        icon: newchat.png,    label: "New session" }
+  - { key: W,     mods: [CMDCTRL],        icon: close.png,      label: "Close session" }
+  - { key: TAB,   mods: [CTRL],           icon: next.png,       label: "Next session" }
+  - { key: TAB,   mods: [CTRL, SHIFT],    icon: prev.png,       label: "Previous session" }
+  - { key: "]",   mods: [CMDCTRL, SHIFT], icon: next.png,       label: "Next session" }
+  - { key: "[",   mods: [CMDCTRL, SHIFT], icon: prev.png,       label: "Previous session" }
+  - { key: D,     mods: [CMDCTRL, SHIFT], icon: diff.png,       label: "Toggle changes" }
+  - { key: S,     mods: [CMDCTRL, SHIFT], icon: pick.png,       label: "Select element in preview" }
+  - { key: "`",   mods: [CTRL],           icon: terminal.png,   label: "Toggle terminal" }
+  - { key: "\\",  mods: [CMDCTRL],        icon: closepane.png,  label: "Close pane" }
+  - { key: ";",   mods: [CMDCTRL],        icon: sidechat.png,   label: "Toggle side chat" }
+  - { key: O,     mods: [CTRL],           icon: viewmode.png,   label: "Transcript view" }
+  - { key: M,     mods: [CMDCTRL, SHIFT], icon: permission.png, label: "Mode menu" }
+  - { key: I,     mods: [CMDCTRL, SHIFT], icon: model.png,      label: "Model menu" }
+  - { key: E,     mods: [CMDCTRL, SHIFT], icon: effort.png,     label: "Effort selector" }
+  # --- both platforms (both app lists) ---
+  - { key: K,     mods: [CMDCTRL],        icon: search.png,     label: "Search or start a session" }
+  - { key: K,     mods: [CMDCTRL, SHIFT], icon: search.png,     label: "Search" }
+  - { key: Q,     mods: [CTRL],           icon: recents.png,    label: "Switch between recents" }
+  - { key: B,     mods: [CMDCTRL],        icon: sidebar.png,    label: "Toggle sidebar" }
+  - { key: ",",   mods: [CMDCTRL],        icon: settings.png,   label: Settings }
+  - { key: RIGHT, mods: [CMDCTRL, ALT],   icon: next.png,       label: "Next sidebar tab" }
+  - { key: LEFT,  mods: [CMDCTRL, ALT],   icon: prev.png,       label: "Previous sidebar tab" }
+  - { key: U,     mods: [CMDCTRL],        icon: attach.png,     label: "Add files or photos" }
+  - { key: D,     mods: [CMDCTRL],        icon: dictation.png,  label: "Toggle dictation" }
+  - { key: "1",   mods: [CMDCTRL], icon: tab1.png, mode: luma, label: "Jump to session 1", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "2",   mods: [CMDCTRL], icon: tab2.png, mode: luma, label: "Jump to session 2", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "3",   mods: [CMDCTRL], icon: tab3.png, mode: luma, label: "Jump to session 3", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "4",   mods: [CMDCTRL], icon: tab4.png, mode: luma, label: "Jump to session 4", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "5",   mods: [CMDCTRL], icon: tab5.png, mode: luma, label: "Jump to session 5", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "6",   mods: [CMDCTRL], icon: tab6.png, mode: luma, label: "Jump to session 6", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "7",   mods: [CMDCTRL], icon: tab7.png, mode: luma, label: "Jump to session 7", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "8",   mods: [CMDCTRL], icon: tab8.png, mode: luma, label: "Jump to session 8", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "9",   mods: [CMDCTRL], icon: tab9.png, mode: luma, label: "Jump to session 9", source: "ms-fluent/Tab (MIT) + digit" }
+  # --- Windows only: the docs or the Windows list, absent from the macOS list ---
+  - { key: B,     mods: [CMDCTRL, SHIFT], except: [macos], icon: browser.png,  label: "Toggle browser pane" }
+  - { key: ".",   mods: [CTRL, SHIFT],    except: [macos], icon: model.png,    label: "Model menu" }
+  # --- macOS only: the macOS list ---
+  - { key: N,     mods: [GUI, SHIFT],  only: [macos], icon: newsettings.png, label: "New session with current settings" }
+  - { key: T,     mods: [GUI, SHIFT],  only: [macos], icon: reopen.png,      label: "Reopen closed session" }
+  - { key: DOWN,  mods: [ALT],         only: [macos], icon: next.png,        label: "Next session" }
+  - { key: UP,    mods: [ALT],         only: [macos], icon: prev.png,        label: "Previous session" }
+  - { key: "\\",  mods: [GUI, CTRL],   only: [macos], icon: splitright.png,  label: "New session on the right" }
+  - { key: "-",   mods: [GUI, CTRL],   only: [macos], icon: splitdown.png,   label: "New session below" }
+  - { key: "]",   mods: [CTRL],        only: [macos], icon: focusnext.png,   label: "Focus next split view" }
+  - { key: "[",   mods: [CTRL],        only: [macos], icon: focusprev.png,   label: "Focus previous split view" }
+  - { key: W,     mods: [GUI, CTRL],   only: [macos], icon: closesplit.png,  label: "Close split view" }
+  - { key: P,     mods: [GUI, ALT],    only: [macos], icon: pin.png,         label: "Pin / unpin session" }
+  - { key: R,     mods: [GUI, ALT],    only: [macos], icon: rename.png,      label: "Rename session" }
+  - { key: A,     mods: [GUI, ALT],    only: [macos], icon: archive.png,     label: "Archive session" }
+  - { key: U,     mods: [GUI, ALT],    only: [macos], icon: markunread.png,  label: "Mark session as read/unread" }
+  - { key: L,     mods: [GUI],         only: [macos], icon: link.png,        label: "Copy session link" }
+  - { key: L,     mods: [GUI, ALT],    only: [macos], icon: link.png,        label: "Copy session link" }
+  - { key: G,     mods: [GUI, ALT],    only: [macos], icon: pullrequest.png, label: "Open session PR" }
+  - { key: O,     mods: [GUI, ALT],    only: [macos], icon: fork.png,        label: "Fork session" }
+  - { key: Y,     mods: [GUI, SHIFT],  only: [macos], icon: filelist.png,    label: "Toggle file list" }
+  - { key: P,     mods: [GUI],         only: [macos], icon: findfile.png,    label: "Go to file" }
+  - { key: P,     mods: [GUI, SHIFT],  only: [macos], icon: browser.png,     label: "Toggle preview" }
+  - { key: X,     mods: [GUI, SHIFT],  only: [macos], icon: annotate.png,    label: "Annotate page in preview" }
+  - { key: R,     mods: [GUI],         only: [macos], icon: reload.png,      label: "Reload page in preview" }
+  - { key: F,     mods: [GUI, SHIFT],  only: [macos], icon: files.png,       label: "Toggle Files" }
+  - { key: L,     mods: [GUI, SHIFT],  only: [macos], icon: quote.png,       label: "Attach selection as context" }
+  - { key: J,     mods: [GUI],         only: [macos], icon: terminal.png,    label: "Toggle terminal" }
+  - { key: "\\",  mods: [GUI, SHIFT],  only: [macos], icon: expand.png,      label: "Expand or collapse pane" }
+  - { key: F,     mods: [GUI, ALT],    only: [macos], icon: fastmode.png,    label: "Toggle fast mode" }
+  - { key: ENTER, mods: [GUI, ALT],    only: [macos], icon: send.png,        label: "Send in a forked session" }

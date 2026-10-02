@@ -23,7 +23,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # URL *is* known -- a URL that matched none of the needles above already says
   # this is not Miro/Outlook/Jira, so a stray word in the title must not
   # overrule it (searching google.com for "jira" would otherwise load the Jira
-  # overlay). Whole-word matching, so a multi-word key can never fire.
+  # overlay). Keys match whole title words; a key of several words (Claude
+  # Code) matches them adjacent, and is tried before a shorter key (Claude).
   urls-contains:
     miro.com:
       overlay: miro_template.mods.png
@@ -60,6 +61,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
     chatgpt.com:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+  # Only sites whose page titles carry a stable brand name are listed. Codex
+  # cannot be told apart from ChatGPT by title, so without a URL it gets the
+  # ChatGPT set. Never key on "Google" alone: every Chrome window title on
+  # Windows and Linux ends in "Google Chrome".
   titles-contains:
     Miro:
       overlay: miro_template.mods.png
@@ -67,6 +72,25 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: web_outlook_template.mods.png
     Jira:
       overlay: jira_template.mods.png
+    Confluence:
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
+    GitHub:
+      overlay: [github_template.mods.png, github_template.combo.mods.png]
+    GitLab:
+      overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    Bitbucket:
+      overlay: bitbucket_pr_template.mods.png
+    Notion:
+      overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    Google Docs:
+      overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
+                googledocs_template.extra.mods.png]
+    Claude Code:
+      overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
+    Claude:
+      overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
+    ChatGPT:
+      overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
@@ -111,6 +135,24 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         Jira:
           overlay: jira_template.mods.png
+        Confluence:
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+        GitHub:
+          overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        GitLab:
+          overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        Bitbucket:
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+        Notion:
+          overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        Google Docs:
+          overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        Claude Code:
+          overlay: claude_code_web_template_mac.mods.png
+        Claude:
+          overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
+        ChatGPT:
+          overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
 # AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
 # forms are under the browser entry above (claude.ai, chatgpt.com). The Claude
 # desktop app shows its Chat and Code tabs in one window of one process, so one

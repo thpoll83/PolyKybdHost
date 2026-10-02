@@ -63,10 +63,40 @@ FLUENT = {
     "archive": "Archive",
     # --- Claude Code on the web ---
     "files": "Document Multiple",
+    # --- Claude desktop, Chat tab ---
+    "recents": "History",
+    "attach": "Attach",
+    "dictation": "Mic",
+    # --- Claude desktop, macOS list. Names already used by other apps where one
+    # fits, so the glyph is shared and the icon library holds it once. ---
+    "newsettings": "Chat Settings",
+    "reopen": "Arrow Undo",
+    "splitright": "Split Vertical",
+    "splitdown": "Split Horizontal",
+    "focusnext": "Arrow Circle Right",
+    "focusprev": "Arrow Circle Left",
+    "closesplit": "Dismiss Circle",
+    "pin": "Pin",
+    "rename": "Text Edit Style",
+    "markunread": "Mail Unread",
+    "link": "Link",
+    "pullrequest": "Branch Request",
+    "fork": "Branch Fork",
+    "filelist": "Text Bullet List Square",
+    "annotate": "Pen",
+    "reload": "Arrow Clockwise",
+    "quote": "Text Quote",
+    "expand": "Full Screen Maximize",
+    "fastmode": "Flash",
+    "send": "Send",
 }
 
 BRAND = {"claude.png": "claude"}
 LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx"}
+
+# Ctrl+1..9 (jump to chat N) uses the numbered tab glyphs of Windows Terminal
+# and WinSCP, copied byte for byte so all three apps share one icon per digit.
+BORROWED = {f"tab{d}.png": "winscp" for d in "123456789"}
 
 
 def main() -> int:
@@ -77,6 +107,7 @@ def main() -> int:
         brand_marks.ensure(out / fname, slug)
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
+    n += icon_fetch.borrow(BORROWED, out)
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
     return 0
 

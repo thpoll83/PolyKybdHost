@@ -2,7 +2,16 @@
 """Build the overlay icon library, polyhost/res/fontpack/icons.plyi (cmd 42, v20).
 
     python scripts/build_icon_library.py            # rebuild, bump content_version if bytes change
-    python scripts/build_icon_library.py --check    # fail if the shipped files are stale
+    python scripts/build_icon_library.py --check    # fail if the shipped files disagree with the id table
+
+REBUILD IN BATCHES, not per overlay change. Every rebuild bumps content_version,
+and every keyboard re-flashes the 256 KiB slot on its next connect. A new icon
+missing from the library costs nothing in correctness: the send path uses the
+library only on an exact pixel match and otherwise uploads the bitmap. So
+``--check`` (a test) does NOT fail on new eligible icons. It lists them as
+pending and fails only when the shipped files no longer match the frozen id
+table. Rebuild when the pending list is worth a re-flash, for example before a
+release.
 
 SELECTION (OVERLAY_ICON_LIBRARY_DESIGN.md §2.1). An icon is in the library when
 its rendered 72x40 cell is:
@@ -62,8 +71,25 @@ def _specs():
             yield name, y, spec
 
 
+def _platform_results(g, spec: dict, base: Path):
+    """Every artwork set the generator writes for this spec, not only Windows.
+
+    A binding scoped `only: [macos]` (or to Linux, or one desktop) appears in
+    that platform's set alone, so rendering only the default set left its icon
+    out of the library selection entirely."""
+    yield g.generate(spec, base)
+    if g.spec_needs_macos_set(spec):
+        yield g.generate(spec, base, platform=g.PLAT_MACOS)
+    if g.spec_needs_linux_set(spec):
+        yield g.generate(spec, base, platform=g.PLAT_LINUX)
+    for member in g.LINUX_MEMBERS:
+        if g.spec_needs_member_set(spec, member):
+            yield g.generate(spec, base, platform=member)
+
+
 def _spec_cells(y: Path, spec: dict):
-    """[(kind, name, packed 360-byte frame)] for every cell the generator draws."""
+    """[(kind, name, packed 360-byte frame)] for every cell the generator draws,
+    on every platform it writes a set for."""
     import generate_app_overlays as g
     base = y.parent
     fmap = {}
@@ -82,25 +108,27 @@ def _spec_cells(y: Path, spec: dict):
             kind_of[ic] = "material"
         else:
             kind_of[ic] = "custom"
-    res = g.generate(spec, base)
     out = []
-    for p in res["placed"]:
-        if p["mod"] not in g.Modifier.__members__:
-            continue                                  # the ESC program mark
-        mod = g.Modifier[p["mod"]]
-        arr = next(res[t] for t, chmap in (("primary", g.PRIMARY_CH), ("combo", g.COMBO_CH),
-                                            ("extra", g.EXTRA_CH), ("gui", g.GUI_CH)) if mod in chmap)
-        src = str(p["src"])
-        if src.startswith("concept:"):
-            kind = "lexicon"
-        elif src.startswith("label:"):
-            kind = "label"
-        else:
-            kind = kind_of.get(p["src"], "custom")
-        r, c = p["cell"]
-        m = arr[r * g.SLOT_H:(r + 1) * g.SLOT_H, c * g.SLOT_W:(c + 1) * g.SLOT_W, g.CH[p["ch"]]] > 0
-        if m.any():
-            out.append((kind, src, np.packbits(m).tobytes()))
+    for res in _platform_results(g, spec, base):
+        for p in res["placed"]:
+            if p["mod"] not in g.Modifier.__members__:
+                continue                                  # the ESC program mark
+            mod = g.Modifier[p["mod"]]
+            arr = next(res[t] for t, chmap in (("primary", g.PRIMARY_CH), ("combo", g.COMBO_CH),
+                                                ("extra", g.EXTRA_CH), ("gui", g.GUI_CH))
+                       if mod in chmap)
+            src = str(p["src"])
+            if src.startswith("concept:"):
+                kind = "lexicon"
+            elif src.startswith("label:"):
+                kind = "label"
+            else:
+                kind = kind_of.get(p["src"], "custom")
+            r, c = p["cell"]
+            m = arr[r * g.SLOT_H:(r + 1) * g.SLOT_H, c * g.SLOT_W:(c + 1) * g.SLOT_W,
+                    g.CH[p["ch"]]] > 0
+            if m.any():
+                out.append((kind, src, np.packbits(m).tobytes()))
     return out
 
 
@@ -187,13 +215,21 @@ def assign_ids(selected: dict[bytes, str], ids_doc: list,
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--check", action="store_true", help="fail if the shipped files are stale")
+    ap.add_argument("--check", action="store_true",
+                    help="fail if the shipped files disagree with the frozen id table; "
+                         "new eligible icons are only reported as pending")
     args = ap.parse_args(argv)
 
     ids_doc = []
     if IDS_FILE.exists():
         ids_doc = yaml.safe_load(IDS_FILE.read_text(encoding="utf-8")) or []
     selected = select()
+    known = {e["key"] for e in ids_doc}
+    pending = sorted(n for f, n in selected.items() if _key(f) not in known)
+    if args.check:
+        # Rebuild from the frozen table alone: the shipped files must match it,
+        # but a new icon waits for the next deliberate rebuild.
+        selected = {f: n for f, n in selected.items() if _key(f) in known}
     previous = icon_library.parse(PLYI_FILE.read_bytes())[1] if PLYI_FILE.exists() else []
     table, frames = assign_ids(selected, ids_doc, previous)
 
@@ -229,6 +265,9 @@ def main(argv=None) -> int:
             print("stale:", ", ".join(sorted(set(stale))))
             return 1
         print(f"OK: {len(frames)} icons, {len(data)} B, content v{version}")
+        if pending:
+            print(f"pending: {len(pending)} new icon(s) ride as bitmap uploads until the "
+                  f"next rebuild: {', '.join(pending)}")
         return 0
     PLYI_FILE.write_bytes(data)
     IDS_FILE.write_text(ids_text, encoding="utf-8")

@@ -135,6 +135,18 @@ class Flags(Enum):
     HAS_OS = 8
 
 
+def _phrase_keys(sub_map):
+    """``(words, key)`` for each key of a title sub-map, longest phrase first.
+
+    A key may be several words (``Claude Code``, ``Google Docs``). It matches a
+    run of whole title words, compared after splitting both on whitespace.
+    Longest first, so at one title position ``Claude Code`` is tried before
+    ``Claude`` whatever order the YAML lists them in.
+    """
+    keys = [(str(k).split(), k) for k in sub_map]
+    return sorted((kw for kw in keys if kw[0]), key=lambda kw: -len(kw[0]))
+
+
 def find_matching_entry(title, entry, url=None, os_name=None):
     """Return the deepest mapping entry that matches ``title`` (and ``url``), or
     ``None``.
@@ -217,14 +229,18 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     # that failure mode rather than re-arming it with one more term.
     words = title.split() if title else []
     if words:
-        if has_starts_with and words[0] in entry[TITLE_SW]:
-            m = find_matching_entry(title, entry[TITLE_SW][words[0]], url, os_name)
-            if m is not None:
-                return m
-        if has_ends_with and words[-1] in entry[TITLE_EW]:
-            m = find_matching_entry(title, entry[TITLE_EW][words[-1]], url, os_name)
-            if m is not None:
-                return m
+        if has_starts_with:
+            for kw, key in _phrase_keys(entry[TITLE_SW]):
+                if words[:len(kw)] == kw:
+                    m = find_matching_entry(title, entry[TITLE_SW][key], url, os_name)
+                    if m is not None:
+                        return m
+        if has_ends_with:
+            for kw, key in _phrase_keys(entry[TITLE_EW]):
+                if words[-len(kw):] == kw:
+                    m = find_matching_entry(title, entry[TITLE_EW][key], url, os_name)
+                    if m is not None:
+                        return m
         # `titles-contains` is the weakest signal here — any single word anywhere
         # in the title — so for an entry that also declares `urls-contains` it is
         # a fallback for when the URL is *unknown*, not merely unmatched. A known
@@ -235,12 +251,16 @@ def find_matching_entry(title, entry, url=None, os_name=None):
         # False for them whatever the URL is -- as are the two positional
         # matchers above, which no shipped entry combines with `urls-contains`.
         url_decided = bool(has_urls_contains and url)
+        # Scan the title left to right, so the earliest key in the title wins
+        # as before; at each position the longest phrase is tried first.
         if has_contains and not url_decided:
-            for word in words:
-                if word in entry[TITLE_HAS]:
-                    m = find_matching_entry(title, entry[TITLE_HAS][word], url, os_name)
-                    if m is not None:
-                        return m
+            keys = _phrase_keys(entry[TITLE_HAS])
+            for i in range(len(words)):
+                for kw, key in keys:
+                    if words[i:i + len(kw)] == kw:
+                        m = find_matching_entry(title, entry[TITLE_HAS][key], url, os_name)
+                        if m is not None:
+                            return m
 
     # A hard ``url`` regex constraint can only be satisfied when a URL is known;
     # with no URL it simply doesn't match (not a false positive). ``urls-contains``
