@@ -79,6 +79,21 @@ class BootLoopTest(unittest.TestCase):
         self.assertEqual(rec["kind"], "watchdog")
         self.assertEqual((rec["phase"], rec["phase_arg"]), (1, 0x16E1))
 
+    def test_a_lost_reboot_ack_does_not_stop_it(self):
+        # The firmware ACKs before it resets, but the ACK can still be lost.
+        from polyhost.device.command_ids import Cmd
+        core = self._core(drop_replies={Cmd.REBOOT.value: 1})
+        done = self._run(core, 2)
+        self.assertEqual(done["result"], "clean", done)
+        self.assertEqual(core.keeb.firmware.reboot_count, 2)
+
+    def test_a_refused_reboot_stops_it(self):
+        from polyhost.device.command_ids import Cmd
+        core = self._core(nack={Cmd.REBOOT.value: 1})
+        done = self._run(core, 3)
+        self.assertEqual(done["result"], "error", done)
+        self.assertIn("refused", done["msg"])
+
     def test_an_old_record_does_not_stop_it(self):
         core = self._core()
         fw = core.keeb.firmware

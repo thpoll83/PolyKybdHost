@@ -578,10 +578,15 @@ class PolyKybd:
                 compose_cmd(Cmd.REBOOT), 100, expect(Cmd.REBOOT))
         except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
             return False, f"Reboot request failed: {e}"
-        # The prefix check alone accepts a NACK (`P\x2b!`); the '.' is the ACK.
-        if not result or len(reply) < 3 or reply[2:3] != b'.':
+        if result and len(reply) >= 3 and reply[2:3] == b'.':
+            return True, "rebooting"
+        # The prefix check alone accepts a NACK (`P\x2b!`); that is a refusal.
+        if result:
             return False, "The keyboard refused the reboot request."
-        return True, "rebooting"
+        # No reply at all: the ACK is lost, or the reset beat it out. That is not a
+        # failure by itself; the caller's wait for the fresh-boot marker decides.
+        # Reporting it as one stopped the boot loop on a keyboard that WAS rebooting.
+        return True, "sent; no ACK (the reset may have come first)"
 
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
