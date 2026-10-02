@@ -58,7 +58,7 @@ bindings:
   # --- Ctrl+Shift (R channel of the combo file) ---
   - { key: P, mods: [CTRL, SHIFT], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
   - { key: D, mods: [CTRL, SHIFT], icon: duplicate.png,   label: "Duplicate line",  source: "ms-fluent/Row Triple (MIT)" }
-  - { key: K, mods: [CTRL, SHIFT], icon: deleteline.png,  label: "Delete line",     source: "custom/editor_glyphs", mode: alpha }
+  - { key: K, mods: [CTRL, SHIFT], icon: deleteline.png,  label: "Delete line",     source: "ms-fluent/Delete Lines (MIT), borrowed from jetbrains", mode: alpha }
   # Sublime Text 4 moved Join Lines to Ctrl+Shift+J; plain Ctrl+J is now the
   # prefix of two-stroke chords, which a keycap cannot draw.
   - { key: J, mods: [CTRL, SHIFT], icon: joinlines.png,   label: "Join lines",      source: "ms-fluent/Text Wrap Off (MIT)" }

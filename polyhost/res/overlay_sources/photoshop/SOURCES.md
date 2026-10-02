@@ -110,13 +110,16 @@ Photoshop's signature tools have no good Fluent equivalent, so they are drawn:
 | healing | rotated band-aid / plaster | J Healing-brush tool |
 | dodgeburn | dodge "lollipop" (circle on a stick) | O Dodge/Burn tool |
 | pathselect | solid arrow cursor | A Path-selection tool |
-| swapcolors | two overlapping squares + curved swap arrow | X Swap FG/BG |
 | defaultcolors | filled + hollow square pair (black/white) | D Default colours |
 | gradient | swatch split on the diagonal (lit / unlit halves) | G Gradient tool (distinct from the Fill bucket) |
 | quickmask | canvas rect with inner circle (+ masked region) | Q Quick mask |
 
 Each is generated at 4× supersample and downscaled (LANCZOS); the alpha channel is the shape.
 Guarded by an exists-check so a committed hand-edit survives a `fetch_icons.py` re-run.
+
+X Swap FG/BG uses GIMP's swap glyph, copied from `../gimp/icons` by
+`icon_fetch.borrow` (`region: [72, 40]`, centred, `mode: alpha` to match), so the
+three image editors share one icon.
 
 ## Program icon (ESC, all layers)
 

@@ -64,12 +64,12 @@ bindings:
   - { key: U,     mods: [CTRL],        except: [macos], icon: attach.png,    label: "Add files or photos" }
   - { key: D,     mods: [CTRL],        except: [macos], icon: dictation.png, label: "Toggle dictation" }
   - { key: ".",   mods: [CTRL, SHIFT], except: [macos], icon: model.png,     label: "Model menu" }
-  - { key: "1",   mods: [CTRL],        except: [macos], icon: jump1.png,     label: "Jump to chat 1" }
-  - { key: "2",   mods: [CTRL],        except: [macos], icon: jump2.png,     label: "Jump to chat 2" }
-  - { key: "3",   mods: [CTRL],        except: [macos], icon: jump3.png,     label: "Jump to chat 3" }
-  - { key: "4",   mods: [CTRL],        except: [macos], icon: jump4.png,     label: "Jump to chat 4" }
-  - { key: "5",   mods: [CTRL],        except: [macos], icon: jump5.png,     label: "Jump to chat 5" }
-  - { key: "6",   mods: [CTRL],        except: [macos], icon: jump6.png,     label: "Jump to chat 6" }
-  - { key: "7",   mods: [CTRL],        except: [macos], icon: jump7.png,     label: "Jump to chat 7" }
-  - { key: "8",   mods: [CTRL],        except: [macos], icon: jump8.png,     label: "Jump to chat 8" }
-  - { key: "9",   mods: [CTRL],        except: [macos], icon: jump9.png,     label: "Jump to chat 9" }
+  - { key: "1",   mods: [CTRL],        except: [macos], icon: tab1.png,      mode: luma, label: "Jump to chat 1", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "2",   mods: [CTRL],        except: [macos], icon: tab2.png,      mode: luma, label: "Jump to chat 2", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "3",   mods: [CTRL],        except: [macos], icon: tab3.png,      mode: luma, label: "Jump to chat 3", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "4",   mods: [CTRL],        except: [macos], icon: tab4.png,      mode: luma, label: "Jump to chat 4", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "5",   mods: [CTRL],        except: [macos], icon: tab5.png,      mode: luma, label: "Jump to chat 5", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "6",   mods: [CTRL],        except: [macos], icon: tab6.png,      mode: luma, label: "Jump to chat 6", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "7",   mods: [CTRL],        except: [macos], icon: tab7.png,      mode: luma, label: "Jump to chat 7", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "8",   mods: [CTRL],        except: [macos], icon: tab8.png,      mode: luma, label: "Jump to chat 8", source: "ms-fluent/Tab (MIT) + digit" }
+  - { key: "9",   mods: [CTRL],        except: [macos], icon: tab9.png,      mode: luma, label: "Jump to chat 9", source: "ms-fluent/Tab (MIT) + digit" }

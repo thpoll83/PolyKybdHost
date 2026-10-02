@@ -5,8 +5,8 @@ Style route: **all shortcut icons come from Microsoft Fluent UI System
 Icons (MIT)**, in one consistent flat style. (PolyKybdHost is now
 GPL-3.0-or-later, so Notepad++'s own GPL-3.0 icons would be license-compatible
 too; the all-MIT set is kept for visual consistency.) Line-specific glyphs are used where a generic
-one would be ambiguous (e.g. "Row Triple" for duplicate-line). One icon is
-custom-drawn (delete-line strike). The ESC **program icon** is the actual
+one would be ambiguous (e.g. "Row Triple" for duplicate-line). Delete line is
+JetBrains' Fluent "Delete Lines", copied so both apps share one icon. The ESC **program icon** is the actual
 Notepad++ logo (the app's own identity icon, used to mark which overlay is
 loaded).
 
@@ -19,11 +19,15 @@ Each icon renders to a 96x96 RGBA PNG (program icon 256x256); the generator's
 from __future__ import annotations
 
 import urllib.parse
+import sys
 import urllib.request
 from pathlib import Path
 
 import cairosvg
-from PIL import Image, ImageDraw
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import icon_fetch  # noqa: E402
 
 RENDER_PX = 96
 MS = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/{}"
@@ -74,21 +78,9 @@ def _get(url: str) -> bytes:
         urllib.request.Request(url, headers={"User-Agent": "polykybd"}), timeout=30).read()
 
 
-def _draw_deleteline(path: Path) -> None:
-    """Custom 'delete line' glyph: text rows + strike-through (white on transparent
-    -> alpha is the shape; rendered in `mode: alpha`). A generic trash/Delete glyph
-    reads as delete-*file*, so we draw the line-specific one."""
-    ss = 4
-    u = RENDER_PX * ss
-    img = Image.new("RGBA", (u, u), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    w = int(u * 0.06)
-    white = (255, 255, 255, 255)
-    d.line([(u * 0.16, u * 0.26), (u * 0.60, u * 0.26)], fill=white, width=w)
-    d.line([(u * 0.12, u * 0.50), (u * 0.70, u * 0.50)], fill=white, width=w)
-    d.line([(u * 0.16, u * 0.74), (u * 0.50, u * 0.74)], fill=white, width=w)
-    d.line([(u * 0.20, u * 0.50), (u * 0.95, u * 0.50)], fill=white, width=int(u * 0.045))
-    img.resize((RENDER_PX, RENDER_PX), Image.LANCZOS).save(path)
+# Shared with other apps: one drawing per action, so the overlay icon library
+# stores it once (see icon_fetch.borrow).
+BORROWED = {"deleteline.png": "jetbrains"}
 
 
 def main() -> int:
@@ -102,8 +94,7 @@ def main() -> int:
         (out / f"{fname}.png").write_bytes(png)
         print(f"  {fname}.png  <- ms-fluent/{asset.split('/')[0]}")
 
-    _draw_deleteline(out / "deleteline.png")
-    print("  deleteline.png  <- custom (drawn: text rows + strike-through)")
+    icon_fetch.borrow(BORROWED, out)
 
     if (out / "npp.png").exists():
         print("  npp.png  <- committed program-icon asset (left as-is)")

@@ -31,18 +31,19 @@ palette (`Ctrl+Shift+P`, which *is* shipped) cover them.
 | File(s) | Source | License |
 |---|---|---|
 | 34 shortcut icons (`gotoanything, commandpalette, gotosymbol, gotoline, gotoword, find, replace, findinfiles, selectalloccur, indent, unindent, comment, blockcomment, duplicate, joinlines, cutline, swapup, swapdown, matchbracket, selectbrackets, autocomplete, insertafter, insertbefore, pasteindent, softundo, redo, build, closetab, reopentab, sidebar, fold, unfold, bookmark, wraptag`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
-| `multicursor, cursorabove, cursorbelow, deleteline, selectline` | Custom-drawn, `../editor_glyphs.py` | GPL-3.0-or-later (this repo) |
+| `multicursor, cursorabove, cursorbelow, selectline` | Custom-drawn, `../editor_glyphs.py` | GPL-3.0-or-later (this repo) |
+| `deleteline` | Fluent `Delete Lines`, copied from `../jetbrains/icons` (shared with JetBrains, Visual Studio, Notepad++) | MIT |
 | `sublime.png` (ESC program mark) | [Simple Icons](https://github.com/simple-icons/simple-icons) via `../brand_marks.py` | CC0-1.0 (artwork) |
 
 Multiple cursors (`Ctrl+D`, `Ctrl+Alt+Up/Down`) are Sublime's defining feature
 and no general icon set draws them — Fluent's nearest glyphs read as "select
 all" or a plain text caret, which is the wrong idea. Those three, plus
-`deleteline` (a trash can reads as delete-*file*) and `selectline`, are drawn.
+`selectline`, are drawn.
 
-Two drawing notes learned at keycap size, both recorded in `editor_glyphs.py`:
-the delete-line strike must be **diagonal** (a horizontal one merges with the
-middle text row and nothing appears struck), and the caret is drawn as a
-serifed I-beam so it survives the 1-bit threshold.
+A drawing note learned at keycap size, recorded in `editor_glyphs.py`: the
+caret is drawn as a serifed I-beam so it survives the 1-bit threshold. (A
+drawn delete-line glyph needed a diagonal strike, since a horizontal one merged
+with the middle text row. It was replaced by the shared Fluent icon.)
 
 **The program mark IS Sublime Text's own monochrome logo**, rendered from
 Simple Icons (artwork CC0-1.0) — see the "Program mark" section below for the

@@ -4,8 +4,7 @@
 Multiple cursors are the defining feature of a modern editor (Sublime's
 `Ctrl+D` / `Ctrl+Alt+Up` / `Ctrl+Alt+Down`), and no general UI icon set draws
 them — the nearest Fluent glyphs read as "select all" or a plain text cursor,
-which is exactly the wrong idea. `delete_line` is here for the reason the
-Notepad++ set drew its own: a trash can reads as delete-*file*.
+which is exactly the wrong idea.
 
 All are **white on transparent** at 96x96 -> render with `mode: alpha`.
 """
@@ -80,20 +79,6 @@ def cursor_below(path: Path) -> None:
     _cursor_dir(path, up=False)
 
 
-def delete_line(path: Path) -> None:
-    """Text rows with a strike through — delete *line*, not delete *file*.
-
-    The strike is DIAGONAL: a horizontal one lands on the middle row and the two
-    merge into a single longer row once downscaled, so the glyph reads as three
-    lines of text with nothing struck at all.
-    """
-    img, d, u = _canvas()
-    _rows(d, u, (0.24, 0.48, 0.72), x0=0.12, x1=0.76)
-    d.line([(int(u * 0.06), int(u * 0.82)), (int(u * 0.90), int(u * 0.14))],
-           fill=WHITE, width=int(u * 0.070))
-    _save(img, path)
-
-
 def select_line(path: Path) -> None:
     """One row highlighted out of three — select line."""
     img, d, u = _canvas()
@@ -107,7 +92,6 @@ ALL = {
     "multicursor": multicursor,
     "cursorabove": cursor_above,
     "cursorbelow": cursor_below,
-    "deleteline": delete_line,
     "selectline": select_line,
 }
 

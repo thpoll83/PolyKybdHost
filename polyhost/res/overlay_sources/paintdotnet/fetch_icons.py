@@ -100,7 +100,6 @@ FLUENT = {
     "historywin": "History",
     "layerswin":  "Layer Diagonal",
     "colorswin":  "Color",
-    "swapcolors": "Arrow Swap",
     # --- tabs ---
     "nextimage": "Arrow Right",
     "previmage": "Arrow Left",
@@ -197,9 +196,15 @@ def _brush_width(path: Path, *, wider: bool, step: int) -> None:
     img.resize((cw * 4, ch * 4), Image.LANCZOS).save(path)
 
 
+# Shared with other apps: one drawing per action, so the overlay icon library
+# stores it once (see icon_fetch.borrow).
+BORROWED = {"swapcolors.png": "gimp"}
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
+    n += icon_fetch.borrow(BORROWED, out)
 
     # ⚠️ Guarded like every hand-editable asset here: a committed PNG wins.
     for name, wider, step in (("brushdec1", False, 1), ("brushinc1", True, 1),

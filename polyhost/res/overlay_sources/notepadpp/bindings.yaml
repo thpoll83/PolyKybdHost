@@ -1,7 +1,7 @@
 # Notepad++ shortcut overlays for PolyKybd.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) for all shortcuts (one consistent
-# style, license-clean vs the GPL-3.0-or-later host); one custom-drawn glyph (delete line).
+# style, license-clean vs the GPL-3.0-or-later host). Delete line is JetBrains' copy, shared.
 # Program icon (ESC, all layers): the actual Notepad++ logo. See SOURCES.md.
 # Shortcuts: Notepad++ default keymap.
 #
@@ -45,7 +45,7 @@ bindings:
   - { key: Y, mods: [CTRL], icon: redo.png,       label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: A, mods: [CTRL], icon: selectall.png,  label: "Select all", source: "ms-fluent/Select All On (MIT)" }
   - { key: D, mods: [CTRL], icon: duplicate.png,  label: "Dup line",  source: "ms-fluent/Row Triple (MIT)" }
-  - { key: L, mods: [CTRL], icon: deleteline.png, label: "Del line",  mode: alpha, source: "custom (drawn: text rows + strike)" }
+  - { key: L, mods: [CTRL], icon: deleteline.png, label: "Del line",  mode: alpha, source: "ms-fluent/Delete Lines (MIT), borrowed from jetbrains" }
   - { key: Q, mods: [CTRL], icon: comment.png,    label: Comment,     source: "ms-fluent/Comment (MIT)" }
   - { key: I, mods: [CTRL], icon: split.png,      label: "Split lines", source: "ms-fluent/Split Horizontal (MIT)" }
   - { key: T, mods: [CTRL], icon: swapline.png,   label: "Swap line",  source: "ms-fluent/Arrow Sort Up (MIT)" }

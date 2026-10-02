@@ -24,7 +24,6 @@ Run from the repo root with the project venv:
 """
 from __future__ import annotations
 
-import shutil
 import sys
 from pathlib import Path
 
@@ -131,12 +130,7 @@ def main() -> int:
     else:
         _derive_zoomin(out)
         print("  zoomin.png  <- derived from zoomout.png")
-    for name, app in sorted(BORROWED.items()):
-        if (out / name).exists():
-            print(f"  {name}  <- committed asset (left as-is)")
-        else:
-            shutil.copyfile(here.parent / app / "icons" / name, out / name)
-            print(f"  {name}  <- copied from {app}/icons")
+    icon_fetch.borrow(BORROWED, out)
     print(f"Wrote {n} icons to {out}")
     return 0
 

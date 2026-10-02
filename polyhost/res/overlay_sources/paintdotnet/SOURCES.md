@@ -76,7 +76,7 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `recolor.png` | Fluent `Color Line` | MIT |
 | `text.png` | Fluent `Text T` | MIT |
 | `linecurve.png` | Fluent `Line` | MIT |
-| `swapcolors.png` | Fluent `Arrow Swap` | MIT |
+| `swapcolors.png` | GIMP's swap glyph, shared (copied from `../gimp/icons`; `region: [72, 40]`, centred, `mode: alpha` to match) | as `../gimp/SOURCES.md` |
 | `brushdec1.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `brushinc1.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 | `toolswin.png` | Fluent `Options` | MIT |

@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import brand_marks, icon_fetch, number_badge, rect_mark  # noqa: E402
+import brand_marks, icon_fetch, rect_mark  # noqa: E402
 
 FLUENT = {
     # --- shared ---
@@ -72,9 +72,9 @@ FLUENT = {
 BRAND = {"claude.png": "claude"}
 LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx"}
 
-# Ctrl+1..9 (jump to chat N) has no picture of its own, so each digit key gets
-# a filled square with its number punched out (`number_badge.knockout`).
-JUMP_DIGITS = "123456789"
+# Ctrl+1..9 (jump to chat N) uses the numbered tab glyphs of Windows Terminal
+# and WinSCP, copied byte for byte so all three apps share one icon per digit.
+BORROWED = {f"tab{d}.png": "winscp" for d in "123456789"}
 
 
 def main() -> int:
@@ -85,7 +85,7 @@ def main() -> int:
         brand_marks.ensure(out / fname, slug)
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
-    n += number_badge.knockout(JUMP_DIGITS, out, "jump")
+    n += icon_fetch.borrow(BORROWED, out)
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
     return 0
 

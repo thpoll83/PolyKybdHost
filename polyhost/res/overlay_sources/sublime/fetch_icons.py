@@ -70,13 +70,17 @@ FLUENT = {
     "syntaxinfo": "Info",
 }
 
-DRAWN = ["multicursor", "cursorabove", "cursorbelow", "deleteline", "selectline"]
+DRAWN = ["multicursor", "cursorabove", "cursorbelow", "selectline"]
+# Shared with other apps: one drawing per action, so the overlay icon library
+# stores it once (see icon_fetch.borrow).
+BORROWED = {"deleteline.png": "jetbrains"}
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += editor_glyphs.draw_all(out, DRAWN)
+    n += icon_fetch.borrow(BORROWED, out)
     # Sublime's mark is monochrome and CC0 via Simple Icons — use the real one.
     brand_marks.ensure(out / "sublime.png", "sublimetext")
     print(f"Wrote {n} icons (+ program mark) to {out}")

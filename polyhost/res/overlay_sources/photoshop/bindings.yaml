@@ -2,8 +2,8 @@
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) where a clean glyph exists; the
 # signature Photoshop tools (marquee, lasso, magic wand, clone stamp, healing,
-# dodge/burn, path-selection, swap/default colours, quick mask) are simple glyphs
-# DRAWN in fetch_icons.py (mode: alpha). Program icon (ESC): a generic, license-
+# dodge/burn, path-selection, default colours, quick mask) are simple glyphs
+# DRAWN in fetch_icons.py (mode: alpha). Swap colours is GIMP's glyph, shared. Program icon (ESC): a generic, license-
 # clean rounded-square "Ps" monogram (NOT Adobe's logo). Shortcuts: Photoshop
 # defaults. See SOURCES.md.
 #
@@ -57,7 +57,7 @@ bindings:
   - { key: O, mods: [], icon: dodgeburn.png, mode: alpha, label: "Dodge / Burn", source: "custom (drawn: dodge lollipop)" }
   - { key: Y, mods: [], icon: historybrush.png,    label: "History brush",   source: "ms-fluent/History (MIT)" }
   - { key: A, mods: [], icon: pathselect.png, mode: alpha, label: "Path selection", source: "custom (drawn: arrow cursor)" }
-  - { key: X, mods: [], icon: swapcolors.png, mode: alpha, label: "Swap FG/BG", source: "custom (drawn: two squares + swap arrow)" }
+  - { key: X, mods: [], icon: swapcolors.png, mode: alpha, region: [72, 40], anchor: center, label: "Swap FG/BG", source: "gimp (borrowed: shared swap-colours glyph)" }
   - { key: D, mods: [], icon: defaultcolors.png, mode: alpha, label: "Default colours", source: "custom (drawn: B/W squares)" }
   - { key: Q, mods: [], icon: quickmask.png, mode: alpha, label: "Quick mask", source: "custom (drawn: masked rect)" }
 

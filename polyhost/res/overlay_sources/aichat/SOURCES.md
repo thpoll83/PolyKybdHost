@@ -35,8 +35,10 @@ all `except: [macos]` because the macOS forms are not confirmed: Ctrl+K quick
 chat or search, Ctrl+Shift+K search, Ctrl+Q switch between recents, Ctrl+B
 sidebar, Ctrl+, settings, Ctrl+Alt+Right/Left next/previous sidebar tab, Ctrl+U
 add files or photos, Ctrl+D dictation, Ctrl+Shift+. model menu, and Ctrl+1..9
-jump to chat N. The digit keys show a filled square with the number punched out
-(`number_badge.knockout`), since "the Nth chat" has no picture of its own.
+jump to chat N. The digit keys show Windows Terminal's and WinSCP's numbered tab
+glyphs (`tab1.png`..`tab9.png`, copied from `../winscp/icons` by
+`icon_fetch.borrow`, `mode: luma` to match), so all three apps share one icon per
+digit and it comes from the overlay icon library.
 
 The list's Ctrl+/, Ctrl+N, Ctrl+W, Ctrl+Tab, Ctrl+Shift+Tab and Ctrl+Shift+]/[
 mean the same in both tabs and were already drawn. Left out: Enter and
@@ -95,8 +97,8 @@ Multiple, History, Attach, Mic.
 
 Google Material Symbols (Apache-2.0): `difference` (diff pane).
 
-Drawn here: `jump1.png`..`jump9.png`, the knocked-out digit squares
-(`../number_badge.py`, Liberation Sans Bold, SIL OFL).
+Borrowed: `tab1.png`..`tab9.png` from `../winscp/icons` (Fluent `Tab` + digit,
+MIT; Liberation Sans Bold digit, SIL OFL).
 
 ## Program marks (ESC)
 
