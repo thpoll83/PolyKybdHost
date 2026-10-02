@@ -627,6 +627,10 @@ class PolyKybdMock:
     # Device commands -- the real PolyKybd over the emulated keyboard
     # -------------------------------------------------------------------------
 
+    def reboot(self) -> tuple[bool, Any]:
+        self._log_call("reboot")
+        return self._wire.reboot()
+
     def activate_bootloader(self) -> tuple[bool, Any]:
         self._log_call("activate_bootloader")
         return self._wire.activate_bootloader()

@@ -481,6 +481,17 @@ class RemoteCore(Observable):
     def activate_bootloader(self):
         return self._device(p.M_ACTIVATE_BOOTLOADER)
 
+    BOOT_LOOP_MAX_ROUNDS = 50   # the daemon enforces it; the GUI only offers it
+
+    def reboot_keyboard(self):
+        return self._device(p.M_REBOOT)
+
+    def start_boot_loop(self, rounds=BOOT_LOOP_MAX_ROUNDS):
+        return self._device(p.M_BOOT_LOOP_START, {"rounds": int(rounds)})
+
+    def cancel_boot_loop(self):
+        return self._device(p.M_BOOT_LOOP_CANCEL)
+
     def set_handedness(self, master_is_left):
         return self._device(p.M_SET_HANDEDNESS, {"master_is_left": bool(master_is_left)})
 

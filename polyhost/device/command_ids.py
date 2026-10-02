@@ -87,6 +87,9 @@ class Cmd(Enum):
     # packing, drawn by each half from its own flash (services/icon_library.py).
     # Replied: '.' all applied, '!' + index of the first pair to upload instead.
     FILL_POOL_FROM_ICON = 42
+    # Reboot both halves, nothing persisted (protocol v22+). ACKed before the
+    # reset; used by the boot-loop diagnostic (PolyCore.start_boot_loop).
+    REBOOT = 43
 
 
 

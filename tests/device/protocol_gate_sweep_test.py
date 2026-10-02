@@ -86,6 +86,7 @@ CALLS = {
     "press_and_release_key": [(0x04, 0)],
     "press_key": [(0x04,)], "release_key": [(0x04,)],
     "activate_bootloader": [()],
+    "reboot": [()],
     "set_idle": [(True,), (False,)],
     "set_idle_style": [(list(IdleStyle)[0],)], "get_idle_style": [()],
     "set_idle_timeout": [(IdleTimeout.MIN_2,)], "get_idle_timeout": [()],

@@ -97,6 +97,13 @@ FW_DOWNLOAD_DONE = "fw_download_done"
 # raises the crash alert dialog, polyctl watch prints it.
 CRASH_DETECTED = "crash_detected"
 
+# The boot-loop diagnostic (PolyCore.start_boot_loop → `polyctl bootloop`, the
+# Developer > Firmware entry). JSON payloads.
+BOOT_LOOP_PROGRESS = "boot_loop_progress"  # {"round", "rounds", "msg", "boot_s"?}
+# {"ok", "result": clean|crash|timeout|cancelled|error, "msg", "rounds_done",
+#  "boot_times": [s, ...], "record": CrashRecord.to_dict() | None}
+BOOT_LOOP_DONE = "boot_loop_done"
+
 # The problem scan (services/problem_scan.py) saw something worth a report: a
 # known-bad keyboard console line, or a WARNING/ERROR in the host's own log.
 # Payload: problem_scan.Problem.to_dict(). Emitted once per distinct problem per

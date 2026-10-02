@@ -198,6 +198,34 @@ purpose is proving whether the app crashed, shipped into none of them.
 
 ---
 
+## The boot-loop test (cmd 43, protocol v22+)
+
+**Developer > Firmware > "Boot-loop test…"**, `polyctl bootloop [--rounds N] |
+--cancel` and `polyctl reboot`. It hunts the intermittent boot stall that the
+firmware's late-boot watchdog guard recovers from: reboot (cmd 43), wait for the
+GET_ID fresh-boot marker, read cmd 39 on both halves, repeat. It stops at the first
+FRESH crash record, at a reboot that does not come back within 60 s, on cancel, on a
+failed reboot request, or after 1..50 rounds. Progress and the verdict are the
+`boot_loop_progress` / `boot_loop_done` events, so the tray works the same as a
+daemon client.
+
+- ⚠️ **It runs on its own thread, not as a worker job.** The reconnect probe that
+  notices the keyboard coming back runs on the worker, so one long job would block
+  the very event it waits for. Each step is a short `_device_call`.
+- **The signal is the fresh-boot marker, set in `apply_reconnect()`** (`_boot_seen`),
+  not a disconnect: a fast reboot may never show as one. Both the tray and the
+  daemon apply the probe through `core.apply_reconnect()`, so it fires in both modes.
+- **A deliberate reboot never leaves a record** (`shutdown_user()` disarms the
+  watchdog first), so any fresh record after a round is a boot that went wrong.
+  The loop also listens for `crash_detected`, because another reader of the slave's
+  record may report it first.
+- **A timeout is the worse outcome**: the board wedged where the guard does not
+  reach (before boot step 5) or a second stall in a row (the guard is one-shot).
+  Read the status panel before replugging; the record, if any, survives the replug.
+- `MockFirmware` models it: `FaultPlan.boot_crash_on_reboot` (the Nth reboot comes
+  back with a fresh `phase=1:0x16e1` record) and `boot_hang_on_reboot` (it never
+  comes back). `tests/core/boot_loop_test.py` drives the real core over them.
+
 ## The firmware-crash dialog
 
 - **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +

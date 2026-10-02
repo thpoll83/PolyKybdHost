@@ -43,6 +43,7 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core._observers_lock = threading.Lock()
     core._crash_checks = []
     core._crash_checks_lock = threading.Lock()
+    core._init_boot_loop_state()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
         "unicode_send_composition_mode": unicode_mode}.get(k, False)
