@@ -67,6 +67,28 @@ FLUENT = {
     "recents": "History",
     "attach": "Attach",
     "dictation": "Mic",
+    # --- Claude desktop, macOS list. Names already used by other apps where one
+    # fits, so the glyph is shared and the icon library holds it once. ---
+    "newsettings": "Chat Settings",
+    "reopen": "Arrow Undo",
+    "splitright": "Split Vertical",
+    "splitdown": "Split Horizontal",
+    "focusnext": "Arrow Circle Right",
+    "focusprev": "Arrow Circle Left",
+    "closesplit": "Dismiss Circle",
+    "pin": "Pin",
+    "rename": "Rename",
+    "markunread": "Mail Unread",
+    "link": "Link",
+    "pullrequest": "Branch Request",
+    "fork": "Branch Fork",
+    "filelist": "Text Bullet List Square",
+    "annotate": "Pen",
+    "reload": "Arrow Clockwise",
+    "quote": "Text Quote",
+    "expand": "Full Screen Maximize",
+    "fastmode": "Flash",
+    "send": "Send",
 }
 
 BRAND = {"claude.png": "claude"}

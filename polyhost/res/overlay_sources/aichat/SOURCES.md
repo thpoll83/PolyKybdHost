@@ -16,36 +16,43 @@ on macOS and Ctrl elsewhere.
 
 ## Shortcut references
 
-### Claude desktop app (Code tab) — official
+### Claude desktop app
 
-<https://code.claude.com/docs/en/desktop#keyboard-shortcuts>, fetched as
-Markdown (`desktop.md`). All 16 chords of the table are drawn except `Esc`
-(stop the response), which sits under the ESC program mark, and `1`–`9`
-(select an item in an open menu), which has no single action to draw. The doc
-says session cycling, the terminal toggle and the view-mode toggle use Ctrl on
-every platform; those are literal `CTRL` in the spec.
+Three sources, by authority. The Chat and Code tabs share one window and one
+process, so one set covers both.
 
-The Chat and Code tabs share one window and one process, so this set also
-shows while the Chat tab is open.
+1. **The macOS app's own shortcut list**, read off by the owner (2026-10-02).
+   The newest and fullest list. A chord only it shows is `only: [macos]`:
+   ⇧⌘N new session with current settings, ⇧⌘T reopen closed session, ⌥↓/⌥↑
+   next/previous session, ⌃⌘\ and ⌃⌘- new session right/below, ⌃]/⌃[ focus
+   next/previous split view, ⌃⌘W close split view, ⌥⌘P pin, ⌥⌘R rename, ⌥⌘A
+   archive, ⌥⌘U mark read/unread, ⌘L and ⌥⌘L copy session link, ⌥⌘G open
+   session PR, ⌥⌘O fork session, ⇧⌘Y file list, ⌘P go to file, ⇧⌘P preview,
+   ⇧⌘X annotate, ⌘R reload preview, ⇧⌘F Files, ⇧⌘L attach selection as
+   context, ⌘J terminal, ⇧⌘\ expand or collapse pane, ⌥⌘F fast mode, ⌥⌘⏎ send
+   in a forked session. Not drawn: Esc (under the ESC program mark), ⌥ Click,
+   and 1–9 (select an item in an open menu, no single action to draw).
+2. **The Windows app's own list** (2026-10-02, app version unknown). A chord
+   both app lists show, Cmd on macOS and Ctrl on Windows, is one `CMDCTRL`
+   binding: ⌘K search or start a session, ⇧⌘K search, ⌘B sidebar, ⌘, settings,
+   ⌥⌘→/← sidebar tabs, ⌘U add files, ⌘D dictation, ⌘1–9 jump to session N.
+   Switch between recents is a literal Ctrl+Q on both. A chord only the
+   Windows list shows is `except: [macos]`: Ctrl+Shift+. model menu.
+3. **The official docs**,
+   <https://code.claude.com/docs/en/desktop#keyboard-shortcuts>, fetched as
+   Markdown (`desktop.md`). Everything there is also in the macOS list except
+   ⇧⌘B browser pane, so that one is `except: [macos]`. Labels follow the macOS
+   list's wording.
 
-### Claude desktop app (Chat tab)
+Two Windows-list chords clash with the Code tab and are left out: Ctrl+Shift+E
+(Chat: toggle thinking, Code: effort menu) and Ctrl+Shift+I (Chat: incognito
+chat, Code: model menu). The macOS list has only the Code meanings, so the
+clash may belong to an older Windows build.
 
-Read off the Windows app's own shortcut list by the owner (2026-10-02). Drawn,
-all `except: [macos]` because the macOS forms are not confirmed: Ctrl+K quick
-chat or search, Ctrl+Shift+K search, Ctrl+Q switch between recents, Ctrl+B
-sidebar, Ctrl+, settings, Ctrl+Alt+Right/Left next/previous sidebar tab, Ctrl+U
-add files or photos, Ctrl+D dictation, Ctrl+Shift+. model menu, and Ctrl+1..9
-jump to chat N. The digit keys show Windows Terminal's and WinSCP's numbered tab
-glyphs (`tab1.png`..`tab9.png`, copied from `../winscp/icons` by
-`icon_fetch.borrow`, `mode: luma` to match), so all three apps share one icon per
-digit and it comes from the overlay icon library.
-
-The list's Ctrl+/, Ctrl+N, Ctrl+W, Ctrl+Tab, Ctrl+Shift+Tab and Ctrl+Shift+]/[
-mean the same in both tabs and were already drawn. Left out: Enter and
-Shift+Enter (send, new line), and two chords that mean different things in the
-two tabs, Ctrl+Shift+E (Chat: toggle thinking, Code: effort menu) and
-Ctrl+Shift+I (Chat: incognito chat, Code: model menu). The set cannot tell the
-tabs apart, so the Code tab's meaning stays drawn.
+The digit keys show Windows Terminal's and WinSCP's numbered tab glyphs
+(`tab1.png`..`tab9.png`, copied from `../winscp/icons` by `icon_fetch.borrow`,
+`mode: luma` to match), so all three apps share one icon per digit and it comes
+from the overlay icon library.
 
 ### claude.ai — provisional
 
@@ -93,7 +100,10 @@ Keyboard, Chat Add, Search, Panel Left, Window Console, Settings, Apps List
 Detail, Dismiss, Arrow Previous, Arrow Next, Arrow Left, Globe, Cursor Click,
 Dismiss Square, Chat Multiple, Eye, Shield, Brain Circuit, Gauge, Copy, Code
 Block, Person Edit, Delete, Folder Open, Document Search, Archive, Document
-Multiple, History, Attach, Mic.
+Multiple, History, Attach, Mic, Chat Settings, Arrow Undo, Split Vertical,
+Split Horizontal, Arrow Circle Right, Arrow Circle Left, Dismiss Circle, Pin,
+Rename, Mail Unread, Link, Branch Request, Branch Fork, Text Bullet List Square,
+Pen, Arrow Clockwise, Text Quote, Full Screen Maximize, Flash, Send.
 
 Google Material Symbols (Apache-2.0): `difference` (diff pane).
 
