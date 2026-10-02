@@ -328,6 +328,7 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                             ("Pull request #1 — Bitbucket - Google Chrome", "bitbucket_pr_template"),
                             ("Home - Space - Confluence - Google Chrome", "confluence_template"),
                             ("Roadmap | Notion - Google Chrome", "notion_template"),
+                            ("Q3 plan - Google Docs - Google Chrome", "googledocs_template"),
                             ("New chat - Claude - Google Chrome", "claude_web_template"),
                             ("Fix the build - Claude Code - Google Chrome",
                              "claude_code_web_template"),
@@ -336,6 +337,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                             ("ChatGPT - Google Chrome", "chatgpt_template")):
             self.assertIn(f"{stem}.mods.png", self._chrome("windows", None, title), title)
             self.assertIn(f"{stem}_mac.mods.png", self._chrome("macos", None, title), title)
+        # "Docs" alone is not Google Docs.
+        self.assertIn("chrome_template.mods.png",
+                      self._chrome("windows", None, "Read the Docs - Google Chrome"))
         # A known URL that matches no site still overrules the title word.
         self.assertIn("chrome_template.mods.png",
                       self._chrome("windows", "https://www.google.com/search?q=github",
