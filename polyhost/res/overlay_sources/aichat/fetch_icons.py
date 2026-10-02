@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import brand_marks, icon_fetch, rect_mark  # noqa: E402
+import brand_marks, icon_fetch, number_badge, rect_mark  # noqa: E402
 
 FLUENT = {
     # --- shared ---
@@ -63,10 +63,18 @@ FLUENT = {
     "archive": "Archive",
     # --- Claude Code on the web ---
     "files": "Document Multiple",
+    # --- Claude desktop, Chat tab ---
+    "recents": "History",
+    "attach": "Attach",
+    "dictation": "Mic",
 }
 
 BRAND = {"claude.png": "claude"}
 LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx"}
+
+# Ctrl+1..9 (jump to chat N) has no picture of its own, so each digit key gets
+# a filled square with its number punched out (`number_badge.knockout`).
+JUMP_DIGITS = "123456789"
 
 
 def main() -> int:
@@ -77,6 +85,7 @@ def main() -> int:
         brand_marks.ensure(out / fname, slug)
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
+    n += number_badge.knockout(JUMP_DIGITS, out, "jump")
     print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
     return 0
 

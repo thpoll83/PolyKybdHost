@@ -51,3 +51,30 @@ def numbered(base: Path, digits: str, out_dir: Path, stem: str,
         img.save(out_dir / f"{stem}{d}.png")
     print(f"  {stem}{digits[0]}..{stem}{digits[-1]}.png  <- composite ({base.stem} + digit)")
     return len(digits)
+
+
+def knockout(digits: str, out_dir: Path, stem: str, px: int = 96,
+             box: float = 64 / 96, radius: float = 10 / 96,
+             size: float = 48 / 96) -> int:
+    """Write `<stem><d>.png`: a filled rounded square with digit `d` punched out.
+
+    For a digit row whose action has no picture of its own (Claude's Ctrl+1..9
+    jump to chat N): the square says "something is bound here" and the hole says
+    which one. The digit is cut from the alpha channel, so under the overlay
+    generator's `mode: alpha` the square is lit and the digit is dark. Same
+    rules as `numbered()`: one font size and one centre for the whole family.
+    Rendered at 96 px, like the Fluent glyphs it sits beside.
+    """
+    font = ImageFont.truetype(BOLD, int(px * size))
+    o = round(px * (1 - box) / 2)
+    for d in digits:
+        alpha = Image.new("L", (px, px), 0)
+        draw = ImageDraw.Draw(alpha)
+        draw.rounded_rectangle((o, o, px - 1 - o, px - 1 - o),
+                               radius=round(px * radius), fill=255)
+        draw.text((px / 2, px / 2), d, fill=0, font=font, anchor="mm")
+        img = Image.new("RGBA", (px, px), (0, 0, 0, 0))
+        img.putalpha(alpha)
+        img.save(out_dir / f"{stem}{d}.png")
+    print(f"  {stem}{digits[0]}..{stem}{digits[-1]}.png  <- knocked-out digit squares")
+    return len(digits)

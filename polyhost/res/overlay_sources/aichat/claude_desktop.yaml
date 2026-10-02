@@ -1,10 +1,13 @@
 # Claude desktop app overlays for PolyKybd. See SOURCES.md.
 #
-# Covers the Code tab (Claude Code in the desktop app). Every chord here is
-# from the official list at code.claude.com/docs/en/desktop#keyboard-shortcuts.
-# Chat and Code share one window and one process, so this set loads in the
-# Chat tab too; the Chat tab's own chords are not officially published and are
-# left out of this set (see claude_web.yaml).
+# Covers both tabs. Chat and Code share one window and one process, so one set
+# serves both. The Code tab's chords are from the official list at
+# code.claude.com/docs/en/desktop#keyboard-shortcuts. The Chat tab's chords
+# were read off the Windows app's own shortcut list by the owner (2026-10-02);
+# their macOS forms are not confirmed, so they are `except: [macos]`.
+# Two Chat chords clash with the Code tab and are left out until the tabs can
+# be told apart: Ctrl+Shift+E (Chat: toggle thinking, Code: effort menu) and
+# Ctrl+Shift+I (Chat: incognito chat, Code: model menu).
 #
 # CMDCTRL is Cmd on macOS and Ctrl on Windows (the doc: "On Windows, use Ctrl in
 # place of Cmd"). Session cycling and the terminal toggle use Ctrl on every
@@ -50,3 +53,23 @@ bindings:
   - { key: M,    mods: [CMDCTRL, SHIFT], icon: permission.png, label: "Permission mode menu" }
   - { key: I,    mods: [CMDCTRL, SHIFT], icon: model.png,     label: "Model menu" }
   - { key: E,    mods: [CMDCTRL, SHIFT], icon: effort.png,    label: "Effort menu" }
+  # --- Chat tab (Windows list; macOS unconfirmed) ---
+  - { key: K,     mods: [CTRL],        except: [macos], icon: search.png,    label: "Quick chat or search" }
+  - { key: K,     mods: [CTRL, SHIFT], except: [macos], icon: search.png,    label: "Search" }
+  - { key: Q,     mods: [CTRL],        except: [macos], icon: recents.png,   label: "Switch between recents" }
+  - { key: B,     mods: [CTRL],        except: [macos], icon: sidebar.png,   label: "Toggle sidebar" }
+  - { key: ",",   mods: [CTRL],        except: [macos], icon: settings.png,  label: Settings }
+  - { key: RIGHT, mods: [CTRL, ALT],   except: [macos], icon: next.png,      label: "Next sidebar tab" }
+  - { key: LEFT,  mods: [CTRL, ALT],   except: [macos], icon: prev.png,      label: "Previous sidebar tab" }
+  - { key: U,     mods: [CTRL],        except: [macos], icon: attach.png,    label: "Add files or photos" }
+  - { key: D,     mods: [CTRL],        except: [macos], icon: dictation.png, label: "Toggle dictation" }
+  - { key: ".",   mods: [CTRL, SHIFT], except: [macos], icon: model.png,     label: "Model menu" }
+  - { key: "1",   mods: [CTRL],        except: [macos], icon: jump1.png,     label: "Jump to chat 1" }
+  - { key: "2",   mods: [CTRL],        except: [macos], icon: jump2.png,     label: "Jump to chat 2" }
+  - { key: "3",   mods: [CTRL],        except: [macos], icon: jump3.png,     label: "Jump to chat 3" }
+  - { key: "4",   mods: [CTRL],        except: [macos], icon: jump4.png,     label: "Jump to chat 4" }
+  - { key: "5",   mods: [CTRL],        except: [macos], icon: jump5.png,     label: "Jump to chat 5" }
+  - { key: "6",   mods: [CTRL],        except: [macos], icon: jump6.png,     label: "Jump to chat 6" }
+  - { key: "7",   mods: [CTRL],        except: [macos], icon: jump7.png,     label: "Jump to chat 7" }
+  - { key: "8",   mods: [CTRL],        except: [macos], icon: jump8.png,     label: "Jump to chat 8" }
+  - { key: "9",   mods: [CTRL],        except: [macos], icon: jump9.png,     label: "Jump to chat 9" }
