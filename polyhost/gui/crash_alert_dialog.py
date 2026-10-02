@@ -56,13 +56,9 @@ class CrashAlertDialog(QDialog):
         self.detail.setLineWrapMode(QPlainTextEdit.NoWrap)
         layout.addWidget(self.detail)
 
-        hint = QLabel(
-            "The keyboard restarted on its own and is working again. To help fix "
-            "the cause, either open a bug report (this collects the logs and "
-            "pre-fills a GitHub issue — nothing is sent until you press Submit "
-            "there), or copy the details to paste wherever you are discussing it.")
-        hint.setWordWrap(True)
-        layout.addWidget(hint)
+        self.hint = QLabel()
+        self.hint.setWordWrap(True)
+        layout.addWidget(self.hint)
 
         self.status = QLabel("")
         self.status.setWordWrap(True)
@@ -110,9 +106,25 @@ class CrashAlertDialog(QDialog):
         n = len(self.records)
         which = "Both keyboard halves" if n > 1 and {r.side for r in self.records} == {"master", "slave"} \
             else ("The keyboard" if first.side == "master" else "The link-side keyboard half")
-        self.headline.setText(
-            f"<b>{which} crashed and restarted</b> "
-            f"(firmware {first.fw}, {first.kind} while in {first.phase_name}).")
+        # The manual readout shows ARCHIVED records through this same dialog, and
+        # "crashed and restarted" over a days-old record reads as a new crash.
+        if any(r.fresh for r in self.records):
+            self.setWindowTitle("PolyKybd — the keyboard firmware crashed")
+            self.headline.setText(
+                f"<b>{which} crashed and restarted</b> "
+                f"(firmware {first.fw}, {first.kind} while in {first.phase_name}).")
+            lead = "The keyboard restarted on its own and is working again."
+        else:
+            self.setWindowTitle("PolyKybd — keyboard crash records")
+            self.headline.setText(
+                f"<b>Crash record{'s' if n > 1 else ''} archived on the keyboard</b> "
+                f"(firmware {first.fw}, {first.kind} while in {first.phase_name}). "
+                f"None of them is from the boot before this one.")
+            lead = "These are earlier crashes, not a new one."
+        self.hint.setText(
+            f"{lead} To help fix the cause, either open a bug report (this collects "
+            "the logs and pre-fills a GitHub issue — nothing is sent until you press "
+            "Submit there), or copy the details to paste wherever you are discussing it.")
         self.detail.setPlainText(
             "\n\n".join(crash_report.summarize(r) + "\n" + r.as_console_line()
                         + "\n" + crash_report.freshness_text(r)

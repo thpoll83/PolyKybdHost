@@ -1203,9 +1203,12 @@ class PolyHost(QApplication):
         self.updates_menu.menuAction().setEnabled(True)
         self.help_menu.menuAction().setEnabled(True)
         # Inside Help & About, so the blanket loop never reaches it. Needs the
-        # device and cmd 39 (protocol v16+).
+        # device and cmd 39 (protocol v16+). Live in safe mode too: it is read-only
+        # debugging, and safe mode means firmware NEWER than this host, which has
+        # cmd 39 even though every capability is reported False there.
         self.crash_record_action.setEnabled(
-            self.connected and not self.paused and self.supports("crash_record"))
+            self.connected and not self.paused
+            and (bool(self.safe_mode) or self.supports("crash_record")))
         self.pause_action.setEnabled(True)
         # Only meaningful while the core is actually holding the keyboard at
         # arm's length; it disappears again once the situation is resolved.

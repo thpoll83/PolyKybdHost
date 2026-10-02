@@ -204,7 +204,7 @@ class CrashScanner:
     the boot banner re-emits for ~30 s, and the same line arriving again is noise.
 
     ⚠️ The console is not the only source. The connect-time cmd 39 read
-    (``PolyCore._crash_autocheck_job``) reports through :meth:`note`, so a crash
+    (``PolyCore._crash_autocheck_one``) reports through :meth:`note`, so a crash
     the console delivered is not reported a second time by HID, or the reverse.
     """
 
@@ -242,8 +242,13 @@ class CrashScanner:
 # ---------------------------------------------------------------------------
 
 # The boot breadcrumb's in-milestone marks (qmk boot_diag.c, splash_progress()).
-_BOOT_MARKS = {0xE1: "status panel paint", 0xE2: "keycap logo draw",
-               0xE3: "final dwell and keycap render"}
+# 0xE1 is stamped before the panel paint; since the per-call marks (qmk#335) a
+# record still reading 0xE1 stalled before the paint's first render call, while
+# older firmware leaves 0xE1 for a stall anywhere in the paint.
+_BOOT_MARKS = {0xE1: "status panel paint did not finish (before its first render call "
+                     "on firmware with per-call marks)",
+               0xE2: "keycap logo draw did not finish",
+               0xE3: "final dwell and keycap render did not finish"}
 
 
 def boot_breadcrumb_text(arg: int) -> str:
@@ -264,8 +269,8 @@ def boot_breadcrumb_text(arg: int) -> str:
     if 0xC0 <= lo <= 0xCF:
         return f"boot step {step} status panel paint, render call {(lo & 0x0F) + 1}; {core1}"
     if lo in _BOOT_MARKS:
-        return f"boot step {step}, {_BOOT_MARKS[lo]} did not finish; {core1}"
-    if 0xE0 <= lo:
+        return f"boot step {step}, {_BOOT_MARKS[lo]}; {core1}"
+    if lo >= 0x80:      # an unassigned range: say so rather than guess
         return f"boot step {step}, breadcrumb 0x{arg:04x}"
     return f"boot step {step}, sub-step or render key {lo}"
 

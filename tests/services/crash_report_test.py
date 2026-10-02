@@ -162,7 +162,8 @@ class BootBreadcrumbTest(unittest.TestCase):
     def test_the_field_record_reads_as_the_75_percent_panel_paint(self):
         # fw 1.3.2, 2026-10-02: the screen froze at "63%, 4 / 4".
         self.assertEqual(cr.boot_breadcrumb_text(0x16E1),
-                         "boot step 6, status panel paint did not finish; core1 running")
+                         "boot step 6, status panel paint did not finish (before its first "
+                         "render call on firmware with per-call marks); core1 running")
 
     def test_each_range(self):
         self.assertEqual(cr.boot_breadcrumb_text(0x0005), "boot step 5")
@@ -175,11 +176,13 @@ class BootBreadcrumbTest(unittest.TestCase):
         self.assertEqual(cr.boot_breadcrumb_text(0x05E2),
                          "boot step 5, keycap logo draw did not finish; core1 not yet running")
         self.assertEqual(cr.boot_breadcrumb_text(0x06F0), "boot step 6, breadcrumb 0x06f0")
+        # Unassigned, and NOT a render key: keys are 1..40.
+        self.assertEqual(cr.boot_breadcrumb_text(0x16D2), "boot step 6, breadcrumb 0x16d2")
 
     def test_the_summary_carries_it(self):
         rec = cr.parse_crash_line(LINE.replace("kind=hardfault", "kind=watchdog")
                                   .replace("phase=3:0x0015", "phase=1:0x16e1"))
-        self.assertIn("boot (boot step 6, status panel paint did not finish; core1 running)",
+        self.assertIn("boot (boot step 6, status panel paint did not finish",
                       cr.summarize(rec))
 
 

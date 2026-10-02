@@ -228,15 +228,26 @@ purpose is proving whether the app crashed, shipped into none of them.
     keyboard re-enumerates while the host's probe is still debouncing. The record
     was on the keyboard the whole time. On the GET_ID **fresh-boot marker** (`*`,
     cleared by the first GET_ID after the keyboard boots), `PolyCore._arm_crash_autocheck()` queues
-    cmd 39 reads of the master at once and of the slave at 0, 8 and 20 s (the
-    master pulls the slave's record over the split link three times, 2 s apart,
-    after link-up), drained by the 1 s `crash_autocheck` worker periodic. Only a
-    **fresh** record alerts; `CrashScanner.note()` is the dedupe for both sources.
+    cmd 39 reads of the master at 0, 4 and 10 s until it answers at all (right after
+    a boot the keyboard can be deaf after the overlay resend, and one timeout used
+    to lose the crash), and of the slave at 0, 8 and 20 s until a record arrives
+    (the master pulls the slave's record over the split link three times, 2 s
+    apart, after link-up). The 1 s `crash_autocheck` worker periodic drains them,
+    and a read that falls due while the keyboard is paused or away WAITS rather
+    than being dropped: no new marker will come to re-arm it. Only a **fresh**
+    record alerts; `CrashScanner.note()` is the dedupe for both sources.
     ⚠️ **Arm it on the marker, never on a connect.** A record stays fresh for the
     whole keyboard boot, so a read on every connect re-alerts an old crash after a
     host restart, a pause/resume or a sleep/wake. The marker is seen by exactly one
     host connect per keyboard boot. The per-process dedupe cannot replace it: it
     dies with the process, and two stalls at the same breadcrumb are byte-identical.
+    ⚠️ **Known gap, shared with the console path: a SLAVE record is fresh relative
+    to the slave's boot, not the master's.** The master copies the slave's fresh
+    flag (`crash_record_note_slave()`), so when the master alone reboots and the
+    slave stays up, an old slave crash reads fresh again, on cmd 39 and in the
+    `crash: side=slave` console line alike. The host cannot tell that apart from a
+    new one. The fix is firmware-side: clear the slave's fresh flag once the master
+    has pulled it.
   - **Help & About → "Read keyboard crash record"** is the manual readout. It reads
     both halves over cmd 39, opens the same dialog with whatever is archived
     (fresh or older) and copies the report text to the clipboard. Gated on

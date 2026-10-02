@@ -148,13 +148,44 @@ class ConnectTimeCrashReadTest(unittest.TestCase):
         self._tick()
         self.assertEqual(len(self._crashes()), 1)
 
-    def test_a_disconnect_drops_the_pending_reads(self):
+    def test_a_disconnect_defers_the_reads_instead_of_dropping_them(self):
+        # No new boot marker will re-arm them, so a flap must not throw them away.
+        self.replies[0] = (True, _hid())
         self.core._arm_crash_autocheck()
         self.core.connected = False
         self._tick()
-        self.core.connected = True
-        self._tick(30)
         self.assertEqual(self.reads, [])
+        self.core.connected = True
+        self._tick(1)
+        self.assertEqual(self.reads, [0, 1])
+        self.assertEqual(len(self._crashes()), 1)
+
+    def test_a_failed_master_read_is_retried(self):
+        # Right after a boot the keyboard can be deaf after a large overlay
+        # transfer; one timeout used to lose the crash for good.
+        self.replies[0] = (False, "timed out")
+        self.core._arm_crash_autocheck()
+        self._tick(0)
+        self.replies[0] = (True, _hid())
+        self._tick(4)
+        self.assertEqual([w for w in self.reads if w == 0], [0, 0])
+        self.assertEqual([p["side"] for p in self._crashes()], ["master"])
+        self._tick(10)              # answered: the 10 s re-check is dropped
+        self.assertEqual([w for w in self.reads if w == 0], [0, 0])
+
+    def test_an_empty_master_answer_ends_its_checks(self):
+        self.core._arm_crash_autocheck()
+        self._tick(0)
+        self._tick(30)
+        self.assertEqual([w for w in self.reads if w == 0], [0])
+
+    def test_a_cancel_mid_tick_keeps_the_unread_half(self):
+        self.core._arm_crash_autocheck()
+        calls = iter([False, True, True, True])
+        self.core._crash_autocheck_periodic(MagicMock(is_set=lambda: next(calls)))
+        self.assertEqual(self.reads, [0])
+        self._tick()
+        self.assertEqual(self.reads, [0, 1])
 
     def test_a_failed_or_raising_read_is_quiet(self):
         self.replies[0] = (False, "refused")

@@ -1860,9 +1860,14 @@ class PolyCore(Observable):
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
 
-    # When the slave half is asked again. The master pulls the slave's record over
-    # the split link once per link-up (three tries, 2 s apart), so a read in the
-    # first second after connect usually finds nothing there yet.
+    # When each half is asked, in seconds after the boot is seen. The master's read
+    # is retried because right after a boot the worker is busy with the overlay
+    # resend and the keyboard can be deaf for hundreds of ms after a large transfer;
+    # a failed read with no retry would lose the very crash this exists to report.
+    # The slave is asked again because the master pulls the slave's record over the
+    # split link once per link-up (three tries, 2 s apart), so a read in the first
+    # second usually finds nothing there yet.
+    CRASH_MASTER_RECHECK_S = (0.0, 4.0, 10.0)
     CRASH_SLAVE_RECHECK_S = (0.0, 8.0, 20.0)
 
     def _arm_crash_autocheck(self):
@@ -1887,46 +1892,53 @@ class PolyCore(Observable):
         does not survive a restart, and two stalls at the same breadcrumb produce
         byte-identical records."""
         now = time.monotonic()
-        checks = [(now, 0)] + [(now + d, 1) for d in self.CRASH_SLAVE_RECHECK_S]
+        checks = ([(now + d, 0) for d in self.CRASH_MASTER_RECHECK_S]
+                  + [(now + d, 1) for d in self.CRASH_SLAVE_RECHECK_S])
         with self._crash_checks_lock:
             self._crash_checks = checks
 
     def _crash_autocheck_periodic(self, cancel):
-        """Worker periodic (1 s): run whichever queued crash-record reads are due."""
+        """Worker periodic (1 s): run whichever queued crash-record reads are due.
+
+        Nothing is dropped while the keyboard is away: a due read waits for the
+        next tick that finds it connected, because no new boot marker will arrive
+        to re-arm a read that a brief pause or flap threw away."""
+        if not self.connected or self.paused:
+            return
         now = time.monotonic()
         with self._crash_checks_lock:
-            due = [w for t, w in self._crash_checks if t <= now]
-            self._crash_checks = [(t, w) for t, w in self._crash_checks if t > now]
-        if not due:
-            return
-        if not self.connected or self.paused:
-            with self._crash_checks_lock:
-                self._crash_checks = []
-            return
-        for which in sorted(set(due)):
+            due = sorted({w for t, w in self._crash_checks if t <= now})
+        for which in due:
             if cancel.is_set():
                 return
-            self._crash_autocheck_one(which)
+            with self._crash_checks_lock:
+                # Consume only what is due for this half; a later re-check stays.
+                self._crash_checks = [(t, w) for t, w in self._crash_checks
+                                      if w != which or t > now]
+            if self._crash_autocheck_one(which):
+                with self._crash_checks_lock:
+                    self._crash_checks = [(t, w) for t, w in self._crash_checks
+                                          if w != which]
 
     def _crash_autocheck_one(self, which):
+        """One cmd 39 read; True when this half needs no further re-check.
+
+        The master is done on any answer. The slave is done only once a record
+        arrives, since an empty answer may mean the master has not pulled it yet."""
         try:
             ok, payload = self.keeb.get_crash_record(which)
         except Exception:  # noqa: BLE001 — a failed read must not kill the periodic
             self.log.debug("Connect-time crash record read failed", exc_info=True)
-            return
-        if not ok or not payload:
-            return
+            return False
+        if not ok:
+            return False
+        if not payload:
+            return which == 0
         rec = CrashRecord.from_dict(payload)
-        if not rec.fresh:
-            return
-        if which == 1:
-            # The slave's record is found; later re-checks have nothing to add.
-            with self._crash_checks_lock:
-                self._crash_checks = [(t, w) for t, w in self._crash_checks if w != 1]
-        if not self._crash_scanner.note(rec):
-            return
-        self.log.warning("Keyboard firmware crash record (read over HID): %s", rec.key())
-        self.emit("crash_detected", rec.to_dict())
+        if rec.fresh and self._crash_scanner.note(rec):
+            self.log.warning("Keyboard firmware crash record (read over HID): %s", rec.key())
+            self.emit("crash_detected", rec.to_dict())
+        return True
 
     def _problem_setting(self, key, default):
         try:

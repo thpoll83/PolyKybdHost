@@ -140,6 +140,17 @@ class CrashAlertClearTest(unittest.TestCase):
         self.assertIn("fresh (from the boot before this one)", text)
         self.assertIn("archived (older)", text)
 
+    def test_archived_only_records_do_not_read_as_a_new_crash(self):
+        d = cad.CrashAlertDialog(host_version="0.0.0")
+        self.addCleanup(d.deleteLater)
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="", fresh=False)))
+        self.assertIn("archived on the keyboard", d.headline.text())
+        self.assertNotIn("crashed and restarted", d.headline.text())
+        self.assertIn("not a new one", d.hint.text())
+        d.add_record(self.records[1])            # a fresh one arrives: back to the alert
+        self.assertIn("crashed and restarted", d.headline.text())
+
     def test_copy_to_clipboard_puts_the_report_text_there(self):
         d = self._dialog(clear_cb=lambda: (True, "ok"))
         d.copy_to_clipboard()
