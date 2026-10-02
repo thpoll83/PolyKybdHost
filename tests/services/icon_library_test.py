@@ -5,12 +5,19 @@ host half of the same contract: what `build` writes is what `parse` -- which
 applies the firmware's own checks -- reads back, pixel for pixel.
 """
 import binascii
+import contextlib
+import hashlib
+import io
+import json
 import os
+import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -172,19 +179,14 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
     its own frozen id table still fails."""
 
     def setUp(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
         try:
-            sys.path.insert(0, str(ROOT / "scripts"))
             import build_icon_library as bil
         except Exception as exc:         # the builder needs the image stack
-            self.skipTest(f"icon library builder unavailable: {exc}")
-        import contextlib
-        import io
-        import json
-        import tempfile
-        from unittest import mock
-        self.bil, self.io, self.contextlib = bil, io, contextlib
+            raise unittest.SkipTest(f"icon library builder unavailable: {exc}") from exc
+        self.bil = bil
         tmp = Path(tempfile.mkdtemp())
-        self.addCleanup(lambda: __import__("shutil").rmtree(tmp, ignore_errors=True))
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
         ids = yaml.safe_load(bil.IDS_FILE.read_text(encoding="utf-8"))
         _ver, frames = il.parse(bil.PLYI_FILE.read_bytes())
         manifest = json.loads(bil.MANIFEST.read_text(encoding="utf-8"))
@@ -193,7 +195,7 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
         old = il.build(frames[:-2], 1)
         entry = next(b for b in manifest["bundles"] if b["id"] == "icons")
         entry.update(content_version=1, size=len(old),
-                     sha256=__import__("hashlib").sha256(old).hexdigest()[:16])
+                     sha256=hashlib.sha256(old).hexdigest()[:16])
         self.ids_path, self.plyi, self.man = tmp / "ids.yaml", tmp / "i.plyi", tmp / "b.json"
         self.ids_path.write_text(
             "# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes\n"
@@ -208,8 +210,8 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
             self.addCleanup(patcher.stop)
 
     def _check(self):
-        out = self.io.StringIO()
-        with self.contextlib.redirect_stdout(out):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
             rc = self.bil.main(["--check"])
         return rc, out.getvalue()
 
