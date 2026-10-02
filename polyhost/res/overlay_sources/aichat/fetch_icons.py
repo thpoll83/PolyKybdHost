@@ -77,7 +77,7 @@ FLUENT = {
     "focusprev": "Arrow Circle Left",
     "closesplit": "Dismiss Circle",
     "pin": "Pin",
-    "rename": "Rename",
+    "rename": "Text Edit Style",
     "markunread": "Mail Unread",
     "link": "Link",
     "pullrequest": "Branch Request",

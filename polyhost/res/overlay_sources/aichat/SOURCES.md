@@ -102,7 +102,7 @@ Dismiss Square, Chat Multiple, Eye, Shield, Brain Circuit, Gauge, Copy, Code
 Block, Person Edit, Delete, Folder Open, Document Search, Archive, Document
 Multiple, History, Attach, Mic, Chat Settings, Arrow Undo, Split Vertical,
 Split Horizontal, Arrow Circle Right, Arrow Circle Left, Dismiss Circle, Pin,
-Rename, Mail Unread, Link, Branch Request, Branch Fork, Text Bullet List Square,
+Text Edit Style, Mail Unread, Link, Branch Request, Branch Fork, Text Bullet List Square,
 Pen, Arrow Clockwise, Text Quote, Full Screen Maximize, Flash, Send.
 
 Google Material Symbols (Apache-2.0): `difference` (diff pane).
