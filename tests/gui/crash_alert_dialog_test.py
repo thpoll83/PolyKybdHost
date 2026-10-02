@@ -124,6 +124,30 @@ class CrashAlertClearTest(unittest.TestCase):
         d.add_record(crash_report.parse_crash_line(MASTER))
         self.assertEqual(len(d.records), 2)
 
+    def test_the_hid_copy_of_a_console_record_is_not_appended(self):
+        # The connect-time cmd 39 read carries no console line; deduping on the
+        # line let both copies of one crash into the list.
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="")))
+        self.assertEqual(len(d.records), 2)
+
+    def test_the_detail_says_whether_a_record_is_fresh(self):
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.add_record(crash_report.CrashRecord.from_dict(
+            dict(self.records[0].to_dict(), line="", fresh=False, consecutive=2)))
+        text = d.detail.toPlainText()
+        self.assertIn("fresh (from the boot before this one)", text)
+        self.assertIn("archived (older)", text)
+
+    def test_copy_to_clipboard_puts_the_report_text_there(self):
+        d = self._dialog(clear_cb=lambda: (True, "ok"))
+        d.copy_to_clipboard()
+        text = QApplication.clipboard().text()
+        self.assertIn("PolyKybd firmware crash report", text)
+        self.assertIn("side=slave", text)
+        self.assertEqual(d.status.text(), "Copied to the clipboard.")
+
 
 if __name__ == "__main__":
     unittest.main()

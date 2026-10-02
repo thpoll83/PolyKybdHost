@@ -44,7 +44,7 @@ from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
-from polyhost.services.crash_report import CrashScanner
+from polyhost.services.crash_report import CrashRecord, CrashScanner
 from polyhost.services import problem_scan
 from polyhost.util.observable import Observable
 
@@ -300,6 +300,11 @@ class PolyCore(Observable):
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
+        # Pending connect-time crash-record reads (cmd 39): (due monotonic s, half).
+        # Armed when the host sees a keyboard boot, drained by the periodic below.
+        self._crash_checks = []
+        self._crash_checks_lock = threading.Lock()
+        self.worker.add_periodic("crash_autocheck", 1.0, self._crash_autocheck_periodic)
         # Known-bad console lines, and this process's own WARNING/ERROR records
         # (services/problem_scan.py). The handler sits on the ROOT logger, so in
         # in-process mode it covers the GUI's logging too; a daemon client GUI
@@ -1790,6 +1795,11 @@ class PolyCore(Observable):
                     self.device_mgr.reset_all_caches()
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
                 applied["fresh_boot"] = True
+                # Ask the keyboard itself whether the boot before this one crashed.
+                # Keyed on the fresh-boot marker, not on a connect: see
+                # _arm_crash_autocheck for why that makes it "new crashes only".
+                if self.keeb.supports("crash_record"):
+                    self._arm_crash_autocheck()
 
         self.emit("status_changed", {
             "connected": self.connected,
@@ -1849,6 +1859,74 @@ class PolyCore(Observable):
         for rec in records:
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
+
+    # When the slave half is asked again. The master pulls the slave's record over
+    # the split link once per link-up (three tries, 2 s apart), so a read in the
+    # first second after connect usually finds nothing there yet.
+    CRASH_SLAVE_RECHECK_S = (0.0, 8.0, 20.0)
+
+    def _arm_crash_autocheck(self):
+        """Queue cmd 39 reads of both halves after the host sees a keyboard boot.
+
+        ⚠️ The crash dialog used to be raised ONLY by the console line, which is
+        lossy: the firmware prints it with the boot banner and a few re-emits in
+        the first ~30 s, and after a watchdog reset the keyboard re-enumerates
+        while the host's probe is still debouncing. A recovered boot stall at
+        "63%, 4 / 4" (fw 1.3.2, phase 1:0x16e1, 2026-10-02) was archived on the
+        keyboard and never reported. The record itself is durable, so read it.
+        Only a FRESH record (from the boot before this one) raises the alert;
+        older ones are history for `polyctl crash show`. The scanner's dedupe
+        covers both sources, so a crash the console also delivered alerts once.
+
+        ⚠️ New crashes only, which is why this is armed on the GET_ID fresh-boot
+        marker and not on every connect. A record stays fresh for the WHOLE keyboard
+        boot, so a connect-time read would re-alert the same crash after a host
+        restart, a pause/resume or a sleep/wake. The firmware clears the marker on
+        the first GET_ID after it boots, so exactly one host connect per keyboard
+        boot sees it. The scanner's per-process dedupe cannot do that job alone: it
+        does not survive a restart, and two stalls at the same breadcrumb produce
+        byte-identical records."""
+        now = time.monotonic()
+        checks = [(now, 0)] + [(now + d, 1) for d in self.CRASH_SLAVE_RECHECK_S]
+        with self._crash_checks_lock:
+            self._crash_checks = checks
+
+    def _crash_autocheck_periodic(self, cancel):
+        """Worker periodic (1 s): run whichever queued crash-record reads are due."""
+        now = time.monotonic()
+        with self._crash_checks_lock:
+            due = [w for t, w in self._crash_checks if t <= now]
+            self._crash_checks = [(t, w) for t, w in self._crash_checks if t > now]
+        if not due:
+            return
+        if not self.connected or self.paused:
+            with self._crash_checks_lock:
+                self._crash_checks = []
+            return
+        for which in sorted(set(due)):
+            if cancel.is_set():
+                return
+            self._crash_autocheck_one(which)
+
+    def _crash_autocheck_one(self, which):
+        try:
+            ok, payload = self.keeb.get_crash_record(which)
+        except Exception:  # noqa: BLE001 — a failed read must not kill the periodic
+            self.log.debug("Connect-time crash record read failed", exc_info=True)
+            return
+        if not ok or not payload:
+            return
+        rec = CrashRecord.from_dict(payload)
+        if not rec.fresh:
+            return
+        if which == 1:
+            # The slave's record is found; later re-checks have nothing to add.
+            with self._crash_checks_lock:
+                self._crash_checks = [(t, w) for t, w in self._crash_checks if w != 1]
+        if not self._crash_scanner.note(rec):
+            return
+        self.log.warning("Keyboard firmware crash record (read over HID): %s", rec.key())
+        self.emit("crash_detected", rec.to_dict())
 
     def _problem_setting(self, key, default):
         try:

@@ -1,8 +1,8 @@
 """PolyCore surfaces a firmware crash line from the console read as ONE event."""
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from polyhost.services.crash_report import CrashScanner
+from polyhost.services.crash_report import CrashScanner, parse_crash_line
 from tests.core.poly_core_apply_test import make_core
 from tests.services.crash_report_test import LINE
 
@@ -68,6 +68,101 @@ class ConsoleCrashScanTest(unittest.TestCase):
         self.assertIn("Invalid half", msg)
         core.worker.run_sync.return_value = (True, None)
         self.assertEqual(core.get_crash_record(1), (True, None))
+
+
+
+def _hid(fresh=True, side="master", line=""):
+    d = dict(parse_crash_line(LINE).to_dict(), line=line, fresh=fresh, side=side)
+    return d
+
+
+class ConnectTimeCrashReadTest(unittest.TestCase):
+    """The console line is lossy; a fresh connect asks the keyboard over cmd 39."""
+
+    def setUp(self):
+        self.core, self.events = _core_with_console("")
+        self.replies = {0: (True, None), 1: (True, None)}
+        self.reads = []
+
+        def get(which):
+            self.reads.append(which)
+            return self.replies[which]
+        self.core.keeb.get_crash_record.side_effect = get
+        self.clock = [1000.0]
+        patcher = patch("polyhost.core.poly_core.time.monotonic",
+                        side_effect=lambda: self.clock[0])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _tick(self, at=None):
+        if at is not None:
+            self.clock[0] = 1000.0 + at
+        self.core._crash_autocheck_periodic(MagicMock(is_set=lambda: False))
+
+    def _crashes(self):
+        return [p for n, p in self.events if n == "crash_detected"]
+
+    def test_nothing_is_read_until_armed(self):
+        self._tick()
+        self.assertEqual(self.reads, [])
+
+    def test_a_fresh_master_record_alerts_once(self):
+        self.replies[0] = (True, _hid())
+        self.core._arm_crash_autocheck()
+        self._tick()
+        self.assertEqual(self.reads, [0, 1])
+        self.assertEqual(len(self._crashes()), 1)
+        self.assertEqual(self._crashes()[0]["side"], "master")
+
+    def test_an_archived_record_does_not_alert(self):
+        self.replies[0] = (True, _hid(fresh=False))
+        self.core._arm_crash_autocheck()
+        self._tick()
+        self.assertEqual(self._crashes(), [])
+
+    def test_the_slave_is_asked_again_until_its_record_arrives(self):
+        self.core._arm_crash_autocheck()
+        self._tick(0)
+        self._tick(5)
+        self.assertEqual(self.reads, [0, 1])
+        self.replies[1] = (True, _hid(side="slave"))
+        self._tick(8)
+        self.assertEqual(self.reads, [0, 1, 1])
+        self.assertEqual([p["side"] for p in self._crashes()], ["slave"])
+        self._tick(25)              # found: the 20 s re-check is dropped
+        self.assertEqual(self.reads, [0, 1, 1])
+
+    def test_the_banner_line_after_a_hid_read_does_not_alert_again(self):
+        self.replies[0] = (True, _hid())
+        self.core._arm_crash_autocheck()
+        self._tick()
+        self.core.keeb.get_console_output.side_effect = ["   " + LINE + "\n"]
+        self.core._console_periodic(MagicMock())
+        self.assertEqual(len(self._crashes()), 1)
+
+    def test_a_record_the_console_already_reported_does_not_alert_again(self):
+        self.core.keeb.get_console_output.side_effect = [LINE + "\n"]
+        self.core._console_periodic(MagicMock())
+        self.replies[0] = (True, _hid())
+        self.core._arm_crash_autocheck()
+        self._tick()
+        self.assertEqual(len(self._crashes()), 1)
+
+    def test_a_disconnect_drops_the_pending_reads(self):
+        self.core._arm_crash_autocheck()
+        self.core.connected = False
+        self._tick()
+        self.core.connected = True
+        self._tick(30)
+        self.assertEqual(self.reads, [])
+
+    def test_a_failed_or_raising_read_is_quiet(self):
+        self.replies[0] = (False, "refused")
+        self.core.keeb.get_crash_record.side_effect = [
+            (False, "refused"), RuntimeError("hid gone")]
+        self.core._arm_crash_autocheck()
+        self._tick()
+        self.assertEqual(self._crashes(), [])
 
 
 if __name__ == "__main__":

@@ -140,8 +140,15 @@ class CrashRecord:
 
     def as_console_line(self) -> str:
         """The firmware's own line shape, for a record decoded from HID."""
-        if self.line:
-            return self.line
+        return self.line or self.key()
+
+    def key(self) -> str:
+        """The record's identity, the same whichever path delivered it.
+
+        Rebuilt from the fields in ``crash_record_format()``'s exact shape, so a
+        record read over cmd 39 and the console line for the same crash compare
+        equal. The console line itself cannot be the key: it is whatever the
+        read returned around the record, prefix included."""
         return (f"crash: side={self.side} kind={self.kind} core={self.core} "
                 f"pc=0x{self.pc:08x} lr=0x{self.lr:08x} sp=0x{self.sp:08x} "
                 f"psr=0x{self.xpsr:08x} icsr=0x{self.icsr:08x} "
@@ -193,8 +200,12 @@ class CrashScanner:
     """Reassemble console fragments into lines and surface each crash record once.
 
     ``feed`` takes whatever the 250 ms console read returned and yields the
-    records completed by it. A record is reported once per distinct line: the
-    boot banner re-emits for ~30 s, and the same line arriving again is noise.
+    records completed by it. A record is reported once per :meth:`CrashRecord.key`:
+    the boot banner re-emits for ~30 s, and the same line arriving again is noise.
+
+    ⚠️ The console is not the only source. The connect-time cmd 39 read
+    (``PolyCore._crash_autocheck_job``) reports through :meth:`note`, so a crash
+    the console delivered is not reported a second time by HID, or the reverse.
     """
 
     MAX_PENDING = LineAssembler.MAX_PENDING
@@ -209,11 +220,17 @@ class CrashScanner:
             if "crash: side=" not in line:
                 continue
             rec = parse_crash_line(line)
-            if rec is None or rec.line in self._seen:
-                continue
-            self._seen.add(rec.line)
-            out.append(rec)
+            if rec is not None and self.note(rec):
+                out.append(rec)
         return out
+
+    def note(self, rec: CrashRecord) -> bool:
+        """True the first time this record is seen, from either source."""
+        k = rec.key()
+        if k in self._seen:
+            return False
+        self._seen.add(k)
+        return True
 
     def forget(self) -> None:
         """Allow every record to be reported again (after a clear)."""
@@ -223,6 +240,35 @@ class CrashScanner:
 # ---------------------------------------------------------------------------
 # Text for humans
 # ---------------------------------------------------------------------------
+
+# The boot breadcrumb's in-milestone marks (qmk boot_diag.c, splash_progress()).
+_BOOT_MARKS = {0xE1: "status panel paint", 0xE2: "keycap logo draw",
+               0xE3: "final dwell and keycap render"}
+
+
+def boot_breadcrumb_text(arg: int) -> str:
+    """Decode a `phase=boot` argument into how far the boot got.
+
+    Mirrors qmk ``boot_diag.c`` (and ``tools/hil_probes/crash_record.py``):
+    a bare step; ``step << 8 | sub``; a render key 1..40; ``0x80..0xBF`` a
+    sub-step paint call; ``0xC0..0xCF`` a milestone paint call; ``0xE1..0xE3``
+    the in-milestone marks. Bit 12 says core1 had reached ``core1_entry()``."""
+    hi, lo = (arg >> 8) & 0xFF, arg & 0xFF
+    if hi == 0:
+        return f"boot step {lo}"
+    step = hi & 0x0F
+    core1 = "core1 running" if hi & 0x10 else "core1 not yet running"
+    if 0x80 <= lo <= 0xBF:
+        return (f"boot step {step}, sub-step {((lo >> 4) & 3) + 1} status panel paint, "
+                f"render call {(lo & 0x0F) + 1}; {core1}")
+    if 0xC0 <= lo <= 0xCF:
+        return f"boot step {step} status panel paint, render call {(lo & 0x0F) + 1}; {core1}"
+    if lo in _BOOT_MARKS:
+        return f"boot step {step}, {_BOOT_MARKS[lo]} did not finish; {core1}"
+    if 0xE0 <= lo:
+        return f"boot step {step}, breadcrumb 0x{arg:04x}"
+    return f"boot step {step}, sub-step or render key {lo}"
+
 
 def summarize(rec: CrashRecord) -> str:
     """One paragraph a user can read without knowing the field names."""
@@ -237,7 +283,9 @@ def summarize(rec: CrashRecord) -> str:
     up = rec.uptime_ms / 1000.0
     text = (f"Firmware {rec.fw} on {half} {what} after {up:.1f} s of uptime, "
             f"while it was in: {rec.phase_name}")
-    if rec.phase == 3:
+    if rec.phase == 1:
+        text += f" ({boot_breadcrumb_text(rec.phase_arg)})"
+    elif rec.phase == 3:
         text += f" (HID command {rec.phase_arg})"
     elif rec.phase == 4:
         text += f" (transaction id {rec.phase_arg})"
@@ -248,6 +296,11 @@ def summarize(rec: CrashRecord) -> str:
         text += (f" The faulting address is 0x{rec.pc:08x}, which can be mapped to a "
                  f"source line against the {rec.fw} firmware ELF with addr2line.")
     return text
+
+
+def freshness_text(rec: CrashRecord) -> str:
+    """Whether the record is from the boot right before the current one."""
+    return "fresh (from the boot before this one)" if rec.fresh else "archived (older)"
 
 
 def compose_report_text(records: list[CrashRecord], diagnostics: str = "",
@@ -262,7 +315,8 @@ def compose_report_text(records: list[CrashRecord], diagnostics: str = "",
         parts.append("")
         parts.append("    " + rec.as_console_line())
         parts.append("")
-        parts.append(f"    reset reason: {rec.reset_reason_text}; exception vector: {rec.vector}")
+        parts.append(f"    reset reason: {rec.reset_reason_text}; exception vector: {rec.vector}; "
+                     f"{freshness_text(rec)}")
         parts.append("")
     if diagnostics.strip():
         parts.append("Diagnostics:")
@@ -274,7 +328,7 @@ def compose_report_text(records: list[CrashRecord], diagnostics: str = "",
 def issue_description(records: list[CrashRecord]) -> str:
     """The pre-filled 'What happened' for the Report-a-Problem dialog."""
     intro = ("The keyboard firmware crashed and restarted itself. PolyKybdHost "
-             "read this record from the keyboard's console:")
+             "read this record from the keyboard:")
     lines = [intro, ""]
     for rec in records:
         lines.append(summarize(rec))

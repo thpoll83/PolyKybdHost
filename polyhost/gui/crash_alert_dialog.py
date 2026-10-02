@@ -96,7 +96,9 @@ class CrashAlertDialog(QDialog):
 
     # -- content -------------------------------------------------------------
     def add_record(self, rec: crash_report.CrashRecord) -> None:
-        if any(r.line == rec.line and r.side == rec.side for r in self.records):
+        # By key, not by line: a record read over cmd 39 has no console line, so
+        # the console copy and the HID copy of one crash would both be appended.
+        if any(r.key() == rec.key() for r in self.records):
             return
         self.records.append(rec)
         self._render()
@@ -113,6 +115,7 @@ class CrashAlertDialog(QDialog):
             f"(firmware {first.fw}, {first.kind} while in {first.phase_name}).")
         self.detail.setPlainText(
             "\n\n".join(crash_report.summarize(r) + "\n" + r.as_console_line()
+                        + "\n" + crash_report.freshness_text(r)
                         for r in self.records))
 
     def _text(self) -> str:
@@ -165,6 +168,10 @@ class CrashAlertDialog(QDialog):
         self.status.setText(f"Cleared here, but the keyboard did not: {payload}")
         self.detail.setPlainText("")
         self.headline.setText("<b>No crash records held.</b>")
+
+    def copy_to_clipboard(self) -> None:
+        """Public for the tray's manual readout, which copies on open."""
+        self._copy()
 
     def _copy(self) -> None:
         QApplication.clipboard().setText(self._text())

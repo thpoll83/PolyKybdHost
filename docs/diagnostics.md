@@ -214,13 +214,42 @@ purpose is proving whether the app crashed, shipped into none of them.
   = 16). Three things that are easy to get wrong:
   - ⚠️ **A console read is a report-sized FRAGMENT, not a line** — the scanner
     reassembles across the 250 ms reads and only classifies `\n`-terminated lines,
-    and it **dedupes by the line itself** because the boot banner re-emits for
-    ~30 s. `clear_crash_record()` calls `forget()` so the next boot's line is
-    reported again. Same trap the rig's `ConsoleTap` documents.
+    and it **dedupes by `CrashRecord.key()`** because the boot banner re-emits for
+    ~30 s. The key is rebuilt from the fields in the firmware's own
+    `crash_record_format()` shape, so the console copy and the cmd 39 copy of one
+    crash compare equal (a HID record has no console line to compare).
+    `clear_crash_record()` calls `forget()` so the next boot's line is reported
+    again. Same trap the rig's `ConsoleTap` documents.
+  - ⚠️ **The console line alone MISSED a recovered boot stall, so the host now
+    also asks the keyboard once per keyboard boot.** Field, 2026-10-02: fw 1.3.2
+    wedged at "63%, 4 / 4", the late-boot guard reset it once
+    (`phase=1:0x16e1`), and no dialog appeared. The line is printed only with the
+    banner and its re-emits in the first ~30 s, and after a watchdog reset the
+    keyboard re-enumerates while the host's probe is still debouncing. The record
+    was on the keyboard the whole time. On the GET_ID **fresh-boot marker** (`*`,
+    cleared by the first GET_ID after the keyboard boots), `PolyCore._arm_crash_autocheck()` queues
+    cmd 39 reads of the master at once and of the slave at 0, 8 and 20 s (the
+    master pulls the slave's record over the split link three times, 2 s apart,
+    after link-up), drained by the 1 s `crash_autocheck` worker periodic. Only a
+    **fresh** record alerts; `CrashScanner.note()` is the dedupe for both sources.
+    ⚠️ **Arm it on the marker, never on a connect.** A record stays fresh for the
+    whole keyboard boot, so a read on every connect re-alerts an old crash after a
+    host restart, a pause/resume or a sleep/wake. The marker is seen by exactly one
+    host connect per keyboard boot. The per-process dedupe cannot replace it: it
+    dies with the process, and two stalls at the same breadcrumb are byte-identical.
+  - **Help & About → "Read keyboard crash record"** is the manual readout. It reads
+    both halves over cmd 39, opens the same dialog with whatever is archived
+    (fresh or older) and copies the report text to the clipboard. Gated on
+    `connected`, not paused, and `supports("crash_record")` in
+    `managed_connection_status`.
   - ⚠️ **The console is starved during a flash** (see the threading notes above),
     so a crash line printed while the host is flashing is lost to the scanner —
     the record is still on the keyboard: `polyctl crash show` reads it over HID,
     where `fresh` says whether it belongs to the boot before this one.
+  - **`boot_breadcrumb_text()` decodes a `phase=boot` argument** into the summary
+    (step, sub-step, which paint was in flight, the core1 flag). It mirrors the
+    ranges in qmk `boot_diag.c` and `tools/hil_probes/crash_record.py`; a new
+    range there needs a branch here, or the summary falls back to "breadcrumb 0x…".
   - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
     (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
     name here or the summary reads `phase N`.

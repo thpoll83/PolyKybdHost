@@ -41,6 +41,8 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core._observers = []
     import threading
     core._observers_lock = threading.Lock()
+    core._crash_checks = []
+    core._crash_checks_lock = threading.Lock()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
         "unicode_send_composition_mode": unicode_mode}.get(k, False)
@@ -286,6 +288,24 @@ class TestApplyReconnect(unittest.TestCase):
         # is the bug below: a reboot the host never saw as a disconnect left every
         # protocol-derived conclusion describing the previous firmware.
         self.assertIsNotNone(applied["decision"])
+
+    def test_a_keyboard_boot_arms_the_crash_record_read(self):
+        core = make_core(connected=True)
+        core.apply_reconnect(connect_snapshot(state_changed=False, fresh_boot=True))
+        self.assertEqual(sorted({w for _, w in core._crash_checks}), [0, 1])
+
+    def test_a_connect_without_a_keyboard_boot_does_not_read_crash_records(self):
+        # A record stays fresh for the whole keyboard boot, so a host restart or a
+        # resume would re-alert an old crash. Only the boot marker arms the read.
+        core = make_core()
+        core.apply_reconnect(connect_snapshot(state_changed=True, fresh_boot=False))
+        self.assertEqual(core._crash_checks, [])
+
+    def test_old_firmware_does_not_arm_the_crash_record_read(self):
+        core = make_core(connected=True)
+        core.keeb.supports.side_effect = lambda f: f != "crash_record"
+        core.apply_reconnect(connect_snapshot(state_changed=False, fresh_boot=True))
+        self.assertEqual(core._crash_checks, [])
 
     def test_a_flash_that_changes_protocol_is_noticed_without_a_disconnect(self):
         """The reported bug: flash new firmware from the host app and the app keeps
