@@ -71,8 +71,25 @@ def _specs():
             yield name, y, spec
 
 
+def _platform_results(g, spec: dict, base: Path):
+    """Every artwork set the generator writes for this spec, not only Windows.
+
+    A binding scoped `only: [macos]` (or to Linux, or one desktop) appears in
+    that platform's set alone, so rendering only the default set left its icon
+    out of the library selection entirely."""
+    yield g.generate(spec, base)
+    if g.spec_needs_macos_set(spec):
+        yield g.generate(spec, base, platform=g.PLAT_MACOS)
+    if g.spec_needs_linux_set(spec):
+        yield g.generate(spec, base, platform=g.PLAT_LINUX)
+    for member in g.LINUX_MEMBERS:
+        if g.spec_needs_member_set(spec, member):
+            yield g.generate(spec, base, platform=member)
+
+
 def _spec_cells(y: Path, spec: dict):
-    """[(kind, name, packed 360-byte frame)] for every cell the generator draws."""
+    """[(kind, name, packed 360-byte frame)] for every cell the generator draws,
+    on every platform it writes a set for."""
     import generate_app_overlays as g
     base = y.parent
     fmap = {}
@@ -91,25 +108,27 @@ def _spec_cells(y: Path, spec: dict):
             kind_of[ic] = "material"
         else:
             kind_of[ic] = "custom"
-    res = g.generate(spec, base)
     out = []
-    for p in res["placed"]:
-        if p["mod"] not in g.Modifier.__members__:
-            continue                                  # the ESC program mark
-        mod = g.Modifier[p["mod"]]
-        arr = next(res[t] for t, chmap in (("primary", g.PRIMARY_CH), ("combo", g.COMBO_CH),
-                                            ("extra", g.EXTRA_CH), ("gui", g.GUI_CH)) if mod in chmap)
-        src = str(p["src"])
-        if src.startswith("concept:"):
-            kind = "lexicon"
-        elif src.startswith("label:"):
-            kind = "label"
-        else:
-            kind = kind_of.get(p["src"], "custom")
-        r, c = p["cell"]
-        m = arr[r * g.SLOT_H:(r + 1) * g.SLOT_H, c * g.SLOT_W:(c + 1) * g.SLOT_W, g.CH[p["ch"]]] > 0
-        if m.any():
-            out.append((kind, src, np.packbits(m).tobytes()))
+    for res in _platform_results(g, spec, base):
+        for p in res["placed"]:
+            if p["mod"] not in g.Modifier.__members__:
+                continue                                  # the ESC program mark
+            mod = g.Modifier[p["mod"]]
+            arr = next(res[t] for t, chmap in (("primary", g.PRIMARY_CH), ("combo", g.COMBO_CH),
+                                                ("extra", g.EXTRA_CH), ("gui", g.GUI_CH))
+                       if mod in chmap)
+            src = str(p["src"])
+            if src.startswith("concept:"):
+                kind = "lexicon"
+            elif src.startswith("label:"):
+                kind = "label"
+            else:
+                kind = kind_of.get(p["src"], "custom")
+            r, c = p["cell"]
+            m = arr[r * g.SLOT_H:(r + 1) * g.SLOT_H, c * g.SLOT_W:(c + 1) * g.SLOT_W,
+                    g.CH[p["ch"]]] > 0
+            if m.any():
+                out.append((kind, src, np.packbits(m).tobytes()))
     return out
 
 
