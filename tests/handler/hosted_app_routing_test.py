@@ -320,6 +320,23 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                       self._chrome("windows", "https://github.com/x/y/pull/1"))
         self.assertIn("chrome_template.mods.png", self._chrome("linux"))
 
+    def test_chrome_web_apps_fall_back_to_the_title_without_a_url(self):
+        """No extension means no URL. The window title's brand word then picks
+        the web-app set, on both the default and the macOS branch."""
+        for title, stem in (("Pull requests · x/y · GitHub - Google Chrome", "github_template"),
+                            ("Merge requests · x / y · GitLab - Google Chrome", "gitlab_template"),
+                            ("Pull request #1 — Bitbucket - Google Chrome", "bitbucket_pr_template"),
+                            ("Home - Space - Confluence - Google Chrome", "confluence_template"),
+                            ("Roadmap | Notion - Google Chrome", "notion_template"),
+                            ("New chat - Claude - Google Chrome", "claude_web_template"),
+                            ("ChatGPT - Google Chrome", "chatgpt_template")):
+            self.assertIn(f"{stem}.mods.png", self._chrome("windows", None, title), title)
+            self.assertIn(f"{stem}_mac.mods.png", self._chrome("macos", None, title), title)
+        # A known URL that matches no site still overrules the title word.
+        self.assertIn("chrome_template.mods.png",
+                      self._chrome("windows", "https://www.google.com/search?q=github",
+                                   "github - Google Search - Google Chrome"))
+
     def test_libreoffice_keeps_its_title_routing_on_macOS(self):
         self.assertIn("libreoffice_calc_template_mac.mods.png",
                       self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))
