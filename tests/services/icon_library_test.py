@@ -165,5 +165,66 @@ class ShippedLibraryTest(unittest.TestCase):
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
 
 
+class CheckToleratesPendingIconsTest(unittest.TestCase):
+    """`--check` must not force a rebuild for every new icon. A library one
+    rebuild behind the templates passes and lists the new icons as pending
+    (they are uploaded as bitmaps meanwhile). A library that disagrees with
+    its own frozen id table still fails."""
+
+    def setUp(self):
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            import build_icon_library as bil
+        except Exception as exc:         # the builder needs the image stack
+            self.skipTest(f"icon library builder unavailable: {exc}")
+        import contextlib
+        import io
+        import json
+        import tempfile
+        from unittest import mock
+        self.bil, self.io, self.contextlib = bil, io, contextlib
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(tmp, ignore_errors=True))
+        ids = yaml.safe_load(bil.IDS_FILE.read_text(encoding="utf-8"))
+        _ver, frames = il.parse(bil.PLYI_FILE.read_bytes())
+        manifest = json.loads(bil.MANIFEST.read_text(encoding="utf-8"))
+        # The library as it was before its two newest icons were appended.
+        self.dropped = [e["name"] for e in ids[-2:]]
+        old = il.build(frames[:-2], 1)
+        entry = next(b for b in manifest["bundles"] if b["id"] == "icons")
+        entry.update(content_version=1, size=len(old),
+                     sha256=__import__("hashlib").sha256(old).hexdigest()[:16])
+        self.ids_path, self.plyi, self.man = tmp / "ids.yaml", tmp / "i.plyi", tmp / "b.json"
+        self.ids_path.write_text(
+            "# Frozen overlay icon ids (HID cmd 42). APPEND-ONLY: an id never changes\n"
+            "# and a retired icon keeps its entry. Written by scripts/build_icon_library.py.\n"
+            + yaml.safe_dump(ids[:-2], sort_keys=False, width=200), encoding="utf-8")
+        self.plyi.write_bytes(old)
+        self.man.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        for name, path in (("IDS_FILE", self.ids_path), ("PLYI_FILE", self.plyi),
+                           ("MANIFEST", self.man)):
+            patcher = mock.patch.object(bil, name, path)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def _check(self):
+        out = self.io.StringIO()
+        with self.contextlib.redirect_stdout(out):
+            rc = self.bil.main(["--check"])
+        return rc, out.getvalue()
+
+    def test_a_library_behind_the_templates_passes_and_lists_pending(self):
+        rc, out = self._check()
+        self.assertEqual(rc, 0, out)
+        self.assertIn("pending: 2", out)
+        for name in self.dropped:
+            self.assertIn(name, out)
+
+    def test_a_library_that_disagrees_with_its_id_table_fails(self):
+        self.plyi.write_bytes(il.build(il.parse(self.plyi.read_bytes())[1][:-1], 1))
+        rc, out = self._check()
+        self.assertEqual(rc, 1, out)
+
+
 if __name__ == "__main__":
     unittest.main()

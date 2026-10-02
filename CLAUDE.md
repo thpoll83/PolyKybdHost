@@ -316,6 +316,13 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   the keyboard reports exactly the shipped bundle version. A bundle whose slot the
   device's `V` block does not list is never flashed (`device_has_slot`), or a v19
   keyboard would refuse `icons.plyi` on every connect.
+  ⚠️ **Rebuild it in BATCHES, never per overlay change** (maintainer's rule,
+  2026-10-02). Each rebuild bumps `content_version`, and every keyboard re-flashes
+  the slot on its next connect. An icon missing from the library is simply uploaded
+  as a bitmap like any other overlay image (`poly_kybd.py`, the `upload()` branch),
+  so `--check` lists new eligible icons as **pending** and fails only when the
+  shipped files disagree with `icon_ids.yaml`. Rebuild when the pending list is
+  worth a re-flash, for example before a release.
 - **The flash events carry a `kind`** (`fontpack` / `doomwad` / `doompack`) — label UIs
   from it, not from the event name; the doom `.whx` and `.plyx` ride the same transport.
 - ⚠️ **`install_doompack` sends EXECUTABLE CODE over that transport.** The `.sig`

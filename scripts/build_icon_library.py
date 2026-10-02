@@ -2,7 +2,16 @@
 """Build the overlay icon library, polyhost/res/fontpack/icons.plyi (cmd 42, v20).
 
     python scripts/build_icon_library.py            # rebuild, bump content_version if bytes change
-    python scripts/build_icon_library.py --check    # fail if the shipped files are stale
+    python scripts/build_icon_library.py --check    # fail if the shipped files disagree with the id table
+
+REBUILD IN BATCHES, not per overlay change. Every rebuild bumps content_version,
+and every keyboard re-flashes the 256 KiB slot on its next connect. A new icon
+missing from the library costs nothing in correctness: the send path uses the
+library only on an exact pixel match and otherwise uploads the bitmap. So
+``--check`` (a test) does NOT fail on new eligible icons. It lists them as
+pending and fails only when the shipped files no longer match the frozen id
+table. Rebuild when the pending list is worth a re-flash, for example before a
+release.
 
 SELECTION (OVERLAY_ICON_LIBRARY_DESIGN.md §2.1). An icon is in the library when
 its rendered 72x40 cell is:
@@ -187,13 +196,21 @@ def assign_ids(selected: dict[bytes, str], ids_doc: list,
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--check", action="store_true", help="fail if the shipped files are stale")
+    ap.add_argument("--check", action="store_true",
+                    help="fail if the shipped files disagree with the frozen id table; "
+                         "new eligible icons are only reported as pending")
     args = ap.parse_args(argv)
 
     ids_doc = []
     if IDS_FILE.exists():
         ids_doc = yaml.safe_load(IDS_FILE.read_text(encoding="utf-8")) or []
     selected = select()
+    known = {e["key"] for e in ids_doc}
+    pending = sorted(n for f, n in selected.items() if _key(f) not in known)
+    if args.check:
+        # Rebuild from the frozen table alone: the shipped files must match it,
+        # but a new icon waits for the next deliberate rebuild.
+        selected = {f: n for f, n in selected.items() if _key(f) in known}
     previous = icon_library.parse(PLYI_FILE.read_bytes())[1] if PLYI_FILE.exists() else []
     table, frames = assign_ids(selected, ids_doc, previous)
 
@@ -229,6 +246,9 @@ def main(argv=None) -> int:
             print("stale:", ", ".join(sorted(set(stale))))
             return 1
         print(f"OK: {len(frames)} icons, {len(data)} B, content v{version}")
+        if pending:
+            print(f"pending: {len(pending)} new icon(s) ride as bitmap uploads until the "
+                  f"next rebuild: {', '.join(pending)}")
         return 0
     PLYI_FILE.write_bytes(data)
     IDS_FILE.write_text(ids_text, encoding="utf-8")
