@@ -56,6 +56,11 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).
+  - ⚠️ **Since 1.0, patch (no label) is the default.** `bump:minor` is for a feature an
+    owner would call new, the kind that names a release; a fix, a diagnostic, a developer
+    tool or a small addition stays a patch even when it bumps the protocol. After 1.0
+    nearly every PR took `bump:minor` (firmware 1.0.0 → 1.7.0 in six days, host 1.3.0 →
+    1.15.0 in nine), and the maintainer asked for the 0.9.x habit back (2026-10-03).
   - ⚠️ **Set the label when the PR is OPENED (`issue_write`, `labels:`), never
     only ask for it in the body.** #212 (2026-09-04) asked for `bump:minor` in its
     body, was merged without it, and the label applied as the merge was happening
