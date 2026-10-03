@@ -734,6 +734,13 @@ in [`docs/releases.md`](docs/releases.md).
   the PR body is documentation, not a label; `bump-version.yml` reads labels at merge
   time and a label applied as the merge happens lands too late. `create_pull_request`
   cannot set labels — use `issue_write` with `labels:` right after opening.
+- ⚠️ **Since 1.0, PATCH is the default and `bump:minor` is the exception** (maintainer's
+  rule, 2026-10-03). Before 1.0 a small change landed as a 0.9.x patch; after 1.0 almost
+  every PR carried `bump:minor`, so the firmware went 1.0.0 → 1.7.0 in six days and the
+  host 1.3.0 → 1.15.0 in nine. Leave the label off (patch) for fixes, diagnostics,
+  developer tools and small additions, **even when the PR bumps `PROTOCOL_VERSION`**:
+  the protocol is its own number. Use `bump:minor` only for a feature an owner would
+  call new, the kind that names a release. When unsure, ask.
 - **Host and firmware version numbers are NOT kept in lockstep** (they were aligned
   once, at 0.11.0, cosmetically). The number that must move together is
   `__protocol__` / `PROTOCOL_VERSION`.
