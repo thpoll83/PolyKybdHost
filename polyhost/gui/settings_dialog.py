@@ -39,13 +39,15 @@ def create_editor(value, key=None):
         # value back. A 10_000 cap turned browser_report_port 50164 into 10000
         # on every OK, and the browser extension lost the host. Take the full
         # int range and never start the range above a stored negative value.
-        spinbox.setRange(min(0, value), 2_147_483_647)
+        spinbox.setRange(-2_147_483_648 if value < 0 else 0, 2_147_483_647)
         spinbox.setValue(value)
         return spinbox
     elif isinstance(value, float):
         doublebox = QDoubleSpinBox()
         doublebox.setDecimals(3)
-        doublebox.setRange(min(0.0, value), max(1_000.0, value))  # no clamp, as above
+        # No clamp, as above, and room to move past a stored value in either
+        # direction rather than pinning it to an end of the range.
+        doublebox.setRange(-1e9 if value < 0 else 0.0, max(1_000.0, abs(value) * 10))
         # Default step is 1.0, which silently clamps fine-grained float settings
         # (e.g. the 0.75 brightness prescaler) to 0.0 on a single scroll/click —
         # use a small step so these stay editable to their real precision.

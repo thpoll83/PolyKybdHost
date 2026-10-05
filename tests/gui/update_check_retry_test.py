@@ -28,6 +28,7 @@ class FirmwareAskDuringHostOnlyCheckTest(unittest.TestCase):
         stub.kb_sw_version = fw_version
         stub._fw_actions_allowed.return_value = fw_version is not None
         stub._update_check_fw_retry = False
+        stub._update_manual_retry = False
         stub._update_checker = None
         return stub
 
@@ -124,20 +125,49 @@ class NewerFirmwareCheckForUpdatesTest(unittest.TestCase):
             stub._prompt_and_install, mock.sentinel.release)
         stub._start_update_check.assert_not_called()
 
-    def test_a_check_already_running_hands_its_result_to_the_dialog(self):
+    def _in_flight_click(self):
         stub = self._stub()
         stub._update_installer = None
         stub._pending_release = None
         stub._await_manual_prompt = False
+        stub._update_manual_retry = False
+        stub._update_check_fw_retry = False
         stub._start_update_check.return_value = False
         stub._update_checker.is_alive.return_value = True
         self.PolyHost._on_update_clicked(stub)
-        self.assertTrue(stub._await_manual_prompt)
-        # ...and the finished event drops it, so a later automatic find
-        # goes back to a balloon.
-        stub._update_check_fw_retry = False
+        self.assertTrue(stub._update_manual_retry)
+        return stub
+
+    def test_a_click_during_a_check_becomes_a_manual_check_when_it_ends(self):
+        # The running check found nothing or failed: its callbacks are
+        # silent, so the click is re-run as a manual check, which reports.
+        stub = self._in_flight_click()
+        stub._update_check_fw_retry = True
+        stub._on_update_clicked.reset_mock()
         self.PolyHost._on_update_check_finished(stub)
-        self.assertFalse(stub._await_manual_prompt)
+        stub._on_update_clicked.assert_called_once_with()
+        self.assertFalse(stub._update_manual_retry)
+        self.assertFalse(stub._update_check_fw_retry)   # covered by the manual check
+
+    def test_a_release_found_by_that_check_opens_the_dialog_once(self):
+        stub = self._in_flight_click()
+        self.PolyHost._on_update_available(stub, mock.Mock(version="1.16.0"))
+        stub._fallback_prompt.assert_called_once()
+        stub.show_balloon.assert_not_called()
+        self.assertFalse(stub._update_manual_retry)
+        stub._on_update_clicked.reset_mock()
+        self.PolyHost._on_update_check_finished(stub)
+        stub._on_update_clicked.assert_not_called()      # no second check
+
+    def test_a_stale_finished_event_leaves_a_new_manual_check_alone(self):
+        # The old check's finished event is still queued when the user starts
+        # a new manual check; it must not cancel that check's dialog.
+        stub = self._stub()
+        stub._update_manual_retry = False
+        stub._update_check_fw_retry = False
+        stub._await_manual_prompt = True
+        self.PolyHost._on_update_check_finished(stub)
+        self.assertTrue(stub._await_manual_prompt)
 
 
 if __name__ == "__main__":

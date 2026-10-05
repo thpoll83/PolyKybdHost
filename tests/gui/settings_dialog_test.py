@@ -37,6 +37,15 @@ class SettingsRoundTripTest(unittest.TestCase):
         values = {"some_offset": -5, "some_scale": 2500.5, "neg_scale": -0.25}
         self.assertEqual(self._round_trip(dict(values)), values)
 
+    def test_a_stored_value_is_never_an_end_of_its_range(self):
+        from polyhost.gui.settings_dialog import create_editor
+        for value in (-5, 50164, -0.25, 2500.5, 0.75):
+            with self.subTest(value=value):
+                box = create_editor(value)
+                self.addCleanup(box.deleteLater)
+                self.assertLess(box.minimum(), value)
+                self.assertGreater(box.maximum(), value)
+
 
 if __name__ == "__main__":
     unittest.main()
