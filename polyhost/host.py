@@ -1,4 +1,5 @@
 import functools
+from collections import namedtuple
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -246,25 +247,26 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
 # engine pack, and the tray names which one is flashing. One full message per
 # kind rather than a noun inserted into one sentence: the noun's gender and
 # article change the sentence around it in most languages.
+_FlashTexts = namedtuple("_FlashTexts", "start progress done failed")
 _FLASH_TEXTS = {
-    FLASH_KIND_FONTPACK: {
-        "start": N_("Updating the keyboard font pack — please wait, do not unplug…"),
-        "progress": N_("PolyKybd — updating the font pack ({percent}%)"),
-        "done": N_("The keyboard font pack is up to date."),
-        "failed": N_("Font pack update failed: {error}"),
-    },
-    FLASH_KIND_DOOMWAD: {
-        "start": N_("Updating the keyboard game data — please wait, do not unplug…"),
-        "progress": N_("PolyKybd — updating the game data ({percent}%)"),
-        "done": N_("The keyboard game data is up to date."),
-        "failed": N_("Game data update failed: {error}"),
-    },
-    FLASH_KIND_DOOMPACK: {
-        "start": N_("Updating the keyboard engine pack — please wait, do not unplug…"),
-        "progress": N_("PolyKybd — updating the engine pack ({percent}%)"),
-        "done": N_("The keyboard engine pack is up to date."),
-        "failed": N_("Engine pack update failed: {error}"),
-    },
+    FLASH_KIND_FONTPACK: _FlashTexts(
+        start=N_("Updating the keyboard font pack — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating the font pack ({percent}%)"),
+        done=N_("The keyboard font pack is up to date."),
+        failed=N_("Font pack update failed: {error}"),
+    ),
+    FLASH_KIND_DOOMWAD: _FlashTexts(
+        start=N_("Updating the keyboard game data — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating the game data ({percent}%)"),
+        done=N_("The keyboard game data is up to date."),
+        failed=N_("Game data update failed: {error}"),
+    ),
+    FLASH_KIND_DOOMPACK: _FlashTexts(
+        start=N_("Updating the keyboard engine pack — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating the engine pack ({percent}%)"),
+        done=N_("The keyboard engine pack is up to date."),
+        failed=N_("Engine pack update failed: {error}"),
+    ),
 }
 
 
@@ -272,6 +274,7 @@ def _flash_kind(payload):
     """The payload's flash kind, a font pack when absent or unknown (older cores)."""
     kind = (payload or {}).get("kind")
     return kind if kind in _FLASH_TEXTS else FLASH_KIND_FONTPACK
+
 
 class PolyHost(QApplication):
     def __init__(self, log_level, verbosity=0, developer=False, ignore_version=False,
@@ -2734,10 +2737,10 @@ class PolyHost(QApplication):
         if not self._fontpack_flashing:
             self._fontpack_flashing = True
             self.show_balloon("PolyKybd",  # i18n: skip
-                              _(texts["start"]), 5000)
+                              _(texts.start), 5000)
         pct = result.get("pct")
         if pct is not None:
-            self._fontpack_tooltip = _f(texts["progress"], percent=pct)
+            self._fontpack_tooltip = _f(texts.progress, percent=pct)
             self._refresh_tray_tooltip()
 
     def _on_fontpack_done(self, result):
@@ -2748,10 +2751,10 @@ class PolyHost(QApplication):
         self._refresh_tray_tooltip()
         if result.get("ok"):
             self.show_balloon("PolyKybd",  # i18n: skip
-                              _(texts["done"]), 4000)
+                              _(texts.done), 4000)
         else:
             self.tray.showMessage("PolyKybd",  # i18n: skip
-                                  _f(texts["failed"], error=result.get('msg', '')),
+                                  _f(texts.failed, error=result.get('msg', '')),
                                   QSystemTrayIcon.Warning, 6000)
             self._maybe_show_split_link_help(result)
 
