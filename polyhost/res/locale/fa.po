@@ -21,181 +21,181 @@ msgstr ""
 #: polyhost/device/command_ids.py:148
 #, python-brace-format
 msgid "preset {value}"
-msgstr ""
+msgstr "پیش‌تنظیم {value}"
 
 #: polyhost/device/command_ids.py:150
 #, python-brace-format
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes} دقیقه"
 
 #: polyhost/device/command_ids.py:151
 #, python-brace-format
 msgid "{seconds} sec"
-msgstr ""
+msgstr "{seconds} ثانیه"
 
 #: polyhost/forwarder.py:238
 msgid "Press to pause forwarding"
-msgstr ""
+msgstr "برای مکث ارسال کلیک کنید"
 
 #: polyhost/forwarder.py:245
 msgid "Stop sending this machine's active window to the keyboard machine."
-msgstr ""
+msgstr "ارسال پنجرهٔ فعال این رایانه به رایانهٔ صفحه‌کلید متوقف شود."
 
 #: polyhost/forwarder.py:257
 msgid "Check for host update…"
-msgstr ""
+msgstr "بررسی به‌روزرسانی میزبان…"
 
 #: polyhost/forwarder.py:338
 #, python-brace-format
 msgid "no host (waiting for {path})"
-msgstr ""
+msgstr "بدون میزبان (در انتظار {path})"
 
 #: polyhost/forwarder.py:339
 msgid "no host configured"
-msgstr ""
+msgstr "میزبانی پیکربندی نشده است"
 
 #: polyhost/forwarder.py:342
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
-msgstr ""
+msgstr "PolyKybdHost {version} (ارسال‌کننده) → {target}"
 
 #: polyhost/forwarder.py:347
 msgid "Forwarding paused"
-msgstr ""
+msgstr "ارسال متوقف شد"
 
 #: polyhost/forwarder.py:350
 #, python-brace-format
 msgid "Forwarding to {target}…"
-msgstr ""
+msgstr "در حال ارسال به {target}…"
 
 #: polyhost/forwarder.py:352
 #, python-brace-format
 msgid "Forwarding to {target}"
-msgstr ""
+msgstr "ارسال به {target}"
 
 #: polyhost/forwarder.py:353
 #, python-brace-format
 msgid "Cannot reach {target}"
-msgstr ""
+msgstr "دسترسی به {target} ممکن نیست"
 
 #: polyhost/forwarder.py:746
 msgid "PolyForwarder settings"
-msgstr ""
+msgstr "تنظیمات PolyForwarder"
 
 #: polyhost/forwarder.py:747
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
-msgstr ""
+msgstr "تنظیمات در فایل تنظیمات ذخیره نشد، بنابراین اعمال نخواهد شد. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. دوباره تلاش کنید یا لاگ را ببینید."
 
 #: polyhost/forwarder.py:766
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
-msgstr ""
+msgstr "RPC احراز هویت‌شده (درگاه {port})"
 
 #: polyhost/forwarder.py:768
 msgid "legacy plaintext TCP relay"
-msgstr ""
+msgstr "رلهٔ قدیمی TCP متن ساده"
 
 #: polyhost/forwarder.py:771
 msgid "reaching the keyboard machine"
-msgstr ""
+msgstr "در ارتباط با رایانهٔ صفحه‌کلید"
 
 #: polyhost/forwarder.py:772
 msgid "not reaching the keyboard machine"
-msgstr ""
+msgstr "بدون ارتباط با رایانهٔ صفحه‌کلید"
 
 #: polyhost/forwarder.py:773
 msgid "starting up"
-msgstr ""
+msgstr "در حال راه‌اندازی"
 
 #: polyhost/forwarder.py:775
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
-msgstr ""
+msgstr "<b>حالت:</b> ارسال‌کننده — هیچ صفحه‌کلیدی به این رایانه وصل نیست"
 
 #: polyhost/forwarder.py:776
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
-msgstr ""
+msgstr "<b>مقصد:</b> {target}"
 
 #: polyhost/forwarder.py:778
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
-msgstr ""
+msgstr "<b>گزارش‌های پنجره:</b> {transport}"
 
 #: polyhost/forwarder.py:781
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
-msgstr ""
+msgstr "<b>فایل میزبان:</b> {path}"
 
 #: polyhost/forwarder.py:802
 msgid "About PolyKybdHost (forwarder)"
-msgstr ""
+msgstr "دربارهٔ PolyKybdHost (ارسال‌کننده)"
 
 #: polyhost/forwarder.py:811
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
-msgstr ""
+msgstr "حالت ارسال‌کننده: این رایانه صفحه‌کلید ندارد. پنجرهٔ فعال اینجا را دنبال می‌کند و آن را به PolyKybdHost در حال اجرا روی رایانه‌ای که صفحه‌کلید به آن وصل است می‌فرستد."
 
 #: polyhost/forwarder.py:850
 msgid "Download, install, and restart the forwarder now?"
-msgstr ""
+msgstr "ارسال‌کننده اکنون بارگیری، نصب و دوباره راه‌اندازی شود؟"
 
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
-msgstr ""
+msgstr "وبلاگ"
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
-msgstr ""
+msgstr "دربارهٔ PolyKybdHost"
 
 #: polyhost/gui/about_dialog.py:141 polyhost/gui/about_dialog.py:151
 msgid "Copy diagnostics"
-msgstr ""
+msgstr "کپی اطلاعات عیب‌یابی"
 
 #: polyhost/gui/about_dialog.py:145
 msgid "Copied ✓"
-msgstr ""
+msgstr "کپی شد ✓"
 
 #: polyhost/gui/boot_loop_dialog.py:25
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
-msgstr ""
+msgstr "صفحه‌کلید را بارها و بارها راه‌اندازی مجدد می‌کند تا یک گیر کردن گاه‌به‌گاه هنگام راه‌اندازی را پیدا کند. پس از هر راه‌اندازی مجدد، منتظر بازگشت صفحه‌کلید می‌ماند و سابقهٔ خرابی آن را می‌خواند. در نخستین راه‌اندازی که سابقهٔ خرابی تازه‌ای به جا بگذارد، در راه‌اندازی‌ای که ظرف یک دقیقه بازنگردد، یا پس از آخرین دور متوقف می‌شود.<br><br>در این مدت صفحه‌کلید تایپ نمی‌کند و هر دور چند ثانیه طول می‌کشد."
 
 #: polyhost/gui/boot_loop_dialog.py:34
 msgid "<b>No boot problem found.</b>"
-msgstr ""
+msgstr "<b>مشکلی در راه‌اندازی پیدا نشد.</b>"
 
 #: polyhost/gui/boot_loop_dialog.py:35
 msgid "<b>A boot problem was recorded.</b> The record is above; Copy to Clipboard to report it."
-msgstr ""
+msgstr "<b>یک مشکل راه‌اندازی ثبت شد.</b> سابقه در بالا آمده است؛ برای گزارش آن «کپی در کلیپ‌بورد» را بزنید."
 
 #: polyhost/gui/boot_loop_dialog.py:37
 msgid "<b>The keyboard did not come back.</b> Note the status panel, then unplug and replug it and read the crash record."
-msgstr ""
+msgstr "<b>صفحه‌کلید بازنگشت.</b> وضعیت پنل را یادداشت کنید، سپس آن را جدا و دوباره وصل کنید و سابقهٔ خرابی را بخوانید."
 
 #: polyhost/gui/boot_loop_dialog.py:39
 msgid "Stopped."
-msgstr ""
+msgstr "متوقف شد."
 
 #: polyhost/gui/boot_loop_dialog.py:49
 msgid "PolyKybd — boot-loop test"
-msgstr ""
+msgstr "PolyKybd — آزمون حلقهٔ راه‌اندازی"
 
 #: polyhost/gui/boot_loop_dialog.py:58
 msgid "Reboots:"
-msgstr ""
+msgstr "راه‌اندازی‌های مجدد:"
 
 #: polyhost/gui/boot_loop_dialog.py:78
 msgid "Start"
-msgstr ""
+msgstr "شروع"
 
 #: polyhost/gui/boot_loop_dialog.py:82
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
 msgid "Stop"
-msgstr ""
+msgstr "توقف"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
 #: polyhost/gui/log_bundle_dialog.py:151
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
-msgstr ""
+msgstr "کپی در کلیپ‌بورد"
 
 #: polyhost/gui/boot_loop_dialog.py:90
 #: polyhost/gui/fontpack_extend_dialog.py:856
@@ -204,316 +204,316 @@ msgstr ""
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
-msgstr ""
+msgstr "بستن"
 
 #: polyhost/gui/boot_loop_dialog.py:113
 #, python-brace-format
 msgid "Could not start: {error}"
-msgstr ""
+msgstr "شروع ممکن نشد: {error}"
 
 #: polyhost/gui/boot_loop_dialog.py:115
 #, python-brace-format
 msgid "Started: up to {n} reboot(s)."
 msgid_plural "Started: up to {n} reboot(s)."
-msgstr[0] ""
+msgstr[0] "شروع شد: حداکثر {n} راه‌اندازی مجدد."
 
 #: polyhost/gui/boot_loop_dialog.py:123
 msgid "Stopping after the current step…"
-msgstr ""
+msgstr "توقف پس از مرحلهٔ کنونی…"
 
 #: polyhost/gui/boot_loop_dialog.py:124
 #, python-brace-format
 msgid "Could not stop: {error}"
-msgstr ""
+msgstr "توقف ممکن نشد: {error}"
 
 #: polyhost/gui/boot_loop_dialog.py:155
 #, python-brace-format
 msgid "<b>Failed:</b> {reason}"
-msgstr ""
+msgstr "<b>ناموفق:</b> {reason}"
 
 #: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:48
 msgid "Brightness"
-msgstr ""
+msgstr "روشنایی"
 
 #: polyhost/gui/cmd_menu.py:128
 msgid "Off"
-msgstr ""
+msgstr "خاموش"
 
 #: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
 msgid "Back to automatic"
-msgstr ""
+msgstr "بازگشت به خودکار"
 
 #: polyhost/gui/cmd_menu.py:159
 msgid "Re-apply the host's automatic brightness."
-msgstr ""
+msgstr "روشنایی خودکار میزبان دوباره اعمال شود."
 
 #: polyhost/gui/cmd_menu.py:163
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
-msgstr ""
+msgstr "روشنایی خودکار (وابسته به نور روز) دوباره فعال شود — پیش‌تنظیم دستی بالا کنار گذاشته می‌شود."
 
 #: polyhost/gui/cmd_menu.py:166
 msgid "Clear manual override"
-msgstr ""
+msgstr "حذف تنظیم دستی"
 
 #: polyhost/gui/cmd_menu.py:167
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
-msgstr ""
+msgstr "روشنایی وابسته به نور روز در تنظیمات خاموش است، بنابراین این گزینه فقط صفحه‌کلید را به روشنایی ذخیره‌شدهٔ خودش برمی‌گرداند."
 
 #: polyhost/gui/cmd_menu.py:182
 msgid "Maintenance"
-msgstr ""
+msgstr "نگه‌داری"
 
 #: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
 msgid "Fix Left/Right Side"
-msgstr ""
+msgstr "اصلاح سمت چپ/راست"
 
 #: polyhost/gui/cmd_menu.py:187
 msgid "Connected half is LEFT (other is RIGHT)"
-msgstr ""
+msgstr "نیمهٔ وصل‌شده چپ است (دیگری راست)"
 
 #: polyhost/gui/cmd_menu.py:190
 msgid "Connected half is RIGHT (other is LEFT)"
-msgstr ""
+msgstr "نیمهٔ وصل‌شده راست است (دیگری چپ)"
 
 #: polyhost/gui/cmd_menu.py:194
 msgid "Reset overlays"
-msgstr ""
+msgstr "بازنشانی هم‌پوشانی‌ها"
 
 #: polyhost/gui/cmd_menu.py:196
 msgid "Reset keymap to default…"
-msgstr ""
+msgstr "بازنشانی نقشهٔ کلید به پیش‌فرض…"
 
 #: polyhost/gui/cmd_menu.py:202
 msgid "Flash firmware file (.bin)…"
-msgstr ""
+msgstr "فلش کردن فایل میان‌افزار (.bin)…"
 
 #: polyhost/gui/cmd_menu.py:205
 msgid "Activate bootloader…"
-msgstr ""
+msgstr "فعال‌سازی بوت‌لودر…"
 
 #: polyhost/gui/cmd_menu.py:211
 msgid "Overlays"
-msgstr ""
+msgstr "هم‌پوشانی‌ها"
 
 #: polyhost/gui/cmd_menu.py:212
 msgid "Enable shortcut overlays"
-msgstr ""
+msgstr "فعال کردن هم‌پوشانی‌های میان‌بر"
 
 #: polyhost/gui/cmd_menu.py:214
 msgid "Disable shortcut overlays"
-msgstr ""
+msgstr "غیرفعال کردن هم‌پوشانی‌های میان‌بر"
 
 #: polyhost/gui/cmd_menu.py:217
 msgid "Reset overlay buffers"
-msgstr ""
+msgstr "بازنشانی بافرهای هم‌پوشانی"
 
 #: polyhost/gui/cmd_menu.py:219
 msgid "Reset overlay mapping"
-msgstr ""
+msgstr "بازنشانی نگاشت هم‌پوشانی"
 
 #: polyhost/gui/cmd_menu.py:221
 msgid "Clear overlay usage"
-msgstr ""
+msgstr "پاک کردن آمار استفادهٔ هم‌پوشانی"
 
 #: polyhost/gui/cmd_menu.py:223
 msgid "Set all overlay mapping"
-msgstr ""
+msgstr "تنظیم همهٔ نگاشت‌های هم‌پوشانی"
 
 #: polyhost/gui/cmd_menu.py:227
 msgid "Idle"
-msgstr ""
+msgstr "حالت بیکاری"
 
 #: polyhost/gui/cmd_menu.py:228
 msgid "Start idle now"
-msgstr ""
+msgstr "شروع حالت بیکاری اکنون"
 
 #: polyhost/gui/cmd_menu.py:230
 msgid "Stop idle"
-msgstr ""
+msgstr "توقف حالت بیکاری"
 
 #: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
 #: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
 #: polyhost/gui/cmd_menu.py:440
 msgid "Keymap"
-msgstr ""
+msgstr "نقشهٔ کلید"
 
 #: polyhost/gui/cmd_menu.py:235
 msgid "Layer count"
-msgstr ""
+msgstr "تعداد لایه‌ها"
 
 #: polyhost/gui/cmd_menu.py:237
 msgid "Default layer"
-msgstr ""
+msgstr "لایهٔ پیش‌فرض"
 
 #: polyhost/gui/cmd_menu.py:239
 msgid "Dump keymap buffer to the log"
-msgstr ""
+msgstr "نوشتن بافر نقشهٔ کلید در لاگ"
 
 #: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
 #: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
 msgid "Font Pack"
-msgstr ""
+msgstr "بستهٔ فونت"
 
 #: polyhost/gui/cmd_menu.py:244
 msgid "Per-bundle status…"
-msgstr ""
+msgstr "وضعیت هر مجموعه…"
 
 #: polyhost/gui/cmd_menu.py:246
 msgid "Sync (flash missing/updated bundles)"
-msgstr ""
+msgstr "همگام‌سازی (فلش مجموعه‌های ناموجود/به‌روزشده)"
 
 #: polyhost/gui/cmd_menu.py:248
 msgid "Re-flash ALL bundles (force)…"
-msgstr ""
+msgstr "فلش دوبارهٔ همهٔ مجموعه‌ها (اجباری)…"
 
 #: polyhost/gui/cmd_menu.py:250
 msgid "Wipe (empty all bundles)"
-msgstr ""
+msgstr "پاک‌سازی (خالی کردن همهٔ مجموعه‌ها)"
 
 #: polyhost/gui/cmd_menu.py:256
 msgid "Firmware"
-msgstr ""
+msgstr "میان‌افزار"
 
 #: polyhost/gui/cmd_menu.py:257
 msgid "Flash only (.bin, stage)…"
-msgstr ""
+msgstr "فقط فلش (.bin، آماده‌سازی)…"
 
 #: polyhost/gui/cmd_menu.py:260
 msgid "Apply staged firmware…"
-msgstr ""
+msgstr "اعمال میان‌افزار آماده‌شده…"
 
 #: polyhost/gui/cmd_menu.py:265
 msgid "Boot-loop test…"
-msgstr ""
+msgstr "آزمون حلقهٔ راه‌اندازی…"
 
 #: polyhost/gui/cmd_menu.py:271
 msgid "Run command file (.poly.cmd)…"
-msgstr ""
+msgstr "اجرای فایل فرمان (.poly.cmd)…"
 
 #: polyhost/gui/cmd_menu.py:297
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
-msgstr ""
+msgstr "<b>نیمه‌ای که کابل USB به آن وصل است به‌عنوان سمت چپ تنظیم شود؟</b><br><br>نیمهٔ دیگر سمت راست می‌شود. هر دو نیمه سمت جدید را ذخیره کرده و با آن دوباره راه‌اندازی می‌شوند (حدود ۱۰ ثانیه، بدون نیاز به جدا و وصل کردن).<br><br>مطمئن شوید کابل USB به نیمه‌ای وصل است که می‌خواهید سمت <b>چپ</b> باشد، سپس ادامه دهید."
 
 #: polyhost/gui/cmd_menu.py:304
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
-msgstr ""
+msgstr "<b>نیمه‌ای که کابل USB به آن وصل است به‌عنوان سمت راست تنظیم شود؟</b><br><br>نیمهٔ دیگر سمت چپ می‌شود. هر دو نیمه سمت جدید را ذخیره کرده و با آن دوباره راه‌اندازی می‌شوند (حدود ۱۰ ثانیه، بدون نیاز به جدا و وصل کردن).<br><br>مطمئن شوید کابل USB به نیمه‌ای وصل است که می‌خواهید سمت <b>راست</b> باشد، سپس ادامه دهید."
 
 #: polyhost/gui/cmd_menu.py:330
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr ""
+msgstr "<b>نقشهٔ کلید صفحه‌کلید به پیش‌فرض میان‌افزار بازنشانی شود؟</b><br><br>هر کلیدی که تغییر داده‌اید به چیدمان همراه میان‌افزار بازمی‌گردد. این کار قابل بازگشت نیست.<br><br>ادامه می‌دهید؟"
 
 #: polyhost/gui/cmd_menu.py:335
 msgid "Reset Keymap"
-msgstr ""
+msgstr "بازنشانی نقشهٔ کلید"
 
 #: polyhost/gui/cmd_menu.py:389
 msgid "Re-flash Font Pack"
-msgstr ""
+msgstr "فلش دوبارهٔ بستهٔ فونت"
 
 #: polyhost/gui/cmd_menu.py:390
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
-msgstr ""
+msgstr "<b>همهٔ مجموعه‌های بستهٔ فونت دوباره فلش شوند؟</b><br><br>همهٔ مجموعه‌های همراه برنامه دوباره فرستاده می‌شوند، حتی اگر صفحه‌کلید آن‌ها را به‌روز گزارش کند — وقتی گلیفی نادرست نمایش داده می‌شود یا فلش قبلی ناموفق گزارش شده از این گزینه استفاده کنید. حدود یک دقیقه طول می‌کشد؛ در این مدت تایپ کار می‌کند.<br><br>ادامه می‌دهید؟"
 
 #: polyhost/gui/cmd_menu.py:406
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
-msgstr ""
+msgstr "<b>بستهٔ فونت حافظهٔ فلش خارجی پاک شود؟</b><br><br>همهٔ جایگاه‌های مجموعهٔ بستهٔ فونت خالی می‌شوند — صفحه‌کلید تا فلش دوبارهٔ بسته فقط فونت‌های داخلی (مقیم) خود را نمایش می‌دهد. مجموعه‌های همراه این میزبان در اتصال بعدی (یا از طریق بستهٔ فونت ← همگام‌سازی) خودکار دوباره فلش می‌شوند.<br><br>ادامه می‌دهید؟"
 
 #: polyhost/gui/cmd_menu.py:413
 msgid "Wipe Font Pack"
-msgstr ""
+msgstr "پاک‌سازی بستهٔ فونت"
 
 #: polyhost/gui/cmd_menu.py:423
 #, python-brace-format
 msgid "Layers: {count}"
-msgstr ""
+msgstr "لایه‌ها: {count}"
 
 #: polyhost/gui/cmd_menu.py:424
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
-msgstr ""
+msgstr "خواندن تعداد لایه‌ها ممکن نشد: {error}"
 
 #: polyhost/gui/cmd_menu.py:428
 #, python-brace-format
 msgid "Default layer: {layer}"
-msgstr ""
+msgstr "لایهٔ پیش‌فرض: {layer}"
 
 #: polyhost/gui/cmd_menu.py:429
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
-msgstr ""
+msgstr "خواندن لایهٔ پیش‌فرض ممکن نشد: {error}"
 
 #: polyhost/gui/cmd_menu.py:436
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
-msgstr ""
+msgstr "خواندن بافر نقشهٔ کلید ممکن نشد: {error}"
 
 #: polyhost/gui/cmd_menu.py:440
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
-msgstr ""
+msgstr "بافر نقشهٔ کلید ({size} بایت) در لاگ نوشته شد."
 
 #: polyhost/gui/cmd_menu.py:447
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
-msgstr ""
+msgstr "خواندن وضعیت بستهٔ فونت ممکن نشد: {error}"
 
 #: polyhost/gui/cmd_menu.py:450
 msgid "This host ships no font-pack bundles."
-msgstr ""
+msgstr "این میزبان هیچ مجموعهٔ بستهٔ فونتی همراه ندارد."
 
 #. TRANSLATORS: font-pack bundle state in a status table
 #: polyhost/gui/cmd_menu.py:459
 msgid "stale"
-msgstr ""
+msgstr "قدیمی"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
 #: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
-msgstr ""
+msgstr "سالم"
 
 #: polyhost/gui/cmd_menu.py:462
 msgid "bundle"
-msgstr ""
+msgstr "مجموعه"
 
 #: polyhost/gui/cmd_menu.py:463
 msgid "device"
-msgstr ""
+msgstr "دستگاه"
 
 #: polyhost/gui/cmd_menu.py:464
 msgid "shipped"
-msgstr ""
+msgstr "همراه برنامه"
 
 #: polyhost/gui/cmd_menu.py:470
 msgid "PolyKybd commands (*.poly.cmd)"
-msgstr ""
+msgstr "فرمان‌های PolyKybd (*.poly.cmd)"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
 #: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2201
 msgid "Open file"
-msgstr ""
+msgstr "باز کردن فایل"
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:191
 msgid "Not Connected"
-msgstr ""
+msgstr "متصل نیست"
 
 #: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
-msgstr ""
+msgstr "PolyKybd متصل نیست. لطفاً صفحه‌کلید را وصل کنید و دوباره تلاش کنید."
 
 #: polyhost/gui/cmd_menu.py:504
 msgid "Select Firmware Binary"
-msgstr ""
+msgstr "انتخاب فایل باینری میان‌افزار"
 
 #: polyhost/gui/cmd_menu.py:504
 msgid "Firmware binary (*.bin)"
-msgstr ""
+msgstr "فایل باینری میان‌افزار (*.bin)"
 
 #: polyhost/gui/cmd_menu.py:515
 msgid "File Error"
-msgstr ""
+msgstr "خطای فایل"
 
 #: polyhost/gui/cmd_menu.py:516
 #, python-brace-format
@@ -521,422 +521,424 @@ msgid ""
 "Could not read firmware file:\n"
 "{error}"
 msgstr ""
+"خواندن فایل میان‌افزار ممکن نشد:\n"
+"{error}"
 
 #: polyhost/gui/cmd_menu.py:521
 msgid "Invalid Firmware File"
-msgstr ""
+msgstr "فایل میان‌افزار نامعتبر"
 
 #: polyhost/gui/cmd_menu.py:526
 msgid "Wrong Keyboard"
-msgstr ""
+msgstr "صفحه‌کلید نادرست"
 
 #: polyhost/gui/cmd_menu.py:536
 msgid "Unsigned Firmware"
-msgstr ""
+msgstr "میان‌افزار بدون امضا"
 
 #: polyhost/gui/cmd_menu.py:541
 msgid "Flash + Apply Firmware"
-msgstr ""
+msgstr "فلش و اعمال میان‌افزار"
 
 #: polyhost/gui/cmd_menu.py:543
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
-msgstr ""
+msgstr "میان‌افزار جدید به صفحه‌کلید منتقل و تأیید (CRC32) می‌شود، سپس <b>فعال می‌شود</b> — هر دو نیمه خودکار با میان‌افزار جدید دوباره راه‌اندازی می‌شوند (بدون نیاز به جدا و وصل کردن)."
 
 #: polyhost/gui/cmd_menu.py:548
 msgid "Flash Firmware"
-msgstr ""
+msgstr "فلش میان‌افزار"
 
 #: polyhost/gui/cmd_menu.py:550
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
-msgstr ""
+msgstr "میان‌افزار جدید به صفحه‌کلید منتقل و آماده می‌شود، سپس تأیید (CRC32) می‌شود. تصویر ذخیره می‌شود اما <b>هنوز فعال نمی‌شود</b> — صفحه‌کلید تا زمانی که آن را جداگانه اعمال کنید با میان‌افزار کنونی خود کار می‌کند."
 
 #: polyhost/gui/cmd_menu.py:568
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
-msgstr ""
+msgstr "میان‌افزار کنونی صفحه‌کلید: <b>{version}</b> ({size_kb} KB)"
 
 #: polyhost/gui/cmd_menu.py:571
 msgid "Could not query current firmware version."
-msgstr ""
+msgstr "پرس‌وجوی نسخهٔ کنونی میان‌افزار ممکن نشد."
 
 #: polyhost/gui/cmd_menu.py:572
 #, python-brace-format
 msgid "Selected file:<br>{path}"
-msgstr ""
+msgstr "فایل انتخاب‌شده:<br>{path}"
 
 #: polyhost/gui/cmd_menu.py:573
 msgid "Continue?"
-msgstr ""
+msgstr "ادامه می‌دهید؟"
 
 #: polyhost/gui/cmd_menu.py:601
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
-msgstr ""
+msgstr "<b>میان‌افزار آماده‌شده اعمال شود؟</b><br><br>هر دو نیمهٔ صفحه‌کلید تصویر از پیش آماده‌شده را نصب کرده و خودکار با میان‌افزار جدید دوباره راه‌اندازی می‌شوند (بدون نیاز به جدا و وصل کردن).<br><br>اگر این میان‌افزار با قابلیت اعمال درون‌برنامه‌ای ساخته نشده باشد، صفحه‌کلید با امنیت گزارش می‌دهد که اعمال در دسترس نیست و تصویر آماده‌شده را دست‌نخورده باقی می‌گذارد.<br><br>ادامه می‌دهید؟"
 
 #: polyhost/gui/cmd_menu.py:610
 msgid "Apply Staged Firmware"
-msgstr ""
+msgstr "اعمال میان‌افزار آماده‌شده"
 
 #: polyhost/gui/cmd_menu.py:635
 msgid "Firmware Applied"
-msgstr ""
+msgstr "میان‌افزار اعمال شد"
 
 #: polyhost/gui/cmd_menu.py:637
 msgid "Apply Failed"
-msgstr ""
+msgstr "اعمال ناموفق بود"
 
 #: polyhost/gui/crash_alert_dialog.py:44 polyhost/gui/crash_alert_dialog.py:113
 msgid "PolyKybd — the keyboard firmware crashed"
-msgstr ""
+msgstr "PolyKybd — میان‌افزار صفحه‌کلید از کار افتاد"
 
 #: polyhost/gui/crash_alert_dialog.py:53
 msgid "What the keyboard reported"
-msgstr ""
+msgstr "آنچه صفحه‌کلید گزارش کرد"
 
 #: polyhost/gui/crash_alert_dialog.py:69
 msgid "Report on GitHub…"
-msgstr ""
+msgstr "گزارش در GitHub…"
 
 #: polyhost/gui/crash_alert_dialog.py:83
 #: polyhost/gui/layout_dialog/macro_tab.py:213
 #: polyhost/gui/layout_dialog/macro_tab.py:235
 msgid "Clear"
-msgstr ""
+msgstr "پاک کردن"
 
 #: polyhost/gui/crash_alert_dialog.py:85
 msgid "Forget these records here AND erase the keyboard's crash archive."
-msgstr ""
+msgstr "این سوابق اینجا فراموش شوند و بایگانی خرابی صفحه‌کلید هم پاک شود."
 
 #: polyhost/gui/crash_alert_dialog.py:89
 #: polyhost/gui/problem_alert_dialog.py:75
 msgid "Dismiss"
-msgstr ""
+msgstr "نادیده گرفتن"
 
 #: polyhost/gui/crash_alert_dialog.py:115
 #, python-brace-format
 msgid "<b>Both keyboard halves crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>هر دو نیمهٔ صفحه‌کلید از کار افتادند و دوباره راه‌اندازی شدند</b> (میان‌افزار {firmware}، {kind} هنگام {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:118
 #, python-brace-format
 msgid "<b>The keyboard crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>صفحه‌کلید از کار افتاد و دوباره راه‌اندازی شد</b> (میان‌افزار {firmware}، {kind} هنگام {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:121
 #, python-brace-format
 msgid "<b>The link-side keyboard half crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>نیمهٔ متصل از طریق پیوند صفحه‌کلید از کار افتاد و دوباره راه‌اندازی شد</b> (میان‌افزار {firmware}، {kind} هنگام {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:124
 msgid "The keyboard restarted on its own and is working again."
-msgstr ""
+msgstr "صفحه‌کلید خودبه‌خود دوباره راه‌اندازی شد و اکنون دوباره کار می‌کند."
 
 #: polyhost/gui/crash_alert_dialog.py:126
 msgid "PolyKybd — keyboard crash records"
-msgstr ""
+msgstr "PolyKybd — سوابق خرابی صفحه‌کلید"
 
 #: polyhost/gui/crash_alert_dialog.py:128
 #, python-brace-format
 msgid "<b>Crash record archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
 msgid_plural "<b>Crash records archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
-msgstr[0] ""
+msgstr[0] "<b>سوابق خرابی در صفحه‌کلید بایگانی شده است</b> (میان‌افزار {firmware}، {kind} هنگام {phase}). هیچ‌کدام مربوط به راه‌اندازی پیش از این نیست."
 
 #: polyhost/gui/crash_alert_dialog.py:134
 msgid "These are earlier crashes, not a new one."
-msgstr ""
+msgstr "این‌ها خرابی‌های قبلی هستند، نه یک خرابی جدید."
 
 #: polyhost/gui/crash_alert_dialog.py:136
 msgid "To help fix the cause, either open a bug report (this collects the logs and pre-fills a GitHub issue — nothing is sent until you press Submit there), or copy the details to paste wherever you are discussing it."
-msgstr ""
+msgstr "برای کمک به رفع علت، یا یک گزارش اشکال باز کنید (این کار لاگ‌ها را جمع‌آوری کرده و یک issue در GitHub را از پیش پر می‌کند — تا وقتی آنجا Submit را نزنید چیزی فرستاده نمی‌شود)، یا جزئیات را کپی کنید تا هر جا که درباره‌اش گفت‌وگو می‌کنید بچسبانید."
 
 #: polyhost/gui/crash_alert_dialog.py:161
 msgid "Clear crash records"
-msgstr ""
+msgstr "پاک کردن سوابق خرابی"
 
 #: polyhost/gui/crash_alert_dialog.py:162
 #, python-brace-format
 msgid "Discard {n} crash record here and erase the keyboard's crash archive?"
 msgid_plural "Discard {n} crash records here and erase the keyboard's crash archive?"
-msgstr[0] ""
+msgstr[0] "{n} سابقهٔ خرابی اینجا کنار گذاشته شود و بایگانی خرابی صفحه‌کلید پاک شود؟"
 
 #: polyhost/gui/crash_alert_dialog.py:166
 msgid "This cannot be undone — report or copy them first if you still need them."
-msgstr ""
+msgstr "این کار قابل بازگشت نیست — اگر هنوز به آن‌ها نیاز دارید، ابتدا گزارش یا کپی‌شان کنید."
 
 #: polyhost/gui/crash_alert_dialog.py:194
 #, python-brace-format
 msgid "Cleared here, but the keyboard did not: {reason}"
-msgstr ""
+msgstr "اینجا پاک شد، اما در صفحه‌کلید نه: {reason}"
 
 #: polyhost/gui/crash_alert_dialog.py:196
 msgid "No crash records held."
-msgstr ""
+msgstr "هیچ سابقهٔ خرابی‌ای نگه داشته نشده است."
 
 #: polyhost/gui/crash_alert_dialog.py:204
 #: polyhost/gui/problem_alert_dialog.py:107
 msgid "Copied to the clipboard."
-msgstr ""
+msgstr "در کلیپ‌بورد کپی شد."
 
 #: polyhost/gui/crash_alert_dialog.py:213
 msgid "Opened the problem report with the crash filled in."
-msgstr ""
+msgstr "گزارش مشکل با اطلاعات خرابی پرشده باز شد."
 
 #: polyhost/gui/fontpack_extend_dialog.py:98
 msgid "PolyKybd — Build / Edit Glyph"
-msgstr ""
+msgstr "PolyKybd — ساخت / ویرایش گلیف"
 
 #: polyhost/gui/fontpack_extend_dialog.py:118
 msgid "pick one from Source fonts below, or Browse…"
-msgstr ""
+msgstr "یکی را از «فونت‌های منبع» در پایین انتخاب کنید، یا مرور…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:119
 msgid "Browse…"
-msgstr ""
+msgstr "مرور…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
 msgid "Use a custom font not in the Noto list"
-msgstr ""
+msgstr "استفاده از فونت سفارشی خارج از فهرست Noto"
 
 #: polyhost/gui/fontpack_extend_dialog.py:127
 msgid "Source font"
-msgstr ""
+msgstr "فونت منبع"
 
 #: polyhost/gui/fontpack_extend_dialog.py:129
 msgid "Codepoint range"
-msgstr ""
+msgstr "بازهٔ کدپوینت"
 
 #: polyhost/gui/fontpack_extend_dialog.py:129
 msgid "HarfBuzz sequence"
-msgstr ""
+msgstr "دنبالهٔ HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
 #: polyhost/gui/settings_dialog.py:74 polyhost/gui/settings_dialog.py:82
 msgid "Mode"
-msgstr ""
+msgstr "حالت"
 
 #: polyhost/gui/fontpack_extend_dialog.py:138
 msgid "Range first–last (hex)"
-msgstr ""
+msgstr "بازهٔ اول–آخر (هگز)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:140
 msgid "Sequence (hex cps; , = glyph)"
-msgstr ""
+msgstr "دنباله (کدپوینت‌های هگز؛ , = گلیف)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:142
 msgid "Sequence base -F (hex)"
-msgstr ""
+msgstr "پایهٔ دنباله -F (هگز)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:143
 msgid "Composite -C (combine group into one glyph)"
-msgstr ""
+msgstr "ترکیبی -C (ترکیب گروه در یک گلیف)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:145
 msgid "Composite all codepoints of each sequence group into a single glyph (mono) — used by the combining-mark / matra fonts (base U+25CC + mark)."
-msgstr ""
+msgstr "همهٔ کدپوینت‌های هر گروه دنباله در یک گلیف (تک‌رنگ) ترکیب شوند — مورد استفادهٔ فونت‌های نشانهٔ ترکیبی / ماترا (پایهٔ U+25CC + نشانه)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:150
 msgid "Size -s"
-msgstr ""
+msgstr "اندازه -s"
 
 #: polyhost/gui/fontpack_extend_dialog.py:152
 msgid "Grayscale / colour (-g)"
-msgstr ""
+msgstr "خاکستری / رنگی (-g)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:154
 msgid "Normalize -N"
-msgstr ""
+msgstr "نرمال‌سازی -N"
 
 #: polyhost/gui/fontpack_extend_dialog.py:154
 msgid "Invert -I"
-msgstr ""
+msgstr "وارونه -I"
 
 #: polyhost/gui/fontpack_extend_dialog.py:155
 msgid "Edge-preserve -E"
-msgstr ""
+msgstr "حفظ لبه -E"
 
 #: polyhost/gui/fontpack_extend_dialog.py:160
 msgid "Flags"
-msgstr ""
+msgstr "پرچم‌ها"
 
 #: polyhost/gui/fontpack_extend_dialog.py:164
 msgid "Dither -D"
-msgstr ""
+msgstr "دیترینگ -D"
 
 #: polyhost/gui/fontpack_extend_dialog.py:165
 msgid "Outline -O"
-msgstr ""
+msgstr "طرح کلی -O"
 
 #: polyhost/gui/fontpack_extend_dialog.py:166
 msgid "Render size -r (0=off)"
-msgstr ""
+msgstr "اندازهٔ رندر -r (0=خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:167
 msgid "yAdvance -Y (0=off)"
-msgstr ""
+msgstr "yAdvance -Y (0=خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:168
 msgid "Max width -W (0=off)"
-msgstr ""
+msgstr "حداکثر عرض -W (0=خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:170
 msgid "Variable-font wght axis (e.g. 400 Regular, 500 Medium, 700 Bold). 0 = the font's default instance."
-msgstr ""
+msgstr "محور wght فونت متغیر (مثلاً 400 Regular، 500 Medium، 700 Bold). 0 = نمونهٔ پیش‌فرض فونت."
 
 #: polyhost/gui/fontpack_extend_dialog.py:172
 msgid "Weight -w (0=default)"
-msgstr ""
+msgstr "وزن -w (0=پیش‌فرض)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:174
 msgid "Horizontal pixel shift of the rendered glyph (rarely needed; e.g. couple emoji use -12)."
-msgstr ""
+msgstr "جابه‌جایی افقی پیکسلی گلیف رندرشده (به‌ندرت لازم است؛ مثلاً چند ایموجی از -12 استفاده می‌کنند)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:176
 msgid "X shift -X"
-msgstr ""
+msgstr "جابه‌جایی X -X"
 
 #: polyhost/gui/fontpack_extend_dialog.py:180
 msgid "Gamma -G (1 = off)"
-msgstr ""
+msgstr "گاما -G (1 = خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:182
 msgid "Contrast -c (1 = off)"
-msgstr ""
+msgstr "کنتراست -c (1 = خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:184
 msgid "Exposure -e (0 = off)"
-msgstr ""
+msgstr "نوردهی -e (0 = خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:186
 msgid "Sharpen -U (0 = off)"
-msgstr ""
+msgstr "تیزکردن -U (0 = خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:188
 msgid "Saturation -B (0 = off)"
-msgstr ""
+msgstr "اشباع -B (0 = خاموش)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:194
 msgid "Target bundle"
-msgstr ""
+msgstr "مجموعهٔ مقصد"
 
 #: polyhost/gui/fontpack_extend_dialog.py:196
 msgid "Global font index"
-msgstr ""
+msgstr "اندیس سراسری فونت"
 
 #: polyhost/gui/fontpack_extend_dialog.py:201
 msgid "Build / Preview"
-msgstr ""
+msgstr "ساخت / پیش‌نمایش"
 
 #: polyhost/gui/fontpack_extend_dialog.py:202
 msgid "Reset"
-msgstr ""
+msgstr "بازنشانی"
 
 #: polyhost/gui/fontpack_extend_dialog.py:203
 msgid "Restore the render options to the settings this dialog opened with (the glyph's defaults)"
-msgstr ""
+msgstr "گزینه‌های رندر به تنظیماتی که این پنجره با آن باز شد (پیش‌فرض‌های گلیف) بازگردانده شوند"
 
 #: polyhost/gui/fontpack_extend_dialog.py:206
 msgid "Auto update"
-msgstr ""
+msgstr "به‌روزرسانی خودکار"
 
 #: polyhost/gui/fontpack_extend_dialog.py:208
 msgid "Re-render the preview automatically when an option changes"
-msgstr ""
+msgstr "با تغییر هر گزینه، پیش‌نمایش خودکار دوباره رندر شود"
 
 #: polyhost/gui/fontpack_extend_dialog.py:212
 msgid "Normal"
-msgstr ""
+msgstr "عادی"
 
 #: polyhost/gui/fontpack_extend_dialog.py:213
 msgid "OLED"
-msgstr ""
+msgstr "OLED"
 
 #: polyhost/gui/fontpack_extend_dialog.py:214
 msgid "Keycap"
-msgstr ""
+msgstr "کلاهک کلید"
 
 #: polyhost/gui/fontpack_extend_dialog.py:215
 msgid "Plain white-on-black bitmap (what the font renders)"
-msgstr ""
+msgstr "بیت‌مپ سادهٔ سفید روی سیاه (آنچه فونت رندر می‌کند)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:216
 msgid "The raw OLED look: cool-white pixels + bloom + a crisp pixel grid on true black"
-msgstr ""
+msgstr "نمای خام OLED: پیکسل‌های سفید سرد + درخشش + شبکهٔ پیکسلی واضح روی سیاه مطلق"
 
 #: polyhost/gui/fontpack_extend_dialog.py:218
 msgid "As seen through the clear keycap cover: adds per-pixel brightness shimmer, a staggered grid and a diffusion blur"
-msgstr ""
+msgstr "همان‌گونه که از پشت پوشش شفاف کلاهک دیده می‌شود: لرزش روشنایی هر پیکسل، شبکهٔ پلکانی و تاری پخش را اضافه می‌کند"
 
 #: polyhost/gui/fontpack_extend_dialog.py:227
 msgid "Preview:"
-msgstr ""
+msgstr "پیش‌نمایش:"
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:71
 msgid "OK"
-msgstr ""
+msgstr "تأیید"
 
 #: polyhost/gui/fontpack_extend_dialog.py:237
 msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
-msgstr ""
+msgstr "گلیف ساخته‌شده نگه داشته شود (در حافظه به مجموعه افزوده می‌شود؛ آن را از «ذخیره به‌عنوان…» در بازرس ذخیره کنید)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:72 polyhost/host.py:221
 msgid "Cancel"
-msgstr ""
+msgstr "لغو"
 
 #: polyhost/gui/fontpack_extend_dialog.py:253
 msgid "Pick a font, set options, then Build / Preview."
-msgstr ""
+msgstr "یک فونت انتخاب کنید، گزینه‌ها را تنظیم کنید، سپس ساخت / پیش‌نمایش."
 
 #: polyhost/gui/fontpack_extend_dialog.py:258
 msgid "Scroll here to zoom the preview"
-msgstr ""
+msgstr "برای بزرگ‌نمایی پیش‌نمایش، اینجا اسکرول کنید"
 
 #: polyhost/gui/fontpack_extend_dialog.py:280
 #: polyhost/gui/fontpack_extend_dialog.py:574
 msgid "No valid shipped bundles available to extend."
-msgstr ""
+msgstr "هیچ مجموعهٔ همراه معتبری برای گسترش وجود ندارد."
 
 #: polyhost/gui/fontpack_extend_dialog.py:324
 msgid "(no saved settings for this font — set options manually.)"
-msgstr ""
+msgstr "(تنظیمات ذخیره‌شده‌ای برای این فونت نیست — گزینه‌ها را دستی تنظیم کنید.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:326
 #, python-brace-format
 msgid "Pre-filled from '{source}' + its original settings."
-msgstr ""
+msgstr "از «{source}» و تنظیمات اصلی آن از پیش پر شد."
 
 #: polyhost/gui/fontpack_extend_dialog.py:330
 #, python-brace-format
 msgid "Original settings pre-filled; source font '{source}' isn't cached — Download Noto… or Browse."
-msgstr ""
+msgstr "تنظیمات اصلی از پیش پر شد؛ فونت منبع «{source}» در حافظهٔ نهان نیست — «بارگیری Noto…» یا مرور."
 
 #: polyhost/gui/fontpack_extend_dialog.py:332
 msgid "Original settings pre-filled; pick the source font."
-msgstr ""
+msgstr "تنظیمات اصلی از پیش پر شد؛ فونت منبع را انتخاب کنید."
 
 #: polyhost/gui/fontpack_extend_dialog.py:334
 #, python-brace-format
 msgid "Editing {codepoint} in '{bundle}' — Build to preview, then OK to keep it (Cancel to discard)."
-msgstr ""
+msgstr "در حال ویرایش {codepoint} در «{bundle}» — برای پیش‌نمایش ساخت را بزنید، سپس تأیید برای نگه داشتن (لغو برای کنار گذاشتن)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:489
 msgid "Reset to the default render settings."
-msgstr ""
+msgstr "بازنشانی به تنظیمات پیش‌فرض رندر."
 
 #: polyhost/gui/fontpack_extend_dialog.py:513
 msgid "Select font"
-msgstr ""
+msgstr "انتخاب فونت"
 
 #: polyhost/gui/fontpack_extend_dialog.py:514
 msgid "Fonts (*.ttf *.otf)"
-msgstr ""
+msgstr "فونت‌ها (*.ttf *.otf)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:514
 #: polyhost/gui/fontpack_inspector_dialog.py:766
 msgid "All files (*)"
-msgstr ""
+msgstr "همهٔ فایل‌ها (*)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:574
 #: polyhost/gui/fontpack_extend_dialog.py:578
@@ -944,11 +946,11 @@ msgstr ""
 #: polyhost/gui/fontpack_extend_dialog.py:592
 #: polyhost/gui/fontpack_extend_dialog.py:615
 msgid "Build"
-msgstr ""
+msgstr "ساخت"
 
 #: polyhost/gui/fontpack_extend_dialog.py:578
 msgid "Pick an existing font file first."
-msgstr ""
+msgstr "ابتدا یک فایل فونت موجود انتخاب کنید."
 
 #: polyhost/gui/fontpack_extend_dialog.py:582
 #, python-brace-format
@@ -959,6 +961,11 @@ msgid ""
 "\n"
 "(They're normally pulled in by installing PolyKybdHost: pip install -e .)"
 msgstr ""
+"ساخت گلیف‌ها به این وابستگی‌های تولید فونت نیاز دارد که در این محیط نصب نیستند:\n"
+"\n"
+"    pip install {packages}\n"
+"\n"
+"(معمولاً با نصب PolyKybdHost نصب می‌شوند: pip install -e .)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:592
 #, python-brace-format
@@ -968,36 +975,40 @@ msgid ""
 "\n"
 "({error})"
 msgstr ""
+"وابستگی‌های ساخت فونت ناموجود یا خراب هستند:\n"
+"  pip install -e .\n"
+"\n"
+"({error})"
 
 #: polyhost/gui/fontpack_extend_dialog.py:607
 #, python-brace-format
 msgid "(auto preview) {error}"
-msgstr ""
+msgstr "(پیش‌نمایش خودکار) {error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:609
 msgid "Build failed"
-msgstr ""
+msgstr "ساخت ناموفق بود"
 
 #: polyhost/gui/fontpack_extend_dialog.py:615
 #, python-brace-format
 msgid "Editing a single glyph ({codepoint}), but this built {n} glyph. Narrow the range / sequence to one glyph."
 msgid_plural "Editing a single glyph ({codepoint}), but this built {n} glyphs. Narrow the range / sequence to one glyph."
-msgstr[0] ""
+msgstr[0] "در حال ویرایش یک گلیف ({codepoint}) هستید، اما این ساخت {n} گلیف تولید کرد. بازه / دنباله را به یک گلیف محدود کنید."
 
 #: polyhost/gui/fontpack_extend_dialog.py:626
 #, python-brace-format
 msgid "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
 msgid_plural "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
-msgstr[0] ""
+msgstr[0] "{n} گلیف ساخته شد، {range}، اندیس سراسری {index}. تأیید برای نگه داشتن در مجموعهٔ «{bundle}»، لغو برای کنار گذاشتن."
 
 #: polyhost/gui/fontpack_extend_dialog.py:678
 #, python-brace-format
 msgid "Zoom {scale}×  (scroll over the preview to change)"
-msgstr ""
+msgstr "بزرگ‌نمایی {scale}×  (برای تغییر، روی پیش‌نمایش اسکرول کنید)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:718
 msgid "Download"
-msgstr ""
+msgstr "بارگیری"
 
 #: polyhost/gui/fontpack_extend_dialog.py:719
 #, python-brace-format
@@ -1005,29 +1016,31 @@ msgid ""
 "Could not read the font catalog:\n"
 "{error}"
 msgstr ""
+"خواندن فهرست فونت‌ها ممکن نشد:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:726
 msgid "Source fonts — click to use (✓ = downloaded; uncached downloads first)"
-msgstr ""
+msgstr "فونت‌های منبع — برای استفاده کلیک کنید (✓ = بارگیری‌شده؛ موارد بارگیری‌نشده ابتدا بارگیری می‌شوند)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:728
 #: polyhost/gui/fontpack_extend_dialog.py:793
 #: polyhost/gui/fontpack_extend_dialog.py:797
 msgid "Download all"
-msgstr ""
+msgstr "بارگیری همه"
 
 #: polyhost/gui/fontpack_extend_dialog.py:729
 msgid "Fetch every Noto font in the list into the cache"
-msgstr ""
+msgstr "همهٔ فونت‌های Noto فهرست در حافظهٔ نهان بارگیری شوند"
 
 #: polyhost/gui/fontpack_extend_dialog.py:746
 #, python-brace-format
 msgid "{name}  ({filename})  ✓ cached"
-msgstr ""
+msgstr "{name}  ({filename})  ✓ در حافظهٔ نهان"
 
 #: polyhost/gui/fontpack_extend_dialog.py:779
 msgid "Download failed"
-msgstr ""
+msgstr "بارگیری ناموفق بود"
 
 #: polyhost/gui/fontpack_extend_dialog.py:780
 #, python-brace-format
@@ -1035,10 +1048,12 @@ msgid ""
 "Could not download {name}:\n"
 "{error}"
 msgstr ""
+"بارگیری {name} ممکن نشد:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:793
 msgid "All fonts are already cached."
-msgstr ""
+msgstr "همهٔ فونت‌ها از قبل در حافظهٔ نهان هستند."
 
 #: polyhost/gui/fontpack_extend_dialog.py:798
 #, python-brace-format
@@ -1046,161 +1061,163 @@ msgid ""
 "Stopped on an error:\n"
 "{error}"
 msgstr ""
+"به دلیل خطا متوقف شد:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:807
 msgid "Downloading…"
-msgstr ""
+msgstr "در حال بارگیری…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:819
 #, python-brace-format
 msgid "Downloading {name}  ({index}/{count})…"
-msgstr ""
+msgstr "در حال بارگیری {name}  ({index}/{count})…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:848
 msgid "Download Noto source font"
-msgstr ""
+msgstr "بارگیری فونت منبع Noto"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:128
 #, python-brace-format
 msgid "{label} (error)"
-msgstr ""
+msgstr "{label} (خطا)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:195
 #, python-brace-format
 msgid "⚠ Could not decode '{label}': {error}"
-msgstr ""
+msgstr "⚠ رمزگشایی «{label}» ممکن نشد: {error}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:200
 msgid "BAD"
-msgstr ""
+msgstr "خراب"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:203
 #, python-brace-format
 msgid "{label}.plyf — abi v{abi} · content v{content} · {fonts} fonts · {glyphs} glyphs ({empty} empty) · {size} B · crc {crc}"
-msgstr ""
+msgstr "{label}.plyf — abi v{abi} · محتوا v{content} · {fonts} فونت · {glyphs} گلیف ({empty} خالی) · {size} B · crc {crc}"
 
 #. TRANSLATORS: label of the glyph-grid magnification spin box
 #: polyhost/gui/fontpack_inspector_dialog.py:214
 msgid "Zoom"
-msgstr ""
+msgstr "بزرگ‌نمایی"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:222
 msgid "Hide empty"
-msgstr ""
+msgstr "پنهان کردن خالی‌ها"
 
 #. TRANSLATORS: checkbox; preview the empty glyph slots from their source font
 #: polyhost/gui/fontpack_inspector_dialog.py:226
 msgid "Peek empty (from source)"
-msgstr ""
+msgstr "پیش‌نمایش خالی‌ها (از منبع)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:227
 msgid "Render the empty slots from their source font (needs the font downloaded) as amber previews — candidates to build/take. Previews are not in the pack."
-msgstr ""
+msgstr "جایگاه‌های خالی از فونت منبعشان (که باید بارگیری شده باشد) به‌صورت پیش‌نمایش کهربایی رندر شوند — نامزدهایی برای ساخت/برداشتن. پیش‌نمایش‌ها در بسته نیستند."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:601
 #, python-brace-format
 msgid "{codepoint} — drawn by {font}  (another bundle)"
-msgstr ""
+msgstr "{codepoint} — رسم‌شده با {font}  (مجموعهٔ دیگر)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:603
 #, python-brace-format
 msgid "{codepoint} — drawn by {font}"
-msgstr ""
+msgstr "{codepoint} — رسم‌شده با {font}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:612
 #, python-brace-format
 msgid "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
 msgid_plural "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
-msgstr[0] ""
+msgstr[0] "؛ {n} مورد رونویسی‌شده: {fonts} (برای دیدن، نشانگر را روی گوشهٔ پشته ببرید؛ برای ویرایش، همان‌جا دوبار کلیک کنید)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:618
 #: polyhost/gui/fontpack_inspector_dialog.py:625
 msgid "(edited — unsaved)"
-msgstr ""
+msgstr "(ویرایش‌شده — ذخیره‌نشده)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:623
 #, python-brace-format
 msgid "{codepoint}  (empty — no glyph)"
-msgstr ""
+msgstr "{codepoint}  (خالی — بدون گلیف)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:661
 #, python-brace-format
 msgid "{codepoint}  (preview from {source} — not in pack)"
-msgstr ""
+msgstr "{codepoint}  (پیش‌نمایش از {source} — در بسته نیست)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:682
 msgid "PolyKybd — Font Pack Inspector"
-msgstr ""
+msgstr "PolyKybd — بازرس بستهٔ فونت"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:695
 msgid "Glyph grid (native size)"
-msgstr ""
+msgstr "شبکهٔ گلیف (اندازهٔ واقعی)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:696
 msgid "Keycap preview (72×40)"
-msgstr ""
+msgstr "پیش‌نمایش کلاهک کلید (72×40)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:697
 msgid "Keycap OLED (raw pixels)"
-msgstr ""
+msgstr "OLED کلاهک (پیکسل‌های خام)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:698
 msgid "Keycap through cover"
-msgstr ""
+msgstr "کلاهک از پشت پوشش"
 
 #. TRANSLATORS: label of the preview-mode dropdown (how glyphs are drawn)
 #: polyhost/gui/fontpack_inspector_dialog.py:701
 msgid "View"
-msgstr ""
+msgstr "نما"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:708
 msgid "Open .plyf…"
-msgstr ""
+msgstr "باز کردن .plyf…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:709
 msgid "Load a .plyf font-pack file (e.g. one you saved elsewhere) as a new tab to inspect"
-msgstr ""
+msgstr "یک فایل بستهٔ فونت .plyf (مثلاً فایلی که جای دیگری ذخیره کرده‌اید) برای بررسی در زبانهٔ جدید بارگذاری شود"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:713
 msgid "Edit…"
-msgstr ""
+msgstr "ویرایش…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:714
 msgid "Replace the selected glyph (double-clicking a glyph does the same)"
-msgstr ""
+msgstr "جایگزینی گلیف انتخاب‌شده (دوبار کلیک روی گلیف هم همین کار را می‌کند)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:718
 msgid "Extend…"
-msgstr ""
+msgstr "گسترش…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:719
 msgid "Build new glyphs from a font and add them to a bundle (in memory)"
-msgstr ""
+msgstr "ساخت گلیف‌های جدید از یک فونت و افزودن آن‌ها به یک مجموعه (در حافظه)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:723
 msgid "Save as…"
-msgstr ""
+msgstr "ذخیره به‌عنوان…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:724
 msgid "Review the current bundle's pending edits and save them to a .plyf (or flash) at a chosen version"
-msgstr ""
+msgstr "بازبینی ویرایش‌های در انتظار مجموعهٔ کنونی و ذخیرهٔ آن‌ها در یک .plyf (یا فلش) با نسخهٔ دلخواه"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:743
 msgid "No font-pack bundles found — use “Open .plyf…”."
-msgstr ""
+msgstr "هیچ مجموعهٔ بستهٔ فونتی پیدا نشد — از «باز کردن .plyf…» استفاده کنید."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:765
 msgid "Open font pack"
-msgstr ""
+msgstr "باز کردن بستهٔ فونت"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:766
 #: polyhost/gui/fontpack_inspector_dialog.py:1026
 msgid "Font pack (*.plyf)"
-msgstr ""
+msgstr "بستهٔ فونت (*.plyf)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:773
 msgid "Open failed"
-msgstr ""
+msgstr "باز کردن ناموفق بود"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:774
 #, python-brace-format
@@ -1208,14 +1225,16 @@ msgid ""
 "Could not decode '{path}':\n"
 "{error}"
 msgstr ""
+"رمزگشایی «{path}» ممکن نشد:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "BAD — file may be truncated/corrupt"
-msgstr ""
+msgstr "خراب — ممکن است فایل ناقص/معیوب باشد"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:785
 msgid "Opened"
-msgstr ""
+msgstr "باز شد"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:786
 #, python-brace-format
@@ -1225,92 +1244,96 @@ msgid ""
 "\n"
 "Note: a .plyf carries no bundle name — this tab is named after the file."
 msgstr ""
+"«{label}.plyf» بارگذاری شد\n"
+"abi v{abi} · محتوا v{content} · {fonts} فونت · {glyphs} گلیف · crc {crc}\n"
+"\n"
+"توجه: فایل .plyf نام مجموعه را در خود ندارد — این زبانه به نام فایل نام‌گذاری شده است."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:811
 msgid "Select a glyph first (click it), or double-click a glyph to edit it."
-msgstr ""
+msgstr "ابتدا یک گلیف را انتخاب کنید (روی آن کلیک کنید)، یا برای ویرایش روی گلیف دوبار کلیک کنید."
 
 #. TRANSLATORS: message-box title (the glyph Edit action)
 #: polyhost/gui/fontpack_inspector_dialog.py:811
 #: polyhost/gui/fontpack_inspector_dialog.py:862
 msgid "Edit"
-msgstr ""
+msgstr "ویرایش"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:862
 #, python-brace-format
 msgid "Unknown bundle {label}."
-msgstr ""
+msgstr "مجموعهٔ ناشناخته {label}."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:874
 #, python-brace-format
 msgid "edit {codepoint} (g{index})"
-msgstr ""
+msgstr "ویرایش {codepoint} (g{index})"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:879
 #, python-brace-format
 msgid "font g{index}: {first}–{last} ({n} slot(s))"
 msgid_plural "font g{index}: {first}–{last} ({n} slot(s))"
-msgstr[0] ""
+msgstr[0] "فونت g{index}: {first}–{last} ({n} جایگاه)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:884
 msgid "Edit failed"
-msgstr ""
+msgstr "ویرایش ناموفق بود"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:940
 msgid "Save as"
-msgstr ""
+msgstr "ذخیره به‌عنوان"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:941
 #, python-brace-format
 msgid "No pending edits in '{label}'. Double-click a glyph (or Extend…) and confirm with OK first."
-msgstr ""
+msgstr "هیچ ویرایش در انتظاری در «{label}» نیست. ابتدا روی یک گلیف دوبار کلیک کنید (یا گسترش…) و با تأیید آن را بپذیرید."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:966
 #, python-brace-format
 msgid "Save font pack — {label}"
-msgstr ""
+msgstr "ذخیرهٔ بستهٔ فونت — {label}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:980
 msgid "content_version written/flashed. Default = current+1 so a connected keyboard re-flashes it; one bump covers all the edits."
-msgstr ""
+msgstr "content_version که نوشته/فلش می‌شود. پیش‌فرض = کنونی+1 تا صفحه‌کلید متصل آن را دوباره فلش کند؛ یک افزایش برای همهٔ ویرایش‌ها کافی است."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:984
 msgid "Save as version"
-msgstr ""
+msgstr "ذخیره با نسخهٔ"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:987
 msgid "Pending edits:"
-msgstr ""
+msgstr "ویرایش‌های در انتظار:"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:992
 msgid "Save .plyf…"
-msgstr ""
+msgstr "ذخیرهٔ .plyf…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:995
 msgid "Flash to device"
-msgstr ""
+msgstr "فلش در دستگاه"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:997
 #: polyhost/gui/fontpack_inspector_dialog.py:1060
 msgid "Discard edits"
-msgstr ""
+msgstr "کنار گذاشتن ویرایش‌ها"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1016
 #, python-brace-format
 msgid "<b>{label}</b> — abi v{abi} · current content v{content}<br>working: {fonts} fonts · {glyphs} glyphs · {size} B → save as v{version}"
-msgstr ""
+msgstr "<b>{label}</b> — abi v{abi} · محتوای کنونی v{content}<br>در حال کار: {fonts} فونت · {glyphs} گلیف · {size} B → ذخیره به‌عنوان v{version}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1025
 msgid "Save font pack"
-msgstr ""
+msgstr "ذخیرهٔ بستهٔ فونت"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1034
 msgid "Save failed"
-msgstr ""
+msgstr "ذخیره ناموفق بود"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1036
 msgid "Saved"
-msgstr ""
+msgstr "ذخیره شد"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1037
 #, python-brace-format
@@ -1318,33 +1341,35 @@ msgid ""
 "Saved {path}\n"
 "content v{version} · {size} B"
 msgstr ""
+"{path} ذخیره شد\n"
+"محتوا v{version} · {size} B"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1045
 #: polyhost/gui/fontpack_inspector_dialog.py:1055
 msgid "Flash"
-msgstr ""
+msgstr "فلش"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1046
 #, python-brace-format
 msgid "Flash '{label}' (content v{version}) to the keyboard?"
-msgstr ""
+msgstr "«{label}» (محتوا v{version}) در صفحه‌کلید فلش شود؟"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1053
 msgid "Flash failed"
-msgstr ""
+msgstr "فلش ناموفق بود"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1055
 msgid "Flash started — watch the tray/log."
-msgstr ""
+msgstr "فلش شروع شد — سینی سیستم/لاگ را دنبال کنید."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1061
 #, python-brace-format
 msgid "Discard all pending edits to '{label}'?"
-msgstr ""
+msgstr "همهٔ ویرایش‌های در انتظار «{label}» کنار گذاشته شوند؟"
 
 #: polyhost/gui/hid_fw_up_dialog.py:22
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
-msgstr ""
+msgstr "این میان‌افزار امضا ندارد. روی صفحه‌کلید تأیید کنید: کلید برجسته‌شدهٔ A (پذیرش) یا R (رد) را فشار دهید."
 
 #: polyhost/gui/hid_fw_up_dialog.py:24
 msgid ""
@@ -1352,6 +1377,9 @@ msgid ""
 "\n"
 "The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
 msgstr ""
+"زمان انتظار برای تأیید روی صفحه‌کلید به پایان رسید.\n"
+"\n"
+"صفحه‌کلید پذیرش/رد فیزیکی می‌خواهد چون این تصویر امضای معتبری ندارد. فلش را دوباره شروع کنید و ظرف یک دقیقه کلید برجسته‌شدهٔ A را روی نیمهٔ چپ فشار دهید."
 
 #: polyhost/gui/hid_fw_up_dialog.py:28
 msgid ""
@@ -1361,100 +1389,105 @@ msgid ""
 "\n"
 "To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
 msgstr ""
+"صفحه‌کلید این میان‌افزار را نپذیرفت: امضا ندارد.\n"
+"\n"
+"میان‌افزار منتشرشده همراه با فایل '.sig' متناظر عرضه می‌شود — آن را کنار فایل .bin بارگیری کنید و دوباره فلش کنید.\n"
+"\n"
+"برای فلش کردن نسخه‌ای که خودتان کامپایل کرده‌اید، دوباره فلش کنید و وقتی صفحه‌کلید پرسید، کلید برجستهٔ A (پذیرش) را فشار دهید."
 
 #: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2814
 #: polyhost/host.py:2838
 msgid "Firmware Update"
-msgstr ""
+msgstr "به‌روزرسانی میان‌افزار"
 
 #: polyhost/gui/hid_fw_up_dialog.py:172
 #, python-brace-format
 msgid "<b>File:</b> {path}"
-msgstr ""
+msgstr "<b>فایل:</b> {path}"
 
 #: polyhost/gui/hid_fw_up_dialog.py:177
 msgid "Applying staged firmware…"
-msgstr ""
+msgstr "در حال اعمال میان‌افزار آماده‌شده…"
 
 #: polyhost/forwarder.py:237 polyhost/gui/hid_fw_up_dialog.py:177
 msgid "Starting…"
-msgstr ""
+msgstr "در حال شروع…"
 
 #: polyhost/gui/hid_fw_up_dialog.py:270
 #, python-brace-format
 msgid "~{seconds} s remaining"
-msgstr ""
+msgstr "~{seconds} ثانیه باقی مانده"
 
 #: polyhost/gui/hid_fw_up_dialog.py:275
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
-msgstr ""
+msgstr "~{minutes} دقیقه و {seconds} ثانیه باقی مانده"
 
 #: polyhost/gui/hid_fw_up_dialog.py:388
 msgid "Applying — activating the staged firmware…"
-msgstr ""
+msgstr "در حال اعمال — فعال‌سازی میان‌افزار آماده‌شده…"
 
 #: polyhost/gui/hid_fw_up_dialog.py:468
 msgid "Cancelling — waiting for current chunk to finish…"
-msgstr ""
+msgstr "در حال لغو — منتظر پایان قطعهٔ کنونی…"
 
 #: polyhost/gui/i18n_qt.py:93 polyhost/gui/settings_dialog.py:73
 msgid "Language"
-msgstr ""
+msgstr "زبان"
 
 #: polyhost/gui/i18n_qt.py:94
 msgid "The new language is used after a restart. Restart now?"
-msgstr ""
+msgstr "زبان جدید پس از راه‌اندازی مجدد استفاده می‌شود. اکنون راه‌اندازی مجدد شود؟"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:56
 msgid "Edit Key"
-msgstr ""
+msgstr "ویرایش کلید"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
 msgid "QMK Keycode:"
-msgstr ""
+msgstr "کد کلید QMK:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:64
 msgid "Visual Label:"
-msgstr ""
+msgstr "برچسب نمایشی:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
-msgstr ""
+msgstr "چرخش: {angle}° حول ({x}, {y})"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
 msgid "Info:"
-msgstr ""
+msgstr "اطلاعات:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:94
 msgid "PolyKybd Split72 Layout"
-msgstr ""
+msgstr "چیدمان PolyKybd Split72"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:192
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
-msgstr ""
+msgstr "PolyKybd در دسترس نیست. لطفاً صفحه‌کلید را وصل کنید و دوباره تلاش کنید."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:193
 msgid "Could not read layers from device"
-msgstr ""
+msgstr "خواندن لایه‌ها از دستگاه ممکن نشد"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "Layers:"
-msgstr ""
+msgstr "لایه‌ها:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:280
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
-msgstr ""
+msgstr "هر کلید همان‌طور رسم شود که صفحه‌کلید کلاهک آن را نشان می‌دهد. کلیدی که نوشته‌اش اینجا مدل نشده، متن کد کلیدش را نگه می‌دارد."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:282
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
-msgstr ""
+msgstr "در دسترس نیست: فونت‌های کلاهک و جدول‌های چیدمان بارگذاری نشدند، بنابراین کلیدها کد کلیدشان را نشان می‌دهند."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:288
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
-msgstr ""
+msgstr "تا حدی در دسترس نیست — {reason}"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:293
 #, python-brace-format
@@ -1462,38 +1495,40 @@ msgid ""
 "Legends read from:\n"
 "{source}"
 msgstr ""
+"نوشته‌ها از این منبع خوانده شدند:\n"
+"{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:310
 msgid "Symbol"
-msgstr ""
+msgstr "نماد"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:310
 msgid "Every key shows its keycode."
-msgstr ""
+msgstr "هر کلید کد کلید خود را نشان می‌دهد."
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:312
 msgid "Preview"
-msgstr ""
+msgstr "پیش‌نمایش"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:314
 msgid "Real"
-msgstr ""
+msgstr "واقعی"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:314
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
-msgstr ""
+msgstr "از طریق شبیه‌سازی پنل: پیکسل‌های نورانی، درخشش و پخش نور پوشش شفاف کلاهک — همان‌طور که کلید واقعاً دیده می‌شود."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:332
 #, python-brace-format
 msgid "Unavailable: {reason}"
-msgstr ""
+msgstr "در دسترس نیست: {reason}"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:583
 msgid "Error"
-msgstr ""
+msgstr "خطا"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:583
 #, python-brace-format
@@ -1502,18 +1537,21 @@ msgid ""
 "{error}\n"
 "{details}"
 msgstr ""
+"بارگذاری ناموفق بود:\n"
+"{error}\n"
+"{details}"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:346
 msgid "no preview data (shipped or checkout)"
-msgstr ""
+msgstr "داده‌ای برای پیش‌نمایش نیست (نه همراه برنامه، نه در checkout)"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:383
 msgid "the shipped language table is missing"
-msgstr ""
+msgstr "جدول زبان همراه برنامه موجود نیست"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2794
 msgid "unknown"
-msgstr ""
+msgstr "نامشخص"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:549
 #, python-brace-format
@@ -1521,682 +1559,686 @@ msgid ""
 "shipped with this host\n"
 "firmware {version}"
 msgstr ""
+"همراه این میزبان\n"
+"میان‌افزار {version}"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:553
 msgid "(a firmware checkout is present but is not newer)"
-msgstr ""
+msgstr "(یک checkout میان‌افزار وجود دارد اما جدیدتر نیست)"
 
 #: polyhost/gui/layout_dialog/keycode_browser.py:58
 msgid "Layers && Mods"
-msgstr ""
+msgstr "لایه‌ها && اصلاح‌گرها"
 
 #: polyhost/gui/layout_dialog/keycode_browser.py:73
 msgid "Macros"
-msgstr ""
+msgstr "ماکروها"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:31
 msgid "MO — Momentary layer"
-msgstr ""
+msgstr "MO — لایهٔ لحظه‌ای"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:32
 msgid "TO — Switch to layer"
-msgstr ""
+msgstr "TO — رفتن به لایه"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:33
 msgid "TG — Toggle layer"
-msgstr ""
+msgstr "TG — تغییر وضعیت لایه"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:34
 msgid "DF — Set default layer"
-msgstr ""
+msgstr "DF — تنظیم لایهٔ پیش‌فرض"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:35
 msgid "PDF — Persistent default layer"
-msgstr ""
+msgstr "PDF — لایهٔ پیش‌فرض ماندگار"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:36
 msgid "TT — Tap-toggle layer"
-msgstr ""
+msgstr "TT — لایهٔ ضربه‌ای-تغییر وضعیت"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:37
 msgid "OSL — One-shot layer"
-msgstr ""
+msgstr "OSL — لایهٔ یک‌باره"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:38
 msgid "OSM — One-shot modifier"
-msgstr ""
+msgstr "OSM — اصلاح‌گر یک‌باره"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:39
 msgid "LT — Layer-tap (hold layer / tap key)"
-msgstr ""
+msgstr "LT — لایه-ضربه (نگه داشتن: لایه / ضربه: کلید)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:40
 msgid "LM — Layer + modifier (momentary)"
-msgstr ""
+msgstr "LM — لایه + اصلاح‌گر (لحظه‌ای)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:41
 msgid "MT — Mod-tap (hold mod / tap key)"
-msgstr ""
+msgstr "MT — اصلاح‌گر-ضربه (نگه داشتن: اصلاح‌گر / ضربه: کلید)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:42
 msgid "Modified key (Ctrl/Shift/… + key)"
-msgstr ""
+msgstr "کلید اصلاح‌شده (Ctrl/Shift/… + کلید)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:43
 msgid "SH_T — Swap-hands tap-hold (tap key / hold swap)"
-msgstr ""
+msgstr "SH_T — جابه‌جایی دست‌ها با ضربه-نگه داشتن (ضربه: کلید / نگه داشتن: جابه‌جایی)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:74
 msgid "Behavior:"
-msgstr ""
+msgstr "رفتار:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:78
 msgid "Layer:"
-msgstr ""
+msgstr "لایه:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:81
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:180
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Modifiers"
-msgstr ""
+msgstr "اصلاح‌گرها"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:83
 msgid "Ctrl"
-msgstr ""
+msgstr "Ctrl"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:84
 msgid "Shift"
-msgstr ""
+msgstr "Shift"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:85
 msgid "Alt"
-msgstr ""
+msgstr "Alt"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:86
 msgid "GUI"
-msgstr ""
+msgstr "GUI"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:89
 msgid "Left"
-msgstr ""
+msgstr "چپ"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:90
 msgid "Right"
-msgstr ""
+msgstr "راست"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:105
 msgid "Inner key:"
-msgstr ""
+msgstr "کلید درونی:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:113
 msgid "Apply to selected key"
-msgstr ""
+msgstr "اعمال روی کلید انتخاب‌شده"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:251
 msgid "Select at least one modifier"
-msgstr ""
+msgstr "دست‌کم یک اصلاح‌گر انتخاب کنید"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:57
 msgid "Choose a keycap icon"
-msgstr ""
+msgstr "انتخاب نماد کلاهک"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:67
 msgid "Emoji and symbols"
-msgstr ""
+msgstr "ایموجی و نمادها"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:68
 msgid "Every bundle"
-msgstr ""
+msgstr "همهٔ مجموعه‌ها"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:70
 msgid "Show:"
-msgstr ""
+msgstr "نمایش:"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:73
 msgid "filter by codepoint — 1F4E7, U+2699, or a character"
-msgstr ""
+msgstr "فیلتر بر اساس کدپوینت — 1F4E7، U+2699، یا یک نویسه"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:148
 #, python-brace-format
 msgid "{n} glyph"
 msgid_plural "{n} glyphs"
-msgstr[0] ""
+msgstr[0] "{n} گلیف"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Tap"
-msgstr ""
+msgstr "ضربه"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Hold"
-msgstr ""
+msgstr "نگه داشتن"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Release"
-msgstr ""
+msgstr "رها کردن"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Wait"
-msgstr ""
+msgstr "انتظار"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:91
 msgid "Macro steps"
-msgstr ""
+msgstr "مراحل ماکرو"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
 msgid "Action"
-msgstr ""
+msgstr "کنش"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
 msgid "Value"
-msgstr ""
+msgstr "مقدار"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:117
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:311
 msgid "Type"
-msgstr ""
+msgstr "نوع"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:123
 msgid "VIA's macro syntax:  plain text  ·  {KC_A} tap  ·  {+KC_A} hold  ·  {-KC_A} release  ·  {250} wait  ·  \\{ a literal brace"
-msgstr ""
+msgstr "نحو ماکروی VIA:  متن ساده  ·  {KC_A} ضربه  ·  {+KC_A} نگه داشتن  ·  {-KC_A} رها کردن  ·  {250} انتظار  ·  \\{ یک آکولاد واقعی"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:142
 msgid "Add step"
-msgstr ""
+msgstr "افزودن مرحله"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:144
 msgid "Add text…"
-msgstr ""
+msgstr "افزودن متن…"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:145
 msgid "Append a run of characters the macro should type"
-msgstr ""
+msgstr "افزودن رشته‌ای از نویسه‌ها که ماکرو باید تایپ کند"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
 msgid "Remove"
-msgstr ""
+msgstr "حذف"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:150
 msgid "Move the selected step up"
-msgstr ""
+msgstr "انتقال مرحلهٔ انتخاب‌شده به بالا"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:153
 msgid "Move the selected step down"
-msgstr ""
+msgstr "انتقال مرحلهٔ انتخاب‌شده به پایین"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:173
 msgid "Table"
-msgstr ""
+msgstr "جدول"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:174
 msgid "Script"
-msgstr ""
+msgstr "اسکریپت"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:188
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
 msgid "Record"
-msgstr ""
+msgstr "ضبط"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:194
 msgid "Press the keys you want, then click Stop. Esc stops recording."
-msgstr ""
+msgstr "کلیدهای دلخواه را فشار دهید، سپس روی توقف کلیک کنید. Esc ضبط را متوقف می‌کند."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:198
 msgid "no timing"
-msgstr ""
+msgstr "بدون زمان‌بندی"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:199
 msgid "with timing"
-msgstr ""
+msgstr "با زمان‌بندی"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:201
 msgid ""
 "Record the real pauses between keystrokes as Wait steps.\n"
 "Off by default: most macros want to run as fast as the keyboard can."
 msgstr ""
+"مکث‌های واقعی بین ضربه‌های کلید به‌صورت مراحل انتظار ضبط شوند.\n"
+"به‌طور پیش‌فرض خاموش است: بیشتر ماکروها باید با بیشترین سرعت صفحه‌کلید اجرا شوند."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:289
 #, python-brace-format
 msgid "{error}  — fix it or switch back."
-msgstr ""
+msgstr "{error}  — آن را اصلاح کنید یا برگردید."
 
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
 msgid " ms"
-msgstr ""
+msgstr " ms"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:382
 #, python-brace-format
 msgid "Switch this row back to a key action to restore {keycode}."
-msgstr ""
+msgstr "برای بازگرداندن {keycode}، این ردیف را دوباره به کنش کلید برگردانید."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
 msgid "Add text"
-msgstr ""
+msgstr "افزودن متن"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
 msgid "Characters to type:"
-msgstr ""
+msgstr "نویسه‌هایی که تایپ شوند:"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:461
 msgid "No steps yet."
-msgstr ""
+msgstr "هنوز مرحله‌ای نیست."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:494
 msgid "Recording — press keys, then click Stop (or Esc)."
-msgstr ""
+msgstr "در حال ضبط — کلیدها را فشار دهید، سپس روی توقف کلیک کنید (یا Esc)."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:530
 #, python-brace-format
 msgid "No basic keycode for that key — skipped. (Recorded {n} step so far.)"
 msgid_plural "No basic keycode for that key — skipped. (Recorded {n} steps so far.)"
-msgstr[0] ""
+msgstr[0] "برای آن کلید کد کلید پایه‌ای وجود ندارد — رد شد. (تاکنون {n} مرحله ضبط شده است.)"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:542
 #, python-brace-format
 msgid "Recording — {n} step. Stop (or Esc) when done."
 msgid_plural "Recording — {n} steps. Stop (or Esc) when done."
-msgstr[0] ""
+msgstr[0] "در حال ضبط — {n} مرحله. پس از پایان، توقف (یا Esc)."
 
 #: polyhost/gui/layout_dialog/macro_tab.py:46
 msgid "stored unencrypted, readable by anything on the USB"
-msgstr ""
+msgstr "بدون رمزگذاری ذخیره می‌شود و هر چیزی روی USB می‌تواند آن را بخواند"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:148
 #: polyhost/gui/layout_dialog/macro_tab.py:275
 msgid "Keycap:"
-msgstr ""
+msgstr "کلاهک:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:166
 msgid "Number above the label"
-msgstr ""
+msgstr "عدد بالای برچسب"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:167
 msgid "Icon above the label"
-msgstr ""
+msgstr "نماد بالای برچسب"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:168
 msgid "Label only, as large as it fits"
-msgstr ""
+msgstr "فقط برچسب، تا جای ممکن بزرگ"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:169
 msgid "Icon only, filling the key"
-msgstr ""
+msgstr "فقط نماد، پرکنندهٔ کلید"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:172
 msgid "Style:"
-msgstr ""
+msgstr "سبک:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:181
 msgid "Types:"
-msgstr ""
+msgstr "تایپ می‌کند:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:188
 msgid "Steps…"
-msgstr ""
+msgstr "مراحل…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:190
 msgid "Build the macro out of key presses, chords and pauses — or record them"
-msgstr ""
+msgstr "ساخت ماکرو از فشار کلیدها، ترکیب‌ها و مکث‌ها — یا ضبط آن‌ها"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:205
 msgid "How the keycap will look"
-msgstr ""
+msgstr "کلاهک چگونه دیده خواهد شد"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:210
 #: polyhost/gui/layout_dialog/macro_tab.py:425
 msgid "Choose icon…"
-msgstr ""
+msgstr "انتخاب نماد…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:232
 msgid "Save macro"
-msgstr ""
+msgstr "ذخیرهٔ ماکرو"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:238
 msgid "Use on selected key"
-msgstr ""
+msgstr "استفاده روی کلید انتخاب‌شده"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:249
 msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
-msgstr ""
+msgstr "همهٔ ماکروها یک فضای مشترک در صفحه‌کلید دارند، بنابراین یک ماکروی طولانی جای کمتری برای بقیه می‌گذارد"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:301
 #, python-brace-format
 msgid "M{number} (empty)"
-msgstr ""
+msgstr "M{number} (خالی)"
 
 #. TRANSLATORS: %p% is Qt's percentage placeholder -- keep it as it is.
 #: polyhost/gui/layout_dialog/macro_tab.py:318
 #, python-brace-format
 msgid "{used} / {capacity} bytes  ·  %p%"
-msgstr ""
+msgstr "{used} / {capacity} بایت  ·  %p%"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:346
 #: polyhost/gui/layout_dialog/macro_tab.py:403
 #, python-brace-format
 msgid "{n} byte  ·  {caveat}"
 msgid_plural "{n} bytes  ·  {caveat}"
-msgstr[0] ""
+msgstr[0] "{n} بایت  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:363
 #, python-brace-format
 msgid "{n} step — press Steps… to edit  ·  {caveat}"
 msgid_plural "{n} steps — press Steps… to edit  ·  {caveat}"
-msgstr[0] ""
+msgstr[0] "{n} مرحله — برای ویرایش «مراحل…» را بزنید  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:367
 #, python-brace-format
 msgid "{size} bytes  ·  {n} step — press Steps… to edit  ·  {caveat}"
 msgid_plural "{size} bytes  ·  {n} steps — press Steps… to edit  ·  {caveat}"
-msgstr[0] ""
+msgstr[0] "{size} بایت  ·  {n} مرحله — برای ویرایش «مراحل…» را بزنید  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:388
 msgid "That text cannot become steps"
-msgstr ""
+msgstr "این متن را نمی‌توان به مراحل تبدیل کرد"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:439
 #, python-brace-format
 msgid "{codepoint} (no glyph)"
-msgstr ""
+msgstr "{codepoint} (بدون گلیف)"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:441
 #, python-brace-format
 msgid "{codepoint} (unverified)"
-msgstr ""
+msgstr "{codepoint} (تأییدنشده)"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:460
 msgid "no font — preview unavailable"
-msgstr ""
+msgstr "بدون فونت — پیش‌نمایش در دسترس نیست"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:468
 #, python-brace-format
 msgid "{width} / {panel_width} px"
-msgstr ""
+msgstr "{width} / {panel_width} px"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:520
 msgid "Could not save the macro"
-msgstr ""
+msgstr "ذخیرهٔ ماکرو ممکن نشد"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:531
 msgid "Could not clear the macro"
-msgstr ""
+msgstr "پاک کردن ماکرو ممکن نشد"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:178
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Steno"
-msgstr ""
+msgstr "استنو"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Media / System"
-msgstr ""
+msgstr "رسانه / سیستم"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Midi"
-msgstr ""
+msgstr "MIDI"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Haptic"
-msgstr ""
+msgstr "لمسی (Haptic)"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
 msgid "Unicode / International"
-msgstr ""
+msgstr "یونیکد / بین‌المللی"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "RGB"
-msgstr ""
+msgstr "RGB"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
 msgid "Mouse / Joystick"
-msgstr ""
+msgstr "ماوس / جوی‌استیک"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Magic"
-msgstr ""
+msgstr "Magic"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "User / Macro"
-msgstr ""
+msgstr "کاربر / ماکرو"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Programmable"
-msgstr ""
+msgstr "قابل برنامه‌ریزی"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Space Cadet"
-msgstr ""
+msgstr "Space Cadet"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Quantum"
-msgstr ""
+msgstr "Quantum"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Additional"
-msgstr ""
+msgstr "اضافی"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:239
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Standard"
-msgstr ""
+msgstr "استاندارد"
 
 #: polyhost/gui/log_bundle_dialog.py:30
 msgid "Last 15 minutes"
-msgstr ""
+msgstr "۱۵ دقیقهٔ اخیر"
 
 #: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last hour"
-msgstr ""
+msgstr "یک ساعت اخیر"
 
 #: polyhost/gui/log_bundle_dialog.py:32
 msgid "Last 24 hours"
-msgstr ""
+msgstr "۲۴ ساعت اخیر"
 
 #: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last 7 days"
-msgstr ""
+msgstr "۷ روز اخیر"
 
 #: polyhost/gui/log_bundle_dialog.py:34
 msgid "Everything on disk"
-msgstr ""
+msgstr "همه‌چیز روی دیسک"
 
 #: polyhost/gui/log_bundle_dialog.py:88
 #, python-brace-format
 msgid "Log collection failed: {error}"
-msgstr ""
+msgstr "جمع‌آوری لاگ‌ها ناموفق بود: {error}"
 
 #: polyhost/gui/log_bundle_dialog.py:106
 msgid "Collect Logs"
-msgstr ""
+msgstr "جمع‌آوری لاگ‌ها"
 
 #: polyhost/gui/log_bundle_dialog.py:111
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
-msgstr ""
+msgstr "همهٔ لاگ‌های PolyHost — از جمله لاگ سرویس پس‌زمینه و کنسول صفحه‌کلید — را همراه با نسخه‌های پشتیبان چرخشی آن‌ها، به‌علاوهٔ جزئیات نسخه و اتصال، در یک فایل جمع‌آوری می‌کند تا بتوانید آن را به گزارش اشکال پیوست کنید."
 
 #: polyhost/gui/log_bundle_dialog.py:123
 msgid "Timeframe:"
-msgstr ""
+msgstr "بازهٔ زمانی:"
 
 #: polyhost/gui/log_bundle_dialog.py:126
 msgid "Mask window titles"
-msgstr ""
+msgstr "پوشاندن عنوان پنجره‌ها"
 
 #: polyhost/gui/log_bundle_dialog.py:128
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
-msgstr ""
+msgstr "عنوان پنجره‌ها ممکن است نام اسنادی را که باز داشتید نشان دهد. پوشاندن، نام برنامه‌ها را نگه می‌دارد (که اشکال‌زدایی تطبیق هم‌پوشانی بر اساس آن است) اما هر عنوان را با یک جانگهدار جایگزین می‌کند."
 
 #: polyhost/gui/log_bundle_dialog.py:145
 msgid "Show in Folder"
-msgstr ""
+msgstr "نمایش در پوشه"
 
 #: polyhost/gui/log_bundle_dialog.py:155
 msgid "Save Bundle…"
-msgstr ""
+msgstr "ذخیرهٔ بسته…"
 
 #: polyhost/gui/log_bundle_dialog.py:169
 msgid "Window titles will be replaced with placeholders. Application names are kept."
-msgstr ""
+msgstr "عنوان پنجره‌ها با جانگهدار جایگزین می‌شود. نام برنامه‌ها حفظ می‌شود."
 
 #: polyhost/gui/log_bundle_dialog.py:173
 msgid "The logs record the titles of windows you focused, which can name open documents."
-msgstr ""
+msgstr "لاگ‌ها عنوان پنجره‌هایی را که فعال کرده‌اید ثبت می‌کنند که ممکن است نام اسناد باز را نشان دهد."
 
 #: polyhost/gui/log_bundle_dialog.py:175
 msgid "Tick the box above to mask them."
-msgstr ""
+msgstr "برای پوشاندن آن‌ها، کادر بالا را علامت بزنید."
 
 #: polyhost/gui/log_bundle_dialog.py:196
 msgid "Collecting…"
-msgstr ""
+msgstr "در حال جمع‌آوری…"
 
 #: polyhost/gui/log_bundle_dialog.py:218
 msgid "Save Log Bundle"
-msgstr ""
+msgstr "ذخیرهٔ بستهٔ لاگ"
 
 #: polyhost/gui/log_bundle_dialog.py:219
 msgid "Zip archives (*.zip)"
-msgstr ""
+msgstr "بایگانی‌های Zip (*.zip)"
 
 #: polyhost/gui/log_bundle_dialog.py:229
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
-msgstr ""
+msgstr "{summary} ذخیره شد"
 
 #: polyhost/gui/log_bundle_dialog.py:239
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."
-msgstr[0] ""
+msgstr[0] "{n} خط در کلیپ‌بورد کپی شد."
 
 #: polyhost/gui/log_viewer.py:60
 msgid "Log Viewer"
-msgstr ""
+msgstr "نمایشگر لاگ"
 
 #: polyhost/gui/log_viewer.py:98
 msgid "Collect Logs..."
-msgstr ""
+msgstr "جمع‌آوری لاگ‌ها..."
 
 #: polyhost/gui/log_viewer.py:99
 msgid "Save all logs as a .zip, or copy them to the clipboard"
-msgstr ""
+msgstr "ذخیرهٔ همهٔ لاگ‌ها به‌صورت .zip، یا کپی آن‌ها در کلیپ‌بورد"
 
 #: polyhost/gui/log_viewer.py:103
 msgid "Open Folder"
-msgstr ""
+msgstr "باز کردن پوشه"
 
 #: polyhost/gui/log_viewer.py:107
 msgid "Reload"
-msgstr ""
+msgstr "بارگذاری دوباره"
 
 #: polyhost/gui/log_viewer.py:130
 #, python-brace-format
 msgid "Failed to load log file '{path}': {error}"
-msgstr ""
+msgstr "بارگذاری فایل لاگ «{path}» ناموفق بود: {error}"
 
 #: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1836
 msgid "Mock keyboard"
-msgstr ""
+msgstr "صفحه‌کلید شبیه‌سازی‌شده"
 
 #: polyhost/gui/mock_board_dialog.py:101
 msgid "Live"
-msgstr ""
+msgstr "زنده"
 
 #: polyhost/gui/mock_board_dialog.py:103
 msgid "Follow modifiers"
-msgstr ""
+msgstr "دنبال کردن اصلاح‌گرها"
 
 #: polyhost/gui/mock_board_dialog.py:104
 msgid "Show the variant for the modifiers held on this computer's keyboard"
-msgstr ""
+msgstr "نمایش حالتِ مربوط به اصلاح‌گرهای نگه‌داشته‌شده روی صفحه‌کلید این رایانه"
 
 #: polyhost/gui/mock_board_dialog.py:107
 msgid "Save PNGs…"
-msgstr ""
+msgstr "ذخیرهٔ PNGها…"
 
 #: polyhost/gui/mock_board_dialog.py:112
 msgid "Modifier:"
-msgstr ""
+msgstr "اصلاح‌گر:"
 
 #: polyhost/gui/mock_board_dialog.py:186
 #, python-brace-format
 msgid "Refresh failed: {error}"
-msgstr ""
+msgstr "تازه‌سازی ناموفق بود: {error}"
 
 #. TRANSLATORS: {side} is "Primary" or "Secondary", {state} is "on" or "OFF".
 #: polyhost/gui/mock_board_dialog.py:214
 #, python-brace-format
 msgid "{side} mock, protocol v{protocol} · overlays {state} · {shown} keycap(s) with an overlay · received: {images} image, {fills} fill, {mappings} mapping, {controls} control report(s)"
-msgstr ""
+msgstr "شبیه‌ساز {side}، پروتکل v{protocol} · هم‌پوشانی‌ها {state} · {shown} کلاهک دارای هم‌پوشانی · دریافتی: {images} تصویر، {fills} پرکردن، {mappings} نگاشت، {controls} گزارش کنترلی"
 
 #: polyhost/gui/mock_board_dialog.py:217
 msgid "Primary"
-msgstr ""
+msgstr "اصلی"
 
 #: polyhost/gui/mock_board_dialog.py:217
 msgid "Secondary"
-msgstr ""
+msgstr "ثانویه"
 
 #. TRANSLATORS: the state of the mock keyboard's overlays.
 #: polyhost/gui/mock_board_dialog.py:220
 msgid "on"
-msgstr ""
+msgstr "روشن"
 
 #: polyhost/gui/mock_board_dialog.py:220
 msgid "OFF"
-msgstr ""
+msgstr "خاموش"
 
 #: polyhost/gui/mock_board_dialog.py:224
 #, python-brace-format
 msgid " · ⚠ {count} refused: {last}"
-msgstr ""
+msgstr " · ⚠ {count} رد شد: {last}"
 
 #: polyhost/gui/mock_board_dialog.py:233
 msgid "Save the mock's keycaps to"
-msgstr ""
+msgstr "ذخیرهٔ کلاهک‌های شبیه‌ساز در"
 
 #: polyhost/gui/mock_board_dialog.py:240
 #, python-brace-format
 msgid "Saved {count} PNG(s) to {folder}"
-msgstr ""
+msgstr "{count} فایل PNG در {folder} ذخیره شد"
 
 #. TRANSLATORS: an overlay image shown under every modifier combination.
 #: polyhost/gui/mru_inspector_dialog.py:35
 msgid "any"
-msgstr ""
+msgstr "هر حالت"
 
 #: polyhost/gui/mru_inspector_dialog.py:117
 #, python-brace-format
 msgid "MRU Overlay Cache Inspector  —  {caches}"
-msgstr ""
+msgstr "بازرس حافظهٔ نهان هم‌پوشانی MRU  —  {caches}"
 
 #: polyhost/gui/mru_inspector_dialog.py:145
 #, python-brace-format
 msgid "All transferred mappings so far ({n} entries) — display position → pool slot"
 msgid_plural "All transferred mappings so far ({n} entries) — display position → pool slot"
-msgstr[0] ""
+msgstr[0] "همهٔ نگاشت‌های منتقل‌شده تاکنون ({n} مورد) — موقعیت نمایش → جایگاه مخزن"
 
 #: polyhost/gui/mru_inspector_dialog.py:152
 msgid "From"
-msgstr ""
+msgstr "از"
 
 #: polyhost/gui/mru_inspector_dialog.py:152
 msgid "To"
-msgstr ""
+msgstr "به"
 
 #: polyhost/gui/mru_inspector_dialog.py:168
 msgid "(no mapping sent yet)"
-msgstr ""
+msgstr "(هنوز نگاشتی فرستاده نشده)"
 
 #: polyhost/gui/mru_inspector_dialog.py:273
 #, python-brace-format
@@ -2205,757 +2247,762 @@ msgid ""
 "{keycode}·{modifier}→{slot}\n"
 "batch {rank}/{max_rank}"
 msgstr ""
+"{file}\n"
+"{keycode}·{modifier}→{slot}\n"
+"دستهٔ {rank}/{max_rank}"
 
 #: polyhost/gui/newer_firmware_dialog.py:32
 msgid "Safe mode"
-msgstr ""
+msgstr "حالت امن"
 
 #: polyhost/gui/newer_firmware_dialog.py:33
 msgid "Check for updates"
-msgstr ""
+msgstr "بررسی به‌روزرسانی‌ها"
 
 #: polyhost/gui/newer_firmware_dialog.py:34
 msgid "Connect anyway"
-msgstr ""
+msgstr "در هر حال وصل شو"
 
 #: polyhost/gui/newer_firmware_dialog.py:57
 #, python-brace-format
 msgid "{keyboard}'s firmware (protocol P{device_protocol}) is newer than this host app (protocol P{host_protocol})."
-msgstr ""
+msgstr "میان‌افزار {keyboard} (پروتکل P{device_protocol}) از این برنامهٔ میزبان (پروتکل P{host_protocol}) جدیدتر است."
 
 #: polyhost/gui/newer_firmware_dialog.py:61
 msgid "A newer firmware may use commands this version of the app doesn't fully understand, so some features could misbehave. How would you like to proceed?"
-msgstr ""
+msgstr "میان‌افزار جدیدتر ممکن است از فرمان‌هایی استفاده کند که این نسخهٔ برنامه کاملاً نمی‌فهمد، بنابراین برخی قابلیت‌ها ممکن است درست کار نکنند. چگونه ادامه می‌دهید؟"
 
 #: polyhost/gui/newer_firmware_dialog.py:65
 msgid "• Safe mode — connect, but enable only the stable set (firmware update and debugging)."
-msgstr ""
+msgstr "• حالت امن — وصل شود، اما فقط مجموعهٔ پایدار (به‌روزرسانی میان‌افزار و اشکال‌زدایی) فعال شود."
 
 #: polyhost/gui/newer_firmware_dialog.py:67
 msgid "• Check for updates — look for a newer host app that matches; if none is found, stay in safe mode."
-msgstr ""
+msgstr "• بررسی به‌روزرسانی‌ها — به دنبال برنامهٔ میزبان جدیدتر و سازگار بگردد؛ اگر پیدا نشد، در حالت امن بماند."
 
 #: polyhost/gui/newer_firmware_dialog.py:69
 msgid "• Connect anyway — use everything and accept the risk."
-msgstr ""
+msgstr "• در هر حال وصل شو — همه‌چیز استفاده شود و خطر آن پذیرفته شود."
 
 #: polyhost/gui/newer_firmware_dialog.py:73
 msgid "Newer keyboard firmware detected"
-msgstr ""
+msgstr "میان‌افزار جدیدتر صفحه‌کلید شناسایی شد"
 
 #: polyhost/gui/oled_look.py:36
 #, python-brace-format
 msgid "Pillow is unavailable: {error}"
-msgstr ""
+msgstr "Pillow در دسترس نیست: {error}"
 
 #: polyhost/gui/problem_alert_dialog.py:37
 msgid "PolyKybd — a problem was detected"
-msgstr ""
+msgstr "PolyKybd — مشکلی شناسایی شد"
 
 #: polyhost/gui/problem_alert_dialog.py:53
 msgid "Everything may still be working, but this is worth a look. A bug report collects the logs and pre-fills a GitHub issue; nothing is sent until you press Submit there. To change what is watched, see the problem_scan settings."
-msgstr ""
+msgstr "ممکن است همه‌چیز هنوز کار کند، اما ارزش بررسی دارد. گزارش اشکال، لاگ‌ها را جمع‌آوری کرده و یک issue در GitHub را از پیش پر می‌کند؛ تا وقتی آنجا Submit را نزنید چیزی فرستاده نمی‌شود. برای تغییر موارد تحت نظر، تنظیمات problem_scan را ببینید."
 
 #: polyhost/gui/problem_alert_dialog.py:65
 msgid "Report a Problem…"
-msgstr ""
+msgstr "گزارش مشکل…"
 
 #: polyhost/gui/problem_alert_dialog.py:100
 #, python-brace-format
 msgid "<b>PolyKybd noticed {n} problem.</b>"
 msgid_plural "<b>PolyKybd noticed {n} problems.</b>"
-msgstr[0] ""
+msgstr[0] "<b>PolyKybd {n} مشکل شناسایی کرد.</b>"
 
 #: polyhost/gui/problem_alert_dialog.py:117
 msgid "Opened the problem report with these filled in."
-msgstr ""
+msgstr "گزارش مشکل با این موارد پرشده باز شد."
 
 #: polyhost/gui/report_problem_dialog.py:53
 msgid "Report a Problem"
-msgstr ""
+msgstr "گزارش مشکل"
 
 #: polyhost/gui/report_problem_dialog.py:58
 msgid "This collects your logs and opens a pre-filled bug report on GitHub. Nothing is sent anywhere until you press Submit there — and you attach the log file yourself, so you can look at it first."
-msgstr ""
+msgstr "این کار لاگ‌های شما را جمع‌آوری می‌کند و یک گزارش اشکال ازپیش‌پرشده در GitHub باز می‌کند. تا وقتی آنجا Submit را نزنید چیزی به جایی فرستاده نمی‌شود — و فایل لاگ را خودتان پیوست می‌کنید، پس می‌توانید اول آن را ببینید."
 
 #: polyhost/gui/report_problem_dialog.py:66
 msgid "What went wrong? What were you doing when it happened?"
-msgstr ""
+msgstr "چه مشکلی پیش آمد؟ هنگام وقوع آن چه می‌کردید؟"
 
 #: polyhost/gui/report_problem_dialog.py:69
 msgid "What happened"
-msgstr ""
+msgstr "چه اتفاقی افتاد"
 
 #: polyhost/gui/report_problem_dialog.py:73
 msgid "Optional — what you expected instead"
-msgstr ""
+msgstr "اختیاری — به جای آن چه انتظاری داشتید"
 
 #: polyhost/gui/report_problem_dialog.py:81
 msgid "Include logs from:"
-msgstr ""
+msgstr "شامل کردن لاگ‌ها از:"
 
 #: polyhost/gui/report_problem_dialog.py:86
 msgid "Mask window titles (recommended)"
-msgstr ""
+msgstr "پوشاندن عنوان پنجره‌ها (توصیه‌شده)"
 
 #: polyhost/gui/report_problem_dialog.py:102
 msgid "Show Log File"
-msgstr ""
+msgstr "نمایش فایل لاگ"
 
 #: polyhost/gui/report_problem_dialog.py:108
 msgid "Create Report…"
-msgstr ""
+msgstr "ایجاد گزارش…"
 
 #: polyhost/gui/report_problem_dialog.py:134
 msgid "Window titles are replaced with placeholders. Application names are kept — that is what overlay problems are diagnosed from."
-msgstr ""
+msgstr "عنوان پنجره‌ها با جانگهدار جایگزین می‌شوند. نام برنامه‌ها حفظ می‌شود — مشکلات هم‌پوشانی بر اساس همین تشخیص داده می‌شوند."
 
 #: polyhost/gui/report_problem_dialog.py:139
 msgid "The log file will contain the titles of windows you had open, which can name documents."
-msgstr ""
+msgstr "فایل لاگ شامل عنوان پنجره‌هایی خواهد بود که باز داشتید و ممکن است نام اسناد را نشان دهد."
 
 #: polyhost/gui/report_problem_dialog.py:141
 msgid "Only untick this if the problem is about the wrong overlay appearing for an app."
-msgstr ""
+msgstr "فقط در صورتی علامت این را بردارید که مشکل، نمایش هم‌پوشانی نادرست برای یک برنامه باشد."
 
 #: polyhost/gui/report_problem_dialog.py:202
 msgid "Collecting logs…"
-msgstr ""
+msgstr "در حال جمع‌آوری لاگ‌ها…"
 
 #: polyhost/gui/report_problem_dialog.py:252
 msgid "The report itself is fine — it just has no logs attached."
-msgstr ""
+msgstr "خود گزارش مشکلی ندارد — فقط لاگی به آن پیوست نشده است."
 
 #: polyhost/gui/report_problem_dialog.py:254
 msgid "A GitHub issue has been opened in your browser."
-msgstr ""
+msgstr "یک issue در GitHub در مرورگر شما باز شد."
 
 #: polyhost/gui/report_problem_dialog.py:255
 msgid "A GitHub issue has been opened in your browser — the report is on your clipboard, paste it in."
-msgstr ""
+msgstr "یک issue در GitHub در مرورگر شما باز شد — گزارش در کلیپ‌بورد شماست، آن را بچسبانید."
 
 #: polyhost/gui/report_problem_dialog.py:261
 #, python-brace-format
 msgid "Could not open your browser — the report is on your clipboard. <a href='{url}'>Open an issue</a> and paste it in."
-msgstr ""
+msgstr "مرورگر شما باز نشد — گزارش در کلیپ‌بورد شماست. <a href='{url}'>یک issue باز کنید</a> و آن را بچسبانید."
 
 #: polyhost/gui/report_problem_dialog.py:265
 msgid "<b>Attach the log file</b> (button on the left reveals it) and press Submit."
-msgstr ""
+msgstr "<b>فایل لاگ را پیوست کنید</b> (دکمهٔ سمت چپ آن را نشان می‌دهد) و Submit را بزنید."
 
 #: polyhost/gui/report_problem_dialog.py:268
 msgid "Press Submit. (No log file was produced — see above.)"
-msgstr ""
+msgstr "Submit را بزنید. (هیچ فایل لاگی تولید نشد — بالا را ببینید.)"
 
 #: polyhost/gui/settings_dialog.py:26
 #, python-brace-format
 msgid "Automatic ({language})"
-msgstr ""
+msgstr "خودکار ({language})"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Automatic"
-msgstr ""
+msgstr "خودکار"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Light"
-msgstr ""
+msgstr "روشن"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Dark"
-msgstr ""
+msgstr "تیره"
 
 #: polyhost/gui/settings_dialog.py:38
 msgid "Errors"
-msgstr ""
+msgstr "خطاها"
 
 #: polyhost/gui/settings_dialog.py:39
 msgid "Errors and warnings"
-msgstr ""
+msgstr "خطاها و هشدارها"
 
 #: polyhost/gui/settings_dialog.py:47
 msgid "General"
-msgstr ""
+msgstr "عمومی"
 
 #: polyhost/gui/settings_dialog.py:48
 msgid "Browser"
-msgstr ""
+msgstr "مرورگر"
 
 #: polyhost/gui/settings_dialog.py:48
 msgid "Daemon"
-msgstr ""
+msgstr "سرویس پس‌زمینه"
 
 #: polyhost/gui/settings_dialog.py:49
 msgid "Delay"
-msgstr ""
+msgstr "تأخیر"
 
 #: polyhost/gui/settings_dialog.py:49
 msgid "Dev"
-msgstr ""
+msgstr "توسعه"
 
 #: polyhost/gui/settings_dialog.py:49 polyhost/host.py:760
 msgid "Developer"
-msgstr ""
+msgstr "توسعه‌دهنده"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Fontpack"
-msgstr ""
+msgstr "بستهٔ فونت"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Generic"
-msgstr ""
+msgstr "عمومی"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Hid"
-msgstr ""
+msgstr "HID"
 
 #: polyhost/gui/settings_dialog.py:51
 msgid "Irradiance"
-msgstr ""
+msgstr "تابش"
 
 #: polyhost/gui/settings_dialog.py:51
 msgid "Problem"
-msgstr ""
+msgstr "مشکل"
 
 #: polyhost/gui/settings_dialog.py:51 polyhost/gui/settings_dialog.py:62
 msgid "Max"
-msgstr ""
+msgstr "حداکثر"
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Shortcut"
-msgstr ""
+msgstr "میان‌بر"
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Telemetry"
-msgstr ""
+msgstr "تله‌متری"
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Ui"
-msgstr ""
+msgstr "رابط کاربری"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Unicode"
-msgstr ""
+msgstr "یونیکد"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Window"
-msgstr ""
+msgstr "پنجره"
 
 #: polyhost/gui/settings_dialog.py:57
 msgid "Send Composition Mode"
-msgstr ""
+msgstr "ارسال حالت ترکیب"
 
 #: polyhost/gui/settings_dialog.py:58
 msgid "Set Daylight Dependent"
-msgstr ""
+msgstr "وابسته به نور روز"
 
 #: polyhost/gui/settings_dialog.py:59
 msgid "Allow Online Irradiance Request"
-msgstr ""
+msgstr "اجازهٔ درخواست آنلاین تابش"
 
 #: polyhost/gui/settings_dialog.py:60
 msgid "Allow Online Location Lookup"
-msgstr ""
+msgstr "اجازهٔ جست‌وجوی آنلاین موقعیت"
 
 #: polyhost/gui/settings_dialog.py:61
 msgid "Min"
-msgstr ""
+msgstr "حداقل"
 
 #: polyhost/gui/settings_dialog.py:63
 msgid "Prescaler"
-msgstr ""
+msgstr "پیش‌مقیاس‌گر"
 
 #: polyhost/gui/settings_dialog.py:64
 msgid "Gamma"
-msgstr ""
+msgstr "گاما"
 
 #: polyhost/gui/settings_dialog.py:65
 msgid "Overlays Enabled"
-msgstr ""
+msgstr "هم‌پوشانی‌ها فعال"
 
 #: polyhost/gui/settings_dialog.py:66
 msgid "Overlays Fill Gaps"
-msgstr ""
+msgstr "پرکردن شکاف‌ها با هم‌پوشانی"
 
 #: polyhost/gui/settings_dialog.py:67
 msgid "Icons Enabled"
-msgstr ""
+msgstr "نمادها فعال"
 
 #: polyhost/gui/settings_dialog.py:68
 msgid "Icon Auto Fetch"
-msgstr ""
+msgstr "دریافت خودکار نماد"
 
 #: polyhost/gui/settings_dialog.py:69
 msgid "Hid Message Before Delay"
-msgstr ""
+msgstr "پیام‌های HID پیش از تأخیر"
 
 #: polyhost/gui/settings_dialog.py:70
 msgid "Time After Max Hid Messages"
-msgstr ""
+msgstr "زمان پس از حداکثر پیام‌های HID"
 
 #: polyhost/gui/settings_dialog.py:71
 msgid "Reconnect Retries"
-msgstr ""
+msgstr "تلاش‌های اتصال مجدد"
 
 #: polyhost/gui/settings_dialog.py:72
 msgid "Theme"
-msgstr ""
+msgstr "پوسته"
 
 #: polyhost/gui/settings_dialog.py:75
 msgid "Mock Enabled"
-msgstr ""
+msgstr "شبیه‌ساز فعال"
 
 #: polyhost/gui/settings_dialog.py:76
 msgid "Mock Primary"
-msgstr ""
+msgstr "شبیه‌ساز اصلی"
 
 #: polyhost/gui/settings_dialog.py:77
 msgid "Mock Protocol"
-msgstr ""
+msgstr "پروتکل شبیه‌ساز"
 
 #: polyhost/gui/settings_dialog.py:79
 msgid "Run Window Detection If Not Connected To Poly Kybd"
-msgstr ""
+msgstr "تشخیص پنجره حتی وقتی به PolyKybd وصل نیست"
 
 #: polyhost/gui/settings_dialog.py:80
 msgid "Win Native Set Language"
-msgstr ""
+msgstr "تنظیم زبان با روش بومی Windows"
 
 #: polyhost/gui/settings_dialog.py:81
 msgid "Legacy Plaintext Relay"
-msgstr ""
+msgstr "رلهٔ قدیمی متن ساده"
 
 #: polyhost/gui/settings_dialog.py:83
 msgid "Report Network Enabled"
-msgstr ""
+msgstr "گزارش شبکه فعال"
 
 #: polyhost/gui/settings_dialog.py:84
 msgid "Auto Flash"
-msgstr ""
+msgstr "فلش خودکار"
 
 #: polyhost/gui/settings_dialog.py:85
 msgid "Path"
-msgstr ""
+msgstr "مسیر"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Url Detection"
-msgstr ""
+msgstr "تشخیص URL"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Report Local Enabled"
-msgstr ""
+msgstr "گزارش محلی فعال"
 
 #: polyhost/gui/settings_dialog.py:88
 msgid "Report Port"
-msgstr ""
+msgstr "درگاه گزارش"
 
 #: polyhost/gui/settings_dialog.py:89
 msgid "Report Token"
-msgstr ""
+msgstr "توکن گزارش"
 
 #: polyhost/gui/settings_dialog.py:90
 msgid "Enabled"
-msgstr ""
+msgstr "فعال"
 
 #: polyhost/gui/settings_dialog.py:91
 msgid "Endpoint"
-msgstr ""
+msgstr "نقطهٔ پایانی"
 
 #: polyhost/gui/settings_dialog.py:92
 msgid "Install Id"
-msgstr ""
+msgstr "شناسهٔ نصب"
 
 #: polyhost/gui/settings_dialog.py:93
 msgid "Scan Keyboard Console"
-msgstr ""
+msgstr "بررسی کنسول صفحه‌کلید"
 
 #: polyhost/gui/settings_dialog.py:94
 msgid "Scan Host Logs"
-msgstr ""
+msgstr "بررسی لاگ‌های میزبان"
 
 #: polyhost/gui/settings_dialog.py:95
 msgid "Scan Level"
-msgstr ""
+msgstr "سطح بررسی"
 
 #: polyhost/gui/settings_dialog.py:168
 msgid "PolyKybd Settings"
-msgstr ""
+msgstr "تنظیمات PolyKybd"
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "Some settings might need a restart to take effect."
-msgstr ""
+msgstr "برخی تنظیمات ممکن است برای اعمال به راه‌اندازی مجدد نیاز داشته باشند."
 
 #: polyhost/gui/settings_dialog.py:236
 msgid "Reset glyph script to Standard"
-msgstr ""
+msgstr "بازنشانی خط نوشته‌ها به استاندارد"
 
 #: polyhost/gui/settings_dialog.py:237
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
-msgstr ""
+msgstr "هر جایگزینی خط فانتزی/جایگزین خاموش شود و نوشته‌های عادی زبان دوباره نمایش داده شوند."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
-msgstr ""
+msgstr "<p>نیمه‌ای که با USB وصل است پاسخ داد، اما نیمهٔ دیگر پاسخ نداد. به‌روزرسانی‌ها و نصب فونت به هر دو نیمه نیاز دارند، بنابراین این کار متوقف شد.</p><p><b>۱.</b> کابل بین دو نیمه را جدا کنید و دوباره در هر دو سر محکم وصل کنید. سپس به‌روزرسانی را دوباره امتحان کنید.</p><p><b>۲.</b> اگر نیمهٔ دیگر هنوز هیچ چراغی ندارد و کلاهک‌هایش خالی است، میان‌افزاری در آن اجرا نمی‌شود. هر دو نیمه را جدا کنید. دکمهٔ <b>BOOT</b> روی آن نیمه را نگه دارید و هم‌زمان آن را با USB به رایانه وصل کنید. درایوی به نام <b>RPI-RP2</b> ظاهر می‌شود. فایل .uf2 را روی آن بکشید؛ پس از پایان کپی، درایو ناپدید می‌شود. سپس هر دو نیمه را دوباره وصل کنید.</p>"
 
 #: polyhost/gui/split_link_dialog.py:70
 msgid "Other keyboard half not answering"
-msgstr ""
+msgstr "نیمهٔ دیگر صفحه‌کلید پاسخ نمی‌دهد"
 
 #: polyhost/gui/split_link_dialog.py:88
 msgid "Download .uf2"
-msgstr ""
+msgstr "بارگیری .uf2"
 
 #: polyhost/gui/split_link_dialog.py:90
 msgid "Show in folder"
-msgstr ""
+msgstr "نمایش در پوشه"
 
 #: polyhost/gui/split_link_dialog.py:93
 msgid "Open guide"
-msgstr ""
+msgstr "باز کردن راهنما"
 
 #: polyhost/gui/split_link_dialog.py:115
 msgid "Looking up the newest firmware release…"
-msgstr ""
+msgstr "در حال جست‌وجوی جدیدترین نسخهٔ میان‌افزار…"
 
 #: polyhost/gui/split_link_dialog.py:132
 #, python-brace-format
 msgid "Saved: {path}"
-msgstr ""
+msgstr "ذخیره شد: {path}"
 
 #: polyhost/gui/split_link_dialog.py:134
 msgid "Download again"
-msgstr ""
+msgstr "بارگیری دوباره"
 
 #: polyhost/gui/split_link_dialog.py:138
 #, python-brace-format
 msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
-msgstr ""
+msgstr "بارگیری ناموفق بود ({error}). می‌توانید فایل .uf2 را از <a href=\"{url}\">صفحهٔ انتشار</a> دریافت کنید."
 
 #: polyhost/gui/tray_notify.py:62
 #, python-brace-format
 msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
-msgstr ""
+msgstr "{prefix} — میزبان v{host_version} و میان‌افزار v{fw_version} در دسترس است"
 
 #: polyhost/gui/tray_notify.py:65
 #, python-brace-format
 msgid "{prefix} — host v{host_version} available"
-msgstr ""
+msgstr "{prefix} — میزبان v{host_version} در دسترس است"
 
 #: polyhost/gui/tray_notify.py:68
 #, python-brace-format
 msgid "{prefix} — firmware v{fw_version} available"
-msgstr ""
+msgstr "{prefix} — میان‌افزار v{fw_version} در دسترس است"
 
 #: polyhost/gui/tray_notify.py:81 polyhost/host.py:654
 msgid "Updates"
-msgstr ""
+msgstr "به‌روزرسانی‌ها"
 
 #: polyhost/gui/update_dialog.py:98
 msgid "What's new"
-msgstr ""
+msgstr "تازه‌ها"
 
 #: polyhost/gui/update_dialog.py:101
 #, python-brace-format
 msgid "What's new — {release_name}"
-msgstr ""
+msgstr "تازه‌ها — {release_name}"
 
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
-msgstr ""
+msgstr "راه‌اندازی مجدد برای تکمیل به‌روزرسانی…"
 
 #: polyhost/host.py:51
 msgid "Standard (normal legends)"
-msgstr ""
+msgstr "استاندارد (نوشته‌های عادی)"
 
 #: polyhost/host.py:52
 msgid "Tengwar (fantasy)"
-msgstr ""
+msgstr "تنگوار (فانتزی)"
 
 #: polyhost/host.py:53
 msgid "Elder Futhark runes"
-msgstr ""
+msgstr "رونهای فوتارک کهن"
 
 #: polyhost/host.py:54
 msgid "Aurebesh (sci-fi)"
-msgstr ""
+msgstr "اوربش (علمی-تخیلی)"
 
 #: polyhost/host.py:55
 msgid "Standard Galactic"
-msgstr ""
+msgstr "Standard Galactic"
 
 #: polyhost/host.py:56
 msgid "Cirth / Angerthas"
-msgstr ""
+msgstr "کیرث / انگرتاس"
 
 #: polyhost/host.py:57
 msgid "IBM VGA / CP437"
-msgstr ""
+msgstr "IBM VGA / CP437"
 
 #: polyhost/host.py:58
 msgid "Commodore 64"
-msgstr ""
+msgstr "Commodore 64"
 
 #: polyhost/host.py:59
 msgid "Amiga Topaz"
-msgstr ""
+msgstr "Amiga Topaz"
 
 #: polyhost/host.py:60
 msgid "APL"
-msgstr ""
+msgstr "APL"
 
 #: polyhost/host.py:61
 msgid "Braille"
-msgstr ""
+msgstr "بریل"
 
 #: polyhost/host.py:67
 msgid "Small (standard)"
-msgstr ""
+msgstr "کوچک (استاندارد)"
 
 #: polyhost/host.py:68
 msgid "Medium"
-msgstr ""
+msgstr "متوسط"
 
 #: polyhost/host.py:69
 msgid "Large"
-msgstr ""
+msgstr "بزرگ"
 
 #: polyhost/host.py:414 polyhost/host.py:1406
 msgid "Waiting for PolyKybd..."
-msgstr ""
+msgstr "در انتظار PolyKybd..."
 
 #: polyhost/host.py:415 polyhost/host.py:1258
 msgid "Press to pause connection"
-msgstr ""
+msgstr "برای مکث اتصال کلیک کنید"
 
 #: polyhost/forwarder.py:306 polyhost/host.py:418
 msgid "Quit"
-msgstr ""
+msgstr "خروج"
 
 #: polyhost/host.py:427
 msgid "Quit && stop background daemon"
-msgstr ""
+msgstr "خروج && توقف سرویس پس‌زمینه"
 
 #: polyhost/forwarder.py:273 polyhost/host.py:432
 msgid "About"
-msgstr ""
+msgstr "درباره"
 
 #: polyhost/forwarder.py:262 polyhost/host.py:436
 msgid "Settings..."
-msgstr ""
+msgstr "تنظیمات..."
 
 #: polyhost/forwarder.py:277 polyhost/host.py:440
 msgid "Log file..."
-msgstr ""
+msgstr "فایل لاگ..."
 
 #: polyhost/forwarder.py:283 polyhost/host.py:449
 msgid "Report a Problem..."
-msgstr ""
+msgstr "گزارش مشکل..."
 
 #: polyhost/forwarder.py:289 polyhost/host.py:468
 msgid "Collect logs..."
-msgstr ""
+msgstr "جمع‌آوری لاگ‌ها..."
 
 #: polyhost/host.py:477
 msgid "Read keyboard crash record"
-msgstr ""
+msgstr "خواندن سابقهٔ خرابی صفحه‌کلید"
 
 #: polyhost/host.py:479
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
-msgstr ""
+msgstr "آخرین سابقهٔ خرابی صفحه‌کلید از هر دو نیمه خوانده و در کلیپ‌بورد کپی شود."
 
 #: polyhost/host.py:484
 msgid "Inspect Font Packs..."
-msgstr ""
+msgstr "بررسی بسته‌های فونت..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:243 polyhost/forwarder.py:364 polyhost/host.py:498
 #: polyhost/host.py:1260
 msgid "Pause"
-msgstr ""
+msgstr "مکث"
 
 #: polyhost/host.py:508
 msgid "Firmware newer than this app — safe mode…"
-msgstr ""
+msgstr "میان‌افزار جدیدتر از این برنامه — حالت امن…"
 
 #: polyhost/host.py:510
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
-msgstr ""
+msgstr "نحوهٔ برخورد با صفحه‌کلیدی که میان‌افزارش از این برنامهٔ میزبان جدیدتر است را انتخاب کنید."
 
 #: polyhost/host.py:546
 msgid "Idle Display"
-msgstr ""
+msgstr "نمایش در حالت بیکاری"
 
 #: polyhost/host.py:549
 msgid "Pulse (legacy)"
-msgstr ""
+msgstr "تپش (قدیمی)"
 
 #: polyhost/host.py:551
 msgid "Jitter (move legend)"
-msgstr ""
+msgstr "لرزش (جابه‌جایی نوشته)"
 
 #: polyhost/host.py:555
 msgid "IDDQD (attract demo)"
-msgstr ""
+msgstr "IDDQD (نمایش دمو)"
 
 #: polyhost/host.py:559
 msgid "Eden"
-msgstr ""
+msgstr "عدن"
 
 #: polyhost/host.py:579
 msgid "Idle After"
-msgstr ""
+msgstr "بیکاری پس از"
 
 #: polyhost/host.py:600
 msgid "Keycap Script"
-msgstr ""
+msgstr "خط کلاهک"
 
 #: polyhost/host.py:628
 msgid "Keycap Size"
-msgstr ""
+msgstr "اندازهٔ کلاهک"
 
 #: polyhost/host.py:646
 msgid "Configure Keymap"
-msgstr ""
+msgstr "پیکربندی نقشهٔ کلید"
 
 #: polyhost/host.py:656
 msgid "Check for host update..."
-msgstr ""
+msgstr "بررسی به‌روزرسانی میزبان..."
 
 #: polyhost/host.py:695
 msgid "Check for keyboard firmware update…"
-msgstr ""
+msgstr "بررسی به‌روزرسانی میان‌افزار صفحه‌کلید…"
 
 #: polyhost/host.py:704
 msgid "Keyboard fonts"
-msgstr ""
+msgstr "فونت‌های صفحه‌کلید"
 
 #: polyhost/host.py:738
 msgid "Install WinCompose…"
-msgstr ""
+msgstr "نصب WinCompose…"
 
 #: polyhost/host.py:762
 msgid "Change System Input Language"
-msgstr ""
+msgstr "تغییر زبان ورودی سیستم"
 
 #: polyhost/host.py:768
 msgid "Inspect MRU Cache..."
-msgstr ""
+msgstr "بررسی حافظهٔ نهان MRU..."
 
 #: polyhost/host.py:774
 msgid "Mock Keyboard..."
-msgstr ""
+msgstr "صفحه‌کلید شبیه‌سازی‌شده..."
 
 #: polyhost/host.py:782
 msgid "Refresh unicode input mode"
-msgstr ""
+msgstr "تازه‌سازی حالت ورودی یونیکد"
 
 #: polyhost/host.py:786
 msgid "Save MRU cache now"
-msgstr ""
+msgstr "ذخیرهٔ حافظهٔ نهان MRU اکنون"
 
 #: polyhost/forwarder.py:299 polyhost/host.py:800
 msgid "Help && About"
-msgstr ""
+msgstr "راهنما && درباره"
 
 #: polyhost/forwarder.py:295 polyhost/host.py:809
 msgid "Open config folder"
-msgstr ""
+msgstr "باز کردن پوشهٔ پیکربندی"
 
 #: polyhost/host.py:922
 msgid "System language query not supported for this platform."
-msgstr ""
+msgstr "پرس‌وجوی زبان سیستم در این سکو پشتیبانی نمی‌شود."
 
 #: polyhost/host.py:1121
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
-msgstr[0] ""
+msgstr[0] "تلاش دوباره برای فونت‌های صفحه‌کلید ({n} ناموفق)…"
 
 #: polyhost/host.py:1123
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
-msgstr ""
+msgstr "مجموعه‌های فونتی که آخرین تلاششان ناموفق بود دوباره فلش شوند: {bundles}"
 
 #: polyhost/host.py:1129
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
-msgstr[0] ""
+msgstr[0] "به‌روزرسانی فونت‌های صفحه‌کلید ({n})…"
 
 #: polyhost/host.py:1131
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
-msgstr ""
+msgstr "فلش مجموعه‌های فونتی که صفحه‌کلید ندارد، نسخهٔ قدیمی‌شان را دارد، یا دریافتشان ناموفق بود: {bundles}"
 
 #: polyhost/host.py:1136
 msgid "Keyboard fonts: up to date"
-msgstr ""
+msgstr "فونت‌های صفحه‌کلید: به‌روز"
 
 #: polyhost/host.py:1137
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
 msgstr ""
+"همهٔ مجموعه‌های فونت همراه برنامه از قبل روی صفحه‌کلید هستند.\n"
+"اگر کلاهک‌ها هنوز نادرست نمایش داده می‌شوند، توسعه‌دهنده ← بستهٔ فونت ← فلش دوبارهٔ همهٔ مجموعه‌ها ارسال دوباره را اجباری می‌کند."
 
 #: polyhost/forwarder.py:709 polyhost/host.py:1167
 msgid "Config folder"
-msgstr ""
+msgstr "پوشهٔ پیکربندی"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
 #: polyhost/host.py:1252
 msgid "Reconnect"
-msgstr ""
+msgstr "اتصال مجدد"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
 #: polyhost/forwarder.py:364 polyhost/host.py:1255
 msgid "Resume"
-msgstr ""
+msgstr "ازسرگیری"
 
 #: polyhost/host.py:1334 polyhost/host.py:1398
 #, python-brace-format
 msgid "Could not change OS language {language}."
-msgstr ""
+msgstr "تغییر زبان سیستم‌عامل {language} ممکن نشد."
 
 #: polyhost/host.py:1423
 msgid "Select firmware .bin"
-msgstr ""
+msgstr "انتخاب فایل .bin میان‌افزار"
 
 #: polyhost/host.py:1423
 msgid "Firmware image (*.bin)"
-msgstr ""
+msgstr "تصویر میان‌افزار (*.bin)"
 
 #: polyhost/host.py:1474
 msgid "Firmware apply failed"
-msgstr ""
+msgstr "اعمال میان‌افزار ناموفق بود"
 
 #: polyhost/host.py:1475
 msgid "Firmware flash failed"
-msgstr ""
+msgstr "فلش میان‌افزار ناموفق بود"
 
 #: polyhost/host.py:1515 polyhost/host.py:1567
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
-msgstr ""
+msgstr "زبان انتخاب‌شده: {language} {country}"
 
 #: polyhost/host.py:1538
 msgid "Other"
-msgstr ""
+msgstr "سایر"
 
 #: polyhost/host.py:1623
 msgid "PolyHost settings"
-msgstr ""
+msgstr "تنظیمات PolyHost"
 
 #: polyhost/host.py:1624
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
-msgstr ""
+msgstr "تنظیمات اعمال شدند، اما در فایل تنظیمات ذخیره نشدند. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. برای تلاش دوباره بعداً یک تنظیم را دوباره تغییر دهید، یا لاگ را ببینید."
 
 #: polyhost/host.py:1726
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
-msgstr ""
+msgstr "{side}: سابقهٔ ناخوانا {record}"
 
 #: polyhost/host.py:1729
 msgid "Neither keyboard half holds a crash record."
-msgstr ""
+msgstr "هیچ‌یک از دو نیمهٔ صفحه‌کلید سابقهٔ خرابی ندارد."
 
 #: polyhost/host.py:1731
 #, python-brace-format
@@ -2964,101 +3011,104 @@ msgid ""
 "\n"
 "{errors}"
 msgstr ""
+"خواندن سابقهٔ خرابی ممکن نشد.\n"
+"\n"
+"{errors}"
 
 #: polyhost/host.py:1733
 msgid "Keyboard crash record"
-msgstr ""
+msgstr "سابقهٔ خرابی صفحه‌کلید"
 
 #: polyhost/host.py:1742
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
-msgstr ""
+msgstr "در کلیپ‌بورد کپی شد. خوانده نشد: {errors}"
 
 #: polyhost/host.py:1827
 msgid "MRU Cache"
-msgstr ""
+msgstr "حافظهٔ نهان MRU"
 
 #: polyhost/host.py:1827
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
-msgstr ""
+msgstr "حافظهٔ نهان MRU فعال نیست (دستگاه متصل نیست یا حالت MRU غیرفعال است)."
 
 #: polyhost/host.py:1876
 msgid "daemon client"
-msgstr ""
+msgstr "کلاینت سرویس پس‌زمینه"
 
 #: polyhost/host.py:1876
 msgid "standalone"
-msgstr ""
+msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
 #: polyhost/forwarder.py:770 polyhost/host.py:1932
 msgid "paused"
-msgstr ""
+msgstr "مکث‌شده"
 
 #: polyhost/host.py:1934
 msgid "connected"
-msgstr ""
+msgstr "متصل"
 
 #: polyhost/host.py:1935
 msgid "present — not connected (protocol/version)"
-msgstr ""
+msgstr "موجود — متصل نیست (پروتکل/نسخه)"
 
 #: polyhost/host.py:1949
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
-msgstr[0] ""
+msgstr[0] "{n} زبان بارگذاری شد"
 
 #: polyhost/host.py:1952
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
-msgstr ""
+msgstr "<b>صفحه‌کلید متصل:</b> {name} {state}"
 
 #: polyhost/host.py:1954
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
-msgstr ""
+msgstr "<b>میان‌افزار:</b> {firmware} &nbsp;·&nbsp; پروتکل {protocol}"
 
 #: polyhost/host.py:1956
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
-msgstr ""
+msgstr "<b>سخت‌افزار:</b> {hardware}"
 
 #: polyhost/host.py:1957
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
-msgstr ""
+msgstr "<b>زبان:</b> {language}"
 
 #: polyhost/host.py:1964
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
-msgstr ""
+msgstr "<b>مدت کارکرد:</b> {uptime}"
 
 #: polyhost/host.py:1966
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
-msgstr[0] ""
+msgstr[0] "<b>نگاشت‌های هم‌پوشانی:</b> {n} برنامه"
 
 #: polyhost/forwarder.py:787 polyhost/host.py:1968
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
-msgstr ""
+msgstr "<b>پیکربندی:</b> {path}"
 
 #: polyhost/forwarder.py:788 polyhost/host.py:1969
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
-msgstr ""
+msgstr "<b>لاگ‌ها:</b> {path}"
 
 #: polyhost/forwarder.py:806 polyhost/host.py:2020
 #, python-brace-format
 msgid "HID protocol P{protocol}"
-msgstr ""
+msgstr "پروتکل HID P{protocol}"
 
 #: polyhost/host.py:2025
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
-msgstr ""
+msgstr "نرم‌افزار میزبان برای صفحه‌کلید دوتکهٔ PolyKybd با نمایشگرهای OLED روی هر کلاهک — پنجرهٔ فعال را دنبال می‌کند و هم‌پوشانی‌ها، زبان و به‌روزرسانی‌های نقشهٔ کلید را به صفحه‌کلید می‌فرستد."
 
 #: polyhost/host.py:2051
 #, python-brace-format
@@ -3066,59 +3116,61 @@ msgid ""
 "Changing input language to '{language}' failed with:\n"
 "\"{error}\""
 msgstr ""
+"تغییر زبان ورودی به «{language}» با این خطا ناموفق بود:\n"
+"\"{error}\""
 
 #: polyhost/host.py:2071 polyhost/host.py:2086
 #, python-brace-format
 msgid "Could not set {language}: {error}"
-msgstr ""
+msgstr "تنظیم {language} ممکن نشد: {error}"
 
 #: polyhost/host.py:2202
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
-msgstr ""
+msgstr "نگاشت هم‌پوشانی PolyKybd (*.poly.yaml)"
 
 #: polyhost/host.py:2280 polyhost/host.py:2757 polyhost/host.py:2885
 #, python-brace-format
 msgid "Update firmware to v{version}…"
-msgstr ""
+msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 
 #: polyhost/host.py:2282 polyhost/host.py:2792 polyhost/host.py:2954
 msgid "Check for firmware update…"
-msgstr ""
+msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
 #: polyhost/forwarder.py:844 polyhost/forwarder.py:855
 #: polyhost/forwarder.py:861 polyhost/host.py:2300 polyhost/host.py:2421
 #: polyhost/host.py:2425
 msgid "Check for updates..."
-msgstr ""
+msgstr "بررسی به‌روزرسانی‌ها..."
 
 #: polyhost/host.py:2368
 #, python-brace-format
 msgid "Update to v{version} available"
-msgstr ""
+msgstr "به‌روزرسانی به v{version} در دسترس است"
 
 #: polyhost/forwarder.py:857 polyhost/forwarder.py:863
 #: polyhost/forwarder.py:874 polyhost/host.py:2379 polyhost/host.py:2419
 #: polyhost/host.py:2426 polyhost/host.py:2449
 msgid "PolyKybdHost Update"
-msgstr ""
+msgstr "به‌روزرسانی PolyKybdHost"
 
 #: polyhost/host.py:2380
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
-msgstr ""
+msgstr "نسخهٔ {version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
 #: polyhost/forwarder.py:832 polyhost/host.py:2405
 msgid "Checking for updates..."
-msgstr ""
+msgstr "در حال بررسی به‌روزرسانی‌ها..."
 
 #: polyhost/host.py:2418
 msgid "No updates available"
-msgstr ""
+msgstr "به‌روزرسانی‌ای در دسترس نیست"
 
 #: polyhost/forwarder.py:858 polyhost/host.py:2420
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
-msgstr ""
+msgstr "شما آخرین نسخه (v{version}) را اجرا می‌کنید."
 
 #: polyhost/forwarder.py:864 polyhost/host.py:2427
 #, python-brace-format
@@ -3129,37 +3181,42 @@ msgid ""
 "\n"
 "Run with --dev 1 for details."
 msgstr ""
+"بررسی به‌روزرسانی‌ها ممکن نشد:\n"
+"\n"
+"{error}\n"
+"\n"
+"برای جزئیات با --dev 1 اجرا کنید."
 
 #: polyhost/host.py:2432 polyhost/host.py:2818
 #, python-brace-format
 msgid "Released: {date}"
-msgstr ""
+msgstr "تاریخ انتشار: {date}"
 
 #: polyhost/forwarder.py:845 polyhost/host.py:2433
 #, python-brace-format
 msgid "Version {version} is available."
-msgstr ""
+msgstr "نسخهٔ {version} در دسترس است."
 
 #: polyhost/forwarder.py:846 polyhost/host.py:2434
 msgid "Update PolyKybdHost"
-msgstr ""
+msgstr "به‌روزرسانی PolyKybdHost"
 
 #: polyhost/host.py:2438
 msgid "Download, install, and restart now?"
-msgstr ""
+msgstr "اکنون بارگیری، نصب و راه‌اندازی مجدد شود؟"
 
 #: polyhost/forwarder.py:873 polyhost/host.py:2449
 #, python-brace-format
 msgid "Downloading v{version}…"
-msgstr ""
+msgstr "در حال بارگیری v{version}…"
 
 #: polyhost/forwarder.py:914 polyhost/host.py:2574
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
-msgstr ""
+msgstr "رلهٔ به‌روزرسانی شروع نشد؛ به‌روزرسانی ناقص است. برای جزئیات لاگ را ببینید."
 
 #: polyhost/forwarder.py:926 polyhost/host.py:2586
 msgid "Update failed"
-msgstr ""
+msgstr "به‌روزرسانی ناموفق بود"
 
 #: polyhost/forwarder.py:927 polyhost/host.py:2587
 #, python-brace-format
@@ -3168,43 +3225,46 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"اعمال به‌روزرسانی ممکن نشد:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:2699
 #, python-brace-format
 msgid "Updating keyboard {kind} — please wait, do not unplug…"
-msgstr ""
+msgstr "در حال به‌روزرسانی {kind} صفحه‌کلید — لطفاً صبر کنید و آن را جدا نکنید…"
 
 #: polyhost/host.py:2703
 #, python-brace-format
 msgid "PolyKybd — updating {kind} ({percent}%)"
-msgstr ""
+msgstr "PolyKybd — در حال به‌روزرسانی {kind} ({percent}%)"
 
 #: polyhost/host.py:2715
 #, python-brace-format
 msgid "Keyboard {kind} is up to date."
-msgstr ""
+msgstr "{kind} صفحه‌کلید به‌روز است."
 
 #: polyhost/host.py:2718
 #, python-brace-format
 msgid "{kind} update failed: {error}"
-msgstr ""
+msgstr "به‌روزرسانی {kind} ناموفق بود: {error}"
 
 #: polyhost/host.py:2768
 msgid "PolyKybd Firmware Update"
-msgstr ""
+msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
 #: polyhost/host.py:2769
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
-msgstr ""
+msgstr "میان‌افزار جدید v{version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
 #: polyhost/host.py:2786
 msgid "Checking for firmware update…"
-msgstr ""
+msgstr "در حال بررسی به‌روزرسانی میان‌افزار…"
 
 #: polyhost/host.py:2799 polyhost/host.py:2807
 msgid "PolyKybd Firmware"
-msgstr ""
+msgstr "میان‌افزار PolyKybd"
 
 #: polyhost/host.py:2800
 #, python-brace-format
@@ -3213,45 +3273,48 @@ msgid ""
 "\n"
 "Your keyboard is on v{current}. This usually means the release build failed — the release page will get its firmware once that is fixed."
 msgstr ""
+"میان‌افزار v{version} منتشر شده، اما فایل میان‌افزار قابل بارگیری ندارد، بنابراین هنوز نمی‌توان آن را نصب کرد.\n"
+"\n"
+"صفحه‌کلید شما روی v{current} است. معمولاً این یعنی ساخت نسخهٔ انتشار ناموفق بوده است — پس از رفع آن، فایل میان‌افزار به صفحهٔ انتشار افزوده می‌شود."
 
 #: polyhost/host.py:2808
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
-msgstr ""
+msgstr "شما آخرین میان‌افزار (v{version}) را اجرا می‌کنید."
 
 #: polyhost/host.py:2815
 msgid "The keyboard must be connected to update the firmware."
-msgstr ""
+msgstr "برای به‌روزرسانی میان‌افزار، صفحه‌کلید باید متصل باشد."
 
 #: polyhost/host.py:2819
 #, python-brace-format
 msgid "Firmware {version} is available."
-msgstr ""
+msgstr "میان‌افزار {version} در دسترس است."
 
 #: polyhost/host.py:2821
 msgid "Both halves update over HID and reboot automatically."
-msgstr ""
+msgstr "هر دو نیمه از طریق HID به‌روز شده و خودکار دوباره راه‌اندازی می‌شوند."
 
 #: polyhost/host.py:2822
 msgid "Update PolyKybd Firmware"
-msgstr ""
+msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
 #: polyhost/host.py:2826
 msgid "Download and flash now?"
-msgstr ""
+msgstr "اکنون بارگیری و فلش شود؟"
 
 #: polyhost/host.py:2837
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
-msgstr ""
+msgstr "در حال بارگیری میان‌افزار v{version}…"
 
 #: polyhost/host.py:2859 polyhost/host.py:3070
 msgid "Cancelling…"
-msgstr ""
+msgstr "در حال لغو…"
 
 #: polyhost/host.py:2896
 msgid "Firmware Update Failed"
-msgstr ""
+msgstr "به‌روزرسانی میان‌افزار ناموفق بود"
 
 #: polyhost/host.py:2897
 #, python-brace-format
@@ -3260,11 +3323,14 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"بارگیری میان‌افزار ممکن نشد:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:3034 polyhost/host.py:3048 polyhost/host.py:3094
 #: polyhost/host.py:3103 polyhost/host.py:3109
 msgid "Install WinCompose"
-msgstr ""
+msgstr "نصب WinCompose"
 
 #: polyhost/host.py:3035
 msgid ""
@@ -3272,10 +3338,13 @@ msgid ""
 "\n"
 "PolyKybd's build of WinCompose will be downloaded from GitHub and its installer started (Windows will ask you to confirm)."
 msgstr ""
+"WinCompose به PolyKybd امکان می‌دهد هر نویسهٔ یونیکد را در Windows تایپ کند — ایموجی، اعراب و حروف تکیه‌دار، و لایه‌های زبان همگی از طریق آن کار می‌کنند. بدون آن، صفحه‌کلید به ورودی بومی و بسیار محدودتر Windows بازمی‌گردد.\n"
+"\n"
+"نسخهٔ PolyKybd از WinCompose از GitHub بارگیری و نصب‌کنندهٔ آن اجرا می‌شود (Windows از شما تأیید می‌خواهد)."
 
 #: polyhost/host.py:3048
 msgid "Looking for the latest WinCompose release…"
-msgstr ""
+msgstr "در حال جست‌وجوی آخرین نسخهٔ WinCompose…"
 
 #: polyhost/host.py:3095
 msgid ""
@@ -3283,6 +3352,9 @@ msgid ""
 "\n"
 "The releases page will open in your browser — download and run the setup from there."
 msgstr ""
+"هیچ نصب‌کنندهٔ آماده‌ای برای بارگیری پیدا نشد.\n"
+"\n"
+"صفحهٔ انتشارها در مرورگر شما باز می‌شود — برنامهٔ نصب را از آنجا بارگیری و اجرا کنید."
 
 #: polyhost/host.py:3104
 #, python-brace-format
@@ -3291,6 +3363,9 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"بارگیری ناموفق بود:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:3110
 #, python-brace-format
@@ -3302,32 +3377,38 @@ msgid ""
 "It was saved to:\n"
 "{path}"
 msgstr ""
+"نصب‌کننده اجرا نشد:\n"
+"\n"
+"{error}\n"
+"\n"
+"در این مسیر ذخیره شد:\n"
+"{path}"
 
 #: polyhost/host.py:3118
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
-msgstr ""
+msgstr "نصب‌کنندهٔ WinCompose اجرا شد. پس از پایان نصب و اجرای WinCompose، PolyKybd خودکار به آن تغییر می‌کند."
 
 #: polyhost/services/lang_regions.py:128
 msgid "Americas"
-msgstr ""
+msgstr "قارهٔ آمریکا"
 
 #: polyhost/services/lang_regions.py:129
 msgid "Europe"
-msgstr ""
+msgstr "اروپا"
 
 #: polyhost/services/lang_regions.py:130
 msgid "Middle East & Caucasus"
-msgstr ""
+msgstr "خاورمیانه و قفقاز"
 
 #: polyhost/services/lang_regions.py:131
 msgid "Africa"
-msgstr ""
+msgstr "آفریقا"
 
 #: polyhost/services/lang_regions.py:132
 msgid "Asia"
-msgstr ""
+msgstr "آسیا"
 
 #: polyhost/services/lang_regions.py:133
 msgid "Oceania"
-msgstr ""
+msgstr "اقیانوسیه"
 
