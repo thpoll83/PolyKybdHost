@@ -40,6 +40,17 @@ class CopyableErrorDialogTest(unittest.TestCase):
                          "ERROR: [Errno 13] Permission denied")
         self.assertIn("Copied", d.status.text())
 
+    def test_copy_fix_commands_puts_only_the_commands_on_the_clipboard(self):
+        d = CopyableErrorDialog("Update failed", "The update did not finish.",
+                                "long report", commands="cmd one\ncmd two")
+        QApplication.clipboard().clear()
+        d.copy_cmds_btn.click()
+        self.assertEqual(QApplication.clipboard().text(), "cmd one\ncmd two")
+
+    def test_no_commands_no_button(self):
+        d = CopyableErrorDialog("Update failed", "The update did not finish.", "x")
+        self.assertIsNone(d.copy_cmds_btn)
+
 
 if __name__ == "__main__":
     unittest.main()

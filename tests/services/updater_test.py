@@ -889,6 +889,22 @@ class TestApplyUpdate(unittest.TestCase):
                       steps)
         self.assertIn("3. Start PolyKybd Host again.", steps)
 
+    def test_fix_commands_read_back_from_the_message(self):
+        lines = ["ERROR: [Errno 13] Permission denied: '/v/x'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/r/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               lines + ["  indented pip output"], fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         'sudo chown -R "$USER": /v\n'
+                         "/v/bin/python -m pip install -e /r\n"
+                         "/v/bin/python -m pip install -r /r/requirements.txt")
+
+    def test_other_failures_have_no_fix_commands(self):
+        self.assertEqual(updater.fix_commands_from_message("Install dir not writable: x"), "")
+
     def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
         fix = [["py", "-m", "pip", "install", "-e", "x"]]
         lines = ["ERROR: No matching distribution found for foo"]

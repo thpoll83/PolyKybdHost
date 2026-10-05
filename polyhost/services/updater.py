@@ -646,6 +646,7 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
 
 
 _PIP_TAIL_LINES = 30
+_FIX_HEADER = "To fix it:"
 
 
 def _shell_join(argv: list) -> str:
@@ -699,12 +700,29 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     msg = ("The new version's files are installed, but pip could not install "
            "the Python packages it needs. PolyKybd Host runs the new version "
            "from its next start, and features that need the missing packages "
-           "stay off until they are installed.\n\nTo fix it:\n")
+           f"stay off until they are installed.\n\n{_FIX_HEADER}\n")
     msg += "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
     msg += f"\n\npip {label} {outcome}"
     if lines:
         msg += ":\n" + "\n".join(lines[-_PIP_TAIL_LINES:])
     return msg
+
+
+def fix_commands_from_message(message: str) -> str:
+    """The shell commands from a :func:`_pip_failure_message`, one per line.
+
+    The steps tell the user to quit the app, and the dialog goes with it, so
+    the dialog offers these on their own to paste into a terminal. They are
+    the two-space-indented lines of the steps block. The message crosses the
+    control socket as a plain string, so this reads it back from the text;
+    anything else (a download failure, say) yields "".
+    """
+    head = f"{_FIX_HEADER}\n"
+    if head not in message:
+        return ""
+    steps = message.split(head, 1)[1].split("\n\n", 1)[0]
+    return "\n".join(ln.strip() for ln in steps.splitlines()
+                     if ln.startswith("  ") and ln.strip())
 
 
 def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = ()) -> None:

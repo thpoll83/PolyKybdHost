@@ -12,10 +12,16 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
 
 
 class CopyableErrorDialog(QDialog):
-    """Headline, a read-only scrollable details box, Copy and Close."""
+    """Headline, a read-only scrollable details box, Copy and Close.
 
-    def __init__(self, title: str, headline: str, details: str, parent=None):
+    ``commands``, when given, adds a button that copies only those lines: the
+    steps can say to quit the app, which closes this dialog with it.
+    """
+
+    def __init__(self, title: str, headline: str, details: str, parent=None,
+                 commands: str = ""):
         super().__init__(parent)
+        self._commands = commands
         self.setWindowTitle(title)
         self.setMinimumSize(560, 300)
         self.resize(680, 460)
@@ -43,6 +49,13 @@ class CopyableErrorDialog(QDialog):
         self.copy_btn = QPushButton("Copy to Clipboard", self)
         self.copy_btn.clicked.connect(self.copy_to_clipboard)
         buttons.addWidget(self.copy_btn)
+        self.copy_cmds_btn = None
+        if commands:
+            self.copy_cmds_btn = QPushButton("Copy Fix Commands", self)
+            self.copy_cmds_btn.setToolTip(
+                "Copy only the commands, to paste into a terminal after quitting.")
+            self.copy_cmds_btn.clicked.connect(self.copy_commands)
+            buttons.addWidget(self.copy_cmds_btn)
         buttons.addStretch(1)
         close = QPushButton("Close", self)
         close.setDefault(True)
@@ -59,6 +72,12 @@ class CopyableErrorDialog(QDialog):
         self.status.setText("Copied to the clipboard.")
 
 
-def show_copyable_error(title: str, headline: str, details: str, parent=None) -> None:
+    def copy_commands(self) -> None:
+        QApplication.clipboard().setText(self._commands)
+        self.status.setText("Commands copied. Paste them into a terminal.")
+
+
+def show_copyable_error(title: str, headline: str, details: str, parent=None,
+                        commands: str = "") -> None:
     """Open the dialog modally and return once the user closes it."""
-    CopyableErrorDialog(title, headline, details, parent).exec_()
+    CopyableErrorDialog(title, headline, details, parent, commands).exec_()
