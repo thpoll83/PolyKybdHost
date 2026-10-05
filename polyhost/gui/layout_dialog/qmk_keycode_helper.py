@@ -2,6 +2,8 @@ import pathlib
 import re
 from pathlib import Path
 
+from polyhost.i18n import N_
+
 HEADER_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "keycodes.h"
 # The firmware's `enum kb_layers` (qmk_firmware keyboards/polykybd/layers.h), by
 # index. These are ENUM TAGS, not display labels: the preview rebuilds the token
@@ -173,33 +175,33 @@ def categorize(key_name: str) -> str:
     # `ST_*` aliases. Checked first: the aliases carry no `QK` prefix, so without
     # this they fell through to "Additional", the second tab.
     if key_name.startswith(("QK_STENO", "ST_")):
-        return "Steno"
+        return N_("Steno")
     if name.startswith(("LEFT", "RIGHT")):
-        return "Modifiers"
+        return N_("Modifiers")
     if name.startswith(("MEDIA", "VOL", "MUTE", "PLAY", "STOP", "SYSTEM", "WWW")) or "MUSIC" in name or "AUDIO" in name or "BLUETOOTH" in name or "OUTPUT" in name:
-        return "Media / System"
+        return N_("Media / System")
     if "MIDI" in name:
-        return "Midi"
+        return N_("Midi")
     if "HAPTIC" in name:
-        return "Haptic"
+        return N_("Haptic")
     if "UNICODE" in name or "INTERNATIONAL" in name:
-        return "Unicode / International"
+        return N_("Unicode / International")
     if "LED" in name or "RGB" in name or "BACKLIGHT" in name or "UNDERGLOW" in name:
-        return "RGB"
+        return N_("RGB")
     if "MOUSE" in name or "JOYSTICK" in name:
-        return "Mouse / Joystick"
+        return N_("Mouse / Joystick")
     if "MAGIC" in name:
-        return "Magic"
+        return N_("Magic")
     if "MACRO" in name or "USER" in name or name.startswith("QK_KB_"):
-        return "User / Macro"
+        return N_("User / Macro")
     if "PROGRAMMABLE" in name:
-        return "Programmable"
+        return N_("Programmable")
     if name.startswith("QK_SPACE_CADET"):
-        return "Space Cadet"
+        return N_("Space Cadet")
     if name.startswith("QK"):
-        return "Quantum"
+        return N_("Quantum")
 
-    return "Additional"
+    return N_("Additional")
 
 
 def create_nice_name(key_name: str) -> str:
@@ -234,7 +236,7 @@ def create_nice_name(key_name: str) -> str:
 
 
 def standard_category() -> str:
-    return "Standard"
+    return N_("Standard")
 
 
 def last_key_in_standard_category() -> str:
@@ -242,9 +244,12 @@ def last_key_in_standard_category() -> str:
 
 
 def category_order() -> list[str]:
-    return ["Standard", "Additional", "Modifiers", "Media / System", "RGB", "Unicode / International",
-            "Mouse / Joystick",
-            "Midi", "Haptic", "Steno", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum"]
+    # Category names are compared as KEYS (categorize() returns them); they are
+    # marked here and translated only where a tab shows one (keycode_browser).
+    return [N_("Standard"), N_("Additional"), N_("Modifiers"), N_("Media / System"), N_("RGB"),
+            N_("Unicode / International"), N_("Mouse / Joystick"),
+            N_("Midi"), N_("Haptic"), N_("Steno"), N_("Magic"), N_("User / Macro"),
+            N_("Programmable"), N_("Space Cadet"), N_("Quantum")]
 
 
 # 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
