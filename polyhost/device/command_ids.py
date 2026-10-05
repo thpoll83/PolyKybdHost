@@ -1,5 +1,7 @@
 from enum import Enum
 
+from polyhost.i18n import N_
+
 
 class HidId(Enum):
     ID_GET_PROTOCOL_VERSION = 1
@@ -129,20 +131,24 @@ class IdleTimeout(Enum):
         return self.label_for(self.value, self.seconds)
 
     @staticmethod
-    def label_for(value: int, seconds: int | None = None) -> str:
+    def label_for(value: int, seconds: int | None = None, tr=None) -> str:
         """Human label for a preset INDEX, using the seconds the keyboard reported
         when this host does not know the index. That is the whole reason cmd 40
         replies with a duration: a firmware newer than the host can add a preset,
-        and the menu should read "10 min" rather than "preset 6"."""
+        and the menu should read "10 min" rather than "preset 6".
+
+        ``tr`` translates the template (the tray passes ``polyhost.i18n._``).
+        Without it the label is English, which ``polyctl`` relies on: it derives
+        its preset names ("15sec") from these labels."""
+        tr = tr or (lambda text: text)
         if seconds is None:
             try:
                 seconds = IdleTimeout(value).seconds
             except ValueError:
-                return f"preset {value}"
+                return tr(N_("preset {value}")).format(value=value)
         if seconds % 60 == 0 and seconds >= 60:
-            minutes = seconds // 60
-            return f"{minutes} min"
-        return f"{seconds} sec"
+            return tr(N_("{minutes} min")).format(minutes=seconds // 60)
+        return tr(N_("{seconds} sec")).format(seconds=seconds)
 
 
 class MacroStyle(Enum):

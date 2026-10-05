@@ -33,6 +33,9 @@ POT = os.path.join(LOCALE_DIR, "polyhost.pot")
 # The modules whose strings a user reads in the tray app or the forwarder.
 # The core, the device layer, polyctl and every log line stay English.
 UI_PATHS = ("polyhost/gui", "polyhost/host.py", "polyhost/forwarder.py")
+# Modules outside the UI that define N_-marked text the UI shows (extracted,
+# but not scanned: their other literals are not UI).
+EXTRA_EXTRACT = ("polyhost/device/command_ids.py", "polyhost/services/lang_regions.py")
 
 KEYWORDS = ("_", "_f", "N_", "_nf:1,2", "ngettext:1,2", "pgettext:1c,2")
 MARKERS = {"_", "_f", "N_", "_nf", "ngettext", "pgettext"}
@@ -192,7 +195,7 @@ def extract(out_path):
            "--add-comments=TRANSLATORS:", "--project=PolyKybdHost",
            "--copyright-holder=PolyKybd contributors",
            "--msgid-bugs-address=https://github.com/thpoll83/PolyKybdHost/issues",
-           "-o", out_path, *UI_PATHS)
+           "-o", out_path, *UI_PATHS, *EXTRA_EXTRACT)
 
 
 def _msgids(path):
