@@ -1145,6 +1145,44 @@ class JetBrainsOutlineMarksTest(unittest.TestCase):
                 open(os.path.join(ai.PROGRAM_ICON_DIR, "intellijidea.png"), "rb") as b:
             self.assertEqual(a.read(), b.read())
 
+class RasteriserMissingTest(unittest.TestCase):
+    """Without svg_raster's dependencies EVERY SVG mark is lost, and the log
+    used to blame `cairosvg` -- merely the last fallback tried (Plasma,
+    2026-10-05: Chrome drew its OS icon over the shipped logo, VS Code drew
+    nothing)."""
+
+    def setUp(self):
+        ai._RASTERISER_WARNED = False
+        self.addCleanup(setattr, ai, "_RASTERISER_WARNED", False)
+
+    def _draw_without_rasterisers(self):
+        from polyhost.services import svg_raster
+        with mock.patch.object(svg_raster, "rasterise", return_value=None), \
+                mock.patch.object(svg_raster, "unavailable_reason",
+                                  return_value="ImportError: No module named 'freetype'"), \
+                mock.patch.dict(sys.modules, {"cairosvg": None}):
+            return ai._alpha(ai.local_icon_path("googlechrome"), 40)
+
+    def test_the_log_names_the_PRIMARY_cause_once(self):
+        with self.assertLogs(ai.log, level="DEBUG") as logs:
+            self.assertIsNone(self._draw_without_rasterisers())
+            self.assertIsNone(self._draw_without_rasterisers())
+        warnings = [r for r in logs.records if r.levelname == "WARNING"]
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("freetype", warnings[0].getMessage())
+        debug = [r.getMessage() for r in logs.records if r.levelname == "DEBUG"]
+        self.assertTrue(debug and all("svg_raster cannot run" in m for m in debug))
+
+    def test_an_unsupported_FILE_does_not_warn(self):
+        from polyhost.services import svg_raster
+        with mock.patch.object(svg_raster, "rasterise", return_value=None), \
+                mock.patch.object(svg_raster, "unavailable_reason", return_value=None), \
+                mock.patch.dict(sys.modules, {"cairosvg": None}), \
+                self.assertLogs(ai.log, level="DEBUG") as logs:
+            ai._alpha(ai.local_icon_path("googlechrome"), 40)
+        self.assertFalse([r for r in logs.records if r.levelname == "WARNING"])
+
+
 class ShippedMarkOutranksCatalogTest(unittest.TestCase):
     """A `poly:` mark someone shipped beats a higher-SCORING catalog mark.
 

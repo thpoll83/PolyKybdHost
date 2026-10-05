@@ -511,13 +511,18 @@ def _alpha(svg_path: str, size: int):
     except Exception as exc:
         log.debug("Could not read %s: %s", svg_path, exc)
         return None
+    primary = "declined this file (an SVG feature it does not handle)"
     try:
         from polyhost.services import svg_raster
         coverage = svg_raster.rasterise(text, size, size)
         if coverage is not None:
             return (coverage * 255).astype("uint8")
+        missing = svg_raster.unavailable_reason()
+        if missing:
+            primary = "cannot run (%s)" % missing
+            _warn_rasteriser_missing(missing)
     except Exception as exc:
-        log.debug("svg_raster could not draw %s: %s", svg_path, exc)
+        primary = "raised %s" % exc
     try:
         import io
         import cairosvg
@@ -526,8 +531,32 @@ def _alpha(svg_path: str, size: int):
                                output_width=size, output_height=size)
         return np.array(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3]
     except Exception as exc:
-        log.debug("No rasteriser could draw %s: %s", svg_path, exc)
+        # ⚠️ Name BOTH. Naming only the fallback's error read as "install
+        # cairosvg" when the real cause was the primary's missing dependency.
+        log.debug("No rasteriser could draw %s: svg_raster %s; cairosvg: %s",
+                  svg_path, primary, exc)
         return None
+
+
+_RASTERISER_WARNED = False
+
+
+def _warn_rasteriser_missing(reason: str) -> None:
+    """ONE warning per process: without svg_raster every SVG mark is lost.
+
+    Every catalog mark and most shipped marks are SVG, so this silently
+    leaves only bitmap OS icons in the contest -- Chrome drew its dithered
+    OS icon over the shipped logo, and VS Code drew no mark at all (Plasma,
+    2026-10-05). At DEBUG, per file, nobody connected it to a missing package.
+    """
+    global _RASTERISER_WARNED
+    if _RASTERISER_WARNED:
+        return
+    _RASTERISER_WARNED = True
+    log.warning("SVG program marks cannot be drawn: the built-in rasteriser "
+                "needs fontTools + freetype-py (%s). Every catalog and shipped "
+                "SVG mark is skipped until they are installed: "
+                "pip install -r requirements.txt", reason)
 
 
 def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
