@@ -1005,7 +1005,7 @@ class TestApplyUpdate(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
             src.mkdir()
-            (src / "requirements.txt").write_text("requests\n")
+            (src / "requirements.txt").write_text("requests\n", encoding="utf-8")
             install = Path(td) / "install"
             install.mkdir()
             with mock.patch.object(updater.subprocess, "Popen",
