@@ -649,17 +649,35 @@ _PIP_TAIL_LINES = 30
 _FIX_HEADER = "To fix it:"
 
 
+# Characters PowerShell reads literally in a bare argument. Anything else
+# (space, quote, $, `, &, parentheses, ...) gets the argument single-quoted.
+_PS_BARE = re.compile(r"[A-Za-z0-9_\-.:\\/=+]+")
+
+
+def _powershell_quote(arg: str) -> str:
+    if _PS_BARE.fullmatch(arg):
+        return arg
+    return "'" + arg.replace("'", "''") + "'"
+
+
 def _shell_join(argv: list) -> str:
     """One command line the user can paste into this platform's shell.
 
-    Audit: this only FORMATS text for the update-failed dialog; nothing here
-    or downstream executes it. The argv is sys.executable, "-m pip install"
-    and the app's own install paths, none of it from outside the process.
+    This only FORMATS text for the update-failed dialog; nothing executes
+    it. On Windows the target is PowerShell, the default terminal there:
+    a quoted program path is just a string to PowerShell, so the line
+    starts with the call operator ``&``, and quoting follows PowerShell's
+    single-quote rule rather than ``subprocess.list2cmdline``'s, which
+    leaves an apostrophe (``C:\\Users\\O'Brien``) unquoted.
     """
     if sys.platform == "win32":
-        return subprocess.list2cmdline(argv)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        return "& " + " ".join(_powershell_quote(a) for a in argv)
     import shlex
     return shlex.join(argv)
+
+
+def _in_virtualenv() -> bool:
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
 
 
 def pip_fix_commands(install_root: Path) -> list:
@@ -692,13 +710,25 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     # process holds open, and chown does not exist there.
     if sys.platform != "win32" and any(
             "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
-        steps.append(
-            "This user cannot write to a file in the Python environment. An "
-            "earlier 'sudo pip' often leaves files owned by root. Give them "
-            "back to your user:\n"
-            f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+        if _in_virtualenv():
+            # A venv belongs to one user, so handing all of it back is safe.
+            steps.append(
+                "This user cannot write to a file in the Python environment. "
+                "An earlier 'sudo pip' often leaves files owned by root. Give "
+                "them back to your user:\n"
+                f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+        else:
+            # A system Python's prefix is /usr or /usr/local: a recursive
+            # chown there would hand OS-managed files to one user.
+            steps.append(
+                "This user cannot write to the Python installation "
+                f"({sys.prefix}), which is not a virtual environment. Do not "
+                "change its ownership. Run PolyKybd Host from a virtual "
+                "environment you own, or fix only the path named in pip's "
+                "error below.")
     if fix_cmds:
-        steps.append("Quit PolyKybd Host, then run:\n" + "\n".join(
+        where = " in PowerShell" if sys.platform == "win32" else ""
+        steps.append(f"Quit PolyKybd Host, then run{where}:\n" + "\n".join(
             "  " + _shell_join(c) for c in fix_cmds))
     steps.append("Start PolyKybd Host again.")
 

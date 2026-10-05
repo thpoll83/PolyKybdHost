@@ -877,7 +877,8 @@ class TestApplyUpdate(unittest.TestCase):
         fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/home/u/My Host"],
                ["/v/bin/python", "-m", "pip", "install", "-r", "/home/u/My Host/requirements.txt"]]
         with mock.patch.object(updater.sys, "platform", "linux"), \
-                mock.patch.object(updater.sys, "prefix", "/v"):
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
             msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
         self.assertTrue(msg.startswith("The new version's files are installed"))
         steps = msg.split("To fix it:\n", 1)[1].split("\n\npip ", 1)[0]
@@ -894,7 +895,8 @@ class TestApplyUpdate(unittest.TestCase):
         fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"],
                ["/v/bin/python", "-m", "pip", "install", "-r", "/r/requirements.txt"]]
         with mock.patch.object(updater.sys, "platform", "linux"), \
-                mock.patch.object(updater.sys, "prefix", "/v"):
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
             msg = updater._pip_failure_message("install -e .", "returned 1",
                                                lines + ["  indented pip output"], fix)
         self.assertEqual(updater.fix_commands_from_message(msg),
@@ -904,6 +906,33 @@ class TestApplyUpdate(unittest.TestCase):
 
     def test_other_failures_have_no_fix_commands(self):
         self.assertEqual(updater.fix_commands_from_message("Install dir not writable: x"), "")
+
+    def test_no_chown_for_a_python_that_is_not_a_virtualenv(self):
+        # sys.prefix of a system Python is /usr: a recursive chown there
+        # would hand OS-managed files to one user.
+        lines = ["ERROR: [Errno 13] Permission denied: '/usr/lib/python3/x'"]
+        fix = [["/usr/bin/python3", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/usr"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("not a virtual environment", msg)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/usr/bin/python3 -m pip install -e /r")
+
+    def test_windows_commands_are_for_powershell(self):
+        argv = [r"C:\Users\O'Brien\My App\.venv\Scripts\python.exe",
+                "-m", "pip", "install", "-e", r"C:\Users\O'Brien\My App"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            line = updater._shell_join(argv)
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], [argv])
+        self.assertEqual(
+            line,
+            r"& 'C:\Users\O''Brien\My App\.venv\Scripts\python.exe' -m pip install -e "
+            r"'C:\Users\O''Brien\My App'")
+        self.assertIn("Quit PolyKybd Host, then run in PowerShell:", msg)
 
     def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
         fix = [["py", "-m", "pip", "install", "-e", "x"]]
