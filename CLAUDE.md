@@ -445,6 +445,14 @@ ADDS — turning developer mode on **does not rearrange anything** (asserted by
 construction, the theme reader, the brightness rows, the WinCompose install path, the
 unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.md).
 
+- **The tray app and the forwarder are translated into 20 languages; how and why is
+  [`docs/i18n.md`](docs/i18n.md).** Every string a user reads in `gui/`, `host.py`
+  or `forwarder.py` goes through `_()`, `_f()` or `_nf()` from `polyhost.i18n`, and
+  `tests/i18n_test.py` fails on an unmarked literal handed to a Qt text call. After
+  adding or changing one, run `python scripts/i18n_strings.py update`. Logs,
+  `polyctl` output and the core's message text stay English on purpose. ⚠️ A
+  function that calls `_()` must not also assign `_` (`ok, _ = f()`): Python then
+  makes `_` local to the whole function and the call raises `UnboundLocalError`.
 - ⚠️ **`managed_connection_status` blanket-disables every top-level action first**, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect.
