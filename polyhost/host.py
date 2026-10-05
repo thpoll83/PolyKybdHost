@@ -112,6 +112,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
+from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
@@ -2536,8 +2537,7 @@ class PolyHost(QApplication):
             self._update_progress = None
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        _msgbox(QMessageBox.Warning, "Update failed",
-                f"Could not apply the update:\n\n{message}")
+        show_copyable_error("Update failed", "Could not apply the update:", message)
 
     # ------------------------------------------------------------------
     # Balloon notifications

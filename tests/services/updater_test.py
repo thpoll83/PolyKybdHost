@@ -853,6 +853,33 @@ class TestApplyUpdate(unittest.TestCase):
             # Files are copied before the (failing) pip step runs.
             self.assertTrue((install / "marker").exists())
 
+    def test_pip_failure_keeps_the_error_line_and_drops_notices(self):
+        # The field case (2026-10-05): the ERROR line sat behind progress
+        # output and was followed by two [notice] lines.
+        captured = ["Building wheel"] * 50 + [
+            "Installing collected packages: uharfbuzz, PolyHost",
+            "ERROR: Could not install packages due to an OSError: [Errno 13] "
+            "Permission denied: '/v/site-packages/uharfbuzz'",
+            "[notice] A new release of pip is available: 26.1.2 -> 26.2.1",
+            "[notice] To update, run: pip install --upgrade pip"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            msg = updater._pip_failure_message("install -e .", 1, captured)
+        self.assertIn("returned 1:\n", msg)
+        self.assertIn("\nERROR: Could not install packages", msg)
+        self.assertNotIn("[notice]", msg)
+        self.assertEqual(msg.count("Building wheel"), updater._PIP_TAIL_LINES - 2)
+        self.assertIn("sudo chown -R", msg)
+
+    def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
+        lines = ["ERROR: No matching distribution found for foo"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            self.assertNotIn("chown",
+                             updater._pip_failure_message("x", 1, lines))
+        lines = ["ERROR: [Errno 13] Permission denied: 'C:\\v\\x.pyd'"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            self.assertNotIn("chown",
+                             updater._pip_failure_message("x", 1, lines))
+
     def test_requirements_failure_raises(self):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"

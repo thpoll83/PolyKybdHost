@@ -645,6 +645,32 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
     return children[0]
 
 
+_PIP_TAIL_LINES = 30
+
+
+def _pip_failure_message(label: str, returncode: int, captured: list) -> str:
+    """The text a failed pip run reports: one pip line per line.
+
+    pip's ``ERROR:`` line comes last, after pages of progress, so the message
+    keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
+    sit below the error and pushed it out of the old 500-character slice. A
+    permission error gets a hint, because its usual cause is a directory in
+    the environment that an earlier ``sudo pip`` left owned by root.
+    """
+    lines = [ln for ln in captured if not ln.startswith("[notice]")]
+    msg = f"pip {label} after update returned {returncode}:\n" + "\n".join(
+        lines[-_PIP_TAIL_LINES:])
+    # POSIX only: on Windows the same errno usually means a file another
+    # process holds open, and chown does not exist there.
+    if sys.platform != "win32" and any(
+            "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
+        msg += ("\n\nThis user cannot write to a file in the Python environment "
+                f"({sys.prefix}). It is often left by an earlier 'sudo pip'. "
+                "Give it back to your user and try the update again, e.g.\n"
+                f'  sudo chown -R "$USER": {sys.prefix}')
+    return msg
+
+
 def _run_pip(args: list, label: str, line_cb=None) -> None:
     """Run `pip <args>` in the active interpreter; log on non-zero exit.
 
@@ -665,8 +691,7 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
                     line_cb(line)
         proc.wait()
         if proc.returncode != 0:
-            msg = (f"pip {label} after update returned {proc.returncode}: "
-                   f'{" ".join(captured[-20:])[-500:]}')
+            msg = _pip_failure_message(label, proc.returncode, captured)
             log.warning(msg)
             raise RuntimeError(msg)
     except (subprocess.SubprocessError, OSError) as e:
