@@ -35,13 +35,17 @@ def create_editor(value, key=None):
         return checkbox
     elif isinstance(value, int):
         spinbox = QSpinBox()
-        spinbox.setMaximum(10_000)  # Adjust as needed
+        # ⚠️ A spin box CLAMPS the value it is given, and OK writes the clamped
+        # value back. A 10_000 cap turned browser_report_port 50164 into 10000
+        # on every OK, and the browser extension lost the host. Take the full
+        # int range and never start the range above a stored negative value.
+        spinbox.setRange(min(0, value), 2_147_483_647)
         spinbox.setValue(value)
         return spinbox
     elif isinstance(value, float):
         doublebox = QDoubleSpinBox()
         doublebox.setDecimals(3)
-        doublebox.setMaximum(1_000.0)
+        doublebox.setRange(min(0.0, value), max(1_000.0, value))  # no clamp, as above
         # Default step is 1.0, which silently clamps fine-grained float settings
         # (e.g. the 0.75 brightness prescaler) to 0.0 on a single scroll/click —
         # use a small step so these stay editable to their real precision.

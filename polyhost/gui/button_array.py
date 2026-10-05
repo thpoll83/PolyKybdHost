@@ -22,7 +22,7 @@ class ButtonArray(QWidget):
 
             # Optional: Styling for a clear "Active" look
             btn.setStyleSheet("""
-                QPushBuself.grouptton:checked {
+                QPushButton:checked {
                     background-color: #2ecc71;
                     color: white;
                     font-weight: bold;
