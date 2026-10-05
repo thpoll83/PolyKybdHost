@@ -185,6 +185,11 @@ DEFAULT_SETTINGS = {
         # dark tray menu against light windows. A desktop that does not answer
         # falls back to dark, which is what the app has always looked like.
         "ui_theme": "auto",
+        # User-interface language of the tray app and the forwarder: "auto"
+        # follows the OS UI language, a code from polyhost.i18n.LANGUAGES
+        # pins it. Read once at startup (main_app), so a change applies when
+        # the tray restarts; the settings dialog offers that restart.
+        "ui_language": "auto",
         "developer_mode": False,
         "dev_mock_enabled": False,
         # Run with NO keyboard: the mock (device/poly_kybd_mock.py over the
