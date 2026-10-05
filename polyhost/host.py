@@ -250,21 +250,21 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
 _FlashTexts = namedtuple("_FlashTexts", "start progress done failed")
 _FLASH_TEXTS = {
     FLASH_KIND_FONTPACK: _FlashTexts(
-        start=N_("Updating the keyboard font pack — please wait, do not unplug…"),
-        progress=N_("PolyKybd — updating the font pack ({percent}%)"),
-        done=N_("The keyboard font pack is up to date."),
+        start=N_("Updating keyboard font pack — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating font pack ({percent}%)"),
+        done=N_("Keyboard font pack is up to date."),
         failed=N_("Font pack update failed: {error}"),
     ),
     FLASH_KIND_DOOMWAD: _FlashTexts(
-        start=N_("Updating the keyboard game data — please wait, do not unplug…"),
-        progress=N_("PolyKybd — updating the game data ({percent}%)"),
-        done=N_("The keyboard game data is up to date."),
+        start=N_("Updating keyboard game data — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating game data ({percent}%)"),
+        done=N_("Keyboard game data is up to date."),
         failed=N_("Game data update failed: {error}"),
     ),
     FLASH_KIND_DOOMPACK: _FlashTexts(
-        start=N_("Updating the keyboard engine pack — please wait, do not unplug…"),
-        progress=N_("PolyKybd — updating the engine pack ({percent}%)"),
-        done=N_("The keyboard engine pack is up to date."),
+        start=N_("Updating keyboard engine pack — please wait, do not unplug…"),
+        progress=N_("PolyKybd — updating engine pack ({percent}%)"),
+        done=N_("Keyboard engine pack is up to date."),
         failed=N_("Engine pack update failed: {error}"),
     ),
 }

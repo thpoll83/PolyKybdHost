@@ -2795,16 +2795,16 @@ msgid "Large"
 msgstr "Velká"
 
 #: polyhost/host.py:248
-msgid "Updating the keyboard font pack — please wait, do not unplug…"
+msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Aktualizace balíčku písem klávesnice — počkejte prosím, neodpojujte…"
 
 #: polyhost/host.py:249
 #, python-brace-format
-msgid "PolyKybd — updating the font pack ({percent}%)"
+msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — aktualizace balíčku písem ({percent} %)"
 
 #: polyhost/host.py:250
-msgid "The keyboard font pack is up to date."
+msgid "Keyboard font pack is up to date."
 msgstr "Balíček písem klávesnice je aktuální."
 
 #: polyhost/host.py:251
@@ -2813,16 +2813,16 @@ msgid "Font pack update failed: {error}"
 msgstr "Aktualizace balíčku písem selhala: {error}"
 
 #: polyhost/host.py:254
-msgid "Updating the keyboard game data — please wait, do not unplug…"
+msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "Aktualizace herních dat klávesnice — počkejte prosím, neodpojujte…"
 
 #: polyhost/host.py:255
 #, python-brace-format
-msgid "PolyKybd — updating the game data ({percent}%)"
+msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — aktualizace herních dat ({percent} %)"
 
 #: polyhost/host.py:256
-msgid "The keyboard game data is up to date."
+msgid "Keyboard game data is up to date."
 msgstr "Herní data klávesnice jsou aktuální."
 
 #: polyhost/host.py:257
@@ -2831,16 +2831,16 @@ msgid "Game data update failed: {error}"
 msgstr "Aktualizace herních dat selhala: {error}"
 
 #: polyhost/host.py:260
-msgid "Updating the keyboard engine pack — please wait, do not unplug…"
+msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "Aktualizace balíčku enginu klávesnice — počkejte prosím, neodpojujte…"
 
 #: polyhost/host.py:261
 #, python-brace-format
-msgid "PolyKybd — updating the engine pack ({percent}%)"
+msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — aktualizace balíčku enginu ({percent} %)"
 
 #: polyhost/host.py:262
-msgid "The keyboard engine pack is up to date."
+msgid "Keyboard engine pack is up to date."
 msgstr "Balíček enginu klávesnice je aktuální."
 
 #: polyhost/host.py:263
