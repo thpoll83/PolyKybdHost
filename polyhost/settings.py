@@ -163,6 +163,12 @@ DEFAULT_SETTINGS = {
         "generic_overlays_fill_gaps": True,
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
+        # Linux only: before the first harvest, switch the session's
+        # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
+        # joins the AT-SPI bus only while it is set and Plasma leaves it off
+        # (shortcut_source/atspi.py). Lasts until logout. Off = harvest only
+        # what is already on the bus.
+        "shortcut_enable_accessibility": True,
         "max_hid_message_before_delay": 15,
         "delay_time_after_max_hid_messages": 0.3,
         "hid_reconnect_retries": 5,
