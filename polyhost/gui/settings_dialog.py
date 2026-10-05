@@ -47,7 +47,8 @@ def create_editor(value, key=None):
         doublebox.setDecimals(3)
         # No clamp, as above, and room to move past a stored value in either
         # direction rather than pinning it to an end of the range.
-        doublebox.setRange(-1e9 if value < 0 else 0.0, max(1_000.0, abs(value) * 10))
+        doublebox.setRange(min(-1e9, value * 10) if value < 0 else 0.0,
+                           max(1_000.0, abs(value) * 10))
         # Default step is 1.0, which silently clamps fine-grained float settings
         # (e.g. the 0.75 brightness prescaler) to 0.0 on a single scroll/click —
         # use a small step so these stay editable to their real precision.

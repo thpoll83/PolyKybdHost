@@ -9,7 +9,8 @@ import os
 import unittest
 
 
-@unittest.skipUnless(os.environ.get("DISPLAY") or os.environ.get("QT_QPA_PLATFORM"),
+@unittest.skipUnless(os.environ.get("DISPLAY")
+                     or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
                      "building the dialog needs a display (xvfb-run)")
 class SettingsRoundTripTest(unittest.TestCase):
 
@@ -39,7 +40,7 @@ class SettingsRoundTripTest(unittest.TestCase):
 
     def test_a_stored_value_is_never_an_end_of_its_range(self):
         from polyhost.gui.settings_dialog import create_editor
-        for value in (-5, 50164, -0.25, 2500.5, 0.75):
+        for value in (-5, 50164, -0.25, 2500.5, 0.75, -2_000_000_000.5):
             with self.subTest(value=value):
                 box = create_editor(value)
                 self.addCleanup(box.deleteLater)

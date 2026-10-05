@@ -28,7 +28,8 @@ class NewerFirmwareChoicesTest(unittest.TestCase):
         self.assertEqual(NEWER_FW_CHOICES[0][1], "safe")
 
 
-@unittest.skipUnless(os.environ.get("DISPLAY") or os.environ.get("QT_QPA_PLATFORM"),
+@unittest.skipUnless(os.environ.get("DISPLAY")
+                     or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
                      "building the dialog needs a display (xvfb-run)")
 class NewerFirmwareDialogClickTest(unittest.TestCase):
     """Click each button and read the choice back.
