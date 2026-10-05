@@ -17,7 +17,7 @@ with `python tools/esc_mark_preview.py`.
 | file | form | why |
 |---|---|---|
 | `terminal.svg` | vector | plain line work, nothing stops it being an SVG |
-| `chrome.svg` | vector | Simple Icons' `googlechrome`, unchanged (see below) |
+| `chrome.svg`, `googlechrome.svg` | vector | Simple Icons' `googlechrome`, unchanged, under both slugs (see below) |
 | `notes.png` | mask | rendered at box **34** so it is smaller than 38 in *both* axes |
 | `photos.png` | mask | carries a per-petal **dither** |
 | `finder.png` | mask | a thinned raster of mdi's art |
@@ -82,5 +82,12 @@ pick it from the catalog: `mark_score` rewards thin line art, so
 0.24, while on the keycap the solid logo is the one that reads (keycap preview,
 2026-09-29). A shipped `poly:` mark that reads the right way up outranks every
 catalog and OS candidate (`app_icons.contest_key`), so dropping the file here is
-the whole fix. It answers `poly:chrome`, i.e. the `chrome` executable only; Edge,
-Brave and the other Chromium browsers keep their own marks.
+the whole fix. Edge, Brave and the other Chromium browsers keep their own marks.
+
+⚠️ **It ships under TWO names, like `idea.png`.** `chrome.svg` answers only the
+Windows executable `chrome`. On Linux Chrome reports `google-chrome` and the
+display name "Google Chrome", both of which normalise to `googlechrome`, so
+with one file Plasma never offered the shipped mark and drew mdi's thin logo
+instead (field, 2026-10-05). The source is vendored as
+`src/si-googlechrome.svg`, and `tools/gen_program_icons.py` writes it under
+both slugs (`CHROME_SLUGS`), so `--check` catches the copies drifting apart.

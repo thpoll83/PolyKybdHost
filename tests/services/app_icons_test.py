@@ -1170,6 +1170,25 @@ class ShippedMarkOutranksCatalogTest(unittest.TestCase):
         self.assertGreater(ai.contest_key((True, 0.6), "mdi:a"),
                            ai.contest_key((True, 0.5), "si:a"))
 
+    def test_EVERY_name_chrome_reports_reaches_the_shipped_mark(self):
+        """Windows reports the exe `chrome`; Linux and macOS report
+        `google-chrome` / "Google Chrome", which normalise to `googlechrome`.
+        With only `chrome.svg` shipped, Plasma never offered the mark and drew
+        mdi's thin logo (field, 2026-10-05)."""
+        for app, names in [("chrome", ()), ("google-chrome", ()),
+                           ("Google Chrome", ()),
+                           ("google-chrome", ("Google Chrome",))]:
+            with self.subTest(app=app, names=names):
+                shipped = [c for c in ai.candidates(app, names)
+                           if c.startswith(ai.LOCAL_SOURCE + ":")
+                           and ai.local_icon_path(c.split(":", 1)[1])]
+                self.assertTrue(shipped, ai.candidates(app, names))
+
+    def test_both_chrome_slugs_are_the_SAME_mark(self):
+        with open(os.path.join(ai.PROGRAM_ICON_DIR, "chrome.svg"), "rb") as a, \
+                open(os.path.join(ai.PROGRAM_ICON_DIR, "googlechrome.svg"), "rb") as b:
+            self.assertEqual(a.read(), b.read())
+
     def test_the_shipped_chrome_mark_reads_the_right_way_up(self):
         _needs_render(self)
         mark = ai.render_mark(os.path.join(ai.PROGRAM_ICON_DIR, "chrome.svg"))

@@ -299,6 +299,15 @@ PLATE_FRAME = 2                 # px; 1 px ranked 0.42-0.50 and read as a hairli
 # The same mark ships a second time under the exe's slug.
 JETBRAINS_EXE_SLUGS = {"idea": "intellijidea"}
 
+# Simple Icons' solid `googlechrome`, shipped VERBATIM (see the README). Chrome
+# reports `chrome` as its Windows executable but `google-chrome` / "Google
+# Chrome" on Linux and macOS, which normalise to `googlechrome` -- so a single
+# `chrome.svg` was never offered on Plasma, and mdi's thin-stroke logo won
+# there instead (field, 2026-10-05). Same answer as `idea.png`: one source,
+# written under every slug the browser reports.
+CHROME_SRC = "si-googlechrome.svg"
+CHROME_SLUGS = ("chrome", "googlechrome")
+
 
 def plate_outline_mask(svg_path, frame=PLATE_FRAME):
     """A filled-plate mark with the plate hollowed out: its holes lit, plus a frame.
@@ -349,6 +358,10 @@ def main(argv=None) -> int:
         products["%s.png" % ide] = _png_bytes(plate_outline_mask(src))
     for exe, ide in JETBRAINS_EXE_SLUGS.items():
         products["%s.png" % exe] = products["%s.png" % ide]
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", CHROME_SRC), "rb") as fh:
+        chrome = fh.read()
+    for slug in CHROME_SLUGS:
+        products["%s.svg" % slug] = chrome
 
     drifted = []
     for name, payload in products.items():
