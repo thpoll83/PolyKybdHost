@@ -5,6 +5,7 @@ under xvfb); here we pin the pure choice metadata that both the dialog and the
 tests rely on — the three offered choices and the safe default — so a rename can't
 silently break the host wiring that matches on these strings.
 """
+import os
 import unittest
 
 from polyhost.gui.newer_firmware_dialog import NEWER_FW_CHOICES, NEWER_FW_DEFAULT
@@ -25,6 +26,43 @@ class NewerFirmwareChoicesTest(unittest.TestCase):
     def test_safe_is_the_first_button(self):
         # host.py relies on safe being the default/focus button; keep it first.
         self.assertEqual(NEWER_FW_CHOICES[0][1], "safe")
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY")
+                     or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
+                     "building the dialog needs a display (xvfb-run)")
+class NewerFirmwareDialogClickTest(unittest.TestCase):
+    """Click each button and read the choice back.
+
+    The dialog used to read the click through QDialogButtonBox.clickedButton(),
+    which does not exist; every click raised AttributeError and no choice
+    reached the host. Only clicking the real buttons catches that."""
+
+    @classmethod
+    def setUpClass(cls):
+        from PyQt5.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _build(self):
+        from polyhost.gui.newer_firmware_dialog import build_newer_firmware_dialog
+        dlg, result = build_newer_firmware_dialog(20, 22, "split72", "1.9.0")
+        self.addCleanup(dlg.deleteLater)
+        from PyQt5.QtWidgets import QPushButton
+        buttons = {b.text(): b for b in dlg.findChildren(QPushButton)}
+        return dlg, result, buttons
+
+    def test_every_button_returns_its_own_choice(self):
+        for label, choice in NEWER_FW_CHOICES:
+            with self.subTest(label=label):
+                dlg, result, buttons = self._build()
+                buttons[label].click()
+                self.assertEqual(result["choice"], choice)
+                self.assertEqual(dlg.result(), dlg.Accepted)
+
+    def test_closing_without_a_click_is_safe(self):
+        dlg, result, _buttons = self._build()
+        dlg.reject()
+        self.assertEqual(result["choice"], NEWER_FW_DEFAULT)
 
 
 if __name__ == "__main__":

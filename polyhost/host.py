@@ -666,6 +666,9 @@ class PolyHost(QApplication):
         # A firmware check asked for while a host-only check was in flight;
         # `_on_update_check_finished` runs it once that check ends.
         self._update_check_fw_retry = False
+        # A manual "Check for updates" asked for while an automatic check was
+        # in flight; `_on_update_check_finished` re-runs it as a manual check.
+        self._update_manual_retry = False
         self._update_installer = None
         self._update_ui = UpdateProgressController(self.log)
         self._await_manual_prompt = False
@@ -1046,15 +1049,13 @@ class PolyHost(QApplication):
         finally:
             self._newer_fw_prompt_open = False
         if choice == "update":
-            # Look for a host-app update that matches the firmware; if none is
-            # found (or the check errors), fall back to safe mode. force=True so a
-            # throttled auto-check doesn't swallow our callbacks.
-            started = self._start_update_check(
-                on_no_update=lambda: self.core.set_newer_firmware_policy("safe"),
-                on_check_error=lambda _msg=None: self.core.set_newer_firmware_policy("safe"),
-                force=True)
-            if not started:
-                self.core.set_newer_firmware_policy("safe")
+            # Stay in safe mode until a matching host is installed, then run the
+            # SAME path as the Updates menu row. A private check here differed
+            # from it in two silent ways: it ignored a release the startup check
+            # had already found (the menu offers that one directly), and a found
+            # release only raised a balloon instead of the install dialog.
+            self.core.set_newer_firmware_policy("safe")
+            self._on_update_clicked()
         else:
             # "ignore" -> connect fully; "safe" (or dismissed) -> stay restricted.
             self.core.set_newer_firmware_policy(choice if choice == "ignore" else "safe")
@@ -2299,6 +2300,15 @@ class PolyHost(QApplication):
         thread can still read alive here; it has nothing left to do but return,
         which is why a short join is enough.
         """
+        if self._update_manual_retry:
+            # A forced manual check also covers firmware, so it replaces a
+            # queued firmware retry.
+            self._update_manual_retry = False
+            self._update_check_fw_retry = False
+            if self._update_checker is not None:
+                self._update_checker.join(timeout=2)
+            self._on_update_clicked()
+            return
         if not self._update_check_fw_retry:
             return
         self._update_check_fw_retry = False
@@ -2311,8 +2321,11 @@ class PolyHost(QApplication):
         self.update_action.setText(f"Update to v{release.version} available")
         self._refresh_updates_marker()
         self.log.info("Update available: %s", release.version)
-        if self._await_manual_prompt:
+        if self._await_manual_prompt or self._update_manual_retry:
+            # The user asked: open the dialog rather than a balloon. Clearing
+            # the retry stops the finished event from running a second check.
             self._await_manual_prompt = False
+            self._update_manual_retry = False
             self._fallback_prompt(self._prompt_and_install, release)
         elif self._balloons_reach_user():
             self.show_balloon(
@@ -2344,6 +2357,14 @@ class PolyHost(QApplication):
         ):
             self.update_action.setText("Checking for updates...")
             self._await_manual_prompt = True
+        elif self._update_checker is not None and self._update_checker.is_alive():
+            # An automatic check is already running (the on-connect one starts
+            # together with the newer-firmware dialog), with silent callbacks.
+            # Remember the click: a release that check finds opens the install
+            # dialog (`_on_update_available`), and otherwise the finished event
+            # runs this handler again as a manual check, so "no update" and a
+            # failure are reported too.
+            self._update_manual_retry = True
 
     def _on_manual_no_update(self):
         self._await_manual_prompt = False

@@ -39,6 +39,17 @@ def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version="
 
     Returns one of ``"safe"`` / ``"update"`` / ``"ignore"`` (``"safe"`` if the
     dialog is closed without a choice)."""
+    dlg, result = build_newer_firmware_dialog(host_protocol, device_protocol, name, fw_version)
+    dlg.exec_()
+    return result["choice"]
+
+
+def build_newer_firmware_dialog(host_protocol, device_protocol, name="", fw_version=""):
+    """Build the dialog without running it.
+
+    Returns ``(dialog, result)``. ``result["choice"]`` starts at the safe default
+    and is set by the button the user clicks. Split from
+    ``confirm_newer_firmware`` so a test can click the buttons."""
     kb = f"PolyKybd {name}".strip()
     lead = (
         f"{kb}'s firmware (protocol P{device_protocol}) is newer than this host "
@@ -75,20 +86,21 @@ def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version="
     row.addWidget(msg, 1)
     outer.addLayout(row)
 
-    # Three distinct choices via addButton + clickedButton (QDialogButtonBox's
-    # standard Ok/Yes/No set only gives two). ActionRole keeps them left-aligned
-    # and stops Qt from auto-mapping them to accept/reject.
+    # Three distinct choices via addButton (QDialogButtonBox's standard
+    # Ok/Yes/No set only gives two). ActionRole keeps them left-aligned and stops
+    # Qt from auto-mapping them to accept/reject.
+    # ⚠️ Each button records its own choice. QDialogButtonBox has NO
+    # clickedButton() (only QMessageBox does): calling it raised AttributeError
+    # after the modal closed, so no choice ever reached the core and "Check for
+    # updates" did nothing at all.
+    result = {"choice": NEWER_FW_DEFAULT}
     btn_box = QDialogButtonBox()
-    buttons = {}
     for label, choice in NEWER_FW_CHOICES:
         b = btn_box.addButton(label, QDialogButtonBox.ActionRole)
+        b.clicked.connect(lambda _checked=False, c=choice: result.update(choice=c))
         b.clicked.connect(dlg.accept)   # any click closes the modal
-        buttons[b] = choice
         if choice == NEWER_FW_DEFAULT:
             b.setDefault(True)
             b.setFocus()
     outer.addWidget(btn_box, 0, Qt.AlignRight)
-
-    dlg.exec_()
-    clicked = btn_box.clickedButton()
-    return buttons.get(clicked, NEWER_FW_DEFAULT)
+    return dlg, result
