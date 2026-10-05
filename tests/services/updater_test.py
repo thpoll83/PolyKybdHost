@@ -952,6 +952,24 @@ class TestApplyUpdate(unittest.TestCase):
             [r"& Copy-Item -Force -LiteralPath C:\Temp\upd\x.pyd -Destination C:\App\x.pyd",
              r"& C:\App\.venv\Scripts\python.exe -m pip install -e C:\App"])
 
+    def test_in_use_files_end_with_deleting_the_kept_download(self):
+        # The relay that deletes the download never runs after a pip failure
+        # (Greptile on #316), so the steps delete it.
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], locked, r"C:\Temp\polyhost-update-1")
+        self.assertIn("2. Delete the downloaded update in PowerShell:\n"
+                      r"  & Remove-Item -Recurse -Force -LiteralPath C:\Temp\polyhost-update-1",
+                      msg)
+        self.assertEqual(updater.fix_commands_from_message(msg).splitlines()[-1],
+                         r"& Remove-Item -Recurse -Force -LiteralPath C:\Temp\polyhost-update-1")
+        # Without files in use the download is already gone: no such step.
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], [], r"C:\Temp\polyhost-update-1")
+        self.assertNotIn("Remove-Item", msg)
+
     def test_apply_update_reports_in_use_files_and_keeps_sources(self):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
@@ -988,6 +1006,18 @@ class TestApplyUpdate(unittest.TestCase):
         self.assertIn("cannot write to /home/u/.cache/pip/wheels, which is outside", outside)
         # A sibling directory that merely shares the prefix string is outside.
         self.assertNotIn("chown", msg_for("/home/u/app/.venv-old/x"))
+
+    def test_a_denied_path_with_an_apostrophe_is_read_whole(self):
+        # str(OSError) gives repr(filename): DOUBLE quotes when the path has an
+        # apostrophe, which a '...'-only pattern cut to "/home/o" (Greptile).
+        err = PermissionError(13, "Permission denied",
+                              "/home/o'brien/app/.venv/lib/site-packages/uharfbuzz")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/home/o'brien/app/.venv"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines)
+        self.assertIn("sudo chown -R \"$USER\": '/home/o'\"'\"'brien/app/.venv'", msg)
 
     def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
         fix = [["py", "-m", "pip", "install", "-e", "x"]]
@@ -1515,6 +1545,17 @@ class TestUpdateInstaller(unittest.TestCase):
         # The Copy-Item steps read the in-use files out of this directory.
         rmtree = self._fail_with(updater.PipInstallError("m", keeps_sources=True))
         self.assertNotIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
+
+    def test_run_names_its_temp_dir_for_the_cleanup_step(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]) as apply, \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(apply.call_args.kwargs["download_dir"], Path("/tmp/x"))
 
     def test_a_pip_failure_without_copy_steps_cleans_up(self):
         rmtree = self._fail_with(updater.PipInstallError("m"))

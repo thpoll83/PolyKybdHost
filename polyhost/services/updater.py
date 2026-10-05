@@ -4,6 +4,7 @@ Polls the GitHub releases API for a newer version, downloads the auto-generated
 source tarball, copies the files over the install directory, and triggers an
 in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
+import ast
 import json
 import logging
 import math
@@ -690,7 +691,21 @@ def pip_fix_commands(install_root: Path) -> list:
     return cmds
 
 
-_DENIED_PATH = re.compile(r"Permission denied: '([^']+)'")
+# pip prints str(OSError), which gives the filename as repr(): single quotes,
+# or DOUBLE quotes when the path itself has an apostrophe (/home/o'brien).
+_DENIED_PATH = re.compile(
+    r"""Permission denied: ('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
+
+
+def _denied_path(lines: list) -> Optional[str]:
+    for ln in lines:
+        m = _DENIED_PATH.search(ln)
+        if m:
+            try:
+                return ast.literal_eval(m.group(1))
+            except (ValueError, SyntaxError):
+                return m.group(1)[1:-1]
+    return None
 
 
 def _is_inside(path: str, root: str) -> bool:
@@ -709,8 +724,7 @@ def _permission_step(lines: list) -> Optional[str]:
     if sys.platform == "win32" or not any(
             "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
         return None
-    denied = next((m.group(1) for ln in lines
-                   for m in [_DENIED_PATH.search(ln)] if m), None)
+    denied = _denied_path(lines)
     if denied is None:
         return ("This user cannot write to a path pip needs. Check the "
                 "ownership of the path in pip's error below.")
@@ -731,7 +745,8 @@ def _permission_step(lines: list) -> Optional[str]:
 
 
 def _pip_failure_message(label: str, outcome: str, captured: list,
-                         fix_cmds: list = (), locked: list = ()) -> str:
+                         fix_cmds: list = (), locked: list = (),
+                         download_dir: Optional[str] = None) -> str:
     """What a failed pip step tells the user: what state the install is in,
     how to finish it, then pip's own output.
 
@@ -743,6 +758,8 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     ``locked`` are the Windows ``(src, dst)`` pairs that were in use and so
     not replaced. A successful install hands them to the relay; a failed one
     never reaches it, so the steps copy them by hand from the kept download.
+    ``download_dir`` is that kept download; the last step deletes it, since
+    the relay that would have is never started.
 
     pip's ``ERROR:`` line comes last, after pages of progress, so the output
     keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
@@ -766,6 +783,9 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     if fix_cmds:
         lead = f"{quit_first}run{where}:" if quit_first else f"Then run{where}:"
         steps.append(lead + "\n" + "\n".join("  " + _shell_join(c) for c in fix_cmds))
+    if locked and download_dir:
+        steps.append(f"Delete the downloaded update{where}:\n  " + _shell_join(
+            ["Remove-Item", "-Recurse", "-Force", "-LiteralPath", download_dir]))
     steps.append("Start PolyKybd Host again.")
 
     if locked:
@@ -815,7 +835,7 @@ def fix_commands_from_message(message: str) -> str:
 
 
 def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = (),
-             locked: list = ()) -> None:
+             locked: list = (), download_dir: Optional[str] = None) -> None:
     """Run `pip <args>` in the active interpreter; raise on failure.
 
     Streams stdout+stderr line by line.  Each non-empty line is passed to
@@ -824,7 +844,8 @@ def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = (),
     """
     def fail(outcome, captured):
         return PipInstallError(
-            _pip_failure_message(label, outcome, captured, fix_cmds, locked),
+            _pip_failure_message(label, outcome, captured, fix_cmds, locked,
+                                 download_dir),
             keeps_sources=bool(locked))
 
     try:
@@ -996,7 +1017,8 @@ def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
     return script
 
 
-def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
+def apply_update(extracted_dir: Path, install_root: Path, line_cb=None,
+                 download_dir: Optional[Path] = None) -> list:
     """Copy files from `extracted_dir` over `install_root`, then refresh deps.
 
     On Windows, native DLLs locked by the running process are skipped and
@@ -1006,8 +1028,11 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     Runs ``pip install -e .`` to pick up ``setup.py`` changes and, if a
     ``requirements.txt`` is present, ``pip install -r requirements.txt``.
     ``line_cb``, when provided, is called with each non-empty pip output line.
+    ``download_dir`` is the temp directory holding ``extracted_dir``, named
+    in a failed install's cleanup step (default: ``extracted_dir``).
     """
     locked: list = []
+    cleanup = str(download_dir or extracted_dir)
 
     def _copy2(src, dst):
         try:
@@ -1028,11 +1053,11 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     )
     fix_cmds = pip_fix_commands(install_root)
     _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb,
-             fix_cmds, locked)
+             fix_cmds, locked, cleanup)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
         _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt",
-                 line_cb, fix_cmds, locked)
+                 line_cb, fix_cmds, locked, cleanup)
     return locked
 
 
@@ -1324,6 +1349,7 @@ class UpdateInstaller(threading.Thread):
             locked = apply_update(
                 extracted, install_root,
                 line_cb=lambda line: _fire(self._on_progress, -1, line),
+                download_dir=tmp_dir,
             )
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
