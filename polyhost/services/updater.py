@@ -650,9 +650,14 @@ _FIX_HEADER = "To fix it:"
 
 
 def _shell_join(argv: list) -> str:
-    """One command line the user can paste into this platform's shell."""
+    """One command line the user can paste into this platform's shell.
+
+    Audit: this only FORMATS text for the update-failed dialog; nothing here
+    or downstream executes it. The argv is sys.executable, "-m pip install"
+    and the app's own install paths, none of it from outside the process.
+    """
     if sys.platform == "win32":
-        return subprocess.list2cmdline(argv)
+        return subprocess.list2cmdline(argv)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     import shlex
     return shlex.join(argv)
 
