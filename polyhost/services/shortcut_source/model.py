@@ -12,6 +12,7 @@ cover both backends' string formats from a machine that has neither.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------------------
@@ -77,10 +78,11 @@ def displayable_hid(usage: int | None) -> bool:
     return 0x04 <= usage <= 0x53 or 0x64 <= usage <= 0x65 or 0xE0 <= usage <= 0xE7
 
 
-def pick_binding(raw: str, role: str = "") -> tuple[str | None, str]:
+def pick_binding(raw: str, role: str = "", name: str = "",
+                 parent_role: str = "") -> tuple[str | None, str]:
     """Choose the usable accelerator out of an AT-SPI keybinding string.
 
-    AT-SPI returns up to three ';'-delimited parts:
+    GTK returns up to three ';'-delimited parts:
       1. the binding usable only while the object is posted (a menu mnemonic),
       2. the full sequence that posts the menu AND activates the item,
       3. the direct shortcut, which invokes the action with no menu posted.
@@ -102,10 +104,15 @@ def pick_binding(raw: str, role: str = "") -> tuple[str | None, str]:
     is absent from the tree entirely. Reporting those 13 would turn a true zero
     into a plausible-looking number, which is the worst available outcome.
 
+    Qt sends a different shape entirely -- see `_pick_qt_binding`, which takes
+    the `name` and `parent_role` arguments; the GTK path ignores both.
+
     Returns (accel_text, kind) where kind is "accelerator" or "menu".
     """
     if not raw:
         return None, ""
+    if ";" not in raw and "<" not in raw:
+        return _pick_qt_binding(raw, role, name, parent_role)
     parts = [p.strip() for p in raw.split(";")]
     if len(parts) >= 3 and parts[2]:
         return parts[2], "accelerator"
@@ -114,6 +121,46 @@ def pick_binding(raw: str, role: str = "") -> tuple[str | None, str]:
             if part and "<" in part and ":" not in part:
                 return part, "menu"
     return None, ""
+
+
+# Qt's mnemonic as GetKeyBinding reports it: Alt plus one letter or digit.
+_QT_MNEMONIC = re.compile(r"^alt\+(\w)$", re.IGNORECASE)
+
+
+def _pick_qt_binding(raw: str, role: str, name: str,
+                     parent_role: str) -> tuple[str | None, str]:
+    """The Qt half of `pick_binding`: ONE display string, 'Ctrl+N'.
+
+    Measured on Kate 2026-10-05 (Plasma, 683 nodes, 264 non-empty strings):
+    Qt has no ';' fields. A menu item with a shortcut reports it ('Close' ->
+    'Ctrl+W'); one WITHOUT a shortcut reports its MNEMONIC in the same field
+    ('Open Recent' -> 'Alt+R', 'File' -> 'Alt+F'). The old three-part parse
+    dropped all 264, so Kate scored zero.
+
+    Three filters, each against a measured false positive:
+      * menu-item roles only -- combo boxes report 'Down' (the key that opens
+        them), push buttons and check boxes report their mnemonic;
+      * no key SEQUENCE -- 'Ctrl+T, O' is two presses ("Open Folder...");
+      * Alt + one character that appears in the label is the mnemonic. On a
+        top-level menubar item that IS one press (Alt+F posts File), so it is
+        kept as kind "menu", like GTK's '<Alt>f;<Alt>f;'. Anywhere else it
+        works only inside an open menu and is dropped.
+
+    ⚠️ The mnemonic test can drop a REAL Alt+letter shortcut whose letter is
+    in its own label. Accepted: a missing keycap beats every menu letter of
+    every Qt app reported as a shortcut.
+    """
+    text = raw.strip()
+    if not text or "menu item" not in role:
+        return None, ""
+    if ", " in text:
+        return None, ""
+    m = _QT_MNEMONIC.match(text)
+    if m and m.group(1).lower() in name.lower():
+        if parent_role == "menu bar":
+            return text, "menu"
+        return None, ""
+    return text, "accelerator"
 
 
 @dataclass
@@ -217,6 +264,17 @@ def parse_accel(text: str) -> Accel | None:
     if not text:
         return None
     stripped = text.strip()
+    accel = _parse_x_or_aria(stripped)
+    if not stripped.startswith("<") and (accel is None or accel.hid is None):
+        # Qt names keys the way Windows does ('Ctrl+PgDown', 'Del', and
+        # localized 'Strg+S'), so the UIA display-string parser reads it.
+        display = parse_win_accel(stripped)
+        if display is not None and display.hid is not None:
+            return display
+    return accel
+
+
+def _parse_x_or_aria(stripped: str) -> Accel | None:
     if not stripped.startswith("<") and (
             "+" in stripped or stripped in ARIA_KEY_TO_KEYSYM):
         return parse_aria_accel(stripped)
@@ -355,7 +413,7 @@ WINKEY_TO_HID.update({
     "pgup": 0x4B, "page up": 0x4B, "pageup": 0x4B, "bild auf": 0x4B,
     "del": 0x4C, "delete": 0x4C, "entf": 0x4C, "suppr": 0x4C,
     "end": 0x4D, "ende": 0x4D, "fin": 0x4D,
-    "pgdn": 0x4E, "page down": 0x4E, "pagedown": 0x4E, "bild ab": 0x4E,
+    "pgdn": 0x4E, "pgdown": 0x4E, "page down": 0x4E, "pagedown": 0x4E, "bild ab": 0x4E,
     "right": 0x4F, "→": 0x4F, "rechts": 0x4F,
     "left": 0x50, "←": 0x50, "links": 0x50,
     "down": 0x51, "↓": 0x51, "unten": 0x51,

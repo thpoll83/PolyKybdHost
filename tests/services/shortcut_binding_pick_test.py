@@ -180,5 +180,64 @@ class AriaAccelTest(unittest.TestCase):
         self.assertFalse(accel.displayable)
 
 
+class QtPickTest(unittest.TestCase):
+    """Qt sends ONE display string per action, and puts the menu MNEMONIC in
+    it when the item has no shortcut. Every case below is a real string from
+    Kate on Plasma (2026-10-05), where the three-part GTK parse dropped all 264
+    and the app scored zero."""
+
+    def test_a_real_shortcut_on_a_menu_item_is_kept(self):
+        for name, raw in [("New", "Ctrl+N"), ("New Window", "Ctrl+Shift+N"),
+                          ("Close", "Ctrl+W"), ("Go to Next Match", "F6"),
+                          ("Go to Previous Match", "Shift+F6"),
+                          ("Save All", "Ctrl+L")]:
+            with self.subTest(name=name):
+                self.assertEqual(pick_binding(raw, "menu item", name, "popup menu"),
+                                 (raw, "accelerator"))
+
+    def test_a_submenu_MNEMONIC_is_not_a_shortcut(self):
+        """'Open Recent' -> 'Alt+R' works only while File is open."""
+        for name, raw in [("Open Recent", "Alt+R"), ("Close Other", "Alt+T"),
+                          ("Selection", "Alt+C"), ("No Entries", "Alt+N"),
+                          ("INFO_UF2.TXT [/media/x/INFO_UF2.TXT]", "Alt+I")]:
+            with self.subTest(name=name):
+                self.assertEqual(pick_binding(raw, "menu item", name, "popup menu"),
+                                 (None, ""))
+
+    def test_a_TOP_LEVEL_menubar_mnemonic_is_one_press(self):
+        """Alt+F posts File from anywhere -- GTK's '<Alt>f;<Alt>f;' case."""
+        self.assertEqual(pick_binding("Alt+F", "menu item", "File", "menu bar"),
+                         ("Alt+F", "menu"))
+
+    def test_a_key_SEQUENCE_is_refused(self):
+        self.assertEqual(pick_binding("Ctrl+T, O", "menu item", "Open Folder...",
+                                      "popup menu"), (None, ""))
+
+    def test_non_menu_roles_are_refused(self):
+        self.assertEqual(pick_binding("Down", "combo box", "All"), (None, ""))
+        self.assertEqual(pick_binding("Alt+N", "push button", "New File"), (None, ""))
+        self.assertEqual(pick_binding("Alt+W", "check box",
+                                      "Show welcome page for new window"), (None, ""))
+
+    def test_an_Alt_letter_NOT_in_the_label_is_a_real_shortcut(self):
+        self.assertEqual(pick_binding("Alt+X", "menu item", "Close", "popup menu"),
+                         ("Alt+X", "accelerator"))
+
+    def test_qt_key_names_parse_to_the_same_key_as_gtk(self):
+        for qt, gtk in [("Ctrl+N", "<Control>n"), ("Shift+F6", "<Shift>F6"),
+                        ("Ctrl+PgDown", "<Control>Page_Down"),
+                        ("Ctrl+PgUp", "<Control>Page_Up"), ("Del", "Delete"),
+                        ("Ctrl+Del", "<Control>Delete"), ("Esc", "Escape"),
+                        ("Meta+L", "<Super>l"), ("Ctrl++", "<Control>plus")]:
+            with self.subTest(qt=qt):
+                a, g = parse_accel(qt), parse_accel(gtk)
+                self.assertIsNotNone(a)
+                self.assertEqual((a.mods, a.hid), (g.mods, g.hid))
+
+    def test_a_localized_qt_string_parses(self):
+        a = parse_accel("Strg+Umschalt+S")
+        self.assertEqual((a.mods, a.hid), (MOD_CTRL | MOD_SHIFT, 0x16))
+
+
 if __name__ == "__main__":
     unittest.main()

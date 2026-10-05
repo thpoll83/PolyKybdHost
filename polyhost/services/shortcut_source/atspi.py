@@ -16,6 +16,12 @@ carries. GTK 4.18-4.20 sends '<Control>s'; GTK 4.22 sends the ARIA spelling
 'Control+S', which `parse_accel` accepts. A shortcut with no menu item (a bare
 GtkShortcutController) is still exposed nowhere. Not yet measured on a live
 GTK >= 4.18 desktop.
+
+⚠️ QT sends a FOURTH shape -- one display string, 'Ctrl+N', with the menu
+mnemonic in the same field when there is no shortcut (`_pick_qt_binding`).
+And a Qt app joins the accessibility bus ONLY while accessibility is enabled,
+which Plasma leaves off unless a screen reader runs: measured 2026-10-05, Kate
+was absent from the bus until started with QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1.
 """
 
 from __future__ import annotations
@@ -151,13 +157,20 @@ def shortcuts_for(app, atspi, budget: list[int]) -> list[Shortcut]:
         n = _safe(action.get_n_actions, 0) or 0
         for i in range(n):
             raw = _safe(lambda i=i: action.get_key_binding(i), "") or ""
-            accel_text, kind = pick_binding(raw, role)
+            label = (_safe(node.get_name, "") or "").strip()
+            parent_role = ""
+            if raw and ";" not in raw and "<" not in raw:
+                # Qt's one-string form: the mnemonic rule needs to know
+                # whether this item sits directly on the menu bar. One extra
+                # D-Bus call, paid only on that form.
+                parent = _safe(node.get_parent)
+                parent_role = (_safe(parent.get_role_name, "") or "") if parent else ""
+            accel_text, kind = pick_binding(raw, role, label, parent_role)
             if not accel_text:
                 continue
             accel = parse_accel(accel_text)
             if accel is None:
                 continue
-            label = (_safe(node.get_name, "") or "").strip()
             key = (accel.mods, accel.keysym)
             if key in seen:
                 continue
