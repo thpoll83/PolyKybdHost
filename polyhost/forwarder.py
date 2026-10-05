@@ -904,7 +904,7 @@ class PolyForwarder(QApplication):
         self._update_ui.close()
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        show_copyable_error("Update failed", "Could not apply the update:", message)
+        show_copyable_error("Update failed", "The update did not finish.", message)
 
     def quit_app(self):
         self.icon_manager.set_disconnected()

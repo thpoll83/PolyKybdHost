@@ -648,41 +648,82 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
 _PIP_TAIL_LINES = 30
 
 
-def _pip_failure_message(label: str, returncode: int, captured: list) -> str:
-    """The text a failed pip run reports: one pip line per line.
+def _shell_join(argv: list) -> str:
+    """One command line the user can paste into this platform's shell."""
+    if sys.platform == "win32":
+        return subprocess.list2cmdline(argv)
+    import shlex
+    return shlex.join(argv)
 
-    pip's ``ERROR:`` line comes last, after pages of progress, so the message
+
+def pip_fix_commands(install_root: Path) -> list:
+    """The pip commands that finish an update by hand, in the order
+    :func:`apply_update` runs them."""
+    cmds = [[sys.executable, "-m", "pip", "install", "-e", str(install_root)]]
+    requirements = install_root / "requirements.txt"
+    if requirements.is_file():
+        cmds.append([sys.executable, "-m", "pip", "install", "-r", str(requirements)])
+    return cmds
+
+
+def _pip_failure_message(label: str, outcome: str, captured: list,
+                         fix_cmds: list = ()) -> str:
+    """What a failed pip step tells the user: what state the install is in,
+    how to finish it, then pip's own output.
+
+    The new files are copied BEFORE pip runs, so the next start already runs
+    the new version without the packages it added (field report 2026-10-05:
+    1.15.0 started without uharfbuzz/freetype-py/fonttools). Saying "could not
+    apply the update" reads as "still on the old version", which is wrong.
+
+    pip's ``ERROR:`` line comes last, after pages of progress, so the output
     keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
-    sit below the error and pushed it out of the old 500-character slice. A
-    permission error gets a hint, because its usual cause is a directory in
-    the environment that an earlier ``sudo pip`` left owned by root.
+    sit below the error and pushed it out of the old 500-character slice.
     """
     lines = [ln for ln in captured if not ln.startswith("[notice]")]
-    msg = f"pip {label} after update returned {returncode}:\n" + "\n".join(
-        lines[-_PIP_TAIL_LINES:])
+    steps = []
     # POSIX only: on Windows the same errno usually means a file another
     # process holds open, and chown does not exist there.
     if sys.platform != "win32" and any(
             "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
-        msg += ("\n\nThis user cannot write to a file in the Python environment "
-                f"({sys.prefix}). It is often left by an earlier 'sudo pip'. "
-                "Give it back to your user and try the update again, e.g.\n"
-                f'  sudo chown -R "$USER": {sys.prefix}')
+        steps.append(
+            "This user cannot write to a file in the Python environment. An "
+            "earlier 'sudo pip' often leaves files owned by root. Give them "
+            "back to your user:\n"
+            f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+    if fix_cmds:
+        steps.append("Quit PolyKybd Host, then run:\n" + "\n".join(
+            "  " + _shell_join(c) for c in fix_cmds))
+    steps.append("Start PolyKybd Host again.")
+
+    msg = ("The new version's files are installed, but pip could not install "
+           "the Python packages it needs. PolyKybd Host runs the new version "
+           "from its next start, and features that need the missing packages "
+           "stay off until they are installed.\n\nTo fix it:\n")
+    msg += "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
+    msg += f"\n\npip {label} {outcome}"
+    if lines:
+        msg += ":\n" + "\n".join(lines[-_PIP_TAIL_LINES:])
     return msg
 
 
-def _run_pip(args: list, label: str, line_cb=None) -> None:
-    """Run `pip <args>` in the active interpreter; log on non-zero exit.
+def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = ()) -> None:
+    """Run `pip <args>` in the active interpreter; raise on failure.
 
     Streams stdout+stderr line by line.  Each non-empty line is passed to
     ``line_cb(line)`` when provided, so callers can surface it as UI feedback.
+    ``fix_cmds`` are the commands the failure message tells the user to run.
     """
     try:
         proc = subprocess.Popen(
             [sys.executable, "-m", "pip", *args],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
-        captured = []
+    except (subprocess.SubprocessError, OSError) as e:
+        raise RuntimeError(_pip_failure_message(
+            label, f"failed to run: {e}", [], fix_cmds)) from e
+    captured = []
+    try:
         for raw in proc.stdout:
             line = raw.rstrip()
             if line:
@@ -690,12 +731,14 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
                 if line_cb:
                     line_cb(line)
         proc.wait()
-        if proc.returncode != 0:
-            msg = _pip_failure_message(label, proc.returncode, captured)
-            log.warning(msg)
-            raise RuntimeError(msg)
     except (subprocess.SubprocessError, OSError) as e:
-        raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
+        raise RuntimeError(_pip_failure_message(
+            label, f"failed to run: {e}", captured, fix_cmds)) from e
+    if proc.returncode != 0:
+        msg = _pip_failure_message(
+            label, f"returned {proc.returncode}", captured, fix_cmds)
+        log.warning(msg)
+        raise RuntimeError(msg)
 
 
 # Win32 process-creation flags. Taken from `subprocess` where it defines them
@@ -873,10 +916,12 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
         ignore=shutil.ignore_patterns(*EXCLUDES),
         copy_function=_copy2,
     )
-    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb)
+    fix_cmds = pip_fix_commands(install_root)
+    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb, fix_cmds)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
-        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt", line_cb)
+        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt",
+                 line_cb, fix_cmds)
     return locked
 
 

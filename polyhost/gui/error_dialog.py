@@ -18,6 +18,7 @@ class CopyableErrorDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumSize(560, 300)
+        self.resize(680, 460)
         layout = QVBoxLayout(self)
 
         top = QHBoxLayout()

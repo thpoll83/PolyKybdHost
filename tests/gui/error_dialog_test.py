@@ -26,17 +26,17 @@ def setUpModule():
 class CopyableErrorDialogTest(unittest.TestCase):
     def test_long_details_are_kept_whole(self):
         details = "\n".join(f"line {i}" for i in range(200))
-        d = CopyableErrorDialog("Update failed", "Could not apply the update:", details)
+        d = CopyableErrorDialog("Update failed", "The update did not finish.", details)
         self.assertEqual(d.detail.toPlainText(), details)
         self.assertTrue(d.detail.isReadOnly())
 
     def test_copy_puts_headline_and_details_on_the_clipboard(self):
-        d = CopyableErrorDialog("Update failed", "Could not apply the update:",
+        d = CopyableErrorDialog("Update failed", "The update did not finish.",
                                 "ERROR: [Errno 13] Permission denied")
         QApplication.clipboard().clear()
         d.copy_btn.click()
         self.assertEqual(QApplication.clipboard().text(),
-                         "Could not apply the update:\n\n"
+                         "The update did not finish.\n\n"
                          "ERROR: [Errno 13] Permission denied")
         self.assertIn("Copied", d.status.text())
 

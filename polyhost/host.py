@@ -2537,7 +2537,7 @@ class PolyHost(QApplication):
             self._update_progress = None
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        show_copyable_error("Update failed", "Could not apply the update:", message)
+        show_copyable_error("Update failed", "The update did not finish.", message)
 
     # ------------------------------------------------------------------
     # Balloon notifications

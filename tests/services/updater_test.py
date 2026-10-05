@@ -863,22 +863,69 @@ class TestApplyUpdate(unittest.TestCase):
             "[notice] A new release of pip is available: 26.1.2 -> 26.2.1",
             "[notice] To update, run: pip install --upgrade pip"]
         with mock.patch.object(updater.sys, "platform", "linux"):
-            msg = updater._pip_failure_message("install -e .", 1, captured)
-        self.assertIn("returned 1:\n", msg)
+            msg = updater._pip_failure_message("install -e .", "returned 1", captured)
+        self.assertIn("pip install -e . returned 1:\n", msg)
         self.assertIn("\nERROR: Could not install packages", msg)
         self.assertNotIn("[notice]", msg)
         self.assertEqual(msg.count("Building wheel"), updater._PIP_TAIL_LINES - 2)
-        self.assertIn("sudo chown -R", msg)
+
+    def test_pip_failure_says_the_files_are_in_and_how_to_finish(self):
+        # The files are copied before pip runs, so the next start runs the new
+        # version; the message must say so and list the steps in order.
+        lines = ["ERROR: Could not install packages due to an OSError: "
+                 "[Errno 13] Permission denied: '/v/site-packages/uharfbuzz'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/home/u/My Host"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/home/u/My Host/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertTrue(msg.startswith("The new version's files are installed"))
+        steps = msg.split("To fix it:\n", 1)[1].split("\n\npip ", 1)[0]
+        self.assertIn('1. This user cannot write', steps)
+        self.assertIn('sudo chown -R "$USER": /v', steps)
+        self.assertIn("2. Quit PolyKybd Host, then run:\n"
+                      "  /v/bin/python -m pip install -e '/home/u/My Host'\n"
+                      "  /v/bin/python -m pip install -r '/home/u/My Host/requirements.txt'",
+                      steps)
+        self.assertIn("3. Start PolyKybd Host again.", steps)
 
     def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
         lines = ["ERROR: No matching distribution found for foo"]
         with mock.patch.object(updater.sys, "platform", "linux"):
-            self.assertNotIn("chown",
-                             updater._pip_failure_message("x", 1, lines))
-        lines = ["ERROR: [Errno 13] Permission denied: 'C:\\v\\x.pyd'"]
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("1. Quit PolyKybd Host", msg)
+        lines = ["ERROR: [Errno 13] Permission denied: 'C:\\\\v\\\\x.pyd'"]
         with mock.patch.object(updater.sys, "platform", "win32"):
             self.assertNotIn("chown",
-                             updater._pip_failure_message("x", 1, lines))
+                             updater._pip_failure_message("x", "returned 1", lines, fix))
+
+    def test_apply_update_hands_the_fix_commands_to_the_message(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "requirements.txt").write_text("requests\n")
+            install = Path(td) / "install"
+            install.mkdir()
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(RuntimeError) as ctx:
+                    updater.apply_update(src, install)
+            msg = str(ctx.exception)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-e", str(install)]), msg)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-r",
+                 str(install / "requirements.txt")]), msg)
+
+    def test_pip_that_cannot_start_still_says_how_to_finish(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
+        with mock.patch.object(updater.subprocess, "Popen", side_effect=OSError("no pip")):
+            with self.assertRaises(RuntimeError) as ctx:
+                updater._run_pip(["install"], "install -e .", None, fix)
+        self.assertIn("pip install -e . failed to run: no pip", str(ctx.exception))
+        self.assertIn("Quit PolyKybd Host, then run:", str(ctx.exception))
 
     def test_requirements_failure_raises(self):
         with tempfile.TemporaryDirectory() as td:
