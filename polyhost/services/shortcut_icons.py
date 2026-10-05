@@ -146,7 +146,9 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "settings":    (0x2699,  "settings", ("settings", "preferences", "options",
                                           "configure", "properties")),
     "help":        (0x2753,  "help", ("help", "about", "contents",
-                                      "documentation", "keyboard shortcuts")),
+                                      "documentation", "keyboard shortcuts",
+                                      # normalize() splits the apostrophe
+                                      "what s this")),
     "close":       (0x1F5D9, "close", ("close", "cancel", "close tab",
                                        "close document", "close window")),
     "wrap text":   (None,    "wrap_text", ("wrap text", "word wrap",
@@ -645,6 +647,21 @@ NAME_SYNONYMS = {
     "split": "splitscreen",
     "sidebar": "side_navigation",
     "next": "navigate_next",
+    # From a Kate harvest on Plasma (2026-10-05), where 19 of 59 shortcuts
+    # drew nothing. Word-level on purpose: each closes a FAMILY ("Previous
+    # Document", "Previous Item", "Activate Previous Project"), not one label.
+    # Every target was rendered at the keycap size before it went in.
+    "previous": "navigate_before",       # the mirror of `next`
+    "sidebars": "side_navigation",       # "Show Sidebars" -- the plural missed
+    "lookup": "search",
+    "shrink": "compress",                # pairs with `expand` ("Expand Selection")
+    "menubar": "menu",
+    "handbook": "menu_book",             # KDE's "<App> Handbook" on F1
+    "manual": "menu_book",
+    "fix": "auto_fix_high",              # "Quick Fix": the wand
+    "terminal": "terminal",              # "Focus/Defocus Terminal Panel"
+    "rename": "drive_file_rename_outline",  # Material has no plain `rename`
+    "configure": "settings",             # KDE's "Configure <App>..."
 }
 
 
