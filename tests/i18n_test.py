@@ -173,7 +173,12 @@ class PoReaderTest(unittest.TestCase):
 
 
 def _fields(text):
-    return sorted({f for _lit, f, _spec, _conv in string.Formatter().parse(text) if f})
+    try:
+        return sorted({f for _lit, f, _spec, _conv in string.Formatter().parse(text) if f})
+    except ValueError:
+        # Not a format string (shown with _(), e.g. the VIA syntax help with
+        # its literal "{KC_A}"): the brace tokens must survive verbatim.
+        return sorted(re.findall(r"\{[^{}]*\}", text))
 
 
 class ShippedCatalogsTest(unittest.TestCase):
