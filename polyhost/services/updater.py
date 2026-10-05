@@ -698,13 +698,22 @@ _DENIED_PATH = re.compile(
 
 
 def _denied_path(lines: list) -> Optional[str]:
+    """The path from pip's ``Permission denied: '<path>'``, or None.
+
+    None also for a path with a control character: decoding turns an
+    escaped newline into a real one, and the path is quoted into the fix
+    steps, whose indented lines Copy Fix Commands puts on the clipboard.
+    """
     for ln in lines:
         m = _DENIED_PATH.search(ln)
         if m:
             try:
-                return ast.literal_eval(m.group(1))
+                path = ast.literal_eval(m.group(1))
             except (ValueError, SyntaxError):
-                return m.group(1)[1:-1]
+                return None
+            if not isinstance(path, str) or any(ord(c) < 0x20 or c == "\x7f" for c in path):
+                return None
+            return path
     return None
 
 
@@ -758,8 +767,9 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     ``locked`` are the Windows ``(src, dst)`` pairs that were in use and so
     not replaced. A successful install hands them to the relay; a failed one
     never reaches it, so the steps copy them by hand from the kept download.
-    ``download_dir`` is that kept download; the last step deletes it, since
-    the relay that would have is never started.
+    ``download_dir`` is that kept download; the last step says to delete it
+    once the new version runs, since the relay that would have is never
+    started.
 
     pip's ``ERROR:`` line comes last, after pages of progress, so the output
     keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
@@ -783,10 +793,13 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     if fix_cmds:
         lead = f"{quit_first}run{where}:" if quit_first else f"Then run{where}:"
         steps.append(lead + "\n" + "\n".join("  " + _shell_join(c) for c in fix_cmds))
-    if locked and download_dir:
-        steps.append(f"Delete the downloaded update{where}:\n  " + _shell_join(
-            ["Remove-Item", "-Recurse", "-Force", "-LiteralPath", download_dir]))
     steps.append("Start PolyKybd Host again.")
+    if locked and download_dir:
+        # Prose, not an indented command: Copy Fix Commands pastes the
+        # commands as one block, and a delete there would run even after a
+        # failed Copy-Item and take the files needed to retry it.
+        steps.append("Once PolyKybd Host runs the new version, delete the "
+                     f"downloaded update folder {download_dir}.")
 
     if locked:
         msg = (f"Most of the new version's files are installed, but {len(locked)} "

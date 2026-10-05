@@ -954,21 +954,23 @@ class TestApplyUpdate(unittest.TestCase):
 
     def test_in_use_files_end_with_deleting_the_kept_download(self):
         # The relay that deletes the download never runs after a pip failure
-        # (Greptile on #316), so the steps delete it.
+        # (Greptile on #316), so the last step says to delete it. It is prose,
+        # not a command: pasted as one block, a delete would also run after a
+        # failed Copy-Item and take the files needed to retry it.
         locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
         with mock.patch.object(updater.sys, "platform", "win32"):
             msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
                                                [], locked, r"C:\Temp\polyhost-update-1")
-        self.assertIn("2. Delete the downloaded update in PowerShell:\n"
-                      r"  & Remove-Item -Recurse -Force -LiteralPath C:\Temp\polyhost-update-1",
-                      msg)
-        self.assertEqual(updater.fix_commands_from_message(msg).splitlines()[-1],
-                         r"& Remove-Item -Recurse -Force -LiteralPath C:\Temp\polyhost-update-1")
+        self.assertIn("3. Once PolyKybd Host runs the new version, delete the downloaded "
+                      r"update folder C:\Temp\polyhost-update-1.", msg)
+        cmds = updater.fix_commands_from_message(msg)
+        self.assertNotIn("Remove-Item", cmds)
+        self.assertNotIn("polyhost-update-1", cmds)
         # Without files in use the download is already gone: no such step.
         with mock.patch.object(updater.sys, "platform", "win32"):
             msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
                                                [], [], r"C:\Temp\polyhost-update-1")
-        self.assertNotIn("Remove-Item", msg)
+        self.assertNotIn("polyhost-update-1", msg)
 
     def test_apply_update_reports_in_use_files_and_keeps_sources(self):
         with tempfile.TemporaryDirectory() as td:
@@ -1006,6 +1008,20 @@ class TestApplyUpdate(unittest.TestCase):
         self.assertIn("cannot write to /home/u/.cache/pip/wheels, which is outside", outside)
         # A sibling directory that merely shares the prefix string is outside.
         self.assertNotIn("chown", msg_for("/home/u/app/.venv-old/x"))
+
+    def test_a_denied_path_cannot_add_a_command(self):
+        # An escaped newline + two spaces in pip's path would decode into an
+        # indented line that Copy Fix Commands copies (Greptile on #316).
+        err = PermissionError(13, "Permission denied", "/tmp/a\n  rm -rf ~")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/v/bin/python -m pip install -e /r")
+        self.assertIn("Check the ownership of the path in pip's error below.", msg)
 
     def test_a_denied_path_with_an_apostrophe_is_read_whole(self):
         # str(OSError) gives repr(filename): DOUBLE quotes when the path has an
