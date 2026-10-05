@@ -1046,15 +1046,13 @@ class PolyHost(QApplication):
         finally:
             self._newer_fw_prompt_open = False
         if choice == "update":
-            # Look for a host-app update that matches the firmware; if none is
-            # found (or the check errors), fall back to safe mode. force=True so a
-            # throttled auto-check doesn't swallow our callbacks.
-            started = self._start_update_check(
-                on_no_update=lambda: self.core.set_newer_firmware_policy("safe"),
-                on_check_error=lambda _msg=None: self.core.set_newer_firmware_policy("safe"),
-                force=True)
-            if not started:
-                self.core.set_newer_firmware_policy("safe")
+            # Stay in safe mode until a matching host is installed, then run the
+            # SAME path as the Updates menu row. A private check here differed
+            # from it in two silent ways: it ignored a release the startup check
+            # had already found (the menu offers that one directly), and a found
+            # release only raised a balloon instead of the install dialog.
+            self.core.set_newer_firmware_policy("safe")
+            self._on_update_clicked()
         else:
             # "ignore" -> connect fully; "safe" (or dismissed) -> stay restricted.
             self.core.set_newer_firmware_policy(choice if choice == "ignore" else "safe")
@@ -2299,6 +2297,7 @@ class PolyHost(QApplication):
         thread can still read alive here; it has nothing left to do but return,
         which is why a short join is enough.
         """
+        self._await_manual_prompt = False
         if not self._update_check_fw_retry:
             return
         self._update_check_fw_retry = False
@@ -2343,6 +2342,12 @@ class PolyHost(QApplication):
             force=True,
         ):
             self.update_action.setText("Checking for updates...")
+            self._await_manual_prompt = True
+        elif self._update_checker is not None and self._update_checker.is_alive():
+            # An automatic check is already running (the on-connect one starts
+            # together with the newer-firmware dialog). Let a release it finds
+            # open the install dialog instead of only a balloon; the finished
+            # event drops this again so a later automatic find stays a balloon.
             self._await_manual_prompt = True
 
     def _on_manual_no_update(self):

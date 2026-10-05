@@ -85,5 +85,60 @@ class FirmwareAskDuringHostOnlyCheckTest(unittest.TestCase):
         self.assertTrue(claim.call_args.args[1])      # asked with firmware
 
 
+@unittest.skipUnless(os.environ.get("DISPLAY"),
+                     "polyhost.host imports pynput, which needs an X server")
+class NewerFirmwareCheckForUpdatesTest(unittest.TestCase):
+    """"Check for updates" in the newer-firmware dialog must do what the
+    Updates menu row does. It ran a private check instead, which ignored a
+    release the startup check had already found and, on Windows, announced a
+    found release only by balloon."""
+
+    def setUp(self):
+        from polyhost import host
+        self.PolyHost = host.PolyHost
+
+    def _stub(self):
+        stub = mock.MagicMock()
+        stub._newer_fw_prompt_open = False
+        stub._newer_fw_prompted_proto = None
+        return stub
+
+    def _choose_update(self, stub):
+        with mock.patch("polyhost.gui.newer_firmware_dialog.confirm_newer_firmware",
+                        return_value="update"):
+            self.PolyHost._maybe_prompt_newer_firmware(stub, True, 22, "split72", "1.9.0")
+
+    def test_update_goes_through_the_menu_path_in_safe_mode(self):
+        stub = self._stub()
+        self._choose_update(stub)
+        stub.core.set_newer_firmware_policy.assert_called_once_with("safe")
+        stub._on_update_clicked.assert_called_once_with()
+        stub._start_update_check.assert_not_called()
+
+    def test_a_release_already_found_opens_the_install_dialog(self):
+        stub = self._stub()
+        stub._update_installer = None
+        stub._pending_release = mock.sentinel.release
+        self.PolyHost._on_update_clicked(stub)
+        stub._fallback_prompt.assert_called_once_with(
+            stub._prompt_and_install, mock.sentinel.release)
+        stub._start_update_check.assert_not_called()
+
+    def test_a_check_already_running_hands_its_result_to_the_dialog(self):
+        stub = self._stub()
+        stub._update_installer = None
+        stub._pending_release = None
+        stub._await_manual_prompt = False
+        stub._start_update_check.return_value = False
+        stub._update_checker.is_alive.return_value = True
+        self.PolyHost._on_update_clicked(stub)
+        self.assertTrue(stub._await_manual_prompt)
+        # ...and the finished event drops it, so a later automatic find
+        # goes back to a balloon.
+        stub._update_check_fw_retry = False
+        self.PolyHost._on_update_check_finished(stub)
+        self.assertFalse(stub._await_manual_prompt)
+
+
 if __name__ == "__main__":
     unittest.main()
