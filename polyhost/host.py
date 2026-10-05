@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost import i18n
 from polyhost.i18n import _, _f, _nf, N_
-from polyhost.core.events import flash_kind_label
+from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
 from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.file_dialogs import get_open_file_name
@@ -240,6 +240,38 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
     QTimer.singleShot(0, lambda: position_near_tray(dlg, tray_icon))
     return dlg
 
+
+
+# The font-pack transport also carries the doom easter egg's game data and
+# engine pack, and the tray names which one is flashing. One full message per
+# kind rather than a noun inserted into one sentence: the noun's gender and
+# article change the sentence around it in most languages.
+_FLASH_TEXTS = {
+    FLASH_KIND_FONTPACK: {
+        "start": N_("Updating the keyboard font pack — please wait, do not unplug…"),
+        "progress": N_("PolyKybd — updating the font pack ({percent}%)"),
+        "done": N_("The keyboard font pack is up to date."),
+        "failed": N_("Font pack update failed: {error}"),
+    },
+    FLASH_KIND_DOOMWAD: {
+        "start": N_("Updating the keyboard game data — please wait, do not unplug…"),
+        "progress": N_("PolyKybd — updating the game data ({percent}%)"),
+        "done": N_("The keyboard game data is up to date."),
+        "failed": N_("Game data update failed: {error}"),
+    },
+    FLASH_KIND_DOOMPACK: {
+        "start": N_("Updating the keyboard engine pack — please wait, do not unplug…"),
+        "progress": N_("PolyKybd — updating the engine pack ({percent}%)"),
+        "done": N_("The keyboard engine pack is up to date."),
+        "failed": N_("Engine pack update failed: {error}"),
+    },
+}
+
+
+def _flash_kind(payload):
+    """The payload's flash kind, a font pack when absent or unknown (older cores)."""
+    kind = (payload or {}).get("kind")
+    return kind if kind in _FLASH_TEXTS else FLASH_KIND_FONTPACK
 
 class PolyHost(QApplication):
     def __init__(self, log_level, verbosity=0, developer=False, ignore_version=False,
@@ -1424,8 +1456,8 @@ class PolyHost(QApplication):
         the GUI and daemon share a filesystem (co-located / same machine).
         Progress arrives as fw_flash_*/fw_apply_* events (see _on_flash_*)."""
         # TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-        path, _filter = get_open_file_name(
-            None, _("Select firmware .bin"), "", _("Firmware image (*.bin)"))
+        bin_filter = _("Firmware image (*.bin)")
+        path, _filter = get_open_file_name(None, _("Select firmware .bin"), "", bin_filter)
         if not path:
             return
         # Same polished dialog as the in-process flash (tray-corner + ETA), just
@@ -1547,7 +1579,8 @@ class PolyHost(QApplication):
                 langs = by_region.get(region)
                 if not langs:
                     continue
-                sub = self.keeb_lang_menu.addMenu(_(region))
+                # A menu title reads "&" as a mnemonic and hides it ("Middle East & Caucasus").
+                sub = self.keeb_lang_menu.addMenu(_(region).replace("&", "&&"))
                 for lang in langs:
                     text = f"{lang[:2]} {lang[2:].upper()}"
                     if lang == current_lang:
@@ -2203,8 +2236,8 @@ class PolyHost(QApplication):
     def read_overlay_mapping_file(self, file):
         if not file:
             # TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-            file, _filter = get_open_file_name(None, _('Open file'), '',
-                                               _("PolyKybd overlay mapping (*.poly.yaml)"))
+            mapping_filter = _("PolyKybd overlay mapping (*.poly.yaml)")
+            file, _filter = get_open_file_name(None, _('Open file'), '', mapping_filter)
         if file:
             self.core.load_overlay_mapping(file)
 
@@ -2697,31 +2730,28 @@ class PolyHost(QApplication):
         The doom easter egg's game data / engine pack ride the same transport and
         events, so the wording comes from the payload's "kind"."""
         result = result or {}
-        noun = flash_kind_label(result)
+        texts = _FLASH_TEXTS[_flash_kind(result)]
         if not self._fontpack_flashing:
             self._fontpack_flashing = True
             self.show_balloon("PolyKybd",  # i18n: skip
-                              _f("Updating keyboard {kind} — please wait, do not unplug…",
-                                 kind=noun), 5000)
+                              _(texts["start"]), 5000)
         pct = result.get("pct")
         if pct is not None:
-            self._fontpack_tooltip = _f("PolyKybd — updating {kind} ({percent}%)",
-                                        kind=noun, percent=pct)
+            self._fontpack_tooltip = _f(texts["progress"], percent=pct)
             self._refresh_tray_tooltip()
 
     def _on_fontpack_done(self, result):
         result = result or {}
-        noun = flash_kind_label(result)
+        texts = _FLASH_TEXTS[_flash_kind(result)]
         self._fontpack_flashing = False
         self._fontpack_tooltip = ""
         self._refresh_tray_tooltip()
         if result.get("ok"):
             self.show_balloon("PolyKybd",  # i18n: skip
-                              _f("Keyboard {kind} is up to date.", kind=noun), 4000)
+                              _(texts["done"]), 4000)
         else:
             self.tray.showMessage("PolyKybd",  # i18n: skip
-                                  _f("{kind} update failed: {error}", kind=noun.capitalize(),
-                                     error=result.get('msg', '')),
+                                  _f(texts["failed"], error=result.get('msg', '')),
                                   QSystemTrayIcon.Warning, 6000)
             self._maybe_show_split_link_help(result)
 

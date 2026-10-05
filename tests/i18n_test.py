@@ -250,7 +250,7 @@ class ShippedCatalogsTest(unittest.TestCase):
 
     def test_mnemonic_count_is_kept(self):
         """'&Quit' loses its keyboard accelerator if a translation drops the &."""
-        amp = re.compile(r"&(?![a-zA-Z#0-9]+;|&)")
+        amp = re.compile(r"(?<!&)&(?![a-zA-Z#0-9]+;|&)(?=\w)")
         for code, text in self.catalogs.items():
             _header, entries = i18n.parse_po(text)
             for e in entries:

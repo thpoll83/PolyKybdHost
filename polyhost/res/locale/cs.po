@@ -21,181 +21,181 @@ msgstr ""
 #: polyhost/device/command_ids.py:148
 #, python-brace-format
 msgid "preset {value}"
-msgstr ""
+msgstr "předvolba {value}"
 
 #: polyhost/device/command_ids.py:150
 #, python-brace-format
 msgid "{minutes} min"
-msgstr ""
+msgstr "{minutes} min"
 
 #: polyhost/device/command_ids.py:151
 #, python-brace-format
 msgid "{seconds} sec"
-msgstr ""
+msgstr "{seconds} s"
 
 #: polyhost/forwarder.py:238
 msgid "Press to pause forwarding"
-msgstr ""
+msgstr "Stisknutím pozastavíte přeposílání"
 
 #: polyhost/forwarder.py:245
 msgid "Stop sending this machine's active window to the keyboard machine."
-msgstr ""
+msgstr "Přestat posílat aktivní okno tohoto počítače na počítač s klávesnicí."
 
 #: polyhost/forwarder.py:257
 msgid "Check for host update…"
-msgstr ""
+msgstr "Vyhledat aktualizaci aplikace…"
 
 #: polyhost/forwarder.py:338
 #, python-brace-format
 msgid "no host (waiting for {path})"
-msgstr ""
+msgstr "žádný hostitel (čeká se na {path})"
 
 #: polyhost/forwarder.py:339
 msgid "no host configured"
-msgstr ""
+msgstr "není nastaven žádný hostitel"
 
 #: polyhost/forwarder.py:342
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
-msgstr ""
+msgstr "PolyKybdHost {version} (přeposílač) → {target}"
 
 #: polyhost/forwarder.py:347
 msgid "Forwarding paused"
-msgstr ""
+msgstr "Přeposílání pozastaveno"
 
 #: polyhost/forwarder.py:350
 #, python-brace-format
 msgid "Forwarding to {target}…"
-msgstr ""
+msgstr "Přeposílání na {target}…"
 
 #: polyhost/forwarder.py:352
 #, python-brace-format
 msgid "Forwarding to {target}"
-msgstr ""
+msgstr "Přeposílání na {target}"
 
 #: polyhost/forwarder.py:353
 #, python-brace-format
 msgid "Cannot reach {target}"
-msgstr ""
+msgstr "{target} není dostupný"
 
 #: polyhost/forwarder.py:746
 msgid "PolyForwarder settings"
-msgstr ""
+msgstr "Nastavení PolyForwarder"
 
 #: polyhost/forwarder.py:747
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
-msgstr ""
+msgstr "Nastavení se nepodařilo uložit do souboru nastavení, takže se neprojeví. Soubor možná drží otevřený jiný program. Zkuste to znovu nebo se podívejte do protokolu."
 
 #: polyhost/forwarder.py:766
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
-msgstr ""
+msgstr "ověřené RPC (port {port})"
 
 #: polyhost/forwarder.py:768
 msgid "legacy plaintext TCP relay"
-msgstr ""
+msgstr "starší nešifrované přeposílání přes TCP"
 
 #: polyhost/forwarder.py:771
 msgid "reaching the keyboard machine"
-msgstr ""
+msgstr "počítač s klávesnicí je dostupný"
 
 #: polyhost/forwarder.py:772
 msgid "not reaching the keyboard machine"
-msgstr ""
+msgstr "počítač s klávesnicí není dostupný"
 
 #: polyhost/forwarder.py:773
 msgid "starting up"
-msgstr ""
+msgstr "spouštění"
 
 #: polyhost/forwarder.py:775
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
-msgstr ""
+msgstr "<b>Režim:</b> přeposílač — k tomuto počítači není připojena žádná klávesnice"
 
 #: polyhost/forwarder.py:776
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
-msgstr ""
+msgstr "<b>Cíl:</b> {target}"
 
 #: polyhost/forwarder.py:778
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
-msgstr ""
+msgstr "<b>Hlášení oken:</b> {transport}"
 
 #: polyhost/forwarder.py:781
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
-msgstr ""
+msgstr "<b>Soubor hostitele:</b> {path}"
 
 #: polyhost/forwarder.py:802
 msgid "About PolyKybdHost (forwarder)"
-msgstr ""
+msgstr "O aplikaci PolyKybdHost (přeposílač)"
 
 #: polyhost/forwarder.py:811
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
-msgstr ""
+msgstr "Režim přeposílače: tento počítač nemá klávesnici. Sleduje zde aktivní okno a předává ho aplikaci PolyKybdHost spuštěné na počítači, ke kterému je klávesnice připojena."
 
 #: polyhost/forwarder.py:850
 msgid "Download, install, and restart the forwarder now?"
-msgstr ""
+msgstr "Stáhnout, nainstalovat a restartovat přeposílač nyní?"
 
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
-msgstr ""
+msgstr "Blog"
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
-msgstr ""
+msgstr "O aplikaci PolyKybdHost"
 
 #: polyhost/gui/about_dialog.py:141 polyhost/gui/about_dialog.py:151
 msgid "Copy diagnostics"
-msgstr ""
+msgstr "Kopírovat diagnostiku"
 
 #: polyhost/gui/about_dialog.py:145
 msgid "Copied ✓"
-msgstr ""
+msgstr "Zkopírováno ✓"
 
 #: polyhost/gui/boot_loop_dialog.py:25
 msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
-msgstr ""
+msgstr "Opakovaně restartuje klávesnici, aby zachytil občasné zaseknutí při spouštění. Po každém restartu čeká, až se klávesnice znovu ozve, a přečte její záznam o pádu. Zastaví se při prvním spuštění, které zanechalo nový záznam o pádu, při spuštění, které se do minuty neozve, nebo po posledním kole.<br><br>Během testu klávesnice nepíše a každé kolo trvá několik sekund."
 
 #: polyhost/gui/boot_loop_dialog.py:34
 msgid "<b>No boot problem found.</b>"
-msgstr ""
+msgstr "<b>Nebyl nalezen žádný problém se spouštěním.</b>"
 
 #: polyhost/gui/boot_loop_dialog.py:35
 msgid "<b>A boot problem was recorded.</b> The record is above; Copy to Clipboard to report it."
-msgstr ""
+msgstr "<b>Byl zaznamenán problém se spouštěním.</b> Záznam je výše; nahlaste ho pomocí tlačítka Kopírovat do schránky."
 
 #: polyhost/gui/boot_loop_dialog.py:37
 msgid "<b>The keyboard did not come back.</b> Note the status panel, then unplug and replug it and read the crash record."
-msgstr ""
+msgstr "<b>Klávesnice se znovu neozvala.</b> Poznamenejte si stavový panel, pak ji odpojte, znovu připojte a přečtěte záznam o pádu."
 
 #: polyhost/gui/boot_loop_dialog.py:39
 msgid "Stopped."
-msgstr ""
+msgstr "Zastaveno."
 
 #: polyhost/gui/boot_loop_dialog.py:49
 msgid "PolyKybd — boot-loop test"
-msgstr ""
+msgstr "PolyKybd — test opakovaného spouštění"
 
 #: polyhost/gui/boot_loop_dialog.py:58
 msgid "Reboots:"
-msgstr ""
+msgstr "Restarty:"
 
 #: polyhost/gui/boot_loop_dialog.py:78
 msgid "Start"
-msgstr ""
+msgstr "Spustit"
 
 #: polyhost/gui/boot_loop_dialog.py:82
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
 msgid "Stop"
-msgstr ""
+msgstr "Zastavit"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
 #: polyhost/gui/log_bundle_dialog.py:151
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
-msgstr ""
+msgstr "Kopírovat do schránky"
 
 #: polyhost/gui/boot_loop_dialog.py:90
 #: polyhost/gui/fontpack_extend_dialog.py:856
@@ -204,318 +204,318 @@ msgstr ""
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
-msgstr ""
+msgstr "Zavřít"
 
 #: polyhost/gui/boot_loop_dialog.py:113
 #, python-brace-format
 msgid "Could not start: {error}"
-msgstr ""
+msgstr "Nelze spustit: {error}"
 
 #: polyhost/gui/boot_loop_dialog.py:115
 #, python-brace-format
 msgid "Started: up to {n} reboot(s)."
 msgid_plural "Started: up to {n} reboot(s)."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Spuštěno: nejvýše {n} restart."
+msgstr[1] "Spuštěno: nejvýše {n} restarty."
+msgstr[2] "Spuštěno: nejvýše {n} restartů."
 
 #: polyhost/gui/boot_loop_dialog.py:123
 msgid "Stopping after the current step…"
-msgstr ""
+msgstr "Zastavení po aktuálním kroku…"
 
 #: polyhost/gui/boot_loop_dialog.py:124
 #, python-brace-format
 msgid "Could not stop: {error}"
-msgstr ""
+msgstr "Nelze zastavit: {error}"
 
 #: polyhost/gui/boot_loop_dialog.py:155
 #, python-brace-format
 msgid "<b>Failed:</b> {reason}"
-msgstr ""
+msgstr "<b>Selhalo:</b> {reason}"
 
 #: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:48
 msgid "Brightness"
-msgstr ""
+msgstr "Jas"
 
 #: polyhost/gui/cmd_menu.py:128
 msgid "Off"
-msgstr ""
+msgstr "Vypnuto"
 
 #: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
 msgid "Back to automatic"
-msgstr ""
+msgstr "Zpět na automatický jas"
 
 #: polyhost/gui/cmd_menu.py:159
 msgid "Re-apply the host's automatic brightness."
-msgstr ""
+msgstr "Znovu použít automatický jas řízený aplikací."
 
 #: polyhost/gui/cmd_menu.py:163
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
-msgstr ""
+msgstr "Znovu zapnout automatický jas (podle denního světla) — výše zvolená ruční předvolba se zruší."
 
 #: polyhost/gui/cmd_menu.py:166
 msgid "Clear manual override"
-msgstr ""
+msgstr "Zrušit ruční nastavení"
 
 #: polyhost/gui/cmd_menu.py:167
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
-msgstr ""
+msgstr "Jas podle denního světla je v Nastavení vypnutý, takže tato volba jen vrátí klávesnici její vlastní uložený jas."
 
 #: polyhost/gui/cmd_menu.py:182
 msgid "Maintenance"
-msgstr ""
+msgstr "Údržba"
 
 #: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
 msgid "Fix Left/Right Side"
-msgstr ""
+msgstr "Opravit levou/pravou stranu"
 
 #: polyhost/gui/cmd_menu.py:187
 msgid "Connected half is LEFT (other is RIGHT)"
-msgstr ""
+msgstr "Připojená polovina je LEVÁ (druhá je PRAVÁ)"
 
 #: polyhost/gui/cmd_menu.py:190
 msgid "Connected half is RIGHT (other is LEFT)"
-msgstr ""
+msgstr "Připojená polovina je PRAVÁ (druhá je LEVÁ)"
 
 #: polyhost/gui/cmd_menu.py:194
 msgid "Reset overlays"
-msgstr ""
+msgstr "Resetovat překryvy"
 
 #: polyhost/gui/cmd_menu.py:196
 msgid "Reset keymap to default…"
-msgstr ""
+msgstr "Obnovit výchozí rozložení kláves…"
 
 #: polyhost/gui/cmd_menu.py:202
 msgid "Flash firmware file (.bin)…"
-msgstr ""
+msgstr "Nahrát soubor firmwaru (.bin)…"
 
 #: polyhost/gui/cmd_menu.py:205
 msgid "Activate bootloader…"
-msgstr ""
+msgstr "Aktivovat zavaděč…"
 
 #: polyhost/gui/cmd_menu.py:211
 msgid "Overlays"
-msgstr ""
+msgstr "Překryvy"
 
 #: polyhost/gui/cmd_menu.py:212
 msgid "Enable shortcut overlays"
-msgstr ""
+msgstr "Zapnout překryvy zkratek"
 
 #: polyhost/gui/cmd_menu.py:214
 msgid "Disable shortcut overlays"
-msgstr ""
+msgstr "Vypnout překryvy zkratek"
 
 #: polyhost/gui/cmd_menu.py:217
 msgid "Reset overlay buffers"
-msgstr ""
+msgstr "Resetovat vyrovnávací paměti překryvů"
 
 #: polyhost/gui/cmd_menu.py:219
 msgid "Reset overlay mapping"
-msgstr ""
+msgstr "Resetovat mapování překryvů"
 
 #: polyhost/gui/cmd_menu.py:221
 msgid "Clear overlay usage"
-msgstr ""
+msgstr "Vymazat využití překryvů"
 
 #: polyhost/gui/cmd_menu.py:223
 msgid "Set all overlay mapping"
-msgstr ""
+msgstr "Nastavit celé mapování překryvů"
 
 #: polyhost/gui/cmd_menu.py:227
 msgid "Idle"
-msgstr ""
+msgstr "Nečinnost"
 
 #: polyhost/gui/cmd_menu.py:228
 msgid "Start idle now"
-msgstr ""
+msgstr "Spustit režim nečinnosti nyní"
 
 #: polyhost/gui/cmd_menu.py:230
 msgid "Stop idle"
-msgstr ""
+msgstr "Ukončit režim nečinnosti"
 
 #: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
 #: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
 #: polyhost/gui/cmd_menu.py:440
 msgid "Keymap"
-msgstr ""
+msgstr "Rozložení kláves"
 
 #: polyhost/gui/cmd_menu.py:235
 msgid "Layer count"
-msgstr ""
+msgstr "Počet vrstev"
 
 #: polyhost/gui/cmd_menu.py:237
 msgid "Default layer"
-msgstr ""
+msgstr "Výchozí vrstva"
 
 #: polyhost/gui/cmd_menu.py:239
 msgid "Dump keymap buffer to the log"
-msgstr ""
+msgstr "Vypsat vyrovnávací paměť rozložení do protokolu"
 
 #: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
 #: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
 msgid "Font Pack"
-msgstr ""
+msgstr "Balíček písem"
 
 #: polyhost/gui/cmd_menu.py:244
 msgid "Per-bundle status…"
-msgstr ""
+msgstr "Stav jednotlivých sad…"
 
 #: polyhost/gui/cmd_menu.py:246
 msgid "Sync (flash missing/updated bundles)"
-msgstr ""
+msgstr "Synchronizovat (nahrát chybějící/aktualizované sady)"
 
 #: polyhost/gui/cmd_menu.py:248
 msgid "Re-flash ALL bundles (force)…"
-msgstr ""
+msgstr "Znovu nahrát VŠECHNY sady (vynutit)…"
 
 #: polyhost/gui/cmd_menu.py:250
 msgid "Wipe (empty all bundles)"
-msgstr ""
+msgstr "Vymazat (vyprázdnit všechny sady)"
 
 #: polyhost/gui/cmd_menu.py:256
 msgid "Firmware"
-msgstr ""
+msgstr "Firmware"
 
 #: polyhost/gui/cmd_menu.py:257
 msgid "Flash only (.bin, stage)…"
-msgstr ""
+msgstr "Pouze nahrát (.bin, připravit)…"
 
 #: polyhost/gui/cmd_menu.py:260
 msgid "Apply staged firmware…"
-msgstr ""
+msgstr "Použít připravený firmware…"
 
 #: polyhost/gui/cmd_menu.py:265
 msgid "Boot-loop test…"
-msgstr ""
+msgstr "Test opakovaného spouštění…"
 
 #: polyhost/gui/cmd_menu.py:271
 msgid "Run command file (.poly.cmd)…"
-msgstr ""
+msgstr "Spustit soubor příkazů (.poly.cmd)…"
 
 #: polyhost/gui/cmd_menu.py:297
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
-msgstr ""
+msgstr "<b>Nastavit polovinu, ke které je připojen USB kabel, jako LEVOU stranu?</b><br><br>Druhá polovina se stane PRAVOU stranou. Obě poloviny uloží nové nastavení strany a restartují se s ním (asi 10 s, bez nutnosti znovu připojovat).<br><br>Ujistěte se, že je USB kabel připojen k polovině, která má být <b>LEVOU</b> stranou, a pokračujte."
 
 #: polyhost/gui/cmd_menu.py:304
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
-msgstr ""
+msgstr "<b>Nastavit polovinu, ke které je připojen USB kabel, jako PRAVOU stranu?</b><br><br>Druhá polovina se stane LEVOU stranou. Obě poloviny uloží nové nastavení strany a restartují se s ním (asi 10 s, bez nutnosti znovu připojovat).<br><br>Ujistěte se, že je USB kabel připojen k polovině, která má být <b>PRAVOU</b> stranou, a pokračujte."
 
 #: polyhost/gui/cmd_menu.py:330
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr ""
+msgstr "<b>Obnovit rozložení kláves na výchozí hodnoty firmwaru?</b><br><br>Každá přemapovaná klávesa se vrátí k rozložení, se kterým se firmware dodává. Tuto akci nelze vrátit zpět.<br><br>Pokračovat?"
 
 #: polyhost/gui/cmd_menu.py:335
 msgid "Reset Keymap"
-msgstr ""
+msgstr "Obnovit rozložení kláves"
 
 #: polyhost/gui/cmd_menu.py:389
 msgid "Re-flash Font Pack"
-msgstr ""
+msgstr "Znovu nahrát balíček písem"
 
 #: polyhost/gui/cmd_menu.py:390
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
-msgstr ""
+msgstr "<b>Znovu nahrát všechny sady balíčku písem?</b><br><br>Každá dodaná sada se odešle znovu, i když ji klávesnice už hlásí jako aktuální — použijte to, když se glyf vykresluje špatně nebo bylo předchozí nahrání nahlášeno jako neúspěšné. Trvá to asi minutu; psát lze po celou dobu.<br><br>Pokračovat?"
 
 #: polyhost/gui/cmd_menu.py:406
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
-msgstr ""
+msgstr "<b>Vymazat balíček písem v externí paměti flash?</b><br><br>Všechny pozice sad balíčku písem se vyprázdní — klávesnice bude vykreslovat jen svá vestavěná (rezidentní) písma, dokud se balíček znovu nenahraje. Sady dodané s touto aplikací se automaticky znovu nahrají při příštím připojení (nebo přes Balíček písem → Synchronizovat).<br><br>Pokračovat?"
 
 #: polyhost/gui/cmd_menu.py:413
 msgid "Wipe Font Pack"
-msgstr ""
+msgstr "Vymazat balíček písem"
 
 #: polyhost/gui/cmd_menu.py:423
 #, python-brace-format
 msgid "Layers: {count}"
-msgstr ""
+msgstr "Vrstvy: {count}"
 
 #: polyhost/gui/cmd_menu.py:424
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
-msgstr ""
+msgstr "Nelze přečíst počet vrstev: {error}"
 
 #: polyhost/gui/cmd_menu.py:428
 #, python-brace-format
 msgid "Default layer: {layer}"
-msgstr ""
+msgstr "Výchozí vrstva: {layer}"
 
 #: polyhost/gui/cmd_menu.py:429
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
-msgstr ""
+msgstr "Nelze přečíst výchozí vrstvu: {error}"
 
 #: polyhost/gui/cmd_menu.py:436
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
-msgstr ""
+msgstr "Nelze přečíst vyrovnávací paměť rozložení: {error}"
 
 #: polyhost/gui/cmd_menu.py:440
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
-msgstr ""
+msgstr "Vyrovnávací paměť rozložení ({size} bajtů) zapsána do protokolu."
 
 #: polyhost/gui/cmd_menu.py:447
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
-msgstr ""
+msgstr "Nelze přečíst stav balíčku písem: {error}"
 
 #: polyhost/gui/cmd_menu.py:450
 msgid "This host ships no font-pack bundles."
-msgstr ""
+msgstr "Tato aplikace nedodává žádné sady balíčku písem."
 
 #. TRANSLATORS: font-pack bundle state in a status table
 #: polyhost/gui/cmd_menu.py:459
 msgid "stale"
-msgstr ""
+msgstr "zastaralá"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
 #: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
-msgstr ""
+msgstr "ok"
 
 #: polyhost/gui/cmd_menu.py:462
 msgid "bundle"
-msgstr ""
+msgstr "sada"
 
 #: polyhost/gui/cmd_menu.py:463
 msgid "device"
-msgstr ""
+msgstr "zařízení"
 
 #: polyhost/gui/cmd_menu.py:464
 msgid "shipped"
-msgstr ""
+msgstr "dodáno"
 
 #: polyhost/gui/cmd_menu.py:470
 msgid "PolyKybd commands (*.poly.cmd)"
-msgstr ""
+msgstr "Příkazy PolyKybd (*.poly.cmd)"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
 #: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2201
 msgid "Open file"
-msgstr ""
+msgstr "Otevřít soubor"
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:191
 msgid "Not Connected"
-msgstr ""
+msgstr "Nepřipojeno"
 
 #: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
-msgstr ""
+msgstr "PolyKybd není připojena. Připojte klávesnici a zkuste to znovu."
 
 #: polyhost/gui/cmd_menu.py:504
 msgid "Select Firmware Binary"
-msgstr ""
+msgstr "Vybrat binární soubor firmwaru"
 
 #: polyhost/gui/cmd_menu.py:504
 msgid "Firmware binary (*.bin)"
-msgstr ""
+msgstr "Binární soubor firmwaru (*.bin)"
 
 #: polyhost/gui/cmd_menu.py:515
 msgid "File Error"
-msgstr ""
+msgstr "Chyba souboru"
 
 #: polyhost/gui/cmd_menu.py:516
 #, python-brace-format
@@ -523,426 +523,428 @@ msgid ""
 "Could not read firmware file:\n"
 "{error}"
 msgstr ""
+"Nelze přečíst soubor firmwaru:\n"
+"{error}"
 
 #: polyhost/gui/cmd_menu.py:521
 msgid "Invalid Firmware File"
-msgstr ""
+msgstr "Neplatný soubor firmwaru"
 
 #: polyhost/gui/cmd_menu.py:526
 msgid "Wrong Keyboard"
-msgstr ""
+msgstr "Nesprávná klávesnice"
 
 #: polyhost/gui/cmd_menu.py:536
 msgid "Unsigned Firmware"
-msgstr ""
+msgstr "Nepodepsaný firmware"
 
 #: polyhost/gui/cmd_menu.py:541
 msgid "Flash + Apply Firmware"
-msgstr ""
+msgstr "Nahrát a použít firmware"
 
 #: polyhost/gui/cmd_menu.py:543
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
-msgstr ""
+msgstr "Nový firmware se přenese do klávesnice, ověří (CRC32) a poté se <b>aktivuje</b> — obě poloviny se automaticky restartují s novým firmwarem (bez nutnosti znovu připojovat)."
 
 #: polyhost/gui/cmd_menu.py:548
 msgid "Flash Firmware"
-msgstr ""
+msgstr "Nahrát firmware"
 
 #: polyhost/gui/cmd_menu.py:550
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
-msgstr ""
+msgstr "Nový firmware se přenese do klávesnice, připraví a ověří (CRC32). Obraz se uloží, ale <b>zatím se neaktivuje</b> — klávesnice poběží se stávajícím firmwarem, dokud ho samostatně nepoužijete."
 
 #: polyhost/gui/cmd_menu.py:568
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
-msgstr ""
+msgstr "Aktuální firmware klávesnice: <b>{version}</b> ({size_kb} KB)"
 
 #: polyhost/gui/cmd_menu.py:571
 msgid "Could not query current firmware version."
-msgstr ""
+msgstr "Nelze zjistit aktuální verzi firmwaru."
 
 #: polyhost/gui/cmd_menu.py:572
 #, python-brace-format
 msgid "Selected file:<br>{path}"
-msgstr ""
+msgstr "Vybraný soubor:<br>{path}"
 
 #: polyhost/gui/cmd_menu.py:573
 msgid "Continue?"
-msgstr ""
+msgstr "Pokračovat?"
 
 #: polyhost/gui/cmd_menu.py:601
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
-msgstr ""
+msgstr "<b>Použít připravený firmware?</b><br><br>Obě poloviny klávesnice nainstalují dříve připravený obraz a automaticky se restartují s novým firmwarem (bez nutnosti znovu připojovat).<br><br>Pokud tento firmware nebyl sestaven s povoleným použitím z aplikace, klávesnice bezpečně ohlásí, že použití není k dispozici, a připravený obraz ponechá beze změny.<br><br>Pokračovat?"
 
 #: polyhost/gui/cmd_menu.py:610
 msgid "Apply Staged Firmware"
-msgstr ""
+msgstr "Použít připravený firmware"
 
 #: polyhost/gui/cmd_menu.py:635
 msgid "Firmware Applied"
-msgstr ""
+msgstr "Firmware použit"
 
 #: polyhost/gui/cmd_menu.py:637
 msgid "Apply Failed"
-msgstr ""
+msgstr "Použití selhalo"
 
 #: polyhost/gui/crash_alert_dialog.py:44 polyhost/gui/crash_alert_dialog.py:113
 msgid "PolyKybd — the keyboard firmware crashed"
-msgstr ""
+msgstr "PolyKybd — firmware klávesnice spadl"
 
 #: polyhost/gui/crash_alert_dialog.py:53
 msgid "What the keyboard reported"
-msgstr ""
+msgstr "Co klávesnice nahlásila"
 
 #: polyhost/gui/crash_alert_dialog.py:69
 msgid "Report on GitHub…"
-msgstr ""
+msgstr "Nahlásit na GitHubu…"
 
 #: polyhost/gui/crash_alert_dialog.py:83
 #: polyhost/gui/layout_dialog/macro_tab.py:213
 #: polyhost/gui/layout_dialog/macro_tab.py:235
 msgid "Clear"
-msgstr ""
+msgstr "Vymazat"
 
 #: polyhost/gui/crash_alert_dialog.py:85
 msgid "Forget these records here AND erase the keyboard's crash archive."
-msgstr ""
+msgstr "Zapomenout tyto záznamy zde A vymazat archiv pádů v klávesnici."
 
 #: polyhost/gui/crash_alert_dialog.py:89
 #: polyhost/gui/problem_alert_dialog.py:75
 msgid "Dismiss"
-msgstr ""
+msgstr "Zavřít"
 
 #: polyhost/gui/crash_alert_dialog.py:115
 #, python-brace-format
 msgid "<b>Both keyboard halves crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>Obě poloviny klávesnice spadly a restartovaly se</b> (firmware {firmware}, {kind} ve fázi {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:118
 #, python-brace-format
 msgid "<b>The keyboard crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>Klávesnice spadla a restartovala se</b> (firmware {firmware}, {kind} ve fázi {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:121
 #, python-brace-format
 msgid "<b>The link-side keyboard half crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
-msgstr ""
+msgstr "<b>Polovina klávesnice na straně propojení spadla a restartovala se</b> (firmware {firmware}, {kind} ve fázi {phase})."
 
 #: polyhost/gui/crash_alert_dialog.py:124
 msgid "The keyboard restarted on its own and is working again."
-msgstr ""
+msgstr "Klávesnice se sama restartovala a opět funguje."
 
 #: polyhost/gui/crash_alert_dialog.py:126
 msgid "PolyKybd — keyboard crash records"
-msgstr ""
+msgstr "PolyKybd — záznamy o pádech klávesnice"
 
 #: polyhost/gui/crash_alert_dialog.py:128
 #, python-brace-format
 msgid "<b>Crash record archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
 msgid_plural "<b>Crash records archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "<b>Záznam o pádu archivovaný v klávesnici</b> (firmware {firmware}, {kind} ve fázi {phase}). Žádný z nich nepochází z předchozího spuštění."
+msgstr[1] "<b>Záznamy o pádech archivované v klávesnici</b> (firmware {firmware}, {kind} ve fázi {phase}). Žádný z nich nepochází z předchozího spuštění."
+msgstr[2] "<b>Záznamy o pádech archivované v klávesnici</b> (firmware {firmware}, {kind} ve fázi {phase}). Žádný z nich nepochází z předchozího spuštění."
 
 #: polyhost/gui/crash_alert_dialog.py:134
 msgid "These are earlier crashes, not a new one."
-msgstr ""
+msgstr "Jde o dřívější pády, ne o nový."
 
 #: polyhost/gui/crash_alert_dialog.py:136
 msgid "To help fix the cause, either open a bug report (this collects the logs and pre-fills a GitHub issue — nothing is sent until you press Submit there), or copy the details to paste wherever you are discussing it."
-msgstr ""
+msgstr "Chcete-li pomoci odstranit příčinu, otevřete hlášení o chybě (shromáždí protokoly a předvyplní issue na GitHubu — nic se neodešle, dokud tam nestisknete Submit), nebo zkopírujte podrobnosti a vložte je tam, kde o problému diskutujete."
 
 #: polyhost/gui/crash_alert_dialog.py:161
 msgid "Clear crash records"
-msgstr ""
+msgstr "Vymazat záznamy o pádech"
 
 #: polyhost/gui/crash_alert_dialog.py:162
 #, python-brace-format
 msgid "Discard {n} crash record here and erase the keyboard's crash archive?"
 msgid_plural "Discard {n} crash records here and erase the keyboard's crash archive?"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Zahodit zde {n} záznam o pádu a vymazat archiv pádů v klávesnici?"
+msgstr[1] "Zahodit zde {n} záznamy o pádech a vymazat archiv pádů v klávesnici?"
+msgstr[2] "Zahodit zde {n} záznamů o pádech a vymazat archiv pádů v klávesnici?"
 
 #: polyhost/gui/crash_alert_dialog.py:166
 msgid "This cannot be undone — report or copy them first if you still need them."
-msgstr ""
+msgstr "Tuto akci nelze vrátit zpět — pokud je ještě potřebujete, nejprve je nahlaste nebo zkopírujte."
 
 #: polyhost/gui/crash_alert_dialog.py:194
 #, python-brace-format
 msgid "Cleared here, but the keyboard did not: {reason}"
-msgstr ""
+msgstr "Vymazáno zde, ale v klávesnici ne: {reason}"
 
 #: polyhost/gui/crash_alert_dialog.py:196
 msgid "No crash records held."
-msgstr ""
+msgstr "Nejsou uloženy žádné záznamy o pádech."
 
 #: polyhost/gui/crash_alert_dialog.py:204
 #: polyhost/gui/problem_alert_dialog.py:107
 msgid "Copied to the clipboard."
-msgstr ""
+msgstr "Zkopírováno do schránky."
 
 #: polyhost/gui/crash_alert_dialog.py:213
 msgid "Opened the problem report with the crash filled in."
-msgstr ""
+msgstr "Hlášení problému bylo otevřeno s vyplněným pádem."
 
 #: polyhost/gui/fontpack_extend_dialog.py:98
 msgid "PolyKybd — Build / Edit Glyph"
-msgstr ""
+msgstr "PolyKybd — sestavit / upravit glyf"
 
 #: polyhost/gui/fontpack_extend_dialog.py:118
 msgid "pick one from Source fonts below, or Browse…"
-msgstr ""
+msgstr "vyberte jedno ze zdrojových písem níže, nebo Procházet…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:119
 msgid "Browse…"
-msgstr ""
+msgstr "Procházet…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:120
 msgid "Use a custom font not in the Noto list"
-msgstr ""
+msgstr "Použít vlastní písmo, které není v seznamu Noto"
 
 #: polyhost/gui/fontpack_extend_dialog.py:127
 msgid "Source font"
-msgstr ""
+msgstr "Zdrojové písmo"
 
 #: polyhost/gui/fontpack_extend_dialog.py:129
 msgid "Codepoint range"
-msgstr ""
+msgstr "Rozsah kódových bodů"
 
 #: polyhost/gui/fontpack_extend_dialog.py:129
 msgid "HarfBuzz sequence"
-msgstr ""
+msgstr "Sekvence HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
 #: polyhost/gui/settings_dialog.py:74 polyhost/gui/settings_dialog.py:82
 msgid "Mode"
-msgstr ""
+msgstr "Režim"
 
 #: polyhost/gui/fontpack_extend_dialog.py:138
 msgid "Range first–last (hex)"
-msgstr ""
+msgstr "Rozsah první–poslední (hex)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:140
 msgid "Sequence (hex cps; , = glyph)"
-msgstr ""
+msgstr "Sekvence (hex kódové body; , = glyf)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:142
 msgid "Sequence base -F (hex)"
-msgstr ""
+msgstr "Základ sekvence -F (hex)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:143
 msgid "Composite -C (combine group into one glyph)"
-msgstr ""
+msgstr "Složený -C (sloučit skupinu do jednoho glyfu)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:145
 msgid "Composite all codepoints of each sequence group into a single glyph (mono) — used by the combining-mark / matra fonts (base U+25CC + mark)."
-msgstr ""
+msgstr "Sloučí všechny kódové body každé skupiny sekvence do jediného glyfu (mono) — používají to písma s kombinačními znaky / matrami (základ U+25CC + znak)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:150
 msgid "Size -s"
-msgstr ""
+msgstr "Velikost -s"
 
 #: polyhost/gui/fontpack_extend_dialog.py:152
 msgid "Grayscale / colour (-g)"
-msgstr ""
+msgstr "Stupně šedi / barva (-g)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:154
 msgid "Normalize -N"
-msgstr ""
+msgstr "Normalizovat -N"
 
 #: polyhost/gui/fontpack_extend_dialog.py:154
 msgid "Invert -I"
-msgstr ""
+msgstr "Invertovat -I"
 
 #: polyhost/gui/fontpack_extend_dialog.py:155
 msgid "Edge-preserve -E"
-msgstr ""
+msgstr "Zachovat hrany -E"
 
 #: polyhost/gui/fontpack_extend_dialog.py:160
 msgid "Flags"
-msgstr ""
+msgstr "Příznaky"
 
 #: polyhost/gui/fontpack_extend_dialog.py:164
 msgid "Dither -D"
-msgstr ""
+msgstr "Rozptylování -D"
 
 #: polyhost/gui/fontpack_extend_dialog.py:165
 msgid "Outline -O"
-msgstr ""
+msgstr "Obrys -O"
 
 #: polyhost/gui/fontpack_extend_dialog.py:166
 msgid "Render size -r (0=off)"
-msgstr ""
+msgstr "Velikost vykreslení -r (0=vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:167
 msgid "yAdvance -Y (0=off)"
-msgstr ""
+msgstr "yAdvance -Y (0=vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:168
 msgid "Max width -W (0=off)"
-msgstr ""
+msgstr "Max. šířka -W (0=vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:170
 msgid "Variable-font wght axis (e.g. 400 Regular, 500 Medium, 700 Bold). 0 = the font's default instance."
-msgstr ""
+msgstr "Osa wght proměnného písma (např. 400 Regular, 500 Medium, 700 Bold). 0 = výchozí instance písma."
 
 #: polyhost/gui/fontpack_extend_dialog.py:172
 msgid "Weight -w (0=default)"
-msgstr ""
+msgstr "Tloušťka -w (0=výchozí)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:174
 msgid "Horizontal pixel shift of the rendered glyph (rarely needed; e.g. couple emoji use -12)."
-msgstr ""
+msgstr "Vodorovný posun vykresleného glyfu v pixelech (potřeba jen zřídka; např. emoji páru používají -12)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:176
 msgid "X shift -X"
-msgstr ""
+msgstr "Posun X -X"
 
 #: polyhost/gui/fontpack_extend_dialog.py:180
 msgid "Gamma -G (1 = off)"
-msgstr ""
+msgstr "Gama -G (1 = vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:182
 msgid "Contrast -c (1 = off)"
-msgstr ""
+msgstr "Kontrast -c (1 = vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:184
 msgid "Exposure -e (0 = off)"
-msgstr ""
+msgstr "Expozice -e (0 = vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:186
 msgid "Sharpen -U (0 = off)"
-msgstr ""
+msgstr "Doostření -U (0 = vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:188
 msgid "Saturation -B (0 = off)"
-msgstr ""
+msgstr "Sytost -B (0 = vyp.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:194
 msgid "Target bundle"
-msgstr ""
+msgstr "Cílová sada"
 
 #: polyhost/gui/fontpack_extend_dialog.py:196
 msgid "Global font index"
-msgstr ""
+msgstr "Globální index písma"
 
 #: polyhost/gui/fontpack_extend_dialog.py:201
 msgid "Build / Preview"
-msgstr ""
+msgstr "Sestavit / náhled"
 
 #: polyhost/gui/fontpack_extend_dialog.py:202
 msgid "Reset"
-msgstr ""
+msgstr "Obnovit"
 
 #: polyhost/gui/fontpack_extend_dialog.py:203
 msgid "Restore the render options to the settings this dialog opened with (the glyph's defaults)"
-msgstr ""
+msgstr "Obnovit volby vykreslení na nastavení, se kterým se tento dialog otevřel (výchozí hodnoty glyfu)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:206
 msgid "Auto update"
-msgstr ""
+msgstr "Automatická aktualizace"
 
 #: polyhost/gui/fontpack_extend_dialog.py:208
 msgid "Re-render the preview automatically when an option changes"
-msgstr ""
+msgstr "Při změně volby automaticky znovu vykreslit náhled"
 
 #: polyhost/gui/fontpack_extend_dialog.py:212
 msgid "Normal"
-msgstr ""
+msgstr "Normální"
 
 #: polyhost/gui/fontpack_extend_dialog.py:213
 msgid "OLED"
-msgstr ""
+msgstr "OLED"
 
 #: polyhost/gui/fontpack_extend_dialog.py:214
 msgid "Keycap"
-msgstr ""
+msgstr "Klávesa"
 
 #: polyhost/gui/fontpack_extend_dialog.py:215
 msgid "Plain white-on-black bitmap (what the font renders)"
-msgstr ""
+msgstr "Prostá bitmapa bílá na černé (jak ji písmo vykreslí)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:216
 msgid "The raw OLED look: cool-white pixels + bloom + a crisp pixel grid on true black"
-msgstr ""
+msgstr "Surový vzhled OLED: studeně bílé pixely + záře + ostrá pixelová mřížka na čistě černé"
 
 #: polyhost/gui/fontpack_extend_dialog.py:218
 msgid "As seen through the clear keycap cover: adds per-pixel brightness shimmer, a staggered grid and a diffusion blur"
-msgstr ""
+msgstr "Jak to vypadá přes průhledný kryt klávesy: přidává kolísání jasu jednotlivých pixelů, posunutou mřížku a rozptylové rozmazání"
 
 #: polyhost/gui/fontpack_extend_dialog.py:227
 msgid "Preview:"
-msgstr ""
+msgstr "Náhled:"
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:71
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: polyhost/gui/fontpack_extend_dialog.py:237
 msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
-msgstr ""
+msgstr "Ponechat sestavený glyf (přidá se do sady v paměti; uložte ho v inspektoru přes „Uložit jako…“)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:72 polyhost/host.py:221
 msgid "Cancel"
-msgstr ""
+msgstr "Zrušit"
 
 #: polyhost/gui/fontpack_extend_dialog.py:253
 msgid "Pick a font, set options, then Build / Preview."
-msgstr ""
+msgstr "Vyberte písmo, nastavte volby a pak Sestavit / náhled."
 
 #: polyhost/gui/fontpack_extend_dialog.py:258
 msgid "Scroll here to zoom the preview"
-msgstr ""
+msgstr "Posouváním kolečka zde přiblížíte náhled"
 
 #: polyhost/gui/fontpack_extend_dialog.py:280
 #: polyhost/gui/fontpack_extend_dialog.py:574
 msgid "No valid shipped bundles available to extend."
-msgstr ""
+msgstr "Nejsou k dispozici žádné platné dodané sady k rozšíření."
 
 #: polyhost/gui/fontpack_extend_dialog.py:324
 msgid "(no saved settings for this font — set options manually.)"
-msgstr ""
+msgstr "(pro toto písmo nejsou uložena žádná nastavení — nastavte volby ručně.)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:326
 #, python-brace-format
 msgid "Pre-filled from '{source}' + its original settings."
-msgstr ""
+msgstr "Předvyplněno z '{source}' + jeho původní nastavení."
 
 #: polyhost/gui/fontpack_extend_dialog.py:330
 #, python-brace-format
 msgid "Original settings pre-filled; source font '{source}' isn't cached — Download Noto… or Browse."
-msgstr ""
+msgstr "Původní nastavení předvyplněno; zdrojové písmo '{source}' není v mezipaměti — Stáhnout Noto… nebo Procházet."
 
 #: polyhost/gui/fontpack_extend_dialog.py:332
 msgid "Original settings pre-filled; pick the source font."
-msgstr ""
+msgstr "Původní nastavení předvyplněno; vyberte zdrojové písmo."
 
 #: polyhost/gui/fontpack_extend_dialog.py:334
 #, python-brace-format
 msgid "Editing {codepoint} in '{bundle}' — Build to preview, then OK to keep it (Cancel to discard)."
-msgstr ""
+msgstr "Úprava {codepoint} v '{bundle}' — Sestavit pro náhled, pak OK pro ponechání (Zrušit pro zahození)."
 
 #: polyhost/gui/fontpack_extend_dialog.py:489
 msgid "Reset to the default render settings."
-msgstr ""
+msgstr "Obnovit výchozí nastavení vykreslení."
 
 #: polyhost/gui/fontpack_extend_dialog.py:513
 msgid "Select font"
-msgstr ""
+msgstr "Vybrat písmo"
 
 #: polyhost/gui/fontpack_extend_dialog.py:514
 msgid "Fonts (*.ttf *.otf)"
-msgstr ""
+msgstr "Písma (*.ttf *.otf)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:514
 #: polyhost/gui/fontpack_inspector_dialog.py:766
 msgid "All files (*)"
-msgstr ""
+msgstr "Všechny soubory (*)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:574
 #: polyhost/gui/fontpack_extend_dialog.py:578
@@ -950,11 +952,11 @@ msgstr ""
 #: polyhost/gui/fontpack_extend_dialog.py:592
 #: polyhost/gui/fontpack_extend_dialog.py:615
 msgid "Build"
-msgstr ""
+msgstr "Sestavit"
 
 #: polyhost/gui/fontpack_extend_dialog.py:578
 msgid "Pick an existing font file first."
-msgstr ""
+msgstr "Nejprve vyberte existující soubor písma."
 
 #: polyhost/gui/fontpack_extend_dialog.py:582
 #, python-brace-format
@@ -965,6 +967,11 @@ msgid ""
 "\n"
 "(They're normally pulled in by installing PolyKybdHost: pip install -e .)"
 msgstr ""
+"Sestavování glyfů vyžaduje tyto závislosti pro generování písem, které v tomto prostředí nejsou nainstalovány:\n"
+"\n"
+"    pip install {packages}\n"
+"\n"
+"(Obvykle se nainstalují spolu s PolyKybdHost: pip install -e .)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:592
 #, python-brace-format
@@ -974,40 +981,44 @@ msgid ""
 "\n"
 "({error})"
 msgstr ""
+"Závislosti pro sestavování písem chybí nebo jsou poškozené:\n"
+"  pip install -e .\n"
+"\n"
+"({error})"
 
 #: polyhost/gui/fontpack_extend_dialog.py:607
 #, python-brace-format
 msgid "(auto preview) {error}"
-msgstr ""
+msgstr "(automatický náhled) {error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:609
 msgid "Build failed"
-msgstr ""
+msgstr "Sestavení selhalo"
 
 #: polyhost/gui/fontpack_extend_dialog.py:615
 #, python-brace-format
 msgid "Editing a single glyph ({codepoint}), but this built {n} glyph. Narrow the range / sequence to one glyph."
 msgid_plural "Editing a single glyph ({codepoint}), but this built {n} glyphs. Narrow the range / sequence to one glyph."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Upravuje se jediný glyf ({codepoint}), ale sestaven byl {n} glyf. Zužte rozsah / sekvenci na jeden glyf."
+msgstr[1] "Upravuje se jediný glyf ({codepoint}), ale sestaveny byly {n} glyfy. Zužte rozsah / sekvenci na jeden glyf."
+msgstr[2] "Upravuje se jediný glyf ({codepoint}), ale sestaveno bylo {n} glyfů. Zužte rozsah / sekvenci na jeden glyf."
 
 #: polyhost/gui/fontpack_extend_dialog.py:626
 #, python-brace-format
 msgid "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
 msgid_plural "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Sestaven {n} glyf, {range}, globální index {index}. OK = ponechat v sadě '{bundle}', Zrušit = zahodit."
+msgstr[1] "Sestaveny {n} glyfy, {range}, globální index {index}. OK = ponechat v sadě '{bundle}', Zrušit = zahodit."
+msgstr[2] "Sestaveno {n} glyfů, {range}, globální index {index}. OK = ponechat v sadě '{bundle}', Zrušit = zahodit."
 
 #: polyhost/gui/fontpack_extend_dialog.py:678
 #, python-brace-format
 msgid "Zoom {scale}×  (scroll over the preview to change)"
-msgstr ""
+msgstr "Přiblížení {scale}×  (změníte kolečkem nad náhledem)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:718
 msgid "Download"
-msgstr ""
+msgstr "Stáhnout"
 
 #: polyhost/gui/fontpack_extend_dialog.py:719
 #, python-brace-format
@@ -1015,29 +1026,31 @@ msgid ""
 "Could not read the font catalog:\n"
 "{error}"
 msgstr ""
+"Nelze přečíst katalog písem:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:726
 msgid "Source fonts — click to use (✓ = downloaded; uncached downloads first)"
-msgstr ""
+msgstr "Zdrojová písma — kliknutím použijete (✓ = staženo; nestažená se nejprve stáhnou)"
 
 #: polyhost/gui/fontpack_extend_dialog.py:728
 #: polyhost/gui/fontpack_extend_dialog.py:793
 #: polyhost/gui/fontpack_extend_dialog.py:797
 msgid "Download all"
-msgstr ""
+msgstr "Stáhnout vše"
 
 #: polyhost/gui/fontpack_extend_dialog.py:729
 msgid "Fetch every Noto font in the list into the cache"
-msgstr ""
+msgstr "Stáhnout všechna písma Noto ze seznamu do mezipaměti"
 
 #: polyhost/gui/fontpack_extend_dialog.py:746
 #, python-brace-format
 msgid "{name}  ({filename})  ✓ cached"
-msgstr ""
+msgstr "{name}  ({filename})  ✓ v mezipaměti"
 
 #: polyhost/gui/fontpack_extend_dialog.py:779
 msgid "Download failed"
-msgstr ""
+msgstr "Stažení selhalo"
 
 #: polyhost/gui/fontpack_extend_dialog.py:780
 #, python-brace-format
@@ -1045,10 +1058,12 @@ msgid ""
 "Could not download {name}:\n"
 "{error}"
 msgstr ""
+"Nelze stáhnout {name}:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:793
 msgid "All fonts are already cached."
-msgstr ""
+msgstr "Všechna písma už jsou v mezipaměti."
 
 #: polyhost/gui/fontpack_extend_dialog.py:798
 #, python-brace-format
@@ -1056,163 +1071,165 @@ msgid ""
 "Stopped on an error:\n"
 "{error}"
 msgstr ""
+"Zastaveno kvůli chybě:\n"
+"{error}"
 
 #: polyhost/gui/fontpack_extend_dialog.py:807
 msgid "Downloading…"
-msgstr ""
+msgstr "Stahování…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:819
 #, python-brace-format
 msgid "Downloading {name}  ({index}/{count})…"
-msgstr ""
+msgstr "Stahování {name}  ({index}/{count})…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:848
 msgid "Download Noto source font"
-msgstr ""
+msgstr "Stáhnout zdrojové písmo Noto"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:128
 #, python-brace-format
 msgid "{label} (error)"
-msgstr ""
+msgstr "{label} (chyba)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:195
 #, python-brace-format
 msgid "⚠ Could not decode '{label}': {error}"
-msgstr ""
+msgstr "⚠ Nelze dekódovat '{label}': {error}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:200
 msgid "BAD"
-msgstr ""
+msgstr "VADNÉ"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:203
 #, python-brace-format
 msgid "{label}.plyf — abi v{abi} · content v{content} · {fonts} fonts · {glyphs} glyphs ({empty} empty) · {size} B · crc {crc}"
-msgstr ""
+msgstr "{label}.plyf — abi v{abi} · obsah v{content} · písma: {fonts} · glyfy: {glyphs} (prázdné: {empty}) · {size} B · crc {crc}"
 
 #. TRANSLATORS: label of the glyph-grid magnification spin box
 #: polyhost/gui/fontpack_inspector_dialog.py:214
 msgid "Zoom"
-msgstr ""
+msgstr "Přiblížení"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:222
 msgid "Hide empty"
-msgstr ""
+msgstr "Skrýt prázdné"
 
 #. TRANSLATORS: checkbox; preview the empty glyph slots from their source font
 #: polyhost/gui/fontpack_inspector_dialog.py:226
 msgid "Peek empty (from source)"
-msgstr ""
+msgstr "Nahlédnout do prázdných (ze zdroje)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:227
 msgid "Render the empty slots from their source font (needs the font downloaded) as amber previews — candidates to build/take. Previews are not in the pack."
-msgstr ""
+msgstr "Vykreslit prázdné pozice z jejich zdrojového písma (písmo musí být stažené) jako jantarové náhledy — kandidáty k sestavení/převzetí. Náhledy nejsou součástí balíčku."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:601
 #, python-brace-format
 msgid "{codepoint} — drawn by {font}  (another bundle)"
-msgstr ""
+msgstr "{codepoint} — kreslí {font}  (jiná sada)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:603
 #, python-brace-format
 msgid "{codepoint} — drawn by {font}"
-msgstr ""
+msgstr "{codepoint} — kreslí {font}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:612
 #, python-brace-format
 msgid "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
 msgid_plural "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "; {n} překrytý: {fonts} (zobrazíte najetím na roh zásobníku, upravíte dvojklikem tamtéž)"
+msgstr[1] "; {n} překryté: {fonts} (zobrazíte najetím na roh zásobníku, upravíte dvojklikem tamtéž)"
+msgstr[2] "; {n} překrytých: {fonts} (zobrazíte najetím na roh zásobníku, upravíte dvojklikem tamtéž)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:618
 #: polyhost/gui/fontpack_inspector_dialog.py:625
 msgid "(edited — unsaved)"
-msgstr ""
+msgstr "(upraveno — neuloženo)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:623
 #, python-brace-format
 msgid "{codepoint}  (empty — no glyph)"
-msgstr ""
+msgstr "{codepoint}  (prázdné — žádný glyf)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:661
 #, python-brace-format
 msgid "{codepoint}  (preview from {source} — not in pack)"
-msgstr ""
+msgstr "{codepoint}  (náhled z {source} — není v balíčku)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:682
 msgid "PolyKybd — Font Pack Inspector"
-msgstr ""
+msgstr "PolyKybd — inspektor balíčků písem"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:695
 msgid "Glyph grid (native size)"
-msgstr ""
+msgstr "Mřížka glyfů (nativní velikost)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:696
 msgid "Keycap preview (72×40)"
-msgstr ""
+msgstr "Náhled klávesy (72×40)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:697
 msgid "Keycap OLED (raw pixels)"
-msgstr ""
+msgstr "OLED klávesy (surové pixely)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:698
 msgid "Keycap through cover"
-msgstr ""
+msgstr "Klávesa přes kryt"
 
 #. TRANSLATORS: label of the preview-mode dropdown (how glyphs are drawn)
 #: polyhost/gui/fontpack_inspector_dialog.py:701
 msgid "View"
-msgstr ""
+msgstr "Zobrazení"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:708
 msgid "Open .plyf…"
-msgstr ""
+msgstr "Otevřít .plyf…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:709
 msgid "Load a .plyf font-pack file (e.g. one you saved elsewhere) as a new tab to inspect"
-msgstr ""
+msgstr "Načíst soubor balíčku písem .plyf (např. uložený jinde) jako novou kartu ke kontrole"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:713
 msgid "Edit…"
-msgstr ""
+msgstr "Upravit…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:714
 msgid "Replace the selected glyph (double-clicking a glyph does the same)"
-msgstr ""
+msgstr "Nahradit vybraný glyf (totéž udělá dvojklik na glyf)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:718
 msgid "Extend…"
-msgstr ""
+msgstr "Rozšířit…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:719
 msgid "Build new glyphs from a font and add them to a bundle (in memory)"
-msgstr ""
+msgstr "Sestavit nové glyfy z písma a přidat je do sady (v paměti)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:723
 msgid "Save as…"
-msgstr ""
+msgstr "Uložit jako…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:724
 msgid "Review the current bundle's pending edits and save them to a .plyf (or flash) at a chosen version"
-msgstr ""
+msgstr "Zkontrolovat čekající úpravy aktuální sady a uložit je do .plyf (nebo nahrát) ve zvolené verzi"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:743
 msgid "No font-pack bundles found — use “Open .plyf…”."
-msgstr ""
+msgstr "Nebyly nalezeny žádné sady balíčku písem — použijte „Otevřít .plyf…“."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:765
 msgid "Open font pack"
-msgstr ""
+msgstr "Otevřít balíček písem"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:766
 #: polyhost/gui/fontpack_inspector_dialog.py:1026
 msgid "Font pack (*.plyf)"
-msgstr ""
+msgstr "Balíček písem (*.plyf)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:773
 msgid "Open failed"
-msgstr ""
+msgstr "Otevření selhalo"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:774
 #, python-brace-format
@@ -1220,14 +1237,16 @@ msgid ""
 "Could not decode '{path}':\n"
 "{error}"
 msgstr ""
+"Nelze dekódovat '{path}':\n"
+"{error}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "BAD — file may be truncated/corrupt"
-msgstr ""
+msgstr "VADNÉ — soubor může být zkrácený/poškozený"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:785
 msgid "Opened"
-msgstr ""
+msgstr "Otevřeno"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:786
 #, python-brace-format
@@ -1237,94 +1256,98 @@ msgid ""
 "\n"
 "Note: a .plyf carries no bundle name — this tab is named after the file."
 msgstr ""
+"Načteno '{label}.plyf'\n"
+"abi v{abi} · obsah v{content} · písma: {fonts} · glyfy: {glyphs} · crc {crc}\n"
+"\n"
+"Poznámka: soubor .plyf nenese název sady — tato karta je pojmenována podle souboru."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:811
 msgid "Select a glyph first (click it), or double-click a glyph to edit it."
-msgstr ""
+msgstr "Nejprve vyberte glyf (klikněte na něj), nebo glyf upravte dvojklikem."
 
 #. TRANSLATORS: message-box title (the glyph Edit action)
 #: polyhost/gui/fontpack_inspector_dialog.py:811
 #: polyhost/gui/fontpack_inspector_dialog.py:862
 msgid "Edit"
-msgstr ""
+msgstr "Upravit"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:862
 #, python-brace-format
 msgid "Unknown bundle {label}."
-msgstr ""
+msgstr "Neznámá sada {label}."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:874
 #, python-brace-format
 msgid "edit {codepoint} (g{index})"
-msgstr ""
+msgstr "úprava {codepoint} (g{index})"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:879
 #, python-brace-format
 msgid "font g{index}: {first}–{last} ({n} slot(s))"
 msgid_plural "font g{index}: {first}–{last} ({n} slot(s))"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "písmo g{index}: {first}–{last} ({n} pozice)"
+msgstr[1] "písmo g{index}: {first}–{last} ({n} pozice)"
+msgstr[2] "písmo g{index}: {first}–{last} ({n} pozic)"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:884
 msgid "Edit failed"
-msgstr ""
+msgstr "Úprava selhala"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:940
 msgid "Save as"
-msgstr ""
+msgstr "Uložit jako"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:941
 #, python-brace-format
 msgid "No pending edits in '{label}'. Double-click a glyph (or Extend…) and confirm with OK first."
-msgstr ""
+msgstr "V '{label}' nejsou žádné čekající úpravy. Nejprve dvakrát klikněte na glyf (nebo Rozšířit…) a potvrďte tlačítkem OK."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:966
 #, python-brace-format
 msgid "Save font pack — {label}"
-msgstr ""
+msgstr "Uložit balíček písem — {label}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:980
 msgid "content_version written/flashed. Default = current+1 so a connected keyboard re-flashes it; one bump covers all the edits."
-msgstr ""
+msgstr "Zapisovaná/nahrávaná hodnota content_version. Výchozí = aktuální+1, aby ji připojená klávesnice znovu nahrála; jedno zvýšení pokryje všechny úpravy."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:984
 msgid "Save as version"
-msgstr ""
+msgstr "Uložit jako verzi"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:987
 msgid "Pending edits:"
-msgstr ""
+msgstr "Čekající úpravy:"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:992
 msgid "Save .plyf…"
-msgstr ""
+msgstr "Uložit .plyf…"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:995
 msgid "Flash to device"
-msgstr ""
+msgstr "Nahrát do zařízení"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:997
 #: polyhost/gui/fontpack_inspector_dialog.py:1060
 msgid "Discard edits"
-msgstr ""
+msgstr "Zahodit úpravy"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1016
 #, python-brace-format
 msgid "<b>{label}</b> — abi v{abi} · current content v{content}<br>working: {fonts} fonts · {glyphs} glyphs · {size} B → save as v{version}"
-msgstr ""
+msgstr "<b>{label}</b> — abi v{abi} · aktuální obsah v{content}<br>pracovní: písma: {fonts} · glyfy: {glyphs} · {size} B → uložit jako v{version}"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1025
 msgid "Save font pack"
-msgstr ""
+msgstr "Uložit balíček písem"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1034
 msgid "Save failed"
-msgstr ""
+msgstr "Uložení selhalo"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1036
 msgid "Saved"
-msgstr ""
+msgstr "Uloženo"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1037
 #, python-brace-format
@@ -1332,33 +1355,35 @@ msgid ""
 "Saved {path}\n"
 "content v{version} · {size} B"
 msgstr ""
+"Uloženo {path}\n"
+"obsah v{version} · {size} B"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1045
 #: polyhost/gui/fontpack_inspector_dialog.py:1055
 msgid "Flash"
-msgstr ""
+msgstr "Nahrát"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1046
 #, python-brace-format
 msgid "Flash '{label}' (content v{version}) to the keyboard?"
-msgstr ""
+msgstr "Nahrát '{label}' (obsah v{version}) do klávesnice?"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1053
 msgid "Flash failed"
-msgstr ""
+msgstr "Nahrání selhalo"
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1055
 msgid "Flash started — watch the tray/log."
-msgstr ""
+msgstr "Nahrávání zahájeno — sledujte oznamovací oblast/protokol."
 
 #: polyhost/gui/fontpack_inspector_dialog.py:1061
 #, python-brace-format
 msgid "Discard all pending edits to '{label}'?"
-msgstr ""
+msgstr "Zahodit všechny čekající úpravy v '{label}'?"
 
 #: polyhost/gui/hid_fw_up_dialog.py:22
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
-msgstr ""
+msgstr "Tento firmware není podepsaný. Potvrďte na KLÁVESNICI: stiskněte zvýrazněnou klávesu A (přijmout) nebo R (odmítnout)."
 
 #: polyhost/gui/hid_fw_up_dialog.py:24
 msgid ""
@@ -1366,6 +1391,9 @@ msgid ""
 "\n"
 "The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
 msgstr ""
+"Vypršel čas čekání na potvrzení na klávesnici.\n"
+"\n"
+"Klávesnice vyžaduje fyzické PŘIJETÍ/ODMÍTNUTÍ, protože tento obraz není platně podepsaný. Spusťte nahrávání znovu a do minuty stiskněte zvýrazněnou klávesu A na levé polovině."
 
 #: polyhost/gui/hid_fw_up_dialog.py:28
 msgid ""
@@ -1375,100 +1403,105 @@ msgid ""
 "\n"
 "To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
 msgstr ""
+"Klávesnice tento firmware odmítla: není podepsaný.\n"
+"\n"
+"Vydaný firmware se dodává s odpovídajícím souborem '.sig' — stáhněte ho vedle souboru .bin a nahrajte znovu.\n"
+"\n"
+"Chcete-li nahrát sestavení, které jste si zkompilovali sami, nahrajte ho znovu a na výzvu stiskněte na klávesnici zvýrazněnou klávesu A (přijmout)."
 
 #: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2814
 #: polyhost/host.py:2838
 msgid "Firmware Update"
-msgstr ""
+msgstr "Aktualizace firmwaru"
 
 #: polyhost/gui/hid_fw_up_dialog.py:172
 #, python-brace-format
 msgid "<b>File:</b> {path}"
-msgstr ""
+msgstr "<b>Soubor:</b> {path}"
 
 #: polyhost/gui/hid_fw_up_dialog.py:177
 msgid "Applying staged firmware…"
-msgstr ""
+msgstr "Používání připraveného firmwaru…"
 
 #: polyhost/forwarder.py:237 polyhost/gui/hid_fw_up_dialog.py:177
 msgid "Starting…"
-msgstr ""
+msgstr "Spouštění…"
 
 #: polyhost/gui/hid_fw_up_dialog.py:270
 #, python-brace-format
 msgid "~{seconds} s remaining"
-msgstr ""
+msgstr "zbývá ~{seconds} s"
 
 #: polyhost/gui/hid_fw_up_dialog.py:275
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
-msgstr ""
+msgstr "zbývá ~{minutes} min {seconds} s"
 
 #: polyhost/gui/hid_fw_up_dialog.py:388
 msgid "Applying — activating the staged firmware…"
-msgstr ""
+msgstr "Používání — aktivace připraveného firmwaru…"
 
 #: polyhost/gui/hid_fw_up_dialog.py:468
 msgid "Cancelling — waiting for current chunk to finish…"
-msgstr ""
+msgstr "Rušení — čeká se na dokončení aktuálního bloku…"
 
 #: polyhost/gui/i18n_qt.py:93 polyhost/gui/settings_dialog.py:73
 msgid "Language"
-msgstr ""
+msgstr "Jazyk"
 
 #: polyhost/gui/i18n_qt.py:94
 msgid "The new language is used after a restart. Restart now?"
-msgstr ""
+msgstr "Nový jazyk se použije po restartu. Restartovat nyní?"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:56
 msgid "Edit Key"
-msgstr ""
+msgstr "Upravit klávesu"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
 msgid "QMK Keycode:"
-msgstr ""
+msgstr "Kód klávesy QMK:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:64
 msgid "Visual Label:"
-msgstr ""
+msgstr "Zobrazený popisek:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
-msgstr ""
+msgstr "Otočení: {angle}° kolem ({x}, {y})"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
 msgid "Info:"
-msgstr ""
+msgstr "Informace:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:94
 msgid "PolyKybd Split72 Layout"
-msgstr ""
+msgstr "Rozložení PolyKybd Split72"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:192
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
-msgstr ""
+msgstr "PolyKybd není dostupná. Připojte klávesnici a zkuste to znovu."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:193
 msgid "Could not read layers from device"
-msgstr ""
+msgstr "Nelze přečíst vrstvy ze zařízení"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "Layers:"
-msgstr ""
+msgstr "Vrstvy:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:280
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
-msgstr ""
+msgstr "Vykreslit každou klávesu tak, jak ji zobrazuje klávesnice. Klávesa, jejíž popisek zde není modelován, zobrazí text svého kódu klávesy."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:282
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
-msgstr ""
+msgstr "Nedostupné: písma kláves a tabulky rozložení se nepodařilo načíst, takže klávesy zobrazují svůj kód."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:288
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
-msgstr ""
+msgstr "Částečně nedostupné — {reason}"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:293
 #, python-brace-format
@@ -1476,38 +1509,40 @@ msgid ""
 "Legends read from:\n"
 "{source}"
 msgstr ""
+"Popisky načteny z:\n"
+"{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:310
 msgid "Symbol"
-msgstr ""
+msgstr "Symbol"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:310
 msgid "Every key shows its keycode."
-msgstr ""
+msgstr "Každá klávesa zobrazuje svůj kód klávesy."
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:312
 msgid "Preview"
-msgstr ""
+msgstr "Náhled"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:314
 msgid "Real"
-msgstr ""
+msgstr "Skutečné"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:314
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
-msgstr ""
+msgstr "Přes simulaci panelu: svítící pixely, záře a rozptyl průhledného krytu klávesy — jak klávesa skutečně vypadá."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:332
 #, python-brace-format
 msgid "Unavailable: {reason}"
-msgstr ""
+msgstr "Nedostupné: {reason}"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:583
 msgid "Error"
-msgstr ""
+msgstr "Chyba"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:583
 #, python-brace-format
@@ -1516,18 +1551,21 @@ msgid ""
 "{error}\n"
 "{details}"
 msgstr ""
+"Načtení selhalo:\n"
+"{error}\n"
+"{details}"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:346
 msgid "no preview data (shipped or checkout)"
-msgstr ""
+msgstr "žádná data náhledu (dodaná ani ze zdrojového stromu)"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:383
 msgid "the shipped language table is missing"
-msgstr ""
+msgstr "dodaná tabulka jazyků chybí"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2794
 msgid "unknown"
-msgstr ""
+msgstr "neznámé"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:549
 #, python-brace-format
@@ -1535,698 +1573,702 @@ msgid ""
 "shipped with this host\n"
 "firmware {version}"
 msgstr ""
+"dodáno s touto aplikací\n"
+"firmware {version}"
 
 #: polyhost/gui/layout_dialog/keycap_preview.py:553
 msgid "(a firmware checkout is present but is not newer)"
-msgstr ""
+msgstr "(zdrojový strom firmwaru je k dispozici, ale není novější)"
 
 #: polyhost/gui/layout_dialog/keycode_browser.py:58
 msgid "Layers && Mods"
-msgstr ""
+msgstr "Vrstvy && modifikátory"
 
 #: polyhost/gui/layout_dialog/keycode_browser.py:73
 msgid "Macros"
-msgstr ""
+msgstr "Makra"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:31
 msgid "MO — Momentary layer"
-msgstr ""
+msgstr "MO — dočasná vrstva"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:32
 msgid "TO — Switch to layer"
-msgstr ""
+msgstr "TO — přepnout na vrstvu"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:33
 msgid "TG — Toggle layer"
-msgstr ""
+msgstr "TG — přepínat vrstvu"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:34
 msgid "DF — Set default layer"
-msgstr ""
+msgstr "DF — nastavit výchozí vrstvu"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:35
 msgid "PDF — Persistent default layer"
-msgstr ""
+msgstr "PDF — trvalá výchozí vrstva"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:36
 msgid "TT — Tap-toggle layer"
-msgstr ""
+msgstr "TT — přepínání vrstvy klepnutím"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:37
 msgid "OSL — One-shot layer"
-msgstr ""
+msgstr "OSL — jednorázová vrstva"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:38
 msgid "OSM — One-shot modifier"
-msgstr ""
+msgstr "OSM — jednorázový modifikátor"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:39
 msgid "LT — Layer-tap (hold layer / tap key)"
-msgstr ""
+msgstr "LT — vrstva/klávesa (podržet = vrstva / klepnout = klávesa)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:40
 msgid "LM — Layer + modifier (momentary)"
-msgstr ""
+msgstr "LM — vrstva + modifikátor (dočasně)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:41
 msgid "MT — Mod-tap (hold mod / tap key)"
-msgstr ""
+msgstr "MT — modifikátor/klávesa (podržet = modifikátor / klepnout = klávesa)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:42
 msgid "Modified key (Ctrl/Shift/… + key)"
-msgstr ""
+msgstr "Klávesa s modifikátorem (Ctrl/Shift/… + klávesa)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:43
 msgid "SH_T — Swap-hands tap-hold (tap key / hold swap)"
-msgstr ""
+msgstr "SH_T — prohození rukou klepnutím/podržením (klepnout = klávesa / podržet = prohodit)"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:74
 msgid "Behavior:"
-msgstr ""
+msgstr "Chování:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:78
 msgid "Layer:"
-msgstr ""
+msgstr "Vrstva:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:81
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:180
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Modifiers"
-msgstr ""
+msgstr "Modifikátory"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:83
 msgid "Ctrl"
-msgstr ""
+msgstr "Ctrl"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:84
 msgid "Shift"
-msgstr ""
+msgstr "Shift"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:85
 msgid "Alt"
-msgstr ""
+msgstr "Alt"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:86
 msgid "GUI"
-msgstr ""
+msgstr "GUI"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:89
 msgid "Left"
-msgstr ""
+msgstr "Levý"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:90
 msgid "Right"
-msgstr ""
+msgstr "Pravý"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:105
 msgid "Inner key:"
-msgstr ""
+msgstr "Vnitřní klávesa:"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:113
 msgid "Apply to selected key"
-msgstr ""
+msgstr "Použít na vybranou klávesu"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:251
 msgid "Select at least one modifier"
-msgstr ""
+msgstr "Vyberte alespoň jeden modifikátor"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:57
 msgid "Choose a keycap icon"
-msgstr ""
+msgstr "Vyberte ikonu klávesy"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:67
 msgid "Emoji and symbols"
-msgstr ""
+msgstr "Emoji a symboly"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:68
 msgid "Every bundle"
-msgstr ""
+msgstr "Všechny sady"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:70
 msgid "Show:"
-msgstr ""
+msgstr "Zobrazit:"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:73
 msgid "filter by codepoint — 1F4E7, U+2699, or a character"
-msgstr ""
+msgstr "filtrovat podle kódového bodu — 1F4E7, U+2699 nebo znak"
 
 #: polyhost/gui/layout_dialog/macro_icon_dialog.py:148
 #, python-brace-format
 msgid "{n} glyph"
 msgid_plural "{n} glyphs"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} glyf"
+msgstr[1] "{n} glyfy"
+msgstr[2] "{n} glyfů"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Tap"
-msgstr ""
+msgstr "Klepnout"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Hold"
-msgstr ""
+msgstr "Podržet"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Release"
-msgstr ""
+msgstr "Uvolnit"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
 msgid "Wait"
-msgstr ""
+msgstr "Čekat"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:91
 msgid "Macro steps"
-msgstr ""
+msgstr "Kroky makra"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
 msgid "Action"
-msgstr ""
+msgstr "Akce"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
 msgid "Value"
-msgstr ""
+msgstr "Hodnota"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:117
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:311
 msgid "Type"
-msgstr ""
+msgstr "Typ"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:123
 msgid "VIA's macro syntax:  plain text  ·  {KC_A} tap  ·  {+KC_A} hold  ·  {-KC_A} release  ·  {250} wait  ·  \\{ a literal brace"
-msgstr ""
+msgstr "Syntaxe maker VIA:  prostý text  ·  {KC_A} klepnutí  ·  {+KC_A} podržení  ·  {-KC_A} uvolnění  ·  {250} čekání  ·  \\{ doslovná složená závorka"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:142
 msgid "Add step"
-msgstr ""
+msgstr "Přidat krok"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:144
 msgid "Add text…"
-msgstr ""
+msgstr "Přidat text…"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:145
 msgid "Append a run of characters the macro should type"
-msgstr ""
+msgstr "Přidat řadu znaků, které má makro napsat"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
 msgid "Remove"
-msgstr ""
+msgstr "Odebrat"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:150
 msgid "Move the selected step up"
-msgstr ""
+msgstr "Posunout vybraný krok nahoru"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:153
 msgid "Move the selected step down"
-msgstr ""
+msgstr "Posunout vybraný krok dolů"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:173
 msgid "Table"
-msgstr ""
+msgstr "Tabulka"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:174
 msgid "Script"
-msgstr ""
+msgstr "Skript"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:188
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
 msgid "Record"
-msgstr ""
+msgstr "Nahrávat"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:194
 msgid "Press the keys you want, then click Stop. Esc stops recording."
-msgstr ""
+msgstr "Stiskněte požadované klávesy a pak klikněte na Zastavit. Klávesa Esc nahrávání ukončí."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:198
 msgid "no timing"
-msgstr ""
+msgstr "bez časování"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:199
 msgid "with timing"
-msgstr ""
+msgstr "s časováním"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:201
 msgid ""
 "Record the real pauses between keystrokes as Wait steps.\n"
 "Off by default: most macros want to run as fast as the keyboard can."
 msgstr ""
+"Nahrávat skutečné pauzy mezi stisky kláves jako kroky Čekat.\n"
+"Ve výchozím stavu vypnuto: většina maker má běžet tak rychle, jak to klávesnice zvládne."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:289
 #, python-brace-format
 msgid "{error}  — fix it or switch back."
-msgstr ""
+msgstr "{error}  — opravte to, nebo se přepněte zpět."
 
 #. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
 msgid " ms"
-msgstr ""
+msgstr " ms"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:382
 #, python-brace-format
 msgid "Switch this row back to a key action to restore {keycode}."
-msgstr ""
+msgstr "Chcete-li obnovit {keycode}, přepněte tento řádek zpět na akci klávesy."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
 msgid "Add text"
-msgstr ""
+msgstr "Přidat text"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
 msgid "Characters to type:"
-msgstr ""
+msgstr "Znaky k napsání:"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:461
 msgid "No steps yet."
-msgstr ""
+msgstr "Zatím žádné kroky."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:494
 msgid "Recording — press keys, then click Stop (or Esc)."
-msgstr ""
+msgstr "Nahrávání — stiskněte klávesy a pak klikněte na Zastavit (nebo Esc)."
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:530
 #, python-brace-format
 msgid "No basic keycode for that key — skipped. (Recorded {n} step so far.)"
 msgid_plural "No basic keycode for that key — skipped. (Recorded {n} steps so far.)"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Pro tuto klávesu neexistuje základní kód klávesy — přeskočeno. (Zatím nahrán {n} krok.)"
+msgstr[1] "Pro tuto klávesu neexistuje základní kód klávesy — přeskočeno. (Zatím nahrány {n} kroky.)"
+msgstr[2] "Pro tuto klávesu neexistuje základní kód klávesy — přeskočeno. (Zatím nahráno {n} kroků.)"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:542
 #, python-brace-format
 msgid "Recording — {n} step. Stop (or Esc) when done."
 msgid_plural "Recording — {n} steps. Stop (or Esc) when done."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Nahrávání — {n} krok. Po dokončení Zastavit (nebo Esc)."
+msgstr[1] "Nahrávání — {n} kroky. Po dokončení Zastavit (nebo Esc)."
+msgstr[2] "Nahrávání — {n} kroků. Po dokončení Zastavit (nebo Esc)."
 
 #: polyhost/gui/layout_dialog/macro_tab.py:46
 msgid "stored unencrypted, readable by anything on the USB"
-msgstr ""
+msgstr "uloženo nešifrovaně, čitelné čímkoli na USB"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:148
 #: polyhost/gui/layout_dialog/macro_tab.py:275
 msgid "Keycap:"
-msgstr ""
+msgstr "Klávesa:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:166
 msgid "Number above the label"
-msgstr ""
+msgstr "Číslo nad popiskem"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:167
 msgid "Icon above the label"
-msgstr ""
+msgstr "Ikona nad popiskem"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:168
 msgid "Label only, as large as it fits"
-msgstr ""
+msgstr "Pouze popisek, co největší"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:169
 msgid "Icon only, filling the key"
-msgstr ""
+msgstr "Pouze ikona přes celou klávesu"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:172
 msgid "Style:"
-msgstr ""
+msgstr "Styl:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:181
 msgid "Types:"
-msgstr ""
+msgstr "Píše:"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:188
 msgid "Steps…"
-msgstr ""
+msgstr "Kroky…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:190
 msgid "Build the macro out of key presses, chords and pauses — or record them"
-msgstr ""
+msgstr "Sestavit makro ze stisků kláves, akordů a pauz — nebo je nahrát"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:205
 msgid "How the keycap will look"
-msgstr ""
+msgstr "Jak bude klávesa vypadat"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:210
 #: polyhost/gui/layout_dialog/macro_tab.py:425
 msgid "Choose icon…"
-msgstr ""
+msgstr "Vybrat ikonu…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:232
 msgid "Save macro"
-msgstr ""
+msgstr "Uložit makro"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:238
 msgid "Use on selected key"
-msgstr ""
+msgstr "Použít na vybranou klávesu"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:249
 msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
-msgstr ""
+msgstr "Všechna makra sdílejí v klávesnici jeden společný prostor, takže dlouhé makro ponechá méně místa ostatním"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:301
 #, python-brace-format
 msgid "M{number} (empty)"
-msgstr ""
+msgstr "M{number} (prázdné)"
 
 #. TRANSLATORS: %p% is Qt's percentage placeholder -- keep it as it is.
 #: polyhost/gui/layout_dialog/macro_tab.py:318
 #, python-brace-format
 msgid "{used} / {capacity} bytes  ·  %p%"
-msgstr ""
+msgstr "{used} / {capacity} bajtů  ·  %p%"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:346
 #: polyhost/gui/layout_dialog/macro_tab.py:403
 #, python-brace-format
 msgid "{n} byte  ·  {caveat}"
 msgid_plural "{n} bytes  ·  {caveat}"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} bajt  ·  {caveat}"
+msgstr[1] "{n} bajty  ·  {caveat}"
+msgstr[2] "{n} bajtů  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:363
 #, python-brace-format
 msgid "{n} step — press Steps… to edit  ·  {caveat}"
 msgid_plural "{n} steps — press Steps… to edit  ·  {caveat}"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{n} krok — upravíte tlačítkem Kroky…  ·  {caveat}"
+msgstr[1] "{n} kroky — upravíte tlačítkem Kroky…  ·  {caveat}"
+msgstr[2] "{n} kroků — upravíte tlačítkem Kroky…  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:367
 #, python-brace-format
 msgid "{size} bytes  ·  {n} step — press Steps… to edit  ·  {caveat}"
 msgid_plural "{size} bytes  ·  {n} steps — press Steps… to edit  ·  {caveat}"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{size} bajtů  ·  {n} krok — upravíte tlačítkem Kroky…  ·  {caveat}"
+msgstr[1] "{size} bajtů  ·  {n} kroky — upravíte tlačítkem Kroky…  ·  {caveat}"
+msgstr[2] "{size} bajtů  ·  {n} kroků — upravíte tlačítkem Kroky…  ·  {caveat}"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:388
 msgid "That text cannot become steps"
-msgstr ""
+msgstr "Tento text nelze převést na kroky"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:439
 #, python-brace-format
 msgid "{codepoint} (no glyph)"
-msgstr ""
+msgstr "{codepoint} (žádný glyf)"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:441
 #, python-brace-format
 msgid "{codepoint} (unverified)"
-msgstr ""
+msgstr "{codepoint} (neověřeno)"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:460
 msgid "no font — preview unavailable"
-msgstr ""
+msgstr "žádné písmo — náhled není k dispozici"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:468
 #, python-brace-format
 msgid "{width} / {panel_width} px"
-msgstr ""
+msgstr "{width} / {panel_width} px"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:520
 msgid "Could not save the macro"
-msgstr ""
+msgstr "Makro se nepodařilo uložit"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:531
 msgid "Could not clear the macro"
-msgstr ""
+msgstr "Makro se nepodařilo vymazat"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:178
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Steno"
-msgstr ""
+msgstr "Steno"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Media / System"
-msgstr ""
+msgstr "Média / systém"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Midi"
-msgstr ""
+msgstr "MIDI"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Haptic"
-msgstr ""
+msgstr "Haptika"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
 msgid "Unicode / International"
-msgstr ""
+msgstr "Unicode / mezinárodní"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "RGB"
-msgstr ""
+msgstr "RGB"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
 msgid "Mouse / Joystick"
-msgstr ""
+msgstr "Myš / joystick"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "Magic"
-msgstr ""
+msgstr "Magic"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
 msgid "User / Macro"
-msgstr ""
+msgstr "Uživatel / makro"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Programmable"
-msgstr ""
+msgstr "Programovatelné"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Space Cadet"
-msgstr ""
+msgstr "Space Cadet"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
 msgid "Quantum"
-msgstr ""
+msgstr "Quantum"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Additional"
-msgstr ""
+msgstr "Další"
 
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:239
 #: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
 msgid "Standard"
-msgstr ""
+msgstr "Standardní"
 
 #: polyhost/gui/log_bundle_dialog.py:30
 msgid "Last 15 minutes"
-msgstr ""
+msgstr "Posledních 15 minut"
 
 #: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last hour"
-msgstr ""
+msgstr "Poslední hodina"
 
 #: polyhost/gui/log_bundle_dialog.py:32
 msgid "Last 24 hours"
-msgstr ""
+msgstr "Posledních 24 hodin"
 
 #: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last 7 days"
-msgstr ""
+msgstr "Posledních 7 dní"
 
 #: polyhost/gui/log_bundle_dialog.py:34
 msgid "Everything on disk"
-msgstr ""
+msgstr "Vše na disku"
 
 #: polyhost/gui/log_bundle_dialog.py:88
 #, python-brace-format
 msgid "Log collection failed: {error}"
-msgstr ""
+msgstr "Shromáždění protokolů selhalo: {error}"
 
 #: polyhost/gui/log_bundle_dialog.py:106
 msgid "Collect Logs"
-msgstr ""
+msgstr "Shromáždit protokoly"
 
 #: polyhost/gui/log_bundle_dialog.py:111
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
-msgstr ""
+msgstr "Shromáždí všechny protokoly PolyHost — včetně protokolů démona a konzole klávesnice — s jejich rotovanými zálohami a také údaje o verzi a připojení do jediného souboru, který můžete přiložit k hlášení o chybě."
 
 #: polyhost/gui/log_bundle_dialog.py:123
 msgid "Timeframe:"
-msgstr ""
+msgstr "Časové období:"
 
 #: polyhost/gui/log_bundle_dialog.py:126
 msgid "Mask window titles"
-msgstr ""
+msgstr "Maskovat názvy oken"
 
 #: polyhost/gui/log_bundle_dialog.py:128
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
-msgstr ""
+msgstr "Názvy oken mohou prozradit dokumenty, které jste měli otevřené. Maskování zachová názvy aplikací (podle nich se ladí přiřazování překryvů), ale každý název okna nahradí zástupným textem."
 
 #: polyhost/gui/log_bundle_dialog.py:145
 msgid "Show in Folder"
-msgstr ""
+msgstr "Zobrazit ve složce"
 
 #: polyhost/gui/log_bundle_dialog.py:155
 msgid "Save Bundle…"
-msgstr ""
+msgstr "Uložit balík…"
 
 #: polyhost/gui/log_bundle_dialog.py:169
 msgid "Window titles will be replaced with placeholders. Application names are kept."
-msgstr ""
+msgstr "Názvy oken budou nahrazeny zástupným textem. Názvy aplikací zůstanou zachovány."
 
 #: polyhost/gui/log_bundle_dialog.py:173
 msgid "The logs record the titles of windows you focused, which can name open documents."
-msgstr ""
+msgstr "Protokoly zaznamenávají názvy oken, se kterými jste pracovali, a ty mohou prozradit otevřené dokumenty."
 
 #: polyhost/gui/log_bundle_dialog.py:175
 msgid "Tick the box above to mask them."
-msgstr ""
+msgstr "Chcete-li je maskovat, zaškrtněte políčko výše."
 
 #: polyhost/gui/log_bundle_dialog.py:196
 msgid "Collecting…"
-msgstr ""
+msgstr "Shromažďování…"
 
 #: polyhost/gui/log_bundle_dialog.py:218
 msgid "Save Log Bundle"
-msgstr ""
+msgstr "Uložit balík protokolů"
 
 #: polyhost/gui/log_bundle_dialog.py:219
 msgid "Zip archives (*.zip)"
-msgstr ""
+msgstr "Archivy ZIP (*.zip)"
 
 #: polyhost/gui/log_bundle_dialog.py:229
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
-msgstr ""
+msgstr "Uloženo: {summary}"
 
 #: polyhost/gui/log_bundle_dialog.py:239
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Do schránky zkopírován {n} řádek."
+msgstr[1] "Do schránky zkopírovány {n} řádky."
+msgstr[2] "Do schránky zkopírováno {n} řádků."
 
 #: polyhost/gui/log_viewer.py:60
 msgid "Log Viewer"
-msgstr ""
+msgstr "Prohlížeč protokolů"
 
 #: polyhost/gui/log_viewer.py:98
 msgid "Collect Logs..."
-msgstr ""
+msgstr "Shromáždit protokoly..."
 
 #: polyhost/gui/log_viewer.py:99
 msgid "Save all logs as a .zip, or copy them to the clipboard"
-msgstr ""
+msgstr "Uložit všechny protokoly jako .zip, nebo je zkopírovat do schránky"
 
 #: polyhost/gui/log_viewer.py:103
 msgid "Open Folder"
-msgstr ""
+msgstr "Otevřít složku"
 
 #: polyhost/gui/log_viewer.py:107
 msgid "Reload"
-msgstr ""
+msgstr "Znovu načíst"
 
 #: polyhost/gui/log_viewer.py:130
 #, python-brace-format
 msgid "Failed to load log file '{path}': {error}"
-msgstr ""
+msgstr "Nepodařilo se načíst soubor protokolu '{path}': {error}"
 
 #: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1836
 msgid "Mock keyboard"
-msgstr ""
+msgstr "Simulovaná klávesnice"
 
 #: polyhost/gui/mock_board_dialog.py:101
 msgid "Live"
-msgstr ""
+msgstr "Živě"
 
 #: polyhost/gui/mock_board_dialog.py:103
 msgid "Follow modifiers"
-msgstr ""
+msgstr "Sledovat modifikátory"
 
 #: polyhost/gui/mock_board_dialog.py:104
 msgid "Show the variant for the modifiers held on this computer's keyboard"
-msgstr ""
+msgstr "Zobrazit variantu pro modifikátory držené na klávesnici tohoto počítače"
 
 #: polyhost/gui/mock_board_dialog.py:107
 msgid "Save PNGs…"
-msgstr ""
+msgstr "Uložit PNG…"
 
 #: polyhost/gui/mock_board_dialog.py:112
 msgid "Modifier:"
-msgstr ""
+msgstr "Modifikátor:"
 
 #: polyhost/gui/mock_board_dialog.py:186
 #, python-brace-format
 msgid "Refresh failed: {error}"
-msgstr ""
+msgstr "Obnovení selhalo: {error}"
 
 #. TRANSLATORS: {side} is "Primary" or "Secondary", {state} is "on" or "OFF".
 #: polyhost/gui/mock_board_dialog.py:214
 #, python-brace-format
 msgid "{side} mock, protocol v{protocol} · overlays {state} · {shown} keycap(s) with an overlay · received: {images} image, {fills} fill, {mappings} mapping, {controls} control report(s)"
-msgstr ""
+msgstr "{side} simulace, protokol v{protocol} · překryvy {state} · klávesy s překryvem: {shown} · přijato: obrázky {images}, výplně {fills}, mapování {mappings}, řídicí hlášení {controls}"
 
 #: polyhost/gui/mock_board_dialog.py:217
 msgid "Primary"
-msgstr ""
+msgstr "Primární"
 
 #: polyhost/gui/mock_board_dialog.py:217
 msgid "Secondary"
-msgstr ""
+msgstr "Sekundární"
 
 #. TRANSLATORS: the state of the mock keyboard's overlays.
 #: polyhost/gui/mock_board_dialog.py:220
 msgid "on"
-msgstr ""
+msgstr "zapnuty"
 
 #: polyhost/gui/mock_board_dialog.py:220
 msgid "OFF"
-msgstr ""
+msgstr "VYPNUTY"
 
 #: polyhost/gui/mock_board_dialog.py:224
 #, python-brace-format
 msgid " · ⚠ {count} refused: {last}"
-msgstr ""
+msgstr " · ⚠ odmítnuto {count}: {last}"
 
 #: polyhost/gui/mock_board_dialog.py:233
 msgid "Save the mock's keycaps to"
-msgstr ""
+msgstr "Uložit klávesy simulace do"
 
 #: polyhost/gui/mock_board_dialog.py:240
 #, python-brace-format
 msgid "Saved {count} PNG(s) to {folder}"
-msgstr ""
+msgstr "Uloženo PNG: {count} do {folder}"
 
 #. TRANSLATORS: an overlay image shown under every modifier combination.
 #: polyhost/gui/mru_inspector_dialog.py:35
 msgid "any"
-msgstr ""
+msgstr "libovolný"
 
 #: polyhost/gui/mru_inspector_dialog.py:117
 #, python-brace-format
 msgid "MRU Overlay Cache Inspector  —  {caches}"
-msgstr ""
+msgstr "Inspektor mezipaměti překryvů MRU  —  {caches}"
 
 #: polyhost/gui/mru_inspector_dialog.py:145
 #, python-brace-format
 msgid "All transferred mappings so far ({n} entries) — display position → pool slot"
 msgid_plural "All transferred mappings so far ({n} entries) — display position → pool slot"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Všechna dosud přenesená mapování ({n} položka) — pozice displeje → pozice ve fondu"
+msgstr[1] "Všechna dosud přenesená mapování ({n} položky) — pozice displeje → pozice ve fondu"
+msgstr[2] "Všechna dosud přenesená mapování ({n} položek) — pozice displeje → pozice ve fondu"
 
 #: polyhost/gui/mru_inspector_dialog.py:152
 msgid "From"
-msgstr ""
+msgstr "Z"
 
 #: polyhost/gui/mru_inspector_dialog.py:152
 msgid "To"
-msgstr ""
+msgstr "Do"
 
 #: polyhost/gui/mru_inspector_dialog.py:168
 msgid "(no mapping sent yet)"
-msgstr ""
+msgstr "(zatím nebylo odesláno žádné mapování)"
 
 #: polyhost/gui/mru_inspector_dialog.py:273
 #, python-brace-format
@@ -2235,763 +2277,768 @@ msgid ""
 "{keycode}·{modifier}→{slot}\n"
 "batch {rank}/{max_rank}"
 msgstr ""
+"{file}\n"
+"{keycode}·{modifier}→{slot}\n"
+"dávka {rank}/{max_rank}"
 
 #: polyhost/gui/newer_firmware_dialog.py:32
 msgid "Safe mode"
-msgstr ""
+msgstr "Nouzový režim"
 
 #: polyhost/gui/newer_firmware_dialog.py:33
 msgid "Check for updates"
-msgstr ""
+msgstr "Vyhledat aktualizace"
 
 #: polyhost/gui/newer_firmware_dialog.py:34
 msgid "Connect anyway"
-msgstr ""
+msgstr "Přesto připojit"
 
 #: polyhost/gui/newer_firmware_dialog.py:57
 #, python-brace-format
 msgid "{keyboard}'s firmware (protocol P{device_protocol}) is newer than this host app (protocol P{host_protocol})."
-msgstr ""
+msgstr "Firmware klávesnice {keyboard} (protokol P{device_protocol}) je novější než tato aplikace (protokol P{host_protocol})."
 
 #: polyhost/gui/newer_firmware_dialog.py:61
 msgid "A newer firmware may use commands this version of the app doesn't fully understand, so some features could misbehave. How would you like to proceed?"
-msgstr ""
+msgstr "Novější firmware může používat příkazy, kterým tato verze aplikace plně nerozumí, takže některé funkce se mohou chovat nesprávně. Jak chcete pokračovat?"
 
 #: polyhost/gui/newer_firmware_dialog.py:65
 msgid "• Safe mode — connect, but enable only the stable set (firmware update and debugging)."
-msgstr ""
+msgstr "• Nouzový režim — připojit, ale povolit jen stabilní sadu funkcí (aktualizace firmwaru a ladění)."
 
 #: polyhost/gui/newer_firmware_dialog.py:67
 msgid "• Check for updates — look for a newer host app that matches; if none is found, stay in safe mode."
-msgstr ""
+msgstr "• Vyhledat aktualizace — najít novější odpovídající verzi aplikace; pokud se žádná nenajde, zůstat v nouzovém režimu."
 
 #: polyhost/gui/newer_firmware_dialog.py:69
 msgid "• Connect anyway — use everything and accept the risk."
-msgstr ""
+msgstr "• Přesto připojit — používat vše a přijmout riziko."
 
 #: polyhost/gui/newer_firmware_dialog.py:73
 msgid "Newer keyboard firmware detected"
-msgstr ""
+msgstr "Zjištěn novější firmware klávesnice"
 
 #: polyhost/gui/oled_look.py:36
 #, python-brace-format
 msgid "Pillow is unavailable: {error}"
-msgstr ""
+msgstr "Pillow není k dispozici: {error}"
 
 #: polyhost/gui/problem_alert_dialog.py:37
 msgid "PolyKybd — a problem was detected"
-msgstr ""
+msgstr "PolyKybd — byl zjištěn problém"
 
 #: polyhost/gui/problem_alert_dialog.py:53
 msgid "Everything may still be working, but this is worth a look. A bug report collects the logs and pre-fills a GitHub issue; nothing is sent until you press Submit there. To change what is watched, see the problem_scan settings."
-msgstr ""
+msgstr "Vše možná stále funguje, ale stojí za to se na to podívat. Hlášení o chybě shromáždí protokoly a předvyplní issue na GitHubu; nic se neodešle, dokud tam nestisknete Submit. Co se sleduje, změníte v nastavení problem_scan."
 
 #: polyhost/gui/problem_alert_dialog.py:65
 msgid "Report a Problem…"
-msgstr ""
+msgstr "Nahlásit problém…"
 
 #: polyhost/gui/problem_alert_dialog.py:100
 #, python-brace-format
 msgid "<b>PolyKybd noticed {n} problem.</b>"
 msgid_plural "<b>PolyKybd noticed {n} problems.</b>"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "<b>PolyKybd zjistila {n} problém.</b>"
+msgstr[1] "<b>PolyKybd zjistila {n} problémy.</b>"
+msgstr[2] "<b>PolyKybd zjistila {n} problémů.</b>"
 
 #: polyhost/gui/problem_alert_dialog.py:117
 msgid "Opened the problem report with these filled in."
-msgstr ""
+msgstr "Hlášení problému bylo otevřeno s vyplněnými údaji."
 
 #: polyhost/gui/report_problem_dialog.py:53
 msgid "Report a Problem"
-msgstr ""
+msgstr "Nahlásit problém"
 
 #: polyhost/gui/report_problem_dialog.py:58
 msgid "This collects your logs and opens a pre-filled bug report on GitHub. Nothing is sent anywhere until you press Submit there — and you attach the log file yourself, so you can look at it first."
-msgstr ""
+msgstr "Shromáždí vaše protokoly a otevře předvyplněné hlášení o chybě na GitHubu. Nic se nikam neodešle, dokud tam nestisknete Submit — a soubor protokolu přikládáte sami, takže si ho můžete nejprve prohlédnout."
 
 #: polyhost/gui/report_problem_dialog.py:66
 msgid "What went wrong? What were you doing when it happened?"
-msgstr ""
+msgstr "Co se pokazilo? Co jste dělali, když k tomu došlo?"
 
 #: polyhost/gui/report_problem_dialog.py:69
 msgid "What happened"
-msgstr ""
+msgstr "Co se stalo"
 
 #: polyhost/gui/report_problem_dialog.py:73
 msgid "Optional — what you expected instead"
-msgstr ""
+msgstr "Volitelné — co jste místo toho očekávali"
 
 #: polyhost/gui/report_problem_dialog.py:81
 msgid "Include logs from:"
-msgstr ""
+msgstr "Zahrnout protokoly z:"
 
 #: polyhost/gui/report_problem_dialog.py:86
 msgid "Mask window titles (recommended)"
-msgstr ""
+msgstr "Maskovat názvy oken (doporučeno)"
 
 #: polyhost/gui/report_problem_dialog.py:102
 msgid "Show Log File"
-msgstr ""
+msgstr "Zobrazit soubor protokolu"
 
 #: polyhost/gui/report_problem_dialog.py:108
 msgid "Create Report…"
-msgstr ""
+msgstr "Vytvořit hlášení…"
 
 #: polyhost/gui/report_problem_dialog.py:134
 msgid "Window titles are replaced with placeholders. Application names are kept — that is what overlay problems are diagnosed from."
-msgstr ""
+msgstr "Názvy oken jsou nahrazeny zástupným textem. Názvy aplikací zůstanou zachovány — podle nich se diagnostikují problémy s překryvy."
 
 #: polyhost/gui/report_problem_dialog.py:139
 msgid "The log file will contain the titles of windows you had open, which can name documents."
-msgstr ""
+msgstr "Soubor protokolu bude obsahovat názvy oken, která jste měli otevřená, a ty mohou prozradit dokumenty."
 
 #: polyhost/gui/report_problem_dialog.py:141
 msgid "Only untick this if the problem is about the wrong overlay appearing for an app."
-msgstr ""
+msgstr "Zrušte zaškrtnutí, jen pokud se problém týká nesprávného překryvu zobrazeného pro aplikaci."
 
 #: polyhost/gui/report_problem_dialog.py:202
 msgid "Collecting logs…"
-msgstr ""
+msgstr "Shromažďování protokolů…"
 
 #: polyhost/gui/report_problem_dialog.py:252
 msgid "The report itself is fine — it just has no logs attached."
-msgstr ""
+msgstr "Samotné hlášení je v pořádku — jen k němu nejsou připojeny protokoly."
 
 #: polyhost/gui/report_problem_dialog.py:254
 msgid "A GitHub issue has been opened in your browser."
-msgstr ""
+msgstr "V prohlížeči bylo otevřeno issue na GitHubu."
 
 #: polyhost/gui/report_problem_dialog.py:255
 msgid "A GitHub issue has been opened in your browser — the report is on your clipboard, paste it in."
-msgstr ""
+msgstr "V prohlížeči bylo otevřeno issue na GitHubu — hlášení máte ve schránce, vložte ho tam."
 
 #: polyhost/gui/report_problem_dialog.py:261
 #, python-brace-format
 msgid "Could not open your browser — the report is on your clipboard. <a href='{url}'>Open an issue</a> and paste it in."
-msgstr ""
+msgstr "Nepodařilo se otevřít prohlížeč — hlášení máte ve schránce. <a href='{url}'>Otevřete issue</a> a vložte ho tam."
 
 #: polyhost/gui/report_problem_dialog.py:265
 msgid "<b>Attach the log file</b> (button on the left reveals it) and press Submit."
-msgstr ""
+msgstr "<b>Přiložte soubor protokolu</b> (tlačítko vlevo ho zobrazí) a stiskněte Submit."
 
 #: polyhost/gui/report_problem_dialog.py:268
 msgid "Press Submit. (No log file was produced — see above.)"
-msgstr ""
+msgstr "Stiskněte Submit. (Nebyl vytvořen žádný soubor protokolu — viz výše.)"
 
 #: polyhost/gui/settings_dialog.py:26
 #, python-brace-format
 msgid "Automatic ({language})"
-msgstr ""
+msgstr "Automaticky ({language})"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Automatic"
-msgstr ""
+msgstr "Automaticky"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Light"
-msgstr ""
+msgstr "Světlý"
 
 #: polyhost/gui/settings_dialog.py:36
 msgid "Dark"
-msgstr ""
+msgstr "Tmavý"
 
 #: polyhost/gui/settings_dialog.py:38
 msgid "Errors"
-msgstr ""
+msgstr "Chyby"
 
 #: polyhost/gui/settings_dialog.py:39
 msgid "Errors and warnings"
-msgstr ""
+msgstr "Chyby a varování"
 
 #: polyhost/gui/settings_dialog.py:47
 msgid "General"
-msgstr ""
+msgstr "Obecné"
 
 #: polyhost/gui/settings_dialog.py:48
 msgid "Browser"
-msgstr ""
+msgstr "Prohlížeč"
 
 #: polyhost/gui/settings_dialog.py:48
 msgid "Daemon"
-msgstr ""
+msgstr "Démon"
 
 #: polyhost/gui/settings_dialog.py:49
 msgid "Delay"
-msgstr ""
+msgstr "Prodleva"
 
 #: polyhost/gui/settings_dialog.py:49
 msgid "Dev"
-msgstr ""
+msgstr "Vývoj"
 
 #: polyhost/gui/settings_dialog.py:49 polyhost/host.py:760
 msgid "Developer"
-msgstr ""
+msgstr "Vývojář"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Fontpack"
-msgstr ""
+msgstr "Balíček písem"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Generic"
-msgstr ""
+msgstr "Obecné ikony"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "Hid"
-msgstr ""
+msgstr "HID"
 
 #: polyhost/gui/settings_dialog.py:51
 msgid "Irradiance"
-msgstr ""
+msgstr "Ozáření"
 
 #: polyhost/gui/settings_dialog.py:51
 msgid "Problem"
-msgstr ""
+msgstr "Problémy"
 
 #: polyhost/gui/settings_dialog.py:51 polyhost/gui/settings_dialog.py:62
 msgid "Max"
-msgstr ""
+msgstr "Max."
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Shortcut"
-msgstr ""
+msgstr "Zkratky"
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Telemetry"
-msgstr ""
+msgstr "Telemetrie"
 
 #: polyhost/gui/settings_dialog.py:52
 msgid "Ui"
-msgstr ""
+msgstr "Rozhraní"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Unicode"
-msgstr ""
+msgstr "Unicode"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Window"
-msgstr ""
+msgstr "Okno"
 
 #: polyhost/gui/settings_dialog.py:57
 msgid "Send Composition Mode"
-msgstr ""
+msgstr "Odesílat režim kompozice"
 
 #: polyhost/gui/settings_dialog.py:58
 msgid "Set Daylight Dependent"
-msgstr ""
+msgstr "Podle denního světla"
 
 #: polyhost/gui/settings_dialog.py:59
 msgid "Allow Online Irradiance Request"
-msgstr ""
+msgstr "Povolit online dotaz na ozáření"
 
 #: polyhost/gui/settings_dialog.py:60
 msgid "Allow Online Location Lookup"
-msgstr ""
+msgstr "Povolit online zjištění polohy"
 
 #: polyhost/gui/settings_dialog.py:61
 msgid "Min"
-msgstr ""
+msgstr "Min."
 
 #: polyhost/gui/settings_dialog.py:63
 msgid "Prescaler"
-msgstr ""
+msgstr "Předdělička"
 
 #: polyhost/gui/settings_dialog.py:64
 msgid "Gamma"
-msgstr ""
+msgstr "Gama"
 
 #: polyhost/gui/settings_dialog.py:65
 msgid "Overlays Enabled"
-msgstr ""
+msgstr "Překryvy zapnuty"
 
 #: polyhost/gui/settings_dialog.py:66
 msgid "Overlays Fill Gaps"
-msgstr ""
+msgstr "Překryvy vyplňují mezery"
 
 #: polyhost/gui/settings_dialog.py:67
 msgid "Icons Enabled"
-msgstr ""
+msgstr "Ikony zapnuty"
 
 #: polyhost/gui/settings_dialog.py:68
 msgid "Icon Auto Fetch"
-msgstr ""
+msgstr "Automaticky stahovat ikony"
 
 #: polyhost/gui/settings_dialog.py:69
 msgid "Hid Message Before Delay"
-msgstr ""
+msgstr "Zprávy HID před prodlevou"
 
 #: polyhost/gui/settings_dialog.py:70
 msgid "Time After Max Hid Messages"
-msgstr ""
+msgstr "Čas po max. počtu zpráv HID"
 
 #: polyhost/gui/settings_dialog.py:71
 msgid "Reconnect Retries"
-msgstr ""
+msgstr "Pokusy o opětovné připojení"
 
 #: polyhost/gui/settings_dialog.py:72
 msgid "Theme"
-msgstr ""
+msgstr "Motiv"
 
 #: polyhost/gui/settings_dialog.py:75
 msgid "Mock Enabled"
-msgstr ""
+msgstr "Simulace zapnuta"
 
 #: polyhost/gui/settings_dialog.py:76
 msgid "Mock Primary"
-msgstr ""
+msgstr "Simulace jako primární"
 
 #: polyhost/gui/settings_dialog.py:77
 msgid "Mock Protocol"
-msgstr ""
+msgstr "Protokol simulace"
 
 #: polyhost/gui/settings_dialog.py:79
 msgid "Run Window Detection If Not Connected To Poly Kybd"
-msgstr ""
+msgstr "Detekovat okna i bez připojené PolyKybd"
 
 #: polyhost/gui/settings_dialog.py:80
 msgid "Win Native Set Language"
-msgstr ""
+msgstr "Nativní nastavení jazyka ve Windows"
 
 #: polyhost/gui/settings_dialog.py:81
 msgid "Legacy Plaintext Relay"
-msgstr ""
+msgstr "Starší nešifrované přeposílání"
 
 #: polyhost/gui/settings_dialog.py:83
 msgid "Report Network Enabled"
-msgstr ""
+msgstr "Hlášení po síti zapnuto"
 
 #: polyhost/gui/settings_dialog.py:84
 msgid "Auto Flash"
-msgstr ""
+msgstr "Automaticky nahrávat"
 
 #: polyhost/gui/settings_dialog.py:85
 msgid "Path"
-msgstr ""
+msgstr "Cesta"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Url Detection"
-msgstr ""
+msgstr "Detekce URL"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Report Local Enabled"
-msgstr ""
+msgstr "Místní hlášení zapnuto"
 
 #: polyhost/gui/settings_dialog.py:88
 msgid "Report Port"
-msgstr ""
+msgstr "Port pro hlášení"
 
 #: polyhost/gui/settings_dialog.py:89
 msgid "Report Token"
-msgstr ""
+msgstr "Token pro hlášení"
 
 #: polyhost/gui/settings_dialog.py:90
 msgid "Enabled"
-msgstr ""
+msgstr "Zapnuto"
 
 #: polyhost/gui/settings_dialog.py:91
 msgid "Endpoint"
-msgstr ""
+msgstr "Koncový bod"
 
 #: polyhost/gui/settings_dialog.py:92
 msgid "Install Id"
-msgstr ""
+msgstr "ID instalace"
 
 #: polyhost/gui/settings_dialog.py:93
 msgid "Scan Keyboard Console"
-msgstr ""
+msgstr "Kontrolovat konzoli klávesnice"
 
 #: polyhost/gui/settings_dialog.py:94
 msgid "Scan Host Logs"
-msgstr ""
+msgstr "Kontrolovat protokoly aplikace"
 
 #: polyhost/gui/settings_dialog.py:95
 msgid "Scan Level"
-msgstr ""
+msgstr "Úroveň kontroly"
 
 #: polyhost/gui/settings_dialog.py:168
 msgid "PolyKybd Settings"
-msgstr ""
+msgstr "Nastavení PolyKybd"
 
 #: polyhost/gui/settings_dialog.py:186
 msgid "Some settings might need a restart to take effect."
-msgstr ""
+msgstr "Některá nastavení se mohou projevit až po restartu."
 
 #: polyhost/gui/settings_dialog.py:236
 msgid "Reset glyph script to Standard"
-msgstr ""
+msgstr "Obnovit standardní písmo kláves"
 
 #: polyhost/gui/settings_dialog.py:237
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
-msgstr ""
+msgstr "Vypnout jakékoli fantasy/alternativní písmo a znovu zobrazit běžné popisky jazyka."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
-msgstr ""
+msgstr "<p>Polovina připojená přes USB odpověděla, ale druhá polovina ne. Aktualizace a instalace písem vyžadují obě poloviny, proto byla tato akce zastavena.</p><p><b>1.</b> Odpojte kabel mezi polovinami a pevně ho na obou koncích znovu zapojte. Pak zkuste aktualizaci znovu.</p><p><b>2.</b> Pokud druhá polovina stále nesvítí a klávesy jsou prázdné, neběží na ní firmware. Odpojte obě poloviny. Podržte na této polovině tlačítko <b>BOOT</b> a současně ji připojte k počítači přes USB. Objeví se jednotka s názvem <b>RPI-RP2</b>. Přetáhněte na ni soubor .uf2; po dokončení kopírování jednotka zmizí. Pak znovu připojte obě poloviny.</p>"
 
 #: polyhost/gui/split_link_dialog.py:70
 msgid "Other keyboard half not answering"
-msgstr ""
+msgstr "Druhá polovina klávesnice neodpovídá"
 
 #: polyhost/gui/split_link_dialog.py:88
 msgid "Download .uf2"
-msgstr ""
+msgstr "Stáhnout .uf2"
 
 #: polyhost/gui/split_link_dialog.py:90
 msgid "Show in folder"
-msgstr ""
+msgstr "Zobrazit ve složce"
 
 #: polyhost/gui/split_link_dialog.py:93
 msgid "Open guide"
-msgstr ""
+msgstr "Otevřít návod"
 
 #: polyhost/gui/split_link_dialog.py:115
 msgid "Looking up the newest firmware release…"
-msgstr ""
+msgstr "Vyhledávání nejnovějšího vydání firmwaru…"
 
 #: polyhost/gui/split_link_dialog.py:132
 #, python-brace-format
 msgid "Saved: {path}"
-msgstr ""
+msgstr "Uloženo: {path}"
 
 #: polyhost/gui/split_link_dialog.py:134
 msgid "Download again"
-msgstr ""
+msgstr "Stáhnout znovu"
 
 #: polyhost/gui/split_link_dialog.py:138
 #, python-brace-format
 msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
-msgstr ""
+msgstr "Stažení selhalo ({error}). Soubor .uf2 můžete místo toho získat na <a href=\"{url}\">stránce vydání</a>."
 
 #: polyhost/gui/tray_notify.py:62
 #, python-brace-format
 msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
-msgstr ""
+msgstr "{prefix} — k dispozici aplikace v{host_version} a firmware v{fw_version}"
 
 #: polyhost/gui/tray_notify.py:65
 #, python-brace-format
 msgid "{prefix} — host v{host_version} available"
-msgstr ""
+msgstr "{prefix} — k dispozici aplikace v{host_version}"
 
 #: polyhost/gui/tray_notify.py:68
 #, python-brace-format
 msgid "{prefix} — firmware v{fw_version} available"
-msgstr ""
+msgstr "{prefix} — k dispozici firmware v{fw_version}"
 
 #: polyhost/gui/tray_notify.py:81 polyhost/host.py:654
 msgid "Updates"
-msgstr ""
+msgstr "Aktualizace"
 
 #: polyhost/gui/update_dialog.py:98
 msgid "What's new"
-msgstr ""
+msgstr "Co je nového"
 
 #: polyhost/gui/update_dialog.py:101
 #, python-brace-format
 msgid "What's new — {release_name}"
-msgstr ""
+msgstr "Co je nového — {release_name}"
 
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
-msgstr ""
+msgstr "Restartování pro dokončení aktualizace…"
 
 #: polyhost/host.py:51
 msgid "Standard (normal legends)"
-msgstr ""
+msgstr "Standardní (běžné popisky)"
 
 #: polyhost/host.py:52
 msgid "Tengwar (fantasy)"
-msgstr ""
+msgstr "Tengwar (fantasy)"
 
 #: polyhost/host.py:53
 msgid "Elder Futhark runes"
-msgstr ""
+msgstr "Runy staršího futharku"
 
 #: polyhost/host.py:54
 msgid "Aurebesh (sci-fi)"
-msgstr ""
+msgstr "Aurebesh (sci-fi)"
 
 #: polyhost/host.py:55
 msgid "Standard Galactic"
-msgstr ""
+msgstr "Standard Galactic"
 
 #: polyhost/host.py:56
 msgid "Cirth / Angerthas"
-msgstr ""
+msgstr "Cirth / Angerthas"
 
 #: polyhost/host.py:57
 msgid "IBM VGA / CP437"
-msgstr ""
+msgstr "IBM VGA / CP437"
 
 #: polyhost/host.py:58
 msgid "Commodore 64"
-msgstr ""
+msgstr "Commodore 64"
 
 #: polyhost/host.py:59
 msgid "Amiga Topaz"
-msgstr ""
+msgstr "Amiga Topaz"
 
 #: polyhost/host.py:60
 msgid "APL"
-msgstr ""
+msgstr "APL"
 
 #: polyhost/host.py:61
 msgid "Braille"
-msgstr ""
+msgstr "Braillovo písmo"
 
 #: polyhost/host.py:67
 msgid "Small (standard)"
-msgstr ""
+msgstr "Malá (standardní)"
 
 #: polyhost/host.py:68
 msgid "Medium"
-msgstr ""
+msgstr "Střední"
 
 #: polyhost/host.py:69
 msgid "Large"
-msgstr ""
+msgstr "Velká"
 
 #: polyhost/host.py:414 polyhost/host.py:1406
 msgid "Waiting for PolyKybd..."
-msgstr ""
+msgstr "Čekání na PolyKybd..."
 
 #: polyhost/host.py:415 polyhost/host.py:1258
 msgid "Press to pause connection"
-msgstr ""
+msgstr "Stisknutím pozastavíte připojení"
 
 #: polyhost/forwarder.py:306 polyhost/host.py:418
 msgid "Quit"
-msgstr ""
+msgstr "Ukončit"
 
 #: polyhost/host.py:427
 msgid "Quit && stop background daemon"
-msgstr ""
+msgstr "Ukončit && zastavit démona na pozadí"
 
 #: polyhost/forwarder.py:273 polyhost/host.py:432
 msgid "About"
-msgstr ""
+msgstr "O aplikaci"
 
 #: polyhost/forwarder.py:262 polyhost/host.py:436
 msgid "Settings..."
-msgstr ""
+msgstr "Nastavení..."
 
 #: polyhost/forwarder.py:277 polyhost/host.py:440
 msgid "Log file..."
-msgstr ""
+msgstr "Soubor protokolu..."
 
 #: polyhost/forwarder.py:283 polyhost/host.py:449
 msgid "Report a Problem..."
-msgstr ""
+msgstr "Nahlásit problém..."
 
 #: polyhost/forwarder.py:289 polyhost/host.py:468
 msgid "Collect logs..."
-msgstr ""
+msgstr "Shromáždit protokoly..."
 
 #: polyhost/host.py:477
 msgid "Read keyboard crash record"
-msgstr ""
+msgstr "Přečíst záznam o pádu klávesnice"
 
 #: polyhost/host.py:479
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
-msgstr ""
+msgstr "Přečíst poslední záznam o pádu z obou polovin klávesnice a zkopírovat ho do schránky."
 
 #: polyhost/host.py:484
 msgid "Inspect Font Packs..."
-msgstr ""
+msgstr "Prozkoumat balíčky písem..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:243 polyhost/forwarder.py:364 polyhost/host.py:498
 #: polyhost/host.py:1260
 msgid "Pause"
-msgstr ""
+msgstr "Pozastavit"
 
 #: polyhost/host.py:508
 msgid "Firmware newer than this app — safe mode…"
-msgstr ""
+msgstr "Firmware novější než tato aplikace — nouzový režim…"
 
 #: polyhost/host.py:510
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
-msgstr ""
+msgstr "Zvolte, jak zacházet s klávesnicí, jejíž firmware je novější než tato aplikace."
 
 #: polyhost/host.py:546
 msgid "Idle Display"
-msgstr ""
+msgstr "Zobrazení při nečinnosti"
 
 #: polyhost/host.py:549
 msgid "Pulse (legacy)"
-msgstr ""
+msgstr "Pulzování (starší)"
 
 #: polyhost/host.py:551
 msgid "Jitter (move legend)"
-msgstr ""
+msgstr "Chvění (posun popisku)"
 
 #: polyhost/host.py:555
 msgid "IDDQD (attract demo)"
-msgstr ""
+msgstr "IDDQD (ukázkové demo)"
 
 #: polyhost/host.py:559
 msgid "Eden"
-msgstr ""
+msgstr "Eden"
 
 #: polyhost/host.py:579
 msgid "Idle After"
-msgstr ""
+msgstr "Nečinnost po"
 
 #: polyhost/host.py:600
 msgid "Keycap Script"
-msgstr ""
+msgstr "Písmo kláves"
 
 #: polyhost/host.py:628
 msgid "Keycap Size"
-msgstr ""
+msgstr "Velikost popisků"
 
 #: polyhost/host.py:646
 msgid "Configure Keymap"
-msgstr ""
+msgstr "Upravit rozložení kláves"
 
 #: polyhost/host.py:656
 msgid "Check for host update..."
-msgstr ""
+msgstr "Vyhledat aktualizaci aplikace..."
 
 #: polyhost/host.py:695
 msgid "Check for keyboard firmware update…"
-msgstr ""
+msgstr "Vyhledat aktualizaci firmwaru klávesnice…"
 
 #: polyhost/host.py:704
 msgid "Keyboard fonts"
-msgstr ""
+msgstr "Písma klávesnice"
 
 #: polyhost/host.py:738
 msgid "Install WinCompose…"
-msgstr ""
+msgstr "Nainstalovat WinCompose…"
 
 #: polyhost/host.py:762
 msgid "Change System Input Language"
-msgstr ""
+msgstr "Změnit vstupní jazyk systému"
 
 #: polyhost/host.py:768
 msgid "Inspect MRU Cache..."
-msgstr ""
+msgstr "Prozkoumat mezipaměť MRU..."
 
 #: polyhost/host.py:774
 msgid "Mock Keyboard..."
-msgstr ""
+msgstr "Simulovaná klávesnice..."
 
 #: polyhost/host.py:782
 msgid "Refresh unicode input mode"
-msgstr ""
+msgstr "Obnovit režim vstupu Unicode"
 
 #: polyhost/host.py:786
 msgid "Save MRU cache now"
-msgstr ""
+msgstr "Uložit mezipaměť MRU nyní"
 
 #: polyhost/forwarder.py:299 polyhost/host.py:800
 msgid "Help && About"
-msgstr ""
+msgstr "Nápověda && O aplikaci"
 
 #: polyhost/forwarder.py:295 polyhost/host.py:809
 msgid "Open config folder"
-msgstr ""
+msgstr "Otevřít složku konfigurace"
 
 #: polyhost/host.py:922
 msgid "System language query not supported for this platform."
-msgstr ""
+msgstr "Zjištění jazyka systému není na této platformě podporováno."
 
 #: polyhost/host.py:1121
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Zkusit znovu písma klávesnice ({n} selhala)…"
+msgstr[1] "Zkusit znovu písma klávesnice ({n} selhaly)…"
+msgstr[2] "Zkusit znovu písma klávesnice ({n} selhalo)…"
 
 #: polyhost/host.py:1123
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
-msgstr ""
+msgstr "Znovu nahrát sady písem, jejichž poslední pokus selhal: {bundles}"
 
 #: polyhost/host.py:1129
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Aktualizovat písma klávesnice ({n})…"
+msgstr[1] "Aktualizovat písma klávesnice ({n})…"
+msgstr[2] "Aktualizovat písma klávesnice ({n})…"
 
 #: polyhost/host.py:1131
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
-msgstr ""
+msgstr "Nahrát sady písem, které klávesnici chybí, jsou zastaralé nebo se je nepodařilo nahrát: {bundles}"
 
 #: polyhost/host.py:1136
 msgid "Keyboard fonts: up to date"
-msgstr ""
+msgstr "Písma klávesnice: aktuální"
 
 #: polyhost/host.py:1137
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
 msgstr ""
+"Všechny dodané sady písem už jsou v klávesnici.\n"
+"Pokud klávesy stále vykreslují špatně, Vývojář → Balíček písem → Znovu nahrát všechny sady vynutí opětovné odeslání."
 
 #: polyhost/forwarder.py:709 polyhost/host.py:1167
 msgid "Config folder"
-msgstr ""
+msgstr "Složka konfigurace"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
 #: polyhost/host.py:1252
 msgid "Reconnect"
-msgstr ""
+msgstr "Znovu připojit"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
 #: polyhost/forwarder.py:364 polyhost/host.py:1255
 msgid "Resume"
-msgstr ""
+msgstr "Pokračovat"
 
 #: polyhost/host.py:1334 polyhost/host.py:1398
 #, python-brace-format
 msgid "Could not change OS language {language}."
-msgstr ""
+msgstr "Nelze změnit jazyk systému {language}."
 
 #: polyhost/host.py:1423
 msgid "Select firmware .bin"
-msgstr ""
+msgstr "Vybrat firmware .bin"
 
 #: polyhost/host.py:1423
 msgid "Firmware image (*.bin)"
-msgstr ""
+msgstr "Obraz firmwaru (*.bin)"
 
 #: polyhost/host.py:1474
 msgid "Firmware apply failed"
-msgstr ""
+msgstr "Použití firmwaru selhalo"
 
 #: polyhost/host.py:1475
 msgid "Firmware flash failed"
-msgstr ""
+msgstr "Nahrání firmwaru selhalo"
 
 #: polyhost/host.py:1515 polyhost/host.py:1567
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
-msgstr ""
+msgstr "Vybraný jazyk: {language} {country}"
 
 #: polyhost/host.py:1538
 msgid "Other"
-msgstr ""
+msgstr "Ostatní"
 
 #: polyhost/host.py:1623
 msgid "PolyHost settings"
-msgstr ""
+msgstr "Nastavení PolyHost"
 
 #: polyhost/host.py:1624
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
-msgstr ""
+msgstr "Nastavení jsou použita, ale nepodařilo se je uložit do souboru nastavení. Soubor možná drží otevřený jiný program. Pro nový pokus později znovu změňte některé nastavení, nebo se podívejte do protokolu."
 
 #: polyhost/host.py:1726
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
-msgstr ""
+msgstr "{side}: nečitelný záznam {record}"
 
 #: polyhost/host.py:1729
 msgid "Neither keyboard half holds a crash record."
-msgstr ""
+msgstr "Ani jedna polovina klávesnice nemá uložen záznam o pádu."
 
 #: polyhost/host.py:1731
 #, python-brace-format
@@ -3000,105 +3047,108 @@ msgid ""
 "\n"
 "{errors}"
 msgstr ""
+"Záznam o pádu se nepodařilo přečíst.\n"
+"\n"
+"{errors}"
 
 #: polyhost/host.py:1733
 msgid "Keyboard crash record"
-msgstr ""
+msgstr "Záznam o pádu klávesnice"
 
 #: polyhost/host.py:1742
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
-msgstr ""
+msgstr "Zkopírováno do schránky. Nepřečteno: {errors}"
 
 #: polyhost/host.py:1827
 msgid "MRU Cache"
-msgstr ""
+msgstr "Mezipaměť MRU"
 
 #: polyhost/host.py:1827
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
-msgstr ""
+msgstr "Mezipaměť MRU není aktivní (zařízení není připojeno nebo je režim MRU vypnutý)."
 
 #: polyhost/host.py:1876
 msgid "daemon client"
-msgstr ""
+msgstr "klient démona"
 
 #: polyhost/host.py:1876
 msgid "standalone"
-msgstr ""
+msgstr "samostatně"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
 #: polyhost/forwarder.py:770 polyhost/host.py:1932
 msgid "paused"
-msgstr ""
+msgstr "pozastaveno"
 
 #: polyhost/host.py:1934
 msgid "connected"
-msgstr ""
+msgstr "připojeno"
 
 #: polyhost/host.py:1935
 msgid "present — not connected (protocol/version)"
-msgstr ""
+msgstr "přítomna — nepřipojena (protokol/verze)"
 
 #: polyhost/host.py:1949
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Načten {n} jazyk"
+msgstr[1] "Načteny {n} jazyky"
+msgstr[2] "Načteno {n} jazyků"
 
 #: polyhost/host.py:1952
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
-msgstr ""
+msgstr "<b>Připojená klávesnice:</b> {name} {state}"
 
 #: polyhost/host.py:1954
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
-msgstr ""
+msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protokol {protocol}"
 
 #: polyhost/host.py:1956
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
-msgstr ""
+msgstr "<b>Hardware:</b> {hardware}"
 
 #: polyhost/host.py:1957
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
-msgstr ""
+msgstr "<b>Jazyk:</b> {language}"
 
 #: polyhost/host.py:1964
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
-msgstr ""
+msgstr "<b>Doba provozu:</b> {uptime}"
 
 #: polyhost/host.py:1966
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "<b>Mapování překryvů:</b> {n} aplikace"
+msgstr[1] "<b>Mapování překryvů:</b> {n} aplikace"
+msgstr[2] "<b>Mapování překryvů:</b> {n} aplikací"
 
 #: polyhost/forwarder.py:787 polyhost/host.py:1968
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
-msgstr ""
+msgstr "<b>Konfigurace:</b> {path}"
 
 #: polyhost/forwarder.py:788 polyhost/host.py:1969
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
-msgstr ""
+msgstr "<b>Protokoly:</b> {path}"
 
 #: polyhost/forwarder.py:806 polyhost/host.py:2020
 #, python-brace-format
 msgid "HID protocol P{protocol}"
-msgstr ""
+msgstr "Protokol HID P{protocol}"
 
 #: polyhost/host.py:2025
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
-msgstr ""
+msgstr "Hostitelský software pro dělenou klávesnici PolyKybd s OLED displejem na každé klávese — sleduje aktivní okno a posílá do klávesnice překryvy, jazyk a změny rozložení kláves."
 
 #: polyhost/host.py:2051
 #, python-brace-format
@@ -3106,59 +3156,61 @@ msgid ""
 "Changing input language to '{language}' failed with:\n"
 "\"{error}\""
 msgstr ""
+"Změna vstupního jazyka na '{language}' selhala s chybou:\n"
+"\"{error}\""
 
 #: polyhost/host.py:2071 polyhost/host.py:2086
 #, python-brace-format
 msgid "Could not set {language}: {error}"
-msgstr ""
+msgstr "Nelze nastavit {language}: {error}"
 
 #: polyhost/host.py:2202
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
-msgstr ""
+msgstr "Mapování překryvů PolyKybd (*.poly.yaml)"
 
 #: polyhost/host.py:2280 polyhost/host.py:2757 polyhost/host.py:2885
 #, python-brace-format
 msgid "Update firmware to v{version}…"
-msgstr ""
+msgstr "Aktualizovat firmware na v{version}…"
 
 #: polyhost/host.py:2282 polyhost/host.py:2792 polyhost/host.py:2954
 msgid "Check for firmware update…"
-msgstr ""
+msgstr "Vyhledat aktualizaci firmwaru…"
 
 #: polyhost/forwarder.py:844 polyhost/forwarder.py:855
 #: polyhost/forwarder.py:861 polyhost/host.py:2300 polyhost/host.py:2421
 #: polyhost/host.py:2425
 msgid "Check for updates..."
-msgstr ""
+msgstr "Vyhledat aktualizace..."
 
 #: polyhost/host.py:2368
 #, python-brace-format
 msgid "Update to v{version} available"
-msgstr ""
+msgstr "K dispozici je aktualizace na v{version}"
 
 #: polyhost/forwarder.py:857 polyhost/forwarder.py:863
 #: polyhost/forwarder.py:874 polyhost/host.py:2379 polyhost/host.py:2419
 #: polyhost/host.py:2426 polyhost/host.py:2449
 msgid "PolyKybdHost Update"
-msgstr ""
+msgstr "Aktualizace PolyKybdHost"
 
 #: polyhost/host.py:2380
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
-msgstr ""
+msgstr "Je k dispozici verze {version}. Aktualizujte kliknutím na ikonu v oznamovací oblasti."
 
 #: polyhost/forwarder.py:832 polyhost/host.py:2405
 msgid "Checking for updates..."
-msgstr ""
+msgstr "Vyhledávání aktualizací..."
 
 #: polyhost/host.py:2418
 msgid "No updates available"
-msgstr ""
+msgstr "Žádné aktualizace nejsou k dispozici"
 
 #: polyhost/forwarder.py:858 polyhost/host.py:2420
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
-msgstr ""
+msgstr "Používáte nejnovější verzi (v{version})."
 
 #: polyhost/forwarder.py:864 polyhost/host.py:2427
 #, python-brace-format
@@ -3169,37 +3221,42 @@ msgid ""
 "\n"
 "Run with --dev 1 for details."
 msgstr ""
+"Nelze vyhledat aktualizace:\n"
+"\n"
+"{error}\n"
+"\n"
+"Podrobnosti zobrazíte spuštěním s --dev 1."
 
 #: polyhost/host.py:2432 polyhost/host.py:2818
 #, python-brace-format
 msgid "Released: {date}"
-msgstr ""
+msgstr "Vydáno: {date}"
 
 #: polyhost/forwarder.py:845 polyhost/host.py:2433
 #, python-brace-format
 msgid "Version {version} is available."
-msgstr ""
+msgstr "Je k dispozici verze {version}."
 
 #: polyhost/forwarder.py:846 polyhost/host.py:2434
 msgid "Update PolyKybdHost"
-msgstr ""
+msgstr "Aktualizovat PolyKybdHost"
 
 #: polyhost/host.py:2438
 msgid "Download, install, and restart now?"
-msgstr ""
+msgstr "Stáhnout, nainstalovat a restartovat nyní?"
 
 #: polyhost/forwarder.py:873 polyhost/host.py:2449
 #, python-brace-format
 msgid "Downloading v{version}…"
-msgstr ""
+msgstr "Stahování v{version}…"
 
 #: polyhost/forwarder.py:914 polyhost/host.py:2574
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
-msgstr ""
+msgstr "Nepodařilo se spustit předávání aktualizace; aktualizace není dokončena. Podrobnosti najdete v protokolu."
 
 #: polyhost/forwarder.py:926 polyhost/host.py:2586
 msgid "Update failed"
-msgstr ""
+msgstr "Aktualizace selhala"
 
 #: polyhost/forwarder.py:927 polyhost/host.py:2587
 #, python-brace-format
@@ -3208,43 +3265,46 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"Aktualizaci nelze použít:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:2699
 #, python-brace-format
 msgid "Updating keyboard {kind} — please wait, do not unplug…"
-msgstr ""
+msgstr "Aktualizace klávesnice ({kind}) — počkejte prosím, neodpojujte…"
 
 #: polyhost/host.py:2703
 #, python-brace-format
 msgid "PolyKybd — updating {kind} ({percent}%)"
-msgstr ""
+msgstr "PolyKybd — aktualizace ({kind}) {percent} %"
 
 #: polyhost/host.py:2715
 #, python-brace-format
 msgid "Keyboard {kind} is up to date."
-msgstr ""
+msgstr "Klávesnice: {kind} je aktuální."
 
 #: polyhost/host.py:2718
 #, python-brace-format
 msgid "{kind} update failed: {error}"
-msgstr ""
+msgstr "Aktualizace ({kind}) selhala: {error}"
 
 #: polyhost/host.py:2768
 msgid "PolyKybd Firmware Update"
-msgstr ""
+msgstr "Aktualizace firmwaru PolyKybd"
 
 #: polyhost/host.py:2769
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
-msgstr ""
+msgstr "Je k dispozici nový firmware v{version}. Aktualizujte kliknutím na ikonu v oznamovací oblasti."
 
 #: polyhost/host.py:2786
 msgid "Checking for firmware update…"
-msgstr ""
+msgstr "Vyhledávání aktualizace firmwaru…"
 
 #: polyhost/host.py:2799 polyhost/host.py:2807
 msgid "PolyKybd Firmware"
-msgstr ""
+msgstr "Firmware PolyKybd"
 
 #: polyhost/host.py:2800
 #, python-brace-format
@@ -3253,45 +3313,48 @@ msgid ""
 "\n"
 "Your keyboard is on v{current}. This usually means the release build failed — the release page will get its firmware once that is fixed."
 msgstr ""
+"Firmware v{version} byl vydán, ale neobsahuje soubor firmwaru ke stažení, takže ho zatím nelze nainstalovat.\n"
+"\n"
+"Vaše klávesnice má v{current}. Obvykle to znamená, že sestavení vydání selhalo — stránka vydání dostane firmware, jakmile bude chyba opravena."
 
 #: polyhost/host.py:2808
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
-msgstr ""
+msgstr "Používáte nejnovější firmware (v{version})."
 
 #: polyhost/host.py:2815
 msgid "The keyboard must be connected to update the firmware."
-msgstr ""
+msgstr "Pro aktualizaci firmwaru musí být klávesnice připojena."
 
 #: polyhost/host.py:2819
 #, python-brace-format
 msgid "Firmware {version} is available."
-msgstr ""
+msgstr "Je k dispozici firmware {version}."
 
 #: polyhost/host.py:2821
 msgid "Both halves update over HID and reboot automatically."
-msgstr ""
+msgstr "Obě poloviny se aktualizují přes HID a automaticky se restartují."
 
 #: polyhost/host.py:2822
 msgid "Update PolyKybd Firmware"
-msgstr ""
+msgstr "Aktualizovat firmware PolyKybd"
 
 #: polyhost/host.py:2826
 msgid "Download and flash now?"
-msgstr ""
+msgstr "Stáhnout a nahrát nyní?"
 
 #: polyhost/host.py:2837
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
-msgstr ""
+msgstr "Stahování firmwaru v{version}…"
 
 #: polyhost/host.py:2859 polyhost/host.py:3070
 msgid "Cancelling…"
-msgstr ""
+msgstr "Rušení…"
 
 #: polyhost/host.py:2896
 msgid "Firmware Update Failed"
-msgstr ""
+msgstr "Aktualizace firmwaru selhala"
 
 #: polyhost/host.py:2897
 #, python-brace-format
@@ -3300,11 +3363,14 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"Firmware se nepodařilo stáhnout:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:3034 polyhost/host.py:3048 polyhost/host.py:3094
 #: polyhost/host.py:3103 polyhost/host.py:3109
 msgid "Install WinCompose"
-msgstr ""
+msgstr "Nainstalovat WinCompose"
 
 #: polyhost/host.py:3035
 msgid ""
@@ -3312,10 +3378,13 @@ msgid ""
 "\n"
 "PolyKybd's build of WinCompose will be downloaded from GitHub and its installer started (Windows will ask you to confirm)."
 msgstr ""
+"WinCompose umožňuje vaší PolyKybd psát ve Windows libovolný znak Unicode — emoji, diakritika i jazykové vrstvy jdou přes něj. Bez něj se klávesnice vrátí k mnohem omezenějšímu nativnímu vstupu Windows.\n"
+"\n"
+"Sestavení WinCompose od PolyKybd se stáhne z GitHubu a spustí se jeho instalační program (Windows vás požádají o potvrzení)."
 
 #: polyhost/host.py:3048
 msgid "Looking for the latest WinCompose release…"
-msgstr ""
+msgstr "Vyhledávání nejnovějšího vydání WinCompose…"
 
 #: polyhost/host.py:3095
 msgid ""
@@ -3323,6 +3392,9 @@ msgid ""
 "\n"
 "The releases page will open in your browser — download and run the setup from there."
 msgstr ""
+"Nebyl nalezen žádný hotový instalační program ke stažení.\n"
+"\n"
+"V prohlížeči se otevře stránka vydání — stáhněte a spusťte instalaci odtud."
 
 #: polyhost/host.py:3104
 #, python-brace-format
@@ -3331,6 +3403,9 @@ msgid ""
 "\n"
 "{error}"
 msgstr ""
+"Stažení selhalo:\n"
+"\n"
+"{error}"
 
 #: polyhost/host.py:3110
 #, python-brace-format
@@ -3342,32 +3417,38 @@ msgid ""
 "It was saved to:\n"
 "{path}"
 msgstr ""
+"Instalační program se nepodařilo spustit:\n"
+"\n"
+"{error}\n"
+"\n"
+"Byl uložen do:\n"
+"{path}"
 
 #: polyhost/host.py:3118
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
-msgstr ""
+msgstr "Instalační program WinCompose byl spuštěn. Jakmile instalace skončí a WinCompose poběží, PolyKybd na něj automaticky přepne."
 
 #: polyhost/services/lang_regions.py:128
 msgid "Americas"
-msgstr ""
+msgstr "Amerika"
 
 #: polyhost/services/lang_regions.py:129
 msgid "Europe"
-msgstr ""
+msgstr "Evropa"
 
 #: polyhost/services/lang_regions.py:130
 msgid "Middle East & Caucasus"
-msgstr ""
+msgstr "Blízký východ & Kavkaz"
 
 #: polyhost/services/lang_regions.py:131
 msgid "Africa"
-msgstr ""
+msgstr "Afrika"
 
 #: polyhost/services/lang_regions.py:132
 msgid "Asia"
-msgstr ""
+msgstr "Asie"
 
 #: polyhost/services/lang_regions.py:133
 msgid "Oceania"
-msgstr ""
+msgstr "Oceánie"
 
