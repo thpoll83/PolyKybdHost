@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-05 16:02+0000\n"
+"POT-Creation-Date: 2026-10-05 16:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -490,8 +490,7 @@ msgstr "meegeleverd"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd-opdrachten (*.poly.cmd)"
 
-#. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2201
+#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2238
 msgid "Open file"
 msgstr "Bestand openen"
 
@@ -886,7 +885,7 @@ msgstr "De gebouwde glyph behouden (in het geheugen aan de bundel toegevoegd; sl
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72 polyhost/host.py:221
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72 polyhost/host.py:222
 msgid "Cancel"
 msgstr "Annuleren"
 
@@ -1402,8 +1401,8 @@ msgstr ""
 "\n"
 "Om een zelf gecompileerde build te flashen: flash opnieuw en druk op de gemarkeerde toets A (accepteren) op het toetsenbord wanneer daarom wordt gevraagd."
 
-#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2814
-#: polyhost/host.py:2838
+#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2847
+#: polyhost/host.py:2871
 msgid "Firmware Update"
 msgstr "Firmware-update"
 
@@ -1556,7 +1555,7 @@ msgstr "geen voorbeeldgegevens (meegeleverd of checkout)"
 msgid "the shipped language table is missing"
 msgstr "de meegeleverde taaltabel ontbreekt"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2794
+#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2827
 msgid "unknown"
 msgstr "onbekend"
 
@@ -2160,7 +2159,7 @@ msgstr "Opnieuw laden"
 msgid "Failed to load log file '{path}': {error}"
 msgstr "Kan logbestand '{path}' niet laden: {error}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1836
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1872
 msgid "Mock keyboard"
 msgstr "Mock-toetsenbord"
 
@@ -2453,7 +2452,7 @@ msgstr "Vertraging"
 msgid "Dev"
 msgstr "Dev"
 
-#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:760
+#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:795
 msgid "Developer"
 msgstr "Ontwikkelaar"
 
@@ -2706,7 +2705,7 @@ msgstr "{prefix} — host v{host_version} beschikbaar"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — firmware v{fw_version} beschikbaar"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:654
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:689
 msgid "Updates"
 msgstr "Updates"
 
@@ -2723,237 +2722,291 @@ msgstr "Wat is er nieuw — {release_name}"
 msgid "Restarting to complete update…"
 msgstr "Opnieuw starten om de update te voltooien…"
 
-#: polyhost/host.py:51
+#: polyhost/host.py:52
 msgid "Standard (normal legends)"
 msgstr "Standaard (normale legenda's)"
 
-#: polyhost/host.py:52
+#: polyhost/host.py:53
 msgid "Tengwar (fantasy)"
 msgstr "Tengwar (fantasy)"
 
-#: polyhost/host.py:53
+#: polyhost/host.py:54
 msgid "Elder Futhark runes"
 msgstr "Oudere futhark-runen"
 
-#: polyhost/host.py:54
+#: polyhost/host.py:55
 msgid "Aurebesh (sci-fi)"
 msgstr "Aurebesh (sciencefiction)"
 
-#: polyhost/host.py:55
+#: polyhost/host.py:56
 msgid "Standard Galactic"
 msgstr "Standard Galactic"
 
-#: polyhost/host.py:56
+#: polyhost/host.py:57
 msgid "Cirth / Angerthas"
 msgstr "Cirth / Angerthas"
 
-#: polyhost/host.py:57
+#: polyhost/host.py:58
 msgid "IBM VGA / CP437"
 msgstr "IBM VGA / CP437"
 
-#: polyhost/host.py:58
+#: polyhost/host.py:59
 msgid "Commodore 64"
 msgstr "Commodore 64"
 
-#: polyhost/host.py:59
+#: polyhost/host.py:60
 msgid "Amiga Topaz"
 msgstr "Amiga Topaz"
 
-#: polyhost/host.py:60
+#: polyhost/host.py:61
 msgid "APL"
 msgstr "APL"
 
-#: polyhost/host.py:61
+#: polyhost/host.py:62
 msgid "Braille"
 msgstr "Braille"
 
-#: polyhost/host.py:67
+#: polyhost/host.py:68
 msgid "Small (standard)"
 msgstr "Klein (standaard)"
 
-#: polyhost/host.py:68
+#: polyhost/host.py:69
 msgid "Medium"
 msgstr "Middel"
 
-#: polyhost/host.py:69
+#: polyhost/host.py:70
 msgid "Large"
 msgstr "Groot"
 
-#: polyhost/host.py:414 polyhost/host.py:1406
+#: polyhost/host.py:248
+msgid "Updating the keyboard font pack — please wait, do not unplug…"
+msgstr "Het lettertypepakket van het toetsenbord wordt bijgewerkt — even geduld, niet loskoppelen…"
+
+#: polyhost/host.py:249
+#, python-brace-format
+msgid "PolyKybd — updating the font pack ({percent}%)"
+msgstr "PolyKybd — lettertypepakket bijwerken ({percent}%)"
+
+#: polyhost/host.py:250
+msgid "The keyboard font pack is up to date."
+msgstr "Het lettertypepakket van het toetsenbord is actueel."
+
+#: polyhost/host.py:251
+#, python-brace-format
+msgid "Font pack update failed: {error}"
+msgstr "Bijwerken van het lettertypepakket mislukt: {error}"
+
+#: polyhost/host.py:254
+msgid "Updating the keyboard game data — please wait, do not unplug…"
+msgstr "De spelgegevens van het toetsenbord worden bijgewerkt — even geduld, niet loskoppelen…"
+
+#: polyhost/host.py:255
+#, python-brace-format
+msgid "PolyKybd — updating the game data ({percent}%)"
+msgstr "PolyKybd — spelgegevens bijwerken ({percent}%)"
+
+#: polyhost/host.py:256
+msgid "The keyboard game data is up to date."
+msgstr "De spelgegevens van het toetsenbord zijn actueel."
+
+#: polyhost/host.py:257
+#, python-brace-format
+msgid "Game data update failed: {error}"
+msgstr "Bijwerken van de spelgegevens mislukt: {error}"
+
+#: polyhost/host.py:260
+msgid "Updating the keyboard engine pack — please wait, do not unplug…"
+msgstr "Het enginepakket van het toetsenbord wordt bijgewerkt — even geduld, niet loskoppelen…"
+
+#: polyhost/host.py:261
+#, python-brace-format
+msgid "PolyKybd — updating the engine pack ({percent}%)"
+msgstr "PolyKybd — enginepakket bijwerken ({percent}%)"
+
+#: polyhost/host.py:262
+msgid "The keyboard engine pack is up to date."
+msgstr "Het enginepakket van het toetsenbord is actueel."
+
+#: polyhost/host.py:263
+#, python-brace-format
+msgid "Engine pack update failed: {error}"
+msgstr "Bijwerken van het enginepakket mislukt: {error}"
+
+#: polyhost/host.py:449 polyhost/host.py:1441
 msgid "Waiting for PolyKybd..."
 msgstr "Wachten op PolyKybd..."
 
-#: polyhost/host.py:415 polyhost/host.py:1258
+#: polyhost/host.py:450 polyhost/host.py:1293
 msgid "Press to pause connection"
 msgstr "Klik om de verbinding te pauzeren"
 
-#: polyhost/forwarder.py:306 polyhost/host.py:418
+#: polyhost/forwarder.py:306 polyhost/host.py:453
 msgid "Quit"
 msgstr "Afsluiten"
 
-#: polyhost/host.py:427
+#: polyhost/host.py:462
 msgid "Quit && stop background daemon"
 msgstr "Afsluiten && achtergronddaemon stoppen"
 
-#: polyhost/forwarder.py:273 polyhost/host.py:432
+#: polyhost/forwarder.py:273 polyhost/host.py:467
 msgid "About"
 msgstr "Over"
 
-#: polyhost/forwarder.py:262 polyhost/host.py:436
+#: polyhost/forwarder.py:262 polyhost/host.py:471
 msgid "Settings..."
 msgstr "Instellingen..."
 
-#: polyhost/forwarder.py:277 polyhost/host.py:440
+#: polyhost/forwarder.py:277 polyhost/host.py:475
 msgid "Log file..."
 msgstr "Logbestand..."
 
-#: polyhost/forwarder.py:283 polyhost/host.py:449
+#: polyhost/forwarder.py:283 polyhost/host.py:484
 msgid "Report a Problem..."
 msgstr "Probleem melden..."
 
-#: polyhost/forwarder.py:289 polyhost/host.py:468
+#: polyhost/forwarder.py:289 polyhost/host.py:503
 msgid "Collect logs..."
 msgstr "Logbestanden verzamelen..."
 
-#: polyhost/host.py:477
+#: polyhost/host.py:512
 msgid "Read keyboard crash record"
 msgstr "Crashrecord van toetsenbord lezen"
 
-#: polyhost/host.py:479
+#: polyhost/host.py:514
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Het laatste crashrecord van beide helften van het toetsenbord lezen en naar het klembord kopiëren."
 
-#: polyhost/host.py:484
+#: polyhost/host.py:519
 msgid "Inspect Font Packs..."
 msgstr "Lettertypepakketten inspecteren..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:243 polyhost/forwarder.py:364 polyhost/host.py:498
-#: polyhost/host.py:1260
+#: polyhost/forwarder.py:243 polyhost/forwarder.py:364 polyhost/host.py:533
+#: polyhost/host.py:1295
 msgid "Pause"
 msgstr "Pauzeren"
 
-#: polyhost/host.py:508
+#: polyhost/host.py:543
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Firmware nieuwer dan deze app — veilige modus…"
 
-#: polyhost/host.py:510
+#: polyhost/host.py:545
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Kiezen hoe om te gaan met een toetsenbord waarvan de firmware nieuwer is dan deze host-app."
 
-#: polyhost/host.py:546
+#: polyhost/host.py:581
 msgid "Idle Display"
 msgstr "Inactiviteitsweergave"
 
-#: polyhost/host.py:549
+#: polyhost/host.py:584
 msgid "Pulse (legacy)"
 msgstr "Pulseren (verouderd)"
 
-#: polyhost/host.py:551
+#: polyhost/host.py:586
 msgid "Jitter (move legend)"
 msgstr "Trillen (legenda verplaatsen)"
 
-#: polyhost/host.py:555
+#: polyhost/host.py:590
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (demo-modus)"
 
-#: polyhost/host.py:559
+#: polyhost/host.py:594
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:579
+#: polyhost/host.py:614
 msgid "Idle After"
 msgstr "Inactief na"
 
-#: polyhost/host.py:600
+#: polyhost/host.py:635
 msgid "Keycap Script"
 msgstr "Toetskapschrift"
 
-#: polyhost/host.py:628
+#: polyhost/host.py:663
 msgid "Keycap Size"
 msgstr "Toetskapgrootte"
 
-#: polyhost/host.py:646
+#: polyhost/host.py:681
 msgid "Configure Keymap"
 msgstr "Keymap configureren"
 
-#: polyhost/host.py:656
+#: polyhost/host.py:691
 msgid "Check for host update..."
 msgstr "Controleren op host-update..."
 
-#: polyhost/host.py:695
+#: polyhost/host.py:730
 msgid "Check for keyboard firmware update…"
 msgstr "Controleren op firmware-update voor het toetsenbord…"
 
-#: polyhost/host.py:704
+#: polyhost/host.py:739
 msgid "Keyboard fonts"
 msgstr "Toetsenbordlettertypen"
 
-#: polyhost/host.py:738
+#: polyhost/host.py:773
 msgid "Install WinCompose…"
 msgstr "WinCompose installeren…"
 
-#: polyhost/host.py:762
+#: polyhost/host.py:797
 msgid "Change System Input Language"
 msgstr "Invoertaal van het systeem wijzigen"
 
-#: polyhost/host.py:768
+#: polyhost/host.py:803
 msgid "Inspect MRU Cache..."
 msgstr "MRU-cache inspecteren..."
 
-#: polyhost/host.py:774
+#: polyhost/host.py:809
 msgid "Mock Keyboard..."
 msgstr "Mock-toetsenbord..."
 
-#: polyhost/host.py:782
+#: polyhost/host.py:817
 msgid "Refresh unicode input mode"
 msgstr "Unicode-invoermodus vernieuwen"
 
-#: polyhost/host.py:786
+#: polyhost/host.py:821
 msgid "Save MRU cache now"
 msgstr "MRU-cache nu opslaan"
 
-#: polyhost/forwarder.py:299 polyhost/host.py:800
+#: polyhost/forwarder.py:299 polyhost/host.py:835
 msgid "Help && About"
 msgstr "Help && Over"
 
-#: polyhost/forwarder.py:295 polyhost/host.py:809
+#: polyhost/forwarder.py:295 polyhost/host.py:844
 msgid "Open config folder"
 msgstr "Configuratiemap openen"
 
-#: polyhost/host.py:922
+#: polyhost/host.py:957
 msgid "System language query not supported for this platform."
 msgstr "Opvragen van de systeemtaal wordt op dit platform niet ondersteund."
 
-#: polyhost/host.py:1121
+#: polyhost/host.py:1156
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "Toetsenbordlettertypen opnieuw proberen ({n} mislukt)…"
 msgstr[1] "Toetsenbordlettertypen opnieuw proberen ({n} mislukt)…"
 
-#: polyhost/host.py:1123
+#: polyhost/host.py:1158
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "De lettertypebundels opnieuw flashen waarvan de laatste poging is mislukt: {bundles}"
 
-#: polyhost/host.py:1129
+#: polyhost/host.py:1164
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "Toetsenbordlettertypen bijwerken ({n})…"
 msgstr[1] "Toetsenbordlettertypen bijwerken ({n})…"
 
-#: polyhost/host.py:1131
+#: polyhost/host.py:1166
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "De lettertypebundels flashen die op het toetsenbord ontbreken, verouderd zijn of niet zijn overgenomen: {bundles}"
 
-#: polyhost/host.py:1136
+#: polyhost/host.py:1171
 msgid "Keyboard fonts: up to date"
 msgstr "Toetsenbordlettertypen: actueel"
 
-#: polyhost/host.py:1137
+#: polyhost/host.py:1172
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -2961,68 +3014,69 @@ msgstr ""
 "Elke meegeleverde lettertypebundel staat al op het toetsenbord.\n"
 "Ontwikkelaar → Lettertypepakket → ALLE bundels opnieuw flashen forceert opnieuw verzenden als de toetskappen nog steeds verkeerd worden weergegeven."
 
-#: polyhost/forwarder.py:709 polyhost/host.py:1167
+#: polyhost/forwarder.py:709 polyhost/host.py:1202
 msgid "Config folder"
 msgstr "Configuratiemap"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1252
+#: polyhost/host.py:1287
 msgid "Reconnect"
 msgstr "Opnieuw verbinden"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:364 polyhost/host.py:1255
+#: polyhost/forwarder.py:364 polyhost/host.py:1290
 msgid "Resume"
 msgstr "Hervatten"
 
-#: polyhost/host.py:1334 polyhost/host.py:1398
+#: polyhost/host.py:1369 polyhost/host.py:1433
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Kan de OS-taal {language} niet wijzigen."
 
-#: polyhost/host.py:1423
-msgid "Select firmware .bin"
-msgstr "Firmware-.bin selecteren"
-
-#: polyhost/host.py:1423
+#. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
+#: polyhost/host.py:1457
 msgid "Firmware image (*.bin)"
 msgstr "Firmware-image (*.bin)"
 
-#: polyhost/host.py:1474
+#: polyhost/host.py:1458
+msgid "Select firmware .bin"
+msgstr "Firmware-.bin selecteren"
+
+#: polyhost/host.py:1509
 msgid "Firmware apply failed"
 msgstr "Toepassen van firmware mislukt"
 
-#: polyhost/host.py:1475
+#: polyhost/host.py:1510
 msgid "Firmware flash failed"
 msgstr "Flashen van firmware mislukt"
 
-#: polyhost/host.py:1515 polyhost/host.py:1567
+#: polyhost/host.py:1550 polyhost/host.py:1603
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Geselecteerde taal: {language} {country}"
 
-#: polyhost/host.py:1538
+#: polyhost/host.py:1573
 msgid "Other"
 msgstr "Overig"
 
-#: polyhost/host.py:1623
+#: polyhost/host.py:1659
 msgid "PolyHost settings"
 msgstr "PolyHost-instellingen"
 
-#: polyhost/host.py:1624
+#: polyhost/host.py:1660
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "De instellingen zijn toegepast, maar konden niet in het instellingenbestand worden opgeslagen. Mogelijk houdt een ander programma het bestand open. Wijzig later opnieuw een instelling om het nogmaals te proberen, of bekijk het logbestand."
 
-#: polyhost/host.py:1726
+#: polyhost/host.py:1762
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: onleesbaar record {record}"
 
-#: polyhost/host.py:1729
+#: polyhost/host.py:1765
 msgid "Neither keyboard half holds a crash record."
 msgstr "Geen van beide toetsenbordhelften bevat een crashrecord."
 
-#: polyhost/host.py:1731
+#: polyhost/host.py:1767
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3033,104 +3087,104 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1733
+#: polyhost/host.py:1769
 msgid "Keyboard crash record"
 msgstr "Crashrecord van toetsenbord"
 
-#: polyhost/host.py:1742
+#: polyhost/host.py:1778
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Gekopieerd naar het klembord. Niet gelezen: {errors}"
 
-#: polyhost/host.py:1827
+#: polyhost/host.py:1863
 msgid "MRU Cache"
 msgstr "MRU-cache"
 
-#: polyhost/host.py:1827
+#: polyhost/host.py:1863
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU-cache is niet actief (apparaat niet verbonden of MRU-modus uitgeschakeld)."
 
-#: polyhost/host.py:1876
+#: polyhost/host.py:1912
 msgid "daemon client"
 msgstr "daemon-client"
 
-#: polyhost/host.py:1876
+#: polyhost/host.py:1912
 msgid "standalone"
 msgstr "zelfstandig"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:770 polyhost/host.py:1932
+#: polyhost/forwarder.py:770 polyhost/host.py:1968
 msgid "paused"
 msgstr "gepauzeerd"
 
-#: polyhost/host.py:1934
+#: polyhost/host.py:1970
 msgid "connected"
 msgstr "verbonden"
 
-#: polyhost/host.py:1935
+#: polyhost/host.py:1971
 msgid "present — not connected (protocol/version)"
 msgstr "aanwezig — niet verbonden (protocol/versie)"
 
-#: polyhost/host.py:1949
+#: polyhost/host.py:1985
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} taal geladen"
 msgstr[1] "{n} talen geladen"
 
-#: polyhost/host.py:1952
+#: polyhost/host.py:1988
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Verbonden toetsenbord:</b> {name} {state}"
 
-#: polyhost/host.py:1954
+#: polyhost/host.py:1990
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 
-#: polyhost/host.py:1956
+#: polyhost/host.py:1992
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Hardware:</b> {hardware}"
 
-#: polyhost/host.py:1957
+#: polyhost/host.py:1993
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Taal:</b> {language}"
 
-#: polyhost/host.py:1964
+#: polyhost/host.py:2000
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Actief sinds:</b> {uptime}"
 
-#: polyhost/host.py:1966
+#: polyhost/host.py:2002
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Overlaytoewijzingen:</b> {n} app"
 msgstr[1] "<b>Overlaytoewijzingen:</b> {n} apps"
 
-#: polyhost/forwarder.py:787 polyhost/host.py:1968
+#: polyhost/forwarder.py:787 polyhost/host.py:2004
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Configuratie:</b> {path}"
 
-#: polyhost/forwarder.py:788 polyhost/host.py:1969
+#: polyhost/forwarder.py:788 polyhost/host.py:2005
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Logbestanden:</b> {path}"
 
-#: polyhost/forwarder.py:806 polyhost/host.py:2020
+#: polyhost/forwarder.py:806 polyhost/host.py:2056
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID-protocol P{protocol}"
 
-#: polyhost/host.py:2025
+#: polyhost/host.py:2061
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Hostsoftware voor het gesplitste PolyKybd-toetsenbord met een OLED-display per toetskap — volgt het actieve venster en stuurt overlays, taal- en keymap-updates naar het toetsenbord."
 
-#: polyhost/host.py:2051
+#: polyhost/host.py:2087
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3139,60 +3193,61 @@ msgstr ""
 "Wijzigen van de invoertaal naar '{language}' is mislukt met:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2071 polyhost/host.py:2086
+#: polyhost/host.py:2107 polyhost/host.py:2122
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Kan {language} niet instellen: {error}"
 
-#: polyhost/host.py:2202
+#. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
+#: polyhost/host.py:2237
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd-overlaytoewijzing (*.poly.yaml)"
 
-#: polyhost/host.py:2280 polyhost/host.py:2757 polyhost/host.py:2885
+#: polyhost/host.py:2316 polyhost/host.py:2790 polyhost/host.py:2918
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Firmware bijwerken naar v{version}…"
 
-#: polyhost/host.py:2282 polyhost/host.py:2792 polyhost/host.py:2954
+#: polyhost/host.py:2318 polyhost/host.py:2825 polyhost/host.py:2987
 msgid "Check for firmware update…"
 msgstr "Controleren op firmware-update…"
 
 #: polyhost/forwarder.py:844 polyhost/forwarder.py:855
-#: polyhost/forwarder.py:861 polyhost/host.py:2300 polyhost/host.py:2421
-#: polyhost/host.py:2425
+#: polyhost/forwarder.py:861 polyhost/host.py:2336 polyhost/host.py:2457
+#: polyhost/host.py:2461
 msgid "Check for updates..."
 msgstr "Controleren op updates..."
 
-#: polyhost/host.py:2368
+#: polyhost/host.py:2404
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Update naar v{version} beschikbaar"
 
 #: polyhost/forwarder.py:857 polyhost/forwarder.py:863
-#: polyhost/forwarder.py:874 polyhost/host.py:2379 polyhost/host.py:2419
-#: polyhost/host.py:2426 polyhost/host.py:2449
+#: polyhost/forwarder.py:874 polyhost/host.py:2415 polyhost/host.py:2455
+#: polyhost/host.py:2462 polyhost/host.py:2485
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost-update"
 
-#: polyhost/host.py:2380
+#: polyhost/host.py:2416
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Versie {version} is beschikbaar. Klik op het pictogram in het systeemvak om bij te werken."
 
-#: polyhost/forwarder.py:832 polyhost/host.py:2405
+#: polyhost/forwarder.py:832 polyhost/host.py:2441
 msgid "Checking for updates..."
 msgstr "Controleren op updates..."
 
-#: polyhost/host.py:2418
+#: polyhost/host.py:2454
 msgid "No updates available"
 msgstr "Geen updates beschikbaar"
 
-#: polyhost/forwarder.py:858 polyhost/host.py:2420
+#: polyhost/forwarder.py:858 polyhost/host.py:2456
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "U gebruikt de nieuwste versie (v{version})."
 
-#: polyhost/forwarder.py:864 polyhost/host.py:2427
+#: polyhost/forwarder.py:864 polyhost/host.py:2463
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3207,38 +3262,38 @@ msgstr ""
 "\n"
 "Start met --dev 1 voor details."
 
-#: polyhost/host.py:2432 polyhost/host.py:2818
+#: polyhost/host.py:2468 polyhost/host.py:2851
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Uitgebracht: {date}"
 
-#: polyhost/forwarder.py:845 polyhost/host.py:2433
+#: polyhost/forwarder.py:845 polyhost/host.py:2469
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Versie {version} is beschikbaar."
 
-#: polyhost/forwarder.py:846 polyhost/host.py:2434
+#: polyhost/forwarder.py:846 polyhost/host.py:2470
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost bijwerken"
 
-#: polyhost/host.py:2438
+#: polyhost/host.py:2474
 msgid "Download, install, and restart now?"
 msgstr "Nu downloaden, installeren en opnieuw starten?"
 
-#: polyhost/forwarder.py:873 polyhost/host.py:2449
+#: polyhost/forwarder.py:873 polyhost/host.py:2485
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} downloaden…"
 
-#: polyhost/forwarder.py:914 polyhost/host.py:2574
+#: polyhost/forwarder.py:914 polyhost/host.py:2610
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Kan de update-relay niet starten; de update is onvolledig. Zie het logbestand voor details."
 
-#: polyhost/forwarder.py:926 polyhost/host.py:2586
+#: polyhost/forwarder.py:926 polyhost/host.py:2622
 msgid "Update failed"
 msgstr "Update mislukt"
 
-#: polyhost/forwarder.py:927 polyhost/host.py:2587
+#: polyhost/forwarder.py:927 polyhost/host.py:2623
 #, python-brace-format
 msgid ""
 "Could not apply the update:\n"
@@ -3249,44 +3304,24 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:2699
-#, python-brace-format
-msgid "Updating keyboard {kind} — please wait, do not unplug…"
-msgstr "{kind} van het toetsenbord wordt bijgewerkt — even geduld, niet loskoppelen…"
-
-#: polyhost/host.py:2703
-#, python-brace-format
-msgid "PolyKybd — updating {kind} ({percent}%)"
-msgstr "PolyKybd — {kind} bijwerken ({percent}%)"
-
-#: polyhost/host.py:2715
-#, python-brace-format
-msgid "Keyboard {kind} is up to date."
-msgstr "{kind} van het toetsenbord is actueel."
-
-#: polyhost/host.py:2718
-#, python-brace-format
-msgid "{kind} update failed: {error}"
-msgstr "Bijwerken van {kind} mislukt: {error}"
-
-#: polyhost/host.py:2768
+#: polyhost/host.py:2801
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd-firmware-update"
 
-#: polyhost/host.py:2769
+#: polyhost/host.py:2802
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Nieuwe firmware v{version} is beschikbaar. Klik op het pictogram in het systeemvak om bij te werken."
 
-#: polyhost/host.py:2786
+#: polyhost/host.py:2819
 msgid "Checking for firmware update…"
 msgstr "Controleren op firmware-update…"
 
-#: polyhost/host.py:2799 polyhost/host.py:2807
+#: polyhost/host.py:2832 polyhost/host.py:2840
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd-firmware"
 
-#: polyhost/host.py:2800
+#: polyhost/host.py:2833
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3297,46 +3332,46 @@ msgstr ""
 "\n"
 "Uw toetsenbord gebruikt v{current}. Meestal betekent dit dat de releasebuild is mislukt — de releasepagina krijgt de firmware zodra dat is opgelost."
 
-#: polyhost/host.py:2808
+#: polyhost/host.py:2841
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "U gebruikt de nieuwste firmware (v{version})."
 
-#: polyhost/host.py:2815
+#: polyhost/host.py:2848
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Het toetsenbord moet verbonden zijn om de firmware bij te werken."
 
-#: polyhost/host.py:2819
+#: polyhost/host.py:2852
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} is beschikbaar."
 
-#: polyhost/host.py:2821
+#: polyhost/host.py:2854
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Beide helften worden via HID bijgewerkt en starten automatisch opnieuw op."
 
-#: polyhost/host.py:2822
+#: polyhost/host.py:2855
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd-firmware bijwerken"
 
-#: polyhost/host.py:2826
+#: polyhost/host.py:2859
 msgid "Download and flash now?"
 msgstr "Nu downloaden en flashen?"
 
-#: polyhost/host.py:2837
+#: polyhost/host.py:2870
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Firmware v{version} downloaden…"
 
-#: polyhost/host.py:2859 polyhost/host.py:3070
+#: polyhost/host.py:2892 polyhost/host.py:3103
 msgid "Cancelling…"
 msgstr "Annuleren…"
 
-#: polyhost/host.py:2896
+#: polyhost/host.py:2929
 msgid "Firmware Update Failed"
 msgstr "Firmware-update mislukt"
 
-#: polyhost/host.py:2897
+#: polyhost/host.py:2930
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3347,12 +3382,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3034 polyhost/host.py:3048 polyhost/host.py:3094
-#: polyhost/host.py:3103 polyhost/host.py:3109
+#: polyhost/host.py:3067 polyhost/host.py:3081 polyhost/host.py:3127
+#: polyhost/host.py:3136 polyhost/host.py:3142
 msgid "Install WinCompose"
 msgstr "WinCompose installeren"
 
-#: polyhost/host.py:3035
+#: polyhost/host.py:3068
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3362,11 +3397,11 @@ msgstr ""
 "\n"
 "De WinCompose-build van PolyKybd wordt van GitHub gedownload en het installatieprogramma wordt gestart (Windows vraagt u om te bevestigen)."
 
-#: polyhost/host.py:3048
+#: polyhost/host.py:3081
 msgid "Looking for the latest WinCompose release…"
 msgstr "Zoeken naar de nieuwste WinCompose-release…"
 
-#: polyhost/host.py:3095
+#: polyhost/host.py:3128
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3376,7 +3411,7 @@ msgstr ""
 "\n"
 "De releasepagina wordt in uw browser geopend — download en start de installatie vanaf daar."
 
-#: polyhost/host.py:3104
+#: polyhost/host.py:3137
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3387,7 +3422,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3110
+#: polyhost/host.py:3143
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3404,7 +3439,7 @@ msgstr ""
 "Het is opgeslagen in:\n"
 "{path}"
 
-#: polyhost/host.py:3118
+#: polyhost/host.py:3151
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Het installatieprogramma van WinCompose is gestart. Zodra het klaar is en WinCompose draait, schakelt PolyKybd er automatisch naar over."
 
