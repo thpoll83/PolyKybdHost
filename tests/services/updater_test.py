@@ -934,6 +934,61 @@ class TestApplyUpdate(unittest.TestCase):
             r"'C:\Users\O''Brien\My App'")
         self.assertIn("Quit PolyKybd Host, then run in PowerShell:", msg)
 
+    def test_in_use_files_get_copy_steps_before_pip(self):
+        # Windows: files in use are skipped and left for the relay, which a
+        # pip failure never reaches (Greptile on #316).
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        fix = [[r"C:\App\.venv\Scripts\python.exe", "-m", "pip", "install", "-e", r"C:\App"]]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], fix, locked)
+        self.assertTrue(msg.startswith("Most of the new version's files are installed, "
+                                       "but 1 file(s) were in use"))
+        self.assertIn("1. Quit PolyKybd Host, then copy the 1 file(s) that were in use "
+                      "in PowerShell:", msg)
+        self.assertIn("2. Then run in PowerShell:", msg)
+        self.assertEqual(
+            updater.fix_commands_from_message(msg).splitlines(),
+            [r"& Copy-Item -Force -LiteralPath C:\Temp\upd\x.pyd -Destination C:\App\x.pyd",
+             r"& C:\App\.venv\Scripts\python.exe -m pip install -e C:\App"])
+
+    def test_apply_update_reports_in_use_files_and_keeps_sources(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "x.pyd").write_bytes(b"new")
+            install = Path(td) / "install"
+            install.mkdir()
+
+            locked_err = OSError(13, "in use")
+            locked_err.winerror = 32
+            with mock.patch.object(updater.sys, "platform", "win32"), \
+                    mock.patch.object(updater.shutil, "copy2", side_effect=locked_err), \
+                    mock.patch.object(updater.subprocess, "Popen",
+                                      side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(updater.PipInstallError) as ctx:
+                    updater.apply_update(src, install)
+            self.assertTrue(ctx.exception.keeps_sources)
+            self.assertIn("1 file(s) were in use", str(ctx.exception))
+            self.assertIn(str(src / "x.pyd"), str(ctx.exception))
+
+    def test_chown_only_when_the_denied_path_is_inside_the_venv(self):
+        def msg_for(denied):
+            lines = [f"ERROR: [Errno 13] Permission denied: '{denied}'"]
+            with mock.patch.object(updater.sys, "platform", "linux"), \
+                    mock.patch.object(updater.sys, "prefix", "/home/u/app/.venv"), \
+                    mock.patch.object(updater.sys, "base_prefix", "/usr"):
+                return updater._pip_failure_message("x", "returned 1", lines)
+        inside = msg_for("/home/u/app/.venv/lib/python3.12/site-packages/uharfbuzz")
+        self.assertIn('sudo chown -R "$USER": /home/u/app/.venv', inside)
+        # pip's cache is outside the environment: chowning the venv would not
+        # fix it (Greptile on #316).
+        outside = msg_for("/home/u/.cache/pip/wheels")
+        self.assertNotIn("chown", outside)
+        self.assertIn("cannot write to /home/u/.cache/pip/wheels, which is outside", outside)
+        # A sibling directory that merely shares the prefix string is outside.
+        self.assertNotIn("chown", msg_for("/home/u/app/.venv-old/x"))
+
     def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
         fix = [["py", "-m", "pip", "install", "-e", "x"]]
         lines = ["ERROR: No matching distribution found for foo"]
@@ -1442,6 +1497,29 @@ class TestUpdateInstaller(unittest.TestCase):
             self._make(rel, rec).run()
         self.assertIn("failed", rec.names)
         self.assertEqual(rec.args_for("failed"), [("net down",)])
+
+    def _fail_with(self, error):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", side_effect=error), \
+             mock.patch.object(updater.shutil, "rmtree") as rmtree, \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(rec.names[-1], "failed")
+        self.assertNotIn("relay_needed", rec.names)
+        return rmtree
+
+    def test_a_pip_failure_with_copy_steps_keeps_the_download(self):
+        # The Copy-Item steps read the in-use files out of this directory.
+        rmtree = self._fail_with(updater.PipInstallError("m", keeps_sources=True))
+        self.assertNotIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
+
+    def test_a_pip_failure_without_copy_steps_cleans_up(self):
+        rmtree = self._fail_with(updater.PipInstallError("m"))
+        # (The preflight probe also gets an rmtree; this is the install's.)
+        self.assertIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
 
 
 class _NamedFile:

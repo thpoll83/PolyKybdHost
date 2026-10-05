@@ -690,8 +690,48 @@ def pip_fix_commands(install_root: Path) -> list:
     return cmds
 
 
+_DENIED_PATH = re.compile(r"Permission denied: '([^']+)'")
+
+
+def _is_inside(path: str, root: str) -> bool:
+    path, root = os.path.normpath(path), os.path.normpath(root)
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def _permission_step(lines: list) -> Optional[str]:
+    """The ownership step for a POSIX permission error, or None.
+
+    The chown is offered only for a path pip names INSIDE a virtualenv: a
+    venv belongs to one user, while a system Python's prefix is /usr or
+    /usr/local, and a path outside the environment (pip's cache, say) is
+    not fixed by changing the environment's owner.
+    """
+    if sys.platform == "win32" or not any(
+            "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
+        return None
+    denied = next((m.group(1) for ln in lines
+                   for m in [_DENIED_PATH.search(ln)] if m), None)
+    if denied is None:
+        return ("This user cannot write to a path pip needs. Check the "
+                "ownership of the path in pip's error below.")
+    if not _is_inside(denied, sys.prefix):
+        return (f"This user cannot write to {denied}, which is outside the "
+                "Python environment. Check who owns it (ls -ld) and give it "
+                "back to your user if an earlier 'sudo' created it.")
+    if not _in_virtualenv():
+        return ("This user cannot write to the Python installation "
+                f"({sys.prefix}), which is not a virtual environment. Do not "
+                "change its ownership. Run PolyKybd Host from a virtual "
+                "environment you own, or fix only the path named in pip's "
+                "error below.")
+    return ("This user cannot write to a file in the Python environment. An "
+            "earlier 'sudo pip' often leaves files owned by root. Give them "
+            "back to your user:\n"
+            f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+
+
 def _pip_failure_message(label: str, outcome: str, captured: list,
-                         fix_cmds: list = ()) -> str:
+                         fix_cmds: list = (), locked: list = ()) -> str:
     """What a failed pip step tells the user: what state the install is in,
     how to finish it, then pip's own output.
 
@@ -700,47 +740,61 @@ def _pip_failure_message(label: str, outcome: str, captured: list,
     1.15.0 started without uharfbuzz/freetype-py/fonttools). Saying "could not
     apply the update" reads as "still on the old version", which is wrong.
 
+    ``locked`` are the Windows ``(src, dst)`` pairs that were in use and so
+    not replaced. A successful install hands them to the relay; a failed one
+    never reaches it, so the steps copy them by hand from the kept download.
+
     pip's ``ERROR:`` line comes last, after pages of progress, so the output
     keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
     sit below the error and pushed it out of the old 500-character slice.
     """
     lines = [ln for ln in captured if not ln.startswith("[notice]")]
+    where = " in PowerShell" if sys.platform == "win32" else ""
     steps = []
-    # POSIX only: on Windows the same errno usually means a file another
-    # process holds open, and chown does not exist there.
-    if sys.platform != "win32" and any(
-            "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
-        if _in_virtualenv():
-            # A venv belongs to one user, so handing all of it back is safe.
-            steps.append(
-                "This user cannot write to a file in the Python environment. "
-                "An earlier 'sudo pip' often leaves files owned by root. Give "
-                "them back to your user:\n"
-                f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
-        else:
-            # A system Python's prefix is /usr or /usr/local: a recursive
-            # chown there would hand OS-managed files to one user.
-            steps.append(
-                "This user cannot write to the Python installation "
-                f"({sys.prefix}), which is not a virtual environment. Do not "
-                "change its ownership. Run PolyKybd Host from a virtual "
-                "environment you own, or fix only the path named in pip's "
-                "error below.")
+    permission = _permission_step(lines)
+    if permission:
+        steps.append(permission)
+    quit_first = "Quit PolyKybd Host, then "
+    if locked:
+        steps.append(
+            f"{quit_first}copy the {len(locked)} file(s) that were in use"
+            f"{where}:\n" + "\n".join(
+                "  " + _shell_join(["Copy-Item", "-Force", "-LiteralPath", src,
+                                    "-Destination", dst])
+                for src, dst in locked))
+        quit_first = ""
     if fix_cmds:
-        where = " in PowerShell" if sys.platform == "win32" else ""
-        steps.append(f"Quit PolyKybd Host, then run{where}:\n" + "\n".join(
-            "  " + _shell_join(c) for c in fix_cmds))
+        lead = f"{quit_first}run{where}:" if quit_first else f"Then run{where}:"
+        steps.append(lead + "\n" + "\n".join("  " + _shell_join(c) for c in fix_cmds))
     steps.append("Start PolyKybd Host again.")
 
-    msg = ("The new version's files are installed, but pip could not install "
-           "the Python packages it needs. PolyKybd Host runs the new version "
-           "from its next start, and features that need the missing packages "
-           f"stay off until they are installed.\n\n{_FIX_HEADER}\n")
+    if locked:
+        msg = (f"Most of the new version's files are installed, but {len(locked)} "
+               "file(s) were in use and could not be replaced, and pip could not "
+               "install the Python packages the new version needs. PolyKybd Host "
+               "may not start correctly until the steps below are done.")
+    else:
+        msg = ("The new version's files are installed, but pip could not install "
+               "the Python packages it needs. PolyKybd Host runs the new version "
+               "from its next start, and features that need the missing packages "
+               "stay off until they are installed.")
+    msg += f"\n\n{_FIX_HEADER}\n"
     msg += "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
     msg += f"\n\npip {label} {outcome}"
     if lines:
         msg += ":\n" + "\n".join(lines[-_PIP_TAIL_LINES:])
     return msg
+
+
+class PipInstallError(RuntimeError):
+    """A pip step of :func:`apply_update` failed after the files were copied.
+
+    ``keeps_sources`` is True when the message tells the user to copy files
+    out of the download, so the installer must not delete it."""
+
+    def __init__(self, message: str, keeps_sources: bool = False):
+        super().__init__(message)
+        self.keeps_sources = keeps_sources
 
 
 def fix_commands_from_message(message: str) -> str:
@@ -760,21 +814,26 @@ def fix_commands_from_message(message: str) -> str:
                      if ln.startswith("  ") and ln.strip())
 
 
-def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = ()) -> None:
+def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = (),
+             locked: list = ()) -> None:
     """Run `pip <args>` in the active interpreter; raise on failure.
 
     Streams stdout+stderr line by line.  Each non-empty line is passed to
     ``line_cb(line)`` when provided, so callers can surface it as UI feedback.
-    ``fix_cmds`` are the commands the failure message tells the user to run.
+    ``fix_cmds`` and ``locked`` feed the steps the failure message lists.
     """
+    def fail(outcome, captured):
+        return PipInstallError(
+            _pip_failure_message(label, outcome, captured, fix_cmds, locked),
+            keeps_sources=bool(locked))
+
     try:
         proc = subprocess.Popen(
             [sys.executable, "-m", "pip", *args],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
     except (subprocess.SubprocessError, OSError) as e:
-        raise RuntimeError(_pip_failure_message(
-            label, f"failed to run: {e}", [], fix_cmds)) from e
+        raise fail(f"failed to run: {e}", []) from e
     captured = []
     try:
         for raw in proc.stdout:
@@ -785,13 +844,11 @@ def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = ()) -> None:
                     line_cb(line)
         proc.wait()
     except (subprocess.SubprocessError, OSError) as e:
-        raise RuntimeError(_pip_failure_message(
-            label, f"failed to run: {e}", captured, fix_cmds)) from e
+        raise fail(f"failed to run: {e}", captured) from e
     if proc.returncode != 0:
-        msg = _pip_failure_message(
-            label, f"returned {proc.returncode}", captured, fix_cmds)
-        log.warning(msg)
-        raise RuntimeError(msg)
+        err = fail(f"returned {proc.returncode}", captured)
+        log.warning(str(err))
+        raise err
 
 
 # Win32 process-creation flags. Taken from `subprocess` where it defines them
@@ -970,11 +1027,12 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
         copy_function=_copy2,
     )
     fix_cmds = pip_fix_commands(install_root)
-    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb, fix_cmds)
+    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb,
+             fix_cmds, locked)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
         _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt",
-                 line_cb, fix_cmds)
+                 line_cb, fix_cmds, locked)
     return locked
 
 
@@ -1269,7 +1327,12 @@ class UpdateInstaller(threading.Thread):
             )
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+            # A pip failure with files still in use leaves Copy-Item steps that
+            # read from this download, so it has to outlive the dialog.
+            if getattr(e, "keeps_sources", False):
+                log.info("Keeping %s for the manual copy steps", tmp_dir)
+            else:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
             _fire(self._on_failed, str(e))
             return
 
