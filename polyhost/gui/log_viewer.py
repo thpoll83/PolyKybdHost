@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPlain
 
 from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
+from polyhost.i18n import _, _f
 from polyhost.util.log_util import LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -118,7 +119,7 @@ class LogViewerDialog(QMainWindow):
         super().__init__()
         self.log = logging.getLogger('PolyHost')
         self._collect_cb = collect_cb
-        self.setWindowTitle("Log Viewer")
+        self.setWindowTitle(_("Log Viewer"))
         # Inherits QApplication's window icon — see settings_dialog: both tray
         # apps open this one, and they wear different marks.
 
@@ -202,20 +203,20 @@ class LogViewerDialog(QMainWindow):
         # Reading a log here is one thing; handing it to someone else is the
         # other half, and this is where a user looks for it.
         if collect_cb is not None:
-            button = QPushButton("Collect Logs...")
-            button.setToolTip("Save all logs as a .zip, or copy them to the clipboard")
+            button = QPushButton(_("Collect Logs..."))
+            button.setToolTip(_("Save all logs as a .zip, or copy them to the clipboard"))
             button.clicked.connect(collect_cb)
             button_layout.addWidget(button)
 
-        button = QPushButton("Open Folder")
+        button = QPushButton(_("Open Folder"))
         button.clicked.connect(self.open_file_directory)
         button_layout.addWidget(button)
 
-        button = QPushButton("Reload")
+        button = QPushButton(_("Reload"))
         button.clicked.connect(self.load_log)
         button_layout.addWidget(button)
 
-        button = QPushButton("Close")
+        button = QPushButton(_("Close"))
         button.clicked.connect(self.close)
         button_layout.addWidget(button)
 
@@ -234,7 +235,8 @@ class LogViewerDialog(QMainWindow):
                 with open(tab_log_file_name, encoding='utf-8') as f:
                     log_content = f.read()
             except Exception as e:
-                text_edit.setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
+                text_edit.setPlainText(_f("Failed to load log file '{path}': {error}",
+                                            path=tab_log_file_name, error=e))
                 continue
             text_edit.setPlainText(log_content)
             text_edit.moveCursor(QTextCursor.End)

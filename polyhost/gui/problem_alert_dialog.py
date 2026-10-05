@@ -21,6 +21,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QPlainTextEdit, QPushButton, QVBoxLayout)
 
+from polyhost.i18n import _, _nf
 from polyhost.services import problem_scan
 
 
@@ -33,7 +34,7 @@ class ProblemAlertDialog(QDialog):
         self._report_cb = report_cb
         self.problems: list[problem_scan.Problem] = []
 
-        self.setWindowTitle("PolyKybd — a problem was detected")
+        self.setWindowTitle(_("PolyKybd — a problem was detected"))
         self.setMinimumWidth(640)
         layout = QVBoxLayout(self)
 
@@ -48,11 +49,11 @@ class ProblemAlertDialog(QDialog):
         self.detail.setLineWrapMode(QPlainTextEdit.WidgetWidth)
         layout.addWidget(self.detail)
 
-        hint = QLabel(
+        hint = QLabel(_(
             "Everything may still be working, but this is worth a look. A bug "
             "report collects the logs and pre-fills a GitHub issue; nothing is "
             "sent until you press Submit there. To change what is watched, see "
-            "the problem_scan settings.")
+            "the problem_scan settings."))
         hint.setWordWrap(True)
         layout.addWidget(hint)
 
@@ -61,17 +62,17 @@ class ProblemAlertDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.report_btn = QPushButton("Report a Problem…", self)
+        self.report_btn = QPushButton(_("Report a Problem…"), self)
         self.report_btn.setDefault(True)
         self.report_btn.clicked.connect(self._report)
         buttons.addWidget(self.report_btn)
 
-        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
         buttons.addStretch(1)
-        dismiss = QPushButton("Dismiss", self)
+        dismiss = QPushButton(_("Dismiss"), self)
         dismiss.clicked.connect(self.reject)
         buttons.addWidget(dismiss)
         layout.addLayout(buttons)
@@ -96,13 +97,14 @@ class ProblemAlertDialog(QDialog):
     def _render(self) -> None:
         n = len(self.problems)
         self.headline.setText(
-            f"<b>PolyKybd noticed {n} {'problem' if n == 1 else 'problems'}.</b>")
+            _nf("<b>PolyKybd noticed {n} problem.</b>",
+                "<b>PolyKybd noticed {n} problems.</b>", n))
         self.detail.setPlainText(problem_scan.describe_problems(self.problems))
 
     # -- actions -------------------------------------------------------------
     def _copy(self) -> None:
         QApplication.clipboard().setText(problem_scan.compose_report_text(self.problems)[0])
-        self.status.setText("Copied to the clipboard.")
+        self.status.setText(_("Copied to the clipboard."))
 
     def _report(self) -> None:
         if self._report_cb is None:
@@ -112,7 +114,7 @@ class ProblemAlertDialog(QDialog):
         try:
             description, title = problem_scan.compose_report_text(self.problems)
             self._report_cb(description, title)
-            self.status.setText("Opened the problem report with these filled in.")
+            self.status.setText(_("Opened the problem report with these filled in."))
         except Exception:  # noqa: BLE001 — never lose the problems over a dialog error
             self.log.warning("Could not open the problem report", exc_info=True)
             self._copy()
