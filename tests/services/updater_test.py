@@ -859,7 +859,7 @@ class TestApplyUpdate(unittest.TestCase):
         captured = ["Building wheel"] * 50 + [
             "Installing collected packages: uharfbuzz, PolyHost",
             "ERROR: Could not install packages due to an OSError: [Errno 13] "
-            "Permission denied: '/v/site-packages/uharfbuzz'",
+            + "Permission denied: '/v/site-packages/uharfbuzz'",
             "[notice] A new release of pip is available: 26.1.2 -> 26.2.1",
             "[notice] To update, run: pip install --upgrade pip"]
         with mock.patch.object(updater.sys, "platform", "linux"):
