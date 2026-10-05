@@ -15,17 +15,29 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel, QPlainTextEdit,
                              QPushButton, QSpinBox, QVBoxLayout)
 
+from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import crash_report
 
 DEFAULT_ROUNDS = 50
 MAX_ROUNDS = 9999
 
-_INTRO = (
+_INTRO = N_(
     "Reboots the keyboard again and again to catch an intermittent boot hang. "
     "After each reboot it waits for the keyboard to come back and reads its crash "
     "record. It stops at the first boot that left a fresh crash record, at a boot "
     "that does not come back within a minute, or after the last round.<br><br>"
     "The keyboard does not type while this runs, and each round takes a few seconds.")
+
+
+# The verdict line per core result; the keys are the core's protocol values.
+_VERDICTS = {
+    "clean": N_("<b>No boot problem found.</b>"),
+    "crash": N_("<b>A boot problem was recorded.</b> The record is above; "
+                "Copy to Clipboard to report it."),
+    "timeout": N_("<b>The keyboard did not come back.</b> Note the status panel, "
+                  "then unplug and replug it and read the crash record."),
+    "cancelled": N_("Stopped."),
+}
 
 
 class BootLoopDialog(QDialog):
@@ -34,16 +46,16 @@ class BootLoopDialog(QDialog):
         self.log = logging.getLogger("PolyHost")
         self._core = core
         self._running = False
-        self.setWindowTitle("PolyKybd — boot-loop test")
+        self.setWindowTitle(_("PolyKybd — boot-loop test"))
         self.setMinimumWidth(620)
         layout = QVBoxLayout(self)
 
-        intro = QLabel(_INTRO)
+        intro = QLabel(_(_INTRO))
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         row = QHBoxLayout()
-        row.addWidget(QLabel("Reboots:"))
+        row.addWidget(QLabel(_("Reboots:")))
         self.rounds = QSpinBox(self)
         self.rounds.setRange(1, MAX_ROUNDS)
         self.rounds.setValue(DEFAULT_ROUNDS)
@@ -63,19 +75,19 @@ class BootLoopDialog(QDialog):
         layout.addWidget(self.verdict)
 
         buttons = QHBoxLayout()
-        self.start_btn = QPushButton("Start", self)
+        self.start_btn = QPushButton(_("Start"), self)
         self.start_btn.setDefault(True)
         self.start_btn.clicked.connect(self._start)
         buttons.addWidget(self.start_btn)
-        self.cancel_btn = QPushButton("Stop", self)
+        self.cancel_btn = QPushButton(_("Stop"), self)
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._cancel)
         buttons.addWidget(self.cancel_btn)
-        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
         buttons.addStretch(1)
-        close = QPushButton("Close", self)
+        close = QPushButton(_("Close"), self)
         close.clicked.connect(self.hide)
         buttons.addWidget(close)
         layout.addLayout(buttons)
@@ -98,9 +110,9 @@ class BootLoopDialog(QDialog):
         except Exception as e:  # noqa: BLE001
             ok, info = False, f"{type(e).__name__}: {e}"
         if not ok:
-            self.verdict.setText(f"Could not start: {info}")
+            self.verdict.setText(_f("Could not start: {error}", error=info))
             return
-        self._append(f"Started: up to {n} reboot(s).")
+        self._append(_nf("Started: up to {n} reboot(s).", "Started: up to {n} reboot(s).", n))
         self._set_running(True)
 
     def _cancel(self) -> None:
@@ -108,7 +120,8 @@ class BootLoopDialog(QDialog):
             ok, info = self._core.cancel_boot_loop()
         except Exception as e:  # noqa: BLE001 — see _start
             ok, info = False, f"{type(e).__name__}: {e}"
-        self._append("Stopping after the current step…" if ok else f"Could not stop: {info}")
+        self._append(_("Stopping after the current step…") if ok
+                     else _f("Could not stop: {error}", error=info))
 
     def _copy(self) -> None:
         text = self.output.toPlainText()
@@ -137,11 +150,6 @@ class BootLoopDialog(QDialog):
             except Exception:  # noqa: BLE001 — the verdict must still show
                 self.log.warning("Unreadable boot-loop record: %r", rec, exc_info=True)
         result = p.get("result")
-        self.verdict.setText({
-            "clean": "<b>No boot problem found.</b>",
-            "crash": "<b>A boot problem was recorded.</b> The record is above; "
-                     "Copy to Clipboard to report it.",
-            "timeout": "<b>The keyboard did not come back.</b> Note the status panel, "
-                       "then unplug and replug it and read the crash record.",
-            "cancelled": "Stopped.",
-        }.get(result, f"<b>Failed:</b> {p.get('msg', '')}"))
+        verdict = _VERDICTS.get(result)
+        self.verdict.setText(_(verdict) if verdict
+                             else _f("<b>Failed:</b> {reason}", reason=p.get("msg", "")))

@@ -37,6 +37,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (HEADER_FILE, build_ke
                                                            describe_keycode, parse_qmk_keycodes)
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
+from polyhost.i18n import _, _f
 from polyhost.services.board_layout import physical_keys
 
 KEY_SCALE = 80.0
@@ -86,7 +87,7 @@ class MockBoardDialog(QDialog):
     def __init__(self, core, parent=None):
         super().__init__(parent)
         self.core = core
-        self.setWindowTitle("Mock keyboard")
+        self.setWindowTitle(_("Mock keyboard"))
         self.resize(1400, 560)
         self._names = build_keycode_to_name(parse_qmk_keycodes(HEADER_FILE))
         self._last = None
@@ -97,18 +98,18 @@ class MockBoardDialog(QDialog):
             self.modifier.addItem(m.name.replace("_", "+").title(), m.value)
         # noinspection PyUnresolvedReferences
         self.modifier.currentIndexChanged.connect(self.refresh)
-        self.live = QCheckBox("Live")
+        self.live = QCheckBox(_("Live"))
         self.live.setChecked(True)
-        self.follow = QCheckBox("Follow modifiers")
-        self.follow.setToolTip("Show the variant for the modifiers held on this computer's keyboard")
+        self.follow = QCheckBox(_("Follow modifiers"))
+        self.follow.setToolTip(_("Show the variant for the modifiers held on this computer's keyboard"))
         # noinspection PyUnresolvedReferences
         self.follow.toggled.connect(self._on_follow_toggled)
-        save = QPushButton("Save PNGs…")
+        save = QPushButton(_("Save PNGs…"))
         # noinspection PyUnresolvedReferences
         save.clicked.connect(self.save_pngs)
 
         top = QHBoxLayout()
-        top.addWidget(QLabel("Modifier:"))
+        top.addWidget(QLabel(_("Modifier:")))
         top.addWidget(self.modifier)
         top.addWidget(self.follow)
         top.addWidget(self.live)
@@ -182,7 +183,7 @@ class MockBoardDialog(QDialog):
         try:
             self._refresh()
         except Exception as e:   # noqa: BLE001 -- see above
-            self.status.setText(f"Refresh failed: {e}")
+            self.status.setText(_f("Refresh failed: {error}", error=e))
 
     def _refresh(self):
         modifier = self.modifier.currentData() or 0
@@ -209,13 +210,19 @@ class MockBoardDialog(QDialog):
                 item.set_display(main, badge, color, 9 if len(main) < 5 else 7)
         stats = payload["stats"]
         refused = payload["refused"]
-        self.status.setText(
-            f"{'Primary' if payload['primary'] else 'Secondary'} mock, protocol "
-            f"v{payload['protocol']} · overlays {'on' if lit else 'OFF'} · {shown} keycap(s) "
-            f"with an overlay · received: {stats['image_reports']} image, "
-            f"{stats['fill_reports']} fill, {stats['mapping_reports']} mapping, "
-            f"{stats['control_reports']} control report(s)"
-            + (f" · ⚠ {len(refused)} refused: {refused[-1]}" if refused else ""))
+        # TRANSLATORS: {side} is "Primary" or "Secondary", {state} is "on" or "OFF".
+        text = _f("{side} mock, protocol v{protocol} · overlays {state} · {shown} keycap(s) "
+                  "with an overlay · received: {images} image, {fills} fill, "
+                  "{mappings} mapping, {controls} control report(s)",
+                  side=_("Primary") if payload["primary"] else _("Secondary"),
+                  protocol=payload["protocol"],
+                  # TRANSLATORS: the state of the mock keyboard's overlays.
+                  state=_("on") if lit else _("OFF"),
+                  shown=shown, images=stats["image_reports"], fills=stats["fill_reports"],
+                  mappings=stats["mapping_reports"], controls=stats["control_reports"])
+        if refused:
+            text += _f(" · ⚠ {count} refused: {last}", count=len(refused), last=refused[-1])
+        self.status.setText(text)
 
     def save_pngs(self):
         """Every overlay the keyboard holds under the current modifier, one PNG
@@ -223,14 +230,15 @@ class MockBoardDialog(QDialog):
         each keycap SHOWS rather than by raw pool slot."""
         if not self._last:
             return
-        out = QFileDialog.getExistingDirectory(self, "Save the mock's keycaps to")
+        out = QFileDialog.getExistingDirectory(self, _("Save the mock's keycaps to"))
         if not out:
             return
         mod = self._last["modifier"]
         for kc, encoded in self._last["images"].items():
             image = bitmap_to_image(base64.b64decode(encoded))
             image.save(os.path.join(out, f"kc0x{int(kc):02x}_mod{mod}.png"))
-        self.status.setText(f"Saved {len(self._last['images'])} PNG(s) to {out}")
+        self.status.setText(_f("Saved {count} PNG(s) to {folder}",
+                               count=len(self._last["images"]), folder=out))
 
     def closeEvent(self, event):
         self.timer.stop()

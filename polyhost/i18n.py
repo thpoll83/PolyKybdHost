@@ -31,6 +31,7 @@ import logging
 import math
 import os
 import re
+import string
 from collections import namedtuple
 
 _log = logging.getLogger(__name__)
@@ -399,15 +400,25 @@ def isolate(value):
     return f"{_FSI}{text}{_PDI}" if is_rtl() else text
 
 
+class _IsolatingFormatter(string.Formatter):
+    """str.format, except each value is isolated AFTER its format spec ran,
+    so ``{size:,}`` and ``{pct:.0f}`` keep working under every language."""
+
+    def format_field(self, value, format_spec):
+        return isolate(super().format_field(value, format_spec))
+
+
+_FORMATTER = _IsolatingFormatter()
+
+
 def _f(message, **values):
     """Translate ``message``, then fill its ``{name}`` fields from ``values``,
-    each one isolated for right-to-left languages."""
-    return _active.gettext(message).format(**{k: isolate(v) for k, v in values.items()})
+    each one isolated for right-to-left languages. Format specs work."""
+    return _FORMATTER.format(_active.gettext(message), **values)
 
 
 def _nf(singular, plural, n, **values):
     """Plural-aware :func:`_f`: picks the form for ``n`` (also available to
     the message as ``{n}``), then fills and isolates like ``_f``."""
     values.setdefault("n", n)
-    return _active.ngettext(singular, plural, n).format(
-        **{k: isolate(v) for k, v in values.items()})
+    return _FORMATTER.format(_active.ngettext(singular, plural, n), **values)

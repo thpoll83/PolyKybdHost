@@ -78,6 +78,16 @@ class HelpersTest(unittest.TestCase):
         i18n.install("ar")
         self.assertIn("⁨1.2⁩", i18n._f("Version {version}", version="1.2"))
 
+    def test_format_specs_apply_before_isolation(self):
+        for code in ("en", "ar"):
+            i18n.install(code)
+            with self.subTest(code=code):
+                out = i18n._f("{size:,} bytes, {pct:.0f} %, {sec:02d}", size=12345, pct=42.4, sec=7)
+                self.assertEqual(out.replace("\u2068", "").replace("\u2069", ""),
+                                 "12,345 bytes, 42 %, 07")
+                self.assertEqual(i18n._nf("{n:,} glyph", "{n:,} glyphs", 1200)
+                                 .replace("\u2068", "").replace("\u2069", ""), "1,200 glyphs")
+
     def test_rtl_flags(self):
         self.assertEqual({lang.code for lang in i18n.LANGUAGES if lang.rtl}, {"ar", "fa"})
         self.assertTrue(i18n.is_rtl("fa"))
