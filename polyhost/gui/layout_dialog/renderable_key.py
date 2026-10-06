@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QPixmap, QPainter, QColor, QBrush, QTransform, QPen, QFont, QTextOption
+from PyQt5.QtGui import QPixmap, QPainter, QPainterPath, QColor, QBrush, QTransform, QPen, QFont, QTextOption
 from PyQt5.QtCore import QRect, Qt, pyqtSignal, QRectF
 
 from PyQt5.QtWidgets import (
@@ -129,8 +129,20 @@ class RenderableKey(QGraphicsObject):
 
     def set_photo_mode(self, on):
         """Draw only the panel picture (and hover / selection), for the photo."""
+        self.prepareGeometryChange()
         self._photo = bool(on)
         self.update()
+
+    def shape(self) -> QPainterPath:
+        # On the photo only the panel is drawn, and the tile around it would sit
+        # over the neighbouring keys' caps: hover and clicks there must not land
+        # on this key. The ring margin keeps the selection ring itself clickable.
+        path = QPainterPath()
+        if self._photo:
+            path.addRect(QRectF(self.display_rect()).adjusted(-3, -3, 3, 3))
+        else:
+            path.addRect(self.boundingRect())
+        return path
 
     def _paint_photo(self, painter):
         r = self.display_rect()

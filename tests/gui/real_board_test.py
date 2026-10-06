@@ -152,6 +152,19 @@ class DialogTest(unittest.TestCase):
             self.assertEqual(item.transform(), key_transform(info, minx, miny, kb.KEY_SCALE))
             self.assertFalse(item._photo)
 
+    def test_on_the_photo_a_key_answers_only_over_its_display(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        for (row, col) in self.board.quads:
+            item = self.dlg.keys[row * _Settings.MATRIX_COLUMNS + col]
+            r = QRectF(item.display_rect())
+            self.assertTrue(item.contains(r.center()), f"{row},{col}")
+            # the tile's lower part, below the panel: another key's cap on the photo
+            below = QPointF(r.center().x(), (r.bottom() + item.boundingRect().bottom()) / 2)
+            self.assertFalse(item.contains(below), f"{row},{col}")
+        self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        item = self.dlg.keys[2]
+        self.assertTrue(item.contains(item.boundingRect().center()))
+
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])
         self.dlg.keys[2].setSelected(True)
