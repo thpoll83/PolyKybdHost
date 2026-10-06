@@ -22,12 +22,14 @@ Fails soft like the plate: no files, or a file that does not parse, and `load`
 returns None, so Real mode keeps its drawn board.
 """
 import json
+import os
 import pathlib
 from dataclasses import dataclass
+from typing import List, Optional, Sequence, Tuple
 
-from PyQt5.QtCore import QPointF, QRectF, Qt
+from PyQt5.QtCore import QPointF, QRect, QRectF, Qt
 from PyQt5.QtGui import QPixmap, QPolygonF, QTransform
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from PyQt5.QtWidgets import QGraphicsItem, QGraphicsPixmapItem, QGraphicsScene
 
 from polyhost.gui.layout_dialog.board_plate import SCREEN_BOX, SCREEN_SIDE, Z_PLATE, Z_SCREEN
 
@@ -43,16 +45,16 @@ class RealBoard:
     quads: dict                 # (row, col) -> four (x, y) photo pixels, OLED order
     status: dict                # side -> (x0, y0, x1, y1) photo pixels
 
-    def scale(self, key_scale):
+    def scale(self, key_scale: float) -> float:
         """Scene units per photo pixel, so one key unit is `key_scale` as in the KLE view."""
         return key_scale * self.mm_per_px / U_MM
 
-    def scene_quad(self, key, key_scale):
+    def scene_quad(self, key: Tuple[int, int], key_scale: float) -> List[QPointF]:
         s = self.scale(key_scale)
         return [QPointF(x * s, y * s) for x, y in self.quads[key]]
 
 
-def load(path=RES / "board.json"):
+def load(path: os.PathLike = RES / "board.json") -> Optional[RealBoard]:
     """The photo and its key quads, or None when it is not shipped or unreadable."""
     try:
         path = pathlib.Path(path)
@@ -79,7 +81,7 @@ def load(path=RES / "board.json"):
         return None
 
 
-def add_photo(scene, board, key_scale):
+def add_photo(scene: QGraphicsScene, board: RealBoard, key_scale: float) -> List[QGraphicsItem]:
     """Put the photo and the two status-screen slots in `scene`; returns the items.
 
     The screen slots carry the same SCREEN_SIDE / SCREEN_BOX tags as the drawn
@@ -109,12 +111,12 @@ def add_photo(scene, board, key_scale):
     return items
 
 
-def scene_rect(board, key_scale):
+def scene_rect(board: RealBoard, key_scale: float) -> QRectF:
     s = board.scale(key_scale)
     return QRectF(0, 0, board.size[0] * s, board.size[1] * s)
 
 
-def quad_transform(rect, quad):
+def quad_transform(rect: QRect, quad: Sequence[QPointF]) -> Optional[QTransform]:
     """The item transform that maps `rect` (item coordinates) onto `quad` (scene)."""
     src = QPolygonF([QPointF(rect.left(), rect.top()), QPointF(rect.right() + 1, rect.top()),
                      QPointF(rect.right() + 1, rect.bottom() + 1), QPointF(rect.left(), rect.bottom() + 1)])
@@ -124,7 +126,7 @@ def quad_transform(rect, quad):
     return t
 
 
-def fit_affine(pairs):
+def fit_affine(pairs: Sequence[Tuple[QPointF, QPointF]]) -> QTransform:
     """Least-squares affine QTransform taking each pair's first point to its second."""
     import numpy as np
     if len(pairs) < 3:
