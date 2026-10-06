@@ -127,11 +127,19 @@ class RenderableKey(QGraphicsObject):
         y = int(display.y() + margin)
         return QRect(x, y, inner_w, h)
 
-    def set_photo_mode(self, on):
+    def set_photo_mode(self, on: bool) -> None:
         """Draw only the panel picture (and hover / selection), for the photo."""
         self.prepareGeometryChange()
         self._photo = bool(on)
+        self._sync_labels()
         self.update()
+
+    def _sync_labels(self):
+        # The child labels sit at tile positions. On the photo the tile around
+        # the panel covers caps and plate, so the badge there would float over
+        # the picture: it is hidden, and the panel alone carries the key.
+        self.text.setVisible(self._keycap is None)
+        self.badge.setVisible(bool(self.badge.toPlainText()) and not self._photo)
 
     def shape(self) -> QPainterPath:
         # On the photo only the panel is drawn, and the tile around it would sit
@@ -251,7 +259,7 @@ class RenderableKey(QGraphicsObject):
         that stops being a macro keeps the old picture.
         """
         self._keycap = pixmap
-        self.text.setVisible(pixmap is None)
+        self._sync_labels()
         self.update()
 
     def set_display(self, main_text, badge_text="", badge_color=None, font_size_hint=None):
@@ -263,11 +271,12 @@ class RenderableKey(QGraphicsObject):
 
         has_badge = bool(badge_text)
         self.badge.document().setPlainText(badge_text or "")
-        self.badge.setVisible(has_badge)
+        self.badge.setVisible(has_badge)    # for the layout below; _sync_labels settles it
         if has_badge and badge_color:
             self.badge.setDefaultTextColor(QColor(badge_color))
 
         self.update_text_position()
+        self._sync_labels()
         self.update()
 
     def update_text_position(self):

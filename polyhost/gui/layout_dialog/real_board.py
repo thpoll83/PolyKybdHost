@@ -68,8 +68,13 @@ def load(path=RES / "board.json"):
                 return None
             quads[(row, col)] = quad
         status = {s["side"]: tuple(float(v) for v in s["bbox"]) for s in data.get("status_displays", [])}
-        return RealBoard(image=image, size=tuple(data["size"]), mm_per_px=float(data["mm_per_px"]),
-                         quads=quads, status=status)
+        if any(len(box) != 4 for box in status.values()):
+            return None
+        w, h = (int(v) for v in data["size"])       # exactly two, or ValueError
+        mm_per_px = float(data["mm_per_px"])
+        if w <= 0 or h <= 0 or mm_per_px <= 0:
+            return None
+        return RealBoard(image=image, size=(w, h), mm_per_px=mm_per_px, quads=quads, status=status)
     except (OSError, ValueError, KeyError, TypeError):
         return None
 

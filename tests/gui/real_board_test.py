@@ -69,7 +69,7 @@ class _Settings:
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
-class LoadTest(unittest.TestCase):
+class RealBoardLoadTest(unittest.TestCase):
     def test_the_shipped_view_has_every_display(self):
         board = rb.load()
         if board is None:
@@ -93,6 +93,15 @@ class LoadTest(unittest.TestCase):
             with open(path, "w", encoding="utf-8") as f:
                 f.write("{not json")
             self.assertIsNone(rb.load(path))
+            # valid json, image present, but metadata the scene code would index past
+            with open(os.path.join(d, "board.jpg"), "wb") as f:
+                f.write(b"\xff\xd8")
+            for bad in ({"size": [10]}, {"size": [10, 0]}, {"mm_per_px": 0},
+                        {"status_displays": [{"side": "left", "bbox": [1, 2]}]}):
+                meta = {"image": "board.jpg", "size": [10, 10], "mm_per_px": 1, "keys": [], **bad}
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(meta, f)
+                self.assertIsNone(rb.load(path), bad)
 
     def test_fit_affine_recovers_a_transform(self):
         truth = QTransform().translate(30, -12).rotate(7).scale(1.3, 1.3)
@@ -105,7 +114,7 @@ class LoadTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
-class DialogTest(unittest.TestCase):
+class RealModeDialogTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from polyhost.gui import oled_look
@@ -164,6 +173,17 @@ class DialogTest(unittest.TestCase):
         self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
         item = self.dlg.keys[2]
         self.assertTrue(item.contains(item.boundingRect().center()))
+
+    def test_on_the_photo_no_badge_floats_over_the_picture(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        for (row, col) in self.board.quads:
+            item = self.dlg.keys[row * _Settings.MATRIX_COLUMNS + col]
+            item.set_display("A", "MO", "#FFCC44")
+            self.assertFalse(item.badge.isVisible(), f"{row},{col}")
+            item.set_photo_mode(False)
+            self.assertTrue(item.badge.isVisible(), f"{row},{col}")
+            item.set_photo_mode(True)
+            self.assertFalse(item.badge.isVisible(), f"{row},{col}")
 
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])
