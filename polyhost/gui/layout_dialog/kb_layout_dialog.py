@@ -3,6 +3,7 @@ import logging
 import pathlib
 import traceback
 
+from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QGuiApplication, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -21,6 +22,7 @@ from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.board_plate import add_board, set_screen_images
+from polyhost.gui.layout_dialog import real_board
 from polyhost.gui.layout_dialog import status_screen_render as ssr
 from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
@@ -342,9 +344,14 @@ class KbLayoutDialog(QMainWindow):
         """
         if mode == self._keycap_mode:
             return
+        was_photo = self._real_board() is not None
         self._keycap_mode = mode
         self._keycap_cache.clear()
         self._key_cache.clear()
+        # Real mode lays the keys out on the rendered photo, the others on the KLE
+        # grid: a change between the two rebuilds the scene before it is repainted.
+        if (self._real_board() is not None) != was_photo:
+            self.render_keys()
         btn = self.keycap_buttons.get(mode) if hasattr(self, "keycap_buttons") else None
         if btn is not None and not btn.isChecked():
             btn.setChecked(True)
@@ -619,8 +626,18 @@ class KbLayoutDialog(QMainWindow):
                              keycode, layer, row, col)
 
             
+    def _real_board(self):
+        """The rendered photo for Real mode, or None (not shipped, or another mode)."""
+        if self._keycap_mode != KEYCAP_REAL:
+            return None
+        if not hasattr(self, "_photo"):
+            self._photo = real_board.load()
+        return self._photo
+
     def render_keys(self):
         """Render keys with rotation applied"""
+        selected = getattr(self.selected_key, "matrix_index", None)
+        self.selected_key = None        # the scene is rebuilt: the old item is gone
         self.scene.clear()
         
         if not self.key_matrix:
@@ -628,6 +645,13 @@ class KbLayoutDialog(QMainWindow):
         
         minx = min(p['x'] for p in self.key_matrix.values())
         miny = min(p['y'] for p in self.key_matrix.values())
+
+        photo = self._real_board()
+        if photo is not None and self._render_on_photo(photo, minx, miny):
+            if selected is not None and selected in self.keys:
+                self.keys[selected].setSelected(True)
+                self.selected_key = self.keys[selected]
+            return
 
         # The board the keys are mounted on, behind them. Decoration only, and
         # it fails soft -- see `board_plate`. Added FIRST so the plate is under
@@ -643,6 +667,48 @@ class KbLayoutDialog(QMainWindow):
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+        if selected is not None and selected in self.keys:
+            self.keys[selected].setSelected(True)
+            self.selected_key = self.keys[selected]
+
+    def _render_on_photo(self, photo, minx, miny):
+        """Real mode on the rendered top view: every key on its photographed OLED.
+
+        See `real_board`. Returns False (and leaves the scene to the normal path)
+        when the photo cannot be shown, so Real mode never ends up with no board.
+        """
+        items = real_board.add_photo(self.scene, photo, KEY_SCALE)
+        if not items:
+            self.scene.clear()
+            return False
+        self._board_items = items
+        pairs = {"left": [], "right": []}
+        loose = []
+        for name, info in self.key_matrix.items():
+            index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
+            item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
+            item.pressed.connect(self.mouseClickEvent)
+            self.keys[index] = item
+            kle = key_transform(info, minx, miny, KEY_SCALE)
+            side = "left" if info["row"] < self.settings.MATRIX_ROWS // 2 else "right"
+            key = (info["row"], info["col"])
+            t = None
+            if key in photo.quads:
+                t = real_board.quad_transform(item.display_rect(), photo.scene_quad(key, KEY_SCALE))
+            if t is not None:
+                item.setTransform(t)
+                item.set_photo_mode(True)
+                c = QRectF(item.display_rect()).center()
+                pairs[side].append((kle.map(c), t.map(c)))
+            else:
+                loose.append((item, kle, side))
+            self.scene.addItem(item)
+        # the keys without a display: their KLE place, moved by the half's fit
+        for item, kle, side in loose:
+            item.setTransform(kle * real_board.fit_affine(pairs[side]))
+        self.view.setSceneRect(real_board.scene_rect(photo, KEY_SCALE))
+        self._refresh_screens(self.current_layer)
+        return True
 
     def _add_board(self, minx, miny):
         """Draw the board outline + status screens under the keys.

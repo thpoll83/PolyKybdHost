@@ -635,6 +635,31 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
 
 ---
 
+## Real mode on the rendered photo (`real_board.py`)
+
+- **In Real mode the board is a PICTURE of the keyboard, not the drawn plate.**
+  `polyhost/res/real_view/board.jpg` is an orthographic Blender render straight down
+  on both halves (PolyKybd `render/topview.py`), and `board.json` gives each key
+  display's 72x40 active area as four image pixels, keyed by the KLE `"row,col"`
+  label. `scripts/import_real_view.py <topview.png> <topview.json> [width]` brings a
+  new render in (scaled to 2400 px, JPEG: ~0.35 MB against ~4.5 MB as PNG). Symbol
+  and Preview are unchanged and keep the KLE grid and the drawn plate.
+- **Each key is MOVED onto its photographed OLED**: its `display_rect()` is mapped
+  onto the quad with `QTransform.quadToQuad`, and the key then paints only the
+  simulated panel (`set_photo_mode`). ⚠️ The keys therefore sit where the PCB puts
+  them, not where the KLE does — the two disagree by up to ~4.5 mm per half, and on
+  a photo that shows as every legend sliding off its screen. `display_rect()` is the
+  one definition of the panel rect for both the tile and the photo; keep it that way.
+- **The two keys with no display** ((3,7) and (8,0), under the encoder) keep their
+  tile, placed by a per-half least-squares affine fit from the KLE to the photo over
+  the 36 keys that have one.
+- **The status screens** are two pixmap slots tagged like the plate's
+  (`SCREEN_SIDE` / `SCREEN_BOX`), so `set_screen_images` paints them unchanged.
+- A mode change across the Real boundary REBUILDS the scene (`render_keys`), keeping
+  the selected key by matrix index. Missing or unreadable files fail soft: `load()`
+  returns None and Real keeps the drawn board. `tests/gui/real_board_test.py` maps
+  every key's display rect into the scene and compares it with the measured quad.
+
 ## Where the preview DATA comes from, and how it goes stale
 
 - ⚠️ **A GENERATOR whose default source path has gone dead fails SILENTLY, and its

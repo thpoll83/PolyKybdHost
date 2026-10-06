@@ -1,0 +1,164 @@
+"""Real mode on the rendered top view: every key lands on its photographed OLED.
+
+The point of the photo is that a legend sits ON its screen. So the dialog test
+does not check that a transform was set; it maps each key's display rect into
+the scene and compares it with the quad the render measured.
+"""
+import json
+import os
+import tempfile
+import unittest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+try:
+    from PyQt5.QtCore import QPointF, QRectF
+    from PyQt5.QtGui import QTransform
+    from PyQt5.QtWidgets import QApplication
+except ImportError as e:                      # pragma: no cover - PyQt5 not installed
+    _IMPORT_ERR = e
+else:
+    _IMPORT_ERR = None
+    from polyhost.gui.layout_dialog import board_plate as bp
+    from polyhost.gui.layout_dialog import kb_layout_dialog as kb
+    from polyhost.gui.layout_dialog import real_board as rb
+    from polyhost.gui.layout_dialog.renderable_key import key_transform
+    _APP = QApplication.instance() or QApplication([])
+
+LAYERS = ["Qwerty", "Fn", "Numpad", "Utility"]
+
+
+def setUpModule():
+    """Pin the QApplication for the life of the module (see kb_layout_screens_test)."""
+    if _IMPORT_ERR is None:
+        assert _APP is not None
+
+
+class _Core:
+    def keymap_layer_names(self):
+        return True, list(LAYERS)
+
+    def keymap_layer_count(self):
+        return True, len(LAYERS)
+
+    def keymap_buffer(self, *a, **k):
+        return True, [0] * (8 * 10 * len(LAYERS))
+
+    def keymap_default_layer(self):
+        return True, 0
+
+    def macro_list(self):
+        return True, {"macros": [], "count": 0}
+
+    def macro_set(self, *a, **k):
+        return True, ""
+
+    def macro_clear(self, *a, **k):
+        return True, ""
+
+    def keymap_set(self, *a, **k):
+        return True, ""
+
+    def subscribe(self, cb):
+        return lambda: None
+
+
+class _Settings:
+    MATRIX_COLUMNS = 8
+    MATRIX_ROWS = 10
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
+class LoadTest(unittest.TestCase):
+    def test_the_shipped_view_has_every_display(self):
+        board = rb.load()
+        if board is None:
+            self.skipTest("no real view shipped")
+        self.assertEqual(len(board.quads), 72)        # 74 keys, 72 OLEDs
+        self.assertNotIn((3, 7), board.quads)         # under the encoder, no display
+        self.assertNotIn((8, 0), board.quads)
+        self.assertEqual(set(board.status), {"left", "right"})
+        w, h = board.size
+        for quad in board.quads.values():
+            for x, y in quad:
+                self.assertTrue(0 <= x <= w and 0 <= y <= h)
+
+    def test_missing_or_broken_files_fail_soft(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(rb.load(os.path.join(d, "board.json")))
+            path = os.path.join(d, "board.json")
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump({"image": "board.jpg", "size": [10, 10], "mm_per_px": 1, "keys": []}, f)
+            self.assertIsNone(rb.load(path), "a json without its image must not load")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("{not json")
+            self.assertIsNone(rb.load(path))
+
+    def test_fit_affine_recovers_a_transform(self):
+        truth = QTransform().translate(30, -12).rotate(7).scale(1.3, 1.3)
+        pts = [QPointF(x, y) for x, y in ((0, 0), (100, 0), (0, 50), (80, 90), (40, 10))]
+        fit = rb.fit_affine([(p, truth.map(p)) for p in pts])
+        for p in (QPointF(13, 77), QPointF(-20, 5)):
+            a, b = fit.map(p), truth.map(p)
+            self.assertAlmostEqual(a.x(), b.x(), places=6)
+            self.assertAlmostEqual(a.y(), b.y(), places=6)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
+class DialogTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from polyhost.gui import oled_look
+        if not oled_look.available():
+            raise unittest.SkipTest("Pillow unavailable: no Real mode")
+        cls.board = rb.load()
+        if cls.board is None:
+            raise unittest.SkipTest("no real view shipped")
+        cls.dlg = kb.KbLayoutDialog(_Core(), _Settings())
+
+    def tearDown(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_SYMBOL)
+
+    def test_REAL_puts_every_display_on_its_photographed_OLED(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        cols = _Settings.MATRIX_COLUMNS
+        placed = 0
+        for (row, col), quad in self.board.quads.items():
+            item = self.dlg.keys[row * cols + col]
+            r = QRectF(item.display_rect())
+            corners = (r.topLeft(), QPointF(r.right(), r.top()), r.bottomRight(),
+                       QPointF(r.left(), r.bottom()))
+            for got, want in zip(corners, self.board.scene_quad((row, col), kb.KEY_SCALE)):
+                got = item.mapToScene(got)
+                self.assertAlmostEqual(got.x(), want.x(), delta=1.5, msg=f"{row},{col}")
+                self.assertAlmostEqual(got.y(), want.y(), delta=1.5, msg=f"{row},{col}")
+            placed += 1
+        self.assertEqual(placed, 72)
+
+    def test_REAL_shows_the_photo_and_its_status_screens(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        sides = {i.data(bp.SCREEN_SIDE) for i in self.dlg._board_items} - {None}
+        self.assertEqual(sides, {"left", "right"})
+        self.assertEqual(self.dlg.view.sceneRect(), rb.scene_rect(self.board, kb.KEY_SCALE))
+
+    def test_leaving_REAL_puts_the_keys_back_on_the_KLE_grid(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        km = self.dlg.key_matrix
+        minx = min(p["x"] for p in km.values())
+        miny = min(p["y"] for p in km.values())
+        for info in km.values():
+            item = self.dlg.keys[info["row"] * _Settings.MATRIX_COLUMNS + info["col"]]
+            self.assertEqual(item.transform(), key_transform(info, minx, miny, kb.KEY_SCALE))
+            self.assertFalse(item._photo)
+
+    def test_the_selected_key_survives_the_rebuild(self):
+        self.dlg.mouseClickEvent(self.dlg.keys[2])
+        self.dlg.keys[2].setSelected(True)
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        self.assertIs(self.dlg.selected_key, self.dlg.keys[2])
+        self.assertTrue(self.dlg.keys[2].isSelected())
+
+
+if __name__ == "__main__":
+    unittest.main()

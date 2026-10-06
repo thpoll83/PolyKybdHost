@@ -75,6 +75,10 @@ class RenderableKey(QGraphicsObject):
         self.badge.setVisible(False)
 
         self._keycap = None      # a rendered macro keycap, drawn in the display rect
+        # On the rendered photo (Real mode, see real_board.py) the key is moved so its
+        # display rect lands on the photographed OLED, and draws nothing of its own
+        # but that panel's picture: the photo already shows the cap, switch and plate.
+        self._photo = False
         self.update_text_position()
 
         # hover state
@@ -104,12 +108,52 @@ class RenderableKey(QGraphicsObject):
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self.w, self.h)
 
+    def display_rect(self) -> QRect:
+        """The 72:40 panel rect inside the tile, in item coordinates.
+
+        One place for it, because two things depend on it agreeing exactly: the
+        tile paints the keycap there, and Real mode on the photo maps this rect
+        onto the photographed OLED.
+        """
+        display = self.boundingRect()
+        margin = 4
+        inner_w = int(max(0.0, display.height() - 2.0 * margin))
+        max_inner_h = max(0.0, display.height() - 2.0 * margin)
+        # desired height based on ratio (width : height = 72 : 40), capped to the
+        # available height so it never overflows the item
+        h = int(min(inner_w * (40.0 / 72.0), max_inner_h))
+        x = int(display.x() + margin + (display.width() - display.height()) / 2)
+        # anchor at top; leftover space remains at bottom
+        y = int(display.y() + margin)
+        return QRect(x, y, inner_w, h)
+
+    def set_photo_mode(self, on):
+        """Draw only the panel picture (and hover / selection), for the photo."""
+        self._photo = bool(on)
+        self.update()
+
+    def _paint_photo(self, painter):
+        r = self.display_rect()
+        if self._keycap is not None and r.width() > 0 and r.height() > 0:
+            painter.save()
+            painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+            painter.drawPixmap(r, self._keycap)
+            painter.restore()
+        if self.isSelected() or self._hovered:
+            ring = QRectF(r).adjusted(-3, -3, 3, 3)
+            painter.setBrush(Qt.NoBrush)
+            painter.setPen(self.pen_selected if self.isSelected() else self.pen_hover)
+            painter.drawRoundedRect(ring, 3, 3)
+
     # noinspection PyTypeChecker
     def paint(self, painter, option, widget):
         # enable antialiasing for smooth rounded corners
         painter.setRenderHint(QPainter.Antialiasing, True)
 
         rect = self.boundingRect()
+        if self._photo:
+            self._paint_photo(painter)
+            return
 
         # background
         painter.setBrush(self.bg_brush)
@@ -119,20 +163,8 @@ class RenderableKey(QGraphicsObject):
         painter.drawRoundedRect(rect, radius, radius)
 
         painter.setBrush(self.display_brush)
-        display = self.boundingRect()
-        margin = 4
-        inner_w = int(max(0.0, display.height() - 2.0 * margin))
-        max_inner_h = max(0.0, display.height() - 2.0 * margin)
-
-        # desired height based on ratio (width : height = 72 : 40)
-        desired_h = inner_w * (40.0 / 72.0)
-
-        # cap to available height so we never overflow the item
-        h = int(min(desired_h, max_inner_h))
-
-        x = int(display.x() + margin + (display.width()-display.height())/2)
-        # anchor at top; leftover space remains at bottom
-        y = int(display.y() + margin)
+        panel = self.display_rect()
+        x, y, inner_w, h = panel.x(), panel.y(), panel.width(), panel.height()
 
         # draw the rectangle (use drawRoundedRect(...) if you prefer rounded corners)
         painter.drawRoundedRect(x, y, inner_w, h, 0.05, 0.05)
