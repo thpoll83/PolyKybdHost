@@ -29,8 +29,6 @@ def main(png, src_json, width=2400):
         raise SystemExit(f"{png} is {im.size}, but {src_json} describes {data['size']}")
     k = width / im.width
     height = round(im.height * k)
-    OUT.mkdir(parents=True, exist_ok=True)
-    im.resize((width, height), Image.LANCZOS).save(OUT / "board.jpg", quality=90, optimize=True)
 
     def pt(p):
         return [round(p[0] * k, 2), round(p[1] * k, 2)]
@@ -49,7 +47,14 @@ def main(png, src_json, width=2400):
                              "bbox": pt(s["bbox"][:2]) + pt(s["bbox"][2:])}
                             for s in data["status_displays"]],
     }
-    (OUT / "board.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
+    # Both files are built before either is written, so input missing a field
+    # fails here and leaves the shipped pair as it was, never a new photo
+    # beside the old coordinates.
+    text = json.dumps(out, indent=1) + "\n"
+    photo = im.resize((width, height), Image.LANCZOS)
+    OUT.mkdir(parents=True, exist_ok=True)
+    photo.save(OUT / "board.jpg", quality=90, optimize=True)
+    (OUT / "board.json").write_text(text, encoding="utf-8")
     print(f"wrote {OUT / 'board.jpg'} ({width}x{height}) and board.json, {len(out['keys'])} keys")
 
 

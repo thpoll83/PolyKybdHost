@@ -77,7 +77,7 @@ def load(path: os.PathLike = RES / "board.json") -> Optional[RealBoard]:
         if w <= 0 or h <= 0 or mm_per_px <= 0:
             return None
         return RealBoard(image=image, size=(w, h), mm_per_px=mm_per_px, quads=quads, status=status)
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
 
 

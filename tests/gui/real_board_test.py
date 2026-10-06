@@ -72,8 +72,7 @@ class _Settings:
 class RealBoardLoadTest(unittest.TestCase):
     def test_the_shipped_view_has_every_display(self):
         board = rb.load()
-        if board is None:
-            self.skipTest("no real view shipped")
+        self.assertIsNotNone(board, "the shipped real view is missing or broken")
         self.assertEqual(len(board.quads), 72)        # 74 keys, 72 OLEDs
         self.assertNotIn((3, 7), board.quads)         # under the encoder, no display
         self.assertNotIn((8, 0), board.quads)
@@ -97,6 +96,7 @@ class RealBoardLoadTest(unittest.TestCase):
             with open(os.path.join(d, "board.jpg"), "wb") as f:
                 f.write(b"\xff\xd8")
             for bad in ({"size": [10]}, {"size": [10, 0]}, {"mm_per_px": 0},
+                        {"keys": [{"matrix": 12, "oled": [[0, 0]] * 4}]},
                         {"status_displays": [{"side": "left", "bbox": [1, 2]}]}):
                 meta = {"image": "board.jpg", "size": [10, 10], "mm_per_px": 1, "keys": [], **bad}
                 with open(path, "w", encoding="utf-8") as f:
@@ -121,8 +121,8 @@ class RealModeDialogTest(unittest.TestCase):
         if not oled_look.available():
             raise unittest.SkipTest("Pillow unavailable: no Real mode")
         cls.board = rb.load()
-        if cls.board is None:
-            raise unittest.SkipTest("no real view shipped")
+        # a failure, not a skip: the shipped view IS what these tests cover
+        assert cls.board is not None, "the shipped real view is missing or broken"
         cls.dlg = kb.KbLayoutDialog(_Core(), _Settings())
 
     def tearDown(self):
