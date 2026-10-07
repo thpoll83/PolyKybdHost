@@ -52,10 +52,11 @@ GLYPH_SCRIPT_LABELS = {
     GlyphScript.SGA:      "Standard Galactic",
     GlyphScript.CIRTH:    "Cirth / Angerthas",
     GlyphScript.IBMVGA:   "IBM VGA / CP437",
-    GlyphScript.C64:      "Commodore 64",
+    GlyphScript.C64:      "Commodore 64 (screen)",
     GlyphScript.AMIGA:    "Amiga Topaz",
     GlyphScript.APL:      "APL",
     GlyphScript.BRAILLE:  "Braille",
+    GlyphScript.C64KEYS:  "Commodore 64 (keycap)",
 }
 
 # Keys cover every GlyphSize so the menu builds from the enum. Worded as what the

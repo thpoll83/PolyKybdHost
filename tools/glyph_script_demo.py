@@ -39,7 +39,8 @@ from polyhost.services import fontpack_render as FR
 
 # fantasy.plyf fonts are in poly_glyph_script order (Tengwar..Braille).
 SCRIPTS = ["Tengwar", "Elder Futhark Runes", "Aurebesh", "Standard Galactic",
-           "Cirth", "IBM VGA / CP437", "Commodore 64", "Amiga Topaz", "APL", "Braille"]
+           "Cirth", "IBM VGA / CP437", "Commodore 64 (screen)", "Amiga Topaz", "APL", "Braille",
+           "Commodore 64 (keycap)"]
 
 
 def letter_or_digit(kc: str):

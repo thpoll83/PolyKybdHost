@@ -228,6 +228,7 @@ class GlyphScript(Enum):
     AMIGA = 8
     APL = 9
     BRAILLE = 10
+    C64KEYS = 11  # C64 printed keycap lettering (the C64 above is the screen ROM font)
 
 
 class GlyphSize(Enum):
