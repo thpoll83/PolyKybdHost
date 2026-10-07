@@ -17,6 +17,14 @@ interchangeable: a value means "this is so", `""` means "confirmed absent",
 and `None` means "could not tell" and must never be treated as either.
 
 ⚠️ `scripts/` is not a package, so the module is loaded by path.
+
+⚠️ Loading the script fresh per test gives a new MODULE object, but not a new
+`urllib.request` -- that comes from `sys.modules` and is shared with the whole
+suite. So a fake urlopen must be installed with `mock.patch` and removed again:
+assigning it leaks into every later test in the process, and the supported
+runner runs them all in one. Caught by Greptile on PolyKybdHost#318 after a
+plain assignment here left `OSError("network down")` installed for everything
+that ran afterwards.
 """
 import importlib.util
 import io
@@ -24,6 +32,7 @@ import contextlib
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "publish_release.py"
@@ -97,13 +106,16 @@ class ReleaseExistsTest(unittest.TestCase):
     def _with_urlopen(self, exc=None, status=200):
         m = load()
         if exc is not None:
-            m.urllib.request.urlopen = lambda *a, **k: (_ for _ in ()).throw(exc)
+            fake = lambda *a, **k: (_ for _ in ()).throw(exc)
         else:
             class _Resp:
                 def __init__(self, s): self.status = s
                 def __enter__(self): return self
                 def __exit__(self, *a): return False
-            m.urllib.request.urlopen = lambda *a, **k: _Resp(status)
+            fake = lambda *a, **k: _Resp(status)
+        patcher = mock.patch.object(m.urllib.request, "urlopen", fake)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         return m
 
     def test_200_is_true(self):
@@ -134,10 +146,13 @@ class ApiTimeoutTest(unittest.TestCase):
         self.assertIsInstance(m.API_TIMEOUT, (int, float))
         self.assertGreater(m.API_TIMEOUT, 0)
         seen = []
+        fake = lambda *a, **k: seen.append(k.get("timeout")) or (
+            (_ for _ in ()).throw(OSError("stop here")))
+        patcher = mock.patch.object(m.urllib.request, "urlopen", fake)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         for fn, args in ((m.release_exists, ("o", "r", "t", None)),
                          (m._get_json, ("o", "r", "/p", None))):
-            m.urllib.request.urlopen = lambda *a, **k: seen.append(k.get("timeout")) or (
-                (_ for _ in ()).throw(OSError("stop here")))
             fn(*args)
         self.assertEqual(seen, [m.API_TIMEOUT, m.API_TIMEOUT])
 
