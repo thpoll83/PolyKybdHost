@@ -512,8 +512,6 @@ class KbLayoutDialog(QMainWindow):
         num_keys = len(self.keys)
         max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
         offset = layer*max_idx
-        # On the photo every key has a picture to show: the displays their panel,
-        # the two expansion-port keys their legend over the lid.
         photo = self._real_board() is not None
         idx = 0
         for _ in range(num_keys):
@@ -521,19 +519,8 @@ class KbLayoutDialog(QMainWindow):
             while idx not in self.keys and idx < max_idx:
                 idx += 1
             keycode = self.key_buffer[idx + offset]
-            main, badge, color = describe_keycode(keycode, mapping)
-            main = self._tile_main(keycode, main)
-            if photo and keycode in (KC_NO, KC_TRANSPARENT):
-                # nothing assigned: the keyboard shows nothing there, and neither
-                # does the photo -- no "NO", "TRNS" or "______" over the picture
-                main, badge = "", ""
-            self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
-            # After set_display, which restores the text a keycap hides. The PREVIEW
-            # resolves transparency; the TEXT deliberately does not, so the tile still
-            # says the slot is transparent rather than claiming it holds that key.
-            self.keys[idx].set_keycap(
-                self._keycap_for(self._resolve(idx, layer))
-                if photo or self._has_display(idx) else None)
+            self._show_key(self.keys[idx], idx, keycode, self._resolve(idx, layer),
+                           mapping, photo)
             idx += 1
         # The status panels name the layer, so they follow it -- and this is the one
         # path both a layer change and a mode change go through.
@@ -606,6 +593,30 @@ class KbLayoutDialog(QMainWindow):
             max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
             self.keycode_browser.show_keycode(self.key_buffer[idx + self.current_layer * max_idx])
 
+    def _show_key(self, item, idx, keycode, preview_keycode, mapping, photo):
+        """Draw one key: its tile text and its keycap picture.
+
+        The ONE place both the whole-layer redraw and a single-key edit go through,
+        so the two cannot disagree about how a key looks. `preview_keycode` is what
+        the picture shows: the layer redraw passes the slot's own keycode (see
+        `_resolve`), an edit the keycode just assigned.
+        """
+        main, badge, color = describe_keycode(keycode, mapping)
+        main = self._tile_main(keycode, main)
+        if photo and keycode in (KC_NO, KC_TRANSPARENT):
+            # nothing assigned: the keyboard shows nothing there, and neither does
+            # the photo -- no "NO", "TRNS" or "______" over the picture
+            main, badge = "", ""
+        item.set_display(main, badge, color, 9 if len(main) < 5 else 7)
+        # After set_display, which restores the text a keycap hides. The PREVIEW
+        # resolves transparency; the TEXT deliberately does not, so the tile still
+        # says the slot is transparent rather than claiming it holds that key.
+        # On the photo every key has a picture to show: the displays their panel,
+        # the two expansion-port keys their legend over the lid. None for a key
+        # with no picture clears one it showed before (a key that WAS a macro).
+        shown = photo or idx is None or self._has_display(idx)
+        item.set_keycap(self._keycap_for(preview_keycode) if shown else None)
+
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
         if self.selected_key is None:
             return
@@ -613,13 +624,10 @@ class KbLayoutDialog(QMainWindow):
             self.log.warning("Cannot write keycode: key buffer not initialized")
             return
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
-        main, badge, color = describe_keycode(keycode, mapping)
-        main = self._tile_main(keycode, main)
-        self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)
-        # None for a non-macro keycode, which is what clears a key that WAS a macro.
-        sel = self.selected_key.matrix_index
-        self.selected_key.set_keycap(
-            self._keycap_for(keycode) if sel is None or self._has_display(sel) else None)
+        # the same drawing rules as a whole-layer redraw, so an edit looks right at
+        # once rather than after the next layer or mode switch
+        self._show_key(self.selected_key, self.selected_key.matrix_index, keycode, keycode,
+                       mapping, self._real_board() is not None)
         idx = self.selected_key.matrix_index
         if idx is None:
             return

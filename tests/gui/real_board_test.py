@@ -298,6 +298,33 @@ class RealModeDialogTest(unittest.TestCase):
         finally:
             self.dlg.key_buffer[:] = saved
 
+    def test_an_EDIT_draws_the_key_like_a_layer_redraw(self):
+        """keycodeSelected must follow the same Real-mode rules as the layer redraw:
+        an edited empty key shows nothing at once, and an expansion key keeps its
+        picture -- not only after the next layer or mode switch."""
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        cols = _Settings.MATRIX_COLUMNS
+        disp, port = 0 * cols + 1, 3 * cols + 7
+        saved = self._layer0({disp: 0x0004, port: 0x0000})
+        try:
+            self.dlg.selected_key = self.dlg.keys[disp]
+            self.dlg.keycodeSelected("", "", 0x0000, None)          # KC_NO
+            self.assertEqual(self.dlg.keys[disp].text.toPlainText(), "")
+            self.assertIsNone(self.dlg.keys[disp]._keycap)
+            self.dlg.selected_key = self.dlg.keys[port]
+            self.dlg.keycodeSelected("", "", 0x0004, None)          # KC_A
+            item = self.dlg.keys[port]
+            if item._keycap is None:
+                self.skipTest("no keycap preview in this environment")
+            self.assertFalse(item.text.isVisible())
+            # and identical to what a whole-layer redraw gives the same slot
+            pic = item._keycap.toImage()
+            self.dlg.set_keycodes_for_layer(0)
+            self.assertEqual(item._keycap.toImage(), pic)
+        finally:
+            self.dlg.key_buffer[:] = saved
+            self.dlg.selected_key = None
+
     def test_a_mode_change_centres_the_view_on_the_board(self):
         view = self.dlg.view
         for mode in (kb.KEYCAP_REAL, kb.KEYCAP_PREVIEW, kb.KEYCAP_REAL):
