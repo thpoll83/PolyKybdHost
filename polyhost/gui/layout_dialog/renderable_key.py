@@ -161,9 +161,17 @@ class RenderableKey(QGraphicsObject):
         # The child labels sit at tile positions. On the photo the tile around
         # the panel covers caps and plate, so the badge there would float over
         # the picture: it is hidden, and the panel alone carries the key.
-        self.text.setVisible(self._keycap is None)
+        self.text.setVisible(self._keycap is None and self._label_shown())
         self.badge.setVisible(bool(self.badge.toPlainText())
                               and not (self._photo or self._label_only))
+
+    def _label_shown(self) -> bool:
+        """Whether the label is drawn. A label-only key (an expansion-port lid on
+        the photo) shows its legend only while hovered or selected: the lid is
+        bare on the board, so a legend there all the time puts something on the
+        photo that the keyboard does not have. Its hit area stays, so hovering the
+        lid still finds it."""
+        return not self._label_only or self._hovered or self.isSelected()
 
     def _label_rect(self) -> QRectF:
         if self._keycap is not None:
@@ -209,6 +217,8 @@ class RenderableKey(QGraphicsObject):
             self._paint_photo(painter)
             return
         if self._label_only:
+            if not self._label_shown():
+                return
             if self._keycap is not None:
                 # The same simulated panel the displays show, but with no panel:
                 # LIGHTEN keeps the lit pixels and their glow and drops the panel's
@@ -280,13 +290,20 @@ class RenderableKey(QGraphicsObject):
     # Hover events to toggle hover state
     def hoverEnterEvent(self, ev):
         self._hovered = True
+        self._sync_labels()     # a label-only key's text label shows on hover
         self.update()  # schedule repaint
         super().hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
         self._hovered = False
+        self._sync_labels()
         self.update()
         super().hoverLeaveEvent(ev)
+
+    def itemChange(self, change, value):
+        if change == self.ItemSelectedHasChanged:
+            self._sync_labels()     # ... and while selected
+        return super().itemChange(change, value)
 
     # Make clicking focus the item (so keyboard focus can be shown if desired)
     def mousePressEvent(self, ev):

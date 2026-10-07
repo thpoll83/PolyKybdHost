@@ -127,16 +127,10 @@ class KbLayoutDialog(QMainWindow):
         # keycaps came from, so one board cannot show two firmwares.
         self._status_render = None
         self._board_items: list = []
-        # Drives the header toggle. A plain flag rather than reading the checkbox back,
-        # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
-        # OFF by default: the editor's job is assigning keycodes, and a board of
-        # pictures makes the keycode you are about to change harder to read, not
-        # easier. The previews are the thing you turn ON to check your work.
         # SYMBOL / PREVIEW / REAL, driving the header's button group. A plain field
         # rather than reading a widget back, so `_keycap_for` does not depend on one
-        # init_ui has not built yet. SYMBOL by default: the editor's job is assigning
-        # keycodes, and a board of pictures makes the keycode you are about to change
-        # harder to read, not easier. The pictures are what you turn ON to check work.
+        # init_ui has not built yet. Set to the default once the fonts below have
+        # loaded (`_default_keycap_mode`); SYMBOL until then.
         self._keycap_mode = KEYCAP_SYMBOL
         try:
             faces = ml.load_caption_faces(ml.default_font_dir())
@@ -149,8 +143,19 @@ class KbLayoutDialog(QMainWindow):
             self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder, faces)
         except Exception:
             self.log.debug("macro keycap fonts unavailable; keys show their keycode")
+        self._keycap_mode = self._default_keycap_mode()
 
         self.init_ui()
+
+    def _default_keycap_mode(self):
+        """REAL when it can draw, else the best mode that can: the editor opens on
+        the board as it looks (the maintainer's call, 2026-10-07), and falls back
+        to Preview without the panel simulation and to Symbol without the fonts,
+        the same rules that enable the header's buttons."""
+        macro_ok = self._keycap_render is not None and self._keycap_render.usable
+        if not (macro_ok or self._preview.usable):
+            return KEYCAP_SYMBOL
+        return KEYCAP_REAL if oled_look.available() else KEYCAP_PREVIEW
 
     def get_selected_key(self):
         return self.selected_key

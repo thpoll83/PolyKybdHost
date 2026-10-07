@@ -9,13 +9,14 @@ import math
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtCore import QPointF, QRectF, Qt
-    from PyQt5.QtGui import QColor, QTransform
-    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtGui import QColor, QImage, QPainter, QTransform
+    from PyQt5.QtWidgets import QApplication, QGraphicsObject
 except ImportError as e:                      # pragma: no cover - PyQt5 not installed
     _IMPORT_ERR = e
 else:
@@ -25,6 +26,14 @@ else:
     from polyhost.gui.layout_dialog import real_board as rb
     from polyhost.gui.layout_dialog.renderable_key import key_transform
     _APP = QApplication.instance() or QApplication([])
+
+def _hover(item, on):
+    """Drive the item's own hover handler. PyQt5 cannot construct a
+    QGraphicsSceneHoverEvent, so the base handler it chains to is stubbed."""
+    name = "hoverEnterEvent" if on else "hoverLeaveEvent"
+    with mock.patch.object(QGraphicsObject, name):
+        getattr(item, name)(None)
+
 
 LAYERS = ["Qwerty", "Fn", "Numpad", "Utility"]
 
@@ -203,7 +212,16 @@ class RealModeDialogTest(unittest.TestCase):
         for item in loose:
             item.set_display("Enc", "MO", "#FFCC44")
             self.assertTrue(item._label_only)
+            # the lid is bare on the board: the label shows only on hover or selection
+            self.assertFalse(item.text.isVisible())
+            item.setSelected(True)
             self.assertTrue(item.text.isVisible())
+            item.setSelected(False)
+            self.assertFalse(item.text.isVisible())
+            _hover(item, True)
+            self.assertTrue(item.text.isVisible())
+            _hover(item, False)
+            self.assertFalse(item.text.isVisible())
             self.assertFalse(item.badge.isVisible())
             # only the label answers: not the empty tile around it
             self.assertFalse(item.contains(item.boundingRect().bottomLeft() + QPointF(2, -2)))
@@ -295,8 +313,31 @@ class RealModeDialogTest(unittest.TestCase):
             self.assertAlmostEqual(r.center().y(), item.label_anchor().y(), delta=0.5)
             self.assertTrue(item.contains(r.center()))
             self.assertFalse(item.contains(item.boundingRect().bottomLeft() + QPointF(2, -2)))
+            # ...and it is drawn only while the key is hovered or selected: the lid
+            # on the board is bare
+            self.assertEqual(self._painted(item), 0)
+            item.setSelected(True)
+            self.assertGreater(self._painted(item), 0)
+            item.setSelected(False)
+            _hover(item, True)
+            self.assertGreater(self._painted(item), 0)
+            _hover(item, False)
+            self.assertEqual(self._painted(item), 0)
+            self.assertTrue(item.contains(r.center()), "still found by the mouse when hidden")
         finally:
             self.dlg.key_buffer[:] = saved
+
+    @staticmethod
+    def _painted(item):
+        """Pixels item.paint() covers, on a transparent image of its bounds."""
+        r = item.boundingRect()
+        img = QImage(int(r.width()) + 2, int(r.height()) + 2, QImage.Format_ARGB32)
+        img.fill(0)
+        p = QPainter(img)
+        p.translate(-r.left() + 1, -r.top() + 1)
+        item.paint(p, None, None)
+        p.end()
+        return sum(1 for y in range(img.height()) for x in range(img.width()) if img.pixel(x, y) >> 24)
 
     def test_an_EDIT_draws_the_key_like_a_layer_redraw(self):
         """keycodeSelected must follow the same Real-mode rules as the layer redraw:

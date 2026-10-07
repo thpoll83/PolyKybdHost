@@ -12,12 +12,14 @@ draw.
 """
 import os
 import unittest
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
     from PyQt5.QtWidgets import QApplication
     from polyhost.device.device_settings import DeviceSettings
+    from polyhost.gui import oled_look
     from polyhost.gui.layout_dialog.kb_layout_dialog import (
         KEYCAP_PREVIEW, KEYCAP_REAL, KEYCAP_SYMBOL, KbLayoutDialog)
     from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT, KeycapPreview
@@ -76,10 +78,9 @@ class FakeCore:
 def _editor(core=None, previews=True):
     """The dialog, with previews ON unless asked otherwise.
 
-    They ship OFF -- the editor's job is assigning keycodes and a board of pictures
-    makes the one you are about to change harder to read -- but almost every test here
-    is ABOUT the previews, so the fixture turns them on rather than each test doing it.
-    `test_previews_are_OFF_when_the_dialog_opens` pins the shipped default.
+    The dialog opens in Real (`test_the_dialog_opens_in_REAL` pins that), but almost
+    every test here is about the flat previews, so the fixture switches to Preview
+    rather than each test doing it.
     """
     dlg = KbLayoutDialog(core or FakeCore(), DeviceSettings())
     if previews:
@@ -516,18 +517,26 @@ class MacroKeycapInEditorTest(unittest.TestCase):
             with self.subTest(drawn=hex(op_cp)):
                 self.assertNotIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
 
-    def test_previews_are_OFF_when_the_dialog_opens(self):
-        """The editor is for assigning keycodes; a wall of keycaps makes the code you
-        are about to change harder to read. Previews are what you switch ON to check
-        the result, so the box starts clear even when everything loaded fine."""
+    def test_the_dialog_opens_in_REAL(self):
+        """The editor opens on the board as it looks (the maintainer's call,
+        2026-10-07): Real, with the other two modes a click away."""
         dlg = _editor(previews=False)
-        self.assertTrue(dlg.keycap_buttons[KEYCAP_SYMBOL].isChecked())
-        self.assertFalse(dlg.keycap_buttons[KEYCAP_PREVIEW].isChecked())
-        self.assertTrue(dlg.keycap_buttons[KEYCAP_PREVIEW].isEnabled(),
-                        "…but still available")
+        self.assertEqual(dlg._keycap_mode, KEYCAP_REAL)
+        self.assertTrue(dlg.keycap_buttons[KEYCAP_REAL].isChecked())
+        self.assertFalse(dlg.keycap_buttons[KEYCAP_SYMBOL].isChecked())
+        self.assertTrue(dlg.keycap_buttons[KEYCAP_SYMBOL].isEnabled())
         first = sorted(dlg.keys)[0]
         _assign(dlg, first, QK_MACRO + 0)
-        self.assertIsNone(dlg.keys[first]._keycap)
+        self.assertIsNotNone(dlg.keys[first]._keycap)
+
+    def test_without_the_panel_simulation_it_opens_in_PREVIEW(self):
+        """Real is the default only where it can draw; the fallback is the same
+        rule that disables its button."""
+        with mock.patch.object(oled_look, "available", return_value=False):
+            dlg = _editor(previews=False)
+        self.assertEqual(dlg._keycap_mode, KEYCAP_PREVIEW)
+        self.assertTrue(dlg.keycap_buttons[KEYCAP_PREVIEW].isChecked())
+        self.assertFalse(dlg.keycap_buttons[KEYCAP_REAL].isEnabled())
 
 
 class _DeadPreview:

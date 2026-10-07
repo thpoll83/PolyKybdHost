@@ -4,10 +4,10 @@
 
 The inputs come from the PolyKybd repo (`render/topview.py`, which renders
 both halves straight down and writes each key display's image quad). This
-scales them to `width` pixels (default 2400; the render is 3200) and writes
+scales them to `width` pixels (default 4000; the render is 4800) and writes
 `polyhost/res/real_view/board.jpg` + `board.json`, the pair
 `gui/layout_dialog/real_board.py` loads. JPEG because the picture is a photo:
-~0.4 MB here against ~4 MB as PNG, and Qt reads it everywhere PyQt5 runs.
+a fraction of the PNG's size, and Qt reads it everywhere PyQt5 runs.
 
 Every coordinate is scaled with the image, and `mm_per_px` with it, so the
 quads stay on the displays at any width.
@@ -22,7 +22,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "polyhost" / "res" / "real_view"
 
 
-def main(png, src_json, width=2400):
+def main(png, src_json, width=4000):
     data = json.loads(pathlib.Path(src_json).read_text(encoding="utf-8"))
     im = Image.open(png).convert("RGB")
     if list(im.size) != list(data["size"]):
@@ -64,4 +64,4 @@ def main(png, src_json, width=2400):
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         raise SystemExit(__doc__)
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 2400)
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 4000)

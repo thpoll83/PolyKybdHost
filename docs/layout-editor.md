@@ -253,9 +253,9 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
         keymap; a board that cannot be edited still says which layer is selected.
       - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
         test that says so, and the first draft claimed it was.** `_add_board` does draw
-        them before the default layer is read, but the default mode is Symbol — so they
-        are blank until the user picks Preview, and that pick repaints at
-        `current_layer` regardless. Measured: deleting the startup
+        them before the default layer is read, but the default mode was Symbol then — so
+        they were blank until the user picked Preview, and that pick repaints at
+        `current_layer` regardless. (The editor opens in Real now; see *Real mode*.) Measured: deleting the startup
         `set_keycodes_for_layer` outright leaves the test green. What that actually
         breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
         claim and belongs in a keycap test.
@@ -642,8 +642,12 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   on both halves (PolyKybd `render/topview.py`), and `board.json` gives each key
   display's 72x40 active area as four image pixels, keyed by the KLE `"row,col"`
   label. `scripts/import_real_view.py <topview.png> <topview.json> [width]` brings a
-  new render in (scaled to 2400 px, JPEG: ~0.35 MB against ~4.5 MB as PNG). Symbol
+  new render in (rendered at 4800 px and scaled to 4000, 0.13 mm per pixel, JPEG). Symbol
   and Preview are unchanged and keep the KLE grid and the drawn plate.
+- **The editor opens maximized and in Real** (the maintainer's call, 2026-10-07).
+  `_default_keycap_mode()` falls back to Preview when the panel simulation is
+  unavailable and to Symbol without the fonts, the same rules that enable the
+  header's buttons; `tests/gui/macro_keycap_editor_test.py` pins both.
 - **Each key is MOVED onto its photographed OLED**: its `display_rect()` is mapped
   onto the quad with `QTransform.quadToQuad`, and the key then paints only the
   simulated panel (`set_photo_mode`). ⚠️ The keys therefore sit where the PCB puts
@@ -655,6 +659,10 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   and scaled to the photographed displays, and draw their LEGEND ALONE
   (`set_label_only`): the same simulated-panel picture the displays show, blended
   with LIGHTEN so only the lit pixels land on the lid, with no tile and no badge.
+  ⚠️ **Only while hovered or selected** (`_label_shown()`): the lid is bare on the
+  keyboard, so a legend there all the time puts something on the photo the board does
+  not have. The hit area stays, so the mouse still finds the lid; the hover and
+  selection handlers re-sync the text label, and the tests drive both.
   Without lid data they fall back to a per-half affine fit from the KLE.
   `tests/gui/real_board_test.py` measures each lid's angle on the photo itself, so
   an outline turned the wrong way fails there.
