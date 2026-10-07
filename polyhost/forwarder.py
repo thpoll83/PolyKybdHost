@@ -29,6 +29,7 @@ from polyhost.gui.theme import apply_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
+from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
 from polyhost.gui.tray_wait import TrayVisibilityWaiter
@@ -903,8 +904,9 @@ class PolyForwarder(QApplication):
         self._update_ui.close()
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        QMessageBox.warning(
-            None, "Update failed", f"Could not apply the update:\n\n{message}")
+        from polyhost.services.updater import fix_commands_from_message
+        show_copyable_error("Update failed", "The update did not finish.", message,
+                            commands=fix_commands_from_message(message))
 
     def quit_app(self):
         self.icon_manager.set_disconnected()

@@ -103,7 +103,12 @@ CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
        escalated_summary="The status display keeps rejecting updates (the keyboard's retries land)."),
     _p("oled_i2c_stuck", r"oled_i2c: status display not responding", SEVERITY_ERROR,
        "The status display stopped responding (I2C writes fail even after a retry)."),
-    _p("slave_unresponsive", r"RPC FAILED .* slave unresponsive", SEVERITY_ERROR,
+    # Not the `slave status (begin-pending)` snapshot: hid_fw_up.c prints it
+    # every ~4 s while the slave is still erasing staging flash at the start of
+    # a firmware update. A status read can miss mid-erase, the BEGIN poll goes
+    # on, and the update completes (field report 2026-10-05).
+    _p("slave_unresponsive", r"^(?!.*slave status \(begin-pending\)).*RPC FAILED .* slave unresponsive",
+       SEVERITY_ERROR,
        "The second keyboard half stopped answering over the split link."),
     _p("slave_refused", r"slave REFUSED \(ack=", SEVERITY_ERROR,
        "The second keyboard half rejected data sent to it."),

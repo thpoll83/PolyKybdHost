@@ -4,6 +4,7 @@ Polls the GitHub releases API for a newer version, downloads the auto-generated
 source tarball, copies the files over the install directory, and triggers an
 in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
+import ast
 import json
 import logging
 import math
@@ -645,18 +646,230 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
     return children[0]
 
 
-def _run_pip(args: list, label: str, line_cb=None) -> None:
-    """Run `pip <args>` in the active interpreter; log on non-zero exit.
+_PIP_TAIL_LINES = 30
+_FIX_HEADER = "To fix it:"
+
+
+# Characters PowerShell reads literally in a bare argument. Anything else
+# (space, quote, $, `, &, parentheses, ...) gets the argument single-quoted.
+_PS_BARE = re.compile(r"[A-Za-z0-9_\-.:\\/=+]+")
+
+
+def _powershell_quote(arg: str) -> str:
+    if _PS_BARE.fullmatch(arg):
+        return arg
+    return "'" + arg.replace("'", "''") + "'"
+
+
+def _shell_join(argv: list) -> str:
+    """One command line the user can paste into this platform's shell.
+
+    This only FORMATS text for the update-failed dialog; nothing executes
+    it. On Windows the target is PowerShell, the default terminal there:
+    a quoted program path is just a string to PowerShell, so the line
+    starts with the call operator ``&``, and quoting follows PowerShell's
+    single-quote rule rather than ``subprocess.list2cmdline``'s, which
+    leaves an apostrophe (``C:\\Users\\O'Brien``) unquoted.
+    """
+    if sys.platform == "win32":
+        return "& " + " ".join(_powershell_quote(a) for a in argv)
+    import shlex
+    return shlex.join(argv)
+
+
+def _in_virtualenv() -> bool:
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+
+
+def pip_fix_commands(install_root: Path) -> list:
+    """The pip commands that finish an update by hand, in the order
+    :func:`apply_update` runs them."""
+    cmds = [[sys.executable, "-m", "pip", "install", "-e", str(install_root)]]
+    requirements = install_root / "requirements.txt"
+    if requirements.is_file():
+        cmds.append([sys.executable, "-m", "pip", "install", "-r", str(requirements)])
+    return cmds
+
+
+# pip prints str(OSError), which gives the filename as repr(): single quotes,
+# or DOUBLE quotes when the path itself has an apostrophe (/home/o'brien).
+_DENIED_PATH = re.compile(
+    r"""Permission denied: ('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")""")
+
+
+def _denied_path(lines: list) -> Optional[str]:
+    """The path from pip's ``Permission denied: '<path>'``, or None.
+
+    None also for a path with a control character: decoding turns an
+    escaped newline into a real one, and the path is quoted into the fix
+    steps, whose indented lines Copy Fix Commands puts on the clipboard.
+    """
+    for ln in lines:
+        m = _DENIED_PATH.search(ln)
+        if m:
+            try:
+                path = ast.literal_eval(m.group(1))
+            except (ValueError, SyntaxError):
+                return None
+            if not isinstance(path, str) or any(ord(c) < 0x20 or c == "\x7f" for c in path):
+                return None
+            return path
+    return None
+
+
+def _is_inside(path: str, root: str) -> bool:
+    path, root = os.path.normpath(path), os.path.normpath(root)
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def _permission_step(lines: list) -> Optional[str]:
+    """The ownership step for a POSIX permission error, or None.
+
+    The chown is offered only for a path pip names INSIDE a virtualenv: a
+    venv belongs to one user, while a system Python's prefix is /usr or
+    /usr/local, and a path outside the environment (pip's cache, say) is
+    not fixed by changing the environment's owner.
+    """
+    if sys.platform == "win32" or not any(
+            "[Errno 13]" in ln or "Permission denied" in ln for ln in lines):
+        return None
+    denied = _denied_path(lines)
+    if denied is None:
+        return ("This user cannot write to a path pip needs. Check the "
+                "ownership of the path in pip's error below.")
+    if not _is_inside(denied, sys.prefix):
+        return (f"This user cannot write to {denied}, which is outside the "
+                "Python environment. Check who owns it (ls -ld) and give it "
+                "back to your user if an earlier 'sudo' created it.")
+    if not _in_virtualenv():
+        return ("This user cannot write to the Python installation "
+                f"({sys.prefix}), which is not a virtual environment. Do not "
+                "change its ownership. Run PolyKybd Host from a virtual "
+                "environment you own, or fix only the path named in pip's "
+                "error below.")
+    return ("This user cannot write to a file in the Python environment. An "
+            "earlier 'sudo pip' often leaves files owned by root. Give them "
+            "back to your user:\n"
+            f'  sudo chown -R "$USER": {_shell_join([sys.prefix])}')
+
+
+def _pip_failure_message(label: str, outcome: str, captured: list,
+                         fix_cmds: list = (), locked: list = (),
+                         download_dir: Optional[str] = None) -> str:
+    """What a failed pip step tells the user: what state the install is in,
+    how to finish it, then pip's own output.
+
+    The new files are copied BEFORE pip runs, so the next start already runs
+    the new version without the packages it added (field report 2026-10-05:
+    1.15.0 started without uharfbuzz/freetype-py/fonttools). Saying "could not
+    apply the update" reads as "still on the old version", which is wrong.
+
+    ``locked`` are the Windows ``(src, dst)`` pairs that were in use and so
+    not replaced. A successful install hands them to the relay; a failed one
+    never reaches it, so the steps copy them by hand from the kept download.
+    ``download_dir`` is that kept download; the last step says to delete it
+    once the new version runs, since the relay that would have is never
+    started.
+
+    pip's ``ERROR:`` line comes last, after pages of progress, so the output
+    keeps the tail. ``[notice]`` lines (a newer pip exists) are dropped: they
+    sit below the error and pushed it out of the old 500-character slice.
+    """
+    lines = [ln for ln in captured if not ln.startswith("[notice]")]
+    where = " in PowerShell" if sys.platform == "win32" else ""
+    steps = []
+    permission = _permission_step(lines)
+    if permission:
+        steps.append(permission)
+    quit_first = "Quit PolyKybd Host, then "
+    if locked:
+        steps.append(
+            f"{quit_first}copy the {len(locked)} file(s) that were in use"
+            f"{where}:\n" + "\n".join(
+                "  " + _shell_join(["Copy-Item", "-Force", "-LiteralPath", src,
+                                    "-Destination", dst])
+                for src, dst in locked))
+        quit_first = ""
+    if fix_cmds:
+        lead = f"{quit_first}run{where}:" if quit_first else f"Then run{where}:"
+        steps.append(lead + "\n" + "\n".join("  " + _shell_join(c) for c in fix_cmds))
+    steps.append("Start PolyKybd Host again.")
+    if locked and download_dir:
+        # Prose, not an indented command: Copy Fix Commands pastes the
+        # commands as one block, and a delete there would run even after a
+        # failed Copy-Item and take the files needed to retry it.
+        steps.append("Once PolyKybd Host runs the new version, delete the "
+                     f"downloaded update folder {download_dir}.")
+
+    if locked:
+        msg = (f"Most of the new version's files are installed, but {len(locked)} "
+               "file(s) were in use and could not be replaced, and pip could not "
+               "install the Python packages the new version needs. PolyKybd Host "
+               "may not start correctly until the steps below are done.")
+    else:
+        msg = ("The new version's files are installed, but pip could not install "
+               "the Python packages it needs. PolyKybd Host runs the new version "
+               "from its next start, and features that need the missing packages "
+               "stay off until they are installed.")
+    msg += f"\n\n{_FIX_HEADER}\n"
+    msg += "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
+    msg += f"\n\npip {label} {outcome}"
+    if lines:
+        msg += ":\n" + "\n".join(lines[-_PIP_TAIL_LINES:])
+    return msg
+
+
+class PipInstallError(RuntimeError):
+    """A pip step of :func:`apply_update` failed after the files were copied.
+
+    ``keeps_sources`` is True when the message tells the user to copy files
+    out of the download, so the installer must not delete it."""
+
+    def __init__(self, message: str, keeps_sources: bool = False):
+        super().__init__(message)
+        self.keeps_sources = keeps_sources
+
+
+def fix_commands_from_message(message: str) -> str:
+    """The shell commands from a :func:`_pip_failure_message`, one per line.
+
+    The steps tell the user to quit the app, and the dialog goes with it, so
+    the dialog offers these on their own to paste into a terminal. They are
+    the two-space-indented lines of the steps block. The message crosses the
+    control socket as a plain string, so this reads it back from the text;
+    anything else (a download failure, say) yields "".
+    """
+    head = f"{_FIX_HEADER}\n"
+    if head not in message:
+        return ""
+    steps = message.split(head, 1)[1].split("\n\n", 1)[0]
+    return "\n".join(ln.strip() for ln in steps.splitlines()
+                     if ln.startswith("  ") and ln.strip())
+
+
+def _run_pip(args: list, label: str, line_cb=None, fix_cmds: list = (),
+             locked: list = (), download_dir: Optional[str] = None) -> None:
+    """Run `pip <args>` in the active interpreter; raise on failure.
 
     Streams stdout+stderr line by line.  Each non-empty line is passed to
     ``line_cb(line)`` when provided, so callers can surface it as UI feedback.
+    ``fix_cmds`` and ``locked`` feed the steps the failure message lists.
     """
+    def fail(outcome, captured):
+        return PipInstallError(
+            _pip_failure_message(label, outcome, captured, fix_cmds, locked,
+                                 download_dir),
+            keeps_sources=bool(locked))
+
     try:
         proc = subprocess.Popen(
             [sys.executable, "-m", "pip", *args],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
-        captured = []
+    except (subprocess.SubprocessError, OSError) as e:
+        raise fail(f"failed to run: {e}", []) from e
+    captured = []
+    try:
         for raw in proc.stdout:
             line = raw.rstrip()
             if line:
@@ -664,13 +877,12 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
                 if line_cb:
                     line_cb(line)
         proc.wait()
-        if proc.returncode != 0:
-            msg = (f"pip {label} after update returned {proc.returncode}: "
-                   f'{" ".join(captured[-20:])[-500:]}')
-            log.warning(msg)
-            raise RuntimeError(msg)
     except (subprocess.SubprocessError, OSError) as e:
-        raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
+        raise fail(f"failed to run: {e}", captured) from e
+    if proc.returncode != 0:
+        err = fail(f"returned {proc.returncode}", captured)
+        log.warning(str(err))
+        raise err
 
 
 # Win32 process-creation flags. Taken from `subprocess` where it defines them
@@ -818,7 +1030,8 @@ def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
     return script
 
 
-def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
+def apply_update(extracted_dir: Path, install_root: Path, line_cb=None,
+                 download_dir: Optional[Path] = None) -> list:
     """Copy files from `extracted_dir` over `install_root`, then refresh deps.
 
     On Windows, native DLLs locked by the running process are skipped and
@@ -828,8 +1041,11 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     Runs ``pip install -e .`` to pick up ``setup.py`` changes and, if a
     ``requirements.txt`` is present, ``pip install -r requirements.txt``.
     ``line_cb``, when provided, is called with each non-empty pip output line.
+    ``download_dir`` is the temp directory holding ``extracted_dir``, named
+    in a failed install's cleanup step (default: ``extracted_dir``).
     """
     locked: list = []
+    cleanup = str(download_dir or extracted_dir)
 
     def _copy2(src, dst):
         try:
@@ -848,10 +1064,13 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
         ignore=shutil.ignore_patterns(*EXCLUDES),
         copy_function=_copy2,
     )
-    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb)
+    fix_cmds = pip_fix_commands(install_root)
+    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb,
+             fix_cmds, locked, cleanup)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
-        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt", line_cb)
+        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt",
+                 line_cb, fix_cmds, locked, cleanup)
     return locked
 
 
@@ -1143,10 +1362,16 @@ class UpdateInstaller(threading.Thread):
             locked = apply_update(
                 extracted, install_root,
                 line_cb=lambda line: _fire(self._on_progress, -1, line),
+                download_dir=tmp_dir,
             )
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+            # A pip failure with files still in use leaves Copy-Item steps that
+            # read from this download, so it has to outlive the dialog.
+            if getattr(e, "keeps_sources", False):
+                log.info("Keeping %s for the manual copy steps", tmp_dir)
+            else:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
             _fire(self._on_failed, str(e))
             return
 

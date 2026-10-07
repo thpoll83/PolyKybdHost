@@ -23,6 +23,18 @@ EDEN = "Eden idle: core1 job for key 7 timed out - rendering on core0"
 
 
 class ConsoleScannerTest(unittest.TestCase):
+    def test_the_erase_wait_status_snapshot_is_not_a_problem(self):
+        # Printed while the slave erases staging flash at the start of a
+        # firmware update; the update went on to complete (2026-10-05).
+        s = ps.ConsoleProblemScanner()
+        found = s.feed("slave status (begin-pending): RPC FAILED \u2014 slave unresponsive\n")
+        self.assertEqual(found, [])
+
+    def test_a_status_snapshot_failing_at_another_point_still_counts(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed("slave status (begin-ready): RPC FAILED \u2014 slave unresponsive\n")
+        self.assertEqual([p.key for p in found], ["slave_unresponsive"])
+
     def test_an_error_line_is_reported_once(self):
         s = ps.ConsoleProblemScanner()
         found = s.feed(f"boot\n{SLAVE}\n")

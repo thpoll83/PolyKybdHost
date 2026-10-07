@@ -84,7 +84,7 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
-    AUTO_CHECK_INTERVAL_S, claim_automatic_check)
+    AUTO_CHECK_INTERVAL_S, claim_automatic_check, fix_commands_from_message)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.split_link_dialog import show_split_link_help
 from polyhost.gui.progress_dialog import StableProgressDialog
@@ -112,6 +112,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
+from polyhost.gui.error_dialog import show_copyable_error
 from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
@@ -2536,8 +2537,8 @@ class PolyHost(QApplication):
             self._update_progress = None
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        _msgbox(QMessageBox.Warning, "Update failed",
-                f"Could not apply the update:\n\n{message}")
+        show_copyable_error("Update failed", "The update did not finish.", message,
+                            commands=fix_commands_from_message(message))
 
     # ------------------------------------------------------------------
     # Balloon notifications

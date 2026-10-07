@@ -853,6 +853,226 @@ class TestApplyUpdate(unittest.TestCase):
             # Files are copied before the (failing) pip step runs.
             self.assertTrue((install / "marker").exists())
 
+    def test_pip_failure_keeps_the_error_line_and_drops_notices(self):
+        # The field case (2026-10-05): the ERROR line sat behind progress
+        # output and was followed by two [notice] lines.
+        captured = ["Building wheel"] * 50 + [
+            "Installing collected packages: uharfbuzz, PolyHost",
+            "ERROR: Could not install packages due to an OSError: [Errno 13] "
+            + "Permission denied: '/v/site-packages/uharfbuzz'",
+            "[notice] A new release of pip is available: 26.1.2 -> 26.2.1",
+            "[notice] To update, run: pip install --upgrade pip"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", captured)
+        self.assertIn("pip install -e . returned 1:\n", msg)
+        self.assertIn("\nERROR: Could not install packages", msg)
+        self.assertNotIn("[notice]", msg)
+        self.assertEqual(msg.count("Building wheel"), updater._PIP_TAIL_LINES - 2)
+
+    def test_pip_failure_says_the_files_are_in_and_how_to_finish(self):
+        # The files are copied before pip runs, so the next start runs the new
+        # version; the message must say so and list the steps in order.
+        lines = ["ERROR: Could not install packages due to an OSError: "
+                 "[Errno 13] Permission denied: '/v/site-packages/uharfbuzz'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/home/u/My Host"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/home/u/My Host/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertTrue(msg.startswith("The new version's files are installed"))
+        steps = msg.split("To fix it:\n", 1)[1].split("\n\npip ", 1)[0]
+        self.assertIn('1. This user cannot write', steps)
+        self.assertIn('sudo chown -R "$USER": /v', steps)
+        self.assertIn("2. Quit PolyKybd Host, then run:\n"
+                      "  /v/bin/python -m pip install -e '/home/u/My Host'\n"
+                      "  /v/bin/python -m pip install -r '/home/u/My Host/requirements.txt'",
+                      steps)
+        self.assertIn("3. Start PolyKybd Host again.", steps)
+
+    def test_fix_commands_read_back_from_the_message(self):
+        lines = ["ERROR: [Errno 13] Permission denied: '/v/x'"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"],
+               ["/v/bin/python", "-m", "pip", "install", "-r", "/r/requirements.txt"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               lines + ["  indented pip output"], fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         'sudo chown -R "$USER": /v\n'
+                         "/v/bin/python -m pip install -e /r\n"
+                         "/v/bin/python -m pip install -r /r/requirements.txt")
+
+    def test_other_failures_have_no_fix_commands(self):
+        self.assertEqual(updater.fix_commands_from_message("Install dir not writable: x"), "")
+
+    def test_no_chown_for_a_python_that_is_not_a_virtualenv(self):
+        # sys.prefix of a system Python is /usr: a recursive chown there
+        # would hand OS-managed files to one user.
+        lines = ["ERROR: [Errno 13] Permission denied: '/usr/lib/python3/x'"]
+        fix = [["/usr/bin/python3", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/usr"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("install -e .", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("not a virtual environment", msg)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/usr/bin/python3 -m pip install -e /r")
+
+    def test_windows_commands_are_for_powershell(self):
+        argv = [r"C:\Users\O'Brien\My App\.venv\Scripts\python.exe",
+                "-m", "pip", "install", "-e", r"C:\Users\O'Brien\My App"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            line = updater._shell_join(argv)
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], [argv])
+        self.assertEqual(
+            line,
+            r"& 'C:\Users\O''Brien\My App\.venv\Scripts\python.exe' -m pip install -e "
+            r"'C:\Users\O''Brien\My App'")
+        self.assertIn("Quit PolyKybd Host, then run in PowerShell:", msg)
+
+    def test_in_use_files_get_copy_steps_before_pip(self):
+        # Windows: files in use are skipped and left for the relay, which a
+        # pip failure never reaches (Greptile on #316).
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        fix = [[r"C:\App\.venv\Scripts\python.exe", "-m", "pip", "install", "-e", r"C:\App"]]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("install -e .", "returned 1",
+                                               ["ERROR: boom"], fix, locked)
+        self.assertTrue(msg.startswith("Most of the new version's files are installed, "
+                                       "but 1 file(s) were in use"))
+        self.assertIn("1. Quit PolyKybd Host, then copy the 1 file(s) that were in use "
+                      "in PowerShell:", msg)
+        self.assertIn("2. Then run in PowerShell:", msg)
+        self.assertEqual(
+            updater.fix_commands_from_message(msg).splitlines(),
+            [r"& Copy-Item -Force -LiteralPath C:\Temp\upd\x.pyd -Destination C:\App\x.pyd",
+             r"& C:\App\.venv\Scripts\python.exe -m pip install -e C:\App"])
+
+    def test_in_use_files_end_with_deleting_the_kept_download(self):
+        # The relay that deletes the download never runs after a pip failure
+        # (Greptile on #316), so the last step says to delete it. It is prose,
+        # not a command: pasted as one block, a delete would also run after a
+        # failed Copy-Item and take the files needed to retry it.
+        locked = [(r"C:\Temp\upd\x.pyd", r"C:\App\x.pyd")]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], locked, r"C:\Temp\polyhost-update-1")
+        self.assertIn("3. Once PolyKybd Host runs the new version, delete the downloaded "
+                      r"update folder C:\Temp\polyhost-update-1.", msg)
+        cmds = updater.fix_commands_from_message(msg)
+        self.assertNotIn("Remove-Item", cmds)
+        self.assertNotIn("polyhost-update-1", cmds)
+        # Without files in use the download is already gone: no such step.
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            msg = updater._pip_failure_message("x", "returned 1", ["ERROR: boom"],
+                                               [], [], r"C:\Temp\polyhost-update-1")
+        self.assertNotIn("polyhost-update-1", msg)
+
+    def test_apply_update_reports_in_use_files_and_keeps_sources(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "x.pyd").write_bytes(b"new")
+            install = Path(td) / "install"
+            install.mkdir()
+
+            locked_err = OSError(13, "in use")
+            locked_err.winerror = 32
+            with mock.patch.object(updater.sys, "platform", "win32"), \
+                    mock.patch.object(updater.shutil, "copy2", side_effect=locked_err), \
+                    mock.patch.object(updater.subprocess, "Popen",
+                                      side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(updater.PipInstallError) as ctx:
+                    updater.apply_update(src, install)
+            self.assertTrue(ctx.exception.keeps_sources)
+            self.assertIn("1 file(s) were in use", str(ctx.exception))
+            self.assertIn(str(src / "x.pyd"), str(ctx.exception))
+
+    def test_chown_only_when_the_denied_path_is_inside_the_venv(self):
+        def msg_for(denied):
+            lines = [f"ERROR: [Errno 13] Permission denied: '{denied}'"]
+            with mock.patch.object(updater.sys, "platform", "linux"), \
+                    mock.patch.object(updater.sys, "prefix", "/home/u/app/.venv"), \
+                    mock.patch.object(updater.sys, "base_prefix", "/usr"):
+                return updater._pip_failure_message("x", "returned 1", lines)
+        inside = msg_for("/home/u/app/.venv/lib/python3.12/site-packages/uharfbuzz")
+        self.assertIn('sudo chown -R "$USER": /home/u/app/.venv', inside)
+        # pip's cache is outside the environment: chowning the venv would not
+        # fix it (Greptile on #316).
+        outside = msg_for("/home/u/.cache/pip/wheels")
+        self.assertNotIn("chown", outside)
+        self.assertIn("cannot write to /home/u/.cache/pip/wheels, which is outside", outside)
+        # A sibling directory that merely shares the prefix string is outside.
+        self.assertNotIn("chown", msg_for("/home/u/app/.venv-old/x"))
+
+    def test_a_denied_path_cannot_add_a_command(self):
+        # An escaped newline + two spaces in pip's path would decode into an
+        # indented line that Copy Fix Commands copies (Greptile on #316).
+        err = PermissionError(13, "Permission denied", "/tmp/a\n  rm -rf ~")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        fix = [["/v/bin/python", "-m", "pip", "install", "-e", "/r"]]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/v"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertEqual(updater.fix_commands_from_message(msg),
+                         "/v/bin/python -m pip install -e /r")
+        self.assertIn("Check the ownership of the path in pip's error below.", msg)
+
+    def test_a_denied_path_with_an_apostrophe_is_read_whole(self):
+        # str(OSError) gives repr(filename): DOUBLE quotes when the path has an
+        # apostrophe, which a '...'-only pattern cut to "/home/o" (Greptile).
+        err = PermissionError(13, "Permission denied",
+                              "/home/o'brien/app/.venv/lib/site-packages/uharfbuzz")
+        lines = [f"ERROR: Could not install packages due to an OSError: {err}"]
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+                mock.patch.object(updater.sys, "prefix", "/home/o'brien/app/.venv"), \
+                mock.patch.object(updater.sys, "base_prefix", "/usr"):
+            msg = updater._pip_failure_message("x", "returned 1", lines)
+        self.assertIn("sudo chown -R \"$USER\": '/home/o'\"'\"'brien/app/.venv'", msg)
+
+    def test_pip_failure_hint_only_for_permission_errors_on_posix(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
+        lines = ["ERROR: No matching distribution found for foo"]
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            msg = updater._pip_failure_message("x", "returned 1", lines, fix)
+        self.assertNotIn("chown", msg)
+        self.assertIn("1. Quit PolyKybd Host", msg)
+        lines = ["ERROR: [Errno 13] Permission denied: 'C:\\\\v\\\\x.pyd'"]
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            self.assertNotIn("chown",
+                             updater._pip_failure_message("x", "returned 1", lines, fix))
+
+    def test_apply_update_hands_the_fix_commands_to_the_message(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "requirements.txt").write_text("requests\n", encoding="utf-8")
+            install = Path(td) / "install"
+            install.mkdir()
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((1, ["ERROR: boom"]))):
+                with self.assertRaises(RuntimeError) as ctx:
+                    updater.apply_update(src, install)
+            msg = str(ctx.exception)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-e", str(install)]), msg)
+            self.assertIn(updater._shell_join(
+                [sys.executable, "-m", "pip", "install", "-r",
+                 str(install / "requirements.txt")]), msg)
+
+    def test_pip_that_cannot_start_still_says_how_to_finish(self):
+        fix = [["py", "-m", "pip", "install", "-e", "x"]]
+        with mock.patch.object(updater.subprocess, "Popen", side_effect=OSError("no pip")):
+            with self.assertRaises(RuntimeError) as ctx:
+                updater._run_pip(["install"], "install -e .", None, fix)
+        self.assertIn("pip install -e . failed to run: no pip", str(ctx.exception))
+        self.assertIn("Quit PolyKybd Host, then run:", str(ctx.exception))
+
     def test_requirements_failure_raises(self):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
@@ -1323,6 +1543,40 @@ class TestUpdateInstaller(unittest.TestCase):
             self._make(rel, rec).run()
         self.assertIn("failed", rec.names)
         self.assertEqual(rec.args_for("failed"), [("net down",)])
+
+    def _fail_with(self, error):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", side_effect=error), \
+             mock.patch.object(updater.shutil, "rmtree") as rmtree, \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(rec.names[-1], "failed")
+        self.assertNotIn("relay_needed", rec.names)
+        return rmtree
+
+    def test_a_pip_failure_with_copy_steps_keeps_the_download(self):
+        # The Copy-Item steps read the in-use files out of this directory.
+        rmtree = self._fail_with(updater.PipInstallError("m", keeps_sources=True))
+        self.assertNotIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
+
+    def test_run_names_its_temp_dir_for_the_cleanup_step(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]) as apply, \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertEqual(apply.call_args.kwargs["download_dir"], Path("/tmp/x"))
+
+    def test_a_pip_failure_without_copy_steps_cleans_up(self):
+        rmtree = self._fail_with(updater.PipInstallError("m"))
+        # (The preflight probe also gets an rmtree; this is the install's.)
+        self.assertIn(mock.call(Path("/tmp/x"), ignore_errors=True), rmtree.call_args_list)
 
 
 class _NamedFile:
