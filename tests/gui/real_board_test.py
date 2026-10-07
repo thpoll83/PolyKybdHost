@@ -12,8 +12,8 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt5.QtCore import QPointF, QRectF
-    from PyQt5.QtGui import QTransform
+    from PyQt5.QtCore import QPointF, QRectF, Qt
+    from PyQt5.QtGui import QColor, QTransform
     from PyQt5.QtWidgets import QApplication
 except ImportError as e:                      # pragma: no cover - PyQt5 not installed
     _IMPORT_ERR = e
@@ -184,6 +184,30 @@ class RealModeDialogTest(unittest.TestCase):
             self.assertTrue(item.badge.isVisible(), f"{row},{col}")
             item.set_photo_mode(True)
             self.assertFalse(item.badge.isVisible(), f"{row},{col}")
+
+    def test_REAL_has_a_white_scene_and_leaving_it_resets(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        self.assertEqual(self.dlg.scene.backgroundBrush().color(), QColor(Qt.white))
+        self.assertEqual(self.dlg.scene.backgroundBrush().style(), Qt.SolidPattern)
+        self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        self.assertNotEqual(self.dlg.scene.backgroundBrush().color(), QColor(Qt.white))
+
+    def test_keys_without_a_display_are_a_label_alone(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        cols = _Settings.MATRIX_COLUMNS
+        loose = [i for i in self.dlg.keys.values()
+                 if (i.matrix_index // cols, i.matrix_index % cols) not in self.board.quads]
+        self.assertEqual(len(loose), 2)
+        for item in loose:
+            item.set_display("Enc", "MO", "#FFCC44")
+            self.assertTrue(item._label_only)
+            self.assertTrue(item.text.isVisible())
+            self.assertFalse(item.badge.isVisible())
+            # only the label answers: not the empty tile around it
+            self.assertFalse(item.contains(item.boundingRect().bottomLeft() + QPointF(2, -2)))
+            self.assertTrue(item.contains(item.text.mapRectToParent(item.text.boundingRect()).center()))
+        self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        self.assertFalse(any(i._label_only for i in self.dlg.keys.values()))
 
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])

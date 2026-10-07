@@ -650,9 +650,13 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   them, not where the KLE does — the two disagree by up to ~4.5 mm per half, and on
   a photo that shows as every legend sliding off its screen. `display_rect()` is the
   one definition of the panel rect for both the tile and the photo; keep it that way.
-- **The two keys with no display** ((3,7) and (8,0), under the encoder) keep their
-  tile, placed by a per-half least-squares affine fit from the KLE to the photo over
-  the 36 keys that have one.
+- **The two keys with no display** ((3,7) and (8,0), the expansion ports) are
+  placed by a per-half least-squares affine fit from the KLE to the photo over the
+  36 keys that have one, and draw their LABEL ALONE (`set_label_only`): no tile and
+  no badge, because a tile there would draw a box over the photographed lid.
+- **The photo is rendered on pure white and the scene background is white in Real
+  mode**, so zooming shows no edge around the picture. `render_keys` resets the
+  brush on every rebuild, and each mode sets its own.
 - **The status screens** are two pixmap slots tagged like the plate's
   (`SCREEN_SIDE` / `SCREEN_BOX`), so `set_screen_images` paints them unchanged.
 - A mode change across the Real boundary REBUILDS the scene (`render_keys`), keeping

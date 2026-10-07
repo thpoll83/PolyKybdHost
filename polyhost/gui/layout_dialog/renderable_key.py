@@ -79,6 +79,7 @@ class RenderableKey(QGraphicsObject):
         # display rect lands on the photographed OLED, and draws nothing of its own
         # but that panel's picture: the photo already shows the cap, switch and plate.
         self._photo = False
+        self._label_only = False
         self.update_text_position()
 
         # hover state
@@ -134,12 +135,27 @@ class RenderableKey(QGraphicsObject):
         self._sync_labels()
         self.update()
 
+    def set_label_only(self, on: bool) -> None:
+        """Draw only the key's label, no tile, for a key the photo shows no display for.
+
+        On the photo the two keys without a display sit over the expansion-port
+        lids; a tile there would cover the lid with a box that is not on the board.
+        """
+        self.prepareGeometryChange()
+        self._label_only = bool(on)
+        self._sync_labels()
+        self.update()
+
     def _sync_labels(self):
         # The child labels sit at tile positions. On the photo the tile around
         # the panel covers caps and plate, so the badge there would float over
         # the picture: it is hidden, and the panel alone carries the key.
-        self.text.setVisible(self._keycap is None)
-        self.badge.setVisible(bool(self.badge.toPlainText()) and not self._photo)
+        self.text.setVisible(self._keycap is None or self._label_only)
+        self.badge.setVisible(bool(self.badge.toPlainText())
+                              and not (self._photo or self._label_only))
+
+    def _label_rect(self) -> QRectF:
+        return self.text.mapRectToParent(self.text.boundingRect()).adjusted(-3, -3, 3, 3)
 
     def shape(self) -> QPainterPath:
         # On the photo only the panel is drawn, and the tile around it would sit
@@ -148,6 +164,8 @@ class RenderableKey(QGraphicsObject):
         path = QPainterPath()
         if self._photo:
             path.addRect(QRectF(self.display_rect()).adjusted(-3, -3, 3, 3))
+        elif self._label_only:
+            path.addRect(self._label_rect())
         else:
             path.addRect(self.boundingRect())
         return path
@@ -173,6 +191,12 @@ class RenderableKey(QGraphicsObject):
         rect = self.boundingRect()
         if self._photo:
             self._paint_photo(painter)
+            return
+        if self._label_only:
+            if self.isSelected() or self._hovered:
+                painter.setBrush(Qt.NoBrush)
+                painter.setPen(self.pen_selected if self.isSelected() else self.pen_hover)
+                painter.drawRoundedRect(self._label_rect(), 3, 3)
             return
 
         # background

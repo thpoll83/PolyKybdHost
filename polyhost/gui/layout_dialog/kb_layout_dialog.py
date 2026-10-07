@@ -3,8 +3,8 @@ import logging
 import pathlib
 import traceback
 
-from PyQt5.QtCore import QRectF
-from PyQt5.QtGui import QGuiApplication, QCursor, QPixmap
+from PyQt5.QtCore import QRectF, Qt
+from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
@@ -639,6 +639,7 @@ class KbLayoutDialog(QMainWindow):
         selected = getattr(self.selected_key, "matrix_index", None)
         self.selected_key = None        # the scene is rebuilt: the old item is gone
         self.scene.clear()
+        self.scene.setBackgroundBrush(QBrush(Qt.NoBrush))   # each mode sets its own
         
         if not self.key_matrix:
             return
@@ -703,9 +704,14 @@ class KbLayoutDialog(QMainWindow):
             else:
                 loose.append((item, kle, side))
             self.scene.addItem(item)
-        # the keys without a display: their KLE place, moved by the half's fit
+        # the keys without a display: their KLE place, moved by the half's fit,
+        # drawn as a label alone over the expansion-port lid
         for item, kle, side in loose:
             item.setTransform(kle * real_board.fit_affine(pairs[side]))
+            item.set_label_only(True)
+        # the photo is rendered on pure white, so a white scene leaves no edge
+        # around it at any zoom
+        self.scene.setBackgroundBrush(QBrush(Qt.white))
         self.view.setSceneRect(real_board.scene_rect(photo, KEY_SCALE))
         self._refresh_screens(self.current_layer)
         return True
