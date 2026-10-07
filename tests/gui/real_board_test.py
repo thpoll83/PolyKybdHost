@@ -131,7 +131,6 @@ class RealBoardLoadTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
-@unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
 class ZoomFollowsTheWindowTest(unittest.TestCase):
     """The board opens fully visible, stays so through a resize (shrinking with
     the window), and a zoom keeps its size relative to the window."""
@@ -193,6 +192,7 @@ class ZoomFollowsTheWindowTest(unittest.TestCase):
                 self._assert_fits()
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
 class RealModeDialogTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
