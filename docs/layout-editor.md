@@ -650,10 +650,18 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   them, not where the KLE does — the two disagree by up to ~4.5 mm per half, and on
   a photo that shows as every legend sliding off its screen. `display_rect()` is the
   one definition of the panel rect for both the tile and the photo; keep it that way.
-- **The two keys with no display** ((3,7) and (8,0), the expansion ports) are
-  placed by a per-half least-squares affine fit from the KLE to the photo over the
-  36 keys that have one, and draw their LABEL ALONE (`set_label_only`): no tile and
-  no badge, because a tile there would draw a box over the photographed lid.
+- **The two keys with no display** ((3,7) and (8,0), the expansion ports) sit on
+  their half's photographed lid (`board.json` → `expansion_ports`), turned with it
+  and scaled to the photographed displays, and draw their LEGEND ALONE
+  (`set_label_only`): the same simulated-panel picture the displays show, blended
+  with LIGHTEN so only the lit pixels land on the lid, with no tile and no badge.
+  Without lid data they fall back to a per-half affine fit from the KLE.
+  `tests/gui/real_board_test.py` measures each lid's angle on the photo itself, so
+  an outline turned the wrong way fails there.
+- **An empty slot (KC_NO, KC_TRANSPARENT) shows nothing on the photo** — no "NO",
+  "TRNS" or "______" over the picture, as on the keyboard. The other modes keep
+  naming it on the tile.
+- **A mode change centres the view on the board**, keeping the zoom.
 - **The photo is rendered on pure white and the scene background is white in Real
   mode**, so zooming shows no edge around the picture. `render_keys` resets the
   brush on every rebuild, and each mode sets its own.

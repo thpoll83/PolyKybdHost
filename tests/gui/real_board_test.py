@@ -250,6 +250,66 @@ class RealModeDialogTest(unittest.TestCase):
             diff = (photo - outline + 90) % 180 - 90           # axes: modulo 180
             self.assertLess(abs(diff), 4, f"{side}: photo {photo:.1f}, outline {outline:.1f}")
 
+    def _layer0(self, assign):
+        """Put keycodes on layer 0 ({matrix index: keycode}, the rest KC_NO) and redraw."""
+        buf = self.dlg.key_buffer
+        saved = list(buf)
+        for i in range(len(buf)):
+            buf[i] = 0
+        for i, kc in assign.items():
+            buf[i] = kc
+        self.dlg.set_keycodes_for_layer(0)
+        return saved
+
+    def test_on_the_photo_an_empty_key_shows_nothing(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        cols = _Settings.MATRIX_COLUMNS
+        disp, port = 0 * cols + 1, 3 * cols + 7
+        saved = self._layer0({disp: 0x0001, port: 0x0001})   # KC_TRANSPARENT
+        try:
+            for idx in self.dlg.keys:                          # KC_NO everywhere else
+                item = self.dlg.keys[idx]
+                self.assertEqual(item.text.toPlainText(), "", idx)
+                self.assertIsNone(item._keycap, idx)
+                self.assertFalse(item.badge.isVisible(), idx)
+            # off the photo the tile still names the empty slot
+            self.dlg.set_keycap_mode(kb.KEYCAP_SYMBOL)
+            self.assertNotEqual(self.dlg.keys[disp].text.toPlainText(), "")
+        finally:
+            self.dlg.key_buffer[:] = saved
+
+    def test_an_expansion_key_shows_its_legend_like_a_display(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        port = 3 * _Settings.MATRIX_COLUMNS + 7
+        saved = self._layer0({port: 0x0004})                 # KC_A
+        try:
+            item = self.dlg.keys[port]
+            if item._keycap is None:
+                self.skipTest("no keycap preview in this environment")
+            self.assertTrue(item._label_only)
+            self.assertFalse(item.text.isVisible())          # the picture carries it
+            # the picture is display-sized and centred on the lid
+            r = item._label_rect().adjusted(3, 3, -3, -3)
+            self.assertAlmostEqual(r.width(), item.display_rect().width(), delta=0.5)
+            self.assertAlmostEqual(r.center().x(), item.label_anchor().x(), delta=0.5)
+            self.assertAlmostEqual(r.center().y(), item.label_anchor().y(), delta=0.5)
+            self.assertTrue(item.contains(r.center()))
+            self.assertFalse(item.contains(item.boundingRect().bottomLeft() + QPointF(2, -2)))
+        finally:
+            self.dlg.key_buffer[:] = saved
+
+    def test_a_mode_change_centres_the_view_on_the_board(self):
+        view = self.dlg.view
+        for mode in (kb.KEYCAP_REAL, kb.KEYCAP_PREVIEW, kb.KEYCAP_REAL):
+            view.centerOn(view.sceneRect().topLeft())            # scrolled away
+            self.dlg.set_keycap_mode(mode)
+            centre = view.mapToScene(view.viewport().rect().center())
+            want = view.sceneRect().center()
+            # where the scene fits the viewport Qt centres it anyway; otherwise
+            # the view must have scrolled back to the middle
+            self.assertAlmostEqual(centre.x(), want.x(), delta=2.0, msg=mode)
+            self.assertAlmostEqual(centre.y(), want.y(), delta=2.0, msg=mode)
+
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])
         self.dlg.keys[2].setSelected(True)

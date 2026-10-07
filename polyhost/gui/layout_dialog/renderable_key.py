@@ -137,10 +137,13 @@ class RenderableKey(QGraphicsObject):
         self.update()
 
     def set_label_only(self, on: bool) -> None:
-        """Draw only the key's label, no tile, for a key the photo shows no display for.
+        """Draw only the key's legend, no tile, for a key the photo shows no display for.
 
         On the photo the two keys without a display sit over the expansion-port
         lids; a tile there would cover the lid with a box that is not on the board.
+        With a keycap preview the legend is that picture, blended onto the lid like
+        a lit panel, so it reads like the displays around it; without one it is the
+        text label.
         """
         self.prepareGeometryChange()
         self._label_only = bool(on)
@@ -158,11 +161,16 @@ class RenderableKey(QGraphicsObject):
         # The child labels sit at tile positions. On the photo the tile around
         # the panel covers caps and plate, so the badge there would float over
         # the picture: it is hidden, and the panel alone carries the key.
-        self.text.setVisible(self._keycap is None or self._label_only)
+        self.text.setVisible(self._keycap is None)
         self.badge.setVisible(bool(self.badge.toPlainText())
                               and not (self._photo or self._label_only))
 
     def _label_rect(self) -> QRectF:
+        if self._keycap is not None:
+            # the legend picture, display-sized and centred where the label sits
+            r = QRectF(self.display_rect())
+            r.moveCenter(self.label_anchor())
+            return r.adjusted(-3, -3, 3, 3)
         return self.text.mapRectToParent(self.text.boundingRect()).adjusted(-3, -3, 3, 3)
 
     def shape(self) -> QPainterPath:
@@ -201,6 +209,18 @@ class RenderableKey(QGraphicsObject):
             self._paint_photo(painter)
             return
         if self._label_only:
+            if self._keycap is not None:
+                # The same simulated panel the displays show, but with no panel:
+                # LIGHTEN keeps the lit pixels and their glow and drops the panel's
+                # dark ground (darker than the lid), so the legend reads as lit on
+                # the lid rather than as a box on it. SCREEN lightened the ground
+                # too and left a faint rectangle.
+                r = self._label_rect().adjusted(3, 3, -3, -3)
+                painter.save()
+                painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
+                painter.setCompositionMode(QPainter.CompositionMode_Lighten)
+                painter.drawPixmap(r, self._keycap, QRectF(self._keycap.rect()))
+                painter.restore()
             if self.isSelected() or self._hovered:
                 painter.setBrush(Qt.NoBrush)
                 painter.setPen(self.pen_selected if self.isSelected() else self.pen_hover)
@@ -290,6 +310,8 @@ class RenderableKey(QGraphicsObject):
         None to go back to the plain tile -- every reassignment must do that, or a key
         that stops being a macro keeps the old picture.
         """
+        if self._label_only:
+            self.prepareGeometryChange()        # the hit area follows the picture
         self._keycap = pixmap
         self._sync_labels()
         self.update()

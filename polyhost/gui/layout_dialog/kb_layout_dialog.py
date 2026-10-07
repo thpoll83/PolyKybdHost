@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import pathlib
 import traceback
 
@@ -16,7 +17,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
-from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
+from polyhost.gui.layout_dialog.keycap_preview import KC_NO, KC_TRANSPARENT, KeycapPreview
 from polyhost.gui import oled_look
 from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
@@ -363,6 +364,9 @@ class KbLayoutDialog(QMainWindow):
             # the only reason they did not, and a board whose keys are locked down
             # still says which layer is selected.
             self._refresh_screens(self.current_layer)
+        # every mode lays the board out differently (and Real on another scene
+        # rect), so the view is put back on the middle of the board, zoom kept
+        self.view.centerOn(self.view.sceneRect().center())
 
     def _pixmap(self, img):
         """One QImage -> QPixmap step for BOTH halves of the preview.
@@ -508,6 +512,9 @@ class KbLayoutDialog(QMainWindow):
         num_keys = len(self.keys)
         max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
         offset = layer*max_idx
+        # On the photo every key has a picture to show: the displays their panel,
+        # the two expansion-port keys their legend over the lid.
+        photo = self._real_board() is not None
         idx = 0
         for _ in range(num_keys):
             # skip matrix positions without junctions (no physical key)
@@ -516,13 +523,17 @@ class KbLayoutDialog(QMainWindow):
             keycode = self.key_buffer[idx + offset]
             main, badge, color = describe_keycode(keycode, mapping)
             main = self._tile_main(keycode, main)
+            if photo and keycode in (KC_NO, KC_TRANSPARENT):
+                # nothing assigned: the keyboard shows nothing there, and neither
+                # does the photo -- no "NO", "TRNS" or "______" over the picture
+                main, badge = "", ""
             self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
             # After set_display, which restores the text a keycap hides. The PREVIEW
             # resolves transparency; the TEXT deliberately does not, so the tile still
             # says the slot is transparent rather than claiming it holds that key.
             self.keys[idx].set_keycap(
-                self._keycap_for(self._resolve(idx, layer)) if self._has_display(idx)
-                else None)
+                self._keycap_for(self._resolve(idx, layer))
+                if photo or self._has_display(idx) else None)
             idx += 1
         # The status panels name the layer, so they follow it -- and this is the one
         # path both a layer change and a mode change go through.
@@ -684,7 +695,7 @@ class KbLayoutDialog(QMainWindow):
             return False
         self._board_items = items
         pairs = {"left": [], "right": []}
-        loose = []
+        loose, placed = [], []
         for name, info in self.key_matrix.items():
             index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
             item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
@@ -699,11 +710,14 @@ class KbLayoutDialog(QMainWindow):
             if t is not None:
                 item.setTransform(t)
                 item.set_photo_mode(True)
+                placed.append((t, item))
                 c = QRectF(item.display_rect()).center()
                 pairs[side].append((kle.map(c), t.map(c)))
             else:
                 loose.append((item, kle, side))
             self.scene.addItem(item)
+        # how much a key's display rect shrinks onto its photographed OLED
+        panel = sum(math.hypot(t.m11(), t.m12()) for t, _ in placed) / max(1, len(placed))
         # the keys without a display: a label alone, centred on the half's
         # expansion-port lid and turned with it (or, without lid data, their KLE
         # place moved by the half's fit)
@@ -718,6 +732,9 @@ class KbLayoutDialog(QMainWindow):
             t = QTransform()
             t.translate(centre.x(), centre.y())
             t.rotate(angle)
+            # the legend at the size of the photographed displays around it, not
+            # of the editor's tile (about twice that)
+            t.scale(panel, panel)
             t.translate(-anchor.x(), -anchor.y())
             item.setTransform(t)
         # the photo is rendered on pure white, so a white scene leaves no edge
