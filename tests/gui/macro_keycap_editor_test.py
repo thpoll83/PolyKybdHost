@@ -12,7 +12,7 @@ draw.
 """
 import os
 import unittest
-from unittest import mock
+import unittest.mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -532,7 +532,7 @@ class MacroKeycapInEditorTest(unittest.TestCase):
     def test_without_the_panel_simulation_it_opens_in_PREVIEW(self):
         """Real is the default only where it can draw; the fallback is the same
         rule that disables its button."""
-        with mock.patch.object(oled_look, "available", return_value=False):
+        with unittest.mock.patch.object(oled_look, "available", return_value=False):
             dlg = _editor(previews=False)
         self.assertEqual(dlg._keycap_mode, KEYCAP_PREVIEW)
         self.assertTrue(dlg.keycap_buttons[KEYCAP_PREVIEW].isChecked())

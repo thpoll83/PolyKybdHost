@@ -9,7 +9,7 @@ import math
 import os
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -31,7 +31,7 @@ def _hover(item, on):
     """Drive the item's own hover handler. PyQt5 cannot construct a
     QGraphicsSceneHoverEvent, so the base handler it chains to is stubbed."""
     name = "hoverEnterEvent" if on else "hoverLeaveEvent"
-    with mock.patch.object(QGraphicsObject, name):
+    with unittest.mock.patch.object(QGraphicsObject, name):
         getattr(item, name)(None)
 
 
