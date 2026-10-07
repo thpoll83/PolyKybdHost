@@ -354,6 +354,25 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         rows = {b.geometry().y() for b in buttons}
         self.assertEqual(len(rows), 1, "the layer buttons wrapped onto several rows")
 
+    def test_the_ACTIVE_layer_button_is_not_clipped_and_not_restyled(self):
+        """The checked layer button carried a stylesheet that made its text green
+        and BOLD; bold is wider than the width the flow layout reserved from the
+        regular font, so the active layer read ") Qwerty". The buttons now use the
+        platform's own checked look: no stylesheet, and every button -- checked
+        or not -- gets at least the width its text asks for."""
+        dlg = KbLayoutDialog(EightLayerCore(), DeviceSettings())
+        dlg.resize(1800, 1000)
+        dlg.show()
+        _APP.processEvents()
+        for idx in (0, 3):
+            dlg.layers.set_active(idx)
+            _APP.processEvents()
+            for b in dlg.layers.group.buttons():
+                self.assertEqual(b.styleSheet(), "", b.text())
+                self.assertGreaterEqual(b.width(), b.sizeHint().width(), b.text())
+        self.assertTrue(dlg.layers.group.exclusive())
+        self.assertTrue(dlg.layers.group.button(3).isChecked())
+
     def test_the_toggle_still_sits_to_the_RIGHT_of_the_layers(self):
         """The fix is a stretch FACTOR on the ButtonArray, not a spacer between the
         two -- so this pins the placement the spacer was there for."""
