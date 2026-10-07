@@ -503,8 +503,14 @@ def parse_ime_key(poly_keymap_c: str, langs) -> dict | None:
     with open(poly_keymap_c, encoding='utf-8') as fh:
         text = strip_c_comments(fh.read())
     m = re.search(r'\bpoly_ime_family\s*\(\s*uint8_t\s+\w+\s*\)\s*\{', text)
-    case = re.search(r'case\s+KC_IME\s*:(.*?)(?=\bcase\s|\bdefault\s*:)', text, re.S)
-    if not m or not case:
+    # The legend case is searched INSIDE to_static_text() only: a `case KC_IME:`
+    # in a key-event handler earlier in the file would otherwise be taken for it.
+    fn = re.search(r'\bto_static_text\s*\([^)]*\)\s*\{', text)
+    if not m or not fn:
+        return None
+    case = re.search(r'case\s+KC_IME\s*:(.*?)(?=\bcase\s|\bdefault\s*:|\Z)',
+                     _balanced_body(text, fn.end() - 1), re.S)
+    if not case:
         return None
     lang_of = {'LANG_' + lang.replace('-', '').upper(): lang for lang in langs}
     families, pending = {}, []

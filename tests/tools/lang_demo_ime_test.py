@@ -73,6 +73,25 @@ class ParseImeKeyTest(unittest.TestCase):
             got = ld.parse_ime_key(_write(tmp, FIXTURE), LANGS)
         self.assertNotIn("de-DE", got["families"])
 
+    def test_an_earlier_case_in_another_function_is_not_taken(self):
+        """Only to_static_text()'s case is the legend: a key-event handler above it
+        with its own `case KC_IME:` must not be read for icons."""
+        earlier = """
+            bool process_record_user(uint16_t keycode, keyrecord_t* record) {
+                switch (keycode) {
+                    case KC_IME:
+                        return ICON_WRONG ? ICON_WRONG_A : ICON_WRONG_B;
+                    default:
+                        return true;
+                }
+            }
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            got = ld.parse_ime_key(_write(tmp, earlier + FIXTURE), LANGS)
+        self.assertEqual(got["icons"], {"KOREAN": "ICON_HAN_YEONG",
+                                        "JAPANESE": "ICON_EISU_KANA",
+                                        "JAPANESE_SHIFT": "ICON_KATAKANA"})
+
     def test_a_tree_without_the_key_returns_None(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = _write(tmp, "const uint32_t* to_static_text(uint16_t k) { switch (k) { } }")

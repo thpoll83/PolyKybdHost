@@ -376,7 +376,7 @@ class KeycapPreview:
         self._resolver.named = dict(pd.named)
         self._legends = self._drawable(pd.legends)
         self._custom = dict(pd.custom)
-        self._ime = dict(pd.ime)
+        self._set_ime(pd.ime.get("families", {}), pd.ime.get("legends", {}))
         self._layer_tags = dict(pd.layer_tags) or dict(qh.LAYER_TAGS)
         self._ld.set_qmk_aliases(pd.aliases)
         self._L = pd.lang_reader() or self._resolver
@@ -485,9 +485,10 @@ class KeycapPreview:
             self._lang_ok = True
             ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
             if ime is not None:
-                self._ime = {"families": ime["families"],
-                             "legends": {fam: list(self._resolver.resolve(icon))
-                                         for fam, icon in ime["icons"].items()}}
+                self._set_ime(ime["families"],
+                              {fam: list(self._resolver.resolve(icon))
+                               for fam, icon in ime["icons"].items()
+                               if not self._resolver.unresolved_tokens(icon)})
         except Exception as e:
             self._L = self._resolver
             self._reason = (f"letters and digits need the language table "
@@ -670,6 +671,13 @@ class KeycapPreview:
             return None
         return self._to_qimage(img)
 
+    def _set_ime(self, families: dict, legends: dict):
+        """Store KC_IME's data, its icons through the SAME `_drawable` gate as every
+        other legend, so an icon this renderer cannot follow falls back to keycode
+        text rather than drawing half a picture."""
+        self._ime = ({"families": dict(families), "legends": self._drawable(legends)}
+                     if families else {})
+
     def _is_ime(self, keycode: int, name: str | None) -> bool:
         return bool(self._ime) and "KC_IME" in (name, self._custom.get(keycode))
 
@@ -680,10 +688,14 @@ class KeycapPreview:
         with that layout's legend. The editor shows the key at rest, so Japanese
         draws its unshifted 英数/かな."""
         family = self._ime.get("families", {}).get(self._lang)
+        if family == "RALT":
+            return "KC_RIGHT_ALT"
+        if family is None:
+            return "KC_NONUS_BACKSLASH"
         legend = self._ime.get("legends", {}).get(family)
-        if legend:
-            return list(legend)
-        return "KC_RIGHT_ALT" if family == "RALT" else "KC_NONUS_BACKSLASH"
+        # An icon family whose icon was refused draws nothing (keycode text), never
+        # another key's legend.
+        return list(legend) if legend else None
 
     def _resolve_name(self, keycode: int, name: str | None):
         """The name to draw `keycode` by -- the first CANDIDATE we can draw, or None.

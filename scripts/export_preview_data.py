@@ -139,8 +139,12 @@ def build(pk: pathlib.Path) -> dict:
     ime = ld.parse_ime_key(str(pk / "poly_keymap.c"), L.langs)
     if ime is not None:
         ime = {"families": ime["families"],
+               # Same refusal as every legend above: a name with no glyphs would
+               # resolve to its own text, so it is left out and the key falls
+               # back to its keycode text instead of drawing `ICON_HAN_YEONG`.
                "legends": {fam: list(resolver.resolve(name))
-                           for fam, name in ime["icons"].items()}}
+                           for fam, name in ime["icons"].items()
+                           if not resolver.unresolved_tokens(name)}}
 
     version = fw_version(pk)
     return {

@@ -72,6 +72,33 @@ class ImeStandInTest(unittest.TestCase):
         self.assertTrue(p._is_ime(0x1234, "KC_IME"))      # the tile's own pick
         self.assertFalse(p._is_ime(0x04, "KC_A"))
 
+    def test_a_refused_icon_draws_keycode_text_not_another_legend(self):
+        """A Korean/Japanese icon that was refused (a name with no glyphs, an op the
+        renderer cannot follow) leaves the key to its keycode text: None, never the
+        NUBS or Right Alt legend of another family."""
+        ime = {"families": dict(self.IME["families"]), "legends": {"JAPANESE": [0x100027]}}
+        self.assertIsNone(self._p("ko-KR", ime=ime)._ime_stand_in())
+
+    def test_icons_go_through_the_drawable_gate(self):
+        class _R:
+            @staticmethod
+            def unsupported_ops(cps):
+                return {0x99} if 0x99 in cps else set()
+        p = self._p("ko-KR", ime={})
+        p._R = _R()
+        p.log = logging.getLogger("test")
+        p._set_ime({"ko-KR": "KOREAN", "ja-JP": "JAPANESE"},
+                   {"KOREAN": [0x99, 0x100026], "JAPANESE": [0x100027]})
+        self.assertEqual(p._ime["legends"], {"JAPANESE": [0x100027]})
+        self.assertIsNone(p._ime_stand_in())          # ko-KR: refused -> keycode text
+
+    def test_no_families_means_no_ime_data(self):
+        p = self._p("en-US", ime={})
+        p._R = None
+        p.log = logging.getLogger("test")
+        p._set_ime({}, {})
+        self.assertEqual(p._ime, {})
+
     def test_without_ime_data_the_key_is_not_special(self):
         """An export from before the key: it resolves like any other name."""
         self.assertFalse(self._p("en-US", ime={})._is_ime(0x7FA8, "KC_IME"))
