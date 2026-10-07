@@ -227,6 +227,29 @@ class RealModeDialogTest(unittest.TestCase):
             r = item.text.mapRectToParent(item.text.boundingRect())
             self.assertAlmostEqual(r.center().y(), item.label_anchor().y(), delta=0.5)
 
+    def test_each_lid_outline_turns_with_the_photographed_lid(self):
+        # Measured on the photo itself: the dark lid's long axis (principal axis
+        # of its pixels) must match the outline's top edge. An outline turned
+        # the wrong way (a sign error in the exporter) puts every label at the
+        # mirrored angle while the centres still agree.
+        import numpy as np
+        from PIL import Image
+        img = np.asarray(Image.open(self.board.image).convert("L"), dtype=float)
+        for side, quad in self.board.ports.items():
+            q = np.array(quad)
+            # a ROUND window, so the window itself has no direction; 0.6 of the
+            # lid's width takes in the whole lid and little of its neighbours
+            c, r = q.mean(0), np.linalg.norm(q[1] - q[0]) * 0.6
+            ys, xs = np.nonzero(img < 70)
+            near = np.hypot(xs - c[0], ys - c[1]) < r
+            pts = np.column_stack([xs[near], ys[near]]).astype(float)
+            w, v = np.linalg.eigh(np.cov((pts - pts.mean(0)).T))
+            photo = math.degrees(math.atan2(v[1, 1], v[0, 1]))
+            top = q[1] - q[0]
+            outline = math.degrees(math.atan2(top[1], top[0]))
+            diff = (photo - outline + 90) % 180 - 90           # axes: modulo 180
+            self.assertLess(abs(diff), 4, f"{side}: photo {photo:.1f}, outline {outline:.1f}")
+
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])
         self.dlg.keys[2].setSelected(True)
