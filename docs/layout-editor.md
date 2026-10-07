@@ -253,9 +253,9 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
         keymap; a board that cannot be edited still says which layer is selected.
       - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
         test that says so, and the first draft claimed it was.** `_add_board` does draw
-        them before the default layer is read, but the default mode is Symbol — so they
-        are blank until the user picks Preview, and that pick repaints at
-        `current_layer` regardless. Measured: deleting the startup
+        them before the default layer is read, but the default mode was Symbol then — so
+        they were blank until the user picked Preview, and that pick repaints at
+        `current_layer` regardless. (The editor opens in Real now; see *Real mode*.) Measured: deleting the startup
         `set_keycodes_for_layer` outright leaves the test green. What that actually
         breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
         claim and belongs in a keycap test.
@@ -634,6 +634,62 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
       sources agree, and it is why that test renders rather than compares structures.
 
 ---
+
+## Real mode on the rendered photo (`real_board.py`)
+
+- **In Real mode the board is a PICTURE of the keyboard, not the drawn plate.**
+  `polyhost/res/real_view/board.jpg` is an orthographic Blender render straight down
+  on both halves (PolyKybd `render/topview.py`), and `board.json` gives each key
+  display's 72x40 active area as four image pixels, keyed by the KLE `"row,col"`
+  label. `scripts/import_real_view.py <topview.png> <topview.json> [width]` brings a
+  new render in (rendered at 4800 px and scaled to 4000, 0.13 mm per pixel, JPEG). Symbol
+  and Preview are unchanged and keep the KLE grid and the drawn plate.
+- **The editor opens maximized and in Real** (the maintainer's call, 2026-10-07).
+  `_default_keycap_mode()` falls back to Preview when the panel simulation is
+  unavailable and to Symbol without the fonts, the same rules that enable the
+  header's buttons; `tests/gui/macro_keycap_editor_test.py` pins both.
+- **Each key is MOVED onto its photographed OLED**: its `display_rect()` is mapped
+  onto the quad with `QTransform.quadToQuad`, and the key then paints only the
+  simulated panel (`set_photo_mode`). ⚠️ The keys therefore sit where the PCB puts
+  them, not where the KLE does — the two disagree by up to ~4.5 mm per half, and on
+  a photo that shows as every legend sliding off its screen. `display_rect()` is the
+  one definition of the panel rect for both the tile and the photo; keep it that way.
+- **The two keys with no display** ((3,7) and (8,0), the expansion ports) sit on
+  their half's photographed lid (`board.json` → `expansion_ports`), turned with it
+  and scaled to the photographed displays, and draw their LEGEND ALONE
+  (`set_label_only`): the same simulated-panel picture the displays show, blended
+  with LIGHTEN so only the lit pixels land on the lid, with no tile and no badge.
+  ⚠️ **Only while hovered or selected** (`_label_shown()`): the lid is bare on the
+  keyboard, so a legend there all the time puts something on the photo the board does
+  not have. The hit area stays, so the mouse still finds the lid; the hover and
+  selection handlers re-sync the text label, and the tests drive both.
+  Without lid data they fall back to a per-half affine fit from the KLE.
+  `tests/gui/real_board_test.py` measures each lid's angle on the photo itself, so
+  an outline turned the wrong way fails there.
+- **An empty slot (KC_NO, KC_TRANSPARENT) shows nothing on the photo** — no "NO",
+  "TRNS" or "______" over the picture, as on the keyboard. The other modes keep
+  naming it on the tile.
+- **The zoom is relative to the window** (`ZoomableGraphicsView(fit_scene=True)`):
+  `relative_zoom` 1.0 shows the whole scene rect at 96% of the viewport, and every
+  resize re-applies fit x relative zoom. So the board opens fully visible in the
+  maximized dialog, stays fully visible as the window shrinks, and a wheel zoom keeps
+  its size relative to the window. A mode change re-fits (`refit()`), keeping the
+  relative zoom. `ZoomFollowsTheWindowTest` covers all three.
+  - ⚠️ **What is fitted is the KLE layout's extent, in every mode** (`_set_fit_rect`:
+    the key tiles on the grid plus `FIT_PAD`, centred on the keys as the mode places
+    them), and it is the scene rect too. Fitting each mode's own scene rect showed
+    the keyboard at different sizes across a switch: the photo carries a white margin
+    the drawn board does not, and on the photo a key's extent is its display, not its
+    tile.
+- **The photo is rendered on pure white and the scene background is white in Real
+  mode**, so zooming shows no edge around the picture. `render_keys` resets the
+  brush on every rebuild, and each mode sets its own.
+- **The status screens** are two pixmap slots tagged like the plate's
+  (`SCREEN_SIDE` / `SCREEN_BOX`), so `set_screen_images` paints them unchanged.
+- A mode change across the Real boundary REBUILDS the scene (`render_keys`), keeping
+  the selected key by matrix index. Missing or unreadable files fail soft: `load()`
+  returns None and Real keeps the drawn board. `tests/gui/real_board_test.py` maps
+  every key's display rect into the scene and compares it with the measured quad.
 
 ## Where the preview DATA comes from, and how it goes stale
 

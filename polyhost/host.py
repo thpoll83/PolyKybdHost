@@ -1564,7 +1564,7 @@ class PolyHost(QApplication):
         # Driven through the core's keymap_* methods, so it works in-process
         # (worker run_sync) and in client mode (RPC) alike.
         self.layout_dialog = KbLayoutDialog(self.core, self.device_settings)
-        self.layout_dialog.show()
+        self.layout_dialog.showMaximized()      # the board wants the whole screen
 
     def open_settings(self):
         dlg = SettingsDialog()
