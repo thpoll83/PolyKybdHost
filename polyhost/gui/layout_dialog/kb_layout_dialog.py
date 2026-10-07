@@ -49,6 +49,8 @@ KEYCAP_REAL = "real"
 KEYCAP_REAL_SCALE = 3
 
 KEY_SCALE = 80.0
+# the case around the KLE key tiles, in scene units
+FIT_PAD = 0.5 * KEY_SCALE
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
 
 class KeyEditDialog(QDialog):
@@ -674,6 +676,7 @@ class KbLayoutDialog(QMainWindow):
 
         photo = self._real_board()
         if photo is not None and self._render_on_photo(photo, minx, miny):
+            self._set_fit_rect(minx, miny)
             if selected is not None and selected in self.keys:
                 self.keys[selected].setSelected(True)
                 self.selected_key = self.keys[selected]
@@ -693,9 +696,40 @@ class KbLayoutDialog(QMainWindow):
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+        self._set_fit_rect(minx, miny)
         if selected is not None and selected in self.keys:
             self.keys[selected].setSelected(True)
             self.selected_key = self.keys[selected]
+
+    def _set_fit_rect(self, minx, miny):
+        """What a relative zoom of 1 shows, and the scene rect: the board at
+        ONE size in every mode, so a mode switch keeps the keyboard's size.
+
+        The SIZE is the KLE layout's (every key's tile on the grid, plus a
+        margin for the case), whatever the mode draws; it is centred on the
+        keys as this mode places them. Fitting each mode's own scene rect
+        showed the keyboard at different sizes: the photo carries a white
+        margin the drawn board does not, and on the photo a key's extent is
+        its display, not its tile. The keys themselves come out the same size
+        in both layouts (KEY_SCALE per U, the photo by its mm_per_px).
+        """
+        kle, here = QRectF(), QRectF()
+        for name, info in self.key_matrix.items():
+            index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
+            item = self.keys.get(index)
+            if item is None:
+                continue
+            kle = kle.united(key_transform(info, minx, miny, KEY_SCALE).mapRect(item.boundingRect()))
+            here = here.united(item.sceneBoundingRect())
+        if not kle.isValid():
+            self.view.fit_rect = None
+            return
+        fit = kle.adjusted(-FIT_PAD, -FIT_PAD, FIT_PAD, FIT_PAD)
+        fit.moveCenter(here.center())
+        self.view.fit_rect = fit
+        # the scene rect with it: the photo's white margin beyond the case put
+        # scroll bars on a fully visible board and let it pan into nothing
+        self.view.setSceneRect(fit)
 
     def _render_on_photo(self, photo, minx, miny):
         """Real mode on the rendered top view: every key on its photographed OLED.

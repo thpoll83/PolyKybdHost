@@ -185,11 +185,24 @@ class ZoomFollowsTheWindowTest(unittest.TestCase):
     def test_a_mode_change_keeps_the_board_fitted(self):
         self.dlg.view.relative_zoom = self.dlg.scale_factor = 1.0
         self._resize(1300, 800)
+        widths = {}
         for mode in (kb.KEYCAP_PREVIEW, kb.KEYCAP_REAL, kb.KEYCAP_SYMBOL):
             with self.subTest(mode=mode):
                 self.dlg.set_keycap_mode(mode)
                 _APP.processEvents()
                 self._assert_fits()
+                widths[mode] = self._keys_on_screen().width()
+        # ...and the KEYBOARD at the same size in each: the photo's scene used to
+        # carry a white margin the drawn board does not, so fitting the scene
+        # rects showed it smaller in Real
+        lo, hi = min(widths.values()), max(widths.values())
+        self.assertLess((hi - lo) / hi, 0.03, widths)
+
+    def _keys_on_screen(self):
+        keys = QRectF()
+        for item in self.dlg.keys.values():
+            keys = keys.united(item.sceneBoundingRect())
+        return self.dlg.view.mapFromScene(keys).boundingRect()
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
@@ -227,7 +240,10 @@ class RealModeDialogTest(unittest.TestCase):
         self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
         sides = {i.data(bp.SCREEN_SIDE) for i in self.dlg._board_items} - {None}
         self.assertEqual(sides, {"left", "right"})
-        self.assertEqual(self.dlg.view.sceneRect(), rb.scene_rect(self.board, kb.KEY_SCALE))
+        # the scene rect is the fitted board (see ZoomFollowsTheWindowTest), and
+        # it lies on the photo
+        self.assertEqual(self.dlg.view.sceneRect(), self.dlg.view.fit_rect)
+        self.assertTrue(rb.scene_rect(self.board, kb.KEY_SCALE).contains(self.dlg.view.sceneRect()))
 
     def test_leaving_REAL_puts_the_keys_back_on_the_KLE_grid(self):
         self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
@@ -443,8 +459,11 @@ class RealModeDialogTest(unittest.TestCase):
             want = view.sceneRect().center()
             # where the scene fits the viewport Qt centres it anyway; otherwise
             # the view must have scrolled back to the middle
-            self.assertAlmostEqual(centre.x(), want.x(), delta=2.0, msg=mode)
-            self.assertAlmostEqual(centre.y(), want.y(), delta=2.0, msg=mode)
+            # within a viewport pixel or two: the view now scales to fit, and
+            # this dialog is never shown, so one pixel is several scene units
+            tol = max(2.0, 2.0 / view.transform().m11())
+            self.assertAlmostEqual(centre.x(), want.x(), delta=tol, msg=mode)
+            self.assertAlmostEqual(centre.y(), want.y(), delta=tol, msg=mode)
 
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])

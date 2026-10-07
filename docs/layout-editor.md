@@ -673,8 +673,14 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
   `relative_zoom` 1.0 shows the whole scene rect at 96% of the viewport, and every
   resize re-applies fit x relative zoom. So the board opens fully visible in the
   maximized dialog, stays fully visible as the window shrinks, and a wheel zoom keeps
-  its size relative to the window. A mode change re-fits on the new scene rect
-  (`refit()`), keeping the relative zoom. `ZoomFollowsTheWindowTest` covers all three.
+  its size relative to the window. A mode change re-fits (`refit()`), keeping the
+  relative zoom. `ZoomFollowsTheWindowTest` covers all three.
+  - ⚠️ **What is fitted is the KLE layout's extent, in every mode** (`_set_fit_rect`:
+    the key tiles on the grid plus `FIT_PAD`, centred on the keys as the mode places
+    them), and it is the scene rect too. Fitting each mode's own scene rect showed
+    the keyboard at different sizes across a switch: the photo carries a white margin
+    the drawn board does not, and on the photo a key's extent is its display, not its
+    tile.
 - **The photo is rendered on pure white and the scene background is white in Real
   mode**, so zooming shows no edge around the picture. `render_keys` resets the
   brush on every rebuild, and each mode sets its own.

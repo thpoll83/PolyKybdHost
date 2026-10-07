@@ -11,22 +11,28 @@ class ZoomableGraphicsView(QGraphicsView):
     `zoom_callback(delta)` is called with +1 / -1 steps when wheel triggers zoom.
 
     With `fit_scene=True` the zoom is RELATIVE to the window: `relative_zoom`
-    1.0 shows the whole scene rect, and every resize re-applies
-    fit x relative_zoom, so a fully visible scene stays fully visible (shrinking
-    with the window) and a zoomed-in one keeps its size relative to it.
+    1.0 shows the whole of `fit_rect` (the scene rect when unset), and every
+    resize re-applies fit x relative_zoom, so a fully visible scene stays fully
+    visible (shrinking with the window) and a zoomed-in one keeps its size
+    relative to it. Give scenes that show the same thing differently the same
+    `fit_rect` extent, and they show it at the same size.
     """
     def __init__(self, *args, zoom_callback=None, fit_scene=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.zoom_callback = zoom_callback
         self.fit_scene = fit_scene
         self.relative_zoom = 1.0
+        self.fit_rect = None            # QRectF in scene coordinates, or None
         # anchor so zoom focuses under the mouse pointer
         # noinspection PyTypeChecker
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+    def _fit_rect(self):
+        return self.fit_rect if self.fit_rect is not None else self.sceneRect()
+
     def fit_scale(self) -> float:
-        """The scale at which the scene rect just fits the viewport."""
-        r = self.sceneRect()
+        """The scale at which the fit rect just fits the viewport."""
+        r = self._fit_rect()
         vp = self.viewport().size()
         if r.width() <= 0 or r.height() <= 0 or vp.width() <= 0 or vp.height() <= 0:
             return 1.0
@@ -46,7 +52,7 @@ class ZoomableGraphicsView(QGraphicsView):
         """Back to the scene's middle at the current relative zoom: after the
         scene rect changes (another mode lays the board out differently)."""
         if self.fit_scene:
-            self.apply_zoom(self.sceneRect().center())
+            self.apply_zoom(self._fit_rect().center())
         else:
             self.centerOn(self.sceneRect().center())
 
@@ -57,11 +63,11 @@ class ZoomableGraphicsView(QGraphicsView):
 
     def resizeEvent(self, event):
         # the middle of what was on screen stays in the middle; while the
-        # whole scene is visible, that is the scene's own middle
+        # whole board is visible, that is the board's own middle
         center = self.mapToScene(self.viewport().rect().center())
         super().resizeEvent(event)
         if self.fit_scene:
-            self.apply_zoom(self.sceneRect().center() if self.relative_zoom <= 1.0 else center)
+            self.apply_zoom(self._fit_rect().center() if self.relative_zoom <= 1.0 else center)
 
     def wheelEvent(self, event):
         angle = event.angleDelta().y()
