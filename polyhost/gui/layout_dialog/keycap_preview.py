@@ -267,6 +267,10 @@ class KeycapPreview:
         self._fw_dir = ""          # the firmware checkout, when that is the source
         self._ranges = None        # layer-switch ranges, read from the header
         self._custom: dict = {}           # keycode -> PolyKybd's own name
+        # KC_IME's per-language stand-in: {"families": {lang: family},
+        # "legends": {family: codepoints}} (lang_demo.parse_ime_key). Empty when the
+        # firmware predates the key; it then resolves like any other name.
+        self._ime: dict = {}
         # layer index -> enum tag, e.g. 5 -> "FL". Seeded from the shipped map so a
         # preview built before either source loads still decodes layer keys.
         self._layer_tags: dict = dict(qh.LAYER_TAGS)
@@ -372,6 +376,7 @@ class KeycapPreview:
         self._resolver.named = dict(pd.named)
         self._legends = self._drawable(pd.legends)
         self._custom = dict(pd.custom)
+        self._ime = dict(pd.ime)
         self._layer_tags = dict(pd.layer_tags) or dict(qh.LAYER_TAGS)
         self._ld.set_qmk_aliases(pd.aliases)
         self._L = pd.lang_reader() or self._resolver
@@ -478,6 +483,11 @@ class KeycapPreview:
         try:
             self._L = op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
             self._lang_ok = True
+            ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
+            if ime is not None:
+                self._ime = {"families": ime["families"],
+                             "legends": {fam: list(self._resolver.resolve(icon))
+                                         for fam, icon in ime["icons"].items()}}
         except Exception as e:
             self._L = self._resolver
             self._reason = (f"letters and digits need the language table "
@@ -634,7 +644,14 @@ class KeycapPreview:
         """
         if not self._load():
             return None
-        kc = self._resolve_name(keycode, name)
+        # KC_IME first: it draws per LANGUAGE (another key's legend, or an icon),
+        # so no name lookup can answer for it.
+        if self._is_ime(keycode, name):
+            kc = self._ime_stand_in()
+            if isinstance(kc, list):
+                return self._to_qimage(self._ld.render_static_cps(self._R, kc))
+        else:
+            kc = self._resolve_name(keycode, name)
         if kc is None:
             return None
         try:
@@ -652,6 +669,21 @@ class KeycapPreview:
             self.log.debug("no preview for %s (%s: %s)", kc, type(e).__name__, e)
             return None
         return self._to_qimage(img)
+
+    def _is_ime(self, keycode: int, name: str | None) -> bool:
+        return bool(self._ime) and "KC_IME" in (name, self._custom.get(keycode))
+
+    def _ime_stand_in(self):
+        """What KC_IME draws on the current language, the firmware's rule:
+        Korean/Japanese draw their own icon (codepoints, returned as a list), the
+        RALT family draws as Right Alt, and every other language as Non-US Backslash
+        with that layout's legend. The editor shows the key at rest, so Japanese
+        draws its unshifted 英数/かな."""
+        family = self._ime.get("families", {}).get(self._lang)
+        legend = self._ime.get("legends", {}).get(family)
+        if legend:
+            return list(legend)
+        return "KC_RIGHT_ALT" if family == "RALT" else "KC_NONUS_BACKSLASH"
 
     def _resolve_name(self, keycode: int, name: str | None):
         """The name to draw `keycode` by -- the first CANDIDATE we can draw, or None.
