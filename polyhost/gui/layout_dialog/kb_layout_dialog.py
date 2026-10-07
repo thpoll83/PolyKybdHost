@@ -104,10 +104,12 @@ class KbLayoutDialog(QMainWindow):
         # dialog works identically for an in-process or a --connect GUI.
         self.core = core
 
+        # zoom RELATIVE to the window: 1.0 shows the whole board, and the view
+        # re-applies it on every resize (ZoomableGraphicsView fit_scene)
         self.scale_factor = 1.0
         self._zoom_step = 1.2   # multiplicative step for each + / - press
-        self._zoom_min = 0.2
-        self._zoom_max = 3.0
+        self._zoom_min = 0.5
+        self._zoom_max = 8.0
         self.selected_key = None
         self.keys = {}
         self.current_layer = 0
@@ -181,7 +183,7 @@ class KbLayoutDialog(QMainWindow):
         
         # Left: keyboard view
         self.scene = QGraphicsScene()
-        self.view = ZoomableGraphicsView(zoom_callback=self.zoom)
+        self.view = ZoomableGraphicsView(zoom_callback=self.zoom, fit_scene=True)
         self.view.setScene(self.scene)
 
         self.keycode_browser = KeycodeBrowser(core=self.core)
@@ -370,8 +372,9 @@ class KbLayoutDialog(QMainWindow):
             # still says which layer is selected.
             self._refresh_screens(self.current_layer)
         # every mode lays the board out differently (and Real on another scene
-        # rect), so the view is put back on the middle of the board, zoom kept
-        self.view.centerOn(self.view.sceneRect().center())
+        # rect), so the view is put back on the middle of the board, at the
+        # same zoom relative to the window
+        self.view.refit()
 
     def _pixmap(self, img):
         """One QImage -> QPixmap step for BOTH halves of the preview.
@@ -568,10 +571,8 @@ class KbLayoutDialog(QMainWindow):
 
         new_scale = self.scale_factor * factor
         new_scale = max(self._zoom_min, min(self._zoom_max, new_scale))
-        # compute relative factor to apply to view (delta)
-        delta = new_scale / self.scale_factor
-        # apply transform
-        self.view.scale(delta, delta)
+        # the view keeps it relative to the window from here on
+        self.view.zoom_by(new_scale / self.scale_factor)
         self.scale_factor = new_scale
 
         

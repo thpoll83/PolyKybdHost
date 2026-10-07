@@ -669,7 +669,12 @@ tab by prefix. A name that matches no rule lands in "Additional", the second tab
 - **An empty slot (KC_NO, KC_TRANSPARENT) shows nothing on the photo** — no "NO",
   "TRNS" or "______" over the picture, as on the keyboard. The other modes keep
   naming it on the tile.
-- **A mode change centres the view on the board**, keeping the zoom.
+- **The zoom is relative to the window** (`ZoomableGraphicsView(fit_scene=True)`):
+  `relative_zoom` 1.0 shows the whole scene rect at 96% of the viewport, and every
+  resize re-applies fit x relative zoom. So the board opens fully visible in the
+  maximized dialog, stays fully visible as the window shrinks, and a wheel zoom keeps
+  its size relative to the window. A mode change re-fits on the new scene rect
+  (`refit()`), keeping the relative zoom. `ZoomFollowsTheWindowTest` covers all three.
 - **The photo is rendered on pure white and the scene background is white in Real
   mode**, so zooming shows no edge around the picture. `render_keys` resets the
   brush on every rebuild, and each mode sets its own.

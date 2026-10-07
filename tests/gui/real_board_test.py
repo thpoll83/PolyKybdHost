@@ -131,6 +131,68 @@ class RealBoardLoadTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
+@unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
+class ZoomFollowsTheWindowTest(unittest.TestCase):
+    """The board opens fully visible, stays so through a resize (shrinking with
+    the window), and a zoom keeps its size relative to the window."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dlg = kb.KbLayoutDialog(_Core(), _Settings())
+        cls.dlg.show()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.dlg.close()
+
+    def _resize(self, w, h):
+        self.dlg.view.resize(w, h)
+        _APP.processEvents()
+
+    def _board_on_screen(self):
+        """The scene rect in viewport pixels, and the viewport rect."""
+        v = self.dlg.view
+        return v.mapFromScene(v.sceneRect()).boundingRect(), v.viewport().rect()
+
+    def _assert_fits(self):
+        board, vp = self._board_on_screen()
+        self.assertTrue(vp.adjusted(-1, -1, 1, 1).contains(board), (board, vp))
+        # and fills it along the limiting side, less the margin
+        fill = max(board.width() / vp.width(), board.height() / vp.height())
+        self.assertAlmostEqual(fill, 0.96, delta=0.02)
+
+    def test_the_board_fits_and_keeps_fitting(self):
+        self.dlg.view.relative_zoom = self.dlg.scale_factor = 1.0
+        self._resize(1600, 900)
+        self._assert_fits()
+        self._resize(700, 500)          # smaller window: the board shrinks with it
+        self._assert_fits()
+        self._resize(1400, 1100)
+        self._assert_fits()
+
+    def test_a_zoom_stays_relative_to_the_window(self):
+        self.dlg.view.relative_zoom = self.dlg.scale_factor = 1.0
+        self._resize(1200, 800)
+        self.dlg.zoom(+2)
+        board, vp = self._board_on_screen()
+        ratio = board.width() / vp.width()
+        self.assertAlmostEqual(ratio, 0.96 * 1.2 ** 2, delta=0.03)
+        self._resize(600, 400)          # the same aspect, half the size
+        board, vp = self._board_on_screen()
+        self.assertAlmostEqual(board.width() / vp.width(), ratio, delta=0.03)
+        self.dlg.zoom(-2)
+        self._assert_fits()
+
+    def test_a_mode_change_keeps_the_board_fitted(self):
+        self.dlg.view.relative_zoom = self.dlg.scale_factor = 1.0
+        self._resize(1300, 800)
+        for mode in (kb.KEYCAP_PREVIEW, kb.KEYCAP_REAL, kb.KEYCAP_SYMBOL):
+            with self.subTest(mode=mode):
+                self.dlg.set_keycap_mode(mode)
+                _APP.processEvents()
+                self._assert_fits()
+
+
 class RealModeDialogTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
