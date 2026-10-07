@@ -3,7 +3,7 @@
 The previews used to draw every layout in en-US whatever the keyboard was set to,
 so no language-dependent legend could ever be seen in the editor. These drive the
 real dialog: it must open on the keyboard's own language, fall back to en-US when
-that is unknown, redraw on a change, and stay out of the way in Symbol mode.
+that is unknown, redraw the keys on a change, and stay out of the way in Symbol mode.
 """
 import os
 import unittest
@@ -18,16 +18,14 @@ else:
     _IMPORT_ERR = None
     from polyhost.gui.layout_dialog import kb_layout_dialog as kb
     from tests.gui.kb_layout_screens_test import _Core, _Settings
-    _APP = QApplication.instance() or QApplication([])
 
-
-def setUpModule():
-    # Pin the QApplication for the life of the module (see kb_layout_screens_test).
-    if _IMPORT_ERR is None:
-        assert _APP is not None
+KC_A = 0x04
 
 
 class _CoreWithLang(_Core if _IMPORT_ERR is None else object):
+    """A keyboard reporting `lang` the way the firmware does, with KC_A on every
+    key of layer 0 so a redraw has a language-dependent legend to change."""
+
     def __init__(self, lang, **kw):
         super().__init__(**kw)
         self._lang = lang
@@ -35,34 +33,57 @@ class _CoreWithLang(_Core if _IMPORT_ERR is None else object):
     def get_status(self):
         return {"current_lang": self._lang}
 
+    def keymap_buffer(self, *a, **k):
+        ok, buf = super().keymap_buffer(*a, **k)
+        cols, rows = _Settings.MATRIX_COLUMNS, _Settings.MATRIX_ROWS
+        buf[:cols * rows] = [KC_A] * (cols * rows)
+        return ok, buf
+
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
 class PreviewLanguageTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Held on the class for the life of the tests: Qt needs exactly one
+        # QApplication, and it must outlive every widget built below.
+        cls.app = QApplication.instance() or QApplication([])
+
     def _dialog(self, core):
         dlg = kb.KbLayoutDialog(core, _Settings())
-        if dlg.preview_lang.count() == 0:
-            self.skipTest("no language table loaded")
+        # The language table SHIPS with the host (res/preview), so an empty picker
+        # is a broken picker -- a failure, never a skip.
+        langs = [dlg.preview_lang.itemText(i) for i in range(dlg.preview_lang.count())]
+        for lang in ("en-US", "de-DE", "ko-KR", "ja-JP"):
+            self.assertIn(lang, langs)
         return dlg
 
     def test_it_opens_on_the_keyboards_language(self):
-        dlg = self._dialog(_CoreWithLang("ko-KR"))
-        self.assertEqual(dlg.preview_lang.currentText(), "ko-KR")
-        self.assertEqual(dlg._preview._lang, "ko-KR")
+        """`koKR` is what GET_LANG really answers; `ko-KR` covers a core that
+        already spells it the table's way."""
+        for reported in ("koKR", "ko-KR"):
+            dlg = self._dialog(_CoreWithLang(reported))
+            self.assertEqual(dlg.preview_lang.currentText(), "ko-KR", reported)
+            self.assertEqual(dlg._preview._lang, "ko-KR", reported)
 
     def test_an_unknown_keyboard_language_falls_back_to_en_US(self):
-        for core in (_Core(), _CoreWithLang(None), _CoreWithLang("xx-XX")):
+        for core in (_Core(), _CoreWithLang(None), _CoreWithLang("xxXX")):
             dlg = self._dialog(core)
             self.assertEqual(dlg.preview_lang.currentText(), kb.DEFAULT_LANG)
 
-    def test_a_change_redraws_in_the_new_language(self):
-        dlg = self._dialog(_CoreWithLang("en-US"))
-        dlg._key_cache[0x04] = object()           # a pixmap drawn in en-US
-        dlg.preview_lang.setCurrentText("de-DE")
-        self.assertEqual(dlg._preview._lang, "de-DE")
-        self.assertNotIn(0x04, dlg._key_cache)    # no stale en-US legend survives
+    def test_a_change_redraws_the_keys_on_screen(self):
+        dlg = self._dialog(_CoreWithLang("enUS"))
+        dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        item = next(k for i, k in sorted(dlg.keys.items()) if dlg._has_display(i))
+        before = item._keycap
+        self.assertIsNotNone(before, "the en-US `a` should have a keycap")
+        dlg.preview_lang.setCurrentText("ko-KR")
+        after = item._keycap
+        self.assertIsNotNone(after)
+        # ㅁ is not a: the picture ON the key changed, not just a cache
+        self.assertNotEqual(before.toImage(), after.toImage())
 
     def test_symbol_mode_disables_it(self):
-        dlg = self._dialog(_CoreWithLang("en-US"))
+        dlg = self._dialog(_CoreWithLang("enUS"))
         dlg.set_keycap_mode(kb.KEYCAP_SYMBOL)
         self.assertFalse(dlg.preview_lang.isEnabled())
         dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)

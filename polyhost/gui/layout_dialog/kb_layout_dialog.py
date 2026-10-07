@@ -344,19 +344,27 @@ class KbLayoutDialog(QMainWindow):
     # -- preview language ---------------------------------------------------
 
     def _keyboard_lang(self):
-        """The keyboard's current language (`xx-YY`), or None.
+        """The keyboard's current language in the preview's `xx-YY` spelling, or None.
 
         Through `get_status()`, which PolyCore and RemoteCore both answer from
         cached state with no device I/O. A core without it (an older client, a
-        test double) or one that raises simply means "unknown"."""
+        test double) or one that raises simply means "unknown".
+
+        ⚠️ The KEYBOARD spells it without the dash: GET_LANG answers `P\x07.koKR`
+        and `current_lang` carries `koKR` through unchanged, while the language
+        table says `ko-KR`. Compared raw, no keyboard language ever matched and a
+        Korean board opened on en-US (Greptile, #320)."""
         get = getattr(self.core, "get_status", None)
         if get is None:
             return None
         try:
-            return (get() or {}).get("current_lang") or None
+            code = (get() or {}).get("current_lang") or None
         except Exception as e:
             self.log.debug("keyboard language unknown (%s: %s)", type(e).__name__, e)
             return None
+        if isinstance(code, str) and len(code) == 4 and "-" not in code:
+            code = f"{code[:2]}-{code[2:]}"
+        return code
 
     def _build_preview_language(self):
         """The language the PREVIEW draws its legends in.
