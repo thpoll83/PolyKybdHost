@@ -14,14 +14,16 @@ and the photo supplies the cap, switch, plate and case around it. The keys sit
 where the PCB puts them, not where the KLE does; the two disagree by up to
 ~4.5 mm, which on a photo would show as every legend sliding off its screen.
 
-The two keys with no display (they sit under the rotary encoder) are placed by
-a per-half affine fit from their KLE position to the photo, from the 36 keys
-that do have one.
+The two keys with no display sit on the expansion ports: each one's label is
+centred on its half's photographed lid and turned to the lid's angle. Without
+lid data they fall back to a per-half affine fit from their KLE position to
+the photo, from the 36 keys that do have one.
 
 Fails soft like the plate: no files, or a file that does not parse, and `load`
 returns None, so Real mode keeps its drawn board.
 """
 import json
+import math
 import os
 import pathlib
 from dataclasses import dataclass
@@ -44,6 +46,7 @@ class RealBoard:
     mm_per_px: float
     quads: dict                 # (row, col) -> four (x, y) photo pixels, OLED order
     status: dict                # side -> (x0, y0, x1, y1) photo pixels
+    ports: dict = None          # side -> four (x, y) photo pixels of the expansion-port lid
 
     def scale(self, key_scale: float) -> float:
         """Scene units per photo pixel, so one key unit is `key_scale` as in the KLE view."""
@@ -52,6 +55,17 @@ class RealBoard:
     def scene_quad(self, key: Tuple[int, int], key_scale: float) -> List[QPointF]:
         s = self.scale(key_scale)
         return [QPointF(x * s, y * s) for x, y in self.quads[key]]
+
+    def port_pose(self, side: str, key_scale: float) -> Optional[Tuple[QPointF, float]]:
+        """Scene centre and angle (degrees, Qt's clockwise) of a half's expansion-port lid."""
+        quad = (self.ports or {}).get(side)
+        if quad is None:
+            return None
+        s = self.scale(key_scale)
+        pts = [QPointF(x * s, y * s) for x, y in quad]
+        centre = sum(pts, QPointF()) / 4
+        top = pts[1] - pts[0]
+        return centre, math.degrees(math.atan2(top.y(), top.x()))
 
 
 def load(path: os.PathLike = RES / "board.json") -> Optional[RealBoard]:
@@ -72,11 +86,16 @@ def load(path: os.PathLike = RES / "board.json") -> Optional[RealBoard]:
         status = {s["side"]: tuple(float(v) for v in s["bbox"]) for s in data.get("status_displays", [])}
         if any(len(box) != 4 for box in status.values()):
             return None
+        ports = {e["side"]: tuple((float(x), float(y)) for x, y in e["quad"])
+                 for e in data.get("expansion_ports", [])}
+        if any(len(q) != 4 for q in ports.values()):
+            return None
         w, h = (int(v) for v in data["size"])       # exactly two, or ValueError
         mm_per_px = float(data["mm_per_px"])
         if w <= 0 or h <= 0 or mm_per_px <= 0:
             return None
-        return RealBoard(image=image, size=(w, h), mm_per_px=mm_per_px, quads=quads, status=status)
+        return RealBoard(image=image, size=(w, h), mm_per_px=mm_per_px, quads=quads, status=status,
+                         ports=ports)
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
 

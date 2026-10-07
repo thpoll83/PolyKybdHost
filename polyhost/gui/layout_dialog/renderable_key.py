@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QPixmap, QPainter, QPainterPath, QColor, QBrush, QTransform, QPen, QFont, QTextOption
-from PyQt5.QtCore import QRect, Qt, pyqtSignal, QRectF
+from PyQt5.QtCore import QPointF, QRect, Qt, pyqtSignal, QRectF
 
 from PyQt5.QtWidgets import (
     QGraphicsObject, QGraphicsTextItem
@@ -9,6 +9,7 @@ KEY_MARGIN_X = 2
 KEY_MARGIN_Y = 2
 KEY_RADIUS = 0.1
 BADGE_BOTTOM_GAP = 20  # px from tile bottom to the badge's top edge
+LABEL_ONLY_NUDGE = 14  # px the label sits above the tile centre (no badge beside it)
 
 
 def key_transform(info, minx, miny, scale) -> QTransform:
@@ -144,7 +145,14 @@ class RenderableKey(QGraphicsObject):
         self.prepareGeometryChange()
         self._label_only = bool(on)
         self._sync_labels()
+        self.update_text_position()
         self.update()
+
+    def label_anchor(self) -> QPointF:
+        """The label's centre in item coordinates, fixed whatever the text, for a
+        label-only key: `update_text_position` centres it there."""
+        r = self.boundingRect()
+        return QPointF(r.center().x(), r.center().y() - LABEL_ONLY_NUDGE)
 
     def _sync_labels(self):
         # The child labels sit at tile positions. On the photo the tile around
@@ -308,7 +316,7 @@ class RenderableKey(QGraphicsObject):
         bounding = self.text.boundingRect()
         # Nudge the main label up a little when a badge is shown so the two
         # lines sit either side of the tile's display area.
-        y_nudge = 18 if self.badge.isVisible() else 14
+        y_nudge = LABEL_ONLY_NUDGE if self._label_only else 18 if self.badge.isVisible() else 14
         self.text.setPos(rect.x() + (rect.width() - bounding.width())/2,
                          rect.y() + (rect.height() - bounding.height())/2 - y_nudge)
         self.text.setTextWidth(bounding.width())

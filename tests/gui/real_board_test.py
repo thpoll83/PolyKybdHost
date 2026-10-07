@@ -5,6 +5,7 @@ does not check that a transform was set; it maps each key's display rect into
 the scene and compares it with the quad the render measured.
 """
 import json
+import math
 import os
 import tempfile
 import unittest
@@ -77,6 +78,7 @@ class RealBoardLoadTest(unittest.TestCase):
         self.assertNotIn((3, 7), board.quads)         # under the encoder, no display
         self.assertNotIn((8, 0), board.quads)
         self.assertEqual(set(board.status), {"left", "right"})
+        self.assertEqual(set(board.ports), {"left", "right"})
         w, h = board.size
         for quad in board.quads.values():
             for x, y in quad:
@@ -208,6 +210,22 @@ class RealModeDialogTest(unittest.TestCase):
             self.assertTrue(item.contains(item.text.mapRectToParent(item.text.boundingRect()).center()))
         self.dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
         self.assertFalse(any(i._label_only for i in self.dlg.keys.values()))
+
+    def test_expansion_labels_sit_on_their_lids_at_the_lids_angle(self):
+        self.dlg.set_keycap_mode(kb.KEYCAP_REAL)
+        cols = _Settings.MATRIX_COLUMNS
+        for side, (row, col) in (("left", (3, 7)), ("right", (8, 0))):
+            item = self.dlg.keys[row * cols + col]
+            centre, angle = self.board.port_pose(side, kb.KEY_SCALE)
+            got = item.mapToScene(item.label_anchor())
+            self.assertAlmostEqual(got.x(), centre.x(), delta=0.5, msg=side)
+            self.assertAlmostEqual(got.y(), centre.y(), delta=0.5, msg=side)
+            t = item.transform()
+            self.assertAlmostEqual(math.degrees(math.atan2(t.m12(), t.m11())), angle, delta=0.1)
+            # the label really is centred there, whatever its text
+            item.set_display("Enc", "", None)
+            r = item.text.mapRectToParent(item.text.boundingRect())
+            self.assertAlmostEqual(r.center().y(), item.label_anchor().y(), delta=0.5)
 
     def test_the_selected_key_survives_the_rebuild(self):
         self.dlg.mouseClickEvent(self.dlg.keys[2])

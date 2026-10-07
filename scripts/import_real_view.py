@@ -46,6 +46,9 @@ def main(png, src_json, width=2400):
         "status_displays": [{"side": s["side"], "size_px": s["size_px"],
                              "bbox": pt(s["bbox"][:2]) + pt(s["bbox"][2:])}
                             for s in data["status_displays"]],
+        "expansion_ports": [{"side": e["side"], "quad": [pt(p) for p in e["quad"]],
+                             "rotation_deg": e["rotation_deg"]}
+                            for e in data.get("expansion_ports", [])],
     }
     # Both files are built before either is written, so input missing a field
     # fails here and leaves the shipped pair as it was, never a new photo

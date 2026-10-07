@@ -4,7 +4,7 @@ import pathlib
 import traceback
 
 from PyQt5.QtCore import QRectF, Qt
-from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap
+from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
@@ -704,11 +704,22 @@ class KbLayoutDialog(QMainWindow):
             else:
                 loose.append((item, kle, side))
             self.scene.addItem(item)
-        # the keys without a display: their KLE place, moved by the half's fit,
-        # drawn as a label alone over the expansion-port lid
+        # the keys without a display: a label alone, centred on the half's
+        # expansion-port lid and turned with it (or, without lid data, their KLE
+        # place moved by the half's fit)
         for item, kle, side in loose:
-            item.setTransform(kle * real_board.fit_affine(pairs[side]))
             item.set_label_only(True)
+            pose = photo.port_pose(side, KEY_SCALE)
+            if pose is None:
+                item.setTransform(kle * real_board.fit_affine(pairs[side]))
+                continue
+            centre, angle = pose
+            anchor = item.label_anchor()
+            t = QTransform()
+            t.translate(centre.x(), centre.y())
+            t.rotate(angle)
+            t.translate(-anchor.x(), -anchor.y())
+            item.setTransform(t)
         # the photo is rendered on pure white, so a white scene leaves no edge
         # around it at any zoom
         self.scene.setBackgroundBrush(QBrush(Qt.white))
