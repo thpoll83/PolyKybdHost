@@ -106,6 +106,12 @@ class RealBoardLoadTest(unittest.TestCase):
             # valid json, image present, but metadata the scene code would index past
             with open(os.path.join(d, "board.jpg"), "wb") as f:
                 f.write(b"\xff\xd8")
+            # positive control: load() checks the image exists and never decodes
+            # it, so this stub with good metadata loads, and each case below is
+            # refused for its own field
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump({"image": "board.jpg", "size": [10, 10], "mm_per_px": 1, "keys": []}, f)
+            self.assertIsNotNone(rb.load(path))
             for bad in ({"size": [10]}, {"size": [10, 0]}, {"mm_per_px": 0},
                         {"keys": [{"matrix": 12, "oled": [[0, 0]] * 4}]},
                         {"status_displays": [{"side": "left", "bbox": [1, 2]}]}):
