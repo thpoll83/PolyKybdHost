@@ -71,3 +71,9 @@ python scripts/generate_app_overlays.py \
 ```
 
 Verified byte-identical on a re-run.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Neither reference lists any of Save / Open / New / Print /
+Cut / Copy / Paste / Undo / Redo / Select all / Find / Close / Zoom / Reload for
+Sound Recorder; recordings auto-save and Ctrl+R is *new recording*, not reload.

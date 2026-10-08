@@ -101,3 +101,25 @@ python polyhost/res/overlay_sources/windowsterminal/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/windowsterminal/bindings.yaml --preview /tmp/wt_preview
 ```
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Added:
+
+| chord | concept | confirmation |
+|---|---|---|
+| Ctrl+V | Paste | `{ "id": "Terminal.PasteFromClipboard", "keys": "ctrl+v" }` in [`userDefaults.json`](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalSettingsModel/userDefaults.json) — the template written into every newly created `settings.json`. It is **not** in `defaults.json`, so a settings file created by a very old build may lack it. |
+
+Deliberately NOT added:
+
+- **Ctrl+C Copy** — also in `userDefaults.json`, but the copy action only fires
+  while text is selected; otherwise the key goes to the shell as ^C (SIGINT).
+  A permanent "Copy" icon would be wrong most of the time — the same reason the
+  plain `enter` copy binding is excluded above.
+- **Copy / Paste / Select all / Find / Close / Zoom** — already drawn on the app's
+  real chords (Ctrl+Shift+C/V/A/F/W, Ctrl+=/-), never duplicated.
+- **Save, Open, New, Print, Cut, Undo, Redo, Find next, Replace, Reload** — no
+  such action in `defaults.json`
+  (<https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalSettingsModel/defaults.json>);
+  Ctrl+S/O/N/P/X/Z/Y/R/W go to the shell. Ctrl+Shift+N (new window) and
+  Ctrl+Shift+T (new tab) are drawn with their own icons already.

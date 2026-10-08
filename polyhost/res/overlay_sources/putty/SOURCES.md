@@ -122,3 +122,14 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added, deliberately.** PuTTY binds none of the standard chords: every
+Ctrl+letter is sent to the remote host (Ctrl+C is SIGINT, Ctrl+V is
+readline `quoted-insert`, Ctrl+S is XOFF / forward-search, Ctrl+Z is SIGTSTP,
+Ctrl+W kills a word). PuTTY's own clipboard is select-to-copy plus right-click /
+Shift+Insert to paste — there is no Ctrl+C/Ctrl+V copy/paste
+(PuTTY manual §3.1.1 "Copying and pasting text":
+<https://the.earth.li/~sgtatham/putty/latest/htmldoc/Chapter3.html#using-selection>).
+Drawing Save/Copy/Paste/Undo here would contradict what the keys do.

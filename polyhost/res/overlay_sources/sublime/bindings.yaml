@@ -90,3 +90,20 @@ bindings:
 
   # --- bookmarks (no modifier) ---
   - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Default (Windows).sublime-keymap / Default (Linux).sublime-keymap. Ctrl+X
+  # ("Cut line"), Ctrl+Y (Redo), Ctrl+F, Ctrl+H and Ctrl+W are already above and
+  # are NOT repeated. Sublime has no Print and no default Reload/Revert chord.
+  - { key: S, mods: [CTRL], label: "Save", source: "concept (shared Fluent)" }
+  - { key: O, mods: [CTRL], label: "Open", source: "concept (shared Fluent)" }
+  - { key: N, mods: [CTRL], label: "New", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CTRL], label: "Undo", source: "concept (shared Fluent)" }
+  # ctrl+shift+z is `redo`; ctrl+y (above) is `redo_or_repeat`.
+  - { key: Z, mods: [CTRL, SHIFT], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CTRL], label: "Select all", source: "concept (shared Fluent)" }
+  - { key: F3, mods: [], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: EQUAL, mods: [CTRL], label: "Zoom in", source: "concept (shared Fluent)" }
+  - { key: MINUS, mods: [CTRL], label: "Zoom out", source: "concept (shared Fluent)" }

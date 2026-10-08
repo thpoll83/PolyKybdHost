@@ -92,3 +92,22 @@ python polyhost/res/overlay_sources/sublime/fetch_icons.py      # shared icon fo
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/sublime_mac/bindings.yaml --preview /tmp/sublime_mac_preview
 ```
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Added (macOS set; this spec is the macOS counterpart, so plain `GUI`, not CMDCTRL):
+
+| chord | concept | confirmation |
+|---|---|---|
+| Cmd+S / Cmd+O / Cmd+N | Save / Open / New | File menu accelerators of `Default (OSX).sublime-keymap` |
+| Cmd+C / Cmd+V / Cmd+Z / Cmd+A | Copy / Paste / Undo / Select all | Edit / Selection menu accelerators, same keymap |
+| Cmd+Shift+Z | Redo | `super+shift+z` → `redo` (Cmd+Y, already drawn, is `redo_or_repeat`): <https://forum.sublimetext.com/t/use-cases-for-redo-or-repeat/59101> |
+| Cmd+G | Find next | "F3 (⌘+G for MacOS) is bound to the find_next command by default": <https://forum.sublimetext.com/t/find-next-and-find-prev-occurence-functionality-not-working/52268>, <https://forum.sublimetext.com/t/find-next-cmd-g-must-be-entered-twice-to-function/10766> |
+| Cmd+= / Cmd+- | Zoom in / Zoom out | `increase_font_size` / `decrease_font_size` on super+= / super+-: <https://forum.sublimetext.com/t/ctrl-vs-ctrl-equals-what-is-the-difference/60982> (Windows counterpart quoted), <https://forum.sublimetext.com/t/zoom-plugin/132> |
+
+Deliberately NOT added:
+
+- **Cmd+X, Cmd+Y, Cmd+F, Cmd+Option+F (Replace), Cmd+W** — already bound above.
+- **Print** — no print command. **Reload** — Revert File has no default binding.
+- Cmd+Shift+Z is in the `extra` tier (GUI+Shift, G channel), which this spec
+  already draws — no new tier.
