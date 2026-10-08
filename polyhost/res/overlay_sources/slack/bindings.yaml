@@ -91,3 +91,16 @@ bindings:
   - { key: H,     mods: [CMDCTRL, SHIFT], icon: huddle.png,      label: "Toggle huddle" }
   - { key: ",",   mods: [CMDCTRL],        icon: preferences.png, label: Preferences }
   - { key: "/",   mods: [CMDCTRL],        icon: shortcuts.png,   label: "Keyboard shortcuts" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Slack's own table (see SOURCES.md) lists Ctrl/Cmd+Z ("Unsend a message")
+  # and Ctrl/Cmd+W ("Close window"). Cut/Copy/Paste/Select all are the message
+  # box's standard Electron edit roles. Already above: Find (Ctrl+F = search
+  # in conversation). Deliberately NOT added: Save/Open/New/Print (Ctrl+O is
+  # "Upload a file", Ctrl+N "Compose"), Redo (not listed by Slack).
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }
+  - { key: W, mods: [CMDCTRL], label: "Close", source: "concept (shared Fluent)" }

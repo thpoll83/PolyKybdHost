@@ -97,3 +97,28 @@ bindings:
   - { key: F9, mods: [],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [windows, linux] }
   # macOS: Send/Receive All is Cmd+K
   - { key: K, mods: [GUI],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [macos] }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Microsoft's "Keyboard shortcuts for Outlook" (Windows) and "Keyboard
+  # shortcuts in Outlook for Mac" (see SOURCES.md). Already above and NOT
+  # repeated: New (Ctrl+N), Save (Ctrl+S), Print (Ctrl+P).
+  # Ctrl+O = open the selected item; Cmd+O the same on macOS.
+  - { key: O, mods: [CMDCTRL], label: "Open", source: "concept (shared Fluent)" }
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  # Redo: Cmd+Y on macOS only. On Windows Ctrl+Y is "Go to a different folder"
+  # (classic) / "Go to the Folder pane" (new Outlook), so it is not drawn there.
+  - { key: Y, mods: [GUI], only: [macos], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }
+  # Find: F4 (find or replace text) on Windows; Cmd+F (find text within an
+  # item) on macOS. Ctrl+F stays Forward on Windows.
+  - { key: F4, mods: [], only: [windows, linux], label: "Find", source: "concept (shared Fluent)" }
+  - { key: F, mods: [GUI], only: [macos], label: "Find", source: "concept (shared Fluent)" }
+  - { key: F4, mods: [SHIFT], only: [windows, linux], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: G, mods: [GUI], only: [macos], label: "Find next", source: "concept (shared Fluent)" }
+  # Replace: Ctrl+H (Windows); the Mac article lists no Replace chord.
+  - { key: H, mods: [CTRL], only: [windows, linux], label: "Replace", source: "concept (shared Fluent)" }
+  # Close: Cmd+W "Close the active window" (Mac); Windows lists Esc only.
+  - { key: W, mods: [GUI], only: [macos], label: "Close", source: "concept (shared Fluent)" }

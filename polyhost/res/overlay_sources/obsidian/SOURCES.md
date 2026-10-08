@@ -101,3 +101,25 @@ Windows/Linux fixed against the app's default table (2026-09-30): Navigate
 back/forward moved from `Alt+Left/Right` to `Ctrl+Alt+Left/Right`, and the
 `Ctrl+Shift+L/R/X` cells (Toggle left/right sidebar, Strikethrough) are gone,
 because Obsidian binds none of them in a clean install.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. Source: Obsidian help, "Editing shortcuts"
+(`obsidianmd/obsidian-help`, `en/Editing and formatting/Editing shortcuts.md`,
+https://help.obsidian.md/editing-shortcuts), separate Windows/Linux and macOS
+tables:
+
+| Concept | Windows / Linux | macOS |
+|---|---|---|
+| Cut / Copy / Paste | Ctrl+X/C/V | ⌘X/C/V |
+| Undo | Ctrl+Z | ⌘Z |
+| Redo | Ctrl+Shift+Z or Ctrl+Y (`only: [windows, linux]`) | ⌘⇧Z |
+| Select all | Ctrl+A | ⌘A |
+
+Not added / why:
+- Find (Ctrl/⌘F), Replace (Ctrl+H / ⌘⌥F), Close (Ctrl/⌘W), New (Ctrl/⌘N):
+  already bound above.
+- Open: Ctrl/⌘O is the Quick switcher.
+- Save / Print / Zoom / Reload: not documented as default hotkeys (Obsidian
+  autosaves; "Save current file" and "Reload app" are commands with no help-
+  documented default).

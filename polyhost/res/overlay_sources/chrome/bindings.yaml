@@ -84,3 +84,25 @@ bindings:
   - { key: F5,  mods: [],      only: [windows, linux], icon: reload_f5.png,      <<: *r, label: Reload }
   - { key: F6,  mods: [],      only: [windows, linux], icon: addressbar_f6.png,  <<: *r, label: "Address bar" }
   - { key: F10, mods: [SHIFT], only: [windows, linux], icon: contextmenu.png,    <<: *r, label: "Context menu" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Chromium binds these on every platform (see SOURCES.md): Save page / Open
+  # file / Print in accelerator_table.cc (Win/Linux) and accelerators_cocoa.mm
+  # (macOS); Cut/Copy/Paste in GetStandardAcceleratorForCommandId (Win/Linux)
+  # and the Edit menu (macOS); Undo/Redo/Select all in Blink's
+  # editing_behavior.cc (Win/Linux) and the Edit menu (macOS). They serve the
+  # web-app overlays layered on top of this set too.
+  # Already above and NOT repeated: Find, Find next (Ctrl+G, F3), Close (W),
+  # Reload (R, F5), Zoom in/out. Cmd+Y on macOS is History, so macOS Redo is
+  # Cmd+Shift+Z only.
+  - { key: S, mods: [CMDCTRL], label: "Save", source: "concept (shared Fluent)" }
+  - { key: O, mods: [CMDCTRL], label: "Open", source: "concept (shared Fluent)" }
+  - { key: P, mods: [CMDCTRL], label: "Print", source: "concept (shared Fluent)" }
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  # Ctrl+Shift+Z is Redo on Windows/Linux too (Blink), and Cmd+Shift+Z on macOS.
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: Y, mods: [CTRL], only: [windows, linux], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }

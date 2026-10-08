@@ -77,3 +77,34 @@ name (`Microsoft Outlook`) resolves to this stanza is decided by
 | New appt | Ctrl+Shift+A | — | dropped: Mac uses ⌘N inside the Calendar view; no global chord |
 | New contact | Ctrl+Shift+C | — | dropped: ⌘⇧C copies the item to a folder on Mac |
 | New task | Ctrl+Shift+K | — | dropped: ⌘⇧K sends all Outbox messages on Mac |
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. support.microsoft.com was reachable this time:
+- "Keyboard shortcuts for Outlook" (new + classic Outlook for Windows) —
+  https://support.microsoft.com/en-us/accessibility/outlook/keyboard-shortcuts-for-outlook
+- "Keyboard shortcuts in Outlook for Mac" —
+  https://support.microsoft.com/en-us/accessibility/outlook/mac/keyboard-shortcuts-in-outlook-for-mac
+
+| Concept | Windows | macOS | MS wording |
+|---|---|---|---|
+| Open | Ctrl+O | ⌘O | "Open the selected item" / "Open a received message" |
+| Cut / Copy / Paste | Ctrl+X/C/V | ⌘X/C/V | "Edit text" table / "Edit and format text" |
+| Undo | Ctrl+Z | ⌘Z | "Reverse the most recent action" / "Undo the last action" |
+| Redo | — | ⌘Y (`only: [macos]`) | Mac: "Redo the last action ⌘Y" |
+| Select all | Ctrl+A | ⌘A | "Select all items" / "Select all items in the item list" |
+| Find | F4 (`only: [windows, linux]`) | ⌘F (`only: [macos]`) | classic: "Find or replace text F4"; Mac: "Find text within an item" |
+| Find next | Shift+F4 | ⌘G | classic: "Find the next item"; Mac: "Find the next instance…" |
+| Replace | Ctrl+H (`only: [windows, linux]`) | — | classic: "Find and replace text … in an open item" |
+| Close | — | ⌘W (`only: [macos]`) | Mac: "Close the active window" |
+
+Not added / why:
+- Redo on Windows: Ctrl+Y is "Go to a different folder" (classic) / "Go to the
+  Folder pane" (new Outlook); new Outlook's text table also lists Ctrl+Y as
+  "Repeat", so the chord is ambiguous — not drawn.
+- Find on Windows as Ctrl+F: Ctrl+F is Forward (already drawn).
+- Replace on macOS: the Mac article lists no chord.
+- Close on Windows: the article lists Esc only.
+- New / Save / Print: already bound above.
+- Zoom in/out: the Mac article's ⌘+/⌘- change only the message text size, and
+  Windows has no chord; not drawn.

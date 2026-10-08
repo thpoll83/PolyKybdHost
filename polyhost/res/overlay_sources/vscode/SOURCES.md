@@ -203,3 +203,28 @@ Two things worth flagging to the maintainer:
   it, replace `icons/vscode.png` with a generic drawn mark (see
   `../program_marks.py`) and regenerate. `fetch_icons.py` guards the file, so a
   re-run will never clobber your replacement.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon (the shared Fluent concept renderer draws it).
+Every chord read from VS Code's own source (`microsoft/vscode`, `main`):
+
+| Concept | Windows / Linux | macOS | Source |
+|---|---|---|---|
+| Save | Ctrl+S | ⌘S | `workbench/contrib/files/browser/fileCommands.ts` (`KeyMod.CtrlCmd \| KeyCode.KeyS`) |
+| Open | Ctrl+O (Open File) | ⌘O (Open…) | `workbench/browser/actions/workspaceActions.ts` (`OpenFileAction` non-mac, `OpenFileFolderAction` mac) |
+| Cut / Copy / Paste | Ctrl+X/C/V | ⌘X/C/V | `editor/contrib/clipboard/browser/clipboard.ts` |
+| Undo | Ctrl+Z | ⌘Z | `editor/browser/editorExtensions.ts` (`UndoCommand`) |
+| Redo | Ctrl+Y and Ctrl+Shift+Z | ⌘⇧Z | `editorExtensions.ts` `RedoCommand`: primary CtrlCmd+Y, secondary CtrlCmd+Shift+Z, mac primary CtrlCmd+Shift+Z |
+| Select all | Ctrl+A | ⌘A | `editorExtensions.ts` (`SelectAllCommand`) |
+| Find | Ctrl+F | ⌘F | `editor/contrib/find/browser/findController.ts` |
+| Find next | F3 | ⌘G (and F3) | `findController.ts` `NextMatchFindAction`: primary F3, mac primary CtrlCmd+G, secondary F3 |
+| Replace | Ctrl+H | ⌘⌥F | `findController.ts` `StartFindReplaceAction`: CtrlCmd+H, mac CtrlCmd+Alt+F |
+
+Ctrl+Y is scoped `only: [windows, linux]`; ⌘G is `only: [macos]` (it does not
+collide with the literal ⌃G "Go to line" binding).
+
+Not added / why:
+- New (Ctrl/⌘N), Close (Ctrl/⌘W), Zoom in/out (Ctrl/⌘ =/-): already bound above.
+- Print: VS Code has no default print chord.
+- Reload: "Developer: Reload Window" has no default chord (Ctrl/⌘R is Open Recent).
