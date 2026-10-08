@@ -1780,7 +1780,6 @@ class PolyCore(Observable):
             fresh_boot = bool(snapshot.get("fresh_boot"))
             if fresh_boot and not caches_reset:
                 self.device_mgr.reset_all_caches()
-                caches_reset = True
                 self.needs_overlay_reset = True
             if (snapshot["state_changed"] or fresh_boot) and self.needs_overlay_reset:
                 self.needs_overlay_reset = False
