@@ -122,3 +122,6 @@ bindings:
   - { key: ".", mods: [CTRL, SHIFT],        label: "Zoom in" }
   - { key: ",", mods: [CTRL, SHIFT],        label: "Zoom out" }
   - { key: F1,  mods: [],                   label: Help }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: Z, mods: [CTRL, SHIFT], label: "Redo", source: "concept (shared Fluent)" }

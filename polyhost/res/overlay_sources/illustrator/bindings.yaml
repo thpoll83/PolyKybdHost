@@ -119,3 +119,7 @@ bindings:
   - { key: J, mods: [CMDCTRL, ALT], icon: average.png, mode: alpha, label: "Average points", source: "custom (drawn: points to centre)" }
   - { key: B, mods: [CMDCTRL, ALT], icon: blend.png, mode: alpha, label: "Make blend", source: "custom (drawn: shrinking shapes)" }
   - { key: "3", mods: [CMDCTRL, ALT], icon: showall.png, label: "Show all", source: "ms-fluent/Eye (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo",  source: "concept (shared Fluent)" }
+  - { key: W, mods: [CMDCTRL],        label: "Close", source: "concept (shared Fluent)" }

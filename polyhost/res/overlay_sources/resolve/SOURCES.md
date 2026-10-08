@@ -93,3 +93,12 @@ Fixed 2026-09-30: the Windows `Ctrl+R` "Start render" cell is gone, because
 `Ctrl+R` is Retime Controls (manual, see above). ⚠️ `Ctrl+Shift+R` "Render queue"
 is still drawn on Windows but unconfirmed: the manual gives Shift-Command-R as
 Resolve Live Freeze.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. Save/New timeline/Undo/Redo/Cut/Copy/Paste/Select all and
+Ctrl+= / Ctrl+- zoom were already drawn.
+
+- **Ctrl+O (Open)**, **Ctrl+W (Close)**, **Ctrl+P (Print)**: no default documented in the
+  DR18 reference manual or the cheat sheets above.
+- **Ctrl+F**: still unresolved (Full Screen vs Find) — left off, as before.

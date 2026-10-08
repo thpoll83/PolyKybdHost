@@ -76,3 +76,18 @@ The other 10 old cells are byte-identical.
   location), Shift+F3, Shift+Alt+= / Shift+Alt+- (expand/contract selection),
   Ctrl+Shift+O, Ctrl+Alt+Break / Ctrl+Break (the Pause key), and the
   Ctrl+Alt+{C,I,E,...} debug tool windows apart from Breakpoints.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+Shift+Z — Redo (alternative to Ctrl+Y) | Windows | https://learn.microsoft.com/en-us/visualstudio/ide/default-keyboard-shortcuts-in-visual-studio ("Redo: Ctrl+Y or Ctrl+Shift+Z or Shift+Alt+Backspace — Edit.Redo") |
+
+Deliberately NOT added:
+
+- **Ctrl+P (Print)**: the same page lists Ctrl+P for both File.Print and
+  Edit.GoToAll/NavigateTo; ambiguous, so left off.
+- Everything else (New/Open/Save/Close/Undo/Cut/Copy/Paste/Select all/Find/F3 Find
+  next/Ctrl+H Replace/Ctrl+Shift+. , zoom) was already drawn.

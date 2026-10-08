@@ -79,3 +79,18 @@ name (`Microsoft Excel`) resolves to this stanza is decided by
 | Flash fill | Ctrl+E | — | dropped, *uncertain*: not in either scrape; ⌘E is Align center |
 | Table | Ctrl+L | — | dropped: on Mac Control+L is Define Name (pretzel); Mac's create-table chord is ⌃T/⌘T, already drawn |
 | F2 / F4 / F9 / F12 | same | same | unchanged (all listed in the Mac function-key table) |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+Alt+= — Zoom in | Windows (+Linux set) | https://support.microsoft.com/en-us/office/keyboard-shortcuts-in-excel-1798d9d5-842a-42b8-9c99-9b7213f0040f ("Zoom in: Ctrl+Alt+Equal sign (=)") |
+| Ctrl+Alt+- — Zoom out | Windows (+Linux set) | same ("Zoom out: Ctrl+Alt+Minus sign (-)") |
+
+Deliberately NOT added:
+
+- **Find next (Shift+F4)**: documented only for Excel for the web, not desktop Windows.
+- **Zoom on macOS**: not documented on the Mac table.
+- Close (Ctrl+W), Replace (Ctrl+H, which also covers Mac's Ctrl+H) were already drawn.

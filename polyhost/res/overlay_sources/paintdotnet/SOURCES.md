@@ -146,3 +146,8 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Print/Undo/Redo/Cut/Copy/Paste/Select all and
+Ctrl+= / Ctrl+- zoom were already drawn; paint.net has no Find / Find next / Replace.
