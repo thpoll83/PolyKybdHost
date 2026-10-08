@@ -108,3 +108,22 @@ Not added / why:
 - New / Save / Print: already bound above.
 - Zoom in/out: the Mac article's ⌘+/⌘- change only the message text size, and
   Windows has no chord; not drawn.
+
+## F2 / F5 (no modifier, 2026-10-08)
+
+The firmware no longer draws a built-in Rename/Refresh hint on F2/F5 for every
+app, so the overlay carries them only where Outlook really does that.
+
+| Key | Platform | Drawn as | Confirmed by |
+|---|---|---|---|
+| F2 | Windows (`only: [windows, linux]`) | Rename (`icon: rename.png`) | <https://support.microsoft.com/en-us/office/keyboard-shortcuts-for-outlook-3cdeb221-7ae5-4c1d-8c1d-9e63216c1efd> — classic Outlook, "Use the Folder pane": "F2 — Rename a selected folder in the list of folders." |
+
+`icons/rename.png` is a byte-identical copy of `../explorer/icons/rename.png`
+(Microsoft Fluent UI System Icons "Rename", MIT). Rename is not a shared lexicon
+concept, so it is drawn from the file. It is not produced by `fetch_icons.py`.
+
+Not added:
+- **F5 Reload** — the same page's only bare-F5 row is "Update a list of contact
+  group members" (People), not a view refresh; F9 is Send/Receive (already drawn).
+- **macOS** — the documented F2 rename is classic Outlook for Windows; it is not
+  carried over to the Mac set.

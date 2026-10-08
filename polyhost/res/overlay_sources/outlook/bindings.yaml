@@ -97,6 +97,9 @@ bindings:
   - { key: F9, mods: [],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [windows, linux] }
   # macOS: Send/Receive All is Cmd+K
   - { key: K, mods: [GUI],     icon: sendrecv.png, label: "Send/Recv", source: "ms-fluent/Arrow Sync (MIT)", only: [macos] }
+  # F2: "Rename a selected folder in the list of folders" (classic Outlook, Folder
+  # pane, classic Outlook for Windows). Not drawn on macOS. See SOURCES.md -> F2 / F5.
+  - { key: F2, mods: [], icon: rename.png, label: Rename, source: "ms-fluent/Rename (MIT)", only: [windows, linux] }
 
   # --- standard editing (shared Fluent concepts) ---
   # Microsoft's "Keyboard shortcuts for Outlook" (Windows) and "Keyboard

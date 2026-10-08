@@ -106,6 +106,10 @@ bindings:
   - { key: V,   mods: [CTRL, SHIFT],        icon: clipboardring.png,        label: "Cycle clipboard ring",    source: "ms-fluent/Clipboard Multiple (MIT)" }
 
   # ============================ files / windows ================================
+  # F2 = View.EditLabel, listed under "View: global shortcuts": renames the
+  # selected item in Solution Explorer. Code rename (Ctrl+R,R) is a two-stroke
+  # chord and stays undrawn. See SOURCES.md -> F2 / F5.
+  - { key: F2,  mods: [],                   icon: rename.png,               label: Rename,                    source: "ms-fluent/Rename (MIT)" }
   - { key: N,   mods: [CTRL],               label: New }
   - { key: N,   mods: [CTRL, SHIFT],        icon: newproject.png,           label: "New project",             source: "ms-fluent/Folder Add (MIT)" }
   - { key: O,   mods: [CTRL],               label: Open }
