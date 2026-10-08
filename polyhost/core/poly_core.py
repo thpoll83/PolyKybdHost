@@ -1762,7 +1762,26 @@ class PolyCore(Observable):
                              snapshot["lang"] if snapshot["lang"] else "NO RESPONSE")
 
         if self.connected:
-            if snapshot["state_changed"] and self.needs_overlay_reset:
+            # ⚠️ A FRESH BOOT clears the keyboard too, not only a state change.
+            # The marker can reach the host AFTER a connect that already filled
+            # the pool: on 2026-10-08 a firmware apply rebooted the keyboard, the
+            # 13:53:58 reconnect cleared it and uploaded ~110 images, and the
+            # marker arrived at 13:54:02. Resetting only the host cache then made
+            # every one of those slots read as clean, so the next ROI upload
+            # (OverlayMRUCache.slot_is_clean) left the old image around the new
+            # one on the ESC keycap. One extra report per keyboard boot.
+            #
+            # Independent of state_changed: a fast reboot (no observed
+            # disconnect) still must invalidate the host-side MRU cache.
+            # Post-connect already does it on the paths where it runs, so this
+            # is the fallback for the ones where it does not (a reboot into
+            # firmware this host refuses, or into safe mode) -- not a second
+            # reset on top of it.
+            fresh_boot = bool(snapshot.get("fresh_boot"))
+            if fresh_boot and not caches_reset:
+                self.device_mgr.reset_all_caches()
+                self.needs_overlay_reset = True
+            if (snapshot["state_changed"] or fresh_boot) and self.needs_overlay_reset:
                 self.needs_overlay_reset = False
                 applied["do_overlay_reset"] = True
                 # We just reset our OWN MRU cache (reset_all_caches above) to
@@ -1786,14 +1805,7 @@ class PolyCore(Observable):
                         self.log.info("Connected: keyboard overlay state cleared.")
                     except Exception as e:
                         self.log.warning("Connect-time overlay reset failed: %s", e)
-            # Independent of state_changed: a fast reboot (no observed
-            # disconnect) still must invalidate the host-side MRU cache. Post-connect
-            # already does it on the paths where it runs, so this is the fallback for
-            # the ones where it does not (a reboot into firmware this host refuses,
-            # or into safe mode) -- not a second reset on top of it.
-            if snapshot.get("fresh_boot"):
-                if not caches_reset:
-                    self.device_mgr.reset_all_caches()
+            if fresh_boot:
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
                 applied["fresh_boot"] = True
                 # Ask the keyboard itself whether the boot before this one crashed.
