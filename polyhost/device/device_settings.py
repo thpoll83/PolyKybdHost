@@ -1,11 +1,12 @@
 from polyhost.util.math_util import find_nearest, natural_divisors
 
 # The firmware's NUM_OVERLAY_SLOTS: the most distinct keycap images one program
-# switch can show. ⚠️ ONE value for every limit that follows from it -- the
-# pool here, the shortcut planner (`shortcut_overlays.MAX_SLOTS`) and the
-# forwarder relay (`shortcut_relay.MAX_SHORTCUTS`) -- so a local app and a
-# forwarded one are cut at the same point. Measured as the hard limit over the
-# emulated keyboard: 650 images in one switch drew 600 correct keys (2026-10-09).
+# switch can show, whatever made them (a template, a generic icon, an
+# icons.plyi match). ⚠️ The ONE limit, and the send path enforces it
+# (overlay_cache.get_or_allocate). Measured as the hard limit over the emulated
+# keyboard: 650 images in one switch drew 600 correct keys and 50 wrong ones
+# before the guard (2026-10-09). The forwarder relay reuses the value as its
+# network bound (`shortcut_relay.MAX_SHORTCUTS`) rather than a second number.
 # ⚠️ Keep in lockstep with qmk_firmware keyboards/polykybd/config.h.
 OVERLAY_POOL_CAPACITY = 600
 

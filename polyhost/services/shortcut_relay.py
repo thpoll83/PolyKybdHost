@@ -30,11 +30,12 @@ from polyhost.device.device_settings import OVERLAY_POOL_CAPACITY
 from polyhost.services.shortcut_source.model import Shortcut, displayable_hid
 
 # A ceiling on what one frame may carry, because this is attacker-shaped input on
-# the network method (module docstring). ⚠️ It is the SAME value the local
-# planner caps at (`shortcut_overlays.MAX_SLOTS`, the overlay pool), so a
-# forwarded app is cut where a local one is. It was 64 while the planner drew
-# at most 48, which would have dropped 44 of a forwarded Kate's 108 (2026-10-09).
-# 600 shortcuts at MAX_LABEL characters is about 50 KB of JSON in one report.
+# the network method (module docstring). It reuses the overlay pool's value
+# rather than a number of its own. ⚠️ This bound counts SHORTCUTS; the real limit,
+# 600 distinct IMAGES per switch, is enforced in the send path for local and
+# forwarded apps alike (overlay_cache.get_or_allocate). It was 64 while the
+# planner drew at most 48, which would have dropped 44 of a forwarded Kate's 108
+# (2026-10-09). 600 shortcuts at MAX_LABEL characters is about 50 KB of JSON.
 MAX_SHORTCUTS = OVERLAY_POOL_CAPACITY
 # Labels are menu-item text. "Toggle Comment Line" is 20; 64 leaves room for a
 # localized one without letting a frame carry prose.

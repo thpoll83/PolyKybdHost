@@ -110,27 +110,29 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(len(plan), 2)
         self.assertEqual({s.concept for s in plan}, {"save"})
 
-    def test_the_cap_is_the_overlay_POOL(self):
-        """A 48-slot cap dropped F1/F2/Find in Files from Kate's 108. The cap is
-        the pool now, and the relay uses the same value, so a forwarded app is
-        cut where a local one is."""
-        from polyhost.device.device_settings import OVERLAY_POOL_CAPACITY
-        from polyhost.services import shortcut_relay
-        self.assertEqual(so.MAX_SLOTS, OVERLAY_POOL_CAPACITY)
-        self.assertEqual(shortcut_relay.MAX_SHORTCUTS, OVERLAY_POOL_CAPACITY)
-        self.assertEqual(OVERLAY_POOL_CAPACITY, 600)
-
-    def test_an_app_with_more_than_48_shortcuts_keeps_them_all(self):
+    def test_there_is_NO_cap_on_slots(self):
+        """A 48-slot cap dropped F1/F2/Find in Files from Kate's 108."""
         keys = list(range(0x3A, 0x46)) + list(range(0x49, 0x53))   # F1-F12, nav
         many = [sc("Save", mods=m, hid=h) for m in (CTRL, CTRL | SHIFT, ALT)
                 for h in keys]
-        self.assertGreater(len(many), 48)
         self.assertEqual(len(so.plan(many)), len(many))
 
-    def test_the_slot_cap_keeps_the_most_confident(self):
-        many = [sc("Save", hid=h) for h in range(0x04, 0x30)]
-        plan = so.plan(many, limit=3)
-        self.assertEqual(len(plan), 3)
+    def test_MORE_keys_than_the_pool_holds_images_are_all_planned(self):
+        """The limit is 600 distinct IMAGES, enforced by the send path. Keys
+        sharing a concept share one image, so 600+ keys can fit, and a cap on
+        keys here would drop them for nothing."""
+        from polyhost.device.device_settings import OVERLAY_POOL_CAPACITY
+        many = [sc("Save", mods=m, hid=h) for m in range(1, 16)
+                for h in range(0x04, 0x54)]
+        planned = so.plan(many)
+        self.assertGreater(len(planned), OVERLAY_POOL_CAPACITY)
+        self.assertEqual({s.concept for s in planned}, {"save"})
+
+    def test_the_relay_bound_is_the_pool_value(self):
+        """One value, not a second number to keep in step."""
+        from polyhost.device.device_settings import OVERLAY_POOL_CAPACITY
+        from polyhost.services import shortcut_relay
+        self.assertEqual(shortcut_relay.MAX_SHORTCUTS, OVERLAY_POOL_CAPACITY)
 
     def test_a_blank_label_is_dropped(self):
         """Decided by `match()`, which normalizes to "" and refuses — so there
@@ -375,7 +377,7 @@ class PlanReportTest(unittest.TestCase):
         """Each names a different fix — nothing to do, a curation entry, a
         lexicon gap — so two that read alike are one that cannot be
         acted on."""
-        reasons = [so.NO_KEYCAP, so.NO_CONCEPT, so.NO_CATALOG_ICON, so.OVER_CAP]
+        reasons = [so.NO_KEYCAP, so.NO_CONCEPT, so.NO_CATALOG_ICON]
         self.assertEqual(len(set(reasons)), len(reasons))
 
     def test_a_refusal_names_the_KEY_and_the_LABEL(self):
@@ -385,13 +387,6 @@ class PlanReportTest(unittest.TestCase):
         (item,) = report.refused[so.NO_CONCEPT]
         self.assertIn("Ctrl+Shift+B", item)
         self.assertIn("Frobnicate", item)
-
-    def test_the_cap_reports_what_it_dropped(self):
-        """Silently drawing 3 of 44 would read as the other 41 having failed."""
-        report = so.plan_report([sc("Save", hid=h) for h in range(0x04, 0x30)],
-                                limit=3)
-        self.assertEqual(len(report.slots), 3)
-        self.assertEqual(len(report.refused[so.OVER_CAP]), 0x30 - 0x04 - 3)
 
     def test_the_summary_counts_both_halves(self):
         report = so.plan_report([sc("Save"), sc("Frobnicate")])
