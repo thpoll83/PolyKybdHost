@@ -1735,12 +1735,13 @@ class PolyKybd:
             deferred: dict[str, list] = {}
             pool_full: list = []    # keys left blank: the switch filled the pool
             uploaded = 0
+
+            # Every image of the switch, extracted ONCE: the claim pass below
+            # needs them all before the first allocation, and the send loop
+            # reuses them rather than rendering twice.
+            extracted: list[tuple[str, object, bool, bool, list]] = []
             for filename, converter in zip(filenames, converters):
-                source_is_synthetic = filename in synthetic
-                # An image that is the SAME under every modifier is keyed ONCE,
-                # so the variants after the first are cache hits that upload
-                # nothing -- see synthetic_overlay.program_converter.
-                invariant = getattr(converter, "modifier_invariant", False)
+                maps = []
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1749,8 +1750,31 @@ class PolyKybd:
                     if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
                         continue
                     overlay_map = converter.extract_overlays(modifier)
-                    if not overlay_map:
-                        continue
+                    if overlay_map:
+                        maps.append((modifier, overlay_map))
+                # An image that is the SAME under every modifier is keyed ONCE,
+                # so the variants after the first are cache hits that upload
+                # nothing -- see synthetic_overlay.program_converter.
+                extracted.append((filename, converter, filename in synthetic,
+                                  getattr(converter, "modifier_invariant", False), maps))
+
+            # ⚠️ Claim every image the pool already holds BEFORE allocating any
+            # new one (overlay_cache.claim), so a new image can only evict a slot
+            # this switch does not want. Same skip rule as the loop below: a
+            # synthetic source does not draw a key a template already covers.
+            claim_covered: set[tuple[int, int]] = set()
+            for filename, _, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
+                    for keycode, overlay_data in overlay_map.items():
+                        if source_is_synthetic and (modifier.value, keycode) in claim_covered:
+                            continue
+                        claim_covered.add((modifier.value, keycode))
+                        key_modifier = MODIFIER_ANY if invariant else modifier.value
+                        cache.claim((os.path.basename(filename), key_modifier, keycode),
+                                    overlay_data.all_bytes)
+
+            for filename, converter, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
 
                     for keycode, overlay_data in overlay_map.items():
                         if cancel is not None and cancel.is_set():

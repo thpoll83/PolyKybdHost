@@ -135,6 +135,29 @@ class OverlayMRUCache:
         self._version += 1
         return slot, False
 
+    def claim(self, content_key: tuple, bytes_data: bytes | None = None) -> bool:
+        """Mark an image this switch will show as part of the current batch, if
+        the pool already holds it. Allocates nothing; returns whether it held it.
+
+        ⚠️ Called for EVERY image of a switch before the first
+        ``get_or_allocate``. Images arrive one at a time, so without it a new
+        image could evict an old slot that a LATER key of the same switch would
+        have hit, and that key then uploads its image again: measured with the
+        pool full, a switch reusing 300 images and adding 300 sent 491 uploads
+        in mixed order and 600 with the new ones first, instead of 300
+        (2026-10-09). A claimed slot belongs to the current batch, so
+        ``_evict_oldest_slot`` never picks it. Same hit rules as
+        ``get_or_allocate``: the content key, then the bytes."""
+        slot = self._cache.get(content_key)
+        if slot is None and bytes_data is not None:
+            slot = self._bytes_to_slot.get(bytes_data)
+        if slot is None:
+            return False
+        if self._slot_batch.get(slot) != self._current_batch:
+            self._slot_batch[slot] = self._current_batch
+            self._version += 1
+        return True
+
     def slot_is_clean(self, slot: int) -> bool:
         """True while ``slot`` has never been written since the pool was cleared.
 
