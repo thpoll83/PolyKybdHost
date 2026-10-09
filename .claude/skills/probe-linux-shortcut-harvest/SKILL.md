@@ -31,14 +31,13 @@ grep -E "Shortcut icons for|No shortcut icons for|Accessibility flag|Turned on t
 | `No shortcut icons for 'x' (<backend reason>)` | PyGObject / typelib / bus missing | the reason names the package; `docs/generic-icons-plan.md` E13/E14 |
 | `No shortcut icons for 'x' (the app exposes no accelerators)` | on the bus, nothing parsed | step 2, then 3 |
 | no line for the app at all | the harvest never ran for that name | step 1 (is it on the bus, under which name?) |
-| `Shortcut icons for 'x': N shortcut(s) harvested -> …` + `no icon (<why>)` | harvest fine; curation or the cap | read the `why` (below) |
+| `Shortcut icons for 'x': N shortcut(s) harvested -> …` + `no icon (<why>)` | harvest fine; curation | read the `why` (below) |
 | icons from the wrong STATE (welcome page vs document) | menus changed after the harvest | step 4 |
 
 The `no icon (why)` reasons are phrased as the fix: `no icon concept matched the
-label` is curation (`res/shortcut_hints.yaml`, `NAME_SYNONYMS`), `the keyboard
+label` is curation (`res/shortcut_hints.yaml`, `NAME_SYNONYMS`), and `the keyboard
 has no keycap for that key` and `a bare keypress on a key that types a
-character` are by design, and `over the 48-icon cap for one app` is
-`MAX_SLOTS` (see `docs/FUTURE_WORK.md`).
+character` are by design. There is no per-app cap on the number of icons.
 
 ## 1. Is the app on the bus?
 

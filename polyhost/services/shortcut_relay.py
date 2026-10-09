@@ -28,11 +28,12 @@ from __future__ import annotations
 
 from polyhost.services.shortcut_source.model import Shortcut, displayable_hid
 
-# A generous ceiling next to what an application really exposes: the richest
-# measured harvest is 26 accelerators (mousepad's GtkMenuBar), and the planner
-# caps what it will DRAW at `shortcut_overlays.MAX_SLOTS` regardless. The number
-# that matters is that it is bounded at all -- see the module docstring.
-MAX_SHORTCUTS = 64
+# A ceiling on what one frame may carry, because this is attacker-shaped input on
+# the network method (module docstring): bounded is what matters, not tight. It
+# was 64 while the planner drew at most 48, and Kate with a document open
+# already harvests 108 (2026-10-09), so it sits well above any app measured.
+# 512 shortcuts at MAX_LABEL characters is about 40 KB of JSON per report.
+MAX_SHORTCUTS = 512
 # Labels are menu-item text. "Toggle Comment Line" is 20; 64 leaves room for a
 # localized one without letting a frame carry prose.
 MAX_LABEL = 64

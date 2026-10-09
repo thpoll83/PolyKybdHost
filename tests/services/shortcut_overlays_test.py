@@ -110,10 +110,12 @@ class PlanTest(unittest.TestCase):
         self.assertEqual(len(plan), 2)
         self.assertEqual({s.concept for s in plan}, {"save"})
 
-    def test_the_slot_cap_keeps_the_most_confident(self):
-        many = [sc("Save", hid=h) for h in range(0x04, 0x30)]
-        plan = so.plan(many, limit=3)
-        self.assertEqual(len(plan), 3)
+    def test_there_is_NO_cap_on_slots(self):
+        """A 48-slot cap dropped F1/F2/Find in Files from Kate's 108."""
+        keys = list(range(0x3A, 0x46)) + list(range(0x49, 0x53))   # F1-F12, nav
+        many = [sc("Save", mods=m, hid=h) for m in (CTRL, CTRL | SHIFT, ALT)
+                for h in keys]
+        self.assertEqual(len(so.plan(many)), len(many))
 
     def test_a_blank_label_is_dropped(self):
         """Decided by `match()`, which normalizes to "" and refuses — so there
@@ -356,9 +358,9 @@ class PlanReportTest(unittest.TestCase):
 
     def test_the_reasons_are_DISTINCT_strings(self):
         """Each names a different fix — nothing to do, a curation entry, a
-        lexicon gap, a cap — so two that read alike are one that cannot be
+        lexicon gap — so two that read alike are one that cannot be
         acted on."""
-        reasons = [so.NO_KEYCAP, so.NO_CONCEPT, so.NO_CATALOG_ICON, so.OVER_CAP]
+        reasons = [so.NO_KEYCAP, so.NO_CONCEPT, so.NO_CATALOG_ICON]
         self.assertEqual(len(set(reasons)), len(reasons))
 
     def test_a_refusal_names_the_KEY_and_the_LABEL(self):
@@ -368,13 +370,6 @@ class PlanReportTest(unittest.TestCase):
         (item,) = report.refused[so.NO_CONCEPT]
         self.assertIn("Ctrl+Shift+B", item)
         self.assertIn("Frobnicate", item)
-
-    def test_the_cap_reports_what_it_dropped(self):
-        """Silently drawing 48 of 60 would read as the other 12 having failed."""
-        report = so.plan_report([sc("Save", hid=h) for h in range(0x04, 0x30)],
-                                limit=3)
-        self.assertEqual(len(report.slots), 3)
-        self.assertEqual(len(report.refused[so.OVER_CAP]), 0x30 - 0x04 - 3)
 
     def test_the_summary_counts_both_halves(self):
         report = so.plan_report([sc("Save"), sc("Frobnicate")])
@@ -446,8 +441,8 @@ class BareKeypressTest(unittest.TestCase):
 
     def test_it_is_refused_BEFORE_the_icon_lookup(self):
         """⚠️ Whether the label happens to match a concept is irrelevant, and
-        refusing early also keeps it out of the MAX_SLOTS budget, where it would
-        displace a real shortcut."""
+        refusing early also keeps a bare letter from taking the key slot of a
+        real shortcut."""
         bare = [NS(label="Copy", hid=0x06, mods=0)]      # a label that DOES match
         report = so.plan_report(bare)
         self.assertEqual(report.slots, [])

@@ -494,7 +494,7 @@ class ADerivationMustNotNameTheAppOrTheFile(unittest.TestCase):
 
     Attempt one reordered the PLANNER so a sub-threshold lexicon hit beat a
     derivation. Measured on one app that turned 35 distinct icons into 25
-    repeated generics and pushed three keys off the 48-icon cap. Reverted.
+    repeated generics and pushed three keys off the then 48-icon cap. Reverted.
 
     Attempt two suppressed the label's TAIL whenever its head was a lexicon
     concept. That blocked the app name, and also cost `Show Previous Tab` its

@@ -20,21 +20,20 @@ from polyhost.services import icon_catalog, shortcut_icons
 from polyhost.services.shortcut_source.model import (
     MOD_ALT, MOD_CTRL, MOD_GUI, displayable_hid)
 
-# ⚠️ A BOUND ON A LIST NOBODY CURATES. A classic menubar app measured 26
-# shortcuts, but an app is free to expose hundreds of ribbon controls and every
-# one of them costs a render, a pool slot and (on a miss) an upload. The cap is
-# generous rather than tight -- it exists to stop a pathological app, not to
-# ration a normal one -- and the planner keeps the HIGHEST-confidence slots when
-# it bites, so what is dropped is the guesswork rather than the sure things.
-MAX_SLOTS = 48
+# ⚠️ There is deliberately NO cap on how many shortcuts one app gets. A
+# 48-slot cap used to sit here with no measurement behind it, and the first app
+# to reach it was an ordinary one: Kate with a document open matches 108, and
+# the cap dropped F1, F2 and Find in Files (2026-10-09). The plan is already
+# bounded by the keyboard: one slot per (modifier, key), which is what `best`
+# below keys on, and the keyboard's pool holds far more images than that.
 
 # Below this a label is better left alone: the keycap already says what the key
 # is, and a wrong icon is worse than none (the same reasoning that keeps
 # app-slug matching strict). `match()` itself refuses anything under 0.6.
 
 # A derived name is a real hit but a weaker one than a curated concept, so it
-# sorts BELOW every lexicon match when two shortcuts contend for one key and
-# when the plan is trimmed to MAX_SLOTS. Deliberately under `match()`'s own 0.6
+# sorts BELOW every lexicon match when two shortcuts contend for one key.
+# Deliberately under `match()`'s own 0.6
 # floor for the same reason: it is the answer of last resort.
 DERIVED_CONFIDENCE = 0.5
 MIN_CONFIDENCE = 0.85
@@ -47,7 +46,6 @@ NO_KEYCAP = "the keyboard has no keycap for that key"
 NO_MODIFIER = "a bare keypress on a key that types a character"
 NO_CONCEPT = "no icon concept matched the label"
 NO_CATALOG_ICON = "the concept has no catalog icon, only a font-pack glyph"
-OVER_CAP = f"over the {MAX_SLOTS}-icon cap for one app"
 
 # ⚠️ Keys that INSERT A CHARACTER, where a bare-keypress shortcut must not be
 # drawn: 0x04..0x38 is letters, digits, Enter, Backspace, Tab, Space and
@@ -155,16 +153,15 @@ class Slot:
 
 def plan(shortcuts, hints: dict | None = None,
          min_confidence: float = MIN_CONFIDENCE,
-         limit: int = MAX_SLOTS, known_names=None,
-         app: str | None = None) -> list[Slot]:
+         known_names=None, app: str | None = None) -> list[Slot]:
     """The slots alone — see `plan_report` for what was refused and why."""
-    return plan_report(shortcuts, hints, min_confidence, limit, known_names,
+    return plan_report(shortcuts, hints, min_confidence, known_names,
                        app).slots
 
 
 def plan_report(shortcuts, hints: dict | None = None,
                 min_confidence: float = MIN_CONFIDENCE,
-                limit: int = MAX_SLOTS, known_names=None,
+                known_names=None,
                 app: str | None = None) -> "Plan":
     """Decide which harvested shortcuts get an icon, and on which key.
 
@@ -213,8 +210,8 @@ def plan_report(shortcuts, hints: dict | None = None,
         if needs_a_modifier(hid, mods):
             # ⚠️ Before the icon lookup, not after: a bare letter must be
             # refused whether or not its label happens to match a concept, and
-            # refusing it here also keeps it out of the MAX_SLOTS budget, where
-            # it would displace a real shortcut.
+            # refusing it here also keeps a bare letter from taking a key
+            # slot from a real shortcut on the same key.
             refuse(NO_MODIFIER, sc)
             continue
         # ⚠️ No empty-label guard here, deliberately: `match()` normalizes and
@@ -271,10 +268,7 @@ def plan_report(shortcuts, hints: dict | None = None,
         if current is None or slot.confidence > current.confidence:
             best[(mods, slot.keycode)] = slot
     out = sorted(best.values(), key=lambda s: (-s.confidence, s.modifier, s.keycode))
-    for dropped in out[limit:]:
-        refused.setdefault(OVER_CAP, []).append(
-            f"{pretty_key(dropped.modifier, dropped.keycode)}={dropped.label}")
-    return Plan(out[:limit], refused)
+    return Plan(out, refused)
 
 
 def icon_names(slots) -> list[str]:
