@@ -52,22 +52,26 @@ def main() -> int:
                 if all_nodes and is_menu_item:
                     raws.append((role, name, "-",
                                  "<no action interface>" if action is None
-                                 else "<no actions>"))
+                                 else "<no actions>", True))
                 continue
             for i in range(n):
                 # None, not "": a lookup that RAISED is not an empty binding.
                 raw = A._safe(lambda i=i: action.get_key_binding(i), None)
                 if raw is None:
-                    raw = "<lookup failed>"
-                if raw or (all_nodes and is_menu_item):
-                    raws.append((role, name, i, raw))
+                    raws.append((role, name, i, "<lookup failed>", True))
+                elif raw or (all_nodes and is_menu_item):
+                    raws.append((role, name, i, raw, False))
         print(f"=== {app.get_name()} ({sum(roles.values())} nodes)")
         for role, n in roles.most_common():
             print(f"  {n:5d}  {role}")
         print(f"--- {len(raws)} keybinding string(s)"
               + (" (menu items without one included)" if all_nodes else ""))
-        for role, name, i, raw in raws:
-            shown = raw if raw.startswith("<") else repr(raw)
+        # ⚠️ The marker is a FLAG, never read off the text: a real GTK binding
+        # starts with "<" too ('<Control>s'), and an app-supplied string must
+        # always go through repr() so a newline or a control character in it
+        # cannot rewrite the terminal (Greptile, #337).
+        for role, name, i, raw, is_marker in raws:
+            shown = raw if is_marker else repr(raw)
             print(f"  [{role}] {name!r} action{i}: {shown}")
     return 0
 
