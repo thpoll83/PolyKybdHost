@@ -41,20 +41,34 @@ def main() -> int:
         raws = []
         for node, role, path in A.walk(app, Atspi, [20000]):
             roles[role] += 1
+            is_menu_item = "menu item" in role
+            name = A._safe(node.get_name, "") or ""
             action = A._safe(node.get_action_iface)
-            if action is None:
+            n = (A._safe(action.get_n_actions, 0) or 0) if action is not None else 0
+            if n == 0:
+                # A menu item with no action interface, or none of its own,
+                # is still PRESENT -- dropping it would read as "absent from
+                # the tree", the exact question --all-nodes exists to answer.
+                if all_nodes and is_menu_item:
+                    raws.append((role, name, "-",
+                                 "<no action interface>" if action is None
+                                 else "<no actions>"))
                 continue
-            for i in range(A._safe(action.get_n_actions, 0) or 0):
-                raw = A._safe(lambda i=i: action.get_key_binding(i), "") or ""
-                if raw or (all_nodes and "menu item" in role):
-                    raws.append((role, A._safe(node.get_name, "") or "", i, raw))
+            for i in range(n):
+                # None, not "": a lookup that RAISED is not an empty binding.
+                raw = A._safe(lambda i=i: action.get_key_binding(i), None)
+                if raw is None:
+                    raw = "<lookup failed>"
+                if raw or (all_nodes and is_menu_item):
+                    raws.append((role, name, i, raw))
         print(f"=== {app.get_name()} ({sum(roles.values())} nodes)")
         for role, n in roles.most_common():
             print(f"  {n:5d}  {role}")
         print(f"--- {len(raws)} keybinding string(s)"
               + (" (menu items without one included)" if all_nodes else ""))
         for role, name, i, raw in raws:
-            print(f"  [{role}] {name!r} action{i}: {raw!r}")
+            shown = raw if raw.startswith("<") else repr(raw)
+            print(f"  [{role}] {name!r} action{i}: {shown}")
     return 0
 
 

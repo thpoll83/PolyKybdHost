@@ -576,7 +576,7 @@ class TestKateHarvest(unittest.TestCase):
                             ("LSP Client", "code_blocks")):
             with self.subTest(label=label):
                 self.assertEqual(hints[label.lower()], "icon:" + name)
-                self.assertIsNotNone(self.icon(label))
+                self.assertEqual(self.icon(label), name)
 
     def test_whats_this_is_help(self):
         hit = so.shortcut_icons.match("What's This?")

@@ -513,6 +513,7 @@ def _alpha(svg_path: str, size: int):
         log.debug("Could not read %s: %s", svg_path, exc)
         return None
     primary = "declined this file (an SVG feature it does not handle)"
+    missing = None
     try:
         from polyhost.services import svg_raster
         coverage = svg_raster.rasterise(text, size, size)
@@ -521,7 +522,6 @@ def _alpha(svg_path: str, size: int):
         missing = svg_raster.unavailable_reason()
         if missing:
             primary = "cannot run (%s)" % missing
-            _warn_rasteriser_missing(missing)
     except Exception as exc:
         primary = "raised %s" % exc
     try:
@@ -536,6 +536,11 @@ def _alpha(svg_path: str, size: int):
         # cairosvg" when the real cause was the primary's missing dependency.
         log.debug("No rasteriser could draw %s: svg_raster %s; cairosvg: %s",
                   svg_path, primary, exc)
+        # Only HERE, once the fallback has failed too: with cairosvg working,
+        # a missing svg_raster costs nothing, and warning that "every SVG
+        # mark is skipped" would send the user to fix what already works.
+        if missing:
+            _warn_rasteriser_missing(missing)
         return None
 
 
