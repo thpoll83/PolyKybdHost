@@ -847,8 +847,13 @@ class PolyCore(Observable):
             # which is frozen on the fetcher's worker thread -- measured in the
             # field as every app but one reporting a focus race that had not
             # happened (2026-09-21).
+            # `title` re-harvests when the window retitles: Kate's menus gain
+            # Save/Undo/Copy only once a document opens (shortcut_fetcher).
+            # getattr: test doubles and older handlers have no focused_title.
+            title_of = getattr(handler, "focused_title", None)
             shortcuts = self._shortcut_icons.overlays_for(
-                name, pid=handler.focused_pid())
+                name, pid=handler.focused_pid(),
+                title=title_of() if callable(title_of) else None)
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             if mask is not None and not shortcuts:

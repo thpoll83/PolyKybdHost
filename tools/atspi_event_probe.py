@@ -20,6 +20,23 @@ cost of listening at all).
     # meanwhile: open a file, switch tabs, edit, save, close the document
 
 Ctrl+C stops early and still prints the summary. --quiet prints only the summary.
+
+MEASURED on Kate, Plasma, 2026-10-09 (65 s: new document, close, new
+document, type nine characters, save):
+
+  * object:children-changed: NONE, not even when the first document opened
+    and the menus gained Save/Undo/Copy. Qt does not announce a menu rebuild
+    over AT-SPI, so an event listener has no precise trigger to offer;
+  * frame title: changed exactly on welcome -> document (and back), but ALSO
+    on every keystroke in an unsaved document (Kate previews its first words
+    in the title): nine changes in 0.6 s;
+  * the rest is noise: ~20 name changes on status-bar widgets per view
+    switch, a busy "popup menu 'Kate'", window:activate in duplicate pairs.
+
+So the harvest re-runs on the window title the core already has, behind a
+one-in-flight guard, a 3 s floor and a backoff on unchanged results
+(`services/shortcut_fetcher.py`). Re-run this before building on events for
+another toolkit -- GTK may behave differently.
 """
 
 import argparse
