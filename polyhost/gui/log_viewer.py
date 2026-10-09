@@ -9,6 +9,8 @@ from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTex
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QPlainTextEdit,
                               QPushButton, QTabWidget, QVBoxLayout, QWidget)
 
+from polyhost.services import problem_scan
+from polyhost.services.log_bundle import LOG_SOURCES
 from polyhost.util.log_util import LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -51,6 +53,33 @@ class _LogHighlighter(QSyntaxHighlighter):
         self.setCurrentBlockState(state)
 
 
+# The keyboard console's file name: its lines carry no level, so they need their own
+# highlighter (below). Taken from LOG_SOURCES rather than spelled out again here.
+_CONSOLE_FILENAME = next(s.filename for s in LOG_SOURCES if s.label == "keyboard-console")
+
+_SEVERITY_TO_FORMAT: dict[str, QTextCharFormat] = {}
+for _sev, _lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
+                   (problem_scan.SEVERITY_WARNING, logging.WARNING)):
+    _fmt = QTextCharFormat()
+    _fmt.setForeground(QColor(LEVEL_HEX_COLORS[_lvl]))
+    _SEVERITY_TO_FORMAT[_sev] = _fmt
+
+
+class _ConsoleHighlighter(QSyntaxHighlighter):
+    """Colours keyboard console lines that the problem scan would report.
+
+    Console lines are `[timestamp] text` with no level, so _LogHighlighter
+    leaves them all plain. Each line is classified on its own: there are no
+    continuation lines to inherit a colour, and inheriting would paint every line
+    after a warning. problem_scan.classify_console_line() decides, so the viewer
+    and the problem dialog agree on what counts."""
+
+    def highlightBlock(self, text: str) -> None:
+        fmt = _SEVERITY_TO_FORMAT.get(problem_scan.classify_console_line(text))
+        if fmt:
+            self.setFormat(0, len(text), fmt)
+
+
 class LogViewerDialog(QMainWindow):
     def __init__(self, log_files, collect_cb=None):
         super().__init__()
@@ -74,13 +103,15 @@ class LogViewerDialog(QMainWindow):
         # Keep highlighters alive — QSyntaxHighlighter is GC'd if not referenced.
         self._highlighters = []
 
-        for tab_name in log_files:
+        for tab_name, path in log_files.items():
             log_text = QPlainTextEdit(self)
             log_text.setReadOnly(True)
             log_text.setLineWrapMode(QPlainTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
 
-            self._highlighters.append(_LogHighlighter(log_text.document()))
+            is_console = os.path.basename(path) == _CONSOLE_FILENAME
+            highlighter = _ConsoleHighlighter if is_console else _LogHighlighter
+            self._highlighters.append(highlighter(log_text.document()))
 
             tab = QWidget()
             tab_layout = QVBoxLayout(tab)

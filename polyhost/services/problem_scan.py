@@ -186,6 +186,27 @@ def _clip(text: str) -> str:
     return text if len(text) <= MAX_LINE else text[:MAX_LINE - 1] + "…"
 
 
+# The firmware's own explicit markers, for a console line no curated pattern knows.
+# Whole words only: healthy lines such as `transport_fail=0 giveup=0` contain the
+# substrings, and a viewer that paints them teaches people to ignore the colour.
+_CONSOLE_MARKER_RE = re.compile(r"\b(?:WARNING|REJECTED|ERROR)\b|\b(?:Warning|Error):")
+
+
+def classify_console_line(line: str) -> str | None:
+    """Severity to SHOW a keyboard console line with, or None for a normal line.
+
+    For the log viewer's highlighting, not for the scan: a curated pattern gives
+    its own severity (its base one; escalation needs a history a single line does
+    not have), so the viewer and the problem dialog agree. A line no pattern knows
+    is a warning only when the firmware marked it so itself."""
+    for pat in CONSOLE_PATTERNS:
+        if pat.regex.search(line):
+            return pat.severity
+    if _CONSOLE_MARKER_RE.search(line):
+        return SEVERITY_WARNING
+    return None
+
+
 class ConsoleProblemScanner:
     """Reassemble console fragments and match whole lines against the patterns.
 

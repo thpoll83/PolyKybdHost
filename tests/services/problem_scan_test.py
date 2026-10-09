@@ -103,6 +103,26 @@ class ConsoleScannerTest(unittest.TestCase):
         found = s.feed("fw_staging: core1 relaunch timed out — RLE service down until reboot\n")
         self.assertEqual([p.key for p in found], ["core1_relaunch"])
 
+    # -- classify_console_line: what the log viewer colours ----------------------
+    def test_a_curated_pattern_colours_with_its_own_severity(self):
+        self.assertEqual(ps.classify_console_line(f"[t] {SLAVE}"), ps.SEVERITY_ERROR)
+        self.assertEqual(ps.classify_console_line(f"[t] {SPLIT_LOST}"), ps.SEVERITY_WARNING)
+        self.assertEqual(ps.classify_console_line(f"[t] {CORE1_STALL_OK}"), ps.SEVERITY_ERROR)
+
+    def test_a_firmware_marker_colours_an_unknown_line_as_a_warning(self):
+        for line in ("Warning: overlay mapping chunk did not reach the slave; repairing at enable.",
+                     "REJECTED overlay mapping report: bad width 3",
+                     "ERROR: something new"):
+            self.assertEqual(ps.classify_console_line(f"[t] {line}"), ps.SEVERITY_WARNING, line)
+
+    def test_healthy_lines_stay_plain(self):
+        # Substrings of the markers must not count: these are all a healthy board.
+        for line in (SPLIT_OK, "Eden idle 5226ms (frame 33ms, worst slice 3ms, 31 frames, core1)",
+                     "Status idle: 67 frames/60s, worst compose 6ms",
+                     "slave status (begin-pending): RPC FAILED \u2014 slave unresponsive",
+                     "errors=0 warnings=0"):
+            self.assertIsNone(ps.classify_console_line(f"[t] {line}"), line)
+
     # -- the status OLED: one failure is a glitch, a burst is a fault ------------
     def test_one_oled_failure_is_a_warning_that_the_default_level_does_not_raise(self):
         s = ps.ConsoleProblemScanner()
