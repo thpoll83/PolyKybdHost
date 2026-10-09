@@ -147,7 +147,10 @@ def _describe(root: Optional[Path], version: Optional[str]) -> str:
         marker = _read_marker(root)
         git = _git_state(root)
         if marker and marker.get("version") == version:
-            if marker.get("git_head", "") == (git or {}).get("head", ""):
+            # A HEAD either side could not read is no evidence against the
+            # marker: only two known, different commits mean git moved.
+            then, now = marker.get("git_head", ""), (git or {}).get("head", "")
+            if not (then and now) or then == now:
                 text = (f"release {marker.get('tag') or 'v' + version}, published "
                         f"{_date(marker.get('published_at', ''))}, installed by update "
                         f"{_date(marker.get('installed_at', ''))}")
@@ -169,4 +172,4 @@ def banner(root: Optional[Path] = None) -> str:
     """The startup banner line, shaped like the firmware's ``== … ==`` banner."""
     from polyhost._version import __protocol__, __version__
     return (f"== PolyKybdHost {__version__} P{__protocol__} | "
-            f"build {describe(root, __version__)} ==")
+            f"build {describe(root)} ==")

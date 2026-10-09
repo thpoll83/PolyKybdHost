@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from polyhost.services import build_info
@@ -97,6 +98,25 @@ class BuildInfoTest(unittest.TestCase):
     def test_a_corrupt_marker_is_ignored(self):
         (self.root / build_info.MARKER_NAME).write_text("{not json", encoding="utf-8")
         self.assertIn("unknown source", build_info.describe(self.root, "1.16.0"))
+
+    @unittest.skipUnless(_HAS_GIT, "git not installed")
+    def test_an_unreadable_HEAD_does_not_overrule_the_marker(self):
+        self._checkout()
+        self._marker()
+        with unittest.mock.patch.object(build_info, "_git", return_value=None):
+            text = build_info.describe(self.root, "1.16.0")
+        self.assertTrue(text.startswith("release v1.16.0"), text)
+
+    def test_the_startup_banner_fills_the_cache_the_dialog_reads(self):
+        build_info._cached = None
+        try:
+            with unittest.mock.patch.object(build_info, "_describe",
+                                            return_value="x") as work:
+                build_info.banner()
+                build_info.describe()
+            work.assert_called_once()
+        finally:
+            build_info._cached = None
 
     def test_the_default_description_is_computed_once_per_process(self):
         build_info._cached = None
