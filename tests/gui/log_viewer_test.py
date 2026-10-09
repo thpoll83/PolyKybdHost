@@ -70,6 +70,33 @@ class LogViewerTest(unittest.TestCase):
         kinds = sorted(type(h).__name__ for h in self.dlg._highlighters)
         self.assertEqual(kinds, ["_ConsoleHighlighter", "_LogHighlighter"])
 
+    def _console_colours(self, text):
+        """Write `text` as the console log, reload, and return each line's colour."""
+        with open(self.console, "w", encoding="utf-8") as f:
+            f.write(text)
+        self.dlg.load_log()
+        self.dlg.tab_widget.setCurrentIndex(1)
+        self.app.processEvents()
+        doc = self.dlg.log_text["Console"].document()
+        colours = []
+        for i in range(doc.blockCount() - 1):   # the file ends with a newline
+            fmts = doc.findBlockByNumber(i).layout().formats()
+            colours.append(fmts[0].format.foreground().color().name() if fmts else None)
+        return colours
+
+    def test_the_boot_banner_block_is_cyan_and_a_warning_inside_it_stays_orange(self):
+        cyan, orange = lv._BANNER_FORMAT.foreground().color().name(), "#ff8700"
+        colours = self._console_colours(
+            "[t] Stop idle.\n"
+            "[t] == PolyKybd Split72 1.8.0 P22 HW0x0320 | left master | build b@h 2026 ==\n"
+            "[t]    link: vbus_pin=1 transport_connected=1\n"
+            "[t]    hand: LEFT (flash stamp) slot=1/2 writer=0x00\n"
+            "[t]    apply: written image DIFFERS at offset 4 - WARNING\n"
+            "[t]    clk: sys=200000000Hz vreg_vsel=0xC\n"
+            "[t] Eden idle 5226ms (frame 33ms, core1)\n"
+            "[t]    not banner: indented, but after a normal line\n")
+        self.assertEqual(colours, [None, cyan, cyan, cyan, orange, cyan, None, None])
+
     # -- search ------------------------------------------------------------------
     def test_typing_counts_the_matches_case_insensitively(self):
         self.assertEqual(self._search("0x3e5"), "2 of 2")

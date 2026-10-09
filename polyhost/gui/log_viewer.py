@@ -67,6 +67,17 @@ for _sev, _lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
     _SEVERITY_TO_FORMAT[_sev] = _fmt
 
 
+# The firmware's boot banner, `== PolyKybd Split72 1.8.0 … | build <branch>@<hash> … ==`,
+# then its detail lines, each indented three spaces (`   link:`, `   hand:`, `   clk:`,
+# `   intl:`, `   keymap:`, `   apply:` …). Coloured as one block so the build
+# identity stands out in a long log.
+_BANNER_RE = re.compile(r"^\[[^\]]*\] == .* ==\s*$")
+_BANNER_DETAIL_RE = re.compile(r"^\[[^\]]*\]    \S")
+_BANNER_FORMAT = QTextCharFormat()
+_BANNER_FORMAT.setForeground(QColor("#00acc1"))   # cyan, readable on light & dark
+_IN_BANNER = 1   # block state: this line belongs to a banner block
+
+
 class _ConsoleHighlighter(QSyntaxHighlighter):
     """Colours keyboard console lines that the problem scan would report.
 
@@ -74,10 +85,17 @@ class _ConsoleHighlighter(QSyntaxHighlighter):
     leaves them all plain. Each line is classified on its own: there are no
     continuation lines to inherit a colour, and inheriting would paint every line
     after a warning. problem_scan.classify_console_line() decides, so the viewer
-    and the problem dialog agree on what counts."""
+    and the problem dialog agree on what counts. The boot banner block is cyan;
+    that is the one colour that carries state across lines."""
 
     def highlightBlock(self, text: str) -> None:
+        in_banner = bool(_BANNER_RE.match(text)) or (
+            self.previousBlockState() == _IN_BANNER and bool(_BANNER_DETAIL_RE.match(text)))
+        self.setCurrentBlockState(_IN_BANNER if in_banner else 0)
+        # A problem line keeps its warning/error colour, inside a banner block too.
         fmt = _SEVERITY_TO_FORMAT.get(problem_scan.classify_console_line(text))
+        if fmt is None and in_banner:
+            fmt = _BANNER_FORMAT
         if fmt:
             self.setFormat(0, len(text), fmt)
 
