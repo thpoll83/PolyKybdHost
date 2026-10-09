@@ -83,6 +83,12 @@ and relative links were adjusted to suit a standalone file.
     a PR and after each push that matters**, and treat a PR with no request as
     unreviewed by CodeRabbit, whatever its status rows say. The setting lives in
     the CodeRabbit org UI ("Configuration used: Organization UI"), not in the repo.
+  - ⚠️ **`@coderabbitai review` in the PR BODY does nothing; it must be a
+    COMMENT.** host#340 (2026-10-09) was opened with the request as the last line
+    of its body: CodeRabbit answered *"Review skipped — Auto reviews are
+    disabled"* 11 s later, and the review started only when the same text was
+    posted as a comment 17 s after that. A body line reads as a request and is
+    not one, so post the comment right after `create_pull_request`.
   **The full field guide — which bot goes quiet in which disguise, the sticky
   walkthrough, the Merge Risk sha, the false `✅ Addressed in <sha>` attribution,
   the quota shapes and the rate-limit arithmetic — is the `triage-pr-review`

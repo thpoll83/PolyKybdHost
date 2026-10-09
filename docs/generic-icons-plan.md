@@ -134,6 +134,38 @@ degrade to drawing nothing and logging which it was.
 ⚠️ This is the real coverage ceiling of the whole feature, and it is far below
 the catalog's. Effort spent on name matching is effort not spent here.
 
+**Qt answers in a third format, and on Plasma it is not on the bus at all
+until asked** (measured on Kate, KDE Plasma, 2026-10-05):
+
+* **The format is one display string**, `Ctrl+N` or `Ctrl+Shift+F`, with no
+  `;` and no `<…>`. When the item has no shortcut, the same field carries its
+  MNEMONIC instead (`Alt+R` for "&Recent"), so an Alt+letter whose letter is
+  in the label is a mnemonic, not a shortcut. `pick_binding` routes a string
+  with neither `;` nor `<` to `_pick_qt_binding`, which keeps menu-item roles
+  only, refuses multi-chord `Ctrl+K, Ctrl+D` sequences, and keeps an Alt
+  mnemonic only on a direct child of the `menu bar`. Key names are Qt's
+  (`PgDown`, `Del`, and German `Strg` on a German desktop), which is why
+  `parse_accel` falls back to `parse_win_accel`.
+* ⚠️ **A Qt app joins the AT-SPI bus only while `org.a11y.Status.IsEnabled`
+  is true, and Plasma leaves it false** unless a screen reader runs. GTK
+  registers regardless, so GNOME hid this. Kate was simply absent from
+  `--list`: no shortcut icons and no ESC mark. The host now sets the flag
+  once per process (`ensure_accessibility_enabled`, setting
+  `shortcut_enable_accessibility`, default on); `ScreenReaderEnabled` stays
+  untouched, so no screen reader starts. `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1`
+  forces one app on by hand, which is how the cause was proven.
+* ⚠️ **`kate &` does not start a Kate** when one is running: it hands the
+  request to the running instance over D-Bus and exits, so a test started
+  with a new environment variable silently ran in the old process. `kate -n`
+  forces a new instance.
+* Kate scored 0 harvested shortcuts before the Qt parser, 59 after, and 108
+  once a document is open (see E15).
+
+`tools/atspi_raw_dump.py <app> [--all-nodes]` prints the unfiltered
+GetKeyBinding strings, so "the app exposes nothing" and "the app exposes a
+format we reject" can be told apart; `shortcut_probe.py` reports only what the
+parser accepted. The `probe-linux-shortcut-harvest` skill is the full loop.
+
 ### A.4 Binarisation: error diffusion over white
 
 `services/icon_binarise.py` chooses a 1-bit reading per icon from four
@@ -916,6 +948,56 @@ when the bus is down. The other was a **vacuous fixture** — the sys.path test
 used `/usr/lib/python3/dist-packages`, which is already on `sys.path` in this
 container, so it compared a path against itself and passed with the cleanup
 deleted. It now uses a marker directory and asserts it is absent first.
+
+### E15 — an app's menus change under a cached answer (#340)
+
+The harvest was cached once per app per process, empty answers included.
+**Kate's welcome page has no Save, Undo or Copy**: its editor component adds
+them only when a document opens, so a Kate first seen on the welcome page kept
+59 shortcuts for the life of the process, while the same Kate with a document
+exposes 108.
+
+**Accessibility events cannot say when to re-read.** Measured with
+`tools/atspi_event_probe.py kate` over 65 s (new document, close, new
+document, type nine characters, save):
+
+* `object:children-changed`: **none**, not even when the menus gained
+  Save/Undo/Copy. Qt does not announce a menu rebuild over AT-SPI;
+* the frame title changed on welcome → document and back, **and on every
+  keystroke** in an unsaved document (Kate previews the first words): nine
+  changes in 0.6 s;
+* the rest was noise: about 20 status-bar name changes per view switch, and
+  `window:activate` in duplicate pairs.
+
+So the fetcher re-harvests when the **window title** changes, which the core
+already has (`OverlayHandler.focused_title()`), and serves the old answer
+until the new one lands. Four guards bound the cost (`shortcut_fetcher.py`):
+
+1. one harvest in flight per app, so a typing burst queues one follow-up;
+2. a 3 s floor between re-harvests of one app, whatever they returned, for a
+   title that cycles in seconds (a clock, a progress counter);
+3. a backoff when a re-harvest finds the same shortcuts, 5 s doubling to
+   2 min, reset by a changed answer. A terminal or browser settles at one walk
+   every 2 min;
+4. a **new pid** re-harvests once, past the title test and the floor (not the
+   backoff): a second Kate inherited the first one's 20 s backoff and showed
+   the first one's 97-shortcut answer on its own welcome page for 12 s.
+
+⚠️ **Three traps the first version had, all found in review** (CodeRabbit and
+Greptile, independently): a harvest made under no title recorded nothing, so a
+title appearing later never re-harvested (it records `""` now,
+`focused_title()` never returns `""`); a did-not-look `None` result recorded
+the requested title and cleared the restart mark, so the stale answer stuck
+(`None` now only moves the backoff); and an app restarted during an in-flight
+harvest had its pending re-read cleared by the OLD process's answer (the pid is
+read when the harvest starts and compared when it ends).
+
+Measured on hardware: welcome → Untitled switched 59 → 108 shortcuts about
+0.5 s after the title change, and typing produced one re-harvest. Forwarded
+windows pass no title and never re-harvest; their answer is relayed.
+
+⚠️ GTK may behave differently; re-run the event probe before building on
+events for another toolkit.
 
 ## Part F — what could still fail
 

@@ -190,3 +190,28 @@ the letter move itself (Ctrl+Z's image on the key that types z under QWERTZ)
 no longer happens with the MRU pool; if it is wanted, the host would do it in the
 display mapping it already sends.
 
+---
+
+## Raise the 48-icon cap for one app
+
+**Status:** deferred, no work started. Found on hardware 2026-10-09 (#340).
+
+`MAX_SLOTS = 48` (`polyhost/services/shortcut_overlays.py`) was set "to stop a
+pathological app, not to ration a normal one". Kate with a document open is a
+normal app and exposes **108** shortcuts; the planner keeps the 48 with the
+highest confidence and logs the rest as `over the 48-icon cap for one app`.
+54 were dropped in the field log, among them F1 (Help), F2 (Rename) and
+Ctrl+Shift+F (Find in Files).
+
+**What it costs to raise.** Each slot is a render, a pool slot and, on a pool
+miss, an upload; the cap bounds the burst on an app switch. **What would
+settle it:** the app-switch cost at 48 vs ~100 slots on hardware
+(`measure-firmware-perf` measures the overlay burst), and whether the dropped
+ones are worth it. Ranking by confidence already drops the guesswork first, so
+the question is only whether the sure ones past 48 are worth the burst.
+
+**Also unexplained from the same log:** the first Kate instance reported
+**97** shortcuts on its welcome page, where a second instance reported 59.
+Probably state the first instance carried from an earlier document, but nobody
+has looked. `tools/atspi_raw_dump.py kate --all-nodes` on a fresh and a reused
+instance would answer it.
