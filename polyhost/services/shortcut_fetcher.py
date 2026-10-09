@@ -40,6 +40,11 @@ that transition. Two guards keep the cost bounded, both measured on Kate with
   -- the tick re-asks continuously, so it is taken once the floor passes.
   Welcome -> document is at most 3 s late.
 
+A NEW PID for a cached app re-harvests once, past all three guards and even
+under an unchanged title: a fresh instance starts on its own page, and a
+second Kate inherited the first one's backoff and showed its document
+shortcuts on the welcome page for 12 s (Plasma, 2026-10-09).
+
 The old answer keeps being served until the new one lands. An event listener
 was measured as the alternative and rejected: Qt emits no
 object:children-changed when its menus are rebuilt.
@@ -125,6 +130,11 @@ class ShortcutIconFetcher:
         self._drew: dict[str, frozenset] = {}
         self._backoff: dict[str, tuple[float, float]] = {}
         self._harvested_at: dict[str, float] = {}
+        # Keys whose app came back under a NEW pid since their last harvest.
+        # One re-harvest each, past the title test, the floor and the backoff:
+        # a fresh instance starts on its own page (Kate's welcome page), and
+        # the old instance's backoff kept its answer on screen for 12 s.
+        self._restarted: set[str] = set()
 
     # ------------------------------------------------------------------
 
@@ -161,15 +171,20 @@ class ShortcutIconFetcher:
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
-        if pid is not None:
-            # ⚠️ Keyed on the app alone and deliberately NOT part of the cache
-            # key, exactly like `_harvested`: a pid says WHICH PROCESS to read,
-            # and the answer does not depend on it -- the same app restarted
-            # under a new pid exposes the same shortcuts. Putting it in the key
-            # would re-harvest every app on every restart for no new answer.
-            self._pids[app] = int(pid)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
+            if pid is not None:
+                # ⚠️ Keyed on the app alone and deliberately NOT part of the
+                # cache key, exactly like `_harvested`: a pid says WHICH
+                # PROCESS to read. A new pid re-harvests once (`_restarted`)
+                # rather than starting a new cache entry, so the old answer
+                # stays on screen until the new one lands.
+                previous_pid = self._pids.get(app)
+                self._pids[app] = int(pid)
+                if previous_pid is not None and previous_pid != int(pid):
+                    prefix = f"{app}\x00"
+                    self._restarted.update(k for k in self._overlays
+                                           if k.startswith(prefix))
             if title is not None:
                 self._titles[app] = title
             if key in self._overlays:
@@ -187,7 +202,11 @@ class ShortcutIconFetcher:
 
     def _wants_reharvest(self, key: str, title: str | None) -> bool:
         """Under `_lock`: has the title moved on from the cached answer's?"""
-        if title is None or key in self._queue or key in self._inflight:
+        if key in self._queue or key in self._inflight:
+            return False
+        if key in self._restarted:
+            return True
+        if title is None:
             return False
         harvested_under = self._harvest_title.get(key)
         if harvested_under is None or harvested_under == title:
@@ -205,6 +224,11 @@ class ShortcutIconFetcher:
         backend that keeps failing for a focused app also backs off.
         """
         previous = self._drew.get(key)
+        if key in self._restarted:
+            # A new process: its answer is a first answer, not a repeat.
+            self._restarted.discard(key)
+            self._backoff.pop(key, None)
+            previous = None
         self._harvested_at[key] = _now()
         if overlays is not None:
             self._overlays[key] = overlays
@@ -234,6 +258,7 @@ class ShortcutIconFetcher:
             self._drew.clear()
             self._backoff.clear()
             self._harvested_at.clear()
+            self._restarted.clear()
         self._told.clear()
 
     def stop(self):

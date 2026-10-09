@@ -813,8 +813,50 @@ class TitleReharvestTest(unittest.TestCase):
         self.first()
         self.fetcher.forget()
         self.assertEqual((self.fetcher._harvest_title, self.fetcher._drew,
-                          self.fetcher._backoff, self.fetcher._harvested_at),
-                         ({}, {}, {}, {}))
+                          self.fetcher._backoff, self.fetcher._harvested_at,
+                          self.fetcher._restarted),
+                         ({}, {}, {}, {}, set()))
+
+    def ask_as(self, pid, title):
+        return self.fetcher.overlays_for("kate", pid=pid, title=title)
+
+    def test_a_NEW_pid_re_harvests_past_the_backoff_and_the_title(self):
+        """A second Kate inherited the first one's 20 s backoff and showed its
+        97 shortcuts on the welcome page for 12 s (Plasma, 2026-10-09)."""
+        self.answers = [DOCUMENT, DOCUMENT, DOCUMENT, WELCOME]
+        self.ask_as(100, "Welcome - Kate")
+        self.idle()
+        for t in ("t1", "t2"):             # two unchanged: backoff 10 s
+            self.now += 20
+            self.ask_as(100, t)
+            self.idle()
+        self.assertEqual(len(self.calls), 3)
+        self.now += 1                      # inside the floor AND the backoff,
+        self.assertEqual(self.ask_as(200, "t2"), DOCUMENT)   # same title
+        self.idle()
+        self.assertEqual(len(self.calls), 4)
+        self.assertEqual(self.ask_as(200, "t2"), WELCOME)
+
+    def test_the_new_pid_answer_is_a_FIRST_answer(self):
+        self.answers = [DOCUMENT, DOCUMENT, WELCOME]
+        self.ask_as(100, "a")
+        self.idle()
+        self.now += 20
+        self.ask_as(100, "b")              # unchanged: backoff 5 s
+        self.idle()
+        self.ask_as(200, "b")
+        self.idle()
+        self.assertEqual(self.fetcher._backoff, {})
+        self.assertEqual(self.fetcher._restarted, set())
+
+    def test_the_SAME_pid_is_not_a_restart(self):
+        self.ask_as(100, "a")
+        self.idle()
+        for _ in range(3):
+            self.now += 60
+            self.ask_as(100, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
 
 
 if __name__ == "__main__":
