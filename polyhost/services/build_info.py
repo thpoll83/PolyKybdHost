@@ -12,9 +12,10 @@ There are two sources, and the order matters:
   ``.git`` alone (``updater.EXCLUDES``). The installer clones the repo, so most
   installs have a ``.git`` whose HEAD is OLDER than the files after the first
   update. Reading git there would name a commit that is not running. So the
-  updater writes :data:`MARKER_NAME` after a successful apply, and the marker
-  wins while its version still matches ``__version__`` and git has not moved
-  since (a ``git pull`` after the update makes git the newer source again).
+  updater writes :data:`MARKER_NAME` after a successful apply, with the git
+  HEAD it found. The marker wins while its version still matches
+  ``__version__`` and HEAD is still that commit: any ``git pull`` or checkout
+  after the update makes git the source again, whatever its commit date.
 - Otherwise a ``.git`` checkout names the branch and commit, with ``*`` when the
   tracked files differ from HEAD, like the firmware's banner.
 
@@ -45,12 +46,14 @@ def install_root() -> Path:
 def write_release_marker(root: Path, tag: str, version: str,
                          published_at: str = "", name: str = "") -> None:
     """Record the release the updater just applied. Logged, never raised."""
+    git = _git_state(Path(root))
     data = {
         "tag": tag,
         "version": version,
         "published_at": published_at or "",
         "name": name or "",
         "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "git_head": (git or {}).get("head", ""),
     }
     try:
         (Path(root) / MARKER_NAME).write_text(json.dumps(data, indent=2) + "\n",
@@ -87,10 +90,10 @@ def _git_state(root: Path) -> Optional[dict]:
     """Branch, short hash, commit time and dirty flag of the checkout at ``root``."""
     if not (root / ".git").exists():
         return None
-    head = _git(root, "log", "-1", "--abbrev=10", "--format=%h%x00%ct%x00%D")
+    head = _git(root, "log", "-1", "--abbrev=10", "--format=%h%x00%H%x00%ct%x00%D")
     if not head:
         return {"error": "git unavailable or not a repository"}
-    sha, ctime, refs = (head.strip().split("\x00") + ["", "", ""])[:3]
+    sha, full, ctime, refs = (head.strip().split("\x00") + ["", "", "", ""])[:4]
     branch = "detached"
     for ref in refs.split(", "):
         if ref.startswith("HEAD -> "):
@@ -101,7 +104,7 @@ def _git_state(root: Path) -> Optional[dict]:
         committed = datetime.fromtimestamp(int(ctime), timezone.utc)
     except ValueError:
         committed = None
-    return {"branch": branch, "sha": sha, "committed": committed,
+    return {"branch": branch, "sha": sha, "head": full, "committed": committed,
             "dirty": bool(status and status.strip()),
             "dirty_known": status is not None}
 
@@ -119,8 +122,24 @@ def _date(text: str) -> str:
     return when.strftime("%Y-%m-%d") if when else "?"
 
 
+_cached: Optional[str] = None
+
+
 def describe(root: Optional[Path] = None, version: Optional[str] = None) -> str:
-    """One line naming the running build, e.g. ``release v1.16.0 (published …)``."""
+    """One line naming the running build, e.g. ``release v1.16.0 (published …)``.
+
+    The default call is computed once per process and then cached: the code that
+    is running does not change after start, and the report dialog asks for this
+    on the GUI thread, where a slow git must not cost it seconds."""
+    global _cached
+    if root is None and version is None:
+        if _cached is None:
+            _cached = _describe(None, None)
+        return _cached
+    return _describe(root, version)
+
+
+def _describe(root: Optional[Path], version: Optional[str]) -> str:
     try:
         from polyhost._version import __version__
         version = version or __version__
@@ -128,10 +147,7 @@ def describe(root: Optional[Path] = None, version: Optional[str] = None) -> str:
         marker = _read_marker(root)
         git = _git_state(root)
         if marker and marker.get("version") == version:
-            installed = _parse_time(marker.get("installed_at", ""))
-            moved = (git and git.get("committed") and installed
-                     and git["committed"] > installed)
-            if not moved:
+            if marker.get("git_head", "") == (git or {}).get("head", ""):
                 text = (f"release {marker.get('tag') or 'v' + version}, published "
                         f"{_date(marker.get('published_at', ''))}, installed by update "
                         f"{_date(marker.get('installed_at', ''))}")

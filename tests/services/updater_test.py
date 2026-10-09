@@ -1301,7 +1301,8 @@ class TestInstallerPreflight(unittest.TestCase):
                  mock.patch.object(updater, "download_and_extract", return_value=Path("/x")), \
                  mock.patch.object(updater, "apply_update", return_value=[]):
                 self._make(rec).run()
-            marker = json.loads((Path(root) / build_info.MARKER_NAME).read_text())
+            marker = json.loads((Path(root) / build_info.MARKER_NAME)
+                                .read_text(encoding="utf-8"))
         self.assertEqual(rec.names[-1], "finished_ok")
         self.assertEqual((marker["tag"], marker["version"]), ("v1.0.0", "1.0.0"))
 

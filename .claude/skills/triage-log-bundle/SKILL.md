@@ -55,7 +55,9 @@ as `PolyHost build` in `diagnostics.txt`:
 ⚠️ **A cloned install's `.git` goes stale after the first in-app update** — the
 updater copies the release over the files and never touches `.git`. So the
 `release …` form wins while `.polyhost-release.json` (written by the updater)
-matches the running version, and the line adds `(git …@… predates the files)`.
+matches the running version AND git HEAD is still the commit the updater found,
+and the line adds `(git …@… predates the files)`. Any pull or checkout after the
+update hands the line back to git. Each process computes the line once, at start.
 `*` means tracked files differ from HEAD. A `launching` line with no
 `== PolyKybdHost` line after it is a host older than this banner.
 
