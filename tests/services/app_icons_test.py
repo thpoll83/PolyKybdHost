@@ -1152,8 +1152,8 @@ class RasteriserMissingTest(unittest.TestCase):
     nothing)."""
 
     def setUp(self):
-        ai._RASTERISER_WARNED = False
-        self.addCleanup(setattr, ai, "_RASTERISER_WARNED", False)
+        ai._warn_rasteriser_missing.cache_clear()
+        self.addCleanup(ai._warn_rasteriser_missing.cache_clear)
 
     def _draw_without_rasterisers(self):
         from polyhost.services import svg_raster

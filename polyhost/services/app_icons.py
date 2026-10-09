@@ -61,6 +61,7 @@ dimension it was never short of.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import logging
 import os
@@ -538,9 +539,7 @@ def _alpha(svg_path: str, size: int):
         return None
 
 
-_RASTERISER_WARNED = False
-
-
+@functools.lru_cache(maxsize=None)
 def _warn_rasteriser_missing(reason: str) -> None:
     """ONE warning per process: without svg_raster every SVG mark is lost.
 
@@ -548,11 +547,11 @@ def _warn_rasteriser_missing(reason: str) -> None:
     leaves only bitmap OS icons in the contest -- Chrome drew its dithered
     OS icon over the shipped logo, and VS Code drew no mark at all (Plasma,
     2026-10-05). At DEBUG, per file, nobody connected it to a missing package.
+
+    The cache IS the "once": a module flag rebound through `global` read as
+    an unused variable to CodeQL. Keyed on the reason, which is one string
+    per process because it names a failed import.
     """
-    global _RASTERISER_WARNED
-    if _RASTERISER_WARNED:
-        return
-    _RASTERISER_WARNED = True
     log.warning("SVG program marks cannot be drawn: the built-in rasteriser "
                 "needs fontTools + freetype-py (%s). Every catalog and shipped "
                 "SVG mark is skipped until they are installed: "
