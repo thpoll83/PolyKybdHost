@@ -123,6 +123,16 @@ CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
     _p("core1_relaunch", r"core1 relaunch timed out", SEVERITY_ERROR,
        "The keyboard's second processor core did not restart; keycap images "
        "may stop updating until the keyboard is unplugged."),
+    # multicore_exec.c's stall recovery: core1 owed a decoded keycap image for
+    # 500 ms and was reset. Before that recovery existed the same stall shut the
+    # keyboard's command channel until a replug (field report 2026-10-09), so even
+    # a successful relaunch is a fault worth a report: one keycap image was lost.
+    _p("core1_stall_failed", r"WARNING core1 stalled: .*core1 relaunch FAILED", SEVERITY_ERROR,
+       "The keyboard's second processor core stopped and did not restart; keycap "
+       "images may stop updating until the keyboard is unplugged."),
+    _p("core1_stall", r"WARNING core1 stalled: .*core1 relaunched", SEVERITY_ERROR,
+       "The keyboard's second processor core stopped and was restarted; one keycap "
+       "image may look wrong until the next app switch."),
     _p("split_link_giveup", r"Split link: .*giveup=[1-9]", SEVERITY_WARNING,
        "Messages between the keyboard halves were lost after retries."),
     _p("eden_core1_timeout", r"Eden idle: core1 job for key \d+ timed out", SEVERITY_WARNING,

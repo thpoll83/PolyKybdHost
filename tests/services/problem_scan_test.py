@@ -20,6 +20,12 @@ STUCK = "oled_i2c: status display not responding: 3 writes in a row failed after
 SPLIT_OK = "Split link: 1200 tx crc_err=0 nack=0 transport_fail=0 giveup=0 err=0.0%"
 SPLIT_LOST = "Split link: 1200 tx crc_err=1 nack=0 transport_fail=2 giveup=3 err=0.4%"
 EDEN = "Eden idle: core1 job for key 7 timed out - rendering on core0"
+# The two forms of multicore_exec.c's core1_stall_report() line.
+CORE1_STALL_OK = ("WARNING core1 stalled: no answer for 512 ms (last cmd 0xcafe0004 arg 0x00410012, "
+                  "counts 17/16, entered 1) - core1 relaunched (recovery 1 since boot)")
+CORE1_STALL_FAILED = ("WARNING core1 stalled: no answer for 503 ms (last cmd 0xcafe0001 arg 0x00000000, "
+                      "counts 9/8, entered 1) - core1 relaunch FAILED, overlays degraded until reboot "
+                      "(recovery 2 since boot)")
 
 
 class ConsoleScannerTest(unittest.TestCase):
@@ -49,6 +55,25 @@ class ConsoleScannerTest(unittest.TestCase):
         s = ps.ConsoleProblemScanner()
         self.assertEqual(s.feed(SLAVE[:10]), [])
         self.assertEqual([p.key for p in s.feed(SLAVE[10:] + "\n")], ["slave_unresponsive"])
+
+    # -- core1 stall recovery (multicore_exec.c, core1_stall_report) -----------
+    def test_a_core1_stall_that_was_recovered_is_an_error(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed(f"{CORE1_STALL_OK}\n")
+        self.assertEqual([(p.key, p.severity) for p in found],
+                         [("core1_stall", ps.SEVERITY_ERROR)])
+        self.assertIn("restarted", found[0].summary)
+
+    def test_a_core1_stall_whose_relaunch_failed_is_its_own_error(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed(f"{CORE1_STALL_FAILED}\n")
+        self.assertEqual([p.key for p in found], ["core1_stall_failed"])
+        self.assertIn("did not restart", found[0].summary)
+
+    def test_the_fw_staging_relaunch_line_is_not_a_core1_stall(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed("fw_staging: core1 relaunch timed out — RLE service down until reboot\n")
+        self.assertEqual([p.key for p in found], ["core1_relaunch"])
 
     # -- the status OLED: one failure is a glitch, a burst is a fault ------------
     def test_one_oled_failure_is_a_warning_that_the_default_level_does_not_raise(self):
