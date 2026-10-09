@@ -23,9 +23,13 @@ from polyhost.services.shortcut_source.model import (
 # ⚠️ There is deliberately NO cap on how many shortcuts one app gets. A
 # 48-slot cap used to sit here with no measurement behind it, and the first app
 # to reach it was an ordinary one: Kate with a document open matches 108, and
-# the cap dropped F1, F2 and Find in Files (2026-10-09). The plan is already
-# bounded by the keyboard: one slot per (modifier, key), which is what `best`
-# below keys on, and the keyboard's pool holds far more images than that.
+# the cap dropped F1, F2 and Find in Files (2026-10-09). What a plan costs is
+# its DISTINCT images, not its keys: `render` draws one mask per concept, and
+# identical images share one pool slot, so Kate's 48 drawn keys were 34 images
+# (23 of them already in icons.plyi). Positions are bounded by one slot per
+# (modifier, key), which is what `best` below keys on; images by the concepts
+# the lexicon and the derived names can reach. Neither bound promises a plan
+# fits the 600-image pool, which is an MRU cache that evicts older batches.
 
 # Below this a label is better left alone: the keycap already says what the key
 # is, and a wrong icon is worse than none (the same reasoning that keeps
