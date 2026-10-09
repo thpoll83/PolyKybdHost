@@ -142,6 +142,9 @@ GET_ID_GENERATION_BLOCK_MIN = 16
 UNICODE_VOLATILE_MIN = 17
 GUI_COMBO_MIN = 12
 MAPPING_FLAGS_MIN = 21
+# cmd 33's width byte bit 7 draws the report's pairs dimmed (v23). v21/v22 mask
+# the width with 0x1F, so they ignore it and draw those positions at full strength.
+MAPPING_DIM_MIN = 23
 ICON_BUNDLE_MIN = 20
 
 _IMAGE_CMDS = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
@@ -346,6 +349,8 @@ class MockFirmware:
         self.prc_records: list[bytes] = []
         self.image_reports = 0
         self.mapping_reports = 0
+        # Display positions drawn dimmed (display_dim_bits); cleared with the usage bits.
+        self.dim_positions: set[int] = set()
         self.fill_reports = 0
         self.control_reports = 0
         self._burst_images = 0
@@ -566,10 +571,12 @@ class MockFirmware:
             self.sim._store.clear()
         if flags & USAGE_RESET:
             self.sim.reset_usage()
+            self.dim_positions.clear()
         if flags & MAPPING_RESET:
             self.sim.reset_mapping()
         if flags & MAPPING_ALLSET:
             self.sim.set_all_usage()
+            self.dim_positions.clear()
         self.overlay_flags &= ~ACTION_FLAGS
         self.control_reports += 1
 
@@ -594,7 +601,7 @@ class MockFirmware:
     def _map_index_count(self) -> int:
         return NUM_OVERLAYS * (16 if self.protocol >= GUI_COMBO_MIN else 9)
 
-    def _apply_pairs(self, data: bytes, width: int) -> None:
+    def _apply_pairs(self, data: bytes, width: int, dim: bool = False) -> None:
         """set_packed_overlay_mapping: values pair up in order; a pair with an
         out-of-range `from` is padding (silent), an out-of-pool `to` is refused."""
         values = _read_values(data, width)
@@ -603,6 +610,11 @@ class MockFirmware:
             frm, to = values[i], values[i + 1]
             if frm < self._map_index_count() and to < capacity:
                 self.sim.set_mapping(frm, to)
+                # Every pair sets the bit either way (set_display_dim).
+                if dim:
+                    self.dim_positions.add(frm)
+                else:
+                    self.dim_positions.discard(frm)
 
     def _mapping_fixed(self, p):
         self.mapping_reports += 1
@@ -623,7 +635,8 @@ class MockFirmware:
         if self.protocol >= MAPPING_FLAGS_MIN and flags & 0x40:
             self._flags_apply(MIRROR_OVERLAYS | USAGE_RESET | MAPPING_RESET)
             self.control_reports -= 1          # rode on the mapping report
-        self._apply_pairs(p[3:REPORT_SIZE], width)
+        dim = self.protocol >= MAPPING_DIM_MIN and bool(flags & 0x80)
+        self._apply_pairs(p[3:REPORT_SIZE], width, dim)
         if self.protocol >= MAPPING_FLAGS_MIN and flags & 0x20:
             self.overlay_flags |= DISPLAY_OVERLAYS
             self._end_burst()
