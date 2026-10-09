@@ -78,3 +78,8 @@ bindings:
   - { key: B, mods: [CMDCTRL, SHIFT], icon: subscript.png,    label: Subscript,       source: "ms-fluent/Text Subscript (MIT)" }
   - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special", source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: F11, mods: [CMDCTRL, SHIFT], icon: updatestyle.png, label: "Update style", source: "ms-fluent/Arrow Sync (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: W, mods: [CMDCTRL],        label: "Close",     source: "concept (shared Fluent)" }
+  - { key: F, mods: [CMDCTRL, SHIFT], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [GUI, SHIFT], only: [macos], label: "Redo", source: "concept (shared Fluent)" }

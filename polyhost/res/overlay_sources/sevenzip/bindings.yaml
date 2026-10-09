@@ -106,3 +106,13 @@ bindings:
   - { key: F2,    mods: [ALT], icon: addrright.png,  label: "Right panel path", source: "ms-fluent/Panel Right (MIT)" }
   - { key: F12,   mods: [ALT], icon: history.png,    label: "Folder history",   source: "ms-fluent/History (MIT)" }
   - { key: UP,    mods: [ALT], icon: otherpanel.png, label: "Same folder, other panel", source: "ms-fluent/Arrow Export Up (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # From CPanel::OnKeyDown (CPP/7zip/UI/FileManager/PanelKey.cpp): Ctrl+A ->
+  # SelectAll, Ctrl+N -> CreateFile (menu: "Create File  Ctrl+N"), Ctrl+W ->
+  # IDCLOSE (closes the 7-Zip window). Ctrl+X and Ctrl+V are caught there too but
+  # EditCut()/EditPaste() are EMPTY (PanelMenu.cpp) -- they do nothing, so they
+  # are not drawn. Ctrl+C / Ctrl+Z / Ctrl+R keep their 7-Zip meanings above.
+  - { key: A, mods: [CTRL], label: "Select all", source: "concept (shared Fluent)" }
+  - { key: N, mods: [CTRL], label: "New", source: "concept (shared Fluent)" }
+  - { key: W, mods: [CTRL], label: "Close", source: "concept (shared Fluent)" }

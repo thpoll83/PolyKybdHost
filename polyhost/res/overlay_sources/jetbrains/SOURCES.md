@@ -114,3 +114,21 @@ keymap; `bindings.yaml` gives GNOME's chords `only: [linux_gnome]`.
   editor gives to Replace.
 - Two-stroke chords and double-Shift (Search Everywhere) cannot be drawn on a
   keycap.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| F3 — Find next | Windows + Linux (all three Linux keymaps) | https://www.jetbrains.com/help/idea/reference-keymap-win-default.html ("Find Next / Move to Next Occurrence F3"); `$default.xml` `FindNext` = `F3`, not overridden by `Default for XWin/GNOME/KDE.xml` |
+| Cmd+G — Find next | macOS | https://www.jetbrains.com/help/idea/reference-keymap-mac-default.html ("Find Next / Move to Next Occurrence ⌘ G") |
+
+Deliberately NOT added:
+
+- **Ctrl+O**: Override methods (Win/Linux), not Open. **Ctrl+N**: Go to class. **Ctrl+P**:
+  Parameter info. **Ctrl+W**: Extend selection. **Ctrl+Y**: Delete line. None is
+  labelled with the standard action.
+- **Print**: no default chord. **Zoom**: font size is Alt+Shift+. / Alt+Shift+, (already
+  drawn); no Ctrl+= zoom.
+- Save/Undo/Redo/Cut/Copy/Paste/Select all/Find/Replace/Close tab were already drawn.

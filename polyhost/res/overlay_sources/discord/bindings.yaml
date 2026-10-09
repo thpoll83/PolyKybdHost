@@ -78,3 +78,14 @@ bindings:
   # Windows chords with no confirmed Mac form.
   - { key: "'",  mods: [CTRL],      except: [macos], icon: call.png,         label: "Start call" }
   - { key: A,    mods: [CTRL, ALT], except: [macos], icon: voicechannel.png, label: "Return to voice channel" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # The message box's standard text-editing chords (Chromium editing on
+  # Windows/Linux, the Edit menu on macOS). See SOURCES.md. Deliberately NOT
+  # added: Save/Open/New/Print/Redo/Find/Close/Zoom/Reload -- not documented
+  # by the app as defaults, or already bound above.
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }

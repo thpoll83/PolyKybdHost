@@ -192,3 +192,12 @@ Remapped on macOS: **none**. Dropped on macOS: **none**.
 |---|---|---|
 | Hide extras | ⌘H | **macOS reserved (Hide app).** Adobe documents ⌘H; on first use Photoshop asks whether ⌘H should hide Photoshop or Hide Extras. ⌃⌘H is the alternate if the user chose the Mac standard. Drawn as ⌘H. |
 | Curves | ⌘M | **macOS reserved (Minimize)**, but Photoshop claims ⌘M for Curves by default. Drawn as ⌘M. |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Print/Undo/Redo (Ctrl+Shift+Z,
+"Redo / Step fwd")/Cut/Copy/Paste/Select all and Ctrl+= / Ctrl+- zoom were all
+already drawn.
+
+- **Ctrl+Y is NOT Redo** in Photoshop — it is Proof Colors — so no Ctrl+Y cell.
+- **Find / Find next / Replace**: Photoshop has no document find with a default chord.

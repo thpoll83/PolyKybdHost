@@ -77,3 +77,20 @@ name (`Microsoft Word`) resolves to this stanza is decided by
 | Clear fmt | Ctrl+Q | — | dropped, *uncertain*: not in either scrape; ⌘Q quits Word |
 | Change case | Shift+F3 | ⇧F3 | unchanged (listed on Mac) |
 | Spelling | F7 | F7 | unchanged (listed in the Mac function-key table; also ⌘⌥L) |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Shift+F4 — Find next ("repeats the last Find or Go To action") | Windows (+Linux set) | https://support.microsoft.com/en-us/office/keyboard-shortcuts-in-word-95ef89dd-7142-4b50-afb2-f762f663ceb2 |
+| Cmd+F — Find | macOS | same page, Mac table ("Command+F: Find text") — the existing `CTRL+F` Find is literal Ctrl on macOS |
+
+Deliberately NOT added:
+
+- **Zoom (Ctrl+Plus / Ctrl+Minus)**: Ctrl+= is Subscript and Ctrl+- the optional hyphen
+  (both already drawn), so the "Plus sign" chord cannot be placed on a cell without
+  contradicting them.
+- **Find next on macOS**: the Mac table's Shift+F4 row is not clearly a Mac chord.
+- Close and Replace (Ctrl+H, also Mac's Control+H) were already drawn.

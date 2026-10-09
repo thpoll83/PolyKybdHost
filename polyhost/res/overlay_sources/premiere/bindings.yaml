@@ -94,3 +94,6 @@ bindings:
 
   # --- Ctrl+Alt (G channel of the combo file) ---
   - { key: N, mods: [CMDCTRL, ALT], icon: newproject.png, label: "New project", source: "ms-fluent/Document Add (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: W, mods: [CMDCTRL], label: "Close", source: "concept (shared Fluent)" }

@@ -96,3 +96,20 @@ bindings:
 
   # --- no modifier ---
   - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Default (OSX).sublime-keymap. Cmd+X ("Cut line"), Cmd+Y (Redo), Cmd+F,
+  # Cmd+Option+F (Replace) and Cmd+W are already above and are NOT repeated.
+  # Sublime has no Print and no default Reload/Revert chord.
+  - { key: S, mods: [GUI], label: "Save", source: "concept (shared Fluent)" }
+  - { key: O, mods: [GUI], label: "Open", source: "concept (shared Fluent)" }
+  - { key: N, mods: [GUI], label: "New", source: "concept (shared Fluent)" }
+  - { key: C, mods: [GUI], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [GUI], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [GUI], label: "Undo", source: "concept (shared Fluent)" }
+  # super+shift+z is `redo`; Cmd+Y (above) is `redo_or_repeat`.
+  - { key: Z, mods: [GUI, SHIFT], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [GUI], label: "Select all", source: "concept (shared Fluent)" }
+  - { key: G, mods: [GUI], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: EQUAL, mods: [GUI], label: "Zoom in", source: "concept (shared Fluent)" }
+  - { key: MINUS, mods: [GUI], label: "Zoom out", source: "concept (shared Fluent)" }

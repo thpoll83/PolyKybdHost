@@ -111,7 +111,8 @@ class TestReportWindow(unittest.TestCase):
         rh = self._handler(mapping)
         rh.report_window(9, "chrome", "A board", url="https://miro.com/app/board/x")
         self.assertTrue(rh.remote_changed({}))
-        self.assertEqual(rh.get_overlay_data(), "miro")
+        # the site layers over the browser: browser first, site wins its keys
+        self.assertEqual(rh.get_overlay_data(), ["browser", "miro"])
 
     def test_url_change_on_the_same_window_re_matches(self):
         # An SPA route change / in-app tab switch moves neither handle nor
@@ -129,7 +130,8 @@ class TestReportWindow(unittest.TestCase):
 
         rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")
         self.assertTrue(rh.remote_changed({}), "url change must count as a change")
-        self.assertEqual(rh.get_overlay_data(), "miro")
+        # the site layers over the browser: browser first, site wins its keys
+        self.assertEqual(rh.get_overlay_data(), ["browser", "miro"])
 
         # Same window, same url -> no further change.
         rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")

@@ -155,12 +155,20 @@ class TestPhraseKeys(unittest.TestCase):
         self.assertIs(find_matching_entry("a -  Google\tDocs", e), leaf)
 
 
+def named(e, overlay):
+    e["overlay"] = overlay
+    return e
+
+
 class TestUrlMatching(unittest.TestCase):
     def test_urls_contains_recurses_when_url_present(self):
-        leaf = entry()
-        e = entry(urls_contains={"mail.google.com": leaf})
-        self.assertIs(
-            find_matching_entry("Inbox", e, url="https://mail.google.com/u/0"), leaf)
+        # The site's entry, with the browser's overlay layered UNDER its own
+        # (see TestBrowserLayering); everything else is the leaf's.
+        leaf = named(entry(), "site")
+        e = named(entry(urls_contains={"mail.google.com": leaf}), "browser")
+        got = find_matching_entry("Inbox", e, url="https://mail.google.com/u/0")
+        self.assertEqual(got["overlay"], ["browser", "site"])
+        self.assertEqual(got["flags"], leaf["flags"])
 
     def test_urls_contains_falls_through_to_default_when_no_url(self):
         # A browser entry with a default overlay + urls-contains must still match
@@ -177,11 +185,12 @@ class TestUrlMatching(unittest.TestCase):
     def test_url_wins_over_title_submap(self):
         # urls-contains is checked before titles-contains: the URL is the
         # stronger signal for which web-app is focused.
-        by_url = entry()
-        by_title = entry()
-        e = entry(urls_contains={"jira": by_url}, contains={"Board": by_title})
+        by_url = named(entry(), "by_url")
+        by_title = named(entry(), "by_title")
+        e = named(entry(urls_contains={"jira": by_url}, contains={"Board": by_title}),
+                  "browser")
         got = find_matching_entry("My Board", e, url="https://x.atlassian.net/jira")
-        self.assertIs(got, by_url)
+        self.assertEqual(got["overlay"], ["browser", "by_url"])
 
     def test_hard_url_regex_constraint_blocks_without_url(self):
         e = entry(url=r"github\.com")
@@ -209,10 +218,12 @@ class TestUrlMatching(unittest.TestCase):
     def test_titles_contains_fallback_runs_when_url_unknown(self):
         # ...but with no URL at all (no extension / stale report) the title
         # fallback is the only signal there is, so it still fires.
-        by_url = entry()
-        by_title = entry()
-        e = entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title})
-        self.assertIs(find_matching_entry("PolyKybd - Jira", e, url=None), by_title)
+        by_url = named(entry(), "by_url")
+        by_title = named(entry(), "by_title")
+        e = named(entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title}),
+                  "browser")
+        got = find_matching_entry("PolyKybd - Jira", e, url=None)
+        self.assertEqual(got["overlay"], ["browser", "by_title"])
 
     def test_known_url_does_not_suppress_contains_without_urls_contains(self):
         # The suppression is scoped to entries that actually declare
@@ -222,6 +233,68 @@ class TestUrlMatching(unittest.TestCase):
         e = entry(contains={"Jira": leaf})
         self.assertIs(
             find_matching_entry("PolyKybd - Jira", e, url="https://example.com"), leaf)
+
+
+class TestBrowserLayering(unittest.TestCase):
+    """A web app runs inside the browser, so the browser's shortcuts stay.
+
+    A browser entry is one that declares `urls-contains`. A site matched under it
+    (by URL, or by title when no URL is known) gets the browser's overlay files
+    FIRST and its own after: templates resolve last-one-wins per key, so the site
+    wins the keys it draws and the browser keeps the rest.
+    """
+
+    def _browser(self):
+        self.site = named(entry(), ["site.mods.png", "site.combo.mods.png"])
+        self.by_title = named(entry(), "titled.mods.png")
+        return named(entry(urls_contains={"site.com": self.site},
+                           contains={"Titled": self.by_title}),
+                     ["browser.mods.png", "browser.combo.mods.png"])
+
+    def test_site_goes_last_so_it_wins_its_keys(self):
+        got = find_matching_entry("x", self._browser(), url="https://site.com/a")
+        self.assertEqual(got["overlay"], ["browser.mods.png", "browser.combo.mods.png",
+                                          "site.mods.png", "site.combo.mods.png"])
+
+    def test_the_entries_themselves_are_not_modified(self):
+        e = self._browser()
+        find_matching_entry("x", e, url="https://site.com/a")
+        self.assertEqual(self.site["overlay"], ["site.mods.png", "site.combo.mods.png"])
+        self.assertEqual(e["overlay"], ["browser.mods.png", "browser.combo.mods.png"])
+        self.assertEqual(sorted(self.site), ["flags", "overlay"])
+
+    def test_same_window_returns_the_same_object(self):
+        # The handler re-matches every tick; one object per window keeps the
+        # ENABLE-vs-OFF_ON decision cheap and stable.
+        e = self._browser()
+        a = find_matching_entry("x", e, url="https://site.com/a")
+        b = find_matching_entry("x", e, url="https://site.com/b")
+        self.assertIs(a, b)
+        self.assertEqual(a, b)
+
+    def test_title_fallback_layers_too(self):
+        got = find_matching_entry("A Titled page", self._browser(), url=None)
+        self.assertEqual(got["overlay"], ["browser.mods.png", "browser.combo.mods.png",
+                                          "titled.mods.png"])
+
+    def test_a_site_repeating_a_browser_file_keeps_it_last(self):
+        # chatgpt.com/codex lists the browser's own set as its overlay.
+        e = self._browser()
+        self.site["overlay"] = ["browser.combo.mods.png", "site.mods.png"]
+        got = find_matching_entry("x", e, url="https://site.com/")
+        self.assertEqual(got["overlay"], ["browser.mods.png", "browser.combo.mods.png",
+                                          "site.mods.png"])
+
+    def test_no_site_match_is_the_browser_alone(self):
+        e = self._browser()
+        self.assertIs(find_matching_entry("x", e, url="https://other.com/"), e)
+
+    def test_title_submaps_of_other_apps_still_replace(self):
+        # Not a browser (no urls-contains): a window mode of one app is not
+        # running inside another, so its overlay replaces as before.
+        leaf = named(entry(), "dialog")
+        e = named(entry(contains={"Settings": leaf}), "app")
+        self.assertIs(find_matching_entry("App Settings", e), leaf)
 
 
 class TestOsBranch(unittest.TestCase):

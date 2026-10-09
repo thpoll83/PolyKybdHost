@@ -120,3 +120,23 @@ MIT; Liberation Sans Bold digit, SIL OFL).
   brand terms do not allow redistribution.
 
 The marks are guarded: a committed file is never overwritten by a re-run.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+`claude_desktop.yaml` and `codex.yaml` only. Label = lexicon concept, no icon.
+Added Cut / Copy / Paste / Undo / Select all (Ctrl+X/C/V/Z/A on Windows/Linux,
+⌘X/C/V/Z/A on macOS) — the prompt box's standard text-editing chords: both are
+Electron apps, where Chromium's editing behaviour provides them on
+Windows/Linux and the standard Electron Edit-menu roles (`cut`, `copy`, `paste`,
+`undo`, `selectAll`, all `CommandOrControl+…`, electron `menu-item-roles.ts`)
+provide them on macOS. None of these keys was bound before in either spec.
+
+Not added / why:
+- Save / Open / New / Print: not documented for either app (Claude desktop's
+  Ctrl/⌘N is "New session", Codex's Ctrl/⌘O "Open folder" — already drawn).
+- Redo: neither app documents it.
+- Find: Codex already draws Ctrl/⌘F "Find in thread"; Claude desktop documents no
+  find chord.
+- Close: Claude desktop already draws Ctrl/⌘W "Close session"; Codex documents none.
+- Zoom / Reload: not documented (Claude desktop's ⌘R is "Reload page in preview",
+  already drawn, macOS only).

@@ -83,3 +83,16 @@ cells and the ESC mark are byte-identical.
   everyday commands.
 - **Alt+Tab / Alt+Shift+Tab** (next/previous image): the operating system takes
   Alt+Tab.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. Checked against the `gimp-2-10` and `gimp-3-0` action sources
+(`app/actions/file-actions.c`, `edit-actions.c`, `view-actions.c`,
+`plug-ins/print/print.c`), 2026-10-08:
+
+- New/Open/Save/Close/Undo/Redo(Ctrl+Y)/Cut/Copy/Paste/Select all were already drawn.
+- **Ctrl+Shift+Z is NOT Redo** in GIMP — it is *Strong Undo* (`edit-strong-undo`),
+  so no second Redo cell was added.
+- **Print**: the print plug-in registers no accelerator.
+- **Ctrl+F** is Repeat last filter (already drawn); GIMP has no Find / Find next / Replace.
+- **Zoom**: bare `+`/`-` (already drawn); no Ctrl chord.

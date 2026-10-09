@@ -57,3 +57,16 @@ bindings:
   - { key: LEFT,  mods: [GUI, ALT], only: [macos], icon: back.png,    label: "Navigate back",    source: "ms-fluent/Arrow Left (MIT)" }
   - { key: RIGHT, mods: [CTRL, ALT], only: [windows, linux], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
   - { key: RIGHT, mods: [GUI, ALT], only: [macos], icon: forward.png, label: "Navigate forward", source: "ms-fluent/Arrow Right (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Obsidian help, "Editing shortcuts" (Windows/Linux and macOS tables; see
+  # SOURCES.md). Already above: Find (Ctrl+F), Replace (Ctrl+H / Cmd+Option+F),
+  # Close (Ctrl+W), New (Ctrl+N). Ctrl+O is the quick switcher, not Open.
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  # Redo: Ctrl+Shift+Z or Ctrl+Y on Windows/Linux, Cmd+Shift+Z on macOS.
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: Y, mods: [CTRL], only: [windows, linux], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }

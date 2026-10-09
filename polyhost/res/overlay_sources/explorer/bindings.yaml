@@ -62,3 +62,10 @@ bindings:
 
   # --- Ctrl+Shift -> R channel of combo ---
   - { key: N, mods: [CTRL, SHIFT], icon: newfolder.png, label: "New folder", source: "ms-fluent/Folder Add (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Ctrl+R = "Refresh the active window" (Windows general shortcuts table, the
+  # same page as F5). Everything else in the standard set is already above or is
+  # not an Explorer chord (no Save/Open/Print; Ctrl+Plus is "resize columns",
+  # numpad only, not zoom).
+  - { key: R, mods: [CTRL], label: "Reload", source: "concept (shared Fluent)" }
