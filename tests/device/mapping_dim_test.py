@@ -17,7 +17,7 @@ from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.poly_kybd import (MAPPING_DIM_MIN_PROTOCOL, MAPPING_FLAG_DIM,
                                        MAPPING_FLAG_RESET, MAPPING_FLAG_SHOW,
                                        protocol_supports)
-from polyhost.handler.common import Underlay
+from polyhost.handler.common import Underlay, with_underlays
 from tests.device.mapping_flags_test import _keeb, _reports, MAPPING_W
 from tests.device.mock_firmware_test import _keyboard
 
@@ -149,6 +149,12 @@ class UnderlayTest(unittest.TestCase):
         from polyhost.core.poly_core import get_overlay_path
         self.assertTrue(get_overlay_path(Underlay("chrome_template.mods.png")).underlay)
         self.assertFalse(getattr(get_overlay_path("chrome_template.mods.png"), "underlay", False))
+
+    def test_the_control_socket_restores_the_mark(self):
+        files = with_underlays(["chrome.png", "github.png"], ["chrome.png"])
+        self.assertEqual(files, ["chrome.png", "github.png"])
+        self.assertTrue(getattr(files[0], "underlay", False))
+        self.assertFalse(getattr(files[1], "underlay", False))
 
 
 class EmulatedFirmwareTest(unittest.TestCase):

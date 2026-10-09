@@ -172,6 +172,15 @@ def as_underlay_path(name, path):
     return Underlay(path) if getattr(name, "underlay", False) else path
 
 
+def with_underlays(files, underlay_names):
+    """``files`` with every name listed in ``underlay_names`` marked as an Underlay.
+
+    The inverse of flattening a list for JSON: the control socket carries the
+    marked names beside the list (protocol.M_OVERLAY_SEND)."""
+    marked = set(underlay_names)
+    return [Underlay(f) if f in marked else f for f in files]
+
+
 def _as_list(value):
     if value is None:
         return []
