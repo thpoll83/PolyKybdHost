@@ -183,8 +183,10 @@ class ShortcutIconFetcher:
                 self._pids[app] = int(pid)
                 if previous_pid is not None and previous_pid != int(pid):
                     prefix = f"{app}\x00"
-                    self._restarted.update(k for k in self._overlays
-                                           if k.startswith(prefix))
+                    for k in self._overlays:
+                        if k.startswith(prefix):
+                            self._restarted.add(k)
+                            self._backoff.pop(k, None)
             if title is not None:
                 self._titles[app] = title
             if key in self._overlays:
@@ -201,17 +203,22 @@ class ShortcutIconFetcher:
         return cached
 
     def _wants_reharvest(self, key: str, title: str | None) -> bool:
-        """Under `_lock`: has the title moved on from the cached answer's?"""
+        """Under `_lock`: has the title or the process moved on from the
+        cached answer's?
+
+        A new pid skips the title test and the floor, but not the backoff,
+        so a backend that keeps answering None for it still slows down.
+        """
         if key in self._queue or key in self._inflight:
             return False
+        _, not_before = self._backoff.get(key, (0.0, 0.0))
         if key in self._restarted:
-            return True
+            return _now() >= not_before
         if title is None:
             return False
         harvested_under = self._harvest_title.get(key)
         if harvested_under is None or harvested_under == title:
             return False
-        _, not_before = self._backoff.get(key, (0.0, 0.0))
         not_before = max(not_before,
                          self._harvested_at.get(key, 0.0) + REHARVEST_MIN_GAP)
         return _now() >= not_before
@@ -220,27 +227,36 @@ class ShortcutIconFetcher:
         """Under `_lock`: record a harvest and move the backoff.
 
         Only a RE-harvest moves it -- the first answer for a key has nothing
-        to compare against. None ("did not look") counts as unchanged, so a
-        backend that keeps failing for a focused app also backs off.
+        to compare against. None ("did not look") backs off like an unchanged
+        answer, so a backend that keeps failing for a focused app slows down,
+        but it records NOTHING else: the title or pid it was asked for stays
+        pending and is retried once the backoff passes.
         """
-        previous = self._drew.get(key)
-        if key in self._restarted:
-            # A new process: its answer is a first answer, not a repeat.
-            self._restarted.discard(key)
-            self._backoff.pop(key, None)
-            previous = None
+        restarted = key in self._restarted
+        # A new process: its answer is a first answer, not a repeat.
+        previous = None if restarted else self._drew.get(key)
         self._harvested_at[key] = _now()
-        if overlays is not None:
-            self._overlays[key] = overlays
-            self._drew[key] = _signature(overlays)
-        if title is not None:
-            self._harvest_title[key] = title
-        if previous is None:
+        if overlays is None:
+            if previous is not None or restarted:
+                self._back_off(key)
             return
-        interval, _ = self._backoff.get(key, (0.0, 0.0))
-        if overlays is not None and self._drew[key] != previous:
+        self._restarted.discard(key)
+        self._overlays[key] = overlays
+        self._drew[key] = _signature(overlays)
+        # "" for a harvest made under no title, so a title that appears later
+        # still differs from it. `focused_title()` never reports "".
+        self._harvest_title[key] = title if title is not None else ""
+        if previous is None:
+            self._backoff.pop(key, None)
+            return
+        if self._drew[key] != previous:
             self._backoff[key] = (0.0, 0.0)
             return
+        self._back_off(key)
+
+    def _back_off(self, key: str):
+        """Under `_lock`: double the key's backoff, 5 s to 2 min."""
+        interval, _ = self._backoff.get(key, (0.0, 0.0))
         interval = min(max(REHARVEST_BACKOFF_FIRST, interval * 2),
                        REHARVEST_BACKOFF_MAX)
         self._backoff[key] = (interval, _now() + interval)
@@ -313,6 +329,7 @@ class ShortcutIconFetcher:
                     # as it STARTS. A title that arrives mid-walk is newer than
                     # the answer and queues the one follow-up.
                     harvesting_title = self._titles.get(key.split("\x00", 1)[0])
+                    harvesting_pid = self._pids.get(key.split("\x00", 1)[0])
             if key is None:
                 self._wake.clear()
                 if not self._wake.wait(IDLE_SECONDS):
@@ -331,6 +348,11 @@ class ShortcutIconFetcher:
                 # `overlays_for`, one layer down.
                 self._note_result(key, overlays, harvesting_title)
                 self._inflight.discard(key)
+                if (overlays is not None
+                        and self._pids.get(app) != harvesting_pid):
+                    # The app restarted mid-walk: this answer is the OLD
+                    # process's, so the new one is still owed a harvest.
+                    self._restarted.add(key)
             if overlays and self._on_ready is not None:
                 try:
                     self._on_ready(app)

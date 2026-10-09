@@ -849,6 +849,62 @@ class TitleReharvestTest(unittest.TestCase):
         self.assertEqual(self.fetcher._backoff, {})
         self.assertEqual(self.fetcher._restarted, set())
 
+    def test_a_title_that_appears_AFTER_a_titleless_harvest_re_harvests(self):
+        self.answers = [WELCOME, DOCUMENT]
+        self.fetcher.overlays_for("kate")
+        self.idle()
+        self.now += 10
+        self.assertEqual(self.ask("Untitled - Kate"), WELCOME)
+        self.idle()
+        self.assertEqual(self.ask("Untitled - Kate"), DOCUMENT)
+
+    def test_a_DID_NOT_LOOK_result_keeps_the_title_pending(self):
+        self.answers = [WELCOME, None, DOCUMENT]
+        self.first()
+        self.now += 10
+        self.ask("Untitled - Kate")        # None: backoff 5 s, title pending
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 4
+        self.ask("Untitled - Kate")        # inside the backoff
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 2
+        self.assertEqual(self.ask("Untitled - Kate"), WELCOME)
+        self.idle()
+        self.assertEqual(self.ask("Untitled - Kate"), DOCUMENT)
+
+    def test_a_DID_NOT_LOOK_result_keeps_the_restart_pending(self):
+        self.answers = [DOCUMENT, None, WELCOME]
+        self.ask_as(100, "a")
+        self.idle()
+        self.ask_as(200, "a")              # None: backoff 5 s, still owed
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 5
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(self.ask_as(200, "a"), WELCOME)
+
+    def test_a_restart_DURING_a_harvest_is_still_owed_one(self):
+        """The walk that was in flight read the OLD process."""
+        self.answers = [DOCUMENT, WELCOME]
+        self.gate = threading.Event()
+        self.calls.append("pre")           # make the FIRST harvest the gated one
+        self.ask_as(100, "a")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask_as(200, "a")              # uncached and in flight: nothing marked
+        self.gate.set()
+        self.idle()
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 3)
+
     def test_the_SAME_pid_is_not_a_restart(self):
         self.ask_as(100, "a")
         self.idle()
