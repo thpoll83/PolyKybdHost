@@ -1771,6 +1771,13 @@ class PolyKybd:
                             # The pool is full of this switch's own images. The
                             # key stays blank rather than borrowing a slot an
                             # earlier key still shows (overlay_cache.get_or_allocate).
+                            # ⚠️ Blank, not the picture an EARLIER source of this
+                            # switch put on the same key: a later source overrides
+                            # it (last one wins), so keeping it would show e.g. the
+                            # browser's icon under a website's shortcut.
+                            refused_idx = cache.display_flat_idx(keycode, modifier)
+                            display_to_pool.pop(refused_idx, None)
+                            dim_positions.discard(refused_idx)
                             covered.discard((modifier.value, keycode))
                             pool_full.append((filename, keycode, modifier))
                             continue

@@ -20,6 +20,15 @@ from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd_mock import PolyKybdMock
 
 
+def _template(overlays):
+    """A stand-in for `ImageConverter`, a real file-backed source."""
+    converter = mock.MagicMock()
+    converter.open.return_value = True
+    converter.extract_overlays.side_effect = lambda mod: dict(overlays.get(mod, {})) or None
+    del converter.modifier_invariant
+    return converter
+
+
 def _image(i: int) -> np.ndarray:
     """A distinct picture per index: its bits as blocks, never blank."""
     img = np.zeros((40, 72), dtype=bool)
@@ -100,7 +109,28 @@ class SwitchPastThePoolTest(unittest.TestCase):
     def test_the_real_pool_size(self):
         """600 is OVERLAY_MAPPING_CAPACITY, the firmware's pool."""
         ok, right, wrong, blank = self.send(650, DeviceSettings().OVERLAY_MAPPING_CAPACITY)
+        self.assertTrue(ok)
         self.assertEqual((right, wrong, blank), (600, 0, 50))
+
+    def test_a_refused_LATER_source_blanks_the_key_an_earlier_one_drew(self):
+        """Last source wins a key. When the pool refuses the later one's image,
+        the earlier one's picture must not stay there in its place (review,
+        Greptile): that would show the browser's icon under a website's key."""
+        ds = DeviceSettings()
+        a_key, b_key, c_key = KeyCode.KC_A.value, KeyCode.KC_B.value, KeyCode.KC_C.value
+        first = _template({Modifier.NO_MOD: {a_key: OverlayData(ds, _image(1)),
+                                            b_key: OverlayData(ds, _image(2))}})
+        later = _template({Modifier.NO_MOD: {c_key: OverlayData(ds, _image(3)),
+                                            a_key: OverlayData(ds, _image(4))}})
+        kb = PolyKybdMock(DeviceSettings(), protocol=21)
+        with mock.patch("time.sleep", lambda s: None), \
+                mock.patch("polyhost.device.poly_kybd.ImageConverter") as converter:
+            converter.side_effect = [first, later]
+            self.assertTrue(kb.send_overlays_mru(["first.png", "later.png"],
+                                                 OverlayMRUCache(3), threading.Event()))
+        self.assertIsNone(kb.get_display_bitmap(a_key, Modifier.NO_MOD))
+        self.assertIsNotNone(kb.get_display_bitmap(b_key, Modifier.NO_MOD))
+        self.assertIsNotNone(kb.get_display_bitmap(c_key, Modifier.NO_MOD))
 
 
 if __name__ == "__main__":
