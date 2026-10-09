@@ -44,6 +44,21 @@ the image came from a dirty tree. If the line is missing, the firmware predates 
 or no host session started in the timeframe. Say so, and attribute nothing to a
 specific change until the user confirms which image was flashed.
 
+The host names its own build the same way, once per process in `startup.txt`, and
+as `PolyHost build` in `diagnostics.txt`:
+
+```
+== PolyKybdHost 1.16.0 P22 | build git <branch>@<hash>[*] <commit date> ==
+== PolyKybdHost 1.16.0 P22 | build release v1.16.0, published <date>, installed by update <date> ==
+```
+
+⚠️ **A cloned install's `.git` goes stale after the first in-app update** — the
+updater copies the release over the files and never touches `.git`. So the
+`release …` form wins while `.polyhost-release.json` (written by the updater)
+matches the running version, and the line adds `(git …@… predates the files)`.
+`*` means tracked files differ from HEAD. A `launching` line with no
+`== PolyKybdHost` line after it is a host older than this banner.
+
 ## 1. Count the processes before reading anything else
 
 `crash.txt` is the census. Every process writes a `session start` line with its

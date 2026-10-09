@@ -1,4 +1,5 @@
 import io
+import json
 import shutil
 import sys
 import tarfile
@@ -10,7 +11,7 @@ from unittest import mock
 import requests
 from packaging.version import Version
 
-from polyhost.services import updater
+from polyhost.services import build_info, updater
 
 
 def _release_json(tag="v0.8.0", tarball_url="https://example.com/tarball/0.8.0"):
@@ -1290,6 +1291,19 @@ class TestInstallerPreflight(unittest.TestCase):
         tmp = next(f for f in findings if f.name == "temp dir")
         self.assertFalse(tmp.ok)
         self.assertTrue(tmp.blocking)
+
+    def test_a_successful_apply_writes_the_release_marker(self):
+        # A cloned install keeps its old .git; the marker names the release.
+        rec = _Recorder()
+        with tempfile.TemporaryDirectory() as root:
+            with mock.patch.object(updater, "preflight", return_value=[]), \
+                 mock.patch.object(updater, "get_install_root", return_value=Path(root)), \
+                 mock.patch.object(updater, "download_and_extract", return_value=Path("/x")), \
+                 mock.patch.object(updater, "apply_update", return_value=[]):
+                self._make(rec).run()
+            marker = json.loads((Path(root) / build_info.MARKER_NAME).read_text())
+        self.assertEqual(rec.names[-1], "finished_ok")
+        self.assertEqual((marker["tag"], marker["version"]), ("v1.0.0", "1.0.0"))
 
     def test_warning_is_surfaced_but_does_not_stop_the_update(self):
         rec = _Recorder()
