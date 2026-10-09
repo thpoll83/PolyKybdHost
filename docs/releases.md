@@ -71,6 +71,10 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     hand and re-run the job; the attempt number keeps the retry's branch name unique.
   - The review bots that pick up a bump PR still spend quota on it: Sourcery and Revix
     did on #330. Greptile and Qodo did not.
+  - The firmware repo meets the same rule the other way: its bump checks out with
+    `secrets.BUMP_PAT`, a personal access token whose owner is on the `PolyKybd`
+    bypass list, and pushes directly. That needs no extra PR, but it fails with `GH013`
+    once the token expires (`keyboards/polykybd/RELEASES.md` there).
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).
