@@ -724,6 +724,16 @@ created by **publishing** — *not* by pushing a tag, which lands on the auto-bu
 mechanics, the `release-notes` branch convention and `scripts/publish_release.py` are
 in [`docs/releases.md`](docs/releases.md).
 
+- ⚠️ **`scripts/publish_release.py` is byte-identical across `qmk_firmware`,
+  `PolyKybdHost` and `wincompose`, nothing checks that, and it had already
+  diverged in BOTH directions at once** — these two repos held the
+  commit-pin and the `make_latest` correctness, wincompose held the
+  create-time gate, and each copy was the newer one for a different thing.
+  `md5sum */scripts/publish_release.py` is the check. Its tests live in
+  **`PolyKybdHost/tests/scripts/publish_release_test.py`**, the only one of
+  the three repos with a Python runner, so a break introduced here fails
+  there.
+
 - ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check is
   the PUBLISHED versions, not the in-tree ones.** The source-lockstep rule can be
   perfectly satisfied while the releases sit a protocol apart, and nothing downstream
