@@ -53,6 +53,24 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - **Crafted notes** live one-file-per-tag on the `release-notes` branch (`<TAG>.md`, first
   line `# <title>`, rest = body); `release.yml` applies them on `release: published` via
   `gh release edit`.
+- ⚠️ **The bump lands through a PR of its own** (since 2026-10-09). `main` requires a
+  pull request for every change, and a personal repository's ruleset cannot list the
+  built-in `GITHUB_TOKEN` as a bypass actor, so the old direct push failed with `GH013`
+  (#326's bump never landed). `bump-version.yml` now commits the bump to
+  `bump/host-<version>-<run id>-<attempt>`, opens a PR with `GITHUB_TOKEN` and merges it
+  at once (squash, else a merge commit), deleting the branch: #330 was the first.
+  - It needs **Settings → Actions → General → "Allow GitHub Actions to create and approve
+    pull requests"**, and a `main` rule that requires a PR and **nothing more**. A PR
+    opened with `GITHUB_TOKEN` starts no workflows, so a required status check or
+    approval would never be met and every bump would hang open.
+  - For the same reason the bump PR's merge does not start `bump-version.yml` again
+    (no loop), and CodeQL does not run on it.
+  - The squash commit keeps the old subject, `chore: bump host version to X.Y.Z [skip ci]
+    (#NNN)`, so the release anchors below still match.
+  - A failed attempt can leave its `bump/…` branch or an open bump PR behind. Close it by
+    hand and re-run the job; the attempt number keeps the retry's branch name unique.
+  - The review bots that pick up a bump PR still spend quota on it: Sourcery and Revix
+    did on #330. Greptile and Qodo did not.
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).
