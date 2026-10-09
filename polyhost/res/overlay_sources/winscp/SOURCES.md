@@ -163,3 +163,13 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Checked against <https://winscp.net/eng/docs/ui_commander_key>:
+every standard chord WinSCP binds is already drawn with its WinSCP meaning —
+Ctrl+A select all, Ctrl+C copy (files to clipboard), Ctrl+V paste, Ctrl+F
+incremental search, Ctrl+N new session, Ctrl+W close tab, Ctrl+R re-read
+(reload); and Ctrl+S (Synchronize), Ctrl+O (bookmarks), Ctrl+P (open in PuTTY)
+are NOT Save/Open/Print. Ctrl+X, Ctrl+Z, Ctrl+Y and Ctrl+plus/minus are not
+listed for the Commander interface, so Cut/Undo/Redo/Zoom are not drawn.

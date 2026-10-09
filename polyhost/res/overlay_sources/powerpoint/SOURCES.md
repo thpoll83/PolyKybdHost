@@ -74,3 +74,18 @@ name (`Microsoft PowerPoint`) resolves to this stanza is decided by
 | Replace | Ctrl+H | — | dropped, *uncertain*: not in the scrape; ⌘H is the system Hide |
 | Subscript | Ctrl+= | — | dropped, *uncertain*: not in the scrape |
 | Spelling | F7 | — | dropped, *uncertain*: F7 not listed for PowerPoint for Mac |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Shift+F4 — Find next ("Repeat the last Find action") | Windows (+Linux set) | https://support.microsoft.com/en-us/office/use-keyboard-shortcuts-to-create-powerpoint-presentations-ebb3d20e-dcd4-444f-a38e-bb5c5ed180f4 |
+| Cmd+Shift+H — Replace ("Open the Find and Replace pane") | macOS | same page, Mac table |
+
+Deliberately NOT added:
+
+- **Zoom (Ctrl+Plus / Ctrl+Minus)**: Ctrl+= is Subscript (already drawn); the Plus-sign
+  chord would contradict it, so left off on both platforms.
+- Close (Cmd+W / Ctrl+W) and Find were already drawn.

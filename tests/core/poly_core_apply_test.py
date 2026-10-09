@@ -290,6 +290,28 @@ class TestApplyReconnect(unittest.TestCase):
         # protocol-derived conclusion describing the previous firmware.
         self.assertIsNotNone(applied["decision"])
 
+    def test_a_late_fresh_boot_clears_the_keyboard_pool_headless(self):
+        """The marker can arrive AFTER a connect that already filled the pool
+        (2026-10-08: a firmware apply, a reconnect that uploaded ~110 images,
+        then the marker 4 s later). Resetting only the host cache made those
+        slots read as clean, and the next ROI upload left the old image around
+        the new one. A fresh boot must clear the keyboard as well."""
+        core = make_core(connected=True)
+        core.apply_reconnect_in_core = True
+        applied = core.apply_reconnect(
+            connect_snapshot(state_changed=False, fresh_boot=True))
+        core.device_mgr.reset_all_caches.assert_called_once()
+        core.keeb.reset_overlays_and_usage.assert_called_once()
+        self.assertTrue(applied["do_overlay_reset"])
+        self.assertFalse(core.needs_overlay_reset)
+
+    def test_a_late_fresh_boot_asks_the_gui_to_clear_the_pool(self):
+        core = make_core(connected=True)
+        applied = core.apply_reconnect(
+            connect_snapshot(state_changed=False, fresh_boot=True))
+        self.assertTrue(applied["do_overlay_reset"])
+        core.keeb.reset_overlays_and_usage.assert_not_called()
+
     def test_a_keyboard_boot_arms_the_crash_record_read(self):
         core = make_core(connected=True)
         core.apply_reconnect(connect_snapshot(state_changed=False, fresh_boot=True))

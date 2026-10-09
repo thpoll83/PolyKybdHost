@@ -155,3 +155,23 @@ recorded for a follow-up:
 - **Save `Ctrl+S`**: Figma saves automatically; "Save to version history" is
   `Ctrl+Alt+S` / ⌥⌘S.
 - **Select inverse `Ctrl+Alt+A`** and **Pixel grid `Ctrl+'`**: see the table.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block (labels are
+the shared lexicon concepts; no icon file, no geometry keys):
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+Shift+Z / Cmd+Shift+Z — Redo | all (`CMDCTRL`) | https://layerpath.com/learn/how-to-redo-in-figma ; https://www.raycast.com/arturdz/figma-shortcuts (Figma's own page does not list Redo; verify in the in-app panel, Ctrl+Shift+?) |
+| Ctrl+= / Cmd+= — Zoom in | all (`CMDCTRL`) | https://help.figma.com/hc/en-us/articles/360040328653-Keyboard-shortcuts-in-Figma ("hold Command (Mac) or Ctrl (Windows) and press + or -"); https://www.nobledesktop.com/shortcuts/figma/pc |
+| Ctrl+- / Cmd+- — Zoom out | all (`CMDCTRL`) | same |
+
+Deliberately NOT added:
+
+- **Ctrl+O (Open)**: no documented default.
+- **Ctrl+P (Print)**: Figma has no print command; Ctrl+P / Ctrl+/ is Quick actions.
+- **Ctrl+Y (Redo)**: only third-party, cross-app tables list it; Ctrl+Shift+Z is the
+  documented one.
+- **Ctrl+W (Close tab)**: not found in any source consulted; left off rather than guessed.
+- **Find next / Replace**: Figma's find-and-replace lives inside Ctrl+F with no separate chord.

@@ -562,11 +562,12 @@ class PolyKybdMock:
         return True, lang
 
     def send_overlay_mapping(self, from_to: dict, reset: bool = False,
-                             show: bool = False) -> tuple[bool, str]:
+                             show: bool = False, dim=frozenset()) -> tuple[bool, str]:
         self._log_call("send_overlay_mapping", from_to, reset, show)
         self.last_mapping = from_to
         self.last_mapping_flags = (reset, show)
-        return self._wire.send_overlay_mapping(from_to, reset, show)
+        self.last_mapping_dim = set(dim)
+        return self._wire.send_overlay_mapping(from_to, reset, show, dim)
 
     def send_overlay(self, filename, on_off=True):
         self.log.info("Send Overlay '%s'...", filename)

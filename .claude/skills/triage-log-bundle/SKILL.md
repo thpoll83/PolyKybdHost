@@ -21,6 +21,46 @@ wc -l /tmp/b/logs/*
 crash-log tally. Read both before opening a log — they answer half the questions
 and they date the evidence.
 
+## 0. Name the firmware BUILD, not just its version
+
+⚠️ **`Firmware 1.7.14` in `diagnostics.txt` does not identify an image.** The
+maintainer runs many test builds, and every build of one version reports the same
+number (2026-10-09: two stalls in one morning were first blamed on "something
+introduced yesterday" before anyone could say which builds had run). The boot
+banner names the build:
+
+```
+== PolyKybd Split72 1.7.14 P22 HW0x0320 | left master | build <branch>@<hash>[*] <date> ==
+```
+
+```bash
+grep -n '| build ' /tmp/b/logs/keyboard-console.txt
+```
+
+The firmware prints it for ~30 s after boot and again whenever a host starts
+probing after a pause (a PolyHost restart, a woken PC, the reconnect after an
+update). So a bundle that spans a host start carries it. `*` after the hash means
+the image came from a dirty tree. If the line is missing, the firmware predates it,
+or no host session started in the timeframe. Say so, and attribute nothing to a
+specific change until the user confirms which image was flashed.
+
+The host names its own build the same way, once per process in `startup.txt`, and
+as `PolyHost build` in `diagnostics.txt`:
+
+```
+== PolyKybdHost 1.16.0 P22 | build git <branch>@<hash>[*] <commit date> ==
+== PolyKybdHost 1.16.0 P22 | build release v1.16.0, published <date>, installed by update <date> ==
+```
+
+⚠️ **A cloned install's `.git` goes stale after the first in-app update** — the
+updater copies the release over the files and never touches `.git`. So the
+`release …` form wins while `.polyhost-release.json` (written by the updater)
+matches the running version AND git HEAD is still the commit the updater found,
+and the line adds `(git …@… predates the files)`. Any pull or checkout after the
+update hands the line back to git. Each process computes the line once, at start.
+`*` means tracked files differ from HEAD. A `launching` line with no
+`== PolyKybdHost` line after it is a host older than this banner.
+
 ## 1. Count the processes before reading anything else
 
 `crash.txt` is the census. Every process writes a `session start` line with its

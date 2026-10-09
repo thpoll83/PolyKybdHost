@@ -91,3 +91,7 @@ bindings:
   - { key: F4,  mods: [], icon: absref.png, label: "Abs ref",   source: "ms-fluent/Lock Closed (MIT)" }
   - { key: F9,  mods: [], icon: calc.png,   label: Calculate,   source: "ms-fluent/Calculator (MIT)" }
   - { key: F12, mods: [], icon: saveas.png, label: "Save as",   source: "ms-fluent/Save Edit (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: EQUAL, mods: [CTRL, ALT], only: [windows, linux], label: "Zoom in",  source: "concept (shared Fluent)" }
+  - { key: MINUS, mods: [CTRL, ALT], only: [windows, linux], label: "Zoom out", source: "concept (shared Fluent)" }

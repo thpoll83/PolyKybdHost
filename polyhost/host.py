@@ -43,7 +43,10 @@ from polyhost.gui.tray_notify import (balloons_are_delivered, updates_menu_title
 
 # Tray labels for the Glyph Script submenu. Generic names (no franchise
 # branding — trademark caveat on the fictional scripts); the fonts themselves
-# are OK to embed. Keys cover every GlyphScript so the menu builds from the enum.
+# are OK to embed. Keys cover every GlyphScript. The submenu is built in THIS
+# dict's order, not the enum's: the enum values are on the wire and in the
+# keyboard's EEPROM, so they are append-only, but related scripts belong
+# together in the menu (the two Commodore 64 faces, 7 and 11).
 GLYPH_SCRIPT_LABELS = {
     GlyphScript.STANDARD: "Standard (normal legends)",
     GlyphScript.TENGWAR:  "Tengwar (fantasy)",
@@ -52,7 +55,8 @@ GLYPH_SCRIPT_LABELS = {
     GlyphScript.SGA:      "Standard Galactic",
     GlyphScript.CIRTH:    "Cirth / Angerthas",
     GlyphScript.IBMVGA:   "IBM VGA / CP437",
-    GlyphScript.C64:      "Commodore 64",
+    GlyphScript.C64:      "Commodore 64 (screen)",
+    GlyphScript.C64KEYS:  "Commodore 64 (keycap)",
     GlyphScript.AMIGA:    "Amiga Topaz",
     GlyphScript.APL:      "APL",
     GlyphScript.BRAILLE:  "Braille",
@@ -596,10 +600,10 @@ class PolyHost(QApplication):
         self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), "Keycap Script")
         glyph_group = QActionGroup(self)
         glyph_group.setExclusive(True)
-        # One radio entry per GlyphScript (labels in GLYPH_SCRIPT_LABELS). Built
-        # from the enum so new scripts appear automatically.
+        # One radio entry per GlyphScript, in GLYPH_SCRIPT_LABELS order (see the
+        # note there); a test pins that the dict covers every enum value.
         self.glyph_actions = {}
-        for script in GlyphScript:
+        for script in GLYPH_SCRIPT_LABELS:
             act = QAction(GLYPH_SCRIPT_LABELS[script], parent=self, checkable=True)
             act.setData(script.value)
             glyph_group.addAction(act)

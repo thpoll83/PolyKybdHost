@@ -266,3 +266,7 @@ bindings:
   - { key: "9", mods: [CTRL],        only: [linux_kde], icon: build.png,             label: "Build project" }
   - { key: "5", mods: [CTRL],        only: [linux_kde], icon: rerun.png,             label: "Rerun" }
   - { key: "4", mods: [CTRL],        only: [linux_kde], icon: closetab.png,          label: "Close tab" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: F3, mods: [],    only: [windows, linux], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: G,  mods: [GUI], only: [macos],          label: "Find next", source: "concept (shared Fluent)" }

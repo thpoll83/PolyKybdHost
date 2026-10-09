@@ -66,3 +66,13 @@ not fetched: `fetch_icons.py` leaves it untouched so a re-run never clobbers it.
 
 To pin exact bytes against upstream updates, replace the branch names in
 `fetch_icons.py` with commit SHAs. The committed `icons/` freeze the render.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. The twelve core chords, Close, F3 Find next and Ctrl+H Replace
+were already drawn.
+
+- **Zoom**: Notepad++'s defaults are Ctrl+**keypad** + / - (and Ctrl+wheel), per the user
+  manual's View-menu table — the main-row `=`/`-` do nothing, and the keypad has no
+  overlay cell.
+- **Reload from disk**: no default chord.

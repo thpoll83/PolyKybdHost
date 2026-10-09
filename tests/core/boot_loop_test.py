@@ -10,7 +10,7 @@ import threading
 import unittest
 import unittest.mock as mock
 
-from polyhost._version import __protocol__
+from polyhost.device.poly_kybd import REBOOT_MIN_PROTOCOL
 from polyhost.core.poly_core import PolyCore
 from polyhost.settings import PolySettings
 
@@ -145,7 +145,9 @@ class BootLoopTest(unittest.TestCase):
         self.assertTrue(self.done.wait(10))
 
     def test_old_firmware_is_refused_before_anything_is_sent(self):
-        core = self._core(protocol=__protocol__ - 1)
+        # One below the reboot gate, not below the newest protocol: the gate does
+        # not move when a later protocol adds something else.
+        core = self._core(protocol=REBOOT_MIN_PROTOCOL - 1)
         ok, msg = core.start_boot_loop(3)
         self.assertFalse(ok)
         self.assertIn("v22", msg)

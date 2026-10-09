@@ -20,6 +20,14 @@ URL_HAS = "urls-contains"
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
 FLAGS = "flags"
+OVERLAY = "overlay"
+# Key of a layered view (see `_layered`) holding the names drawn as Underlays.
+UNDERLAYS = "_underlays"
+# Layered views of web-app sub-entries, keyed by (id(base), id(sub)); see
+# `_layered`. ⚠️ Kept OUT of the entries on purpose: a cache on the sub-entry
+# that pointed back at its browser entry would make the handler's
+# `last_entry == matched` comparison recurse through the loop.
+_LAYERED_CACHE: dict = {}
 
 # Accepted spellings -> canonical name. The mapping file is hand-written, so take
 # the obvious synonyms rather than making the author guess our internal wording.
@@ -147,6 +155,81 @@ def _phrase_keys(sub_map):
     return sorted((kw for kw in keys if kw[0]), key=lambda kw: -len(kw[0]))
 
 
+class Underlay(str):
+    """An overlay file name drawn UNDER a website's overlay: a browser's own file.
+
+    A plain ``str`` everywhere else -- it compares and hashes as the name, so cache
+    keys, logs and the mapping file see no difference. The send path reads
+    ``underlay`` and asks the keyboard to draw the positions it ends up owning
+    dimmed (cmd 33's DIM flag, protocol v23), so the site's own shortcuts stand out
+    and the browser's stay readable underneath.
+    """
+    underlay = True
+
+
+def as_underlay_path(name, path):
+    """``path`` as an Underlay when ``name`` is one: a resolved path keeps the mark."""
+    return Underlay(path) if getattr(name, "underlay", False) else path
+
+
+def with_underlays(files, underlay_names):
+    """``files`` with every name listed in ``underlay_names`` marked as an Underlay.
+
+    The inverse of flattening a list for JSON: the control socket carries the
+    marked names beside the list (protocol.M_OVERLAY_SEND)."""
+    marked = set(underlay_names)
+    return [Underlay(f) if f in marked else f for f in files]
+
+
+def _as_list(value):
+    if value is None:
+        return []
+    return list(value) if isinstance(value, (list, tuple)) else [value]
+
+
+def _layered(base, sub):
+    """``sub`` with ``base``'s overlay UNDERNEATH its own: base files first.
+
+    A web app runs INSIDE the browser, so the browser's own shortcuts (new tab,
+    reload, find, zoom...) still work on every site and must stay on the keycaps.
+    The site's overlay goes last because template sources resolve last-one-wins
+    per (modifier, key) in `send_overlays_mru`: the site wins exactly the keys it
+    draws and the browser keeps every other one. Before this, a site entry
+    REPLACED the browser's overlay, so opening GitHub took Ctrl+T, Ctrl+L and the
+    tab keys off the board.
+
+    Cached by the identity of both entries, so the matcher returns the same
+    object on every tick for the same window. The cache holds the entries it is
+    keyed by, so an id is never reused while its entry is cached; a mapping
+    reload brings new entries, and the size cap keeps the old ones from piling up.
+    """
+    key = (id(base), id(sub))
+    cached = _LAYERED_CACHE.get(key)
+    if cached is not None:
+        return cached[2]
+    files = []
+    site = _as_list(sub.get(OVERLAY))
+    # The browser's files become Underlays, drawn dimmed where they show. A file the
+    # site lists too is the site's: it keeps its later position and full strength.
+    for f in [Underlay(f) for f in _as_list(base.get(OVERLAY))] + site:
+        if f in files:
+            # A site entry that repeats a browser file (chatgpt.com/codex lists the
+            # browser set) keeps the LATER position, so it still wins its keys.
+            files.remove(f)
+        files.append(f)
+    view = dict(sub)
+    view[OVERLAY] = files
+    # An Underlay compares equal to its plain name, so two views whose files
+    # differ only in which are marked would compare equal, and the handler's
+    # `last_entry == matched` would skip the resend that changes the dimming.
+    # The marked names, as plain strings, make that difference visible.
+    view[UNDERLAYS] = tuple(str(f) for f in files if getattr(f, "underlay", False))
+    if len(_LAYERED_CACHE) > 512:
+        _LAYERED_CACHE.clear()
+    _LAYERED_CACHE[key] = (base, sub, view)
+    return view
+
+
 def find_matching_entry(title, entry, url=None, os_name=None):
     """Return the deepest mapping entry that matches ``title`` (and ``url``), or
     ``None``.
@@ -219,7 +302,7 @@ def find_matching_entry(title, entry, url=None, os_name=None):
             if needle in url:
                 m = find_matching_entry(title, sub, url, os_name)
                 if m is not None:
-                    return m
+                    return _layered(entry, m) if has_overlay else m
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
@@ -260,6 +343,13 @@ def find_matching_entry(title, entry, url=None, os_name=None):
                     if words[i:i + len(kw)] == kw:
                         m = find_matching_entry(title, entry[TITLE_HAS][key], url, os_name)
                         if m is not None:
+                            # On a BROWSER entry (it declares urls-contains) this
+                            # is the same web-app routing with no URL known, so
+                            # the site layers over the browser here too. Other
+                            # apps' title sub-maps keep replacing: a dialog or a
+                            # mode of one app is not running inside another.
+                            if has_urls_contains and has_overlay:
+                                return _layered(entry, m)
                             return m
 
     # A hard ``url`` regex constraint can only be satisfied when a URL is known;

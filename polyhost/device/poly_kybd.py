@@ -17,7 +17,7 @@ from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsTy
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
+from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
 from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
@@ -111,6 +111,15 @@ MAPPING_FLAG_RESET = 0x40
 # (set handedness) also reboots but rewrites EEPROM and the handedness flash stamp.
 REBOOT_MIN_PROTOCOL = 22
 
+# Minimum firmware PROTOCOL_VERSION for cmd 33's DIM flag: the width byte's 0x80
+# draws every pair in that report dimmed (the icon through a 25% pattern, the
+# legend untouched). The host sets it for a browser's icons under a website's
+# overlay (handler/common.Underlay). v21/v22 firmware masks the width with 0x1F, so
+# it would ignore the bit and draw those icons at full strength; below the gate the
+# host sends every pair plain instead.
+MAPPING_DIM_MIN_PROTOCOL = 23
+MAPPING_FLAG_DIM = 0x80
+
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
 # of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
@@ -136,6 +145,7 @@ FEATURE_MIN_PROTOCOL = {
     "overlay_icons": OVERLAY_ICONS_MIN_PROTOCOL,
     "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
     "reboot": REBOOT_MIN_PROTOCOL,
+    "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1172,7 +1182,7 @@ class PolyKybd:
         return True, lang
 
     def send_overlay_mapping(self, from_to: dict, reset: bool = False,
-                             show: bool = False) -> tuple[bool, str]:
+                             show: bool = False, dim=frozenset()) -> tuple[bool, str]:
         """Program the display-position -> pool-slot table on the keyboard.
 
         Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
@@ -1189,20 +1199,31 @@ class PolyKybd:
         ``reset`` / ``show`` (protocol v21+, the "mapping_flags" gate) set the
         width byte's flag bits: reset on the first report runs the prepare step
         before its pairs, show on the last runs the enable step after.
+
+        ``dim`` (protocol v23+, the "mapping_dim" gate) is the set of display
+        positions whose icon the keyboard draws dimmed. The flag covers a whole
+        report, so dimmed and plain pairs travel in separate reports. Below v23
+        the set is ignored and every pair goes out plain.
         """
         if (reset or show) and not (self.supports("mapping_flags") and from_to):
             return False, "mapping flags need protocol v21 and at least one pair"
         if self.supports("gui_combo_modifiers"):
-            return self._send_overlay_mapping_sized(from_to, reset, show)
+            if dim and not self.supports("mapping_dim"):
+                dim = frozenset()
+            return self._send_overlay_mapping_sized(from_to, reset, show, dim)
         return self._send_overlay_mapping_legacy(from_to)
 
     def _send_overlay_mapping_sized(self, from_to: dict, reset: bool = False,
-                                    show: bool = False) -> tuple[bool, str]:
+                                    show: bool = False, dim=frozenset()) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        reports = plan_mapping_reports(from_to, data_bytes)
+        plain = {f: t for f, t in from_to.items() if f not in dim}
+        dimmed = {f: t for f, t in from_to.items() if f in dim}
+        reports = ([(w, p, 0) for w, p in plan_mapping_reports(plain, data_bytes)]
+                   + [(w, p, MAPPING_FLAG_DIM) for w, p in plan_mapping_reports(dimmed, data_bytes)])
         num_msgs = 0
-        for r, (width, pairs) in enumerate(reports):
-            flags = ((MAPPING_FLAG_RESET if reset and r == 0 else 0)
+        for r, (width, pairs, dim_flag) in enumerate(reports):
+            flags = (dim_flag
+                     | (MAPPING_FLAG_RESET if reset and r == 0 else 0)
                      | (MAPPING_FLAG_SHOW if show and r == len(reports) - 1 else 0))
             cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
             msg = cmd + pack_report(pairs, data_bytes, width)
@@ -1210,8 +1231,8 @@ class PolyKybd:
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {err}"
-            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits",
-                           len(pairs), width)
+            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s",
+                           len(pairs), width, " (dimmed)" if dim_flag else "")
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
                       num_msgs, len(from_to))
@@ -1541,6 +1562,13 @@ class PolyKybd:
         DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
 
         display_to_pool: dict[int, int] = {}
+        # Positions whose LAST source is an underlay (a browser's file under a
+        # website's, handler/common.Underlay): the keyboard draws them dimmed.
+        # Last-one-wins like the mapping itself, so a site cell on the same key
+        # and modifier takes the position back to full strength. ESC is never
+        # dimmed: it carries the program mark, which names the app the board is
+        # showing and must stay readable whichever source drew it.
+        dim_positions: set[int] = set()
 
         # Decode EVERY file before touching the device. prepare_for_mru_send()
         # resets the firmware's mapping + usage bits, so issuing it first meant an
@@ -1777,6 +1805,10 @@ class PolyKybd:
 
                         display_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[display_idx] = pool_slot
+                        if getattr(filename, "underlay", False) and keycode != KeyCode.KC_ESCAPE.value:
+                            dim_positions.add(display_idx)
+                        else:
+                            dim_positions.discard(display_idx)
                         per_source.setdefault(filename, []).append((keycode, modifier))
                         if not is_hit:
                             uploaded += 1
@@ -1847,9 +1879,10 @@ class PolyKybd:
         # report to carry them, so it takes the separate cmd 11 reports.
         flagged = mapping_flags and bool(display_to_pool)
         if flagged:
-            ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True)
+            ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True,
+                                                dim=dim_positions)
         elif ensure_prepared():
-            ok, msg = self.send_overlay_mapping(display_to_pool)
+            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions)
         else:
             return False
         if not ok:

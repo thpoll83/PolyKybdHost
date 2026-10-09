@@ -28,6 +28,7 @@ FIRMWARE_BLOCKS = {
     GlyphScript.AMIGA.value:    (0xE9C0, True),
     GlyphScript.APL.value:      (0xEA00, True),
     GlyphScript.BRAILLE.value:  (0xEA40, True),
+    GlyphScript.C64KEYS.value:  (0xEA80, True),
 }
 
 

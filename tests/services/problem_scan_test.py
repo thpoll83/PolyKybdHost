@@ -22,6 +22,18 @@ SPLIT_LOST = "Split link: 1200 tx crc_err=1 nack=0 transport_fail=2 giveup=3 err
 EDEN = "Eden idle: core1 job for key 7 timed out - rendering on core0"
 
 
+def core1_stall(n=1, at_ms=734512, report=1, relaunched=True):
+    """One copy of multicore_exec.c's core1_stall_report() line."""
+    outcome = "core1 relaunched" if relaunched else "core1 relaunch FAILED, overlays degraded until reboot"
+    return ("WARNING core1 stalled: no answer for 512 ms (last cmd 0xcafe0004 arg 0x00410012, "
+            f"counts 17/16, entered 1) - {outcome} (recovery {n} since boot at {at_ms} ms, "
+            f"report {report}/3)")
+
+
+CORE1_STALL_OK = core1_stall()
+CORE1_STALL_FAILED = core1_stall(n=2, relaunched=False)
+
+
 class ConsoleScannerTest(unittest.TestCase):
     def test_the_erase_wait_status_snapshot_is_not_a_problem(self):
         # Printed while the slave erases staging flash at the start of a
@@ -49,6 +61,79 @@ class ConsoleScannerTest(unittest.TestCase):
         s = ps.ConsoleProblemScanner()
         self.assertEqual(s.feed(SLAVE[:10]), [])
         self.assertEqual([p.key for p in s.feed(SLAVE[10:] + "\n")], ["slave_unresponsive"])
+
+    # -- core1 stall recovery (multicore_exec.c, core1_stall_report) -----------
+    def test_a_core1_stall_that_was_recovered_is_an_error(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed(f"{CORE1_STALL_OK}\n")
+        self.assertEqual([(p.key, p.severity) for p in found],
+                         [("core1_stall", ps.SEVERITY_ERROR)])
+        self.assertIn("restarted", found[0].summary)
+
+    def test_a_core1_stall_whose_relaunch_failed_is_its_own_error(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed(f"{CORE1_STALL_FAILED}\n")
+        self.assertEqual([p.key for p in found], ["core1_stall_failed"])
+        self.assertIn("did not restart", found[0].summary)
+
+    def test_the_repeated_copies_of_one_recovery_count_once(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        self.assertEqual(len(s.feed(f"{core1_stall(report=1)}\n")), 1)
+        now[0] = 100.0   # past the update interval: a count change would publish
+        self.assertEqual(s.feed(f"{core1_stall(report=2)}\n{core1_stall(report=3)}\n"), [])
+        self.assertEqual(s.problems()[0].count, 1)
+
+    def test_two_recoveries_count_twice(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        s.feed(f"{core1_stall(n=1, at_ms=1000)}\n")
+        now[0] = 100.0
+        found = s.feed(f"{core1_stall(n=2, at_ms=90000)}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("core1_stall", 2)])
+
+    def test_a_second_recovery_inside_the_interval_is_sent_by_its_own_copies(self):
+        # The copies are skipped as repeats, but the count they follow must not
+        # wait for a third recovery to be published.
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(update_interval=10, clock=lambda: now[0])
+        s.feed(f"{core1_stall(n=1, at_ms=1000)}\n")
+        now[0] = 5.0
+        self.assertEqual(s.feed(f"{core1_stall(n=2, at_ms=6000)}\n"), [])   # inside
+        now[0] = 15.0
+        found = s.feed(f"{core1_stall(n=2, at_ms=6000, report=2)}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("core1_stall", 2)])
+
+    def test_the_same_number_after_a_reboot_is_a_new_recovery(self):
+        # <n> restarts at 1 when the keyboard reboots; the uptime tells them apart.
+        s = ps.ConsoleProblemScanner()
+        s.feed(f"{core1_stall(n=1, at_ms=734512)}\n{core1_stall(n=1, at_ms=61200)}\n")
+        self.assertEqual(s.problems()[0].count, 2)
+
+    def test_the_fw_staging_relaunch_line_is_not_a_core1_stall(self):
+        s = ps.ConsoleProblemScanner()
+        found = s.feed("fw_staging: core1 relaunch timed out — RLE service down until reboot\n")
+        self.assertEqual([p.key for p in found], ["core1_relaunch"])
+
+    # -- classify_console_line: what the log viewer colours ----------------------
+    def test_a_curated_pattern_colours_with_its_own_severity(self):
+        self.assertEqual(ps.classify_console_line(f"[t] {SLAVE}"), ps.SEVERITY_ERROR)
+        self.assertEqual(ps.classify_console_line(f"[t] {SPLIT_LOST}"), ps.SEVERITY_WARNING)
+        self.assertEqual(ps.classify_console_line(f"[t] {CORE1_STALL_OK}"), ps.SEVERITY_ERROR)
+
+    def test_a_firmware_marker_colours_an_unknown_line_as_a_warning(self):
+        for line in ("Warning: overlay mapping chunk did not reach the slave; repairing at enable.",
+                     "REJECTED overlay mapping report: bad width 3",
+                     "ERROR: something new"):
+            self.assertEqual(ps.classify_console_line(f"[t] {line}"), ps.SEVERITY_WARNING, line)
+
+    def test_healthy_lines_stay_plain(self):
+        # Substrings of the markers must not count: these are all a healthy board.
+        for line in (SPLIT_OK, "Eden idle 5226ms (frame 33ms, worst slice 3ms, 31 frames, core1)",
+                     "Status idle: 67 frames/60s, worst compose 6ms",
+                     "slave status (begin-pending): RPC FAILED \u2014 slave unresponsive",
+                     "errors=0 warnings=0"):
+            self.assertIsNone(ps.classify_console_line(f"[t] {line}"), line)
 
     # -- the status OLED: one failure is a glitch, a burst is a fault ------------
     def test_one_oled_failure_is_a_warning_that_the_default_level_does_not_raise(self):
@@ -160,7 +245,10 @@ class ConsoleScannerTest(unittest.TestCase):
         self.assertEqual([(p.key, p.count) for p in found], [("slave_unresponsive", 4)])
         self.assertEqual(s.feed(f"{SLAVE}\n"), [])                # interval restarts
         now[0] = 200.0
-        self.assertEqual(s.feed("healthy\n"), [])                # no repeat, no update
+        # The count that rose inside the interval goes out on the next feed,
+        # with no further match; after that, nothing changed, nothing is sent.
+        self.assertEqual([p.count for p in s.feed("healthy\n")], [5])
+        self.assertEqual(s.feed("healthy\n"), [])
 
     def test_a_narrowed_level_stops_warning_updates(self):
         now = [0.0]

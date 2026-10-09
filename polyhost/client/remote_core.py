@@ -377,8 +377,16 @@ class RemoteCore(Observable):
 
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
+        # The core takes one name or a list; list("sublime") would be its letters.
+        files = [files] if isinstance(files, str) else list(files)
+        # An Underlay (handler/common) is a str subclass and arrives as a plain
+        # name, so the marked names travel beside the list.
+        params = {"files": [str(f) for f in files]}
+        underlay = [str(f) for f in files if getattr(f, "underlay", False)]
+        if underlay:
+            params["underlay"] = underlay
         try:
-            res = self._rpc_call(p.M_OVERLAY_SEND, {"files": list(files)})
+            res = self._rpc_call(p.M_OVERLAY_SEND, params)
             return bool((res or {}).get("queued"))
         except RpcError:
             return False

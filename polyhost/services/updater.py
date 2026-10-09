@@ -26,6 +26,7 @@ from packaging.version import InvalidVersion, Version
 
 import polyhost
 from polyhost._version import __version__
+from polyhost.services import build_info
 # The one place the 64-byte Ed25519 signature length is defined. hid_fw_up is
 # stdlib-only (no hid, no Qt), so importing it here costs nothing and keeps the
 # downloader's length check from drifting out of step with the sender's.
@@ -1364,6 +1365,11 @@ class UpdateInstaller(threading.Thread):
                 line_cb=lambda line: _fire(self._on_progress, -1, line),
                 download_dir=tmp_dir,
             )
+            # The tree now holds the release, but a cloned install's .git still
+            # names the commit it was cloned at; the marker is what says so.
+            build_info.write_release_marker(
+                install_root, self.release.tag, self.release.version,
+                self.release.published_at, self.release.name)
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
             # A pip failure with files still in use leaves Copy-Item steps that

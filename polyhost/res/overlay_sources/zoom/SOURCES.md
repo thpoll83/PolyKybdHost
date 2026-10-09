@@ -77,3 +77,16 @@ Reserved-chord check: ⌘T is Zoom's own in-meeting binding; no ⌘H, ⌘M, ⌘Q
 - Alt (bare) — always-show-controls on Windows: no cell for a lone modifier.
 - Ctrl+Alt+Shift (focus meeting controls), F6 (cycle popups), Space (push to
   talk), Ctrl+2 (read speaker name), Alt+F4: no cell, or not meeting-specific.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon.
+
+| Concept | Windows / Linux | macOS | Source |
+|---|---|---|---|
+| Close | (already drawn: Ctrl+W "Close chat") | ⌘W, `only: [macos]` | Zoom KB0067050, macOS *General*: "Command+W: Close the current window"; confirmed by search excerpts of university copies (GVSU, Roane State, City of Santa Barbara) |
+
+Not added / why: the mapping is title-gated to the meeting window, and Zoom
+documents none of Save / Open / New / Print / Cut / Copy / Paste / Undo / Redo /
+Select all / Find / Zoom / Reload as in-meeting chords. Zoom is not an Electron
+app, so no editing roles are assumed.

@@ -67,7 +67,12 @@ class ConsolePattern:
     ``escalate_after`` > 0 makes a WARNING pattern an ERROR once it matches that
     many times within ``escalate_window_s`` seconds, with ``escalated_summary`` as
     its sentence. That is for a line where one occurrence is a glitch the board
-    recovers from and a burst is a fault."""
+    recovers from and a burst is a fault.
+
+    A regex with a named ``instance`` group counts each distinct value of that group
+    ONCE: a line repeating an instance already seen neither raises the count nor
+    publishes again. That is for a firmware line printed more than once for the same
+    event, so a reader that missed the first copy still gets one."""
     id: str
     regex: re.Pattern
     severity: str
@@ -123,6 +128,22 @@ CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
     _p("core1_relaunch", r"core1 relaunch timed out", SEVERITY_ERROR,
        "The keyboard's second processor core did not restart; keycap images "
        "may stop updating until the keyboard is unplugged."),
+    # multicore_exec.c's stall recovery: core1 owed a decoded keycap image for
+    # 500 ms and was reset. Before that recovery existed the same stall shut the
+    # keyboard's command channel until a replug (field report 2026-10-09), so even
+    # a successful relaunch is a fault worth a report: one keycap image was lost.
+    # The firmware prints each recovery up to three times; the ID it repeats,
+    # "recovery <n> since boot at <uptime> ms", makes the copies count once.
+    _p("core1_stall_failed",
+       r"WARNING core1 stalled: .*core1 relaunch FAILED.*\(recovery (?P<instance>\d+ since boot at \d+) ms",
+       SEVERITY_ERROR,
+       "The keyboard's second processor core stopped and did not restart; keycap "
+       "images may stop updating until the keyboard is unplugged."),
+    _p("core1_stall",
+       r"WARNING core1 stalled: .*core1 relaunched \(recovery (?P<instance>\d+ since boot at \d+) ms",
+       SEVERITY_ERROR,
+       "The keyboard's second processor core stopped and was restarted; one keycap "
+       "image may look wrong until the next app switch."),
     _p("split_link_giveup", r"Split link: .*giveup=[1-9]", SEVERITY_WARNING,
        "Messages between the keyboard halves were lost after retries."),
     _p("eden_core1_timeout", r"Eden idle: core1 job for key \d+ timed out", SEVERITY_WARNING,
@@ -165,12 +186,33 @@ def _clip(text: str) -> str:
     return text if len(text) <= MAX_LINE else text[:MAX_LINE - 1] + "…"
 
 
+# The firmware's own explicit markers, for a console line no curated pattern knows.
+# Whole words only: healthy lines such as `transport_fail=0 giveup=0` contain the
+# substrings, and a viewer that paints them teaches people to ignore the colour.
+_CONSOLE_MARKER_RE = re.compile(r"\b(?:WARNING|REJECTED|ERROR)\b|\b(?:Warning|Error):")
+
+
+def classify_console_line(line: str) -> str | None:
+    """Severity to SHOW a keyboard console line with, or None for a normal line.
+
+    For the log viewer's highlighting, not for the scan: a curated pattern gives
+    its own severity (its base one; escalation needs a history a single line does
+    not have), so the viewer and the problem dialog agree. A line no pattern knows
+    is a warning only when the firmware marked it so itself."""
+    for pat in CONSOLE_PATTERNS:
+        if pat.regex.search(line):
+            return pat.severity
+    if _CONSOLE_MARKER_RE.search(line):
+        return SEVERITY_WARNING
+    return None
+
+
 class ConsoleProblemScanner:
     """Reassemble console fragments and match whole lines against the patterns.
 
     ``feed`` returns the problems to publish: those seen for the FIRST time, and
-    known ones whose count rose and whose last publish is at least
-    ``update_interval`` seconds old. Serialize them before the next ``feed``,
+    known ones whose count rose since their last publish, once that publish is
+    at least ``update_interval`` seconds old, whether or not this chunk matched. Serialize them before the next ``feed``,
     which may raise the count again."""
 
     def __init__(self, patterns=CONSOLE_PATTERNS, update_interval=UPDATE_INTERVAL_S,
@@ -183,14 +225,22 @@ class ConsoleProblemScanner:
         self._sent: dict[str, tuple[int, float]] = {}   # id -> (count, when) last published
         self._totals: dict[str, int] = {}                # id -> matches, at any level
         self._hits: dict[str, deque] = {}                # id -> match times, escalating patterns only
+        self._instances: dict[str, set] = {}             # id -> instance values counted
 
     def feed(self, chunk: str, level: str = LEVEL_ERRORS) -> list[Problem]:
         out: dict[str, Problem] = {}
         now = self._clock()
         for line in self._lines.feed(chunk):
             for pat in self._patterns:
-                if not pat.regex.search(line):
+                m = pat.regex.search(line)
+                if not m:
                     continue
+                instance = m.groupdict().get("instance")
+                if instance is not None:
+                    seen = self._instances.setdefault(pat.id, set())
+                    if instance in seen:
+                        break   # a repeat of an event already counted
+                    seen.add(instance)
                 self._totals[pat.id] = self._totals.get(pat.id, 0) + 1
                 severity, summary = self._severity_for(pat, now)
                 prior = self._seen.get(pat.id)
@@ -201,15 +251,6 @@ class ConsoleProblemScanner:
                         prior.severity, prior.summary = severity, summary
                         prior.line = _clip(line)
                         out[pat.id] = prior
-                        break
-                    sent_count, sent_at = self._sent.get(pat.id, (0, now))
-                    # Counted at any level, re-sent only at the CURRENT one: a
-                    # warning first seen under errors_and_warnings goes quiet
-                    # once the user narrows the level to errors.
-                    if (severity_wanted(prior.severity, level)
-                            and pat.id not in out and prior.count != sent_count
-                            and now - sent_at >= self._update_interval):
-                        out[pat.id] = prior
                 elif severity_wanted(severity, level):
                     # Counted from the first match, including the warnings the
                     # current level did not publish.
@@ -218,6 +259,17 @@ class ConsoleProblemScanner:
                     self._seen[pat.id] = prob
                     out[pat.id] = prob
                 break   # one line, one problem
+        # A raised count goes out once the interval has passed, on ANY feed: a
+        # count that rose inside the interval must not wait for another match,
+        # which a repeat copy (skipped above) or a healthy line never brings.
+        # Counted at any level, re-sent only at the CURRENT one: a warning first
+        # seen under errors_and_warnings goes quiet once the level is narrowed.
+        for pid, prior in self._seen.items():
+            sent_count, sent_at = self._sent.get(pid, (0, now))
+            if (pid not in out and prior.count != sent_count
+                    and severity_wanted(prior.severity, level)
+                    and now - sent_at >= self._update_interval):
+                out[pid] = prior
         for pid, prob in out.items():
             self._sent[pid] = (prob.count, now)
         return list(out.values())

@@ -96,3 +96,9 @@ bindings:
   - { key: W,  mods: [GUI, SHIFT],  <<: *mac, icon: galleryview.png, label: "Speaker / gallery view" }
   # Windows/Linux toggles both with Alt+M; the Mac splits them.
   - { key: U,  mods: [GUI, CTRL],   <<: *mac, icon: unmuteall.png,   label: "Unmute all" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # Zoom's hot-key article lists Cmd+W as "Close current window" on macOS.
+  # Ctrl+W (Windows/Linux) is already drawn above as "Close chat". Nothing else
+  # from the standard set is a documented in-meeting chord. See SOURCES.md.
+  - { key: W, mods: [GUI], only: [macos], label: "Close", source: "concept (shared Fluent)" }

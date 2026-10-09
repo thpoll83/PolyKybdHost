@@ -170,3 +170,14 @@ bindings:
   - { key: DOWN,  mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane down",  source: "ms-fluent/Resize (MIT)" }
   - { key: LEFT,  mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane left",  source: "ms-fluent/Resize (MIT)" }
   - { key: RIGHT, mods: [ALT, SHIFT], icon: resizepane.png, label: "Resize pane right", source: "ms-fluent/Resize (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # ctrl+v -> Terminal.PasteFromClipboard is NOT in defaults.json: it is in
+  # userDefaults.json, the template Windows Terminal writes into every NEW
+  # settings.json (alongside ctrl+c copy and alt+shift+d). Paste always acts, so
+  # it is drawn. ctrl+c is deliberately NOT drawn: the copy action only fires
+  # while a selection exists and otherwise passes ^C (SIGINT) to the shell -- the
+  # same "conditional, wrong most of the time" reason plain `enter` is excluded.
+  # Everything else in the standard set is already above (Ctrl+Shift+C/V/A/F/W,
+  # Ctrl+=/- font size) or is not bound (no Save/Open/Print/Undo/Redo/Reload).
+  - { key: V, mods: [CTRL], label: "Paste", source: "concept (shared Fluent)" }

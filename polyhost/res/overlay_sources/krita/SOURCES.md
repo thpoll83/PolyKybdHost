@@ -169,3 +169,13 @@ Fixed 2026-09-30 against Krita's tool action files: "Rect select" moved from
 bare `R` to `Ctrl+R` (⌘R on the Mac; `KisToolSelectRectangular.action`), and
 bare `V` "Line tool" is gone (`KritaShape/KisToolLine` has no default shortcut in
 `tools.action`).
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Nothing added. New/Open/Save/Close/Undo/Redo(Ctrl+Shift+Z)/Cut/Copy/Paste/Select all
+were already drawn (KStandardAction set in `libs/ui/KisMainWindow.cpp`).
+
+- **Print**: Krita creates no Print action.
+- **Find / Find next / Replace**: none in Krita.
+- **Zoom**: the defaults are bare `+` / `-` (https://docs.krita.org/en/reference_manual/tools/zoom.html);
+  Ctrl+= has to be user-assigned, so it is not drawn.

@@ -76,3 +76,11 @@ python scripts/generate_app_overlays.py \
 ```
 
 Verified byte-identical on a re-run.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Every standard chord both references confirm is already drawn
+(Ctrl+S, Ctrl+P, Ctrl+C, Ctrl+Z, Ctrl+Y, Ctrl+=/- zoom). Ctrl+N, Ctrl+O, Ctrl+A,
+Ctrl+F, Ctrl+W are not in either reference
+(<https://winaero.com/the-list-of-keyboard-shortcuts-for-photos-app-in-windows-10/>),
+and Ctrl+R is Rotate, not Reload.
