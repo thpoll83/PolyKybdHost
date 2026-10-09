@@ -157,10 +157,34 @@ class LogViewerTest(unittest.TestCase):
         self._search("e")
         editor = self.dlg._current_editor()
         first = editor.firstVisibleBlock().position()
-        last = editor.cursorForPosition(editor.viewport().rect().bottomRight()).position()
-        visible_text = editor.toPlainText()[first:last + 1]
+        bottom = editor.cursorForPosition(editor.viewport().rect().bottomRight()).block()
+        visible_text = editor.toPlainText()[first:bottom.position() + bottom.length()]
         self.assertGreater(len(editor.extraSelections()), 500)
         self.assertEqual(len(editor.extraSelections()), visible_text.count("e"))
+
+    def test_the_bottom_line_is_tinted_past_the_right_edge(self):
+        # Lines do not wrap, so a horizontal scroll reveals the rest of the
+        # bottom line without a vertical scroll to re-tint it. Below the LAST
+        # line the corner maps to the end of the document, so the long line
+        # sits mid-file and is scrolled into the bottom row of the view.
+        pad = " " * 2000
+        short = "[t] INFO    short\n" * 300
+        with open(self.host, "w", encoding="utf-8") as f:
+            f.write(f"{short}[t] INFO    far{pad}far{pad}far\n{short}")
+        self.dlg.load_log()
+        self._search("far")                  # current: the newest, off-screen
+        editor = self.dlg._current_editor()
+        corner = editor.viewport().rect().bottomRight()
+        bar = editor.verticalScrollBar()
+        for top in range(bar.maximum() + 1):
+            bar.setValue(top)
+            if editor.cursorForPosition(corner).block().blockNumber() == 300:
+                break
+        else:
+            self.fail("could not put the long line in the bottom row")
+        editor.horizontalScrollBar().setValue(0)
+        self.dlg._tint_visible()
+        self.assertEqual(len(editor.extraSelections()), 3)
 
     def test_no_match_says_so_and_tints_nothing(self):
         self.assertEqual(self._search("nothing like this"), "No matches")

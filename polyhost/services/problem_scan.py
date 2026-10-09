@@ -211,8 +211,8 @@ class ConsoleProblemScanner:
     """Reassemble console fragments and match whole lines against the patterns.
 
     ``feed`` returns the problems to publish: those seen for the FIRST time, and
-    known ones whose count rose and whose last publish is at least
-    ``update_interval`` seconds old. Serialize them before the next ``feed``,
+    known ones whose count rose since their last publish, once that publish is
+    at least ``update_interval`` seconds old, whether or not this chunk matched. Serialize them before the next ``feed``,
     which may raise the count again."""
 
     def __init__(self, patterns=CONSOLE_PATTERNS, update_interval=UPDATE_INTERVAL_S,
@@ -251,15 +251,6 @@ class ConsoleProblemScanner:
                         prior.severity, prior.summary = severity, summary
                         prior.line = _clip(line)
                         out[pat.id] = prior
-                        break
-                    sent_count, sent_at = self._sent.get(pat.id, (0, now))
-                    # Counted at any level, re-sent only at the CURRENT one: a
-                    # warning first seen under errors_and_warnings goes quiet
-                    # once the user narrows the level to errors.
-                    if (severity_wanted(prior.severity, level)
-                            and pat.id not in out and prior.count != sent_count
-                            and now - sent_at >= self._update_interval):
-                        out[pat.id] = prior
                 elif severity_wanted(severity, level):
                     # Counted from the first match, including the warnings the
                     # current level did not publish.
@@ -268,6 +259,17 @@ class ConsoleProblemScanner:
                     self._seen[pat.id] = prob
                     out[pat.id] = prob
                 break   # one line, one problem
+        # A raised count goes out once the interval has passed, on ANY feed: a
+        # count that rose inside the interval must not wait for another match,
+        # which a repeat copy (skipped above) or a healthy line never brings.
+        # Counted at any level, re-sent only at the CURRENT one: a warning first
+        # seen under errors_and_warnings goes quiet once the level is narrowed.
+        for pid, prior in self._seen.items():
+            sent_count, sent_at = self._sent.get(pid, (0, now))
+            if (pid not in out and prior.count != sent_count
+                    and severity_wanted(prior.severity, level)
+                    and now - sent_at >= self._update_interval):
+                out[pid] = prior
         for pid, prob in out.items():
             self._sent[pid] = (prob.count, now)
         return list(out.values())

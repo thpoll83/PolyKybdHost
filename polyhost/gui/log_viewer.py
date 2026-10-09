@@ -321,7 +321,10 @@ class LogViewerDialog(QMainWindow):
         doc = editor.document()
         first = editor.firstVisibleBlock().position()
         corner = editor.viewport().rect().bottomRight()
-        last = max(editor.cursorForPosition(corner).position(), first)
+        # To the END of the bottom line: lines do not wrap, so a horizontal
+        # scroll reveals the rest of it without moving the vertical bar.
+        bottom = editor.cursorForPosition(corner).block()
+        last = max(bottom.position() + bottom.length(), first)
         selections = []
         found = doc.find(needle, first)
         current_at = self._current.selectionStart()

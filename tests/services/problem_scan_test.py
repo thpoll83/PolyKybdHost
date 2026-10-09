@@ -92,6 +92,18 @@ class ConsoleScannerTest(unittest.TestCase):
         found = s.feed(f"{core1_stall(n=2, at_ms=90000)}\n")
         self.assertEqual([(p.key, p.count) for p in found], [("core1_stall", 2)])
 
+    def test_a_second_recovery_inside_the_interval_is_sent_by_its_own_copies(self):
+        # The copies are skipped as repeats, but the count they follow must not
+        # wait for a third recovery to be published.
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(update_interval=10, clock=lambda: now[0])
+        s.feed(f"{core1_stall(n=1, at_ms=1000)}\n")
+        now[0] = 5.0
+        self.assertEqual(s.feed(f"{core1_stall(n=2, at_ms=6000)}\n"), [])   # inside
+        now[0] = 15.0
+        found = s.feed(f"{core1_stall(n=2, at_ms=6000, report=2)}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("core1_stall", 2)])
+
     def test_the_same_number_after_a_reboot_is_a_new_recovery(self):
         # <n> restarts at 1 when the keyboard reboots; the uptime tells them apart.
         s = ps.ConsoleProblemScanner()
@@ -233,7 +245,10 @@ class ConsoleScannerTest(unittest.TestCase):
         self.assertEqual([(p.key, p.count) for p in found], [("slave_unresponsive", 4)])
         self.assertEqual(s.feed(f"{SLAVE}\n"), [])                # interval restarts
         now[0] = 200.0
-        self.assertEqual(s.feed("healthy\n"), [])                # no repeat, no update
+        # The count that rose inside the interval goes out on the next feed,
+        # with no further match; after that, nothing changed, nothing is sent.
+        self.assertEqual([p.count for p in s.feed("healthy\n")], [5])
+        self.assertEqual(s.feed("healthy\n"), [])
 
     def test_a_narrowed_level_stops_warning_updates(self):
         now = [0.0]
