@@ -162,7 +162,7 @@ class DeviceSettings:
 
     @property
     def OVERLAY_MAPPING_CAPACITY(self):
-        """Maximum number of overlay images the pool can hold (90 keycode slots x 7 modifier variants)."""
+        """Maximum number of overlay images the pool can hold (firmware NUM_OVERLAY_SLOTS, 600)."""
         return self._overlay_mapping_pool_capacity
     
     @property

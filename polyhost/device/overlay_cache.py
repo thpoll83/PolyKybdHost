@@ -19,7 +19,8 @@ class OverlayMRUCache:
 
     The pool is a contiguous range of firmware overlay slots (0..capacity-1).
     Each slot is addressed by a (keycode, modifier) pair derived from its flat index.
-    Capacity is sourced from DeviceSettings.OVERLAY_MAPPING_CAPACITY (90 x 7 = 630).
+    Capacity is sourced from DeviceSettings.OVERLAY_MAPPING_CAPACITY: 600, the
+    firmware's NUM_OVERLAY_SLOTS, which is not tied to keycode slots x variants.
 
     Content key: (os.path.basename(filename), modifier.value, keycode)
     — uniquely identifies one overlay image (one key+modifier combo from one file).
