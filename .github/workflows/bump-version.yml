@@ -5,8 +5,17 @@ on:
     types: [closed]
     branches: [main]
 
+# main requires a pull request for every change, and a personal repository's
+# ruleset cannot list the built-in token as a bypass actor. So the bump goes
+# through a PR of its own, which this job opens and merges at once. That needs
+# "Allow GitHub Actions to create and approve pull requests" (Settings ->
+# Actions -> General) and a rule that asks for a PR and nothing more: a PR
+# opened with GITHUB_TOKEN starts no workflows, so required checks or
+# approvals would never be met. For the same reason the bump PR's own merge
+# does not start this workflow again.
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   bump:
@@ -71,11 +80,25 @@ jobs:
           print(f"Host bumped to {major}.{minor}.{patch} (protocol {proto})")
           PYEOF
 
-      - name: Commit and push
+      - name: Open and merge the bump PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           VERSION=$(awk -F' = ' '/^__major__/{m=$2} /^__minor__/{n=$2} /^__patch__/{p=$2} END{print m"."n"."p}' polyhost/_version.py)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add polyhost/_version.py
-          git diff --cached --quiet || git commit -m "chore: bump host version to ${VERSION} [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "Nothing to bump."
+            exit 0
+          fi
+          BRANCH="bump/host-${VERSION}-${GITHUB_RUN_ID}"
+          git switch -c "$BRANCH"
+          git commit -m "chore: bump host version to ${VERSION} [skip ci]"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: bump host version to ${VERSION}" \
+            --body "Automatic version bump after #${PR_NUMBER}, opened and merged by bump-version.yml."
+          gh pr merge "$BRANCH" --squash --delete-branch \
+            || gh pr merge "$BRANCH" --merge --delete-branch
