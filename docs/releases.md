@@ -79,6 +79,11 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).
+  - ⚠️ **An open PR that bumps `__protocol__` conflicts after EVERY merge to `main`.**
+    The bump rewrites `__patch__`, the line above `__protocol__` in `_version.py`, so git
+    sees two edits to one hunk. host#327 went `dirty` that way when #330 landed 1.16.1
+    (2026-10-09). The resolution is mechanical: keep `main`'s `__patch__` and the PR's
+    `__protocol__`. Expect it once per merge while the PR is open.
   - ⚠️ **Since 1.0, patch (no label) is the default.** `bump:minor` is for a feature an
     owner would call new, the kind that names a release; a fix, a diagnostic, a developer
     tool or a small addition stays a patch even when it bumps the protocol. After 1.0

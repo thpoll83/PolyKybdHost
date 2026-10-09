@@ -158,3 +158,35 @@ that `git diff --stat origin/main` shows exactly the stacked PR's own
 additions/deletions before pushing. Seen on the firmware's #324 → #325 (2026-10-01):
 seven conflicted files, of which only `config.h` differed, by the version auto-bump,
 and the result matched the PR's +374/−104.
+
+### A stacked PR that is ONE commit on your own branch: rebase it instead
+
+When the stacked branch is yours and carries a single commit, skip the per-file merge
+and move the commit:
+
+```bash
+git rebase --onto origin/main <base PR's last head> <stacked branch>
+diff <(git diff <base PR's last head> <old stacked head>) <(git diff HEAD~1 HEAD) && echo PATCH-SAME
+git push --force-with-lease=<stacked branch>:<old stacked head> origin HEAD:<stacked branch>
+```
+
+⚠️ **Prove it by the PATCH, not the tree.** `main` has usually moved past the base PR by
+then, so `git diff <old stacked head> HEAD` lists every unrelated merge and fails even
+on a perfect rebase. #328 after #327's squash (2026-10-09): the tree check failed on
+#329/#330's files, and the patch compare was identical.
+
+### Squashing a branch full of merges before review
+
+Build the squash beside the branch and prove it is the tested code before replacing it:
+
+```bash
+git checkout -B tmp origin/main
+git merge --squash <branch> && git commit      # reuse the feature commit's message
+git diff --quiet <branch> HEAD && echo TREE-SAME
+git push --force-with-lease=<branch>:<old head sha> origin HEAD:<branch>
+```
+
+If the squash itself conflicts (a stacked branch over a rewritten base),
+`git read-tree -u --reset <old head>` writes the exact tested tree, and the commit then
+holds precisely that. Done three times on 2026-10-09 (#327, #328, qmk#370); each result
+was byte-identical to the head CI had tested.
