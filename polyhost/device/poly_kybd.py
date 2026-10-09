@@ -1733,6 +1733,7 @@ class PolyKybd:
             # never fetched.
             per_source: dict[str, list] = {}
             deferred: dict[str, list] = {}
+            pool_full: list = []    # keys left blank: the switch filled the pool
             uploaded = 0
             for filename, converter in zip(filenames, converters):
                 source_is_synthetic = filename in synthetic
@@ -1766,6 +1767,13 @@ class PolyKybd:
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
                         content_key = (os.path.basename(filename), key_modifier, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                        if pool_slot is None:
+                            # The pool is full of this switch's own images. The
+                            # key stays blank rather than borrowing a slot an
+                            # earlier key still shows (overlay_cache.get_or_allocate).
+                            covered.discard((modifier.value, keycode))
+                            pool_full.append((filename, keycode, modifier))
+                            continue
 
                         if not is_hit:
                             # Read before the upload marks it: a slot reused
@@ -1866,6 +1874,12 @@ class PolyKybd:
         self.log.info("MRU: %d HID message(s) of image data (rest served from "
                       "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
+        if pool_full:
+            self.log.warning(
+                "MRU: %d key(s) left blank: this switch needs more than %d distinct "
+                "images, the keyboard's overlay pool (first: %s 0x%x/%s)",
+                len(pool_full), cache.capacity,
+                os.path.basename(pool_full[0][0]), pool_full[0][1], pool_full[0][2])
 
         # Re-check right before the commit: the token can flip after the last
         # pool upload, and committing the mapping then would flash a superseded

@@ -29,7 +29,8 @@ from polyhost.services.shortcut_source.model import (
 # (23 of them already in icons.plyi). Positions are bounded by one slot per
 # (modifier, key), which is what `best` below keys on; images by the concepts
 # the lexicon and the derived names can reach. Neither bound promises a plan
-# fits the 600-image pool, which is an MRU cache that evicts older batches.
+# fits the 600-image pool. What does is the send path: a switch never evicts its
+# own images, so past 600 the extra keys stay blank (overlay_cache.get_or_allocate).
 
 # Below this a label is better left alone: the keycap already says what the key
 # is, and a wrong icon is worse than none (the same reasoning that keeps

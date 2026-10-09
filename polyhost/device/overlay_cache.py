@@ -77,14 +77,21 @@ class OverlayMRUCache:
             self._in_batch = was_in_batch
 
     def get_or_allocate(self, content_key: tuple, full_path: str = "",
-                        bytes_data: bytes | None = None) -> tuple[int, bool]:
+                        bytes_data: bytes | None = None) -> tuple[int | None, bool]:
         """
-        Return (pool_slot, is_hit).
+        Return (pool_slot, is_hit), or (None, False) when the pool is full of
+        the current batch's own images.
         Hit: content_key already known, OR bytes_data identical to an existing slot.
         Miss: a new slot is allocated. When the pool is full, the slot evicted
-        is taken from the oldest batch (preferring a batch other than the
-        currently-active one, so a single program switch never displaces its own
-        in-progress entries unless its batch has filled the entire pool).
+        is taken from the oldest batch other than the current one.
+
+        ⚠️ A batch NEVER evicts its own slots. Every slot it holds is still
+        mapped to a key in the same program switch, so evicting one put a later
+        image on an earlier key: measured over the emulated keyboard, 650
+        distinct images in one switch showed 600 correct keys and 50 WRONG ones,
+        while the send reported success (2026-10-09). The pool size is therefore
+        a hard limit per switch, and the caller leaves the refused key blank.
+        Nothing is changed on a refusal.
         bytes_data enables cross-key dedup: identical images share one pool slot.
         full_path is stored for the visual inspector (optional for tests).
         """
@@ -112,6 +119,8 @@ class OverlayMRUCache:
             self._next_free += 1
         else:
             slot = self._evict_oldest_slot()
+            if slot is None:
+                return None, False
 
         self._cache[content_key] = slot
         self._slot_batch[slot] = self._current_batch
@@ -179,13 +188,14 @@ class OverlayMRUCache:
         for key in [k for k, s in self._cache.items() if s == slot]:
             self.forget(key)
 
-    def _evict_oldest_slot(self) -> int:
-        """Pick a victim slot. Prefer the smallest batch that is not the current
-        batch; only fall back to the current batch when nothing older remains."""
+    def _evict_oldest_slot(self) -> int | None:
+        """Pick a victim slot from the oldest batch that is not the current one,
+        or None when every occupied slot belongs to the current batch (see
+        `get_or_allocate`)."""
         candidates = {s: b for s, b in self._slot_batch.items()
                       if b != self._current_batch}
         if not candidates:
-            candidates = self._slot_batch
+            return None
         victim = min(candidates, key=candidates.get)
 
         # Drop every alias key pointing at the victim slot
