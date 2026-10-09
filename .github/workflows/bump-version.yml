@@ -93,7 +93,7 @@ jobs:
             echo "Nothing to bump."
             exit 0
           fi
-          BRANCH="bump/host-${VERSION}-${GITHUB_RUN_ID}"
+          BRANCH="bump/host-${VERSION}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git switch -c "$BRANCH"
           git commit -m "chore: bump host version to ${VERSION} [skip ci]"
           git push origin "$BRANCH"
