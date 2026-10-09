@@ -1145,6 +1145,71 @@ class JetBrainsOutlineMarksTest(unittest.TestCase):
                 open(os.path.join(ai.PROGRAM_ICON_DIR, "intellijidea.png"), "rb") as b:
             self.assertEqual(a.read(), b.read())
 
+def _solid_png(size):
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGBA", (size, size), (0, 0, 0, 255)).save(buf, "PNG")
+    return buf.getvalue()
+
+
+try:
+    _PNG_40 = _solid_png(40)
+except Exception:          # PIL absent: the test that needs it errors loudly
+    _PNG_40 = b""
+
+
+class RasteriserMissingTest(unittest.TestCase):
+    """Without svg_raster's dependencies EVERY SVG mark is lost, and the log
+    used to blame `cairosvg` -- merely the last fallback tried (Plasma,
+    2026-10-05: Chrome drew its OS icon over the shipped logo, VS Code drew
+    nothing)."""
+
+    def setUp(self):
+        ai._warn_rasteriser_missing.cache_clear()
+        self.addCleanup(ai._warn_rasteriser_missing.cache_clear)
+
+    def _draw_without_rasterisers(self):
+        from polyhost.services import svg_raster
+        with mock.patch.object(svg_raster, "rasterise", return_value=None), \
+                mock.patch.object(svg_raster, "unavailable_reason",
+                                  return_value="ImportError: No module named 'freetype'"), \
+                mock.patch.dict(sys.modules, {"cairosvg": None}):
+            return ai._alpha(ai.local_icon_path("googlechrome"), 40)
+
+    def test_the_log_names_the_PRIMARY_cause_once(self):
+        with self.assertLogs(ai.log, level="DEBUG") as logs:
+            self.assertIsNone(self._draw_without_rasterisers())
+            self.assertIsNone(self._draw_without_rasterisers())
+        warnings = [r for r in logs.records if r.levelname == "WARNING"]
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("freetype", warnings[0].getMessage())
+        debug = [r.getMessage() for r in logs.records if r.levelname == "DEBUG"]
+        self.assertTrue(debug and all("svg_raster cannot run" in m for m in debug))
+
+    def test_a_WORKING_fallback_does_not_warn(self):
+        """With cairosvg drawing the mark, a missing svg_raster costs nothing,
+        and "every SVG mark is skipped" would be false (review, #337)."""
+        from polyhost.services import svg_raster
+        fake = mock.Mock()
+        fake.svg2png.side_effect = lambda **kw: _PNG_40
+        with mock.patch.object(svg_raster, "rasterise", return_value=None), \
+                mock.patch.object(svg_raster, "unavailable_reason",
+                                  return_value="ImportError: No module named 'freetype'"), \
+                mock.patch.dict(sys.modules, {"cairosvg": fake}), \
+                self.assertNoLogs(ai.log, level="WARNING"):
+            self.assertIsNotNone(ai._alpha(ai.local_icon_path("googlechrome"), 40))
+
+    def test_an_unsupported_FILE_does_not_warn(self):
+        from polyhost.services import svg_raster
+        with mock.patch.object(svg_raster, "rasterise", return_value=None), \
+                mock.patch.object(svg_raster, "unavailable_reason", return_value=None), \
+                mock.patch.dict(sys.modules, {"cairosvg": None}), \
+                self.assertLogs(ai.log, level="DEBUG") as logs:
+            ai._alpha(ai.local_icon_path("googlechrome"), 40)
+        self.assertFalse([r for r in logs.records if r.levelname == "WARNING"])
+
+
 class ShippedMarkOutranksCatalogTest(unittest.TestCase):
     """A `poly:` mark someone shipped beats a higher-SCORING catalog mark.
 

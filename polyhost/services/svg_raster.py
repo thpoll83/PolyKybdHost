@@ -270,6 +270,24 @@ def viewbox(text: str):
     return (x0, y0, w, h) if w > 0 and h > 0 else None
 
 
+def unavailable_reason() -> str | None:
+    """Why `rasterise` cannot run at all in this interpreter, or None.
+
+    `rasterise` returns None for a missing dependency AND for an SVG it does
+    not handle, and the caller cannot tell the two apart. They need different
+    remedies: the first disables EVERY SVG mark (a field log, 2026-10-05,
+    blamed `cairosvg` for a venv that lacked freetype-py, because cairosvg was
+    merely the last fallback tried), the second is one file.
+    """
+    try:
+        from fontTools.pens.freetypePen import FreeTypePen  # noqa: F401
+        from fontTools.misc.transform import Transform  # noqa: F401
+        import numpy  # noqa: F401
+    except Exception as exc:
+        return "%s: %s" % (type(exc).__name__, exc)
+    return None
+
+
 def rasterise(svg_text: str, width: int, height: int):
     """An (height, width) float array of coverage 0..1, or None.
 

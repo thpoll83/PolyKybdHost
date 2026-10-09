@@ -65,7 +65,8 @@ HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host c
 # would be rows that silently do nothing on this machine — worse than no dialog
 # at all. `ui_theme` is read at startup here; the browser-URL keys drive
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
-FORWARDER_SETTING_KEYS = ("ui_theme", "shortcut_icons_enabled") + tuple(_URL_SETTINGS)
+FORWARDER_SETTING_KEYS = ("ui_theme", "shortcut_icons_enabled",
+                          "shortcut_enable_accessibility") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info

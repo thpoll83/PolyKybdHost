@@ -196,6 +196,99 @@ def list_apps(atspi) -> list[tuple[int, str]]:
 
 DEFAULT_NODE_BUDGET = 4000
 
+A11Y_BUS = "org.a11y.Bus"
+A11Y_PATH = "/org/a11y/bus"
+A11Y_STATUS = "org.a11y.Status"
+
+_A11Y_ASKED = False
+
+
+def accessibility_setting_enabled() -> bool:
+    """`shortcut_enable_accessibility`, default on; True if settings are unreadable."""
+    try:
+        from polyhost.settings import read_setting
+        return bool(read_setting("shortcut_enable_accessibility", True))
+    except Exception:
+        return True
+
+
+def ensure_accessibility_enabled(get_flag, set_flag) -> str:
+    """Switch the session's accessibility flag on if it is off. ONCE per process.
+
+    ⚠️ **A Qt app joins the AT-SPI bus only while `org.a11y.Status.IsEnabled`
+    is true**, and Plasma leaves it false unless a screen reader runs. Measured
+    2026-10-05: Kate was absent from the bus, and so drew no shortcut icons
+    and no ESC mark, until started with QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1.
+    GTK registers regardless, so GNOME hid this. The flag is what a screen
+    reader sets; `ScreenReaderEnabled` is a separate property and stays
+    untouched, so no screen reader starts and no app changes its UI.
+
+    It lasts until logout and is not reset on exit: another client may have
+    come to rely on it, and turning it off under them is worse than leaving
+    it on.
+
+    `get_flag()` / `set_flag(bool)` are the D-Bus calls, passed in so the
+    decision is testable without a bus. Returns what happened, for the log.
+    Never raises: this runs on the harvest thread for a cosmetic feature.
+    """
+    global _A11Y_ASKED
+    if _A11Y_ASKED:
+        return "already asked"
+    _A11Y_ASKED = True
+    try:
+        if get_flag():
+            return "already on"
+        set_flag(True)
+        return "turned on"
+    except Exception as exc:
+        return "failed: %s: %s" % (type(exc).__name__, exc)
+
+
+def _a11y_bus_calls():
+    """(get_flag, set_flag) over the session bus, via Gio."""
+    gi = _import_gi()
+    gi.require_version("Gio", "2.0")
+    from gi.repository import Gio, GLib
+    bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+
+    def get_flag() -> bool:
+        reply = bus.call_sync(
+            A11Y_BUS, A11Y_PATH, "org.freedesktop.DBus.Properties", "Get",
+            GLib.Variant("(ss)", (A11Y_STATUS, "IsEnabled")),
+            GLib.VariantType("(v)"), Gio.DBusCallFlags.NONE, 2000, None)
+        return bool(reply.unpack()[0])
+
+    def set_flag(value: bool) -> None:
+        bus.call_sync(
+            A11Y_BUS, A11Y_PATH, "org.freedesktop.DBus.Properties", "Set",
+            GLib.Variant("(ssv)", (A11Y_STATUS, "IsEnabled",
+                                   GLib.Variant("b", value))),
+            None, Gio.DBusCallFlags.NONE, 2000, None)
+
+    return get_flag, set_flag
+
+
+def _ensure_accessibility_once() -> None:
+    global _A11Y_ASKED
+    if _A11Y_ASKED or not accessibility_setting_enabled():
+        return
+    import logging
+    log = logging.getLogger("PolyHost")
+    try:
+        get_flag, set_flag = _a11y_bus_calls()
+    except Exception as exc:
+        _A11Y_ASKED = True
+        log.debug("Accessibility flag: no session bus (%s)", exc)
+        return
+    outcome = ensure_accessibility_enabled(get_flag, set_flag)
+    if outcome == "turned on":
+        log.info("Turned on the session's accessibility flag (org.a11y.Status."
+                 "IsEnabled) so Qt/KDE apps expose their shortcuts. An app "
+                 "started before this may need a restart. Opt out with the "
+                 "'shortcut_enable_accessibility' setting.")
+    else:
+        log.debug("Accessibility flag: %s", outcome)
+
 
 def available() -> bool:
     """Is the accessibility bridge reachable at all?
@@ -323,6 +416,7 @@ def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET,
     if not name:
         return []
     needle = name.lower()
+    _ensure_accessibility_once()
     try:
         atspi = _atspi()
         desktop = atspi.get_desktop(0)

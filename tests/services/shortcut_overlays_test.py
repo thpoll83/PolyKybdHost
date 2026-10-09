@@ -531,5 +531,66 @@ class LexiconNamesByFace(unittest.TestCase):
             so.icon_catalog.subset_path(material, "/c"))
 
 
+class TestKateHarvest(unittest.TestCase):
+    """Kate on Plasma (2026-10-05): 59 shortcuts harvested, 19 drew nothing.
+
+    Each fix is word-level, so these pin the FAMILY each closes rather than
+    one label. The table is synthetic for the reason TestDerivedNameFallback
+    gives; it holds exactly the Material names the synonyms point at.
+    """
+
+    TABLE = {n: i for i, n in enumerate((
+        "navigate_before", "navigate_next", "side_navigation", "search",
+        "compress", "menu", "menu_book", "auto_fix_high", "terminal",
+        "drive_file_rename_outline", "settings"))}
+
+    def icon(self, label, app="org.kde.kate"):
+        slots = so.plan([sc(label)], known_names=self.TABLE, app=app)
+        return slots[0].icon if slots else None
+
+    def test_previous_mirrors_next(self):
+        for label in ("Previous Document", "Previous Item",
+                      "Activate Previous Project", "Previous Tab"):
+            with self.subTest(label=label):
+                self.assertEqual(self.icon(label), "material:navigate_before")
+        self.assertEqual(self.icon("Next Document"), "material:navigate_next")
+
+    def test_each_kate_label_now_draws(self):
+        want = {
+            "Show Sidebars": "side_navigation", "Lookup": "search",
+            "Shrink Selection": "compress", "Show Menubar": "menu",
+            "Kate Handbook": "menu_book", "Quick Fix": "auto_fix_high",
+            "Defocus Terminal Panel": "terminal",
+            "Rename": "drive_file_rename_outline",
+            "Configure Kate\u2026": "settings",
+        }
+        for label, name in want.items():
+            with self.subTest(label=label):
+                self.assertEqual(self.icon(label), "material:" + name)
+
+    def test_the_menubar_titles_come_from_the_hints(self):
+        hints = so.shortcut_icons.load_hints()
+        for label, name in (("Selection", "select"), ("Go", "explore"),
+                            ("Projects", "folder_code"),
+                            ("Sessions", "workspaces"),
+                            ("LSP Client", "code_blocks")):
+            with self.subTest(label=label):
+                self.assertEqual(hints[label.lower()], "icon:" + name)
+                self.assertEqual(self.icon(label), name)
+
+    def test_whats_this_is_help(self):
+        hit = so.shortcut_icons.match("What's This?")
+        self.assertEqual((hit.concept, hit.confidence), ("help", 1.0))
+
+    def test_the_terminal_synonym_still_never_names_a_TERMINAL_app(self):
+        """The app-name rejection runs after the synonyms."""
+        self.assertIsNone(self.icon("Defocus Terminal Panel", app="Terminal"))
+
+    def test_last_used_views_stays_text(self):
+        """Deliberately unmapped: `last` -> a history clock would also hit
+        "Last Page", where an arrow is the answer."""
+        self.assertIsNone(self.icon("Last Used Views"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,3 +55,11 @@ hints:
   # where `tabs` draws a window that reads as a card.
   terminal: icon:terminal
   tabs: icon:tab
+  # Kate's menu-bar titles (Plasma harvest, 2026-10-05). Also Material, and
+  # each one rendered at 36 px first: `select` is the dashed marquee,
+  # `explore` the compass of a Go/navigation menu.
+  selection: icon:select
+  go: icon:explore
+  projects: icon:folder_code
+  sessions: icon:workspaces
+  lsp client: icon:code_blocks
