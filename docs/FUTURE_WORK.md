@@ -203,5 +203,6 @@ has looked. `tools/atspi_raw_dump.py kate --all-nodes` on a fresh and a reused
 instance would answer it.
 
 (The same log also showed a 48-icon cap dropping 54 of Kate's 108 document
-shortcuts. That cap had no measurement behind it and was removed instead of
-deferred; see the comment at the top of `shortcut_overlays.py`.)
+shortcuts. That cap had no measurement behind it. It was replaced by the overlay
+pool (600), the one value the planner and the forwarder relay now share; see the
+comment at the top of `shortcut_overlays.py`.)
