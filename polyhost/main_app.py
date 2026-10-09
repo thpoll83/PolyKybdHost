@@ -190,6 +190,10 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     slog.info("PolyKybdHost %s launching | platform=%s %s | interpreter=%s | argv=%s",
               _ver, _platform.system(), _platform.release(), sys.executable, sys.argv[1:])
     slog.info("Developer mode=%s (source=%s), log verbosity=%d", developer, dev_source, verbosity)
+    # Names the build, not just the version: every commit between two releases
+    # reports the same number. Two short git calls when the install is a checkout.
+    from polyhost.services.build_info import banner as _build_banner  # Qt-free
+    slog.info("%s", _build_banner())
     # Crash capture, as early as possible: under pythonw an unhandled exception
     # (PyQt aborts after the hook) or a hard fault leaves NO trace at all, which
     # is why a vanished tray icon could not be told apart from a live process
