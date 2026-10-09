@@ -1750,6 +1750,12 @@ class PolyKybd:
                     if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
                         continue
                     overlay_map = converter.extract_overlays(modifier)
+                    # Checked per extraction, as the send loop did before this
+                    # pass existed: a newer switch must not wait for this one to
+                    # convert every remaining image. Nothing is allocated yet.
+                    if cancel is not None and cancel.is_set():
+                        self.log.debug_detailed("send_overlays_mru cancelled during extraction")
+                        return False
                     if overlay_map:
                         maps.append((modifier, overlay_map))
                 # An image that is the SAME under every modifier is keyed ONCE,

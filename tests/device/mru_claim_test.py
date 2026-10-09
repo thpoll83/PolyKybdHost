@@ -102,5 +102,24 @@ class SwitchReusingAFullPoolTest(unittest.TestCase):
                 self.assertEqual(self.run_order(order), 10)
 
 
+class CancelDuringExtractionTest(unittest.TestCase):
+
+    def test_a_cancel_stops_the_extraction_pass(self):
+        """The pass extracts every image before the send loop, so it must check
+        `cancel` itself (review, Greptile): a newer switch should not wait for
+        this one to convert its remaining images."""
+        cancel = threading.Event()
+        converter = mock.MagicMock()
+        converter.extract_overlays.side_effect = lambda mod: cancel.set()
+        del converter.modifier_invariant
+        kb = PolyKybdMock(DeviceSettings(), protocol=21)
+        cache = OverlayMRUCache(20)
+        with mock.patch("time.sleep", lambda s: None):
+            ok = kb.send_overlays_mru(["@x"], cache, cancel, synthetic={"@x": converter})
+        self.assertFalse(ok)
+        self.assertEqual(converter.extract_overlays.call_count, 1)
+        self.assertEqual(cache.used_slots(), 0)
+
+
 if __name__ == "__main__":
     unittest.main()
