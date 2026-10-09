@@ -70,6 +70,28 @@ class CacheRefusesToEvictItsOwnBatchTest(unittest.TestCase):
         self.assertIsNotNone(slot)
         self.assertFalse(hit)
 
+    def test_the_NEXT_switch_counts_its_MRU_HITS_toward_its_own_limit(self):
+        """The limit is per switch, and the next app gets the whole pool again
+        -- but a slot it REUSES (an MRU hit, by name or by bytes) is one of its
+        images too. A hit re-stamps the slot with the current batch, so the
+        hits and the new images share one budget, and a new image never evicts
+        a slot this switch reused."""
+        cache = OverlayMRUCache(4)
+        with cache.batch():
+            old = {b: cache.get_or_allocate(("f", 0, i), "f", b)[0]
+                   for i, b in enumerate((b"a", b"b", b"c", b"d"))}
+        with cache.batch():
+            # Two hits on the first app's images, from another app's keys.
+            self.assertEqual(cache.get_or_allocate(("g", 0, 1), "g", b"a"), (old[b"a"], True))
+            self.assertEqual(cache.get_or_allocate(("g", 0, 2), "g", b"b"), (old[b"b"], True))
+            # Two new images take the two slots this switch did NOT reuse.
+            new = [cache.get_or_allocate(("g", 0, k), "g", bytes([k]))[0] for k in (3, 4)]
+            self.assertEqual(sorted(new), sorted([old[b"c"], old[b"d"]]))
+            # 2 hits + 2 new = the whole pool: the fifth distinct image is refused.
+            self.assertEqual(cache.get_or_allocate(("g", 0, 5), "g", b"e"), (None, False))
+            # And the reused slots still answer as hits.
+            self.assertEqual(cache.get_or_allocate(("g", 0, 6), "g", b"a"), (old[b"a"], True))
+
 
 class SwitchPastThePoolTest(unittest.TestCase):
 
