@@ -21,6 +21,29 @@ wc -l /tmp/b/logs/*
 crash-log tally. Read both before opening a log — they answer half the questions
 and they date the evidence.
 
+## 0. Name the firmware BUILD, not just its version
+
+⚠️ **`Firmware 1.7.14` in `diagnostics.txt` does not identify an image.** The
+maintainer runs many test builds, and every build of one version reports the same
+number (2026-10-09: two stalls in one morning were first blamed on "something
+introduced yesterday" before anyone could say which builds had run). The boot
+banner names the build:
+
+```
+== PolyKybd Split72 1.7.14 P22 HW0x0320 | left master | build <branch>@<hash>[*] <date> ==
+```
+
+```bash
+grep -n '| build ' /tmp/b/logs/keyboard-console.txt
+```
+
+The firmware prints it for ~30 s after boot and again whenever a host starts
+probing after a pause (a PolyHost restart, a woken PC, the reconnect after an
+update). So a bundle that spans a host start carries it. `*` after the hash means
+the image came from a dirty tree. If the line is missing, the firmware predates it,
+or no host session started in the timeframe. Say so, and attribute nothing to a
+specific change until the user confirms which image was flashed.
+
 ## 1. Count the processes before reading anything else
 
 `crash.txt` is the census. Every process writes a `session start` line with its
