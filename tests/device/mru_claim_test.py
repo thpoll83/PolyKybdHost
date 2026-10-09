@@ -17,7 +17,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd_mock import PolyKybdMock
-from tests.device.pool_overflow_test import _image
+from tests.device.pool_overflow_test import _image, _template
 
 
 class ClaimTest(unittest.TestCase):
@@ -100,6 +100,64 @@ class SwitchReusingAFullPoolTest(unittest.TestCase):
         for order in ("reused_first", "new_first", "shuffled"):
             with self.subTest(order=order):
                 self.assertEqual(self.run_order(order), 10)
+
+
+class ClaimOnlyWhatTheMappingShowsTest(unittest.TestCase):
+
+    def test_an_image_a_LATER_source_replaces_is_not_claimed(self):
+        """Review, CodeRabbit: a full 2-slot pool holds A and B. One source
+        draws B on key 3, a new C on key 1 and A on key 2; a later source puts
+        B on key 2. A is shown nowhere, so it must not be claimed: claiming it
+        left no slot for C and key 1 blank."""
+        ds = DeviceSettings()
+        img = {name: OverlayData(ds, _image(i)) for i, name in enumerate("ABC", 1)}
+        k1, k2, k3 = KeyCode.KC_A.value, KeyCode.KC_B.value, KeyCode.KC_C.value
+        kb = PolyKybdMock(DeviceSettings(), protocol=21)
+        cache = OverlayMRUCache(2)
+        with mock.patch("time.sleep", lambda s: None), \
+                mock.patch("polyhost.device.poly_kybd.ImageConverter") as conv:
+            conv.side_effect = [_template({Modifier.NO_MOD: {k1: img["A"], k2: img["B"]}})]
+            self.assertTrue(kb.send_overlays_mru(["old.png"], cache, threading.Event()))
+            conv.side_effect = [
+                _template({Modifier.NO_MOD: {k3: img["B"], k1: img["C"], k2: img["A"]}}),
+                _template({Modifier.NO_MOD: {k2: img["B"]}})]
+            self.assertTrue(kb.send_overlays_mru(["app.png", "site.png"], cache,
+                                                 threading.Event()))
+        for key, name in ((k1, "C"), (k2, "B"), (k3, "B")):
+            with self.subTest(key=key):
+                self.assertEqual(bytes(kb.get_display_bitmap(key, Modifier.NO_MOD)),
+                                 img[name].all_bytes)
+
+
+class ChangedImageUnderTheSameNameTest(unittest.TestCase):
+    """Review, CodeRabbit: a file edited under the same name keeps its content
+    key, and the slot still holds the old pixels. A key hit whose bytes differ
+    is a miss, in `get_or_allocate` and in `claim` alike."""
+
+    def test_get_or_allocate_does_not_return_the_stale_slot(self):
+        cache = OverlayMRUCache(4)
+        with cache.batch():
+            old, _ = cache.get_or_allocate(("f", 0, 1), "f", b"old")
+        with cache.batch():
+            slot, hit = cache.get_or_allocate(("f", 0, 1), "f", b"new")
+        self.assertFalse(hit)
+        self.assertNotEqual(slot, old)
+
+    def test_claim_does_not_hold_the_stale_slot(self):
+        cache = OverlayMRUCache(1)
+        with cache.batch():
+            cache.get_or_allocate(("f", 0, 1), "f", b"old")
+        with cache.batch():
+            self.assertFalse(cache.claim(("f", 0, 1), b"new"))
+            slot, hit = cache.get_or_allocate(("f", 0, 1), "f", b"new")
+        self.assertEqual((slot, hit), (0, False))
+
+    def test_the_same_bytes_are_still_a_hit(self):
+        cache = OverlayMRUCache(4)
+        with cache.batch():
+            old, _ = cache.get_or_allocate(("f", 0, 1), "f", b"same")
+        with cache.batch():
+            self.assertEqual(cache.get_or_allocate(("f", 0, 1), "f", b"same"), (old, True))
 
 
 class CancelDuringExtractionTest(unittest.TestCase):

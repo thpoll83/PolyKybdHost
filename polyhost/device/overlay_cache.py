@@ -99,9 +99,9 @@ class OverlayMRUCache:
         if not self._in_batch:
             self._current_batch += 1
 
-        # Exact key hit
-        if content_key in self._cache:
-            slot = self._cache[content_key]
+        # Exact key hit, unless the image under that name has changed
+        slot = self._key_hit(content_key, bytes_data)
+        if slot is not None:
             self._slot_batch[slot] = self._current_batch
             self._version += 1
             return slot, True
@@ -148,7 +148,7 @@ class OverlayMRUCache:
         (2026-10-09). A claimed slot belongs to the current batch, so
         ``_evict_oldest_slot`` never picks it. Same hit rules as
         ``get_or_allocate``: the content key, then the bytes."""
-        slot = self._cache.get(content_key)
+        slot = self._key_hit(content_key, bytes_data)
         if slot is None and bytes_data is not None:
             slot = self._bytes_to_slot.get(bytes_data)
         if slot is None:
@@ -157,6 +157,21 @@ class OverlayMRUCache:
             self._slot_batch[slot] = self._current_batch
             self._version += 1
         return True
+
+    def _key_hit(self, content_key: tuple, bytes_data: bytes | None) -> int | None:
+        """The slot ``content_key`` names, or None. ⚠️ A key whose image has
+        CHANGED is not a hit: a file edited under the same name keeps its key,
+        and the slot still holds the old pixels (review, CodeRabbit). The stale
+        alias is dropped, so the bytes decide from there."""
+        slot = self._cache.get(content_key)
+        if slot is None:
+            return None
+        held = self._slot_to_bytes.get(slot)
+        if bytes_data is not None and held is not None and held != bytes_data:
+            del self._cache[content_key]
+            self._version += 1
+            return None
+        return slot
 
     def slot_is_clean(self, slot: int) -> bool:
         """True while ``slot`` has never been written since the pool was cleared.

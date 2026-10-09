@@ -1766,18 +1766,24 @@ class PolyKybd:
 
             # ⚠️ Claim every image the pool already holds BEFORE allocating any
             # new one (overlay_cache.claim), so a new image can only evict a slot
-            # this switch does not want. Same skip rule as the loop below: a
-            # synthetic source does not draw a key a template already covers.
-            claim_covered: set[tuple[int, int]] = set()
+            # this switch does not want. Same rules as the loop below: a
+            # synthetic source does not draw a key a template already covers,
+            # and a later source wins a key. ⚠️ Only the image a key ENDS UP
+            # showing is claimed: claiming one a later source replaces would hold
+            # a slot nothing shows, and on a full pool leave a new image's key
+            # blank (review, CodeRabbit).
+            final: dict[tuple[int, int], tuple] = {}
             for filename, _, source_is_synthetic, invariant, maps in extracted:
                 for modifier, overlay_map in maps:
                     for keycode, overlay_data in overlay_map.items():
-                        if source_is_synthetic and (modifier.value, keycode) in claim_covered:
+                        position = (modifier.value, keycode)
+                        if source_is_synthetic and position in final:
                             continue
-                        claim_covered.add((modifier.value, keycode))
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
-                        cache.claim((os.path.basename(filename), key_modifier, keycode),
-                                    overlay_data.all_bytes)
+                        final[position] = ((os.path.basename(filename), key_modifier, keycode),
+                                           overlay_data.all_bytes)
+            for content_key, image in final.values():
+                cache.claim(content_key, image)
 
             for filename, converter, source_is_synthetic, invariant, maps in extracted:
                 for modifier, overlay_map in maps:
