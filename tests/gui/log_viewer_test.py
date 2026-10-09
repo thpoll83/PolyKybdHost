@@ -49,6 +49,10 @@ class LogViewerTest(unittest.TestCase):
             f.write(CONSOLE_LINES)
         self.dlg = lv.LogViewerDialog({"Host": self.host, "Console": self.console})
         self.dlg.tab_widget.setCurrentIndex(0)
+        # Shown, because only the matches in view are tinted.
+        self.dlg.resize(1200, 600)
+        self.dlg.show()
+        self.app.processEvents()
 
     def tearDown(self):
         self.dlg.close()
@@ -57,6 +61,8 @@ class LogViewerTest(unittest.TestCase):
 
     def _search(self, text):
         self.dlg.search_edit.setText(text)
+        self.assertTrue(self.dlg._search_timer.isActive() or not text)   # debounced
+        self.dlg._run_search()                                            # skip the wait
         return self.dlg.search_count.text()
 
     # -- highlighters ----------------------------------------------------------
@@ -81,9 +87,23 @@ class LogViewerTest(unittest.TestCase):
         self.dlg.find_previous()
         self.assertEqual(self.dlg.search_count.text(), "2 of 2")
 
-    def test_every_match_is_tinted(self):
+    def test_every_match_in_view_is_tinted_once(self):
         self._search("0x3e5")
         self.assertEqual(len(self.dlg._current_editor().extraSelections()), 2)
+
+    def test_a_large_log_is_counted_and_stepped_without_a_cursor_per_match(self):
+        # 20,000 lines with 3 hits each: the count is exact, stepping wraps, and the
+        # tint stays bounded by what is in view.
+        with open(self.host, "w", encoding="utf-8") as f:
+            f.write("[t] INFO    x e e e\n" * 20000)
+        self.dlg.load_log()
+        self.assertEqual(self._search("e"), "60000 of 60000")
+        self.dlg.find_next()
+        self.assertEqual(self.dlg.search_count.text(), "1 of 60000")
+        self.dlg.find_previous()
+        self.assertEqual(self.dlg.search_count.text(), "60000 of 60000")
+        self.assertLessEqual(len(self.dlg._current_editor().extraSelections()),
+                             lv._MAX_TINTED + 1)
 
     def test_no_match_says_so_and_tints_nothing(self):
         self.assertEqual(self._search("nothing like this"), "No matches")

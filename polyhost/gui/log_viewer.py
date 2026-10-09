@@ -4,9 +4,9 @@ import re
 import subprocess
 import sys
 
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5.QtGui import (QColor, QFont, QKeySequence, QSyntaxHighlighter, QTextCharFormat,
-                         QTextCursor)
+                         QTextCursor, QTextDocument)
 from PyQt5.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPlainTextEdit,
                               QPushButton, QShortcut, QTabWidget, QTextEdit, QVBoxLayout,
                               QWidget)
@@ -90,9 +90,8 @@ _MATCH_FORMAT.setForeground(QColor("#000000"))
 _CURRENT_FORMAT = QTextCharFormat()
 _CURRENT_FORMAT.setBackground(QColor("#ffb300"))
 _CURRENT_FORMAT.setForeground(QColor("#000000"))
-# A cap on how many matches are tinted. Counting is not capped, but thousands of
-# extra selections make the editor sluggish on a long log and help nobody.
-_MAX_TINTED = 2000
+# Only matches in view are tinted; this caps a view full of one-letter hits.
+_MAX_TINTED = 500
 
 
 class LogViewerDialog(QMainWindow):
@@ -117,7 +116,11 @@ class LogViewerDialog(QMainWindow):
         self.search_edit = QLineEdit(self)
         self.search_edit.setPlaceholderText("Search (Ctrl+F)")
         self.search_edit.setClearButtonEnabled(True)
-        self.search_edit.textChanged.connect(lambda _text: self._run_search())
+        self._search_timer = QTimer(self)
+        self._search_timer.setSingleShot(True)
+        self._search_timer.setInterval(150)
+        self._search_timer.timeout.connect(self._run_search)
+        self.search_edit.textChanged.connect(lambda _text: self._schedule_search())
         self.search_edit.returnPressed.connect(self.find_next)
         search_layout.addWidget(self.search_edit, 1)
         prev_button = QPushButton("Previous")
@@ -141,8 +144,9 @@ class LogViewerDialog(QMainWindow):
         self.tab_widget = QTabWidget(self)
         self.layout.addWidget(self.tab_widget)
         self.tab_widget.currentChanged.connect(lambda _idx: self._run_search())
-        self._matches: list[QTextCursor] = []
-        self._match_index = -1
+        self._current: QTextCursor | None = None
+        self._index = 0   # 1-based number of the current match
+        self._total = 0
 
         self.log_text = {}
         self.log_files = log_files
@@ -154,6 +158,9 @@ class LogViewerDialog(QMainWindow):
             log_text.setReadOnly(True)
             log_text.setLineWrapMode(QPlainTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
+
+            # Search tints only what is in view, so scrolling re-tints.
+            log_text.verticalScrollBar().valueChanged.connect(lambda _v: self._tint_visible())
 
             is_console = os.path.basename(path) == _CONSOLE_FILENAME
             highlighter = _ConsoleHighlighter if is_console else _LogHighlighter
@@ -212,6 +219,11 @@ class LogViewerDialog(QMainWindow):
             self._run_search()
 
     # ---- search ----------------------------------------------------------------
+    # Nothing here scales with the number of matches. Host logs rotate at 10 MB, and a
+    # one-letter query there has ~600,000 hits: building a QTextCursor per hit froze
+    # the window for 15 s. So the count is str.count() on the plain text, stepping is
+    # QTextDocument.find() from the current match, and only the matches in view are
+    # tinted (again on scroll). The query runs 150 ms after the last keystroke.
     def _current_editor(self) -> QPlainTextEdit | None:
         idx = self.tab_widget.currentIndex()
         if idx < 0:
@@ -222,69 +234,107 @@ class LogViewerDialog(QMainWindow):
         self.search_edit.setFocus()
         self.search_edit.selectAll()
 
-    def _run_search(self) -> None:
-        """Find every match of the search text in the visible tab and tint them.
+    def _schedule_search(self) -> None:
+        self._search_timer.start()
 
-        The current match is the first one at or after the cursor, so a search
-        typed while reading starts from there. With no match after the cursor it
-        is the last one before it: a log opens scrolled to the end, so a fresh
-        search lands on the NEWEST match, which is usually the one wanted."""
+    def _clear_tint(self) -> None:
         for editor in self.log_text.values():
             editor.setExtraSelections([])
-        self._matches = []
-        self._match_index = -1
+
+    def _run_search(self) -> None:
+        """Count the matches in the visible tab and select the first one to show.
+
+        That is the first match at or after the cursor, so a search typed while
+        reading starts from there. With none after the cursor it is the last one
+        before it: a log opens scrolled to the end, so a fresh search lands on the
+        NEWEST match, which is usually the one wanted."""
+        self._search_timer.stop()
+        self._clear_tint()
+        self._current = None
+        self._total = 0
         editor = self._current_editor()
         needle = self.search_edit.text()
         if editor is None or not needle:
             self.search_count.setText("")
             return
-        doc = editor.document()
-        cursor = doc.find(needle, 0)   # no FindCaseSensitively flag: case-insensitive
-        while not cursor.isNull():
-            self._matches.append(cursor)
-            cursor = doc.find(needle, cursor)
-        if not self._matches:
+        self._total = editor.toPlainText().lower().count(needle.lower())
+        if self._total == 0:
             self.search_count.setText("No matches")
             return
+        doc = editor.document()
         here = editor.textCursor().selectionStart()
-        self._match_index = next((i for i, m in enumerate(self._matches)
-                                  if m.selectionStart() >= here), len(self._matches) - 1)
-        self._show_match()
+        found = doc.find(needle, here)
+        if found.isNull():
+            found = doc.find(needle, here, QTextDocument.FindBackward)
+        self._go_to(editor, found)
 
-    def _show_match(self) -> None:
-        editor = self._current_editor()
-        if editor is None or not self._matches:
+    def _index_of(self, editor: QPlainTextEdit, match: QTextCursor) -> int:
+        """1-based number of `match` among all matches: those starting before it, + 1."""
+        head = QTextCursor(editor.document())
+        head.setPosition(match.selectionStart(), QTextCursor.KeepAnchor)
+        return head.selectedText().lower().count(self.search_edit.text().lower()) + 1
+
+    def _go_to(self, editor: QPlainTextEdit, match: QTextCursor, index: int | None = None) -> None:
+        """Select `match`. `index` is its number when the caller knows it (a step
+        moves by one); otherwise it is counted, which costs a pass over the text."""
+        if match.isNull():
             return
-        selections = []
-        for i, m in enumerate(self._matches[:_MAX_TINTED]):
-            sel = QTextEdit.ExtraSelection()
-            sel.cursor = m
-            sel.format = _CURRENT_FORMAT if i == self._match_index else _MATCH_FORMAT
-            selections.append(sel)
-        current = self._matches[self._match_index]
-        if self._match_index >= _MAX_TINTED:
-            sel = QTextEdit.ExtraSelection()
-            sel.cursor = current
-            sel.format = _CURRENT_FORMAT
-            selections.append(sel)
-        editor.setExtraSelections(selections)
-        editor.setTextCursor(current)
+        self._current = match
+        self._index = index if index is not None else self._index_of(editor, match)
+        editor.setTextCursor(match)
         editor.ensureCursorVisible()
-        self.search_count.setText(f"{self._match_index + 1} of {len(self._matches)}")
+        self.search_count.setText(f"{self._index} of {self._total}")
+        self._tint_visible()
+
+    def _tint_visible(self) -> None:
+        """Tint the matches in view, plus the current one. Called on scroll too."""
+        editor = self._current_editor()
+        needle = self.search_edit.text()
+        if editor is None or not needle or self._current is None:
+            return
+        doc = editor.document()
+        first = editor.firstVisibleBlock().position()
+        corner = editor.viewport().rect().bottomRight()
+        last = max(editor.cursorForPosition(corner).position(), first)
+        selections = []
+        found = doc.find(needle, first)
+        current_at = self._current.selectionStart()
+        while (not found.isNull() and found.selectionStart() <= last
+               and len(selections) < _MAX_TINTED):
+            if found.selectionStart() != current_at:
+                selections.append(self._selection(found, _MATCH_FORMAT))
+            found = doc.find(needle, found)
+        selections.append(self._selection(self._current, _CURRENT_FORMAT))
+        editor.setExtraSelections(selections)
+
+    @staticmethod
+    def _selection(cursor: QTextCursor, fmt: QTextCharFormat) -> QTextEdit.ExtraSelection:
+        sel = QTextEdit.ExtraSelection()
+        sel.cursor = cursor
+        sel.format = fmt
+        return sel
+
+    def _step(self, backward: bool) -> None:
+        editor = self._current_editor()
+        if editor is None:
+            return
+        if self._current is None or self._search_timer.isActive():
+            self._run_search()   # typed and stepped at once: search first
+            return
+        needle = self.search_edit.text()
+        doc = editor.document()
+        flags = QTextDocument.FindBackward if backward else QTextDocument.FindFlags()
+        found = doc.find(needle, self._current, flags)
+        if found.isNull():   # wrap around
+            found = doc.find(needle, doc.characterCount() if backward else 0, flags)
+        step = -1 if backward else 1
+        self._go_to(editor, found, (self._index - 1 + step) % self._total + 1)
 
     def find_next(self) -> None:
-        if not self._matches:
-            self._run_search()
-            return
-        self._match_index = (self._match_index + 1) % len(self._matches)
-        self._show_match()
+        self._step(backward=False)
 
     def find_previous(self) -> None:
-        if not self._matches:
-            self._run_search()
-            return
-        self._match_index = (self._match_index - 1) % len(self._matches)
-        self._show_match()
+        self._step(backward=True)
 
     def open_file_directory(self):
         file = list(self.log_files.values())[0]
