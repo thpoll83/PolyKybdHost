@@ -90,8 +90,9 @@ _MATCH_FORMAT.setForeground(QColor("#000000"))
 _CURRENT_FORMAT = QTextCharFormat()
 _CURRENT_FORMAT.setBackground(QColor("#ffb300"))
 _CURRENT_FORMAT.setForeground(QColor("#000000"))
-# Only matches in view are tinted; this caps a view full of one-letter hits.
-_MAX_TINTED = 500
+# The search waits this long after the last keystroke: a word typed at speed costs
+# one pass over the text, not one per letter. Enter, Next and Previous do not wait.
+_SEARCH_DELAY_MS = 250
 
 
 class LogViewerDialog(QMainWindow):
@@ -118,8 +119,12 @@ class LogViewerDialog(QMainWindow):
         self.search_edit.setClearButtonEnabled(True)
         self._search_timer = QTimer(self)
         self._search_timer.setSingleShot(True)
-        self._search_timer.setInterval(150)
+        self._search_timer.setInterval(_SEARCH_DELAY_MS)
         self._search_timer.timeout.connect(self._run_search)
+        self._tint_timer = QTimer(self)
+        self._tint_timer.setSingleShot(True)
+        self._tint_timer.setInterval(60)
+        self._tint_timer.timeout.connect(self._tint_visible)
         self.search_edit.textChanged.connect(lambda _text: self._schedule_search())
         self.search_edit.returnPressed.connect(self.find_next)
         search_layout.addWidget(self.search_edit, 1)
@@ -159,8 +164,9 @@ class LogViewerDialog(QMainWindow):
             log_text.setLineWrapMode(QPlainTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
 
-            # Search tints only what is in view, so scrolling re-tints.
-            log_text.verticalScrollBar().valueChanged.connect(lambda _v: self._tint_visible())
+            # Search tints only what is in view, so scrolling re-tints, once the
+            # scroll pauses: a screen of one-letter hits takes ~0.5 s to tint.
+            log_text.verticalScrollBar().valueChanged.connect(lambda _v: self._tint_timer.start())
 
             is_console = os.path.basename(path) == _CONSOLE_FILENAME
             highlighter = _ConsoleHighlighter if is_console else _LogHighlighter
@@ -223,7 +229,9 @@ class LogViewerDialog(QMainWindow):
     # one-letter query there has ~600,000 hits: building a QTextCursor per hit froze
     # the window for 15 s. So the count is str.count() on the plain text, stepping is
     # QTextDocument.find() from the current match, and only the matches in view are
-    # tinted (again on scroll). The query runs 150 ms after the last keystroke.
+    # tinted (again on scroll). The query runs _SEARCH_DELAY_MS after the last
+    # keystroke. There is no cap anywhere: every match is counted and reachable, and
+    # every match in view is tinted, because the view bounds that work by itself.
     def _current_editor(self) -> QPlainTextEdit | None:
         idx = self.tab_widget.currentIndex()
         if idx < 0:
@@ -299,8 +307,7 @@ class LogViewerDialog(QMainWindow):
         selections = []
         found = doc.find(needle, first)
         current_at = self._current.selectionStart()
-        while (not found.isNull() and found.selectionStart() <= last
-               and len(selections) < _MAX_TINTED):
+        while not found.isNull() and found.selectionStart() <= last:
             if found.selectionStart() != current_at:
                 selections.append(self._selection(found, _MATCH_FORMAT))
             found = doc.find(needle, found)

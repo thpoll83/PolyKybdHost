@@ -102,8 +102,38 @@ class LogViewerTest(unittest.TestCase):
         self.assertEqual(self.dlg.search_count.text(), "1 of 60000")
         self.dlg.find_previous()
         self.assertEqual(self.dlg.search_count.text(), "60000 of 60000")
-        self.assertLessEqual(len(self.dlg._current_editor().extraSelections()),
-                             lv._MAX_TINTED + 1)
+        # Every match in view is tinted, and only those: the view bounds the work.
+        editor = self.dlg._current_editor()
+        tinted = editor.extraSelections()
+        self.assertGreater(len(tinted), 3)
+        self.assertLess(len(tinted), 60000)
+
+    def test_scrolling_re_tints_the_new_view_once_it_pauses(self):
+        with open(self.host, "w", encoding="utf-8") as f:
+            f.write("".join(f"[t] INFO    line {i} hit\n" for i in range(5000)))
+        self.dlg.load_log()
+        self._search("hit")
+        editor = self.dlg._current_editor()
+        bar = editor.verticalScrollBar()
+        bar.setValue(0)                                  # from the end to the top
+        self.assertTrue(self.dlg._tint_timer.isActive())  # deferred, not per step
+        self.dlg._tint_visible()                          # skip the wait
+        top = editor.firstVisibleBlock().blockNumber()
+        tinted_lines = {sel.cursor.block().blockNumber() for sel in editor.extraSelections()}
+        self.assertIn(top, tinted_lines)
+
+    def test_a_view_full_of_matches_is_tinted_in_full(self):
+        # No cap: one hit per character on screen, all of them tinted.
+        with open(self.host, "w", encoding="utf-8") as f:
+            f.write(("e" * 150 + "\n") * 2000)
+        self.dlg.load_log()
+        self._search("e")
+        editor = self.dlg._current_editor()
+        first = editor.firstVisibleBlock().position()
+        last = editor.cursorForPosition(editor.viewport().rect().bottomRight()).position()
+        visible_text = editor.toPlainText()[first:last + 1]
+        self.assertGreater(len(editor.extraSelections()), 500)
+        self.assertEqual(len(editor.extraSelections()), visible_text.count("e"))
 
     def test_no_match_says_so_and_tints_nothing(self):
         self.assertEqual(self._search("nothing like this"), "No matches")
