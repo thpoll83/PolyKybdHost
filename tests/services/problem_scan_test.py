@@ -20,12 +20,18 @@ STUCK = "oled_i2c: status display not responding: 3 writes in a row failed after
 SPLIT_OK = "Split link: 1200 tx crc_err=0 nack=0 transport_fail=0 giveup=0 err=0.0%"
 SPLIT_LOST = "Split link: 1200 tx crc_err=1 nack=0 transport_fail=2 giveup=3 err=0.4%"
 EDEN = "Eden idle: core1 job for key 7 timed out - rendering on core0"
-# The two forms of multicore_exec.c's core1_stall_report() line.
-CORE1_STALL_OK = ("WARNING core1 stalled: no answer for 512 ms (last cmd 0xcafe0004 arg 0x00410012, "
-                  "counts 17/16, entered 1) - core1 relaunched (recovery 1 since boot)")
-CORE1_STALL_FAILED = ("WARNING core1 stalled: no answer for 503 ms (last cmd 0xcafe0001 arg 0x00000000, "
-                      "counts 9/8, entered 1) - core1 relaunch FAILED, overlays degraded until reboot "
-                      "(recovery 2 since boot)")
+
+
+def core1_stall(n=1, at_ms=734512, report=1, relaunched=True):
+    """One copy of multicore_exec.c's core1_stall_report() line."""
+    outcome = "core1 relaunched" if relaunched else "core1 relaunch FAILED, overlays degraded until reboot"
+    return ("WARNING core1 stalled: no answer for 512 ms (last cmd 0xcafe0004 arg 0x00410012, "
+            f"counts 17/16, entered 1) - {outcome} (recovery {n} since boot at {at_ms} ms, "
+            f"report {report}/3)")
+
+
+CORE1_STALL_OK = core1_stall()
+CORE1_STALL_FAILED = core1_stall(n=2, relaunched=False)
 
 
 class ConsoleScannerTest(unittest.TestCase):
@@ -69,6 +75,28 @@ class ConsoleScannerTest(unittest.TestCase):
         found = s.feed(f"{CORE1_STALL_FAILED}\n")
         self.assertEqual([p.key for p in found], ["core1_stall_failed"])
         self.assertIn("did not restart", found[0].summary)
+
+    def test_the_repeated_copies_of_one_recovery_count_once(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        self.assertEqual(len(s.feed(f"{core1_stall(report=1)}\n")), 1)
+        now[0] = 100.0   # past the update interval: a count change would publish
+        self.assertEqual(s.feed(f"{core1_stall(report=2)}\n{core1_stall(report=3)}\n"), [])
+        self.assertEqual(s.problems()[0].count, 1)
+
+    def test_two_recoveries_count_twice(self):
+        now = [0.0]
+        s = ps.ConsoleProblemScanner(clock=lambda: now[0])
+        s.feed(f"{core1_stall(n=1, at_ms=1000)}\n")
+        now[0] = 100.0
+        found = s.feed(f"{core1_stall(n=2, at_ms=90000)}\n")
+        self.assertEqual([(p.key, p.count) for p in found], [("core1_stall", 2)])
+
+    def test_the_same_number_after_a_reboot_is_a_new_recovery(self):
+        # <n> restarts at 1 when the keyboard reboots; the uptime tells them apart.
+        s = ps.ConsoleProblemScanner()
+        s.feed(f"{core1_stall(n=1, at_ms=734512)}\n{core1_stall(n=1, at_ms=61200)}\n")
+        self.assertEqual(s.problems()[0].count, 2)
 
     def test_the_fw_staging_relaunch_line_is_not_a_core1_stall(self):
         s = ps.ConsoleProblemScanner()

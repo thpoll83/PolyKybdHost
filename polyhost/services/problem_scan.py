@@ -67,7 +67,12 @@ class ConsolePattern:
     ``escalate_after`` > 0 makes a WARNING pattern an ERROR once it matches that
     many times within ``escalate_window_s`` seconds, with ``escalated_summary`` as
     its sentence. That is for a line where one occurrence is a glitch the board
-    recovers from and a burst is a fault."""
+    recovers from and a burst is a fault.
+
+    A regex with a named ``instance`` group counts each distinct value of that group
+    ONCE: a line repeating an instance already seen neither raises the count nor
+    publishes again. That is for a firmware line printed more than once for the same
+    event, so a reader that missed the first copy still gets one."""
     id: str
     regex: re.Pattern
     severity: str
@@ -127,10 +132,16 @@ CONSOLE_PATTERNS: tuple[ConsolePattern, ...] = (
     # 500 ms and was reset. Before that recovery existed the same stall shut the
     # keyboard's command channel until a replug (field report 2026-10-09), so even
     # a successful relaunch is a fault worth a report: one keycap image was lost.
-    _p("core1_stall_failed", r"WARNING core1 stalled: .*core1 relaunch FAILED", SEVERITY_ERROR,
+    # The firmware prints each recovery up to three times; the ID it repeats,
+    # "recovery <n> since boot at <uptime> ms", makes the copies count once.
+    _p("core1_stall_failed",
+       r"WARNING core1 stalled: .*core1 relaunch FAILED.*\(recovery (?P<instance>\d+ since boot at \d+) ms",
+       SEVERITY_ERROR,
        "The keyboard's second processor core stopped and did not restart; keycap "
        "images may stop updating until the keyboard is unplugged."),
-    _p("core1_stall", r"WARNING core1 stalled: .*core1 relaunched", SEVERITY_ERROR,
+    _p("core1_stall",
+       r"WARNING core1 stalled: .*core1 relaunched \(recovery (?P<instance>\d+ since boot at \d+) ms",
+       SEVERITY_ERROR,
        "The keyboard's second processor core stopped and was restarted; one keycap "
        "image may look wrong until the next app switch."),
     _p("split_link_giveup", r"Split link: .*giveup=[1-9]", SEVERITY_WARNING,
@@ -193,14 +204,22 @@ class ConsoleProblemScanner:
         self._sent: dict[str, tuple[int, float]] = {}   # id -> (count, when) last published
         self._totals: dict[str, int] = {}                # id -> matches, at any level
         self._hits: dict[str, deque] = {}                # id -> match times, escalating patterns only
+        self._instances: dict[str, set] = {}             # id -> instance values counted
 
     def feed(self, chunk: str, level: str = LEVEL_ERRORS) -> list[Problem]:
         out: dict[str, Problem] = {}
         now = self._clock()
         for line in self._lines.feed(chunk):
             for pat in self._patterns:
-                if not pat.regex.search(line):
+                m = pat.regex.search(line)
+                if not m:
                     continue
+                instance = m.groupdict().get("instance")
+                if instance is not None:
+                    seen = self._instances.setdefault(pat.id, set())
+                    if instance in seen:
+                        break   # a repeat of an event already counted
+                    seen.add(instance)
                 self._totals[pat.id] = self._totals.get(pat.id, 0) + 1
                 severity, summary = self._severity_for(pat, now)
                 prior = self._seen.get(pat.id)
