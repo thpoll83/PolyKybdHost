@@ -69,3 +69,29 @@ Reserved-chord check: huddle is ⌘⇧H, not the system ⌘H (Hide). No binding 
 - Ctrl+Shift+Space (huddle mute): Space has no overlay cell.
 - The Ctrl+Shift+digit view keys are kept from the old art but were NOT found in
   Slack's published table; verify them against the in-app list (Ctrl+/).
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. slack.com was reachable this time; the
+official table ("Slack keyboard shortcuts",
+https://slack.com/help/articles/201374536-Slack-keyboard-shortcuts) lists:
+
+| Concept | Windows / Linux | macOS | Slack's wording |
+|---|---|---|---|
+| Undo | Ctrl+Z | ⌘Z | "Unsend a message" (and the message box's undo) |
+| Close | Ctrl+W | ⌘W | "Close window" |
+
+Cut / Copy / Paste / Select all (Ctrl/⌘ X, C, V, A) are added as the message
+box's standard text-editing chords (Chromium editing on Windows/Linux, Electron
+Edit-menu roles on macOS); Slack does not list them but ships them.
+
+Not added / why:
+- Find: Ctrl/⌘F ("Search in the current conversation") is already bound above.
+- Save / Print: Slack binds no such chords.
+- Open: Ctrl/⌘O is "Upload a file" in Slack's table, not Open.
+- New: Ctrl/⌘N is "Compose a new message" (already drawn as New message).
+- Redo: not in Slack's table.
+
+Noted, not changed: Slack's current table gives "Upload a file" as Ctrl/⌘O,
+whereas this spec draws Upload on Ctrl/⌘U; and Browse DMs as Ctrl+Shift+2 /
+⌘⇧K. Existing bindings were left as they are.

@@ -116,3 +116,27 @@ One cell was wrong on both platforms: **Join lines** was drawn on `Ctrl+J`.
 Sublime Text 4 moved it to `Ctrl+Shift+J`, and `Ctrl+J` is now the prefix of
 two-stroke tab-selection chords.
 
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Added (Windows **and** Linux set; Sublime's Linux keymap binds these identically),
+label = lexicon concept, no icon (the shared Fluent concept renderer draws it):
+
+| chord | concept | confirmation |
+|---|---|---|
+| Ctrl+S / Ctrl+O / Ctrl+N | Save / Open / New | File menu accelerators of the shipped `Default (Windows).sublime-keymap` (`save`, `prompt_open_file`, `new_file`) |
+| Ctrl+C / Ctrl+V / Ctrl+Z / Ctrl+A | Copy / Paste / Undo / Select all | Edit / Selection menu accelerators, same keymap |
+| Ctrl+Shift+Z | Redo | default keymap binds `ctrl+shift+z` → `redo` (and `ctrl+y` → `redo_or_repeat`): <https://forum.sublimetext.com/t/use-cases-for-redo-or-repeat/59101>, <https://forum.sublimetext.com/t/ctrl-z-ctrl-y-bug-esp-with-redo/459> |
+| F3 | Find next | `find_next` on F3 (⌘G on macOS): <https://forum.sublimetext.com/t/find-next-and-find-prev-occurence-functionality-not-working/52268>, <https://forum.sublimetext.com/t/find-next-cmd-g-must-be-entered-twice-to-function/10766> |
+| Ctrl+= / Ctrl+- | Zoom in / Zoom out | `increase_font_size` / `decrease_font_size`, quoted from `Default (Windows).sublime-keymap`: <https://forum.sublimetext.com/t/ctrl-vs-ctrl-equals-what-is-the-difference/60982>, <https://forum.sublimetext.com/t/ctrl-vi-shortcut-overlapping-issue/15378> |
+
+Sublime is closed source, so the keymap itself is not fetchable; it is visible
+in-app under *Preferences → Key Bindings* (left pane), which is the authority.
+
+Deliberately NOT added:
+
+- **Ctrl+X Cut, Ctrl+Y Redo, Ctrl+F Find, Ctrl+H Replace, Ctrl+W Close** — already
+  bound above (Cut is drawn as Sublime's own "Cut line"), never duplicated.
+- **Print** — Sublime Text has no print command.
+- **Reload** — *File → Revert File* has no default key binding.
+- **Ctrl+P** — Goto Anything, not Print.

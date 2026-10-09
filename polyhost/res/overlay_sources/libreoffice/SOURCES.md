@@ -215,3 +215,24 @@ narrowed to 1 px purely to buy the 2 px that let `WRITER` fit.
 Authoring-time only: `pip install shapely svgpathtools cairosvg` (like
 `cairosvg` elsewhere, these are build tools and deliberately NOT in
 `requirements.txt`, which is the app's runtime set).
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added to each of `calc.yaml`, `impress.yaml` and `writer.yaml` in the
+`# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+W / Cmd+W — Close (window) | all (`CMDCTRL`) | https://help.libreoffice.org/latest/en-US/text/shared/main0107.html ("Close Window … Press Command Ctrl + W") |
+| Ctrl+Shift+F / Cmd+Shift+F — Find next ("Searches for the last entered search term") | all (`CMDCTRL`) | https://help.libreoffice.org/latest/en-US/text/shared/04/01010000.html ; no module page (Writer/Calc/Impress `04/01020000`) rebinds it |
+| Cmd+Shift+Z — Redo | macOS only | https://help.libreoffice.org/latest/en-US/text/shared/04/01010000.html and `swriter/04/01020000` ("Redo last action: Command+Shift+Z / Ctrl+Y") |
+
+⚠️ The existing `{key: Y, mods: [CMDCTRL], label: Redo}` draws **Cmd+Y** on macOS,
+which the help pages above do not document (macOS Redo is Cmd+Shift+Z). It was
+left untouched (no existing binding is changed in this pass); worth re-scoping to
+`only: [windows, linux]` after confirming on a Mac.
+
+Deliberately NOT added:
+
+- **Zoom**: no Ctrl chord documented (Impress uses bare +/- in Normal view).
+- **Reload**: no default chord.

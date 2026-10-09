@@ -102,3 +102,8 @@ python polyhost/res/overlay_sources/notepad/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/notepad/bindings.yaml --preview /tmp/notepad_preview
 ```
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Every standard chord is already drawn (Ctrl+N/O/S/P/W, Ctrl+Z/
+Y/X/C/V/A, Ctrl+F/H, F3, Ctrl+=/-). Notepad has no Reload chord.

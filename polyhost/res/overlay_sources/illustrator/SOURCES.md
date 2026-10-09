@@ -193,3 +193,18 @@ Remapped on macOS: **none**. Dropped on macOS: **none**.
 | Action | macOS chord | Note |
 |---|---|---|
 | Hide edges | ⌘H | **macOS reserved (Hide app).** Illustrator's default ⌘H is Hide Edges (a long-standing complaint on Adobe's forums; users can move it to ⇧⌘H). Drawn as ⌘H, the documented default. |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+Shift+Z / Cmd+Shift+Z — Redo | all (`CMDCTRL`) | https://helpx.adobe.com/illustrator/using/default-keyboard-shortcuts.html (403 to fetchers; via search snippets); https://helpx.adobe.com/illustrator/web/keyboard-shortcuts-web.chromeless.html; https://www.redokun.com/blog/illustrator-shortcuts |
+| Ctrl+W / Cmd+W — Close | all (`CMDCTRL`) | same helpx page ("Close the Document Window"); https://www.redokun.com/blog/illustrator-shortcuts |
+
+Deliberately NOT added:
+
+- **Ctrl+Y**: Outline mode in Illustrator (already drawn) — never Redo.
+- **Ctrl+F**: Paste in front (already drawn); Find and Replace has no default chord.
+- New/Open/Save/Print/Undo/Cut/Copy/Paste/Select all and Ctrl+= / Ctrl+- zoom were already drawn.

@@ -98,3 +98,17 @@ confirmed). Property letters, tool letters, I/O and Space are identical on macOS
 | Add to render queue | Ctrl+M | ⇧⌘/ (remapped, `only:` split) | ⌘M is the macOS Minimize chord; After Effects hands it to the system when *Use System Shortcut Keys* is on (Creative COW: "Command M no longer adds to Render Queue"). Adobe documents ⇧⌘/ as the equivalent command, which cannot collide. |
 
 Dropped on macOS: **none**.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+W / Cmd+W — Close (closes the active panel/comp, not the project) | all (`CMDCTRL`) | https://helpx.adobe.com/after-effects/using/keyboard-shortcuts-reference.html (403 to fetchers); https://community.adobe.com/t5/after-effects-discussions/ctrl-w/m-p/12142827 ; https://www.premiumbeat.com/blog/after-effects-shortcut-close-all-open-compositions |
+
+Deliberately NOT added:
+
+- **Ctrl+Y**: New Solid (already drawn) — never Redo; Redo is Ctrl+Shift+Z (already drawn).
+- **Ctrl+F (Find in Project panel)**: not confirmed against Adobe's page — left off.
+- **Print**: none. **Zoom**: bare `,` / `.` — not a Ctrl chord.

@@ -5,8 +5,17 @@ on:
     types: [closed]
     branches: [main]
 
+# main requires a pull request for every change, and a personal repository's
+# ruleset cannot list the built-in token as a bypass actor. So the bump goes
+# through a PR of its own, which this job opens and merges at once. That needs
+# "Allow GitHub Actions to create and approve pull requests" (Settings ->
+# Actions -> General) and a rule that asks for a PR and nothing more: a PR
+# opened with GITHUB_TOKEN starts no workflows, so required checks or
+# approvals would never be met. For the same reason the bump PR's own merge
+# does not start this workflow again.
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   bump:
@@ -24,8 +33,14 @@ jobs:
 
       - name: Determine bump type from PR labels
         id: bump_type
+        # Label names reach the script through the ENVIRONMENT, never by being
+        # pasted into its text: a label may contain a single quote, which closed
+        # the old `LABELS='${{ ... }}'` string and ran the rest as shell. Same
+        # fix as qmk_firmware#251 (HIL-10 in polykybd-ctnd/docs/SECURITY_AUDIT.md),
+        # which this copy had missed.
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
           if echo "$LABELS" | grep -q '"bump:major"'; then
             echo "type=major" >> "$GITHUB_OUTPUT"
           elif echo "$LABELS" | grep -q '"bump:minor"'; then
@@ -37,8 +52,12 @@ jobs:
           fi
 
       - name: Bump version in _version.py
+        # Read from the environment too, so no `${{ }}` sits inside a run: body.
+        env:
+          BUMP_TYPE: ${{ steps.bump_type.outputs.type }}
         run: |
           python3 - <<'PYEOF'
+          import os
           import re
 
           path = "polyhost/_version.py"
@@ -50,7 +69,7 @@ jobs:
           patch   = int(re.search(r'__patch__\s*=\s*(\d+)',    content).group(1))
           proto   = int(re.search(r'__protocol__\s*=\s*(\d+)', content).group(1))
 
-          bump = "${{ steps.bump_type.outputs.type }}"
+          bump = os.environ["BUMP_TYPE"]
           if bump == "major":
               major += 1; minor = 0; patch = 0
           elif bump == "minor":
@@ -71,11 +90,25 @@ jobs:
           print(f"Host bumped to {major}.{minor}.{patch} (protocol {proto})")
           PYEOF
 
-      - name: Commit and push
+      - name: Open and merge the bump PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           VERSION=$(awk -F' = ' '/^__major__/{m=$2} /^__minor__/{n=$2} /^__patch__/{p=$2} END{print m"."n"."p}' polyhost/_version.py)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add polyhost/_version.py
-          git diff --cached --quiet || git commit -m "chore: bump host version to ${VERSION} [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "Nothing to bump."
+            exit 0
+          fi
+          BRANCH="bump/host-${VERSION}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$BRANCH"
+          git commit -m "chore: bump host version to ${VERSION} [skip ci]"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: bump host version to ${VERSION}" \
+            --body "Automatic version bump after #${PR_NUMBER}, opened and merged by bump-version.yml."
+          gh pr merge "$BRANCH" --squash --delete-branch \
+            || gh pr merge "$BRANCH" --merge --delete-branch

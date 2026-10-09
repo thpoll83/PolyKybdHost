@@ -67,6 +67,19 @@ Most specific first; the first branch that yields a match wins:
 Nothing matching a sub-map is not a failure: the entry's own `overlay` applies.
 That is what makes a default-plus-refinements entry work.
 
+### A web app sits ON TOP of its browser
+
+A sub-entry normally **replaces** its parent's overlay. The one exception is a
+**browser entry** (any entry that declares `urls-contains`): a site matched under
+it, by `urls-contains` or by the `titles-contains` fallback, gets the browser's
+overlay files **first** and its own **after**. Template files resolve
+last-one-wins per key, so the site wins exactly the keys it draws and the
+browser keeps every other one: on GitHub, Ctrl+T, Ctrl+L, the tab keys and the
+standard editing keys stay on the board. A site that lists a browser file
+itself keeps it in the later position. Title sub-maps of other apps still
+replace: a mode or dialog of one app is not running inside another.
+(`handler/common.py::_layered`, `tests/handler/matcher_test.py::TestBrowserLayering`.)
+
 ## `os:` — per-platform artwork
 
 An app's shortcuts are a property of the platform it runs on. Sublime Text binds

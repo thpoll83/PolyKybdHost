@@ -108,3 +108,28 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Source: 7-Zip's own key handler, `CPanel::OnKeyDown` in
+[`CPP/7zip/UI/FileManager/PanelKey.cpp`](https://github.com/ip7z/7zip/blob/main/CPP/7zip/UI/FileManager/PanelKey.cpp),
+cross-checked with the menu in
+[`resource.rc`](https://github.com/ip7z/7zip/blob/main/CPP/7zip/UI/FileManager/resource.rc).
+
+Added:
+
+| chord | concept | confirmation |
+|---|---|---|
+| Ctrl+A | Select all | `case 'A': if (ctrl) SelectAll(true)` |
+| Ctrl+N | New | `case 'N': if (ctrl) CreateFile()`; menu "Create File\tCtrl+N" |
+| Ctrl+W | Close | `case 'W': if (ctrl) PostMessage(g_HWND, WM_COMMAND, IDCLOSE, 0)` — closes the File Manager window |
+
+Deliberately NOT added:
+
+- **Ctrl+X Cut / Ctrl+V Paste** — the handler catches them, but `EditCut()` and
+  `EditPaste()` in `PanelMenu.cpp` have empty bodies; the menu entries are
+  commented out. The keys do nothing.
+- **Ctrl+C, Ctrl+Z, Ctrl+R** — already drawn with 7-Zip's real meanings (copy
+  file NAME, set comment, refresh).
+- **Save / Open / Print / Find / Replace / Redo / Zoom** — not bound (Open is
+  Enter, Find has no chord).

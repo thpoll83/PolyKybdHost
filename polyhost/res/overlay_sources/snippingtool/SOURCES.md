@@ -111,3 +111,11 @@ The preview (`--preview`, `overlay_preview.png`) reads the **rendered** overlay
 back and shows every populated key in its real 72x40 cell. That is the only
 check that catches a cell which drew nothing -- see
 `tests/res/overlay_cells_test.py`, which now pins it for every app at once.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+**Nothing added.** Microsoft's own table
+(<https://support.microsoft.com/windows/use-snipping-tool-to-capture-screenshots-00246869-1843-655f-f220-97299b865f6b>)
+lists only Ctrl+C and Ctrl+S among the standard chords, both already drawn, as
+are Ctrl+N/P/Z/Y/A. Ctrl+O (open file) and Ctrl+W are not documented by
+Microsoft or by the two references above, so they are not drawn.

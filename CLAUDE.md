@@ -734,6 +734,10 @@ in [`docs/releases.md`](docs/releases.md).
   the PR body is documentation, not a label; `bump-version.yml` reads labels at merge
   time and a label applied as the merge happens lands too late. `create_pull_request`
   cannot set labels — use `issue_write` with `labels:` right after opening.
+- ⚠️ **The bump lands through its own auto-merged PR, because `main` requires a PR**
+  (2026-10-09). It depends on "Allow GitHub Actions to create and approve pull requests"
+  and on the `main` rule requiring a PR and nothing more: a required check or approval
+  would leave every bump PR hanging. Details in [`docs/releases.md`](docs/releases.md).
 - ⚠️ **Since 1.0, PATCH is the default and `bump:minor` is the exception** (maintainer's
   rule, 2026-10-03). Before 1.0 a small change landed as a 0.9.x patch; after 1.0 almost
   every PR carried `bump:minor`, so the firmware went 1.0.0 → 1.7.0 in six days and the

@@ -136,3 +136,18 @@ three datasets (⌘E, ⌘N, ⌘,, ⌘/, ⌘., ⌘O, ⌘=, ⌘-, ⌘0, ⌘1–⌘
 list gives **Start audio call = Alt+Shift+A, Start video call = Alt+Shift+V**,
 with Ctrl+Shift+C = toggle recording / inline code and Ctrl+Shift+U = toggle
 speaker. hotkys still lists Ctrl+Shift+C/U. Re-verify on current new Teams.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. Added Cut / Copy / Paste / Undo / Select all
+(Ctrl+X/C/V/Z/A on Windows/Linux, ⌘X/C/V/Z/A on macOS): the compose box's
+standard text-editing chords, which Teams supports like any Chromium-based
+editor. None of these keys was bound before.
+
+Not added / why:
+- Save / Open / Print: Teams binds none (Ctrl/⌘O is "Attach file").
+- New: Ctrl/⌘N is already "New chat".
+- Find: Ctrl+F (search within chat) is still unconfirmed as a stable new-Teams
+  default (see "Dropped / not included" above).
+- Redo, Close, Reload: not documented as Teams defaults.
+- Zoom in/out: already bound above.

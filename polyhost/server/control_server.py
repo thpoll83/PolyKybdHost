@@ -27,6 +27,7 @@ Core events are fanned out to every connection that has sent
 import queue
 import threading
 
+from polyhost.handler.common import with_underlays
 from polyhost.server import protocol as p
 from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
@@ -216,7 +217,8 @@ class ControlServer(MpcListenerServer):
             p.M_BOOT_LOOP_CANCEL: lambda conn, params: _unwrap(c.cancel_boot_loop()),
             p.M_UNICODE_MODE_REFRESH: lambda conn, params: _unwrap(c.refresh_unicode_mode()),
             p.M_DAYLIGHT_REFRESH: lambda conn, params: _unwrap(c.refresh_daylight_brightness()),
-            p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(params["files"])},
+            p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(
+                with_underlays(params["files"], params.get("underlay", ())))},
             p.M_OVERLAY_ENABLE: lambda conn, params: _unwrap(c.enable_overlays()),
             p.M_OVERLAY_DISABLE: lambda conn, params: _unwrap(c.disable_overlays()),
             p.M_OVERLAY_RESET: lambda conn, params: _unwrap(c.reset_overlays()),

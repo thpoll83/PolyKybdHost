@@ -68,11 +68,44 @@ The other 10 old cells are byte-identical.
   (comment/uncomment), Ctrl+K,D / Ctrl+K,F (format), Ctrl+R,R (rename), Ctrl+R,G
   (sort usings), Ctrl+M,M / Ctrl+M,O / Ctrl+M,L (outlining), Ctrl+K,K
   (bookmark), Ctrl+K,X (snippet), Ctrl+\\,… and Ctrl+Alt+W,1 (watch windows).
-- **F2 rename**: the page binds F2 only in Team Explorer and designers (View.EditLabel).
-  Code rename is Ctrl+R,R.
+- **Code rename** (Ctrl+R,R) is a two-stroke chord, see above. Plain **F2** IS
+  drawn since 2026-10-08 — see "F2 / F5" below (an earlier note here said F2 was
+  bound only in Team Explorer and designers; the page lists `View.EditLabel` under
+  *View: global shortcuts*).
 - Some chords are valid but were left out to keep the set to everyday
   commands: Ctrl+F9 (enable breakpoint), Ctrl+J / Ctrl+Space (IntelliSense),
   Ctrl+] (brace), F7 / Shift+F7 (code/designer), F8 / Shift+F8 (next/previous
   location), Shift+F3, Shift+Alt+= / Shift+Alt+- (expand/contract selection),
   Ctrl+Shift+O, Ctrl+Alt+Break / Ctrl+Break (the Pause key), and the
   Ctrl+Alt+{C,I,E,...} debug tool windows apart from Breakpoints.
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+Shift+Z — Redo (alternative to Ctrl+Y) | Windows | https://learn.microsoft.com/en-us/visualstudio/ide/default-keyboard-shortcuts-in-visual-studio ("Redo: Ctrl+Y or Ctrl+Shift+Z or Shift+Alt+Backspace — Edit.Redo") |
+
+Deliberately NOT added:
+
+- **Ctrl+P (Print)**: the same page lists Ctrl+P for both File.Print and
+  Edit.GoToAll/NavigateTo; ambiguous, so left off.
+- Everything else (New/Open/Save/Close/Undo/Cut/Copy/Paste/Select all/Find/F3 Find
+  next/Ctrl+H Replace/Ctrl+Shift+. , zoom) was already drawn.
+
+## F2 / F5 (no modifier, 2026-10-08)
+
+The firmware no longer draws a built-in Rename/Refresh hint on F2/F5 for every
+app, so the overlay carries them only where Visual Studio really does that.
+
+| Key | Drawn as | Confirmed by |
+|---|---|---|
+| F2 | Rename (`icon: rename.png`) | <https://learn.microsoft.com/en-us/visualstudio/ide/default-keyboard-shortcuts-in-visual-studio> — "View: global shortcuts": "Edit label — F2 — View.EditLabel", the in-place rename of the selected item in Solution Explorer (and other tree views). |
+
+`icons/rename.png` is a byte-identical copy of `../explorer/icons/rename.png`
+(Microsoft Fluent UI System Icons "Rename", MIT). Rename is not a shared lexicon
+concept, so it is drawn from the file. It is not produced by `fetch_icons.py`.
+
+Not added: **F5 Reload** — F5 is `Debug.Start` (already drawn as Start debugging);
+the page's `View.Refresh` / `Team.Refresh` F5 rows are Team Explorer-only.

@@ -68,3 +68,15 @@ No binding uses a reserved macOS chord.
 - Ctrl+Shift+N (create/join server), Ctrl+Shift+T (private group), Ctrl+F
   (search), Ctrl+B (previous text channel), Ctrl+Enter (answer call), Tab (focus
   text area): not confirmed by any excerpt, or not worth a keycap.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Label = lexicon concept, no icon. Added Cut / Copy / Paste / Undo / Select all
+(Ctrl+X/C/V/Z/A on Windows/Linux, ⌘X/C/V/Z/A on macOS): the message box's
+standard text-editing chords (Chromium editing on Windows/Linux, Electron
+Edit-menu roles on macOS). None of these keys was bound before.
+
+Not added / why: Save / Open / New / Print / Find / Close / Zoom / Reload / Redo —
+Discord's hotkey articles (support.discord.com, still 403 from this session) do
+not list them as defaults. (Ctrl+R reloads the client in practice, but that is
+undocumented.)

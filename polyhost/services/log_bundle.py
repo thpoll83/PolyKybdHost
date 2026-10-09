@@ -518,8 +518,10 @@ def environment_text(include_slow: bool = False,
     a worker.
     """
     from polyhost._version import __protocol__, __version__
+    from polyhost.services import build_info
     lines = [
         f"PolyHost version : {__version__}",
+        f"PolyHost build   : {build_info.describe()}",
         f"Host protocol    : {__protocol__}",
         f"Python           : {platform.python_version()} ({sys.executable})",
         f"OS               : {os_detail()} ({platform.machine()})",

@@ -103,3 +103,8 @@ bindings:
   - { key: "]", mods: [GUI, ALT],     only: [macos],          icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
   - { key: "[", mods: [CTRL, SHIFT], only: [windows, linux], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
   - { key: "[", mods: [GUI, ALT],     only: [macos],          icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: Z,     mods: [CMDCTRL, SHIFT], label: "Redo",     source: "concept (shared Fluent)" }
+  - { key: EQUAL, mods: [CMDCTRL],        label: "Zoom in",  source: "concept (shared Fluent)" }
+  - { key: MINUS, mods: [CMDCTRL],        label: "Zoom out", source: "concept (shared Fluent)" }

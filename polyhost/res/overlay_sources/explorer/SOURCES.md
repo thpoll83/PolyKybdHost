@@ -53,3 +53,18 @@ hand-made b/w version is used instead.)
 Fluent `.svg` → cairosvg 96px in `fetch_icons.py`. To pin exact bytes against
 upstream updates, replace `main` with a commit SHA; committed `icons/` freeze the
 render regardless.
+
+## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
+
+Source: <https://support.microsoft.com/windows/keyboard-shortcuts-in-windows-dcc61a57-8ff0-cffe-9796-cb9706c75eec>
+(general table: "Ctrl+R (or F5) — Refresh the active window"; Windows 11:
+"Ctrl+F5 Ctrl+R — Refresh the current window").
+
+Added: **Ctrl+R → Reload**.
+
+Deliberately NOT added:
+
+- **Ctrl+C/X/V/Z/Y/A/F/N/W** — already drawn above, never duplicated.
+- **Save, Open, Print, Find next, Replace** — not Explorer actions.
+- **Zoom** — Explorer zooms with Ctrl+mouse wheel only; Ctrl+Plus is "resize all
+  columns to fit" and needs the numeric keypad.

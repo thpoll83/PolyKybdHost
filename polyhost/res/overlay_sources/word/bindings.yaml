@@ -95,3 +95,7 @@ bindings:
   - { key: F12, mods: [], icon: saveas.png,  label: "Save as", source: "ms-fluent/Save Edit (MIT)", only: [windows, linux] }
   # macOS: Save As is Cmd+Shift+S
   - { key: S, mods: [GUI, SHIFT], icon: saveas.png,  label: "Save as", source: "ms-fluent/Save Edit (MIT)", only: [macos] }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: F4, mods: [SHIFT], only: [windows, linux], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: F,  mods: [GUI],   only: [macos],          label: "Find",      source: "concept (shared Fluent)" }

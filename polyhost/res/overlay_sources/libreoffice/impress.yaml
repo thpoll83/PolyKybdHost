@@ -66,3 +66,8 @@ bindings:
 
   # --- Ctrl+Alt+Shift (the `extra` layer) ---
   - { key: A, mods: [CMDCTRL, ALT, SHIFT], icon: ungroup.png, label: Ungroup, source: "ms-fluent/Group Dismiss (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  - { key: W, mods: [CMDCTRL],        label: "Close",     source: "concept (shared Fluent)" }
+  - { key: F, mods: [CMDCTRL, SHIFT], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [GUI, SHIFT], only: [macos], label: "Redo", source: "concept (shared Fluent)" }

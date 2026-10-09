@@ -85,7 +85,8 @@ M_BOOT_LOOP_CANCEL = "bootloop.cancel"   # {} -> "cancelling"
 # keyboard. Normally sent once per connect; needed when WinCompose is installed or
 # quit mid-session. {} -> (ok, {"mode": "WinCompose"|"Windows"|...})
 M_UNICODE_MODE_REFRESH = "unicode.mode.refresh"
-M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...]} -> {"queued": bool}
+M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...], "underlay"?: [name, ...]} -> {"queued": bool}
+# "underlay" names the files drawn dimmed under a website's overlay (handler/common.Underlay).
 M_OVERLAY_ENABLE = "overlay.enable"    # {} -> (ok, payload)
 M_OVERLAY_DISABLE = "overlay.disable"  # {} -> (ok, payload)
 M_OVERLAY_RESET = "overlay.reset"      # {} -> (ok, payload)

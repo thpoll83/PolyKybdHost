@@ -106,3 +106,17 @@ Remapped on macOS: **none**. Dropped on macOS: **none**.
 |---|---|---|
 | Export media | ⌘M | **macOS reserved (Minimize)**, but Premiere documents and claims ⌘M. Drawn as ⌘M. |
 | New project | ⌥⌘N | Swap assumed from Adobe's convention; not individually confirmed by a snippet (low risk). |
+
+## Standard editing chords (shared Fluent concepts, 2026-10)
+
+Added in the `# --- standard editing (shared Fluent concepts) ---` block:
+
+| Chord | Platform | Confirmed by |
+|---|---|---|
+| Ctrl+W / Cmd+W — Close | all (`CMDCTRL`) | https://helpx.adobe.com/au/premiere-pro/using/default-keyboard-shortcuts.chromeless.html (Adobe table: "Close Ctrl+W Cmd+W"; 403 to fetchers, read via search snippet); https://www.oreilly.com/library/view/adobe-premiere-pro/9781681986883/shortcuts.xhtml |
+
+Deliberately NOT added:
+
+- **Ctrl+F (Find)**: listed only by third-party cheat sheets (evercast.us), not
+  confirmed on Adobe's own table — left off.
+- **Print**: no print command. **Zoom**: bare `=` / `-` already drawn.
