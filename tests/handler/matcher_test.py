@@ -289,6 +289,40 @@ class TestBrowserLayering(unittest.TestCase):
         e = self._browser()
         self.assertIs(find_matching_entry("x", e, url="https://other.com/"), e)
 
+    def test_the_browsers_files_are_marked_as_underlays(self):
+        # The keyboard draws an Underlay's icons dimmed (cmd 33, protocol v23), so
+        # the site's own shortcuts stand out. The site's files stay plain.
+        got = find_matching_entry("x", self._browser(), url="https://site.com/a")
+        marks = [getattr(f, "underlay", False) for f in got["overlay"]]
+        self.assertEqual(marks, [True, True, False, False])
+
+    def test_a_browser_file_the_site_lists_too_is_the_sites(self):
+        # chatgpt.com/codex: the repeated file keeps the site's position AND full
+        # strength, or the site's own copy would be drawn dimmed.
+        e = self._browser()
+        self.site["overlay"] = ["browser.combo.mods.png", "site.mods.png"]
+        got = find_matching_entry("x", e, url="https://site.com/")
+        marks = [getattr(f, "underlay", False) for f in got["overlay"]]
+        self.assertEqual(marks, [True, False, False])
+
+    def test_views_differing_only_in_marks_compare_unequal(self):
+        # The handler resends only when the matched entry changes (==). One site
+        # listing the browser's file (plain) and one not listing it (dimmed) give
+        # equal file lists, so the marks must be part of the comparison.
+        e = named(entry(urls_contains={
+                      "a.com": named(entry(), ["browser.mods.png", "site.mods.png"]),
+                      "b.com": named(entry(), ["site.mods.png"])}),
+                  ["browser.mods.png"])
+        a = find_matching_entry("x", e, url="https://a.com/")
+        b = find_matching_entry("x", e, url="https://b.com/")
+        self.assertEqual(a["overlay"], b["overlay"])
+        self.assertNotEqual(a, b)
+
+    def test_the_browser_alone_is_not_marked(self):
+        e = self._browser()
+        got = find_matching_entry("x", e, url="https://other.com/")
+        self.assertFalse(any(getattr(f, "underlay", False) for f in got["overlay"]))
+
     def test_title_submaps_of_other_apps_still_replace(self):
         # Not a browser (no urls-contains): a window mode of one app is not
         # running inside another, so its overlay replaces as before.

@@ -21,6 +21,8 @@ URL_HAS = "urls-contains"
 OS = "os"
 FLAGS = "flags"
 OVERLAY = "overlay"
+# Key of a layered view (see `_layered`) holding the names drawn as Underlays.
+UNDERLAYS = "_underlays"
 # Layered views of web-app sub-entries, keyed by (id(base), id(sub)); see
 # `_layered`. ⚠️ Kept OUT of the entries on purpose: a cache on the sub-entry
 # that pointed back at its browser entry would make the handler's
@@ -153,6 +155,23 @@ def _phrase_keys(sub_map):
     return sorted((kw for kw in keys if kw[0]), key=lambda kw: -len(kw[0]))
 
 
+class Underlay(str):
+    """An overlay file name drawn UNDER a website's overlay: a browser's own file.
+
+    A plain ``str`` everywhere else -- it compares and hashes as the name, so cache
+    keys, logs and the mapping file see no difference. The send path reads
+    ``underlay`` and asks the keyboard to draw the positions it ends up owning
+    dimmed (cmd 33's DIM flag, protocol v23), so the site's own shortcuts stand out
+    and the browser's stay readable underneath.
+    """
+    underlay = True
+
+
+def as_underlay_path(name, path):
+    """``path`` as an Underlay when ``name`` is one: a resolved path keeps the mark."""
+    return Underlay(path) if getattr(name, "underlay", False) else path
+
+
 def _as_list(value):
     if value is None:
         return []
@@ -180,7 +199,10 @@ def _layered(base, sub):
     if cached is not None:
         return cached[2]
     files = []
-    for f in _as_list(base.get(OVERLAY)) + _as_list(sub.get(OVERLAY)):
+    site = _as_list(sub.get(OVERLAY))
+    # The browser's files become Underlays, drawn dimmed where they show. A file the
+    # site lists too is the site's: it keeps its later position and full strength.
+    for f in [Underlay(f) for f in _as_list(base.get(OVERLAY))] + site:
         if f in files:
             # A site entry that repeats a browser file (chatgpt.com/codex lists the
             # browser set) keeps the LATER position, so it still wins its keys.
@@ -188,6 +210,11 @@ def _layered(base, sub):
         files.append(f)
     view = dict(sub)
     view[OVERLAY] = files
+    # An Underlay compares equal to its plain name, so two views whose files
+    # differ only in which are marked would compare equal, and the handler's
+    # `last_entry == matched` would skip the resend that changes the dimming.
+    # The marked names, as plain strings, make that difference visible.
+    view[UNDERLAYS] = tuple(str(f) for f in files if getattr(f, "underlay", False))
     if len(_LAYERED_CACHE) > 512:
         _LAYERED_CACHE.clear()
     _LAYERED_CACHE[key] = (base, sub, view)

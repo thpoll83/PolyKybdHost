@@ -39,7 +39,7 @@ from polyhost.device import hid_fw_up
 from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.handler.common import OverlayCommand
+from polyhost.handler.common import OverlayCommand, as_underlay_path
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -79,8 +79,11 @@ GENERIC_STATE_UNKNOWN = object()
 
 
 def get_overlay_path(filepath):
-    """Absolute path of a shipped overlay template (polyhost/res/overlays)."""
-    return os.path.join(_RES_DIR, "overlays", filepath)
+    """Absolute path of a shipped overlay template (polyhost/res/overlays).
+
+    An Underlay name (a browser's file under a website's) stays an Underlay, so the
+    send path can still ask the keyboard to draw it dimmed."""
+    return as_underlay_path(filepath, os.path.join(_RES_DIR, "overlays", filepath))
 
 
 def strip_key_injection(lines):
