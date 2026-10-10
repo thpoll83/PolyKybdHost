@@ -780,10 +780,12 @@ in [`docs/releases.md`](docs/releases.md).
   `_version_from_tag(tag)`), so a release published before its bump merged hands out a
   tarball that can never reach the advertised version — and every later check offers
   the same update again, forever. wincompose shipped that failure through its own
-  mechanism (`PK-0.9.19`). ⚠️ **It DETECTS rather than PREVENTS here** — this workflow
-  uploads nothing, so there is no asset to withhold, and on `release: published` the
-  release is public before the step runs; withdrawing it is manual. The pre-publish
-  defence is `publish_release.py`. ⚠️ **The fix is to MOVE the tag, and only while no
+  mechanism (`PK-0.9.19`). ⚠️ **On a mismatch it WITHDRAWS the release** — marks it a
+  prerelease, which drops it out of `releases/latest`, the only channel `updater.py`
+  reads — because failing the job retracts nothing: this workflow uploads nothing to
+  withhold, and on `release: published` the release is public before the step runs.
+  Prerelease rather than delete, so it is reversible and keeps the notes and the tag.
+  The pre-publish defence is still `publish_release.py`. ⚠️ **The fix is to MOVE the tag, and only while no
   release holds it** — publishing never moves one, and the tarball people install IS
   `archive/refs/tags/<tag>.tar.gz`, so delete the release the refusal left behind before
   moving anything. [`docs/releases.md`](docs/releases.md) → the first bullet has both

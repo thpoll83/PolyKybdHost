@@ -39,24 +39,34 @@ jobs:
       # the same gate for the host, and qmk_firmware has the matching one for
       # FW_VERSION.
       #
-      # ⚠️ On this repo the check DETECTS, it cannot PREVENT — do not read it as a
-      # gate in the sense the firmware repo's is. There, the assets are uploaded by the
-      # workflow, so refusing withholds the download. Here the workflow uploads nothing:
-      # what the updater installs is GitHub's own `archive/refs/tags/<tag>.tar.gz`, which
-      # exists because the TAG exists. And on the `release: published` path the release
-      # is already public before this runs — publishing is what started the run. So a
-      # mismatch caught here leaves a live, installable, mislabelled release, and
-      # failing the job is all this step does about it.
+      # ⚠️ FAILING THE JOB RETRACTS NOTHING, so on a mismatch this step WITHDRAWS the
+      # release itself. The firmware repo's copy of this gate prevents harm by not
+      # uploading: refuse, and there is no download. This workflow uploads nothing, so
+      # there is no asset to withhold — what the updater installs is GitHub's own
+      # `archive/refs/tags/<tag>.tar.gz`, which exists because the TAG exists — and on
+      # the `release: published` path the release is public before this runs, since
+      # publishing is what started the run. A red job beside a live, installable,
+      # mislabelled release is not a gate; it is a note nobody reads in time.
       #
-      # That is still worth having, because the alternative is silence: the defect is
-      # invisible from the release page and shows up only as users being offered the
-      # same update forever. The real pre-publish defence is `scripts/publish_release.py`
-      # (`commit_for_version` plus its create-time and tag-position gates), which refuses
-      # before anything is public; this step backstops the routes that bypass the script
-      # — a release published by hand in the UI, or a hand-pushed tag — and turns a
-      # permanent quiet failure into a red run plus a manual withdrawal.
+      # So the mismatch branch marks the release a PRERELEASE over the API. That is
+      # preventive rather than advisory, because `releases/latest` excludes prereleases
+      # and it is the ONLY channel `updater.py` reads — both its API path and its
+      # rate-limit web fallback resolve exactly that URL. The bad release leaves every
+      # updater's view at once.
       #
-      # Raised as a P1 by Greptile on PolyKybdHost#349, which is correct.
+      # Prerelease rather than delete, deliberately: reversible by unchecking one box,
+      # keeps whatever notes somebody wrote, keeps the tag where it is, and leaves the
+      # human decision (move the tag, or cut the next patch) exactly where it was. The
+      # step still exits 1, and a PATCH that fails says so loudly rather than letting a
+      # live release read as handled.
+      #
+      # The pre-publish defence remains `scripts/publish_release.py` (`commit_for_version`
+      # plus its create-time and tag-position gates), which refuses before anything is
+      # public. This step backstops the routes that bypass the script: a release
+      # published by hand in the UI, or a hand-pushed tag.
+      #
+      # Raised as a P1 by Greptile on PolyKybdHost#349 (detect-only was the first fix);
+      # the withdrawal is the maintainer's call, taken 2026-10-10.
       #
       # ⚠️ The check reads the TAG's tree — `actions/checkout` with no `ref:` gets
       # the tagged commit for both triggers here — so `main` drifting ahead of a
@@ -64,6 +74,10 @@ jobs:
       - name: Assert the version matches the tag
         if: github.event_name == 'release' || github.ref_type == 'tag'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          RELEASE_ID: ${{ github.event.release.id }}
           TAG_NAME: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
           want="${TAG_NAME#v}"
@@ -76,13 +90,39 @@ jobs:
           fi
           if [ "$want" != "$have" ]; then
             echo "::error::Tag $TAG_NAME wants $want, but this tree declares __version__ $have."
-            if [ "${{ github.event_name }}" = "release" ]; then
-              echo "WITHDRAW THE RELEASE NOW: it is already public, and failing this job does"
-              echo "not retract it. The tarball the updater installs is GitHub's own"
-              echo "archive/refs/tags/$TAG_NAME.tar.gz, which exists because the tag does, so"
-              echo "anyone updating right now gets $have while being told it is $want -- and"
-              echo "will be offered the same update forever. Delete the release (or mark it a"
-              echo "prerelease, which drops it out of releases/latest) before anything else."
+            # Withdraw it. Failing the job retracts nothing on its own: the release is
+            # already public, and the tarball the updater installs is GitHub's own
+            # archive/refs/tags/<tag>.tar.gz, which exists because the TAG exists.
+            #
+            # `prerelease` is the lever because `releases/latest` excludes prereleases,
+            # and that is the ONLY channel updater.py reads -- both its API path
+            # (api.github.com/repos/<repo>/releases/latest) and its rate-limit web
+            # fallback (github.com/<repo>/releases/latest, a 3xx whose Location names
+            # the tag). So this takes the bad release out of every updater's view.
+            #
+            # Deliberately NOT a delete: reversible by unchecking one box, keeps the
+            # notes somebody wrote, keeps the tag where it is, and leaves the human
+            # decision (move the tag, or cut the next patch) exactly where it was.
+            if [ "$EVENT" = "release" ] && [ -n "$RELEASE_ID" ]; then
+              if gh api -X PATCH "repos/$REPO/releases/$RELEASE_ID" -F prerelease=true >/dev/null; then
+                echo "WITHDRAWN: $TAG_NAME is marked a prerelease, so it is no longer"
+                echo "releases/latest and no updater will offer it. Nothing else changed --"
+                echo "the tag, the notes and any assets are where they were."
+              else
+                echo "::error::COULD NOT WITHDRAW IT -- DO THIS BY HAND, NOW: mark $TAG_NAME a"
+                echo "prerelease (or delete it). Until you do, anyone updating gets $have"
+                echo "while being told it is $want, and will be offered the same update"
+                echo "forever. The gh api PATCH above failed; check the token permissions."
+              fi
+            elif [ "$EVENT" = "release" ]; then
+              # A release event with no id should not happen; if it does, the release
+              # IS public and this is the one case that must not read as reassuring.
+              echo "::error::A release is public but its id was not in the event payload,"
+              echo "so it could not be withdrawn automatically. MARK $TAG_NAME A PRERELEASE"
+              echo "(or delete it) BY HAND, NOW."
+            else
+              echo "Nothing is public yet (event=$EVENT): a tag push creates no release,"
+              echo "so there is nothing to withdraw. Fix the tag before publishing."
             fi
             echo "polyhost/_version.py is what the installed app reports, and the updater"
             echo "compares it against the tag. The tag has to point at a commit declaring"

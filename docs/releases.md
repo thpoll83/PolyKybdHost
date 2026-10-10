@@ -23,18 +23,26 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     could not be bumped for two weeks, because an install reporting 0.9.18 would have
     been offered an endless update to itself. `qmk_firmware` has the matching gate for
     `FW_VERSION`, where the asset FILENAMES come from the tag as well.
-  - ⚠️ **It DETECTS; it cannot PREVENT — unlike the firmware repo's, which withholds
-    the assets its own workflow would have uploaded.** This workflow uploads nothing: the
+  - ⚠️ **On a mismatch it WITHDRAWS the release — marks it a prerelease over the API —
+    because failing the job retracts nothing.** The firmware repo's copy prevents harm by
+    not uploading; this workflow uploads nothing, so there is no asset to withhold (the
     updater installs GitHub's own `archive/refs/tags/<tag>.tar.gz`, which exists because
-    the TAG exists, and on the `release: published` path publishing is what *started* the
-    run. So a mismatch caught here leaves a live, installable, mislabelled release, and
-    failing the job is all the step does about it — the withdrawal is manual, and the
-    failure output says so in as many words. The real pre-publish defence is
-    `scripts/publish_release.py`, which refuses before anything is public; this backstops
-    the routes that bypass the script, a release published by hand in the UI or a
-    hand-pushed tag. Worth having anyway, because the alternative is silence: the defect
-    is invisible from the release page and surfaces only as users being offered the same
-    update forever. (Greptile P1 on #349.)
+    the TAG exists), and on `release: published` the release is public before the step
+    runs. A red job beside a live, installable, mislabelled release is a note nobody
+    reads in time.
+    - **`prerelease` is the lever because `releases/latest` excludes prereleases, and
+      that is the only channel `updater.py` reads** — both its API path
+      (`api.github.com/repos/<repo>/releases/latest`) and its rate-limit web fallback
+      (`github.com/<repo>/releases/latest`, whose 3xx `Location` names the tag). So the
+      bad release leaves every updater's view at once.
+    - **Prerelease rather than delete, deliberately**: reversible by unchecking one box,
+      keeps the notes, keeps the tag, and leaves the human decision (move the tag, or cut
+      the next patch) where it was. The step still exits 1, and a PATCH that fails prints
+      `COULD NOT WITHDRAW IT` rather than letting a live release read as handled.
+    - The pre-publish defence is still `scripts/publish_release.py`, which refuses before
+      anything is public; this backstops the routes that bypass the script — a release
+      published by hand in the UI, or a hand-pushed tag. (Greptile P1 on #349 found the
+      original detect-only version; the withdrawal was added 2026-10-10.)
   - **Recovery always ends in moving the tag; WHY it refused only decides whether a
     commit exists to move it to.**
     `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
@@ -58,7 +66,8 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     `git push --force origin refs/tags/v<ver>`.
     ⚠️ **Only while no release holds that tag.** This gate fires on
     `release: published`, so by the time you read its refusal a release usually DOES
-    exist. **Delete it first**, then move the tag and publish. Two reasons: the tarball
+    exist — already marked a prerelease by the step, so it is out of the updater's way
+    but still there. **Delete it first**, then move the tag and publish. Two reasons: the tarball
     the updater hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag
     points at is the product rather than a bookkeeping detail — **and only a CREATE
     re-runs this workflow**, since `publish_release.py` against a release that still
