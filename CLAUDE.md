@@ -734,6 +734,16 @@ in [`docs/releases.md`](docs/releases.md).
   the three repos with a Python runner, so a break introduced here fails
   there.
 
+- ⚠️ **`release.yml` now REFUSES a tag whose tree declares a different
+  `__version__`** — its first step, before the release is created or its notes edited.
+  The updater compares exactly those two numbers (`updater.py` fetches
+  `archive/refs/tags/<tag>.tar.gz` and tests the installed `__version__` against
+  `_version_from_tag(tag)`), so a release published before its bump merged hands out a
+  tarball that can never reach the advertised version — and every later check offers
+  the same update again, forever. wincompose shipped that failure through its own
+  mechanism (`PK-0.9.19`). ⚠️ **The fix is to MOVE the tag** — publishing never moves
+  one. [`docs/releases.md`](docs/releases.md) → the first bullet.
+
 - ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check is
   the PUBLISHED versions, not the in-tree ones.** The source-lockstep rule can be
   perfectly satisfied while the releases sit a protocol apart, and nothing downstream

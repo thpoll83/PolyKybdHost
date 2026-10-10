@@ -9,6 +9,31 @@ Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_versi
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 
+- ⚠️ **`release.yml`'s first step asserts that `__version__` in the TAG's tree equals
+  the tag's version, because the updater compares exactly those two numbers.** The host
+  ships no built asset: `polyhost/services/updater.py` downloads
+  `archive/refs/tags/<tag>.tar.gz` and decides an update exists by comparing the
+  installed `__version__` against `_version_from_tag(tag)`. So a release published
+  before its version bump merged hands the user a tarball whose `_version.py` still
+  declares the previous number — the install succeeds, `__version__` never reaches the
+  tag, and every later check offers the same update again. An endless update to itself,
+  with nothing anywhere saying why.
+  - wincompose shipped this through its own mechanism (wincompose#21): `PK-0.9.19`
+    carries `WinCompose-Setup-0.9.18.exe`, its About tab reads 0.9.18, and `status.txt`
+    could not be bumped for two weeks, because an install reporting 0.9.18 would have
+    been offered an endless update to itself. `qmk_firmware` has the matching gate for
+    `FW_VERSION`, where the asset FILENAMES come from the tag as well.
+  - **Recovery is to MOVE the tag, not to force the release through.**
+    `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
+    the version (`commit_for_version`), so a refusal means either the bump has not
+    merged yet or the tag already existed in the wrong place — **publishing never moves
+    a tag** (`target_commitish` is documented as *"Unused if the Git tag already
+    exists"*). `git tag -f v<ver> <commit declaring it>` then
+    `git push --force origin refs/tags/v<ver>`, and publish.
+  - ⚠️ **The check reads the TAG's tree**, which `actions/checkout` gives it with no
+    `ref:` for both triggers here — so `main` drifting ahead of a prepared tag is
+    harmless, which it always is, since every merge auto-bumps.
+
 - ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check that
   catches it is the PUBLISHED versions, not the in-tree ones.** The existing "bump
   `__protocol__` in lockstep with `PROTOCOL_VERSION`" rule is about the *sources*, and

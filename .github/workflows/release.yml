@@ -23,6 +23,53 @@ jobs:
         with:
           persist-credentials: false
 
+      # ── refuse a tag whose tree declares a different version ────────────────
+      # The host ships no built asset: `polyhost/services/updater.py` downloads
+      # `archive/refs/tags/<tag>.tar.gz` and decides there is an update by
+      # comparing the INSTALLED `__version__` against the version in the tag
+      # (`_version_from_tag`). So a release published before its version bump has
+      # merged hands the user a tarball whose `_version.py` still declares the
+      # previous number: the install succeeds, `__version__` never reaches the
+      # tag, and every subsequent check offers the same update again — an endless
+      # update to itself, with nothing anywhere saying why.
+      #
+      # wincompose shipped this failure through its own mechanism (wincompose#21,
+      # PK-0.9.19: assets named 0.9.18, About tab 0.9.18, `status.txt` unbumpable
+      # for two weeks) and now asserts the built version against the tag. This is
+      # the same gate for the host, and qmk_firmware has the matching one for
+      # FW_VERSION.
+      #
+      # ⚠️ First step, before the release is created or its notes edited, so a
+      # refusal changes nothing.
+      #
+      # ⚠️ The check reads the TAG's tree — `actions/checkout` with no `ref:` gets
+      # the tagged commit for both triggers here — so `main` drifting ahead of a
+      # prepared tag is harmless, which it always is, since every merge auto-bumps.
+      - name: Assert the version matches the tag
+        if: github.event_name == 'release' || github.ref_type == 'tag'
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          want="${TAG_NAME#v}"
+          # ⚠️ `|| true`: GitHub runs this under `bash -e`, so a failing command
+          # substitution would kill the step before the clean error below prints.
+          have=$(python3 -c "import runpy; print(runpy.run_path('polyhost/_version.py').get('__version__',''))" 2>/dev/null || true)
+          if [ -z "$have" ]; then
+            echo "::error::could not read __version__ from polyhost/_version.py"
+            exit 1
+          fi
+          if [ "$want" != "$have" ]; then
+            echo "::error::Tag $TAG_NAME wants $want, but this tree declares __version__ $have."
+            echo "polyhost/_version.py is what the installed app reports, and the updater"
+            echo "compares it against the tag — so this release would be offered forever."
+            echo "The tag has to point at a commit declaring $want: scripts/publish_release.py"
+            echo "pins it to that commit (commit_for_version), so a refusal here means either"
+            echo "the version bump has not merged yet, or the tag already existed somewhere"
+            echo "else — a release never moves a tag. docs/releases.md covers both."
+            exit 1
+          fi
+          echo "__version__ $have matches tag $TAG_NAME."
+
       # Crafted release notes (optional): one file per tag on the unprotected
       # `release-notes` branch — release-notes/<TAG>.md, first line "# <title>",
       # the rest the body. Files are keyed by tag, so they are never overwritten
