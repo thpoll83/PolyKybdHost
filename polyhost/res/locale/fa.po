@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -32,6 +32,270 @@ msgstr "{minutes} دقیقه"
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} ثانیه"
+
+#: polyhost/device/hid_fw_up.py:40
+#, python-brace-format
+msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
+msgstr "فایل برای اینکه تصویر میان‌افزار معتبر RP2040 باشد بسیار کوچک است ({size} بایت) (دست‌کم 264 بایت برای boot2 + جدول بردار ARM انتظار می‌رود)."
+
+#: polyhost/device/hid_fw_up.py:43
+#, python-brace-format
+msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
+msgstr "CRC32 مربوط به boot2 در RP2040 نامعتبر است (در فایل {stored}، محاسبه‌شده {computed}). به نظر نمی‌رسد این یک فایل .bin معتبر میان‌افزار QMK برای RP2040 باشد. مطمئن شوید فایل .bin تولیدشده با 'qmk compile' را انتخاب کرده‌اید، نه .uf2، .hex یا قالبی دیگر."
+
+#: polyhost/device/hid_fw_up.py:48
+#, python-brace-format
+msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
+msgstr "جدول بردار ARM نامعتبر است: SP اولیهٔ {sp} خارج از SRAM در RP2040 ({sram}) است. به نظر نمی‌رسد این یک فایل باینری معتبر میان‌افزار RP2040 باشد."
+
+#: polyhost/device/hid_fw_up.py:51
+msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
+msgstr "به نظر نمی‌رسد این فایل باینری میان‌افزار برای PolyKybd ساخته شده باشد. هیچ رشتهٔ شناسهٔ PolyKybd در فایل باینری پیدا نشد. مطمئن شوید میان‌افزاری را انتخاب کرده‌اید که برای 'polykybd/split72' با 'qmk compile' کامپایل شده است."
+
+#: polyhost/device/hid_fw_up.py:56
+#, python-brace-format
+msgid ""
+"No signature file was found next to this image ({sig}).\n"
+"\n"
+"The keyboard will ask you to confirm it physically: every keycap goes dark except a big A (accept) on the left half and R (reject) on the right. That is expected for a firmware you built yourself.\n"
+"\n"
+"If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
+msgstr ""
+"هیچ فایل امضایی کنار این تصویر پیدا نشد ({sig}).\n"
+"\n"
+"صفحه‌کلید از شما می‌خواهد آن را به‌صورت فیزیکی تأیید کنید: همهٔ کلاهک‌ها خاموش می‌شوند جز یک A (پذیرش) بزرگ روی نیمهٔ چپ و R (رد) روی نیمهٔ راست. این برای میان‌افزاری که خودتان ساخته‌اید طبیعی است.\n"
+"\n"
+"اگر قصد فلش یک نسخهٔ منتشرشده را داشتید، ابتدا فایل '.sig' آن را در همان پوشهٔ فایل '.bin' بارگیری کنید."
+
+#: polyhost/device/hid_fw_up.py:62
+#, python-brace-format
+msgid "Cannot read {sig}: {error}"
+msgstr "خواندن {sig} ممکن نیست: {error}"
+
+#: polyhost/device/hid_fw_up.py:64
+#, python-brace-format
+msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
+msgstr "{sig} برابر {size} بایت است، اما امضا دقیقاً {expected} است. نادیده گرفته می‌شود و صفحه‌کلید از شما می‌خواهد تصویر را به‌صورت فیزیکی تأیید کنید."
+
+#: polyhost/device/hid_fw_up.py:66
+msgid "Firmware file is empty."
+msgstr "فایل میان‌افزار خالی است."
+
+#: polyhost/device/hid_fw_up.py:67
+#, python-brace-format
+msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
+msgstr "میان‌افزار بیش از حد بزرگ است: {size} بایت (حداکثر {max_kb} KB)."
+
+#: polyhost/device/hid_fw_up.py:68
+#, python-brace-format
+msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
+msgstr "در حال ارسال FW_UP_BEGIN — {kb} KB، CRC32 {crc}…"
+
+#: polyhost/device/hid_fw_up.py:69
+#, python-brace-format
+msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
+msgstr "{step} — {elapsed}s گذشته (≈10–20 s)…"
+
+#: polyhost/device/hid_fw_up.py:70
+msgid "Erasing staging area — keyboard will reconnect when done"
+msgstr "در حال پاک کردن ناحیهٔ آماده‌سازی — صفحه‌کلید پس از پایان دوباره وصل می‌شود"
+
+#: polyhost/device/hid_fw_up.py:71
+msgid "Erasing staging area (both halves)"
+msgstr "در حال پاک کردن ناحیهٔ آماده‌سازی (هر دو نیمه)"
+
+#: polyhost/device/hid_fw_up.py:72
+msgid "FW_UP_BEGIN timed out"
+msgstr "مهلت FW_UP_BEGIN به پایان رسید"
+
+#: polyhost/device/hid_fw_up.py:73
+msgid "staging area"
+msgstr "ناحیهٔ آماده‌سازی"
+
+#: polyhost/device/hid_fw_up.py:75
+msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
+msgstr "مهلت FW_UP_BEGIN به پایان رسید — صفحه‌کلید پاک کردن را در 90 s تمام نکرد. کابل USB را بررسی کنید و دوباره امتحان کنید."
+
+#: polyhost/device/hid_fw_up.py:78
+msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
+msgstr "FW_UP_BEGIN ناموفق بود — صفحه‌کلید در 30 s دوباره وصل نشد. کابل USB را بررسی کنید و دوباره امتحان کنید."
+
+#: polyhost/device/hid_fw_up.py:81
+msgid ""
+"FW_UP_BEGIN failed — the slave half could not be prepared.\n"
+"Ensure both keyboard halves are connected and powered on.\n"
+"If the slave half has old firmware (without HID firmware update support), it must be\n"
+"flashed manually via UF2 before HID firmware update will work."
+msgstr ""
+"FW_UP_BEGIN ناموفق بود — نیمهٔ پیرو آماده نشد.\n"
+"مطمئن شوید هر دو نیمهٔ صفحه‌کلید وصل و روشن هستند.\n"
+"اگر نیمهٔ پیرو میان‌افزار قدیمی (بدون پشتیبانی از به‌روزرسانی میان‌افزار از طریق HID) دارد، باید\n"
+"پیش از آنکه به‌روزرسانی میان‌افزار از طریق HID کار کند، به‌صورت دستی با UF2 فلش شود."
+
+#: polyhost/device/hid_fw_up.py:85
+#, python-brace-format
+msgid "Staging erased. Sending {chunks} chunks…"
+msgstr "ناحیهٔ آماده‌سازی پاک شد. در حال ارسال {chunks} قطعه…"
+
+#: polyhost/device/hid_fw_up.py:86
+msgid "Update cancelled by user."
+msgstr "به‌روزرسانی توسط کاربر لغو شد."
+
+#: polyhost/device/hid_fw_up.py:87
+#, python-brace-format
+msgid "Chunk {n}/{total} ({kb} KB sent)…"
+msgstr "قطعهٔ {n}/{total} ({kb} KB ارسال شد)…"
+
+#: polyhost/device/hid_fw_up.py:89
+#, python-brace-format
+msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
+msgstr "نیمه‌های صفحه‌کلید دوباره همگام شدند — بازگشت به قطعهٔ {n}/{total} (آفست {offset}، همگام‌سازی مجدد {resync})…"
+
+#: polyhost/device/hid_fw_up.py:91
+msgid "keyboard rejected the chunk"
+msgstr "صفحه‌کلید قطعه را رد کرد"
+
+#: polyhost/device/hid_fw_up.py:92
+msgid "no reply from the keyboard"
+msgstr "پاسخی از صفحه‌کلید نیامد"
+
+#: polyhost/device/hid_fw_up.py:94
+#, python-brace-format
+msgid ""
+"FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
+"Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
+msgstr ""
+"FW_UP_CHUNK در آفست {offset} پس از {attempts} تلاش ناموفق بود — {reason}.\n"
+"مطمئن شوید هر دو نیمهٔ صفحه‌کلید وصل هستند و میان‌افزار یکسانی اجرا می‌کنند، سپس دوباره امتحان کنید — به‌روزرسانی از ابتدا شروع می‌شود و تکرار آن بی‌خطر است."
+
+#: polyhost/device/hid_fw_up.py:97
+#, python-brace-format
+msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
+msgstr "قطعهٔ {n}/{total} — تلاش مجدد {attempt}/{max_attempts} (انتظار {ms} ms)…"
+
+#: polyhost/device/hid_fw_up.py:98
+#, python-brace-format
+msgid "Could not read {sig}: {error} — flashing unsigned."
+msgstr "خواندن {sig} ممکن نشد: {error} — فلش بدون امضا انجام می‌شود."
+
+#: polyhost/device/hid_fw_up.py:99
+msgid "Sending image signature…"
+msgstr "در حال ارسال امضای تصویر…"
+
+#: polyhost/device/hid_fw_up.py:100
+#, python-brace-format
+msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
+msgstr "{sig} نادیده گرفته شد — {expected} بایت انتظار می‌رفت، {size} دریافت شد."
+
+#: polyhost/device/hid_fw_up.py:101
+msgid "Verifying the staged image (CRC32)…"
+msgstr "در حال تأیید تصویر آماده‌شده (CRC32)…"
+
+#: polyhost/device/hid_fw_up.py:103
+msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
+msgstr "این میان‌افزار امضا ندارد. روی صفحه‌کلید تأیید کنید: کلید برجسته‌شدهٔ A (پذیرش) یا R (رد) را فشار دهید."
+
+#: polyhost/device/hid_fw_up.py:106
+msgid ""
+"Timed out waiting for confirmation on the keyboard.\n"
+"\n"
+"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
+msgstr ""
+"زمان انتظار برای تأیید روی صفحه‌کلید به پایان رسید.\n"
+"\n"
+"صفحه‌کلید پذیرش/رد فیزیکی می‌خواهد چون این تصویر امضای معتبری ندارد. فلش را دوباره شروع کنید و ظرف یک دقیقه کلید برجسته‌شدهٔ A را روی نیمهٔ چپ فشار دهید."
+
+#: polyhost/device/hid_fw_up.py:111
+#, python-brace-format
+msgid ""
+"The keyboard refused this firmware: the signature does not match the image.\n"
+"\n"
+"{sig} is not a valid signature for this .bin. Either the two files come from different builds, or one of them is damaged — re-download both from the same release.\n"
+"\n"
+"There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
+msgstr ""
+"صفحه‌کلید این میان‌افزار را نپذیرفت: امضا با تصویر مطابقت ندارد.\n"
+"\n"
+"{sig} امضای معتبری برای این .bin نیست. یا این دو فایل از ساخت‌های متفاوتی هستند یا یکی از آن‌ها آسیب دیده است — هر دو را دوباره از همان نسخهٔ منتشرشده بارگیری کنید.\n"
+"\n"
+"عمداً هیچ راهی برای عبور از این مرحله با تأیید روی صفحه‌کلید وجود ندارد: امضایی که تأیید نشود یعنی فایل آن چیزی نیست که ادعا می‌کند."
+
+#: polyhost/device/hid_fw_up.py:120
+msgid ""
+"The keyboard refused this firmware: it is not signed.\n"
+"\n"
+"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
+"\n"
+"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
+msgstr ""
+"صفحه‌کلید این میان‌افزار را نپذیرفت: امضا ندارد.\n"
+"\n"
+"میان‌افزار منتشرشده همراه با فایل '.sig' متناظر عرضه می‌شود — آن را کنار فایل .bin بارگیری کنید و دوباره فلش کنید.\n"
+"\n"
+"برای فلش کردن نسخه‌ای که خودتان کامپایل کرده‌اید، دوباره فلش کنید و وقتی صفحه‌کلید پرسید، کلید برجستهٔ A (پذیرش) را فشار دهید."
+
+#: polyhost/device/hid_fw_up.py:125
+msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
+msgstr "FW_UP_COMMIT ناموفق بود — CRC روی صفحه‌کلید مطابقت ندارد. دوباره امتحان کنید."
+
+#: polyhost/device/hid_fw_up.py:126
+msgid "Done. New firmware staged and verified on the keyboard."
+msgstr "انجام شد. میان‌افزار جدید روی صفحه‌کلید آماده و تأیید شد."
+
+#: polyhost/device/hid_fw_up.py:128
+msgid ""
+"Firmware staged and verified successfully.\n"
+"\n"
+"The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
+msgstr ""
+"میان‌افزار با موفقیت آماده و تأیید شد.\n"
+"\n"
+"تصویر جدید روی صفحه‌کلید ذخیره و با CRC بررسی شده است، اما هنوز فعال نیست — صفحه‌کلید همچنان با میان‌افزار کنونی خود کار می‌کند. فعال‌سازی تصویر آماده‌شده مرحله‌ای جداگانه خواهد بود."
+
+#: polyhost/device/hid_fw_up.py:132
+msgid "Sending FW_UP_APPLY…"
+msgstr "در حال ارسال FW_UP_APPLY…"
+
+#: polyhost/device/hid_fw_up.py:134
+msgid ""
+"Apply is not available.\n"
+"\n"
+"The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
+msgstr ""
+"اعمال در دسترس نیست.\n"
+"\n"
+"صفحه‌کلید گزارش داد که تصویر آماده‌شدهٔ معتبری ندارد، یا این میان‌افزار بدون اعمال درون‌برنامه‌ای (FW_UP_INAPP_APPLY=no) ساخته شده است. تصویر آماده‌شده تغییری نکرده است."
+
+#: polyhost/device/hid_fw_up.py:138
+msgid "Applying — keyboard is erasing its flash and rebooting…"
+msgstr "در حال اعمال — صفحه‌کلید حافظهٔ فلش خود را پاک می‌کند و دوباره راه‌اندازی می‌شود…"
+
+#: polyhost/device/hid_fw_up.py:140
+msgid ""
+"Keyboard did not reconnect within 30 s after apply.\n"
+"If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
+msgstr ""
+"صفحه‌کلید پس از اعمال در 30 s دوباره وصل نشد.\n"
+"اگر خودبه‌خود برنگشت، BOOTSEL را روی نیمهٔ اصلی نگه دارید و فایل .uf2 را دوباره فلش کنید."
+
+#: polyhost/device/hid_fw_up.py:143
+msgid "Done. Keyboard reconnected on the applied firmware."
+msgstr "انجام شد. صفحه‌کلید با میان‌افزار اعمال‌شده دوباره وصل شد."
+
+#: polyhost/device/hid_fw_up.py:145
+msgid ""
+"Firmware applied — the keyboard rebooted and reconnected.\n"
+"\n"
+"Both halves now run the new firmware."
+msgstr ""
+"میان‌افزار اعمال شد — صفحه‌کلید دوباره راه‌اندازی و وصل شد.\n"
+"\n"
+"اکنون هر دو نیمه میان‌افزار جدید را اجرا می‌کنند."
+
+#: polyhost/device/split_link.py:30
+#, python-brace-format
+msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
+msgstr "{prefix} — نیمهٔ USB پاسخ داد، اما نیمهٔ دیگر صفحه‌کلید تأیید نکرد که {what} را در 90 s پاک کرده است. کابل بین دو نیمه را بررسی کنید. اگر نیمهٔ دیگر خاموش بماند، میان‌افزاری اجرا نمی‌کند و باید فایل .uf2 میان‌افزار را به‌صورت دستی روی آن کپی کرد."
 
 #: polyhost/forwarder.py:240
 msgid "Press to pause forwarding"
@@ -200,7 +464,7 @@ msgstr "کپی در کلیپ‌بورد"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:856
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:458 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:440 polyhost/gui/log_viewer.py:219
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -493,12 +757,12 @@ msgstr "فرمان‌های PolyKybd (*.poly.cmd)"
 msgid "Open file"
 msgstr "باز کردن فایل"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
+#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:624
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
 msgid "Not Connected"
 msgstr "متصل نیست"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:625
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd متصل نیست. لطفاً صفحه‌کلید را وصل کنید و دوباره تلاش کنید."
 
@@ -535,53 +799,53 @@ msgstr "صفحه‌کلید نادرست"
 msgid "Unsigned Firmware"
 msgstr "میان‌افزار بدون امضا"
 
-#: polyhost/gui/cmd_menu.py:541
+#: polyhost/gui/cmd_menu.py:542
 msgid "Flash + Apply Firmware"
 msgstr "فلش و اعمال میان‌افزار"
 
-#: polyhost/gui/cmd_menu.py:543
+#: polyhost/gui/cmd_menu.py:544
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "میان‌افزار جدید به صفحه‌کلید منتقل و تأیید (CRC32) می‌شود، سپس <b>فعال می‌شود</b> — هر دو نیمه خودکار با میان‌افزار جدید دوباره راه‌اندازی می‌شوند (بدون نیاز به جدا و وصل کردن)."
 
-#: polyhost/gui/cmd_menu.py:548
+#: polyhost/gui/cmd_menu.py:549
 msgid "Flash Firmware"
 msgstr "فلش میان‌افزار"
 
-#: polyhost/gui/cmd_menu.py:550
+#: polyhost/gui/cmd_menu.py:551
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "میان‌افزار جدید به صفحه‌کلید منتقل و آماده می‌شود، سپس تأیید (CRC32) می‌شود. تصویر ذخیره می‌شود اما <b>هنوز فعال نمی‌شود</b> — صفحه‌کلید تا زمانی که آن را جداگانه اعمال کنید با میان‌افزار کنونی خود کار می‌کند."
 
-#: polyhost/gui/cmd_menu.py:568
+#: polyhost/gui/cmd_menu.py:569
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "میان‌افزار کنونی صفحه‌کلید: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:571
+#: polyhost/gui/cmd_menu.py:572
 msgid "Could not query current firmware version."
 msgstr "پرس‌وجوی نسخهٔ کنونی میان‌افزار ممکن نشد."
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:573
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "فایل انتخاب‌شده:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:574
 msgid "Continue?"
 msgstr "ادامه می‌دهید؟"
 
-#: polyhost/gui/cmd_menu.py:601
+#: polyhost/gui/cmd_menu.py:602
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>میان‌افزار آماده‌شده اعمال شود؟</b><br><br>هر دو نیمهٔ صفحه‌کلید تصویر از پیش آماده‌شده را نصب کرده و خودکار با میان‌افزار جدید دوباره راه‌اندازی می‌شوند (بدون نیاز به جدا و وصل کردن).<br><br>اگر این میان‌افزار با قابلیت اعمال درون‌برنامه‌ای ساخته نشده باشد، صفحه‌کلید با امنیت گزارش می‌دهد که اعمال در دسترس نیست و تصویر آماده‌شده را دست‌نخورده باقی می‌گذارد.<br><br>ادامه می‌دهید؟"
 
-#: polyhost/gui/cmd_menu.py:610
+#: polyhost/gui/cmd_menu.py:611
 msgid "Apply Staged Firmware"
 msgstr "اعمال میان‌افزار آماده‌شده"
 
-#: polyhost/gui/cmd_menu.py:635
+#: polyhost/gui/cmd_menu.py:636
 msgid "Firmware Applied"
 msgstr "میان‌افزار اعمال شد"
 
-#: polyhost/gui/cmd_menu.py:637
+#: polyhost/gui/cmd_menu.py:638
 msgid "Apply Failed"
 msgstr "اعمال ناموفق بود"
 
@@ -893,7 +1157,7 @@ msgstr "گلیف ساخته‌شده نگه داشته شود (در حافظه �
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
-#: polyhost/gui/hid_fw_up_dialog.py:204
+#: polyhost/gui/hid_fw_up_dialog.py:186
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
 msgid "Cancel"
 msgstr "لغو"
@@ -1378,67 +1642,39 @@ msgstr "فلش شروع شد — سینی سیستم/لاگ را دنبال کن
 msgid "Discard all pending edits to '{label}'?"
 msgstr "همهٔ ویرایش‌های در انتظار «{label}» کنار گذاشته شوند؟"
 
-#: polyhost/gui/hid_fw_up_dialog.py:22
-msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
-msgstr "این میان‌افزار امضا ندارد. روی صفحه‌کلید تأیید کنید: کلید برجسته‌شدهٔ A (پذیرش) یا R (رد) را فشار دهید."
-
-#: polyhost/gui/hid_fw_up_dialog.py:24
-msgid ""
-"Timed out waiting for confirmation on the keyboard.\n"
-"\n"
-"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
-msgstr ""
-"زمان انتظار برای تأیید روی صفحه‌کلید به پایان رسید.\n"
-"\n"
-"صفحه‌کلید پذیرش/رد فیزیکی می‌خواهد چون این تصویر امضای معتبری ندارد. فلش را دوباره شروع کنید و ظرف یک دقیقه کلید برجسته‌شدهٔ A را روی نیمهٔ چپ فشار دهید."
-
-#: polyhost/gui/hid_fw_up_dialog.py:28
-msgid ""
-"The keyboard refused this firmware: it is not signed.\n"
-"\n"
-"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
-"\n"
-"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
-msgstr ""
-"صفحه‌کلید این میان‌افزار را نپذیرفت: امضا ندارد.\n"
-"\n"
-"میان‌افزار منتشرشده همراه با فایل '.sig' متناظر عرضه می‌شود — آن را کنار فایل .bin بارگیری کنید و دوباره فلش کنید.\n"
-"\n"
-"برای فلش کردن نسخه‌ای که خودتان کامپایل کرده‌اید، دوباره فلش کنید و وقتی صفحه‌کلید پرسید، کلید برجستهٔ A (پذیرش) را فشار دهید."
-
-#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2856
+#: polyhost/gui/hid_fw_up_dialog.py:145 polyhost/host.py:2856
 #: polyhost/host.py:2880
 msgid "Firmware Update"
 msgstr "به‌روزرسانی میان‌افزار"
 
-#: polyhost/gui/hid_fw_up_dialog.py:172
+#: polyhost/gui/hid_fw_up_dialog.py:154
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>فایل:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/gui/hid_fw_up_dialog.py:159
 msgid "Applying staged firmware…"
 msgstr "در حال اعمال میان‌افزار آماده‌شده…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:159
 msgid "Starting…"
 msgstr "در حال شروع…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:270
+#: polyhost/gui/hid_fw_up_dialog.py:252
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "~{seconds} ثانیه باقی مانده"
 
-#: polyhost/gui/hid_fw_up_dialog.py:275
+#: polyhost/gui/hid_fw_up_dialog.py:257
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "~{minutes} دقیقه و {seconds} ثانیه باقی مانده"
 
-#: polyhost/gui/hid_fw_up_dialog.py:388
+#: polyhost/gui/hid_fw_up_dialog.py:370
 msgid "Applying — activating the staged firmware…"
 msgstr "در حال اعمال — فعال‌سازی میان‌افزار آماده‌شده…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:468
+#: polyhost/gui/hid_fw_up_dialog.py:450
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "در حال لغو — منتظر پایان قطعهٔ کنونی…"
 
@@ -3229,7 +3465,7 @@ msgstr "نگاشت هم‌پوشانی PolyKybd (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 
-#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2996
+#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2997
 msgid "Check for firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
@@ -3377,7 +3613,7 @@ msgstr "اکنون بارگیری و فلش شود؟"
 msgid "Downloading firmware v{version}…"
 msgstr "در حال بارگیری میان‌افزار v{version}…"
 
-#: polyhost/host.py:2901 polyhost/host.py:3112
+#: polyhost/host.py:2901 polyhost/host.py:3113
 msgid "Cancelling…"
 msgstr "در حال لغو…"
 
@@ -3396,12 +3632,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3076 polyhost/host.py:3090 polyhost/host.py:3136
-#: polyhost/host.py:3145 polyhost/host.py:3151
+#: polyhost/host.py:3077 polyhost/host.py:3091 polyhost/host.py:3137
+#: polyhost/host.py:3146 polyhost/host.py:3152
 msgid "Install WinCompose"
 msgstr "نصب WinCompose"
 
-#: polyhost/host.py:3077
+#: polyhost/host.py:3078
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3411,11 +3647,11 @@ msgstr ""
 "\n"
 "نسخهٔ PolyKybd از WinCompose از GitHub بارگیری و نصب‌کنندهٔ آن اجرا می‌شود (Windows از شما تأیید می‌خواهد)."
 
-#: polyhost/host.py:3090
+#: polyhost/host.py:3091
 msgid "Looking for the latest WinCompose release…"
 msgstr "در حال جست‌وجوی آخرین نسخهٔ WinCompose…"
 
-#: polyhost/host.py:3137
+#: polyhost/host.py:3138
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3425,7 +3661,7 @@ msgstr ""
 "\n"
 "صفحهٔ انتشارها در مرورگر شما باز می‌شود — برنامهٔ نصب را از آنجا بارگیری و اجرا کنید."
 
-#: polyhost/host.py:3146
+#: polyhost/host.py:3147
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3436,7 +3672,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3152
+#: polyhost/host.py:3153
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3453,7 +3689,7 @@ msgstr ""
 "در این مسیر ذخیره شد:\n"
 "{path}"
 
-#: polyhost/host.py:3160
+#: polyhost/host.py:3161
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "نصب‌کنندهٔ WinCompose اجرا شد. پس از پایان نصب و اجرای WinCompose، PolyKybd خودکار به آن تغییر می‌کند."
 
@@ -3480,4 +3716,84 @@ msgstr "آسیا"
 #: polyhost/services/lang_regions.py:133
 msgid "Oceania"
 msgstr "اقیانوسیه"
+
+#: polyhost/services/updater.py:39
+#, python-brace-format
+msgid "Preflight failed: {details}"
+msgstr "بررسی مقدماتی ناموفق بود: {details}"
+
+#: polyhost/services/updater.py:40
+#, python-brace-format
+msgid "Warning — {name}: {detail}"
+msgstr "هشدار — {name}: {detail}"
+
+#: polyhost/services/updater.py:41
+#, python-brace-format
+msgid "Install dir not writable: {error}"
+msgstr "پوشهٔ نصب قابل نوشتن نیست: {error}"
+
+#: polyhost/services/updater.py:42
+#, python-brace-format
+msgid "Could not create a temp directory for the update: {error}"
+msgstr "ایجاد پوشهٔ موقت برای به‌روزرسانی ممکن نشد: {error}"
+
+#: polyhost/services/updater.py:43
+msgid "Starting download..."
+msgstr "در حال شروع بارگیری..."
+
+#: polyhost/services/updater.py:44
+#, python-brace-format
+msgid "Downloading v{version}..."
+msgstr "در حال بارگیری v{version}..."
+
+#: polyhost/services/updater.py:45
+msgid "Applying update..."
+msgstr "در حال اعمال به‌روزرسانی..."
+
+#: polyhost/services/updater.py:46
+msgid "Connecting…"
+msgstr "در حال اتصال…"
+
+#: polyhost/services/updater.py:47
+#, python-brace-format
+msgid "Downloading firmware… {done} / {total} KB"
+msgstr "در حال بارگیری میان‌افزار… {done} / {total} KB"
+
+#: polyhost/services/updater.py:48
+#, python-brace-format
+msgid "Downloading firmware… {done} KB"
+msgstr "در حال بارگیری میان‌افزار… {done} KB"
+
+#: polyhost/services/updater.py:49
+msgid "Download cancelled."
+msgstr "بارگیری لغو شد."
+
+#: polyhost/services/updater.py:50
+msgid "Downloading signature…"
+msgstr "در حال بارگیری امضا…"
+
+#: polyhost/services/updater.py:52
+#, python-brace-format
+msgid ""
+"The image downloaded, but its signature did not ({error}).\n"
+"\n"
+"Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
+msgstr ""
+"تصویر بارگیری شد، اما امضای آن نه ({error}).\n"
+"\n"
+"فلش بدون آن باعث می‌شد صفحه‌کلید این نسخه را یک ساخت بدون امضا بداند و از شما بخواهد روی کلیدها تأیید کنید، بنابراین به‌روزرسانی متوقف شد."
+
+#: polyhost/services/wincompose_install.py:51
+msgid "Looking for the latest release…"
+msgstr "در حال جست‌وجوی جدیدترین نسخه…"
+
+#: polyhost/services/wincompose_install.py:52
+#, python-brace-format
+msgid "Downloading WinCompose… {done} / {total} KB"
+msgstr "در حال بارگیری WinCompose… {done} / {total} KB"
+
+#: polyhost/services/wincompose_install.py:53
+#, python-brace-format
+msgid "Downloading WinCompose… {done} KB"
+msgstr "در حال بارگیری WinCompose… {done} KB"
 

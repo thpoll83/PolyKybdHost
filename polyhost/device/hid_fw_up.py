@@ -4,6 +4,7 @@ import struct
 import time
 
 from polyhost.device.split_link import split_link_timeout_message
+from polyhost.i18n import M_
 
 HID_POLYKYBD          = 0x50   # ord('P')
 CMD_FW_UP_GET_VERSION = 0x43
@@ -30,6 +31,119 @@ CONFIRM_POLL_TIMEOUT_S = 75.0
 CONFIRM_POLL_INTERVAL_S = 1.0
 
 FW_SIG_LEN = 64
+
+
+# Status and result messages. They stay English here (the log, polyctl and the
+# daemon -> GUI events carry them); the flash dialog shows the translation
+# through i18n.translate_message(). Module constants on purpose, see M_().
+MSG_TOO_SMALL = M_(
+    "File is too small ({size} bytes) to be a valid RP2040 firmware image "
+    "(expected at least 264 bytes for boot2 + ARM vector table).")
+MSG_BAD_BOOT2_CRC = M_(
+    "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). "
+    "This does not appear to be a valid RP2040 QMK firmware .bin. "
+    "Make sure you select the .bin produced by 'qmk compile', "
+    "not a .uf2, .hex, or other format.")
+MSG_BAD_VECTOR_TABLE = M_(
+    "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). "
+    "This does not appear to be a valid RP2040 firmware binary.")
+MSG_NOT_POLYKYBD = M_(
+    "This firmware binary does not appear to be built for PolyKybd. "
+    "No PolyKybd identifier string was found in the binary. "
+    "Make sure you selected a firmware compiled for "
+    "'polykybd/split72' using 'qmk compile'.")
+MSG_NO_SIG_FILE = M_(
+    "No signature file was found next to this image ({sig}).\n\n"
+    "The keyboard will ask you to confirm it physically: every keycap goes "
+    "dark except a big A (accept) on the left half and R (reject) on the "
+    "right. That is expected for a firmware you built yourself.\n\n"
+    "If you meant to flash a release, download its '.sig' file into the "
+    "same folder as the '.bin' first.")
+MSG_SIG_UNREADABLE = M_("Cannot read {sig}: {error}")
+MSG_SIG_WRONG_SIZE = M_(
+    "{sig} is {size} bytes, but a signature is exactly {expected}. It will be "
+    "ignored and the keyboard will ask you to confirm the image physically.")
+MSG_EMPTY = M_("Firmware file is empty.")
+MSG_TOO_LARGE = M_("Firmware too large: {size} bytes (max {max_kb} KB).")
+MSG_BEGIN = M_("Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…")
+MSG_ERASING_ELAPSED = M_("{step} — {elapsed}s elapsed (≈10–20 s)…")
+MSG_ERASING_RECONNECT = M_("Erasing staging area — keyboard will reconnect when done")
+MSG_ERASING_BOTH = M_("Erasing staging area (both halves)")
+MSG_BEGIN_TIMED_OUT = M_("FW_UP_BEGIN timed out")
+MSG_STAGING_AREA = M_("staging area")
+MSG_BEGIN_ERASE_TIMEOUT = M_(
+    "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  "
+    "Check the USB cable and try again.")
+MSG_BEGIN_NO_RECONNECT = M_(
+    "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  "
+    "Check the USB cable and try again.")
+MSG_BEGIN_SLAVE = M_(
+    "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
+    "Ensure both keyboard halves are connected and powered on.\n"
+    "If the slave half has old firmware (without HID firmware update support), it must be\n"
+    "flashed manually via UF2 before HID firmware update will work.")
+MSG_STAGING_ERASED = M_("Staging erased. Sending {chunks} chunks…")
+MSG_CANCELLED = M_("Update cancelled by user.")
+MSG_CHUNK = M_("Chunk {n}/{total} ({kb} KB sent)…")
+MSG_REWIND = M_(
+    "Keyboard halves resynced — rewinding to chunk {n}/{total} "
+    "(offset {offset}, resync {resync})…")
+MSG_CHUNK_REJECTED = M_("keyboard rejected the chunk")
+MSG_CHUNK_NO_REPLY = M_("no reply from the keyboard")
+MSG_CHUNK_FAILED = M_(
+    "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
+    "Ensure both keyboard halves are connected and running the same firmware, "
+    "then try again — the update resumes from scratch and is safe to repeat.")
+MSG_CHUNK_RETRY = M_("Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…")
+MSG_SIG_UNREADABLE_UNSIGNED = M_("Could not read {sig}: {error} — flashing unsigned.")
+MSG_SENDING_SIG = M_("Sending image signature…")
+MSG_SIG_IGNORED = M_("Ignoring {sig} — expected {expected} bytes, got {size}.")
+MSG_VERIFYING = M_("Verifying the staged image (CRC32)…")
+MSG_CONFIRM_ON_KEYBOARD = M_(
+    "This firmware is not signed. Confirm on the KEYBOARD: press "
+    "the highlighted A (accept) or R (reject) key.")
+MSG_CONFIRM_TIMEOUT = M_(
+    "Timed out waiting for confirmation on the keyboard.\n\n"
+    "The keyboard asks for a physical ACCEPT/REJECT because this image "
+    "is not validly signed. Start the flash again and press the "
+    "highlighted A key on the left half within a minute.")
+MSG_SIG_MISMATCH = M_(
+    "The keyboard refused this firmware: the signature does not match "
+    "the image.\n\n"
+    "{sig} is not a valid signature for this .bin. Either the two files come "
+    "from different builds, or one of them is damaged — re-download both from "
+    "the same release.\n\n"
+    "There is deliberately no way to confirm past this on the keyboard: "
+    "a signature that fails to verify means the file is not what it "
+    "claims to be.")
+MSG_UNSIGNED_REFUSED = M_(
+    "The keyboard refused this firmware: it is not signed.\n\n"
+    "Released firmware ships a matching '.sig' file — download it next to "
+    "the .bin and flash again.\n\n"
+    "To flash a build you compiled yourself, flash again and press the "
+    "highlighted A (accept) key on the keyboard when it asks.")
+MSG_COMMIT_CRC = M_("FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again.")
+MSG_STAGED_DONE = M_("Done. New firmware staged and verified on the keyboard.")
+MSG_STAGED_OK = M_(
+    "Firmware staged and verified successfully.\n\n"
+    "The new image is stored and CRC-checked on the keyboard, but it is "
+    "not active yet — the keyboard is still running its current firmware. "
+    "Activating the staged image will be a separate step.")
+MSG_SENDING_APPLY = M_("Sending FW_UP_APPLY…")
+MSG_APPLY_UNAVAILABLE = M_(
+    "Apply is not available.\n\n"
+    "The keyboard reported no valid staged image, or this firmware "
+    "was built without in-app apply (FW_UP_INAPP_APPLY=no). The "
+    "staged image is unchanged.")
+MSG_APPLYING = M_("Applying — keyboard is erasing its flash and rebooting…")
+MSG_APPLY_NO_RECONNECT = M_(
+    "Keyboard did not reconnect within 30 s after apply.\n"
+    "If it does not come back on its own, hold BOOTSEL on the "
+    "master half and re-flash the .uf2.")
+MSG_APPLY_DONE = M_("Done. Keyboard reconnected on the applied firmware.")
+MSG_APPLIED_OK = M_(
+    "Firmware applied — the keyboard rebooted and reconnected.\n\n"
+    "Both halves now run the new firmware.")
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
@@ -95,11 +209,7 @@ def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
     fw = bytes(fw_bytes)
 
     if len(fw) < _RP2040_BOOT2_SIZE + 8:
-        return False, (
-            f"File is too small ({len(fw)} bytes) to be a valid RP2040 "
-            "firmware image (expected at least 264 bytes for boot2 + "
-            "ARM vector table)."
-        )
+        return False, MSG_TOO_SMALL.format(size=len(fw))
 
     # Boot2 CRC32: bytes [0..251] vs stored little-endian uint32 at [252..255].
     # The RP2040 ROM uses a non-reflected MSB-first CRC32 (_crc32_rp2040),
@@ -107,23 +217,15 @@ def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
     computed_crc = _crc32_rp2040(fw[:252])
     stored_crc   = struct.unpack_from('<I', fw, 252)[0]
     if computed_crc != stored_crc:
-        return False, (
-            f"Invalid RP2040 boot2 CRC32 "
-            f"(file has 0x{stored_crc:08X}, computed 0x{computed_crc:08X}). "
-            "This does not appear to be a valid RP2040 QMK firmware .bin. "
-            "Make sure you select the .bin produced by 'qmk compile', "
-            "not a .uf2, .hex, or other format."
-        )
+        return False, MSG_BAD_BOOT2_CRC.format(stored=f"0x{stored_crc:08X}",
+                                               computed=f"0x{computed_crc:08X}")
 
     # ARM Cortex-M0+ initial SP must point into RP2040 SRAM.
     initial_sp = struct.unpack_from('<I', fw, _RP2040_BOOT2_SIZE)[0]
     if not (_RP2040_SRAM_BASE <= initial_sp <= _RP2040_SRAM_END):
-        return False, (
-            f"Invalid ARM vector table: initial SP 0x{initial_sp:08X} is "
-            f"outside RP2040 SRAM "
-            f"(0x{_RP2040_SRAM_BASE:08X}–0x{_RP2040_SRAM_END:08X}). "
-            "This does not appear to be a valid RP2040 firmware binary."
-        )
+        return False, MSG_BAD_VECTOR_TABLE.format(
+            sp=f"0x{initial_sp:08X}",
+            sram=f"0x{_RP2040_SRAM_BASE:08X}–0x{_RP2040_SRAM_END:08X}")
 
     return True, ""
 
@@ -143,12 +245,7 @@ def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]
     for sig in _POLYKYBD_SIGNATURES:
         if sig in fw:
             return True, ""
-    return False, (
-        "This firmware binary does not appear to be built for PolyKybd. "
-        "No PolyKybd identifier string was found in the binary. "
-        "Make sure you selected a firmware compiled for "
-        "'polykybd/split72' using 'qmk compile'."
-    )
+    return False, MSG_NOT_POLYKYBD
 
 
 def check_signature_file(bin_path: str) -> tuple[bool, str]:
@@ -167,25 +264,14 @@ def check_signature_file(bin_path: str) -> tuple[bool, str]:
     """
     sig_path = bin_path + ".sig"
     if not os.path.exists(sig_path):
-        return False, (
-            "No signature file was found next to this image "
-            f"({os.path.basename(sig_path)}).\n\n"
-            "The keyboard will ask you to confirm it physically: every keycap goes "
-            "dark except a big A (accept) on the left half and R (reject) on the "
-            "right. That is expected for a firmware you built yourself.\n\n"
-            "If you meant to flash a release, download its '.sig' file into the "
-            "same folder as the '.bin' first."
-        )
+        return False, MSG_NO_SIG_FILE.format(sig=os.path.basename(sig_path))
     try:
         size = os.path.getsize(sig_path)
     except OSError as e:
-        return False, f"Cannot read {os.path.basename(sig_path)}: {e}"
+        return False, MSG_SIG_UNREADABLE.format(sig=os.path.basename(sig_path), error=e)
     if size != FW_SIG_LEN:
-        return False, (
-            f"{os.path.basename(sig_path)} is {size} bytes, but a signature is "
-            f"exactly {FW_SIG_LEN}. It will be ignored and the keyboard will ask "
-            "you to confirm the image physically."
-        )
+        return False, MSG_SIG_WRONG_SIZE.format(sig=os.path.basename(sig_path), size=size,
+                                                expected=FW_SIG_LEN)
     return True, ""
 
 
@@ -257,9 +343,9 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     fw_crc  = binascii.crc32(fw_bytes) & 0xFFFFFFFF
 
     if fw_size == 0:
-        return False, "Firmware file is empty."
+        return False, MSG_EMPTY
     if fw_size > FW_UP_MAX_SIZE:
-        return False, f"Firmware too large: {fw_size} bytes (max {FW_UP_MAX_SIZE // 1024} KB)."
+        return False, MSG_TOO_LARGE.format(size=fw_size, max_kb=FW_UP_MAX_SIZE // 1024)
 
     valid, reason = validate_rp2040_firmware(fw_bytes)
     if not valid:
@@ -270,7 +356,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         return False, reason
 
     total_chunks = (fw_size + FW_UP_CHUNK_SIZE - 1) // FW_UP_CHUNK_SIZE
-    report(0, f"Sending FW_UP_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
+    report(0, MSG_BEGIN.format(kb=fw_size // 1024, crc=f"0x{fw_crc:08X}"))
 
     # -- FW_UP_BEGIN --
     # Drain stale replies before the first send.
@@ -302,16 +388,15 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # instead of sitting frozen on a single message.
     def _erasing(msg):
         elapsed = int(time.monotonic() - erase_start)
-        report(1, f"{msg} — {elapsed}s elapsed (≈10–20 s)…")
+        report(1, MSG_ERASING_ELAPSED.format(step=msg, elapsed=elapsed))
 
     while not begin_ready:
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
             if polling:
-                return False, split_link_timeout_message("FW_UP_BEGIN timed out",
-                                                         "staging area")
-            return False, ("FW_UP_BEGIN timed out — keyboard did not finish erasing "
-                           "within 90 s.  Check the USB cable and try again.")
+                return False, split_link_timeout_message(MSG_BEGIN_TIMED_OUT,
+                                                         MSG_STAGING_AREA)
+            return False, MSG_BEGIN_ERASE_TIMEOUT
 
         ok, reply = hid.send_and_read(pkt, timeout=timeout_ms)
         timeout_ms = 5000   # shorter for subsequent re-polls
@@ -320,10 +405,9 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             # USB dropout (or Windows empty-bytes disconnect) — master may be
             # rebooting after its synchronous flash erase.
             polling = False
-            _erasing("Erasing staging area — keyboard will reconnect when done")
+            _erasing(MSG_ERASING_RECONNECT)
             if not hid.wait_for_reconnect(timeout_s=30):
-                return False, ("FW_UP_BEGIN failed — keyboard did not reconnect "
-                               "within 30 s.  Check the USB cable and try again.")
+                return False, MSG_BEGIN_NO_RECONNECT
             hid.drain_replies()
             # Loop continues — re-poll with the same packet.
         elif reply[2] == ord('.'):
@@ -332,21 +416,16 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             polling = True
             # Slave half still erasing (deferred sector-by-sector).  Sleep briefly
             # so the QMK main loop runs and keeps the split transport alive.
-            _erasing("Erasing staging area (both halves)")
+            _erasing(MSG_ERASING_BOTH)
             time.sleep(0.3)
             # Loop continues — re-poll.
         else:
             # Explicit '!' NACK — slave can't be prepared (disconnected, old fw, etc.)
             _abort_cleanup(hid)
             hid.close_interface()
-            return False, (
-                "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
-                "Ensure both keyboard halves are connected and powered on.\n"
-                "If the slave half has old firmware (without HID firmware update support), it must be\n"
-                "flashed manually via UF2 before HID firmware update will work."
-            )
+            return False, MSG_BEGIN_SLAVE
 
-    report(2, f"Staging erased. Sending {total_chunks} chunks…")
+    report(2, MSG_STAGING_ERASED.format(chunks=total_chunks))
 
     # -- FW_UP_CHUNK x N --
     # The firmware relays each chunk to the slave via the split bridge with an
@@ -369,7 +448,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
-            return False, "Update cancelled by user."
+            return False, MSG_CANCELLED
 
         offset    = i * FW_UP_CHUNK_SIZE
         raw_chunk = fw_bytes[offset:offset + FW_UP_CHUNK_SIZE]
@@ -381,7 +460,8 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             attempts = 0
             if i % 100 == 0 or i == total_chunks - 1:
                 pct = 2 + int(96 * (i + 1) / total_chunks)
-                report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FW_UP_CHUNK_SIZE) // 1024} KB sent)…")
+                report(pct, MSG_CHUNK.format(n=i + 1, total=total_chunks,
+                                             kb=(offset + FW_UP_CHUNK_SIZE) // 1024))
             i += 1
             continue
 
@@ -395,29 +475,26 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             attempts = 0
             i = resume // FW_UP_CHUNK_SIZE
             report(2 + int(96 * (i + 1) / total_chunks),
-                   f"Keyboard halves resynced — rewinding to chunk {i + 1}/{total_chunks} "
-                   f"(offset {resume}, resync {rewinds})…")
+                   MSG_REWIND.format(n=i + 1, total=total_chunks, offset=resume,
+                                     resync=rewinds))
             time.sleep(0.05)
             continue
 
         attempts += 1
         if attempts >= _CHUNK_ATTEMPTS:
-            reason = ("keyboard rejected the chunk" if ok and len(reply) >= 3
-                      else "no reply from the keyboard")
+            reason = (MSG_CHUNK_REJECTED if ok and len(reply) >= 3
+                      else MSG_CHUNK_NO_REPLY)
             _abort_cleanup(hid)
             hid.close_interface()
-            return False, (
-                f"FW_UP_CHUNK failed at offset {offset} after {_CHUNK_ATTEMPTS} attempts "
-                f"— {reason}.\n"
-                "Ensure both keyboard halves are connected and running the same firmware, "
-                "then try again — the update resumes from scratch and is safe to repeat."
-            )
+            return False, MSG_CHUNK_FAILED.format(offset=offset, attempts=_CHUNK_ATTEMPTS,
+                                                  reason=reason)
         # NACK without a usable resume offset, or timeout: back off so the slave
         # half can finish its flash write / split-link recovery, then re-send.
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
         report(2 + int(96 * (i + 1) / total_chunks),
-               f"Chunk {i + 1}/{total_chunks} — retry {attempts}/{_CHUNK_ATTEMPTS - 1} "
-               f"(waiting {int(pause * 1000)} ms)…")
+               MSG_CHUNK_RETRY.format(n=i + 1, total=total_chunks, attempt=attempts,
+                                      max_attempts=_CHUNK_ATTEMPTS - 1,
+                                      ms=int(pause * 1000)))
         time.sleep(pause)
 
     # -- FW_UP_SIGNATURE (FW-2) --
@@ -436,19 +513,20 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         except OSError as e:
             # Distinguish a real I/O failure (permissions, FS error) from a
             # missing/short signature so the operator isn't told "got 0 bytes".
-            report(97, f"Could not read {os.path.basename(sig_path)}: {e} — flashing unsigned.")
+            report(97, MSG_SIG_UNREADABLE_UNSIGNED.format(sig=os.path.basename(sig_path),
+                                                          error=e))
         if sig is not None:
             half = FW_SIG_LEN // 2   # one 32-byte HID report per half of the 64-byte sig
             if len(sig) == FW_SIG_LEN:
-                report(97, "Sending image signature…")
+                report(97, MSG_SENDING_SIG)
                 for part in (0, 1):
                     pkt = (bytearray([HID_POLYKYBD, CMD_FW_UP_SIGNATURE, part])
                            + sig[part * half:part * half + half])
                     hid.send_and_read(pkt, timeout=2000)  # NACK on older firmware is fine
                 sig_sent = True
             else:
-                report(97, f"Ignoring {os.path.basename(sig_path)} — "
-                           f"expected {FW_SIG_LEN} bytes, got {len(sig)}.")
+                report(97, MSG_SIG_IGNORED.format(sig=os.path.basename(sig_path),
+                                              expected=FW_SIG_LEN, size=len(sig)))
 
     # -- FW_UP_COMMIT --
     # COMMIT verifies the running CRC32 the keyboard accumulated while it staged
@@ -457,7 +535,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # running its current firmware — activation is a separate, future step.
     # (FW-2: the firmware also verifies the Ed25519 signature here — currently
     # FW-2: the firmware also verifies the Ed25519 signature here.
-    report(98, "Verifying the staged image (CRC32)…")
+    report(98, MSG_VERIFYING)
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
 
@@ -466,8 +544,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # physical keypress. Re-poll COMMIT until it resolves; the staged image and
     # its CRC are untouched between polls, so this is free on the keyboard side.
     if ok and len(reply) >= 3 and reply[2] == COMMIT_AWAITING_CONFIRM:
-        report(98, "This firmware is not signed. Confirm on the KEYBOARD: press "
-                   "the highlighted A (accept) or R (reject) key.")
+        report(98, MSG_CONFIRM_ON_KEYBOARD)
         deadline = time.monotonic() + CONFIRM_POLL_TIMEOUT_S
         while time.monotonic() < deadline:
             time.sleep(CONFIRM_POLL_INTERVAL_S)
@@ -476,12 +553,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
                 break
         else:
             hid.close_interface()
-            return False, (
-                "Timed out waiting for confirmation on the keyboard.\n\n"
-                "The keyboard asks for a physical ACCEPT/REJECT because this image "
-                "is not validly signed. Start the flash again and press the "
-                "highlighted A key on the left half within a minute."
-            )
+            return False, MSG_CONFIRM_TIMEOUT
 
     if ok and len(reply) >= 3 and reply[2] == COMMIT_REFUSED_UNSIGNED:
         hid.close_interface()
@@ -491,34 +563,14 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         # signature is present and fails to verify is refused outright, and saying
         # "press A to accept" there would be actively wrong advice.
         if sig_sent:
-            return False, (
-                "The keyboard refused this firmware: the signature does not match "
-                "the image.\n\n"
-                f"{os.path.basename(sig_path)} is not a valid signature for this "
-                ".bin. Either the two files come from different builds, or one of "
-                "them is damaged — re-download both from the same release.\n\n"
-                "There is deliberately no way to confirm past this on the keyboard: "
-                "a signature that fails to verify means the file is not what it "
-                "claims to be."
-            )
-        return False, (
-            "The keyboard refused this firmware: it is not signed.\n\n"
-            "Released firmware ships a matching '.sig' file — download it next to "
-            "the .bin and flash again.\n\n"
-            "To flash a build you compiled yourself, flash again and press the "
-            "highlighted A (accept) key on the keyboard when it asks."
-        )
+            return False, MSG_SIG_MISMATCH.format(sig=os.path.basename(sig_path))
+        return False, MSG_UNSIGNED_REFUSED
     if not ok or len(reply) < 3 or reply[2] != COMMIT_ACK:
         hid.close_interface()
-        return False, "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
+        return False, MSG_COMMIT_CRC
 
-    report(100, "Done. New firmware staged and verified on the keyboard.")
-    return True, (
-        "Firmware staged and verified successfully.\n\n"
-        "The new image is stored and CRC-checked on the keyboard, but it is "
-        "not active yet — the keyboard is still running its current firmware. "
-        "Activating the staged image will be a separate step."
-    )
+    report(100, MSG_STAGED_DONE)
+    return True, MSG_STAGED_OK
 
 
 def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
@@ -537,7 +589,7 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
         if progress_cb:
             progress_cb(pct, msg)
 
-    report(0, "Sending FW_UP_APPLY…")
+    report(0, MSG_SENDING_APPLY)
     hid.drain_replies()
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
@@ -547,22 +599,14 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     # image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no).
     # Report it plainly instead of waiting for a reconnect that will never come.
     if ok and len(reply) >= 3 and reply[2] == ord('!'):
-        return False, ("Apply is not available.\n\n"
-                       "The keyboard reported no valid staged image, or this firmware "
-                       "was built without in-app apply (FW_UP_INAPP_APPLY=no). The "
-                       "staged image is unchanged.")
+        return False, MSG_APPLY_UNAVAILABLE
 
     # Either an ACK ('.') or no reply (the device already accepted and is rebooting
     # with USB torn down): in both cases wait for it to come back.
-    report(50, "Applying — keyboard is erasing its flash and rebooting…")
+    report(50, MSG_APPLYING)
     if not hid.wait_for_reconnect(timeout_s=30):
-        return False, ("Keyboard did not reconnect within 30 s after apply.\n"
-                       "If it does not come back on its own, hold BOOTSEL on the "
-                       "master half and re-flash the .uf2.")
+        return False, MSG_APPLY_NO_RECONNECT
     hid.drain_replies()
 
-    report(100, "Done. Keyboard reconnected on the applied firmware.")
-    return True, (
-        "Firmware applied — the keyboard rebooted and reconnected.\n\n"
-        "Both halves now run the new firmware."
-    )
+    report(100, MSG_APPLY_DONE)
+    return True, MSG_APPLIED_OK

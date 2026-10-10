@@ -22,7 +22,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from polyhost.gui.dialog_util import bring_to_front
-from polyhost.i18n import _, _f, N_, isolate
+from polyhost.i18n import _, _f, N_, isolate, translate_message
 from polyhost.gui.log_bundle_dialog import reveal_in_file_manager
 from polyhost.services.updater import FwUf2Downloader
 
@@ -106,7 +106,7 @@ class SplitLinkHelpDialog(QDialog):
     def set_detail(self, detail: str):
         """The failure message that led here, as a tooltip: it is also in the
         log, and shown in full it repeated the steps."""
-        self._body.setToolTip(detail or "")
+        self._body.setToolTip(translate_message(detail) or "")
 
     def _start_download(self):
         if self._downloader is not None and self._downloader.is_alive():

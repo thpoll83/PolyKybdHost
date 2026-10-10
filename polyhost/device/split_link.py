@@ -19,15 +19,24 @@ carries ``msg``). Keep ``SPLIT_LINK_MARK`` inside every message built here, and
 build them only through ``split_link_timeout_message()``.
 """
 
+from polyhost.i18n import M_
+
 SPLIT_LINK_MARK = "the other keyboard half did not confirm"
+
+# English, like every device message; the GUI shows it through
+# i18n.translate_message(). The mark is spelled out in the template so the
+# extracted msgid reads as a sentence; the assert keeps the two in step.
+MSG_SPLIT_LINK_TIMEOUT = M_(
+    "{prefix} — the USB half answered, but the other keyboard half did not confirm "
+    "that it had erased the {what} within 90 s. Check the cable between the two "
+    "halves. If the other half stays dark, it is not running firmware and needs the "
+    "firmware .uf2 copied onto it by hand.")
+assert SPLIT_LINK_MARK in MSG_SPLIT_LINK_TIMEOUT
 
 
 def split_link_timeout_message(prefix: str, what: str) -> str:
     """The user-facing text for a BEGIN that timed out on ``~`` replies."""
-    return (f"{prefix} — the USB half answered, but {SPLIT_LINK_MARK} that it had "
-            f"erased the {what} within 90 s. Check the cable between the two halves. "
-            "If the other half stays dark, it is not running firmware and needs the "
-            "firmware .uf2 copied onto it by hand.")
+    return MSG_SPLIT_LINK_TIMEOUT.format(prefix=prefix, what=what)
 
 
 def is_split_link_failure(msg) -> bool:

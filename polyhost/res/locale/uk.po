@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:08+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -32,6 +32,270 @@ msgstr "{minutes} хв"
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} с"
+
+#: polyhost/device/hid_fw_up.py:40
+#, python-brace-format
+msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
+msgstr "Файл замалий ({size} байтів) для коректного образу мікропрограми RP2040 (очікується щонайменше 264 байти для boot2 і таблиці векторів ARM)."
+
+#: polyhost/device/hid_fw_up.py:43
+#, python-brace-format
+msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
+msgstr "Неправильна CRC32 boot2 RP2040 (у файлі {stored}, обчислено {computed}). Схоже, це не коректний файл .bin мікропрограми QMK для RP2040. Виберіть файл .bin, створений командою 'qmk compile', а не .uf2, .hex чи інший формат."
+
+#: polyhost/device/hid_fw_up.py:48
+#, python-brace-format
+msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
+msgstr "Неправильна таблиця векторів ARM: початковий SP {sp} лежить поза SRAM RP2040 ({sram}). Схоже, це не коректний двійковий файл мікропрограми RP2040."
+
+#: polyhost/device/hid_fw_up.py:51
+msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
+msgstr "Схоже, цей двійковий файл мікропрограми зібрано не для PolyKybd. У ньому не знайдено ідентифікаційного рядка PolyKybd. Виберіть мікропрограму, скомпільовану для 'polykybd/split72' командою 'qmk compile'."
+
+#: polyhost/device/hid_fw_up.py:56
+#, python-brace-format
+msgid ""
+"No signature file was found next to this image ({sig}).\n"
+"\n"
+"The keyboard will ask you to confirm it physically: every keycap goes dark except a big A (accept) on the left half and R (reject) on the right. That is expected for a firmware you built yourself.\n"
+"\n"
+"If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
+msgstr ""
+"Поруч із цим образом не знайдено файлу підпису ({sig}).\n"
+"\n"
+"Клавіатура попросить Вас підтвердити його фізично: усі клавіші згаснуть, окрім великої A (прийняти) на лівій половині та R (відхилити) на правій. Для мікропрограми, яку Ви зібрали самі, це нормально.\n"
+"\n"
+"Якщо Ви хотіли прошити випуск, спершу завантажте його файл '.sig' у ту саму теку, що й '.bin'."
+
+#: polyhost/device/hid_fw_up.py:62
+#, python-brace-format
+msgid "Cannot read {sig}: {error}"
+msgstr "Не вдалося прочитати {sig}: {error}"
+
+#: polyhost/device/hid_fw_up.py:64
+#, python-brace-format
+msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
+msgstr "Розмір {sig} — {size} байтів, а підпис має рівно {expected}. Файл буде проігноровано, і клавіатура попросить Вас підтвердити образ фізично."
+
+#: polyhost/device/hid_fw_up.py:66
+msgid "Firmware file is empty."
+msgstr "Файл мікропрограми порожній."
+
+#: polyhost/device/hid_fw_up.py:67
+#, python-brace-format
+msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
+msgstr "Мікропрограма завелика: {size} байтів (максимум {max_kb} KB)."
+
+#: polyhost/device/hid_fw_up.py:68
+#, python-brace-format
+msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
+msgstr "Надсилання FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
+
+#: polyhost/device/hid_fw_up.py:69
+#, python-brace-format
+msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
+msgstr "{step} — минуло {elapsed} s (≈10–20 s)…"
+
+#: polyhost/device/hid_fw_up.py:70
+msgid "Erasing staging area — keyboard will reconnect when done"
+msgstr "Стирання області підготовки — після завершення клавіатура перепід’єднається"
+
+#: polyhost/device/hid_fw_up.py:71
+msgid "Erasing staging area (both halves)"
+msgstr "Стирання області підготовки (обидві половини)"
+
+#: polyhost/device/hid_fw_up.py:72
+msgid "FW_UP_BEGIN timed out"
+msgstr "Час очікування FW_UP_BEGIN минув"
+
+#: polyhost/device/hid_fw_up.py:73
+msgid "staging area"
+msgstr "область підготовки"
+
+#: polyhost/device/hid_fw_up.py:75
+msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
+msgstr "Час очікування FW_UP_BEGIN минув — клавіатура не завершила стирання за 90 s.  Перевірте USB-кабель і спробуйте ще раз."
+
+#: polyhost/device/hid_fw_up.py:78
+msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
+msgstr "Помилка FW_UP_BEGIN — клавіатура не перепід’єдналася за 30 s.  Перевірте USB-кабель і спробуйте ще раз."
+
+#: polyhost/device/hid_fw_up.py:81
+msgid ""
+"FW_UP_BEGIN failed — the slave half could not be prepared.\n"
+"Ensure both keyboard halves are connected and powered on.\n"
+"If the slave half has old firmware (without HID firmware update support), it must be\n"
+"flashed manually via UF2 before HID firmware update will work."
+msgstr ""
+"Помилка FW_UP_BEGIN — не вдалося підготувати ведену половину.\n"
+"Переконайтеся, що обидві половини клавіатури під’єднано й увімкнено.\n"
+"Якщо на веденій половині стара мікропрограма (без підтримки оновлення через HID), її треба\n"
+"спершу прошити вручну через UF2, і лише тоді оновлення через HID працюватиме."
+
+#: polyhost/device/hid_fw_up.py:85
+#, python-brace-format
+msgid "Staging erased. Sending {chunks} chunks…"
+msgstr "Область підготовки стерто. Надсилання фрагментів: {chunks}…"
+
+#: polyhost/device/hid_fw_up.py:86
+msgid "Update cancelled by user."
+msgstr "Оновлення скасовано користувачем."
+
+#: polyhost/device/hid_fw_up.py:87
+#, python-brace-format
+msgid "Chunk {n}/{total} ({kb} KB sent)…"
+msgstr "Фрагмент {n}/{total} (надіслано {kb} KB)…"
+
+#: polyhost/device/hid_fw_up.py:89
+#, python-brace-format
+msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
+msgstr "Половини клавіатури повторно синхронізовано — повернення до фрагмента {n}/{total} (зміщення {offset}, синхронізація {resync})…"
+
+#: polyhost/device/hid_fw_up.py:91
+msgid "keyboard rejected the chunk"
+msgstr "клавіатура відхилила фрагмент"
+
+#: polyhost/device/hid_fw_up.py:92
+msgid "no reply from the keyboard"
+msgstr "клавіатура не відповіла"
+
+#: polyhost/device/hid_fw_up.py:94
+#, python-brace-format
+msgid ""
+"FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
+"Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
+msgstr ""
+"Помилка FW_UP_CHUNK на зміщенні {offset} після спроб: {attempts} — {reason}.\n"
+"Переконайтеся, що обидві половини клавіатури під’єднано й на них працює та сама мікропрограма, потім спробуйте ще раз — оновлення почнеться спочатку, і його можна безпечно повторювати."
+
+#: polyhost/device/hid_fw_up.py:97
+#, python-brace-format
+msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
+msgstr "Фрагмент {n}/{total} — повтор {attempt}/{max_attempts} (очікування {ms} ms)…"
+
+#: polyhost/device/hid_fw_up.py:98
+#, python-brace-format
+msgid "Could not read {sig}: {error} — flashing unsigned."
+msgstr "Не вдалося прочитати {sig}: {error} — прошивання без підпису."
+
+#: polyhost/device/hid_fw_up.py:99
+msgid "Sending image signature…"
+msgstr "Надсилання підпису образу…"
+
+#: polyhost/device/hid_fw_up.py:100
+#, python-brace-format
+msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
+msgstr "{sig} ігнорується — очікувалося {expected} байтів, отримано {size}."
+
+#: polyhost/device/hid_fw_up.py:101
+msgid "Verifying the staged image (CRC32)…"
+msgstr "Перевірка підготовленого образу (CRC32)…"
+
+#: polyhost/device/hid_fw_up.py:103
+msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
+msgstr "Ця мікропрограма не підписана. Підтвердьте на КЛАВІАТУРІ: натисніть підсвічену клавішу A (прийняти) або R (відхилити)."
+
+#: polyhost/device/hid_fw_up.py:106
+msgid ""
+"Timed out waiting for confirmation on the keyboard.\n"
+"\n"
+"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
+msgstr ""
+"Час очікування підтвердження на клавіатурі минув.\n"
+"\n"
+"Клавіатура просить фізично ПРИЙНЯТИ/ВІДХИЛИТИ, бо цей образ не має дійсного підпису. Почніть прошивання знову й протягом хвилини натисніть підсвічену клавішу A на лівій половині."
+
+#: polyhost/device/hid_fw_up.py:111
+#, python-brace-format
+msgid ""
+"The keyboard refused this firmware: the signature does not match the image.\n"
+"\n"
+"{sig} is not a valid signature for this .bin. Either the two files come from different builds, or one of them is damaged — re-download both from the same release.\n"
+"\n"
+"There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
+msgstr ""
+"Клавіатура відхилила цю мікропрограму: підпис не відповідає образу.\n"
+"\n"
+"{sig} не є дійсним підписом для цього .bin. Або файли походять із різних збірок, або один із них пошкоджено — завантажте обидва знову з того самого випуску.\n"
+"\n"
+"Підтвердити такий образ на клавіатурі навмисно неможливо: підпис, що не пройшов перевірку, означає, що файл не той, за який себе видає."
+
+#: polyhost/device/hid_fw_up.py:120
+msgid ""
+"The keyboard refused this firmware: it is not signed.\n"
+"\n"
+"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
+"\n"
+"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
+msgstr ""
+"Клавіатура відхилила цю мікропрограму: вона не підписана.\n"
+"\n"
+"Випущена мікропрограма постачається з відповідним файлом '.sig' — завантажте його в ту саму теку, що й .bin, і прошийте знову.\n"
+"\n"
+"Щоб прошити власноруч зібрану мікропрограму, прошийте знову й натисніть підсвічену клавішу A (прийняти) на клавіатурі, коли вона попросить."
+
+#: polyhost/device/hid_fw_up.py:125
+msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
+msgstr "Помилка FW_UP_COMMIT — невідповідність CRC на клавіатурі. Спробуйте ще раз."
+
+#: polyhost/device/hid_fw_up.py:126
+msgid "Done. New firmware staged and verified on the keyboard."
+msgstr "Готово. Нову мікропрограму підготовлено й перевірено на клавіатурі."
+
+#: polyhost/device/hid_fw_up.py:128
+msgid ""
+"Firmware staged and verified successfully.\n"
+"\n"
+"The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
+msgstr ""
+"Мікропрограму успішно підготовлено й перевірено.\n"
+"\n"
+"Новий образ збережено на клавіатурі й перевірено за CRC, але він ще не активний — клавіатура досі працює на поточній мікропрограмі. Активація підготовленого образу — окремий крок."
+
+#: polyhost/device/hid_fw_up.py:132
+msgid "Sending FW_UP_APPLY…"
+msgstr "Надсилання FW_UP_APPLY…"
+
+#: polyhost/device/hid_fw_up.py:134
+msgid ""
+"Apply is not available.\n"
+"\n"
+"The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
+msgstr ""
+"Застосування недоступне.\n"
+"\n"
+"Клавіатура повідомила, що дійсного підготовленого образу немає, або цю мікропрограму зібрано без застосування із програми (FW_UP_INAPP_APPLY=no). Підготовлений образ не змінено."
+
+#: polyhost/device/hid_fw_up.py:138
+msgid "Applying — keyboard is erasing its flash and rebooting…"
+msgstr "Застосування — клавіатура стирає флеш-пам’ять і перезавантажується…"
+
+#: polyhost/device/hid_fw_up.py:140
+msgid ""
+"Keyboard did not reconnect within 30 s after apply.\n"
+"If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
+msgstr ""
+"Клавіатура не перепід’єдналася за 30 s після застосування.\n"
+"Якщо вона не відновиться сама, утримуйте BOOTSEL на ведучій половині й прошийте .uf2 знову."
+
+#: polyhost/device/hid_fw_up.py:143
+msgid "Done. Keyboard reconnected on the applied firmware."
+msgstr "Готово. Клавіатура перепід’єдналася із застосованою мікропрограмою."
+
+#: polyhost/device/hid_fw_up.py:145
+msgid ""
+"Firmware applied — the keyboard rebooted and reconnected.\n"
+"\n"
+"Both halves now run the new firmware."
+msgstr ""
+"Мікропрограму застосовано — клавіатура перезавантажилася й перепід’єдналася.\n"
+"\n"
+"Обидві половини тепер працюють на новій мікропрограмі."
+
+#: polyhost/device/split_link.py:30
+#, python-brace-format
+msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
+msgstr "{prefix} — половина з USB відповіла, але інша половина клавіатури не підтвердила, що стерла {what} за 90 s. Перевірте кабель між половинами. Якщо інша половина залишається темною, на ній не працює мікропрограма й на неї треба вручну скопіювати файл мікропрограми .uf2."
 
 #: polyhost/forwarder.py:240
 msgid "Press to pause forwarding"
@@ -200,7 +464,7 @@ msgstr "Копіювати в буфер обміну"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:856
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:458 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:440 polyhost/gui/log_viewer.py:219
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -495,12 +759,12 @@ msgstr "Команди PolyKybd (*.poly.cmd)"
 msgid "Open file"
 msgstr "Відкрити файл"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
+#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:624
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
 msgid "Not Connected"
 msgstr "Не під’єднано"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:625
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd не під’єднано. Під’єднайте клавіатуру та спробуйте ще раз."
 
@@ -537,53 +801,53 @@ msgstr "Не та клавіатура"
 msgid "Unsigned Firmware"
 msgstr "Непідписана мікропрограма"
 
-#: polyhost/gui/cmd_menu.py:541
+#: polyhost/gui/cmd_menu.py:542
 msgid "Flash + Apply Firmware"
 msgstr "Прошити й застосувати мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:543
+#: polyhost/gui/cmd_menu.py:544
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Нову мікропрограму буде передано на клавіатуру, перевірено (CRC32), а потім <b>активовано</b> — обидві половини автоматично перезавантажаться з новою мікропрограмою (повторно під’єднувати не потрібно)."
 
-#: polyhost/gui/cmd_menu.py:548
+#: polyhost/gui/cmd_menu.py:549
 msgid "Flash Firmware"
 msgstr "Прошити мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:550
+#: polyhost/gui/cmd_menu.py:551
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Нову мікропрограму буде передано й підготовлено на клавіатурі, а потім перевірено (CRC32). Образ зберігається, але <b>ще не активується</b> — клавіатура працюватиме з поточною мікропрограмою, доки ви окремо не застосуєте новий образ."
 
-#: polyhost/gui/cmd_menu.py:568
+#: polyhost/gui/cmd_menu.py:569
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Поточна мікропрограма клавіатури: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:571
+#: polyhost/gui/cmd_menu.py:572
 msgid "Could not query current firmware version."
 msgstr "Не вдалося запитати версію поточної мікропрограми."
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:573
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Вибраний файл:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:574
 msgid "Continue?"
 msgstr "Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:601
+#: polyhost/gui/cmd_menu.py:602
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Застосувати підготовлену мікропрограму?</b><br><br>Обидві половини клавіатури інсталюють раніше підготовлений образ і автоматично перезавантажаться з новою мікропрограмою (повторно під’єднувати не потрібно).<br><br>Якщо цю мікропрограму зібрано без підтримки застосування з програми, клавіатура безпечно повідомить, що застосування недоступне, і залишить підготовлений образ без змін.<br><br>Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:610
+#: polyhost/gui/cmd_menu.py:611
 msgid "Apply Staged Firmware"
 msgstr "Застосувати підготовлену мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:635
+#: polyhost/gui/cmd_menu.py:636
 msgid "Firmware Applied"
 msgstr "Мікропрограму застосовано"
 
-#: polyhost/gui/cmd_menu.py:637
+#: polyhost/gui/cmd_menu.py:638
 msgid "Apply Failed"
 msgstr "Не вдалося застосувати"
 
@@ -899,7 +1163,7 @@ msgstr "Зберегти створений гліф (додається до н
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
-#: polyhost/gui/hid_fw_up_dialog.py:204
+#: polyhost/gui/hid_fw_up_dialog.py:186
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
 msgid "Cancel"
 msgstr "Скасувати"
@@ -1392,67 +1656,39 @@ msgstr "Прошивання почалося — стежте за значко
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Відкинути всі незбережені зміни в '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:22
-msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
-msgstr "Ця мікропрограма не підписана. Підтвердьте на КЛАВІАТУРІ: натисніть підсвічену клавішу A (прийняти) або R (відхилити)."
-
-#: polyhost/gui/hid_fw_up_dialog.py:24
-msgid ""
-"Timed out waiting for confirmation on the keyboard.\n"
-"\n"
-"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
-msgstr ""
-"Час очікування підтвердження на клавіатурі минув.\n"
-"\n"
-"Клавіатура просить фізично ПРИЙНЯТИ/ВІДХИЛИТИ, бо цей образ не має дійсного підпису. Почніть прошивання знову й протягом хвилини натисніть підсвічену клавішу A на лівій половині."
-
-#: polyhost/gui/hid_fw_up_dialog.py:28
-msgid ""
-"The keyboard refused this firmware: it is not signed.\n"
-"\n"
-"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
-"\n"
-"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
-msgstr ""
-"Клавіатура відхилила цю мікропрограму: вона не підписана.\n"
-"\n"
-"Випущена мікропрограма постачається з відповідним файлом '.sig' — завантажте його в ту саму теку, що й .bin, і прошийте знову.\n"
-"\n"
-"Щоб прошити власноруч зібрану мікропрограму, прошийте знову й натисніть підсвічену клавішу A (прийняти) на клавіатурі, коли вона попросить."
-
-#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2856
+#: polyhost/gui/hid_fw_up_dialog.py:145 polyhost/host.py:2856
 #: polyhost/host.py:2880
 msgid "Firmware Update"
 msgstr "Оновлення мікропрограми"
 
-#: polyhost/gui/hid_fw_up_dialog.py:172
+#: polyhost/gui/hid_fw_up_dialog.py:154
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>Файл:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/gui/hid_fw_up_dialog.py:159
 msgid "Applying staged firmware…"
 msgstr "Застосування підготовленої мікропрограми…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:159
 msgid "Starting…"
 msgstr "Запуск…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:270
+#: polyhost/gui/hid_fw_up_dialog.py:252
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "Залишилося ~{seconds} с"
 
-#: polyhost/gui/hid_fw_up_dialog.py:275
+#: polyhost/gui/hid_fw_up_dialog.py:257
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "Залишилося ~{minutes} хв {seconds} с"
 
-#: polyhost/gui/hid_fw_up_dialog.py:388
+#: polyhost/gui/hid_fw_up_dialog.py:370
 msgid "Applying — activating the staged firmware…"
 msgstr "Застосування — активація підготовленої мікропрограми…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:468
+#: polyhost/gui/hid_fw_up_dialog.py:450
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Скасування — очікування завершення поточного фрагмента…"
 
@@ -3269,7 +3505,7 @@ msgstr "Призначення накладок PolyKybd (*.poly.yaml)"
 msgid "Update firmware to v{version}…"
 msgstr "Оновити мікропрограму до v{version}…"
 
-#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2996
+#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2997
 msgid "Check for firmware update…"
 msgstr "Перевірити оновлення мікропрограми…"
 
@@ -3417,7 +3653,7 @@ msgstr "Завантажити й прошити зараз?"
 msgid "Downloading firmware v{version}…"
 msgstr "Завантаження мікропрограми v{version}…"
 
-#: polyhost/host.py:2901 polyhost/host.py:3112
+#: polyhost/host.py:2901 polyhost/host.py:3113
 msgid "Cancelling…"
 msgstr "Скасування…"
 
@@ -3436,12 +3672,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3076 polyhost/host.py:3090 polyhost/host.py:3136
-#: polyhost/host.py:3145 polyhost/host.py:3151
+#: polyhost/host.py:3077 polyhost/host.py:3091 polyhost/host.py:3137
+#: polyhost/host.py:3146 polyhost/host.py:3152
 msgid "Install WinCompose"
 msgstr "Інсталювати WinCompose"
 
-#: polyhost/host.py:3077
+#: polyhost/host.py:3078
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3451,11 +3687,11 @@ msgstr ""
 "\n"
 "Збірку WinCompose від PolyKybd буде завантажено з GitHub і запущено її інсталятор (Windows попросить підтвердження)."
 
-#: polyhost/host.py:3090
+#: polyhost/host.py:3091
 msgid "Looking for the latest WinCompose release…"
 msgstr "Пошук останнього випуску WinCompose…"
 
-#: polyhost/host.py:3137
+#: polyhost/host.py:3138
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3465,7 +3701,7 @@ msgstr ""
 "\n"
 "У браузері відкриється сторінка випусків — завантажте й запустіть інсталятор звідти."
 
-#: polyhost/host.py:3146
+#: polyhost/host.py:3147
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3476,7 +3712,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3152
+#: polyhost/host.py:3153
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3493,7 +3729,7 @@ msgstr ""
 "Його збережено в:\n"
 "{path}"
 
-#: polyhost/host.py:3160
+#: polyhost/host.py:3161
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
 
@@ -3520,4 +3756,84 @@ msgstr "Азія"
 #: polyhost/services/lang_regions.py:133
 msgid "Oceania"
 msgstr "Океанія"
+
+#: polyhost/services/updater.py:39
+#, python-brace-format
+msgid "Preflight failed: {details}"
+msgstr "Попередню перевірку не пройдено: {details}"
+
+#: polyhost/services/updater.py:40
+#, python-brace-format
+msgid "Warning — {name}: {detail}"
+msgstr "Попередження — {name}: {detail}"
+
+#: polyhost/services/updater.py:41
+#, python-brace-format
+msgid "Install dir not writable: {error}"
+msgstr "Немає прав на запис у теку встановлення: {error}"
+
+#: polyhost/services/updater.py:42
+#, python-brace-format
+msgid "Could not create a temp directory for the update: {error}"
+msgstr "Не вдалося створити тимчасову теку для оновлення: {error}"
+
+#: polyhost/services/updater.py:43
+msgid "Starting download..."
+msgstr "Початок завантаження..."
+
+#: polyhost/services/updater.py:44
+#, python-brace-format
+msgid "Downloading v{version}..."
+msgstr "Завантаження v{version}..."
+
+#: polyhost/services/updater.py:45
+msgid "Applying update..."
+msgstr "Застосування оновлення..."
+
+#: polyhost/services/updater.py:46
+msgid "Connecting…"
+msgstr "Під’єднання…"
+
+#: polyhost/services/updater.py:47
+#, python-brace-format
+msgid "Downloading firmware… {done} / {total} KB"
+msgstr "Завантаження мікропрограми… {done} / {total} KB"
+
+#: polyhost/services/updater.py:48
+#, python-brace-format
+msgid "Downloading firmware… {done} KB"
+msgstr "Завантаження мікропрограми… {done} KB"
+
+#: polyhost/services/updater.py:49
+msgid "Download cancelled."
+msgstr "Завантаження скасовано."
+
+#: polyhost/services/updater.py:50
+msgid "Downloading signature…"
+msgstr "Завантаження підпису…"
+
+#: polyhost/services/updater.py:52
+#, python-brace-format
+msgid ""
+"The image downloaded, but its signature did not ({error}).\n"
+"\n"
+"Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
+msgstr ""
+"Образ завантажено, а його підпис — ні ({error}).\n"
+"\n"
+"Прошивання без нього змусило б клавіатуру вважати цей випуск непідписаною збіркою й просити підтвердження на клавішах, тому оновлення зупинено."
+
+#: polyhost/services/wincompose_install.py:51
+msgid "Looking for the latest release…"
+msgstr "Пошук останнього випуску…"
+
+#: polyhost/services/wincompose_install.py:52
+#, python-brace-format
+msgid "Downloading WinCompose… {done} / {total} KB"
+msgstr "Завантаження WinCompose… {done} / {total} KB"
+
+#: polyhost/services/wincompose_install.py:53
+#, python-brace-format
+msgid "Downloading WinCompose… {done} KB"
+msgstr "Завантаження WinCompose… {done} KB"
 

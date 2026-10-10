@@ -22,7 +22,7 @@ each app keeps its own dialog styling — the tray snaps its dialog to the tray
 corner, the forwarder uses a plain one — while the logic lives here once. That
 also keeps this module import-light and unit-testable without a Qt platform.
 """
-from polyhost.i18n import _, N_
+from polyhost.i18n import _, N_, translate_message
 from polyhost.services.updater import relaunch_executable, spawn_detached
 
 #: Shown while the relay script takes over — the app is about to vanish.
@@ -55,7 +55,7 @@ class UpdateProgressController:
         to restore the 0..100 range or the bar stays a busy pulse forever."""
         if self.dialog is None:
             return
-        self.dialog.setLabelText(message)
+        self.dialog.setLabelText(translate_message(message))
         if percent < 0:
             self.dialog.setRange(0, 0)          # indeterminate / busy pulse
         else:

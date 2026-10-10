@@ -308,5 +308,126 @@ class MarkingTest(unittest.TestCase):
                         "polyhost.pot is stale: run `python scripts/i18n_strings.py update`")
 
 
+class DeviceMessageTest(unittest.TestCase):
+    """i18n.translate_message(): an English message built from an M_()
+    template comes back in the active language, values and all."""
+
+    def setUp(self):
+        # Every module whose messages a dialog shows registers its templates
+        # on import, exactly as in the GUI process.
+        from polyhost.device import hid_fw_up, split_link  # noqa: F401
+        from polyhost.services import updater, wincompose_install  # noqa: F401
+        self.fw = hid_fw_up
+        self.split_link = split_link
+        self.updater = updater
+
+    def tearDown(self):
+        i18n.install(i18n.SOURCE_LANGUAGE)
+
+    def test_english_passes_through(self):
+        msg = self.fw.MSG_CHUNK.format(n=3, total=9, kb=7)
+        self.assertEqual(i18n.translate_message(msg), msg)
+
+    def test_a_message_with_values_is_rebuilt_from_its_translated_template(self):
+        i18n.install("de")
+        msg = self.updater.MSG_DOWNLOADING_FW_OF.format(done=120, total=900)
+        self.assertEqual(i18n.translate_message(msg),
+                         i18n._f(self.updater.MSG_DOWNLOADING_FW_OF, done="120", total="900"))
+        self.assertNotEqual(i18n.translate_message(msg), msg)
+
+    def test_a_message_inside_a_message_is_translated_too(self):
+        i18n.install("de")
+        msg = self.fw.MSG_ERASING_ELAPSED.format(step=self.fw.MSG_ERASING_BOTH, elapsed=4)
+        shown = i18n.translate_message(msg)
+        self.assertIn(i18n._(self.fw.MSG_ERASING_BOTH), shown)
+        self.assertNotIn(self.fw.MSG_ERASING_BOTH, shown)
+
+    def test_a_value_containing_the_separator_is_not_cut_in_two(self):
+        # MSG_ERASING_RECONNECT carries the " — " that follows {step}, so the
+        # shortest split would put half of it into {elapsed}.
+        i18n.install("de")
+        msg = self.fw.MSG_ERASING_ELAPSED.format(step=self.fw.MSG_ERASING_RECONNECT, elapsed=4)
+        self.assertEqual(i18n.translate_message(msg),
+                         i18n._f(self.fw.MSG_ERASING_ELAPSED,
+                                 step=i18n._(self.fw.MSG_ERASING_RECONNECT), elapsed="4"))
+
+    def test_the_split_link_message_translates_and_is_still_recognised(self):
+        i18n.install("de")
+        msg = self.split_link.split_link_timeout_message(self.fw.MSG_BEGIN_TIMED_OUT,
+                                                         self.fw.MSG_STAGING_AREA)
+        self.assertTrue(self.split_link.is_split_link_failure(msg))
+        shown = i18n.translate_message(msg)
+        self.assertNotEqual(shown, msg)
+        self.assertIn(i18n._(self.fw.MSG_STAGING_AREA), shown)
+
+    def test_unknown_text_and_non_text_pass_through(self):
+        i18n.install("de")
+        for value in ("[Errno 13] Permission denied", "", None):
+            self.assertEqual(i18n.translate_message(value), value)
+
+    def test_every_template_is_translated_in_every_catalog(self):
+        missing = []
+        for lang in i18n.LANGUAGES:
+            if lang.code == i18n.SOURCE_LANGUAGE:
+                continue
+            i18n.install(lang.code)
+            missing += [(lang.code, t[:50]) for t in i18n._MESSAGE_TEMPLATES
+                        if i18n._(t) == t]
+        self.assertEqual(missing, [])
+
+
+class DeviceMessageRulesTest(unittest.TestCase):
+    """The rules M_() depends on, checked over the whole package."""
+
+    @classmethod
+    def setUpClass(cls):
+        import ast
+        cls.calls = []          # (path, lineno, at module level, template or None)
+        for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "polyhost")):
+            for name in files:
+                if not name.endswith(".py"):
+                    continue
+                path = os.path.join(dirpath, name)
+                with open(path, encoding="utf-8") as fh:
+                    tree = ast.parse(fh.read(), path)
+                top = {id(n) for stmt in tree.body for n in ast.walk(stmt)
+                       if not isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                                ast.ClassDef))}
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) \
+                            and node.func.id == "M_":
+                        arg = node.args[0] if node.args else None
+                        text = arg.value if isinstance(arg, ast.Constant) else None
+                        cls.calls.append((os.path.relpath(path, ROOT), node.lineno,
+                                          id(node) in top, text))
+
+    def test_templates_are_module_constants(self):
+        # A template built inside a function is registered only in the
+        # process that ran it, so the GUI would not know it in client mode.
+        self.assertEqual([(p, n) for p, n, top, _t in self.calls if not top], [])
+
+    def test_templates_are_literal_and_carry_no_format_spec(self):
+        bad = [(p, n) for p, n, _top, t in self.calls
+               if t is None or re.search(r"\{\w*[:!]", t)]
+        self.assertEqual(bad, [])
+
+    def test_templates_have_enough_literal_text_to_match_on(self):
+        bad = [(p, n) for p, n, _top, t in self.calls
+               if t is not None and len(re.findall(r"[A-Za-z]", re.sub(r"\{\w+\}", "", t))) < 6]
+        self.assertEqual(bad, [])
+
+    def test_every_module_with_templates_is_extracted(self):
+        sys.path.insert(0, os.path.join(ROOT, "scripts"))
+        try:
+            import i18n_strings
+        finally:
+            sys.path.pop(0)
+        covered = set(i18n_strings.EXTRA_EXTRACT)
+        missing = sorted({p for p, *_rest in self.calls
+                          if p not in covered and p != "polyhost/i18n.py"
+                          and not any(p.startswith(u) for u in i18n_strings.UI_PATHS)})
+        self.assertEqual(missing, [])
+
+
 if __name__ == "__main__":
     unittest.main()

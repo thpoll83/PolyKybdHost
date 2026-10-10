@@ -10,7 +10,7 @@ from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        check_signature_file)
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
-from polyhost.i18n import _, _f
+from polyhost.i18n import _, _f, translate_message
 
 
 class _RequireExplicitOpen(QProxyStyle):
@@ -518,12 +518,12 @@ class CommandsSubMenu:
 
         valid, reason = validate_rp2040_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Invalid Firmware File"), reason)
+            QMessageBox.critical(None, _("Invalid Firmware File"), translate_message(reason))
             return
 
         valid, reason = validate_polykybd_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Wrong Keyboard"), reason)
+            QMessageBox.critical(None, _("Wrong Keyboard"), translate_message(reason))
             return
 
         # FW-2 advisory, at SELECTION time — before a 446 KB transfer and before
@@ -533,7 +533,8 @@ class CommandsSubMenu:
         # this never blocks the flash.
         signed, advisory = check_signature_file(bin_path)
         if not signed:
-            QMessageBox.information(None, _("Unsigned Firmware"), advisory)
+            QMessageBox.information(None, _("Unsigned Firmware"),
+                                    translate_message(advisory))
 
         # The confirmation text + title depend on whether we also activate the
         # image right after staging (single-step "flash + apply").
@@ -632,6 +633,6 @@ class CommandsSubMenu:
                 progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
 
         if ok:
-            QMessageBox.information(None, _("Firmware Applied"), msg)
+            QMessageBox.information(None, _("Firmware Applied"), translate_message(msg))
         else:
-            QMessageBox.warning(None, _("Apply Failed"), msg)
+            QMessageBox.warning(None, _("Apply Failed"), translate_message(msg))
