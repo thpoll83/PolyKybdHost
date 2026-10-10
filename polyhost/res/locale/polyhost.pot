@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -129,6 +129,11 @@ msgstr ""
 msgid "About PolyKybdHost (forwarder)"
 msgstr ""
 
+#. TRANSLATORS: the run mode in the About dialog's environment line
+#: polyhost/forwarder.py:811
+msgid "forwarder"
+msgstr ""
+
 #: polyhost/forwarder.py:813
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr ""
@@ -139,6 +144,11 @@ msgstr ""
 
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
+msgstr ""
+
+#: polyhost/gui/about_dialog.py:66
+#, python-brace-format
+msgid "Version {version}"
 msgstr ""
 
 #: polyhost/gui/about_dialog.py:97
@@ -494,7 +504,7 @@ msgid "Open file"
 msgstr ""
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
 msgid "Not Connected"
 msgstr ""
 
@@ -883,7 +893,7 @@ msgid "Preview:"
 msgstr ""
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "OK"
 msgstr ""
 
@@ -894,7 +904,7 @@ msgstr ""
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:78 polyhost/host.py:227
 msgid "Cancel"
 msgstr ""
 
@@ -1423,57 +1433,57 @@ msgstr ""
 msgid "The new language is used after a restart. Restart now?"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:62
 msgid "Edit Key"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 msgid "QMK Keycode:"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:70
 msgid "Visual Label:"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:73
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:75
 msgid "Info:"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:100
 msgid "PolyKybd Split72 Layout"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:206
 msgid "Could not read layers from device"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Layers:"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:296
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:302
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:307
 #, python-brace-format
 msgid ""
 "Legends read from:\n"
@@ -1481,38 +1491,50 @@ msgid ""
 msgstr ""
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Symbol"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Every key shows its keycode."
 msgstr ""
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
 msgid "Preview"
 msgstr ""
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Real"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:346
 #, python-brace-format
 msgid "Unavailable: {reason}"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:393
+msgid "Preview language:"
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:405
+msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:407
+msgid "Unavailable: the language table could not be loaded."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 msgid "Error"
 msgstr ""
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 #, python-brace-format
 msgid ""
 "Failed to load:\n"
@@ -2709,6 +2731,10 @@ msgstr ""
 msgid "What's new — {release_name}"
 msgstr ""
 
+#: polyhost/gui/update_dialog.py:119
+msgid "View full release notes on GitHub"
+msgstr ""
+
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
 msgstr ""
@@ -3116,6 +3142,18 @@ msgstr ""
 msgid "present — not connected (protocol/version)"
 msgstr ""
 
+#: polyhost/host.py:1983
+msgid "Keyboard"
+msgstr ""
+
+#: polyhost/host.py:1984
+msgid "No keyboard connected."
+msgstr ""
+
+#: polyhost/host.py:1988
+msgid "⚠ mismatch"
+msgstr ""
+
 #: polyhost/host.py:1990
 #, python-brace-format
 msgid "{n} languages loaded"
@@ -3168,6 +3206,10 @@ msgstr ""
 #: polyhost/forwarder.py:808 polyhost/host.py:2061
 #, python-brace-format
 msgid "HID protocol P{protocol}"
+msgstr ""
+
+#: polyhost/host.py:2064
+msgid "mode"
 msgstr ""
 
 #: polyhost/host.py:2066

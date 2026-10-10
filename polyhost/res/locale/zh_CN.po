@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -130,6 +130,11 @@ msgstr "<b>主机文件：</b>{path}"
 msgid "About PolyKybdHost (forwarder)"
 msgstr "关于 PolyKybdHost（转发器）"
 
+#. TRANSLATORS: the run mode in the About dialog's environment line
+#: polyhost/forwarder.py:811
+msgid "forwarder"
+msgstr ""
+
 #: polyhost/forwarder.py:813
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "转发器模式：本机没有连接键盘。它会监视本机的活动窗口，并将其转发给运行在连接键盘的电脑上的 PolyKybdHost。"
@@ -141,6 +146,11 @@ msgstr "立即下载、安装并重新启动转发器吗？"
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
 msgstr "博客"
+
+#: polyhost/gui/about_dialog.py:66
+#, python-brace-format
+msgid "Version {version}"
+msgstr ""
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
@@ -494,7 +504,7 @@ msgid "Open file"
 msgstr "打开文件"
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
 msgid "Not Connected"
 msgstr "未连接"
 
@@ -883,7 +893,7 @@ msgid "Preview:"
 msgstr "预览："
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "OK"
 msgstr "确定"
 
@@ -894,7 +904,7 @@ msgstr "保留构建的字形（已添加到内存中的分包；请通过检查
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:78 polyhost/host.py:227
 msgid "Cancel"
 msgstr "取消"
 
@@ -1450,57 +1460,57 @@ msgstr "语言"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新语言将在重新启动后生效。立即重新启动吗？"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:62
 msgid "Edit Key"
 msgstr "编辑按键"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 msgid "QMK Keycode:"
 msgstr "QMK 键码："
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:70
 msgid "Visual Label:"
 msgstr "显示标签："
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:73
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
 msgstr "旋转：绕（{x}, {y}）{angle}°"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:75
 msgid "Info:"
 msgstr "信息："
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:100
 msgid "PolyKybd Split72 Layout"
 msgstr "PolyKybd Split72 布局"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
 msgstr "无法连接到 PolyKybd。请连接键盘后重试。"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:206
 msgid "Could not read layers from device"
 msgstr "无法从设备读取层"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Layers:"
 msgstr "层："
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
 msgstr "将每个按键绘制成键盘上显示的键帽样子。键面字符未在此建模的按键会保留其键码文本。"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:296
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
 msgstr "不可用：无法加载键帽字体和布局表，因此按键显示其键码。"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:302
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
 msgstr "部分不可用 — {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:307
 #, python-brace-format
 msgid ""
 "Legends read from:\n"
@@ -1510,38 +1520,50 @@ msgstr ""
 "{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Symbol"
 msgstr "符号"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Every key shows its keycode."
 msgstr "每个按键都显示其键码。"
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
 msgid "Preview"
 msgstr "预览"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Real"
 msgstr "真实"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
 msgstr "经过面板模拟：自发光像素、泛光以及透明键帽盖的漫射 — 按键实际看起来的样子。"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:346
 #, python-brace-format
 msgid "Unavailable: {reason}"
 msgstr "不可用：{reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:393
+msgid "Preview language:"
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:405
+msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:407
+msgid "Unavailable: the language table could not be loaded."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 msgid "Error"
 msgstr "错误"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 #, python-brace-format
 msgid ""
 "Failed to load:\n"
@@ -2739,6 +2761,10 @@ msgstr "新功能"
 msgid "What's new — {release_name}"
 msgstr "新功能 — {release_name}"
 
+#: polyhost/gui/update_dialog.py:119
+msgid "View full release notes on GitHub"
+msgstr ""
+
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
 msgstr "正在重新启动以完成更新…"
@@ -3149,6 +3175,18 @@ msgstr "已连接"
 msgid "present — not connected (protocol/version)"
 msgstr "已检测到 — 未连接（协议/版本）"
 
+#: polyhost/host.py:1983
+msgid "Keyboard"
+msgstr ""
+
+#: polyhost/host.py:1984
+msgid "No keyboard connected."
+msgstr ""
+
+#: polyhost/host.py:1988
+msgid "⚠ mismatch"
+msgstr ""
+
 #: polyhost/host.py:1990
 #, python-brace-format
 msgid "{n} languages loaded"
@@ -3200,6 +3238,10 @@ msgstr "<b>日志：</b>{path}"
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 协议 P{protocol}"
+
+#: polyhost/host.py:2064
+msgid "mode"
+msgstr ""
 
 #: polyhost/host.py:2066
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
