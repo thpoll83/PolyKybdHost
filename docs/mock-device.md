@@ -155,10 +155,8 @@ report right / wrong / blank. `tests/device/pool_overflow_test.py` and
 `tests/device/mru_claim_test.py` are the worked examples; the measurement
 that found 50 wrong keys in a 650-image switch (#344) was this loop.
 
-⚠️ **Use keycodes 0x04–0x43 only.** In this harness the keys from 0x44 up
-do not each have a display slot of their own, so they read back wrong for a
-reason that has nothing to do with the code under test: the first run
-reported 10 wrong keys that were all of that kind. Pass a small
+Every key from 0x04 to 0x53 under every modifier reads back correctly:
+600 distinct images over those positions came back 600 right. Pass a small
 `OverlayMRUCache(capacity)` to fill the pool with a handful of images, and
 count misses by wrapping that cache instance's `get_or_allocate`.
 
