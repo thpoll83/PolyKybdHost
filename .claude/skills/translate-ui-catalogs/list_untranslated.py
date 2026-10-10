@@ -22,10 +22,13 @@ for lang in i18n.LANGUAGES:
         _header, entries = i18n.parse_po(fh.read())
     empty = [e["msgid"] for e in entries
              if e["msgid"] and not any(e["msgstr"]) and e["msgid_plural"] is None]
-    plural = [e["msgid"] for e in entries if e["msgid_plural"] and not any(e["msgstr"])]
-    print(f"{lang.code}: {len(empty)} empty" + (f", {len(plural)} plural (do by hand)" if plural else ""))
+    # A plural entry counts only with EVERY form filled: PoTranslations drops a
+    # partly translated one, so it shows English for every count.
+    plural = [e["msgid"] for e in entries if e["msgid_plural"] and not all(e["msgstr"])]
+    print(f"{lang.code}: {len(empty)} empty" + (f", {len(plural)} plural unfinished (do by hand)" if plural else ""))
     for m in empty:
         missing[m] = True
+os.makedirs(os.path.dirname(os.path.abspath(sys.argv[1])), exist_ok=True)
 with open(sys.argv[1], "w", encoding="utf-8") as fh:
     json.dump(list(missing), fh, ensure_ascii=False, indent=1)
 print(f"{len(missing)} msgid(s) -> {sys.argv[1]}")

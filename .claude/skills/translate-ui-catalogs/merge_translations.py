@@ -12,20 +12,30 @@ so the diff shows only the filled entries.
 import json
 import os
 import re
+import string
 import sys
 
 from babel.messages.pofile import read_po, write_po
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 LOCALE = os.path.join(ROOT, "polyhost", "res", "locale")
-FIELD = re.compile(r"\{(\w*)\}")
 TAG = re.compile(r"<[^>]+>")
 MNEMONIC = re.compile(r"(?<!&)&(?![a-zA-Z#0-9]+;|&)(?=\w)")
 
 
+def fields(text):
+    """The format fields, or, for text that is not a format string (the macro
+    help's literal "{+KC_A}"), every brace token verbatim. Same rule as
+    tests/i18n_test.py's _fields()."""
+    try:
+        return sorted({f for _lit, f, _spec, _conv in string.Formatter().parse(text) if f})
+    except ValueError:
+        return sorted(re.findall(r"\{[^{}]*\}", text))
+
+
 def problems(src, dst):
     out = []
-    if sorted(FIELD.findall(src)) != sorted(FIELD.findall(dst)):
+    if fields(src) != fields(dst):
         out.append("placeholders")
     if src.count("\n") != dst.count("\n"):
         out.append("newlines")
