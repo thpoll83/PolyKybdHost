@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:34+0000\n"
+"POT-Creation-Date: 2026-10-10 07:48+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -1406,8 +1406,8 @@ msgstr ""
 "\n"
 "若要燒錄您自行編譯的版本，請重新燒錄，並在鍵盤詢問時按下亮起的 A（接受）鍵。"
 
-#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2852
-#: polyhost/host.py:2876
+#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2856
+#: polyhost/host.py:2880
 msgid "Firmware Update"
 msgstr "韌體更新"
 
@@ -1442,11 +1442,11 @@ msgstr "正在套用 — 正在啟用已暫存的韌體…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "正在取消 — 等待目前的區塊完成…"
 
-#: polyhost/gui/i18n_qt.py:93 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
 msgid "Language"
 msgstr "語言"
 
-#: polyhost/gui/i18n_qt.py:94
+#: polyhost/gui/i18n_qt.py:89
 msgid "The new language is used after a restart. Restart now?"
 msgstr "新語言會在重新啟動後使用。要立即重新啟動嗎？"
 
@@ -1560,7 +1560,7 @@ msgstr "沒有預覽資料（隨附或簽出版本皆無）"
 msgid "the shipped language table is missing"
 msgstr "缺少隨附的語言表"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2832
+#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2836
 msgid "unknown"
 msgstr "未知"
 
@@ -3224,12 +3224,12 @@ msgstr "無法設定 {language}：{error}"
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd 覆蓋圖對應（*.poly.yaml）"
 
-#: polyhost/host.py:2321 polyhost/host.py:2795 polyhost/host.py:2923
+#: polyhost/host.py:2321 polyhost/host.py:2799 polyhost/host.py:2927
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "將韌體更新至 v{version}…"
 
-#: polyhost/host.py:2323 polyhost/host.py:2830 polyhost/host.py:2992
+#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2996
 msgid "Check for firmware update…"
 msgstr "檢查韌體更新…"
 
@@ -3283,7 +3283,7 @@ msgstr ""
 "\n"
 "請使用 --dev 1 執行以查看詳細資訊。"
 
-#: polyhost/host.py:2473 polyhost/host.py:2856
+#: polyhost/host.py:2473 polyhost/host.py:2860
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "發行日期：{date}"
@@ -3310,32 +3310,32 @@ msgstr "正在下載 v{version}…"
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "無法啟動更新轉接程序；更新未完成。詳細資訊請查看記錄檔。"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2627
+#: polyhost/forwarder.py:928 polyhost/host.py:2630
 msgid "Update failed"
 msgstr "更新失敗"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2627
+#: polyhost/forwarder.py:928 polyhost/host.py:2630
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
-#: polyhost/host.py:2806
+#: polyhost/host.py:2810
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd 韌體更新"
 
-#: polyhost/host.py:2807
+#: polyhost/host.py:2811
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "新韌體 v{version} 已推出。按一下系統匣圖示即可更新。"
 
-#: polyhost/host.py:2824
+#: polyhost/host.py:2828
 msgid "Checking for firmware update…"
 msgstr "正在檢查韌體更新…"
 
-#: polyhost/host.py:2837 polyhost/host.py:2845
+#: polyhost/host.py:2841 polyhost/host.py:2849
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd 韌體"
 
-#: polyhost/host.py:2838
+#: polyhost/host.py:2842
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3346,46 +3346,46 @@ msgstr ""
 "\n"
 "您的鍵盤目前為 v{current}。這通常表示發行版本的建置失敗 — 修正後發行頁面就會提供韌體。"
 
-#: polyhost/host.py:2846
+#: polyhost/host.py:2850
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "您正在執行最新的韌體（v{version}）。"
 
-#: polyhost/host.py:2853
+#: polyhost/host.py:2857
 msgid "The keyboard must be connected to update the firmware."
 msgstr "必須連接鍵盤才能更新韌體。"
 
-#: polyhost/host.py:2857
+#: polyhost/host.py:2861
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "韌體 {version} 已推出。"
 
-#: polyhost/host.py:2859
+#: polyhost/host.py:2863
 msgid "Both halves update over HID and reboot automatically."
 msgstr "兩個半邊都會透過 HID 更新並自動重新啟動。"
 
-#: polyhost/host.py:2860
+#: polyhost/host.py:2864
 msgid "Update PolyKybd Firmware"
 msgstr "更新 PolyKybd 韌體"
 
-#: polyhost/host.py:2864
+#: polyhost/host.py:2868
 msgid "Download and flash now?"
 msgstr "要立即下載並燒錄嗎？"
 
-#: polyhost/host.py:2875
+#: polyhost/host.py:2879
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "正在下載韌體 v{version}…"
 
-#: polyhost/host.py:2897 polyhost/host.py:3108
+#: polyhost/host.py:2901 polyhost/host.py:3112
 msgid "Cancelling…"
 msgstr "正在取消…"
 
-#: polyhost/host.py:2934
+#: polyhost/host.py:2938
 msgid "Firmware Update Failed"
 msgstr "韌體更新失敗"
 
-#: polyhost/host.py:2935
+#: polyhost/host.py:2939
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3396,12 +3396,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3072 polyhost/host.py:3086 polyhost/host.py:3132
-#: polyhost/host.py:3141 polyhost/host.py:3147
+#: polyhost/host.py:3076 polyhost/host.py:3090 polyhost/host.py:3136
+#: polyhost/host.py:3145 polyhost/host.py:3151
 msgid "Install WinCompose"
 msgstr "安裝 WinCompose"
 
-#: polyhost/host.py:3073
+#: polyhost/host.py:3077
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3411,11 +3411,11 @@ msgstr ""
 "\n"
 "將從 GitHub 下載 PolyKybd 版的 WinCompose 並啟動其安裝程式（Windows 會要求您確認）。"
 
-#: polyhost/host.py:3086
+#: polyhost/host.py:3090
 msgid "Looking for the latest WinCompose release…"
 msgstr "正在尋找最新的 WinCompose 版本…"
 
-#: polyhost/host.py:3133
+#: polyhost/host.py:3137
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3425,7 +3425,7 @@ msgstr ""
 "\n"
 "將在瀏覽器中開啟發行頁面 — 請從該處下載並執行安裝程式。"
 
-#: polyhost/host.py:3142
+#: polyhost/host.py:3146
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3436,7 +3436,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3148
+#: polyhost/host.py:3152
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3453,7 +3453,7 @@ msgstr ""
 "已儲存至：\n"
 "{path}"
 
-#: polyhost/host.py:3156
+#: polyhost/host.py:3160
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執行後，PolyKybd 會自動切換使用它。"
 

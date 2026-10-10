@@ -2611,20 +2611,24 @@ class PolyHost(QApplication):
         if not self._update_ui.stage_relay(relay_path):
             # Nothing will finish the locked-file copy if we exit now, and the
             # tree is already partially rewritten — surface it and stay up.
-            self._on_update_failed(
-                _("Could not start the update relay; the update is incomplete. "
-                  "See the log for details."))
+            # The log keeps the English; the dialog shows the translation.
+            relay_failed = N_("Could not start the update relay; the update is "
+                              "incomplete. See the log for details.")
+            self._on_update_failed(relay_failed, shown=_(relay_failed))
             return
         # Brief pause so the user sees the "Restarting" label before the window vanishes.
         QTimer.singleShot(1200, self.quit)
 
-    def _on_update_failed(self, message):
+    def _on_update_failed(self, message, shown=None):
+        """``message`` is logged as is; ``shown``, when given, is what the
+        dialog displays instead (a translation of a message of our own)."""
         if self._update_progress is not None:
             self._update_progress.close()
             self._update_progress = None
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        show_copyable_error(_("Update failed"), _("The update did not finish."), message,
+        show_copyable_error(_("Update failed"), _("The update did not finish."),
+                            message if shown is None else shown,
                             commands=fix_commands_from_message(message))
 
     # ------------------------------------------------------------------
