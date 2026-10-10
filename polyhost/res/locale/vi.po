@@ -36,21 +36,21 @@ msgstr "{seconds} giây"
 #: polyhost/device/hid_fw_up.py:40
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
-msgstr ""
+msgstr "Tệp quá nhỏ ({size} byte) để là một ảnh firmware RP2040 hợp lệ (cần ít nhất 264 byte cho boot2 + bảng vector ARM)."
 
 #: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
-msgstr ""
+msgstr "CRC32 boot2 của RP2040 không hợp lệ (tệp ghi {stored}, tính được {computed}). Đây có vẻ không phải là tệp .bin firmware QMK RP2040 hợp lệ. Hãy chắc chắn bạn chọn tệp .bin do 'qmk compile' tạo ra, không phải .uf2, .hex hay định dạng khác."
 
 #: polyhost/device/hid_fw_up.py:48
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
-msgstr ""
+msgstr "Bảng vector ARM không hợp lệ: SP ban đầu {sp} nằm ngoài SRAM của RP2040 ({sram}). Đây có vẻ không phải là tệp nhị phân firmware RP2040 hợp lệ."
 
 #: polyhost/device/hid_fw_up.py:51
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
-msgstr ""
+msgstr "Tệp nhị phân firmware này có vẻ không được build cho PolyKybd. Không tìm thấy chuỗi nhận dạng PolyKybd trong tệp. Hãy chắc chắn bạn đã chọn firmware được biên dịch cho 'polykybd/split72' bằng 'qmk compile'."
 
 #: polyhost/device/hid_fw_up.py:56
 #, python-brace-format
@@ -61,59 +61,64 @@ msgid ""
 "\n"
 "If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
 msgstr ""
+"Không tìm thấy tệp chữ ký bên cạnh ảnh này ({sig}).\n"
+"\n"
+"Bàn phím sẽ yêu cầu bạn xác nhận trực tiếp: mọi keycap đều tắt, chỉ còn chữ A (chấp nhận) lớn ở nửa trái và R (từ chối) ở nửa phải. Điều này là bình thường với firmware bạn tự build.\n"
+"\n"
+"Nếu bạn định nạp một bản phát hành, hãy tải tệp '.sig' của nó vào cùng thư mục với tệp '.bin' trước."
 
 #: polyhost/device/hid_fw_up.py:62
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
-msgstr ""
+msgstr "Không thể đọc {sig}: {error}"
 
 #: polyhost/device/hid_fw_up.py:64
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
-msgstr ""
+msgstr "{sig} có {size} byte, nhưng chữ ký phải đúng {expected} byte. Tệp này sẽ bị bỏ qua và bàn phím sẽ yêu cầu bạn xác nhận ảnh trực tiếp."
 
 #: polyhost/device/hid_fw_up.py:66
 msgid "Firmware file is empty."
-msgstr ""
+msgstr "Tệp firmware trống."
 
 #: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
-msgstr ""
+msgstr "Firmware quá lớn: {size} byte (tối đa {max_kb} KB)."
 
 #: polyhost/device/hid_fw_up.py:68
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
-msgstr ""
+msgstr "Đang gửi FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
 
 #: polyhost/device/hid_fw_up.py:69
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
-msgstr ""
+msgstr "{step} — đã trôi qua {elapsed}s (≈10–20 s)…"
 
 #: polyhost/device/hid_fw_up.py:70
 msgid "Erasing staging area — keyboard will reconnect when done"
-msgstr ""
+msgstr "Đang xóa vùng lưu tạm — bàn phím sẽ kết nối lại khi xong"
 
 #: polyhost/device/hid_fw_up.py:71
 msgid "Erasing staging area (both halves)"
-msgstr ""
+msgstr "Đang xóa vùng lưu tạm (cả hai nửa)"
 
 #: polyhost/device/hid_fw_up.py:72
 msgid "FW_UP_BEGIN timed out"
-msgstr ""
+msgstr "FW_UP_BEGIN hết thời gian chờ"
 
 #: polyhost/device/hid_fw_up.py:73
 msgid "staging area"
-msgstr ""
+msgstr "vùng lưu tạm"
 
 #: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN hết thời gian chờ — bàn phím chưa xóa xong trong 90 s.  Hãy kiểm tra cáp USB rồi thử lại."
 
 #: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN thất bại — bàn phím không kết nối lại trong 30 s.  Hãy kiểm tra cáp USB rồi thử lại."
 
 #: polyhost/device/hid_fw_up.py:81
 msgid ""
@@ -122,33 +127,37 @@ msgid ""
 "If the slave half has old firmware (without HID firmware update support), it must be\n"
 "flashed manually via UF2 before HID firmware update will work."
 msgstr ""
+"FW_UP_BEGIN thất bại — không thể chuẩn bị nửa phụ (slave).\n"
+"Hãy đảm bảo cả hai nửa bàn phím đều được kết nối và bật nguồn.\n"
+"Nếu nửa phụ đang chạy firmware cũ (không hỗ trợ cập nhật firmware qua HID), nó phải được\n"
+"nạp thủ công qua UF2 trước khi cập nhật firmware qua HID có thể hoạt động."
 
 #: polyhost/device/hid_fw_up.py:85
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
-msgstr ""
+msgstr "Đã xóa vùng lưu tạm. Đang gửi {chunks} phần dữ liệu…"
 
 #: polyhost/device/hid_fw_up.py:86
 msgid "Update cancelled by user."
-msgstr ""
+msgstr "Người dùng đã hủy cập nhật."
 
 #: polyhost/device/hid_fw_up.py:87
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
-msgstr ""
+msgstr "Phần {n}/{total} (đã gửi {kb} KB)…"
 
 #: polyhost/device/hid_fw_up.py:89
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
-msgstr ""
+msgstr "Hai nửa bàn phím đã đồng bộ lại — đang quay lại phần {n}/{total} (offset {offset}, đồng bộ lại {resync})…"
 
 #: polyhost/device/hid_fw_up.py:91
 msgid "keyboard rejected the chunk"
-msgstr ""
+msgstr "bàn phím đã từ chối phần dữ liệu"
 
 #: polyhost/device/hid_fw_up.py:92
 msgid "no reply from the keyboard"
-msgstr ""
+msgstr "bàn phím không phản hồi"
 
 #: polyhost/device/hid_fw_up.py:94
 #, python-brace-format
@@ -156,29 +165,31 @@ msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
 "Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
 msgstr ""
+"FW_UP_CHUNK thất bại tại offset {offset} sau {attempts} lần thử — {reason}.\n"
+"Hãy đảm bảo cả hai nửa bàn phím đều được kết nối và chạy cùng một firmware, rồi thử lại — quá trình cập nhật sẽ bắt đầu lại từ đầu và có thể lặp lại an toàn."
 
 #: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
-msgstr ""
+msgstr "Phần {n}/{total} — thử lại {attempt}/{max_attempts} (chờ {ms} ms)…"
 
 #: polyhost/device/hid_fw_up.py:98
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
-msgstr ""
+msgstr "Không thể đọc {sig}: {error} — sẽ nạp không có chữ ký."
 
 #: polyhost/device/hid_fw_up.py:99
 msgid "Sending image signature…"
-msgstr ""
+msgstr "Đang gửi chữ ký của ảnh…"
 
 #: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
-msgstr ""
+msgstr "Bỏ qua {sig} — cần {expected} byte, nhận được {size}."
 
 #: polyhost/device/hid_fw_up.py:101
 msgid "Verifying the staged image (CRC32)…"
-msgstr ""
+msgstr "Đang kiểm tra ảnh đã lưu tạm (CRC32)…"
 
 #: polyhost/device/hid_fw_up.py:103
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
@@ -203,6 +214,11 @@ msgid ""
 "\n"
 "There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
 msgstr ""
+"Bàn phím đã từ chối firmware này: chữ ký không khớp với ảnh.\n"
+"\n"
+"{sig} không phải là chữ ký hợp lệ cho tệp .bin này. Hai tệp có thể đến từ các bản build khác nhau, hoặc một trong hai đã bị hỏng — hãy tải lại cả hai từ cùng một bản phát hành.\n"
+"\n"
+"Cố ý không có cách nào xác nhận để bỏ qua bước này trên bàn phím: chữ ký không xác minh được nghĩa là tệp không đúng như những gì nó tự nhận."
 
 #: polyhost/device/hid_fw_up.py:120
 msgid ""
@@ -220,11 +236,11 @@ msgstr ""
 
 #: polyhost/device/hid_fw_up.py:125
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
-msgstr ""
+msgstr "FW_UP_COMMIT thất bại — CRC không khớp trên bàn phím. Hãy thử lại."
 
 #: polyhost/device/hid_fw_up.py:126
 msgid "Done. New firmware staged and verified on the keyboard."
-msgstr ""
+msgstr "Xong. Firmware mới đã được lưu tạm và kiểm tra trên bàn phím."
 
 #: polyhost/device/hid_fw_up.py:128
 msgid ""
@@ -232,10 +248,13 @@ msgid ""
 "\n"
 "The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
 msgstr ""
+"Đã lưu tạm và kiểm tra firmware thành công.\n"
+"\n"
+"Ảnh mới đã được lưu và kiểm tra CRC trên bàn phím nhưng chưa được kích hoạt — bàn phím vẫn đang chạy firmware hiện tại. Việc kích hoạt ảnh đã lưu tạm sẽ là một bước riêng."
 
 #: polyhost/device/hid_fw_up.py:132
 msgid "Sending FW_UP_APPLY…"
-msgstr ""
+msgstr "Đang gửi FW_UP_APPLY…"
 
 #: polyhost/device/hid_fw_up.py:134
 msgid ""
@@ -243,20 +262,25 @@ msgid ""
 "\n"
 "The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
 msgstr ""
+"Không thể áp dụng.\n"
+"\n"
+"Bàn phím báo không có ảnh lưu tạm hợp lệ, hoặc firmware này được build mà không có tính năng áp dụng trong ứng dụng (FW_UP_INAPP_APPLY=no). Ảnh đã lưu tạm không thay đổi."
 
 #: polyhost/device/hid_fw_up.py:138
 msgid "Applying — keyboard is erasing its flash and rebooting…"
-msgstr ""
+msgstr "Đang áp dụng — bàn phím đang xóa bộ nhớ flash và khởi động lại…"
 
 #: polyhost/device/hid_fw_up.py:140
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
 msgstr ""
+"Bàn phím không kết nối lại trong 30 s sau khi áp dụng.\n"
+"Nếu nó không tự trở lại, hãy giữ BOOTSEL trên nửa chính (master) và nạp lại tệp .uf2."
 
 #: polyhost/device/hid_fw_up.py:143
 msgid "Done. Keyboard reconnected on the applied firmware."
-msgstr ""
+msgstr "Xong. Bàn phím đã kết nối lại với firmware vừa áp dụng."
 
 #: polyhost/device/hid_fw_up.py:145
 msgid ""
@@ -264,11 +288,14 @@ msgid ""
 "\n"
 "Both halves now run the new firmware."
 msgstr ""
+"Đã áp dụng firmware — bàn phím đã khởi động lại và kết nối lại.\n"
+"\n"
+"Cả hai nửa hiện đang chạy firmware mới."
 
 #: polyhost/device/split_link.py:30
 #, python-brace-format
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
-msgstr ""
+msgstr "{prefix} — nửa cắm USB đã phản hồi, nhưng nửa bàn phím còn lại không xác nhận đã xóa {what} trong 90 s. Hãy kiểm tra cáp nối giữa hai nửa. Nếu nửa còn lại vẫn tối, nó không chạy firmware và cần được chép tệp firmware .uf2 vào thủ công."
 
 #: polyhost/forwarder.py:240
 msgid "Press to pause forwarding"
@@ -3693,57 +3720,57 @@ msgstr "Châu Đại Dương"
 #: polyhost/services/updater.py:39
 #, python-brace-format
 msgid "Preflight failed: {details}"
-msgstr ""
+msgstr "Kiểm tra trước thất bại: {details}"
 
 #: polyhost/services/updater.py:40
 #, python-brace-format
 msgid "Warning — {name}: {detail}"
-msgstr ""
+msgstr "Cảnh báo — {name}: {detail}"
 
 #: polyhost/services/updater.py:41
 #, python-brace-format
 msgid "Install dir not writable: {error}"
-msgstr ""
+msgstr "Không thể ghi vào thư mục cài đặt: {error}"
 
 #: polyhost/services/updater.py:42
 #, python-brace-format
 msgid "Could not create a temp directory for the update: {error}"
-msgstr ""
+msgstr "Không thể tạo thư mục tạm cho bản cập nhật: {error}"
 
 #: polyhost/services/updater.py:43
 msgid "Starting download..."
-msgstr ""
+msgstr "Đang bắt đầu tải xuống..."
 
 #: polyhost/services/updater.py:44
 #, python-brace-format
 msgid "Downloading v{version}..."
-msgstr ""
+msgstr "Đang tải xuống v{version}..."
 
 #: polyhost/services/updater.py:45
 msgid "Applying update..."
-msgstr ""
+msgstr "Đang áp dụng bản cập nhật..."
 
 #: polyhost/services/updater.py:46
 msgid "Connecting…"
-msgstr ""
+msgstr "Đang kết nối…"
 
 #: polyhost/services/updater.py:47
 #, python-brace-format
 msgid "Downloading firmware… {done} / {total} KB"
-msgstr ""
+msgstr "Đang tải firmware… {done} / {total} KB"
 
 #: polyhost/services/updater.py:48
 #, python-brace-format
 msgid "Downloading firmware… {done} KB"
-msgstr ""
+msgstr "Đang tải firmware… {done} KB"
 
 #: polyhost/services/updater.py:49
 msgid "Download cancelled."
-msgstr ""
+msgstr "Đã hủy tải xuống."
 
 #: polyhost/services/updater.py:50
 msgid "Downloading signature…"
-msgstr ""
+msgstr "Đang tải chữ ký…"
 
 #: polyhost/services/updater.py:52
 #, python-brace-format
@@ -3752,18 +3779,21 @@ msgid ""
 "\n"
 "Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
 msgstr ""
+"Đã tải xong ảnh, nhưng không tải được chữ ký ({error}).\n"
+"\n"
+"Nạp mà không có chữ ký sẽ khiến bàn phím coi bản phát hành này là bản build chưa ký và yêu cầu bạn xác nhận trên phím, nên quá trình cập nhật đã được dừng lại."
 
 #: polyhost/services/wincompose_install.py:51
 msgid "Looking for the latest release…"
-msgstr ""
+msgstr "Đang tìm bản phát hành mới nhất…"
 
 #: polyhost/services/wincompose_install.py:52
 #, python-brace-format
 msgid "Downloading WinCompose… {done} / {total} KB"
-msgstr ""
+msgstr "Đang tải WinCompose… {done} / {total} KB"
 
 #: polyhost/services/wincompose_install.py:53
 #, python-brace-format
 msgid "Downloading WinCompose… {done} KB"
-msgstr ""
+msgstr "Đang tải WinCompose… {done} KB"
 

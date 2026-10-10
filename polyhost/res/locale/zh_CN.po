@@ -36,21 +36,21 @@ msgstr "{seconds} 秒"
 #: polyhost/device/hid_fw_up.py:40
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
-msgstr ""
+msgstr "文件太小（{size} 字节），不是有效的 RP2040 固件映像（boot2 + ARM 向量表至少需要 264 字节）。"
 
 #: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
-msgstr ""
+msgstr "RP2040 boot2 CRC32 无效（文件中为 {stored}，计算值为 {computed}）。这似乎不是有效的 RP2040 QMK 固件 .bin。请确保选择的是 'qmk compile' 生成的 .bin，而不是 .uf2、.hex 或其他格式。"
 
 #: polyhost/device/hid_fw_up.py:48
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
-msgstr ""
+msgstr "ARM 向量表无效：初始 SP {sp} 超出 RP2040 SRAM 范围（{sram}）。这似乎不是有效的 RP2040 固件二进制文件。"
 
 #: polyhost/device/hid_fw_up.py:51
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
-msgstr ""
+msgstr "此固件二进制文件似乎不是为 PolyKybd 构建的。在二进制文件中未找到 PolyKybd 标识字符串。请确保选择的是使用 'qmk compile' 为 'polykybd/split72' 编译的固件。"
 
 #: polyhost/device/hid_fw_up.py:56
 #, python-brace-format
@@ -61,59 +61,64 @@ msgid ""
 "\n"
 "If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
 msgstr ""
+"在此映像旁未找到签名文件（{sig}）。\n"
+"\n"
+"键盘会要求您进行实体确认：除左半边的大号 A（接受）和右半边的 R（拒绝）外，所有键帽都会熄灭。对于您自己构建的固件，这是正常现象。\n"
+"\n"
+"如果您想刷写的是正式发布版本，请先将其 '.sig' 文件下载到与 '.bin' 相同的文件夹中。"
 
 #: polyhost/device/hid_fw_up.py:62
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
-msgstr ""
+msgstr "无法读取 {sig}：{error}"
 
 #: polyhost/device/hid_fw_up.py:64
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
-msgstr ""
+msgstr "{sig} 的大小为 {size} 字节，但签名必须正好为 {expected} 字节。该文件将被忽略，键盘会要求您对映像进行实体确认。"
 
 #: polyhost/device/hid_fw_up.py:66
 msgid "Firmware file is empty."
-msgstr ""
+msgstr "固件文件为空。"
 
 #: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
-msgstr ""
+msgstr "固件过大：{size} 字节（最大 {max_kb} KB）。"
 
 #: polyhost/device/hid_fw_up.py:68
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
-msgstr ""
+msgstr "正在发送 FW_UP_BEGIN — {kb} KB，CRC32 {crc}…"
 
 #: polyhost/device/hid_fw_up.py:69
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
-msgstr ""
+msgstr "{step} — 已用时 {elapsed}s（≈10–20 s）…"
 
 #: polyhost/device/hid_fw_up.py:70
 msgid "Erasing staging area — keyboard will reconnect when done"
-msgstr ""
+msgstr "正在擦除暂存区 — 完成后键盘将重新连接"
 
 #: polyhost/device/hid_fw_up.py:71
 msgid "Erasing staging area (both halves)"
-msgstr ""
+msgstr "正在擦除暂存区（两个半边）"
 
 #: polyhost/device/hid_fw_up.py:72
 msgid "FW_UP_BEGIN timed out"
-msgstr ""
+msgstr "FW_UP_BEGIN 超时"
 
 #: polyhost/device/hid_fw_up.py:73
 msgid "staging area"
-msgstr ""
+msgstr "暂存区"
 
 #: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN 超时 — 键盘未在 90 s 内完成擦除。请检查 USB 线后重试。"
 
 #: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN 失败 — 键盘未在 30 s 内重新连接。请检查 USB 线后重试。"
 
 #: polyhost/device/hid_fw_up.py:81
 msgid ""
@@ -122,33 +127,37 @@ msgid ""
 "If the slave half has old firmware (without HID firmware update support), it must be\n"
 "flashed manually via UF2 before HID firmware update will work."
 msgstr ""
+"FW_UP_BEGIN 失败 — 无法准备从属半边。\n"
+"请确保键盘的两个半边都已连接并通电。\n"
+"如果从属半边运行的是旧固件（不支持 HID 固件更新），则必须先\n"
+"通过 UF2 手动刷写，HID 固件更新才能工作。"
 
 #: polyhost/device/hid_fw_up.py:85
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
-msgstr ""
+msgstr "暂存区已擦除。正在发送 {chunks} 个数据块…"
 
 #: polyhost/device/hid_fw_up.py:86
 msgid "Update cancelled by user."
-msgstr ""
+msgstr "用户已取消更新。"
 
 #: polyhost/device/hid_fw_up.py:87
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
-msgstr ""
+msgstr "数据块 {n}/{total}（已发送 {kb} KB）…"
 
 #: polyhost/device/hid_fw_up.py:89
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
-msgstr ""
+msgstr "键盘两个半边已重新同步 — 正在回退到数据块 {n}/{total}（偏移 {offset}，重新同步 {resync}）…"
 
 #: polyhost/device/hid_fw_up.py:91
 msgid "keyboard rejected the chunk"
-msgstr ""
+msgstr "键盘拒绝了该数据块"
 
 #: polyhost/device/hid_fw_up.py:92
 msgid "no reply from the keyboard"
-msgstr ""
+msgstr "键盘无响应"
 
 #: polyhost/device/hid_fw_up.py:94
 #, python-brace-format
@@ -156,29 +165,31 @@ msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
 "Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
 msgstr ""
+"FW_UP_CHUNK 在偏移 {offset} 处尝试 {attempts} 次后失败 — {reason}。\n"
+"请确保键盘的两个半边都已连接并运行相同的固件，然后重试 — 更新将从头开始，可以安全地重复进行。"
 
 #: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
-msgstr ""
+msgstr "数据块 {n}/{total} — 第 {attempt}/{max_attempts} 次重试（等待 {ms} ms）…"
 
 #: polyhost/device/hid_fw_up.py:98
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
-msgstr ""
+msgstr "无法读取 {sig}：{error} — 将以未签名方式刷写。"
 
 #: polyhost/device/hid_fw_up.py:99
 msgid "Sending image signature…"
-msgstr ""
+msgstr "正在发送映像签名…"
 
 #: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
-msgstr ""
+msgstr "忽略 {sig} — 应为 {expected} 字节，实际为 {size} 字节。"
 
 #: polyhost/device/hid_fw_up.py:101
 msgid "Verifying the staged image (CRC32)…"
-msgstr ""
+msgstr "正在校验已暂存的映像（CRC32）…"
 
 #: polyhost/device/hid_fw_up.py:103
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
@@ -203,6 +214,11 @@ msgid ""
 "\n"
 "There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
 msgstr ""
+"键盘拒绝了此固件：签名与映像不匹配。\n"
+"\n"
+"{sig} 不是此 .bin 的有效签名。可能这两个文件来自不同的构建，或其中一个已损坏 — 请从同一发布版本重新下载这两个文件。\n"
+"\n"
+"键盘上特意没有提供绕过此检查的确认方式：签名验证失败意味着该文件并非其所声称的内容。"
 
 #: polyhost/device/hid_fw_up.py:120
 msgid ""
@@ -220,11 +236,11 @@ msgstr ""
 
 #: polyhost/device/hid_fw_up.py:125
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
-msgstr ""
+msgstr "FW_UP_COMMIT 失败 — 键盘上的 CRC 不匹配。请重试。"
 
 #: polyhost/device/hid_fw_up.py:126
 msgid "Done. New firmware staged and verified on the keyboard."
-msgstr ""
+msgstr "完成。新固件已暂存到键盘并通过校验。"
 
 #: polyhost/device/hid_fw_up.py:128
 msgid ""
@@ -232,10 +248,13 @@ msgid ""
 "\n"
 "The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
 msgstr ""
+"固件已成功暂存并通过校验。\n"
+"\n"
+"新映像已存储在键盘上并通过 CRC 校验，但尚未生效 — 键盘仍在运行当前固件。激活已暂存的映像需要单独的步骤。"
 
 #: polyhost/device/hid_fw_up.py:132
 msgid "Sending FW_UP_APPLY…"
-msgstr ""
+msgstr "正在发送 FW_UP_APPLY…"
 
 #: polyhost/device/hid_fw_up.py:134
 msgid ""
@@ -243,20 +262,25 @@ msgid ""
 "\n"
 "The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
 msgstr ""
+"无法应用。\n"
+"\n"
+"键盘报告没有有效的已暂存映像，或此固件在构建时未启用应用内应用（FW_UP_INAPP_APPLY=no）。已暂存的映像未被更改。"
 
 #: polyhost/device/hid_fw_up.py:138
 msgid "Applying — keyboard is erasing its flash and rebooting…"
-msgstr ""
+msgstr "正在应用 — 键盘正在擦除闪存并重启…"
 
 #: polyhost/device/hid_fw_up.py:140
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
 msgstr ""
+"应用后键盘未在 30 s 内重新连接。\n"
+"如果它没有自行恢复，请在主半边上按住 BOOTSEL 并重新刷写 .uf2。"
 
 #: polyhost/device/hid_fw_up.py:143
 msgid "Done. Keyboard reconnected on the applied firmware."
-msgstr ""
+msgstr "完成。键盘已使用新应用的固件重新连接。"
 
 #: polyhost/device/hid_fw_up.py:145
 msgid ""
@@ -264,11 +288,14 @@ msgid ""
 "\n"
 "Both halves now run the new firmware."
 msgstr ""
+"固件已应用 — 键盘已重启并重新连接。\n"
+"\n"
+"两个半边现在都运行新固件。"
 
 #: polyhost/device/split_link.py:30
 #, python-brace-format
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
-msgstr ""
+msgstr "{prefix} — 连接 USB 的半边已响应，但另一个半边未在 90 s 内确认已擦除{what}。请检查两个半边之间的连接线。如果另一个半边一直不亮，说明它没有运行固件，需要手动将固件 .uf2 复制到其中。"
 
 #: polyhost/forwarder.py:240
 msgid "Press to pause forwarding"
@@ -3693,57 +3720,57 @@ msgstr "大洋洲"
 #: polyhost/services/updater.py:39
 #, python-brace-format
 msgid "Preflight failed: {details}"
-msgstr ""
+msgstr "预检失败：{details}"
 
 #: polyhost/services/updater.py:40
 #, python-brace-format
 msgid "Warning — {name}: {detail}"
-msgstr ""
+msgstr "警告 — {name}：{detail}"
 
 #: polyhost/services/updater.py:41
 #, python-brace-format
 msgid "Install dir not writable: {error}"
-msgstr ""
+msgstr "安装目录不可写：{error}"
 
 #: polyhost/services/updater.py:42
 #, python-brace-format
 msgid "Could not create a temp directory for the update: {error}"
-msgstr ""
+msgstr "无法为更新创建临时目录：{error}"
 
 #: polyhost/services/updater.py:43
 msgid "Starting download..."
-msgstr ""
+msgstr "正在开始下载..."
 
 #: polyhost/services/updater.py:44
 #, python-brace-format
 msgid "Downloading v{version}..."
-msgstr ""
+msgstr "正在下载 v{version}..."
 
 #: polyhost/services/updater.py:45
 msgid "Applying update..."
-msgstr ""
+msgstr "正在应用更新..."
 
 #: polyhost/services/updater.py:46
 msgid "Connecting…"
-msgstr ""
+msgstr "正在连接…"
 
 #: polyhost/services/updater.py:47
 #, python-brace-format
 msgid "Downloading firmware… {done} / {total} KB"
-msgstr ""
+msgstr "正在下载固件… {done} / {total} KB"
 
 #: polyhost/services/updater.py:48
 #, python-brace-format
 msgid "Downloading firmware… {done} KB"
-msgstr ""
+msgstr "正在下载固件… {done} KB"
 
 #: polyhost/services/updater.py:49
 msgid "Download cancelled."
-msgstr ""
+msgstr "下载已取消。"
 
 #: polyhost/services/updater.py:50
 msgid "Downloading signature…"
-msgstr ""
+msgstr "正在下载签名…"
 
 #: polyhost/services/updater.py:52
 #, python-brace-format
@@ -3752,18 +3779,21 @@ msgid ""
 "\n"
 "Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
 msgstr ""
+"映像已下载，但其签名下载失败（{error}）。\n"
+"\n"
+"如果不带签名刷写，键盘会将此版本视为未签名的构建，并要求您在按键上确认，因此已停止更新。"
 
 #: polyhost/services/wincompose_install.py:51
 msgid "Looking for the latest release…"
-msgstr ""
+msgstr "正在查找最新发布版本…"
 
 #: polyhost/services/wincompose_install.py:52
 #, python-brace-format
 msgid "Downloading WinCompose… {done} / {total} KB"
-msgstr ""
+msgstr "正在下载 WinCompose… {done} / {total} KB"
 
 #: polyhost/services/wincompose_install.py:53
 #, python-brace-format
 msgid "Downloading WinCompose… {done} KB"
-msgstr ""
+msgstr "正在下载 WinCompose… {done} KB"
 

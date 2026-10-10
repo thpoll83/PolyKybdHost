@@ -36,21 +36,21 @@ msgstr "{seconds}초"
 #: polyhost/device/hid_fw_up.py:40
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
-msgstr ""
+msgstr "파일이 너무 작아({size}바이트) 유효한 RP2040 펌웨어 이미지가 아닙니다(boot2 + ARM 벡터 테이블에 최소 264바이트 필요)."
 
 #: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
-msgstr ""
+msgstr "RP2040 boot2 CRC32가 잘못되었습니다(파일 값 {stored}, 계산 값 {computed}). 유효한 RP2040 QMK 펌웨어 .bin이 아닌 것 같습니다. .uf2, .hex 등 다른 형식이 아닌 'qmk compile'로 생성된 .bin을 선택했는지 확인하십시오."
 
 #: polyhost/device/hid_fw_up.py:48
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
-msgstr ""
+msgstr "ARM 벡터 테이블이 잘못되었습니다: 초기 SP {sp}이(가) RP2040 SRAM 범위({sram})를 벗어납니다. 유효한 RP2040 펌웨어 바이너리가 아닌 것 같습니다."
 
 #: polyhost/device/hid_fw_up.py:51
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
-msgstr ""
+msgstr "이 펌웨어 바이너리는 PolyKybd용으로 빌드되지 않은 것 같습니다. 바이너리에서 PolyKybd 식별 문자열을 찾지 못했습니다. 'qmk compile'을 사용해 'polykybd/split72'용으로 컴파일한 펌웨어를 선택했는지 확인하십시오."
 
 #: polyhost/device/hid_fw_up.py:56
 #, python-brace-format
@@ -61,59 +61,64 @@ msgid ""
 "\n"
 "If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
 msgstr ""
+"이 이미지 옆에서 서명 파일을 찾을 수 없습니다({sig}).\n"
+"\n"
+"키보드에서 직접 확인을 요청합니다: 왼쪽 반쪽의 큰 A(수락)와 오른쪽 반쪽의 R(거부)을 제외한 모든 키캡이 꺼집니다. 직접 빌드한 펌웨어라면 정상적인 동작입니다.\n"
+"\n"
+"릴리스를 플래시하려던 경우, 먼저 해당 '.sig' 파일을 '.bin'과 같은 폴더에 다운로드하십시오."
 
 #: polyhost/device/hid_fw_up.py:62
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
-msgstr ""
+msgstr "{sig}을(를) 읽을 수 없습니다: {error}"
 
 #: polyhost/device/hid_fw_up.py:64
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
-msgstr ""
+msgstr "{sig}의 크기는 {size}바이트이지만 서명은 정확히 {expected}바이트여야 합니다. 이 파일은 무시되며 키보드에서 이미지를 직접 확인하도록 요청합니다."
 
 #: polyhost/device/hid_fw_up.py:66
 msgid "Firmware file is empty."
-msgstr ""
+msgstr "펌웨어 파일이 비어 있습니다."
 
 #: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
-msgstr ""
+msgstr "펌웨어가 너무 큽니다: {size}바이트(최대 {max_kb} KB)."
 
 #: polyhost/device/hid_fw_up.py:68
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
-msgstr ""
+msgstr "FW_UP_BEGIN 보내는 중 — {kb} KB, CRC32 {crc}…"
 
 #: polyhost/device/hid_fw_up.py:69
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
-msgstr ""
+msgstr "{step} — {elapsed}s 경과(≈10–20 s)…"
 
 #: polyhost/device/hid_fw_up.py:70
 msgid "Erasing staging area — keyboard will reconnect when done"
-msgstr ""
+msgstr "스테이징 영역 지우는 중 — 완료되면 키보드가 다시 연결됩니다"
 
 #: polyhost/device/hid_fw_up.py:71
 msgid "Erasing staging area (both halves)"
-msgstr ""
+msgstr "스테이징 영역 지우는 중(두 반쪽 모두)"
 
 #: polyhost/device/hid_fw_up.py:72
 msgid "FW_UP_BEGIN timed out"
-msgstr ""
+msgstr "FW_UP_BEGIN 시간 초과"
 
 #: polyhost/device/hid_fw_up.py:73
 msgid "staging area"
-msgstr ""
+msgstr "스테이징 영역"
 
 #: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN 시간 초과 — 키보드가 90 s 이내에 지우기를 완료하지 못했습니다.  USB 케이블을 확인하고 다시 시도하십시오."
 
 #: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
-msgstr ""
+msgstr "FW_UP_BEGIN 실패 — 키보드가 30 s 이내에 다시 연결되지 않았습니다.  USB 케이블을 확인하고 다시 시도하십시오."
 
 #: polyhost/device/hid_fw_up.py:81
 msgid ""
@@ -122,33 +127,37 @@ msgid ""
 "If the slave half has old firmware (without HID firmware update support), it must be\n"
 "flashed manually via UF2 before HID firmware update will work."
 msgstr ""
+"FW_UP_BEGIN 실패 — 슬레이브 반쪽을 준비할 수 없습니다.\n"
+"키보드의 두 반쪽이 모두 연결되어 있고 전원이 켜져 있는지 확인하십시오.\n"
+"슬레이브 반쪽에 HID 펌웨어 업데이트를 지원하지 않는 이전 펌웨어가 있으면,\n"
+"HID 펌웨어 업데이트를 사용하기 전에 UF2로 수동 플래시해야 합니다."
 
 #: polyhost/device/hid_fw_up.py:85
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
-msgstr ""
+msgstr "스테이징 영역을 지웠습니다. 청크 {chunks}개 보내는 중…"
 
 #: polyhost/device/hid_fw_up.py:86
 msgid "Update cancelled by user."
-msgstr ""
+msgstr "사용자가 업데이트를 취소했습니다."
 
 #: polyhost/device/hid_fw_up.py:87
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
-msgstr ""
+msgstr "청크 {n}/{total}({kb} KB 전송됨)…"
 
 #: polyhost/device/hid_fw_up.py:89
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
-msgstr ""
+msgstr "키보드 반쪽 재동기화됨 — 청크 {n}/{total}(오프셋 {offset}, 재동기화 {resync})로 되감는 중…"
 
 #: polyhost/device/hid_fw_up.py:91
 msgid "keyboard rejected the chunk"
-msgstr ""
+msgstr "키보드가 청크를 거부함"
 
 #: polyhost/device/hid_fw_up.py:92
 msgid "no reply from the keyboard"
-msgstr ""
+msgstr "키보드에서 응답 없음"
 
 #: polyhost/device/hid_fw_up.py:94
 #, python-brace-format
@@ -156,29 +165,31 @@ msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
 "Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
 msgstr ""
+"FW_UP_CHUNK가 오프셋 {offset}에서 {attempts}회 시도 후 실패했습니다 — {reason}.\n"
+"키보드의 두 반쪽이 모두 연결되어 있고 같은 펌웨어를 실행 중인지 확인한 후 다시 시도하십시오 — 업데이트는 처음부터 다시 시작되며 반복해도 안전합니다."
 
 #: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
-msgstr ""
+msgstr "청크 {n}/{total} — 재시도 {attempt}/{max_attempts}({ms} ms 대기 중)…"
 
 #: polyhost/device/hid_fw_up.py:98
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
-msgstr ""
+msgstr "{sig}을(를) 읽을 수 없습니다: {error} — 서명 없이 플래시합니다."
 
 #: polyhost/device/hid_fw_up.py:99
 msgid "Sending image signature…"
-msgstr ""
+msgstr "이미지 서명 보내는 중…"
 
 #: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
-msgstr ""
+msgstr "{sig} 무시 — {expected}바이트여야 하지만 {size}바이트입니다."
 
 #: polyhost/device/hid_fw_up.py:101
 msgid "Verifying the staged image (CRC32)…"
-msgstr ""
+msgstr "스테이징된 이미지 확인 중(CRC32)…"
 
 #: polyhost/device/hid_fw_up.py:103
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
@@ -203,6 +214,11 @@ msgid ""
 "\n"
 "There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
 msgstr ""
+"키보드가 이 펌웨어를 거부했습니다: 서명이 이미지와 일치하지 않습니다.\n"
+"\n"
+"{sig}은(는) 이 .bin에 대한 유효한 서명이 아닙니다. 두 파일이 서로 다른 빌드에서 왔거나 둘 중 하나가 손상되었습니다 — 같은 릴리스에서 둘 다 다시 다운로드하십시오.\n"
+"\n"
+"키보드에서 이를 무시하고 승인하는 방법은 의도적으로 제공되지 않습니다: 서명 검증에 실패했다는 것은 파일이 주장하는 것과 다르다는 뜻입니다."
 
 #: polyhost/device/hid_fw_up.py:120
 msgid ""
@@ -220,11 +236,11 @@ msgstr ""
 
 #: polyhost/device/hid_fw_up.py:125
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
-msgstr ""
+msgstr "FW_UP_COMMIT 실패 — 키보드에서 CRC가 일치하지 않습니다. 다시 시도하십시오."
 
 #: polyhost/device/hid_fw_up.py:126
 msgid "Done. New firmware staged and verified on the keyboard."
-msgstr ""
+msgstr "완료. 새 펌웨어가 키보드에 스테이징되고 확인되었습니다."
 
 #: polyhost/device/hid_fw_up.py:128
 msgid ""
@@ -232,10 +248,13 @@ msgid ""
 "\n"
 "The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
 msgstr ""
+"펌웨어가 성공적으로 스테이징되고 확인되었습니다.\n"
+"\n"
+"새 이미지는 키보드에 저장되고 CRC 검사를 마쳤지만 아직 활성화되지 않았습니다 — 키보드는 여전히 현재 펌웨어를 실행 중입니다. 스테이징된 이미지 활성화는 별도의 단계입니다."
 
 #: polyhost/device/hid_fw_up.py:132
 msgid "Sending FW_UP_APPLY…"
-msgstr ""
+msgstr "FW_UP_APPLY 보내는 중…"
 
 #: polyhost/device/hid_fw_up.py:134
 msgid ""
@@ -243,20 +262,25 @@ msgid ""
 "\n"
 "The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
 msgstr ""
+"적용할 수 없습니다.\n"
+"\n"
+"키보드가 유효한 스테이징된 이미지가 없다고 보고했거나, 이 펌웨어가 앱 내 적용 없이(FW_UP_INAPP_APPLY=no) 빌드되었습니다. 스테이징된 이미지는 변경되지 않았습니다."
 
 #: polyhost/device/hid_fw_up.py:138
 msgid "Applying — keyboard is erasing its flash and rebooting…"
-msgstr ""
+msgstr "적용 중 — 키보드가 플래시를 지우고 재부팅하는 중…"
 
 #: polyhost/device/hid_fw_up.py:140
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
 msgstr ""
+"적용 후 30 s 이내에 키보드가 다시 연결되지 않았습니다.\n"
+"자동으로 돌아오지 않으면 마스터 반쪽의 BOOTSEL을 누른 상태에서 .uf2를 다시 플래시하십시오."
 
 #: polyhost/device/hid_fw_up.py:143
 msgid "Done. Keyboard reconnected on the applied firmware."
-msgstr ""
+msgstr "완료. 적용된 펌웨어로 키보드가 다시 연결되었습니다."
 
 #: polyhost/device/hid_fw_up.py:145
 msgid ""
@@ -264,11 +288,14 @@ msgid ""
 "\n"
 "Both halves now run the new firmware."
 msgstr ""
+"펌웨어 적용됨 — 키보드가 재부팅 후 다시 연결되었습니다.\n"
+"\n"
+"이제 두 반쪽 모두 새 펌웨어를 실행합니다."
 
 #: polyhost/device/split_link.py:30
 #, python-brace-format
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
-msgstr ""
+msgstr "{prefix} — USB 반쪽은 응답했지만, 다른 키보드 반쪽이 90 s 이내에 {what} 지우기를 확인하지 않았습니다. 두 반쪽 사이의 케이블을 확인하십시오. 다른 반쪽이 계속 어두우면 펌웨어가 실행되고 있지 않으므로 펌웨어 .uf2를 직접 복사해 넣어야 합니다."
 
 #: polyhost/forwarder.py:240
 msgid "Press to pause forwarding"
@@ -3693,57 +3720,57 @@ msgstr "오세아니아"
 #: polyhost/services/updater.py:39
 #, python-brace-format
 msgid "Preflight failed: {details}"
-msgstr ""
+msgstr "사전 점검 실패: {details}"
 
 #: polyhost/services/updater.py:40
 #, python-brace-format
 msgid "Warning — {name}: {detail}"
-msgstr ""
+msgstr "경고 — {name}: {detail}"
 
 #: polyhost/services/updater.py:41
 #, python-brace-format
 msgid "Install dir not writable: {error}"
-msgstr ""
+msgstr "설치 디렉터리에 쓸 수 없음: {error}"
 
 #: polyhost/services/updater.py:42
 #, python-brace-format
 msgid "Could not create a temp directory for the update: {error}"
-msgstr ""
+msgstr "업데이트용 임시 디렉터리를 만들 수 없습니다: {error}"
 
 #: polyhost/services/updater.py:43
 msgid "Starting download..."
-msgstr ""
+msgstr "다운로드 시작 중..."
 
 #: polyhost/services/updater.py:44
 #, python-brace-format
 msgid "Downloading v{version}..."
-msgstr ""
+msgstr "v{version} 다운로드하는 중..."
 
 #: polyhost/services/updater.py:45
 msgid "Applying update..."
-msgstr ""
+msgstr "업데이트 적용 중..."
 
 #: polyhost/services/updater.py:46
 msgid "Connecting…"
-msgstr ""
+msgstr "연결하는 중…"
 
 #: polyhost/services/updater.py:47
 #, python-brace-format
 msgid "Downloading firmware… {done} / {total} KB"
-msgstr ""
+msgstr "펌웨어 다운로드하는 중… {done} / {total} KB"
 
 #: polyhost/services/updater.py:48
 #, python-brace-format
 msgid "Downloading firmware… {done} KB"
-msgstr ""
+msgstr "펌웨어 다운로드하는 중… {done} KB"
 
 #: polyhost/services/updater.py:49
 msgid "Download cancelled."
-msgstr ""
+msgstr "다운로드가 취소되었습니다."
 
 #: polyhost/services/updater.py:50
 msgid "Downloading signature…"
-msgstr ""
+msgstr "서명 다운로드하는 중…"
 
 #: polyhost/services/updater.py:52
 #, python-brace-format
@@ -3752,18 +3779,21 @@ msgid ""
 "\n"
 "Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
 msgstr ""
+"이미지는 다운로드되었지만 서명은 다운로드되지 않았습니다({error}).\n"
+"\n"
+"서명 없이 플래시하면 키보드가 이 릴리스를 서명되지 않은 빌드로 취급하여 키에서 확인을 요청하므로, 대신 업데이트를 중지했습니다."
 
 #: polyhost/services/wincompose_install.py:51
 msgid "Looking for the latest release…"
-msgstr ""
+msgstr "최신 릴리스를 찾는 중…"
 
 #: polyhost/services/wincompose_install.py:52
 #, python-brace-format
 msgid "Downloading WinCompose… {done} / {total} KB"
-msgstr ""
+msgstr "WinCompose 다운로드하는 중… {done} / {total} KB"
 
 #: polyhost/services/wincompose_install.py:53
 #, python-brace-format
 msgid "Downloading WinCompose… {done} KB"
-msgstr ""
+msgstr "WinCompose 다운로드하는 중… {done} KB"
 
