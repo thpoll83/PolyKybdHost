@@ -36,9 +36,14 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
       `git push --force origin refs/tags/v<ver>`.
       ⚠️ **Only while no release holds that tag.** This gate fires on
       `release: published`, so by the time you read its refusal a release usually DOES
-      exist. **Delete it first**, then move the tag and publish: the tarball the updater
-      hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag points at is
-      the product, not a bookkeeping detail. If a release on that tag is already live
+      exist. **Delete it first**, then move the tag and publish. Two reasons: the tarball
+      the updater hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag
+      points at is the product rather than a bookkeeping detail — **and only a CREATE
+      re-runs this workflow**, since `publish_release.py` against a release that still
+      exists merely edits its notes and fires no event. Deleting it makes the next run
+      a create, which fires `release: published`; that is also why the `[skip ci]` on
+      the bump commit does not matter here, since a release event ignores it where the
+      tag-push trigger does not. If a release on that tag is already live
       and people may have installed from it, do not move it at all — cut the next
       patch version instead. (Nothing in the repo enforces this: there is no tag
       ruleset and no tag protection, so the force-push will simply succeed.)
