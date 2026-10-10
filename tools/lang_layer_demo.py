@@ -14,7 +14,7 @@ Faithful to the firmware: geometry from the KLE + split72/keyboard.json, the
 [_LL] roles from keymap.c, the region tables from lang_layer.c, and the per-key
 draw mirrors render_lang_flag_key / render_lang_region_tab / kdisp_write_gfx_vtext
 (poly_keymap.c, disp_array.c). Flag glyphs come from the font pack (flag_fonts.h,
-FLAG_CP_BASE + LANG_* index); the tiny code label is the resident Tiny font.
+FLAG_CP_BASE + LANG_* index); the code label is the resident Nano 10 px font (nano_font.h).
 
 Usage:
     python tools/lang_layer_demo.py
@@ -76,7 +76,7 @@ def slot_lang(off, langs, spp, region, page, slot):
     return langs[off[region] + local] if local < region_count(off, region) else None
 
 
-# ── single-font loader for the standalone Tiny label font ────────────────────
+# ── single-font loader for the standalone label font ─────────────────────────
 def load_one_font(header_path: str, name: str) -> GfxFont:
     bm, ga, rf = {}, {}, {}
     _parse_header(open(header_path, encoding='utf-8', errors='replace').read(), bm, ga, rf)
@@ -123,6 +123,19 @@ def _blank():
     return Image.new('L', (OLED_W, OLED_H), 0)
 
 
+def _glyph_pixels(font, g):
+    """The lit (x, y) pixels of glyph `g`. The firmware's fonts are column-native
+    (gfxfont.h's PolyColGfx: one OLED page byte per 8 rows, LSB on top, column after
+    column), the layout gfx_font.GfxGlyphRenderer._blit reads. A row-major bit
+    stream over the same bytes draws diagonal stripes."""
+    bo, cb = g['bitmapOffset'], (g['height'] + 7) >> 3
+    for gx in range(g['width']):
+        col = bo + gx * cb
+        for gy in range(g['height']):
+            if font.bitmap[col + (gy >> 3)] & (1 << (gy & 7)):
+                yield gx, gy
+
+
 def render_flag_key(g_all_fonts, tiny_font, lang_idx, code, selected) -> Image.Image:
     """render_lang_flag_key: full-height country flag on the left + the language
     code running vertically up the right edge (inverted bar when selected)."""
@@ -136,16 +149,10 @@ def render_flag_key(g_all_fonts, tiny_font, lang_idx, code, selected) -> Image.I
         # flag clips top/bottom). Single-font draw → no baseline-align shift.
         x0 = FLAG_LEFT_X - BUFFER_X                 # buffer -> viewport
         y0 = (SCREEN_HEIGHT - fh) // 2
-        bo, bit, bits = g['bitmapOffset'], 0, 0
-        for gy in range(fh):
-            for gx in range(fw):
-                if (bit & 7) == 0:
-                    bits = f.bitmap[bo]; bo += 1
-                if bits & 0x80:
-                    vx, vy = x0 + gx, y0 + gy
-                    if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
-                        px[vx, vy] = 255
-                bits = (bits << 1) & 0xFF; bit += 1
+        for gx, gy in _glyph_pixels(f, g):
+            vx, vy = x0 + gx, y0 + gy
+            if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
+                px[vx, vy] = 255
     _vtext(px, tiny_font, LABEL_COL_X, code, selected)
     return img
 
@@ -178,18 +185,12 @@ def _vtext(px, font, col_x, text, selected):
         if not (font.first <= cp <= font.last):
             continue
         g = font.glyphs[cp - font.first]
-        w, h, xo, yo = g['width'], g['height'], g['xOffset'], g['yOffset']
-        bo, bit, bits = g['bitmapOffset'], 0, 0
-        for gy in range(h):
-            for gx in range(w):
-                if (bit & 7) == 0:
-                    bits = font.bitmap[bo]; bo += 1
-                if bits & 0x80:
-                    sx, sy = col_x + yo + gy, vcur - xo - gx
-                    vx = sx - BUFFER_X
-                    if 0 <= vx < OLED_W and 0 <= sy < OLED_H:
-                        px[vx, sy] = 0 if selected else 255
-                bits = (bits << 1) & 0xFF; bit += 1
+        xo, yo = g['xOffset'], g['yOffset']
+        for gx, gy in _glyph_pixels(font, g):
+            sx, sy = col_x + yo + gy, vcur - xo - gx
+            vx = sx - BUFFER_X
+            if 0 <= vx < OLED_W and 0 <= sy < OLED_H:
+                px[vx, sy] = 0 if selected else 255
         vcur -= g['xAdvance']
 
 
@@ -292,8 +293,8 @@ def main():
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     g_all = load_all_fonts(os.path.join(pk, 'base', 'fonts'))
     R = Renderer(g_all)
-    tiny = load_one_font(os.path.join(pk, 'base', 'fonts', 'lang_label_font.h'),
-                         'NotoSans_Regular_Tiny_6pt7b')
+    tiny = load_one_font(os.path.join(pk, 'base', 'fonts', 'nano_font.h'),
+                         'NotoSans_Regular_Nano_10px7b')
     R_tiny = Renderer([tiny])
     current_idx = L.langs.index(args.current) if args.current in L.langs else -1
     print(f"  {nreg} regions, {sum(region_count(off,r) for r in range(nreg))} langs, "
