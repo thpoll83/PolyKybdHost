@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The brand mark (tools/gen_brand_icons.py): key blue and the dark body. -->
+    <color name="brand_blue">#1D4ED8</color>
+    <color name="bg">#0B1220</color>
+    <color name="card">#16213A</color>
+    <color name="card_line">#24324F</color>
+
+    <!-- Contrast measured against bg / card: text 17.1 / 14.6, text_dim 8.9 / 7.6,
+         accent 7.4 / 6.3, accent_text 10.4 / 8.9. White on brand_blue is 6.7. -->
+    <color name="text">#F1F5F9</color>
+    <color name="text_dim">#A5B4CC</color>
+    <color name="accent">#60A5FA</color>
+    <color name="accent_text">#93C5FD</color>
+    <color name="header_sub">#DBEAFE</color>
+    <color name="control">#94A3B8</color>
+    <color name="disabled_fill">#1E293B</color>
+    <color name="disabled_line">#334155</color>
+    <color name="disabled_text">#64748B</color>
+</resources>
