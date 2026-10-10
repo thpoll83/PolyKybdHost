@@ -42,6 +42,68 @@ def _preview(known, custom=None, alt_names=None, layer_tags=None, aliases=None):
     return p
 
 
+class ImeStandInTest(unittest.TestCase):
+    """KC_IME draws per language, the firmware's `ime_key_stand_in()` rule."""
+
+    IME = {"families": {"ko-KR": "KOREAN", "ja-JP": "JAPANESE", "en-US": "RALT"},
+           "legends": {"KOREAN": [0x100026], "JAPANESE": [0x100027],
+                       "JAPANESE_SHIFT": [0x100028]}}
+
+    def _p(self, lang, ime=None):
+        p = _preview({"KC_RIGHT_ALT"}, custom={0x7FA8: "KC_IME"})
+        p._ime = self.IME if ime is None else ime
+        p._lang = lang
+        return p
+
+    def test_korean_and_japanese_draw_their_own_icon(self):
+        self.assertEqual(self._p("ko-KR")._ime_stand_in(), [0x100026])
+        # at rest, so the unshifted 英数/かな, never カナ
+        self.assertEqual(self._p("ja-JP")._ime_stand_in(), [0x100027])
+
+    def test_the_ralt_family_draws_as_right_alt(self):
+        self.assertEqual(self._p("en-US")._ime_stand_in(), "KC_RIGHT_ALT")
+
+    def test_every_other_language_draws_as_nubs(self):
+        self.assertEqual(self._p("de-DE")._ime_stand_in(), "KC_NONUS_BACKSLASH")
+
+    def test_the_key_is_recognised_by_either_name(self):
+        p = self._p("en-US")
+        self.assertTrue(p._is_ime(0x7FA8, "QK_USER_0"))   # the firmware's name
+        self.assertTrue(p._is_ime(0x1234, "KC_IME"))      # the tile's own pick
+        self.assertFalse(p._is_ime(0x04, "KC_A"))
+
+    def test_a_refused_icon_draws_keycode_text_not_another_legend(self):
+        """A Korean/Japanese icon that was refused (a name with no glyphs, an op the
+        renderer cannot follow) leaves the key to its keycode text: None, never the
+        NUBS or Right Alt legend of another family."""
+        ime = {"families": dict(self.IME["families"]), "legends": {"JAPANESE": [0x100027]}}
+        self.assertIsNone(self._p("ko-KR", ime=ime)._ime_stand_in())
+
+    def test_icons_go_through_the_drawable_gate(self):
+        class _R:
+            @staticmethod
+            def unsupported_ops(cps):
+                return {0x99} if 0x99 in cps else set()
+        p = self._p("ko-KR", ime={})
+        p._R = _R()
+        p.log = logging.getLogger("test")
+        p._set_ime({"ko-KR": "KOREAN", "ja-JP": "JAPANESE"},
+                   {"KOREAN": [0x99, 0x100026], "JAPANESE": [0x100027]})
+        self.assertEqual(p._ime["legends"], {"JAPANESE": [0x100027]})
+        self.assertIsNone(p._ime_stand_in())          # ko-KR: refused -> keycode text
+
+    def test_no_families_means_no_ime_data(self):
+        p = self._p("en-US", ime={})
+        p._R = None
+        p.log = logging.getLogger("test")
+        p._set_ime({}, {})
+        self.assertEqual(p._ime, {})
+
+    def test_without_ime_data_the_key_is_not_special(self):
+        """An export from before the key: it resolves like any other name."""
+        self.assertFalse(self._p("en-US", ime={})._is_ime(0x7FA8, "KC_IME"))
+
+
 class ResolveNameTest(unittest.TestCase):
     def test_the_browsers_pick_is_used_when_it_is_drawable(self):
         p = _preview({"KC_A"})

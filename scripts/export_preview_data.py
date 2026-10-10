@@ -133,6 +133,19 @@ def build(pk: pathlib.Path) -> dict:
     # table has.
     aliases = dict(ld.load_qmk_aliases(str(pk.parent.parent), str(pk)))
 
+    # KC_IME draws per LANGUAGE, so it has no entry in `legends`: the family each
+    # language gets, and the icons the Korean / Japanese families draw, resolved to
+    # codepoints like every other legend. None on a tree that predates the key.
+    ime = ld.parse_ime_key(str(pk / "poly_keymap.c"), L.langs)
+    if ime is not None:
+        ime = {"families": ime["families"],
+               # Same refusal as every legend above: a name with no glyphs would
+               # resolve to its own text, so it is left out and the key falls
+               # back to its keycode text instead of drawing `ICON_HAN_YEONG`.
+               "legends": {fam: list(resolver.resolve(name))
+                           for fam, name in ime["icons"].items()
+                           if not resolver.unresolved_tokens(name)}}
+
     version = fw_version(pk)
     return {
         "resident.plyf": resident,
@@ -144,6 +157,7 @@ def build(pk: pathlib.Path) -> dict:
                          "ui_fonts": ui_names,
                          "custom": {str(k): v for k, v in custom.items()},
                          "aliases": aliases,
+                         "ime": ime,
                          "unresolved": sorted(unresolved)},
         "layers.json": {"fw_version": version,
                         "tags": {str(k): v for k, v in

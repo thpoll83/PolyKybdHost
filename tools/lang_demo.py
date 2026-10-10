@@ -483,6 +483,56 @@ def parse_to_static_text_map(poly_keymap_c: str) -> dict:
     return out
 
 
+def parse_ime_key(poly_keymap_c: str, langs) -> dict | None:
+    """What `KC_IME` draws per language, read from the firmware, or None.
+
+    `KC_IME` has no single legend. The firmware picks a FAMILY per language
+    (`poly_ime_family()`): Korean and Japanese draw their own icon (Japanese a
+    second one while Shift is held), the `RALT` family draws as `KC_RIGHT_ALT`, and
+    every other language draws as `KC_NONUS_BACKSLASH` with that layout's legend.
+    The legend case in `to_static_text()` has an `if`, so `parse_to_static_text_map`
+    rightly skips it, and a keycap preview drew nothing for the key at all.
+
+    Both halves are derived, not retyped: the language list is the drift-prone
+    part (a language added to the firmware's switch must reach the editor without
+    a host edit), and the icon names follow the same rule. Returns
+    `{"families": {lang: "KOREAN"|"JAPANESE"|"RALT"},
+      "icons": {"KOREAN": name, "JAPANESE": name, "JAPANESE_SHIFT": name}}`,
+    or None for a tree that predates the key.
+    """
+    with open(poly_keymap_c, encoding='utf-8') as fh:
+        text = strip_c_comments(fh.read())
+    m = re.search(r'\bpoly_ime_family\s*\(\s*uint8_t\s+\w+\s*\)\s*\{', text)
+    # The legend case is searched INSIDE to_static_text() only: a `case KC_IME:`
+    # in a key-event handler earlier in the file would otherwise be taken for it.
+    fn = re.search(r'\bto_static_text\s*\([^)]*\)\s*\{', text)
+    if not m or not fn:
+        return None
+    case = re.search(r'case\s+KC_IME\s*:(.*?)(?=\bcase\s|\bdefault\s*:|\Z)',
+                     _balanced_body(text, fn.end() - 1), re.S)
+    if not case:
+        return None
+    lang_of = {'LANG_' + lang.replace('-', '').upper(): lang for lang in langs}
+    families, pending = {}, []
+    for cm in re.finditer(r'case\s+(LANG_\w+)\s*:|return\s+IME_FAMILY_(\w+)\s*;',
+                          _balanced_body(text, m.end() - 1)):
+        if cm.group(1):
+            pending.append(cm.group(1))
+            continue
+        for sym in pending:
+            if sym in lang_of and cm.group(2) != 'NONE':
+                families[lang_of[sym]] = cm.group(2)
+        pending = []
+    block = case.group(1)
+    ja = re.search(r'\?\s*(ICON_\w+)\s*:\s*(ICON_\w+)', block)
+    ko = re.findall(r'return\s+(ICON_\w+)\s*;', block)
+    if not families or not ja or not ko:
+        return None
+    return {"families": families,
+            "icons": {"JAPANESE_SHIFT": ja.group(1), "JAPANESE": ja.group(2),
+                      "KOREAN": ko[-1]}}
+
+
 def strip_c_comments(s: str) -> str:
     s = re.sub(r'/\*.*?\*/', '', s, flags=re.S)
     s = re.sub(r'//[^\n]*', '', s)
