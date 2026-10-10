@@ -9,6 +9,73 @@ Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_versi
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 
+- ⚠️ **`release.yml`'s first step asserts that `__version__` in the TAG's tree equals
+  the tag's version, because the updater compares exactly those two numbers.** The host
+  ships no built asset: `polyhost/services/updater.py` downloads
+  `archive/refs/tags/<tag>.tar.gz` and decides an update exists by comparing the
+  installed `__version__` against `_version_from_tag(tag)`. So a release published
+  before its version bump merged hands the user a tarball whose `_version.py` still
+  declares the previous number — the install succeeds, `__version__` never reaches the
+  tag, and every later check offers the same update again. An endless update to itself,
+  with nothing anywhere saying why.
+  - wincompose shipped this through its own mechanism (wincompose#21): `PK-0.9.19`
+    carries `WinCompose-Setup-0.9.18.exe`, its About tab reads 0.9.18, and `status.txt`
+    could not be bumped for two weeks, because an install reporting 0.9.18 would have
+    been offered an endless update to itself. `qmk_firmware` has the matching gate for
+    `FW_VERSION`, where the asset FILENAMES come from the tag as well.
+  - ⚠️ **It DETECTS; it cannot PREVENT — unlike the firmware repo's, which withholds
+    the assets its own workflow would have uploaded.** This workflow uploads nothing: the
+    updater installs GitHub's own `archive/refs/tags/<tag>.tar.gz`, which exists because
+    the TAG exists, and on the `release: published` path publishing is what *started* the
+    run. So a mismatch caught here leaves a live, installable, mislabelled release, and
+    failing the job is all the step does about it — the withdrawal is manual, and the
+    failure output says so in as many words. The real pre-publish defence is
+    `scripts/publish_release.py`, which refuses before anything is public; this backstops
+    the routes that bypass the script, a release published by hand in the UI or a
+    hand-pushed tag. Worth having anyway, because the alternative is silence: the defect
+    is invisible from the release page and surfaces only as users being offered the same
+    update forever. (Greptile P1 on #349.)
+  - **Recovery always ends in moving the tag; WHY it refused only decides whether a
+    commit exists to move it to.**
+    `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
+    the version (`commit_for_version`), so a refusal means one of two things. ⚠️ **Both
+    of them end in MOVING THE TAG.** Every trigger that can reach this step requires a
+    tag to already exist — `push: tags: v*`, or the tag a published release names — so
+    merging the bump never repairs the tag by itself. What differs between the two cases
+    is only whether there is yet a commit to move it to.
+    - **No commit declares the version** (the bump has not merged). Merge it first;
+      until then there is nothing to point the tag at. Then move the tag, below.
+      ⚠️ **Do not confuse this with `publish_release.py` refusing the same condition
+      BEFORE any tag exists.** There, merging the bump genuinely is the whole fix,
+      because the script then creates the tag at the pinned commit itself. Here the tag
+      is already placed and wrong, and nothing but moving it will do.
+    - **A commit declares it and the tag is elsewhere.** Move the tag straight away.
+
+    **Moving the tag.** **Publishing never moves one** (`target_commitish` is
+    documented as *"Unused if the Git tag already exists"*), so the release is built
+    from wherever it points:
+    `git tag -f v<ver> <commit declaring it>` then
+    `git push --force origin refs/tags/v<ver>`.
+    ⚠️ **Only while no release holds that tag.** This gate fires on
+    `release: published`, so by the time you read its refusal a release usually DOES
+    exist. **Delete it first**, then move the tag and publish. Two reasons: the tarball
+    the updater hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag
+    points at is the product rather than a bookkeeping detail — **and only a CREATE
+    re-runs this workflow**, since `publish_release.py` against a release that still
+    exists merely edits its notes and fires no event. Deleting it makes the next run
+    a create, which fires `release: published`; that is also why the `[skip ci]` on
+    the bump commit does not matter here, since a release event ignores it where the
+    tag-push trigger does not. If a release on that tag is already live
+    and people may have installed from it, do not move it at all — cut the next
+    patch version instead. (Nothing in the repo enforces this: there is no tag
+    ruleset and no tag protection, so the force-push will simply succeed.)
+    There is no `workflow_dispatch` on this workflow, so once the tag is right the
+    route is to publish — the firmware repo's dispatch-based recovery has no equivalent
+    here, and would be the wrong tool anyway.
+  - ⚠️ **The check reads the TAG's tree**, which `actions/checkout` gives it with no
+    `ref:` for both triggers here — so `main` drifting ahead of a prepared tag is
+    harmless, which it always is, since every merge auto-bumps.
+
 - ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check that
   catches it is the PUBLISHED versions, not the in-tree ones.** The existing "bump
   `__protocol__` in lockstep with `PROTOCOL_VERSION`" rule is about the *sources*, and

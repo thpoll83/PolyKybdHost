@@ -18,6 +18,8 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
+from polyhost.i18n import _, _f
+
 
 # Release notes run to a few screens of markdown, so the notes pane gets most
 # of the screen: 60 % x 70 % of the available area, capped at 1100 x 900.
@@ -93,10 +95,10 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     outer.addLayout(row)
 
     # "What's new" heading (+ the release title when it adds information).
-    heading = "What's new"
+    heading = _("What's new")
     release_name = (release_name or "").strip()
     if release_name:
-        heading = f"What's new — {release_name}"
+        heading = _f("What's new — {release_name}", release_name=release_name)
     hdr_lbl = QLabel(heading)
     hdr_lbl.setStyleSheet("font-weight: bold;")
     hdr_lbl.setWordWrap(True)  # long release titles must wrap, not clip
@@ -114,7 +116,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     outer.addWidget(browser, 1)
 
     if html_url:
-        link = QLabel(f'<a href="{html_url}">View full release notes on GitHub</a>')
+        link = QLabel(f'<a href="{html_url}">{_("View full release notes on GitHub")}</a>')  # i18n: skip
         link.setOpenExternalLinks(True)
         link.setTextInteractionFlags(Qt.TextBrowserInteraction)
         outer.addWidget(link)

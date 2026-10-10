@@ -190,3 +190,19 @@ the letter move itself (Ctrl+Z's image on the key that types z under QWERTZ)
 no longer happens with the MRU pool; if it is wanted, the host would do it in the
 display mapping it already sends.
 
+---
+
+## Why Kate reported 97 shortcuts on a welcome page
+
+**Status:** not investigated. Found on hardware 2026-10-09 (#340).
+
+The first Kate instance reported
+**97** shortcuts on its welcome page, where a second instance reported 59.
+Probably state the first instance carried from an earlier document, but nobody
+has looked. `tools/atspi_raw_dump.py kate --all-nodes` on a fresh and a reused
+instance would answer it.
+
+(The same log also showed a 48-icon cap dropping 54 of Kate's 108 document
+shortcuts. That cap had no measurement behind it. The one limit now is 600 distinct
+images per switch, enforced in the send path; see the comment at the top of
+`shortcut_overlays.py`.)

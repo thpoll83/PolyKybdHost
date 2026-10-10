@@ -10,6 +10,32 @@ from PyQt5.QtWidgets import (
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
+from polyhost.i18n import _, _f, N_
+
+# The device layer reports its status in English (device/hid_fw_up.py, which
+# also feeds the log and polyctl). These are the messages that ask the user to
+# DO something on the keyboard, so the dialog shows them translated. Each must
+# match the device's text exactly; a message that drifts from its copy here
+# simply shows in English, and is_split_link_failure() always reads the
+# original.
+_DEVICE_PROSE = frozenset((
+    N_("This firmware is not signed. Confirm on the KEYBOARD: press "
+       "the highlighted A (accept) or R (reject) key."),
+    N_("Timed out waiting for confirmation on the keyboard.\n\n"
+       "The keyboard asks for a physical ACCEPT/REJECT because this image "
+       "is not validly signed. Start the flash again and press the "
+       "highlighted A key on the left half within a minute."),
+    N_("The keyboard refused this firmware: it is not signed.\n\n"
+       "Released firmware ships a matching '.sig' file — download it next to "
+       "the .bin and flash again.\n\n"
+       "To flash a build you compiled yourself, flash again and press the "
+       "highlighted A (accept) key on the keyboard when it asks."),
+))
+
+
+def _shown(msg: str) -> str:
+    """A device status message as the dialog shows it."""
+    return _(msg) if msg in _DEVICE_PROSE else msg
 
 
 class _HidFwUpWorker(QThread):
@@ -134,7 +160,7 @@ class HidFwUpDialog(QDialog):
         self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
         self._positioned          = False  # move-to-corner only on the first showEvent
 
-        self.setWindowTitle("Firmware Update")
+        self.setWindowTitle(_("Firmware Update"))
         self.setMinimumWidth(500)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         # Prevent accidental close during flash
@@ -143,12 +169,12 @@ class HidFwUpDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
-        self._file_label = QLabel(f"<b>File:</b> {bin_path}")
+        self._file_label = QLabel(_f("<b>File:</b> {path}", path=bin_path))
         self._file_label.setWordWrap(True)
         self._file_label.setVisible(bool(bin_path))
         layout.addWidget(self._file_label)
 
-        self._status_label = QLabel("Applying staged firmware…" if apply_only else "Starting…")
+        self._status_label = QLabel(_("Applying staged firmware…") if apply_only else _("Starting…"))
         self._status_label.setWordWrap(True)
         layout.addWidget(self._status_label)
 
@@ -175,7 +201,7 @@ class HidFwUpDialog(QDialog):
         self._eta_timer.timeout.connect(self._update_eta)
 
         btn_row = QHBoxLayout()
-        self._cancel_btn = QPushButton("Cancel")
+        self._cancel_btn = QPushButton(_("Cancel"))
         self._cancel_btn.clicked.connect(self._on_cancel)
         btn_row.addStretch()
         btn_row.addWidget(self._cancel_btn)
@@ -241,11 +267,13 @@ class HidFwUpDialog(QDialog):
             return
         remaining = max(0.0, elapsed / fraction_done - elapsed)
         if remaining < 60:
-            self._eta_label.setText(f"~{round(remaining)} s remaining")
+            self._eta_label.setText(_f("~{seconds} s remaining", seconds=round(remaining)))
         else:
             mins = int(remaining // 60)
             secs = int(remaining % 60)
-            self._eta_label.setText(f"~{mins}m {secs:02d}s remaining")
+            # Pre-formatted: _f() passes values as text, so no :02d in the msgid.
+            self._eta_label.setText(_f("~{minutes}m {seconds}s remaining",
+                                       minutes=mins, seconds=f"{secs:02d}"))
 
     # ------------------------------------------------------------------
     def _on_progress(self, pct: int, msg: str):
@@ -253,7 +281,7 @@ class HidFwUpDialog(QDialog):
             # The dialog is logically complete; ignore any late signals so they
             # can't restart the animation or flip the bar back into busy mode.
             return
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
         self.log.info("FW_UP %d%% — %s", pct, msg)
 
         if pct < self._DETERMINATE_FROM and not self._determinate:
@@ -357,7 +385,7 @@ class HidFwUpDialog(QDialog):
         so the bar shows a spinner and only the status messages update.
         """
         self.log.info("FW_UP: staging done, starting apply…")
-        self._status_label.setText("Applying — activating the staged firmware…")
+        self._status_label.setText(_("Applying — activating the staged firmware…"))
         self._set_busy(True)
         # Apply can't be interrupted; the button is meaningless until it returns.
         self._cancel_btn.setEnabled(False)
@@ -373,7 +401,7 @@ class HidFwUpDialog(QDialog):
 
     def _on_apply_progress(self, pct: int, msg: str):
         # No determinate percentage during apply — keep the spinner, show the text.
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
         self.log.info("FW_UP_APPLY %d%% — %s", pct, msg)
 
     def _on_apply_finished(self, ok: bool, msg: str):
@@ -397,7 +425,7 @@ class HidFwUpDialog(QDialog):
         if ok:
             self._display_pct = 100.0
         self._show_pct(self._display_pct)
-        self._status_label.setText(msg)
+        self._status_label.setText(_shown(msg))
 
         if ok:
             # Nothing for the user to do — show the completed state briefly, then
@@ -427,7 +455,7 @@ class HidFwUpDialog(QDialog):
         # message wrapped and grew the dialog.
         self._cancel_btn.setVisible(True)
         self._cancel_btn.setEnabled(True)
-        self._cancel_btn.setText("Close")
+        self._cancel_btn.setText(_("Close"))
         self._cancel_btn.clicked.disconnect()
         self._cancel_btn.clicked.connect(self.reject)
         self._positioned = False
@@ -437,7 +465,7 @@ class HidFwUpDialog(QDialog):
         if self._worker is not None and self._worker.isRunning():
             self._worker.cancel()
             self._cancel_btn.setEnabled(False)
-            self._status_label.setText("Cancelling — waiting for current chunk to finish…")
+            self._status_label.setText(_("Cancelling — waiting for current chunk to finish…"))
         else:
             self.reject()
 

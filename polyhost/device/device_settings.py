@@ -1,5 +1,15 @@
 from polyhost.util.math_util import find_nearest, natural_divisors
 
+# The firmware's NUM_OVERLAY_SLOTS: the most distinct keycap images one program
+# switch can show, whatever made them (a template, a generic icon, an
+# icons.plyi match). ⚠️ The ONE limit, and the send path enforces it
+# (overlay_cache.get_or_allocate). Measured as the hard limit over the emulated
+# keyboard: 650 images in one switch drew 600 correct keys and 50 wrong ones
+# before the guard (2026-10-09). The forwarder relay reuses the value as its
+# network bound (`shortcut_relay.MAX_SHORTCUTS`) rather than a second number.
+# ⚠️ Keep in lockstep with qmk_firmware keyboards/polykybd/config.h.
+OVERLAY_POOL_CAPACITY = 600
+
 
 # noinspection PyPep8Naming
 class DeviceSettings:
@@ -62,8 +72,7 @@ class DeviceSettings:
     # 810 (slot, variant) pairs points at any pool slot and variants sharing artwork
     # share one slot. Sized from measurement (heaviest shipped app = 62 distinct
     # images after dedup, median 31), floored by the firmware's DOOM arena at 584.
-    # ⚠️ Keep in lockstep with qmk_firmware keyboards/polykybd/config.h.
-    _overlay_mapping_pool_capacity = 600
+    _overlay_mapping_pool_capacity = OVERLAY_POOL_CAPACITY
     _overlay_mapping_usage_count = _overlay_mapping_slots * _overlay_mapping_source_variants
 
     _hid_raw_usage_page         = 0xFF61
@@ -162,7 +171,7 @@ class DeviceSettings:
 
     @property
     def OVERLAY_MAPPING_CAPACITY(self):
-        """Maximum number of overlay images the pool can hold (90 keycode slots x 7 modifier variants)."""
+        """Maximum number of overlay images the pool can hold (firmware NUM_OVERLAY_SLOTS, 600)."""
         return self._overlay_mapping_pool_capacity
     
     @property

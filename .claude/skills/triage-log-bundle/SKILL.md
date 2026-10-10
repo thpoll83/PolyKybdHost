@@ -117,7 +117,7 @@ These are the ones that have produced wrong diagnoses:
   faulting thread is a native one with no Python state. The fatal one is a dump
   that reads `access violation` and **breaks off mid-line**, followed by no
   `clean exit` for that pid. A long run of `0x80010108` before it is the signature
-  of a COM object used across threads (see `CLAUDE.md` → *Threading model*):
+  of a COM object used across threads (see `CLAUDE.md` → *Threading* and `docs/hid-worker-refactor.md`):
   35 of them in 92 minutes preceded the 2026-09-23 daemon death.
   ⚠️ **Check WHERE the `access violation` sits.** When it appears INSIDE a
   first-chance dump, cutting off a thread's `File "…"` line, the dump itself

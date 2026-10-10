@@ -309,3 +309,121 @@ and relative links were adjusted to suit a standalone file.
       renders both apps' menus in one go. The two are supposed to have the same
       shape and nothing but an eye on both images says whether they still do.
 
+## The tray, its menus, and the OS around them (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+The tray menu is **two-tier**: ~9 normal rows plus a **Developer** submenu that only ever
+ADDS — turning developer mode on **does not rearrange anything** (asserted by
+`tests/gui/host_client_test.py`). Both apps follow the OS light/dark setting. The menu
+construction, the theme reader, the brightness rows, the WinCompose install path, the
+unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](tray-ui.md).
+
+- ⚠️ **`managed_connection_status` blanket-disables every top-level action first**, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect.
+- ⚠️ **A tray balloon (`show_balloon` → `QSystemTrayIcon.showMessage`) reaches
+  NOBODY on macOS** — Qt's Cocoa backend routes it through `NSUserNotificationCenter`,
+  which silently drops a notification from a process with no bundle id of its own, and
+  we always run as a bare `python -m polyhost`. `messageClicked` dies with it, so
+  "click the tray icon to update" was an instruction to click something never shown.
+  **Never make a balloon the only carrier of anything.** `PolyHost._balloons_reach_user()`
+  (`host.py`) is the gate, over `balloons_are_delivered()` in `gui/tray_notify.py`: it
+  asks whether the executable sits inside `<name>.app/Contents/MacOS/`, the rule
+  `NSBundle` itself applies, so a real bundle re-enables delivery with nothing here to
+  revert (the USER still has to grant notification permission — bundling buys the
+  prompt, not the banner). The fallbacks are a directly-opened dialog (once per version
+  per session, serialized through `_fallback_prompt` because ONE check reports host then
+  firmware and a modal dispatches the second event while the first is open) plus the
+  version on the **top-level** Updates row. ⚠️ **`IconStateManager` owns the tray
+  tooltip** — it restores its OWN stored text when a warning expires, so a direct
+  `tray.setToolTip` survives only until the next `set_warning`. Anything with a
+  lifetime goes through `set_base_tooltip`, and `_refresh_tray_tooltip` is the one
+  place that decides what that text is.
+- **Developer mode (`--dev`) is SEPARATE from log verbosity**, and it is a persisted
+  setting, not just a flag — under daemon-by-default the tray is launched by autostart
+  with no flags, so a flag-only gate makes every developer tool unreachable.
+- **A settings change applies its device side effects through ONE core hook**,
+  `PolyCore.note_settings_changed(keys=None)`. Add the side effect to the hook, never to
+  a caller; there are two settings writers and the second copy is how enabling a setting
+  mid-session came to do nothing at all.
+- ⚠️ **`PolySettings.save()` merges per KEY against the file, and must keep doing so** —
+  the daemon and the tray both hold a `PolySettings`, so a whole-file rewrite from a
+  stale in-memory copy silently reverts the other one. That is how the telemetry install
+  id was lost: the GUI generated and saved it, the daemon saved 8 minutes later from the
+  empty value it had loaded first, and the next run generated a new id, counting the
+  machine as two installs. `save()` re-reads the file and imposes only the keys this
+  process changed, through a temp file + `os.replace`, **under a cross-process lock** —
+  read-merge-replace is itself a read-modify-write, and six concurrent writers of six
+  different keys lose 3–4 of them per run without it. ⚠️ Two details are load-bearing:
+  `_read_file()` returns **None, not `{}`**, when the file cannot be read (merging
+  against `{}` fills every unchanged key with a DEFAULT and silently resets the user's
+  settings), and the lock is **best effort** — a save that cannot take it still writes,
+  because losing the write outright is worse than the rare interleaving.
+  ⚠️ **`save()` never raises**: the constructor saves on every start, and on
+  Windows `os.replace` fails with `WinError 5` while any process has the file open
+  (Python's `open()` never shares delete). That killed the tray at startup twice
+  in a row (2026-09-25). The replace is retried for ~1 s on Windows, and a save
+  that still fails is logged and kept pending in memory. ⚠️ It **returns whether
+  it wrote**, and a caller that tells the user a change was saved must check it:
+  `read_setting()` readers (the shortcut harvest's privacy switch among them) see
+  the file, not the in-memory value.
+- ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
+  `QApplication`, menu and log file, **on a different machine from the keyboard**. A
+  user-facing tray feature added to `host.py` is simply absent there until wired
+  separately — which matters most for support features, since its logs can never appear
+  in a bundle collected host-side. Its menu **follows the tray app's shape minus the
+  device group** (status · Pause · — · update · Settings… · Help & About · Quit) and its
+  About is the **shared** `gui/about_dialog.build_about_dialog`; render both with
+  `tools/render_tray_menu.py --mode all`, since nothing but an eye on the two images says
+  whether they still match. ⚠️ Its Settings is an **allow-list**
+  (`FORWARDER_SETTING_KEYS`) — `SettingsDialog` renders whatever dict it is handed, so
+  the whole `settings.yaml` would put brightness and font-pack rows on a machine with no
+  keyboard, every one a control that writes a value and changes nothing.
+  ⚠️ **Process-wide Qt identity is "wired separately" too.** `PolyHost.__init__` set
+  the application name and the forwarder never did, so its windows carried the X11
+  WM_CLASS `__main__.py` (Qt falls back to the script name). Two things read that one
+  string: GNOME's `.desktop` matching, which drew a grey gear on every forwarder dialog,
+  and the GNOME Wayland reporter, which uses the class as the app name, so the keyboard
+  drew no ESC mark either (#265). `main_app` now sets it before either app is built.
+  Put anything process-wide there, not in one app's constructor.
+- ⚠️ **The forwarder's tray mark spells an F, not a P** (`IconStateManager(prefix=)`),
+  because both apps can sit in one notification area. It tracks whether reports are
+  **landing** (`relay_ok`, set by the `send_to_host` wrapper around `_send_to_host`) —
+  it used to call `set_connected()` once at startup and never revisit it. ⚠️ `think`/
+  `warn` are deliberately unprefixed: they clear every inner key, so no letter survives
+  in them and an `f` twin would be a byte-identical copy with no `cmp` guarding it.
+- ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent path
+  returns an empty icon and the row renders without a picture. `tests/gui/icon_assets_test.py`
+  is the guard.
+- **The brand mark and the menu/tray icon rules are [`docs/icons.md`](icons.md);
+  the ESC program mark — the per-application icon, its three sources and the
+  rule that governs them — is
+  [`docs/generic-icons-plan.md`](generic-icons-plan.md).** ⚠️ Read the
+  second before adding any per-application anything: its rule is **no
+  per-application configuration**, and it reverses an earlier 70-entry
+  name→slug map. Both files were unreachable from this file until 2026-09-23
+  even though the Key notes intro named "icons" as a pointer — the plan's rule
+  was found by grep, one step from being broken.
+- ⚠️ **A FLOOR MUST NOT DECIDE A CONTEST.** `MIN_SCORE` answers "may we draw
+  this when there is nothing else"; clearing it used to END icon resolution, so
+  every macOS `.icns` (measured 0.117 against a floor of 0.08) won outright and
+  four newly shipped marks were inert on hardware — shipped, tested, changed
+  nothing. Candidates are ranked now; the floor only gates usability.
+- ⚠️ **A rendered pixmap does not follow a palette change** — the glyph-script previews
+  are dropped and rebuilt on a theme switch, or near-white ink lands on a light menu.
+- ⚠️ **Defaulting a platform path OFF because it is obnoxious can hide that it
+  never worked.** macOS language switching was disabled in 0.18.1 to stop a
+  password dialog, and for three months a language key repainted the tray menu
+  and reported `True, "OS-language auto-switch disabled"`. The dialog came from
+  `languagesetup`, which sets the system UI language and had never once switched
+  an input source. **Check whether the path was doing its job before muting it.**
+- **The input helpers — the keystroke-cycling `set_language` every platform
+  inherits, the per-platform compat maps, and the four traps around them — are
+  [`docs/architecture.md`](architecture.md) → *Platform input abstraction*.**
+  Two rules bind code outside it: `LangComp(platform)` REQUIRES its argument
+  (reading another platform's map mostly WORKS, which is the trap), and a
+  helper's `get_current_language` and `set_language` must answer in ONE
+  namespace or the sync re-fires on every probe forever.
+

@@ -10,6 +10,8 @@ rather than as two copies.
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QPlainTextEdit, QPushButton, QStyle, QVBoxLayout)
 
+from polyhost.i18n import _
+
 
 class CopyableErrorDialog(QDialog):
     """Headline, a read-only scrollable details box, Copy and Close.
@@ -46,18 +48,18 @@ class CopyableErrorDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
         self.copy_btn.clicked.connect(self.copy_to_clipboard)
         buttons.addWidget(self.copy_btn)
         self.copy_cmds_btn = None
         if commands:
-            self.copy_cmds_btn = QPushButton("Copy Fix Commands", self)
+            self.copy_cmds_btn = QPushButton(_("Copy Fix Commands"), self)
             self.copy_cmds_btn.setToolTip(
-                "Copy only the commands, to paste into a terminal after quitting.")
+                _("Copy only the commands, to paste into a terminal after quitting."))
             self.copy_cmds_btn.clicked.connect(self.copy_commands)
             buttons.addWidget(self.copy_cmds_btn)
         buttons.addStretch(1)
-        close = QPushButton("Close", self)
+        close = QPushButton(_("Close"), self)
         close.setDefault(True)
         close.clicked.connect(self.accept)
         buttons.addWidget(close)
@@ -69,12 +71,12 @@ class CopyableErrorDialog(QDialog):
 
     def copy_to_clipboard(self) -> None:
         QApplication.clipboard().setText(self.text())
-        self.status.setText("Copied to the clipboard.")
+        self.status.setText(_("Copied to the clipboard."))
 
 
     def copy_commands(self) -> None:
         QApplication.clipboard().setText(self._commands)
-        self.status.setText("Commands copied. Paste them into a terminal.")
+        self.status.setText(_("Commands copied. Paste them into a terminal."))
 
 
 def show_copyable_error(title: str, headline: str, details: str, parent=None,

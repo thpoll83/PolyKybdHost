@@ -41,7 +41,9 @@ setup(name='PolyHost',
       # The PRC table (HID cmd 41) is part of the wire format, so a wheel without it
       # would fail on the first v19 overlay send. Only the table is listed: the rest
       # of polyhost/res/ is not packaged either and is read from the checkout.
-      package_data={"polyhost": ["res/prc_table_v*.bin"]},
+      # The UI translations are read from these .po files at startup; without
+      # them every language falls back to English.
+      package_data={"polyhost": ["res/prc_table_v*.bin", "res/locale/*.po"]},
       install_requires=requirements(),
       # The font-pack *extend* path (build glyphs from TTF/OTF, fontconvert-parity)
       # needs freetype-py/uharfbuzz/fonttools — now core deps (requirements.txt) so

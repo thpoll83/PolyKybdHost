@@ -1733,13 +1733,15 @@ class PolyKybd:
             # never fetched.
             per_source: dict[str, list] = {}
             deferred: dict[str, list] = {}
+            pool_full: list = []    # keys left blank: the switch filled the pool
             uploaded = 0
+
+            # Every image of the switch, extracted ONCE: the claim pass below
+            # needs them all before the first allocation, and the send loop
+            # reuses them rather than rendering twice.
+            extracted: list[tuple[str, object, bool, bool, list]] = []
             for filename, converter in zip(filenames, converters):
-                source_is_synthetic = filename in synthetic
-                # An image that is the SAME under every modifier is keyed ONCE,
-                # so the variants after the first are cache hits that upload
-                # nothing -- see synthetic_overlay.program_converter.
-                invariant = getattr(converter, "modifier_invariant", False)
+                maps = []
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1748,8 +1750,43 @@ class PolyKybd:
                     if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
                         continue
                     overlay_map = converter.extract_overlays(modifier)
-                    if not overlay_map:
-                        continue
+                    # Checked per extraction, as the send loop did before this
+                    # pass existed: a newer switch must not wait for this one to
+                    # convert every remaining image. Nothing is allocated yet.
+                    if cancel is not None and cancel.is_set():
+                        self.log.debug_detailed("send_overlays_mru cancelled during extraction")
+                        return False
+                    if overlay_map:
+                        maps.append((modifier, overlay_map))
+                # An image that is the SAME under every modifier is keyed ONCE,
+                # so the variants after the first are cache hits that upload
+                # nothing -- see synthetic_overlay.program_converter.
+                extracted.append((filename, converter, filename in synthetic,
+                                  getattr(converter, "modifier_invariant", False), maps))
+
+            # ⚠️ Claim every image the pool already holds BEFORE allocating any
+            # new one (overlay_cache.claim), so a new image can only evict a slot
+            # this switch does not want. Same rules as the loop below: a
+            # synthetic source does not draw a key a template already covers,
+            # and a later source wins a key. ⚠️ Only the image a key ENDS UP
+            # showing is claimed: claiming one a later source replaces would hold
+            # a slot nothing shows, and on a full pool leave a new image's key
+            # blank (review, CodeRabbit).
+            final: dict[tuple[int, int], tuple] = {}
+            for filename, _, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
+                    for keycode, overlay_data in overlay_map.items():
+                        position = (modifier.value, keycode)
+                        if source_is_synthetic and position in final:
+                            continue
+                        key_modifier = MODIFIER_ANY if invariant else modifier.value
+                        final[position] = ((os.path.basename(filename), key_modifier, keycode),
+                                           overlay_data.all_bytes)
+            for content_key, image in final.values():
+                cache.claim(content_key, image)
+
+            for filename, converter, source_is_synthetic, invariant, maps in extracted:
+                for modifier, overlay_map in maps:
 
                     for keycode, overlay_data in overlay_map.items():
                         if cancel is not None and cancel.is_set():
@@ -1766,6 +1803,20 @@ class PolyKybd:
                         key_modifier = MODIFIER_ANY if invariant else modifier.value
                         content_key = (os.path.basename(filename), key_modifier, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                        if pool_slot is None:
+                            # The pool is full of this switch's own images. The
+                            # key stays blank rather than borrowing a slot an
+                            # earlier key still shows (overlay_cache.get_or_allocate).
+                            # ⚠️ Blank, not the picture an EARLIER source of this
+                            # switch put on the same key: a later source overrides
+                            # it (last one wins), so keeping it would show e.g. the
+                            # browser's icon under a website's shortcut.
+                            refused_idx = cache.display_flat_idx(keycode, modifier)
+                            display_to_pool.pop(refused_idx, None)
+                            dim_positions.discard(refused_idx)
+                            covered.discard((modifier.value, keycode))
+                            pool_full.append((filename, keycode, modifier))
+                            continue
 
                         if not is_hit:
                             # Read before the upload marks it: a slot reused
@@ -1866,6 +1917,12 @@ class PolyKybd:
         self.log.info("MRU: %d HID message(s) of image data (rest served from "
                       "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
+        if pool_full:
+            self.log.warning(
+                "MRU: %d key(s) left blank: this switch needs more than %d distinct "
+                "images, the keyboard's overlay pool (first: %s 0x%x/%s)",
+                len(pool_full), cache.capacity,
+                os.path.basename(pool_full[0][0]), pool_full[0][1], pool_full[0][2])
 
         # Re-check right before the commit: the token can flip after the last
         # pool upload, and committing the mapping then would flash a superseded

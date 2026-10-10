@@ -22,6 +22,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from polyhost.gui.dialog_util import bring_to_front
+from polyhost.i18n import _, _f, N_, isolate
 from polyhost.gui.log_bundle_dialog import reveal_in_file_manager
 from polyhost.services.updater import FwUf2Downloader
 
@@ -31,7 +32,7 @@ UF2_GUIDE_URL = "https://www.polykybd.org/setup/flashing/#fallback-uf2-bootloade
 
 # Plain paragraphs, not <ol>/<ul>: QLabel's height-for-width undercounts nested
 # lists, which clipped the steps mid-sentence in the first render.
-_TEXT = (
+_TEXT = N_(
     "<p>The half connected by USB answered, but the other half did not. Updates "
     "and font installs need both halves, so this one stopped.</p>"
     "<p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at "
@@ -66,11 +67,11 @@ class SplitLinkHelpDialog(QDialog):
         self._uf2_path = ""
         self._release_page = ""
 
-        self.setWindowTitle("Other keyboard half not answering")
+        self.setWindowTitle(_("Other keyboard half not answering"))
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         layout = QVBoxLayout(self)
-        body = QLabel(_TEXT)
+        body = QLabel(_(_TEXT))
         body.setWordWrap(True)
         body.setTextFormat(Qt.RichText)
         _fit(body)
@@ -84,14 +85,14 @@ class SplitLinkHelpDialog(QDialog):
         layout.addWidget(self._status)
 
         row = QHBoxLayout()
-        self._download_btn = QPushButton("Download .uf2")
+        self._download_btn = QPushButton(_("Download .uf2"))
         self._download_btn.clicked.connect(self._start_download)
-        self._reveal_btn = QPushButton("Show in folder")
+        self._reveal_btn = QPushButton(_("Show in folder"))
         self._reveal_btn.setVisible(False)
         self._reveal_btn.clicked.connect(lambda: reveal_in_file_manager(self._uf2_path, self.log))
-        guide_btn = QPushButton("Open guide")
+        guide_btn = QPushButton(_("Open guide"))
         guide_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(UF2_GUIDE_URL)))
-        close_btn = QPushButton("Close")
+        close_btn = QPushButton(_("Close"))
         close_btn.clicked.connect(self.close)
         row.addWidget(self._download_btn)
         row.addWidget(self._reveal_btn)
@@ -111,7 +112,7 @@ class SplitLinkHelpDialog(QDialog):
         if self._downloader is not None and self._downloader.is_alive():
             return
         self._download_btn.setEnabled(False)
-        self._set_status("Looking up the newest firmware release…")
+        self._set_status(_("Looking up the newest firmware release…"))
         self._downloader = FwUf2Downloader(
             on_finished=lambda *a: self._downloaded.emit(*a))
         self._downloader.start()
@@ -128,13 +129,15 @@ class SplitLinkHelpDialog(QDialog):
         self._release_page = page
         if ok:
             self._uf2_path = path
-            self._set_status(f"Saved: {path}")
+            self._set_status(_f("Saved: {path}", path=path))
             self._reveal_btn.setVisible(True)
-            self._download_btn.setText("Download again")
+            self._download_btn.setText(_("Download again"))
             return
         self._set_status(
-            f"The download failed ({html.escape(error)}). You can get the .uf2 from "
-            f"<a href=\"{html.escape(page, quote=True)}\">the release page</a> instead.",
+            # Not _f(): its RTL isolate marks would land inside the href.
+            _("The download failed ({error}). You can get the .uf2 from "
+              "<a href=\"{url}\">the release page</a> instead.").format(
+                error=isolate(html.escape(error)), url=html.escape(page, quote=True)),
             rich=True)
 
 

@@ -13,6 +13,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier, MODIFIER_ANY
 from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
+from polyhost.i18n import _, _f, _nf
 
 
 # Column headings for the display-position grid: index == Modifier value, which
@@ -30,7 +31,8 @@ def _modifier_label(value: int) -> str:
     cell, silently, for an image that is on every variant.
     """
     if value == MODIFIER_ANY:
-        return "any"
+        # TRANSLATORS: an overlay image shown under every modifier combination.
+        return _("any")
     if 0 <= value < len(_MODIFIER_NAMES):
         return _MODIFIER_NAMES[value]
     return str(value)
@@ -96,7 +98,7 @@ class MRUInspectorDialog(QDialog):
         outer.addWidget(self._tabs)
 
         btn_row = QHBoxLayout()
-        close_btn = QPushButton("Close")
+        close_btn = QPushButton(_("Close"))
         close_btn.clicked.connect(self.accept)
         btn_row.addStretch()
         btn_row.addWidget(close_btn)
@@ -112,7 +114,7 @@ class MRUInspectorDialog(QDialog):
 
     def _update_title(self):
         parts = [f"{label}: {cache.used_slots()}/{cache.capacity}" for label, cache in self._caches]
-        self.setWindowTitle("MRU Overlay Cache Inspector  —  " + "  |  ".join(parts))
+        self.setWindowTitle(_f("MRU Overlay Cache Inspector  —  {caches}", caches="  |  ".join(parts)))
 
     def _build_tabs(self):
         self._tabs.clear()
@@ -139,12 +141,15 @@ class MRUInspectorDialog(QDialog):
         wrap_layout.setContentsMargins(4, 2, 4, 2)
         wrap_layout.setSpacing(2)
 
-        title = QLabel(f"All transferred mappings so far ({len(mapping)} entries) — display position → pool slot")
+        title = QLabel(_nf(
+            "All transferred mappings so far ({n} entries) — display position → pool slot",
+            "All transferred mappings so far ({n} entries) — display position → pool slot",
+            len(mapping)))
         title.setStyleSheet("color: #aaa; font-size: 8pt;")
         wrap_layout.addWidget(title)
 
         table = QTableWidget(2, max(len(mapping), 1))
-        table.setVerticalHeaderLabels(["From", "To"])
+        table.setVerticalHeaderLabels([_("From"), _("To")])
         table.horizontalHeader().setVisible(False)
         table.setSelectionMode(QAbstractItemView.NoSelection)
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -160,7 +165,7 @@ class MRUInspectorDialog(QDialog):
         table.setFixedHeight(22 * 4 + table.horizontalScrollBar().sizeHint().height() + 20)
 
         if not mapping:
-            placeholder = QTableWidgetItem("(no mapping sent yet)")
+            placeholder = QTableWidgetItem(_("(no mapping sent yet)"))
             placeholder.setForeground(Qt.gray)
             table.setSpan(0, 0, 2, 1)
             table.setItem(0, 0, placeholder)
@@ -265,7 +270,9 @@ class MRUInspectorDialog(QDialog):
             except ValueError:
                 kc_name = f"0x{kc:02x}"
 
-            info_lbl = QLabel(f"{basename}\n{kc_name}·{mod_name}→{pool_slot}\nbatch {rank}/{max_rank}")
+            info_lbl = QLabel(_f("{file}\n{keycode}·{modifier}→{slot}\nbatch {rank}/{max_rank}",
+                                  file=basename, keycode=kc_name, modifier=mod_name,
+                                  slot=pool_slot, rank=rank, max_rank=max_rank))
             info_lbl.setStyleSheet("font-size: 7pt; color: #ddd;")
         else:
             img_lbl.setStyleSheet("background: #1a1a1a;")
