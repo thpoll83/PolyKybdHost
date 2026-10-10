@@ -23,6 +23,18 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     could not be bumped for two weeks, because an install reporting 0.9.18 would have
     been offered an endless update to itself. `qmk_firmware` has the matching gate for
     `FW_VERSION`, where the asset FILENAMES come from the tag as well.
+  - ⚠️ **It DETECTS; it cannot PREVENT — unlike the firmware repo's, which withholds
+    the assets its own workflow would have uploaded.** This workflow uploads nothing: the
+    updater installs GitHub's own `archive/refs/tags/<tag>.tar.gz`, which exists because
+    the TAG exists, and on the `release: published` path publishing is what *started* the
+    run. So a mismatch caught here leaves a live, installable, mislabelled release, and
+    failing the job is all the step does about it — the withdrawal is manual, and the
+    failure output says so in as many words. The real pre-publish defence is
+    `scripts/publish_release.py`, which refuses before anything is public; this backstops
+    the routes that bypass the script, a release published by hand in the UI or a
+    hand-pushed tag. Worth having anyway, because the alternative is silence: the defect
+    is invisible from the release page and surfaces only as users being offered the same
+    update forever. (Greptile P1 on #349.)
   - **Recovery depends on WHY it refused, and the two cases take different actions.**
     `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
     the version (`commit_for_version`), so a refusal means one of two things.
