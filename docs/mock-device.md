@@ -145,6 +145,23 @@ core's retry memory, a chunk resync, the erase wait, the unsigned-firmware
 prompt, apply-and-reboot, and the probe's 3-strike debounce riding out the deaf
 window. Each test was checked by breaking the code it guards.
 
+## Measuring what a send puts on each key
+
+`PolyKybdMock.get_display_bitmap(keycode, modifier)` returns the image a key
+shows after a send, resolved through the mapping into the pool, or None for a
+blank key. That turns "does the switch draw the right thing" into a count:
+send N distinct images, compare each key's bitmap with the bytes sent, and
+report right / wrong / blank. `tests/device/pool_overflow_test.py` and
+`tests/device/mru_claim_test.py` are the worked examples; the measurement
+that found 50 wrong keys in a 650-image switch (#344) was this loop.
+
+⚠️ **Use keycodes 0x04–0x43 only.** In this harness the keys from 0x44 up
+do not each have a display slot of their own, so they read back wrong for a
+reason that has nothing to do with the code under test: the first run
+reported 10 wrong keys that were all of that kind. Pass a small
+`OverlayMRUCache(capacity)` to fill the pool with a handful of images, and
+count misses by wrapping that cache instance's `get_or_allocate`.
+
 ## The two protocol sweeps
 
 The repo rule that every device-facing command is version-gated used to be
