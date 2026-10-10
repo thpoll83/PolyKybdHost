@@ -2,6 +2,7 @@
 paths:
   - "polyhost/server/control_server.py"
   - "polyhost/server/window_report_server.py"
+  - "polyhost/server/browser_report_server.py"
   - "polyhost/server/mpc_listener.py"
   - "polyhost/server/protocol.py"
 ---

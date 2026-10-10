@@ -306,3 +306,46 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
 
+## Architecture (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+**PolyKybdHost** is a PyQt5 system-tray application bridging the PolyKybd HID keyboard
+to the host OS: it tracks the active window and sends overlay/keymap/language commands
+over HID. The full file-by-file map — entry points, `PolyCore`, the control socket and
+its three servers, `polyctl`, headless mode, `RemoteCore`, the device layer, the
+platform input abstraction, the window handlers and the settings/services — is
+[`docs/architecture.md`](architecture.md). Read it before adding a module or a
+control-socket method. Five rules bind code outside it:
+
+- ⚠️ **`PolyCore.__init__` OPENS THE KEYBOARD** (`keeb.connect()`), so anything that
+  decides whether this process should be the host must happen **before** the core is
+  constructed, not in a `start()` afterwards. `instance.claim_instance()` is that
+  gate: an OS file lock held for the life of the process, taken in `main_app` before
+  any device code runs. Probing the socket alone is a check-then-act — two hosts
+  starting in the same millisecond both read STALE and both open the device.
+- **`PolyCore` is the Qt-free operational core** and must stay importable without
+  PyQt5 and without a display. It communicates **only** through observer callbacks
+  with JSON-serializable payloads; worker-side code must never touch a Qt object.
+  Guarded by `tests/core/import_guard_test.py`.
+- **A new device-coupled GUI surface is expected to work in client mode over RPC.**
+  Client mode is the default under daemon-by-default, so anything gated off it is
+  unreachable out of the box.
+- ⚠️ **Six pieces of plumbing are shared implementations because a hand-written copy
+  had already drifted** — `MpcListenerServer`, `UpdateProgressController`,
+  `gui/theme.apply_theme`, `util/observable.Observable`, `util/filelock` (the
+  endpoint claim and the settings save both need an OS file lock) and
+  `PolyCore._flash_resource`. Reach for the shared piece; that is the point of it.
+  ⚠️ **Extracting one drops the INLINE comments that made the original pass
+  review** — `util/filelock` lost the comment on an `except … pass` that had been
+  written for CodeQL's empty-except rule, because the extraction moved the
+  rationale into the new module's docstring, where neither the linter nor the next
+  reader looks. Re-run the checks on the extracted copy, not just on the callers.
+  ⚠️ **When a bug is found in one of the three servers, grep the other two**
+  (`control_server` / `window_report_server` / `browser_report_server`) for the same
+  shape before designing anything — a deadlock was diagnosed across three sessions
+  while a sibling module carried the remedy and its rationale in prose.
+- ⚠️ **The network `WindowReportServer` serves exactly one method and holds no
+  `PolyCore` reference.** That separation is the security boundary, not tidiness.
+

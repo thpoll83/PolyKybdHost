@@ -1,6 +1,5 @@
 ---
 paths:
-  - "polyhost/gui/host.py"
   - "polyhost/gui/cmd_menu.py"
   - "polyhost/forwarder.py"
   - "polyhost/host.py"

@@ -352,3 +352,74 @@ and relative links were adjusted to suit a standalone file.
     i.e. it pins the race, not the symptom, and it fails against the old
     implementation.
 
+## Tests (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+`*_test.py` under `tests/` mirroring `polyhost/`; **unittest, not pytest**. Use
+`scripts/run_tests.py` when a run might hang — it arms a stall watchdog that prints every
+thread's stack. ⚠️ **`--timeout` bounds ONE test, not the run** (it re-arms per test),
+so it needs no tuning as the suite grows. Do not write the suite's length or test count
+down anywhere: every figure this file has carried went stale, and a whole-run budget set
+from one fired on a healthy run. Run the full suite backgrounded, or under a tool timeout
+well past it, since an outer kill throws the dump away.
+GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and**
+`QT_QPA_PLATFORM=offscreen`, for opposite reasons. The rest — the fixture traps, the
+headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in
+[`docs/testing.md`](testing.md).
+
+- **No keyboard needed: `dev_mock_primary` (+ `dev_mock_protocol`) makes the mock the
+  device**, and its overlay path is the real `PolyKybd` over `MockFirmware`, a Python
+  copy of the firmware's side of the HID channel with a `FaultPlan` for the recovery
+  paths. ⚠️ It copies the firmware's QUIRKS too, on purpose. What it models, what it
+  does not, the board view and the sweeps: [`docs/mock-device.md`](mock-device.md).
+- ⚠️ **HOW YOU INVOKE THE SUITE CHANGES THE ANSWER, and both wrong ways look
+  like results.** `unittest discover -s ./tests` PREPENDS `tests/` to
+  `sys.path`, and `tests/tools/` then SHADOWS the repo's own `tools/`, so
+  anything reaching `tools.gfx_font` blows up: measured on one tree,
+  **3418 tests / 5 failures + 21 errors** against
+  `scripts/run_tests.py`'s **3441 / 1 error**. And a baseline taken in a
+  `git worktree` under `/tmp` silently skips every test gated on
+  `../qmk_firmware` (129 skips vs 44), so the comparison reads as your branch
+  un-skipping 85 tests. **Run the runner, and baseline IN PLACE** — check the
+  two commits' files back out in the real checkout. Both cost a full cycle in
+  2026-09-23. Details in [`docs/testing.md`](testing.md).
+- ⚠️ **A `skipUnless` guard that checks a SUBSET of what the code checks turns a
+  missing dependency into an infinite HANG.** `_FONTGEN` imported numpy+freetype
+  while `_build()` also needs uharfbuzz/fontTools/PIL, so on a partial set the
+  guard said run, the dialog took its error path — a **modal** `QMessageBox`
+  with nobody under xvfb to dismiss it — and the suite sat for 48 minutes with
+  no output. Derive such a guard from the function the code itself calls. A
+  missing dep normally skips or errors; this class hangs, and only
+  `scripts/run_tests.py`'s watchdog (or `py-spy dump --pid`) names it.
+- ⚠️ **A change to CONCURRENT FILE ACCESS is not done when the tests pass.** The
+  per-key settings merge took four review rounds and produced two regressions
+  *while fixing the previous one* — merging against `{}` on a read failure reset
+  every untouched key, and degrading an unreadable file to defaults let the
+  constructor's save destroy it. Its diff looked small. Before calling one done:
+  mutation-sweep it (`mutation-test-suite`), and race it with REAL processes —
+  six concurrent writers of six different keys lose 3–4 per run unlocked and none
+  locked, which no single-process test would ever have shown.
+- **RUN the real entry point once before believing a mocked suite.** A suite whose
+  fixtures you wrote can only be as right as your idea of the real data; one
+  `polyctl logs bundle` in a temp dir caught two format bugs every test passed over.
+- ⚠️ **Appending test methods after a file's trailing `if __name__ == "__main__":`
+  registers NOTHING** — the indented `def`s become part of the `if` body, parse fine and
+  never run. **Check the test COUNT changed**, not just that the suite is green.
+- ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already BOUND that
+  method**, which this repo's fixture idiom does constantly. Drive the real input, or
+  override the attribute on the instance.
+- ⚠️ **A stale `.pyc` can survive a CORRECT fix** — invalidation is (mtime, size), so a
+  length-neutral edit in the same mtime second is invisible. The tell is a traceback
+  quoting source that no longer exists. Clear `__pycache__` after **restoring** too, not
+  only after editing — a mutation sweep's confirmation run is exactly where this lands.
+- ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment** (pywinctl at
+  module load). Put forwarder logic worth testing in a Qt-free module; a test gated on
+  both `DISPLAY` and pywinctl is permanently skipped, which reads as coverage.
+- ⚠️ **The suite cannot execute the platform input paths** — Win32, Carbon and
+  pynput keystrokes are mocked by necessity. All four field defects of
+  2026-09-22 lived in that region while 2949 tests stayed green, so a green
+  board says nothing about it: budget a hardware round.
+- **No unit-test CI**, but `codeql.yml` analyses every PR — the one automated reviewer
+  here that cannot go quiet.

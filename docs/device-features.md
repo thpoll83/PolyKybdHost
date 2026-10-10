@@ -161,3 +161,48 @@ and relative links were adjusted to suit a standalone file.
   bigger change than it looks — the tuner never emits `caps`, so the grammar would
   gain an arm nothing exercises.
 
+## Device features over HID (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+The per-feature device commands — **glyph script** (cmd 30, v9+, with the v10
+open-ended index and the rendered menu previews), **keycap legend size** (cmd 34, v13+),
+and **macros** (cmds 36/37/38, v15+, behind one `"macros"` gate) — are wired identically:
+`PolyKybd` accessors behind a `FEATURE_MIN_PROTOCOL` entry, `PolyCore`, an `M_*` control
+method, the `RemoteCore` mirror, a `polyctl` subcommand and a gated tray submenu. The
+full wiring, the preview rendering and the label-measurement rules are in
+[`docs/device-features.md`](device-features.md).
+
+- **The idle TIMEOUT (cmd 40, v18+) is the same wiring one more time**, gated on
+  `"idle_timeout"`: six fixed presets (15 s…5 min) replacing what was a compile-time
+  2 minutes in the firmware. ⚠️ **Its reply carries the duration in SECONDS as well
+  as the preset index, and the UI labels from the SECONDS** — that is the only way a
+  host older than a firmware which adds a preset renders "10 min" instead of "preset
+  6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
+  local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
+  this one follows GlyphSize).
+- ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
+  too** — so `send_and_read_validate` returning True says the reply arrived, never
+  that the firmware accepted it. On a CLOSED range that is the difference between a
+  refusal and a silent success: read the verdict at `reply[2]` (`.` accept, `!`
+  refuse) before reporting one. `set_idle_timeout` does, and validates the preset
+  through the enum before any I/O; `set_glyph_size`, `set_idle_style` and
+  `set_glyph_script` still have the older prefix-only shape.
+- ⚠️ **`GlyphSize` is a CLOSED range and `GlyphScript` is OPEN — that asymmetry is
+  deliberate, and it is the one way they differ.** An unknown SCRIPT index is accepted
+  by the firmware and degrades to the normal legend, which is what lets the host offer
+  faces a keyboard lacks **without a protocol bump**. An unknown SIZE is NACKed, because
+  it would persist as a setting that silently renders small. Never "make them
+  consistent"; `tests/device/poly_kybd_capabilities_test.py` pins the contrast.
+- ⚠️ **`PolyCore.macro_*` is WHOLE-BUFFER on purpose** — the bodies are NUL-delimited in
+  one shared buffer, so read-modify-write is the only shape that cannot corrupt a
+  neighbour.
+- ⚠️ **The macro label meter is in PIXELS, not characters** (`services/macro_label.py`
+  mirrors the firmware's bbox): the real budget is ~12 characters, 8 in the worst case,
+  and a character count is wrong in both directions.
+- ⚠️ **`tools/apply_tuner.py`'s export grammar cannot express the `caps` column** — a
+  bulk edit touching caps cells must import the module and call `set_cell()`, which
+  returns the sheet and persists nothing. The whole loop is the firmware repo's
+  `tune-lang-lut-cells` skill.
+
