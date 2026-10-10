@@ -18,11 +18,6 @@ from polyhost.i18n import _
 
 _log = logging.getLogger(__name__)
 
-# Held for the life of the process: QCoreApplication keeps only a pointer,
-# so a translator Python collects is a translator Qt silently loses.
-_qt_translator = None
-
-
 def os_ui_languages():
     """The OS user-interface languages, most preferred first.
 
@@ -56,16 +51,16 @@ def install_qt_translator(app, code=None):
     Needs the QApplication instance. Qt ships no catalog for Vietnamese or
     Indonesian; their standard buttons stay English.
     """
-    global _qt_translator
     code = code or i18n.current_language()
     if code in (i18n.SOURCE_LANGUAGE, i18n.PSEUDO):
         return False
+    # Parented to the app, so Qt owns it for the life of the process; a
+    # Python reference to keep it alive is not needed.
     translator = QTranslator(app)
     path = QLibraryInfo.location(QLibraryInfo.TranslationsPath)
     for name in (f"qtbase_{code}", f"qtbase_{code.split('_')[0]}"):
         if translator.load(name, path):
             app.installTranslator(translator)
-            _qt_translator = translator
             # Loading the catalog can flip the direction (Qt reads it from
             # the catalog itself); ours is the answer.
             app.setLayoutDirection(Qt.RightToLeft if i18n.is_rtl(code) else Qt.LeftToRight)
