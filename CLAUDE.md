@@ -741,8 +741,11 @@ in [`docs/releases.md`](docs/releases.md).
   `_version_from_tag(tag)`), so a release published before its bump merged hands out a
   tarball that can never reach the advertised version — and every later check offers
   the same update again, forever. wincompose shipped that failure through its own
-  mechanism (`PK-0.9.19`). ⚠️ **The fix is to MOVE the tag** — publishing never moves
-  one. [`docs/releases.md`](docs/releases.md) → the first bullet.
+  mechanism (`PK-0.9.19`). ⚠️ **The fix is to MOVE the tag, and only while no release
+  holds it** — publishing never moves one, and the tarball people install IS
+  `archive/refs/tags/<tag>.tar.gz`, so delete the release the refusal left behind before
+  moving anything. [`docs/releases.md`](docs/releases.md) → the first bullet has both
+  refusal cases.
 
 - ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check is
   the PUBLISHED versions, not the in-tree ones.** The source-lockstep rule can be

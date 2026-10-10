@@ -23,13 +23,28 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     could not be bumped for two weeks, because an install reporting 0.9.18 would have
     been offered an endless update to itself. `qmk_firmware` has the matching gate for
     `FW_VERSION`, where the asset FILENAMES come from the tag as well.
-  - **Recovery is to MOVE the tag, not to force the release through.**
+  - **Recovery depends on WHY it refused, and the two cases take different actions.**
     `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
-    the version (`commit_for_version`), so a refusal means either the bump has not
-    merged yet or the tag already existed in the wrong place — **publishing never moves
-    a tag** (`target_commitish` is documented as *"Unused if the Git tag already
-    exists"*). `git tag -f v<ver> <commit declaring it>` then
-    `git push --force origin refs/tags/v<ver>`, and publish.
+    the version (`commit_for_version`), so a refusal means one of two things.
+    - **The bump has not merged yet.** Nothing declares that version, so there is no
+      commit to point a tag at and moving it is not an option. Merge the bump; the pin
+      then finds it and tags the right commit with no further intervention.
+    - **The tag already exists in the wrong place.** **Publishing never moves a tag**
+      (`target_commitish` is documented as *"Unused if the Git tag already exists"*),
+      so the release is built from wherever it points. Move it, then publish normally:
+      `git tag -f v<ver> <commit declaring it>` then
+      `git push --force origin refs/tags/v<ver>`.
+      ⚠️ **Only while no release holds that tag.** This gate fires on
+      `release: published`, so by the time you read its refusal a release usually DOES
+      exist. **Delete it first**, then move the tag and publish: the tarball the updater
+      hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag points at is
+      the product, not a bookkeeping detail. If a release on that tag is already live
+      and people may have installed from it, do not move it at all — cut the next
+      patch version instead. (Nothing in the repo enforces this: there is no tag
+      ruleset and no tag protection, so the force-push will simply succeed.)
+    There is no `workflow_dispatch` on this workflow, so once the tag is right the
+    route is to publish — the firmware repo's dispatch-based recovery has no equivalent
+    here, and would be the wrong tool anyway.
   - ⚠️ **The check reads the TAG's tree**, which `actions/checkout` gives it with no
     `ref:` for both triggers here — so `main` drifting ahead of a prepared tag is
     harmless, which it always is, since every merge auto-bumps.
