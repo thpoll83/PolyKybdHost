@@ -24,6 +24,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QMessageBox, QPlainTextEdit, QPushButton, QVBoxLayout)
 
+from polyhost.i18n import _, _f, _nf
 from polyhost.services import crash_report
 
 
@@ -40,7 +41,7 @@ class CrashAlertDialog(QDialog):
         self._host_version = host_version
         self.records: list[crash_report.CrashRecord] = []
 
-        self.setWindowTitle("PolyKybd — the keyboard firmware crashed")
+        self.setWindowTitle(_("PolyKybd — the keyboard firmware crashed"))
         self.setMinimumWidth(640)
         layout = QVBoxLayout(self)
 
@@ -49,7 +50,7 @@ class CrashAlertDialog(QDialog):
         self.headline.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(self.headline)
 
-        layout.addWidget(QLabel("<b>What the keyboard reported</b>"))
+        layout.addWidget(QLabel("<b>" + _("What the keyboard reported") + "</b>"))
         self.detail = QPlainTextEdit(self)
         self.detail.setReadOnly(True)
         self.detail.setMinimumHeight(120)
@@ -65,12 +66,12 @@ class CrashAlertDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.report_btn = QPushButton("Report on GitHub…", self)
+        self.report_btn = QPushButton(_("Report on GitHub…"), self)
         self.report_btn.setDefault(True)
         self.report_btn.clicked.connect(self._report)
         buttons.addWidget(self.report_btn)
 
-        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
@@ -79,13 +80,13 @@ class CrashAlertDialog(QDialog):
         # host's list while the keyboard still holds the record would put the two
         # out of step, which is the state this button exists to prevent.
         if self._clear_cb is not None:
-            self.clear_btn = QPushButton("Clear", self)
+            self.clear_btn = QPushButton(_("Clear"), self)
             self.clear_btn.setToolTip(
-                "Forget these records here AND erase the keyboard's crash archive.")
+                _("Forget these records here AND erase the keyboard's crash archive."))
             self.clear_btn.clicked.connect(self._clear)
             buttons.addWidget(self.clear_btn)
 
-        dismiss = QPushButton("Dismiss", self)
+        dismiss = QPushButton(_("Dismiss"), self)
         dismiss.clicked.connect(self.reject)
         buttons.addWidget(dismiss)
         layout.addLayout(buttons)
@@ -104,27 +105,37 @@ class CrashAlertDialog(QDialog):
             return
         first = self.records[0]
         n = len(self.records)
-        which = "Both keyboard halves" if n > 1 and {r.side for r in self.records} == {"master", "slave"} \
-            else ("The keyboard" if first.side == "master" else "The link-side keyboard half")
+        both = n > 1 and {r.side for r in self.records} == {"master", "slave"}
+        facts = dict(firmware=first.fw, kind=first.kind, phase=first.phase_name)
         # The manual readout shows ARCHIVED records through this same dialog, and
         # "crashed and restarted" over a days-old record reads as a new crash.
         if any(r.fresh for r in self.records):
-            self.setWindowTitle("PolyKybd — the keyboard firmware crashed")
-            self.headline.setText(
-                f"<b>{which} crashed and restarted</b> "
-                f"(firmware {first.fw}, {first.kind} while in {first.phase_name}).")
-            lead = "The keyboard restarted on its own and is working again."
+            self.setWindowTitle(_("PolyKybd — the keyboard firmware crashed"))
+            if both:
+                headline = _f("<b>Both keyboard halves crashed and restarted</b> "
+                              "(firmware {firmware}, {kind} while in {phase}).", **facts)
+            elif first.side == "master":
+                headline = _f("<b>The keyboard crashed and restarted</b> "
+                              "(firmware {firmware}, {kind} while in {phase}).", **facts)
+            else:
+                headline = _f("<b>The link-side keyboard half crashed and restarted</b> "
+                              "(firmware {firmware}, {kind} while in {phase}).", **facts)
+            self.headline.setText(headline)
+            lead = _("The keyboard restarted on its own and is working again.")
         else:
-            self.setWindowTitle("PolyKybd — keyboard crash records")
-            self.headline.setText(
-                f"<b>Crash record{'s' if n > 1 else ''} archived on the keyboard</b> "
-                f"(firmware {first.fw}, {first.kind} while in {first.phase_name}). "
-                f"None of them is from the boot before this one.")
-            lead = "These are earlier crashes, not a new one."
-        self.hint.setText(
-            f"{lead} To help fix the cause, either open a bug report (this collects "
+            self.setWindowTitle(_("PolyKybd — keyboard crash records"))
+            self.headline.setText(_nf(
+                "<b>Crash record archived on the keyboard</b> "
+                "(firmware {firmware}, {kind} while in {phase}). "
+                "None of them is from the boot before this one.",
+                "<b>Crash records archived on the keyboard</b> "
+                "(firmware {firmware}, {kind} while in {phase}). "
+                "None of them is from the boot before this one.", n, **facts))
+            lead = _("These are earlier crashes, not a new one.")
+        self.hint.setText(lead + " " + _(
+            "To help fix the cause, either open a bug report (this collects "
             "the logs and pre-fills a GitHub issue — nothing is sent until you press "
-            "Submit there), or copy the details to paste wherever you are discussing it.")
+            "Submit there), or copy the details to paste wherever you are discussing it."))
         self.detail.setPlainText(
             "\n\n".join(crash_report.summarize(r) + "\n" + r.as_console_line()
                         + "\n" + crash_report.freshness_text(r)
@@ -147,10 +158,13 @@ class CrashAlertDialog(QDialog):
         this runs there is nothing left to report but the console log."""
         n = len(self.records)
         if QMessageBox.question(
-                self, "Clear crash records",
-                f"Discard {n} crash record(s) here and erase the keyboard's "
-                f"crash archive?\n\nThis cannot be undone — report or copy them first "
-                f"if you still need them.",
+                self, _("Clear crash records"),
+                _nf("Discard {n} crash record here and erase the keyboard's "
+                    "crash archive?",
+                    "Discard {n} crash records here and erase the keyboard's "
+                    "crash archive?", n)
+                + "\n\n" + _("This cannot be undone — report or copy them first "
+                               "if you still need them."),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
         # No pre-assignment: both arms below bind the pair, and CodeQL flags a dead
@@ -177,9 +191,9 @@ class CrashAlertDialog(QDialog):
         if ok:
             self.accept()
             return
-        self.status.setText(f"Cleared here, but the keyboard did not: {payload}")
+        self.status.setText(_f("Cleared here, but the keyboard did not: {reason}", reason=payload))
         self.detail.setPlainText("")
-        self.headline.setText("<b>No crash records held.</b>")
+        self.headline.setText("<b>" + _("No crash records held.") + "</b>")
 
     def copy_to_clipboard(self) -> None:
         """Public for the tray's manual readout, which copies on open."""
@@ -187,7 +201,7 @@ class CrashAlertDialog(QDialog):
 
     def _copy(self) -> None:
         QApplication.clipboard().setText(self._text())
-        self.status.setText("Copied to the clipboard.")
+        self.status.setText(_("Copied to the clipboard."))
 
     def _report(self) -> None:
         if self._report_cb is None:
@@ -196,7 +210,7 @@ class CrashAlertDialog(QDialog):
         try:
             self._report_cb(crash_report.issue_description(self.records),
                             crash_report.issue_title(self.records))
-            self.status.setText("Opened the problem report with the crash filled in.")
+            self.status.setText(_("Opened the problem report with the crash filled in."))
         except Exception:  # noqa: BLE001 — never lose the record over a dialog error
             self.log.warning("Could not open the problem report", exc_info=True)
             self._copy()

@@ -29,6 +29,7 @@ from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey, key_transform
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
+from polyhost.i18n import _, _f
 from polyhost.kle.kle_praser import parse_kle
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
@@ -57,22 +58,23 @@ class KeyEditDialog(QDialog):
     """Key editing dialog"""
     def __init__(self, key_dict):
         super().__init__()
-        self.setWindowTitle("Edit Key")
+        self.setWindowTitle(_("Edit Key"))
         self.key = key_dict
         layout = QFormLayout()
         
         self.qmk_edit = QLineEdit(self.key.get('qmk', ''))
-        layout.addRow("QMK Keycode:", self.qmk_edit)
+        layout.addRow(_("QMK Keycode:"), self.qmk_edit)
         
         self.label_edit = QTextEdit(self.key.get('label', ''))
-        layout.addRow("Visual Label:", self.label_edit)
+        layout.addRow(_("Visual Label:"), self.label_edit)
         
         if self.key.get('r', 0) != 0:
-            info = f"Rotation: {self.key['r']}° around ({self.key['rx']}, {self.key['ry']})"
-            layout.addRow("Info:", QLabel(info))
+            info = _f("Rotation: {angle}° around ({x}, {y})",
+                      angle=self.key['r'], x=self.key['rx'], y=self.key['ry'])
+            layout.addRow(_("Info:"), QLabel(info))
         
-        btn_ok = QPushButton("OK")
-        btn_cancel = QPushButton("Cancel")
+        btn_ok = QPushButton(_("OK"))
+        btn_cancel = QPushButton(_("Cancel"))
         btn_ok.clicked.connect(self.accept_changes)
         btn_cancel.clicked.connect(self.reject)
         h = QHBoxLayout()
@@ -94,7 +96,7 @@ class KbLayoutDialog(QMainWindow):
         super().__init__(parent)
         self.log = logging.getLogger('PolyHost')
         self.settings = settings
-        self.setWindowTitle("PolyKybd Split72 Layout")
+        self.setWindowTitle(_("PolyKybd Split72 Layout"))
         self.key_matrix = {}
         self.mapping = {}
         self.row_count = 0
@@ -198,9 +200,9 @@ class KbLayoutDialog(QMainWindow):
 
         if not success:
             QMessageBox.warning(
-                None, "Not Connected",
-                "PolyKybd is not reachable. Please connect the keyboard and try again.")
-            my_options = ["Could not read layers from device"]
+                None, _("Not Connected"),
+                _("PolyKybd is not reachable. Please connect the keyboard and try again."))
+            my_options = [_("Could not read layers from device")]
         else:
             self.keycode_browser.set_layer_count(self.num_layers)
             my_options = []
@@ -212,7 +214,7 @@ class KbLayoutDialog(QMainWindow):
         self.layers = ButtonArray(my_options)
         self.layers.setMaximumHeight(40)
         self.layers.connect(self.layerChanged)
-        label = QLabel("Layers:")
+        label = QLabel(_("Layers:"))
         # ⚠️ NO width cap here. It carried setMaximumWidth(50) and the string needs
         # 62 px, so the header read "Layer:" -- clipped in the app itself, and in
         # every docs screenshot of it. The cap was there to stop the label eating
@@ -287,18 +289,20 @@ class KbLayoutDialog(QMainWindow):
         # missing openpyxl silently disabled everything but the macros. `source_info()`
         # below then names WHICH data drew them, which is the other half of the same
         # question: a legend can be perfectly rendered and still be the wrong vintage.
-        tip = ("Draw each key as the keycap the keyboard shows. A key whose legend is "
-               "not modelled here keeps its keycode text.") if usable else (
+        tip = _("Draw each key as the keycap the keyboard shows. A key whose legend is "
+                "not modelled here keeps its keycode text.") if usable else _(
               "Unavailable: the keycap fonts and layout tables could not be loaded, so "
               "keys show their keycode.")
         why = self._preview.reason
         if why:
-            tip += f"\n\nPartly unavailable — {why}"
+            # `reason` is English (it is logged too); the fixed ones are marked msgids,
+            # and an exception text simply has no translation and passes through.
+            tip += "\n\n" + _f("Partly unavailable — {reason}", reason=_(why))
         # Name the checkout the legends came from. Without it, a preview drawing
         # legends the keyboard has moved past looks the same as one that is wrong.
         src = self._preview.source_info()
         if src:
-            tip += f"\n\nLegends read from:\n{src}"
+            tip += "\n\n" + _f("Legends read from:\n{source}", source=src)
         # One exclusive group of push buttons rather than three checkboxes: the modes
         # are alternatives, and a segmented control says so where three ticks would
         # invite the reader to look for a combination that does not exist.
@@ -314,11 +318,14 @@ class KbLayoutDialog(QMainWindow):
         lay.setSpacing(0)
         real_ok = usable and oled_look.available()
         for mode, text, hint in (
-            (KEYCAP_SYMBOL, "Symbol", "Every key shows its keycode."),
-            (KEYCAP_PREVIEW, "Preview", tip),
-            (KEYCAP_REAL, "Real", tip + "\n\nThrough the panel simulation: emissive "
-                                        "pixels, bloom and the diffusion of the clear "
-                                        "keycap cover — how the key actually reads."),
+            # TRANSLATORS: keycap display mode -- show the raw keycode text.
+            (KEYCAP_SYMBOL, _("Symbol"), _("Every key shows its keycode.")),
+            # TRANSLATORS: keycap display mode -- the rendered keycap image.
+            (KEYCAP_PREVIEW, _("Preview"), tip),
+            # TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
+            (KEYCAP_REAL, _("Real"), tip + "\n\n" + _("Through the panel simulation: emissive "
+                                                       "pixels, bloom and the diffusion of the clear "
+                                                       "keycap cover — how the key actually reads.")),
         ):
             b = QToolButton(row)
             b.setText(text)
@@ -334,7 +341,7 @@ class KbLayoutDialog(QMainWindow):
             lay.addWidget(b)
         if not oled_look.available():
             self.keycap_buttons[KEYCAP_REAL].setToolTip(
-                f"Unavailable: {oled_look.reason()}")
+                _f("Unavailable: {reason}", reason=oled_look.reason()))
         self.keycap_group.buttonClicked.connect(self._on_keycap_button)
         self.keycap_modes = row
         return row
@@ -524,7 +531,7 @@ class KbLayoutDialog(QMainWindow):
         offset = layer*max_idx
         photo = self._real_board() is not None
         idx = 0
-        for _ in range(num_keys):
+        for _key in range(num_keys):
             # skip matrix positions without junctions (no physical key)
             while idx not in self.keys and idx < max_idx:
                 idx += 1
@@ -586,7 +593,8 @@ class KbLayoutDialog(QMainWindow):
             # self.row_count, self.col_count, self.mapping = build_matrix(self.matrix_pos)
             self.render_keys()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load:\n{e}\n{traceback.format_exc()}")
+            QMessageBox.critical(self, _("Error"), _f("Failed to load:\n{error}\n{details}",
+                                                     error=e, details=traceback.format_exc()))
             
     # def load_kle(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
@@ -647,7 +655,7 @@ class KbLayoutDialog(QMainWindow):
 
         # Single-key write via the core (a quick HID write in-process, or an RPC
         # round-trip in client mode); keeps the local buffer in sync above.
-        ok, _ = self.core.keymap_set(layer, row, col, keycode)
+        ok, _unused = self.core.keymap_set(layer, row, col, keycode)
         if not ok:
             self.log.warning("Failed to write keycode 0x%04x to device (layer=%d row=%d col=%d)",
                              keycode, layer, row, col)

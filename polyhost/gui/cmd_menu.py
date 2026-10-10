@@ -10,6 +10,7 @@ from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        check_signature_file)
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
+from polyhost.i18n import _, _f
 
 
 class _RequireExplicitOpen(QProxyStyle):
@@ -39,7 +40,7 @@ def _get_open_file_explicit(caption: str, name_filter: str) -> str:
     single-click on its own — so it is applied only in that branch.
     """
     if file_dialogs.use_native():
-        path, _ = QFileDialog.getOpenFileName(None, caption, "", name_filter)
+        path, _filter = QFileDialog.getOpenFileName(None, caption, "", name_filter)
         return path
 
     dlg = QFileDialog(None, caption, "", name_filter)
@@ -123,8 +124,8 @@ class CommandsSubMenu:
         light sensor and the host's daylight periodic drive it). These presets
         are manual overrides; the trailing entry is the way back out of one.
         """
-        menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), "Brightness")
-        for icon, label, value in (("backlight_high_off.svg", "Off", 0),
+        menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), _("Brightness"))
+        for icon, label, value in (("backlight_high_off.svg", _("Off"), 0),
                                    ("backlight_low.svg", "1%", 2),
                                    ("backlight_high.svg", "50%", 25),
                                    ("backlight_high_fill.svg", "100%", 50)):
@@ -134,7 +135,7 @@ class CommandsSubMenu:
         # itself, so without this the presets above are a one-way door until a
         # replug. Wording/tooltip are set on open from the live setting.
         self._auto_brightness_action = self._act(
-            "brightness_auto.svg", "Back to automatic", self.back_to_automatic_brightness, device=True)
+            "brightness_auto.svg", _("Back to automatic"), self.back_to_automatic_brightness, device=True)
         menu.addAction(self._auto_brightness_action)
         # noinspection PyUnresolvedReferences
         menu.aboutToShow.connect(self._refresh_auto_brightness_action)
@@ -155,16 +156,16 @@ class CommandsSubMenu:
             daylight = bool(self._core.settings_get("brightness_set_daylight_dependent"))
         except Exception as exc:   # noqa: BLE001 — a tooltip must never break the menu
             self.log.debug("Could not read the daylight setting: %s", exc)
-            action.setToolTip("Re-apply the host's automatic brightness.")
+            action.setToolTip(_("Re-apply the host's automatic brightness."))
             return
         if daylight:
-            action.setText("Back to automatic")
-            action.setToolTip("Re-engage automatic (daylight) brightness — the manual "
-                              "preset above is dropped.")
+            action.setText(_("Back to automatic"))
+            action.setToolTip(_("Re-engage automatic (daylight) brightness — the manual "
+                                "preset above is dropped."))
         else:
-            action.setText("Clear manual override")
-            action.setToolTip("Daylight-dependent brightness is off in Settings, so this "
-                              "only returns the keyboard to its own stored brightness.")
+            action.setText(_("Clear manual override"))
+            action.setToolTip(_("Daylight-dependent brightness is off in Settings, so this "
+                                "only returns the keyboard to its own stored brightness."))
 
     def back_to_automatic_brightness(self):
         self._report(self._core.refresh_daylight_brightness(),
@@ -178,96 +179,96 @@ class CommandsSubMenu:
         manual firmware paths. Everything diagnostic or bulk lives under
         Developer instead.
         """
-        menu = parent_menu.addMenu(get_icon("build.svg"), "Maintenance")
+        menu = parent_menu.addMenu(get_icon("build.svg"), _("Maintenance"))
         self._maintenance_action = menu.menuAction()
 
-        hand_menu = menu.addMenu(get_icon("flip.svg"), "Fix Left/Right Side")
+        hand_menu = menu.addMenu(get_icon("flip.svg"), _("Fix Left/Right Side"))
         hand_menu.addAction(self._act("splitscreen_left.svg",
-                                      "Connected half is LEFT (other is RIGHT)",
+                                      _("Connected half is LEFT (other is RIGHT)"),
                                       self.set_handedness, data=True, device=True))
         hand_menu.addAction(self._act("splitscreen_right.svg",
-                                      "Connected half is RIGHT (other is LEFT)",
+                                      _("Connected half is RIGHT (other is LEFT)"),
                                       self.set_handedness, data=False, device=True))
         self._device_actions.append(hand_menu.menuAction())
 
-        menu.addAction(self._act("layers_clear.svg", "Reset overlays",
+        menu.addAction(self._act("layers_clear.svg", _("Reset overlays"),
                                  self.reset_overlays, device=True))
-        menu.addAction(self._act("device_reset.svg", "Reset keymap to default\u2026",
+        menu.addAction(self._act("device_reset.svg", _("Reset keymap to default\u2026"),
                                  self.reset_dynamic_keymap_confirmed, device=True))
 
         menu.addSeparator()
         # Firmware: protocol-independent staging transport, so these follow
         # fw_enabled and stay usable on a protocol mismatch.
-        menu.addAction(self._act("deployed_code_update.svg", "Flash firmware file (.bin)\u2026",
+        menu.addAction(self._act("deployed_code_update.svg", _("Flash firmware file (.bin)\u2026"),
                                  lambda: self.open_hid_fw_up_dialog(apply_after=True),
                                  firmware=True))
-        menu.addAction(self._act("usb.svg", "Activate bootloader\u2026",
+        menu.addAction(self._act("usb.svg", _("Activate bootloader\u2026"),
                                  self.activate_bootloader, firmware=True))
         return menu
 
     def build_developer_menus(self, dev_menu):
         """The diagnostic / bulk half, under the Developer submenu."""
-        ov_menu = dev_menu.addMenu(get_icon("overlays.svg"), "Overlays")
-        ov_menu.addAction(self._act("toggle_on.svg", "Enable shortcut overlays",
+        ov_menu = dev_menu.addMenu(get_icon("overlays.svg"), _("Overlays"))
+        ov_menu.addAction(self._act("toggle_on.svg", _("Enable shortcut overlays"),
                                     self.enable_overlays, device=True))
-        ov_menu.addAction(self._act("toggle_off.svg", "Disable shortcut overlays",
+        ov_menu.addAction(self._act("toggle_off.svg", _("Disable shortcut overlays"),
                                     self.disable_overlays, device=True))
         ov_menu.addSeparator()
-        ov_menu.addAction(self._act("layers_clear.svg", "Reset overlay buffers",
+        ov_menu.addAction(self._act("layers_clear.svg", _("Reset overlay buffers"),
                                     self.reset_overlays, device=True))
-        ov_menu.addAction(self._act("link_off.svg", "Reset overlay mapping",
+        ov_menu.addAction(self._act("link_off.svg", _("Reset overlay mapping"),
                                     self.reset_overlay_mapping, device=True))
-        ov_menu.addAction(self._act("deselect.svg", "Clear overlay usage",
+        ov_menu.addAction(self._act("deselect.svg", _("Clear overlay usage"),
                                     self.reset_overlay_usage, device=True))
-        ov_menu.addAction(self._act("select_all.svg", "Set all overlay mapping",
+        ov_menu.addAction(self._act("select_all.svg", _("Set all overlay mapping"),
                                     self.set_all_overlay_usage, device=True))
         self._device_actions.append(ov_menu.menuAction())
 
-        idle_menu = dev_menu.addMenu(get_icon("bedtime.svg"), "Idle")
-        idle_menu.addAction(self._act("bedtime.svg", "Start idle now",
+        idle_menu = dev_menu.addMenu(get_icon("bedtime.svg"), _("Idle"))
+        idle_menu.addAction(self._act("bedtime.svg", _("Start idle now"),
                                       self.change_idle, data=True, device=True))
-        idle_menu.addAction(self._act("bedtime_off.svg", "Stop idle",
+        idle_menu.addAction(self._act("bedtime_off.svg", _("Stop idle"),
                                       self.change_idle, data=False, device=True))
         self._device_actions.append(idle_menu.menuAction())
 
-        km_menu = dev_menu.addMenu(get_icon("keyboard.svg"), "Keymap")
-        km_menu.addAction(self._act("list_alt.svg", "Layer count",
+        km_menu = dev_menu.addMenu(get_icon("keyboard.svg"), _("Keymap"))
+        km_menu.addAction(self._act("list_alt.svg", _("Layer count"),
                                     self.show_layer_count, device=True))
-        km_menu.addAction(self._act("list_alt.svg", "Default layer",
+        km_menu.addAction(self._act("list_alt.svg", _("Default layer"),
                                     self.show_default_layer, device=True))
-        km_menu.addAction(self._act("file_open.svg", "Dump keymap buffer to the log",
+        km_menu.addAction(self._act("file_open.svg", _("Dump keymap buffer to the log"),
                                     self.dump_keymap_buffer, device=True))
         self._device_actions.append(km_menu.menuAction())
 
-        fp_menu = dev_menu.addMenu(get_icon("font_download.svg"), "Font Pack")
-        fp_menu.addAction(self._act("list_alt.svg", "Per-bundle status…",
+        fp_menu = dev_menu.addMenu(get_icon("font_download.svg"), _("Font Pack"))
+        fp_menu.addAction(self._act("list_alt.svg", _("Per-bundle status…"),
                                     self.show_fontpack_status, firmware=True))
-        fp_menu.addAction(self._act("sync_alt.svg", "Sync (flash missing/updated bundles)",
+        fp_menu.addAction(self._act("sync_alt.svg", _("Sync (flash missing/updated bundles)"),
                                     self.sync_fontpack, firmware=True))
-        fp_menu.addAction(self._act("sync_alt.svg", "Re-flash ALL bundles (force)…",
+        fp_menu.addAction(self._act("sync_alt.svg", _("Re-flash ALL bundles (force)…"),
                                     self.force_sync_fontpack, firmware=True))
-        fp_menu.addAction(self._act("delete.svg", "Wipe (empty all bundles)",
+        fp_menu.addAction(self._act("delete.svg", _("Wipe (empty all bundles)"),
                                     self.wipe_fontpack, firmware=True))
         # The submenu's own action must be in _fw_actions too, else it stays grey
         # when only the firmware half is enabled and its items are unreachable.
         self._fw_actions.append(fp_menu.menuAction())
 
-        fw_menu = dev_menu.addMenu(get_icon("memory.svg"), "Firmware")
-        fw_menu.addAction(self._act("deployed_code.svg", "Flash only (.bin, stage)\u2026",
+        fw_menu = dev_menu.addMenu(get_icon("memory.svg"), _("Firmware"))
+        fw_menu.addAction(self._act("deployed_code.svg", _("Flash only (.bin, stage)\u2026"),
                                     lambda: self.open_hid_fw_up_dialog(apply_after=False),
                                     firmware=True))
-        fw_menu.addAction(self._act("arrow_circle_down.svg", "Apply staged firmware\u2026",
+        fw_menu.addAction(self._act("arrow_circle_down.svg", _("Apply staged firmware\u2026"),
                                     self.apply_staged_firmware_action, firmware=True))
         fw_menu.addSeparator()
         # Gated per feature (cmd 43, v22+) in PolyHost.managed_connection_status,
         # so it is deliberately in neither action list here.
-        self.boot_loop_action = self._act("sync_problem.svg", "Boot-loop test\u2026",
+        self.boot_loop_action = self._act("sync_problem.svg", _("Boot-loop test\u2026"),
                                           lambda: self.parent.open_boot_loop_dialog())
         fw_menu.addAction(self.boot_loop_action)
         self._fw_actions.append(fw_menu.menuAction())
 
         dev_menu.addSeparator()
-        dev_menu.addAction(self._act("file_open.svg", "Run command file (.poly.cmd)\u2026",
+        dev_menu.addAction(self._act("file_open.svg", _("Run command file (.poly.cmd)\u2026"),
                                      self.load_commands, device=True))
 
     def update_enabled(self, connected, fw_enabled):
@@ -291,17 +292,22 @@ class CommandsSubMenu:
 
     def set_handedness(self):
         master_is_left = self.parent.sender().data()
-        connected = "LEFT" if master_is_left else "RIGHT"
-        other = "RIGHT" if master_is_left else "LEFT"
-        confirm_msg = (
-            f"<b>Set the half the USB cable is plugged into as the {connected} side?</b>"
-            f"<br><br>The other half becomes the {other} side. Both halves save the "
-            f"new handedness and reboot onto it (about 10 s, no replug needed).<br><br>"
-            f"Make sure the USB cable is plugged into the half you want to be the "
-            f"<b>{connected}</b> side, then continue."
-        )
+        if master_is_left:
+            confirm_msg = _(
+                "<b>Set the half the USB cable is plugged into as the LEFT side?</b>"
+                "<br><br>The other half becomes the RIGHT side. Both halves save the "
+                "new handedness and reboot onto it (about 10 s, no replug needed).<br><br>"
+                "Make sure the USB cable is plugged into the half you want to be the "
+                "<b>LEFT</b> side, then continue.")
+        else:
+            confirm_msg = _(
+                "<b>Set the half the USB cable is plugged into as the RIGHT side?</b>"
+                "<br><br>The other half becomes the LEFT side. Both halves save the "
+                "new handedness and reboot onto it (about 10 s, no replug needed).<br><br>"
+                "Make sure the USB cable is plugged into the half you want to be the "
+                "<b>RIGHT</b> side, then continue.")
         reply = QMessageBox.question(
-            None, "Fix Left/Right Side", confirm_msg,
+            None, _("Fix Left/Right Side"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("Set handedness: user cancelled at confirmation.")
@@ -320,13 +326,13 @@ class CommandsSubMenu:
         fired straight away; on the top-level Maintenance menu it is one slip
         away from every user's remapped keymap, so it confirms.
         """
-        confirm_msg = (
+        confirm_msg = _(
             "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>"
             "Every key you remapped goes back to the layout the "
             "firmware ships with. This cannot be undone.<br><br>Continue?"
         )
         reply = QMessageBox.question(
-            None, "Reset Keymap", confirm_msg,
+            None, _("Reset Keymap"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("Reset dynamic keymap: user cancelled at confirmation.")
@@ -380,12 +386,12 @@ class CommandsSubMenu:
         renders wrong (a lost COMMIT acknowledgement leaves exactly that state), so this
         is the way back. Confirmed because it re-sends the whole pack (~0.5 MB, ~1 min)."""
         reply = QMessageBox.question(
-            None, "Re-flash Font Pack",
-            "<b>Re-flash every font-pack bundle?</b><br><br>"
-            "Every shipped bundle is sent again even if the keyboard already reports it as "
-            "up to date — use this when a glyph renders wrong or a previous flash was "
-            "reported as failed. Takes about a minute; typing keeps working throughout."
-            "<br><br>Continue?",
+            None, _("Re-flash Font Pack"),
+            _("<b>Re-flash every font-pack bundle?</b><br><br>"
+              "Every shipped bundle is sent again even if the keyboard already reports it as "
+              "up to date — use this when a glyph renders wrong or a previous flash was "
+              "reported as failed. Takes about a minute; typing keeps working throughout."
+              "<br><br>Continue?"),
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("Font pack force re-flash: user cancelled at confirmation.")
@@ -396,7 +402,7 @@ class CommandsSubMenu:
     def wipe_fontpack(self):
         """Empty every font-pack slot (resident-only fonts until re-flashed). The next
         connect re-flashes the shipped bundles automatically."""
-        confirm_msg = (
+        confirm_msg = _(
             "<b>Wipe the external-flash font pack?</b><br><br>"
             "Every font-pack bundle slot is emptied — the keyboard renders only its "
             "built-in (resident) fonts until the pack is flashed again. The bundles "
@@ -404,7 +410,7 @@ class CommandsSubMenu:
             "(or via Font Pack → Sync).<br><br>Continue?"
         )
         reply = QMessageBox.question(
-            None, "Wipe Font Pack", confirm_msg,
+            None, _("Wipe Font Pack"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("Font pack wipe: user cancelled at confirmation.")
@@ -414,32 +420,34 @@ class CommandsSubMenu:
 
     def show_layer_count(self):
         ok, value = self._core.keymap_layer_count()
-        self._info("Keymap", f"Layers: {value}" if ok else f"Could not read the layer count: {value}")
+        self._info(_("Keymap"), _f("Layers: {count}", count=value) if ok
+                   else _f("Could not read the layer count: {error}", error=value))
 
     def show_default_layer(self):
         ok, value = self._core.keymap_default_layer()
-        self._info("Keymap", f"Default layer: {value}" if ok
-                   else f"Could not read the default layer: {value}")
+        self._info(_("Keymap"), _f("Default layer: {layer}", layer=value) if ok
+                   else _f("Could not read the default layer: {error}", error=value))
 
     def dump_keymap_buffer(self):
         """Write the raw keymap buffer to the host log — it is far too big for a
         dialog, and the log is what gets attached to a bug report anyway."""
         ok, buf = self._core.keymap_buffer()
         if not ok:
-            self._info("Keymap", f"Could not read the keymap buffer: {buf}")
+            self._info(_("Keymap"), _f("Could not read the keymap buffer: {error}", error=buf))
             return
         data = bytes(buf) if not isinstance(buf, str) else buf.encode()
         self.log.info("Keymap buffer (%d bytes):\n%s", len(data), data.hex(" ", 2))
-        self._info("Keymap", f"Keymap buffer ({len(data)} bytes) written to the log.")
+        self._info(_("Keymap"), _f("Keymap buffer ({size} bytes) written to the log.",
+                                   size=len(data)))
 
     def show_fontpack_status(self):
         """Per-bundle device-vs-shipped versions (what Sync would actually do)."""
         ok, info = self._core.fontpack_bundle_status()
         if not ok:
-            self._info("Font Pack", f"Could not read the font-pack status: {info}")
+            self._info(_("Font Pack"), _f("Could not read the font-pack status: {error}", error=info))
             return
         if not info.get("shipped"):
-            self._info("Font Pack", "This host ships no font-pack bundles.")
+            self._info(_("Font Pack"), _("This host ships no font-pack bundles."))
             return
         # NB: `state=` is deliberately a DIFFERENT name from the payload's own
         # `stale` key — passing both an explicit stale= and **b (which carries
@@ -447,17 +455,19 @@ class CommandsSubMenu:
         rows = "".join(
             "<tr><td>{id}</td><td align=right>{device_version}</td>"
             "<td align=right>{shipped_version}</td><td>{state}</td></tr>".format(
-                state="stale" if b["stale"] else "ok", **b)
+                # TRANSLATORS: font-pack bundle state in a status table
+                state=_("stale") if b["stale"] else _("ok"), **b)
             for b in info["bundles"])
-        self._info("Font Pack",
-                   "<table cellpadding=4><tr><th align=left>bundle</th><th>device</th>"
-                   f"<th>shipped</th><th></th></tr>{rows}</table>")
+        self._info(_("Font Pack"),
+                   "<table cellpadding=4><tr><th align=left>" + _("bundle") + "</th>"
+                   "<th>" + _("device") + "</th>"
+                   "<th>" + _("shipped") + f"</th><th></th></tr>{rows}</table>")
 
     def _info(self, title, text):
         QMessageBox.information(None, title, text)
 
     def load_commands(self):
-        file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")
+        file_name = _get_open_file_explicit(_("Open file"), _("PolyKybd commands (*.poly.cmd)"))
         if file_name:
             with open(file_name) as f:
                 lines = [ln.strip() for ln in f if ln.strip()]
@@ -487,11 +497,11 @@ class CommandsSubMenu:
         from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
         if not self.parent.keeb.hid or not self.parent.keeb.hid.interface_acquired():
-            QMessageBox.warning(None, "Not Connected",
-                                "PolyKybd is not connected. Please connect the keyboard and try again.")
+            QMessageBox.warning(None, _("Not Connected"),
+                                _("PolyKybd is not connected. Please connect the keyboard and try again."))
             return
 
-        bin_path = _get_open_file_explicit("Select Firmware Binary", "Firmware binary (*.bin)")
+        bin_path = _get_open_file_explicit(_("Select Firmware Binary"), _("Firmware binary (*.bin)"))
         if not bin_path:
             self.log.info("FW_UP: no file selected, cancelled.")
             return
@@ -502,18 +512,18 @@ class CommandsSubMenu:
             with open(bin_path, 'rb') as fh:
                 fw_bytes = fh.read()
         except OSError as exc:
-            QMessageBox.critical(None, "File Error",
-                                 f"Could not read firmware file:\n{exc}")
+            QMessageBox.critical(None, _("File Error"),
+                                 _f("Could not read firmware file:\n{error}", error=exc))
             return
 
         valid, reason = validate_rp2040_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, "Invalid Firmware File", reason)
+            QMessageBox.critical(None, _("Invalid Firmware File"), reason)
             return
 
         valid, reason = validate_polykybd_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, "Wrong Keyboard", reason)
+            QMessageBox.critical(None, _("Wrong Keyboard"), reason)
             return
 
         # FW-2 advisory, at SELECTION time — before a 446 KB transfer and before
@@ -523,20 +533,20 @@ class CommandsSubMenu:
         # this never blocks the flash.
         signed, advisory = check_signature_file(bin_path)
         if not signed:
-            QMessageBox.information(None, "Unsigned Firmware", advisory)
+            QMessageBox.information(None, _("Unsigned Firmware"), advisory)
 
         # The confirmation text + title depend on whether we also activate the
         # image right after staging (single-step "flash + apply").
         if apply_after:
-            dlg_title = "Flash + Apply Firmware"
-            confirm_body = (
+            dlg_title = _("Flash + Apply Firmware")
+            confirm_body = _(
                 "This will transfer the new firmware to the keyboard, verify it "
                 "(CRC32), then <b>activate it</b> — both halves reboot onto the "
                 "new firmware automatically (no replug needed)."
             )
         else:
-            dlg_title = "Flash Firmware"
-            confirm_body = (
+            dlg_title = _("Flash Firmware")
+            confirm_body = _(
                 "This will transfer and stage the new firmware on the keyboard, "
                 "then verify it (CRC32). The image is stored but "
                 "<b>not activated yet</b> — the keyboard keeps running its "
@@ -555,12 +565,12 @@ class CommandsSubMenu:
         if ok:
             current = info.get('version', '?')
             size_kb = info.get('fw_size', 0) // 1024
-            head = (f"Current keyboard firmware: <b>{current}</b> ({size_kb} KB)<br><br>"
-                    f"Selected file:<br>{bin_path}<br><br>")
+            head = (_f("Current keyboard firmware: <b>{version}</b> ({size_kb} KB)",
+                       version=current, size_kb=size_kb) + "<br><br>")
         else:
-            head = (f"Could not query current firmware version.<br><br>"
-                    f"Selected file:<br>{bin_path}<br><br>")
-        confirm_msg = head + confirm_body + "<br><br>Continue?"
+            head = _("Could not query current firmware version.") + "<br><br>"
+        head += _f("Selected file:<br>{path}", path=bin_path) + "<br><br>"
+        confirm_msg = head + confirm_body + "<br><br>" + _("Continue?")
 
         reply = QMessageBox.question(
             None, dlg_title, confirm_msg,
@@ -587,7 +597,7 @@ class CommandsSubMenu:
         enabled; otherwise the keyboard safely reports apply unavailable and leaves
         the staged image untouched.
         """
-        confirm_msg = (
+        confirm_msg = _(
             "<b>Apply the staged firmware?</b><br><br>"
             "Both keyboard halves will install the previously-staged image and "
             "reboot onto the new firmware automatically (no replug needed).<br><br>"
@@ -597,7 +607,7 @@ class CommandsSubMenu:
             "Continue?"
         )
         reply = QMessageBox.question(
-            None, "Apply Staged Firmware", confirm_msg,
+            None, _("Apply Staged Firmware"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("FW_UP_APPLY: user cancelled at confirmation.")
@@ -610,8 +620,8 @@ class CommandsSubMenu:
             return
 
         if not self.parent.keeb.hid or not self.parent.keeb.hid.interface_acquired():
-            QMessageBox.warning(None, "Not Connected",
-                                "PolyKybd is not connected. Please connect the keyboard and try again.")
+            QMessageBox.warning(None, _("Not Connected"),
+                                _("PolyKybd is not connected. Please connect the keyboard and try again."))
             return
 
         # Pause the host polling loop so the 1 s reconnect timer doesn't contend for
@@ -622,6 +632,6 @@ class CommandsSubMenu:
                 progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
 
         if ok:
-            QMessageBox.information(None, "Firmware Applied", msg)
+            QMessageBox.information(None, _("Firmware Applied"), msg)
         else:
-            QMessageBox.warning(None, "Apply Failed", msg)
+            QMessageBox.warning(None, _("Apply Failed"), msg)

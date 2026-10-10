@@ -1,0 +1,3503 @@
+# Indonesian translations for PolyKybdHost.
+# Copyright (C) 2026 PolyKybd contributors
+# This file is distributed under the same license as the PolyKybdHost project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PolyKybdHost VERSION\n"
+"Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
+"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"PO-Revision-Date: 2026-10-05 16:02+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: id\n"
+"Language-Team: id <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: polyhost/device/command_ids.py:148
+#, python-brace-format
+msgid "preset {value}"
+msgstr "preset {value}"
+
+#: polyhost/device/command_ids.py:150
+#, python-brace-format
+msgid "{minutes} min"
+msgstr "{minutes} mnt"
+
+#: polyhost/device/command_ids.py:151
+#, python-brace-format
+msgid "{seconds} sec"
+msgstr "{seconds} dtk"
+
+#: polyhost/forwarder.py:240
+msgid "Press to pause forwarding"
+msgstr "Tekan untuk menjeda penerusan"
+
+#: polyhost/forwarder.py:247
+msgid "Stop sending this machine's active window to the keyboard machine."
+msgstr "Berhenti mengirim jendela aktif komputer ini ke komputer keyboard."
+
+#: polyhost/forwarder.py:259
+msgid "Check for host update…"
+msgstr "Periksa pembaruan host…"
+
+#: polyhost/forwarder.py:340
+#, python-brace-format
+msgid "no host (waiting for {path})"
+msgstr "tidak ada host (menunggu {path})"
+
+#: polyhost/forwarder.py:341
+msgid "no host configured"
+msgstr "host belum dikonfigurasi"
+
+#: polyhost/forwarder.py:344
+#, python-brace-format
+msgid "PolyKybdHost {version} (forwarder) → {target}"
+msgstr "PolyKybdHost {version} (forwarder) → {target}"
+
+#: polyhost/forwarder.py:349
+msgid "Forwarding paused"
+msgstr "Penerusan dijeda"
+
+#: polyhost/forwarder.py:352
+#, python-brace-format
+msgid "Forwarding to {target}…"
+msgstr "Meneruskan ke {target}…"
+
+#: polyhost/forwarder.py:354
+#, python-brace-format
+msgid "Forwarding to {target}"
+msgstr "Meneruskan ke {target}"
+
+#: polyhost/forwarder.py:355
+#, python-brace-format
+msgid "Cannot reach {target}"
+msgstr "Tidak dapat menjangkau {target}"
+
+#: polyhost/forwarder.py:748
+msgid "PolyForwarder settings"
+msgstr "Pengaturan PolyForwarder"
+
+#: polyhost/forwarder.py:749
+msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
+msgstr "Pengaturan tidak dapat disimpan ke file pengaturan, jadi tidak akan berlaku. Mungkin ada program lain yang sedang membukanya. Coba lagi, atau lihat log."
+
+#: polyhost/forwarder.py:768
+#, python-brace-format
+msgid "authenticated RPC (port {port})"
+msgstr "RPC terautentikasi (port {port})"
+
+#: polyhost/forwarder.py:770
+msgid "legacy plaintext TCP relay"
+msgstr "relai TCP teks biasa lama"
+
+#: polyhost/forwarder.py:773
+msgid "reaching the keyboard machine"
+msgstr "menjangkau komputer keyboard"
+
+#: polyhost/forwarder.py:774
+msgid "not reaching the keyboard machine"
+msgstr "tidak menjangkau komputer keyboard"
+
+#: polyhost/forwarder.py:775
+msgid "starting up"
+msgstr "sedang memulai"
+
+#: polyhost/forwarder.py:777
+msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
+msgstr "<b>Mode:</b> forwarder — tidak ada keyboard yang terpasang di komputer ini"
+
+#: polyhost/forwarder.py:778
+#, python-brace-format
+msgid "<b>Target:</b> {target}"
+msgstr "<b>Tujuan:</b> {target}"
+
+#: polyhost/forwarder.py:780
+#, python-brace-format
+msgid "<b>Window reports:</b> {transport}"
+msgstr "<b>Laporan jendela:</b> {transport}"
+
+#: polyhost/forwarder.py:783
+#, python-brace-format
+msgid "<b>Host file:</b> {path}"
+msgstr "<b>File host:</b> {path}"
+
+#: polyhost/forwarder.py:804
+msgid "About PolyKybdHost (forwarder)"
+msgstr "Tentang PolyKybdHost (forwarder)"
+
+#: polyhost/forwarder.py:813
+msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
+msgstr "Mode forwarder: komputer ini tidak memiliki keyboard. Aplikasi memantau jendela aktif di sini dan meneruskannya ke PolyKybdHost yang berjalan di komputer tempat keyboard terpasang."
+
+#: polyhost/forwarder.py:852
+msgid "Download, install, and restart the forwarder now?"
+msgstr "Unduh, instal, dan mulai ulang forwarder sekarang?"
+
+#: polyhost/gui/about_dialog.py:40
+msgid "Blog"
+msgstr "Blog"
+
+#: polyhost/gui/about_dialog.py:97
+msgid "About PolyKybdHost"
+msgstr "Tentang PolyKybdHost"
+
+#: polyhost/gui/about_dialog.py:141 polyhost/gui/about_dialog.py:151
+msgid "Copy diagnostics"
+msgstr "Salin diagnostik"
+
+#: polyhost/gui/about_dialog.py:145
+msgid "Copied ✓"
+msgstr "Tersalin ✓"
+
+#: polyhost/gui/boot_loop_dialog.py:25
+msgid "Reboots the keyboard again and again to catch an intermittent boot hang. After each reboot it waits for the keyboard to come back and reads its crash record. It stops at the first boot that left a fresh crash record, at a boot that does not come back within a minute, or after the last round.<br><br>The keyboard does not type while this runs, and each round takes a few seconds."
+msgstr "Mem-boot ulang keyboard berulang kali untuk menangkap macet saat boot yang terjadi sesekali. Setelah setiap boot ulang, aplikasi menunggu keyboard kembali dan membaca catatan crash-nya. Pengujian berhenti pada boot pertama yang meninggalkan catatan crash baru, pada boot yang tidak kembali dalam satu menit, atau setelah putaran terakhir.<br><br>Keyboard tidak mengetik selama pengujian berjalan, dan setiap putaran memakan waktu beberapa detik."
+
+#: polyhost/gui/boot_loop_dialog.py:34
+msgid "<b>No boot problem found.</b>"
+msgstr "<b>Tidak ditemukan masalah boot.</b>"
+
+#: polyhost/gui/boot_loop_dialog.py:35
+msgid "<b>A boot problem was recorded.</b> The record is above; Copy to Clipboard to report it."
+msgstr "<b>Masalah boot tercatat.</b> Catatannya ada di atas; gunakan Salin ke Papan Klip untuk melaporkannya."
+
+#: polyhost/gui/boot_loop_dialog.py:37
+msgid "<b>The keyboard did not come back.</b> Note the status panel, then unplug and replug it and read the crash record."
+msgstr "<b>Keyboard tidak kembali.</b> Catat isi panel status, lalu cabut dan pasang kembali keyboard, kemudian baca catatan crash-nya."
+
+#: polyhost/gui/boot_loop_dialog.py:39
+msgid "Stopped."
+msgstr "Dihentikan."
+
+#: polyhost/gui/boot_loop_dialog.py:49
+msgid "PolyKybd — boot-loop test"
+msgstr "PolyKybd — uji boot berulang"
+
+#: polyhost/gui/boot_loop_dialog.py:58
+msgid "Reboots:"
+msgstr "Boot ulang:"
+
+#: polyhost/gui/boot_loop_dialog.py:78
+msgid "Start"
+msgstr "Mulai"
+
+#: polyhost/gui/boot_loop_dialog.py:82
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
+msgid "Stop"
+msgstr "Hentikan"
+
+#: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
+#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:151
+#: polyhost/gui/problem_alert_dialog.py:70
+msgid "Copy to Clipboard"
+msgstr "Salin ke Papan Klip"
+
+#: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
+#: polyhost/gui/fontpack_extend_dialog.py:856
+#: polyhost/gui/fontpack_inspector_dialog.py:1000
+#: polyhost/gui/hid_fw_up_dialog.py:458 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/mru_inspector_dialog.py:101
+#: polyhost/gui/split_link_dialog.py:95
+msgid "Close"
+msgstr "Tutup"
+
+#: polyhost/gui/boot_loop_dialog.py:113
+#, python-brace-format
+msgid "Could not start: {error}"
+msgstr "Tidak dapat memulai: {error}"
+
+#: polyhost/gui/boot_loop_dialog.py:115
+#, python-brace-format
+msgid "Started: up to {n} reboot(s)."
+msgid_plural "Started: up to {n} reboot(s)."
+msgstr[0] "Dimulai: hingga {n} boot ulang."
+msgstr[1] "Dimulai: hingga {n} boot ulang."
+
+#: polyhost/gui/boot_loop_dialog.py:123
+msgid "Stopping after the current step…"
+msgstr "Berhenti setelah langkah saat ini…"
+
+#: polyhost/gui/boot_loop_dialog.py:124
+#, python-brace-format
+msgid "Could not stop: {error}"
+msgstr "Tidak dapat menghentikan: {error}"
+
+#: polyhost/gui/boot_loop_dialog.py:155
+#, python-brace-format
+msgid "<b>Failed:</b> {reason}"
+msgstr "<b>Gagal:</b> {reason}"
+
+#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:48
+msgid "Brightness"
+msgstr "Kecerahan"
+
+#: polyhost/gui/cmd_menu.py:128
+msgid "Off"
+msgstr "Mati"
+
+#: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
+msgid "Back to automatic"
+msgstr "Kembali ke otomatis"
+
+#: polyhost/gui/cmd_menu.py:159
+msgid "Re-apply the host's automatic brightness."
+msgstr "Terapkan ulang kecerahan otomatis dari host."
+
+#: polyhost/gui/cmd_menu.py:163
+msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
+msgstr "Aktifkan kembali kecerahan otomatis (cahaya siang) — preset manual di atas dibatalkan."
+
+#: polyhost/gui/cmd_menu.py:166
+msgid "Clear manual override"
+msgstr "Hapus pengaturan manual"
+
+#: polyhost/gui/cmd_menu.py:167
+msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
+msgstr "Kecerahan berdasarkan cahaya siang dinonaktifkan di Pengaturan, jadi ini hanya mengembalikan keyboard ke kecerahan tersimpannya sendiri."
+
+#: polyhost/gui/cmd_menu.py:182
+msgid "Maintenance"
+msgstr "Pemeliharaan"
+
+#: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
+msgid "Fix Left/Right Side"
+msgstr "Perbaiki Sisi Kiri/Kanan"
+
+#: polyhost/gui/cmd_menu.py:187
+msgid "Connected half is LEFT (other is RIGHT)"
+msgstr "Belahan yang terhubung adalah KIRI (yang lain KANAN)"
+
+#: polyhost/gui/cmd_menu.py:190
+msgid "Connected half is RIGHT (other is LEFT)"
+msgstr "Belahan yang terhubung adalah KANAN (yang lain KIRI)"
+
+#: polyhost/gui/cmd_menu.py:194
+msgid "Reset overlays"
+msgstr "Atur ulang overlay"
+
+#: polyhost/gui/cmd_menu.py:196
+msgid "Reset keymap to default…"
+msgstr "Atur ulang keymap ke bawaan…"
+
+#: polyhost/gui/cmd_menu.py:202
+msgid "Flash firmware file (.bin)…"
+msgstr "Flash file firmware (.bin)…"
+
+#: polyhost/gui/cmd_menu.py:205
+msgid "Activate bootloader…"
+msgstr "Aktifkan bootloader…"
+
+#: polyhost/gui/cmd_menu.py:211
+msgid "Overlays"
+msgstr "Overlay"
+
+#: polyhost/gui/cmd_menu.py:212
+msgid "Enable shortcut overlays"
+msgstr "Aktifkan overlay pintasan"
+
+#: polyhost/gui/cmd_menu.py:214
+msgid "Disable shortcut overlays"
+msgstr "Nonaktifkan overlay pintasan"
+
+#: polyhost/gui/cmd_menu.py:217
+msgid "Reset overlay buffers"
+msgstr "Atur ulang buffer overlay"
+
+#: polyhost/gui/cmd_menu.py:219
+msgid "Reset overlay mapping"
+msgstr "Atur ulang pemetaan overlay"
+
+#: polyhost/gui/cmd_menu.py:221
+msgid "Clear overlay usage"
+msgstr "Hapus data penggunaan overlay"
+
+#: polyhost/gui/cmd_menu.py:223
+msgid "Set all overlay mapping"
+msgstr "Setel semua pemetaan overlay"
+
+#: polyhost/gui/cmd_menu.py:227
+msgid "Idle"
+msgstr "Diam"
+
+#: polyhost/gui/cmd_menu.py:228
+msgid "Start idle now"
+msgstr "Mulai mode diam sekarang"
+
+#: polyhost/gui/cmd_menu.py:230
+msgid "Stop idle"
+msgstr "Hentikan mode diam"
+
+#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
+#: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
+#: polyhost/gui/cmd_menu.py:440
+msgid "Keymap"
+msgstr "Keymap"
+
+#: polyhost/gui/cmd_menu.py:235
+msgid "Layer count"
+msgstr "Jumlah lapisan"
+
+#: polyhost/gui/cmd_menu.py:237
+msgid "Default layer"
+msgstr "Lapisan bawaan"
+
+#: polyhost/gui/cmd_menu.py:239
+msgid "Dump keymap buffer to the log"
+msgstr "Tulis buffer keymap ke log"
+
+#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
+#: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
+msgid "Font Pack"
+msgstr "Paket Font"
+
+#: polyhost/gui/cmd_menu.py:244
+msgid "Per-bundle status…"
+msgstr "Status per bundel…"
+
+#: polyhost/gui/cmd_menu.py:246
+msgid "Sync (flash missing/updated bundles)"
+msgstr "Sinkronkan (flash bundel yang hilang/diperbarui)"
+
+#: polyhost/gui/cmd_menu.py:248
+msgid "Re-flash ALL bundles (force)…"
+msgstr "Flash ulang SEMUA bundel (paksa)…"
+
+#: polyhost/gui/cmd_menu.py:250
+msgid "Wipe (empty all bundles)"
+msgstr "Hapus isi (kosongkan semua bundel)"
+
+#: polyhost/gui/cmd_menu.py:256
+msgid "Firmware"
+msgstr "Firmware"
+
+#: polyhost/gui/cmd_menu.py:257
+msgid "Flash only (.bin, stage)…"
+msgstr "Flash saja (.bin, tahap)…"
+
+#: polyhost/gui/cmd_menu.py:260
+msgid "Apply staged firmware…"
+msgstr "Terapkan firmware yang ditahap…"
+
+#: polyhost/gui/cmd_menu.py:265
+msgid "Boot-loop test…"
+msgstr "Uji boot berulang…"
+
+#: polyhost/gui/cmd_menu.py:271
+msgid "Run command file (.poly.cmd)…"
+msgstr "Jalankan file perintah (.poly.cmd)…"
+
+#: polyhost/gui/cmd_menu.py:297
+msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
+msgstr "<b>Jadikan belahan tempat kabel USB terpasang sebagai sisi KIRI?</b><br><br>Belahan lainnya menjadi sisi KANAN. Kedua belahan menyimpan pengaturan sisi yang baru dan boot ulang dengannya (sekitar 10 s, tanpa perlu mencabut kabel).<br><br>Pastikan kabel USB terpasang di belahan yang ingin Anda jadikan sisi <b>KIRI</b>, lalu lanjutkan."
+
+#: polyhost/gui/cmd_menu.py:304
+msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
+msgstr "<b>Jadikan belahan tempat kabel USB terpasang sebagai sisi KANAN?</b><br><br>Belahan lainnya menjadi sisi KIRI. Kedua belahan menyimpan pengaturan sisi yang baru dan boot ulang dengannya (sekitar 10 s, tanpa perlu mencabut kabel).<br><br>Pastikan kabel USB terpasang di belahan yang ingin Anda jadikan sisi <b>KANAN</b>, lalu lanjutkan."
+
+#: polyhost/gui/cmd_menu.py:330
+msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
+msgstr "<b>Atur ulang keymap keyboard ke bawaan firmware?</b><br><br>Setiap tombol yang Anda petakan ulang kembali ke tata letak bawaan firmware. Tindakan ini tidak dapat dibatalkan.<br><br>Lanjutkan?"
+
+#: polyhost/gui/cmd_menu.py:335
+msgid "Reset Keymap"
+msgstr "Atur Ulang Keymap"
+
+#: polyhost/gui/cmd_menu.py:389
+msgid "Re-flash Font Pack"
+msgstr "Flash Ulang Paket Font"
+
+#: polyhost/gui/cmd_menu.py:390
+msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
+msgstr "<b>Flash ulang setiap bundel paket font?</b><br><br>Setiap bundel bawaan dikirim lagi meskipun keyboard sudah melaporkannya sebagai mutakhir — gunakan ini jika glif tampil salah atau flash sebelumnya dilaporkan gagal. Memakan waktu sekitar satu menit; mengetik tetap berfungsi selama proses.<br><br>Lanjutkan?"
+
+#: polyhost/gui/cmd_menu.py:406
+msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
+msgstr "<b>Hapus isi paket font di flash eksternal?</b><br><br>Setiap slot bundel paket font dikosongkan — keyboard hanya menampilkan font bawaannya (residen) hingga paket di-flash lagi. Bundel yang disertakan dengan host ini di-flash ulang secara otomatis pada koneksi berikutnya (atau melalui Paket Font → Sinkronkan).<br><br>Lanjutkan?"
+
+#: polyhost/gui/cmd_menu.py:413
+msgid "Wipe Font Pack"
+msgstr "Hapus Isi Paket Font"
+
+#: polyhost/gui/cmd_menu.py:423
+#, python-brace-format
+msgid "Layers: {count}"
+msgstr "Lapisan: {count}"
+
+#: polyhost/gui/cmd_menu.py:424
+#, python-brace-format
+msgid "Could not read the layer count: {error}"
+msgstr "Tidak dapat membaca jumlah lapisan: {error}"
+
+#: polyhost/gui/cmd_menu.py:428
+#, python-brace-format
+msgid "Default layer: {layer}"
+msgstr "Lapisan bawaan: {layer}"
+
+#: polyhost/gui/cmd_menu.py:429
+#, python-brace-format
+msgid "Could not read the default layer: {error}"
+msgstr "Tidak dapat membaca lapisan bawaan: {error}"
+
+#: polyhost/gui/cmd_menu.py:436
+#, python-brace-format
+msgid "Could not read the keymap buffer: {error}"
+msgstr "Tidak dapat membaca buffer keymap: {error}"
+
+#: polyhost/gui/cmd_menu.py:440
+#, python-brace-format
+msgid "Keymap buffer ({size} bytes) written to the log."
+msgstr "Buffer keymap ({size} byte) ditulis ke log."
+
+#: polyhost/gui/cmd_menu.py:447
+#, python-brace-format
+msgid "Could not read the font-pack status: {error}"
+msgstr "Tidak dapat membaca status paket font: {error}"
+
+#: polyhost/gui/cmd_menu.py:450
+msgid "This host ships no font-pack bundles."
+msgstr "Host ini tidak menyertakan bundel paket font."
+
+#. TRANSLATORS: font-pack bundle state in a status table
+#: polyhost/gui/cmd_menu.py:459
+msgid "stale"
+msgstr "usang"
+
+#. TRANSLATORS: CRC check result in the bundle header ("crc ok")
+#. TRANSLATORS: CRC check result ("crc ok")
+#: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/fontpack_inspector_dialog.py:784
+msgid "ok"
+msgstr "ok"
+
+#: polyhost/gui/cmd_menu.py:462
+msgid "bundle"
+msgstr "bundel"
+
+#: polyhost/gui/cmd_menu.py:463
+msgid "device"
+msgstr "perangkat"
+
+#: polyhost/gui/cmd_menu.py:464
+msgid "shipped"
+msgstr "bawaan"
+
+#: polyhost/gui/cmd_menu.py:470
+msgid "PolyKybd commands (*.poly.cmd)"
+msgstr "Perintah PolyKybd (*.poly.cmd)"
+
+#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2243
+msgid "Open file"
+msgstr "Buka file"
+
+#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+msgid "Not Connected"
+msgstr "Tidak Terhubung"
+
+#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
+msgid "PolyKybd is not connected. Please connect the keyboard and try again."
+msgstr "PolyKybd tidak terhubung. Hubungkan keyboard lalu coba lagi."
+
+#: polyhost/gui/cmd_menu.py:504
+msgid "Select Firmware Binary"
+msgstr "Pilih Biner Firmware"
+
+#: polyhost/gui/cmd_menu.py:504
+msgid "Firmware binary (*.bin)"
+msgstr "Biner firmware (*.bin)"
+
+#: polyhost/gui/cmd_menu.py:515
+msgid "File Error"
+msgstr "Kesalahan File"
+
+#: polyhost/gui/cmd_menu.py:516
+#, python-brace-format
+msgid ""
+"Could not read firmware file:\n"
+"{error}"
+msgstr ""
+"Tidak dapat membaca file firmware:\n"
+"{error}"
+
+#: polyhost/gui/cmd_menu.py:521
+msgid "Invalid Firmware File"
+msgstr "File Firmware Tidak Valid"
+
+#: polyhost/gui/cmd_menu.py:526
+msgid "Wrong Keyboard"
+msgstr "Keyboard Salah"
+
+#: polyhost/gui/cmd_menu.py:536
+msgid "Unsigned Firmware"
+msgstr "Firmware Tidak Bertanda Tangan"
+
+#: polyhost/gui/cmd_menu.py:541
+msgid "Flash + Apply Firmware"
+msgstr "Flash + Terapkan Firmware"
+
+#: polyhost/gui/cmd_menu.py:543
+msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
+msgstr "Ini akan mentransfer firmware baru ke keyboard, memverifikasinya (CRC32), lalu <b>mengaktifkannya</b> — kedua belahan otomatis boot ulang ke firmware baru (tanpa perlu mencabut kabel)."
+
+#: polyhost/gui/cmd_menu.py:548
+msgid "Flash Firmware"
+msgstr "Flash Firmware"
+
+#: polyhost/gui/cmd_menu.py:550
+msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
+msgstr "Ini akan mentransfer dan menahap firmware baru di keyboard, lalu memverifikasinya (CRC32). Image disimpan tetapi <b>belum diaktifkan</b> — keyboard tetap menjalankan firmware saat ini hingga Anda menerapkannya secara terpisah."
+
+#: polyhost/gui/cmd_menu.py:568
+#, python-brace-format
+msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
+msgstr "Firmware keyboard saat ini: <b>{version}</b> ({size_kb} KB)"
+
+#: polyhost/gui/cmd_menu.py:571
+msgid "Could not query current firmware version."
+msgstr "Tidak dapat menanyakan versi firmware saat ini."
+
+#: polyhost/gui/cmd_menu.py:572
+#, python-brace-format
+msgid "Selected file:<br>{path}"
+msgstr "File yang dipilih:<br>{path}"
+
+#: polyhost/gui/cmd_menu.py:573
+msgid "Continue?"
+msgstr "Lanjutkan?"
+
+#: polyhost/gui/cmd_menu.py:601
+msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
+msgstr "<b>Terapkan firmware yang ditahap?</b><br><br>Kedua belahan keyboard akan memasang image yang sebelumnya ditahap dan otomatis boot ulang ke firmware baru (tanpa perlu mencabut kabel).<br><br>Jika firmware ini tidak di-build dengan fitur penerapan dalam aplikasi, keyboard dengan aman melaporkan bahwa penerapan tidak tersedia dan membiarkan image yang ditahap tidak tersentuh.<br><br>Lanjutkan?"
+
+#: polyhost/gui/cmd_menu.py:610
+msgid "Apply Staged Firmware"
+msgstr "Terapkan Firmware yang Ditahap"
+
+#: polyhost/gui/cmd_menu.py:635
+msgid "Firmware Applied"
+msgstr "Firmware Diterapkan"
+
+#: polyhost/gui/cmd_menu.py:637
+msgid "Apply Failed"
+msgstr "Penerapan Gagal"
+
+#: polyhost/gui/crash_alert_dialog.py:44 polyhost/gui/crash_alert_dialog.py:113
+msgid "PolyKybd — the keyboard firmware crashed"
+msgstr "PolyKybd — firmware keyboard mengalami crash"
+
+#: polyhost/gui/crash_alert_dialog.py:53
+msgid "What the keyboard reported"
+msgstr "Yang dilaporkan keyboard"
+
+#: polyhost/gui/crash_alert_dialog.py:69
+msgid "Report on GitHub…"
+msgstr "Laporkan di GitHub…"
+
+#: polyhost/gui/crash_alert_dialog.py:83
+#: polyhost/gui/layout_dialog/macro_tab.py:213
+#: polyhost/gui/layout_dialog/macro_tab.py:235
+msgid "Clear"
+msgstr "Hapus"
+
+#: polyhost/gui/crash_alert_dialog.py:85
+msgid "Forget these records here AND erase the keyboard's crash archive."
+msgstr "Lupakan catatan ini di sini DAN hapus arsip crash di keyboard."
+
+#: polyhost/gui/crash_alert_dialog.py:89
+#: polyhost/gui/problem_alert_dialog.py:75
+msgid "Dismiss"
+msgstr "Tutup"
+
+#: polyhost/gui/crash_alert_dialog.py:115
+#, python-brace-format
+msgid "<b>Both keyboard halves crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
+msgstr "<b>Kedua belahan keyboard mengalami crash dan dimulai ulang</b> (firmware {firmware}, {kind} saat dalam {phase})."
+
+#: polyhost/gui/crash_alert_dialog.py:118
+#, python-brace-format
+msgid "<b>The keyboard crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
+msgstr "<b>Keyboard mengalami crash dan dimulai ulang</b> (firmware {firmware}, {kind} saat dalam {phase})."
+
+#: polyhost/gui/crash_alert_dialog.py:121
+#, python-brace-format
+msgid "<b>The link-side keyboard half crashed and restarted</b> (firmware {firmware}, {kind} while in {phase})."
+msgstr "<b>Belahan keyboard sisi tautan mengalami crash dan dimulai ulang</b> (firmware {firmware}, {kind} saat dalam {phase})."
+
+#: polyhost/gui/crash_alert_dialog.py:124
+msgid "The keyboard restarted on its own and is working again."
+msgstr "Keyboard dimulai ulang dengan sendirinya dan sudah berfungsi kembali."
+
+#: polyhost/gui/crash_alert_dialog.py:126
+msgid "PolyKybd — keyboard crash records"
+msgstr "PolyKybd — catatan crash keyboard"
+
+#: polyhost/gui/crash_alert_dialog.py:128
+#, python-brace-format
+msgid "<b>Crash record archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
+msgid_plural "<b>Crash records archived on the keyboard</b> (firmware {firmware}, {kind} while in {phase}). None of them is from the boot before this one."
+msgstr[0] "<b>Catatan crash diarsipkan di keyboard</b> (firmware {firmware}, {kind} saat dalam {phase}). Tidak ada yang berasal dari boot sebelum ini."
+msgstr[1] "<b>Catatan crash diarsipkan di keyboard</b> (firmware {firmware}, {kind} saat dalam {phase}). Tidak ada yang berasal dari boot sebelum ini."
+
+#: polyhost/gui/crash_alert_dialog.py:134
+msgid "These are earlier crashes, not a new one."
+msgstr "Ini adalah crash sebelumnya, bukan crash baru."
+
+#: polyhost/gui/crash_alert_dialog.py:136
+msgid "To help fix the cause, either open a bug report (this collects the logs and pre-fills a GitHub issue — nothing is sent until you press Submit there), or copy the details to paste wherever you are discussing it."
+msgstr "Untuk membantu memperbaiki penyebabnya, buka laporan bug (ini mengumpulkan log dan mengisi awal issue GitHub — tidak ada yang dikirim sampai Anda menekan Submit di sana), atau salin detailnya untuk ditempel di tempat Anda mendiskusikannya."
+
+#: polyhost/gui/crash_alert_dialog.py:161
+msgid "Clear crash records"
+msgstr "Hapus catatan crash"
+
+#: polyhost/gui/crash_alert_dialog.py:162
+#, python-brace-format
+msgid "Discard {n} crash record here and erase the keyboard's crash archive?"
+msgid_plural "Discard {n} crash records here and erase the keyboard's crash archive?"
+msgstr[0] "Buang {n} catatan crash di sini dan hapus arsip crash di keyboard?"
+msgstr[1] "Buang {n} catatan crash di sini dan hapus arsip crash di keyboard?"
+
+#: polyhost/gui/crash_alert_dialog.py:166
+msgid "This cannot be undone — report or copy them first if you still need them."
+msgstr "Tindakan ini tidak dapat dibatalkan — laporkan atau salin dulu jika Anda masih memerlukannya."
+
+#: polyhost/gui/crash_alert_dialog.py:194
+#, python-brace-format
+msgid "Cleared here, but the keyboard did not: {reason}"
+msgstr "Dihapus di sini, tetapi keyboard tidak: {reason}"
+
+#: polyhost/gui/crash_alert_dialog.py:196
+msgid "No crash records held."
+msgstr "Tidak ada catatan crash."
+
+#: polyhost/gui/crash_alert_dialog.py:204 polyhost/gui/error_dialog.py:74
+#: polyhost/gui/problem_alert_dialog.py:107
+msgid "Copied to the clipboard."
+msgstr "Disalin ke papan klip."
+
+#: polyhost/gui/crash_alert_dialog.py:213
+msgid "Opened the problem report with the crash filled in."
+msgstr "Laporan masalah dibuka dengan data crash sudah terisi."
+
+#: polyhost/gui/error_dialog.py:56
+msgid "Copy Fix Commands"
+msgstr "Salin Perintah Perbaikan"
+
+#: polyhost/gui/error_dialog.py:58
+msgid "Copy only the commands, to paste into a terminal after quitting."
+msgstr "Salin hanya perintahnya, untuk ditempel ke terminal setelah keluar."
+
+#: polyhost/gui/error_dialog.py:79
+msgid "Commands copied. Paste them into a terminal."
+msgstr "Perintah disalin. Tempelkan ke terminal."
+
+#: polyhost/gui/fontpack_extend_dialog.py:98
+msgid "PolyKybd — Build / Edit Glyph"
+msgstr "PolyKybd — Build / Edit Glif"
+
+#: polyhost/gui/fontpack_extend_dialog.py:118
+msgid "pick one from Source fonts below, or Browse…"
+msgstr "pilih salah satu dari Font sumber di bawah, atau Telusuri…"
+
+#: polyhost/gui/fontpack_extend_dialog.py:119
+msgid "Browse…"
+msgstr "Telusuri…"
+
+#: polyhost/gui/fontpack_extend_dialog.py:120
+msgid "Use a custom font not in the Noto list"
+msgstr "Gunakan font kustom yang tidak ada di daftar Noto"
+
+#: polyhost/gui/fontpack_extend_dialog.py:127
+msgid "Source font"
+msgstr "Font sumber"
+
+#: polyhost/gui/fontpack_extend_dialog.py:129
+msgid "Codepoint range"
+msgstr "Rentang codepoint"
+
+#: polyhost/gui/fontpack_extend_dialog.py:129
+msgid "HarfBuzz sequence"
+msgstr "Urutan HarfBuzz"
+
+#: polyhost/gui/fontpack_extend_dialog.py:131
+#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+msgid "Mode"
+msgstr "Mode"
+
+#: polyhost/gui/fontpack_extend_dialog.py:138
+msgid "Range first–last (hex)"
+msgstr "Rentang awal–akhir (heksa)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:140
+msgid "Sequence (hex cps; , = glyph)"
+msgstr "Urutan (cp heksa; , = glif)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:142
+msgid "Sequence base -F (hex)"
+msgstr "Basis urutan -F (heksa)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:143
+msgid "Composite -C (combine group into one glyph)"
+msgstr "Komposit -C (gabungkan grup menjadi satu glif)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:145
+msgid "Composite all codepoints of each sequence group into a single glyph (mono) — used by the combining-mark / matra fonts (base U+25CC + mark)."
+msgstr "Gabungkan semua codepoint dari setiap grup urutan menjadi satu glif (mono) — dipakai oleh font tanda gabung / matra (basis U+25CC + tanda)."
+
+#: polyhost/gui/fontpack_extend_dialog.py:150
+msgid "Size -s"
+msgstr "Ukuran -s"
+
+#: polyhost/gui/fontpack_extend_dialog.py:152
+msgid "Grayscale / colour (-g)"
+msgstr "Skala abu-abu / warna (-g)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:154
+msgid "Normalize -N"
+msgstr "Normalisasi -N"
+
+#: polyhost/gui/fontpack_extend_dialog.py:154
+msgid "Invert -I"
+msgstr "Balik -I"
+
+#: polyhost/gui/fontpack_extend_dialog.py:155
+msgid "Edge-preserve -E"
+msgstr "Pertahankan tepi -E"
+
+#: polyhost/gui/fontpack_extend_dialog.py:160
+msgid "Flags"
+msgstr "Flag"
+
+#: polyhost/gui/fontpack_extend_dialog.py:164
+msgid "Dither -D"
+msgstr "Dither -D"
+
+#: polyhost/gui/fontpack_extend_dialog.py:165
+msgid "Outline -O"
+msgstr "Garis luar -O"
+
+#: polyhost/gui/fontpack_extend_dialog.py:166
+msgid "Render size -r (0=off)"
+msgstr "Ukuran render -r (0=mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:167
+msgid "yAdvance -Y (0=off)"
+msgstr "yAdvance -Y (0=mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:168
+msgid "Max width -W (0=off)"
+msgstr "Lebar maks -W (0=mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:170
+msgid "Variable-font wght axis (e.g. 400 Regular, 500 Medium, 700 Bold). 0 = the font's default instance."
+msgstr "Sumbu wght font variabel (mis. 400 Regular, 500 Medium, 700 Bold). 0 = instans bawaan font."
+
+#: polyhost/gui/fontpack_extend_dialog.py:172
+msgid "Weight -w (0=default)"
+msgstr "Ketebalan -w (0=bawaan)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:174
+msgid "Horizontal pixel shift of the rendered glyph (rarely needed; e.g. couple emoji use -12)."
+msgstr "Pergeseran piksel horizontal glif yang dirender (jarang diperlukan; mis. beberapa emoji memakai -12)."
+
+#: polyhost/gui/fontpack_extend_dialog.py:176
+msgid "X shift -X"
+msgstr "Geser X -X"
+
+#: polyhost/gui/fontpack_extend_dialog.py:180
+msgid "Gamma -G (1 = off)"
+msgstr "Gamma -G (1 = mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:182
+msgid "Contrast -c (1 = off)"
+msgstr "Kontras -c (1 = mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:184
+msgid "Exposure -e (0 = off)"
+msgstr "Eksposur -e (0 = mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:186
+msgid "Sharpen -U (0 = off)"
+msgstr "Pertajam -U (0 = mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:188
+msgid "Saturation -B (0 = off)"
+msgstr "Saturasi -B (0 = mati)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:194
+msgid "Target bundle"
+msgstr "Bundel tujuan"
+
+#: polyhost/gui/fontpack_extend_dialog.py:196
+msgid "Global font index"
+msgstr "Indeks font global"
+
+#: polyhost/gui/fontpack_extend_dialog.py:201
+msgid "Build / Preview"
+msgstr "Build / Pratinjau"
+
+#: polyhost/gui/fontpack_extend_dialog.py:202
+msgid "Reset"
+msgstr "Atur Ulang"
+
+#: polyhost/gui/fontpack_extend_dialog.py:203
+msgid "Restore the render options to the settings this dialog opened with (the glyph's defaults)"
+msgstr "Kembalikan opsi render ke pengaturan saat dialog ini dibuka (bawaan glif)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:206
+msgid "Auto update"
+msgstr "Perbarui otomatis"
+
+#: polyhost/gui/fontpack_extend_dialog.py:208
+msgid "Re-render the preview automatically when an option changes"
+msgstr "Render ulang pratinjau secara otomatis saat opsi berubah"
+
+#: polyhost/gui/fontpack_extend_dialog.py:212
+msgid "Normal"
+msgstr "Normal"
+
+#: polyhost/gui/fontpack_extend_dialog.py:213
+msgid "OLED"
+msgstr "OLED"
+
+#: polyhost/gui/fontpack_extend_dialog.py:214
+msgid "Keycap"
+msgstr "Keycap"
+
+#: polyhost/gui/fontpack_extend_dialog.py:215
+msgid "Plain white-on-black bitmap (what the font renders)"
+msgstr "Bitmap putih-di-atas-hitam polos (hasil render font)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:216
+msgid "The raw OLED look: cool-white pixels + bloom + a crisp pixel grid on true black"
+msgstr "Tampilan OLED mentah: piksel putih dingin + bloom + kisi piksel tajam di atas hitam pekat"
+
+#: polyhost/gui/fontpack_extend_dialog.py:218
+msgid "As seen through the clear keycap cover: adds per-pixel brightness shimmer, a staggered grid and a diffusion blur"
+msgstr "Seperti terlihat melalui penutup keycap bening: menambahkan kilau kecerahan per piksel, kisi berselang-seling, dan blur difusi"
+
+#: polyhost/gui/fontpack_extend_dialog.py:227
+msgid "Preview:"
+msgstr "Pratinjau:"
+
+#: polyhost/gui/fontpack_extend_dialog.py:236
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+msgid "OK"
+msgstr "OK"
+
+#: polyhost/gui/fontpack_extend_dialog.py:237
+msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
+msgstr "Simpan glif yang di-build (ditambahkan ke bundel di memori; simpan dari “Simpan sebagai…” di inspektur)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:241
+#: polyhost/gui/fontpack_extend_dialog.py:807
+#: polyhost/gui/hid_fw_up_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
+msgid "Cancel"
+msgstr "Batal"
+
+#: polyhost/gui/fontpack_extend_dialog.py:253
+msgid "Pick a font, set options, then Build / Preview."
+msgstr "Pilih font, atur opsi, lalu Build / Pratinjau."
+
+#: polyhost/gui/fontpack_extend_dialog.py:258
+msgid "Scroll here to zoom the preview"
+msgstr "Gulir di sini untuk memperbesar pratinjau"
+
+#: polyhost/gui/fontpack_extend_dialog.py:280
+#: polyhost/gui/fontpack_extend_dialog.py:574
+msgid "No valid shipped bundles available to extend."
+msgstr "Tidak ada bundel bawaan valid yang dapat diperluas."
+
+#: polyhost/gui/fontpack_extend_dialog.py:324
+msgid "(no saved settings for this font — set options manually.)"
+msgstr "(tidak ada pengaturan tersimpan untuk font ini — atur opsi secara manual.)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:326
+#, python-brace-format
+msgid "Pre-filled from '{source}' + its original settings."
+msgstr "Diisi awal dari '{source}' + pengaturan aslinya."
+
+#: polyhost/gui/fontpack_extend_dialog.py:330
+#, python-brace-format
+msgid "Original settings pre-filled; source font '{source}' isn't cached — Download Noto… or Browse."
+msgstr "Pengaturan asli sudah diisi; font sumber '{source}' belum ada di cache — Unduh Noto… atau Telusuri."
+
+#: polyhost/gui/fontpack_extend_dialog.py:332
+msgid "Original settings pre-filled; pick the source font."
+msgstr "Pengaturan asli sudah diisi; pilih font sumber."
+
+#: polyhost/gui/fontpack_extend_dialog.py:334
+#, python-brace-format
+msgid "Editing {codepoint} in '{bundle}' — Build to preview, then OK to keep it (Cancel to discard)."
+msgstr "Mengedit {codepoint} di '{bundle}' — Build untuk pratinjau, lalu OK untuk menyimpannya (Batal untuk membuang)."
+
+#: polyhost/gui/fontpack_extend_dialog.py:489
+msgid "Reset to the default render settings."
+msgstr "Atur ulang ke pengaturan render bawaan."
+
+#: polyhost/gui/fontpack_extend_dialog.py:513
+msgid "Select font"
+msgstr "Pilih font"
+
+#: polyhost/gui/fontpack_extend_dialog.py:514
+msgid "Fonts (*.ttf *.otf)"
+msgstr "Font (*.ttf *.otf)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:514
+#: polyhost/gui/fontpack_inspector_dialog.py:766
+msgid "All files (*)"
+msgstr "Semua file (*)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:574
+#: polyhost/gui/fontpack_extend_dialog.py:578
+#: polyhost/gui/fontpack_extend_dialog.py:582
+#: polyhost/gui/fontpack_extend_dialog.py:592
+#: polyhost/gui/fontpack_extend_dialog.py:615
+msgid "Build"
+msgstr "Build"
+
+#: polyhost/gui/fontpack_extend_dialog.py:578
+msgid "Pick an existing font file first."
+msgstr "Pilih file font yang sudah ada terlebih dahulu."
+
+#: polyhost/gui/fontpack_extend_dialog.py:582
+#, python-brace-format
+msgid ""
+"Building glyphs needs these font-generation dependencies, which aren't installed in this environment:\n"
+"\n"
+"    pip install {packages}\n"
+"\n"
+"(They're normally pulled in by installing PolyKybdHost: pip install -e .)"
+msgstr ""
+"Membuat glif memerlukan dependensi pembuatan font berikut, yang tidak terinstal di lingkungan ini:\n"
+"\n"
+"    pip install {packages}\n"
+"\n"
+"(Biasanya terpasang saat menginstal PolyKybdHost: pip install -e .)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:592
+#, python-brace-format
+msgid ""
+"Font building dependencies are missing or broken:\n"
+"  pip install -e .\n"
+"\n"
+"({error})"
+msgstr ""
+"Dependensi pembuatan font tidak ada atau rusak:\n"
+"  pip install -e .\n"
+"\n"
+"({error})"
+
+#: polyhost/gui/fontpack_extend_dialog.py:607
+#, python-brace-format
+msgid "(auto preview) {error}"
+msgstr "(pratinjau otomatis) {error}"
+
+#: polyhost/gui/fontpack_extend_dialog.py:609
+msgid "Build failed"
+msgstr "Build gagal"
+
+#: polyhost/gui/fontpack_extend_dialog.py:615
+#, python-brace-format
+msgid "Editing a single glyph ({codepoint}), but this built {n} glyph. Narrow the range / sequence to one glyph."
+msgid_plural "Editing a single glyph ({codepoint}), but this built {n} glyphs. Narrow the range / sequence to one glyph."
+msgstr[0] "Mengedit satu glif ({codepoint}), tetapi build ini menghasilkan {n} glif. Persempit rentang / urutan menjadi satu glif."
+msgstr[1] "Mengedit satu glif ({codepoint}), tetapi build ini menghasilkan {n} glif. Persempit rentang / urutan menjadi satu glif."
+
+#: polyhost/gui/fontpack_extend_dialog.py:626
+#, python-brace-format
+msgid "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
+msgid_plural "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
+msgstr[0] "{n} glif di-build, {range}, indeks global {index}. OK untuk menyimpannya di bundel '{bundle}', Batal untuk membuang."
+msgstr[1] "{n} glif di-build, {range}, indeks global {index}. OK untuk menyimpannya di bundel '{bundle}', Batal untuk membuang."
+
+#: polyhost/gui/fontpack_extend_dialog.py:678
+#, python-brace-format
+msgid "Zoom {scale}×  (scroll over the preview to change)"
+msgstr "Zoom {scale}×  (gulir di atas pratinjau untuk mengubah)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:718
+msgid "Download"
+msgstr "Unduh"
+
+#: polyhost/gui/fontpack_extend_dialog.py:719
+#, python-brace-format
+msgid ""
+"Could not read the font catalog:\n"
+"{error}"
+msgstr ""
+"Tidak dapat membaca katalog font:\n"
+"{error}"
+
+#: polyhost/gui/fontpack_extend_dialog.py:726
+msgid "Source fonts — click to use (✓ = downloaded; uncached downloads first)"
+msgstr "Font sumber — klik untuk memakai (✓ = sudah diunduh; yang belum ada di cache diunduh dulu)"
+
+#: polyhost/gui/fontpack_extend_dialog.py:728
+#: polyhost/gui/fontpack_extend_dialog.py:793
+#: polyhost/gui/fontpack_extend_dialog.py:797
+msgid "Download all"
+msgstr "Unduh semua"
+
+#: polyhost/gui/fontpack_extend_dialog.py:729
+msgid "Fetch every Noto font in the list into the cache"
+msgstr "Ambil setiap font Noto dalam daftar ke cache"
+
+#: polyhost/gui/fontpack_extend_dialog.py:746
+#, python-brace-format
+msgid "{name}  ({filename})  ✓ cached"
+msgstr "{name}  ({filename})  ✓ di cache"
+
+#: polyhost/gui/fontpack_extend_dialog.py:779
+msgid "Download failed"
+msgstr "Unduhan gagal"
+
+#: polyhost/gui/fontpack_extend_dialog.py:780
+#, python-brace-format
+msgid ""
+"Could not download {name}:\n"
+"{error}"
+msgstr ""
+"Tidak dapat mengunduh {name}:\n"
+"{error}"
+
+#: polyhost/gui/fontpack_extend_dialog.py:793
+msgid "All fonts are already cached."
+msgstr "Semua font sudah ada di cache."
+
+#: polyhost/gui/fontpack_extend_dialog.py:798
+#, python-brace-format
+msgid ""
+"Stopped on an error:\n"
+"{error}"
+msgstr ""
+"Berhenti karena kesalahan:\n"
+"{error}"
+
+#: polyhost/gui/fontpack_extend_dialog.py:807
+msgid "Downloading…"
+msgstr "Mengunduh…"
+
+#: polyhost/gui/fontpack_extend_dialog.py:819
+#, python-brace-format
+msgid "Downloading {name}  ({index}/{count})…"
+msgstr "Mengunduh {name}  ({index}/{count})…"
+
+#: polyhost/gui/fontpack_extend_dialog.py:848
+msgid "Download Noto source font"
+msgstr "Unduh font sumber Noto"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:128
+#, python-brace-format
+msgid "{label} (error)"
+msgstr "{label} (kesalahan)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:195
+#, python-brace-format
+msgid "⚠ Could not decode '{label}': {error}"
+msgstr "⚠ Tidak dapat mendekode '{label}': {error}"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:200
+msgid "BAD"
+msgstr "RUSAK"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:203
+#, python-brace-format
+msgid "{label}.plyf — abi v{abi} · content v{content} · {fonts} fonts · {glyphs} glyphs ({empty} empty) · {size} B · crc {crc}"
+msgstr "{label}.plyf — abi v{abi} · konten v{content} · {fonts} font · {glyphs} glif ({empty} kosong) · {size} B · crc {crc}"
+
+#. TRANSLATORS: label of the glyph-grid magnification spin box
+#: polyhost/gui/fontpack_inspector_dialog.py:214
+msgid "Zoom"
+msgstr "Zoom"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:222
+msgid "Hide empty"
+msgstr "Sembunyikan yang kosong"
+
+#. TRANSLATORS: checkbox; preview the empty glyph slots from their source font
+#: polyhost/gui/fontpack_inspector_dialog.py:226
+msgid "Peek empty (from source)"
+msgstr "Intip yang kosong (dari sumber)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:227
+msgid "Render the empty slots from their source font (needs the font downloaded) as amber previews — candidates to build/take. Previews are not in the pack."
+msgstr "Render slot kosong dari font sumbernya (font harus sudah diunduh) sebagai pratinjau berwarna kuning sawo — kandidat untuk di-build/diambil. Pratinjau tidak termasuk dalam paket."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:601
+#, python-brace-format
+msgid "{codepoint} — drawn by {font}  (another bundle)"
+msgstr "{codepoint} — digambar oleh {font}  (bundel lain)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:603
+#, python-brace-format
+msgid "{codepoint} — drawn by {font}"
+msgstr "{codepoint} — digambar oleh {font}"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:612
+#, python-brace-format
+msgid "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
+msgid_plural "; {n} overdrawn: {fonts} (hover the stack corner to see, double-click there to edit)"
+msgstr[0] "; {n} tertimpa: {fonts} (arahkan kursor ke sudut tumpukan untuk melihat, klik ganda di sana untuk mengedit)"
+msgstr[1] "; {n} tertimpa: {fonts} (arahkan kursor ke sudut tumpukan untuk melihat, klik ganda di sana untuk mengedit)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:618
+#: polyhost/gui/fontpack_inspector_dialog.py:625
+msgid "(edited — unsaved)"
+msgstr "(diedit — belum disimpan)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:623
+#, python-brace-format
+msgid "{codepoint}  (empty — no glyph)"
+msgstr "{codepoint}  (kosong — tanpa glif)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:661
+#, python-brace-format
+msgid "{codepoint}  (preview from {source} — not in pack)"
+msgstr "{codepoint}  (pratinjau dari {source} — tidak ada di paket)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:682
+msgid "PolyKybd — Font Pack Inspector"
+msgstr "PolyKybd — Inspektur Paket Font"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:695
+msgid "Glyph grid (native size)"
+msgstr "Kisi glif (ukuran asli)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:696
+msgid "Keycap preview (72×40)"
+msgstr "Pratinjau keycap (72×40)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:697
+msgid "Keycap OLED (raw pixels)"
+msgstr "OLED keycap (piksel mentah)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:698
+msgid "Keycap through cover"
+msgstr "Keycap melalui penutup"
+
+#. TRANSLATORS: label of the preview-mode dropdown (how glyphs are drawn)
+#: polyhost/gui/fontpack_inspector_dialog.py:701
+msgid "View"
+msgstr "Tampilan"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:708
+msgid "Open .plyf…"
+msgstr "Buka .plyf…"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:709
+msgid "Load a .plyf font-pack file (e.g. one you saved elsewhere) as a new tab to inspect"
+msgstr "Muat file paket font .plyf (mis. yang Anda simpan di tempat lain) sebagai tab baru untuk diperiksa"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:713
+msgid "Edit…"
+msgstr "Edit…"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:714
+msgid "Replace the selected glyph (double-clicking a glyph does the same)"
+msgstr "Ganti glif yang dipilih (klik ganda pada glif melakukan hal yang sama)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:718
+msgid "Extend…"
+msgstr "Perluas…"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:719
+msgid "Build new glyphs from a font and add them to a bundle (in memory)"
+msgstr "Build glif baru dari sebuah font dan tambahkan ke bundel (di memori)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:723
+msgid "Save as…"
+msgstr "Simpan sebagai…"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:724
+msgid "Review the current bundle's pending edits and save them to a .plyf (or flash) at a chosen version"
+msgstr "Tinjau edit tertunda pada bundel saat ini dan simpan ke .plyf (atau flash) dengan versi pilihan"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:743
+msgid "No font-pack bundles found — use “Open .plyf…”."
+msgstr "Tidak ditemukan bundel paket font — gunakan “Buka .plyf…”."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:765
+msgid "Open font pack"
+msgstr "Buka paket font"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:766
+#: polyhost/gui/fontpack_inspector_dialog.py:1026
+msgid "Font pack (*.plyf)"
+msgstr "Paket font (*.plyf)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:773
+msgid "Open failed"
+msgstr "Gagal membuka"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:774
+#, python-brace-format
+msgid ""
+"Could not decode '{path}':\n"
+"{error}"
+msgstr ""
+"Tidak dapat mendekode '{path}':\n"
+"{error}"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:784
+msgid "BAD — file may be truncated/corrupt"
+msgstr "RUSAK — file mungkin terpotong/rusak"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:785
+msgid "Opened"
+msgstr "Dibuka"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:786
+#, python-brace-format
+msgid ""
+"Loaded '{label}.plyf'\n"
+"abi v{abi} · content v{content} · {fonts} fonts · {glyphs} glyphs · crc {crc}\n"
+"\n"
+"Note: a .plyf carries no bundle name — this tab is named after the file."
+msgstr ""
+"'{label}.plyf' dimuat\n"
+"abi v{abi} · konten v{content} · {fonts} font · {glyphs} glif · crc {crc}\n"
+"\n"
+"Catatan: file .plyf tidak membawa nama bundel — tab ini dinamai sesuai nama file."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:811
+msgid "Select a glyph first (click it), or double-click a glyph to edit it."
+msgstr "Pilih glif terlebih dahulu (klik glif), atau klik ganda glif untuk mengeditnya."
+
+#. TRANSLATORS: message-box title (the glyph Edit action)
+#: polyhost/gui/fontpack_inspector_dialog.py:811
+#: polyhost/gui/fontpack_inspector_dialog.py:862
+msgid "Edit"
+msgstr "Edit"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:862
+#, python-brace-format
+msgid "Unknown bundle {label}."
+msgstr "Bundel {label} tidak dikenal."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:874
+#, python-brace-format
+msgid "edit {codepoint} (g{index})"
+msgstr "edit {codepoint} (g{index})"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:879
+#, python-brace-format
+msgid "font g{index}: {first}–{last} ({n} slot(s))"
+msgid_plural "font g{index}: {first}–{last} ({n} slot(s))"
+msgstr[0] "font g{index}: {first}–{last} ({n} slot)"
+msgstr[1] "font g{index}: {first}–{last} ({n} slot)"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:884
+msgid "Edit failed"
+msgstr "Edit gagal"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:940
+msgid "Save as"
+msgstr "Simpan sebagai"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:941
+#, python-brace-format
+msgid "No pending edits in '{label}'. Double-click a glyph (or Extend…) and confirm with OK first."
+msgstr "Tidak ada edit tertunda di '{label}'. Klik ganda glif (atau Perluas…) dan konfirmasi dengan OK terlebih dahulu."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:966
+#, python-brace-format
+msgid "Save font pack — {label}"
+msgstr "Simpan paket font — {label}"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:980
+msgid "content_version written/flashed. Default = current+1 so a connected keyboard re-flashes it; one bump covers all the edits."
+msgstr "content_version yang ditulis/di-flash. Bawaan = saat ini+1 agar keyboard yang terhubung mem-flash ulang; satu kenaikan mencakup semua edit."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:984
+msgid "Save as version"
+msgstr "Simpan sebagai versi"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:987
+msgid "Pending edits:"
+msgstr "Edit tertunda:"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:992
+msgid "Save .plyf…"
+msgstr "Simpan .plyf…"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:995
+msgid "Flash to device"
+msgstr "Flash ke perangkat"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:997
+#: polyhost/gui/fontpack_inspector_dialog.py:1060
+msgid "Discard edits"
+msgstr "Buang edit"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1016
+#, python-brace-format
+msgid "<b>{label}</b> — abi v{abi} · current content v{content}<br>working: {fonts} fonts · {glyphs} glyphs · {size} B → save as v{version}"
+msgstr "<b>{label}</b> — abi v{abi} · konten saat ini v{content}<br>kerja: {fonts} font · {glyphs} glif · {size} B → simpan sebagai v{version}"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1025
+msgid "Save font pack"
+msgstr "Simpan paket font"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1034
+msgid "Save failed"
+msgstr "Gagal menyimpan"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1036
+msgid "Saved"
+msgstr "Tersimpan"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1037
+#, python-brace-format
+msgid ""
+"Saved {path}\n"
+"content v{version} · {size} B"
+msgstr ""
+"{path} tersimpan\n"
+"konten v{version} · {size} B"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1045
+#: polyhost/gui/fontpack_inspector_dialog.py:1055
+msgid "Flash"
+msgstr "Flash"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1046
+#, python-brace-format
+msgid "Flash '{label}' (content v{version}) to the keyboard?"
+msgstr "Flash '{label}' (konten v{version}) ke keyboard?"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1053
+msgid "Flash failed"
+msgstr "Flash gagal"
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1055
+msgid "Flash started — watch the tray/log."
+msgstr "Flash dimulai — pantau baki sistem/log."
+
+#: polyhost/gui/fontpack_inspector_dialog.py:1061
+#, python-brace-format
+msgid "Discard all pending edits to '{label}'?"
+msgstr "Buang semua edit tertunda pada '{label}'?"
+
+#: polyhost/gui/hid_fw_up_dialog.py:22
+msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
+msgstr "Firmware ini tidak bertanda tangan. Konfirmasikan di KEYBOARD: tekan tombol A (terima) atau R (tolak) yang disorot."
+
+#: polyhost/gui/hid_fw_up_dialog.py:24
+msgid ""
+"Timed out waiting for confirmation on the keyboard.\n"
+"\n"
+"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
+msgstr ""
+"Waktu habis menunggu konfirmasi di keyboard.\n"
+"\n"
+"Keyboard meminta TERIMA/TOLAK secara fisik karena image ini tidak memiliki tanda tangan yang valid. Mulai flash lagi dan tekan tombol A yang disorot di belahan kiri dalam satu menit."
+
+#: polyhost/gui/hid_fw_up_dialog.py:28
+msgid ""
+"The keyboard refused this firmware: it is not signed.\n"
+"\n"
+"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
+"\n"
+"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
+msgstr ""
+"Keyboard menolak firmware ini: firmware tidak bertanda tangan.\n"
+"\n"
+"Firmware rilis disertai file '.sig' yang cocok — unduh file itu ke folder yang sama dengan .bin lalu flash lagi.\n"
+"\n"
+"Untuk mem-flash build yang Anda kompilasi sendiri, flash lagi dan tekan tombol A (terima) yang disorot di keyboard saat diminta."
+
+#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2856
+#: polyhost/host.py:2880
+msgid "Firmware Update"
+msgstr "Pembaruan Firmware"
+
+#: polyhost/gui/hid_fw_up_dialog.py:172
+#, python-brace-format
+msgid "<b>File:</b> {path}"
+msgstr "<b>File:</b> {path}"
+
+#: polyhost/gui/hid_fw_up_dialog.py:177
+msgid "Applying staged firmware…"
+msgstr "Menerapkan firmware yang ditahap…"
+
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:177
+msgid "Starting…"
+msgstr "Memulai…"
+
+#: polyhost/gui/hid_fw_up_dialog.py:270
+#, python-brace-format
+msgid "~{seconds} s remaining"
+msgstr "~{seconds} dtk tersisa"
+
+#: polyhost/gui/hid_fw_up_dialog.py:275
+#, python-brace-format
+msgid "~{minutes}m {seconds}s remaining"
+msgstr "~{minutes} mnt {seconds} dtk tersisa"
+
+#: polyhost/gui/hid_fw_up_dialog.py:388
+msgid "Applying — activating the staged firmware…"
+msgstr "Menerapkan — mengaktifkan firmware yang ditahap…"
+
+#: polyhost/gui/hid_fw_up_dialog.py:468
+msgid "Cancelling — waiting for current chunk to finish…"
+msgstr "Membatalkan — menunggu potongan saat ini selesai…"
+
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+msgid "Language"
+msgstr "Bahasa"
+
+#: polyhost/gui/i18n_qt.py:89
+msgid "The new language is used after a restart. Restart now?"
+msgstr "Bahasa baru digunakan setelah aplikasi dimulai ulang. Mulai ulang sekarang?"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+msgid "Edit Key"
+msgstr "Edit Tombol"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+msgid "QMK Keycode:"
+msgstr "Keycode QMK:"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+msgid "Visual Label:"
+msgstr "Label Visual:"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#, python-brace-format
+msgid "Rotation: {angle}° around ({x}, {y})"
+msgstr "Rotasi: {angle}° di sekitar ({x}, {y})"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+msgid "Info:"
+msgstr "Info:"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+msgid "PolyKybd Split72 Layout"
+msgstr "Tata Letak PolyKybd Split72"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
+msgstr "PolyKybd tidak dapat dijangkau. Hubungkan keyboard lalu coba lagi."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+msgid "Could not read layers from device"
+msgstr "Tidak dapat membaca lapisan dari perangkat"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+msgid "Layers:"
+msgstr "Lapisan:"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
+msgstr "Gambar setiap tombol sebagai keycap yang ditampilkan keyboard. Tombol yang legendanya tidak dimodelkan di sini tetap menampilkan teks keycode-nya."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
+msgstr "Tidak tersedia: font keycap dan tabel tata letak tidak dapat dimuat, jadi tombol menampilkan keycode-nya."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#, python-brace-format
+msgid "Partly unavailable — {reason}"
+msgstr "Sebagian tidak tersedia — {reason}"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#, python-brace-format
+msgid ""
+"Legends read from:\n"
+"{source}"
+msgstr ""
+"Legenda dibaca dari:\n"
+"{source}"
+
+#. TRANSLATORS: keycap display mode -- show the raw keycode text.
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+msgid "Symbol"
+msgstr "Simbol"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+msgid "Every key shows its keycode."
+msgstr "Setiap tombol menampilkan keycode-nya."
+
+#. TRANSLATORS: keycap display mode -- the rendered keycap image.
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+msgid "Preview"
+msgstr "Pratinjau"
+
+#. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+msgid "Real"
+msgstr "Nyata"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
+msgstr "Melalui simulasi panel: piksel bercahaya, bloom, dan difusi penutup keycap bening — seperti tampilan tombol yang sebenarnya."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#, python-brace-format
+msgid "Unavailable: {reason}"
+msgstr "Tidak tersedia: {reason}"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+msgid "Error"
+msgstr "Kesalahan"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#, python-brace-format
+msgid ""
+"Failed to load:\n"
+"{error}\n"
+"{details}"
+msgstr ""
+"Gagal memuat:\n"
+"{error}\n"
+"{details}"
+
+#: polyhost/gui/layout_dialog/keycap_preview.py:346
+msgid "no preview data (shipped or checkout)"
+msgstr "tidak ada data pratinjau (bawaan atau checkout)"
+
+#: polyhost/gui/layout_dialog/keycap_preview.py:383
+msgid "the shipped language table is missing"
+msgstr "tabel bahasa bawaan tidak ada"
+
+#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2836
+msgid "unknown"
+msgstr "tidak diketahui"
+
+#: polyhost/gui/layout_dialog/keycap_preview.py:549
+#, python-brace-format
+msgid ""
+"shipped with this host\n"
+"firmware {version}"
+msgstr ""
+"disertakan dengan host ini\n"
+"firmware {version}"
+
+#: polyhost/gui/layout_dialog/keycap_preview.py:553
+msgid "(a firmware checkout is present but is not newer)"
+msgstr "(ada checkout firmware tetapi tidak lebih baru)"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:58
+msgid "Layers && Mods"
+msgstr "Lapisan && Modifier"
+
+#: polyhost/gui/layout_dialog/keycode_browser.py:73
+msgid "Macros"
+msgstr "Makro"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:31
+msgid "MO — Momentary layer"
+msgstr "MO — Lapisan sementara"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:32
+msgid "TO — Switch to layer"
+msgstr "TO — Beralih ke lapisan"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:33
+msgid "TG — Toggle layer"
+msgstr "TG — Alihkan lapisan"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:34
+msgid "DF — Set default layer"
+msgstr "DF — Setel lapisan bawaan"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:35
+msgid "PDF — Persistent default layer"
+msgstr "PDF — Lapisan bawaan permanen"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:36
+msgid "TT — Tap-toggle layer"
+msgstr "TT — Lapisan ketuk-alih"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:37
+msgid "OSL — One-shot layer"
+msgstr "OSL — Lapisan sekali pakai"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:38
+msgid "OSM — One-shot modifier"
+msgstr "OSM — Modifier sekali pakai"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:39
+msgid "LT — Layer-tap (hold layer / tap key)"
+msgstr "LT — Layer-tap (tahan lapisan / ketuk tombol)"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:40
+msgid "LM — Layer + modifier (momentary)"
+msgstr "LM — Lapisan + modifier (sementara)"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:41
+msgid "MT — Mod-tap (hold mod / tap key)"
+msgstr "MT — Mod-tap (tahan modifier / ketuk tombol)"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:42
+msgid "Modified key (Ctrl/Shift/… + key)"
+msgstr "Tombol termodifikasi (Ctrl/Shift/… + tombol)"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:43
+msgid "SH_T — Swap-hands tap-hold (tap key / hold swap)"
+msgstr "SH_T — Swap-hands ketuk-tahan (ketuk tombol / tahan tukar)"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:74
+msgid "Behavior:"
+msgstr "Perilaku:"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:78
+msgid "Layer:"
+msgstr "Lapisan:"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:81
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:180
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
+msgid "Modifiers"
+msgstr "Modifier"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:83
+msgid "Ctrl"
+msgstr "Ctrl"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:84
+msgid "Shift"
+msgstr "Shift"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:85
+msgid "Alt"
+msgstr "Alt"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:86
+msgid "GUI"
+msgstr "GUI"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:89
+msgid "Left"
+msgstr "Kiri"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:90
+msgid "Right"
+msgstr "Kanan"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:105
+msgid "Inner key:"
+msgstr "Tombol dalam:"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:113
+msgid "Apply to selected key"
+msgstr "Terapkan ke tombol yang dipilih"
+
+#: polyhost/gui/layout_dialog/keycode_composer.py:251
+msgid "Select at least one modifier"
+msgstr "Pilih setidaknya satu modifier"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:57
+msgid "Choose a keycap icon"
+msgstr "Pilih ikon keycap"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:67
+msgid "Emoji and symbols"
+msgstr "Emoji dan simbol"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:68
+msgid "Every bundle"
+msgstr "Setiap bundel"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:70
+msgid "Show:"
+msgstr "Tampilkan:"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:73
+msgid "filter by codepoint — 1F4E7, U+2699, or a character"
+msgstr "filter menurut codepoint — 1F4E7, U+2699, atau sebuah karakter"
+
+#: polyhost/gui/layout_dialog/macro_icon_dialog.py:148
+#, python-brace-format
+msgid "{n} glyph"
+msgid_plural "{n} glyphs"
+msgstr[0] "{n} glif"
+msgstr[1] "{n} glif"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
+msgid "Tap"
+msgstr "Ketuk"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
+msgid "Hold"
+msgstr "Tahan"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
+msgid "Release"
+msgstr "Lepas"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:44
+msgid "Wait"
+msgstr "Tunggu"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:91
+msgid "Macro steps"
+msgstr "Langkah makro"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
+msgid "Action"
+msgstr "Aksi"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:106
+msgid "Value"
+msgstr "Nilai"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:117
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:311
+msgid "Type"
+msgstr "Jenis"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:123
+msgid "VIA's macro syntax:  plain text  ·  {KC_A} tap  ·  {+KC_A} hold  ·  {-KC_A} release  ·  {250} wait  ·  \\{ a literal brace"
+msgstr "Sintaks makro VIA:  teks biasa  ·  {KC_A} ketuk  ·  {+KC_A} tahan  ·  {-KC_A} lepas  ·  {250} tunggu  ·  \\{ kurung kurawal literal"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:142
+msgid "Add step"
+msgstr "Tambah langkah"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:144
+msgid "Add text…"
+msgstr "Tambah teks…"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:145
+msgid "Append a run of characters the macro should type"
+msgstr "Tambahkan rangkaian karakter yang harus diketik makro"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
+msgid "Remove"
+msgstr "Hapus"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:150
+msgid "Move the selected step up"
+msgstr "Pindahkan langkah yang dipilih ke atas"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:153
+msgid "Move the selected step down"
+msgstr "Pindahkan langkah yang dipilih ke bawah"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:173
+msgid "Table"
+msgstr "Tabel"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:174
+msgid "Script"
+msgstr "Skrip"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:188
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:487
+msgid "Record"
+msgstr "Rekam"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:194
+msgid "Press the keys you want, then click Stop. Esc stops recording."
+msgstr "Tekan tombol yang Anda inginkan, lalu klik Hentikan. Esc menghentikan perekaman."
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:198
+msgid "no timing"
+msgstr "tanpa jeda waktu"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:199
+msgid "with timing"
+msgstr "dengan jeda waktu"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:201
+msgid ""
+"Record the real pauses between keystrokes as Wait steps.\n"
+"Off by default: most macros want to run as fast as the keyboard can."
+msgstr ""
+"Rekam jeda nyata di antara ketukan tombol sebagai langkah Tunggu.\n"
+"Nonaktif secara bawaan: sebagian besar makro sebaiknya berjalan secepat yang dapat dilakukan keyboard."
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:289
+#, python-brace-format
+msgid "{error}  — fix it or switch back."
+msgstr "{error}  — perbaiki atau beralih kembali."
+
+#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
+msgid " ms"
+msgstr " ms"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:382
+#, python-brace-format
+msgid "Switch this row back to a key action to restore {keycode}."
+msgstr "Kembalikan baris ini ke aksi tombol untuk memulihkan {keycode}."
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
+msgid "Add text"
+msgstr "Tambah teks"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:411
+msgid "Characters to type:"
+msgstr "Karakter yang akan diketik:"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:461
+msgid "No steps yet."
+msgstr "Belum ada langkah."
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:494
+msgid "Recording — press keys, then click Stop (or Esc)."
+msgstr "Merekam — tekan tombol, lalu klik Hentikan (atau Esc)."
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:530
+#, python-brace-format
+msgid "No basic keycode for that key — skipped. (Recorded {n} step so far.)"
+msgid_plural "No basic keycode for that key — skipped. (Recorded {n} steps so far.)"
+msgstr[0] "Tidak ada keycode dasar untuk tombol itu — dilewati. (Sejauh ini {n} langkah terekam.)"
+msgstr[1] "Tidak ada keycode dasar untuk tombol itu — dilewati. (Sejauh ini {n} langkah terekam.)"
+
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:542
+#, python-brace-format
+msgid "Recording — {n} step. Stop (or Esc) when done."
+msgid_plural "Recording — {n} steps. Stop (or Esc) when done."
+msgstr[0] "Merekam — {n} langkah. Hentikan (atau Esc) bila selesai."
+msgstr[1] "Merekam — {n} langkah. Hentikan (atau Esc) bila selesai."
+
+#: polyhost/gui/layout_dialog/macro_tab.py:46
+msgid "stored unencrypted, readable by anything on the USB"
+msgstr "disimpan tanpa enkripsi, dapat dibaca oleh apa pun di USB"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:148
+#: polyhost/gui/layout_dialog/macro_tab.py:275
+msgid "Keycap:"
+msgstr "Keycap:"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:166
+msgid "Number above the label"
+msgstr "Angka di atas label"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:167
+msgid "Icon above the label"
+msgstr "Ikon di atas label"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:168
+msgid "Label only, as large as it fits"
+msgstr "Hanya label, sebesar yang muat"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:169
+msgid "Icon only, filling the key"
+msgstr "Hanya ikon, memenuhi tombol"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:172
+msgid "Style:"
+msgstr "Gaya:"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:181
+msgid "Types:"
+msgstr "Mengetik:"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:188
+msgid "Steps…"
+msgstr "Langkah…"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:190
+msgid "Build the macro out of key presses, chords and pauses — or record them"
+msgstr "Susun makro dari penekanan tombol, kombinasi tombol, dan jeda — atau rekam semuanya"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:205
+msgid "How the keycap will look"
+msgstr "Tampilan keycap nantinya"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:210
+#: polyhost/gui/layout_dialog/macro_tab.py:425
+msgid "Choose icon…"
+msgstr "Pilih ikon…"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:232
+msgid "Save macro"
+msgstr "Simpan makro"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:238
+msgid "Use on selected key"
+msgstr "Gunakan pada tombol yang dipilih"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:249
+msgid "All the macros share one pool on the keyboard, so a long one leaves less for the others"
+msgstr "Semua makro berbagi satu ruang penyimpanan di keyboard, jadi makro yang panjang menyisakan lebih sedikit untuk yang lain"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:301
+#, python-brace-format
+msgid "M{number} (empty)"
+msgstr "M{number} (kosong)"
+
+#. TRANSLATORS: %p% is Qt's percentage placeholder -- keep it as it is.
+#: polyhost/gui/layout_dialog/macro_tab.py:318
+#, python-brace-format
+msgid "{used} / {capacity} bytes  ·  %p%"
+msgstr "{used} / {capacity} byte  ·  %p%"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:346
+#: polyhost/gui/layout_dialog/macro_tab.py:403
+#, python-brace-format
+msgid "{n} byte  ·  {caveat}"
+msgid_plural "{n} bytes  ·  {caveat}"
+msgstr[0] "{n} byte  ·  {caveat}"
+msgstr[1] "{n} byte  ·  {caveat}"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:363
+#, python-brace-format
+msgid "{n} step — press Steps… to edit  ·  {caveat}"
+msgid_plural "{n} steps — press Steps… to edit  ·  {caveat}"
+msgstr[0] "{n} langkah — tekan Langkah… untuk mengedit  ·  {caveat}"
+msgstr[1] "{n} langkah — tekan Langkah… untuk mengedit  ·  {caveat}"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:367
+#, python-brace-format
+msgid "{size} bytes  ·  {n} step — press Steps… to edit  ·  {caveat}"
+msgid_plural "{size} bytes  ·  {n} steps — press Steps… to edit  ·  {caveat}"
+msgstr[0] "{size} byte  ·  {n} langkah — tekan Langkah… untuk mengedit  ·  {caveat}"
+msgstr[1] "{size} byte  ·  {n} langkah — tekan Langkah… untuk mengedit  ·  {caveat}"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:388
+msgid "That text cannot become steps"
+msgstr "Teks itu tidak dapat diubah menjadi langkah"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:439
+#, python-brace-format
+msgid "{codepoint} (no glyph)"
+msgstr "{codepoint} (tanpa glif)"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:441
+#, python-brace-format
+msgid "{codepoint} (unverified)"
+msgstr "{codepoint} (belum diverifikasi)"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:460
+msgid "no font — preview unavailable"
+msgstr "tidak ada font — pratinjau tidak tersedia"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:468
+#, python-brace-format
+msgid "{width} / {panel_width} px"
+msgstr "{width} / {panel_width} px"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:520
+msgid "Could not save the macro"
+msgstr "Tidak dapat menyimpan makro"
+
+#: polyhost/gui/layout_dialog/macro_tab.py:531
+msgid "Could not clear the macro"
+msgstr "Tidak dapat menghapus makro"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:178
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
+msgid "Steno"
+msgstr "Steno"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:182
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
+msgid "Media / System"
+msgstr "Media / Sistem"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:184
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
+msgid "Midi"
+msgstr "Midi"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:186
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
+msgid "Haptic"
+msgstr "Haptik"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:188
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
+msgid "Unicode / International"
+msgstr "Unicode / Internasional"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:190
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
+msgid "RGB"
+msgstr "RGB"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:192
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:250
+msgid "Mouse / Joystick"
+msgstr "Mouse / Joystick"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:194
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
+msgid "Magic"
+msgstr "Magic"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:196
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:251
+msgid "User / Macro"
+msgstr "Pengguna / Makro"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:198
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+msgid "Programmable"
+msgstr "Dapat diprogram"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:200
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+msgid "Space Cadet"
+msgstr "Space Cadet"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:202
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:252
+msgid "Quantum"
+msgstr "Quantum"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:204
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
+msgid "Additional"
+msgstr "Tambahan"
+
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:239
+#: polyhost/gui/layout_dialog/qmk_keycode_helper.py:249
+msgid "Standard"
+msgstr "Standar"
+
+#: polyhost/gui/log_bundle_dialog.py:30
+msgid "Last 15 minutes"
+msgstr "15 menit terakhir"
+
+#: polyhost/gui/log_bundle_dialog.py:31
+msgid "Last hour"
+msgstr "1 jam terakhir"
+
+#: polyhost/gui/log_bundle_dialog.py:32
+msgid "Last 24 hours"
+msgstr "24 jam terakhir"
+
+#: polyhost/gui/log_bundle_dialog.py:33
+msgid "Last 7 days"
+msgstr "7 hari terakhir"
+
+#: polyhost/gui/log_bundle_dialog.py:34
+msgid "Everything on disk"
+msgstr "Semua yang ada di disk"
+
+#: polyhost/gui/log_bundle_dialog.py:88
+#, python-brace-format
+msgid "Log collection failed: {error}"
+msgstr "Pengumpulan log gagal: {error}"
+
+#: polyhost/gui/log_bundle_dialog.py:106
+msgid "Collect Logs"
+msgstr "Kumpulkan Log"
+
+#: polyhost/gui/log_bundle_dialog.py:111
+msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
+msgstr "Mengumpulkan setiap log PolyHost — termasuk log daemon dan konsol keyboard — beserta cadangan rotasinya, ditambah detail versi dan koneksi, ke dalam satu file yang dapat Anda lampirkan pada laporan bug."
+
+#: polyhost/gui/log_bundle_dialog.py:123
+msgid "Timeframe:"
+msgstr "Rentang waktu:"
+
+#: polyhost/gui/log_bundle_dialog.py:126
+msgid "Mask window titles"
+msgstr "Samarkan judul jendela"
+
+#: polyhost/gui/log_bundle_dialog.py:128
+msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
+msgstr "Judul jendela dapat menyebutkan dokumen yang Anda buka. Penyamaran tetap mempertahankan nama aplikasi (yang dipakai untuk men-debug pencocokan overlay) tetapi mengganti setiap judul dengan placeholder."
+
+#: polyhost/gui/log_bundle_dialog.py:145
+msgid "Show in Folder"
+msgstr "Tampilkan di Folder"
+
+#: polyhost/gui/log_bundle_dialog.py:155
+msgid "Save Bundle…"
+msgstr "Simpan Bundel…"
+
+#: polyhost/gui/log_bundle_dialog.py:169
+msgid "Window titles will be replaced with placeholders. Application names are kept."
+msgstr "Judul jendela akan diganti dengan placeholder. Nama aplikasi tetap dipertahankan."
+
+#: polyhost/gui/log_bundle_dialog.py:173
+msgid "The logs record the titles of windows you focused, which can name open documents."
+msgstr "Log mencatat judul jendela yang Anda fokuskan, yang dapat menyebutkan dokumen yang terbuka."
+
+#: polyhost/gui/log_bundle_dialog.py:175
+msgid "Tick the box above to mask them."
+msgstr "Centang kotak di atas untuk menyamarkannya."
+
+#: polyhost/gui/log_bundle_dialog.py:196
+msgid "Collecting…"
+msgstr "Mengumpulkan…"
+
+#: polyhost/gui/log_bundle_dialog.py:218
+msgid "Save Log Bundle"
+msgstr "Simpan Bundel Log"
+
+#: polyhost/gui/log_bundle_dialog.py:219
+msgid "Zip archives (*.zip)"
+msgstr "Arsip zip (*.zip)"
+
+#: polyhost/gui/log_bundle_dialog.py:229
+#: polyhost/gui/report_problem_dialog.py:199
+#, python-brace-format
+msgid "Saved {summary}"
+msgstr "Tersimpan {summary}"
+
+#: polyhost/gui/log_bundle_dialog.py:239
+#, python-brace-format
+msgid "Copied {n} line to the clipboard."
+msgid_plural "Copied {n} lines to the clipboard."
+msgstr[0] "{n} baris disalin ke papan klip."
+msgstr[1] "{n} baris disalin ke papan klip."
+
+#: polyhost/gui/log_viewer.py:122
+msgid "Log Viewer"
+msgstr "Penampil Log"
+
+#: polyhost/gui/log_viewer.py:137
+msgid "Search (Ctrl+F)"
+msgstr "Cari (Ctrl+F)"
+
+#: polyhost/gui/log_viewer.py:150
+msgid "Previous"
+msgstr "Sebelumnya"
+
+#: polyhost/gui/log_viewer.py:153
+msgid "Next"
+msgstr "Berikutnya"
+
+#: polyhost/gui/log_viewer.py:206
+msgid "Collect Logs..."
+msgstr "Kumpulkan Log..."
+
+#: polyhost/gui/log_viewer.py:207
+msgid "Save all logs as a .zip, or copy them to the clipboard"
+msgstr "Simpan semua log sebagai .zip, atau salin ke papan klip"
+
+#: polyhost/gui/log_viewer.py:211
+msgid "Open Folder"
+msgstr "Buka Folder"
+
+#: polyhost/gui/log_viewer.py:215
+msgid "Reload"
+msgstr "Muat Ulang"
+
+#: polyhost/gui/log_viewer.py:238
+#, python-brace-format
+msgid "Failed to load log file '{path}': {error}"
+msgstr "Gagal memuat file log '{path}': {error}"
+
+#: polyhost/gui/log_viewer.py:290
+msgid "No matches"
+msgstr "Tidak ada yang cocok"
+
+#: polyhost/gui/log_viewer.py:314
+#, python-brace-format
+msgid "{index} of {total}"
+msgstr "{index} dari {total}"
+
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1877
+msgid "Mock keyboard"
+msgstr "Keyboard tiruan"
+
+#: polyhost/gui/mock_board_dialog.py:101
+msgid "Live"
+msgstr "Langsung"
+
+#: polyhost/gui/mock_board_dialog.py:103
+msgid "Follow modifiers"
+msgstr "Ikuti modifier"
+
+#: polyhost/gui/mock_board_dialog.py:104
+msgid "Show the variant for the modifiers held on this computer's keyboard"
+msgstr "Tampilkan varian untuk modifier yang ditahan di keyboard komputer ini"
+
+#: polyhost/gui/mock_board_dialog.py:107
+msgid "Save PNGs…"
+msgstr "Simpan PNG…"
+
+#: polyhost/gui/mock_board_dialog.py:112
+msgid "Modifier:"
+msgstr "Modifier:"
+
+#: polyhost/gui/mock_board_dialog.py:186
+#, python-brace-format
+msgid "Refresh failed: {error}"
+msgstr "Penyegaran gagal: {error}"
+
+#. TRANSLATORS: {side} is "Primary" or "Secondary", {state} is "on" or "OFF".
+#: polyhost/gui/mock_board_dialog.py:214
+#, python-brace-format
+msgid "{side} mock, protocol v{protocol} · overlays {state} · {shown} keycap(s) with an overlay · received: {images} image, {fills} fill, {mappings} mapping, {controls} control report(s)"
+msgstr "mock {side}, protokol v{protocol} · overlay {state} · {shown} keycap dengan overlay · diterima: {images} gambar, {fills} isian, {mappings} pemetaan, {controls} laporan kontrol"
+
+#: polyhost/gui/mock_board_dialog.py:217
+msgid "Primary"
+msgstr "Primer"
+
+#: polyhost/gui/mock_board_dialog.py:217
+msgid "Secondary"
+msgstr "Sekunder"
+
+#. TRANSLATORS: the state of the mock keyboard's overlays.
+#: polyhost/gui/mock_board_dialog.py:220
+msgid "on"
+msgstr "aktif"
+
+#: polyhost/gui/mock_board_dialog.py:220
+msgid "OFF"
+msgstr "NONAKTIF"
+
+#: polyhost/gui/mock_board_dialog.py:224
+#, python-brace-format
+msgid " · ⚠ {count} refused: {last}"
+msgstr " · ⚠ {count} ditolak: {last}"
+
+#: polyhost/gui/mock_board_dialog.py:233
+msgid "Save the mock's keycaps to"
+msgstr "Simpan keycap mock ke"
+
+#: polyhost/gui/mock_board_dialog.py:240
+#, python-brace-format
+msgid "Saved {count} PNG(s) to {folder}"
+msgstr "{count} PNG disimpan ke {folder}"
+
+#. TRANSLATORS: an overlay image shown under every modifier combination.
+#: polyhost/gui/mru_inspector_dialog.py:35
+msgid "any"
+msgstr "semua"
+
+#: polyhost/gui/mru_inspector_dialog.py:117
+#, python-brace-format
+msgid "MRU Overlay Cache Inspector  —  {caches}"
+msgstr "Inspektur Cache Overlay MRU  —  {caches}"
+
+#: polyhost/gui/mru_inspector_dialog.py:145
+#, python-brace-format
+msgid "All transferred mappings so far ({n} entries) — display position → pool slot"
+msgid_plural "All transferred mappings so far ({n} entries) — display position → pool slot"
+msgstr[0] "Semua pemetaan yang telah ditransfer ({n} entri) — posisi tampilan → slot pool"
+msgstr[1] "Semua pemetaan yang telah ditransfer ({n} entri) — posisi tampilan → slot pool"
+
+#: polyhost/gui/mru_inspector_dialog.py:152
+msgid "From"
+msgstr "Dari"
+
+#: polyhost/gui/mru_inspector_dialog.py:152
+msgid "To"
+msgstr "Ke"
+
+#: polyhost/gui/mru_inspector_dialog.py:168
+msgid "(no mapping sent yet)"
+msgstr "(belum ada pemetaan yang dikirim)"
+
+#: polyhost/gui/mru_inspector_dialog.py:273
+#, python-brace-format
+msgid ""
+"{file}\n"
+"{keycode}·{modifier}→{slot}\n"
+"batch {rank}/{max_rank}"
+msgstr ""
+"{file}\n"
+"{keycode}·{modifier}→{slot}\n"
+"batch {rank}/{max_rank}"
+
+#: polyhost/gui/newer_firmware_dialog.py:32
+msgid "Safe mode"
+msgstr "Mode aman"
+
+#: polyhost/gui/newer_firmware_dialog.py:33
+msgid "Check for updates"
+msgstr "Periksa pembaruan"
+
+#: polyhost/gui/newer_firmware_dialog.py:34
+msgid "Connect anyway"
+msgstr "Tetap hubungkan"
+
+#: polyhost/gui/newer_firmware_dialog.py:57
+#, python-brace-format
+msgid "{keyboard}'s firmware (protocol P{device_protocol}) is newer than this host app (protocol P{host_protocol})."
+msgstr "Firmware {keyboard} (protokol P{device_protocol}) lebih baru daripada aplikasi host ini (protokol P{host_protocol})."
+
+#: polyhost/gui/newer_firmware_dialog.py:61
+msgid "A newer firmware may use commands this version of the app doesn't fully understand, so some features could misbehave. How would you like to proceed?"
+msgstr "Firmware yang lebih baru mungkin menggunakan perintah yang tidak sepenuhnya dipahami versi aplikasi ini, sehingga beberapa fitur bisa berperilaku tidak semestinya. Bagaimana Anda ingin melanjutkan?"
+
+#: polyhost/gui/newer_firmware_dialog.py:65
+msgid "• Safe mode — connect, but enable only the stable set (firmware update and debugging)."
+msgstr "• Mode aman — hubungkan, tetapi aktifkan hanya fitur yang stabil (pembaruan firmware dan debugging)."
+
+#: polyhost/gui/newer_firmware_dialog.py:67
+msgid "• Check for updates — look for a newer host app that matches; if none is found, stay in safe mode."
+msgstr "• Periksa pembaruan — cari aplikasi host yang lebih baru dan sesuai; jika tidak ditemukan, tetap dalam mode aman."
+
+#: polyhost/gui/newer_firmware_dialog.py:69
+msgid "• Connect anyway — use everything and accept the risk."
+msgstr "• Tetap hubungkan — gunakan semua fitur dan terima risikonya."
+
+#: polyhost/gui/newer_firmware_dialog.py:73
+msgid "Newer keyboard firmware detected"
+msgstr "Firmware keyboard yang lebih baru terdeteksi"
+
+#: polyhost/gui/oled_look.py:36
+#, python-brace-format
+msgid "Pillow is unavailable: {error}"
+msgstr "Pillow tidak tersedia: {error}"
+
+#: polyhost/gui/problem_alert_dialog.py:37
+msgid "PolyKybd — a problem was detected"
+msgstr "PolyKybd — terdeteksi masalah"
+
+#: polyhost/gui/problem_alert_dialog.py:53
+msgid "Everything may still be working, but this is worth a look. A bug report collects the logs and pre-fills a GitHub issue; nothing is sent until you press Submit there. To change what is watched, see the problem_scan settings."
+msgstr "Semuanya mungkin masih berfungsi, tetapi ini perlu diperiksa. Laporan bug mengumpulkan log dan mengisi awal issue GitHub; tidak ada yang dikirim sampai Anda menekan Submit di sana. Untuk mengubah apa yang dipantau, lihat pengaturan problem_scan."
+
+#: polyhost/gui/problem_alert_dialog.py:65
+msgid "Report a Problem…"
+msgstr "Laporkan Masalah…"
+
+#: polyhost/gui/problem_alert_dialog.py:100
+#, python-brace-format
+msgid "<b>PolyKybd noticed {n} problem.</b>"
+msgid_plural "<b>PolyKybd noticed {n} problems.</b>"
+msgstr[0] "<b>PolyKybd mendeteksi {n} masalah.</b>"
+msgstr[1] "<b>PolyKybd mendeteksi {n} masalah.</b>"
+
+#: polyhost/gui/problem_alert_dialog.py:117
+msgid "Opened the problem report with these filled in."
+msgstr "Laporan masalah dibuka dengan data ini sudah terisi."
+
+#: polyhost/gui/report_problem_dialog.py:53
+msgid "Report a Problem"
+msgstr "Laporkan Masalah"
+
+#: polyhost/gui/report_problem_dialog.py:58
+msgid "This collects your logs and opens a pre-filled bug report on GitHub. Nothing is sent anywhere until you press Submit there — and you attach the log file yourself, so you can look at it first."
+msgstr "Ini mengumpulkan log Anda dan membuka laporan bug yang sudah terisi di GitHub. Tidak ada yang dikirim ke mana pun sampai Anda menekan Submit di sana — dan Anda melampirkan file log sendiri, sehingga bisa memeriksanya terlebih dahulu."
+
+#: polyhost/gui/report_problem_dialog.py:66
+msgid "What went wrong? What were you doing when it happened?"
+msgstr "Apa yang salah? Apa yang sedang Anda lakukan saat itu terjadi?"
+
+#: polyhost/gui/report_problem_dialog.py:69
+msgid "What happened"
+msgstr "Apa yang terjadi"
+
+#: polyhost/gui/report_problem_dialog.py:73
+msgid "Optional — what you expected instead"
+msgstr "Opsional — apa yang Anda harapkan"
+
+#: polyhost/gui/report_problem_dialog.py:81
+msgid "Include logs from:"
+msgstr "Sertakan log dari:"
+
+#: polyhost/gui/report_problem_dialog.py:86
+msgid "Mask window titles (recommended)"
+msgstr "Samarkan judul jendela (disarankan)"
+
+#: polyhost/gui/report_problem_dialog.py:102
+msgid "Show Log File"
+msgstr "Tampilkan File Log"
+
+#: polyhost/gui/report_problem_dialog.py:108
+msgid "Create Report…"
+msgstr "Buat Laporan…"
+
+#: polyhost/gui/report_problem_dialog.py:134
+msgid "Window titles are replaced with placeholders. Application names are kept — that is what overlay problems are diagnosed from."
+msgstr "Judul jendela diganti dengan placeholder. Nama aplikasi tetap dipertahankan — itulah yang dipakai untuk mendiagnosis masalah overlay."
+
+#: polyhost/gui/report_problem_dialog.py:139
+msgid "The log file will contain the titles of windows you had open, which can name documents."
+msgstr "File log akan berisi judul jendela yang Anda buka, yang dapat menyebutkan dokumen."
+
+#: polyhost/gui/report_problem_dialog.py:141
+msgid "Only untick this if the problem is about the wrong overlay appearing for an app."
+msgstr "Hapus centang ini hanya jika masalahnya adalah overlay yang salah muncul untuk suatu aplikasi."
+
+#: polyhost/gui/report_problem_dialog.py:202
+msgid "Collecting logs…"
+msgstr "Mengumpulkan log…"
+
+#: polyhost/gui/report_problem_dialog.py:252
+msgid "The report itself is fine — it just has no logs attached."
+msgstr "Laporannya sendiri tidak bermasalah — hanya saja tidak ada log yang terlampir."
+
+#: polyhost/gui/report_problem_dialog.py:254
+msgid "A GitHub issue has been opened in your browser."
+msgstr "Issue GitHub telah dibuka di browser Anda."
+
+#: polyhost/gui/report_problem_dialog.py:255
+msgid "A GitHub issue has been opened in your browser — the report is on your clipboard, paste it in."
+msgstr "Issue GitHub telah dibuka di browser Anda — laporan ada di papan klip, tempelkan di sana."
+
+#: polyhost/gui/report_problem_dialog.py:261
+#, python-brace-format
+msgid "Could not open your browser — the report is on your clipboard. <a href='{url}'>Open an issue</a> and paste it in."
+msgstr "Tidak dapat membuka browser — laporan ada di papan klip. <a href='{url}'>Buka issue</a> dan tempelkan di sana."
+
+#: polyhost/gui/report_problem_dialog.py:265
+msgid "<b>Attach the log file</b> (button on the left reveals it) and press Submit."
+msgstr "<b>Lampirkan file log</b> (tombol di sebelah kiri menampilkannya) lalu tekan Submit."
+
+#: polyhost/gui/report_problem_dialog.py:268
+msgid "Press Submit. (No log file was produced — see above.)"
+msgstr "Tekan Submit. (Tidak ada file log yang dihasilkan — lihat di atas.)"
+
+#: polyhost/gui/settings_dialog.py:26
+#, python-brace-format
+msgid "Automatic ({language})"
+msgstr "Otomatis ({language})"
+
+#: polyhost/gui/settings_dialog.py:36
+msgid "Automatic"
+msgstr "Otomatis"
+
+#: polyhost/gui/settings_dialog.py:36
+msgid "Light"
+msgstr "Terang"
+
+#: polyhost/gui/settings_dialog.py:36
+msgid "Dark"
+msgstr "Gelap"
+
+#: polyhost/gui/settings_dialog.py:38
+msgid "Errors"
+msgstr "Kesalahan"
+
+#: polyhost/gui/settings_dialog.py:39
+msgid "Errors and warnings"
+msgstr "Kesalahan dan peringatan"
+
+#: polyhost/gui/settings_dialog.py:47
+msgid "General"
+msgstr "Umum"
+
+#: polyhost/gui/settings_dialog.py:48
+msgid "Browser"
+msgstr "Browser"
+
+#: polyhost/gui/settings_dialog.py:48
+msgid "Daemon"
+msgstr "Daemon"
+
+#: polyhost/gui/settings_dialog.py:49
+msgid "Delay"
+msgstr "Penundaan"
+
+#: polyhost/gui/settings_dialog.py:49
+msgid "Dev"
+msgstr "Dev"
+
+#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:800
+msgid "Developer"
+msgstr "Pengembang"
+
+#: polyhost/gui/settings_dialog.py:50
+msgid "Fontpack"
+msgstr "Paket font"
+
+#: polyhost/gui/settings_dialog.py:50
+msgid "Generic"
+msgstr "Generik"
+
+#: polyhost/gui/settings_dialog.py:50
+msgid "Hid"
+msgstr "HID"
+
+#: polyhost/gui/settings_dialog.py:51
+msgid "Irradiance"
+msgstr "Iradiansi"
+
+#: polyhost/gui/settings_dialog.py:51
+msgid "Problem"
+msgstr "Masalah"
+
+#: polyhost/gui/settings_dialog.py:51 polyhost/gui/settings_dialog.py:62
+msgid "Max"
+msgstr "Maks"
+
+#: polyhost/gui/settings_dialog.py:52
+msgid "Shortcut"
+msgstr "Pintasan"
+
+#: polyhost/gui/settings_dialog.py:52
+msgid "Telemetry"
+msgstr "Telemetri"
+
+#: polyhost/gui/settings_dialog.py:52
+msgid "Ui"
+msgstr "UI"
+
+#: polyhost/gui/settings_dialog.py:53
+msgid "Unicode"
+msgstr "Unicode"
+
+#: polyhost/gui/settings_dialog.py:53
+msgid "Window"
+msgstr "Jendela"
+
+#: polyhost/gui/settings_dialog.py:57
+msgid "Send Composition Mode"
+msgstr "Kirim Mode Komposisi"
+
+#: polyhost/gui/settings_dialog.py:58
+msgid "Set Daylight Dependent"
+msgstr "Atur Berdasarkan Cahaya Siang"
+
+#: polyhost/gui/settings_dialog.py:59
+msgid "Allow Online Irradiance Request"
+msgstr "Izinkan Permintaan Iradiansi Online"
+
+#: polyhost/gui/settings_dialog.py:60
+msgid "Allow Online Location Lookup"
+msgstr "Izinkan Pencarian Lokasi Online"
+
+#: polyhost/gui/settings_dialog.py:61
+msgid "Min"
+msgstr "Min"
+
+#: polyhost/gui/settings_dialog.py:63
+msgid "Prescaler"
+msgstr "Prescaler"
+
+#: polyhost/gui/settings_dialog.py:64
+msgid "Gamma"
+msgstr "Gamma"
+
+#: polyhost/gui/settings_dialog.py:65
+msgid "Overlays Enabled"
+msgstr "Overlay Aktif"
+
+#: polyhost/gui/settings_dialog.py:66
+msgid "Overlays Fill Gaps"
+msgstr "Overlay Mengisi Celah"
+
+#: polyhost/gui/settings_dialog.py:67
+msgid "Icons Enabled"
+msgstr "Ikon Aktif"
+
+#: polyhost/gui/settings_dialog.py:68
+msgid "Icon Auto Fetch"
+msgstr "Ambil Ikon Otomatis"
+
+#: polyhost/gui/settings_dialog.py:69
+msgid "Enable Accessibility"
+msgstr "Aktifkan Aksesibilitas"
+
+#: polyhost/gui/settings_dialog.py:70
+msgid "Hid Message Before Delay"
+msgstr "Pesan HID Sebelum Penundaan"
+
+#: polyhost/gui/settings_dialog.py:71
+msgid "Time After Max Hid Messages"
+msgstr "Waktu Setelah Pesan HID Maksimum"
+
+#: polyhost/gui/settings_dialog.py:72
+msgid "Reconnect Retries"
+msgstr "Percobaan Ulang Koneksi"
+
+#: polyhost/gui/settings_dialog.py:73
+msgid "Theme"
+msgstr "Tema"
+
+#: polyhost/gui/settings_dialog.py:76
+msgid "Mock Enabled"
+msgstr "Mock Aktif"
+
+#: polyhost/gui/settings_dialog.py:77
+msgid "Mock Primary"
+msgstr "Mock Primer"
+
+#: polyhost/gui/settings_dialog.py:78
+msgid "Mock Protocol"
+msgstr "Protokol Mock"
+
+#: polyhost/gui/settings_dialog.py:80
+msgid "Run Window Detection If Not Connected To Poly Kybd"
+msgstr "Jalankan Deteksi Jendela Jika Tidak Terhubung ke PolyKybd"
+
+#: polyhost/gui/settings_dialog.py:81
+msgid "Win Native Set Language"
+msgstr "Setel Bahasa Native Windows"
+
+#: polyhost/gui/settings_dialog.py:82
+msgid "Legacy Plaintext Relay"
+msgstr "Relai Teks Biasa Lama"
+
+#: polyhost/gui/settings_dialog.py:84
+msgid "Report Network Enabled"
+msgstr "Laporan Jaringan Aktif"
+
+#: polyhost/gui/settings_dialog.py:85
+msgid "Auto Flash"
+msgstr "Flash Otomatis"
+
+#: polyhost/gui/settings_dialog.py:86
+msgid "Path"
+msgstr "Jalur"
+
+#: polyhost/gui/settings_dialog.py:87
+msgid "Url Detection"
+msgstr "Deteksi URL"
+
+#: polyhost/gui/settings_dialog.py:88
+msgid "Report Local Enabled"
+msgstr "Laporan Lokal Aktif"
+
+#: polyhost/gui/settings_dialog.py:89
+msgid "Report Port"
+msgstr "Port Laporan"
+
+#: polyhost/gui/settings_dialog.py:90
+msgid "Report Token"
+msgstr "Token Laporan"
+
+#: polyhost/gui/settings_dialog.py:91
+msgid "Enabled"
+msgstr "Aktif"
+
+#: polyhost/gui/settings_dialog.py:92
+msgid "Endpoint"
+msgstr "Endpoint"
+
+#: polyhost/gui/settings_dialog.py:93
+msgid "Install Id"
+msgstr "ID Instalasi"
+
+#: polyhost/gui/settings_dialog.py:94
+msgid "Scan Keyboard Console"
+msgstr "Pindai Konsol Keyboard"
+
+#: polyhost/gui/settings_dialog.py:95
+msgid "Scan Host Logs"
+msgstr "Pindai Log Host"
+
+#: polyhost/gui/settings_dialog.py:96
+msgid "Scan Level"
+msgstr "Tingkat Pemindaian"
+
+#: polyhost/gui/settings_dialog.py:169
+msgid "PolyKybd Settings"
+msgstr "Pengaturan PolyKybd"
+
+#: polyhost/gui/settings_dialog.py:187
+msgid "Some settings might need a restart to take effect."
+msgstr "Beberapa pengaturan mungkin memerlukan mulai ulang agar berlaku."
+
+#: polyhost/gui/settings_dialog.py:237
+msgid "Reset glyph script to Standard"
+msgstr "Atur ulang skrip glif ke Standar"
+
+#: polyhost/gui/settings_dialog.py:238
+msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
+msgstr "Matikan penggantian skrip fantasi/alternatif apa pun dan tampilkan kembali legenda bahasa normal."
+
+#: polyhost/gui/split_link_dialog.py:36
+msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
+msgstr "<p>Belahan yang terhubung lewat USB merespons, tetapi belahan lainnya tidak. Pembaruan dan pemasangan font memerlukan kedua belahan, jadi proses ini dihentikan.</p><p><b>1.</b> Cabut kabel di antara kedua belahan lalu pasang kembali dengan kencang di kedua ujungnya. Kemudian coba perbarui lagi.</p><p><b>2.</b> Jika belahan lainnya masih tidak menyala dan keycap-nya kosong, belahan itu tidak menjalankan firmware. Cabut kedua belahan. Tahan tombol <b>BOOT</b> pada belahan itu sambil menghubungkannya ke komputer lewat USB. Drive bernama <b>RPI-RP2</b> akan muncul. Seret file .uf2 ke drive tersebut; drive menghilang setelah penyalinan selesai. Lalu hubungkan kembali kedua belahan.</p>"
+
+#: polyhost/gui/split_link_dialog.py:70
+msgid "Other keyboard half not answering"
+msgstr "Belahan keyboard lainnya tidak merespons"
+
+#: polyhost/gui/split_link_dialog.py:88
+msgid "Download .uf2"
+msgstr "Unduh .uf2"
+
+#: polyhost/gui/split_link_dialog.py:90
+msgid "Show in folder"
+msgstr "Tampilkan di folder"
+
+#: polyhost/gui/split_link_dialog.py:93
+msgid "Open guide"
+msgstr "Buka panduan"
+
+#: polyhost/gui/split_link_dialog.py:115
+msgid "Looking up the newest firmware release…"
+msgstr "Mencari rilis firmware terbaru…"
+
+#: polyhost/gui/split_link_dialog.py:132
+#, python-brace-format
+msgid "Saved: {path}"
+msgstr "Tersimpan: {path}"
+
+#: polyhost/gui/split_link_dialog.py:134
+msgid "Download again"
+msgstr "Unduh lagi"
+
+#: polyhost/gui/split_link_dialog.py:138
+#, python-brace-format
+msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
+msgstr "Unduhan gagal ({error}). Anda bisa mendapatkan .uf2 dari <a href=\"{url}\">halaman rilis</a> sebagai gantinya."
+
+#: polyhost/gui/tray_notify.py:62
+#, python-brace-format
+msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
+msgstr "{prefix} — host v{host_version}, firmware v{fw_version} tersedia"
+
+#: polyhost/gui/tray_notify.py:65
+#, python-brace-format
+msgid "{prefix} — host v{host_version} available"
+msgstr "{prefix} — host v{host_version} tersedia"
+
+#: polyhost/gui/tray_notify.py:68
+#, python-brace-format
+msgid "{prefix} — firmware v{fw_version} available"
+msgstr "{prefix} — firmware v{fw_version} tersedia"
+
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:694
+msgid "Updates"
+msgstr "Pembaruan"
+
+#: polyhost/gui/update_dialog.py:98
+msgid "What's new"
+msgstr "Yang baru"
+
+#: polyhost/gui/update_dialog.py:101
+#, python-brace-format
+msgid "What's new — {release_name}"
+msgstr "Yang baru — {release_name}"
+
+#: polyhost/gui/update_ui.py:29
+msgid "Restarting to complete update…"
+msgstr "Memulai ulang untuk menyelesaikan pembaruan…"
+
+#: polyhost/host.py:55
+msgid "Standard (normal legends)"
+msgstr "Standar (legenda normal)"
+
+#: polyhost/host.py:56
+msgid "Tengwar (fantasy)"
+msgstr "Tengwar (fantasi)"
+
+#: polyhost/host.py:57
+msgid "Elder Futhark runes"
+msgstr "Rune Elder Futhark"
+
+#: polyhost/host.py:58
+msgid "Aurebesh (sci-fi)"
+msgstr "Aurebesh (fiksi ilmiah)"
+
+#: polyhost/host.py:59
+msgid "Standard Galactic"
+msgstr "Standard Galactic"
+
+#: polyhost/host.py:60
+msgid "Cirth / Angerthas"
+msgstr "Cirth / Angerthas"
+
+#: polyhost/host.py:61
+msgid "IBM VGA / CP437"
+msgstr "IBM VGA / CP437"
+
+#: polyhost/host.py:62
+msgid "Commodore 64 (screen)"
+msgstr "Commodore 64 (layar)"
+
+#: polyhost/host.py:63
+msgid "Commodore 64 (keycap)"
+msgstr "Commodore 64 (keycap)"
+
+#: polyhost/host.py:64
+msgid "Amiga Topaz"
+msgstr "Amiga Topaz"
+
+#: polyhost/host.py:65
+msgid "APL"
+msgstr "APL"
+
+#: polyhost/host.py:66
+msgid "Braille"
+msgstr "Braille"
+
+#: polyhost/host.py:72
+msgid "Small (standard)"
+msgstr "Kecil (standar)"
+
+#: polyhost/host.py:73
+msgid "Medium"
+msgstr "Sedang"
+
+#: polyhost/host.py:74
+msgid "Large"
+msgstr "Besar"
+
+#: polyhost/host.py:253
+msgid "Updating keyboard font pack — please wait, do not unplug…"
+msgstr "Memperbarui paket font keyboard — harap tunggu, jangan cabut kabel…"
+
+#: polyhost/host.py:254
+#, python-brace-format
+msgid "PolyKybd — updating font pack ({percent}%)"
+msgstr "PolyKybd — memperbarui paket font ({percent}%)"
+
+#: polyhost/host.py:255
+msgid "Keyboard font pack is up to date."
+msgstr "Paket font keyboard sudah mutakhir."
+
+#: polyhost/host.py:256
+#, python-brace-format
+msgid "Font pack update failed: {error}"
+msgstr "Pembaruan paket font gagal: {error}"
+
+#: polyhost/host.py:259
+msgid "Updating keyboard game data — please wait, do not unplug…"
+msgstr "Memperbarui data game keyboard — harap tunggu, jangan cabut kabel…"
+
+#: polyhost/host.py:260
+#, python-brace-format
+msgid "PolyKybd — updating game data ({percent}%)"
+msgstr "PolyKybd — memperbarui data game ({percent}%)"
+
+#: polyhost/host.py:261
+msgid "Keyboard game data is up to date."
+msgstr "Data game keyboard sudah mutakhir."
+
+#: polyhost/host.py:262
+#, python-brace-format
+msgid "Game data update failed: {error}"
+msgstr "Pembaruan data game gagal: {error}"
+
+#: polyhost/host.py:265
+msgid "Updating keyboard engine pack — please wait, do not unplug…"
+msgstr "Memperbarui paket engine keyboard — harap tunggu, jangan cabut kabel…"
+
+#: polyhost/host.py:266
+#, python-brace-format
+msgid "PolyKybd — updating engine pack ({percent}%)"
+msgstr "PolyKybd — memperbarui paket engine ({percent}%)"
+
+#: polyhost/host.py:267
+msgid "Keyboard engine pack is up to date."
+msgstr "Paket engine keyboard sudah mutakhir."
+
+#: polyhost/host.py:268
+#, python-brace-format
+msgid "Engine pack update failed: {error}"
+msgstr "Pembaruan paket engine gagal: {error}"
+
+#: polyhost/host.py:454 polyhost/host.py:1446
+msgid "Waiting for PolyKybd..."
+msgstr "Menunggu PolyKybd..."
+
+#: polyhost/host.py:455 polyhost/host.py:1298
+msgid "Press to pause connection"
+msgstr "Tekan untuk menjeda koneksi"
+
+#: polyhost/forwarder.py:308 polyhost/host.py:458
+msgid "Quit"
+msgstr "Keluar"
+
+#: polyhost/host.py:467
+msgid "Quit && stop background daemon"
+msgstr "Keluar && hentikan daemon latar belakang"
+
+#: polyhost/forwarder.py:275 polyhost/host.py:472
+msgid "About"
+msgstr "Tentang"
+
+#: polyhost/forwarder.py:264 polyhost/host.py:476
+msgid "Settings..."
+msgstr "Pengaturan..."
+
+#: polyhost/forwarder.py:279 polyhost/host.py:480
+msgid "Log file..."
+msgstr "File log..."
+
+#: polyhost/forwarder.py:285 polyhost/host.py:489
+msgid "Report a Problem..."
+msgstr "Laporkan Masalah..."
+
+#: polyhost/forwarder.py:291 polyhost/host.py:508
+msgid "Collect logs..."
+msgstr "Kumpulkan log..."
+
+#: polyhost/host.py:517
+msgid "Read keyboard crash record"
+msgstr "Baca catatan crash keyboard"
+
+#: polyhost/host.py:519
+msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
+msgstr "Baca catatan crash terakhir keyboard dari kedua belahan dan salin ke papan klip."
+
+#: polyhost/host.py:524
+msgid "Inspect Font Packs..."
+msgstr "Periksa Paket Font..."
+
+#. TRANSLATORS: menu action (verb): pause the keyboard connection.
+#: polyhost/forwarder.py:245 polyhost/forwarder.py:366 polyhost/host.py:538
+#: polyhost/host.py:1300
+msgid "Pause"
+msgstr "Jeda"
+
+#: polyhost/host.py:548
+msgid "Firmware newer than this app — safe mode…"
+msgstr "Firmware lebih baru dari aplikasi ini — mode aman…"
+
+#: polyhost/host.py:550
+msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
+msgstr "Pilih cara menangani keyboard yang firmware-nya lebih baru daripada aplikasi host ini."
+
+#: polyhost/host.py:586
+msgid "Idle Display"
+msgstr "Tampilan Diam"
+
+#: polyhost/host.py:589
+msgid "Pulse (legacy)"
+msgstr "Denyut (lama)"
+
+#: polyhost/host.py:591
+msgid "Jitter (move legend)"
+msgstr "Getar (geser legenda)"
+
+#: polyhost/host.py:595
+msgid "IDDQD (attract demo)"
+msgstr "IDDQD (demo atraksi)"
+
+#: polyhost/host.py:599
+msgid "Eden"
+msgstr "Eden"
+
+#: polyhost/host.py:619
+msgid "Idle After"
+msgstr "Diam Setelah"
+
+#: polyhost/host.py:640
+msgid "Keycap Script"
+msgstr "Skrip Keycap"
+
+#: polyhost/host.py:668
+msgid "Keycap Size"
+msgstr "Ukuran Keycap"
+
+#: polyhost/host.py:686
+msgid "Configure Keymap"
+msgstr "Konfigurasi Keymap"
+
+#: polyhost/host.py:696
+msgid "Check for host update..."
+msgstr "Periksa pembaruan host..."
+
+#: polyhost/host.py:735
+msgid "Check for keyboard firmware update…"
+msgstr "Periksa pembaruan firmware keyboard…"
+
+#: polyhost/host.py:744
+msgid "Keyboard fonts"
+msgstr "Font keyboard"
+
+#: polyhost/host.py:778
+msgid "Install WinCompose…"
+msgstr "Instal WinCompose…"
+
+#: polyhost/host.py:802
+msgid "Change System Input Language"
+msgstr "Ubah Bahasa Input Sistem"
+
+#: polyhost/host.py:808
+msgid "Inspect MRU Cache..."
+msgstr "Periksa Cache MRU..."
+
+#: polyhost/host.py:814
+msgid "Mock Keyboard..."
+msgstr "Keyboard Tiruan..."
+
+#: polyhost/host.py:822
+msgid "Refresh unicode input mode"
+msgstr "Segarkan mode input unicode"
+
+#: polyhost/host.py:826
+msgid "Save MRU cache now"
+msgstr "Simpan cache MRU sekarang"
+
+#: polyhost/forwarder.py:301 polyhost/host.py:840
+msgid "Help && About"
+msgstr "Bantuan && Tentang"
+
+#: polyhost/forwarder.py:297 polyhost/host.py:849
+msgid "Open config folder"
+msgstr "Buka folder konfigurasi"
+
+#: polyhost/host.py:962
+msgid "System language query not supported for this platform."
+msgstr "Kueri bahasa sistem tidak didukung di platform ini."
+
+#: polyhost/host.py:1161
+#, python-brace-format
+msgid "Retry keyboard fonts ({n} failed)…"
+msgid_plural "Retry keyboard fonts ({n} failed)…"
+msgstr[0] "Coba lagi font keyboard ({n} gagal)…"
+msgstr[1] "Coba lagi font keyboard ({n} gagal)…"
+
+#: polyhost/host.py:1163
+#, python-brace-format
+msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
+msgstr "Flash ulang bundel font yang percobaan terakhirnya gagal: {bundles}"
+
+#: polyhost/host.py:1169
+#, python-brace-format
+msgid "Update keyboard fonts ({n})…"
+msgid_plural "Update keyboard fonts ({n})…"
+msgstr[0] "Perbarui font keyboard ({n})…"
+msgstr[1] "Perbarui font keyboard ({n})…"
+
+#: polyhost/host.py:1171
+#, python-brace-format
+msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
+msgstr "Flash bundel font yang belum ada di keyboard, versinya tertinggal, atau gagal diterima: {bundles}"
+
+#: polyhost/host.py:1176
+msgid "Keyboard fonts: up to date"
+msgstr "Font keyboard: mutakhir"
+
+#: polyhost/host.py:1177
+msgid ""
+"Every shipped font bundle is already on the keyboard.\n"
+"Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
+msgstr ""
+"Setiap bundel font bawaan sudah ada di keyboard.\n"
+"Pengembang → Paket Font → Flash ulang semua bundel akan memaksa pengiriman ulang jika keycap masih tampil salah."
+
+#: polyhost/forwarder.py:711 polyhost/host.py:1207
+msgid "Config folder"
+msgstr "Folder konfigurasi"
+
+#. TRANSLATORS: status row while paused; clicking it reconnects (verb).
+#: polyhost/host.py:1292
+msgid "Reconnect"
+msgstr "Hubungkan ulang"
+
+#. TRANSLATORS: menu action (verb): resume the keyboard connection.
+#: polyhost/forwarder.py:366 polyhost/host.py:1295
+msgid "Resume"
+msgstr "Lanjutkan"
+
+#: polyhost/host.py:1374 polyhost/host.py:1438
+#, python-brace-format
+msgid "Could not change OS language {language}."
+msgstr "Tidak dapat mengubah bahasa OS {language}."
+
+#. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
+#: polyhost/host.py:1462
+msgid "Firmware image (*.bin)"
+msgstr "Image firmware (*.bin)"
+
+#: polyhost/host.py:1463
+msgid "Select firmware .bin"
+msgstr "Pilih firmware .bin"
+
+#: polyhost/host.py:1514
+msgid "Firmware apply failed"
+msgstr "Penerapan firmware gagal"
+
+#: polyhost/host.py:1515
+msgid "Firmware flash failed"
+msgstr "Flash firmware gagal"
+
+#: polyhost/host.py:1555 polyhost/host.py:1608
+#, python-brace-format
+msgid "Selected Language: {language} {country}"
+msgstr "Bahasa Terpilih: {language} {country}"
+
+#: polyhost/host.py:1578
+msgid "Other"
+msgstr "Lainnya"
+
+#: polyhost/host.py:1664
+msgid "PolyHost settings"
+msgstr "Pengaturan PolyHost"
+
+#: polyhost/host.py:1665
+msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
+msgstr "Pengaturan diterapkan, tetapi tidak dapat disimpan ke file pengaturan. Mungkin ada program lain yang sedang membukanya. Ubah pengaturan lagi nanti untuk mencoba ulang, atau lihat log."
+
+#: polyhost/host.py:1767
+#, python-brace-format
+msgid "{side}: unreadable record {record}"
+msgstr "{side}: catatan {record} tidak terbaca"
+
+#: polyhost/host.py:1770
+msgid "Neither keyboard half holds a crash record."
+msgstr "Tidak ada belahan keyboard yang menyimpan catatan crash."
+
+#: polyhost/host.py:1772
+#, python-brace-format
+msgid ""
+"Could not read the crash record.\n"
+"\n"
+"{errors}"
+msgstr ""
+"Tidak dapat membaca catatan crash.\n"
+"\n"
+"{errors}"
+
+#: polyhost/host.py:1774
+msgid "Keyboard crash record"
+msgstr "Catatan crash keyboard"
+
+#: polyhost/host.py:1783
+#, python-brace-format
+msgid "Copied to the clipboard. Not read: {errors}"
+msgstr "Disalin ke papan klip. Tidak terbaca: {errors}"
+
+#: polyhost/host.py:1868
+msgid "MRU Cache"
+msgstr "Cache MRU"
+
+#: polyhost/host.py:1868
+msgid "MRU cache is not active (device not connected or MRU mode disabled)."
+msgstr "Cache MRU tidak aktif (perangkat tidak terhubung atau mode MRU dinonaktifkan)."
+
+#: polyhost/host.py:1917
+msgid "daemon client"
+msgstr "klien daemon"
+
+#: polyhost/host.py:1917
+msgid "standalone"
+msgstr "mandiri"
+
+#. TRANSLATORS: keyboard connection state (adjective).
+#. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
+#: polyhost/forwarder.py:772 polyhost/host.py:1973
+msgid "paused"
+msgstr "dijeda"
+
+#: polyhost/host.py:1975
+msgid "connected"
+msgstr "terhubung"
+
+#: polyhost/host.py:1976
+msgid "present — not connected (protocol/version)"
+msgstr "ada — tidak terhubung (protokol/versi)"
+
+#: polyhost/host.py:1990
+#, python-brace-format
+msgid "{n} languages loaded"
+msgid_plural "{n} languages loaded"
+msgstr[0] "{n} bahasa dimuat"
+msgstr[1] "{n} bahasa dimuat"
+
+#: polyhost/host.py:1993
+#, python-brace-format
+msgid "<b>Connected keyboard:</b> {name} {state}"
+msgstr "<b>Keyboard terhubung:</b> {name} {state}"
+
+#: polyhost/host.py:1995
+#, python-brace-format
+msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
+msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protokol {protocol}"
+
+#: polyhost/host.py:1997
+#, python-brace-format
+msgid "<b>Hardware:</b> {hardware}"
+msgstr "<b>Perangkat keras:</b> {hardware}"
+
+#: polyhost/host.py:1998
+#, python-brace-format
+msgid "<b>Language:</b> {language}"
+msgstr "<b>Bahasa:</b> {language}"
+
+#: polyhost/host.py:2005
+#, python-brace-format
+msgid "<b>Uptime:</b> {uptime}"
+msgstr "<b>Waktu aktif:</b> {uptime}"
+
+#: polyhost/host.py:2007
+#, python-brace-format
+msgid "<b>Overlay mappings:</b> {n} apps"
+msgid_plural "<b>Overlay mappings:</b> {n} apps"
+msgstr[0] "<b>Pemetaan overlay:</b> {n} aplikasi"
+msgstr[1] "<b>Pemetaan overlay:</b> {n} aplikasi"
+
+#: polyhost/forwarder.py:789 polyhost/host.py:2009
+#, python-brace-format
+msgid "<b>Config:</b> {path}"
+msgstr "<b>Konfigurasi:</b> {path}"
+
+#: polyhost/forwarder.py:790 polyhost/host.py:2010
+#, python-brace-format
+msgid "<b>Logs:</b> {path}"
+msgstr "<b>Log:</b> {path}"
+
+#: polyhost/forwarder.py:808 polyhost/host.py:2061
+#, python-brace-format
+msgid "HID protocol P{protocol}"
+msgstr "Protokol HID P{protocol}"
+
+#: polyhost/host.py:2066
+msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
+msgstr "Perangkat lunak host untuk keyboard split PolyKybd dengan layar OLED di setiap keycap — melacak jendela aktif dan mengirim overlay, bahasa, serta pembaruan keymap ke keyboard."
+
+#: polyhost/host.py:2092
+#, python-brace-format
+msgid ""
+"Changing input language to '{language}' failed with:\n"
+"\"{error}\""
+msgstr ""
+"Mengubah bahasa input ke '{language}' gagal dengan:\n"
+"\"{error}\""
+
+#: polyhost/host.py:2112 polyhost/host.py:2127
+#, python-brace-format
+msgid "Could not set {language}: {error}"
+msgstr "Tidak dapat menyetel {language}: {error}"
+
+#. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
+#: polyhost/host.py:2242
+msgid "PolyKybd overlay mapping (*.poly.yaml)"
+msgstr "Pemetaan overlay PolyKybd (*.poly.yaml)"
+
+#: polyhost/host.py:2321 polyhost/host.py:2799 polyhost/host.py:2927
+#, python-brace-format
+msgid "Update firmware to v{version}…"
+msgstr "Perbarui firmware ke v{version}…"
+
+#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2996
+msgid "Check for firmware update…"
+msgstr "Periksa pembaruan firmware…"
+
+#: polyhost/forwarder.py:846 polyhost/forwarder.py:857
+#: polyhost/forwarder.py:863 polyhost/host.py:2341 polyhost/host.py:2462
+#: polyhost/host.py:2466
+msgid "Check for updates..."
+msgstr "Periksa pembaruan..."
+
+#: polyhost/host.py:2409
+#, python-brace-format
+msgid "Update to v{version} available"
+msgstr "Pembaruan ke v{version} tersedia"
+
+#: polyhost/forwarder.py:859 polyhost/forwarder.py:865
+#: polyhost/forwarder.py:876 polyhost/host.py:2420 polyhost/host.py:2460
+#: polyhost/host.py:2467 polyhost/host.py:2490
+msgid "PolyKybdHost Update"
+msgstr "Pembaruan PolyKybdHost"
+
+#: polyhost/host.py:2421
+#, python-brace-format
+msgid "Version {version} is available. Click the tray icon to update."
+msgstr "Versi {version} tersedia. Klik ikon baki sistem untuk memperbarui."
+
+#: polyhost/forwarder.py:834 polyhost/host.py:2446
+msgid "Checking for updates..."
+msgstr "Memeriksa pembaruan..."
+
+#: polyhost/host.py:2459
+msgid "No updates available"
+msgstr "Tidak ada pembaruan"
+
+#: polyhost/forwarder.py:860 polyhost/host.py:2461
+#, python-brace-format
+msgid "You are running the latest version (v{version})."
+msgstr "Anda menjalankan versi terbaru (v{version})."
+
+#: polyhost/forwarder.py:866 polyhost/host.py:2468
+#, python-brace-format
+msgid ""
+"Could not check for updates:\n"
+"\n"
+"{error}\n"
+"\n"
+"Run with --dev 1 for details."
+msgstr ""
+"Tidak dapat memeriksa pembaruan:\n"
+"\n"
+"{error}\n"
+"\n"
+"Jalankan dengan --dev 1 untuk detailnya."
+
+#: polyhost/host.py:2473 polyhost/host.py:2860
+#, python-brace-format
+msgid "Released: {date}"
+msgstr "Dirilis: {date}"
+
+#: polyhost/forwarder.py:847 polyhost/host.py:2474
+#, python-brace-format
+msgid "Version {version} is available."
+msgstr "Versi {version} tersedia."
+
+#: polyhost/forwarder.py:848 polyhost/host.py:2475
+msgid "Update PolyKybdHost"
+msgstr "Perbarui PolyKybdHost"
+
+#: polyhost/host.py:2479
+msgid "Download, install, and restart now?"
+msgstr "Unduh, instal, dan mulai ulang sekarang?"
+
+#: polyhost/forwarder.py:875 polyhost/host.py:2490
+#, python-brace-format
+msgid "Downloading v{version}…"
+msgstr "Mengunduh v{version}…"
+
+#: polyhost/forwarder.py:916 polyhost/host.py:2615
+msgid "Could not start the update relay; the update is incomplete. See the log for details."
+msgstr "Tidak dapat memulai relai pembaruan; pembaruan belum selesai. Lihat log untuk detailnya."
+
+#: polyhost/forwarder.py:928 polyhost/host.py:2630
+msgid "Update failed"
+msgstr "Pembaruan gagal"
+
+#: polyhost/forwarder.py:928 polyhost/host.py:2630
+msgid "The update did not finish."
+msgstr "Pembaruan tidak selesai."
+
+#: polyhost/host.py:2810
+msgid "PolyKybd Firmware Update"
+msgstr "Pembaruan Firmware PolyKybd"
+
+#: polyhost/host.py:2811
+#, python-brace-format
+msgid "New firmware v{version} is available. Click the tray icon to update."
+msgstr "Firmware baru v{version} tersedia. Klik ikon baki sistem untuk memperbarui."
+
+#: polyhost/host.py:2828
+msgid "Checking for firmware update…"
+msgstr "Memeriksa pembaruan firmware…"
+
+#: polyhost/host.py:2841 polyhost/host.py:2849
+msgid "PolyKybd Firmware"
+msgstr "Firmware PolyKybd"
+
+#: polyhost/host.py:2842
+#, python-brace-format
+msgid ""
+"Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
+"\n"
+"Your keyboard is on v{current}. This usually means the release build failed — the release page will get its firmware once that is fixed."
+msgstr ""
+"Firmware v{version} telah dirilis, tetapi tidak menyertakan file firmware yang dapat diunduh, jadi belum dapat diinstal.\n"
+"\n"
+"Keyboard Anda menggunakan v{current}. Biasanya ini berarti build rilis gagal — halaman rilis akan mendapatkan firmware-nya setelah masalah itu diperbaiki."
+
+#: polyhost/host.py:2850
+#, python-brace-format
+msgid "You are running the latest firmware (v{version})."
+msgstr "Anda menjalankan firmware terbaru (v{version})."
+
+#: polyhost/host.py:2857
+msgid "The keyboard must be connected to update the firmware."
+msgstr "Keyboard harus terhubung untuk memperbarui firmware."
+
+#: polyhost/host.py:2861
+#, python-brace-format
+msgid "Firmware {version} is available."
+msgstr "Firmware {version} tersedia."
+
+#: polyhost/host.py:2863
+msgid "Both halves update over HID and reboot automatically."
+msgstr "Kedua belahan diperbarui melalui HID dan boot ulang secara otomatis."
+
+#: polyhost/host.py:2864
+msgid "Update PolyKybd Firmware"
+msgstr "Perbarui Firmware PolyKybd"
+
+#: polyhost/host.py:2868
+msgid "Download and flash now?"
+msgstr "Unduh dan flash sekarang?"
+
+#: polyhost/host.py:2879
+#, python-brace-format
+msgid "Downloading firmware v{version}…"
+msgstr "Mengunduh firmware v{version}…"
+
+#: polyhost/host.py:2901 polyhost/host.py:3112
+msgid "Cancelling…"
+msgstr "Membatalkan…"
+
+#: polyhost/host.py:2938
+msgid "Firmware Update Failed"
+msgstr "Pembaruan Firmware Gagal"
+
+#: polyhost/host.py:2939
+#, python-brace-format
+msgid ""
+"Could not download the firmware:\n"
+"\n"
+"{error}"
+msgstr ""
+"Tidak dapat mengunduh firmware:\n"
+"\n"
+"{error}"
+
+#: polyhost/host.py:3076 polyhost/host.py:3090 polyhost/host.py:3136
+#: polyhost/host.py:3145 polyhost/host.py:3151
+msgid "Install WinCompose"
+msgstr "Instal WinCompose"
+
+#: polyhost/host.py:3077
+msgid ""
+"WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
+"\n"
+"PolyKybd's build of WinCompose will be downloaded from GitHub and its installer started (Windows will ask you to confirm)."
+msgstr ""
+"WinCompose memungkinkan PolyKybd mengetik karakter unicode apa pun di Windows — emoji, aksen, dan lapisan bahasa semuanya melewatinya. Tanpanya, keyboard kembali ke input native Windows yang jauh lebih terbatas.\n"
+"\n"
+"Build WinCompose dari PolyKybd akan diunduh dari GitHub dan penginstalnya dijalankan (Windows akan meminta Anda mengonfirmasi)."
+
+#: polyhost/host.py:3090
+msgid "Looking for the latest WinCompose release…"
+msgstr "Mencari rilis WinCompose terbaru…"
+
+#: polyhost/host.py:3137
+msgid ""
+"No ready-made installer was found for download.\n"
+"\n"
+"The releases page will open in your browser — download and run the setup from there."
+msgstr ""
+"Tidak ditemukan penginstal siap pakai untuk diunduh.\n"
+"\n"
+"Halaman rilis akan terbuka di browser Anda — unduh dan jalankan setup dari sana."
+
+#: polyhost/host.py:3146
+#, python-brace-format
+msgid ""
+"The download failed:\n"
+"\n"
+"{error}"
+msgstr ""
+"Unduhan gagal:\n"
+"\n"
+"{error}"
+
+#: polyhost/host.py:3152
+#, python-brace-format
+msgid ""
+"The installer could not be started:\n"
+"\n"
+"{error}\n"
+"\n"
+"It was saved to:\n"
+"{path}"
+msgstr ""
+"Penginstal tidak dapat dijalankan:\n"
+"\n"
+"{error}\n"
+"\n"
+"File disimpan di:\n"
+"{path}"
+
+#: polyhost/host.py:3160
+msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
+msgstr "Penginstal WinCompose telah dijalankan. Setelah selesai dan WinCompose berjalan, PolyKybd akan beralih menggunakannya secara otomatis."
+
+#: polyhost/services/lang_regions.py:128
+msgid "Americas"
+msgstr "Amerika"
+
+#: polyhost/services/lang_regions.py:129
+msgid "Europe"
+msgstr "Eropa"
+
+#: polyhost/services/lang_regions.py:130
+msgid "Middle East & Caucasus"
+msgstr "Timur Tengah & Kaukasus"
+
+#: polyhost/services/lang_regions.py:131
+msgid "Africa"
+msgstr "Afrika"
+
+#: polyhost/services/lang_regions.py:132
+msgid "Asia"
+msgstr "Asia"
+
+#: polyhost/services/lang_regions.py:133
+msgid "Oceania"
+msgstr "Oseania"
+

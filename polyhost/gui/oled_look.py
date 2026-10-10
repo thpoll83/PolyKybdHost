@@ -13,6 +13,8 @@ cannot drift into different-looking previews of one panel.
 
 from __future__ import annotations
 
+from polyhost.i18n import _f
+
 # The simulation is pure PIL/NumPy, both hard requirements — but a broken install
 # must cost the picture, not the editor, so the caller asks `available()` and offers
 # the mode only when it answers.
@@ -31,7 +33,7 @@ def available() -> bool:
 
 def reason() -> str:
     """Why it cannot, for a tooltip. Empty when it can."""
-    return "" if _Image is not None else f"Pillow is unavailable: {_ERR}"
+    return "" if _Image is not None else _f("Pillow is unavailable: {error}", error=_ERR)
 
 
 def _to_pil_l(qimg):

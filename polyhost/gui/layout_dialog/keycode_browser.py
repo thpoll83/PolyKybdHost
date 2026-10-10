@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QScrollArea, )
 
 from polyhost.gui.flow_layout import FlowLayout
+from polyhost.i18n import _
 from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButton
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.macro_tab import MacroTab
@@ -45,16 +46,16 @@ class KeycodeBrowser(QWidget):
             if category not in categories:
                 continue
 
-            tabs.addTab(self._build_tab(categories[category]), category)
+            tabs.addTab(self._build_tab(categories[category]), _(category))
 
         for category in sorted(categories):
             if category not in CAT_ORDER:
-                tabs.addTab(self._build_tab(categories[category]), category)
+                tabs.addTab(self._build_tab(categories[category]), _(category))
 
         # Composer tab for building layer-switch / one-shot / tap-hold keycodes.
         self.composer = KeycodeComposer(self.keycodes, num_layers=num_layers)
         self.composer.keycodeSelected.connect(self.keycodeSelected)
-        tabs.addTab(self.composer, "Layers && Mods")
+        tabs.addTab(self.composer, _("Layers && Mods"))
 
         # Macros tab. Like the composer this page BUILDS a keycode rather than listing
         # a fixed set, which is why it belongs here rather than in a window of its own:
@@ -69,7 +70,7 @@ class KeycodeBrowser(QWidget):
             self.macro_tab = MacroTab(core)
             self.macro_tab.keycodeSelected.connect(self.keycodeSelected)
             self.macro_tab.macrosChanged.connect(self.macrosChanged)
-            tabs.addTab(self.macro_tab, "Macros")
+            tabs.addTab(self.macro_tab, _("Macros"))
             tabs.currentChanged.connect(self._on_tab_changed)
 
         layout = QVBoxLayout(self)
@@ -109,7 +110,7 @@ class KeycodeBrowser(QWidget):
         for name, keycode in cat_keycodes.items():
             caption = create_nice_name(name)
             btn = KeycodeBrowserButton(caption, name)
-            btn.clicked.connect(lambda _, c=caption, k=name, v=keycode, s=btn.get_font_size(): self.on_keycode_clicked(c, k, v, s))
+            btn.clicked.connect(lambda _checked, c=caption, k=name, v=keycode, s=btn.get_font_size(): self.on_keycode_clicked(c, k, v, s))
             flow_layout.addWidget(btn)
 
         scroll = QScrollArea()

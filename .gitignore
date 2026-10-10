@@ -54,6 +54,8 @@ cover/
 # Translations
 *.mo
 *.pot
+# ...except the UI template, which tests/i18n_test.py compares the code against.
+!polyhost/res/locale/polyhost.pot
 
 # Django stuff:
 *.log

@@ -22,10 +22,11 @@ each app keeps its own dialog styling — the tray snaps its dialog to the tray
 corner, the forwarder uses a plain one — while the logic lives here once. That
 also keeps this module import-light and unit-testable without a Qt platform.
 """
+from polyhost.i18n import _, N_
 from polyhost.services.updater import relaunch_executable, spawn_detached
 
 #: Shown while the relay script takes over — the app is about to vanish.
-RELAY_LABEL = "Restarting to complete update…"
+RELAY_LABEL = N_("Restarting to complete update…")
 
 
 class UpdateProgressController:
@@ -77,7 +78,7 @@ class UpdateProgressController:
         already rewritten and no evidence anywhere.
         """
         if self.dialog is not None:
-            self.dialog.setLabelText(RELAY_LABEL)
+            self.dialog.setLabelText(_(RELAY_LABEL))
             self.dialog.setValue(100)
         argv = [relaunch_executable(), str(relay_path)]
         try:

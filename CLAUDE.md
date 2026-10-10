@@ -163,6 +163,14 @@ Menus, theme, brightness rows, WinCompose install, unicode-mode watcher:
 per-application ESC mark has a rule of **no per-application configuration**:
 [`docs/generic-icons-plan.md`](docs/generic-icons-plan.md).
 
+- **The tray app and the forwarder are translated into 20 languages**
+  ([`docs/i18n.md`](docs/i18n.md)). Every string a user reads in `gui/`, `host.py` or
+  `forwarder.py` goes through `_()`, `_f()` or `_nf()` from `polyhost.i18n`;
+  `tests/i18n_test.py` fails on an unmarked literal handed to a Qt text call. After
+  changing one, run `python scripts/i18n_strings.py update`. Logs, `polyctl` output and
+  the core's messages stay English on purpose. ⚠️ A function that calls `_()` must not
+  also assign `_` (`ok, _ = f()`): Python makes `_` local and the call raises
+  `UnboundLocalError`.
 - **Developer mode adds a submenu and rearranges nothing.** It is a persisted setting,
   separate from log verbosity.
 - ⚠️ **`managed_connection_status` disables every top-level action first.** Re-enable a

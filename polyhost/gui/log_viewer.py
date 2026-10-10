@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QPlain
 
 from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
+from polyhost.i18n import _, _f
 from polyhost.util.log_util import LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -118,7 +119,7 @@ class LogViewerDialog(QMainWindow):
         super().__init__()
         self.log = logging.getLogger('PolyHost')
         self._collect_cb = collect_cb
-        self.setWindowTitle("Log Viewer")
+        self.setWindowTitle(_("Log Viewer"))
         # Inherits QApplication's window icon — see settings_dialog: both tray
         # apps open this one, and they wear different marks.
 
@@ -133,7 +134,7 @@ class LogViewerDialog(QMainWindow):
         search_layout = QHBoxLayout()
         search_layout.setContentsMargins(6, 6, 6, 0)
         self.search_edit = QLineEdit(self)
-        self.search_edit.setPlaceholderText("Search (Ctrl+F)")
+        self.search_edit.setPlaceholderText(_("Search (Ctrl+F)"))
         self.search_edit.setClearButtonEnabled(True)
         self._search_timer = QTimer(self)
         self._search_timer.setSingleShot(True)
@@ -146,10 +147,10 @@ class LogViewerDialog(QMainWindow):
         self.search_edit.textChanged.connect(lambda _text: self._schedule_search())
         self.search_edit.returnPressed.connect(self.find_next)
         search_layout.addWidget(self.search_edit, 1)
-        prev_button = QPushButton("Previous")
+        prev_button = QPushButton(_("Previous"))
         prev_button.clicked.connect(self.find_previous)
         search_layout.addWidget(prev_button)
-        next_button = QPushButton("Next")
+        next_button = QPushButton(_("Next"))
         next_button.clicked.connect(self.find_next)
         search_layout.addWidget(next_button)
         self.search_count = QLabel("", self)
@@ -202,20 +203,20 @@ class LogViewerDialog(QMainWindow):
         # Reading a log here is one thing; handing it to someone else is the
         # other half, and this is where a user looks for it.
         if collect_cb is not None:
-            button = QPushButton("Collect Logs...")
-            button.setToolTip("Save all logs as a .zip, or copy them to the clipboard")
+            button = QPushButton(_("Collect Logs..."))
+            button.setToolTip(_("Save all logs as a .zip, or copy them to the clipboard"))
             button.clicked.connect(collect_cb)
             button_layout.addWidget(button)
 
-        button = QPushButton("Open Folder")
+        button = QPushButton(_("Open Folder"))
         button.clicked.connect(self.open_file_directory)
         button_layout.addWidget(button)
 
-        button = QPushButton("Reload")
+        button = QPushButton(_("Reload"))
         button.clicked.connect(self.load_log)
         button_layout.addWidget(button)
 
-        button = QPushButton("Close")
+        button = QPushButton(_("Close"))
         button.clicked.connect(self.close)
         button_layout.addWidget(button)
 
@@ -234,7 +235,8 @@ class LogViewerDialog(QMainWindow):
                 with open(tab_log_file_name, encoding='utf-8') as f:
                     log_content = f.read()
             except Exception as e:
-                text_edit.setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
+                text_edit.setPlainText(_f("Failed to load log file '{path}': {error}",
+                                            path=tab_log_file_name, error=e))
                 continue
             text_edit.setPlainText(log_content)
             text_edit.moveCursor(QTextCursor.End)
@@ -285,7 +287,7 @@ class LogViewerDialog(QMainWindow):
             return
         self._total = editor.toPlainText().lower().count(needle.lower())
         if self._total == 0:
-            self.search_count.setText("No matches")
+            self.search_count.setText(_("No matches"))
             return
         doc = editor.document()
         here = editor.textCursor().selectionStart()
@@ -309,7 +311,7 @@ class LogViewerDialog(QMainWindow):
         self._index = index if index is not None else self._index_of(editor, match)
         editor.setTextCursor(match)
         editor.ensureCursorVisible()
-        self.search_count.setText(f"{self._index} of {self._total}")
+        self.search_count.setText(_f("{index} of {total}", index=self._index, total=self._total))
         self._tint_visible()
 
     def _tint_visible(self) -> None:

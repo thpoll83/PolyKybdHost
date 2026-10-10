@@ -24,12 +24,18 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 
 from polyhost.gui.file_dialogs import downloads_dir
 from polyhost.gui.log_bundle_dialog import TIMEFRAMES, _CollectWorker
+from polyhost.i18n import _, _f
 from polyhost.services import log_bundle, problem_report
 
 # Reports default to a tighter window than a plain log bundle: a problem being
 # reported now is almost always minutes old, and a smaller slice carries less
 # history to a public place.
 DEFAULT_TIMEFRAME_INDEX = 1  # "Last hour"
+
+
+# Markup around translated prose, kept out of the msgids.
+_MUTED = "<span style='color:gray;'>{}</span>"
+_ALERT = "<span style='color:#c0392b;'>{}</span>"
 
 
 class ReportProblemDialog(QDialog):
@@ -44,40 +50,40 @@ class ReportProblemDialog(QDialog):
         self._title_override = None   # set by set_description(); default_title otherwise
         self._prefilled_text = ""     # what set_description() put in; the override rides on it
 
-        self.setWindowTitle("Report a Problem")
+        self.setWindowTitle(_("Report a Problem"))
         self.setMinimumWidth(620)
         layout = QVBoxLayout(self)
 
-        intro = QLabel(
+        intro = QLabel(_(
             "This collects your logs and opens a pre-filled bug report on "
             "GitHub. Nothing is sent anywhere until you press Submit there — "
-            "and you attach the log file yourself, so you can look at it first.")
+            "and you attach the log file yourself, so you can look at it first."))
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         self.description = QPlainTextEdit(self)
         self.description.setPlaceholderText(
-            "What went wrong? What were you doing when it happened?")
+            _("What went wrong? What were you doing when it happened?"))
         self.description.setMinimumHeight(90)
         self.description.textChanged.connect(self._refresh_enabled)
-        layout.addWidget(QLabel("<b>What happened</b>"))
+        layout.addWidget(QLabel("<b>" + _("What happened") + "</b>"))
         layout.addWidget(self.description)
 
         self.expected = QLineEdit(self)
-        self.expected.setPlaceholderText("Optional — what you expected instead")
+        self.expected.setPlaceholderText(_("Optional — what you expected instead"))
         layout.addWidget(self.expected)
 
         form = QFormLayout()
         self.timeframe = QComboBox(self)
-        for label, _ in TIMEFRAMES:
-            self.timeframe.addItem(label)
+        for label, _since in TIMEFRAMES:
+            self.timeframe.addItem(_(label))
         self.timeframe.setCurrentIndex(DEFAULT_TIMEFRAME_INDEX)
-        form.addRow("Include logs from:", self.timeframe)
+        form.addRow(_("Include logs from:"), self.timeframe)
         layout.addLayout(form)
 
         # Default ON — the inverse of the local "Collect logs…" dialog, and the
         # difference is the destination, not the data.
-        self.redact = QCheckBox("Mask window titles (recommended)", self)
+        self.redact = QCheckBox(_("Mask window titles (recommended)"), self)
         self.redact.setChecked(True)
         self.redact.toggled.connect(self._update_privacy_note)
         layout.addWidget(self.redact)
@@ -93,13 +99,13 @@ class ReportProblemDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.reveal_btn = QPushButton("Show Log File", self)
+        self.reveal_btn = QPushButton(_("Show Log File"), self)
         self.reveal_btn.clicked.connect(self._reveal)
         self.reveal_btn.setVisible(False)
         buttons.addWidget(self.reveal_btn)
         buttons.addStretch(1)
 
-        self.create_btn = QPushButton("Create Report…", self)
+        self.create_btn = QPushButton(_("Create Report…"), self)
         self.create_btn.setDefault(True)
         self.create_btn.clicked.connect(self._create)
         buttons.addWidget(self.create_btn)
@@ -125,15 +131,15 @@ class ReportProblemDialog(QDialog):
     def _update_privacy_note(self, masked: bool):
         if masked:
             self.privacy.setText(
-                "<span style='color:gray;'>Window titles are replaced with "
+                _MUTED.format(_("Window titles are replaced with "
                 "placeholders. Application names are kept — that is what "
-                "overlay problems are diagnosed from.</span>")
+                "overlay problems are diagnosed from.")))
         else:
             self.privacy.setText(
-                "<span style='color:#c0392b;'>The log file will contain the "
-                "titles of windows you had open, which can name documents.</span> "
-                "<span style='color:gray;'>Only untick this if the problem is "
-                "about the wrong overlay appearing for an app.</span>")
+                _ALERT.format(_("The log file will contain the "
+                "titles of windows you had open, which can name documents.")) + " "
+                + _MUTED.format(_("Only untick this if the problem is "
+                "about the wrong overlay appearing for an app.")))
 
     def _refresh_enabled(self):
         """An empty report helps nobody — require a description."""
@@ -190,10 +196,10 @@ class ReportProblemDialog(QDialog):
         def work():
             result = log_bundle.build_bundle(
                 target, since=since, redact=redact, diagnostics=diagnostics)
-            return True, f"Saved {result.summary()}", ("bundle", str(result.path))
+            return True, _f("Saved {summary}", summary=result.summary()), ("bundle", str(result.path))
 
         self._busy(True)
-        self.status.setText("Collecting logs…")
+        self.status.setText(_("Collecting logs…"))
         self._worker = _CollectWorker(work, self)
         self._worker.done.connect(
             lambda ok, msg, payload: self._collected(
@@ -243,21 +249,23 @@ class ReportProblemDialog(QDialog):
             steps = [f"{bundle_message}."]
         else:
             steps = [f"<span style='color:#c0392b;'>{bundle_message}</span> "
-                     "The report itself is fine — it just has no logs attached."]
+                     + _("The report itself is fine — it just has no logs attached.")]
         if opened:
-            steps.append("A GitHub issue has been opened in your browser"
-                         + ("." if prefilled else
-                            " — the report is on your clipboard, paste it in."))
+            steps.append(_("A GitHub issue has been opened in your browser.") if prefilled
+                         else _("A GitHub issue has been opened in your browser — the "
+                                "report is on your clipboard, paste it in."))
         else:
-            steps.append(
+            # .format, not _f: the URL sits in an href, where an RTL isolate
+            # mark would break the link.
+            steps.append(_(
                 "Could not open your browser — the report is on your clipboard. "
-                "<a href='https://github.com/thpoll83/PolyKybdHost/issues/new'>"
-                "Open an issue</a> and paste it in.")
+                "<a href='{url}'>Open an issue</a> and paste it in.").format(
+                    url="https://github.com/thpoll83/PolyKybdHost/issues/new"))
         if self._bundle_path:
-            steps.append("<b>Attach the log file</b> (button on the left reveals "
-                         "it) and press Submit.")
+            steps.append(_("<b>Attach the log file</b> (button on the left reveals "
+                           "it) and press Submit."))
         else:
-            steps.append("Press Submit. (No log file was produced — see above.)")
+            steps.append(_("Press Submit. (No log file was produced — see above.)"))
         return "<div style='line-height:150%;'>" + "<br>".join(
             f"{i}. {s}" for i, s in enumerate(steps, 1)) + "</div>"
 
