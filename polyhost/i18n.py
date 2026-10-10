@@ -422,3 +422,67 @@ def _nf(singular, plural, n, **values):
     the message as ``{n}``), then fills and isolates like ``_f``."""
     values.setdefault("n", n)
     return _FORMATTER.format(_active.ngettext(singular, plural, n), **values)
+
+
+# ---------------------------------------------------------------------------
+# Messages from code that must stay English (the device layer, the updaters)
+# ---------------------------------------------------------------------------
+#
+# The flash code, the update downloaders and the WinCompose installer report
+# their status as English text: the same text goes to the log, to polyctl and,
+# in client mode, across the daemon -> GUI event boundary as a plain string.
+# A dialog that shows such a message translates it HERE, by matching the
+# English against the template it was built from and rebuilding the sentence
+# from the translated template. No message object has to cross a process.
+#
+# A template is registered by ``M_()`` when its module is imported, so every
+# ``M_()`` call must be a MODULE constant: a template built inside a function
+# is unknown to a GUI process that never ran that function (the daemon did).
+# tests/i18n_test.py enforces that, and that no template carries a format spec
+# (the values come back as the text the English carried).
+
+_MESSAGE_TEMPLATES = {}
+_FIELD = re.compile(r"\{(\w+)\}")
+
+
+def M_(template):
+    """Mark an English status message the GUI may show, and register it for
+    :func:`translate_message`. Returns the template unchanged; the producer
+    fills it with ``template.format(...)``."""
+    if template not in _MESSAGE_TEMPLATES:
+        _MESSAGE_TEMPLATES[template] = _compile_template(template)
+    return template
+
+
+def _compile_template(template):
+    pattern, seen, pos = [], set(), 0
+    for m in _FIELD.finditer(template):
+        pattern.append(re.escape(template[pos:m.start()]))
+        name = m.group(1)
+        pattern.append(f"(?P={name})" if name in seen else f"(?P<{name}>.*?)")
+        seen.add(name)
+        pos = m.end()
+    pattern.append(re.escape(template[pos:]))
+    return re.compile("".join(pattern), re.DOTALL)
+
+
+def _literal_length(template):
+    return len(_FIELD.sub("", template))
+
+
+def translate_message(message):
+    """The active language's version of an English status ``message`` built
+    from an ``M_()`` template, or ``message`` itself when none matches.
+
+    The most specific template (most literal text) wins. Each value is
+    translated in turn, so a message carrying another message as a value
+    (``"{step} — {elapsed}s elapsed"``) comes out translated as a whole."""
+    if not isinstance(message, str) or not message or _active_code == SOURCE_LANGUAGE:
+        return message
+    for template in sorted(_MESSAGE_TEMPLATES, key=_literal_length, reverse=True):
+        m = _MESSAGE_TEMPLATES[template].fullmatch(message)
+        if m is None:
+            continue
+        values = {k: translate_message(v) for k, v in m.groupdict().items()}
+        return _f(template, **values)
+    return message

@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, )
 
 from polyhost import i18n
-from polyhost.i18n import _, _f, _nf, N_
+from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
 from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
@@ -2628,7 +2628,7 @@ class PolyHost(QApplication):
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
         show_copyable_error(_("Update failed"), _("The update did not finish."),
-                            message if shown is None else shown,
+                            translate_message(message) if shown is None else shown,
                             commands=fix_commands_from_message(message))
 
     # ------------------------------------------------------------------
@@ -2906,7 +2906,7 @@ class PolyHost(QApplication):
         # Don't overwrite the "Cancelling…" label with late download progress.
         if self._fw_download_cancel is not None and self._fw_download_cancel[0]:
             return
-        self._fw_up_progress.setLabelText(message)
+        self._fw_up_progress.setLabelText(translate_message(message))
         self._fw_up_progress.setValue(percent)
 
     def _on_fw_download_done(self, ok: bool, error: str, bin_path: str):
@@ -2936,7 +2936,8 @@ class PolyHost(QApplication):
             self.firmware_update_action.setEnabled(True)
             self.log.error("Firmware download failed: %s", error)
             _msgbox(QMessageBox.Warning, _("Firmware Update Failed"),
-                    _f("Could not download the firmware:\n\n{error}", error=error))
+                    _f("Could not download the firmware:\n\n{error}",
+                       error=translate_message(error)))
             return
 
         if self.client_mode:
@@ -3117,7 +3118,7 @@ class PolyHost(QApplication):
         # Don't overwrite "Cancelling…" with late progress from the download thread.
         if self._wincompose_cancel is not None and self._wincompose_cancel[0]:
             return
-        self._wincompose_progress.setLabelText(message)
+        self._wincompose_progress.setLabelText(translate_message(message))
         self._wincompose_progress.setValue(percent)
 
     def _on_wincompose_download_done(self, ok: bool, error: str, path: str):
@@ -3143,7 +3144,7 @@ class PolyHost(QApplication):
         if cancelled or not ok:
             if not cancelled:
                 _msgbox(QMessageBox.Warning, _("Install WinCompose"),
-                        _f("The download failed:\n\n{error}", error=error))
+                        _f("The download failed:\n\n{error}", error=translate_message(error)))
             return
 
         started, err = wincompose_install.launch_installer(path)
