@@ -3,11 +3,25 @@
 Extracted from `tools/shortcut_probe.py` unchanged; see `model.py` for why the
 probe imports this rather than carrying its own copy.
 
-⚠️ MEASURED CEILING: this finds shortcuts for CLASSIC-MENUBAR apps only. An app
-whose menu lives in a hamburger popover exposes no accelerator at all -- gedit's
-real Ctrl+S is simply absent from its accessible tree, and GTK4 answers
-"<VoidSymbol>" for every keybinding it has. That is not a bug to fix here; it is
-the reason `services/shortcut_overlays.py` must degrade to drawing nothing.
+⚠️ MEASURED CEILING (Ubuntu 24.04, GTK 4.14): this finds shortcuts for
+CLASSIC-MENUBAR apps only. An app whose menu lives in a hamburger popover
+exposes no accelerator at all -- gedit's real Ctrl+S is simply absent from its
+accessible tree, and GTK 4.14 answers "<VoidSymbol>" for every keybinding it
+has. That is why `services/shortcut_overlays.py` must degrade to drawing nothing.
+
+⚠️ THE GTK4 HALF OF THAT CEILING WAS AN UPSTREAM STUB, fixed in GTK 4.18
+(commit b2a01696): `GetKeyBinding` now returns 'mnemonic;;shortcut', and a
+popover menu item (GtkModelButton) fills the shortcut from the accel its action
+carries. GTK 4.18-4.20 sends '<Control>s'; GTK 4.22 sends the ARIA spelling
+'Control+S', which `parse_accel` accepts. A shortcut with no menu item (a bare
+GtkShortcutController) is still exposed nowhere. Not yet measured on a live
+GTK >= 4.18 desktop.
+
+⚠️ QT sends a FOURTH shape -- one display string, 'Ctrl+N', with the menu
+mnemonic in the same field when there is no shortcut (`_pick_qt_binding`).
+And a Qt app joins the accessibility bus ONLY while accessibility is enabled,
+which Plasma leaves off unless a screen reader runs: measured 2026-10-05, Kate
+was absent from the bus until started with QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1.
 """
 
 from __future__ import annotations
@@ -143,13 +157,20 @@ def shortcuts_for(app, atspi, budget: list[int]) -> list[Shortcut]:
         n = _safe(action.get_n_actions, 0) or 0
         for i in range(n):
             raw = _safe(lambda i=i: action.get_key_binding(i), "") or ""
-            accel_text, kind = pick_binding(raw, role)
+            label = (_safe(node.get_name, "") or "").strip()
+            parent_role = ""
+            if raw and ";" not in raw and "<" not in raw:
+                # Qt's one-string form: the mnemonic rule needs to know
+                # whether this item sits directly on the menu bar. One extra
+                # D-Bus call, paid only on that form.
+                parent = _safe(node.get_parent)
+                parent_role = (_safe(parent.get_role_name, "") or "") if parent else ""
+            accel_text, kind = pick_binding(raw, role, label, parent_role)
             if not accel_text:
                 continue
             accel = parse_accel(accel_text)
             if accel is None:
                 continue
-            label = (_safe(node.get_name, "") or "").strip()
             key = (accel.mods, accel.keysym)
             if key in seen:
                 continue
@@ -174,6 +195,99 @@ def list_apps(atspi) -> list[tuple[int, str]]:
 
 
 DEFAULT_NODE_BUDGET = 4000
+
+A11Y_BUS = "org.a11y.Bus"
+A11Y_PATH = "/org/a11y/bus"
+A11Y_STATUS = "org.a11y.Status"
+
+_A11Y_ASKED = False
+
+
+def accessibility_setting_enabled() -> bool:
+    """`shortcut_enable_accessibility`, default on; True if settings are unreadable."""
+    try:
+        from polyhost.settings import read_setting
+        return bool(read_setting("shortcut_enable_accessibility", True))
+    except Exception:
+        return True
+
+
+def ensure_accessibility_enabled(get_flag, set_flag) -> str:
+    """Switch the session's accessibility flag on if it is off. ONCE per process.
+
+    ⚠️ **A Qt app joins the AT-SPI bus only while `org.a11y.Status.IsEnabled`
+    is true**, and Plasma leaves it false unless a screen reader runs. Measured
+    2026-10-05: Kate was absent from the bus, and so drew no shortcut icons
+    and no ESC mark, until started with QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1.
+    GTK registers regardless, so GNOME hid this. The flag is what a screen
+    reader sets; `ScreenReaderEnabled` is a separate property and stays
+    untouched, so no screen reader starts and no app changes its UI.
+
+    It lasts until logout and is not reset on exit: another client may have
+    come to rely on it, and turning it off under them is worse than leaving
+    it on.
+
+    `get_flag()` / `set_flag(bool)` are the D-Bus calls, passed in so the
+    decision is testable without a bus. Returns what happened, for the log.
+    Never raises: this runs on the harvest thread for a cosmetic feature.
+    """
+    global _A11Y_ASKED
+    if _A11Y_ASKED:
+        return "already asked"
+    _A11Y_ASKED = True
+    try:
+        if get_flag():
+            return "already on"
+        set_flag(True)
+        return "turned on"
+    except Exception as exc:
+        return "failed: %s: %s" % (type(exc).__name__, exc)
+
+
+def _a11y_bus_calls():
+    """(get_flag, set_flag) over the session bus, via Gio."""
+    gi = _import_gi()
+    gi.require_version("Gio", "2.0")
+    from gi.repository import Gio, GLib
+    bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+
+    def get_flag() -> bool:
+        reply = bus.call_sync(
+            A11Y_BUS, A11Y_PATH, "org.freedesktop.DBus.Properties", "Get",
+            GLib.Variant("(ss)", (A11Y_STATUS, "IsEnabled")),
+            GLib.VariantType("(v)"), Gio.DBusCallFlags.NONE, 2000, None)
+        return bool(reply.unpack()[0])
+
+    def set_flag(value: bool) -> None:
+        bus.call_sync(
+            A11Y_BUS, A11Y_PATH, "org.freedesktop.DBus.Properties", "Set",
+            GLib.Variant("(ssv)", (A11Y_STATUS, "IsEnabled",
+                                   GLib.Variant("b", value))),
+            None, Gio.DBusCallFlags.NONE, 2000, None)
+
+    return get_flag, set_flag
+
+
+def _ensure_accessibility_once() -> None:
+    global _A11Y_ASKED
+    if _A11Y_ASKED or not accessibility_setting_enabled():
+        return
+    import logging
+    log = logging.getLogger("PolyHost")
+    try:
+        get_flag, set_flag = _a11y_bus_calls()
+    except Exception as exc:
+        _A11Y_ASKED = True
+        log.debug("Accessibility flag: no session bus (%s)", exc)
+        return
+    outcome = ensure_accessibility_enabled(get_flag, set_flag)
+    if outcome == "turned on":
+        log.info("Turned on the session's accessibility flag (org.a11y.Status."
+                 "IsEnabled) so Qt/KDE apps expose their shortcuts. An app "
+                 "started before this may need a restart. Opt out with the "
+                 "'shortcut_enable_accessibility' setting.")
+    else:
+        log.debug("Accessibility flag: %s", outcome)
 
 
 def available() -> bool:
@@ -302,6 +416,7 @@ def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET,
     if not name:
         return []
     needle = name.lower()
+    _ensure_accessibility_once()
     try:
         atspi = _atspi()
         desktop = atspi.get_desktop(0)

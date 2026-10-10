@@ -42,6 +42,14 @@ if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
 
 
+def _prepare_language():
+    """English for the docs images whatever this machine's language is;
+    POLYHOST_LANG=de (or ar, pseudo, ...) renders another one. Each render
+    runs in its own child process, which inherits the variable."""
+    from polyhost.gui import i18n_qt
+    i18n_qt.prepare("en")
+
+
 class _FakeCore:
     """The subset of PolyCore the control server exposes, answering as a
     connected Split72. Mirrors the shape of a real status payload."""
@@ -134,6 +142,7 @@ def _render_forwarder(out_dir, log, host="192.168.1.100"):
     helper.start()
     try:
         from polyhost.forwarder import PolyForwarder
+        _prepare_language()
         app = PolyForwarder(logging.CRITICAL, host=host)
         # The steady state a user sees, not the first 250 ms of startup.
         app.relay_ok = True
@@ -182,6 +191,7 @@ def _render(developer, out_dir, log):
         stub.return_value.set_language.return_value = (True, "")
 
         from polyhost.host import PolyHost
+        _prepare_language()
         app = PolyHost(logging.CRITICAL, 0, developer, client_mode=True, endpoint=addr)
         # Drive the status render so the language menu is built and everything
         # is enabled, exactly as on a real connect.

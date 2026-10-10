@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel,
 )
 
+from polyhost.i18n import _, N_
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, create_nice_name,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
@@ -23,21 +24,23 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
-# Behaviour definitions: key -> (label, needs_layer, needs_mods, needs_inner_key)
+# Behaviour definitions: key -> (label, needs_layer, needs_mods, needs_inner_key).
+# The label is marked here and translated where the combo shows it; the KEY is
+# the combo's item data, so nothing compares the label text.
 BEHAVIORS = [
-    ("MO", "MO — Momentary layer", True, False, False),
-    ("TO", "TO — Switch to layer", True, False, False),
-    ("TG", "TG — Toggle layer", True, False, False),
-    ("DF", "DF — Set default layer", True, False, False),
-    ("PDF", "PDF — Persistent default layer", True, False, False),
-    ("TT", "TT — Tap-toggle layer", True, False, False),
-    ("OSL", "OSL — One-shot layer", True, False, False),
-    ("OSM", "OSM — One-shot modifier", False, True, False),
-    ("LT", "LT — Layer-tap (hold layer / tap key)", True, False, True),
-    ("LM", "LM — Layer + modifier (momentary)", True, True, False),
-    ("MT", "MT — Mod-tap (hold mod / tap key)", False, True, True),
-    ("MOD", "Modified key (Ctrl/Shift/… + key)", False, True, True),
-    ("SH_T", "SH_T — Swap-hands tap-hold (tap key / hold swap)", False, False, True),
+    ("MO", N_("MO — Momentary layer"), True, False, False),
+    ("TO", N_("TO — Switch to layer"), True, False, False),
+    ("TG", N_("TG — Toggle layer"), True, False, False),
+    ("DF", N_("DF — Set default layer"), True, False, False),
+    ("PDF", N_("PDF — Persistent default layer"), True, False, False),
+    ("TT", N_("TT — Tap-toggle layer"), True, False, False),
+    ("OSL", N_("OSL — One-shot layer"), True, False, False),
+    ("OSM", N_("OSM — One-shot modifier"), False, True, False),
+    ("LT", N_("LT — Layer-tap (hold layer / tap key)"), True, False, True),
+    ("LM", N_("LM — Layer + modifier (momentary)"), True, True, False),
+    ("MT", N_("MT — Mod-tap (hold mod / tap key)"), False, True, True),
+    ("MOD", N_("Modified key (Ctrl/Shift/… + key)"), False, True, True),
+    ("SH_T", N_("SH_T — Swap-hands tap-hold (tap key / hold swap)"), False, False, True),
 ]
 
 
@@ -66,25 +69,25 @@ class KeycodeComposer(QWidget):
 
         form = QFormLayout()
         self.behavior_combo = QComboBox()
-        for key, label, *_ in BEHAVIORS:
-            self.behavior_combo.addItem(label, key)
-        form.addRow("Behavior:", self.behavior_combo)
+        for key, label, *_rest in BEHAVIORS:
+            self.behavior_combo.addItem(_(label), key)
+        form.addRow(_("Behavior:"), self.behavior_combo)
 
         self.layer_spin = QSpinBox()
         self.layer_spin.setRange(0, self._num_layers - 1)
-        form.addRow("Layer:", self.layer_spin)
+        form.addRow(_("Layer:"), self.layer_spin)
 
         # Modifier selection: Ctrl/Shift/Alt/GUI + a left/right side toggle.
-        mod_box = QGroupBox("Modifiers")
+        mod_box = QGroupBox(_("Modifiers"))
         mod_layout = QHBoxLayout(mod_box)
-        self.cb_ctrl = QCheckBox("Ctrl")
-        self.cb_shift = QCheckBox("Shift")
-        self.cb_alt = QCheckBox("Alt")
-        self.cb_gui = QCheckBox("GUI")
+        self.cb_ctrl = QCheckBox(_("Ctrl"))
+        self.cb_shift = QCheckBox(_("Shift"))
+        self.cb_alt = QCheckBox(_("Alt"))
+        self.cb_gui = QCheckBox(_("GUI"))
         for cb in (self.cb_ctrl, self.cb_shift, self.cb_alt, self.cb_gui):
             mod_layout.addWidget(cb)
-        self.rb_left = QRadioButton("Left")
-        self.rb_right = QRadioButton("Right")
+        self.rb_left = QRadioButton(_("Left"))
+        self.rb_right = QRadioButton(_("Right"))
         self.rb_left.setChecked(True)
         self.side_group = QButtonGroup(self)
         self.side_group.addButton(self.rb_left)
@@ -99,7 +102,7 @@ class KeycodeComposer(QWidget):
             display = name[3:] if name.startswith("KC_") else name
             self.inner_combo.addItem(display, kc)
         self._select_default_inner()
-        form.addRow("Inner key:", self.inner_combo)
+        form.addRow(_("Inner key:"), self.inner_combo)
 
         outer.addLayout(form)
 
@@ -107,7 +110,7 @@ class KeycodeComposer(QWidget):
         self.preview.setStyleSheet("font-weight: bold; padding: 4px;")
         outer.addWidget(self.preview)
 
-        self.apply_btn = QPushButton("Apply to selected key")
+        self.apply_btn = QPushButton(_("Apply to selected key"))
         outer.addWidget(self.apply_btn)
         outer.addStretch(1)
 
@@ -245,7 +248,7 @@ class KeycodeComposer(QWidget):
     def _update_preview(self):
         keycode = self._encode()
         if keycode is None:
-            self.preview.setText("Select at least one modifier")
+            self.preview.setText(_("Select at least one modifier"))
             self.apply_btn.setEnabled(False)
             return
         # Decode back for a verified human-readable preview.

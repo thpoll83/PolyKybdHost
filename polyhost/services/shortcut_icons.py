@@ -117,6 +117,14 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "zoom out":    (0x1F5DB, "zoom_out", ("zoom out", "decrease font", "smaller",
                                           "decrease font size", "shrink font",
                                           "smaller font")),
+    # Ctrl+0 in GTK apps and browsers. Fluent draws a boxed "1:1", which reads as
+    # 100% at 36 px; Material has no such mark, so its fallback is the magnifier
+    # with a reset arrow (named `youtube_searched_for`, drawn generically).
+    # Found by the probe's unmatched log on gnome-terminal (2026-09-23).
+    "zoom reset":  (None, "youtube_searched_for", ("zoom reset", "reset zoom",
+                                                   "normal size", "actual size",
+                                                   "original size", "reset size",
+                                                   "default zoom", "restore zoom")),
     # --- navigation (the codepoints are RESIDENT -- no font pack needed) -----
     "up":          (ICON_UP,    "arrow_upward", ("up", "line up", "one line up",
                                                  "scroll up", "move up",
@@ -138,7 +146,9 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "settings":    (0x2699,  "settings", ("settings", "preferences", "options",
                                           "configure", "properties")),
     "help":        (0x2753,  "help", ("help", "about", "contents",
-                                      "documentation", "keyboard shortcuts")),
+                                      "documentation", "keyboard shortcuts",
+                                      # normalize() splits the apostrophe
+                                      "what s this")),
     "close":       (0x1F5D9, "close", ("close", "cancel", "close tab",
                                        "close document", "close window")),
     "wrap text":   (None,    "wrap_text", ("wrap text", "word wrap",
@@ -226,7 +236,7 @@ FLUENT_ICONS: dict[str, str] = {
     "settings": "settings", "share": "share", "styles": "color",
     "underline": "text_underline", "undo": "arrow_undo", "up": "arrow_up",
     "window": "window", "wrap text": "text_wrap", "zoom in": "zoom_in",
-    "zoom out": "zoom_out",
+    "zoom out": "zoom_out", "zoom reset": "ratio_one_to_one",
 }
 
 
@@ -637,6 +647,21 @@ NAME_SYNONYMS = {
     "split": "splitscreen",
     "sidebar": "side_navigation",
     "next": "navigate_next",
+    # From a Kate harvest on Plasma (2026-10-05), where 19 of 59 shortcuts
+    # drew nothing. Word-level on purpose: each closes a FAMILY ("Previous
+    # Document", "Previous Item", "Activate Previous Project"), not one label.
+    # Every target was rendered at the keycap size before it went in.
+    "previous": "navigate_before",       # the mirror of `next`
+    "sidebars": "side_navigation",       # "Show Sidebars" -- the plural missed
+    "lookup": "search",
+    "shrink": "compress",                # pairs with `expand` ("Expand Selection")
+    "menubar": "menu",
+    "handbook": "menu_book",             # KDE's "<App> Handbook" on F1
+    "manual": "menu_book",
+    "fix": "auto_fix_high",              # "Quick Fix": the wand
+    "terminal": "terminal",              # "Focus/Defocus Terminal Panel"
+    "rename": "drive_file_rename_outline",  # Material has no plain `rename`
+    "configure": "settings",             # KDE's "Configure <App>..."
 }
 
 

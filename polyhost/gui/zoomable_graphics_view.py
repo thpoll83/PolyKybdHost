@@ -1,3 +1,4 @@
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsView
 
 # share of the viewport the scene fills at relative zoom 1, so the fitted board
@@ -26,6 +27,9 @@ class ZoomableGraphicsView(QGraphicsView):
         # anchor so zoom focuses under the mouse pointer
         # noinspection PyTypeChecker
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        # Both users draw the physical keyboard (the layout editor and the mock
+        # board), which does not flip in a right-to-left UI.
+        self.setLayoutDirection(Qt.LeftToRight)
 
     def _fit_rect(self):
         return self.fit_rect if self.fit_rect is not None else self.sceneRect()

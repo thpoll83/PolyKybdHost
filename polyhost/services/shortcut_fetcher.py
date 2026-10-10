@@ -18,16 +18,64 @@ rather than making the icons appear the second time you focus it.
 yield nothing -- a modern Linux toolkit exposes no accelerator at all -- so
 without the negative cache every window switch would re-walk a tree that has
 already been proven empty.
+
+⚠️ ONE EXCEPTION: A WINDOW TITLE CHANGE RE-HARVESTS, because an app's menus
+can change under a cached answer. Kate first seen on its welcome page has no
+Save/Undo/Copy, which its editor component adds only once a document is open,
+and nothing re-asked (Plasma, 2026-10-09). Document apps retitle on exactly
+that transition. Two guards keep the cost bounded, both measured on Kate with
+`tools/atspi_event_probe.py`:
+
+* one harvest in flight per app, so a burst of titles collapses into one
+  follow-up -- Kate retitles an unsaved document on EVERY keystroke (nine
+  titles in 0.6 s while typing);
+* a re-harvest that returns the SAME shortcuts backs the next one off, 5 s
+  doubling to 2 min; one that returns different shortcuts resets the
+  backoff. A terminal or a browser, which retitle constantly and never
+  change their menus, settle at one walk every two minutes;
+* and a hard FLOOR of 3 s between re-harvests of one app WHATEVER the result,
+  because the backoff alone trusts the result: an app whose title cycles in
+  seconds (a clock, a progress counter) and whose harvest kept differing
+  would reset it every time. A title change inside the floor is not dropped
+  -- the tick re-asks continuously, so it is taken once the floor passes.
+  Welcome -> document is at most 3 s late.
+
+A NEW PID for a cached app re-harvests once, past all three guards and even
+under an unchanged title: a fresh instance starts on its own page, and a
+second Kate inherited the first one's backoff and showed its document
+shortcuts on the welcome page for 12 s (Plasma, 2026-10-09).
+
+The old answer keeps being served until the new one lands. An event listener
+was measured as the alternative and rejected: Qt emits no
+object:children-changed when its menus are rebuilt.
 """
 
 from __future__ import annotations
 
 import logging
 import threading
+import time
 
 from polyhost.services import icon_catalog, shortcut_overlays, shortcut_source
 
 IDLE_SECONDS = 30.0
+
+#: Backoff for a title-triggered re-harvest that found nothing new: the first
+#: wait, and the cap it doubles towards. See the module docstring.
+REHARVEST_BACKOFF_FIRST = 5.0
+REHARVEST_BACKOFF_MAX = 120.0
+#: The floor between two re-harvests of one app, whatever they returned.
+REHARVEST_MIN_GAP = 3.0
+
+
+def _now() -> float:
+    """The re-harvest clock. A function so tests can move it."""
+    return time.monotonic()
+
+
+def _signature(overlays: dict) -> frozenset:
+    """What a harvest drew, without the pixels: which icon on which key."""
+    return frozenset((source, frozenset(keys)) for source, keys in overlays.items())
 
 
 def enabled() -> bool:
@@ -73,10 +121,25 @@ class ShortcutIconFetcher:
         # NSWorkspace last called frontmost -- a value frozen on this thread.
         # See `shortcut_source.macos._frontmost_name`.
         self._pids: dict[str, int] = {}
+        # Title-triggered re-harvest (module docstring). `_titles` is the
+        # latest title the caller reported per app; the rest is per cache KEY,
+        # like `_overlays`: the title the cached answer was harvested under,
+        # what it drew, and the (interval, not_before) backoff.
+        self._titles: dict[str, str] = {}
+        self._harvest_title: dict[str, str] = {}
+        self._drew: dict[str, frozenset] = {}
+        self._backoff: dict[str, tuple[float, float]] = {}
+        self._harvested_at: dict[str, float] = {}
+        # Keys whose app came back under a NEW pid since their last harvest.
+        # One re-harvest each, past the title test, the floor and the backoff:
+        # a fresh instance starts on its own page (Kate's welcome page), and
+        # the old instance's backoff kept its answer on screen for 12 s.
+        self._restarted: set[str] = set()
 
     # ------------------------------------------------------------------
 
-    def overlays_for(self, app: str, harvested=None, pid: int | None = None) -> dict:
+    def overlays_for(self, app: str, harvested=None, pid: int | None = None,
+                     title: str | None = None) -> dict:
         """{source_name: {(modifier, keycode): mask}} for an app; {} until known.
 
         ⚠️ Keyed on the app name AND the render settings, because a height or
@@ -98,27 +161,105 @@ class ShortcutIconFetcher:
         the real answer is ignored for the life of the process. The caller holds
         that distinction (`RemoteHandler.forwarded_shortcuts` answers None) and
         must not call at all until it has one.
+
+        `title` is the focused window's title. A change from the title the
+        cached answer was harvested under queues a re-harvest while the cached
+        answer keeps being returned; see the module docstring. None (a
+        forwarded window, or a caller that has none) never re-harvests.
         """
         if not app or not enabled():
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
-        if pid is not None:
-            # ⚠️ Keyed on the app alone and deliberately NOT part of the cache
-            # key, exactly like `_harvested`: a pid says WHICH PROCESS to read,
-            # and the answer does not depend on it -- the same app restarted
-            # under a new pid exposes the same shortcuts. Putting it in the key
-            # would re-harvest every app on every restart for no new answer.
-            self._pids[app] = int(pid)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
+            if pid is not None:
+                # ⚠️ Keyed on the app alone and deliberately NOT part of the
+                # cache key, exactly like `_harvested`: a pid says WHICH
+                # PROCESS to read. A new pid re-harvests once (`_restarted`)
+                # rather than starting a new cache entry, so the old answer
+                # stays on screen until the new one lands.
+                previous_pid = self._pids.get(app)
+                self._pids[app] = int(pid)
+                if previous_pid is not None and previous_pid != int(pid):
+                    prefix = f"{app}\x00"
+                    for k in self._overlays:
+                        if k.startswith(prefix):
+                            self._restarted.add(k)
+                            self._backoff.pop(k, None)
+            if title is not None:
+                self._titles[app] = title
             if key in self._overlays:
-                return self._overlays[key]
-            if key not in self._queue and key not in self._inflight:
+                cached = self._overlays[key]
+                if not self._wants_reharvest(key, title):
+                    return cached
                 self._queue.append(key)
+            else:
+                cached = {}
+                if key not in self._queue and key not in self._inflight:
+                    self._queue.append(key)
         self._ensure_thread()
         self._wake.set()
-        return {}
+        return cached
+
+    def _wants_reharvest(self, key: str, title: str | None) -> bool:
+        """Under `_lock`: has the title or the process moved on from the
+        cached answer's?
+
+        A new pid skips the title test and the floor, but not the backoff,
+        so a backend that keeps answering None for it still slows down.
+        """
+        if key in self._queue or key in self._inflight:
+            return False
+        _, not_before = self._backoff.get(key, (0.0, 0.0))
+        if key in self._restarted:
+            return _now() >= not_before
+        if title is None:
+            return False
+        harvested_under = self._harvest_title.get(key)
+        if harvested_under is None or harvested_under == title:
+            return False
+        not_before = max(not_before,
+                         self._harvested_at.get(key, 0.0) + REHARVEST_MIN_GAP)
+        return _now() >= not_before
+
+    def _note_result(self, key: str, overlays: dict | None, title: str | None):
+        """Under `_lock`: record a harvest and move the backoff.
+
+        Only a RE-harvest moves it -- the first answer for a key has nothing
+        to compare against. None ("did not look") backs off like an unchanged
+        answer, so a backend that keeps failing for a focused app slows down,
+        but it records NOTHING else: the title or pid it was asked for stays
+        pending and is retried once the backoff passes.
+        """
+        restarted = key in self._restarted
+        # A new process: its answer is a first answer, not a repeat.
+        previous = None if restarted else self._drew.get(key)
+        self._harvested_at[key] = _now()
+        if overlays is None:
+            if previous is not None or restarted:
+                self._back_off(key)
+            return
+        self._restarted.discard(key)
+        self._overlays[key] = overlays
+        self._drew[key] = _signature(overlays)
+        # "" for a harvest made under no title, so a title that appears later
+        # still differs from it. `focused_title()` never reports "".
+        self._harvest_title[key] = title if title is not None else ""
+        if previous is None:
+            self._backoff.pop(key, None)
+            return
+        if self._drew[key] != previous:
+            self._backoff[key] = (0.0, 0.0)
+            return
+        self._back_off(key)
+
+    def _back_off(self, key: str):
+        """Under `_lock`: double the key's backoff, 5 s to 2 min."""
+        interval, _ = self._backoff.get(key, (0.0, 0.0))
+        interval = min(max(REHARVEST_BACKOFF_FIRST, interval * 2),
+                       REHARVEST_BACKOFF_MAX)
+        self._backoff[key] = (interval, _now() + interval)
 
     def forget(self):
         """Drop every cached answer, so the next focus re-harvests.
@@ -129,6 +270,11 @@ class ShortcutIconFetcher:
         """
         with self._lock:
             self._overlays.clear()
+            self._harvest_title.clear()
+            self._drew.clear()
+            self._backoff.clear()
+            self._harvested_at.clear()
+            self._restarted.clear()
         self._told.clear()
 
     def stop(self):
@@ -179,6 +325,11 @@ class ShortcutIconFetcher:
                 key = self._queue.pop(0) if self._queue else None
                 if key is not None:
                     self._inflight.add(key)
+                    # The title this harvest answers for: the newest one, read
+                    # as it STARTS. A title that arrives mid-walk is newer than
+                    # the answer and queues the one follow-up.
+                    harvesting_title = self._titles.get(key.split("\x00", 1)[0])
+                    harvesting_pid = self._pids.get(key.split("\x00", 1)[0])
             if key is None:
                 self._wake.clear()
                 if not self._wake.wait(IDLE_SECONDS):
@@ -195,9 +346,13 @@ class ShortcutIconFetcher:
                 # and the app is never re-harvested however long it is focused.
                 # Exactly the distinction the relay path is warned about in
                 # `overlays_for`, one layer down.
-                if overlays is not None:
-                    self._overlays[key] = overlays
+                self._note_result(key, overlays, harvesting_title)
                 self._inflight.discard(key)
+                if (overlays is not None
+                        and self._pids.get(app) != harvesting_pid):
+                    # The app restarted mid-walk: this answer is the OLD
+                    # process's, so the new one is still owed a harvest.
+                    self._restarted.add(key)
             if overlays and self._on_ready is not None:
                 try:
                     self._on_ready(app)

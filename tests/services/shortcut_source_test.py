@@ -391,5 +391,58 @@ class ProbeParityTest(unittest.TestCase):
         self.assertTrue(de is None or de.mods == ss.MOD_ALT)
 
 
+class AccessibilityFlagTest(unittest.TestCase):
+    """Plasma leaves `org.a11y.Status.IsEnabled` off, and a Qt app joins the
+    AT-SPI bus only while it is on: Kate drew nothing until started with
+    QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1 (2026-10-05)."""
+
+    def setUp(self):
+        from polyhost.services.shortcut_source import atspi
+        self.atspi = atspi
+        atspi._A11Y_ASKED = False
+        self.addCleanup(setattr, atspi, "_A11Y_ASKED", False)
+
+    def test_an_OFF_flag_is_turned_on(self):
+        writes = []
+        self.assertEqual(self.atspi.ensure_accessibility_enabled(
+            lambda: False, writes.append), "turned on")
+        self.assertEqual(writes, [True])
+
+    def test_an_ON_flag_is_left_alone(self):
+        writes = []
+        self.assertEqual(self.atspi.ensure_accessibility_enabled(
+            lambda: True, writes.append), "already on")
+        self.assertEqual(writes, [])
+
+    def test_it_asks_ONCE_per_process(self):
+        get = Mock(return_value=False)
+        self.atspi.ensure_accessibility_enabled(get, lambda v: None)
+        self.atspi.ensure_accessibility_enabled(get, lambda v: None)
+        self.assertEqual(get.call_count, 1)
+
+    def test_a_bus_error_never_raises(self):
+        def boom():
+            raise RuntimeError("no org.a11y.Bus")
+        self.assertIn("failed", self.atspi.ensure_accessibility_enabled(
+            boom, lambda v: None))
+
+    def test_the_harvest_asks_before_walking_the_bus(self):
+        with patch.object(self.atspi, "_a11y_bus_calls",
+                          return_value=(lambda: False, Mock())) as calls, \
+                patch.object(self.atspi, "accessibility_setting_enabled",
+                             return_value=True), \
+                patch.object(self.atspi, "_atspi", side_effect=ImportError):
+            self.atspi.shortcuts_for_app("kate")
+        calls.assert_called_once()
+
+    def test_the_setting_OFF_never_touches_the_bus(self):
+        with patch.object(self.atspi, "_a11y_bus_calls") as calls, \
+                patch.object(self.atspi, "accessibility_setting_enabled",
+                             return_value=False), \
+                patch.object(self.atspi, "_atspi", side_effect=ImportError):
+            self.atspi.shortcuts_for_app("kate")
+        calls.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

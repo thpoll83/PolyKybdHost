@@ -32,13 +32,16 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import macro_body as mb
 from polyhost.services import macro_keys as mk
 from polyhost.services import macro_script as msc
 
 # The kinds a row can hold, in the order the combo offers them. `char` is deliberately
 # absent: a character is added as a run of text, not one row at a time.
-KINDS = [("tap", "Tap"), ("down", "Hold"), ("up", "Release"), ("delay", "Wait")]
+# The labels are marked here and translated where the combo shows them; the kind is
+# the combo's item data, so nothing compares a label.
+KINDS = [("tap", N_("Tap")), ("down", N_("Hold")), ("up", N_("Release")), ("delay", N_("Wait"))]
 KIND_LABEL = dict(KINDS)
 
 # Below this the gap between two keystrokes is the user typing, not a pause they meant.
@@ -85,7 +88,7 @@ class MacroStepsDialog(QDialog):
 
     def __init__(self, steps: list[mb.Step] | None = None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Macro steps")
+        self.setWindowTitle(_("Macro steps"))
         self.result_steps: list[mb.Step] = []
         self._recording = False
         # Counts THIS recording session only, for the progress line. Not a model: the
@@ -100,7 +103,7 @@ class MacroStepsDialog(QDialog):
         page = QVBoxLayout(self)
 
         self.table = QTableWidget(0, 2)
-        self.table.setHorizontalHeaderLabels(["Action", "Value"])
+        self.table.setHorizontalHeaderLabels([_("Action"), _("Value")])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -111,14 +114,14 @@ class MacroStepsDialog(QDialog):
         fm = self.table.fontMetrics()
         head.setSectionResizeMode(COL_KIND, QHeaderView.Fixed)
         self.table.setColumnWidth(
-            COL_KIND, max(fm.horizontalAdvance(l) for _, l in KINDS + [("", "Type")]) + 42)
+            COL_KIND, max(fm.horizontalAdvance(_(l)) for _k, l in KINDS + [("", N_("Type"))]) + 42)
         head.setSectionResizeMode(COL_VALUE, QHeaderView.Stretch)
         self.table.itemSelectionChanged.connect(self._refresh_buttons)
         self.script = QPlainTextEdit()
-        self.script.setPlaceholderText("{+KC_LCTL}{KC_A}{-KC_LCTL}{50}done")
-        self.script.setToolTip(
+        self.script.setPlaceholderText("{+KC_LCTL}{KC_A}{-KC_LCTL}{50}done")  # i18n: skip
+        self.script.setToolTip(_(
             "VIA's macro syntax:  plain text  ·  {KC_A} tap  ·  {+KC_A} hold  ·  "
-            "{-KC_A} release  ·  {250} wait  ·  \\{ a literal brace")
+            "{-KC_A} release  ·  {250} wait  ·  \\{ a literal brace"))
         # The summary follows the script as it is typed, exactly as it follows the table
         # -- and because `_refresh` catches a parse failure, the same line doubles as the
         # error display. Without this the script view was the one place where the
@@ -136,18 +139,18 @@ class MacroStepsDialog(QDialog):
         row = QHBoxLayout()
         row.setContentsMargins(0, ROW_BUTTON_GAP, 0, 0)
         row.setSpacing(ROW_BUTTON_GAP)
-        self.add_btn = QPushButton("Add step")
+        self.add_btn = QPushButton(_("Add step"))
         self.add_btn.clicked.connect(self._on_add)
-        self.text_btn = QPushButton("Add text…")
-        self.text_btn.setToolTip("Append a run of characters the macro should type")
+        self.text_btn = QPushButton(_("Add text…"))
+        self.text_btn.setToolTip(_("Append a run of characters the macro should type"))
         self.text_btn.clicked.connect(self._on_add_text)
-        self.remove_btn = QPushButton("Remove")
+        self.remove_btn = QPushButton(_("Remove"))
         self.remove_btn.clicked.connect(self._on_remove)
         self.up_btn = QPushButton("↑")
-        self.up_btn.setToolTip("Move the selected step up")
+        self.up_btn.setToolTip(_("Move the selected step up"))
         self.up_btn.clicked.connect(lambda: self._move(-1))
         self.down_btn = QPushButton("↓")
-        self.down_btn.setToolTip("Move the selected step down")
+        self.down_btn.setToolTip(_("Move the selected step down"))
         self.down_btn.clicked.connect(lambda: self._move(1))
         for b in (self.add_btn, self.text_btn, self.remove_btn):
             b.setMinimumHeight(ROW_BUTTON_HEIGHT)
@@ -167,8 +170,8 @@ class MacroStepsDialog(QDialog):
         # Real tabs, not a combo over a stack: the two views are peers rather than a
         # setting, and a tab bar says so without spending a labelled row on it.
         self.tabs = QTabWidget()
-        self.tabs.addTab(table_page, "Table")
-        self.tabs.addTab(self.script, "Script")
+        self.tabs.addTab(table_page, _("Table"))
+        self.tabs.addTab(self.script, _("Script"))
         self.tabs.currentChanged.connect(self._on_view_changed)
         page.addWidget(self.tabs, 1)
 
@@ -182,21 +185,21 @@ class MacroStepsDialog(QDialog):
         # the list, and the one people look for, so it is sized to be found: taller
         # than the row buttons, a minimum width so "Stop" does not shrink it mid-take,
         # and the standard red dot.
-        self.record_btn = QPushButton(get_icon("radio_button_checked.svg"), "Record")
+        self.record_btn = QPushButton(get_icon("radio_button_checked.svg"), _("Record"))
         self.record_btn.setCheckable(True)
         self.record_btn.setMinimumHeight(RECORD_BUTTON_HEIGHT)
         self.record_btn.setMinimumWidth(RECORD_BUTTON_WIDTH)
         self.record_btn.setIconSize(QSize(RECORD_ICON_PX, RECORD_ICON_PX))
         self.record_btn.setToolTip(
-            "Press the keys you want, then click Stop. Esc stops recording.")
+            _("Press the keys you want, then click Stop. Esc stops recording."))
         self.record_btn.toggled.connect(self._on_record_toggled)
         shared.addWidget(self.record_btn)
         self.timing_box = QComboBox()
-        self.timing_box.addItem("no timing", False)
-        self.timing_box.addItem("with timing", True)
-        self.timing_box.setToolTip(
+        self.timing_box.addItem(_("no timing"), False)
+        self.timing_box.addItem(_("with timing"), True)
+        self.timing_box.setToolTip(_(
             "Record the real pauses between keystrokes as Wait steps.\n"
-            "Off by default: most macros want to run as fast as the keyboard can.")
+            "Off by default: most macros want to run as fast as the keyboard can."))
         self.timing_box.setMinimumHeight(RECORD_BUTTON_HEIGHT)
         shared.addWidget(self.timing_box)
         page.addLayout(shared)
@@ -283,7 +286,7 @@ class MacroStepsDialog(QDialog):
             try:
                 steps = msc.parse(self.script.toPlainText())
             except (msc.ScriptError, mb.MacroError) as e:
-                self.summary.setText(f"{e}  — fix it or switch back.")
+                self.summary.setText(_f("{error}  — fix it or switch back.", error=e))
                 self.tabs.blockSignals(True)
                 self.tabs.setCurrentIndex(VIEW_SCRIPT)
                 self.tabs.blockSignals(False)
@@ -301,15 +304,15 @@ class MacroStepsDialog(QDialog):
 
         kind_box = QComboBox()
         for value, label in KINDS:
-            kind_box.addItem(label, value)
+            kind_box.addItem(_(label), value)
         if step.kind == "char":
             # A character has no Action of its own -- it is text, shown read-only so it
             # cannot be turned into a keycode row that means something else.
-            kind_box.addItem("Type", "char")
+            kind_box.addItem(_("Type"), "char")  # i18n: skip (item data)
             kind_box.setCurrentIndex(kind_box.count() - 1)
             kind_box.setEnabled(False)
         else:
-            kind_box.setCurrentIndex(max(0, [k for k, _ in KINDS].index(step.kind)
+            kind_box.setCurrentIndex(max(0, [k for k, _label in KINDS].index(step.kind)
                                          if step.kind in KIND_LABEL else 0))
         kind_box.currentIndexChanged.connect(lambda _i, box=kind_box: self._on_kind_changed(box))
         self.table.setCellWidget(r, COL_KIND, kind_box)
@@ -348,7 +351,8 @@ class MacroStepsDialog(QDialog):
         if kind == "delay" and spin is None:
             spin = QSpinBox()
             spin.setRange(0, 0xFFFF)
-            spin.setSuffix(" ms")
+            # TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+            spin.setSuffix(_(" ms"))
             spin.setValue(ms)
             spin.valueChanged.connect(self._refresh)
             self.table.setCellWidget(r, COL_VALUE, spin)
@@ -375,12 +379,13 @@ class MacroStepsDialog(QDialog):
             # own tooltip can never be reached by a hover. Cleared when there is nothing
             # parked, so a row that was always a Wait makes no promise.
             spin.setToolTip(
-                f"Switch this row back to a key action to restore {item.text()}."
+                _f("Switch this row back to a key action to restore {keycode}.",
+                   keycode=item.text())
                 if item.text() else "")
         elif kind != "char":
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             if not item.text():
-                item.setText("KC_A")
+                item.setText("KC_A")  # i18n: skip
 
     def _on_kind_changed(self, box):
         for r in range(self.table.rowCount()):
@@ -403,7 +408,7 @@ class MacroStepsDialog(QDialog):
         self._refresh()
 
     def _on_add_text(self):
-        text, ok = QInputDialog.getText(self, "Add text", "Characters to type:")
+        text, ok = QInputDialog.getText(self, _("Add text"), _("Characters to type:"))
         if not ok or not text:
             return
         try:
@@ -451,9 +456,9 @@ class MacroStepsDialog(QDialog):
             self._append_row(step, remembered=keys[i] if keys else "")
         self._refresh()
 
-    def _refresh(self, *_):
+    def _refresh(self, *_args):
         try:
-            self.summary.setText(mk.describe(self.steps()) or "No steps yet.")
+            self.summary.setText(mk.describe(self.steps()) or _("No steps yet."))
         except (msc.ScriptError, mb.MacroError) as e:
             self.summary.setText(str(e))
         self._refresh_buttons()
@@ -479,14 +484,14 @@ class MacroStepsDialog(QDialog):
 
     def _on_record_toggled(self, on: bool):
         self._recording = on
-        self.record_btn.setText("Stop" if on else "Record")
+        self.record_btn.setText(_("Stop") if on else _("Record"))
         if on:
             self._recorded = 0
             self._clock.restart()
             # The grab is what makes this work at all: without it the keystrokes go to
             # whichever widget has focus and the table fills with nothing.
             self.grabKeyboard()
-            self.summary.setText("Recording — press keys, then click Stop (or Esc).")
+            self.summary.setText(_("Recording — press keys, then click Stop (or Esc)."))
         else:
             self.releaseKeyboard()
             self._refresh()
@@ -521,9 +526,10 @@ class MacroStepsDialog(QDialog):
             return
         code = mk.qt_key_to_keycode(int(event.key()), event.text() or "")
         if code is None:
-            self.summary.setText(
-                f"No basic keycode for that key — skipped. "
-                f"(Recorded {self._recorded} step(s) so far.)")
+            self.summary.setText(_nf(
+                "No basic keycode for that key — skipped. (Recorded {n} step so far.)",
+                "No basic keycode for that key — skipped. (Recorded {n} steps so far.)",
+                self._recorded))
             return
         gap = int(self._clock.restart())
         if self.timing_box.currentData() and gap >= MIN_RECORDED_GAP_MS \
@@ -532,8 +538,10 @@ class MacroStepsDialog(QDialog):
             self._recorded += 1
         self._append_step(mb.Step(kind, code=code))
         self._recorded += 1
-        self.summary.setText(
-            f"Recording — {self._recorded} step(s). Stop (or Esc) when done.")
+        self.summary.setText(_nf(
+            "Recording — {n} step. Stop (or Esc) when done.",
+            "Recording — {n} steps. Stop (or Esc) when done.",
+            self._recorded))
 
     # -- finishing ----------------------------------------------------------
 

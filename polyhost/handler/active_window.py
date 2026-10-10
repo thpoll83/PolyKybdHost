@@ -604,6 +604,25 @@ class OverlayHandler:
         # leave a windowless app with a name and nothing to draw.
         return self.windowless_pid
 
+    def focused_title(self):
+        """The focused LOCAL window's title, or None.
+
+        What the shortcut harvest re-harvests on: a document app retitles when
+        a document opens, which is when its menus gain Save/Undo/Copy (see
+        `services.shortcut_fetcher`). None for a FORWARDED window, whose
+        shortcuts are harvested on the other machine, and for a windowless
+        app, which has no title to change.
+        """
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            return None
+        if not self.win:
+            return None
+        title = self.title
+        if isinstance(title, bytes):
+            title = title.decode("utf-8", "replace")
+        return title or None
+
     def _win_pid(self):
         """The focused local window's pid, or None if it cannot be read."""
         return window_pid(self.win) if self.win else None

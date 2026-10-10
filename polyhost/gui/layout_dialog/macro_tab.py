@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.command_ids import MacroStyle
+from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import macro_label as ml
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.services import macro_look as mk
@@ -42,7 +43,7 @@ PREVIEW_SCALE = 3
 
 # One line with the byte count -- both describe the body, and on its own the caveat
 # wrapped to two rows in a column the browser already under-allocates.
-BODY_CAVEAT = "stored unencrypted, readable by anything on the USB"
+BODY_CAVEAT = N_("stored unencrypted, readable by anything on the USB")
 
 
 class MacroTab(QWidget):
@@ -144,10 +145,12 @@ class MacroTab(QWidget):
         left_col = QVBoxLayout()
 
         name_row = QHBoxLayout()
-        name_row.addWidget(self._field_label("Keycap:"))
+        name_row.addWidget(self._field_label(_("Keycap:")))
         self.label_edit = QLineEdit()
         self.label_edit.setMaxLength(ml.LABEL_MAX_CHARS)
-        self.label_edit.setPlaceholderText("work mail")
+        # An example LABEL, i.e. keycap data: the keycap draws ASCII only, so a
+        # translated example could suggest letters the key cannot show.
+        self.label_edit.setPlaceholderText("work mail")  # i18n: skip
         self.label_edit.textChanged.connect(self._on_label_changed)
         name_row.addWidget(self.label_edit, 3)
 
@@ -160,13 +163,13 @@ class MacroTab(QWidget):
         self.style_box = QComboBox()
         # A macro owns its whole keycap, so the cell can be more than a legend. Order
         # IS the wire value.
-        self.style_box.addItem("Number above the label", MacroStyle.INDEX.value)
-        self.style_box.addItem("Icon above the label", MacroStyle.ICON.value)
-        self.style_box.addItem("Label only, as large as it fits", MacroStyle.TEXT.value)
-        self.style_box.addItem("Icon only, filling the key", MacroStyle.ICON_ONLY.value)
+        self.style_box.addItem(_("Number above the label"), MacroStyle.INDEX.value)
+        self.style_box.addItem(_("Icon above the label"), MacroStyle.ICON.value)
+        self.style_box.addItem(_("Label only, as large as it fits"), MacroStyle.TEXT.value)
+        self.style_box.addItem(_("Icon only, filling the key"), MacroStyle.ICON_ONLY.value)
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
         style_row = QHBoxLayout()
-        style_row.addWidget(self._field_label("Style:"))
+        style_row.addWidget(self._field_label(_("Style:")))
         style_row.addWidget(self.style_box, 1)
         left_col.addLayout(style_row)
 
@@ -175,16 +178,16 @@ class MacroTab(QWidget):
         # hole in it while the body -- the field most edits actually touch -- sat below
         # the fold, further from the fields it belongs with than from the buttons.
         types_row = QHBoxLayout()
-        types_row.addWidget(self._field_label("Types:"))
+        types_row.addWidget(self._field_label(_("Types:")))
         self.text_edit = QLineEdit()
-        self.text_edit.setPlaceholderText("tom@example.com")
+        self.text_edit.setPlaceholderText("tom@example.com")  # i18n: skip
         types_row.addWidget(self.text_edit, 1)
         # Chords, delays and held modifiers do not fit a single line of text, so they
         # get an editor of their own -- and recording needs a window that can take the
         # keyboard away from this field. See macro_steps_dialog.
-        self.steps_btn = QPushButton("Steps…")
+        self.steps_btn = QPushButton(_("Steps…"))
         self.steps_btn.setToolTip(
-            "Build the macro out of key presses, chords and pauses — or record them")
+            _("Build the macro out of key presses, chords and pauses — or record them"))
         self.steps_btn.clicked.connect(self._on_edit_steps)
         types_row.addWidget(self.steps_btn)
         left_col.addLayout(types_row)
@@ -199,15 +202,15 @@ class MacroTab(QWidget):
         preview_col = QVBoxLayout()
         self.preview = QLabel()
         self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
-        self.preview.setToolTip("How the keycap will look")
+        self.preview.setToolTip(_("How the keycap will look"))
         preview_col.addWidget(self.preview)
 
         icon_row = QHBoxLayout()
         icon_row.setContentsMargins(0, 0, 0, 0)
-        self.icon_btn = QPushButton("Choose icon…")
+        self.icon_btn = QPushButton(_("Choose icon…"))
         self.icon_btn.clicked.connect(self._on_pick_icon)
         icon_row.addWidget(self.icon_btn, 1)
-        self.icon_clear = QPushButton("Clear")
+        self.icon_clear = QPushButton(_("Clear"))
         self.icon_clear.clicked.connect(self._on_clear_icon)
         icon_row.addWidget(self.icon_clear)
         preview_col.addLayout(icon_row)
@@ -226,13 +229,13 @@ class MacroTab(QWidget):
         right.addStretch(1)
 
         buttons = QHBoxLayout()
-        self.save_btn = QPushButton("Save macro")
+        self.save_btn = QPushButton(_("Save macro"))
         self.save_btn.clicked.connect(self._on_save)
         buttons.addWidget(self.save_btn)
-        self.clear_btn = QPushButton("Clear")
+        self.clear_btn = QPushButton(_("Clear"))
         self.clear_btn.clicked.connect(self._on_clear)
         buttons.addWidget(self.clear_btn)
-        self.assign_btn = QPushButton("Use on selected key")
+        self.assign_btn = QPushButton(_("Use on selected key"))
         self.assign_btn.clicked.connect(self._on_assign)
         buttons.addWidget(self.assign_btn)
         buttons.addStretch(1)
@@ -242,9 +245,9 @@ class MacroTab(QWidget):
         # rather than in the per-macro column, and it costs that column no height.
         self.storage = QProgressBar()
         self.storage.setTextVisible(True)
-        self.storage.setToolTip(
+        self.storage.setToolTip(_(
             "All the macros share one pool on the keyboard, so a long one leaves "
-            "less for the others")
+            "less for the others"))
         # Sized, not left to the sizeHint: the hint is ~107 px, which clips the text
         # the bar exists to show. Bounded above so it cannot crowd the buttons.
         self.storage.setMinimumWidth(260)
@@ -269,7 +272,7 @@ class MacroTab(QWidget):
         "Types:" each measure differently and the boxes step across the column.
         """
         lbl = QLabel(text)
-        lbl.setMinimumWidth(lbl.fontMetrics().horizontalAdvance("Keycap:") + 6)
+        lbl.setMinimumWidth(lbl.fontMetrics().horizontalAdvance(_("Keycap:")) + 6)
         return lbl
 
     def _error(self, title: str, msg: str):
@@ -295,7 +298,7 @@ class MacroTab(QWidget):
         self.list.clear()
         for m in self._macros:
             # By LABEL, not by index: picking `push` is the point of having labels.
-            title = m["label"] or f"M{m['id']} (empty)"
+            title = m["label"] or _f("M{number} (empty)", number=m['id'])
             item = QListWidgetItem(title)
             item.setData(Qt.UserRole, m["id"])
             self.list.addItem(item)
@@ -311,7 +314,8 @@ class MacroTab(QWidget):
         # Short, because it now sits beside the buttons rather than under its own
         # caption -- the long sentence wrapped to two lines and clipped there. The
         # tooltip carries it instead.
-        self.storage.setFormat(f"{used} / {cap} bytes  ·  %p%")
+        # TRANSLATORS: %p% is Qt's percentage placeholder -- keep it as it is.
+        self.storage.setFormat(_f("{used} / {capacity} bytes  ·  %p%", used=used, capacity=cap))
 
     # -- selection ----------------------------------------------------------
 
@@ -339,7 +343,8 @@ class MacroTab(QWidget):
             self.text_edit.setReadOnly(False)
             self.text_edit.setEnabled(True)
             self.text_edit.setText(m["text"])
-            self.body_note.setText(f"{m['bytes']} bytes  ·  {BODY_CAVEAT}")
+            self.body_note.setText(_nf("{n} byte  ·  {caveat}", "{n} bytes  ·  {caveat}",
+                                       m['bytes'], caveat=_(BODY_CAVEAT)))
 
     def _show_steps(self, steps: list, size: int | None = None):
         """Put the tab into step mode: the field summarises, the dialog edits.
@@ -353,10 +358,16 @@ class MacroTab(QWidget):
         self.text_edit.setEnabled(True)
         self.text_edit.setReadOnly(True)
         self.text_edit.setText(macro_keys.describe(decoded))
-        note = f"{len(self._steps)} step(s)"
-        if size is not None:
-            note = f"{size} bytes  ·  {note}"
-        self.body_note.setText(f"{note} — press Steps… to edit  ·  {BODY_CAVEAT}")
+        n = len(self._steps)
+        if size is None:
+            note = _nf("{n} step — press Steps… to edit  ·  {caveat}",
+                       "{n} steps — press Steps… to edit  ·  {caveat}",
+                       n, caveat=_(BODY_CAVEAT))
+        else:
+            note = _nf("{size} bytes  ·  {n} step — press Steps… to edit  ·  {caveat}",
+                       "{size} bytes  ·  {n} steps — press Steps… to edit  ·  {caveat}",
+                       n, size=size, caveat=_(BODY_CAVEAT))
+        self.body_note.setText(note)
 
     def _on_edit_steps(self):
         """Open the step editor on whatever the body currently is.
@@ -374,7 +385,7 @@ class MacroTab(QWidget):
             try:
                 steps = macro_body.decode(macro_body.encode_text(self.text_edit.text()))
             except macro_body.MacroError as e:
-                self._error("That text cannot become steps", str(e))
+                self._error(_("That text cannot become steps"), str(e))
                 return
 
         dlg = MacroStepsDialog(steps, parent=self)
@@ -389,7 +400,8 @@ class MacroTab(QWidget):
             self._steps = None
             self.text_edit.setReadOnly(False)
             self.text_edit.setText(text)
-            self.body_note.setText(f"{len(result)} bytes  ·  {BODY_CAVEAT}")
+            self.body_note.setText(_nf("{n} byte  ·  {caveat}", "{n} bytes  ·  {caveat}",
+                                       len(result), caveat=_(BODY_CAVEAT)))
         else:
             self._show_steps([{"kind": st.kind, "code": st.code, "ms": st.ms}
                               for st in result])
@@ -410,7 +422,7 @@ class MacroTab(QWidget):
         self.icon_btn.setEnabled(icon_style)
         self.icon_clear.setEnabled(icon_style and bool(self._icon))
         if not self._icon:
-            self.icon_btn.setText("Choose icon…")
+            self.icon_btn.setText(_("Choose icon…"))
         else:
             drawable = mk.find_glyph(self._fonts, self._icon) is not None
             # Say so when the keyboard cannot draw it: the firmware falls back to the
@@ -420,8 +432,13 @@ class MacroTab(QWidget):
             # back to the shipped packs leaves them out, so a resident-only glyph reads
             # as absent when the keyboard draws it perfectly well -- and a confident
             # wrong warning is worse than none.
-            warn = " (no glyph)" if self._font_source == "headers" else " (unverified)"
-            self.icon_btn.setText(f"U+{self._icon:04X}" + ("" if drawable else warn))
+            cp = f"U+{self._icon:04X}"
+            if drawable:
+                self.icon_btn.setText(cp)
+            elif self._font_source == "headers":
+                self.icon_btn.setText(_f("{codepoint} (no glyph)", codepoint=cp))
+            else:
+                self.icon_btn.setText(_f("{codepoint} (unverified)", codepoint=cp))
 
     def _on_pick_icon(self):
         from polyhost.gui.layout_dialog.macro_icon_dialog import MacroIconDialog
@@ -440,7 +457,7 @@ class MacroTab(QWidget):
     def _repaint_preview(self):
         text = self.label_edit.text()
         if self._font is None:
-            self.width_meter.setFormat("no font — preview unavailable")
+            self.width_meter.setFormat(_("no font — preview unavailable"))
             self.width_meter.setValue(0)
             return
         # Measure against the face the KEYCAP will use, not always the floor face --
@@ -448,7 +465,7 @@ class MacroTab(QWidget):
         # while the key draws it at half again the size.
         r = ml.fit(text, ml.pick_face(text, self._faces or [self._font]))
         self.width_meter.setValue(min(r.full_width, ml.PANEL_W))
-        self.width_meter.setFormat(f"{r.full_width} / {ml.PANEL_W} px")
+        self.width_meter.setFormat(_f("{width} / {panel_width} px", width=r.full_width, panel_width=ml.PANEL_W))
         # Amber past the panel: the label is still accepted, it is just cut.
         self.width_meter.setStyleSheet(
             "QProgressBar::chunk { background: #B4690E; }" if r.truncated else "")
@@ -500,7 +517,7 @@ class MacroTab(QWidget):
             params["text"] = self.text_edit.text()
         ok, msg = self.core.macro_set(m["id"], **params)
         if not ok:
-            self._error("Could not save the macro", msg)
+            self._error(_("Could not save the macro"), msg)
             return
         self.reload()
         self.macrosChanged.emit()
@@ -511,7 +528,7 @@ class MacroTab(QWidget):
         m = self._macros[self._current]
         ok, msg = self.core.macro_clear(m["id"])
         if not ok:
-            self._error("Could not clear the macro", msg)
+            self._error(_("Could not clear the macro"), msg)
             return
         self.reload()
 

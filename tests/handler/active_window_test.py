@@ -336,6 +336,39 @@ class FocusedPidTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedTitleTest(unittest.TestCase):
+    """The title the shortcut harvest re-harvests on (shortcut_fetcher)."""
+
+    def _handler(self, title="Untitled - Kate", remote=False):
+        h = OverlayHandler({})
+        h.win = MagicMock()
+        h.title = title
+        h.is_remote_mapping_entry = lambda: remote
+        h.remote_handler = MagicMock() if remote else None
+        return h
+
+    def test_a_LOCAL_window_answers_its_title(self):
+        self.assertEqual(self._handler().focused_title(), "Untitled - Kate")
+
+    def test_a_BYTES_title_is_decoded(self):
+        """Some backends hand back bytes (the log prints b'...')."""
+        self.assertEqual(self._handler(title="Welcome \u2014 Kate".encode()).focused_title(),
+                         "Welcome \u2014 Kate")
+
+    def test_a_FORWARDED_window_answers_NOTHING(self):
+        """Its shortcuts are harvested on the other machine."""
+        self.assertIsNone(self._handler(remote=True).focused_title())
+
+    def test_NO_window_answers_nothing(self):
+        h = self._handler()
+        h.win = None
+        self.assertIsNone(h.focused_title())
+
+    def test_an_EMPTY_title_answers_nothing(self):
+        self.assertIsNone(self._handler(title="").focused_title())
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class LosingTheWindowTest(unittest.TestCase):
     """What happens when the backend stops reporting a window at all.
 

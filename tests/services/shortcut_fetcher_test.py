@@ -649,5 +649,271 @@ class ThreadReleaseTest(unittest.TestCase):
         self.assertEqual(self.released, ["poly-shortcut-icons"])
 
 
+WELCOME = {"@sc:a": {(1, 0x16): "MASK"}}
+DOCUMENT = {"@sc:a": {(1, 0x16): "MASK"}, "@sc:b": {(1, 0x06): "MASK"}}
+
+
+class TitleReharvestTest(unittest.TestCase):
+    """A title change re-harvests, so Kate's menus are re-read once a document
+    opens (its welcome page has no Save/Undo/Copy). The cost guards are the
+    point of most of these: Kate retitles an unsaved document on every
+    keystroke, and a clock or a progress counter can retitle every second.
+
+    The clock is `shortcut_fetcher._now`, moved by hand; `_resolve` answers
+    from `self.answers` in order, repeating the last one.
+    """
+
+    def setUp(self):
+        self.now = 1000.0
+        clock = patch.object(shortcut_fetcher, "_now", side_effect=lambda: self.now)
+        clock.start()
+        self.addCleanup(clock.stop)
+        self.calls = []
+        self.answers = [WELCOME]
+        self.gate = None
+        self.fetcher = ShortcutIconFetcher()
+        self.addCleanup(self.fetcher.stop)
+        resolve = patch.object(self.fetcher, "_resolve", side_effect=self._resolve)
+        resolve.start()
+        self.addCleanup(resolve.stop)
+
+    def _resolve(self, app, height, placement):
+        self.calls.append(self.fetcher._titles.get(app))
+        if self.gate is not None and len(self.calls) == 2:
+            self.gate.wait(2)
+        return self.answers[min(len(self.calls), len(self.answers)) - 1]
+
+    def ask(self, title):
+        return self.fetcher.overlays_for("kate", title=title)
+
+    def idle(self):
+        end = time.monotonic() + 2
+        while time.monotonic() < end:
+            with self.fetcher._lock:
+                if not self.fetcher._queue and not self.fetcher._inflight:
+                    return
+            time.sleep(0.005)
+        self.fail("the fetcher never went idle")
+
+    def first(self, title="Welcome - Kate"):
+        self.ask(title)
+        self.idle()
+        self.assertEqual(self.ask(title), WELCOME)
+
+    def test_the_SAME_title_never_re_harvests(self):
+        self.first()
+        for _ in range(5):
+            self.now += 60
+            self.ask("Welcome - Kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+
+    def test_a_NEW_title_re_harvests_and_the_old_answer_is_served_meanwhile(self):
+        self.answers = [WELCOME, DOCUMENT]
+        self.first()
+        self.now += 10
+        self.assertEqual(self.ask("Untitled - Kate"), WELCOME)
+        self.idle()
+        self.assertEqual(self.ask("Untitled - Kate"), DOCUMENT)
+        self.assertEqual(self.calls, ["Welcome - Kate", "Untitled - Kate"])
+
+    def test_inside_the_FLOOR_a_change_is_deferred_not_dropped(self):
+        self.first()
+        self.now += 1
+        self.ask("Untitled - Kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+        self.now += shortcut_fetcher.REHARVEST_MIN_GAP
+        self.ask("Untitled - Kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+
+    def test_an_UNCHANGED_result_backs_off_and_doubles(self):
+        self.first()
+        self.now += 10
+        self.ask("t1")                     # re-harvest 1, unchanged -> 5 s
+        self.idle()
+        self.now += 4
+        self.ask("t2")                     # inside 5 s
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 2
+        self.ask("t2")                     # re-harvest 2, unchanged -> 10 s
+        self.idle()
+        self.assertEqual(len(self.calls), 3)
+        self.now += 8
+        self.ask("t3")
+        self.idle()
+        self.assertEqual(len(self.calls), 3)
+        self.now += 3
+        self.ask("t3")
+        self.idle()
+        self.assertEqual(len(self.calls), 4)
+
+    def test_the_backoff_CAPS(self):
+        self.first()
+        for i in range(12):
+            self.now += 1000
+            self.ask(f"clock {i}")
+            self.idle()
+        key = next(iter(self.fetcher._backoff))
+        self.assertEqual(self.fetcher._backoff[key][0],
+                         shortcut_fetcher.REHARVEST_BACKOFF_MAX)
+
+    def test_a_CHANGED_result_resets_the_backoff_but_not_the_floor(self):
+        self.answers = [WELCOME, WELCOME, DOCUMENT]
+        self.first()
+        self.now += 10
+        self.ask("t1")                     # unchanged -> backoff 5 s
+        self.idle()
+        self.now += 6
+        self.ask("t2")                     # DOCUMENT: changed -> reset
+        self.idle()
+        self.now += 1
+        self.ask("t3")                     # reset, but inside the 3 s floor
+        self.idle()
+        self.assertEqual(len(self.calls), 3)
+        self.now += 2.5
+        self.ask("t3")
+        self.idle()
+        self.assertEqual(len(self.calls), 4)
+
+    def test_a_typing_BURST_while_in_flight_queues_ONE_follow_up(self):
+        """Kate retitles per keystroke: nine titles in 0.6 s (2026-10-09)."""
+        self.answers = [WELCOME, DOCUMENT, WELCOME]
+        self.gate = threading.Event()
+        self.first()
+        self.now += 10
+        self.ask("Untitled (s) * - Kate")  # re-harvest starts and blocks
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        for word in ("sd", "sdf", "sdfs", "sdfsd", "sdfsdf"):
+            self.ask(f"Untitled ({word}) * - Kate")
+        with self.fetcher._lock:
+            self.assertEqual(self.fetcher._queue, [])
+        self.gate.set()
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += shortcut_fetcher.REHARVEST_MIN_GAP
+        self.ask("Untitled (sdfsdf) * - Kate")
+        self.idle()
+        self.assertEqual(self.calls[-1], "Untitled (sdfsdf) * - Kate")
+        self.assertEqual(len(self.calls), 3)
+
+    def test_NO_title_never_re_harvests(self):
+        """A forwarded window has no local title; its harvest is relayed."""
+        self.first()
+        self.now += 60
+        self.fetcher.overlays_for("kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+
+    def test_forget_drops_the_title_state_too(self):
+        self.first()
+        self.fetcher.forget()
+        self.assertEqual((self.fetcher._harvest_title, self.fetcher._drew,
+                          self.fetcher._backoff, self.fetcher._harvested_at,
+                          self.fetcher._restarted),
+                         ({}, {}, {}, {}, set()))
+
+    def ask_as(self, pid, title):
+        return self.fetcher.overlays_for("kate", pid=pid, title=title)
+
+    def test_a_NEW_pid_re_harvests_past_the_backoff_and_the_title(self):
+        """A second Kate inherited the first one's 20 s backoff and showed its
+        97 shortcuts on the welcome page for 12 s (Plasma, 2026-10-09)."""
+        self.answers = [DOCUMENT, DOCUMENT, DOCUMENT, WELCOME]
+        self.ask_as(100, "Welcome - Kate")
+        self.idle()
+        for t in ("t1", "t2"):             # two unchanged: backoff 10 s
+            self.now += 20
+            self.ask_as(100, t)
+            self.idle()
+        self.assertEqual(len(self.calls), 3)
+        self.now += 1                      # inside the floor AND the backoff,
+        self.assertEqual(self.ask_as(200, "t2"), DOCUMENT)   # same title
+        self.idle()
+        self.assertEqual(len(self.calls), 4)
+        self.assertEqual(self.ask_as(200, "t2"), WELCOME)
+
+    def test_the_new_pid_answer_is_a_FIRST_answer(self):
+        self.answers = [DOCUMENT, DOCUMENT, WELCOME]
+        self.ask_as(100, "a")
+        self.idle()
+        self.now += 20
+        self.ask_as(100, "b")              # unchanged: backoff 5 s
+        self.idle()
+        self.ask_as(200, "b")
+        self.idle()
+        self.assertEqual(self.fetcher._backoff, {})
+        self.assertEqual(self.fetcher._restarted, set())
+
+    def test_a_title_that_appears_AFTER_a_titleless_harvest_re_harvests(self):
+        self.answers = [WELCOME, DOCUMENT]
+        self.fetcher.overlays_for("kate")
+        self.idle()
+        self.now += 10
+        self.assertEqual(self.ask("Untitled - Kate"), WELCOME)
+        self.idle()
+        self.assertEqual(self.ask("Untitled - Kate"), DOCUMENT)
+
+    def test_a_DID_NOT_LOOK_result_keeps_the_title_pending(self):
+        self.answers = [WELCOME, None, DOCUMENT]
+        self.first()
+        self.now += 10
+        self.ask("Untitled - Kate")        # None: backoff 5 s, title pending
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 4
+        self.ask("Untitled - Kate")        # inside the backoff
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 2
+        self.assertEqual(self.ask("Untitled - Kate"), WELCOME)
+        self.idle()
+        self.assertEqual(self.ask("Untitled - Kate"), DOCUMENT)
+
+    def test_a_DID_NOT_LOOK_result_keeps_the_restart_pending(self):
+        self.answers = [DOCUMENT, None, WELCOME]
+        self.ask_as(100, "a")
+        self.idle()
+        self.ask_as(200, "a")              # None: backoff 5 s, still owed
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.now += 5
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(self.ask_as(200, "a"), WELCOME)
+
+    def test_a_restart_DURING_a_harvest_is_still_owed_one(self):
+        """The walk that was in flight read the OLD process."""
+        self.answers = [DOCUMENT, WELCOME]
+        self.gate = threading.Event()
+        self.calls.append("pre")           # make the FIRST harvest the gated one
+        self.ask_as(100, "a")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask_as(200, "a")              # uncached and in flight: nothing marked
+        self.gate.set()
+        self.idle()
+        self.ask_as(200, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 3)
+
+    def test_the_SAME_pid_is_not_a_restart(self):
+        self.ask_as(100, "a")
+        self.idle()
+        for _ in range(3):
+            self.now += 60
+            self.ask_as(100, "a")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

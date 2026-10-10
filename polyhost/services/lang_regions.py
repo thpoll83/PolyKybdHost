@@ -1,3 +1,5 @@
+from polyhost.i18n import N_
+
 # Country-code → display region for the language submenu grouping.
 # Covers all ISO 3166-1 alpha-2 country codes so any future firmware language
 # is automatically placed in the right submenu.  Only truly non-country codes
@@ -119,11 +121,14 @@ LANG_REGION_OVERRIDE = {
     "hwUS": "Oceania",   # Hawaiian: US country code, but Polynesian
 }
 
+# The region names are submenu titles in the tray, translated where shown
+# (`_(region)`); N_ only marks them for extraction, the values stay English
+# because LANG_REGION maps to them.
 LANG_REGION_ORDER = [
-    "Americas",
-    "Europe",
-    "Middle East & Caucasus",
-    "Africa",
-    "Asia",
-    "Oceania",
+    N_("Americas"),
+    N_("Europe"),
+    N_("Middle East & Caucasus"),
+    N_("Africa"),
+    N_("Asia"),
+    N_("Oceania"),
 ]

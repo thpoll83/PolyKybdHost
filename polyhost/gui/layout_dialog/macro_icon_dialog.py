@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QListView, QListWidget, QListWidgetItem, QVBoxLayout,
 )
 
+from polyhost.i18n import _, _nf
 from polyhost.services import fontpack_render as fpr
 from polyhost.services import macro_look as mk
 
@@ -53,7 +54,7 @@ class MacroIconDialog(QDialog):
 
     def __init__(self, current: int = 0, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Choose a keycap icon")
+        self.setWindowTitle(_("Choose a keycap icon"))
         self.resize(640, 520)
         self._current = current
         self._pending: list = []
@@ -63,13 +64,13 @@ class MacroIconDialog(QDialog):
 
         row = QHBoxLayout()
         self.source = QComboBox()
-        self.source.addItem("Emoji and symbols", "pictographs")
-        self.source.addItem("Every bundle", "all")
+        self.source.addItem(_("Emoji and symbols"), "pictographs")  # i18n: skip (item data)
+        self.source.addItem(_("Every bundle"), "all")  # i18n: skip (item data)
         self.source.currentIndexChanged.connect(self._reload)
-        row.addWidget(QLabel("Show:"))
+        row.addWidget(QLabel(_("Show:")))
         row.addWidget(self.source)
         self.filter = QLineEdit()
-        self.filter.setPlaceholderText("filter by codepoint — 1F4E7, U+2699, or a character")
+        self.filter.setPlaceholderText(_("filter by codepoint — 1F4E7, U+2699, or a character"))
         self.filter.textChanged.connect(self._reload)
         row.addWidget(self.filter, 1)
         outer.addLayout(row)
@@ -144,7 +145,7 @@ class MacroIconDialog(QDialog):
         self._fill.stop()
         self.grid.clear()
         self._pending = [cp for cp in self._candidates() if self._wanted(cp)]
-        self.status.setText(f"{len(self._pending)} glyphs")
+        self.status.setText(_nf("{n} glyph", "{n} glyphs", len(self._pending)))
         self._fill.start()
 
     def _fill_batch(self):
@@ -156,7 +157,7 @@ class MacroIconDialog(QDialog):
             hit = mk.find_glyph(self._fonts, cp)
             if hit is None:
                 continue
-            item = QListWidgetItem(f"{cp:04X}")
+            item = QListWidgetItem(f"{cp:04X}")  # i18n: skip
             item.setData(Qt.UserRole, cp)
             item.setIcon(QIcon(_to_pixmap(
                 fpr.glyph_cell(hit[0], cp, CELL_W, CELL, scale=1, label=False))))

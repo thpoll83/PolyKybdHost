@@ -42,6 +42,7 @@ import sys
 
 from PyQt5.QtGui import QImage
 
+from polyhost.i18n import _, _f, N_
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
 from polyhost.services import preview_data as pdata
@@ -157,7 +158,7 @@ def _tools_dir() -> str:
     machine with no firmware checkout.
     """
     here = os.path.abspath(__file__)
-    for _ in range(4):
+    for _level in range(4):
         here = os.path.dirname(here)
     return os.path.join(here, "tools")
 
@@ -344,7 +345,9 @@ class KeycapPreview:
             self._static_ok = True
             break
         else:
-            self._reason = self._reason or "no preview data (shipped or checkout)"
+            # Kept ENGLISH here because it is also logged; marked so the tooltip can
+            # translate it (`kb_layout_dialog` passes `reason` through `_()`).
+            self._reason = self._reason or N_("no preview data (shipped or checkout)")
             self.log.warning("key previews unavailable: %s", self._reason)
             return False
 
@@ -382,7 +385,7 @@ class KeycapPreview:
         self._L = pd.lang_reader() or self._resolver
         self._lang_ok = self._L is not self._resolver
         if not self._lang_ok:
-            self._reason = "the shipped language table is missing"
+            self._reason = N_("the shipped language table is missing")
 
     def _load_checkout(self, pk: str, authoritative: bool = False):
         """Draw from a firmware checkout -- the developer path.
@@ -553,12 +556,12 @@ class KeycapPreview:
         if not self._load():
             return ""
         if self._source == "shipped":
-            v = self._fw_version or "unknown"
-            out = f"shipped with this host\nfirmware {v}"
+            v = self._fw_version or _("unknown")
+            out = _f("shipped with this host\nfirmware {version}", version=v)
             # A checkout that did not win is NOT an error -- it just lost the
             # comparison, EQUAL included -- but saying so is what stops the next
             # round being "why is my clone being ignored?".
-            return f"{out}\n(a firmware checkout is present but is not newer)" \
+            return out + "\n" + _("(a firmware checkout is present but is not newer)") \
                 if self._checkout_unused else out
         pk = self._fw_dir or ""
         if not pk:

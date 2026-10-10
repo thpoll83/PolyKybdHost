@@ -20,17 +20,18 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QLabel, QPushButton, QVBoxLayout)
 
 from polyhost.gui.file_dialogs import get_save_file_name
+from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import log_bundle
 
 # (label, `since` spec). Order is the combo order; DEFAULT_INDEX picks 24 hours
 # — long enough for "it broke this morning", short enough to stay small and to
 # carry less window-title history than "Everything".
 TIMEFRAMES = (
-    ("Last 15 minutes", "15m"),
-    ("Last hour", "1h"),
-    ("Last 24 hours", "24h"),
-    ("Last 7 days", "7d"),
-    ("Everything on disk", "all"),
+    (N_("Last 15 minutes"), "15m"),
+    (N_("Last hour"), "1h"),
+    (N_("Last 24 hours"), "24h"),
+    (N_("Last 7 days"), "7d"),
+    (N_("Everything on disk"), "all"),
 )
 DEFAULT_INDEX = 2
 
@@ -58,6 +59,11 @@ def reveal_in_file_manager(path, log=None):
         log.warning("Could not reveal %s in the file manager", path, exc_info=True)
 
 
+# Markup around translated prose, kept out of the msgids.
+_MUTED = "<span style='color:gray;'>{}</span>"
+_ALERT = "<span style='color:#c0392b;'>{}</span>"
+
+
 class _CollectWorker(QThread):
     """Runs one collection off the GUI thread.
 
@@ -79,7 +85,7 @@ class _CollectWorker(QThread):
             self.done.emit(ok, message, payload)
         except Exception as e:  # noqa: BLE001 — a failure must report, not vanish
             logging.getLogger("PolyHost").exception("Log collection failed")
-            self.done.emit(False, f"Log collection failed: {e}", None)
+            self.done.emit(False, _f("Log collection failed: {error}", error=e), None)
 
 
 class LogBundleDialog(QDialog):
@@ -97,31 +103,31 @@ class LogBundleDialog(QDialog):
         self._worker = None
         self._last_bundle = None
 
-        self.setWindowTitle("Collect Logs")
+        self.setWindowTitle(_("Collect Logs"))
         self.setMinimumWidth(520)
         layout = QVBoxLayout(self)
 
-        intro = QLabel(
+        intro = QLabel(_(
             "Collects every PolyHost log — including the daemon's and the "
             "keyboard console — with their rotated backups, plus version and "
             "connection details, into a single file you can attach to a bug "
-            "report.")
+            "report."))
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         form = QFormLayout()
         self.timeframe = QComboBox(self)
-        for label, _ in TIMEFRAMES:
-            self.timeframe.addItem(label)
+        for label, _since in TIMEFRAMES:
+            self.timeframe.addItem(_(label))
         self.timeframe.setCurrentIndex(DEFAULT_INDEX)
-        form.addRow("Timeframe:", self.timeframe)
+        form.addRow(_("Timeframe:"), self.timeframe)
         layout.addLayout(form)
 
-        self.redact = QCheckBox("Mask window titles", self)
-        self.redact.setToolTip(
+        self.redact = QCheckBox(_("Mask window titles"), self)
+        self.redact.setToolTip(_(
             "Window titles can name the documents you had open. Masking keeps "
             "application names (which is what overlay matching is debugged "
-            "from) but replaces each title with a placeholder.")
+            "from) but replaces each title with a placeholder."))
         layout.addWidget(self.redact)
 
         self.privacy = QLabel()
@@ -136,17 +142,17 @@ class LogBundleDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.reveal_btn = QPushButton("Show in Folder", self)
+        self.reveal_btn = QPushButton(_("Show in Folder"), self)
         self.reveal_btn.clicked.connect(self._reveal)
         self.reveal_btn.setVisible(False)
         buttons.addWidget(self.reveal_btn)
         buttons.addStretch(1)
 
-        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
-        self.save_btn = QPushButton("Save Bundle…", self)
+        self.save_btn = QPushButton(_("Save Bundle…"), self)
         self.save_btn.setDefault(True)
         self.save_btn.clicked.connect(self._save)
         buttons.addWidget(self.save_btn)
@@ -160,13 +166,13 @@ class LogBundleDialog(QDialog):
     def _update_privacy_note(self, masked: bool):
         if masked:
             self.privacy.setText(
-                "<span style='color:gray;'>Window titles will be replaced with "
-                "placeholders. Application names are kept.</span>")
+                _MUTED.format(_("Window titles will be replaced with "
+                "placeholders. Application names are kept.")))
         else:
             self.privacy.setText(
-                "<span style='color:#c0392b;'>The logs record the titles of "
-                "windows you focused, which can name open documents.</span> "
-                "<span style='color:gray;'>Tick the box above to mask them.</span>")
+                _ALERT.format(_("The logs record the titles of "
+                "windows you focused, which can name open documents.")) + " "
+                + _MUTED.format(_("Tick the box above to mask them.")))
 
     def _since(self):
         return log_bundle.parse_since(TIMEFRAMES[self.timeframe.currentIndex()][1])
@@ -187,7 +193,7 @@ class LogBundleDialog(QDialog):
 
     def _start(self, fn):
         self._busy(True)
-        self.status.setText("Collecting…")
+        self.status.setText(_("Collecting…"))
         self._worker = _CollectWorker(fn, self)
         self._worker.done.connect(self._finished)
         self._worker.start()
@@ -203,14 +209,14 @@ class LogBundleDialog(QDialog):
             elif kind == "bundle":
                 self._last_bundle = value
         colour = "" if ok else "color:#c0392b;"
-        self.status.setText(f"<span style='{colour}'>{message}</span>")
+        self.status.setText(f"<span style='{colour}'>{message}</span>")  # i18n: skip
         self.reveal_btn.setVisible(bool(ok and self._last_bundle))
 
     # -- actions ---------------------------------------------------------
     def _save(self):
-        path, _ = get_save_file_name(
-            self, "Save Log Bundle", log_bundle.default_bundle_name(),
-            "Zip archives (*.zip)")
+        path, _filter = get_save_file_name(
+            self, _("Save Log Bundle"), log_bundle.default_bundle_name(),
+            _("Zip archives (*.zip)"))
         if not path:
             return
         if not path.lower().endswith(".zip"):
@@ -220,7 +226,7 @@ class LogBundleDialog(QDialog):
         def work():
             result = log_bundle.build_bundle(
                 path, since=since, redact=redact, diagnostics=diagnostics)
-            return True, f"Saved {result.summary()}", ("bundle", str(result.path))
+            return True, _f("Saved {summary}", summary=result.summary()), ("bundle", str(result.path))
 
         self._start(work)
 
@@ -230,7 +236,9 @@ class LogBundleDialog(QDialog):
         def work():
             text = log_bundle.recent_text(since=since, redact=redact)
             lines = text.count("\n") + 1
-            return True, f"Copied {lines} lines to the clipboard.", ("clipboard", text)
+            return (True, _nf("Copied {n} line to the clipboard.",
+                              "Copied {n} lines to the clipboard.", lines),
+                    ("clipboard", text))
 
         self._start(work)
 
