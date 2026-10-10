@@ -134,7 +134,7 @@ class LogViewerDialog(QMainWindow):
         search_layout = QHBoxLayout()
         search_layout.setContentsMargins(6, 6, 6, 0)
         self.search_edit = QLineEdit(self)
-        self.search_edit.setPlaceholderText("Search (Ctrl+F)")
+        self.search_edit.setPlaceholderText(_("Search (Ctrl+F)"))
         self.search_edit.setClearButtonEnabled(True)
         self._search_timer = QTimer(self)
         self._search_timer.setSingleShot(True)
@@ -147,10 +147,10 @@ class LogViewerDialog(QMainWindow):
         self.search_edit.textChanged.connect(lambda _text: self._schedule_search())
         self.search_edit.returnPressed.connect(self.find_next)
         search_layout.addWidget(self.search_edit, 1)
-        prev_button = QPushButton("Previous")
+        prev_button = QPushButton(_("Previous"))
         prev_button.clicked.connect(self.find_previous)
         search_layout.addWidget(prev_button)
-        next_button = QPushButton("Next")
+        next_button = QPushButton(_("Next"))
         next_button.clicked.connect(self.find_next)
         search_layout.addWidget(next_button)
         self.search_count = QLabel("", self)
@@ -287,7 +287,7 @@ class LogViewerDialog(QMainWindow):
             return
         self._total = editor.toPlainText().lower().count(needle.lower())
         if self._total == 0:
-            self.search_count.setText("No matches")
+            self.search_count.setText(_("No matches"))
             return
         doc = editor.document()
         here = editor.textCursor().selectionStart()
@@ -311,7 +311,7 @@ class LogViewerDialog(QMainWindow):
         self._index = index if index is not None else self._index_of(editor, match)
         editor.setTextCursor(match)
         editor.ensureCursorVisible()
-        self.search_count.setText(f"{self._index} of {self._total}")
+        self.search_count.setText(_f("{index} of {total}", index=self._index, total=self._total))
         self._tint_visible()
 
     def _tint_visible(self) -> None:

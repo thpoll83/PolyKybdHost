@@ -66,6 +66,7 @@ SETTING_LABELS = {
     "generic_overlays_fill_gaps": N_("Overlays Fill Gaps"),
     "shortcut_icons_enabled": N_("Icons Enabled"),
     "shortcut_icon_auto_fetch": N_("Icon Auto Fetch"),
+    "shortcut_enable_accessibility": N_("Enable Accessibility"),
     "max_hid_message_before_delay": N_("Hid Message Before Delay"),
     "delay_time_after_max_hid_messages": N_("Time After Max Hid Messages"),
     "hid_reconnect_retries": N_("Reconnect Retries"),
