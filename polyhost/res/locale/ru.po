@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 14:08+0000\n"
+"POT-Creation-Date: 2026-10-10 21:29+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -597,9 +597,9 @@ msgstr "Включить режим простоя сейчас"
 msgid "Stop idle"
 msgstr "Выйти из режима простоя"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
-#: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433 polyhost/gui/cmd_menu.py:441
+#: polyhost/gui/cmd_menu.py:445
 msgid "Keymap"
 msgstr "Раскладка клавиш"
 
@@ -615,8 +615,8 @@ msgstr "Слой по умолчанию"
 msgid "Dump keymap buffer to the log"
 msgstr "Вывести буфер раскладки клавиш в журнал"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
-#: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
+#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:452
+#: polyhost/gui/cmd_menu.py:455 polyhost/gui/cmd_menu.py:466
 msgid "Font Pack"
 msgstr "Пакет шрифтов"
 
@@ -664,123 +664,123 @@ msgstr "<b>Сделать половину, к которой подключён
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>Сделать половину, к которой подключён USB-кабель, ПРАВОЙ?</b><br><br>Другая половина станет ЛЕВОЙ. Обе половины сохранят новую сторону и перезагрузятся с ней (около 10 с, переподключать не нужно).<br><br>Убедитесь, что USB-кабель подключён к половине, которая должна стать <b>ПРАВОЙ</b>, затем продолжите."
 
-#: polyhost/gui/cmd_menu.py:330
-msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr "<b>Сбросить раскладку клавиш клавиатуры к значениям микропрограммы по умолчанию?</b><br><br>Все переназначенные клавиши вернутся к раскладке, поставляемой с микропрограммой. Это действие нельзя отменить.<br><br>Продолжить?"
+#: polyhost/gui/cmd_menu.py:334
+msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
+msgstr "<b>Сбросить раскладку клавиш клавиатуры к значениям микропрограммы по умолчанию?</b><br><br>Все переназначенные клавиши вернутся к раскладке, поставляемой с микропрограммой. Это действие нельзя отменить.<br><br><b>Все макросы также будут удалены.</b><br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:335
+#: polyhost/gui/cmd_menu.py:340
 msgid "Reset Keymap"
 msgstr "Сброс раскладки клавиш"
 
-#: polyhost/gui/cmd_menu.py:389
+#: polyhost/gui/cmd_menu.py:394
 msgid "Re-flash Font Pack"
 msgstr "Повторная прошивка пакета шрифтов"
 
-#: polyhost/gui/cmd_menu.py:390
+#: polyhost/gui/cmd_menu.py:395
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>Прошить заново все наборы пакета шрифтов?</b><br><br>Каждый поставляемый набор будет отправлен снова, даже если клавиатура сообщает, что он актуален, — используйте это, если глиф отображается неправильно или предыдущая прошивка завершилась с ошибкой. Занимает около минуты; печатать при этом можно.<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:406
+#: polyhost/gui/cmd_menu.py:411
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>Стереть пакет шрифтов во внешней флеш-памяти?</b><br><br>Все слоты наборов пакета шрифтов будут очищены — клавиатура будет показывать только встроенные (резидентные) шрифты, пока пакет не будет прошит снова. Наборы, поставляемые с этим хостом, будут автоматически прошиты при следующем подключении (или через «Пакет шрифтов → Синхронизировать»).<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:413
+#: polyhost/gui/cmd_menu.py:418
 msgid "Wipe Font Pack"
 msgstr "Стереть пакет шрифтов"
 
-#: polyhost/gui/cmd_menu.py:423
+#: polyhost/gui/cmd_menu.py:428
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "Слоёв: {count}"
 
-#: polyhost/gui/cmd_menu.py:424
+#: polyhost/gui/cmd_menu.py:429
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "Не удалось прочитать число слоёв: {error}"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "Слой по умолчанию: {layer}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:434
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "Не удалось прочитать слой по умолчанию: {error}"
 
-#: polyhost/gui/cmd_menu.py:436
+#: polyhost/gui/cmd_menu.py:441
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "Не удалось прочитать буфер раскладки клавиш: {error}"
 
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:445
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "Буфер раскладки клавиш ({size} байт) записан в журнал."
 
-#: polyhost/gui/cmd_menu.py:447
+#: polyhost/gui/cmd_menu.py:452
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "Не удалось прочитать состояние пакета шрифтов: {error}"
 
-#: polyhost/gui/cmd_menu.py:450
+#: polyhost/gui/cmd_menu.py:455
 msgid "This host ships no font-pack bundles."
 msgstr "С этим хостом не поставляются наборы пакета шрифтов."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:459
+#: polyhost/gui/cmd_menu.py:464
 msgid "stale"
 msgstr "устарел"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:464 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "ок"
 
-#: polyhost/gui/cmd_menu.py:462
+#: polyhost/gui/cmd_menu.py:467
 msgid "bundle"
 msgstr "набор"
 
-#: polyhost/gui/cmd_menu.py:463
+#: polyhost/gui/cmd_menu.py:468
 msgid "device"
 msgstr "устройство"
 
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:469
 msgid "shipped"
 msgstr "в поставке"
 
-#: polyhost/gui/cmd_menu.py:470
+#: polyhost/gui/cmd_menu.py:475
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Команды PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2243
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2243
 msgid "Open file"
 msgstr "Открыть файл"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
 msgid "Not Connected"
 msgstr "Не подключено"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:625
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd не подключена. Подключите клавиатуру и повторите попытку."
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Select Firmware Binary"
 msgstr "Выбор файла микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Firmware binary (*.bin)"
 msgstr "Файл микропрограммы (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:520
 msgid "File Error"
 msgstr "Ошибка файла"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:521
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -789,65 +789,65 @@ msgstr ""
 "Не удалось прочитать файл микропрограммы:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:526
 msgid "Invalid Firmware File"
 msgstr "Недопустимый файл микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:531
 msgid "Wrong Keyboard"
 msgstr "Не та клавиатура"
 
-#: polyhost/gui/cmd_menu.py:536
+#: polyhost/gui/cmd_menu.py:541
 msgid "Unsigned Firmware"
 msgstr "Неподписанная микропрограмма"
 
-#: polyhost/gui/cmd_menu.py:542
+#: polyhost/gui/cmd_menu.py:547
 msgid "Flash + Apply Firmware"
 msgstr "Прошить и применить микропрограмму"
 
-#: polyhost/gui/cmd_menu.py:544
+#: polyhost/gui/cmd_menu.py:549
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Новая микропрограмма будет передана на клавиатуру, проверена (CRC32), а затем <b>активирована</b> — обе половины автоматически перезагрузятся с новой микропрограммой (переподключать не нужно)."
 
-#: polyhost/gui/cmd_menu.py:549
+#: polyhost/gui/cmd_menu.py:554
 msgid "Flash Firmware"
 msgstr "Прошивка микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:551
+#: polyhost/gui/cmd_menu.py:556
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Новая микропрограмма будет передана на клавиатуру и подготовлена, а затем проверена (CRC32). Образ сохраняется, но <b>пока не активируется</b> — клавиатура продолжит работать на текущей микропрограмме, пока вы не примените новую отдельно."
 
-#: polyhost/gui/cmd_menu.py:569
+#: polyhost/gui/cmd_menu.py:574
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Текущая микропрограмма клавиатуры: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:577
 msgid "Could not query current firmware version."
 msgstr "Не удалось запросить версию текущей микропрограммы."
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:578
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Выбранный файл:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:579
 msgid "Continue?"
 msgstr "Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:602
+#: polyhost/gui/cmd_menu.py:607
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Применить подготовленную микропрограмму?</b><br><br>Обе половины клавиатуры установят ранее подготовленный образ и автоматически перезагрузятся с новой микропрограммой (переподключать не нужно).<br><br>Если эта микропрограмма собрана без поддержки применения из приложения, клавиатура безопасно сообщит, что применение недоступно, и оставит подготовленный образ нетронутым.<br><br>Продолжить?"
 
-#: polyhost/gui/cmd_menu.py:611
+#: polyhost/gui/cmd_menu.py:616
 msgid "Apply Staged Firmware"
 msgstr "Применение подготовленной микропрограммы"
 
-#: polyhost/gui/cmd_menu.py:636
+#: polyhost/gui/cmd_menu.py:641
 msgid "Firmware Applied"
 msgstr "Микропрограмма применена"
 
-#: polyhost/gui/cmd_menu.py:638
+#: polyhost/gui/cmd_menu.py:643
 msgid "Apply Failed"
 msgstr "Ошибка применения"
 

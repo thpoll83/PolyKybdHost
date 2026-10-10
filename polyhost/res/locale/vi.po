@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 14:08+0000\n"
+"POT-Creation-Date: 2026-10-10 21:29+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -595,9 +595,9 @@ msgstr "Vào chế độ chờ ngay"
 msgid "Stop idle"
 msgstr "Thoát chế độ chờ"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
-#: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433 polyhost/gui/cmd_menu.py:441
+#: polyhost/gui/cmd_menu.py:445
 msgid "Keymap"
 msgstr "Sơ đồ phím"
 
@@ -613,8 +613,8 @@ msgstr "Lớp mặc định"
 msgid "Dump keymap buffer to the log"
 msgstr "Ghi bộ đệm sơ đồ phím vào nhật ký"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
-#: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
+#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:452
+#: polyhost/gui/cmd_menu.py:455 polyhost/gui/cmd_menu.py:466
 msgid "Font Pack"
 msgstr "Gói phông chữ"
 
@@ -662,123 +662,123 @@ msgstr "<b>Đặt nửa đang cắm cáp USB làm bên TRÁI?</b><br><br>Nửa c
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>Đặt nửa đang cắm cáp USB làm bên PHẢI?</b><br><br>Nửa còn lại sẽ thành bên TRÁI. Cả hai nửa lưu thiết lập tay mới và khởi động lại theo thiết lập đó (khoảng 10 s, không cần cắm lại).<br><br>Hãy đảm bảo cáp USB đang cắm vào nửa bạn muốn làm bên <b>PHẢI</b>, rồi tiếp tục."
 
-#: polyhost/gui/cmd_menu.py:330
-msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr "<b>Đặt lại sơ đồ phím của bàn phím về mặc định của firmware?</b><br><br>Mọi phím bạn đã gán lại sẽ trở về bố cục đi kèm firmware. Không thể hoàn tác thao tác này.<br><br>Tiếp tục?"
+#: polyhost/gui/cmd_menu.py:334
+msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
+msgstr "<b>Đặt lại sơ đồ phím của bàn phím về mặc định của firmware?</b><br><br>Mọi phím bạn đã gán lại sẽ trở về bố cục đi kèm firmware. Không thể hoàn tác thao tác này.<br><br><b>Tất cả macro cũng sẽ bị xóa.</b><br><br>Tiếp tục?"
 
-#: polyhost/gui/cmd_menu.py:335
+#: polyhost/gui/cmd_menu.py:340
 msgid "Reset Keymap"
 msgstr "Đặt lại sơ đồ phím"
 
-#: polyhost/gui/cmd_menu.py:389
+#: polyhost/gui/cmd_menu.py:394
 msgid "Re-flash Font Pack"
 msgstr "Nạp lại gói phông chữ"
 
-#: polyhost/gui/cmd_menu.py:390
+#: polyhost/gui/cmd_menu.py:395
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>Nạp lại mọi gói con của gói phông chữ?</b><br><br>Mọi gói con đi kèm sẽ được gửi lại ngay cả khi bàn phím báo đã cập nhật — dùng khi một glyph hiển thị sai hoặc lần nạp trước bị báo lỗi. Mất khoảng một phút; vẫn gõ phím bình thường trong suốt quá trình.<br><br>Tiếp tục?"
 
-#: polyhost/gui/cmd_menu.py:406
+#: polyhost/gui/cmd_menu.py:411
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>Xóa sạch gói phông chữ trên bộ nhớ flash ngoài?</b><br><br>Mọi khe gói con của gói phông chữ sẽ bị làm trống — bàn phím chỉ hiển thị các phông chữ tích hợp (thường trú) cho đến khi gói được nạp lại. Các gói con đi kèm host này sẽ tự động được nạp lại ở lần kết nối tiếp theo (hoặc qua Gói phông chữ → Đồng bộ).<br><br>Tiếp tục?"
 
-#: polyhost/gui/cmd_menu.py:413
+#: polyhost/gui/cmd_menu.py:418
 msgid "Wipe Font Pack"
 msgstr "Xóa sạch gói phông chữ"
 
-#: polyhost/gui/cmd_menu.py:423
+#: polyhost/gui/cmd_menu.py:428
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "Số lớp: {count}"
 
-#: polyhost/gui/cmd_menu.py:424
+#: polyhost/gui/cmd_menu.py:429
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "Không thể đọc số lớp: {error}"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "Lớp mặc định: {layer}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:434
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "Không thể đọc lớp mặc định: {error}"
 
-#: polyhost/gui/cmd_menu.py:436
+#: polyhost/gui/cmd_menu.py:441
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "Không thể đọc bộ đệm sơ đồ phím: {error}"
 
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:445
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "Đã ghi bộ đệm sơ đồ phím ({size} byte) vào nhật ký."
 
-#: polyhost/gui/cmd_menu.py:447
+#: polyhost/gui/cmd_menu.py:452
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "Không thể đọc trạng thái gói phông chữ: {error}"
 
-#: polyhost/gui/cmd_menu.py:450
+#: polyhost/gui/cmd_menu.py:455
 msgid "This host ships no font-pack bundles."
 msgstr "Host này không kèm gói con phông chữ nào."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:459
+#: polyhost/gui/cmd_menu.py:464
 msgid "stale"
 msgstr "cũ"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:464 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "ok"
 
-#: polyhost/gui/cmd_menu.py:462
+#: polyhost/gui/cmd_menu.py:467
 msgid "bundle"
 msgstr "gói con"
 
-#: polyhost/gui/cmd_menu.py:463
+#: polyhost/gui/cmd_menu.py:468
 msgid "device"
 msgstr "thiết bị"
 
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:469
 msgid "shipped"
 msgstr "đi kèm"
 
-#: polyhost/gui/cmd_menu.py:470
+#: polyhost/gui/cmd_menu.py:475
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Lệnh PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2243
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2243
 msgid "Open file"
 msgstr "Mở tệp"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
 msgid "Not Connected"
 msgstr "Chưa kết nối"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:625
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd chưa được kết nối. Vui lòng kết nối bàn phím và thử lại."
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Select Firmware Binary"
 msgstr "Chọn tệp nhị phân firmware"
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Firmware binary (*.bin)"
 msgstr "Tệp nhị phân firmware (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:520
 msgid "File Error"
 msgstr "Lỗi tệp"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:521
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -787,65 +787,65 @@ msgstr ""
 "Không thể đọc tệp firmware:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:526
 msgid "Invalid Firmware File"
 msgstr "Tệp firmware không hợp lệ"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:531
 msgid "Wrong Keyboard"
 msgstr "Sai bàn phím"
 
-#: polyhost/gui/cmd_menu.py:536
+#: polyhost/gui/cmd_menu.py:541
 msgid "Unsigned Firmware"
 msgstr "Firmware chưa ký"
 
-#: polyhost/gui/cmd_menu.py:542
+#: polyhost/gui/cmd_menu.py:547
 msgid "Flash + Apply Firmware"
 msgstr "Nạp + áp dụng firmware"
 
-#: polyhost/gui/cmd_menu.py:544
+#: polyhost/gui/cmd_menu.py:549
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Thao tác này sẽ chuyển firmware mới tới bàn phím, kiểm tra nó (CRC32), rồi <b>kích hoạt</b> — cả hai nửa tự động khởi động lại với firmware mới (không cần cắm lại)."
 
-#: polyhost/gui/cmd_menu.py:549
+#: polyhost/gui/cmd_menu.py:554
 msgid "Flash Firmware"
 msgstr "Nạp firmware"
 
-#: polyhost/gui/cmd_menu.py:551
+#: polyhost/gui/cmd_menu.py:556
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Thao tác này sẽ chuyển và lưu tạm firmware mới trên bàn phím, rồi kiểm tra nó (CRC32). Bản firmware được lưu nhưng <b>chưa được kích hoạt</b> — bàn phím tiếp tục chạy firmware hiện tại cho đến khi bạn áp dụng riêng."
 
-#: polyhost/gui/cmd_menu.py:569
+#: polyhost/gui/cmd_menu.py:574
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Firmware hiện tại của bàn phím: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:577
 msgid "Could not query current firmware version."
 msgstr "Không thể truy vấn phiên bản firmware hiện tại."
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:578
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Tệp đã chọn:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:579
 msgid "Continue?"
 msgstr "Tiếp tục?"
 
-#: polyhost/gui/cmd_menu.py:602
+#: polyhost/gui/cmd_menu.py:607
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Áp dụng firmware đã lưu tạm?</b><br><br>Cả hai nửa bàn phím sẽ cài đặt bản firmware đã lưu tạm trước đó và tự động khởi động lại với firmware mới (không cần cắm lại).<br><br>Nếu firmware này không được biên dịch với tính năng áp dụng trong ứng dụng, bàn phím sẽ báo an toàn rằng không thể áp dụng và giữ nguyên bản đã lưu tạm.<br><br>Tiếp tục?"
 
-#: polyhost/gui/cmd_menu.py:611
+#: polyhost/gui/cmd_menu.py:616
 msgid "Apply Staged Firmware"
 msgstr "Áp dụng firmware đã lưu tạm"
 
-#: polyhost/gui/cmd_menu.py:636
+#: polyhost/gui/cmd_menu.py:641
 msgid "Firmware Applied"
 msgstr "Đã áp dụng firmware"
 
-#: polyhost/gui/cmd_menu.py:638
+#: polyhost/gui/cmd_menu.py:643
 msgid "Apply Failed"
 msgstr "Áp dụng thất bại"
 
