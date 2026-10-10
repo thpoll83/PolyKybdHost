@@ -21,6 +21,13 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   object carrying the head sha, and a CLEAN CodeRabbit pass creates no review object at
   all. Check `get_reviews` **and** the summary comment's `📥 Commits` range; no check
   run answers this question.
+- ⚠️ **Raise a new LIMIT with the maintainer before writing it into code or docs**
+  (maintainer's rule, 2026-10-09) — a cap, a bound, a ceiling, a size. A 48-icon cap
+  per app came in with #240 with no measurement behind it and cut Kate's F1, F2 and
+  Find in Files; a replacement guessed on the spot (512, then 1440) was the same
+  mistake twice in one session. Say the number, what it counts and what it is
+  measured against, and wait for an answer. Prefer a value the system already
+  defines (the pool is `OVERLAY_POOL_CAPACITY`) to a new one.
 - ⚠️ **Sourcery's `dangerous-subprocess-use-audit` needs a `# nosemgrep` marker plus a
   written audit, not contorted code** — and the marker applies to the line
   **immediately following** it, so putting it atop an explanatory comment block
@@ -323,6 +330,30 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   so `--check` lists new eligible icons as **pending** and fails only when the
   shipped files disagree with `icon_ids.yaml`. Rebuild when the pending list is
   worth a re-flash, for example before a release.
+  **An icon enters the library only if more than one app uses it** (maintainer's
+  rule, 2026-10-09), and the library never decides what a key shows. The send
+  path's hit test is the image BYTES, whatever made them (a template, a generic
+  icon, a plyi glyph); the plyi only changes how a miss travels, as a cmd 42 fill
+  instead of an upload.
+- ⚠️ **One switch shows at most 600 distinct images, and that is the ONE limit**
+  (the module constant `OVERLAY_POOL_CAPACITY` in `device/device_settings.py`, which
+  the `DeviceSettings.OVERLAY_MAPPING_CAPACITY` property returns, = the firmware's
+  `NUM_OVERLAY_SLOTS`, #344). It counts IMAGES, not keys: keys sharing an image share a slot, so the
+  shortcut planner has no cap of its own, and the forwarder relay reuses the value
+  only as its network bound. The send path enforces it: a switch never evicts its own
+  slots, so past 600 the extra keys stay BLANK and a warning is logged. Before that
+  guard, 650 images in one switch drew 600 right keys and 50 WRONG ones while the send
+  reported success. An MRU hit counts toward the 600 too, since a hit re-stamps its
+  slot with the current batch.
+  ⚠️ **The claim pass and the send loop must agree on which image a key ENDS UP
+  showing** (#346). `send_overlays_mru` claims the switch's pool hits before
+  allocating, so a new image can only evict a slot the switch does not want. Both
+  passes apply the same rules: a later source wins a key, a synthetic source skips a
+  key a template already draws, and a content-key hit counts only if the bytes match
+  (`OverlayMRUCache._key_hit`). The two CodeRabbit findings on #346 were both the
+  passes disagreeing: a claimed image a later source replaced left a new image's key
+  blank, and an edited file under the same name kept its old pixels. Change one pass,
+  change the other, and run `tests/device/mru_claim_test.py`.
 - **The flash events carry a `kind`** (`fontpack` / `doomwad` / `doompack`) — label UIs
   from it, not from the event name; the doom `.whx` and `.plyx` ride the same transport.
 - ⚠️ **`install_doompack` sends EXECUTABLE CODE over that transport.** The `.sig`
