@@ -342,6 +342,15 @@ class DeviceMessageTest(unittest.TestCase):
         self.assertIn(i18n._(self.fw.MSG_ERASING_BOTH), shown)
         self.assertNotIn(self.fw.MSG_ERASING_BOTH, shown)
 
+    def test_a_value_containing_the_separator_is_not_cut_in_two(self):
+        # MSG_ERASING_RECONNECT carries the " — " that follows {step}, so the
+        # shortest split would put half of it into {elapsed}.
+        i18n.install("de")
+        msg = self.fw.MSG_ERASING_ELAPSED.format(step=self.fw.MSG_ERASING_RECONNECT, elapsed=4)
+        self.assertEqual(i18n.translate_message(msg),
+                         i18n._f(self.fw.MSG_ERASING_ELAPSED,
+                                 step=i18n._(self.fw.MSG_ERASING_RECONNECT), elapsed="4"))
+
     def test_the_split_link_message_translates_and_is_still_recognised(self):
         i18n.install("de")
         msg = self.split_link.split_link_timeout_message(self.fw.MSG_BEGIN_TIMED_OUT,

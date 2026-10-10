@@ -450,20 +450,25 @@ def M_(template):
     :func:`translate_message`. Returns the template unchanged; the producer
     fills it with ``template.format(...)``."""
     if template not in _MESSAGE_TEMPLATES:
-        _MESSAGE_TEMPLATES[template] = _compile_template(template)
+        _MESSAGE_TEMPLATES[template] = (_compile_template(template, "*?"),
+                                        _compile_template(template, "*"))
     return template
 
 
-def _compile_template(template):
+def _compile_template(template, quantifier):
     pattern, seen, pos = [], set(), 0
     for m in _FIELD.finditer(template):
         pattern.append(re.escape(template[pos:m.start()]))
         name = m.group(1)
-        pattern.append(f"(?P={name})" if name in seen else f"(?P<{name}>.*?)")
+        pattern.append(f"(?P={name})" if name in seen else f"(?P<{name}>.{quantifier})")
         seen.add(name)
         pos = m.end()
     pattern.append(re.escape(template[pos:]))
     return re.compile("".join(pattern), re.DOTALL)
+
+
+def _is_registered_message(value):
+    return any(lazy.fullmatch(value) for lazy, _greedy in _MESSAGE_TEMPLATES.values())
 
 
 def _literal_length(template):
@@ -476,13 +481,22 @@ def translate_message(message):
 
     The most specific template (most literal text) wins. Each value is
     translated in turn, so a message carrying another message as a value
-    (``"{step} — {elapsed}s elapsed"``) comes out translated as a whole."""
+    (``"{step} — {elapsed}s elapsed"``) comes out translated as a whole.
+
+    ⚠️ A value can contain the template's own separator: a ``step`` of
+    "Erasing staging area — keyboard will reconnect when done" holds the
+    `` — `` that follows ``{step}``. The shortest split then cuts the value in
+    two, so the longest split is tried as well, and the one whose values are
+    registered messages wins."""
     if not isinstance(message, str) or not message or _active_code == SOURCE_LANGUAGE:
         return message
     for template in sorted(_MESSAGE_TEMPLATES, key=_literal_length, reverse=True):
-        m = _MESSAGE_TEMPLATES[template].fullmatch(message)
-        if m is None:
+        candidates = [m for m in (p.fullmatch(message) for p in _MESSAGE_TEMPLATES[template])
+                      if m is not None]
+        if not candidates:
             continue
-        values = {k: translate_message(v) for k, v in m.groupdict().items()}
+        best = max(candidates, key=lambda m: sum(
+            _is_registered_message(v) for v in m.groupdict().values()))
+        values = {k: translate_message(v) for k, v in best.groupdict().items()}
         return _f(template, **values)
     return message
