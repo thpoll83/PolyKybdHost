@@ -336,8 +336,9 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   icon, a plyi glyph); the plyi only changes how a miss travels, as a cmd 42 fill
   instead of an upload.
 - ⚠️ **One switch shows at most 600 distinct images, and that is the ONE limit**
-  (`device_settings.OVERLAY_POOL_CAPACITY` = the firmware's `NUM_OVERLAY_SLOTS`,
-  #344). It counts IMAGES, not keys: keys sharing an image share a slot, so the
+  (the module constant `OVERLAY_POOL_CAPACITY` in `device/device_settings.py`, which
+  the `DeviceSettings.OVERLAY_MAPPING_CAPACITY` property returns, = the firmware's
+  `NUM_OVERLAY_SLOTS`, #344). It counts IMAGES, not keys: keys sharing an image share a slot, so the
   shortcut planner has no cap of its own, and the forwarder relay reuses the value
   only as its network bound. The send path enforces it: a switch never evicts its own
   slots, so past 600 the extra keys stay BLANK and a warning is logged. Before that

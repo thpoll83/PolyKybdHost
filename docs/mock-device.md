@@ -156,7 +156,8 @@ report right / wrong / blank. `tests/device/pool_overflow_test.py` and
 that found 50 wrong keys in a 650-image switch (#344) was this loop.
 
 Every key from 0x04 to 0x53 under every modifier reads back correctly:
-600 distinct images over those positions came back 600 right. Pass a small
+all 1280 positions (80 keys × 16 modifiers), sent as 1280 distinct images in
+three switches of up to 500, came back right. Pass a small
 `OverlayMRUCache(capacity)` to fill the pool with a handful of images, and
 count misses by wrapping that cache instance's `get_or_allocate`.
 
