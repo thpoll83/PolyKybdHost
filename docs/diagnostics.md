@@ -553,3 +553,49 @@ Two sources, each behind its own setting, and one level for both:
     describes as "protect a route/hostname" needs a zone you own. This has cost a
     round twice.
 
+## When something is reported broken (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+Logs, crash reporting and the guided problem report are
+[`docs/diagnostics.md`](diagnostics.md); the three silent failure modes of
+multi-machine forwarding are in the same file; the telemetry client and its collector
+are [`docs/telemetry-internals.md`](telemetry-internals.md). Eight rules bind code
+outside those files:
+
+- ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That one
+  declaration replaced four hand-kept lists which had already drifted —
+  `crash_log.txt`, the file whose whole purpose is proving whether the app crashed,
+  shipped into **none** of them. Registering is half: check the lines carry a sliceable
+  timestamp prefix, or `slice_lines` silently drops the whole file.
+- ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`** — `faulthandler` holds the
+  file descriptor, so a rename leaves the live process dumping into a deleted inode.
+  Clear it by TRUNCATION, which is safe only because every writer opens with `"a"`.
+- **Redaction defaults ON for a report and OFF for "Collect logs…"** — same data,
+  different destination, so the safe default flips.
+- ⚠️ **`polyctl logs` must work with NO host running** — the moment a user most needs
+  the logs is the one where the app failed to start.
+- ⚠️ **`Connected to PolyKybd.` does not mean a usable device** —
+  `_open_interfaces()` returns True when `HidHelper` found no raw HID interface
+  (it sets `self.interface = None` and does not raise), so the core logs a
+  connect and every command afterwards returns `'No Interface'`. Nor is
+  `exclusive access and device already open` proof of a second process: the same
+  function reassigns `self.hid` without closing the previous helper, so one
+  process collides with the handle it is replacing. **Reading a bundle is the
+  `triage-log-bundle` skill**, which carries these and the rest of the lines
+  that lie.
+- ⚠️ **The problem scan matches firmware console lines against a CURATED list
+  (`problem_scan.CONSOLE_PATTERNS`), never keywords** — healthy output says
+  `transport_fail=0 giveup=0`. A new firmware failure message needs an entry there
+  to reach the user. Its log handler is on the root logger of whichever process
+  installs it (the core, or a daemon-client tray), and must not log from its own
+  callback. Details: [`docs/diagnostics.md`](diagnostics.md) → *The problem scan*.
+- ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — under daemon-by-default the
+  daemon still owns the device with no GUI attached. Check the process list, in PAIRS.
+- ⚠️ **The telemetry payload is an ALLOW-LIST at both ends — a privacy guarantee.**
+  `build_payload()` copies named fields and never spreads a status dict. **There is no
+  in-app consent step**, so the release notes are the disclosure and the one INFO line
+  printed at every start is all a headless daemon can say: do not gate it, downgrade it
+  or drop it in a logging cleanup.
+
