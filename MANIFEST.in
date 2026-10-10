@@ -2,3 +2,4 @@ include README.md
 include requirements.txt
 recursive-include polyhost/device *.dll *.rules
 recursive-include polyhost/res prc_table_v*.bin
+recursive-include polyhost/res/locale *.po

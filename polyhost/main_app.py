@@ -417,6 +417,15 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     elif sys.platform == 'win32':
         set_windows_app_id(slog)
 
+    # The UI language, for the tray app and the forwarder alike: resolved here
+    # because this is the one place both pass through before their first
+    # widget exists, and the layout direction is read at widget creation.
+    # Each machine follows its own OS, so a forwarder can run in a different
+    # language from the keyboard machine.
+    from polyhost import i18n
+    from polyhost.gui import i18n_qt
+    i18n_qt.prepare(read_setting("ui_language", i18n.SETTING_AUTO))
+
     if args.host or args.host_file:
         from polyhost.forwarder import PolyForwarder
         addr = args.host or f"IP set in {args.host_file}"
@@ -490,6 +499,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             slog.exception("PolyHost construction failed")
             raise
 
+    # Qt's own catalog needs the QApplication, which the constructor made.
+    i18n_qt.install_qt_translator(app)
     slog.info("Handoff complete; entering the Qt event loop.")
     rc = app.exec_()
     # The counterpart to the crash_log session marker: a launch with no matching

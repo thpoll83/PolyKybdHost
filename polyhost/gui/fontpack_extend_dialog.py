@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (
     QProgressDialog, QButtonGroup, QRadioButton,
 )
 
+from polyhost.i18n import _, _f, _nf
 from polyhost.services import fontpack_reader as fpr
 from polyhost.gui.fontpack_inspector_dialog import _pil_to_pixmap, load_shipped_packs
 
@@ -94,7 +95,7 @@ class FontPackExtendDialog(QDialog):
         On accept (OK), the built glyph is exposed via the result_* attributes for
         the caller to merge; this dialog itself neither accumulates nor saves."""
         super().__init__(parent)
-        self.setWindowTitle("PolyKybd — Build / Edit Glyph")
+        self.setWindowTitle(_("PolyKybd — Build / Edit Glyph"))
         self.resize(900, 640)
         self._built = None          # (bundle_index, new PackFont) — last previewed candidate
         self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
@@ -114,106 +115,108 @@ class FontPackExtendDialog(QDialog):
 
         self._src = QLineEdit()
         self._src.setReadOnly(True)
-        self._src.setPlaceholderText("pick one from Source fonts below, or Browse…")
-        browse = QPushButton("Browse…")
-        browse.setToolTip("Use a custom font not in the Noto list")
+        self._src.setPlaceholderText(_("pick one from Source fonts below, or Browse…"))
+        browse = QPushButton(_("Browse…"))
+        browse.setToolTip(_("Use a custom font not in the Noto list"))
         browse.clicked.connect(self._browse)
         srow = QHBoxLayout()
         srow.addWidget(self._src, 1)
         srow.addWidget(browse)
         sw = QWidget()
         sw.setLayout(srow)
-        form.addRow("Source font", sw)
+        form.addRow(_("Source font"), sw)
 
-        self._mode = QComboBox(); self._mode.addItems(["Codepoint range", "HarfBuzz sequence"])
+        self._mode = QComboBox(); self._mode.addItems([_("Codepoint range"), _("HarfBuzz sequence")])
         self._mode.currentIndexChanged.connect(self._sync_mode)
-        form.addRow("Mode", self._mode)
+        form.addRow(_("Mode"), self._mode)
         self._first = QLineEdit("0x2600"); self._last = QLineEdit("0x2610")
         rrow = QHBoxLayout()
         rrow.addWidget(self._first, 1)
         rrow.addWidget(QLabel("–"))
         rrow.addWidget(self._last, 1)
         rw = QWidget(); rw.setLayout(rrow)
-        form.addRow("Range first–last (hex)", rw)
+        form.addRow(_("Range first–last (hex)"), rw)
         self._seq = QLineEdit("1F1E9 1F1EA"); self._seq.setEnabled(False)
-        form.addRow("Sequence (hex cps; , = glyph)", self._seq)
+        form.addRow(_("Sequence (hex cps; , = glyph)"), self._seq)
         self._seq_first = QLineEdit("0xE000"); self._seq_first.setEnabled(False)
-        form.addRow("Sequence base -F (hex)", self._seq_first)
-        self._composite = QCheckBox("Composite -C (combine group into one glyph)")
+        form.addRow(_("Sequence base -F (hex)"), self._seq_first)
+        self._composite = QCheckBox(_("Composite -C (combine group into one glyph)"))
         self._composite.setEnabled(False)
-        self._composite.setToolTip("Composite all codepoints of each sequence group "
-                                   "into a single glyph (mono) — used by the combining-"
-                                   "mark / matra fonts (base U+25CC + mark).")
+        self._composite.setToolTip(_("Composite all codepoints of each sequence group "
+                                     "into a single glyph (mono) — used by the combining-"
+                                     "mark / matra fonts (base U+25CC + mark)."))
         form.addRow("", self._composite)
 
-        self._size = self._spin(8, 200, 20); form.addRow("Size -s", self._size)
+        self._size = self._spin(8, 200, 20); form.addRow(_("Size -s"), self._size)
         # The four flag checkboxes in a 2x2 grid (was 4 separate rows).
-        self._gray = QCheckBox("Grayscale / colour (-g)")
+        self._gray = QCheckBox(_("Grayscale / colour (-g)"))
         self._gray.stateChanged.connect(self._sync_mode)
-        self._norm = QCheckBox("Normalize -N"); self._inv = QCheckBox("Invert -I")
-        self._edge = QCheckBox("Edge-preserve -E")
+        self._norm = QCheckBox(_("Normalize -N")); self._inv = QCheckBox(_("Invert -I"))
+        self._edge = QCheckBox(_("Edge-preserve -E"))
         flags = QGridLayout()
         flags.addWidget(self._gray, 0, 0); flags.addWidget(self._norm, 0, 1)
         flags.addWidget(self._inv, 1, 0); flags.addWidget(self._edge, 1, 1)
         fw = QWidget(); fw.setLayout(flags)
-        form.addRow("Flags", fw)
+        form.addRow(_("Flags"), fw)
+        # The dither names are fontconvert's own mode ids, read back as data
+        # (dither_mode_from_name), so they stay untranslated.
         self._dither = QComboBox(); self._dither.addItems(_DITHER); self._dither.setEnabled(False)
-        form.addRow("Dither -D", self._dither)
-        self._outline = self._spin(0, 8, 0); form.addRow("Outline -O", self._outline)
-        self._rsize = self._spin(0, 200, 0); form.addRow("Render size -r (0=off)", self._rsize)
-        self._yadv = self._spin(0, 200, 0); form.addRow("yAdvance -Y (0=off)", self._yadv)
-        self._maxw = self._spin(0, 200, 0); form.addRow("Max width -W (0=off)", self._maxw)
+        form.addRow(_("Dither -D"), self._dither)
+        self._outline = self._spin(0, 8, 0); form.addRow(_("Outline -O"), self._outline)
+        self._rsize = self._spin(0, 200, 0); form.addRow(_("Render size -r (0=off)"), self._rsize)
+        self._yadv = self._spin(0, 200, 0); form.addRow(_("yAdvance -Y (0=off)"), self._yadv)
+        self._maxw = self._spin(0, 200, 0); form.addRow(_("Max width -W (0=off)"), self._maxw)
         self._weight = self._spin(0, 1000, 0)
-        self._weight.setToolTip("Variable-font wght axis (e.g. 400 Regular, 500 Medium, "
-                                "700 Bold). 0 = the font's default instance.")
-        form.addRow("Weight -w (0=default)", self._weight)
+        self._weight.setToolTip(_("Variable-font wght axis (e.g. 400 Regular, 500 Medium, "
+                                  "700 Bold). 0 = the font's default instance."))
+        form.addRow(_("Weight -w (0=default)"), self._weight)
         self._xshift = self._spin(-128, 128, 0)
-        self._xshift.setToolTip("Horizontal pixel shift of the rendered glyph (rarely "
-                                "needed; e.g. couple emoji use -12).")
-        form.addRow("X shift -X", self._xshift)
+        self._xshift.setToolTip(_("Horizontal pixel shift of the rendered glyph (rarely "
+                                  "needed; e.g. couple emoji use -12)."))
+        form.addRow(_("X shift -X"), self._xshift)
         # Grayscale/colour tone tuning (pre-dither), same knobs as fontconvert — each
         # number field gets a slider beside it over the same range.
         self._gamma = self._dspin(0.1, 5.0, 1.0, 0.1)
-        form.addRow("Gamma -G (1 = off)", self._with_slider(self._gamma))
+        form.addRow(_("Gamma -G (1 = off)"), self._with_slider(self._gamma))
         self._contrast = self._dspin(0.1, 5.0, 1.0, 0.1)
-        form.addRow("Contrast -c (1 = off)", self._with_slider(self._contrast))
+        form.addRow(_("Contrast -c (1 = off)"), self._with_slider(self._contrast))
         self._exposure = self._dspin(-5.0, 5.0, 0.0, 0.1)
-        form.addRow("Exposure -e (0 = off)", self._with_slider(self._exposure))
+        form.addRow(_("Exposure -e (0 = off)"), self._with_slider(self._exposure))
         self._sharp = self._dspin(0.0, 10.0, 0.0, 0.1)
-        form.addRow("Sharpen -U (0 = off)", self._with_slider(self._sharp))
+        form.addRow(_("Sharpen -U (0 = off)"), self._with_slider(self._sharp))
         self._sat = self._dspin(0.0, 5.0, 0.0, 0.1)
-        form.addRow("Saturation -B (0 = off)", self._with_slider(self._sat))
+        form.addRow(_("Saturation -B (0 = off)"), self._with_slider(self._sat))
 
         self._bundle = QComboBox()
         for label, pack in self._packs:
-            self._bundle.addItem(label, pack)
+            self._bundle.addItem(label, pack)      # bundle ids are data, not prose
         self._bundle.currentIndexChanged.connect(self._default_index)
-        form.addRow("Target bundle", self._bundle)
+        form.addRow(_("Target bundle"), self._bundle)
         self._gidx = self._spin(0, 65535, 0)
-        form.addRow("Global font index", self._gidx)
+        form.addRow(_("Global font index"), self._gidx)
 
         # Build a candidate from the source font and preview it.  Auto update
         # re-renders on any change so a manual Build press is rarely needed.
         brow = QHBoxLayout()
-        self._build_btn = QPushButton("Build / Preview"); self._build_btn.clicked.connect(self._build)
-        self._reset_btn = QPushButton("Reset")
-        self._reset_btn.setToolTip("Restore the render options to the settings this "
-                                   "dialog opened with (the glyph's defaults)")
+        self._build_btn = QPushButton(_("Build / Preview")); self._build_btn.clicked.connect(self._build)
+        self._reset_btn = QPushButton(_("Reset"))
+        self._reset_btn.setToolTip(_("Restore the render options to the settings this "
+                                     "dialog opened with (the glyph's defaults)"))
         self._reset_btn.clicked.connect(self._reset)
-        self._auto = QCheckBox("Auto update")
+        self._auto = QCheckBox(_("Auto update"))
         self._auto.setChecked(True)
-        self._auto.setToolTip("Re-render the preview automatically when an option changes")
+        self._auto.setToolTip(_("Re-render the preview automatically when an option changes"))
         # Preview style: Normal (plain bitmap) · OLED (raw emissive pixels) · Keycap
         # (as seen through the clear keycap cover — diffused).
         self._style_group = QButtonGroup(self)
-        self._rb_normal = QRadioButton("Normal")
-        self._rb_oled = QRadioButton("OLED")
-        self._rb_keycap = QRadioButton("Keycap")
-        self._rb_normal.setToolTip("Plain white-on-black bitmap (what the font renders)")
-        self._rb_oled.setToolTip("The raw OLED look: cool-white pixels + bloom + a crisp "
-                                 "pixel grid on true black")
-        self._rb_keycap.setToolTip("As seen through the clear keycap cover: adds per-pixel "
-                                   "brightness shimmer, a staggered grid and a diffusion blur")
+        self._rb_normal = QRadioButton(_("Normal"))
+        self._rb_oled = QRadioButton(_("OLED"))
+        self._rb_keycap = QRadioButton(_("Keycap"))
+        self._rb_normal.setToolTip(_("Plain white-on-black bitmap (what the font renders)"))
+        self._rb_oled.setToolTip(_("The raw OLED look: cool-white pixels + bloom + a crisp "
+                                   "pixel grid on true black"))
+        self._rb_keycap.setToolTip(_("As seen through the clear keycap cover: adds per-pixel "
+                                     "brightness shimmer, a staggered grid and a diffusion blur"))
         self._rb_normal.setChecked(True)
         for i, rb in enumerate((self._rb_normal, self._rb_oled, self._rb_keycap)):
             self._style_group.addButton(rb, i)
@@ -221,7 +224,7 @@ class FontPackExtendDialog(QDialog):
         brow.addWidget(self._build_btn); brow.addWidget(self._reset_btn)
         brow.addWidget(self._auto)
         brow.addStretch(1)
-        brow.addWidget(QLabel("Preview:"))
+        brow.addWidget(QLabel(_("Preview:")))
         brow.addWidget(self._rb_normal); brow.addWidget(self._rb_oled)
         brow.addWidget(self._rb_keycap)
         form.addRow(brow)
@@ -230,12 +233,12 @@ class FontPackExtendDialog(QDialog):
         # Cancel discards.  OK is enabled only once something has built.
         okrow = QHBoxLayout()
         okrow.addStretch(1)
-        self._ok_btn = QPushButton("OK")
-        self._ok_btn.setToolTip("Keep the built glyph (added to the bundle in memory; "
-                                "save it from the inspector's “Save as…”)")
+        self._ok_btn = QPushButton(_("OK"))
+        self._ok_btn.setToolTip(_("Keep the built glyph (added to the bundle in memory; "
+                                  "save it from the inspector's “Save as…”)"))
         self._ok_btn.clicked.connect(self._ok)
         self._ok_btn.setEnabled(False)
-        cancel_btn = QPushButton("Cancel")
+        cancel_btn = QPushButton(_("Cancel"))
         cancel_btn.clicked.connect(self.reject)
         okrow.addWidget(self._ok_btn); okrow.addWidget(cancel_btn)
         form.addRow(okrow)
@@ -247,12 +250,12 @@ class FontPackExtendDialog(QDialog):
         self._wire_auto_update()
 
         right = QVBoxLayout()
-        self._status = QLabel("Pick a font, set options, then Build / Preview.")
+        self._status = QLabel(_("Pick a font, set options, then Build / Preview."))
         self._status.setWordWrap(True)
         right.addWidget(self._status)
         self._preview = QLabel()
         self._preview.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self._preview.setToolTip("Scroll here to zoom the preview")
+        self._preview.setToolTip(_("Scroll here to zoom the preview"))
         scroll = QScrollArea()
         scroll.setWidget(self._preview)
         scroll.setWidgetResizable(False)
@@ -274,7 +277,7 @@ class FontPackExtendDialog(QDialog):
         self._default_index()
         if not self._packs:
             self._build_btn.setEnabled(False)
-            self._status.setText("No valid shipped bundles available to extend.")
+            self._status.setText(_("No valid shipped bundles available to extend."))
         elif prefill:
             self._apply_prefill(prefill)
         # Snapshot the option controls as opened (blank defaults, or an edit's
@@ -318,17 +321,20 @@ class FontPackExtendDialog(QDialog):
                     seq_base = int(opts.get("seq_first") or cp)
                 self._setup_sequence_edit(cp, seq_base, opts)
         if opts is None:
-            hint = " (no saved settings for this font — set options manually.)"
+            hint = _("(no saved settings for this font — set options manually.)")
         elif self._src.text().strip():
-            hint = (f" Pre-filled from '{opts.get('source_file', 'source')}' + its "
-                    "original settings.")
+            hint = _f("Pre-filled from '{source}' + its original settings.",
+                      source=opts.get('source_file', 'source'))
         else:
             sf = opts.get("source_file")
-            hint = (f" Original settings pre-filled; source font '{sf}' isn't cached — "
-                    "Download Noto… or Browse." if sf else
-                    " Original settings pre-filled; pick the source font.")
-        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — Build to "
-                             f"preview, then OK to keep it (Cancel to discard).{hint}")
+            hint = (_f("Original settings pre-filled; source font '{source}' isn't cached — "
+                       "Download Noto… or Browse.", source=sf) if sf else
+                    _("Original settings pre-filled; pick the source font."))
+        # The hint is its own sentence, appended after a space.
+        self._status.setText(_f("Editing {codepoint} in '{bundle}' — Build to preview, then "
+                                "OK to keep it (Cancel to discard).",
+                                codepoint=f"U+{cp:04X}", bundle=p.get('bundle'))
+                             + " " + hint)
 
     def _flags_record_for(self, cp: int):
         """The flag-font render record (lang_flags.json) if `cp` is a flag codepoint
@@ -480,7 +486,7 @@ class FontPackExtendDialog(QDialog):
 
     def _reset(self):
         self._restore(self._defaults)
-        self._status.setText("Reset to the default render settings.")
+        self._status.setText(_("Reset to the default render settings."))
 
     def _sync_mode(self, *_):
         seq = self._mode.currentIndex() == 1
@@ -503,8 +509,9 @@ class FontPackExtendDialog(QDialog):
 
     def _browse(self):
         from polyhost.gui.file_dialogs import get_open_file_name
-        path, _ = get_open_file_name(self, "Select font", "",
-                                     "Fonts (*.ttf *.otf);;All files (*)")
+        path, _filter = get_open_file_name(
+            self, _("Select font"), "",
+            _("Fonts (*.ttf *.otf)") + ";;" + _("All files (*)"))
         if path:
             self._src.setText(path)
 
@@ -564,25 +571,26 @@ class FontPackExtendDialog(QDialog):
                 QMessageBox.warning(self, title, msg)
 
         if not self._packs:
-            fail("Build", "No valid shipped bundles available to extend.")
+            fail(_("Build"), _("No valid shipped bundles available to extend."))
             return
         src = self._src.text().strip()
         if not src or not os.path.exists(src):
-            fail("Build", "Pick an existing font file first.")
+            fail(_("Build"), _("Pick an existing font file first."))
             return
         missing = _missing_fontgen_deps()
         if missing:
-            fail("Build", "Building glyphs needs these font-generation dependencies, "
-                 "which aren't installed in this environment:\n\n    pip install "
-                 + " ".join(missing) + "\n\n(They're normally pulled in by installing "
-                 "PolyKybdHost: pip install -e .)")
+            fail(_("Build"), _f("Building glyphs needs these font-generation dependencies, "
+                                "which aren't installed in this environment:\n\n"
+                                "    pip install {packages}\n\n(They're normally pulled in "
+                                "by installing PolyKybdHost: pip install -e .)",
+                                packages=" ".join(missing)))
             return
         try:
             from polyhost.services import fontpack_extend as ext
             from polyhost.services import fontpack_render as rd  # noqa: F401  (deps check)
         except Exception as e:  # noqa: BLE001
-            fail("Build", "Font building dependencies are missing or broken:\n"
-                 f"  pip install -e .\n\n({e})")
+            fail(_("Build"), _f("Font building dependencies are missing or broken:\n"
+                                "  pip install -e .\n\n({error})", error=e))
             return
         gidx = self._gidx.value()
         try:
@@ -596,25 +604,32 @@ class FontPackExtendDialog(QDialog):
                     opts=self._options(), global_index=gidx)
         except Exception as e:  # noqa: BLE001
             if auto:
-                self._status.setText(f"(auto preview) {e}")
+                self._status.setText(_f("(auto preview) {error}", error=e))
             else:
-                QMessageBox.critical(self, "Build failed", str(e))
+                QMessageBox.critical(self, _("Build failed"), str(e))
             return
         # In edit mode the inspector replaces a single slot, so a multi-glyph build
         # (a widened range / multiple sequence groups) would silently drop every
         # glyph after the first.  Reject it instead of building an invalid edit.
         if self._edit_target is not None and new.glyph_count > 1:
-            fail("Build", f"Editing a single glyph (U+{self._edit_target['cp']:04X}), "
-                 f"but this built {new.glyph_count} glyphs. Narrow the range / sequence "
-                 "to one glyph.")
+            fail(_("Build"), _nf("Editing a single glyph ({codepoint}), but this built "
+                                 "{n} glyph. Narrow the range / sequence to one glyph.",
+                                 "Editing a single glyph ({codepoint}), but this built "
+                                 "{n} glyphs. Narrow the range / sequence to one glyph.",
+                                 new.glyph_count,
+                                 codepoint=f"U+{self._edit_target['cp']:04X}"))
             self._built = None
             self._ok_btn.setEnabled(False)
             return
         self._built = (self._bundle.currentIndex(), new)
         self._render_preview()
-        self._status.setText(f"Built {new.glyph_count} glyph(s), U+{new.first:04X}-"
-                             f"{new.last:04X}, global index {gidx}. OK to keep it in the "
-                             f"'{self._bundle.currentText()}' bundle, Cancel to discard.")
+        self._status.setText(_nf("Built {n} glyph(s), {range}, global index {index}. OK to "
+                                 "keep it in the '{bundle}' bundle, Cancel to discard.",
+                                 "Built {n} glyph(s), {range}, global index {index}. OK to "
+                                 "keep it in the '{bundle}' bundle, Cancel to discard.",
+                                 new.glyph_count,
+                                 range=f"U+{new.first:04X}-{new.last:04X}", index=gidx,
+                                 bundle=self._bundle.currentText()))
         self._ok_btn.setEnabled(True)
 
     def _render_preview(self):
@@ -660,7 +675,8 @@ class FontPackExtendDialog(QDialog):
             return False
         self._scale = ns
         self._render_preview()
-        self._status.setText(f"Zoom {self._scale:g}×  (scroll over the preview to change)")
+        self._status.setText(_f("Zoom {scale}×  (scroll over the preview to change)",
+                                scale=f"{self._scale:g}"))
         return True
 
     def eventFilter(self, obj, ev):
@@ -699,17 +715,18 @@ class NotoDownloadPanel(QWidget):
             self._fonts = fdl.load_catalog()
         except Exception as e:  # noqa: BLE001
             self._fonts = []
-            QMessageBox.warning(self, "Download", f"Could not read the font catalog:\n{e}")
+            QMessageBox.warning(self, _("Download"),
+                                _f("Could not read the font catalog:\n{error}", error=e))
 
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         # Header row: label + "Download all" ON TOP of the list, so it's clearly
         # separate from the dialog's OK/Cancel buttons below.
         top = QHBoxLayout()
-        top.addWidget(QLabel("Source fonts — click to use (✓ = downloaded; uncached "
-                             "downloads first)"), 1)
-        self._all_btn = QPushButton("Download all")
-        self._all_btn.setToolTip("Fetch every Noto font in the list into the cache")
+        top.addWidget(QLabel(_("Source fonts — click to use (✓ = downloaded; uncached "
+                               "downloads first)")), 1)
+        self._all_btn = QPushButton(_("Download all"))
+        self._all_btn.setToolTip(_("Fetch every Noto font in the list into the cache"))
         self._all_btn.clicked.connect(self._download_all)
         self._all_btn.setEnabled(bool(self._fonts))
         top.addWidget(self._all_btn)
@@ -725,8 +742,9 @@ class NotoDownloadPanel(QWidget):
         v.addWidget(self._list, 1)
 
     def _label(self, font) -> str:
-        mark = "  ✓ cached" if self._fdl.is_downloaded(font) else ""
-        return f"{font.name}  ({font.filename}){mark}"
+        if self._fdl.is_downloaded(font):
+            return _f("{name}  ({filename})  ✓ cached", name=font.name, filename=font.filename)
+        return f"{font.name}  ({font.filename})"
 
     def current_filename(self):
         it = self._list.currentItem()
@@ -758,8 +776,9 @@ class NotoDownloadPanel(QWidget):
             return
         paths, err = self._run_downloads([font])
         if err:
-            QMessageBox.critical(self, "Download failed",
-                                 f"Could not download {font.name}:\n{err}")
+            QMessageBox.critical(self, _("Download failed"),
+                                 _f("Could not download {name}:\n{error}",
+                                    name=font.name, error=err))
             return
         if font.filename in paths:                # not cancelled
             self.font_chosen.emit(paths[font.filename])
@@ -771,11 +790,12 @@ class NotoDownloadPanel(QWidget):
     def _download_all(self):
         todo = [f for f in self._fonts if not self._fdl.is_downloaded(f)]
         if not todo:
-            QMessageBox.information(self, "Download all", "All fonts are already cached.")
+            QMessageBox.information(self, _("Download all"), _("All fonts are already cached."))
             return
-        _, err = self._run_downloads(todo)
+        _paths, err = self._run_downloads(todo)
         if err:
-            QMessageBox.critical(self, "Download all", f"Stopped on an error:\n{err}")
+            QMessageBox.critical(self, _("Download all"),
+                                 _f("Stopped on an error:\n{error}", error=err))
             return
         # marks now show ✓ cached; the user can then pick one to use
 
@@ -784,7 +804,7 @@ class NotoDownloadPanel(QWidget):
         Returns (paths_by_filename, error_or_None).  A cancel yields whatever
         completed before it (and no error)."""
         cancel = threading.Event()
-        prog = QProgressDialog("Downloading…", "Cancel", 0, 100, self)
+        prog = QProgressDialog(_("Downloading…"), _("Cancel"), 0, 100, self)
         prog.setWindowModality(Qt.WindowModal)
         prog.setMinimumDuration(0)
         prog.setAutoClose(False)
@@ -796,7 +816,8 @@ class NotoDownloadPanel(QWidget):
         state = {"paths": {}}
 
         def on_progress(done, total, name, idx, n):
-            prog.setLabelText(f"Downloading {name}  ({idx}/{n})…")
+            prog.setLabelText(_f("Downloading {name}  ({index}/{count})…",
+                                 name=name, index=idx, count=n))
             prog.setValue(min(100, int(done * 100 / total)) if total > 0 else 0)
 
         def on_one(filename, path):     # direct connection → captured synchronously
@@ -824,7 +845,7 @@ class NotoDownloadDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Download Noto source font")
+        self.setWindowTitle(_("Download Noto source font"))
         self.resize(440, 460)
         self.result_path = None
         v = QVBoxLayout(self)
@@ -832,7 +853,7 @@ class NotoDownloadDialog(QDialog):
         self._panel.setMaximumWidth(16777215)       # full width in its own window
         self._panel.font_chosen.connect(self._on_chosen)
         v.addWidget(self._panel, 1)
-        close = QPushButton("Close")
+        close = QPushButton(_("Close"))
         close.clicked.connect(self.reject)
         v.addWidget(close)
         # delegate the bits the tests/standalone callers reach for
