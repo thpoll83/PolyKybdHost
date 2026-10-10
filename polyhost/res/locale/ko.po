@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -130,6 +130,11 @@ msgstr "<b>호스트 파일:</b> {path}"
 msgid "About PolyKybdHost (forwarder)"
 msgstr "PolyKybdHost(포워더) 정보"
 
+#. TRANSLATORS: the run mode in the About dialog's environment line
+#: polyhost/forwarder.py:811
+msgid "forwarder"
+msgstr ""
+
 #: polyhost/forwarder.py:813
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "포워더 모드: 이 컴퓨터에는 키보드가 없습니다. 이 컴퓨터의 활성 창을 감시하여 키보드가 연결된 컴퓨터에서 실행 중인 PolyKybdHost로 전달합니다."
@@ -141,6 +146,11 @@ msgstr "지금 포워더를 다운로드하여 설치하고 다시 시작하시�
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
 msgstr "블로그"
+
+#: polyhost/gui/about_dialog.py:66
+#, python-brace-format
+msgid "Version {version}"
+msgstr ""
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
@@ -494,7 +504,7 @@ msgid "Open file"
 msgstr "파일 열기"
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
 msgid "Not Connected"
 msgstr "연결되지 않음"
 
@@ -883,7 +893,7 @@ msgid "Preview:"
 msgstr "미리 보기:"
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "OK"
 msgstr "확인"
 
@@ -894,7 +904,7 @@ msgstr "빌드한 글리프를 유지합니다(메모리의 번들에 추가됨,
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:78 polyhost/host.py:227
 msgid "Cancel"
 msgstr "취소"
 
@@ -1450,57 +1460,57 @@ msgstr "언어"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "새 언어는 다시 시작한 후에 사용됩니다. 지금 다시 시작하시겠습니까?"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:62
 msgid "Edit Key"
 msgstr "키 편집"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 msgid "QMK Keycode:"
 msgstr "QMK 키코드:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:70
 msgid "Visual Label:"
 msgstr "표시 레이블:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:73
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
 msgstr "회전: ({x}, {y}) 기준 {angle}°"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:75
 msgid "Info:"
 msgstr "정보:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:100
 msgid "PolyKybd Split72 Layout"
 msgstr "PolyKybd Split72 레이아웃"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
 msgstr "PolyKybd에 연결할 수 없습니다. 키보드를 연결한 후 다시 시도하십시오."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:206
 msgid "Could not read layers from device"
 msgstr "장치에서 레이어를 읽을 수 없습니다"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Layers:"
 msgstr "레이어:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
 msgstr "각 키를 키보드에 표시되는 키캡 모습으로 그립니다. 여기서 범례가 모델링되지 않은 키는 키코드 텍스트를 유지합니다."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:296
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
 msgstr "사용할 수 없음: 키캡 글꼴과 레이아웃 표를 불러올 수 없어 키에 키코드가 표시됩니다."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:302
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
 msgstr "일부 사용할 수 없음 — {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:307
 #, python-brace-format
 msgid ""
 "Legends read from:\n"
@@ -1510,38 +1520,50 @@ msgstr ""
 "{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Symbol"
 msgstr "기호"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Every key shows its keycode."
 msgstr "모든 키에 키코드가 표시됩니다."
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
 msgid "Preview"
 msgstr "미리 보기"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Real"
 msgstr "실제"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
 msgstr "패널 시뮬레이션을 통해 봅니다: 발광 픽셀, 번짐, 투명 키캡 덮개의 확산 — 실제로 키가 보이는 모습입니다."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:346
 #, python-brace-format
 msgid "Unavailable: {reason}"
 msgstr "사용할 수 없음: {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:393
+msgid "Preview language:"
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:405
+msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:407
+msgid "Unavailable: the language table could not be loaded."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 msgid "Error"
 msgstr "오류"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 #, python-brace-format
 msgid ""
 "Failed to load:\n"
@@ -2739,6 +2761,10 @@ msgstr "새로운 기능"
 msgid "What's new — {release_name}"
 msgstr "새로운 기능 — {release_name}"
 
+#: polyhost/gui/update_dialog.py:119
+msgid "View full release notes on GitHub"
+msgstr ""
+
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
 msgstr "업데이트를 완료하기 위해 다시 시작하는 중…"
@@ -3149,6 +3175,18 @@ msgstr "연결됨"
 msgid "present — not connected (protocol/version)"
 msgstr "있음 — 연결되지 않음(프로토콜/버전)"
 
+#: polyhost/host.py:1983
+msgid "Keyboard"
+msgstr ""
+
+#: polyhost/host.py:1984
+msgid "No keyboard connected."
+msgstr ""
+
+#: polyhost/host.py:1988
+msgid "⚠ mismatch"
+msgstr ""
+
 #: polyhost/host.py:1990
 #, python-brace-format
 msgid "{n} languages loaded"
@@ -3200,6 +3238,10 @@ msgstr "<b>로그:</b> {path}"
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 프로토콜 P{protocol}"
+
+#: polyhost/host.py:2064
+msgid "mode"
+msgstr ""
 
 #: polyhost/host.py:2066
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."

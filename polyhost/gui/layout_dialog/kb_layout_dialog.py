@@ -353,15 +353,19 @@ class KbLayoutDialog(QMainWindow):
     def _keyboard_lang(self):
         """The keyboard's current language in the preview's `xx-YY` spelling, or None.
 
-        Through `get_status()`, which PolyCore and RemoteCore both answer from
-        cached state with no device I/O. A core without it (an older client, a
-        test double) or one that raises simply means "unknown".
+        From cached state only, because this runs on the GUI thread:
+        `RemoteCore.status_snapshot()` in client mode (its `get_status()` is an
+        RPC to the daemon that waits for the reply -- Greptile, #320), else
+        `get_status()`, which PolyCore answers from its own cache with no device
+        I/O. A core with neither (a test double) or one that raises means
+        "unknown".
 
         ⚠️ The KEYBOARD spells it without the dash: GET_LANG answers `P\x07.koKR`
         and `current_lang` carries `koKR` through unchanged, while the language
         table says `ko-KR`. Compared raw, no keyboard language ever matched and a
         Korean board opened on en-US (Greptile, #320)."""
-        get = getattr(self.core, "get_status", None)
+        get = (getattr(self.core, "status_snapshot", None)
+               or getattr(self.core, "get_status", None))
         if get is None:
             return None
         try:
@@ -386,7 +390,7 @@ class KbLayoutDialog(QMainWindow):
         row = QWidget()
         lay = QHBoxLayout(row)
         lay.setContentsMargins(8, 0, 8, 0)
-        lay.addWidget(QLabel("Preview language:", row))
+        lay.addWidget(QLabel(_("Preview language:"), row))
         self.preview_lang = QComboBox(row)
         langs = list(self._preview.languages)
         self.preview_lang.addItems(langs)
@@ -398,9 +402,9 @@ class KbLayoutDialog(QMainWindow):
             self.preview_lang.setCurrentIndex(langs.index(pick))
             self._preview.set_language(pick)
         self.preview_lang.setToolTip(
-            "The layout the previews draw their legends in. Only the preview "
-            "changes, not the keyboard." if langs else
-            "Unavailable: the language table could not be loaded.")
+            _("The layout the previews draw their legends in. Only the preview "
+              "changes, not the keyboard.") if langs else
+            _("Unavailable: the language table could not be loaded."))
         self._sync_preview_lang_enabled()
         self.preview_lang.currentTextChanged.connect(self.set_preview_language)
         lay.addWidget(self.preview_lang)

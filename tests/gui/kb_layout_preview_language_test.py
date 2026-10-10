@@ -65,6 +65,19 @@ class PreviewLanguageTest(unittest.TestCase):
             self.assertEqual(dlg.preview_lang.currentText(), "ko-KR", reported)
             self.assertEqual(dlg._preview._lang, "ko-KR", reported)
 
+    def test_client_mode_reads_the_cached_snapshot_not_an_rpc(self):
+        """RemoteCore.get_status() is an RPC to the daemon that waits for the
+        reply, so the GUI thread must read status_snapshot() instead."""
+        class _Client(_CoreWithLang):
+            def status_snapshot(self):
+                return {"current_lang": self._lang}
+
+            def get_status(self):
+                raise AssertionError("get_status() blocks on the daemon")
+
+        dlg = self._dialog(_Client("jaJP"))
+        self.assertEqual(dlg.preview_lang.currentText(), "ja-JP")
+
     def test_an_unknown_keyboard_language_falls_back_to_en_US(self):
         for core in (_Core(), _CoreWithLang(None), _CoreWithLang("xxXX")):
             dlg = self._dialog(core)

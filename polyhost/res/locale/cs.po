@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-10 14:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -130,6 +130,11 @@ msgstr "<b>Soubor hostitele:</b> {path}"
 msgid "About PolyKybdHost (forwarder)"
 msgstr "O aplikaci PolyKybdHost (přeposílač)"
 
+#. TRANSLATORS: the run mode in the About dialog's environment line
+#: polyhost/forwarder.py:811
+msgid "forwarder"
+msgstr ""
+
 #: polyhost/forwarder.py:813
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Režim přeposílače: tento počítač nemá klávesnici. Sleduje zde aktivní okno a předává ho aplikaci PolyKybdHost spuštěné na počítači, ke kterému je klávesnice připojena."
@@ -141,6 +146,11 @@ msgstr "Stáhnout, nainstalovat a restartovat přeposílač nyní?"
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
 msgstr "Blog"
+
+#: polyhost/gui/about_dialog.py:66
+#, python-brace-format
+msgid "Version {version}"
+msgstr ""
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
@@ -496,7 +506,7 @@ msgid "Open file"
 msgstr "Otevřít soubor"
 
 #: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
 msgid "Not Connected"
 msgstr "Nepřipojeno"
 
@@ -889,7 +899,7 @@ msgid "Preview:"
 msgstr "Náhled:"
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77
 msgid "OK"
 msgstr "OK"
 
@@ -900,7 +910,7 @@ msgstr "Ponechat sestavený glyf (přidá se do sady v paměti; uložte ho v ins
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:807
 #: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:78 polyhost/host.py:227
 msgid "Cancel"
 msgstr "Zrušit"
 
@@ -1464,57 +1474,57 @@ msgstr "Jazyk"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "Nový jazyk se použije po restartu. Restartovat nyní?"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:62
 msgid "Edit Key"
 msgstr "Upravit klávesu"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:67
 msgid "QMK Keycode:"
 msgstr "Kód klávesy QMK:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:70
 msgid "Visual Label:"
 msgstr "Zobrazený popisek:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:73
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
 msgstr "Otočení: {angle}° kolem ({x}, {y})"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:75
 msgid "Info:"
 msgstr "Informace:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:100
 msgid "PolyKybd Split72 Layout"
 msgstr "Rozložení PolyKybd Split72"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
 msgstr "PolyKybd není dostupná. Připojte klávesnici a zkuste to znovu."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:206
 msgid "Could not read layers from device"
 msgstr "Nelze přečíst vrstvy ze zařízení"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Layers:"
 msgstr "Vrstvy:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
 msgstr "Vykreslit každou klávesu tak, jak ji zobrazuje klávesnice. Klávesa, jejíž popisek zde není modelován, zobrazí text svého kódu klávesy."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:296
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
 msgstr "Nedostupné: písma kláves a tabulky rozložení se nepodařilo načíst, takže klávesy zobrazují svůj kód."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:302
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
 msgstr "Částečně nedostupné — {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:307
 #, python-brace-format
 msgid ""
 "Legends read from:\n"
@@ -1524,38 +1534,50 @@ msgstr ""
 "{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Symbol"
 msgstr "Symbol"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
 msgid "Every key shows its keycode."
 msgstr "Každá klávesa zobrazuje svůj kód klávesy."
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
 msgid "Preview"
 msgstr "Náhled"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Real"
 msgstr "Skutečné"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:328
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
 msgstr "Přes simulaci panelu: svítící pixely, záře a rozptyl průhledného krytu klávesy — jak klávesa skutečně vypadá."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:346
 #, python-brace-format
 msgid "Unavailable: {reason}"
 msgstr "Nedostupné: {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:393
+msgid "Preview language:"
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:405
+msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:407
+msgid "Unavailable: the language table could not be loaded."
+msgstr ""
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 msgid "Error"
 msgstr "Chyba"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:676
 #, python-brace-format
 msgid ""
 "Failed to load:\n"
@@ -2771,6 +2793,10 @@ msgstr "Co je nového"
 msgid "What's new — {release_name}"
 msgstr "Co je nového — {release_name}"
 
+#: polyhost/gui/update_dialog.py:119
+msgid "View full release notes on GitHub"
+msgstr ""
+
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
 msgstr "Restartování pro dokončení aktualizace…"
@@ -3185,6 +3211,18 @@ msgstr "připojeno"
 msgid "present — not connected (protocol/version)"
 msgstr "přítomna — nepřipojena (protokol/verze)"
 
+#: polyhost/host.py:1983
+msgid "Keyboard"
+msgstr ""
+
+#: polyhost/host.py:1984
+msgid "No keyboard connected."
+msgstr ""
+
+#: polyhost/host.py:1988
+msgid "⚠ mismatch"
+msgstr ""
+
 #: polyhost/host.py:1990
 #, python-brace-format
 msgid "{n} languages loaded"
@@ -3240,6 +3278,10 @@ msgstr "<b>Protokoly:</b> {path}"
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protokol HID P{protocol}"
+
+#: polyhost/host.py:2064
+msgid "mode"
+msgstr ""
 
 #: polyhost/host.py:2066
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
