@@ -35,30 +35,40 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     hand-pushed tag. Worth having anyway, because the alternative is silence: the defect
     is invisible from the release page and surfaces only as users being offered the same
     update forever. (Greptile P1 on #349.)
-  - **Recovery depends on WHY it refused, and the two cases take different actions.**
+  - **Recovery always ends in moving the tag; WHY it refused only decides whether a
+    commit exists to move it to.**
     `scripts/publish_release.py` pins the tag to the oldest commit whose tree declares
-    the version (`commit_for_version`), so a refusal means one of two things.
-    - **The bump has not merged yet.** Nothing declares that version, so there is no
-      commit to point a tag at and moving it is not an option. Merge the bump; the pin
-      then finds it and tags the right commit with no further intervention.
-    - **The tag already exists in the wrong place.** **Publishing never moves a tag**
-      (`target_commitish` is documented as *"Unused if the Git tag already exists"*),
-      so the release is built from wherever it points. Move it, then publish normally:
-      `git tag -f v<ver> <commit declaring it>` then
-      `git push --force origin refs/tags/v<ver>`.
-      ⚠️ **Only while no release holds that tag.** This gate fires on
-      `release: published`, so by the time you read its refusal a release usually DOES
-      exist. **Delete it first**, then move the tag and publish. Two reasons: the tarball
-      the updater hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag
-      points at is the product rather than a bookkeeping detail — **and only a CREATE
-      re-runs this workflow**, since `publish_release.py` against a release that still
-      exists merely edits its notes and fires no event. Deleting it makes the next run
-      a create, which fires `release: published`; that is also why the `[skip ci]` on
-      the bump commit does not matter here, since a release event ignores it where the
-      tag-push trigger does not. If a release on that tag is already live
-      and people may have installed from it, do not move it at all — cut the next
-      patch version instead. (Nothing in the repo enforces this: there is no tag
-      ruleset and no tag protection, so the force-push will simply succeed.)
+    the version (`commit_for_version`), so a refusal means one of two things. ⚠️ **Both
+    of them end in MOVING THE TAG.** Every trigger that can reach this step requires a
+    tag to already exist — `push: tags: v*`, or the tag a published release names — so
+    merging the bump never repairs the tag by itself. What differs between the two cases
+    is only whether there is yet a commit to move it to.
+    - **No commit declares the version** (the bump has not merged). Merge it first;
+      until then there is nothing to point the tag at. Then move the tag, below.
+      ⚠️ **Do not confuse this with `publish_release.py` refusing the same condition
+      BEFORE any tag exists.** There, merging the bump genuinely is the whole fix,
+      because the script then creates the tag at the pinned commit itself. Here the tag
+      is already placed and wrong, and nothing but moving it will do.
+    - **A commit declares it and the tag is elsewhere.** Move the tag straight away.
+
+    **Moving the tag.** **Publishing never moves one** (`target_commitish` is
+    documented as *"Unused if the Git tag already exists"*), so the release is built
+    from wherever it points:
+    `git tag -f v<ver> <commit declaring it>` then
+    `git push --force origin refs/tags/v<ver>`.
+    ⚠️ **Only while no release holds that tag.** This gate fires on
+    `release: published`, so by the time you read its refusal a release usually DOES
+    exist. **Delete it first**, then move the tag and publish. Two reasons: the tarball
+    the updater hands people IS `archive/refs/tags/<tag>.tar.gz`, so what that tag
+    points at is the product rather than a bookkeeping detail — **and only a CREATE
+    re-runs this workflow**, since `publish_release.py` against a release that still
+    exists merely edits its notes and fires no event. Deleting it makes the next run
+    a create, which fires `release: published`; that is also why the `[skip ci]` on
+    the bump commit does not matter here, since a release event ignores it where the
+    tag-push trigger does not. If a release on that tag is already live
+    and people may have installed from it, do not move it at all — cut the next
+    patch version instead. (Nothing in the repo enforces this: there is no tag
+    ruleset and no tag protection, so the force-push will simply succeed.)
     There is no `workflow_dispatch` on this workflow, so once the tag is right the
     route is to publish — the firmware repo's dispatch-based recovery has no equivalent
     here, and would be the wrong tool anyway.
