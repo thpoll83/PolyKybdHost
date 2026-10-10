@@ -33,8 +33,16 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     - **`prerelease` is the lever because `releases/latest` excludes prereleases, and
       that is the only channel `updater.py` reads** — both its API path
       (`api.github.com/repos/<repo>/releases/latest`) and its rate-limit web fallback
-      (`github.com/<repo>/releases/latest`, whose 3xx `Location` names the tag). So the
-      bad release leaves every updater's view at once.
+      (`github.com/<repo>/releases/latest`, whose 3xx `Location` names the tag).
+      ⚠️ **It stops new DISCOVERY; it does not cancel an offer already made.** An app
+      that saw the release first holds it in `_pending_release`, and clicking passes
+      that saved record to `UpdateInstaller`, whose tarball URL is the tag's — which
+      still resolves. Such an app drops the offer on its next **successful** check
+      (`_host_no_update`, pinned by `PENDING_AFTER_WITHDRAWN` in
+      `tests/gui/host_client_test.py`; a check that ERRORED deliberately keeps it,
+      since an unreachable GitHub says nothing about the release). So the exposure is
+      one check cycle for whoever already had the offer, and nothing at all for anyone
+      who did not. Fixing the tag is still the fix; the withdrawal buys time.
     - **Prerelease rather than delete, deliberately**: reversible by unchecking one box,
       keeps the notes, keeps the tag, and leaves the human decision (move the tag, or cut
       the next patch) where it was. The step still exits 1, and a PATCH that fails prints

@@ -51,8 +51,16 @@ jobs:
       # So the mismatch branch marks the release a PRERELEASE over the API. That is
       # preventive rather than advisory, because `releases/latest` excludes prereleases
       # and it is the ONLY channel `updater.py` reads — both its API path and its
-      # rate-limit web fallback resolve exactly that URL. The bad release leaves every
-      # updater's view at once.
+      # rate-limit web fallback resolve exactly that URL.
+      #
+      # ⚠️ It stops new DISCOVERY; it does not cancel an offer already made. An app
+      # that saw the release before the withdrawal holds it in `_pending_release` and
+      # can still install it, because clicking passes that saved record to
+      # `UpdateInstaller` and its tarball URL is the tag's, which still resolves. That
+      # app drops the offer on its next SUCCESSFUL check (`_host_no_update` in
+      # `polyhost/host.py`, pinned by `PENDING_AFTER_WITHDRAWN` in
+      # `tests/gui/host_client_test.py`) — so the exposure is one check cycle for
+      # whoever already had it, not forever, and nothing new at all.
       #
       # Prerelease rather than delete, deliberately: reversible by unchecking one box,
       # keeps whatever notes somebody wrote, keeps the tag where it is, and leaves the
@@ -106,8 +114,11 @@ jobs:
             if [ "$EVENT" = "release" ] && [ -n "$RELEASE_ID" ]; then
               if gh api -X PATCH "repos/$REPO/releases/$RELEASE_ID" -F prerelease=true >/dev/null; then
                 echo "WITHDRAWN: $TAG_NAME is marked a prerelease, so it is no longer"
-                echo "releases/latest and no updater will offer it. Nothing else changed --"
+                echo "releases/latest and no app will DISCOVER it. Nothing else changed --"
                 echo "the tag, the notes and any assets are where they were."
+                echo "An app that already saw it keeps the offer until its next successful"
+                echo "check, and could still install it in that window, because the tag"
+                echo "resolves. Fix the tag; do not count on the withdrawal alone."
               else
                 echo "::error::COULD NOT WITHDRAW IT -- DO THIS BY HAND, NOW: mark $TAG_NAME a"
                 echo "prerelease (or delete it). Until you do, anyone updating gets $have"
