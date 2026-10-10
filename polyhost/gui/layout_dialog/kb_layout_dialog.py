@@ -55,6 +55,20 @@ KEY_SCALE = 80.0
 FIT_PAD = 0.5 * KEY_SCALE
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
 
+def _lang_code(value):
+    """`value` as an `xx-YY` language code, or None when it is not one.
+
+    The keyboard answers `koKR`; the language table says `ko-KR`. A failed probe
+    publishes its error text in the same field, so anything else is refused."""
+    if not isinstance(value, str):
+        return None
+    if len(value) == 4 and value.isalpha():
+        return f"{value[:2]}-{value[2:]}"
+    if len(value) == 5 and value[2] == "-" and (value[:2] + value[3:]).isalpha():
+        return value
+    return None
+
+
 class KeyEditDialog(QDialog):
     """Key editing dialog"""
     def __init__(self, key_dict):
@@ -363,19 +377,27 @@ class KbLayoutDialog(QMainWindow):
         ⚠️ The KEYBOARD spells it without the dash: GET_LANG answers `P\x07.koKR`
         and `current_lang` carries `koKR` through unchanged, while the language
         table says `ko-KR`. Compared raw, no keyboard language ever matched and a
-        Korean board opened on en-US (Greptile, #320)."""
+        Korean board opened on en-US (Greptile, #320).
+
+        ⚠️ In client mode `current_lang` is only the `status.get` SEED: every
+        later probe's `status_changed` event updates `lang` instead, so after a
+        language switch `current_lang` names the old one. `lang` is read first.
+        It is not always a code, though -- a failed probe publishes its error
+        text there -- so each candidate must look like one (Greptile, #320)."""
         get = (getattr(self.core, "status_snapshot", None)
                or getattr(self.core, "get_status", None))
         if get is None:
             return None
         try:
-            code = (get() or {}).get("current_lang") or None
+            status = get() or {}
         except Exception as e:
             self.log.debug("keyboard language unknown (%s: %s)", type(e).__name__, e)
             return None
-        if isinstance(code, str) and len(code) == 4 and "-" not in code:
-            code = f"{code[:2]}-{code[2:]}"
-        return code
+        for key in ("lang", "current_lang"):
+            code = _lang_code(status.get(key))
+            if code:
+                return code
+        return None
 
     def _build_preview_language(self):
         """The language the PREVIEW draws its legends in.

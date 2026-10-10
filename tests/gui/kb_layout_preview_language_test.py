@@ -78,6 +78,27 @@ class PreviewLanguageTest(unittest.TestCase):
         dlg = self._dialog(_Client("jaJP"))
         self.assertEqual(dlg.preview_lang.currentText(), "ja-JP")
 
+    def test_a_probes_lang_wins_over_the_seeded_current_lang(self):
+        """In client mode `current_lang` is the status.get seed; each later probe
+        updates `lang`. After a switch to Japanese the seed still says Korean."""
+        class _Client(_CoreWithLang):
+            def status_snapshot(self):
+                return {"current_lang": "koKR", "lang": self._lang}
+
+        dlg = self._dialog(_Client("jaJP"))
+        self.assertEqual(dlg.preview_lang.currentText(), "ja-JP")
+
+    def test_a_failed_probes_error_text_is_not_a_language(self):
+        """A failed probe publishes its error text in `lang`; the seed then
+        stands, rather than the picker falling back to en-US."""
+        for junk in ("Could not read reply from PolyKybd", None, ""):
+            class _Client(_CoreWithLang):
+                def status_snapshot(self, junk=junk):
+                    return {"current_lang": self._lang, "lang": junk}
+
+            dlg = self._dialog(_Client("koKR"))
+            self.assertEqual(dlg.preview_lang.currentText(), "ko-KR", junk)
+
     def test_an_unknown_keyboard_language_falls_back_to_en_US(self):
         for core in (_Core(), _CoreWithLang(None), _CoreWithLang("xxXX")):
             dlg = self._dialog(core)
