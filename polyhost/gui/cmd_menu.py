@@ -325,11 +325,16 @@ class CommandsSubMenu:
         In the old flat command list this sat among a dozen sibling resets and
         fired straight away; on the top-level Maintenance menu it is one slip
         away from every user's remapped keymap, so it confirms.
+
+        ⚠️ The firmware answers the reset with dynamic_keymap_reset_poly(),
+        which also zeroes the macro buffer (qmk split_sync.c), so the dialog
+        says so.
         """
         confirm_msg = _(
             "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>"
             "Every key you remapped goes back to the layout the "
-            "firmware ships with. This cannot be undone.<br><br>Continue?"
+            "firmware ships with. This cannot be undone.<br><br>"
+            "<b>All your macros are deleted too.</b><br><br>Continue?"
         )
         reply = QMessageBox.question(
             None, _("Reset Keymap"), confirm_msg,

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 14:08+0000\n"
+"POT-Creation-Date: 2026-10-10 21:29+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -595,9 +595,9 @@ msgstr "立即进入空闲"
 msgid "Stop idle"
 msgstr "停止空闲"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
-#: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433 polyhost/gui/cmd_menu.py:441
+#: polyhost/gui/cmd_menu.py:445
 msgid "Keymap"
 msgstr "键位映射"
 
@@ -613,8 +613,8 @@ msgstr "默认层"
 msgid "Dump keymap buffer to the log"
 msgstr "将键位映射缓冲区转储到日志"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
-#: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
+#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:452
+#: polyhost/gui/cmd_menu.py:455 polyhost/gui/cmd_menu.py:466
 msgid "Font Pack"
 msgstr "字体包"
 
@@ -662,123 +662,123 @@ msgstr "<b>将插着 USB 线的半边设为左侧吗？</b><br><br>另一半将�
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>将插着 USB 线的半边设为右侧吗？</b><br><br>另一半将成为左侧。两个半边都会保存新的左右手设置并按其重启（约 10 秒，无需重新插拔）。<br><br>请确认 USB 线插在您想设为<b>右侧</b>的半边上，然后继续。"
 
-#: polyhost/gui/cmd_menu.py:330
-msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr "<b>将键盘的键位映射重置为固件默认值吗？</b><br><br>您重新映射过的所有按键都将恢复为固件自带的布局。此操作无法撤销。<br><br>是否继续？"
+#: polyhost/gui/cmd_menu.py:334
+msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
+msgstr "<b>将键盘的键位映射重置为固件默认值吗？</b><br><br>您重新映射过的所有按键都将恢复为固件自带的布局。此操作无法撤销。<br><br><b>所有宏也会被删除。</b><br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:335
+#: polyhost/gui/cmd_menu.py:340
 msgid "Reset Keymap"
 msgstr "重置键位映射"
 
-#: polyhost/gui/cmd_menu.py:389
+#: polyhost/gui/cmd_menu.py:394
 msgid "Re-flash Font Pack"
 msgstr "重新刷写字体包"
 
-#: polyhost/gui/cmd_menu.py:390
+#: polyhost/gui/cmd_menu.py:395
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>重新刷写所有字体包分包吗？</b><br><br>即使键盘报告已是最新，也会重新发送随附的每个分包 — 当某个字形显示错误或上次刷写报告失败时使用此功能。大约需要一分钟；期间可以正常打字。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:406
+#: polyhost/gui/cmd_menu.py:411
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>清空外部闪存中的字体包吗？</b><br><br>所有字体包分包槽位都将被清空 — 在重新刷写字体包之前，键盘只能显示其内置（常驻）字体。本主机端随附的分包会在下次连接时自动重新刷写（或通过“字体包 → 同步”）。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:413
+#: polyhost/gui/cmd_menu.py:418
 msgid "Wipe Font Pack"
 msgstr "清空字体包"
 
-#: polyhost/gui/cmd_menu.py:423
+#: polyhost/gui/cmd_menu.py:428
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "层数：{count}"
 
-#: polyhost/gui/cmd_menu.py:424
+#: polyhost/gui/cmd_menu.py:429
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "无法读取层数：{error}"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:433
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "默认层：{layer}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:434
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "无法读取默认层：{error}"
 
-#: polyhost/gui/cmd_menu.py:436
+#: polyhost/gui/cmd_menu.py:441
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "无法读取键位映射缓冲区：{error}"
 
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:445
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "键位映射缓冲区（{size} 字节）已写入日志。"
 
-#: polyhost/gui/cmd_menu.py:447
+#: polyhost/gui/cmd_menu.py:452
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "无法读取字体包状态：{error}"
 
-#: polyhost/gui/cmd_menu.py:450
+#: polyhost/gui/cmd_menu.py:455
 msgid "This host ships no font-pack bundles."
 msgstr "本主机端未附带任何字体包分包。"
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:459
+#: polyhost/gui/cmd_menu.py:464
 msgid "stale"
 msgstr "过时"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:464 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "正常"
 
-#: polyhost/gui/cmd_menu.py:462
+#: polyhost/gui/cmd_menu.py:467
 msgid "bundle"
 msgstr "分包"
 
-#: polyhost/gui/cmd_menu.py:463
+#: polyhost/gui/cmd_menu.py:468
 msgid "device"
 msgstr "设备"
 
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:469
 msgid "shipped"
 msgstr "随附"
 
-#: polyhost/gui/cmd_menu.py:470
+#: polyhost/gui/cmd_menu.py:475
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd 命令（*.poly.cmd）"
 
-#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2243
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2243
 msgid "Open file"
 msgstr "打开文件"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
 msgid "Not Connected"
 msgstr "未连接"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:625
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd 未连接。请连接键盘后重试。"
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Select Firmware Binary"
 msgstr "选择固件二进制文件"
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:509
 msgid "Firmware binary (*.bin)"
 msgstr "固件二进制文件（*.bin）"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:520
 msgid "File Error"
 msgstr "文件错误"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:521
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -787,65 +787,65 @@ msgstr ""
 "无法读取固件文件：\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:526
 msgid "Invalid Firmware File"
 msgstr "无效的固件文件"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:531
 msgid "Wrong Keyboard"
 msgstr "键盘型号不符"
 
-#: polyhost/gui/cmd_menu.py:536
+#: polyhost/gui/cmd_menu.py:541
 msgid "Unsigned Firmware"
 msgstr "未签名的固件"
 
-#: polyhost/gui/cmd_menu.py:542
+#: polyhost/gui/cmd_menu.py:547
 msgid "Flash + Apply Firmware"
 msgstr "刷写并应用固件"
 
-#: polyhost/gui/cmd_menu.py:544
+#: polyhost/gui/cmd_menu.py:549
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "此操作将把新固件传输到键盘，进行校验（CRC32），然后<b>激活它</b> — 两个半边都会自动重启并运行新固件（无需重新插拔）。"
 
-#: polyhost/gui/cmd_menu.py:549
+#: polyhost/gui/cmd_menu.py:554
 msgid "Flash Firmware"
 msgstr "刷写固件"
 
-#: polyhost/gui/cmd_menu.py:551
+#: polyhost/gui/cmd_menu.py:556
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "此操作将把新固件传输并暂存到键盘上，然后进行校验（CRC32）。固件映像会被保存，但<b>尚未激活</b> — 在您另行应用之前，键盘会继续运行当前固件。"
 
-#: polyhost/gui/cmd_menu.py:569
+#: polyhost/gui/cmd_menu.py:574
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "当前键盘固件：<b>{version}</b>（{size_kb} KB）"
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:577
 msgid "Could not query current firmware version."
 msgstr "无法查询当前固件版本。"
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:578
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "所选文件：<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:579
 msgid "Continue?"
 msgstr "是否继续？"
 
-#: polyhost/gui/cmd_menu.py:602
+#: polyhost/gui/cmd_menu.py:607
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>应用已暂存的固件吗？</b><br><br>两个键盘半边都将安装之前暂存的映像，并自动重启运行新固件（无需重新插拔）。<br><br>如果该固件在构建时未启用应用内安装，键盘会安全地报告无法应用，并保留暂存的映像不变。<br><br>是否继续？"
 
-#: polyhost/gui/cmd_menu.py:611
+#: polyhost/gui/cmd_menu.py:616
 msgid "Apply Staged Firmware"
 msgstr "应用已暂存的固件"
 
-#: polyhost/gui/cmd_menu.py:636
+#: polyhost/gui/cmd_menu.py:641
 msgid "Firmware Applied"
 msgstr "固件已应用"
 
-#: polyhost/gui/cmd_menu.py:638
+#: polyhost/gui/cmd_menu.py:643
 msgid "Apply Failed"
 msgstr "应用失败"
 
