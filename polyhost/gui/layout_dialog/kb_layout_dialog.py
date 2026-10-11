@@ -9,7 +9,7 @@ from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
-    QToolButton, QButtonGroup,
+    QToolButton, QButtonGroup, QComboBox,
     QGraphicsScene, QDialog, QFormLayout
 )
 
@@ -17,7 +17,8 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
-from polyhost.gui.layout_dialog.keycap_preview import KC_NO, KC_TRANSPARENT, KeycapPreview
+from polyhost.gui.layout_dialog.keycap_preview import (
+    DEFAULT_LANG, KC_NO, KC_TRANSPARENT, KeycapPreview)
 from polyhost.gui import oled_look
 from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
@@ -53,6 +54,20 @@ KEY_SCALE = 80.0
 # the case around the KLE key tiles, in scene units
 FIT_PAD = 0.5 * KEY_SCALE
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
+
+def _lang_code(value):
+    """`value` as an `xx-YY` language code, or None when it is not one.
+
+    The keyboard answers `koKR`; the language table says `ko-KR`. A failed probe
+    publishes its error text in the same field, so anything else is refused."""
+    if not isinstance(value, str):
+        return None
+    if len(value) == 4 and value.isalpha():
+        return f"{value[:2]}-{value[2:]}"
+    if len(value) == 5 and value[2] == "-" and (value[:2] + value[3:]).isalpha():
+        return value
+    return None
+
 
 class KeyEditDialog(QDialog):
     """Key editing dialog"""
@@ -227,6 +242,7 @@ class KbLayoutDialog(QMainWindow):
         # the cap hides all but the FIRST: eight layers render as one, with nothing
         # clipped-looking to give it away.
         header_layout.addWidget(self.layers, 1)
+        header_layout.addWidget(self._build_preview_language())
         header_layout.addWidget(self._build_keycap_modes())
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)
@@ -346,6 +362,91 @@ class KbLayoutDialog(QMainWindow):
         self.keycap_modes = row
         return row
 
+    # -- preview language ---------------------------------------------------
+
+    def _keyboard_lang(self):
+        """The keyboard's current language in the preview's `xx-YY` spelling, or None.
+
+        From cached state only, because this runs on the GUI thread:
+        `RemoteCore.status_snapshot()` in client mode (its `get_status()` is an
+        RPC to the daemon that waits for the reply -- Greptile, #320), else
+        `get_status()`, which PolyCore answers from its own cache with no device
+        I/O. A core with neither (a test double) or one that raises means
+        "unknown".
+
+        ⚠️ The KEYBOARD spells it without the dash: GET_LANG answers `P\x07.koKR`
+        and `current_lang` carries `koKR` through unchanged, while the language
+        table says `ko-KR`. Compared raw, no keyboard language ever matched and a
+        Korean board opened on en-US (Greptile, #320).
+
+        ⚠️ In client mode `current_lang` is only the `status.get` SEED: every
+        later probe's `status_changed` event updates `lang` instead, so after a
+        language switch `current_lang` names the old one. `lang` is read first.
+        It is not always a code, though -- a failed probe publishes its error
+        text there -- so each candidate must look like one (Greptile, #320)."""
+        get = (getattr(self.core, "status_snapshot", None)
+               or getattr(self.core, "get_status", None))
+        if get is None:
+            return None
+        try:
+            status = get() or {}
+        except Exception as e:
+            self.log.debug("keyboard language unknown (%s: %s)", type(e).__name__, e)
+            return None
+        for key in ("lang", "current_lang"):
+            code = _lang_code(status.get(key))
+            if code:
+                return code
+        return None
+
+    def _build_preview_language(self):
+        """The language the PREVIEW draws its legends in.
+
+        The previews used to draw every layout in the renderer's default, en-US,
+        whatever the keyboard was set to: Korean jamo, Greek letters and every
+        key whose legend depends on the language (KC_IME's 한/영 / 英数かな / Right
+        Alt / Non-US Backslash) could never be seen in the editor. This picks the
+        language for the preview ONLY -- it does not change the keyboard -- and
+        opens on the keyboard's own language when the host knows it.
+        """
+        row = QWidget()
+        lay = QHBoxLayout(row)
+        lay.setContentsMargins(8, 0, 8, 0)
+        lay.addWidget(QLabel(_("Preview language:"), row))
+        self.preview_lang = QComboBox(row)
+        langs = list(self._preview.languages)
+        self.preview_lang.addItems(langs)
+        current = self._keyboard_lang()
+        pick = (current if current in langs
+                else DEFAULT_LANG if DEFAULT_LANG in langs
+                else (langs[0] if langs else None))
+        if pick is not None:
+            self.preview_lang.setCurrentIndex(langs.index(pick))
+            self._preview.set_language(pick)
+        self.preview_lang.setToolTip(
+            _("The layout the previews draw their legends in. Only the preview "
+              "changes, not the keyboard.") if langs else
+            _("Unavailable: the language table could not be loaded."))
+        self._sync_preview_lang_enabled()
+        self.preview_lang.currentTextChanged.connect(self.set_preview_language)
+        lay.addWidget(self.preview_lang)
+        return row
+
+    def _sync_preview_lang_enabled(self):
+        # Symbol mode draws keycode text, which no language changes.
+        if hasattr(self, "preview_lang"):
+            self.preview_lang.setEnabled(self.preview_lang.count() > 0
+                                         and self._keycap_mode != KEYCAP_SYMBOL)
+
+    def set_preview_language(self, lang):
+        """Redraw the keys in `lang`. The keycode->pixmap cache is per language, so
+        it is dropped; the macro keycaps are language-independent and kept."""
+        if not self._preview.set_language(lang):
+            return
+        self._key_cache.clear()
+        if self.key_buffer is not None:
+            self.set_keycodes_for_layer(self.current_layer)
+
     def _on_keycap_button(self, button):
         for mode, b in self.keycap_buttons.items():
             if b is button:
@@ -369,6 +470,7 @@ class KbLayoutDialog(QMainWindow):
         # grid: a change between the two rebuilds the scene before it is repainted.
         if (self._real_board() is not None) != was_photo:
             self.render_keys()
+        self._sync_preview_lang_enabled()
         btn = self.keycap_buttons.get(mode) if hasattr(self, "keycap_buttons") else None
         if btn is not None and not btn.isChecked():
             btn.setChecked(True)
@@ -877,5 +979,4 @@ class KbLayoutDialog(QMainWindow):
                 names = {}
             self._layer_name_cache = names
         return names.get(layer, "")
-
 
