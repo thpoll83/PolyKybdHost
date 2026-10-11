@@ -10,32 +10,14 @@ from PyQt5.QtWidgets import (
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.dialog_util import position_near_tray
-from polyhost.i18n import _, _f, N_
+from polyhost.i18n import _, _f, translate_message
 
 # The device layer reports its status in English (device/hid_fw_up.py, which
-# also feeds the log and polyctl). These are the messages that ask the user to
-# DO something on the keyboard, so the dialog shows them translated. Each must
-# match the device's text exactly; a message that drifts from its copy here
-# simply shows in English, and is_split_link_failure() always reads the
+# also feeds the log and polyctl, and in client mode crosses the daemon -> GUI
+# boundary as plain text). The dialog shows the translation, rebuilt from the
+# template the message came from; is_split_link_failure() always reads the
 # original.
-_DEVICE_PROSE = frozenset((
-    N_("This firmware is not signed. Confirm on the KEYBOARD: press "
-       "the highlighted A (accept) or R (reject) key."),
-    N_("Timed out waiting for confirmation on the keyboard.\n\n"
-       "The keyboard asks for a physical ACCEPT/REJECT because this image "
-       "is not validly signed. Start the flash again and press the "
-       "highlighted A key on the left half within a minute."),
-    N_("The keyboard refused this firmware: it is not signed.\n\n"
-       "Released firmware ships a matching '.sig' file — download it next to "
-       "the .bin and flash again.\n\n"
-       "To flash a build you compiled yourself, flash again and press the "
-       "highlighted A (accept) key on the keyboard when it asks."),
-))
-
-
-def _shown(msg: str) -> str:
-    """A device status message as the dialog shows it."""
-    return _(msg) if msg in _DEVICE_PROSE else msg
+_shown = translate_message
 
 
 class _HidFwUpWorker(QThread):

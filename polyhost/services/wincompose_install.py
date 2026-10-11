@@ -25,8 +25,10 @@ from typing import NamedTuple, Optional
 
 import requests
 
+from polyhost.i18n import M_
 from polyhost.services.updater import (
-    HTTP_TIMEOUT, USER_AGENT, _latest_tag_via_web, release_asset_urls,
+    HTTP_TIMEOUT, MSG_CONNECTING, MSG_DOWNLOAD_CANCELLED, USER_AGENT,
+    _latest_tag_via_web, release_asset_urls,
 )
 
 log = logging.getLogger(__name__)
@@ -43,6 +45,12 @@ DOWNLOAD_CHUNK = 64 * 1024
 # download error because the caller's response differs: fall back to opening the
 # releases page rather than reporting a failure.
 NO_INSTALLER = "no-installer"
+
+# Progress text the install dialog shows; translated there with
+# i18n.translate_message(). Module constants on purpose, see M_().
+MSG_LOOKING_UP = M_("Looking for the latest release…")
+MSG_DOWNLOADING_OF = M_("Downloading WinCompose… {done} / {total} KB")
+MSG_DOWNLOADING = M_("Downloading WinCompose… {done} KB")
 
 # The Inno Setup installer is named "WinCompose-Setup-<version>.exe"
 # (src/installer/installer.iss OutputBaseFilename). Match loosely — any .exe
@@ -157,14 +165,14 @@ class InstallerDownloader(threading.Thread):
     def run(self):
         tmp_path = None
         if self.info is None:
-            self._fire(self._on_progress, 0, "Looking for the latest release…")
+            self._fire(self._on_progress, 0, MSG_LOOKING_UP)
             try:
                 self.info = find_installer()
             except Exception as e:  # noqa: BLE001 — treated as "nothing to download"
                 log.warning("WinCompose installer lookup failed: %s", e)
                 self.info = None
             if self._cancelled():
-                self._fire(self._on_finished, False, "Download cancelled.", "")
+                self._fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
                 return
             if self.info is None:
                 self._fire(self._on_finished, False, NO_INSTALLER, "")
@@ -174,7 +182,7 @@ class InstallerDownloader(threading.Thread):
                 prefix="wincompose-setup-", suffix=".exe", delete=False
             ) as tmp:
                 tmp_path = tmp.name
-                self._fire(self._on_progress, 0, "Connecting…")
+                self._fire(self._on_progress, 0, MSG_CONNECTING)
                 with requests.get(
                     self.info.url,
                     headers={"User-Agent": USER_AGENT},
@@ -193,15 +201,15 @@ class InstallerDownloader(threading.Thread):
                         written += len(chunk)
                         if total:
                             self._fire(self._on_progress, int(written * 100 / total),
-                                       f"Downloading WinCompose… "
-                                       f"{written // 1024} / {total // 1024} KB")
+                                       MSG_DOWNLOADING_OF.format(done=written // 1024,
+                                                                 total=total // 1024))
                         else:
                             self._fire(self._on_progress, 0,
-                                       f"Downloading WinCompose… {written // 1024} KB")
+                                       MSG_DOWNLOADING.format(done=written // 1024))
         except DownloadCancelled:
             _unlink(tmp_path)
             log.info("WinCompose download cancelled by user.")
-            self._fire(self._on_finished, False, "Download cancelled.", "")
+            self._fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
             return
         except Exception as e:  # noqa: BLE001
             log.exception("WinCompose download failed")

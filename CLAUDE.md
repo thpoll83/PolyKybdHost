@@ -168,7 +168,10 @@ per-application ESC mark has a rule of **no per-application configuration**:
   `forwarder.py` goes through `_()`, `_f()` or `_nf()` from `polyhost.i18n`;
   `tests/i18n_test.py` fails on an unmarked literal handed to a Qt text call. After
   changing one, run `python scripts/i18n_strings.py update`. Logs, `polyctl` output and
-  the core's messages stay English on purpose. ⚠️ A function that calls `_()` must not
+  the core's messages stay English on purpose. ⚠️ Status text a dialog shows from the
+  device layer or a downloader (`hid_fw_up`, `updater`, `wincompose_install`) is a
+  module-level `M_()` template, shown through `translate_message()`. A new message there
+  that is an inline f-string shows in English and no test notices. ⚠️ A function that calls `_()` must not
   also assign `_` (`ok, _ = f()`): Python makes `_` local and the call raises
   `UnboundLocalError`.
 - **Developer mode adds a submenu and rearranges nothing.** It is a persisted setting,

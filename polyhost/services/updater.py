@@ -31,6 +31,28 @@ from polyhost.services import build_info
 # stdlib-only (no hid, no Qt), so importing it here costs nothing and keeps the
 # downloader's length check from drifting out of step with the sender's.
 from polyhost.device.hid_fw_up import FW_SIG_LEN
+from polyhost.i18n import M_
+
+# Progress and failure text the tray shows. English here (log, polyctl, the
+# daemon -> GUI events); the dialogs translate it with i18n.translate_message().
+# Module constants on purpose, see M_().
+MSG_PREFLIGHT_FAILED = M_("Preflight failed: {details}")
+MSG_PREFLIGHT_WARNING = M_("Warning — {name}: {detail}")
+MSG_INSTALL_DIR_NOT_WRITABLE = M_("Install dir not writable: {error}")
+MSG_NO_TEMP_DIR = M_("Could not create a temp directory for the update: {error}")
+MSG_STARTING_DOWNLOAD = M_("Starting download...")
+MSG_DOWNLOADING_VERSION = M_("Downloading v{version}...")
+MSG_APPLYING_UPDATE = M_("Applying update...")
+MSG_CONNECTING = M_("Connecting…")
+MSG_DOWNLOADING_FW_OF = M_("Downloading firmware… {done} / {total} KB")
+MSG_DOWNLOADING_FW = M_("Downloading firmware… {done} KB")
+MSG_DOWNLOAD_CANCELLED = M_("Download cancelled.")
+MSG_DOWNLOADING_SIG = M_("Downloading signature…")
+MSG_SIG_DOWNLOAD_FAILED = M_(
+    "The image downloaded, but its signature did not ({error}).\n\n"
+    "Flashing without it would make the keyboard treat this release as an "
+    "unsigned build and ask you to confirm on the keys, so the update was "
+    "stopped instead.")
 
 log = logging.getLogger(__name__)
 
@@ -1328,18 +1350,17 @@ class UpdateInstaller(threading.Thread):
                 "Update preflight — %s: %s", f.name, f.detail)
         blockers = preflight_blockers(findings)
         if blockers:
-            _fire(self._on_failed,
-                  "Preflight failed: "
-                  + "; ".join(f"{f.name}: {f.detail}" for f in blockers))
+            _fire(self._on_failed, MSG_PREFLIGHT_FAILED.format(
+                details="; ".join(f"{f.name}: {f.detail}" for f in blockers)))
             return
         for f in findings:
             if not f.ok:
-                _fire(self._on_progress, -1, f"Warning — {f.name}: {f.detail}")
+                _fire(self._on_progress, -1, MSG_PREFLIGHT_WARNING.format(name=f.name, detail=f.detail))
 
         try:
             install_root = get_install_root()
         except NotWritableError as e:
-            _fire(self._on_failed, f"Install dir not writable: {e}")
+            _fire(self._on_failed, MSG_INSTALL_DIR_NOT_WRITABLE.format(error=e))
             return
 
         # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
@@ -1351,15 +1372,16 @@ class UpdateInstaller(threading.Thread):
             tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
         except OSError as e:
             log.exception("Could not create the update temp dir")
-            _fire(self._on_failed, f"Could not create a temp directory for the update: {e}")
+            _fire(self._on_failed, MSG_NO_TEMP_DIR.format(error=e))
             return
         try:
-            _fire(self._on_progress, 0, "Starting download...")
+            _fire(self._on_progress, 0, MSG_STARTING_DOWNLOAD)
             extracted = download_and_extract(
                 self.release.tarball_url, tmp_dir,
-                progress_cb=lambda pct: _fire(self._on_progress, pct, f"Downloading v{self.release.version}..."),
+                progress_cb=lambda pct: _fire(self._on_progress, pct, MSG_DOWNLOADING_VERSION.format(
+                    version=self.release.version)),
             )
-            _fire(self._on_progress, -1, "Applying update...")
+            _fire(self._on_progress, -1, MSG_APPLYING_UPDATE)
             locked = apply_update(
                 extracted, install_root,
                 line_cb=lambda line: _fire(self._on_progress, -1, line),
@@ -1472,7 +1494,7 @@ class FwUpDownloader(threading.Thread):
                 prefix="polykybd-fw-", suffix=".bin", delete=False
             ) as tmp:
                 tmp_path = tmp.name
-                _fire(self._on_progress, 0, "Connecting…")
+                _fire(self._on_progress, 0, MSG_CONNECTING)
                 with requests.get(
                     self.release.bin_url,
                     headers={"User-Agent": USER_AGENT},
@@ -1491,14 +1513,15 @@ class FwUpDownloader(threading.Thread):
                         written += len(chunk)
                         if total:
                             pct = int(written * 100 / total)
-                            _fire(self._on_progress, pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
+                            _fire(self._on_progress, pct, MSG_DOWNLOADING_FW_OF.format(
+                                done=written // 1024, total=total // 1024))
                         else:
-                            _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
+                            _fire(self._on_progress, 0, MSG_DOWNLOADING_FW.format(done=written // 1024))
         except _DownloadCancelled:
             # Expected user abort — clean up the partial file quietly (no traceback).
             discard_fw_download(tmp_path)
             log.info("Firmware download cancelled by user.")
-            _fire(self._on_finished, False, "Download cancelled.", "")
+            _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
             return
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
@@ -1512,22 +1535,18 @@ class FwUpDownloader(threading.Thread):
             # letting the (unabortable, single-GET) signature fetch run first.
             discard_fw_download(tmp_path)
             log.info("Firmware download cancelled by user.")
-            _fire(self._on_finished, False, "Download cancelled.", "")
+            _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
             return
 
         sig_url = getattr(self.release, "sig_url", "")
         if sig_url:
-            _fire(self._on_progress, 100, "Downloading signature…")
+            _fire(self._on_progress, 100, MSG_DOWNLOADING_SIG)
             try:
                 self._fetch_signature(sig_url, tmp_path + ".sig")
             except Exception as e:  # noqa: BLE001
                 log.exception("Firmware signature download failed")
                 discard_fw_download(tmp_path)
-                _fire(self._on_finished, False,
-                      f"The image downloaded, but its signature did not ({e}).\n\n"
-                      "Flashing without it would make the keyboard treat this "
-                      "release as an unsigned build and ask you to confirm on the "
-                      "keys, so the update was stopped instead.", "")
+                _fire(self._on_finished, False, MSG_SIG_DOWNLOAD_FAILED.format(error=e), "")
                 return
         else:
             # No .sig on the release: an unsigned build (CI without the signing

@@ -35,10 +35,16 @@ POT = os.path.join(LOCALE_DIR, "polyhost.pot")
 UI_PATHS = ("polyhost/gui", "polyhost/host.py", "polyhost/forwarder.py")
 # Modules outside the UI that define N_-marked text the UI shows (extracted,
 # but not scanned: their other literals are not UI).
-EXTRA_EXTRACT = ("polyhost/device/command_ids.py", "polyhost/services/lang_regions.py")
+# The device and service modules whose English status messages the GUI shows
+# through i18n.translate_message() are listed too (their M_() templates).
+EXTRA_EXTRACT = (
+    "polyhost/device/command_ids.py", "polyhost/services/lang_regions.py",
+    "polyhost/device/hid_fw_up.py", "polyhost/device/split_link.py",
+    "polyhost/services/updater.py", "polyhost/services/wincompose_install.py",
+)
 
-KEYWORDS = ("_", "_f", "N_", "_nf:1,2", "ngettext:1,2", "pgettext:1c,2")
-MARKERS = {"_", "_f", "N_", "_nf", "ngettext", "pgettext"}
+KEYWORDS = ("_", "_f", "N_", "M_", "_nf:1,2", "ngettext:1,2", "pgettext:1c,2")
+MARKERS = {"_", "_f", "N_", "M_", "_nf", "ngettext", "pgettext"}
 
 # Widgets whose constructor takes the shown text.
 UI_CONSTRUCTORS = {

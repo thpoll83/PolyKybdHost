@@ -21,7 +21,7 @@ from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
 from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
-from polyhost.i18n import _, _f, N_
+from polyhost.i18n import _, _f, N_, translate_message
 from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -926,7 +926,7 @@ class PolyForwarder(QApplication):
         self.log.error("Update failed: %s", message)
         from polyhost.services.updater import fix_commands_from_message
         show_copyable_error(_("Update failed"), _("The update did not finish."),
-                            message if shown is None else shown,
+                            translate_message(message) if shown is None else shown,
                             commands=fix_commands_from_message(message))
 
     def quit_app(self):
