@@ -89,13 +89,22 @@ class HidFwUpDialog(QDialog):
     # Bar animation: a timer interpolates the displayed value toward the latest
     # reported one.  Constant velocity (percent per second) means the glide time
     # is proportional to the size of the jump, so the speed feels consistent.
+    # Each step is sized from the wall-clock time since the previous tick, not
+    # from _ANIM_TICK_MS: on a busy PC (or Windows' ~15 ms timer resolution) the
+    # ticks arrive late, and a fixed per-tick step then slowed the bar below the
+    # real transfer rate, so it fell behind and never caught up.
     _ANIM_TICK_MS = 5
-    _GLIDE_SPEED  = 2.3    # %/s — a full-width jump glides in roughly one second
+    _GLIDE_SPEED  = 2.3    # %/s at normal speed
 
     # If a newer progress report arrives while the bar is still catching up to
     # the previous target, the bar has fallen behind the real transfer — glide
     # that stretch this much faster so it catches up, then drop back to normal.
     _CATCHUP_FACTOR = 3
+
+    # More than this many percent behind the latest report: close the whole gap
+    # within _LAG_CATCHUP_S instead of gliding, so the bar never trails the transfer.
+    _MAX_LAG_PCT   = 5
+    _LAG_CATCHUP_S = 0.5
 
     # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
     # advances in 0.1% steps rather than visible whole-percent jumps, and the
@@ -136,6 +145,8 @@ class HidFwUpDialog(QDialog):
         self._determinate    = False # True once chunks start; spinner never returns after
         self._done           = False # True once finalized; late signals are ignored
         self._behind         = False # bar fell behind a fresh report; catch up faster
+        self._last_tick      = None  # monotonic time of the previous animation tick
+        self._catchup_speed  = 0.0   # %/s latched when the lag passed _MAX_LAG_PCT
 
         # ETA tracking for the chunk-transfer phase (pct 2–98).
         self._transfer_start_time = None  # monotonic, set when chunks begin flowing
@@ -284,8 +295,7 @@ class HidFwUpDialog(QDialog):
         if new_target > self._target_pct and self._display_pct < self._target_pct:
             self._behind = True
         self._target_pct = new_target
-        if not self._anim_timer.isActive():
-            self._anim_timer.start()
+        self._start_anim()
 
         # ETA: record when chunk transfer started and keep the latest pct.
         self._last_reported_pct = max(self._last_reported_pct, pct)
@@ -316,19 +326,40 @@ class HidFwUpDialog(QDialog):
             self._progress_bar.setRange(0, 100 * self._SCALE)
             self._show_pct(self._display_pct)
 
+    def _start_anim(self):
+        if not self._anim_timer.isActive():
+            # The first tick after a (re)start covers one interval, not the idle
+            # time since the bar last settled, which would snap it to the target.
+            self._last_tick = None
+            self._anim_timer.start()
+
+    def _glide_speed(self, gap: float) -> float:
+        """%/s for a bar `gap` percent behind the latest report."""
+        speed = self._GLIDE_SPEED
+        if self._behind:
+            speed *= self._CATCHUP_FACTOR
+        # Latched, not recomputed per tick: gap / _LAG_CATCHUP_S on every tick
+        # shrinks with the gap and never closes it within _LAG_CATCHUP_S.
+        if gap > self._MAX_LAG_PCT:
+            self._catchup_speed = max(self._catchup_speed, gap / self._LAG_CATCHUP_S)
+        return max(speed, self._catchup_speed)
+
     def _animate_step(self):
         """Advance the displayed value toward the target at a constant speed."""
+        now = time.monotonic()
+        dt = (self._ANIM_TICK_MS / 1000.0 if self._last_tick is None
+              else now - self._last_tick)
+        self._last_tick = now
         if self._display_pct < self._target_pct:
-            speed = self._GLIDE_SPEED
-            if self._behind:
-                speed *= self._CATCHUP_FACTOR
-            step = speed * (self._ANIM_TICK_MS / 1000.0)
+            gap = self._target_pct - self._display_pct
+            step = self._glide_speed(gap) * dt
             self._display_pct = min(self._display_pct + step, float(self._target_pct))
             self._show_pct(self._display_pct)
 
         if self._display_pct >= self._target_pct:
             # Caught up — back to normal speed; nothing left to animate for now.
             self._behind = False
+            self._catchup_speed = 0.0
             self._anim_timer.stop()
             if self._pending_apply:
                 self._pending_apply = False
@@ -351,8 +382,7 @@ class HidFwUpDialog(QDialog):
                 self._pending_apply = True
             else:
                 self._pending_finish = (ok, msg)
-            if not self._anim_timer.isActive():
-                self._anim_timer.start()
+            self._start_anim()
         else:
             # On failure, leave the bar where it stopped and report immediately.
             self.log.warning("FW_UP finished: ok=%s — %s", ok, msg)
