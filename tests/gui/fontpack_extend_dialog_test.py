@@ -309,6 +309,18 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertIsNone(dlg._flags_record_for(base + rec["count"]))         # past end
         self.assertIsNone(dlg._flags_record_for(0x41))               # not a flag cp
 
+    def test_flags_record_refuses_a_pack_with_another_glyph_count(self):
+        # A pre-v6 flags pack has one glyph per language, so the record's
+        # per-country groups would prefill the wrong flag.
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        rec = fed._lang_flags()
+        if not rec:
+            self.skipTest("no shipped lang_flags.json")
+        base, n = int(rec["seq_first"]), int(rec["count"])
+        self.assertIsNotNone(dlg._flags_record_for(base, base, base + n - 1))
+        self.assertIsNone(dlg._flags_record_for(base, base, base + n + 29))
+
     def test_flag_edit_prefills_sequence_mode(self):
         rec = fed._lang_flags()
         if not rec:
