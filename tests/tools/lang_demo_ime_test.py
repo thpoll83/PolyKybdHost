@@ -105,10 +105,40 @@ class ParseImeKeyTest(unittest.TestCase):
         got = ld.parse_ime_key(FIRMWARE_C, ["en-US", "ko-KR", "ja-JP", "de-DE"])
         self.assertIsNotNone(got)
         self.assertEqual(got["families"].get("ko-KR"), "KOREAN")
-        self.assertEqual(got["families"].get("ja-JP"), "JAPANESE")
+        # JAPANESE before the JIS family existed, JAPANESE_JIS after: either is a
+        # real tree, and this test must pass against both.
+        self.assertIn(got["families"].get("ja-JP"), ("JAPANESE", "JAPANESE_JIS"))
         self.assertEqual(got["families"].get("en-US"), "RALT")
         self.assertNotIn("de-DE", got["families"])
         self.assertEqual(set(got["icons"]), {"KOREAN", "JAPANESE", "JAPANESE_SHIFT"})
+
+
+
+class ImeStandInTest(unittest.TestCase):
+    """`ime_stand_in()`: what the board render draws for KC_IME, per family."""
+
+    IME = {"families": {"ko-KR": "KOREAN", "ja-JP": "JAPANESE_JIS", "ja-US": "JAPANESE",
+                        "en-US": "RALT"},
+           "icons": {"KOREAN": "ICON_HAN_YEONG", "JAPANESE": "ICON_EISU_KANA",
+                     "JAPANESE_SHIFT": "ICON_KATAKANA"}}
+
+    def test_each_family_draws_its_key_or_icon(self):
+        self.assertEqual(ld.ime_stand_in(self.IME, "en-US"), ("key", "KC_RIGHT_ALT"))
+        self.assertEqual(ld.ime_stand_in(self.IME, "de-DE"), ("key", "KC_NONUS_BACKSLASH"))
+        self.assertEqual(ld.ime_stand_in(self.IME, "ko-KR"), ("icon", "ICON_HAN_YEONG"))
+        self.assertEqual(ld.ime_stand_in(self.IME, "ja-US"), ("icon", "ICON_EISU_KANA"))
+
+    def test_ja_jp_is_caps_lock_shifted_or_not(self):
+        # on a JIS layout the Caps key IS 英数; Shift makes it Caps Lock, not カナ
+        for shift in (False, True):
+            self.assertEqual(ld.ime_stand_in(self.IME, "ja-JP", shift), ("key", "KC_CAPS_LOCK"))
+
+    def test_shift_shows_katakana_on_the_japanese_family_only(self):
+        self.assertEqual(ld.ime_stand_in(self.IME, "ja-US", True), ("icon", "ICON_KATAKANA"))
+        self.assertEqual(ld.ime_stand_in(self.IME, "ko-KR", True), ("icon", "ICON_HAN_YEONG"))
+
+    def test_no_data_draws_nothing_special(self):
+        self.assertIsNone(ld.ime_stand_in(None, "ja-JP"))
 
 
 if __name__ == "__main__":

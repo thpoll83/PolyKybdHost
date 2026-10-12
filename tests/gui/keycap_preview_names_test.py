@@ -63,6 +63,10 @@ class ImeStandInTest(unittest.TestCase):
     def test_the_ralt_family_draws_as_right_alt(self):
         self.assertEqual(self._p("en-US")._ime_stand_in(), "KC_RIGHT_ALT")
 
+    def test_ja_jp_on_a_jis_layout_draws_as_caps_lock(self):
+        ime = {"families": {"ja-JP": "JAPANESE_JIS"}, "legends": dict(self.IME["legends"])}
+        self.assertEqual(self._p("ja-JP", ime)._ime_stand_in(), "KC_CAPS_LOCK")
+
     def test_every_other_language_draws_as_nubs(self):
         self.assertEqual(self._p("de-DE")._ime_stand_in(), "KC_NONUS_BACKSLASH")
 

@@ -693,6 +693,10 @@ class KeycapPreview:
         family = self._ime.get("families", {}).get(self._lang)
         if family == "RALT":
             return "KC_RIGHT_ALT"
+        # ja-JP: on a JIS layout the Caps key IS 英数, so KC_IME is Caps Lock there
+        # (the editor shows the Windows/Linux key; macOS keeps the icon).
+        if family == "JAPANESE_JIS":
+            return "KC_CAPS_LOCK"
         if family is None:
             return "KC_NONUS_BACKSLASH"
         legend = self._ime.get("legends", {}).get(family)

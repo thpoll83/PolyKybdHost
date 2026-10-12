@@ -691,12 +691,44 @@ def render_static(L, R, expr) -> Image.Image:
     return render_static_cps(R, L.resolve(expr))
 
 
+def ime_stand_in(ime: dict | None, lang: str, shift: bool = False):
+    """What `KC_IME` draws on `lang`, by the firmware's rule (`ime_key_stand_in`).
+
+    Returns ("key", KC_*) for a family that stands in for a plain key -- RALT draws
+    as Right Alt, JAPANESE_JIS (ja-JP, whose JIS Caps key IS 英数) as Caps Lock, and
+    a language with no family as Non-US Backslash -- or ("icon", ICON_*) for the
+    Korean and Japanese icons. The preview shows the Windows/Linux key: on macOS
+    ja-JP keeps the icon and RALT is Option. None when the tree predates the key.
+    """
+    if not ime:
+        return None
+    family = ime["families"].get(lang)
+    if family is None:
+        return ("key", "KC_NONUS_BACKSLASH")
+    if family == "RALT":
+        return ("key", "KC_RIGHT_ALT")
+    if family == "JAPANESE_JIS":
+        return ("key", "KC_CAPS_LOCK")
+    if family == "JAPANESE" and shift:
+        return ("icon", ime["icons"]["JAPANESE_SHIFT"])
+    return ("icon", ime["icons"][family])
+
+
 def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
-                shift: bool = False) -> dict[str, KeyContent]:
+                shift: bool = False, ime: dict | None = None) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
         whole = normalize_kc(tok)
+        if kc == "KC_IME" and (pick := ime_stand_in(ime, lang, shift)):
+            # KC_IME has no legend of its own: it draws another key's, or an icon.
+            kind, name = pick
+            kc = whole = name
+            if kind == "icon":
+                c = KeyContent()
+                c._oled = render_static(L, R, name)
+                out[mp] = c
+                continue
         if kc in op.ROW:                       # letter / number / symbol (language LUT)
             # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
             # 2 large. It applies to the MAIN legend only — the Shift/AltGr
@@ -769,6 +801,7 @@ def main():
     if unknown:
         raise SystemExit(f"unknown language(s): {unknown}\nhave {len(L.langs)} langs")
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    ime = parse_ime_key(os.path.join(pk, 'poly_keymap.c'), L.langs)
     print(f"  {len(L.langs)} languages available, touring {len(langs)}")
 
     renderer = LangBoard(json.load(open(args.kle, encoding='utf-8')),
@@ -786,7 +819,8 @@ def main():
 
     imgs, durations = [], []
     for li, lang in enumerate(langs):
-        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size))
+        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size,
+                                                  ime=ime))
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))
         d = ImageDraw.Draw(frame)
