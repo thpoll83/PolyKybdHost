@@ -23,14 +23,14 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QLineEdit, QPlainTextEdit, QPushButton, QVBoxLayout)
 
 from polyhost.gui.file_dialogs import downloads_dir
-from polyhost.gui.log_bundle_dialog import TIMEFRAMES, _CollectWorker
+from polyhost.gui.log_bundle_dialog import TIMEFRAMES, _CollectWorker, timeframe_index
 from polyhost.i18n import _, _f
 from polyhost.services import log_bundle, problem_report
 
 # Reports default to a tighter window than a plain log bundle: a problem being
 # reported now is almost always minutes old, and a smaller slice carries less
 # history to a public place.
-DEFAULT_TIMEFRAME_INDEX = 1  # "Last hour"
+DEFAULT_TIMEFRAME_INDEX = timeframe_index("1h")
 
 
 # Markup around translated prose, kept out of the msgids.

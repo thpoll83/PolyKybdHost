@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-12 09:06+0000\n"
+"POT-Creation-Date: 2026-10-12 21:00+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -466,7 +466,7 @@ msgid "Stop"
 msgstr "Stoppen"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
-#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:151
+#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:164
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
 msgstr "In die Zwischenablage kopieren"
@@ -474,7 +474,7 @@ msgstr "In die Zwischenablage kopieren"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:440 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:219
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -1170,7 +1170,7 @@ msgstr "Die erstellte Glyphe behalten (wird dem Bundle im Speicher hinzugefügt;
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:186
+#: polyhost/gui/hid_fw_up_dialog.py:197
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92 polyhost/host.py:227
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -1659,39 +1659,39 @@ msgstr "Flashen gestartet – Infobereich/Protokoll beobachten."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Alle ausstehenden Änderungen an „{label}“ verwerfen?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:145 polyhost/host.py:2864
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2864
 #: polyhost/host.py:2888
 msgid "Firmware Update"
 msgstr "Firmware-Update"
 
-#: polyhost/gui/hid_fw_up_dialog.py:154
+#: polyhost/gui/hid_fw_up_dialog.py:165
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>Datei:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Applying staged firmware…"
 msgstr "Bereitgestellte Firmware wird angewendet…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Starting…"
 msgstr "Wird gestartet…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:252
+#: polyhost/gui/hid_fw_up_dialog.py:263
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "noch ca. {seconds} s"
 
-#: polyhost/gui/hid_fw_up_dialog.py:257
+#: polyhost/gui/hid_fw_up_dialog.py:268
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "noch ca. {minutes} min {seconds} s"
 
-#: polyhost/gui/hid_fw_up_dialog.py:370
+#: polyhost/gui/hid_fw_up_dialog.py:400
 msgid "Applying — activating the staged firmware…"
 msgstr "Wird angewendet – bereitgestellte Firmware wird aktiviert…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:450
+#: polyhost/gui/hid_fw_up_dialog.py:480
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Wird abgebrochen – warte, bis der aktuelle Block fertig ist…"
 
@@ -2315,89 +2315,109 @@ msgid "Standard"
 msgstr "Standard"
 
 #: polyhost/gui/log_bundle_dialog.py:30
+msgid "Last 5 minutes"
+msgstr "Letzte 5 Minuten"
+
+#: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last 15 minutes"
 msgstr "Letzte 15 Minuten"
 
-#: polyhost/gui/log_bundle_dialog.py:31
+#: polyhost/gui/log_bundle_dialog.py:32
+msgid "Last 30 minutes"
+msgstr "Letzte 30 Minuten"
+
+#: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last hour"
 msgstr "Letzte Stunde"
 
-#: polyhost/gui/log_bundle_dialog.py:32
+#: polyhost/gui/log_bundle_dialog.py:34
+msgid "Last 3 hours"
+msgstr "Letzte 3 Stunden"
+
+#: polyhost/gui/log_bundle_dialog.py:35
+msgid "Last 12 hours"
+msgstr "Letzte 12 Stunden"
+
+#: polyhost/gui/log_bundle_dialog.py:36
 msgid "Last 24 hours"
 msgstr "Letzte 24 Stunden"
 
-#: polyhost/gui/log_bundle_dialog.py:33
+#: polyhost/gui/log_bundle_dialog.py:37
+msgid "Last 3 days"
+msgstr "Letzte 3 Tage"
+
+#: polyhost/gui/log_bundle_dialog.py:38
 msgid "Last 7 days"
 msgstr "Letzte 7 Tage"
 
-#: polyhost/gui/log_bundle_dialog.py:34
+#: polyhost/gui/log_bundle_dialog.py:39
 msgid "Everything on disk"
 msgstr "Alles auf dem Datenträger"
 
-#: polyhost/gui/log_bundle_dialog.py:88
+#: polyhost/gui/log_bundle_dialog.py:101
 #, python-brace-format
 msgid "Log collection failed: {error}"
 msgstr "Protokollsammlung fehlgeschlagen: {error}"
 
-#: polyhost/gui/log_bundle_dialog.py:106
+#: polyhost/gui/log_bundle_dialog.py:119
 msgid "Collect Logs"
 msgstr "Protokolle sammeln"
 
-#: polyhost/gui/log_bundle_dialog.py:111
+#: polyhost/gui/log_bundle_dialog.py:124
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
 msgstr "Sammelt alle PolyHost-Protokolle – einschließlich der des Daemons und der Tastaturkonsole – samt ihrer rotierten Sicherungen sowie Versions- und Verbindungsdetails in einer einzigen Datei, die einem Fehlerbericht angehängt werden kann."
 
-#: polyhost/gui/log_bundle_dialog.py:123
+#: polyhost/gui/log_bundle_dialog.py:136
 msgid "Timeframe:"
 msgstr "Zeitraum:"
 
-#: polyhost/gui/log_bundle_dialog.py:126
+#: polyhost/gui/log_bundle_dialog.py:139
 msgid "Mask window titles"
 msgstr "Fenstertitel maskieren"
 
-#: polyhost/gui/log_bundle_dialog.py:128
+#: polyhost/gui/log_bundle_dialog.py:141
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
 msgstr "Fenstertitel können die Namen geöffneter Dokumente enthalten. Beim Maskieren bleiben die Anwendungsnamen erhalten (anhand derer die Overlay-Zuordnung untersucht wird), jeder Titel wird aber durch einen Platzhalter ersetzt."
 
-#: polyhost/gui/log_bundle_dialog.py:145
+#: polyhost/gui/log_bundle_dialog.py:158
 msgid "Show in Folder"
 msgstr "Im Ordner anzeigen"
 
-#: polyhost/gui/log_bundle_dialog.py:155
+#: polyhost/gui/log_bundle_dialog.py:168
 msgid "Save Bundle…"
 msgstr "Paket speichern…"
 
-#: polyhost/gui/log_bundle_dialog.py:169
+#: polyhost/gui/log_bundle_dialog.py:182
 msgid "Window titles will be replaced with placeholders. Application names are kept."
 msgstr "Fenstertitel werden durch Platzhalter ersetzt. Anwendungsnamen bleiben erhalten."
 
-#: polyhost/gui/log_bundle_dialog.py:173
+#: polyhost/gui/log_bundle_dialog.py:186
 msgid "The logs record the titles of windows you focused, which can name open documents."
 msgstr "Die Protokolle enthalten die Titel der Fenster, die im Fokus waren; diese können geöffnete Dokumente benennen."
 
-#: polyhost/gui/log_bundle_dialog.py:175
+#: polyhost/gui/log_bundle_dialog.py:188
 msgid "Tick the box above to mask them."
 msgstr "Zum Maskieren das Kästchen oben aktivieren."
 
-#: polyhost/gui/log_bundle_dialog.py:196
+#: polyhost/gui/log_bundle_dialog.py:209
 msgid "Collecting…"
 msgstr "Wird gesammelt…"
 
-#: polyhost/gui/log_bundle_dialog.py:218
+#: polyhost/gui/log_bundle_dialog.py:231
 msgid "Save Log Bundle"
 msgstr "Protokollpaket speichern"
 
-#: polyhost/gui/log_bundle_dialog.py:219
+#: polyhost/gui/log_bundle_dialog.py:232
 msgid "Zip archives (*.zip)"
 msgstr "ZIP-Archive (*.zip)"
 
-#: polyhost/gui/log_bundle_dialog.py:229
+#: polyhost/gui/log_bundle_dialog.py:242
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
 msgstr "{summary} gespeichert"
 
-#: polyhost/gui/log_bundle_dialog.py:239
+#: polyhost/gui/log_bundle_dialog.py:252
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."

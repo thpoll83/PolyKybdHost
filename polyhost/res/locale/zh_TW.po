@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-12 09:06+0000\n"
+"POT-Creation-Date: 2026-10-12 21:00+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -466,7 +466,7 @@ msgid "Stop"
 msgstr "停止"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
-#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:151
+#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:164
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
 msgstr "複製到剪貼簿"
@@ -474,7 +474,7 @@ msgstr "複製到剪貼簿"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:440 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:219
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -1167,7 +1167,7 @@ msgstr "保留建立的字符（已加入記憶體中的套件；請從檢視器
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:186
+#: polyhost/gui/hid_fw_up_dialog.py:197
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92 polyhost/host.py:227
 msgid "Cancel"
 msgstr "取消"
@@ -1652,39 +1652,39 @@ msgstr "已開始燒錄 — 請留意系統匣／記錄檔。"
 msgid "Discard all pending edits to '{label}'?"
 msgstr "要捨棄「{label}」的所有待處理編輯嗎？"
 
-#: polyhost/gui/hid_fw_up_dialog.py:145 polyhost/host.py:2864
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2864
 #: polyhost/host.py:2888
 msgid "Firmware Update"
 msgstr "韌體更新"
 
-#: polyhost/gui/hid_fw_up_dialog.py:154
+#: polyhost/gui/hid_fw_up_dialog.py:165
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>檔案：</b>{path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Applying staged firmware…"
 msgstr "正在套用已暫存的韌體…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Starting…"
 msgstr "正在開始…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:252
+#: polyhost/gui/hid_fw_up_dialog.py:263
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "剩餘約 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:257
+#: polyhost/gui/hid_fw_up_dialog.py:268
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "剩餘約 {minutes} 分 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:370
+#: polyhost/gui/hid_fw_up_dialog.py:400
 msgid "Applying — activating the staged firmware…"
 msgstr "正在套用 — 正在啟用已暫存的韌體…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:450
+#: polyhost/gui/hid_fw_up_dialog.py:480
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "正在取消 — 等待目前的區塊完成…"
 
@@ -2302,89 +2302,109 @@ msgid "Standard"
 msgstr "標準"
 
 #: polyhost/gui/log_bundle_dialog.py:30
+msgid "Last 5 minutes"
+msgstr "過去 5 分鐘"
+
+#: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last 15 minutes"
 msgstr "過去 15 分鐘"
 
-#: polyhost/gui/log_bundle_dialog.py:31
+#: polyhost/gui/log_bundle_dialog.py:32
+msgid "Last 30 minutes"
+msgstr "過去 30 分鐘"
+
+#: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last hour"
 msgstr "過去 1 小時"
 
-#: polyhost/gui/log_bundle_dialog.py:32
+#: polyhost/gui/log_bundle_dialog.py:34
+msgid "Last 3 hours"
+msgstr "過去 3 小時"
+
+#: polyhost/gui/log_bundle_dialog.py:35
+msgid "Last 12 hours"
+msgstr "過去 12 小時"
+
+#: polyhost/gui/log_bundle_dialog.py:36
 msgid "Last 24 hours"
 msgstr "過去 24 小時"
 
-#: polyhost/gui/log_bundle_dialog.py:33
+#: polyhost/gui/log_bundle_dialog.py:37
+msgid "Last 3 days"
+msgstr "過去 3 天"
+
+#: polyhost/gui/log_bundle_dialog.py:38
 msgid "Last 7 days"
 msgstr "過去 7 天"
 
-#: polyhost/gui/log_bundle_dialog.py:34
+#: polyhost/gui/log_bundle_dialog.py:39
 msgid "Everything on disk"
 msgstr "磁碟上的全部記錄"
 
-#: polyhost/gui/log_bundle_dialog.py:88
+#: polyhost/gui/log_bundle_dialog.py:101
 #, python-brace-format
 msgid "Log collection failed: {error}"
 msgstr "收集記錄檔失敗：{error}"
 
-#: polyhost/gui/log_bundle_dialog.py:106
+#: polyhost/gui/log_bundle_dialog.py:119
 msgid "Collect Logs"
 msgstr "收集記錄檔"
 
-#: polyhost/gui/log_bundle_dialog.py:111
+#: polyhost/gui/log_bundle_dialog.py:124
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
 msgstr "將所有 PolyHost 記錄檔 — 包括常駐程式與鍵盤主控台的記錄 — 連同其輪替備份，以及版本與連線詳細資料，收集成單一檔案，方便附加到錯誤回報。"
 
-#: polyhost/gui/log_bundle_dialog.py:123
+#: polyhost/gui/log_bundle_dialog.py:136
 msgid "Timeframe:"
 msgstr "時間範圍："
 
-#: polyhost/gui/log_bundle_dialog.py:126
+#: polyhost/gui/log_bundle_dialog.py:139
 msgid "Mask window titles"
 msgstr "遮蔽視窗標題"
 
-#: polyhost/gui/log_bundle_dialog.py:128
+#: polyhost/gui/log_bundle_dialog.py:141
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
 msgstr "視窗標題可能包含您開啟的文件名稱。遮蔽會保留應用程式名稱（覆蓋圖比對的除錯依據），但將每個標題替換為預留位置文字。"
 
-#: polyhost/gui/log_bundle_dialog.py:145
+#: polyhost/gui/log_bundle_dialog.py:158
 msgid "Show in Folder"
 msgstr "在資料夾中顯示"
 
-#: polyhost/gui/log_bundle_dialog.py:155
+#: polyhost/gui/log_bundle_dialog.py:168
 msgid "Save Bundle…"
 msgstr "儲存套件包…"
 
-#: polyhost/gui/log_bundle_dialog.py:169
+#: polyhost/gui/log_bundle_dialog.py:182
 msgid "Window titles will be replaced with placeholders. Application names are kept."
 msgstr "視窗標題將以預留位置文字取代。應用程式名稱會保留。"
 
-#: polyhost/gui/log_bundle_dialog.py:173
+#: polyhost/gui/log_bundle_dialog.py:186
 msgid "The logs record the titles of windows you focused, which can name open documents."
 msgstr "記錄檔會記錄您切換過的視窗標題，其中可能包含開啟的文件名稱。"
 
-#: polyhost/gui/log_bundle_dialog.py:175
+#: polyhost/gui/log_bundle_dialog.py:188
 msgid "Tick the box above to mask them."
 msgstr "勾選上方的方塊即可遮蔽。"
 
-#: polyhost/gui/log_bundle_dialog.py:196
+#: polyhost/gui/log_bundle_dialog.py:209
 msgid "Collecting…"
 msgstr "正在收集…"
 
-#: polyhost/gui/log_bundle_dialog.py:218
+#: polyhost/gui/log_bundle_dialog.py:231
 msgid "Save Log Bundle"
 msgstr "儲存記錄檔套件包"
 
-#: polyhost/gui/log_bundle_dialog.py:219
+#: polyhost/gui/log_bundle_dialog.py:232
 msgid "Zip archives (*.zip)"
 msgstr "Zip 封存檔（*.zip）"
 
-#: polyhost/gui/log_bundle_dialog.py:229
+#: polyhost/gui/log_bundle_dialog.py:242
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
 msgstr "已儲存 {summary}"
 
-#: polyhost/gui/log_bundle_dialog.py:239
+#: polyhost/gui/log_bundle_dialog.py:252
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."

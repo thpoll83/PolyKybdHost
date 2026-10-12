@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-12 09:06+0000\n"
+"POT-Creation-Date: 2026-10-12 21:00+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -466,7 +466,7 @@ msgid "Stop"
 msgstr "إيقاف"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
-#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:151
+#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:164
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
 msgstr "نسخ إلى الحافظة"
@@ -474,7 +474,7 @@ msgstr "نسخ إلى الحافظة"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:440 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:219
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -1182,7 +1182,7 @@ msgstr "الاحتفاظ بالرمز المبني (يُضاف إلى الرزم
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:186
+#: polyhost/gui/hid_fw_up_dialog.py:197
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92 polyhost/host.py:227
 msgid "Cancel"
 msgstr "إلغاء"
@@ -1687,39 +1687,39 @@ msgstr "بدأت الكتابة — تابع علبة النظام/السجل."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "هل تريد تجاهل كل التعديلات المعلّقة على '{label}'؟"
 
-#: polyhost/gui/hid_fw_up_dialog.py:145 polyhost/host.py:2864
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2864
 #: polyhost/host.py:2888
 msgid "Firmware Update"
 msgstr "تحديث البرنامج الثابت"
 
-#: polyhost/gui/hid_fw_up_dialog.py:154
+#: polyhost/gui/hid_fw_up_dialog.py:165
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>الملف:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Applying staged firmware…"
 msgstr "جارٍ تطبيق البرنامج الثابت المُجهَّز…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:159
+#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Starting…"
 msgstr "جارٍ البدء…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:252
+#: polyhost/gui/hid_fw_up_dialog.py:263
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "متبقٍ ~{seconds} ث"
 
-#: polyhost/gui/hid_fw_up_dialog.py:257
+#: polyhost/gui/hid_fw_up_dialog.py:268
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "متبقٍ ~{minutes} د {seconds} ث"
 
-#: polyhost/gui/hid_fw_up_dialog.py:370
+#: polyhost/gui/hid_fw_up_dialog.py:400
 msgid "Applying — activating the staged firmware…"
 msgstr "جارٍ التطبيق — تنشيط البرنامج الثابت المُجهَّز…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:450
+#: polyhost/gui/hid_fw_up_dialog.py:480
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "جارٍ الإلغاء — بانتظار انتهاء الجزء الحالي…"
 
@@ -2367,89 +2367,109 @@ msgid "Standard"
 msgstr "قياسية"
 
 #: polyhost/gui/log_bundle_dialog.py:30
+msgid "Last 5 minutes"
+msgstr "آخر 5 دقائق"
+
+#: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last 15 minutes"
 msgstr "آخر 15 دقيقة"
 
-#: polyhost/gui/log_bundle_dialog.py:31
+#: polyhost/gui/log_bundle_dialog.py:32
+msgid "Last 30 minutes"
+msgstr "آخر 30 دقيقة"
+
+#: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last hour"
 msgstr "آخر ساعة"
 
-#: polyhost/gui/log_bundle_dialog.py:32
+#: polyhost/gui/log_bundle_dialog.py:34
+msgid "Last 3 hours"
+msgstr "آخر 3 ساعات"
+
+#: polyhost/gui/log_bundle_dialog.py:35
+msgid "Last 12 hours"
+msgstr "آخر 12 ساعة"
+
+#: polyhost/gui/log_bundle_dialog.py:36
 msgid "Last 24 hours"
 msgstr "آخر 24 ساعة"
 
-#: polyhost/gui/log_bundle_dialog.py:33
+#: polyhost/gui/log_bundle_dialog.py:37
+msgid "Last 3 days"
+msgstr "آخر 3 أيام"
+
+#: polyhost/gui/log_bundle_dialog.py:38
 msgid "Last 7 days"
 msgstr "آخر 7 أيام"
 
-#: polyhost/gui/log_bundle_dialog.py:34
+#: polyhost/gui/log_bundle_dialog.py:39
 msgid "Everything on disk"
 msgstr "كل ما هو على القرص"
 
-#: polyhost/gui/log_bundle_dialog.py:88
+#: polyhost/gui/log_bundle_dialog.py:101
 #, python-brace-format
 msgid "Log collection failed: {error}"
 msgstr "فشل جمع السجلات: {error}"
 
-#: polyhost/gui/log_bundle_dialog.py:106
+#: polyhost/gui/log_bundle_dialog.py:119
 msgid "Collect Logs"
 msgstr "جمع السجلات"
 
-#: polyhost/gui/log_bundle_dialog.py:111
+#: polyhost/gui/log_bundle_dialog.py:124
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
 msgstr "يجمع كل سجلات PolyHost — بما فيها سجل الخدمة الخلفية ووحدة تحكم لوحة المفاتيح — مع نسخها الاحتياطية المدوَّرة، بالإضافة إلى تفاصيل الإصدار والاتصال، في ملف واحد يمكنك إرفاقه بتقرير خطأ."
 
-#: polyhost/gui/log_bundle_dialog.py:123
+#: polyhost/gui/log_bundle_dialog.py:136
 msgid "Timeframe:"
 msgstr "الفترة الزمنية:"
 
-#: polyhost/gui/log_bundle_dialog.py:126
+#: polyhost/gui/log_bundle_dialog.py:139
 msgid "Mask window titles"
 msgstr "إخفاء عناوين النوافذ"
 
-#: polyhost/gui/log_bundle_dialog.py:128
+#: polyhost/gui/log_bundle_dialog.py:141
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
 msgstr "قد تكشف عناوين النوافذ أسماء المستندات التي كانت مفتوحة لديك. يُبقي الإخفاء أسماء التطبيقات (وهي ما يُعتمد عليه في تصحيح مطابقة التراكبات) لكنه يستبدل كل عنوان بعنصر نائب."
 
-#: polyhost/gui/log_bundle_dialog.py:145
+#: polyhost/gui/log_bundle_dialog.py:158
 msgid "Show in Folder"
 msgstr "الإظهار في المجلد"
 
-#: polyhost/gui/log_bundle_dialog.py:155
+#: polyhost/gui/log_bundle_dialog.py:168
 msgid "Save Bundle…"
 msgstr "حفظ الحزمة…"
 
-#: polyhost/gui/log_bundle_dialog.py:169
+#: polyhost/gui/log_bundle_dialog.py:182
 msgid "Window titles will be replaced with placeholders. Application names are kept."
 msgstr "سيتم استبدال عناوين النوافذ بعناصر نائبة. تُحفظ أسماء التطبيقات."
 
-#: polyhost/gui/log_bundle_dialog.py:173
+#: polyhost/gui/log_bundle_dialog.py:186
 msgid "The logs record the titles of windows you focused, which can name open documents."
 msgstr "تسجّل السجلات عناوين النوافذ التي ركّزت عليها، وقد تكشف أسماء المستندات المفتوحة."
 
-#: polyhost/gui/log_bundle_dialog.py:175
+#: polyhost/gui/log_bundle_dialog.py:188
 msgid "Tick the box above to mask them."
 msgstr "حدّد المربع أعلاه لإخفائها."
 
-#: polyhost/gui/log_bundle_dialog.py:196
+#: polyhost/gui/log_bundle_dialog.py:209
 msgid "Collecting…"
 msgstr "جارٍ الجمع…"
 
-#: polyhost/gui/log_bundle_dialog.py:218
+#: polyhost/gui/log_bundle_dialog.py:231
 msgid "Save Log Bundle"
 msgstr "حفظ حزمة السجلات"
 
-#: polyhost/gui/log_bundle_dialog.py:219
+#: polyhost/gui/log_bundle_dialog.py:232
 msgid "Zip archives (*.zip)"
 msgstr "أرشيفات Zip (*.zip)"
 
-#: polyhost/gui/log_bundle_dialog.py:229
+#: polyhost/gui/log_bundle_dialog.py:242
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
 msgstr "تم حفظ {summary}"
 
-#: polyhost/gui/log_bundle_dialog.py:239
+#: polyhost/gui/log_bundle_dialog.py:252
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."
