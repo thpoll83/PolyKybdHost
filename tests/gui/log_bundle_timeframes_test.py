@@ -11,10 +11,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from polyhost.services import log_bundle
 
 try:
-    from polyhost.gui import log_bundle_dialog, report_problem_dialog
+    import PyQt5.QtWidgets  # noqa: F401
     _IMPORT_ERR = None
-except Exception as e:  # pragma: no cover - no Qt available
+except ImportError as e:  # pragma: no cover - no Qt available
     _IMPORT_ERR = e
+
+# Outside the guard: a dialog that fails to import must fail this module, not
+# skip it.
+if _IMPORT_ERR is None:
+    from polyhost.gui import log_bundle_dialog, report_problem_dialog
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
