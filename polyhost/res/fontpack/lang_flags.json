@@ -1,7 +1,7 @@
 {
   "_comment": "Render settings for the language-layer country flag font (base/fonts/flag_fonts.h, gen-lang-fonts.sh). Mirrored byte-identically in PolyKybdHost/polyhost/res/fontpack/lang_flags.json — keep both in sync (cmp). Lets the host font-pack editor rebuild a single flag: sequence-mode, source NotoColorEmoji, group = cp - seq_first.",
   "seq_first": 57344,
-  "count": 160,
+  "count": 161,
   "source": "Noto_CEmoji/NotoColorEmoji-Regular.ttf",
   "source_file": "NotoColorEmoji-Regular.ttf",
   "size": 20,

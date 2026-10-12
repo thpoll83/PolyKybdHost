@@ -119,6 +119,7 @@ LANG_REGION = {
 # Keep in sync with REGION_LANGS in qmk_firmware .../polykybd/lang_layer.c.
 LANG_REGION_OVERRIDE = {
     "hwUS": "Oceania",   # Hawaiian: US country code, but Polynesian
+    "jaUS": "Asia",      # Japanese on a US keyboard layout: US is the layout, not the place
 }
 
 # The region names are submenu titles in the tray, translated where shown
