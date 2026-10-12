@@ -137,6 +137,16 @@ class ImeStandInTest(unittest.TestCase):
         self.assertEqual(ld.ime_stand_in(self.IME, "ja-US", True), ("icon", "ICON_KATAKANA"))
         self.assertEqual(ld.ime_stand_in(self.IME, "ko-KR", True), ("icon", "ICON_HAN_YEONG"))
 
+    def test_a_family_with_no_icon_falls_back_instead_of_raising(self):
+        # a newer firmware's family this parse has no icon for (Revix, #319)
+        ime = {"families": {"xx-XX": "NEWFAMILY"}, "icons": dict(self.IME["icons"])}
+        self.assertIsNone(ld.ime_stand_in(ime, "xx-XX"))
+
+    def test_the_pick_names_the_icon_key_for_the_editor(self):
+        fams = self.IME["families"]
+        self.assertEqual(ld.ime_pick(fams, "ja-US", True), ("icon", "JAPANESE_SHIFT"))
+        self.assertEqual(ld.ime_pick(fams, "ja-JP"), ("key", "KC_CAPS_LOCK"))
+
     def test_no_data_draws_nothing_special(self):
         self.assertIsNone(ld.ime_stand_in(None, "ja-JP"))
 

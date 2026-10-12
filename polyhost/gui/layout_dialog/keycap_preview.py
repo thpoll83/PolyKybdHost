@@ -486,18 +486,25 @@ class KeycapPreview:
         try:
             self._L = op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
             self._lang_ok = True
-            ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
-            if ime is not None:
-                self._set_ime(ime["families"],
-                              {fam: list(self._resolver.resolve(icon))
-                               for fam, icon in ime["icons"].items()
-                               if not self._resolver.unresolved_tokens(icon)})
         except Exception as e:
             self._L = self._resolver
             self._reason = (f"letters and digits need the language table "
                             f"({type(e).__name__}: {e})")
             self.log.warning("key previews: %s -- modifiers and arrows still render",
                              self._reason)
+        # Its own try: a KC_IME parse failure costs that one key its legend (it
+        # falls back to keycode text), never the language table it does not need.
+        if self._lang_ok:
+            try:
+                ime = ld.parse_ime_key(os.path.join(pk, "poly_keymap.c"), self._L.langs)
+                if ime is not None:
+                    self._set_ime(ime["families"],
+                                  {fam: list(self._resolver.resolve(icon))
+                                   for fam, icon in ime["icons"].items()
+                                   if not self._resolver.unresolved_tokens(icon)})
+            except Exception as e:
+                self.log.warning("key previews: KC_IME draws as keycode text (%s: %s)",
+                                 type(e).__name__, e)
 
     def _drawable(self, legends: dict) -> dict:
         """Drop the legends this renderer cannot follow, ONCE, at load time.
@@ -690,16 +697,11 @@ class KeycapPreview:
         RALT family draws as Right Alt, and every other language as Non-US Backslash
         with that layout's legend. The editor shows the key at rest, so Japanese
         draws its unshifted 英数/かな."""
-        family = self._ime.get("families", {}).get(self._lang)
-        if family == "RALT":
-            return "KC_RIGHT_ALT"
-        # ja-JP: on a JIS layout the Caps key IS 英数, so KC_IME is Caps Lock there
-        # (the editor shows the Windows/Linux key; macOS keeps the icon).
-        if family == "JAPANESE_JIS":
-            return "KC_CAPS_LOCK"
-        if family is None:
-            return "KC_NONUS_BACKSLASH"
-        legend = self._ime.get("legends", {}).get(family)
+        # The rule itself is lang_demo.ime_pick(), shared with the board render.
+        kind, name = self._ld.ime_pick(self._ime.get("families", {}), self._lang)
+        if kind == "key":
+            return name
+        legend = self._ime.get("legends", {}).get(name)
         # An icon family whose icon was refused draws nothing (keycode text), never
         # another key's legend.
         return list(legend) if legend else None

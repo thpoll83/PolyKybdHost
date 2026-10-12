@@ -23,6 +23,16 @@ class _Lang:
     def __init__(self, aliases=None):
         self._aliases = aliases or {}
 
+    @staticmethod
+    def ime_pick(families, lang, shift=False):
+        # The REAL rule, not a copy: the editor and the board render share it.
+        import sys
+        tools = str(pathlib.Path(__file__).resolve().parents[2] / "tools")
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import lang_demo
+        return lang_demo.ime_pick(families, lang, shift)
+
     def normalize_kc(self, tok, known=None):
         if known is not None and tok not in known:
             alt = self._aliases.get(tok)

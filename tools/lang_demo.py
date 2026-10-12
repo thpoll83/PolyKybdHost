@@ -691,18 +691,17 @@ def render_static(L, R, expr) -> Image.Image:
     return render_static_cps(R, L.resolve(expr))
 
 
-def ime_stand_in(ime: dict | None, lang: str, shift: bool = False):
+def ime_pick(families: dict, lang: str, shift: bool = False) -> tuple[str, str]:
     """What `KC_IME` draws on `lang`, by the firmware's rule (`ime_key_stand_in`).
 
-    Returns ("key", KC_*) for a family that stands in for a plain key -- RALT draws
-    as Right Alt, JAPANESE_JIS (ja-JP, whose JIS Caps key IS 英数) as Caps Lock, and
-    a language with no family as Non-US Backslash -- or ("icon", ICON_*) for the
-    Korean and Japanese icons. The preview shows the Windows/Linux key: on macOS
-    ja-JP keeps the icon and RALT is Option. None when the tree predates the key.
+    The ONE copy of that rule on the host: the board render below and the editor's
+    keycap preview both call it. Returns ("key", KC_*) for a family that stands in
+    for a plain key -- RALT draws as Right Alt, JAPANESE_JIS (ja-JP, whose JIS Caps
+    key IS 英数) as Caps Lock, and a language with no family as Non-US Backslash --
+    or ("icon", <icon key>), the key into parse_ime_key()'s "icons". The previews
+    show the Windows/Linux key: on macOS ja-JP keeps the icon and RALT is Option.
     """
-    if not ime:
-        return None
-    family = ime["families"].get(lang)
+    family = families.get(lang)
     if family is None:
         return ("key", "KC_NONUS_BACKSLASH")
     if family == "RALT":
@@ -710,8 +709,22 @@ def ime_stand_in(ime: dict | None, lang: str, shift: bool = False):
     if family == "JAPANESE_JIS":
         return ("key", "KC_CAPS_LOCK")
     if family == "JAPANESE" and shift:
-        return ("icon", ime["icons"]["JAPANESE_SHIFT"])
-    return ("icon", ime["icons"][family])
+        return ("icon", "JAPANESE_SHIFT")
+    return ("icon", family)
+
+
+def ime_stand_in(ime: dict | None, lang: str, shift: bool = False):
+    """`ime_pick()` with the icon resolved to its ICON_* name: ("key", KC_*) or
+    ("icon", ICON_*). None when the tree predates the key, or for a family this
+    parse found no icon for (a newer firmware's), so the key falls back to the
+    plain path instead of raising."""
+    if not ime:
+        return None
+    kind, name = ime_pick(ime["families"], lang, shift)
+    if kind == "icon":
+        icon = ime.get("icons", {}).get(name)
+        return ("icon", icon) if icon else None
+    return (kind, name)
 
 
 def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
