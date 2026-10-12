@@ -86,7 +86,7 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.input.unicode_input import wincompose_running
 from polyhost.services import wincompose_install
-from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
+from polyhost.services.lang_regions import LANG_REGION_ORDER, home_country, layout_note, region_of
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
 
@@ -113,7 +113,7 @@ PERIODIC_10MIN_CYCLE_MSEC = 1000*60*10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 def sort_by_country_abc(item):
-    return item[2:]
+    return home_country(item)
 
 
 def get_lang_and_country(combined : str):
@@ -1542,6 +1542,14 @@ class PolyHost(QApplication):
             result = f"{result}{chr(num)}"
         return result
 
+    @classmethod
+    def lang_flag_text(cls, lang):
+        # The flag of the language's home country, so it matches the row's icon,
+        # plus the layout code where that differs: ja-US reads "ja 🇯🇵 US".
+        note = layout_note(lang)
+        flag = cls.langcode_to_flag(home_country(lang))
+        return f"{flag} {note}" if note else flag
+
     def add_supported_lang(self, menu, lang_list, current_lang):
         # Consumes the language list/current language from the reconnect snapshot
         # (or the synchronous initial enumerate) — never queries the device here,
@@ -1553,7 +1561,7 @@ class PolyHost(QApplication):
         # comparison always equal, silently skipping the OS switch on reconnect.
         if lang_list is not None and current_lang is not None:
             title = _f("Selected Language: {language} {country}",
-                       language=current_lang[:2], country=self.langcode_to_flag(current_lang[2:]))
+                       language=current_lang[:2], country=self.lang_flag_text(current_lang))
             if self.keeb_lang_menu is None:
                 # Place the language menu at the head of the device group (just
                 # above Brightness) instead of appending it last. It is created
@@ -1575,7 +1583,7 @@ class PolyHost(QApplication):
             self.log.debug("Adding %s to language menu", all_languages)
             by_region: dict[str, list] = {}
             for lang in all_languages:
-                region = LANG_REGION_OVERRIDE.get(lang, LANG_REGION.get(lang[2:].upper(), N_("Other")))
+                region = region_of(lang)
                 by_region.setdefault(region, []).append(lang)
 
             for region in LANG_REGION_ORDER + (["Other"] if "Other" in by_region else []):
@@ -1590,7 +1598,7 @@ class PolyHost(QApplication):
                         text = f"{text} {chr(0x2714)}"
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)
-                    item.setIcon(self.unicode_cache.get_icon_for(lang[2:]))
+                    item.setIcon(self.unicode_cache.get_icon_for(home_country(lang)))
         else:
             self.log.warning("Enumerating PolyKybd languages failed")
 
@@ -1607,10 +1615,10 @@ class PolyHost(QApplication):
         if self.keeb_lang_menu:
             self.keeb_lang_menu.setTitle(_f("Selected Language: {language} {country}",
                                             language=new_lang[:2],
-                                            country=self.langcode_to_flag(new_lang[2:])))
+                                            country=self.lang_flag_text(new_lang)))
             for action in self._lang_actions():
                 lang = action.data()
-                text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
+                text = f"{lang[:2]} {self.lang_flag_text(lang)}"
                 if lang == new_lang:
                     text = f"{text} {chr(0x2714)}"
                 action.setText(text)
