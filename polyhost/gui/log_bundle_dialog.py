@@ -27,13 +27,26 @@ from polyhost.services import log_bundle
 # — long enough for "it broke this morning", short enough to stay small and to
 # carry less window-title history than "Everything".
 TIMEFRAMES = (
+    (N_("Last 5 minutes"), "5m"),
     (N_("Last 15 minutes"), "15m"),
+    (N_("Last 30 minutes"), "30m"),
     (N_("Last hour"), "1h"),
+    (N_("Last 3 hours"), "3h"),
+    (N_("Last 12 hours"), "12h"),
     (N_("Last 24 hours"), "24h"),
+    (N_("Last 3 days"), "3d"),
     (N_("Last 7 days"), "7d"),
     (N_("Everything on disk"), "all"),
 )
-DEFAULT_INDEX = 2
+
+
+def timeframe_index(spec):
+    """Combo index of the TIMEFRAMES entry with `spec`, so a default survives
+    entries being added in front of it."""
+    return [s for _label, s in TIMEFRAMES].index(spec)
+
+
+DEFAULT_INDEX = timeframe_index("24h")
 
 
 def reveal_in_file_manager(path, log=None):
