@@ -46,11 +46,11 @@
       "id": "flags",
       "index": 4,
       "file": "flags.plyf",
-      "content_version": 5,
-      "size": 65172,
+      "content_version": 6,
+      "size": 52964,
       "slot_offset": 430080,
       "slot_size": 131072,
-      "sha256": "9e55e2ccc7ec431e"
+      "sha256": "1e5c6593bb7e03f9"
     },
     {
       "id": "emoji",
