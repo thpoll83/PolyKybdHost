@@ -86,7 +86,7 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.input.unicode_input import wincompose_running
 from polyhost.services import wincompose_install
-from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
+from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE, home_country
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
 
@@ -113,7 +113,7 @@ PERIODIC_10MIN_CYCLE_MSEC = 1000*60*10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 def sort_by_country_abc(item):
-    return item[2:]
+    return home_country(item)
 
 
 def get_lang_and_country(combined : str):
@@ -1575,7 +1575,7 @@ class PolyHost(QApplication):
             self.log.debug("Adding %s to language menu", all_languages)
             by_region: dict[str, list] = {}
             for lang in all_languages:
-                region = LANG_REGION_OVERRIDE.get(lang, LANG_REGION.get(lang[2:].upper(), N_("Other")))
+                region = LANG_REGION_OVERRIDE.get(lang, LANG_REGION.get(home_country(lang), N_("Other")))
                 by_region.setdefault(region, []).append(lang)
 
             for region in LANG_REGION_ORDER + (["Other"] if "Other" in by_region else []):
@@ -1590,7 +1590,7 @@ class PolyHost(QApplication):
                         text = f"{text} {chr(0x2714)}"
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)
-                    item.setIcon(self.unicode_cache.get_icon_for(lang[2:]))
+                    item.setIcon(self.unicode_cache.get_icon_for(home_country(lang)))
         else:
             self.log.warning("Enumerating PolyKybd languages failed")
 
