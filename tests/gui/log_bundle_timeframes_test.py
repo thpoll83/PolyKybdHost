@@ -3,6 +3,7 @@
 Both dialogs share TIMEFRAMES. Their defaults are looked up by spec, so adding
 an entry in front of one (5 minutes went in front of 15) cannot move it.
 """
+import importlib
 import os
 import unittest
 
@@ -11,7 +12,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from polyhost.services import log_bundle
 
 try:
-    import PyQt5.QtWidgets  # noqa: F401
+    importlib.import_module("PyQt5.QtWidgets")   # the only failure that skips
     _IMPORT_ERR = None
 except ImportError as e:  # pragma: no cover - no Qt available
     _IMPORT_ERR = e
