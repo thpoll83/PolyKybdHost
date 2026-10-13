@@ -91,6 +91,11 @@ class OverlayCellsTest(unittest.TestCase):
             stems = {spec["output"]}
             if gen.spec_needs_macos_set(spec):
                 stems.add(gen.macos_output(spec))
+            if gen.spec_needs_linux_set(spec):
+                stems.add(gen.linux_output(spec))
+            for member in gen.LINUX_MEMBERS:
+                if gen.spec_needs_member_set(spec, member):
+                    stems.add(gen.member_output(spec, member))
             for stem in stems:
                 for suffix, _table in KINDS:
                     name = f"{stem}.{suffix}.png"
