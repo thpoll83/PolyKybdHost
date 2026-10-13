@@ -104,5 +104,70 @@ class TestBrowserUrlProvider(unittest.TestCase):
         self.assertIsNone(p.current_url("Safari"))
 
 
+class TestContextReporter(unittest.TestCase):
+    """A non-browser app with a context add-on (Blender) rides the same gates."""
+
+    URL = "blender://EDIT_MESH/VIEW_3D"
+
+    def setUp(self):
+        self.clock = FakeClock()
+        self.mac = []
+        self.p = BrowserUrlProvider(max_age_s=8.0, clock=self.clock,
+                                    macos_lookup=lambda app: self.mac.append(app) or "osa")
+
+    def test_report_used_when_blender_is_focused(self):
+        self.p.update(app="blender", url=self.URL, focused=True)
+        for name in ("blender", "Blender", "org.blender.blender"):
+            self.assertEqual(self.p.current_url(name), self.URL, name)
+        self.assertEqual(self.mac, [])          # never the AppleScript path
+
+    def test_ignored_while_another_app_is_focused(self):
+        # A background Blender keeps reporting; the foreground app must not see it.
+        self.p.update(app="blender", url=self.URL, focused=True)
+        for name in ("code", "gimp", "explorer", "chrome", "firefox"):
+            got = self.p.current_url(name)
+            self.assertNotEqual(got, self.URL, name)
+        self.assertIsNone(self.p.current_url("code"))
+
+    def test_stale_report_ignored(self):
+        self.p.update(app="blender", url=self.URL, focused=True)
+        self.clock.t += 8.5
+        self.assertIsNone(self.p.current_url("blender"))
+
+    def test_keep_alive_refreshes_freshness(self):
+        self.p.update(app="blender", url=self.URL, focused=True)
+        self.clock.t += 5
+        self.assertFalse(self.p.update(app="blender", url=self.URL, focused=True))
+        self.clock.t += 5
+        self.assertEqual(self.p.current_url("blender"), self.URL)
+
+    def test_non_browser_non_reporter_app_still_ignored(self):
+        self.p.update(app="blender", url=self.URL, focused=True)
+        self.p.update(browser="chrome", url="https://x.com", focused=True)
+        for name in ("code", "kicad", "", None, "blender-launcher"):
+            self.assertIsNone(self.p.current_url(name), name)
+
+    def test_browser_report_never_answers_for_blender(self):
+        self.p.update(browser=None, url="https://x.com", focused=True)
+        self.assertIsNone(self.p.current_url("blender"))
+
+    def test_blender_keep_alive_does_not_clobber_the_browser(self):
+        # The add-on cannot see OS focus, so it never sends focused=false; with
+        # one shared slot its keep-alive would erase Chrome's report.
+        self.p.update(browser="chrome", url="https://mail.google.com", focused=True)
+        self.p.update(app="blender", url=self.URL, focused=True)
+        self.assertEqual(self.p.current_url("chrome"), "https://mail.google.com")
+        self.assertEqual(self.p.current_url("blender"), self.URL)
+
+    def test_mode_change_is_a_change(self):
+        self.assertTrue(self.p.update(app="blender", url=self.URL))
+        self.assertTrue(self.p.update(app="blender", url="blender://SCULPT/VIEW_3D"))
+
+    def test_unknown_app_token_is_dropped(self):
+        self.assertFalse(self.p.update(app="maya", url="maya://x", focused=True))
+        self.assertIsNone(self.p.current_url("maya"))
+        self.assertEqual(self.p._reports, {})
+
+
 if __name__ == "__main__":
     unittest.main()

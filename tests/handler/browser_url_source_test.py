@@ -118,6 +118,19 @@ class BrowserUrlSourceTest(unittest.TestCase):
         src.on_report(browser="chrome", url="https://b.example/", focused=True)
         self.assertEqual(len(fired), 2)
 
+    def test_a_blender_report_reaches_blender_only_and_fires_on_change(self):
+        # A Blender mode switch moves no window title either; on_change is what
+        # re-drives the matcher.
+        fired = []
+        src = self._source(on_change=lambda: fired.append(1))
+        src.start()
+        self.built[0].on_report(browser=None, url="blender://SCULPT/VIEW_3D",
+                                title=None, focused=True, app="blender")
+        self.assertEqual(len(fired), 1)
+        self.assertEqual(src.current_url("blender"), "blender://SCULPT/VIEW_3D")
+        self.assertIsNone(src.current_url("chrome"))
+        self.assertIsNone(src.current_url("code"))
+
     def test_close_stops_the_receiver_and_is_idempotent(self):
         src = self._source()
         src.start()

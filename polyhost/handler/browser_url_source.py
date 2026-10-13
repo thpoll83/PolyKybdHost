@@ -82,10 +82,10 @@ class BrowserUrlSource:
                              type(e).__name__, e)
             return False
 
-    def on_report(self, browser=None, url=None, title=None, focused=True):
-        """Ingest one extension report; notify `on_change` on a real change."""
+    def on_report(self, browser=None, url=None, title=None, focused=True, app=None):
+        """Ingest one extension / add-on report; notify `on_change` on a real change."""
         changed = self.provider.update(
-            browser=browser, url=url, title=title, focused=focused)
+            browser=browser, url=url, title=title, focused=focused, app=app)
         if changed and self._on_change is not None:
             self._on_change()
         return changed
