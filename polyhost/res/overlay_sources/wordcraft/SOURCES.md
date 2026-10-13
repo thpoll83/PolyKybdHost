@@ -45,29 +45,25 @@ set. The table was pulled mechanically from every `.key(` in
 | Comment `Mod+Alt+M`, Track Changes `Mod+Shift+E`, Word Count `Mod+Shift+G` (non_mac), Spelling `F7`/`Alt+F7`, Thesaurus `Shift+F7` | `cmd/review.rs:12-110` |
 | View: marks `Mod+8`/`Mod+Shift+8`, Print Layout / Draft / Outline / Split `Mod+Alt+P/N/O/S` | `cmd/view.rs:22-91` |
 | Equation `Alt+=` | `cmd/equation.rs:26` |
+| Enter / Backspace / Tab: Page Break `Mod+Enter`, Column Break `Mod+Shift+Enter`, Line Break `Shift+Enter`, Delete Previous Word `Mod+Backspace`/`Alt+Backspace`, Back Tab `Shift+Tab` (previous table cell / list level up / outdent, `back_tab` at text.rs:464-486), NBSP `Mod+Shift+Space` | `cmd/text.rs:15-24` |
+| Space: Reset Character Formatting (`mac_or("Ctrl+Space","Mod+Space")`) | `cmd/format.rs:120` |
+| Space: Read Aloud `Mod+Alt+Space` | `cmd/speech.rs:17` |
 | Typing: hyphens `Mod+-`/`Mod+Shift+-`, Em Dash `Mod+Alt+-`, (c)/(R)/TM/ellipsis `Mod+Alt+C/R/T/.` (non_mac), Toggle Unicode `Alt+X` (not macOS), Delete Next Word `Mod+Delete`/`Alt+Delete` | `cmd/text.rs:16-38` |
 | Repeat `F4`, Tell me / Search `Alt+Q` (non_mac), Extend Selection `F8` | `cmd/tools.rs:347,383,652` |
 | Column selection `Mod+Shift+F8` | `cmd/column.rs:25` |
 | UI keys outside the registry: `Alt+Q` (`keys.rs:110-116`), `Shift+F10` context menu (`keys.rs:153-157`), `F10` key tips (`keytips.rs:686`) | `crates/ui-egui/src/` |
 
-Bound: **149** cells on Windows/Linux and **136** on macOS, plus the ESC mark
-on every layer.
+Bound: **158** cells on Windows/Linux and **145** on macOS, plus the ESC mark
+on every layer. Nine of them are on Enter, Backspace, Tab and Space.
 
-- Windows/Linux by tier: Ctrl 49, Alt 10, Shift 7, no-mod 9, Ctrl+Shift 28,
-  Ctrl+Alt 18, Alt+Shift 25, Ctrl+Alt+Shift 2.
-- macOS by tier: Cmd 48, Cmd+Shift 28, Cmd+Alt 13, Cmd+Alt+Shift 2, Ctrl 1,
-  Ctrl+Shift 7, Alt 8, Alt+Shift 12, Shift 7, no-mod 9.
-
-**Skipped, because the key has no cell:** Space (`Mod+Space` reset character,
-`Mod+Shift+Space` NBSP, `Mod+Alt+Space` Read Aloud, macOS `Ctrl+Space`), Enter
-(page/column/line break), Tab, Backspace (`Mod`/`Alt+Backspace`), and Escape
-(the program-icon cell).
-
-**Skipped, because the key has no shortcut of its own:** the unmodified caret
-keys (arrows, Home, End, PageUp, PageDown, Delete, Insert overtype). They do
-what the key's own legend says. Shift+arrow selection extension is also
-skipped. It is a fallback in `keys.rs` `shift_variant_params`, not a bound
-chord.
+**Not bound:**
+- Escape is the program-icon cell.
+- Bare Enter, Backspace, Tab and Space are text entry. Bare Tab also moves to
+  the next table cell.
+- The unmodified caret keys (arrows, Home, End, PageUp, PageDown, Delete,
+  Insert overtype) do what the key's own legend says.
+- Shift+arrow selection extension is a fallback in `keys.rs`
+  `shift_variant_params`, not a bound chord.
 
 ### Choices and caveats
 

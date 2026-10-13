@@ -207,6 +207,20 @@ bindings:
   - { key: RIGHT, mods: [ALT, SHIFT],  icon: demote.png,   label: Demote,  except: [macos] }
   - { key: RIGHT, mods: [CTRL, SHIFT], icon: demote.png,   label: Demote,  only: [macos] }
 
+  # ======================= Enter / Backspace / Tab / Space =======================
+  # Bare Enter, Backspace, Tab and Space are text entry and stay unbound.
+  - { key: ENTER, mods: [CMDCTRL],        icon: pagebreak.png,   label: "Page break" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: columnbreak.png, label: "Column break" }
+  - { key: ENTER, mods: [SHIFT],          icon: linebreak.png,   label: "Line break" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: delwordback.png, label: "Delete previous word" }
+  - { key: BACKSPACE, mods: [ALT],     icon: delwordback.png, label: "Delete previous word" }
+  - { key: TAB, mods: [SHIFT], icon: outdent.png, label: "Back tab" }
+  # Reset character formatting: mac_or("Ctrl+Space", "Mod+Space")
+  - { key: SPACE, mods: [CMDCTRL], icon: resetchar.png, label: "Reset character", except: [macos] }
+  - { key: SPACE, mods: [CTRL],    icon: resetchar.png, label: "Reset character", only: [macos] }
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: nbsp.png, mode: alpha, label: "NB space" }
+  - { key: SPACE, mods: [CMDCTRL, ALT],   icon: readaloud.png, label: "Read aloud" }
+
   # ======================= Shift =======================
   - { key: F3,  mods: [SHIFT], icon: changecase.png, label: "Change case" }
   - { key: F5,  mods: [SHIFT], icon: goback.png,     label: "Go back" }

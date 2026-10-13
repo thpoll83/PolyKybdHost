@@ -160,6 +160,12 @@ FLUENT = {
     "paradown": "ms:keyboard_double_arrow_down",
     "docstart": "ms:vertical_align_top",
     "docend": "ms:vertical_align_bottom",
+    "resetchar": "ms:format_clear",
+    "readaloud": "Read Aloud",
+    "pagebreak": "Document Page Break",
+    "columnbreak": "Text Column Two",
+    "linebreak": "ms:keyboard_return",
+    "delwordback": "ms:backspace",
     "backspace_src": "ms:backspace",       # mirrored below into delwordfwd.png
     "square_src": "Square",                # base for the outline-level badges
 }
@@ -183,6 +189,7 @@ TEXT_GLYPHS = {
     "nbhyphen": ("a‑b", 0.56),
     "unicode": ("U+", 0.56),
     "pilcrow": ("¶", 0.80),
+    "nbsp": ("a°b", 0.56),
 }
 
 
