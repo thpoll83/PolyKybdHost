@@ -77,6 +77,35 @@ class OverlayCellsTest(unittest.TestCase):
         # every assertion above without having checked anything.
         self.assertGreater(checked, 400, "found suspiciously few bindings to check")
 
+    def test_every_generated_file_is_in_the_mapping(self):
+        """A file the generator writes but the mapping never lists is a layer the
+        keyboard never loads: its keys stay blank, and nothing warns. Adding a
+        chord on a new tier creates such a file (a Ctrl+Shift key adds
+        `combo.mods`), and the mapping entry has to grow with it."""
+        import re
+        with open(os.path.join(_HERE, "polyhost", "res", "overlay-mapping.poly.yaml"),
+                  encoding="utf-8") as fh:
+            listed = set(re.findall(r"[\w.-]+\.png", fh.read()))
+        checked = 0
+        for app, spec in _binding_files():
+            stems = {spec["output"]}
+            if gen.spec_needs_macos_set(spec):
+                stems.add(gen.macos_output(spec))
+            if gen.spec_needs_linux_set(spec):
+                stems.add(gen.linux_output(spec))
+            for member in gen.LINUX_MEMBERS:
+                if gen.spec_needs_member_set(spec, member):
+                    stems.add(gen.member_output(spec, member))
+            for stem in stems:
+                for suffix, _table in KINDS:
+                    name = f"{stem}.{suffix}.png"
+                    if os.path.exists(os.path.join(OVERLAYS, name)):
+                        checked += 1
+                        self.assertTrue(name in listed,
+                                        f"{app}: {name} is generated but "
+                                        f"overlay-mapping.poly.yaml never loads it")
+        self.assertGreater(checked, 100, "found suspiciously few generated files")
+
     def _check(self, app, spec, platform, output):
         checked = 0
         # Which modifier each binding asks for, per file kind, resolved for

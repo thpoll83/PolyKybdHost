@@ -2,13 +2,14 @@
 # Bitbucket pull request open).
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) via webapps/fetch_icons.py,
-# plus Material Symbols' space_bar (Apache-2.0) for "Ignore whitespace", which
+# plus Material Symbols' space_bar (Apache-2.0) for "Hide whitespace", which
 # Fluent lacks. They replace the earlier hand-drawn bb_* set. The ESC mark
 # (bitbucket_mark.png) stays the reclaimed hand-drawn mark.
 #
-# Keys: the original fourteen, plus the pull request keys in Atlassian's
-# Bitbucket Cloud table (support.atlassian.com, "Keyboard shortcuts"): R, 1/2/3,
-# F and S. Submit is Cmd+Enter on macOS (CMDCTRL). See SOURCES.md.
+# Keys: exactly Bitbucket's own shortcut dialog (`?`) for a pull request:
+# "Within A Pull Request", the "Diff View" a pull request's diff uses, and the
+# three "Global" keys. Transcribed from the dialog on 2026-10-13. Ctrl is Cmd on
+# macOS (CMDCTRL). See SOURCES.md.
 #
 # Regenerate (from the repo root, with the project venv):
 #   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -32,28 +33,26 @@ program_icon_anchor: center
 program_icon_margin: 0
 
 bindings:
-  # --- review ---
-  - { key: A, mods: [], icon: approve.png,        label: "Approve",          source: "ms-fluent/Checkmark Circle (MIT)" }
-  - { key: R, mods: [], icon: requestchanges.png, label: "Request changes",  source: "ms-fluent/Comment Error (MIT)" }
-  - { key: S, mods: [], icon: finishreview.png,   label: "Finish review",    source: "ms-fluent/Clipboard Task (MIT)" }
-  - { key: M, mods: [], icon: comment.png,        label: "Comment",          source: "ms-fluent/Comment (MIT)" }
-  - { key: ENTER, mods: [CMDCTRL], icon: submit.png, label: "Submit comment", source: "ms-fluent/Send (MIT)" }
-  - { key: E, mods: [], icon: edit.png,           label: "Edit",             source: "ms-fluent/Document Edit (MIT)" }
-  - { key: W, mods: [], icon: watch.png,          label: "Watch",            source: "ms-fluent/Eye (MIT)" }
-
-  # --- tabs and navigation ---
-  - { key: "1", mods: [], icon: overview.png,     label: "Overview tab",     source: "ms-fluent/Info (MIT)" }
-  - { key: "2", mods: [], icon: fileschanged.png, label: "Files changed tab", source: "ms-fluent/Document Multiple (MIT)" }
-  - { key: "3", mods: [], icon: commits.png,      label: "Commits tab",      source: "ms-fluent/History (MIT)" }
-  - { key: F, mods: [], icon: filetree.png,       label: "File tree",        source: "ms-fluent/Text Bullet List Tree (MIT)" }
-  - { key: U, mods: [], icon: filelist.png,       label: "File list",        source: "ms-fluent/Document Bullet List (MIT)" }
-  - { key: "[", mods: [], icon: sidebar.png,      label: "Toggle sidebar",   source: "ms-fluent/Panel Left (MIT)" }
-  - { key: "/", mods: [], icon: search.png,       label: "Search",           source: "ms-fluent/Search (MIT)" }
-  - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Shortcut help",  source: "ms-fluent/Keyboard (MIT)" }
+  # --- within a pull request ---
+  - { key: A, mods: [], icon: approve.png,      label: "Approve",              source: "ms-fluent/Checkmark Circle (MIT)" }
+  - { key: M, mods: [], icon: comment.png,      label: "Comment",              source: "ms-fluent/Comment (MIT)" }
+  - { key: E, mods: [], icon: edit.png,         label: "Edit pull request",    source: "ms-fluent/Document Edit (MIT)" }
+  - { key: W, mods: [], icon: watch.png,        label: "Watch",                source: "ms-fluent/Eye (MIT)" }
+  - { key: U, mods: [], icon: prlist.png,       label: "Pull request list",    source: "ms-fluent/Branch Request (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: submit.png, label: "Post comment",    source: "ms-fluent/Send (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: previewcomment.png, label: "Preview comment", source: "ms-fluent/Glasses (MIT)" }
 
   # --- the diff ---
-  - { key: C, mods: [SHIFT], icon: diffcomments.png, label: "Toggle comments", source: "ms-fluent/Comment Multiple (MIT)" }
-  - { key: D, mods: [SHIFT], icon: sidebyside.png,   label: "Side-by-side diff", source: "ms-fluent/Split Vertical (MIT)" }
-  - { key: E, mods: [SHIFT], icon: expandall.png,    label: "Expand all",      source: "ms-fluent/Arrow Expand (MIT)" }
-  - { key: L, mods: [SHIFT], icon: wraplines.png,    label: "Wrap lines",      source: "ms-fluent/Text Wrap (MIT)" }
-  - { key: W, mods: [SHIFT], icon: whitespace.png,   label: "Ignore whitespace", source: "material-symbols/space_bar (Apache-2.0)" }
+  - { key: N, mods: [], icon: nextitem.png,     label: "Next change",          source: "ms-fluent/Chevron Down (MIT)" }
+  - { key: P, mods: [], icon: previtem.png,     label: "Previous change",      source: "ms-fluent/Chevron Up (MIT)" }
+  - { key: R, mods: [], icon: markread.png,     label: "Mark file read",       source: "ms-fluent/Document Checkmark (MIT)" }
+  - { key: B, mods: [SHIFT], icon: blame.png,   label: "Show blame",           source: "shared with github.yaml" }
+  - { key: W, mods: [SHIFT], icon: whitespace.png, label: "Hide whitespace",   source: "material-symbols/space_bar (Apache-2.0)" }
+  - { key: C, mods: [SHIFT], icon: diffcomments.png, label: "Hide comments and tasks", source: "ms-fluent/Comment Multiple (MIT)" }
+  - { key: E, mods: [SHIFT], icon: worddiff.png, label: "Word diff",           source: "ms-fluent/Highlight (MIT)" }
+  - { key: D, mods: [SHIFT], icon: sidebyside.png, label: "Side-by-side diff", source: "ms-fluent/Split Vertical (MIT)" }
+
+  # --- global ---
+  - { key: "/", mods: [], icon: search.png,     label: "Search",               source: "ms-fluent/Search (MIT)" }
+  - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
+  - { key: "[", mods: [], icon: sidebar.png,    label: "Toggle sidebar",       source: "ms-fluent/Panel Left (MIT)" }

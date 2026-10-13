@@ -36,15 +36,22 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     gitlab.com:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # A Confluence whiteboard (<site>.atlassian.net/wiki/spaces/<KEY>/whiteboard/<id>)
+    # has its own tool keys, so it MUST stay above atlassian.net/wiki. The url
+    # gate keeps the bare "/whiteboard/" needle from catching other sites.
+    /whiteboard/:
+      url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
+      overlay: [confluence_whiteboard_template.mods.png, confluence_whiteboard_template.combo.mods.png]
     # MUST stay above the bare atlassian.net (Jira) entry: matching is
     # first-hit over this map in order, and a Confluence URL
     # (<site>.atlassian.net/wiki/...) also contains "atlassian.net".
     atlassian.net/wiki:
-      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png,
+                confluence_template.extra.mods.png]
     atlassian.net:
       overlay: jira_template.mods.png
     bitbucket.org:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     docs.google.com/document:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
@@ -73,7 +80,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     Jira:
       overlay: jira_template.mods.png
     Confluence:
-      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png,
+                confluence_template.extra.mods.png]
     GitHub:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     # Logged in, GitHub drops "· GitHub" from its titles ("Workflow runs ·
@@ -87,7 +95,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     Bitbucket:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     Google Docs:
@@ -117,12 +125,15 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        /whiteboard/:
+          url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
+          overlay: [confluence_whiteboard_template_mac.mods.png, confluence_whiteboard_template_mac.combo.mods.png, confluence_whiteboard_template_mac.extra.mods.png]
         atlassian.net/wiki:
-          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]
         atlassian.net:
           overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         bitbucket.org:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         docs.google.com/document:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         notion.so:
@@ -143,7 +154,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Jira:
           overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         Confluence:
-          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]
         GitHub:
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         "·":
@@ -152,7 +163,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         Bitbucket:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         Google Docs:

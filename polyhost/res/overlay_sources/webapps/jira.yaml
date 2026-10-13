@@ -4,11 +4,11 @@
 # replacing the earlier hand-drawn jira_* set. The ESC mark (jira_mark.png)
 # stays the reclaimed hand-drawn mark.
 #
-# Keys: the original eight, plus the ones Atlassian documents for Jira Cloud
-# (support.atlassian.com, "Use keyboard shortcuts" / "Overview of Jira Cloud
-# keyboard shortcuts"): C, /, ?, O, J/K, N/P, 1/2/3 on boards and Ctrl+K (Cmd+K
-# on macOS) for the command palette. Two-key sequences (g d, s t) cannot be
-# drawn and are left out. See SOURCES.md.
+# Keys: Jira Cloud's own shortcut dialog (`?`), transcribed 2026-10-13: Global,
+# Navigating issues, Issue actions and Board. Left out: two-key sequences
+# (g then i, s then t), the Plans-only Ctrl+Alt keys, bare `s` (it starts the
+# s-then-t/b sequences), the arrow keys and Ctrl+B (skip to toolbar). Ctrl is
+# Cmd on macOS (CMDCTRL). See SOURCES.md.
 #
 # Regenerate (from the repo root, with the project venv):
 #   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -32,28 +32,41 @@ program_icon_anchor: center
 program_icon_margin: 0
 
 bindings:
-  # --- an open issue ---
-  - { key: A, mods: [], icon: assignee.png,   label: "Assign",              source: "ms-fluent/Person (MIT)" }
-  - { key: I, mods: [], icon: assigntome.png, label: "Assign to me",        source: "ms-fluent/Person Arrow Left (MIT)" }
-  - { key: M, mods: [], icon: comment.png,    label: "Comment",             source: "ms-fluent/Comment (MIT)" }
-  - { key: L, mods: [], icon: label.png,      label: "Edit labels",         source: "ms-fluent/Tag (MIT)" }
-  - { key: W, mods: [], icon: watch.png,      label: "Watch",               source: "ms-fluent/Eye (MIT)" }
-  - { key: D, mods: [], icon: devstatus.png,  label: "Development status",  source: "ms-fluent/Branch (MIT)" }
-  - { key: ".", mods: [], icon: actions.png,  label: "Actions",             source: "ms-fluent/More Horizontal (MIT)" }
-  - { key: S, mods: [SHIFT], icon: share.png, label: "Share",               source: "ms-fluent/Share (MIT)" }
+  # --- issue actions ---
+  - { key: A, mods: [], icon: assignee.png,     label: "Assign",              source: "ms-fluent/Person (MIT)" }
+  - { key: I, mods: [], icon: assigntome.png,   label: "Assign to me",        source: "ms-fluent/Person Arrow Left (MIT)" }
+  - { key: M, mods: [], icon: comment.png,      label: "Comment",             source: "ms-fluent/Comment (MIT)" }
+  - { key: L, mods: [], icon: label.png,        label: "Edit labels",         source: "ms-fluent/Tag (MIT)" }
+  - { key: D, mods: [], icon: changestatus.png, label: "Change status",       source: "ms-fluent/Arrow Sync Circle (MIT)" }
+  - { key: Q, mods: [], icon: logwork.png,      label: "Log work",            source: "ms-fluent/Timer (MIT)" }
+  - { key: ".", mods: [], icon: actions.png,    label: "Actions",             source: "ms-fluent/More Horizontal (MIT)" }
+  - { key: S, mods: [SHIFT], icon: share.png,   label: "Share",               source: "ms-fluent/Share (MIT)" }
+  - { key: C, mods: [SHIFT], icon: childissue.png, label: "Create child issue", source: "ms-fluent/Add Square Multiple (MIT)" }
+  - { key: K, mods: [SHIFT], icon: linkissue.png,  label: "Link existing issue", source: "ms-fluent/Link Add (MIT)" }
 
-  # --- anywhere ---
-  - { key: C, mods: [], icon: createissue.png, label: "Create issue",       source: "ms-fluent/Add Circle (MIT)" }
-  - { key: "/", mods: [], icon: search.png,    label: "Search",             source: "ms-fluent/Search (MIT)" }
+  # --- global ---
+  - { key: C, mods: [], icon: createissue.png,  label: "Create work item",    source: "ms-fluent/Add Circle (MIT)" }
+  - { key: "/", mods: [], icon: search.png,     label: "Quick search",        source: "ms-fluent/Search (MIT)" }
   - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
+  - { key: "[", mods: [], icon: sidebar.png,    label: "Toggle sidebar",      source: "ms-fluent/Panel Left (MIT)" }
+  - { key: H, mods: [], icon: help.png,         label: "Help panel",          source: "ms-fluent/Question Circle (MIT)" }
   - { key: K, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
 
-  # --- lists, boards and backlogs ---
-  - { key: O, mods: [], icon: openitem.png,   label: "Open issue",          source: "ms-fluent/Open (MIT)" }
-  - { key: J, mods: [], icon: nextitem.png,   label: "Next issue",          source: "ms-fluent/Chevron Down (MIT)" }
-  - { key: K, mods: [], icon: previtem.png,   label: "Previous issue",      source: "ms-fluent/Chevron Up (MIT)" }
-  - { key: N, mods: [], icon: nextfile.png,   label: "Next column",         source: "ms-fluent/Chevron Right (MIT)" }
-  - { key: P, mods: [], icon: prevfile.png,   label: "Previous column",     source: "ms-fluent/Chevron Left (MIT)" }
-  - { key: "1", mods: [], icon: backlog.png,  label: "Backlog",             source: "ms-fluent/Text Bullet List Square (MIT)" }
-  - { key: "2", mods: [], icon: board.png,    label: "Board",               source: "ms-fluent/Board (MIT)" }
-  - { key: "3", mods: [], icon: reports.png,  label: "Reports",             source: "ms-fluent/Data Bar Vertical (MIT)" }
+  # --- navigating issues ---
+  - { key: O, mods: [], icon: openitem.png,     label: "Open issue",          source: "ms-fluent/Open (MIT)" }
+  - { key: J, mods: [], icon: nextitem.png,     label: "Next issue",          source: "ms-fluent/Chevron Down (MIT)" }
+  - { key: K, mods: [], icon: previtem.png,     label: "Previous issue",      source: "ms-fluent/Chevron Up (MIT)" }
+  - { key: Z, mods: [], icon: fullscreen.png,   label: "Issue fullscreen",    source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: F, mods: [], icon: filter.png,       label: "Focus search field",  source: "ms-fluent/Filter (MIT)" }
+  - { key: U, mods: [], icon: findfiles.png,    label: "Search for issues",   source: "ms-fluent/Document Search (MIT)" }
+  - { key: Y, mods: [], icon: sortorder.png,    label: "Order by",            source: "ms-fluent/Arrow Sort (MIT)" }
+  # n/p and t mean the same move on boards (column, detail view) as in the
+  # issue navigator (activity, filter view), so one icon serves both.
+  - { key: N, mods: [], icon: nextfile.png,     label: "Next column / activity",     source: "ms-fluent/Chevron Right (MIT)" }
+  - { key: P, mods: [], icon: prevfile.png,     label: "Previous column / activity", source: "ms-fluent/Chevron Left (MIT)" }
+  - { key: T, mods: [], icon: rightsidebar.png, label: "Toggle detail view",  source: "ms-fluent/Panel Right (MIT)" }
+
+  # --- boards ---
+  - { key: E, mods: [], icon: epicpanel.png,    label: "Epic panel",          source: "ms-fluent/Flash (MIT)" }
+  - { key: V, mods: [], icon: publish.png,      label: "Version panel",       source: "ms-fluent/Rocket (MIT)" }
+  - { key: MINUS, mods: [], icon: swimlanes.png, label: "Toggle swimlanes",   source: "ms-fluent/Arrow Collapse All (MIT)" }
