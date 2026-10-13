@@ -68,6 +68,9 @@ bindings:
   - { key: X, mods: [], icon: togglefs.png,     label: "Toggle fill/stroke", source: "material-symbols/flip_to_front (Apache-2.0)" }
   - { key: "/", mods: [], icon: applynone.png,  label: "Apply none",      source: "ms-fluent/Prohibited (MIT)" }
   - { key: DELETE, mods: [], icon: clear.png,   label: Clear,             source: "ms-fluent/Delete (MIT)" }
+  - { key: BACKSPACE, mods: [], icon: clear.png, label: "Clear selection", source: "ms-fluent/Delete (MIT); selection tool, tools/src/select.rs:802" }
+  - { key: TAB, mods: [], icon: hidepanels.png, label: "Show/hide panels", source: "ms-fluent/Panel Right Contract (MIT)" }
+  - { key: SPACE, mods: [], icon: hand.png,     label: "Hand (hold)",     source: "illustrator/hand.png (Fluent Hand Right, MIT); canvas.rs:1386-1403" }
 
   # ===== Shift (tools + commands) =====
   - { key: P, mods: [SHIFT], icon: pagetool.png,     label: "Page tool",       source: "ms-fluent/Document One Page (MIT)" }
@@ -77,6 +80,7 @@ bindings:
   - { key: I, mods: [SHIFT], icon: colortheme.png,   label: "Color theme",     source: "ms-fluent/Color (MIT)" }
   - { key: X, mods: [SHIFT], icon: swap.png, mode: alpha, label: "Swap fill/stroke", source: "illustrator/swap.png (drawn)" }
   - { key: F9, mods: [SHIFT], icon: tablepanel.png,  label: "Table panel",     source: "ms-fluent/Table (MIT)" }
+  - { key: TAB, mods: [SHIFT], icon: hidepanelsx.png, label: "Hide panels except tools", source: "material-symbols/right_panel_close (Apache-2.0)" }
 
   # ===== Cmd/Ctrl =====
   - { key: N, mods: [CMDCTRL], icon: new.png,         label: New,               source: "illustrator/new.png (Fluent Document Add, MIT)" }
@@ -111,6 +115,7 @@ bindings:
   - { key: B, mods: [CMDCTRL], icon: frameopts.png,   label: "Text frame options", source: "ms-fluent/Text Box Settings (MIT)" }
   - { key: "8", mods: [CMDCTRL], icon: compound.png,  label: "Compound path",   source: "illustrator/compound.png (Fluent Shape Subtract, MIT)" }
   - { key: P, mods: [CMDCTRL], icon: print.png,       label: Print,             source: "illustrator/print.png (Fluent Print, MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: quickapply.png, label: "Quick apply", source: "ms-fluent/Search Sparkle (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: spelling.png,    label: "Check spelling",  source: "ms-fluent/Text Proofing Tools (MIT)" }
 
   # ===== Cmd/Ctrl+Shift =====

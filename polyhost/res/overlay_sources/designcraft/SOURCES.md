@@ -15,6 +15,7 @@ The authority is the app's own default keymap, not InDesign's. Source commit
 | UI commands (file dialogs, view, display, window, single-key colour commands) | `crates/ui-egui/src/menus.rs:8-199` (`UI_COMMANDS`) |
 | Engine commands | `crates/engine/src/cmd/edit.rs:106-259`, `file.rs:15-104`, `find.rs:68`, `layout.rs:80,230`, `object.rs:78-610`, `overrides.rs:14`, `paths.rs:15-33`, `print.rs:15`, `select.rs:14-17`, `spelling.rs:13`, `table.rs:78`, `text.rs:154-237` |
 | Tool letters | `crates/tools/src/catalog.rs:19-73` (`TOOL_GROUPS`), `tool_for_shortcut` |
+| Canvas keys (Space hand, tool keys) | `crates/ui-egui/src/canvas.rs:331,1386-1403` (Space-drag = Hand), `canvas.rs:1506-1516` (tool keys); selection tool `crates/tools/src/select.rs:802` (Delete/Backspace → `edit.clear`); pen `crates/tools/src/pen.rs:227` |
 | Dispatch and parsing | `crates/ui-egui/src/menus.rs:2130-2220` (`parse_shortcut`, `shortcuts`) |
 | macOS native menu | `apps/designcraft/src/native_menu.rs` |
 
@@ -28,28 +29,33 @@ action is remapped on macOS.
 registration order, and the first match fires. Single-key and Shift+key tool shortcuts
 come after that, and only when no text is being edited.
 
-### Bound: 120 shortcuts plus the ESC program mark
+### Bound: 125 shortcuts plus the ESC program mark
 
-- **No modifier (28):** tools V Selection, A Direct selection, U Gap, B Content collector,
+- **No modifier (31):** tools V Selection, A Direct selection, U Gap, B Content collector,
   T Type, `\` Line, P Pen, `=` Add anchor, `-` Delete anchor, N Pencil, F Rectangle frame,
   M Rectangle, L Ellipse, C Scissors, E Free transform, R Rotate, S Scale, O Shear,
   G Gradient swatch, I Eyedropper, K Measure, H Hand, Z Zoom. Commands: W Toggle
   normal/preview, D Default fill/stroke, X Toggle fill/stroke, `/` Apply none,
-  Delete Clear.
-- **Shift (7):** P Page tool, T Type on a path, C Convert direction point, G Gradient
-  feather, I Color theme, X Swap fill/stroke, F9 Table panel.
-- **Cmd/Ctrl (33):** N O D S Q E K F Y `=` `-` 0 1 H R `;` F6 J Z A C X V W `]` `[` G L 3 B 8 P I.
+  Delete Clear, Backspace Clear (selection tool), Tab Show/hide panels, Space Hand
+  (hold; Space-drag pans).
+- **Shift (8):** P Page tool, T Type on a path, C Convert direction point, G Gradient
+  feather, I Color theme, X Swap fill/stroke, F9 Table panel, Tab Hide panels except
+  Tools.
+- **Cmd/Ctrl (34):** N O D S Q E K F Y `=` `-` 0 1 H R `;` F6 J Z A C X V W `]` `[` G L 3 B 8 P I,
+  Return (Quick Apply).
 - **Cmd/Ctrl+Shift (22):** S D `;` F6 Z A V P `]` `[` G O L C R J B I U K `.` `,`.
 - **Cmd/Ctrl+Alt (19):** S `=` 0 `'` Y I Z H 6 F P 3 L M W U V `]` `[`.
 - **Cmd/Ctrl+Alt+Shift (11):** P 0 Y Z V D L 8 `]` `[` T.
 
 ### Skipped
 
-- **Keys with no overlay cell:** Cmd+Return (Quick Apply), Tab (Show/Hide panels),
-  Shift+Tab (Hide panels except Tools), Escape (back to the Selection tool; ESC carries
-  the program mark), Space (temporary Hand, `canvas.rs:331`).
-- **Arrows, Home, End, Enter, Backspace** (`canvas.rs:1506-1516`): these go to the
-  active tool for nudging and caret movement. They are not commands.
+- **Escape**: returns to the Selection tool, but the ESC cell carries the program mark.
+- **Bare Enter**: in the Pen tool it finishes the path (`pen.rs:227`), and in text it
+  inserts a newline. It is not a global command.
+- **Shift+Enter, Alt+Backspace**: text-editing only (forced line break, delete word;
+  `tools/src/text.rs:141-143`).
+- **Arrows, Home, End** (`canvas.rs:1506-1516`): these go to the active tool for nudging
+  (Shift = ×10, Alt = copy) and caret movement. They are not commands.
 - **Cmd+Alt+3 "Show All on Spread"** (`object.rs:156`): it collides with
   **Transform Again** (`object.rs:78`, also Cmd+Alt+3). Transform Again is registered
   first and wins the dispatch loop, so the cell draws Transform Again. This is an
@@ -83,7 +89,8 @@ when the action is the same, so both apps share the cell.
   the folder names in `fetch_icons.py` `GLYPHS`. Each name was probed before use.
 - **Google Material Symbols (Apache-2.0)**, weight 300 via `icon_fetch` (`ms:`):
   conversion_path, crop_free, straighten, text_rotation_angleup, gradient, preview,
-  flip_to_front, find_replace, vertical_align_center, format_paragraph, call_split.
+  flip_to_front, find_replace, vertical_align_center, format_paragraph, call_split,
+  right_panel_close.
 - **Drawn in `fetch_icons.py` (4), `mode: alpha`:** addanchor and delanchor (the shared
   pen nib with + or -), rectframe (rectangle with an X, the placeholder frame), shear
   (parallelogram). These files are guarded, so a re-run leaves them untouched.

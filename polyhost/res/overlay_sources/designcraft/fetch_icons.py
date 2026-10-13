@@ -73,6 +73,9 @@ GLYPHS = {
     "applynone": "Prohibited",
     "clear": "Delete",
     "tablepanel": "Table",
+    "quickapply": "Search Sparkle",
+    "hidepanels": "Panel Right Contract",
+    "hidepanelsx": "ms:right_panel_close",
     # file
     "quit": "Arrow Exit",
     "export": "Arrow Export",
