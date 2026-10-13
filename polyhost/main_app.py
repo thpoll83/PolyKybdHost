@@ -250,6 +250,17 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # like: two launches 691 ms apart, two trays (2026-09-19). `--connect` is
     # excluded — an extra client GUI against a running core is a supported ask.
     gui_claim = None
+    # The forwarder gets the same one-per-user rule from a lock of its own (it
+    # may run beside the tray app). Held in `gui_claim` so the post-update
+    # relaunch below drops it before the replacement starts.
+    if (args.host or args.host_file) and not args.headless:
+        from polyhost.server.instance import claim_forwarder, EndpointBusy
+        try:
+            gui_claim = claim_forwarder()
+        except EndpointBusy:
+            slog.warning("Another PolyKybdHost forwarder is already running; exiting.")
+            print("PolyKybdHost forwarder is already running. Exiting.")
+            sys.exit(0)
     if is_plain_gui:
         from polyhost.server.instance import claim_gui, EndpointBusy
         try:

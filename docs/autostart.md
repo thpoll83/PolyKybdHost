@@ -196,6 +196,10 @@ Autostart registration and the post-update relaunch chain are
   relaunch spawns the replacement before this process exits; `main_app` also releases
   the claim explicitly before `restart_app()`. Refusing immediately there is *"it
   doesn't start up again after the update"*.
+  The forwarder takes a third lock, `claim_forwarder()` (`polykybd.forwarder.lock`),
+  with the same wait. A file of its own, because forwarding to your own keyboard
+  machine runs a forwarder beside the tray app. Before it, a second forwarder ran
+  beside the first and sent every window report twice (2026-10-13).
 - ⚠️ **A tray process relaunches with a NEW pid, never `os.execv`.** Qt's D-Bus tray
   icon registers `org.kde.StatusNotifierItem-<pid>-<n>`, so an in-place exec
   re-registers the name the old image just dropped. On Ubuntu 24.04 GNOME (X11) the

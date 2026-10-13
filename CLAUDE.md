@@ -200,9 +200,10 @@ per-application ESC mark has a rule of **no per-application configuration**:
 
 [`docs/autostart.md`](docs/autostart.md).
 
-- ⚠️ **Two locks, two files**: `claim_instance()` guards the control endpoint (daemon),
-  `claim_gui()` the tray icon. `claim_gui()` waits ~3 s because the post-update relaunch
-  starts the replacement before this process exits.
+- ⚠️ **Three locks, three files**: `claim_instance()` guards the control endpoint
+  (daemon), `claim_gui()` the tray icon, `claim_forwarder()` the forwarder. The last
+  two wait ~3 s because the post-update relaunch starts the replacement before this
+  process exits.
 - ⚠️ **Registering autostart must never start the app** (macOS `RunAtLoad` once started
   a second copy that locked the device for 50 minutes).
 - **The daemon applies a GUI self-update, not the client**, and the GUI waits for the

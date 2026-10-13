@@ -16,6 +16,7 @@ from polyhost.server import protocol
 from polyhost.server.control_server import ControlServer
 from polyhost.server.instance import (
     probe_existing, clear_stale_endpoint, claim_instance, claim_gui,
+    claim_forwarder,
     EndpointBusy, LIVE, LOCKED, STALE)
 
 
@@ -244,6 +245,58 @@ class TestGuiClaim(unittest.TestCase):
                                 protocol.instance_lock_path(addr))
         finally:
             gui.release()
+
+
+class TestClaimForwarder(unittest.TestCase):
+    """One forwarder per user, on a lock of its own.
+
+    A second forwarder ran beside the first (2026-10-13): two tray icons and
+    every window report sent twice. It must still start beside the tray app,
+    which forwarding to your own keyboard machine does."""
+
+    def setUp(self):
+        self._dir = tempfile.mkdtemp(prefix="polyfwd_")
+        self._patches = [
+            mock.patch.object(protocol, "gui_lock_path",
+                              return_value=os.path.join(self._dir, "polykybd.gui.lock")),
+            mock.patch.object(protocol, "forwarder_lock_path",
+                              return_value=os.path.join(self._dir, "polykybd.forwarder.lock")),
+        ]
+        for p in self._patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self._patches:
+            p.stop()
+
+    def test_second_forwarder_is_refused(self):
+        claim = claim_forwarder()
+        try:
+            with self.assertRaises(EndpointBusy) as ctx:
+                claim_forwarder(timeout=0)
+            self.assertEqual(ctx.exception.outcome, LOCKED)
+        finally:
+            claim.release()
+
+    def test_waits_for_the_forwarder_an_update_is_replacing(self):
+        claim = claim_forwarder()
+        threading.Timer(0.25, claim.release).start()
+        claim_forwarder(timeout=5.0).release()   # must not raise
+
+    def test_forwarder_and_tray_do_not_block_each_other(self):
+        gui = claim_gui()
+        try:
+            claim_forwarder(timeout=0).release()   # must not raise
+        finally:
+            gui.release()
+
+    def test_the_real_paths_differ(self):
+        self._patches[0].stop(); self._patches[1].stop()
+        try:
+            self.assertNotEqual(protocol.gui_lock_path(),
+                                protocol.forwarder_lock_path())
+        finally:
+            self._patches[0].start(); self._patches[1].start()
 
 
 def _quiet():
