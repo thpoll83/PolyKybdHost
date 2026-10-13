@@ -180,3 +180,15 @@ bindings:
   - { key: END,  mods: [CMDCTRL, SHIFT], icon: extendend.png,   label: "Select to last cell" }
   - { key: PGDN, mods: [CMDCTRL], icon: nextsheet.png, label: "Next sheet" }
   - { key: PGUP, mods: [CMDCTRL], icon: prevsheet.png, label: "Previous sheet" }
+
+  # ---------- Enter / Backspace / Space (grid.rs, formula_bar.rs, keymap.rs) ----------
+  # In the grid, Alt+Enter and Ctrl+Enter start editing (grid.rs:2654-2659).
+  - { key: ENTER, mods: [ALT],  icon: editcell.png, label: "Edit cell" }
+  - { key: ENTER, mods: [CTRL], icon: editcell.png, label: "Edit cell" }
+  # Editor-only chords (formula_bar.rs:169-200); in the grid these only start an edit.
+  - { key: ENTER, mods: [CTRL, SHIFT], icon: arrayformula.png, label: "Array formula" }
+  - { key: ENTER, mods: [GUI], icon: fillselection.png, label: "Fill selection", only: [macos] }
+  - { key: BACKSPACE, mods: [], icon: clearedit.png, label: "Clear and edit" }   # grid.rs:2666
+  - { key: SPACE, mods: [SHIFT], icon: selectrow.png, label: "Select row" }       # keymap.rs:115
+  - { key: SPACE, mods: [CTRL],  icon: selectcol.png, label: "Select column" }    # keymap.rs:116-117
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: selectall.png, label: "Select all" }  # keymap.rs:112

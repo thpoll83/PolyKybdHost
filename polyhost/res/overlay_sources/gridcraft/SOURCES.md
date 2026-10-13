@@ -41,6 +41,15 @@ are bound. Paths are under `crates/ui-egui/src/`:
 | F2, F9, Alt+F8, Delete, Home, Ctrl+Home/End, Ctrl+PgUp/PgDn | `grid.rs:2626-2682` |
 | F4 cycle reference while editing | `formula_bar.rs:255` |
 | F10 key tips | `keytips.rs:93` |
+| Alt+Enter / Ctrl+Enter edit cell, Backspace clear-and-edit | `grid.rs:2654-2659`, `grid.rs:2665-2672` |
+| Ctrl+Shift+Enter array formula, Mac Cmd+Enter fill selection (editor) | `formula_bar.rs:169-200` |
+| Shift+Space row, Ctrl+Space column, Cmd/Ctrl+Shift+Space select all | `keymap.rs:112-117` |
+
+Enter chords are context-dependent. Per the brief the grid meaning wins: Alt+Enter and Ctrl+Enter
+start editing in the grid (while editing, Alt+Enter is a line break and Ctrl/Cmd+Enter fills the
+selection). Two exceptions, because in the grid they do nothing of their own: Ctrl+Shift+Enter
+is drawn as **Array formula** (in the grid it only starts an edit), and Mac Cmd+Enter as
+**Fill selection** (the grid moves down, as plain Enter).
 
 `keymap::lookup()` runs before `ribbon::shortcut()`, so where both match, keymap wins (for
 example, Windows Ctrl+Shift+F opens the Font tab, not the filter).
@@ -68,10 +77,14 @@ macOS-only differences, each scoped `only: [macos]` (Windows/Linux equivalents i
 
 ### Not bound, and why
 
-- **No overlay cell:** Space chords (Shift+Space row, Ctrl+Space column, Cmd/Ctrl+Shift+Space
-  select all), Enter/Alt+Enter/Ctrl+Shift+Enter, Tab, Backspace and Escape. Escape is the
-  program-icon cell.
-- **Basic cursor movement:** plain arrows, PgUp/PgDn, Shift+arrows (extend), Ctrl+arrows (jump).
+- **Escape** is the program-icon cell (grid.rs: clears the copy marquee / format painter).
+- **Basic cursor movement / commit:** plain arrows, PgUp/PgDn, Shift+arrows (extend),
+  Ctrl+arrows (jump), plain/Shift Enter (commit and move down/up; pastes a marked copy range),
+  plain/Shift Tab (move right/left; accepts AutoComplete while editing).
+- **Plain Space** types a space, except on a checkbox cell where it toggles it
+  (`grid.rs:2677`): context-only, not drawn.
+- **Ctrl+Alt+Enter** inserts a line break while editing (`formula_bar.rs:170`); in the grid it
+  only starts editing like Ctrl+Enter. Not drawn separately.
 - **Incidental matches:** `ribbon::shortcut()` ignores Shift on most keys (Ctrl+Shift+B bolds,
   Ctrl+Shift+H replaces on Windows, Mac Cmd+Shift+1 opens format cells, Cmd+Shift+G goes to).
   It also ignores Alt when keymap returns nothing. None of these is a deliberate binding.
@@ -92,7 +105,7 @@ hyperlink, find, replace, goto, filldown, fillright, flashfill, formatcells, tab
 delcells, filter, autosum, calc, absref and currency. The PNGs are byte-identical to
 `excel/icons/` except `copy.png`, which is drawn by the shared concept renderer anyway.
 
-Six are **Material Symbols (Apache-2.0)** at weight 300: `content_paste_go` (paste special),
+Seven are **Material Symbols (Apache-2.0)** at weight 300: `content_paste_go` (paste special), `add_row_below` (insert cells),
 `select` (current region; also the base of the select-to composites), `vertical_align_bottom`
 (value from above), `function` (insert function), `new_label` (names from selection) and
 `arrow_drop_down_circle` (drop-down list).
@@ -105,6 +118,10 @@ Derived in `fetch_icons.py`:
   as the "select to" twins of Ctrl+Home, Ctrl+End and Home.
 
 Percent (Ctrl+Shift+5) is the text label `%`, as in the Excel overlay.
+
+Enter/Backspace/Space icons: Edit (Fluent, as F2), Braces (array formula), Paint Bucket (fill
+selection), Table Cell Edit (clear and edit), Table Insert Row / Table Insert Column (select
+row / column, the same glyphs as `libreoffice/`), Select All On (as Ctrl+A).
 
 ## Program icon (ESC, all layers)
 

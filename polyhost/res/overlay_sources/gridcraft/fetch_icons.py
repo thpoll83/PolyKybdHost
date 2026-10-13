@@ -82,7 +82,12 @@ ICONS = {
     # cells / rows / columns
     "tableadd": "Table Add",
     "delcells": "Table Delete Row",
-    "insertcells": "Table Insert Row",
+    "insertcells": "ms:add_row_below",
+    "selectrow": "Table Insert Row",       # as libreoffice/ Select row
+    "selectcol": "Table Insert Column",    # as libreoffice/ Select column
+    "clearedit": "Table Cell Edit",
+    "arrayformula": "Braces",
+    "fillselection": "Paint Bucket",
     "hiderows": "Arrow Minimize Vertical",
     "unhiderows": "Arrow Maximize Vertical",
     "region": "ms:select",
