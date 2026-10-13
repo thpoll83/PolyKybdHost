@@ -288,6 +288,10 @@ notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
   overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+# GNOME Files reports its WM_CLASS `nautilus` on X11; Wayland readers can report
+# the app id `org.gnome.Nautilus`.
+nautilus,org.gnome.Nautilus:
+  overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
 notepad:
