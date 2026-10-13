@@ -1,0 +1,146 @@
+# Cursor (cursor.com, Anysphere) shortcut overlays for PolyKybd.
+#
+# Base = the VS Code overlay (overlay_sources/vscode/bindings.yaml), copied
+# because the generator has no include/extends mechanism. Same chords, same
+# artwork: every icon is a byte-identical copy of vscode/icons/ (icon_fetch.borrow),
+# so a shared cell costs one pool slot board-wide. MINUS every VS Code chord this
+# fork's own default keybindings take over; PLUS the fork's AI chords. Both read
+# from the shipped build's keybinding registrations (see SOURCES.md), not guessed.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python polyhost/res/overlay_sources/cursor/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cursor/bindings.yaml --preview /tmp/cursor_preview
+app: cursor
+match: [cursor]
+output: cursor_template
+output_macos: cursor_mac_template
+output_linux: cursor_linux_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+# ⚠️ NO program_icon, deliberately. The ESC mark comes from the generic path
+# (the OS's own icon, then Simple Icons `si:cursor` at the pinned 15.22.0, which
+# exists): this vendor's logo is a proprietary trademark and the copied VS Code
+# ribbon would name the wrong app. See SOURCES.md.
+
+# Reclaimed artwork renders 1:1 — the old cell IS the icon, so no fit/anchor.
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
+
+bindings:
+  # ============================ PRESERVED from the previously shipped set =====
+  # Same key, same modifier, same drawing. `CMDCTRL` where VS Code registers the
+  # chord as KeyMod.CtrlCmd, so these now reach macOS too; literal otherwise.
+
+  # -- CMDCTRL (was Ctrl-only; verified KeyMod.CtrlCmd) --
+  - { key: N, mods: [CMDCTRL], icon: newfile.png,  <<: *reclaimed, label: "New file",         source: reclaimed }
+  - { key: T, mods: [CMDCTRL], icon: symbols.png,  <<: *reclaimed, label: "Show all symbols", source: reclaimed }
+  - { key: "-", mods: [CMDCTRL], icon: zoomout.png, <<: *reclaimed, label: "Zoom out",        source: reclaimed }
+  - { key: "=", mods: [CMDCTRL], icon: zoomin.png,  <<: *reclaimed, label: "Zoom in",         source: reclaimed }
+  - { key: ",", mods: [CMDCTRL], icon: settings.png, label: Settings,         source: "shared concept (lexicon)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png, <<: *reclaimed, label: "Command palette", source: reclaimed }
+  - { key: "\\", mods: [CMDCTRL, SHIFT], icon: matchbracket.png, <<: *reclaimed, label: "Jump to matching bracket", source: reclaimed }
+
+  # -- literal Ctrl: stays Ctrl on macOS too (⌃G, ⌃F5) --
+  - { key: G,  mods: [CTRL], icon: gotoline.png,   <<: *reclaimed, label: "Go to line",            source: reclaimed }
+  - { key: F5, mods: [CTRL], icon: runnodebug.png, <<: *reclaimed, label: "Run without debugging", source: reclaimed }
+
+  # -- literal, preserved verbatim: see SOURCES.md "Preserved as-is" --
+  # Go Back / Go Forward are the LINUX chords (Windows uses Alt+←/→, macOS ⌃- /
+  # ⌃⇧-). Kept exactly as shipped rather than re-chorded.
+  - { key: "-", mods: [CTRL, SHIFT], icon: goforward.png, <<: *reclaimed, label: "Go forward", source: reclaimed }
+  - { key: "-", mods: [CTRL, ALT],   icon: goback.png,    <<: *reclaimed, label: "Go back",    source: reclaimed }
+  - { key: F6, mods: [CTRL], icon: pause.png,   <<: *reclaimed, label: "Pause (debug)", source: reclaimed }
+  - { key: H,  mods: [ALT],  icon: history.png, label: "History / recent", source: "ms-fluent/History (MIT), shared with calc" }
+
+  # -- identical on both platforms --
+  - { key: F5,  mods: [],      icon: rundebug.png,   <<: *reclaimed, label: "Start debugging",   source: reclaimed }
+  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: "reclaimed (JetBrains stop, shared)" }
+  - { key: F9,  mods: [],      icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: reclaimed }
+  - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: "reclaimed (JetBrains, shared)" }
+  - { key: F11, mods: [],      icon: stepinto.png,   <<: *reclaimed, label: "Step into",         source: "reclaimed (JetBrains, shared)" }
+  - { key: F11, mods: [SHIFT], icon: stepout.png,    <<: *reclaimed, label: "Step out",          source: "reclaimed (JetBrains, shared)" }
+
+  # ==================================================== NEW coverage ==========
+  # Fluent glyphs (MIT). None of these had artwork before.
+
+  # -- CMDCTRL --
+  - { key: P, mods: [CMDCTRL], icon: quickopen.png,   label: "Quick Open / Go to File", source: "ms-fluent/Document Search (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: sidebar.png,     label: "Toggle sidebar", source: "ms-fluent/Panel Left (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: closeeditor.png, label: "Close editor",   source: "ms-fluent/Dismiss (MIT)" }
+  - { key: "\\", mods: [CMDCTRL], icon: split.png,    label: "Split editor",   source: "ms-fluent/Split Horizontal (MIT)" }
+  - { key: "/", mods: [CMDCTRL], icon: comment.png,   label: "Toggle line comment", source: "ms-fluent/Comment (MIT)" }
+
+  # -- CMDCTRL+Shift --
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: findinfiles.png,    label: "Find in files",    source: "ms-fluent/Folder Search (MIT)" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: replaceinfiles.png, label: "Replace in files", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: gotosymbol.png,     label: "Go to symbol in file", source: "ms-fluent/Text Bullet List Tree (MIT)" }
+  # Ctrl+Shift+L is NOT Select all occurrences here: Cursor binds it to "Open New
+  # Agent Chat" at weight 1600 (VS Code's selectHighlights is weight 100).
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: mdpreview.png,      label: "Markdown preview", source: "ms-fluent/Eye (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: explorer.png,       label: Explorer,           source: "ms-fluent/Folder (MIT)" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: extensions.png,     label: Extensions,         source: "ms-fluent/Puzzle Piece (MIT)" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: debugview.png,      label: "Run and debug",    source: "ms-fluent/Bug (MIT)" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: problems.png,       label: Problems,           source: "ms-fluent/Warning (MIT)" }
+  # ⚠️ Windows `Ctrl+Shift+U` and macOS `⇧⌘U`, but Linux moves this to the
+  # two-stroke chord `Ctrl+K Ctrl+H` (Ubuntu reserves Ctrl+Shift+U for unicode
+  # input), which a keycap cannot draw at all — so it is scoped out there rather
+  # than dropped, which would cost the two correct cells as well. See SOURCES.md.
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: output.png,         label: Output,             source: "ms-fluent/Document Text (MIT)", except: [linux] }
+
+  # -- literal Ctrl (⌃` on macOS too) --
+  - { key: "`", mods: [CTRL], icon: terminal.png, label: "Toggle terminal", source: "ms-fluent/Window Console (MIT)" }
+
+  # -- identical on both platforms --
+  - { key: F2,  mods: [], icon: rename.png,     label: "Rename symbol",    source: "ms-fluent/Rename (MIT)" }
+  - { key: F12, mods: [], icon: definition.png, label: "Go to definition", source: "ms-fluent/Target (MIT)" }
+
+  # --- standard editing (shared Fluent concepts) ---
+  # VS Code's own default keybindings (src/vs, see SOURCES.md). Already above
+  # and NOT repeated: New (Ctrl+N), Close (Ctrl+W), Zoom in/out. VS Code has no
+  # default Print or Reload chord.
+  - { key: S, mods: [CMDCTRL], label: "Save", source: "concept (shared Fluent)" }
+  # Ctrl+O = Open File (Windows/Linux), Cmd+O = Open... (macOS).
+  - { key: O, mods: [CMDCTRL], label: "Open", source: "concept (shared Fluent)" }
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  # Redo: primary Ctrl+Y, secondary Ctrl+Shift+Z; macOS Cmd+Shift+Z only.
+  - { key: Y, mods: [CTRL], only: [windows, linux], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }
+  - { key: F, mods: [CMDCTRL], label: "Find", source: "concept (shared Fluent)" }
+  # Find next: F3 everywhere (macOS secondary), Cmd+G macOS primary. Cmd+G does
+  # not collide with the literal Ctrl+G (Go to line) above.
+  - { key: F3, mods: [], label: "Find next", source: "concept (shared Fluent)" }
+  - { key: G, mods: [GUI], only: [macos], label: "Find next", source: "concept (shared Fluent)" }
+  # Replace: Ctrl+H; macOS Cmd+Option+F (Cmd+H hides the app).
+  - { key: H, mods: [CTRL], only: [windows, linux], label: "Replace", source: "concept (shared Fluent)" }
+  - { key: F, mods: [GUI, ALT], only: [macos], label: "Replace", source: "concept (shared Fluent)" }
+
+  # ============================================== Cursor AI chords ============
+  # Read from Cursor 3.24.12's workbench.desktop.main.js (KeybindingWeight beats
+  # the VS Code default where they share a chord) and the official table at
+  # https://cursor.com/docs/configuration/kbd . All `Ie.CtrlCmd` -> CMDCTRL.
+  - { key: L, mods: [CMDCTRL],        icon: agentpanel.png, label: "Agent panel",    source: "ms-fluent/Chat Sparkle (MIT); Cursor 'Open Chat' (weight 500)" }
+  - { key: I, mods: [CMDCTRL],        icon: agentpanel.png, label: "Agent panel",    source: "ms-fluent/Chat Sparkle (MIT); Cursor 'Open Chat' (weight 1600)" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: newchat.png,    label: "New agent chat", source: "ms-fluent/Chat Add (MIT); Cursor 'Open New Agent Chat' primary" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: newchat.png,    label: "New agent chat", source: "ms-fluent/Chat Add (MIT); Cursor 'Open New Agent Chat' secondary" }
+  - { key: K, mods: [CMDCTRL],        icon: inlineedit.png, label: "Inline edit",    source: "ms-fluent/Sparkle (MIT); Cursor Cmd-K prompt bar (editorFocus, weight 1401)" }
+  - { key: E, mods: [CMDCTRL],        icon: agentlayout.png, label: "Agent layout",  source: "ms-fluent/Panel Right (MIT); Cursor 'Swap Agent Sidebar Location' (weight 600)" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: settings.png,   label: Settings,         source: "shared concept; Cursor Settings (weight 401)" }
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: voice.png,  label: "Voice mode",     source: "ms-fluent/Mic (MIT); Cursor 'Toggle Voice Mode' (weight 201)" }
+  - { key: N, mods: [CMDCTRL, ALT],   icon: agentswindow.png, label: "Agents window", source: "ms-fluent/Bot (MIT); Cursor 'Open or Focus Agents Window' (weight 200)" }
+  # -- accepting / rejecting AI edits (active only while a suggestion or diff shows) --
+  - { key: TAB, mods: [],             icon: acceptsuggestion.png, label: "Accept Tab suggestion", source: "material-symbols/keyboard_tab (Apache-2.0); Cursor 'Accept Cursor Tab Suggestion'" }
+  - { key: RIGHT, mods: [CMDCTRL],    icon: acceptword.png, label: "Accept next word", source: "material-symbols/text_select_move_forward_word (Apache-2.0); inlineSuggest.acceptNextWord" }
+  - { key: ENTER, mods: [CMDCTRL],    icon: acceptall.png,  label: "Accept all edits", source: "ms-fluent/Checkmark Circle (MIT); Cursor 'Accept Edits'" }
+  - { key: BACKSPACE, mods: [CMDCTRL, SHIFT], icon: rejectall.png, label: "Reject all edits", source: "ms-fluent/Dismiss Circle (MIT); Cursor 'Undo Edits' / 'Cancel Edits'" }
+  - { key: J, mods: [ALT],            icon: nextchange.png, label: "Next change",      source: "ms-fluent/Arrow Down (MIT); Cursor 'Go to Next Change'" }
+  - { key: K, mods: [ALT],            icon: prevchange.png, label: "Previous change",  source: "ms-fluent/Arrow Up (MIT); Cursor 'Go to Previous Change'" }
