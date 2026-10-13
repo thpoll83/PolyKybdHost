@@ -511,21 +511,23 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # rather than calling os.execv from inside a Qt slot with the tray/timer
     # still live (the forwarder used to, and a transient execv failure then
     # left it dead with no relaunch). This mirrors the headless daemon, which
-    # re-execs only after its run loop ends. `restart_app()` re-execs (or, on
-    # failure, spawns a detached child) and never returns.
+    # re-execs only after its run loop ends. Unlike the daemon, a tray process
+    # relaunches as a detached child with a new pid (see below) and never
+    # returns.
     if getattr(app, "wants_restart", False):
         from polyhost.services.updater import restart_app
         del app  # let the QApplication release its X/tray/D-Bus resources first
-        # Drop the tray claim BEFORE relaunching. `restart_app()` prefers
-        # os.execv (which drops it anyway — the lock fd is close-on-exec), but
-        # on Windows, and on POSIX when execv fails, it spawns a DETACHED child
-        # and only then exits. The two processes overlap there, so a still-held
-        # claim would turn the replacement away at startup: "it doesn't start up
-        # again after the update", the exact failure the detached spawn exists
-        # to prevent.
+        # Drop the tray claim BEFORE relaunching. `restart_app(new_process=True)`
+        # spawns a DETACHED child and only then exits, so the two processes
+        # overlap, and a still-held claim would turn the replacement away at
+        # startup: "it doesn't start up again after the update", the exact
+        # failure the detached spawn exists to prevent.
         if gui_claim is not None:
             gui_claim.release()
-        restart_app()
+        # A new pid, not os.execv: Qt's D-Bus tray icon name carries the pid,
+        # and GNOME's AppIndicator extension showed no icon for the same name
+        # re-registered by the exec'd image (forwarder, 2026-10-13).
+        restart_app(new_process=True)
     sys.exit(rc)
 
 

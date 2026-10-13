@@ -1153,6 +1153,23 @@ class TestRestartApp(unittest.TestCase):
         popen.assert_called_once()
         sys_exit.assert_called_once_with(0)
 
+    def test_new_process_skips_execv_on_posix(self):
+        """A tray relaunch must get a new pid (main_app passes new_process).
+
+        execv keeps the pid, so Qt re-registers the same
+        org.kde.StatusNotifierItem-<pid>-1 name and GNOME shows no tray icon.
+        """
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit",
+                               side_effect=SystemExit) as sys_exit:
+            with self.assertRaises(SystemExit):
+                updater.restart_app(new_process=True)
+        execv.assert_not_called()
+        popen.assert_called_once()
+        sys_exit.assert_called_once_with(0)
+
     def test_windows_relaunch_is_detached(self):
         """The restarted app must not stay in the exiting parent's console.
 
