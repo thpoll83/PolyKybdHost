@@ -76,6 +76,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
     GitHub:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
+    # Logged in, GitHub drops "· GitHub" from its titles ("Workflow runs ·
+    # owner/repo"), so the brand word above misses most pages. Every one ends in
+    # "· owner/repo" (or "@sha"), which the gate requires. GitLab spaces its
+    # path ("group / project") and ends in "· GitLab", so it fails the gate and
+    # the scan moves on to its own key.
+    "·":
+      title: '· [\w.-]+/[\w.-]+(@[0-9a-f]{7,40})?( · GitHub)?( [-—] [^·]+)?$'
+      overlay: [github_template.mods.png, github_template.combo.mods.png]
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     Bitbucket:
@@ -138,6 +146,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Confluence:
           overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
         GitHub:
+          overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        "·":
+          title: '· [\w.-]+/[\w.-]+(@[0-9a-f]{7,40})?( · GitHub)?( [-—] [^·]+)?$'
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
