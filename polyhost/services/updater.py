@@ -1192,8 +1192,9 @@ def preflight_blockers(findings) -> list:
 def restart_app(new_process: bool = False) -> None:
     """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
 
-    ``new_process=True`` skips ``os.execv`` and always spawns a detached child
-    with a NEW pid, then exits. A tray process needs this: Qt's D-Bus tray icon
+    ``new_process=True`` skips ``os.execv`` and spawns a detached child with a
+    NEW pid, then exits. Only if that spawn raises ``OSError`` does it fall back
+    to ``os.execv``, which keeps the pid. A tray process needs this: Qt's D-Bus tray icon
     registers ``org.kde.StatusNotifierItem-<pid>-<n>``, so an in-place execv
     re-registers the exact name the old image just released, and GNOME's
     AppIndicator extension then shows no icon at all. The process runs on, so
