@@ -345,6 +345,29 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                       self._chrome("windows", "https://www.google.com/search?q=github",
                                    "github - Google Search - Google Chrome"))
 
+    def test_a_logged_in_github_title_routes_without_the_brand_word(self):
+        """Logged in, GitHub drops the trailing "· GitHub" from its page titles,
+        so "Workflow runs · owner/repo" carried no brand word and loaded Chrome's
+        set (forwarder log, 2026-10-13). Every such title ends in "· owner/repo";
+        GitLab writes "group / project", with spaces, and ends in "· GitLab"."""
+        for title in ("Workflow runs · thpoll83/qmk_firmware - Google Chrome",
+                      "Fix it by thpoll83 · Pull Request #369 · thpoll83/PolyKybdHost - Google Chrome",
+                      "Issues · thpoll83/PolyKybdHost - Google Chrome",
+                      "PolyKybdHost/README.md at main · thpoll83/PolyKybdHost - Google Chrome",
+                      "fix: relaunch · thpoll83/PolyKybdHost@305c9fa - Google Chrome",
+                      "Releases · my-org/my.repo_2 — Mozilla Firefox"):
+            self.assertIn("github_template.mods.png", self._chrome("windows", None, title), title)
+        self.assertIn("github_template_mac.mods.png",
+                      self._chrome("macos", None, "Issues · thpoll83/PolyKybdHost"))
+        # GitLab keeps its own set: spaced path, and its brand word later on.
+        for title in ("Issues · group / project · GitLab - Google Chrome",
+                      "Merge requests · Thomas / repo · GitLab"):
+            self.assertIn("gitlab_template.mods.png", self._chrome("windows", None, title), title)
+        # A middle dot without an owner/repo at the end is not GitHub.
+        for title in ("Settings · Profile - Google Chrome",
+                      "News · a/b testing explained · Blog - Google Chrome"):
+            self.assertIn("chrome_template.mods.png", self._chrome("windows", None, title), title)
+
     def test_libreoffice_keeps_its_title_routing_on_macOS(self):
         self.assertIn("libreoffice_calc_template_mac.mods.png",
                       self._overlay("libreoffice", "macos", "Untitled 1 - LibreOffice Calc"))
