@@ -1,0 +1,273 @@
+# PhotoCraft shortcut overlays for PolyKybd.
+#
+# PhotoCraft (github.com/storytold/photocraft, MIT OR Apache-2.0) is the ArtCraft
+# "Crafting Apps" Photoshop work-alike. It keeps Photoshop's default keymap, but
+# the AUTHORITY here is PhotoCraft's own source, not Adobe's list: every binding
+# below is a default the code actually dispatches (see SOURCES.md for file:line).
+#
+# Its shortcut strings are written "Cmd+..." and parsed to egui
+# `Modifiers::COMMAND` (Cmd on macOS, Ctrl elsewhere), so every Cmd chord is
+# CMDCTRL and the generator emits photocraft_template.* and _mac.*. No action is
+# remapped on macOS (native_menu.rs moves the SYSTEM Hide/Minimize to Ctrl+Cmd+H
+# and Ctrl+Cmd+M and drops Settings' Cmd+, instead) -> SOURCES.md "macOS".
+#
+# Icons: Fluent (MIT) house style; Material Symbols (Apache-2.0) for gaps; the
+# Photoshop overlay's drawn tool glyphs are reused byte-identically for the same
+# actions. Program icon (ESC): PhotoCraft's OWN kitsune icon (MIT OR Apache-2.0).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/photocraft/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/photocraft/bindings.yaml --preview /tmp/photocraft_preview
+app: photocraft
+# Windows exe photocraft.exe, Linux binary `photocraft`, macOS bundle "PhotoCraft";
+# Wayland app id / X11 WM_CLASS ai.storyteller.photocraft (main.rs APP_ID, .desktop).
+match: [photocraft, ai.storyteller.photocraft]
+output: photocraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+# The app's own .ico, 64 px frame. Sweep (frames 40/48/64/128/256 x bright
+# 120..210 / luma 60..160): `bright` lights the paper-coloured figure, which at
+# 40 px is a scatter of engraving strokes; `luma` < 110 lights only the ink.
+# `luma` 140 lights the blue field and the ink, leaving the fox as a dark
+# silhouette in a lit tile with both ears and the fanned tails readable; 125
+# fills in the face, 160 starts breaking the tails. 64/128/256 render alike, so
+# 64 is the smallest converged frame.
+program_icon: photocraft.png
+program_icon_mode: luma
+program_icon_threshold: 140
+program_icon_anchor: right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # ============================================================= #
+  # TOOLS  (no-mod; state.rs Tool::key)                           #
+  # ============================================================= #
+  - { key: V, mods: [], icon: move.png,          label: "Move / Artboard" }
+  - { key: M, mods: [], icon: marquee.png,  mode: alpha, label: "Marquee" }
+  - { key: L, mods: [], icon: lasso.png,    mode: alpha, label: "Lasso" }
+  - { key: W, mods: [], icon: magicwand.png, mode: alpha, label: "Quick-select / Magic wand" }
+  - { key: C, mods: [], icon: crop.png,          label: "Crop" }
+  - { key: K, mods: [], icon: frame.png,         label: "Frame tool" }
+  - { key: B, mods: [], icon: brush.png,         label: "Brush" }
+  - { key: E, mods: [], icon: eraser.png,        label: "Eraser" }
+  - { key: S, mods: [], icon: clonestamp.png, mode: alpha, label: "Clone stamp" }
+  - { key: T, mods: [], icon: type.png,          label: "Type" }
+  - { key: G, mods: [], icon: gradient.png, mode: alpha, label: "Gradient / Paint bucket" }
+  - { key: I, mods: [], icon: eyedropper.png,    label: "Eyedropper" }
+  - { key: Z, mods: [], icon: zoom.png,          label: "Zoom" }
+  - { key: H, mods: [], icon: hand.png,          label: "Hand" }
+  - { key: R, mods: [], icon: rotateview.png,    label: "Rotate view" }
+  - { key: P, mods: [], icon: pen.png,           label: "Pen" }
+  - { key: U, mods: [], icon: shape.png,         label: "Shape" }
+  - { key: J, mods: [], icon: healing.png,  mode: alpha, label: "Healing brush" }
+  - { key: O, mods: [], icon: dodgeburn.png, mode: alpha, label: "Dodge / Burn" }
+  - { key: Y, mods: [], icon: historybrush.png,  label: "History brush" }
+  - { key: A, mods: [], icon: pathselect.png, mode: alpha, label: "Path selection" }
+  - { key: X, mods: [], icon: swapcolors.png, mode: alpha, region: [72, 40], anchor: center, label: "Swap FG/BG" }
+  - { key: D, mods: [], icon: defaultcolors.png, mode: alpha, label: "Default colours" }
+  - { key: Q, mods: [], icon: quickmask.png, mode: alpha, label: "Quick mask" }
+  - { key: F, mods: [], icon: screenmode.png,    label: "Screen mode" }
+  - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush size -" }
+  - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +" }
+  - { key: "/", mods: [], icon: locktransp.png,  label: "Lock transparent pixels" }
+  - { key: DELETE, mods: [], icon: clear.png,    label: "Clear selection" }
+  - { key: F5,  mods: [], icon: brushsettings.png, label: "Brush settings panel" }
+  - { key: F6,  mods: [], icon: colorpanel.png,  label: "Color panel" }
+  - { key: F7,  mods: [], icon: layerspanel.png, label: "Layers panel" }
+  - { key: F8,  mods: [], icon: infopanel.png,   label: "Info panel" }
+  - { key: F12, mods: [], icon: revert.png,      label: "Revert" }
+  - { key: SPACE, mods: [], icon: hand.png,      label: "Hand (hold)" }
+  - { key: GRAVE, mods: [], icon: eraser.png,    label: "Erase with brush (hold)" }
+  - { key: TAB, mods: [], icon: panelsall.png,   label: "Show/Hide all panels" }
+  - { key: BACKSPACE, mods: [], icon: clear.png, label: "Clear selection" }
+  # opacity_keys.rs: 1..9 = 10..90 %, 0 = 100 % (brush or layer opacity); the
+  # digit legend carries the value, so one shared glyph (one pool slot).
+  - { key: "1", mods: [], icon: opacity.png, label: "Opacity 10%" }
+  - { key: "2", mods: [], icon: opacity.png, label: "Opacity 20%" }
+  - { key: "3", mods: [], icon: opacity.png, label: "Opacity 30%" }
+  - { key: "4", mods: [], icon: opacity.png, label: "Opacity 40%" }
+  - { key: "5", mods: [], icon: opacity.png, label: "Opacity 50%" }
+  - { key: "6", mods: [], icon: opacity.png, label: "Opacity 60%" }
+  - { key: "7", mods: [], icon: opacity.png, label: "Opacity 70%" }
+  - { key: "8", mods: [], icon: opacity.png, label: "Opacity 80%" }
+  - { key: "9", mods: [], icon: opacity.png, label: "Opacity 90%" }
+  - { key: "0", mods: [], icon: opacity.png, label: "Opacity 100%" }
+
+  # ============================================================= #
+  # SHIFT                                                         #
+  # ============================================================= #
+  - { key: "[", mods: [SHIFT], icon: hardnessdec.png, mode: alpha, label: "Brush hardness -" }
+  - { key: "]", mods: [SHIFT], icon: hardnessinc.png, mode: alpha, label: "Brush hardness +" }
+  - { key: F5,  mods: [SHIFT], icon: fill.png,     label: "Fill" }
+  - { key: F6,  mods: [SHIFT], icon: feather.png,  label: "Feather selection" }
+  - { key: TAB, mods: [SHIFT], icon: panelsdock.png, label: "Show/Hide panel dock" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: fill.png, label: "Fill dialog" }
+  - { key: EQUAL, mods: [SHIFT], icon: blendnext.png, label: "Next blend mode" }
+  - { key: MINUS, mods: [SHIFT], icon: blendprev.png, label: "Previous blend mode" }
+  - { key: "1", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 10%" }
+  - { key: "2", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 20%" }
+  - { key: "3", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 30%" }
+  - { key: "4", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 40%" }
+  - { key: "5", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 50%" }
+  - { key: "6", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 60%" }
+  - { key: "7", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 70%" }
+  - { key: "8", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 80%" }
+  - { key: "9", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 90%" }
+  - { key: "0", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 100%" }
+
+  # ============================================================= #
+  # ALT  /  ALT+SHIFT  (layer_nav_cmds.rs, window panel)          #
+  # ============================================================= #
+  - { key: "]", mods: [ALT], icon: layerabove.png,  label: "Select layer above" }
+  - { key: "[", mods: [ALT], icon: layerbelow.png,  label: "Select layer below" }
+  - { key: DOT,   mods: [ALT], icon: layertop.png,    label: "Select top layer" }
+  - { key: COMMA, mods: [ALT], icon: layerbottom.png, label: "Select bottom layer" }
+  - { key: F9,  mods: [ALT], icon: actions.png,     label: "Actions panel" }
+  - { key: SPACE, mods: [ALT], icon: zoomout.png,   label: "Zoom out (hold)" }
+  - { key: BACKSPACE, mods: [ALT], icon: fillfg.png, mode: alpha, label: "Fill FG color" }
+  - { key: BACKSPACE, mods: [ALT, SHIFT], icon: fillfgpreserve.png, mode: alpha, label: "Fill FG color, preserve transparency" }
+  - { key: "]", mods: [ALT, SHIFT], icon: addabove.png, label: "Add layer above to selection" }
+  - { key: "[", mods: [ALT, SHIFT], icon: addbelow.png, label: "Add layer below to selection" }
+
+  # ============================================================= #
+  # CMD/CTRL                                                      #
+  # ============================================================= #
+  # --- file ---
+  - { key: N, mods: [CMDCTRL], icon: new.png,    label: "New" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,   label: "Open" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,   label: "Save" }
+  - { key: W, mods: [CMDCTRL], icon: close.png,  label: "Close" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,  label: "Print" }
+  - { key: Q, mods: [CMDCTRL], icon: exit.png,   label: "Exit" }
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,   label: "Undo" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,    label: "Cut" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,   label: "Copy" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,  label: "Paste" }
+  - { key: F, mods: [CMDCTRL], icon: search.png, label: "Search" }
+  - { key: T, mods: [CMDCTRL], icon: freetransform.png, label: "Free transform" }
+  - { key: K, mods: [CMDCTRL], icon: prefs.png,  label: "Preferences" }
+  # --- select ---
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all" }
+  - { key: D, mods: [CMDCTRL], icon: deselect.png,  label: "Deselect" }
+  # --- layer ---
+  - { key: J, mods: [CMDCTRL], icon: duplayer.png,  label: "Layer via copy" }
+  - { key: E, mods: [CMDCTRL], icon: mergedown.png, label: "Merge layers / down" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,     label: "Group layers" }
+  - { key: "]", mods: [CMDCTRL], icon: bringforward.png, label: "Bring forward" }
+  - { key: "[", mods: [CMDCTRL], icon: sendbackward.png, label: "Send backward" }
+  - { key: COMMA, mods: [CMDCTRL], icon: hidelayers.png, label: "Hide layers" }
+  # --- image adjustments ---
+  - { key: L, mods: [CMDCTRL], icon: levels.png,       label: "Levels" }
+  - { key: M, mods: [CMDCTRL], icon: curves.png,       label: "Curves" }
+  - { key: U, mods: [CMDCTRL], icon: huesat.png,       label: "Hue / Saturation" }
+  - { key: B, mods: [CMDCTRL], icon: colorbalance.png, label: "Color balance" }
+  - { key: I, mods: [CMDCTRL], icon: invert.png,       label: "Invert" }
+  # --- view ---
+  - { key: R, mods: [CMDCTRL], icon: rulers.png, label: "Rulers" }
+  - { key: H, mods: [CMDCTRL], icon: extras.png, label: "Extras" }
+  - { key: Y, mods: [CMDCTRL], icon: proof.png,  label: "Proof colors" }
+  - { key: QUOTE, mods: [CMDCTRL], icon: grid.png,   label: "Grid" }
+  - { key: ";", mods: [CMDCTRL], icon: guides.png, label: "Guides" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: fitscreen.png, label: "Fit on screen" }
+  - { key: "1", mods: [CMDCTRL], icon: zoom1to1.png,  label: "Zoom 100%" }
+  # --- channels (channel_cmds.rs) ---
+  - { key: "2", mods: [CMDCTRL], icon: composite.png, label: "Target composite channel" }
+  - { key: "3", mods: [CMDCTRL], icon: channel3.png, label: "Target channel 3" }
+  - { key: "4", mods: [CMDCTRL], icon: channel4.png, label: "Target channel 4" }
+  - { key: "5", mods: [CMDCTRL], icon: channel5.png, label: "Target channel 5" }
+  - { key: "6", mods: [CMDCTRL], icon: channel6.png, label: "Target channel 6" }
+  - { key: "7", mods: [CMDCTRL], icon: channel7.png, label: "Target channel 7" }
+  - { key: "8", mods: [CMDCTRL], icon: channel8.png, label: "Target channel 8" }
+  - { key: "9", mods: [CMDCTRL], icon: channel9.png, label: "Target channel 9" }
+  - { key: "\\", mods: [CMDCTRL], icon: layermask.png, label: "Target layer mask" }
+  - { key: SPACE, mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in (hold)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: pathtosel.png, label: "Path to selection" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color" }
+  # Literal Ctrl on every OS (menus.rs "Ctrl+Tab"), not CMDCTRL.
+  - { key: TAB, mods: [CTRL], icon: nextdoc.png, label: "Next document" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevdoc.png, label: "Previous document" }
+
+  # ============================================================= #
+  # CMD/CTRL+SHIFT                                                #
+  # ============================================================= #
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,     label: "Save as" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,       label: "Redo" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copymerged.png, label: "Copy merged" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinplace.png, label: "Paste in place" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: fade.png,       label: "Fade" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: transformagain.png, label: "Transform again" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: colorsettings.png, label: "Color settings" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: newlayer.png,   label: "New layer" }
+  - { key: BACKSPACE, mods: [CMDCTRL, SHIFT], icon: fillbgpreserve.png, mode: alpha, label: "Fill BG color, preserve transparency" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: cut.png,        label: "Layer via cut", shared: false }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: mergevisible.png, label: "Merge visible" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,    label: "Ungroup layers" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: bringfront.png, label: "Bring to front" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: sendback.png,   label: "Send to back" }
+  - { key: QUOTE, mods: [CMDCTRL, SHIFT], icon: quickexport.png, label: "Quick export as PNG" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: invertsel.png,  label: "Inverse selection" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: reselect.png,   label: "Reselect" }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: desaturate.png, label: "Desaturate" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: autotone.png,   label: "Auto tone" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: autocolor.png,  label: "Auto color" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: camraw.png,     label: "Camera Raw filter" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: lenscorr.png,   label: "Lens correction" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: liquify.png,    label: "Liquify" }
+  - { key: Y, mods: [CMDCTRL, SHIFT], icon: gamut.png,      label: "Gamut warning" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: targetpath.png, label: "Show target path" }
+  - { key: ";", mods: [CMDCTRL, SHIFT], icon: snap.png,  label: "Snap" }
+  - { key: DOT,   mods: [CMDCTRL, SHIFT], icon: typesizeup.png,   label: "Type size +" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: typesizedown.png, label: "Type size -" }
+
+  # ============================================================= #
+  # CMD/CTRL+ALT                                                  #
+  # ============================================================= #
+  - { key: W, mods: [CMDCTRL, ALT], icon: closeall.png,    label: "Close all" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: closeothers.png, label: "Close others" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: saveacopy.png,   label: "Save a copy" }
+  - { key: Z, mods: [CMDCTRL, ALT], icon: stepback.png,    label: "Toggle last state" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: freetransformcopy.png, label: "Free transform a copy" }
+  - { key: I, mods: [CMDCTRL, ALT], icon: imagesize.png,   label: "Image size" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: canvassize.png,  label: "Canvas size" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: clipmask.png,    label: "Create clipping mask" }
+  - { key: E, mods: [CMDCTRL, ALT], icon: stampdown.png,   label: "Stamp down" }
+  - { key: A, mods: [CMDCTRL, ALT], icon: alllayers.png,   label: "Select all layers" }
+  - { key: R, mods: [CMDCTRL, ALT], icon: selectandmask.png, label: "Select and mask" }
+  - { key: F, mods: [CMDCTRL, ALT], icon: lastfilter.png,  label: "Last filter" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: vanishing.png,   label: "Vanishing point" }
+  - { key: ";", mods: [CMDCTRL, ALT], icon: lockguides.png, label: "Lock guides" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: luminosity.png, label: "Load luminosity" }
+  - { key: BACKSPACE, mods: [CMDCTRL, ALT], icon: fillhistory.png, label: "Fill from history" }
+
+  # ============================================================= #
+  # CMD/CTRL+ALT+SHIFT                                            #
+  # ============================================================= #
+  - { key: O, mods: [CMDCTRL, ALT, SHIFT], icon: openas.png,    label: "Open as" }
+  - { key: W, mods: [CMDCTRL, ALT, SHIFT], icon: exportas.png,  label: "Export as" }
+  - { key: S, mods: [CMDCTRL, ALT, SHIFT], icon: saveforweb.png, label: "Save for web" }
+  - { key: I, mods: [CMDCTRL, ALT, SHIFT], icon: fileinfo.png,  label: "File info" }
+  - { key: P, mods: [CMDCTRL, ALT, SHIFT], icon: printone.png,  label: "Print one copy" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: pasteinto.png, label: "Paste into" }
+  - { key: C, mods: [CMDCTRL, ALT, SHIFT], icon: contentawarescale.png, label: "Content-aware scale" }
+  - { key: T, mods: [CMDCTRL, ALT, SHIFT], icon: transformagaincopy.png, label: "Transform again on a copy" }
+  - { key: K, mods: [CMDCTRL, ALT, SHIFT], icon: keyboardshortcuts.png, label: "Keyboard shortcuts" }
+  - { key: M, mods: [CMDCTRL, ALT, SHIFT], icon: menus.png,     label: "Menus" }
+  - { key: B, mods: [CMDCTRL, ALT, SHIFT], icon: blackwhite.png, label: "Black & white" }
+  - { key: L, mods: [CMDCTRL, ALT, SHIFT], icon: autocontrast.png, label: "Auto contrast" }
+  - { key: E, mods: [CMDCTRL, ALT, SHIFT], icon: stampvisible.png, label: "Stamp visible" }
+  - { key: F, mods: [CMDCTRL, ALT, SHIFT], icon: findlayers.png, label: "Find layers" }
+  - { key: A, mods: [CMDCTRL, ALT, SHIFT], icon: wideangle.png, label: "Adaptive wide angle" }
+  - { key: QUOTE, mods: [CMDCTRL, ALT, SHIFT], icon: layerexport.png, label: "Export layer as" }
+  - { key: DOT,   mods: [CMDCTRL, ALT, SHIFT], icon: typesizeup.png, region: [40, 38], label: "Type size +10" }
+  - { key: COMMA, mods: [CMDCTRL, ALT, SHIFT], icon: typesizedown.png, region: [40, 38], label: "Type size -10" }

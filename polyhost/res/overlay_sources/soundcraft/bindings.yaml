@@ -1,0 +1,274 @@
+# SoundCraft (ArtCraft "Crafting Apps", Pro-Tools-style DAW) shortcut overlays.
+#
+# Shortcuts: SoundCraft's OWN keymap at storytold/soundcraft@c0cb9934 (the
+# engine command registry, menus.rs UI_COMMANDS and shortcuts.rs) -- NOT Avid
+# Pro Tools'. file:line for every group is in SOURCES.md.
+#
+# The registry stores macOS strings: "Cmd" is Cmd on macOS and Ctrl elsewhere
+# (shortcuts.rs::mods_match), so it is written CMDCTRL and the generator emits
+# soundcraft_template.* and soundcraft_template_mac.*. A registry "Ctrl" is the
+# Mac CONTROL key and has no key off macOS, so those chords are `only: [macos]`
+# -- except the four that shortcuts.rs::fixed also maps to Ctrl off macOS
+# (track height, clip gain), which are literal CTRL on every platform.
+#
+# Single letters are "Commands Keyboard Focus", on by default
+# (model/session.rs:287 keyboard_focus: "commands"), Edit window only.
+#
+# Icons: Fluent (MIT) + Material Symbols (Apache-2.0) via fetch_icons.py,
+# Premiere's committed icons for shared actions, ../nle_glyphs.py, drawn fades,
+# ../number_badge.py composites. Program mark: SoundCraft's own icon (MIT OR
+# Apache-2.0). See SOURCES.md.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/soundcraft/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/soundcraft/bindings.yaml --preview /tmp/soundcraft_preview
+app: soundcraft
+match: [soundcraft, ai.storyteller.soundcraft]
+output: soundcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: soundcraft.png
+program_icon_mode: luma
+program_icon_threshold: 110
+program_icon_anchor: bottom-right
+program_icon_region: [42, 40]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: Commands Keyboard Focus (shortcuts.rs::commands_focus) ---
+  - { key: A, mods: [], icon: trimstart.png,     label: "Trim start to insertion" }
+  - { key: S, mods: [], icon: trimend.png,       label: "Trim end to insertion" }
+  - { key: D, mods: [], icon: fadein.png,        label: "Fade to start", mode: alpha }
+  - { key: G, mods: [], icon: fadeout.png,       label: "Fade to end", mode: alpha }
+  - { key: F, mods: [], icon: crossfade.png,     label: "Create fades", mode: alpha }
+  - { key: ",", mods: [], icon: nudgeback.png,   label: "Nudge back" }
+  - { key: ".", mods: [], icon: nudgefwd.png,    label: "Nudge forward" }
+  - { key: M, mods: [], icon: nudgenextback.png, label: "Nudge back (next value)" }
+  - { key: "/", mods: [], icon: nudgenextfwd.png, label: "Nudge forward (next value)" }
+  - { key: "0", mods: [], icon: tltoedit.png,    label: "Edit to match timeline" }
+  - { key: O, mods: [], icon: edittotl.png,      label: "Timeline to match edit" }
+  - { key: "[", mods: [], icon: playedit.png,    label: "Play edit selection" }
+  - { key: "]", mods: [], icon: playtimeline.png, label: "Play timeline selection" }
+  - { key: B, mods: [], icon: blade.png,         label: "Separate at selection", mode: alpha }
+  - { key: X, mods: [], icon: cut.png,           label: Cut }
+  - { key: C, mods: [], icon: copy.png,          label: Copy }
+  - { key: V, mods: [], icon: paste.png,         label: Paste }
+  - { key: Z, mods: [], icon: undo.png,          label: Undo }
+  - { key: N, mods: [], icon: follow.png,        label: "Insertion follows playback" }
+  - { key: "1", mods: [], icon: zoompreset1.png, label: "Zoom preset 1" }
+  - { key: "2", mods: [], icon: zoompreset2.png, label: "Zoom preset 2" }
+  - { key: "3", mods: [], icon: zoompreset3.png, label: "Zoom preset 3" }
+  - { key: "4", mods: [], icon: zoompreset4.png, label: "Zoom preset 4" }
+  - { key: "5", mods: [], icon: zoompreset5.png, label: "Zoom preset 5" }
+  - { key: P, mods: [], icon: trackabove.png,    label: "Select track above" }
+  - { key: ";", mods: [], icon: trackbelow.png,  label: "Select track below" }
+  - { key: L, mods: [], icon: prevclip.png,      label: "Tab to previous clip" }
+  - { key: "'", mods: [], icon: nextclip.png,    label: "Tab to next clip" }
+  - { key: E, mods: [], icon: zoomtoggle.png,    label: "Zoom toggle" }
+  # --- no modifier: shortcuts.rs::fixed + registry ---
+  - { key: R, mods: [], icon: zoomout.png,       label: "Zoom out" }
+  - { key: T, mods: [], icon: zoomin.png,        label: "Zoom in" }
+  - { key: "-", mods: [], icon: nudgeback.png,   label: "Nudge back" }
+  - { key: "`", mods: [], icon: cyclemode.png,   label: "Cycle edit mode" }
+  - { key: HOME, mods: [], icon: rtz.png,        label: "Return to zero" }
+  - { key: END, mods: [], icon: goend.png,       label: "Go to end" }
+  - { key: F1, mods: [], icon: rippleedit.png,   label: "Shuffle mode", mode: alpha }
+  - { key: F2, mods: [], icon: modeslip.png,     label: "Slip mode" }
+  - { key: F3, mods: [], icon: modespot.png,     label: "Spot mode" }
+  - { key: F4, mods: [], icon: modegrid.png,     label: "Grid mode" }
+  - { key: F5, mods: [], icon: zoom.png,         label: "Zoom tool" }
+  - { key: F6, mods: [], icon: trim.png,         label: "Trim tool", mode: alpha }
+  - { key: F7, mods: [], icon: selector.png,     label: "Selector tool" }
+  - { key: F8, mods: [], icon: hand.png,         label: "Grabber tool" }
+  - { key: F9, mods: [], icon: scrubber.png,     label: "Scrubber tool" }
+  - { key: F10, mods: [], icon: pencil.png,      label: "Pencil tool" }
+  - { key: F12, mods: [], icon: record.png,      label: Record }
+
+  # --- Space / Enter / Tab (shortcuts.rs::fixed :104-124, :172) ---
+  - { key: SPACE, mods: [], icon: play.png,              label: "Play / Stop" }
+  - { key: SPACE, mods: [SHIFT], icon: halfspeed.png,    label: "Half-speed playback" }
+  - { key: SPACE, mods: [CMDCTRL], icon: record.png,     label: Record }
+  - { key: ENTER, mods: [], icon: newmarker.png,         label: "New memory location" }
+  - { key: TAB, mods: [], icon: tabfwd.png,              label: "Tab forward" }
+  - { key: TAB, mods: [SHIFT], icon: tabextfwd.png,      label: "Tab forward, extend selection" }
+  # Back is Ctrl+Tab off macOS (the desktop owns Alt+Tab), Alt+Tab on macOS.
+  - { key: TAB, mods: [CTRL], icon: tabback.png,         label: "Tab back", only: [windows, linux] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: tabextback.png, label: "Tab back, extend selection", only: [windows, linux] }
+  - { key: TAB, mods: [ALT], icon: tabback.png,          label: "Tab back", only: [macos] }
+  - { key: TAB, mods: [ALT, SHIFT], icon: tabextback.png, label: "Tab back, extend selection", only: [macos] }
+  - { key: TAB, mods: [CMDCTRL, ALT], icon: tabtransient.png, label: "Tab to transient" }
+
+  # --- Shift ---
+  - { key: M, mods: [SHIFT], icon: mute.png,         label: "Mute track" }
+  - { key: S, mods: [SHIFT], icon: solo.png,         label: "Solo track" }
+  - { key: R, mods: [SHIFT], icon: recarm.png,       label: "Record enable" }
+  - { key: I, mods: [SHIFT], icon: inputmon.png,     label: "Input monitoring" }
+  - { key: K, mods: [SHIFT], icon: midikeyboard.png, label: "MIDI keyboard" }
+  - { key: RIGHT, mods: [SHIFT], icon: showtarget.png, label: "Show target playlist" }
+  - { key: F4, mods: [SHIFT], icon: snap.png,        label: "Snap to grid", mode: alpha }
+  - { key: Z, mods: [SHIFT], icon: redo.png,         label: Redo }
+  - { key: P, mods: [SHIFT], icon: extendup.png,     label: "Extend edit up" }
+  - { key: ";", mods: [SHIFT], icon: extenddown.png, label: "Extend edit down" }
+  - { key: "=", mods: [SHIFT], icon: gridup.png,     label: "Grid value up" }
+  - { key: "-", mods: [SHIFT], icon: griddown.png,   label: "Grid value down" }
+
+  # --- Alt ---
+  - { key: "1", mods: [ALT], icon: rippleedit.png, label: "Shuffle mode", mode: alpha }
+  - { key: "2", mods: [ALT], icon: modeslip.png,   label: "Slip mode" }
+  - { key: "3", mods: [ALT], icon: modespot.png,   label: "Spot mode" }
+  - { key: "4", mods: [ALT], icon: modegrid.png,   label: "Grid mode" }
+  - { key: "5", mods: [ALT], icon: elastic.png,    label: "Elastic properties" }
+  - { key: "6", mods: [ALT], icon: clipeffects.png, label: "Clip effects" }
+  - { key: "7", mods: [ALT], icon: universe.png,   label: "Universe" }
+  - { key: "0", mods: [ALT], icon: quantize.png,   label: "Quantize MIDI" }
+  - { key: R, mods: [ALT], icon: repeat.png,       label: "Repeat" }
+  - { key: H, mods: [ALT], icon: shiftsel.png,     label: "Shift selection" }
+  - { key: F, mods: [ALT], icon: zoomsel.png,      label: "Zoom to selection" }
+  - { key: A, mods: [ALT], icon: zoomfit.png,      label: "Fill window with session" }
+  - { key: K, mods: [ALT], icon: recinputonly.png, label: "Record tracks to input only" }
+  - { key: C, mods: [ALT], icon: clearclipind.png, label: "Clear clip indicators" }
+  - { key: T, mods: [ALT], icon: transpose.png,    label: "Transpose" }
+  - { key: P, mods: [ALT], icon: duration.png,     label: "Change duration" }
+  - { key: L, mods: [ALT], icon: looprecord.png,   label: "Loop record" }
+  - { key: "[", mods: [ALT], icon: playedit.png,   label: "Play edit selection" }
+  - { key: "'", mods: [ALT], icon: taskmanager.png, label: "Task manager" }
+  - { key: "=", mods: [ALT], icon: eventlist.png,  label: "MIDI event list" }
+  - { key: I, mods: [ALT], icon: workspace.png,    label: "Workspace" }
+  - { key: J, mods: [ALT], icon: workspacefront.png, label: "Workspaces to front" }
+
+  # --- Alt+Shift (combo B) ---
+  - { key: "3", mods: [ALT, SHIFT], icon: consolidate.png, label: "Consolidate" }
+  - { key: "5", mods: [ALT, SHIFT], icon: edittotl.png,    label: "Timeline to match edit" }
+  - { key: "6", mods: [ALT, SHIFT], icon: tltoedit.png,    label: "Edit to match timeline" }
+  - { key: "7", mods: [ALT, SHIFT], icon: trimstart.png,   label: "Trim start to insertion" }
+  - { key: "8", mods: [ALT, SHIFT], icon: trimend.png,     label: "Trim end to insertion" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: copynewpl.png,  label: "Copy to new playlist" }
+  - { key: UP, mods: [ALT, SHIFT], icon: copytargetpl.png, label: "Copy to target playlist" }
+  - { key: T, mods: [ALT, SHIFT], icon: movetargetpl.png,  label: "Move to target playlist" }
+  - { key: N, mods: [ALT, SHIFT], icon: movenewpl.png,     label: "Move to new playlist" }
+  - { key: D, mods: [ALT, SHIFT], icon: trackdup.png,      label: "Duplicate track" }
+  - { key: C, mods: [ALT, SHIFT], icon: commit.png,        label: "Commit track" }
+  - { key: B, mods: [ALT, SHIFT], icon: sendback.png,      label: "Send clip to back" }
+  - { key: F, mods: [ALT, SHIFT], icon: bringfront.png,    label: "Bring clip to front" }
+  - { key: I, mods: [ALT, SHIFT], icon: importsession.png, label: "Import session data" }
+  - { key: "=", mods: [ALT, SHIFT], icon: nudgevalup.png,  label: "Nudge value up" }
+  - { key: "-", mods: [ALT, SHIFT], icon: nudgevaldown.png, label: "Nudge value down" }
+
+  # --- Cmd/Ctrl ---
+  - { key: N, mods: [CMDCTRL], icon: newsequence.png, label: "New session" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,        label: Open }
+  - { key: S, mods: [CMDCTRL], icon: save.png,        label: Save }
+  - { key: W, mods: [CMDCTRL], label: Close }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png,        label: Quit }
+  - { key: P, mods: [CMDCTRL], label: Print }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,        label: Undo }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,         label: Cut }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,        label: Copy }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all" }
+  - { key: B, mods: [CMDCTRL], icon: clear.png,       label: "Clear selection" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png,   label: "Duplicate clip" }
+  - { key: E, mods: [CMDCTRL], icon: blade.png,       label: "Separate at selection", mode: alpha }
+  - { key: H, mods: [CMDCTRL], icon: heal.png,        label: "Heal separation" }
+  - { key: T, mods: [CMDCTRL], icon: trim.png,        label: "Trim to selection", mode: alpha }
+  - { key: M, mods: [CMDCTRL], icon: muteclips.png,   label: "Mute clips" }
+  - { key: U, mods: [CMDCTRL], icon: stripsilence.png, label: "Strip silence" }
+  - { key: F, mods: [CMDCTRL], icon: crossfade.png,   label: "Create fades", mode: alpha }
+  - { key: G, mods: [CMDCTRL], icon: group.png,       label: "Group tracks" }
+  - { key: L, mods: [CMDCTRL], icon: editlock.png,    label: "Edit lock" }
+  - { key: R, mods: [CMDCTRL], icon: capture.png,     label: "Capture clip" }
+  - { key: I, mods: [CMDCTRL], icon: identifybeat.png, label: "Identify beat" }
+  - { key: K, mods: [CMDCTRL], icon: prepostroll.png, label: "Pre/post-roll" }
+  - { key: ",", mods: [CMDCTRL], icon: syncpoint.png, label: "Identify sync point" }
+  - { key: "0", mods: [CMDCTRL], icon: quantizegrid.png, label: "Quantize to grid" }
+  - { key: "]", mods: [CMDCTRL], icon: zoomin.png,    label: "Zoom in" }
+  - { key: "[", mods: [CMDCTRL], icon: zoomout.png,   label: "Zoom out" }
+  - { key: "=", mods: [CMDCTRL], icon: mixedit.png,   label: "Toggle mix/edit" }
+  - { key: "/", mods: [CMDCTRL], icon: autocurrent.png, label: "Write automation to current" }
+  - { key: "1", mods: [CMDCTRL], icon: transport.png, label: "Transport window" }
+  - { key: "2", mods: [CMDCTRL], icon: setup.png,     label: "Session setup" }
+  - { key: "3", mods: [CMDCTRL], icon: bigcounter.png, label: "Big counter" }
+  - { key: "4", mods: [CMDCTRL], icon: automation.png, label: "Automation window" }
+  - { key: "5", mods: [CMDCTRL], icon: memlocs.png,   label: "Memory locations" }
+  - { key: "9", mods: [CMDCTRL], icon: video.png,     label: "Video window" }
+
+  # --- Cmd/Ctrl+Shift ---
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,          label: Redo }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,        label: "Save as" }
+  - { key: W, mods: [CMDCTRL, SHIFT], icon: closesession.png,  label: "Close session" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: import.png,        label: "Import audio" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: exportclips.png,   label: "Export clips as files" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: insertsilence.png, label: "Insert silence" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: newtrack.png,      label: "New track" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: trackpunch.png,    label: "TrackPunch" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: quickpunch.png,    label: "QuickPunch" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: loopplay.png,      label: "Loop playback" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: clearclips.png,    label: "Clear unused clips" }
+  - { key: ".", mods: [CMDCTRL, SHIFT], icon: notesoff.png,    label: "All MIDI notes off" }
+  - { key: RIGHT, mods: [CMDCTRL, SHIFT], icon: designatepl.png, label: "Designate target playlist" }
+
+  # --- Cmd/Ctrl+Alt ---
+  - { key: I, mods: [CMDCTRL, ALT], icon: importmidi.png,   label: "Import MIDI" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: export.png,       label: "Bounce mix" }
+  - { key: Z, mods: [CMDCTRL, ALT], icon: restoresel.png,   label: "Restore last selection" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: repeatfill.png,   label: "Repeat to fill selection" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: editleft.png,     label: "Move edit left" }
+  - { key: "'", mods: [CMDCTRL, ALT], icon: editright.png,  label: "Move edit right" }
+  - { key: F, mods: [CMDCTRL, ALT], icon: scrolltrack.png,  label: "Scroll to track" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: group.png,        label: "Group clips" }
+  - { key: U, mods: [CMDCTRL, ALT], icon: ungroup.png,      label: "Ungroup clips" }
+  - { key: R, mods: [CMDCTRL, ALT], icon: regroup.png,      label: "Regroup clips" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: thin.png,         label: "Thin automation" }
+  - { key: "/", mods: [CMDCTRL, ALT], icon: autoall.png,    label: "Write automation to all" }
+  - { key: H, mods: [CMDCTRL, ALT], icon: copytosend.png,   label: "Automation to send" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: narrowmix.png,    label: "Narrow mix" }
+  - { key: J, mods: [CMDCTRL, ALT], icon: winconfigs.png,   label: "Window configurations" }
+  - { key: "[", mods: [CMDCTRL, ALT], icon: wavezoomout.png, label: "Waveform zoom out" }
+  - { key: "]", mods: [CMDCTRL, ALT], icon: wavezoomin.png, label: "Waveform zoom in" }
+  - { key: "0", mods: [CMDCTRL, ALT], icon: rating0.png,    label: "Clip rating 0" }
+  - { key: "1", mods: [CMDCTRL, ALT], icon: rating1.png,    label: "Clip rating 1" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: rating2.png,    label: "Clip rating 2" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: rating3.png,    label: "Clip rating 3" }
+  - { key: "4", mods: [CMDCTRL, ALT], icon: rating4.png,    label: "Clip rating 4" }
+  - { key: "5", mods: [CMDCTRL, ALT], icon: rating5.png,    label: "Clip rating 5" }
+
+  # --- Cmd/Ctrl+Alt+Shift ---
+  - { key: N, mods: [CMDCTRL, ALT, SHIFT], icon: newfolder.png,   label: "Move to new folder" }
+  - { key: B, mods: [CMDCTRL, ALT, SHIFT], icon: trackbounce.png, label: "Bounce track" }
+  - { key: R, mods: [CMDCTRL, ALT, SHIFT], icon: rename.png,      label: "Rename clip" }
+
+  # --- literal Ctrl on every platform (shortcuts.rs::fixed maps them off macOS too) ---
+  - { key: UP, mods: [CTRL], icon: heightup.png,     label: "Track height up" }
+  - { key: DOWN, mods: [CTRL], icon: heightdown.png, label: "Track height down" }
+  - { key: UP, mods: [CTRL, ALT], icon: heightup.png,     label: "Track height up (all)" }
+  - { key: DOWN, mods: [CTRL, ALT], icon: heightdown.png, label: "Track height down (all)" }
+  - { key: UP, mods: [CTRL, ALT, SHIFT], icon: heightup.png,     label: "Track height up (selected)" }
+  - { key: DOWN, mods: [CTRL, ALT, SHIFT], icon: heightdown.png, label: "Track height down (selected)" }
+  - { key: UP, mods: [CTRL, SHIFT], icon: gainup.png,     label: "Clip gain up" }
+  - { key: DOWN, mods: [CTRL, SHIFT], icon: gaindown.png, label: "Clip gain down" }
+
+  # --- macOS only: the Mac Control key (no key for these off macOS) ---
+  - { key: I, mods: [GUI, CTRL], icon: importvideo.png,  label: "Import video", only: [macos] }
+  - { key: X, mods: [GUI, CTRL], icon: cutgain.png,      label: "Cut clip gain", only: [macos] }
+  - { key: B, mods: [GUI, CTRL], icon: cleargain.png,    label: "Clear clip gain", only: [macos] }
+  - { key: D, mods: [GUI, CTRL], icon: fadein.png,       label: "Fade to start", mode: alpha, only: [macos] }
+  - { key: G, mods: [GUI, CTRL], icon: fadeout.png,      label: "Fade to end", mode: alpha, only: [macos] }
+  - { key: W, mods: [GUI, CTRL], icon: hidefloating.png, label: "Hide floating windows", only: [macos] }
+  - { key: S, mods: [GUI, CTRL], icon: search.png,       label: "Search", only: [macos] }
+  - { key: "=", mods: [GUI, CTRL], icon: score.png,      label: "Score editor", only: [macos] }
+  - { key: "1", mods: [GUI, CTRL], icon: zoompreset1.png, label: "Zoom preset 1", only: [macos] }
+  - { key: "2", mods: [GUI, CTRL], icon: zoompreset2.png, label: "Zoom preset 2", only: [macos] }
+  - { key: "3", mods: [GUI, CTRL], icon: zoompreset3.png, label: "Zoom preset 3", only: [macos] }
+  - { key: "4", mods: [GUI, CTRL], icon: zoompreset4.png, label: "Zoom preset 4", only: [macos] }
+  - { key: "5", mods: [GUI, CTRL], icon: zoompreset5.png, label: "Zoom preset 5", only: [macos] }
+  - { key: P, mods: [CTRL, SHIFT], icon: extendup.png,   label: "Extend edit up", only: [macos] }
+  - { key: ";", mods: [CTRL, SHIFT], icon: extenddown.png, label: "Extend edit down", only: [macos] }
+  - { key: L, mods: [CTRL, ALT], icon: timelock.png,     label: "Time lock", only: [macos] }
+  - { key: LEFT, mods: [CTRL, ALT, SHIFT], icon: recentpl.png, label: "Toggle recent playlist", only: [macos] }
