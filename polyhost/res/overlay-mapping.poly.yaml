@@ -525,3 +525,72 @@ soffice,soffice.bin,libreoffice,startcenter:
           overlay: [libreoffice_calc_template_mac.mods.png, libreoffice_calc_template_mac.combo.mods.png, libreoffice_calc_template_mac.extra.mods.png]
         Impress:
           overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]
+
+# ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
+# app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
+# and on its Linux app id, which is also its X11 WM_CLASS and Wayland app id.
+cadcraft,ai.storyteller.cadcraft:
+  overlay: [cadcraft_template.mods.png, cadcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [cadcraft_template_mac.mods.png, cadcraft_template_mac.combo.mods.png, cadcraft_template_mac.extra.mods.png]
+pdfcraft,ai.storyteller.pdfcraft:
+  overlay: [pdfcraft_template.mods.png, pdfcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [pdfcraft_template_mac.mods.png, pdfcraft_template_mac.combo.mods.png, pdfcraft_template_mac.extra.mods.png]
+deckcraft,ai.storyteller.deckcraft:
+  overlay: [deckcraft_template.mods.png, deckcraft_template.combo.mods.png, deckcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [deckcraft_template_mac.mods.png, deckcraft_template_mac.combo.mods.png, deckcraft_template_mac.extra.mods.png, deckcraft_template_mac.gui.mods.png]
+lightcraft,ai.storyteller.lightcraft:
+  overlay: [lightcraft_template.mods.png, lightcraft_template.combo.mods.png, lightcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [lightcraft_template_mac.mods.png, lightcraft_template_mac.combo.mods.png, lightcraft_template_mac.extra.mods.png, lightcraft_template_mac.gui.mods.png]
+gridcraft,ai.storyteller.gridcraft:
+  overlay: [gridcraft_template.mods.png, gridcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gridcraft_template_mac.mods.png, gridcraft_template_mac.combo.mods.png, gridcraft_template_mac.extra.mods.png]
+wordcraft,ai.storyteller.wordcraft:
+  overlay: [wordcraft_template.mods.png, wordcraft_template.combo.mods.png, wordcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [wordcraft_template_mac.mods.png, wordcraft_template_mac.combo.mods.png, wordcraft_template_mac.extra.mods.png, wordcraft_template_mac.gui.mods.png]
+designcraft,ai.storyteller.designcraft:
+  overlay: [designcraft_template.mods.png, designcraft_template.combo.mods.png, designcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [designcraft_template_mac.mods.png, designcraft_template_mac.combo.mods.png, designcraft_template_mac.extra.mods.png, designcraft_template_mac.gui.mods.png]
+figcraft,ai.storyteller.figcraft:
+  overlay: [figcraft_template.mods.png, figcraft_template.combo.mods.png, figcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [figcraft_template_mac.mods.png, figcraft_template_mac.combo.mods.png, figcraft_template_mac.extra.mods.png, figcraft_template_mac.gui.mods.png]
+soundcraft,ai.storyteller.soundcraft:
+  overlay: [soundcraft_template.mods.png, soundcraft_template.combo.mods.png, soundcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [soundcraft_template_mac.mods.png, soundcraft_template_mac.combo.mods.png, soundcraft_template_mac.extra.mods.png, soundcraft_template_mac.gui.mods.png]
+photocraft,ai.storyteller.photocraft:
+  overlay: [photocraft_template.mods.png, photocraft_template.combo.mods.png, photocraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [photocraft_template_mac.mods.png, photocraft_template_mac.combo.mods.png, photocraft_template_mac.extra.mods.png, photocraft_template_mac.gui.mods.png]
+vectorcraft,ai.storyteller.vectorcraft:
+  overlay: [vectorcraft_template.mods.png, vectorcraft_template.combo.mods.png, vectorcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [vectorcraft_template_mac.mods.png, vectorcraft_template_mac.combo.mods.png, vectorcraft_template_mac.extra.mods.png, vectorcraft_template_mac.gui.mods.png]
+effectcraft,ai.storyteller.effectcraft:
+  overlay: [effectcraft_template.mods.png, effectcraft_template.combo.mods.png, effectcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [effectcraft_template_mac.mods.png, effectcraft_template_mac.combo.mods.png, effectcraft_template_mac.extra.mods.png, effectcraft_template_mac.gui.mods.png]
+filmcraft,ai.storyteller.filmcraft:
+  overlay: [filmcraft_template.mods.png, filmcraft_template.combo.mods.png, filmcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [filmcraft_template_mac.mods.png, filmcraft_template_mac.combo.mods.png, filmcraft_template_mac.extra.mods.png, filmcraft_template_mac.gui.mods.png]
