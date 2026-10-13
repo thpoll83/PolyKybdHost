@@ -43,7 +43,8 @@ bindings:
   - { key: E,   mods: [], icon: edit.png,        label: "Edit page",    source: "ms-fluent/Document Edit (MIT)" }
   - { key: "/", mods: [], icon: quickinsert.png, label: "Quick insert", source: "ms-fluent/Slash Forward (MIT)" }
 
-  # --- Ctrl ---
+  # --- Ctrl (Cmd on the Mac, except the four plain-CTRL keys: Atlassian's page
+  # gives Ctrl+[ / ] / . / , on the Mac too) ---
   - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT)" }
   - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
@@ -51,10 +52,10 @@ bindings:
   - { key: M, mods: [CMDCTRL], icon: insertimage.png, label: "Files and images", source: "ms-fluent/Image Add (MIT)" }
   - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: ENTER, mods: [CMDCTRL], icon: publish.png, label: Publish, source: "ms-fluent/Rocket (MIT)" }
-  - { key: "[", mods: [CMDCTRL], icon: sidebar.png,      label: "Toggle sidebar",   source: "ms-fluent/Panel Left (MIT)" }
-  - { key: "]", mods: [CMDCTRL], icon: diffcomments.png, label: "Comments panel",   source: "ms-fluent/Comment Multiple (MIT)" }
-  - { key: ".", mods: [CMDCTRL], icon: nextcomment.png,  label: "Next comment",     source: "ms-fluent/Comment Arrow Right (MIT)" }
-  - { key: ",", mods: [CMDCTRL], icon: prevcomment.png,  label: "Previous comment", source: "ms-fluent/Comment Arrow Left (MIT)" }
+  - { key: "[", mods: [CTRL], icon: sidebar.png,      label: "Toggle sidebar",   source: "ms-fluent/Panel Left (MIT)" }
+  - { key: "]", mods: [CTRL], icon: diffcomments.png, label: "Comments panel",   source: "ms-fluent/Comment Multiple (MIT)" }
+  - { key: ".", mods: [CTRL], icon: nextcomment.png,  label: "Next comment",     source: "ms-fluent/Comment Arrow Right (MIT)" }
+  - { key: ",", mods: [CTRL], icon: prevcomment.png,  label: "Previous comment", source: "ms-fluent/Comment Arrow Left (MIT)" }
 
   # --- Ctrl+Shift ---
   - { key: M, mods: [CMDCTRL, SHIFT], icon: code.png,        label: Code,            source: "ms-fluent/Code (MIT)" }

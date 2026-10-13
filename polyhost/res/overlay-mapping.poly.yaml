@@ -40,7 +40,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     # has its own tool keys, so it MUST stay above atlassian.net/wiki. The url
     # gate keeps the bare "/whiteboard/" needle from catching other sites.
     /whiteboard/:
-      url: 'atlassian\.net/wiki/.*/whiteboard/'
+      url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
       overlay: [confluence_whiteboard_template.mods.png, confluence_whiteboard_template.combo.mods.png]
     # MUST stay above the bare atlassian.net (Jira) entry: matching is
     # first-hit over this map in order, and a Confluence URL
@@ -126,7 +126,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         /whiteboard/:
-          url: 'atlassian\.net/wiki/.*/whiteboard/'
+          url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
           overlay: [confluence_whiteboard_template_mac.mods.png, confluence_whiteboard_template_mac.combo.mods.png, confluence_whiteboard_template_mac.extra.mods.png]
         atlassian.net/wiki:
           overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]

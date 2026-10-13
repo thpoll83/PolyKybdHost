@@ -94,15 +94,17 @@ Confluence `e`, Notion `Tab`) are the same on every platform and were left
 alone. Confluence Quick search is the exception: `Alt+Shift+Z` and `Ctrl+Alt+Q`
 on Windows/Linux (the dialog lists both) and `Ctrl+Option+Z` on the Mac
 (Atlassian's page, via search snippets), so it is three lines with disjoint
-`only:`. The other Confluence `Ctrl+Alt` chords come from the Windows dialog;
-their Mac forms (`⌘⌥` by the CMDCTRL rule) are not yet checked against the Mac
-dialog.
+`only:`. Atlassian's page (via search snippets, 2026-10-13) gives `⌘⌥` for the
+`Ctrl+Alt` navigation chords, so they stay `CMDCTRL`. It gives plain Ctrl on the
+Mac for `Ctrl+[` (sidebar), `Ctrl+]` (comments panel) and `Ctrl+.` / `Ctrl+,`
+(next/previous comment), so those four are `CTRL`. Whiteboard fullscreen is
+`Shift+F` on Windows/Linux and `⌘F` on the Mac.
 
 | Set | macOS source | Result |
 |---|---|---|
 | GitHub | [`github/docs` → `content/get-started/accessibility/keyboard-shortcuts.md`](https://github.com/github/docs/blob/main/content/get-started/accessibility/keyboard-shortcuts.md). This is the source of the docs page above, and it gives a "Command … (Mac) or Ctrl … (Windows/Linux)" row for every chord. | 5 → `CMDCTRL` |
 | GitLab | [`gitlab-org/gitlab` → `doc/user/shortcuts.md`](https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/user/shortcuts.md). This is the source of the docs page, with its "macOS shortcut / Windows shortcut" columns. | 2 → `CMDCTRL` |
-| Confluence Cloud | The Atlassian page above (Mac = ⌘ for Ctrl, ⌥ for Alt, via search snippets; the page itself was unreachable). The editor's own keymap source, [`@atlaskit/editor-common` 126.1.3 `keymaps/index.js`](https://www.npmjs.com/package/@atlaskit/editor-common), declares each chord as `Mod-…`, which it renders as Ctrl on Windows and Cmd on Mac. | pages 44, whiteboards 18 → `CMDCTRL` |
+| Confluence Cloud | The Atlassian page above (Mac = ⌘ for Ctrl, ⌥ for Alt, via search snippets; the page itself was unreachable). The editor's own keymap source, [`@atlaskit/editor-common` 126.1.3 `keymaps/index.js`](https://www.npmjs.com/package/@atlaskit/editor-common), declares each chord as `Mod-…`, which it renders as Ctrl on Windows and Cmd on Mac. | pages 40, whiteboards 19 → `CMDCTRL` |
 | Google Docs | [Answer 179738, Mac tab](https://support.google.com/docs/answer/179738?hl=en&co=GENIE.Platform%3DDesktop), read through search snippets because the page was unreachable from the build container. | 36 → `CMDCTRL`, 2 remapped |
 | Notion | The [Notion help page](https://www.notion.com/help/keyboard-shortcuts) writes every chord as `cmd/ctrl + …`, read through search snippets. | 20 → `CMDCTRL` |
 

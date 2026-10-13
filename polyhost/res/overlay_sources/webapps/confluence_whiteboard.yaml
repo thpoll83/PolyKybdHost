@@ -64,5 +64,7 @@ bindings:
   - { key: D, mods: [CMDCTRL, ALT], icon: duplicate.png, label: Duplicate, source: "ms-fluent/Square Multiple (MIT)" }
 
   # --- Shift ---
-  - { key: F, mods: [SHIFT], icon: fullscreen.png,   label: Fullscreen,        source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: F, mods: [SHIFT], only: [windows, linux], icon: fullscreen.png, label: Fullscreen, source: "ms-fluent/Full Screen Maximize (MIT)" }
+  # Atlassian's page gives Cmd+F for fullscreen on the Mac.
+  - { key: F, mods: [CMDCTRL], only: [macos], icon: fullscreen.png, label: Fullscreen, source: "ms-fluent/Full Screen Maximize (MIT)" }
   - { key: M, mods: [SHIFT], icon: diffcomments.png, label: "Toggle comments", source: "ms-fluent/Comment Multiple (MIT)" }

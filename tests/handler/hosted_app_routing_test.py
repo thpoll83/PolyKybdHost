@@ -333,6 +333,10 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                           os_name)
             self.assertNotIn(f"confluence_whiteboard_template{sfx}.mods.png",
                              self._chrome(os_name, "https://example.com/whiteboard/1"), os_name)
+            # An Atlassian-looking PATH on another host must not pass the gate.
+            self.assertNotIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                             self._chrome(os_name, "https://example.com/a.atlassian.net/wiki/"
+                                                   "spaces/X/whiteboard/1"), os_name)
 
     def test_chrome_web_apps_fall_back_to_the_title_without_a_url(self):
         """No extension means no URL. The window title's brand word then picks
