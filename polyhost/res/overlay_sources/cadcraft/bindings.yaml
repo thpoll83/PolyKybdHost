@@ -1,0 +1,87 @@
+# CADCraft (storytold/cadcraft) shortcut overlays for PolyKybd.
+#
+# CADCraft is an AutoCAD-style drafting app with a command line: most commands
+# are TYPED aliases (L, C, CO, TR ...) and are NOT keyboard shortcuts, so none of
+# them are bound here. Only real key chords and F-keys the code handles:
+#   crates/ui-egui/src/menus.rs  fn shortcuts()  (the egui shortcut table, all OSes)
+#   crates/ui-egui/src/cmdline.rs  (Delete erases the selection)
+#   apps/cadcraft/src/native_menu.rs  (macOS: every menu `.key()` becomes a native
+#     accelerator, which adds Cmd+W, Cmd+8 and Cmd+, on macOS only)
+# Source commit and file:line per group: SOURCES.md.
+#
+# egui Modifiers::COMMAND = Ctrl on Windows/Linux, Cmd on macOS -> CMDCTRL, so the
+# generator emits cadcraft_template.* and cadcraft_template_mac.*.
+#
+# Icons: Fluent (MIT), Material Symbols (Apache-2.0, ms:), copies of illustrator's /
+# resolve's committed icons; program mark = CADCraft's own app icon (MIT OR Apache-2.0).
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/cadcraft/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cadcraft/bindings.yaml --preview /tmp/cadcraft_preview
+app: cadcraft
+match: [cadcraft, ai.storyteller.cadcraft]   # cadcraft.exe / macOS "CADCraft" / Linux app id
+output: cadcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+# Own app icon, 64px ICO frame. Sweep (64/128/256 x luma 60..180 x bright 150..230):
+# luma t120 keeps the set-square, its inner triangle, the compass arc and the dot;
+# t150+ lights the blue tile into a solid block, bright drops the arc.
+program_icon: cadcraft.png
+program_icon_mode: luma
+program_icon_threshold: 120
+program_icon_anchor: bottom-right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # ===== File / Edit (CMDCTRL -> Ctrl R of primary; Cmd on macOS) =====
+  - { key: N, mods: [CMDCTRL], icon: new.png,       label: New,          source: "menus.rs:605 new; ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,      label: Open,         source: "menus.rs:606 ui.open; ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,      label: Save,         source: "menus.rs:608 qsave; ms-fluent/Save (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,     label: Plot,         source: "menus.rs:609 plot (Print dialog); ms-fluent/Print (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,         source: "menus.rs:603 u; ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CMDCTRL],                      label: Redo,         source: "menus.rs:604 redo; concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "menus.rs:610 selectall; ms-fluent/Select All On (MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,         source: "clipboard.rs:54 copyclip; ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,          source: "clipboard.rs:55 cutclip; ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,        source: "clipboard.rs:61 pasteclip; ms-fluent/Clipboard Paste (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: isoplane.png,  label: Isoplane,     source: "menus.rs:622 isoplane; material-symbols/deployed_code (Apache-2.0)" }
+
+  # ===== Window panels (CMDCTRL) =====
+  - { key: "1", mods: [CMDCTRL], icon: properties.png, label: "Properties inspector", source: "menus.rs:615 ui.panel.properties; ms-fluent/Panel Right (MIT)" }
+  - { key: "3", mods: [CMDCTRL], icon: toolsets.png,   label: "Tool sets",            source: "menus.rs:616 ui.toggle.toolsets; ms-fluent/Toolbox (MIT)" }
+  - { key: "9", mods: [CMDCTRL], icon: cmdline.png,    label: "Command line",         source: "menus.rs:617 ui.toggle.cmdline; ms-fluent/Window Console (MIT)" }
+
+  # ===== macOS only: native menu accelerators (native_menu.rs:25,50,146) =====
+  - { key: W,     mods: [CMDCTRL],                     label: Close,     only: [macos], source: "file.rs:164 close .key(Cmd+W); concept (shared Fluent)" }
+  - { key: "8",   mods: [CMDCTRL], icon: quickcalc.png, label: QuickCalc, only: [macos], source: "menus.rs:30 ui.panel.quickcalc; ms-fluent/Calculator (MIT)" }
+  - { key: COMMA, mods: [CMDCTRL], icon: prefs.png,     label: Settings,  only: [macos], source: "native_menu.rs:50 options (Cmd+,); ms-fluent/Settings (MIT)" }
+
+  # ===== CMDCTRL+Shift -> combo R (macOS: extra G) =====
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,     label: "Save as",            source: "menus.rs:607 ui.saveas; ms-fluent/Save Edit (MIT)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT],                       label: Redo,                 source: "menus.rs:602 redo; concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: pickstyle.png,  label: "Group selection",    shared: false, source: "menus.rs:600 pickstyle; ms-fluent/Group (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copybase.png,   label: "Copy with base point", shared: false, source: "menus.rs:611 / clipboard.rs:54 copybase; ms-fluent/Copy Select (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteblock.png, label: "Paste as block",     shared: false, source: "menus.rs:614 / clipboard.rs:61 pasteblock; material-symbols/content_paste_go (Apache-2.0)" }
+
+  # ===== Function keys (no modifier -> A of primary; same on every OS) =====
+  - { key: F1,  mods: [], icon: commandref.png, label: "Command reference", source: "menus.rs:618 ui.dialog.commands; ms-fluent/Book Question Mark (MIT)" }
+  - { key: F2,  mods: [], icon: history.png,    label: "Command history",   source: "menus.rs:619 ui.toggle.history; ms-fluent/History (MIT)" }
+  - { key: F3,  mods: [], icon: osnap.png,      label: "Object snap",       source: "menus.rs:620 osnap; ms-fluent/Target (MIT)" }
+  - { key: F5,  mods: [], icon: isoplane.png,   label: Isoplane,            source: "menus.rs:621 isoplane; material-symbols/deployed_code (Apache-2.0)" }
+  - { key: F7,  mods: [], icon: grid.png,       label: Grid,                source: "menus.rs:623 grid; ms-fluent/Grid Dots (MIT)" }
+  - { key: F8,  mods: [], icon: ortho.png,      label: Ortho,               source: "menus.rs:624 ortho; ms-fluent/Arrow Move (MIT)" }
+  - { key: F9,  mods: [], icon: snap.png, mode: alpha, label: Snap,         source: "menus.rs:625 snap; resolve/icons/snap.png (drawn magnet, nle_glyphs.snap)" }
+  - { key: F10, mods: [], icon: polar.png,      label: "Polar tracking",    source: "menus.rs:626 polar; material-symbols/radar (Apache-2.0)" }
+  - { key: F11, mods: [], icon: otrack.png,     label: "Object snap tracking", source: "menus.rs:627 otrack; ms-fluent/Target Arrow (MIT)" }
+  - { key: F12, mods: [], icon: dynmode.png,    label: "Dynamic input",     source: "menus.rs:628 dynmode; ms-fluent/Cursor Hover (MIT)" }
+
+  # ===== Nav cluster =====
+  - { key: DELETE, mods: [],                    label: Delete,              source: "cmdline.rs:348 erase.selection (Edit > Clear); concept (shared Fluent)" }
