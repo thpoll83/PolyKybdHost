@@ -2,6 +2,7 @@
 server and clear_stale_endpoint removes a dead socket file. No Qt.
 """
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -197,6 +198,7 @@ class TestGuiClaim(unittest.TestCase):
 
     def setUp(self):
         self._dir = tempfile.mkdtemp(prefix="polygui_")
+        self.addCleanup(shutil.rmtree, self._dir, ignore_errors=True)
         self._patch = mock.patch.object(
             protocol, "gui_lock_path",
             return_value=os.path.join(self._dir, "polykybd.gui.lock"))
@@ -256,6 +258,7 @@ class TestClaimForwarder(unittest.TestCase):
 
     def setUp(self):
         self._dir = tempfile.mkdtemp(prefix="polyfwd_")
+        self.addCleanup(shutil.rmtree, self._dir, ignore_errors=True)
         self._patches = [
             mock.patch.object(protocol, "gui_lock_path",
                               return_value=os.path.join(self._dir, "polykybd.gui.lock")),
