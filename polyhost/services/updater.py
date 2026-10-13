@@ -1217,9 +1217,18 @@ def restart_app(new_process: bool = False) -> None:
     """
     args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     log.info("Restarting: %s", args)
-    if sys.platform == "win32" or new_process:
+    if sys.platform == "win32":
         spawn_detached(args)
         sys.exit(0)
+    if new_process:
+        try:
+            spawn_detached(args)
+        except OSError as e:
+            # A fork can fail (EAGAIN). execv keeps the pid and so may leave the
+            # tray without an icon, but a running app beats none at all.
+            log.warning("Detached relaunch failed (%s); re-executing in place.", e)
+        else:
+            sys.exit(0)
     try:
         os.execv(args[0], args)
     except OSError as e:

@@ -1170,6 +1170,17 @@ class TestRestartApp(unittest.TestCase):
         popen.assert_called_once()
         sys_exit.assert_called_once_with(0)
 
+    def test_new_process_spawn_failure_falls_back_to_execv(self):
+        """A failed fork must not leave the app dead: re-exec in place instead."""
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen",
+                               side_effect=OSError(11, "Resource temporarily unavailable")), \
+             mock.patch.object(updater.sys, "exit") as sys_exit:
+            updater.restart_app(new_process=True)
+        execv.assert_called_once()
+        sys_exit.assert_not_called()
+
     def test_windows_relaunch_is_detached(self):
         """The restarted app must not stay in the exiting parent's console.
 
