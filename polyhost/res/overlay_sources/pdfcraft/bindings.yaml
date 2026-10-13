@@ -98,6 +98,13 @@ bindings:
   # --- quick tools, plain keys (lib.rs::tool_keys) ---
   - { key: V, mods: [], icon: select.png, label: "Select tool", source: "ms-fluent/Cursor (MIT)" }
   - { key: H, mods: [], icon: hand.png,   label: "Hand tool",   source: "ms-fluent/Hand Right (MIT)" }
+  # hold Space = temporary Hand tool, back to the previous tool on release
+  - { key: SPACE, mods: [], icon: hand.png, label: "Hand tool (hold)", source: "ms-fluent/Hand Right (MIT)" }
+
+  # --- Enter (measure_ui.rs, comments.rs, edit_text_ui.rs, js_ui.rs) ---
+  - { key: ENTER, mods: [],        icon: finish.png, label: "Finish shape", source: "ms-fluent/Checkmark (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: apply.png,  label: "Apply",        source: "ms-fluent/Checkmark Circle (MIT)" }
 
   # --- selection (comments.rs, content_ui.rs, link_ui.rs, prepare.rs, panels.rs) ---
-  - { key: DELETE, mods: [], icon: delete.png, label: Delete, source: "ms-fluent/Delete (MIT)" }
+  - { key: DELETE,    mods: [], icon: delete.png, label: Delete, source: "ms-fluent/Delete (MIT)" }
+  - { key: BACKSPACE, mods: [], icon: delete.png, label: Delete, source: "ms-fluent/Delete (MIT)" }

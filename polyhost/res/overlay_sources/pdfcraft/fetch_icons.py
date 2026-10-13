@@ -75,6 +75,8 @@ FLUENT = {
     "lastpage":     "Next",
     "prevpage":     "Chevron Left",
     "nextpage":     "Chevron Right",
+    "finish":       "Checkmark",
+    "apply":        "Checkmark Circle",
     "_arrowup":     "Arrow Up",           # input to the composed findprev.png
 }
 

@@ -22,7 +22,9 @@ Ctrl+N new document; Ctrl+K is the command palette, Ctrl+H is Read mode).
 | Document view | Ctrl+0 Fit page, Ctrl+1 Actual size, Ctrl+2 Fit width, Ctrl+= / Ctrl+- Zoom, Ctrl+Shift+= / Ctrl+Shift+- Rotate view, Ctrl+[ / Ctrl+] Previous / Next view, Ctrl+G / Ctrl+Shift+G Find next / previous, Home / End first / last page, Left / Right and Ctrl+Left / Ctrl+Right and Ctrl+PgUp / Ctrl+PgDn previous / next page | `crates/ui-egui/src/canvas.rs:1928-2014` (`shortcuts`); labels in `crates/ui-egui/src/commands.rs:18-32` |
 | Select all, Copy | Ctrl+A, Ctrl+C | `crates/ui-egui/src/lib.rs:2637-2652`, `lib.rs:2684-2694` (`copy_key`, via egui's Copy event) |
 | Quick tools | V Select, H Hand (plain keys) | `crates/ui-egui/src/lib.rs:2699-2725` (`tool_keys`) |
-| Delete selection | Delete | `comments.rs:1371`, `content_ui.rs:439`, `link_ui.rs:140`, `prepare.rs:604`, `panels.rs:1020`, `canvas.rs:4196` |
+| Hold for Hand | Space (held: temporary Hand tool, previous tool on release) | `crates/ui-egui/src/lib.rs:2702-2725` (`tool_keys`, `space_hand`) |
+| Enter | Enter finishes a perimeter/area measurement or polygon comment; Ctrl+Enter applies a text edit, posts a comment reply, runs the JS console | `measure_ui.rs:202`, `comments.rs:698`; `edit_text_ui.rs:1044`, `comments.rs:1213`, `js_ui.rs:191` |
+| Delete selection | Delete, Backspace | `comments.rs:1371`, `content_ui.rs:439`, `link_ui.rs:140`, `prepare.rs:604`, `panels.rs:1020`, `canvas.rs:4196` |
 
 ### macOS
 
@@ -36,14 +38,21 @@ Ctrl+H on Windows/Linux, **Cmd+Ctrl+H** on macOS. It is written twice with disjo
 - Ctrl+= / Ctrl+- / Ctrl+0: in the page grid (Organize) and the Combine tab they size
   the thumbnails instead (`canvas.rs:1947-1958`, `combine_ui.rs:1150-1168`). Drawn as
   the document-view zoom / fit page.
-- Delete: deletes whatever is selected (comment, content object, link, form field,
+- Ctrl+Enter: "Apply" covers committing a text edit, posting a reply and running the
+  JS console, the three places that read it.
+- Delete / Backspace: deletes whatever is selected (comment, content object, link, form field,
   page). Drawn as one generic Delete.
 - H: plain H is the Hand tool; Ctrl+H is Read mode (different channel, no clash).
 
 ### Skipped
 
-- **No cell**: Escape (program icon cell; cancels / leaves full screen), Space (hold
-  for Hand), Enter, Tab, Backspace (same as Delete).
+- **Escape** is the program-icon cell (it cancels / leaves full screen).
+- **Tab / Shift+Tab**: plain focus traversal between form fields (`forms_ui.rs:390`,
+  `forms_ui.rs:450`), not a command.
+- **Space in the Combine tab** toggles a file's selection (`combine_ui.rs:1115`); the
+  canvas meaning (hold for Hand) is drawn.
+- **Backspace in the measure tools** removes the last point (`measure_ui.rs:205`); the
+  general meaning (delete the selection) is drawn.
 - **Scroll, not an action**: Up / Down, PgUp / PgDn (scroll; they turn pages only in
   single-page view).
 - **Narrow contexts**: Shift+arrows / arrows nudge selected objects in the Edit text
