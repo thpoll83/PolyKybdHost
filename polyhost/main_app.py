@@ -250,6 +250,17 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # like: two launches 691 ms apart, two trays (2026-09-19). `--connect` is
     # excluded — an extra client GUI against a running core is a supported ask.
     gui_claim = None
+    # The forwarder gets the same one-per-user rule from a lock of its own (it
+    # may run beside the tray app). Held in `gui_claim` so the post-update
+    # relaunch below drops it before the replacement starts.
+    if (args.host or args.host_file) and not args.headless:
+        from polyhost.server.instance import claim_forwarder, EndpointBusy
+        try:
+            gui_claim = claim_forwarder()
+        except EndpointBusy:
+            slog.warning("Another PolyKybdHost forwarder is already running; exiting.")
+            print("PolyKybdHost forwarder is already running. Exiting.")
+            sys.exit(0)
     if is_plain_gui:
         from polyhost.server.instance import claim_gui, EndpointBusy
         try:
@@ -511,22 +522,35 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # rather than calling os.execv from inside a Qt slot with the tray/timer
     # still live (the forwarder used to, and a transient execv failure then
     # left it dead with no relaunch). This mirrors the headless daemon, which
-    # re-execs only after its run loop ends. `restart_app()` re-execs (or, on
-    # failure, spawns a detached child) and never returns.
+    # re-execs only after its run loop ends. Unlike the daemon, a tray process
+    # relaunches as a detached child with a new pid
+    # (`_relaunch_after_update`) and never returns.
     if getattr(app, "wants_restart", False):
-        from polyhost.services.updater import restart_app
         del app  # let the QApplication release its X/tray/D-Bus resources first
-        # Drop the tray claim BEFORE relaunching. `restart_app()` prefers
-        # os.execv (which drops it anyway — the lock fd is close-on-exec), but
-        # on Windows, and on POSIX when execv fails, it spawns a DETACHED child
-        # and only then exits. The two processes overlap there, so a still-held
-        # claim would turn the replacement away at startup: "it doesn't start up
-        # again after the update", the exact failure the detached spawn exists
-        # to prevent.
-        if gui_claim is not None:
-            gui_claim.release()
-        restart_app()
+        _relaunch_after_update(gui_claim, instance_claim)
     sys.exit(rc)
+
+
+def _relaunch_after_update(*claims):
+    """Release every claim this process holds, then relaunch with a new pid.
+
+    `restart_app(new_process=True)` spawns a DETACHED child and only then
+    exits, so the two processes overlap, and a still-held claim would turn the
+    replacement away at startup: "it doesn't start up again after the update",
+    the exact failure the detached spawn exists to prevent. The endpoint claim
+    matters most: an in-process tray (no daemon) holds it, and
+    `claim_instance()` tries once and does not wait, unlike `claim_gui()`.
+    `headless._restart_if_requested` does the same for the daemon.
+
+    A new pid, not os.execv: Qt's D-Bus tray icon name carries the pid, and
+    GNOME's AppIndicator extension showed no icon for the same name
+    re-registered by the exec'd image (forwarder, 2026-10-13). Never returns.
+    """
+    from polyhost.services.updater import restart_app
+    for claim in claims:
+        if claim is not None:
+            claim.release()
+    restart_app(new_process=True)
 
 
 def _spawned_daemon_flags(args, verbosity=0):

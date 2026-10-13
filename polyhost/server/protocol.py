@@ -214,6 +214,15 @@ def gui_lock_path() -> str:
     return os.path.join(_config_dir(), "polykybd.gui.lock")
 
 
+def forwarder_lock_path() -> str:
+    """Path of the file lock that keeps the forwarder to ONE process per user.
+
+    A file of its own, not :func:`gui_lock_path`: forwarding to your own
+    keyboard machine runs a forwarder beside the tray app, and the two must
+    not turn each other away."""
+    return os.path.join(_config_dir(), "polykybd.forwarder.lock")
+
+
 def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
 

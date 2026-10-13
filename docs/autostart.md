@@ -196,6 +196,18 @@ Autostart registration and the post-update relaunch chain are
   relaunch spawns the replacement before this process exits; `main_app` also releases
   the claim explicitly before `restart_app()`. Refusing immediately there is *"it
   doesn't start up again after the update"*.
+  The forwarder takes a third lock, `claim_forwarder()` (`polykybd.forwarder.lock`),
+  with the same wait. A file of its own, because forwarding to your own keyboard
+  machine runs a forwarder beside the tray app. Before it, a second forwarder ran
+  beside the first and sent every window report twice (2026-10-13).
+- ⚠️ **A tray process relaunches with a NEW pid, not `os.execv`.** Qt's D-Bus tray
+  icon registers `org.kde.StatusNotifierItem-<pid>-<n>`, so an in-place exec
+  re-registers the name the old image just dropped. On Ubuntu 24.04 GNOME (X11) the
+  forwarder came back from an update forwarding windows with no tray icon at all; the
+  user launched a second copy, which got an icon because its pid was new
+  (2026-10-13). `main_app` calls `restart_app(new_process=True)` after releasing both its
+  claims; only a failed spawn (`OSError`) falls back to execv and keeps the pid.
+  The headless daemon has no tray and keeps execv.
 - ⚠️ **Registering autostart must never START the app** — it always runs from an
   app that is already running. macOS made this concrete: the plist carries
   `RunAtLoad`, so the `launchctl load` in `add_to_startup()` launched a SECOND copy,

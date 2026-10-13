@@ -171,7 +171,21 @@ def claim_gui(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
     rather than around it, so a second launch settles at once instead of waiting
     out the window. ``--connect`` does not take it: an extra client GUI against
     a running core is an explicit, supported thing to ask for."""
-    path = protocol.gui_lock_path()
+    return _claim_waiting(protocol.gui_lock_path(), timeout)
+
+
+def claim_forwarder(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
+    """Claim the right to be the one forwarder, or raise :class:`EndpointBusy`.
+
+    The forwarder is a tray app too, but :func:`claim_gui` skips it, so a
+    second launch ran beside the first: two tray icons and every window report
+    sent twice, ~100 ms apart (2026-10-13, Ubuntu GNOME). Same wait as the
+    GUI claim, for the same post-update overlap."""
+    return _claim_waiting(protocol.forwarder_lock_path(), timeout)
+
+
+def _claim_waiting(path, timeout) -> InstanceClaim:
+    """Take the file lock at ``path``, polling up to ``timeout`` seconds."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     # Same ownership rule as claim_instance: the claim takes the descriptor

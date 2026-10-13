@@ -72,6 +72,32 @@ class StartupLoggingTest(unittest.TestCase):
         self.assertEqual(len(slog2.handlers), n)
 
 
+class RelaunchAfterUpdateTest(unittest.TestCase):
+    """Every claim is released BEFORE the replacement process starts.
+
+    The relaunch spawns a child with a new pid while this process still runs.
+    `claim_instance()` tries once, so an in-process tray that kept its endpoint
+    claim would turn its own replacement away and leave no app at all."""
+
+    def _run(self, *claims):
+        order = []
+        for name, claim in claims:
+            if claim is not None:
+                claim.release.side_effect = lambda n=name: order.append(n)
+        with mock.patch("polyhost.services.updater.restart_app",
+                        side_effect=lambda **kw: order.append(("restart", kw))):
+            main_app._relaunch_after_update(*(c for _, c in claims))
+        return order
+
+    def test_both_claims_are_released_before_the_restart(self):
+        order = self._run(("gui", mock.Mock()), ("instance", mock.Mock()))
+        self.assertEqual(order, ["gui", "instance", ("restart", {"new_process": True})])
+
+    def test_a_missing_claim_is_skipped(self):
+        order = self._run(("gui", None), ("instance", mock.Mock()))
+        self.assertEqual(order, ["instance", ("restart", {"new_process": True})])
+
+
 class ResolveDevTest(unittest.TestCase):
     """--dev / the deprecated --debug / the developer_mode setting."""
 

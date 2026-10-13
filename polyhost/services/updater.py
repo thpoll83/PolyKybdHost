@@ -1189,8 +1189,19 @@ def preflight_blockers(findings) -> list:
     return [f for f in findings if not f.ok and f.blocking]
 
 
-def restart_app() -> None:
+def restart_app(new_process: bool = False) -> None:
     """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
+
+    ``new_process=True`` skips ``os.execv`` and spawns a detached child with a
+    NEW pid, then exits. Only if that spawn raises ``OSError`` does it fall back
+    to ``os.execv``, which keeps the pid. A tray process needs this: Qt's D-Bus tray icon
+    registers ``org.kde.StatusNotifierItem-<pid>-<n>``, so an in-place execv
+    re-registers the exact name the old image just released, and GNOME's
+    AppIndicator extension then shows no icon at all. The process runs on, so
+    the forwarder kept forwarding with no tray (2026-10-13, Ubuntu 24.04 X11;
+    a manual launch of the same build, new pid, got its icon). The headless
+    daemon keeps execv: it has no tray, and its single-try endpoint claim
+    prefers no overlap.
 
     On POSIX we prefer ``os.execv`` (replaces the process in place), but it can
     fail transiently — e.g. ``ETXTBSY`` right after ``pip install -e .`` rewrote
@@ -1210,6 +1221,15 @@ def restart_app() -> None:
     if sys.platform == "win32":
         spawn_detached(args)
         sys.exit(0)
+    if new_process:
+        try:
+            spawn_detached(args)
+        except OSError as e:
+            # A fork can fail (EAGAIN). execv keeps the pid and so may leave the
+            # tray without an icon, but a running app beats none at all.
+            log.warning("Detached relaunch failed (%s); re-executing in place.", e)
+        else:
+            sys.exit(0)
     try:
         os.execv(args[0], args)
     except OSError as e:
