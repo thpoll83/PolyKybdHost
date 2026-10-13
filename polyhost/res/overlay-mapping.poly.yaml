@@ -44,7 +44,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     atlassian.net:
       overlay: jira_template.mods.png
     bitbucket.org:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     docs.google.com/document:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
@@ -87,7 +87,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     Bitbucket:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     Google Docs:
@@ -122,7 +122,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         atlassian.net:
           overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         bitbucket.org:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         docs.google.com/document:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         notion.so:
@@ -152,7 +152,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         Bitbucket:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         Google Docs:
