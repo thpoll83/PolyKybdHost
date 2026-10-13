@@ -28,7 +28,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[3]))   # repo root, for `polyhost.…`
 sys.path.insert(0, str(HERE.parent))       # overlay_sources, for program_marks
 
-import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
 
 import program_marks  # noqa: E402
