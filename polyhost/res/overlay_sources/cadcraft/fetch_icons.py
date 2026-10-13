@@ -47,6 +47,8 @@ FLUENT = {
     "copybase": "Copy Select",            # Ctrl+Shift+C Copy with base point
     "pasteblock": "ms:content_paste_go",  # Ctrl+Shift+V Paste as block
     "quickcalc": "Calculator",            # Cmd+8 QuickCalc (macOS)
+    "repeatcmd": "Arrow Enter Left",      # Enter / Space: enter, or repeat last command
+    "snapcycle": "Arrow Sync",            # Tab: cycle snaps / complete command
 }
 
 # Same action, same glyph as a sibling app (byte-identical copies).

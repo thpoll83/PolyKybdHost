@@ -22,13 +22,16 @@ keyboard shortcuts and are not bound. Only chords and F-keys the code handles:
 |---|---|
 | The egui shortcut table: every Cmd/Ctrl chord, F1-F3, F5, F7-F12 | `crates/ui-egui/src/menus.rs:594-629` (`fn shortcuts`) |
 | Cmd/Ctrl+C, X, V (+Shift = copy with base point / paste as block): arrive as egui clipboard events | `crates/ui-egui/src/clipboard.rs:45-66` (`shortcut_commands`) |
+| Enter, and Space outside a text prompt, submit the command line; empty at `Command:` they repeat the last command | `crates/ui-egui/src/cmdline.rs:264,297,304,384` (`submit` -> `Input::Enter`); `crates/engine/src/lib.rs:1028-1043` |
+| Tab cycles the candidate snaps over a snap marker, else completes the typed command / dynamic-input field | `crates/ui-egui/src/cmdline.rs:78-98` (`tab`), `:347`; Tab captured from egui focus at `:57-75` |
+| macOS: plain Backspace with an empty command line erases the selection | `crates/ui-egui/src/cmdline.rs:237-239` (`backspace_erases`), `:309-323` |
 | Delete erases the selection (empty command line, no command running) | `crates/ui-egui/src/cmdline.rs:348`; `crates/engine/src/cmd/edit.rs:58` (`.key("Delete")`) |
 | macOS native menu: every menu `.key("Cmd+...")` label becomes a real accelerator | `apps/cadcraft/src/native_menu.rs:25-30,50,146`; labels in `crates/engine/src/cmd/*.rs` `.key(...)` and `crates/ui-egui/src/menus.rs:17-73` (`UI_COMMANDS`) |
 
 egui `Modifiers::COMMAND` is Ctrl on Windows/Linux and Cmd on macOS, so every chord
 is written `CMDCTRL` and the generator emits a `_mac` set. Nothing is remapped.
 
-Bound: **34 cells** (Win/Linux 31, macOS 34):
+Bound: **38 cells** (Win/Linux 34, macOS 38):
 
 - **CMDCTRL** (11): N New, O Open, S Save (QSAVE), P Plot (opens the Print/Plot
   dialog), Z Undo (U), Y Redo, A Select all, C Copy (COPYCLIP), X Cut (CUTCLIP),
@@ -43,6 +46,10 @@ Bound: **34 cells** (Win/Linux 31, macOS 34):
   F5 Isoplane, F7 Grid, F8 Ortho, F9 Snap, F10 Polar, F11 Object Snap Tracking,
   F12 Dynamic Input.
 - **Nav** (1): Delete = Erase selection (Edit > Clear).
+- **Enter / Space / Tab** (3, no modifier): Enter and Space = Enter / repeat last
+  command (same glyph, same action); Tab = cycle snaps / complete.
+- **Backspace, macOS only** (1): erase selection (drawn as the shared Delete concept).
+  On Windows/Linux Backspace only deletes a typed character, so it is not drawn.
 - **ESC**: program mark.
 
 ### Not bound, and why
@@ -51,12 +58,13 @@ Bound: **34 cells** (Win/Linux 31, macOS 34):
 - **F4, F6**: no handler (`docs/ui-parity.md:188` lists them as missing).
 - **Up / Down**: command-line history recall (`cmdline.rs:325-345`); text-entry
   navigation in the command line, not a drawing shortcut. Left out on purpose.
-- **Escape** (cancel) is the program-mark cell; **Enter, Space, Tab, Backspace**
-  have no cell. (macOS Backspace also erases a selection, `cmdline.rs:237`.)
+- **Escape** (cancel) is the program-mark cell.
+- **Shift+Tab**: egui focus traversal, not a CADCraft command. Modified Enter/Space/
+  Backspace chords have no handler outside the MTEXT editor.
 - **Cmd+Q, Cmd+H, Cmd+Opt+H** (macOS): standard predefined app-menu items, not
   CADCraft commands.
-- **Cmd/Ctrl+Enter** in the MTEXT editor (`mtext_editor.rs:115`): only inside a
-  modal text editor, and Enter has no cell anyway.
+- **Cmd/Ctrl+Enter** in the MTEXT editor (`mtext_editor.rs:115`): only inside the
+  modal text editor (commit the text), not on the canvas.
 - **Ctrl+Y and Ctrl+Shift+Z** both mean Redo; both are drawn.
 - No Alt, Ctrl+Alt, Ctrl+Alt+Shift or GUI (Win-key) chords exist in the source.
 
@@ -64,7 +72,7 @@ Bound: **34 cells** (Win/Linux 31, macOS 34):
 
 | icon | source | licence |
 |---|---|---|
-| commandref, history, osnap (Target), grid (Grid Dots), ortho (Arrow Move), otrack (Target Arrow), dynmode (Cursor Hover), properties (Panel Right), toolsets (Toolbox), cmdline (Window Console), pickstyle (Group), copybase (Copy Select), quickcalc (Calculator) | Microsoft Fluent UI System Icons, `microsoft/fluentui-system-icons` `main`, via `icon_fetch.fluent` | MIT |
+| repeatcmd (Arrow Enter Left), snapcycle (Arrow Sync), commandref, history, osnap (Target), grid (Grid Dots), ortho (Arrow Move), otrack (Target Arrow), dynmode (Cursor Hover), properties (Panel Right), toolsets (Toolbox), cmdline (Window Console), pickstyle (Group), copybase (Copy Select), quickcalc (Calculator) | Microsoft Fluent UI System Icons, `microsoft/fluentui-system-icons` `main`, via `icon_fetch.fluent` | MIT |
 | isoplane (`deployed_code`, an isometric cube), polar (`radar`), pasteblock (`content_paste_go`) | Google Material Symbols, weight 300, via `icon_fetch` `ms:` | Apache-2.0 |
 | new, open, save, saveas, print, undo, copy, cut, paste, selectall, prefs | byte-identical copies of `../illustrator/icons/` (Fluent, MIT) | MIT |
 | snap | copy of `../resolve/icons/snap.png`, the drawn horseshoe magnet (`nle_glyphs.snap`; neither Fluent nor Material has a magnet) | project's own (GPL-3.0-or-later) |

@@ -85,3 +85,12 @@ bindings:
 
   # ===== Nav cluster =====
   - { key: DELETE, mods: [],                    label: Delete,              source: "cmdline.rs:348 erase.selection (Edit > Clear); concept (shared Fluent)" }
+
+  # ===== Enter / Space / Tab / Backspace (no modifier) =====
+  # Enter, and Space outside a text prompt, submit the command line; empty at Command: they
+  # repeat the last command (engine lib.rs:1028-1043).
+  - { key: ENTER, mods: [], icon: repeatcmd.png, label: "Enter / repeat command", source: "cmdline.rs:304 submit, :384 Input::Enter; ms-fluent/Arrow Enter Left (MIT)" }
+  - { key: SPACE, mods: [], icon: repeatcmd.png, label: "Enter / repeat command", source: "cmdline.rs:264,297 Space = submit; ms-fluent/Arrow Enter Left (MIT)" }
+  - { key: TAB,   mods: [], icon: snapcycle.png, label: "Cycle snaps / complete", source: "cmdline.rs:78 tab(), :347; ms-fluent/Arrow Sync (MIT)" }
+  # macOS only: plain Backspace with an empty command line erases the selection (Delete).
+  - { key: BACKSPACE, mods: [], only: [macos], label: Delete, source: "cmdline.rs:237 backspace_erases(mac,...), :309; concept (shared Fluent)" }
