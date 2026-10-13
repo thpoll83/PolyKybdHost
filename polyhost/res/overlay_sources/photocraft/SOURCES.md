@@ -51,12 +51,22 @@ used and the digit legend carries the value. Shift+O (crop overlay orientation),
 O inside the crop tool, arrow-key nudges and the `+`/`-` of the Color Range
 dialog are modal and not bound.
 
-**Skipped (no cell):** Space / Cmd+Space / Alt+Space (temporary hand/zoom,
-`prefs.rs:1444`), Tab / Shift+Tab / Ctrl+Tab / Ctrl+Shift+Tab (panels,
-documents), Cmd+Enter (path to selection, `vector_cmds.rs:1791`), all Backspace
-fills (Alt / Cmd / Alt+Shift / Cmd+Shift / Cmd+Alt+Backspace, `fill_key_cmds.rs`,
-and Shift+Backspace = Fill, `shortcut_dispatch.rs:44`) per the batch brief, and
-the backtick hold-to-erase key (`prefs.rs:1448`, held, not pressed).
+**Enter / Backspace / Tab / Space chords:**
+
+| Chord | Action | Source (paths under `crates/`) |
+|---|---|---|
+| Space (hold), Cmd+Space (hold), Alt+Space (hold) | temporary Hand / Zoom in / Zoom out | `engine/src/prefs.rs:1445-1447` (`TEMPORARY_TOOLS`, dispatched by `ui-egui/src/hold_keys.rs`) |
+| Tab, Shift+Tab | show/hide all panels, show/hide the panel dock | `ui-egui/src/menus.rs:73-74` |
+| Ctrl+Tab, Ctrl+Shift+Tab | next / previous document (literal Ctrl on every OS) | `ui-egui/src/menus.rs:77-78` |
+| Cmd+Enter | make selection from path | `engine/src/vector_cmds.rs:1791` |
+| Backspace | Clear (`edit.clear` is `Delete`; `key_matches` lets Backspace match Delete) | `engine/src/commands.rs:463`, `ui-egui/src/shortcuts.rs` `key_matches` |
+| Shift+Backspace | Fill dialog (second shortcut of `edit.fill`) | `ui-egui/src/shortcut_dispatch.rs:44` |
+| Alt / Cmd / Alt+Shift / Cmd+Shift / Cmd+Alt +Backspace | fill FG / BG / FG preserve / BG preserve / from history | `engine/src/fill_key_cmds.rs:113-153,214` |
+
+The Delete-key twins of the Backspace fills (Alt+Delete…, also matched by
+`key_matches`) are not drawn: the Backspace cell carries them, as in the
+Photoshop overlay. The backtick (GRAVE) hold key, "Erase with Brush or Pencil",
+is `prefs.rs:1448` and reuses the eraser glyph.
 
 ### macOS
 

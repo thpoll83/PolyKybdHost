@@ -33,6 +33,8 @@ import icon_fetch  # noqa: E402
 import number_badge  # noqa: E402
 import program_marks  # noqa: E402
 
+from PIL import Image  # noqa: E402
+
 # Pinned to the commit the shortcuts were read from (see SOURCES.md).
 PC_COMMIT = "99e1138877e6aa7e856c6883b415e708d042fc59"
 PC_ICO = (f"https://raw.githubusercontent.com/storytold/photocraft/{PC_COMMIT}"
@@ -174,13 +176,40 @@ FLUENT = {
     "opacity": "ms:opacity",
     "typesizeup": "ms:text_increase",
     "typesizedown": "ms:text_decrease",
+    # --- Enter / Backspace / Tab / Space chords ---
+    "panelsall": "Panel Left Contract",
+    "panelsdock": "Panel Right Contract",
+    "nextdoc": "Document Arrow Right",
+    "prevdoc": "Document Arrow Left",
+    "pathtosel": "ms:select",
+    "fillhistory": "ms:settings_backup_restore",
+    "lockbadge": "Lock Closed",
 }
 
 # Photoshop's drawn tool glyphs, copied byte-identically (same action, same art).
 BORROWED = {f"{n}.png": "photoshop" for n in (
     "marquee", "lasso", "magicwand", "clonestamp", "healing", "dodgeburn",
     "pathselect", "defaultcolors", "quickmask", "gradient", "brushdec",
-    "brushinc", "hardnessdec", "hardnessinc", "swapcolors")}
+    "brushinc", "hardnessdec", "hardnessinc", "swapcolors", "fillfg", "fillbg")}
+
+
+def _preserve(fill: Path, lock: Path, path: Path) -> None:
+    """Fill ... Preserve Transparency: the plain fill square shrunk to the top-left
+    with a small lock bottom-right. Both inputs are opaque-on-transparent, and the
+    binding renders `mode: alpha`, so only the alpha channel matters. Guarded."""
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    u = 96
+    out = Image.new("RGBA", (u, u), (0, 0, 0, 0))
+    f = Image.open(fill).convert("RGBA").resize((70, 70), Image.LANCZOS)
+    out.alpha_composite(f, (0, 0))
+    lk = Image.open(lock).convert("RGBA").resize((46, 46), Image.LANCZOS)
+    white = Image.new("RGBA", lk.size, (255, 255, 255, 255))
+    white.putalpha(lk.split()[3])
+    out.alpha_composite(white, (u - 46, u - 46))
+    out.save(path)
+    print(f"  {path.name}  <- composite ({fill.stem} + lock)")
 
 
 def main() -> int:
@@ -190,6 +219,8 @@ def main() -> int:
     # Cmd+3..9 "Target channel N": the digit is the information (number_badge).
     number_badge.numbered(out / "channelbase.png", "3456789", out, "channel")
     icon_fetch.borrow(BORROWED, out)
+    _preserve(out / "fillfg.png", out / "lockbadge.png", out / "fillfgpreserve.png")
+    _preserve(out / "fillbg.png", out / "lockbadge.png", out / "fillbgpreserve.png")
     program_marks.own_icon(out / "photocraft.png", PC_ICO, frame=64,
                            credit="storytold/photocraft assets/app-icon/photocraft.ico (MIT OR Apache-2.0)")
     print(f"Wrote icons to {out}")

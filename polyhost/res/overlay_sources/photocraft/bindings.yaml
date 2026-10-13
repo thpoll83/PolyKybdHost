@@ -84,6 +84,10 @@ bindings:
   - { key: F7,  mods: [], icon: layerspanel.png, label: "Layers panel" }
   - { key: F8,  mods: [], icon: infopanel.png,   label: "Info panel" }
   - { key: F12, mods: [], icon: revert.png,      label: "Revert" }
+  - { key: SPACE, mods: [], icon: hand.png,      label: "Hand (hold)" }
+  - { key: GRAVE, mods: [], icon: eraser.png,    label: "Erase with brush (hold)" }
+  - { key: TAB, mods: [], icon: panelsall.png,   label: "Show/Hide all panels" }
+  - { key: BACKSPACE, mods: [], icon: clear.png, label: "Clear selection" }
   # opacity_keys.rs: 1..9 = 10..90 %, 0 = 100 % (brush or layer opacity); the
   # digit legend carries the value, so one shared glyph (one pool slot).
   - { key: "1", mods: [], icon: opacity.png, label: "Opacity 10%" }
@@ -104,6 +108,8 @@ bindings:
   - { key: "]", mods: [SHIFT], icon: hardnessinc.png, mode: alpha, label: "Brush hardness +" }
   - { key: F5,  mods: [SHIFT], icon: fill.png,     label: "Fill" }
   - { key: F6,  mods: [SHIFT], icon: feather.png,  label: "Feather selection" }
+  - { key: TAB, mods: [SHIFT], icon: panelsdock.png, label: "Show/Hide panel dock" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: fill.png, label: "Fill dialog" }
   - { key: EQUAL, mods: [SHIFT], icon: blendnext.png, label: "Next blend mode" }
   - { key: MINUS, mods: [SHIFT], icon: blendprev.png, label: "Previous blend mode" }
   - { key: "1", mods: [SHIFT], icon: flowfill.png, label: "Flow / Fill 10%" }
@@ -125,6 +131,9 @@ bindings:
   - { key: DOT,   mods: [ALT], icon: layertop.png,    label: "Select top layer" }
   - { key: COMMA, mods: [ALT], icon: layerbottom.png, label: "Select bottom layer" }
   - { key: F9,  mods: [ALT], icon: actions.png,     label: "Actions panel" }
+  - { key: SPACE, mods: [ALT], icon: zoomout.png,   label: "Zoom out (hold)" }
+  - { key: BACKSPACE, mods: [ALT], icon: fillfg.png, mode: alpha, label: "Fill FG color" }
+  - { key: BACKSPACE, mods: [ALT, SHIFT], icon: fillfgpreserve.png, mode: alpha, label: "Fill FG color, preserve transparency" }
   - { key: "]", mods: [ALT, SHIFT], icon: addabove.png, label: "Add layer above to selection" }
   - { key: "[", mods: [ALT, SHIFT], icon: addbelow.png, label: "Add layer below to selection" }
 
@@ -182,6 +191,12 @@ bindings:
   - { key: "8", mods: [CMDCTRL], icon: channel8.png, label: "Target channel 8" }
   - { key: "9", mods: [CMDCTRL], icon: channel9.png, label: "Target channel 9" }
   - { key: "\\", mods: [CMDCTRL], icon: layermask.png, label: "Target layer mask" }
+  - { key: SPACE, mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in (hold)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: pathtosel.png, label: "Path to selection" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color" }
+  # Literal Ctrl on every OS (menus.rs "Ctrl+Tab"), not CMDCTRL.
+  - { key: TAB, mods: [CTRL], icon: nextdoc.png, label: "Next document" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevdoc.png, label: "Previous document" }
 
   # ============================================================= #
   # CMD/CTRL+SHIFT                                                #
@@ -194,6 +209,7 @@ bindings:
   - { key: T, mods: [CMDCTRL, SHIFT], icon: transformagain.png, label: "Transform again" }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: colorsettings.png, label: "Color settings" }
   - { key: N, mods: [CMDCTRL, SHIFT], icon: newlayer.png,   label: "New layer" }
+  - { key: BACKSPACE, mods: [CMDCTRL, SHIFT], icon: fillbgpreserve.png, mode: alpha, label: "Fill BG color, preserve transparency" }
   - { key: J, mods: [CMDCTRL, SHIFT], icon: cut.png,        label: "Layer via cut", shared: false }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: mergevisible.png, label: "Merge visible" }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,    label: "Ungroup layers" }
@@ -232,6 +248,7 @@ bindings:
   - { key: V, mods: [CMDCTRL, ALT], icon: vanishing.png,   label: "Vanishing point" }
   - { key: ";", mods: [CMDCTRL, ALT], icon: lockguides.png, label: "Lock guides" }
   - { key: "2", mods: [CMDCTRL, ALT], icon: luminosity.png, label: "Load luminosity" }
+  - { key: BACKSPACE, mods: [CMDCTRL, ALT], icon: fillhistory.png, label: "Fill from history" }
 
   # ============================================================= #
   # CMD/CTRL+ALT+SHIFT                                            #
