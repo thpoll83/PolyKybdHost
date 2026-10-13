@@ -91,6 +91,20 @@ bindings:
   - { key: F10, mods: [], icon: pencil.png,      label: "Pencil tool" }
   - { key: F12, mods: [], icon: record.png,      label: Record }
 
+  # --- Space / Enter / Tab (shortcuts.rs::fixed :104-124, :172) ---
+  - { key: SPACE, mods: [], icon: play.png,              label: "Play / Stop" }
+  - { key: SPACE, mods: [SHIFT], icon: halfspeed.png,    label: "Half-speed playback" }
+  - { key: SPACE, mods: [CMDCTRL], icon: record.png,     label: Record }
+  - { key: ENTER, mods: [], icon: newmarker.png,         label: "New memory location" }
+  - { key: TAB, mods: [], icon: tabfwd.png,              label: "Tab forward" }
+  - { key: TAB, mods: [SHIFT], icon: tabextfwd.png,      label: "Tab forward, extend selection" }
+  # Back is Ctrl+Tab off macOS (the desktop owns Alt+Tab), Alt+Tab on macOS.
+  - { key: TAB, mods: [CTRL], icon: tabback.png,         label: "Tab back", only: [windows, linux] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: tabextback.png, label: "Tab back, extend selection", only: [windows, linux] }
+  - { key: TAB, mods: [ALT], icon: tabback.png,          label: "Tab back", only: [macos] }
+  - { key: TAB, mods: [ALT, SHIFT], icon: tabextback.png, label: "Tab back, extend selection", only: [macos] }
+  - { key: TAB, mods: [CMDCTRL, ALT], icon: tabtransient.png, label: "Tab to transient" }
+
   # --- Shift ---
   - { key: M, mods: [SHIFT], icon: mute.png,         label: "Mute track" }
   - { key: S, mods: [SHIFT], icon: solo.png,         label: "Solo track" }

@@ -40,6 +40,9 @@ literal `CTRL`.
 | Regroup, Clear Clips, Identify Beat, Import Session Data | `clip_more.rs:13`, `clip_list.rs:12`, `event_more.rs:135`, `setup_more.rs:118` (all under `crates/engine/src/cmd/`) |
 | Window keys (Cmd+1/3/4/5/9, Cmd+W, Cmd+Alt+M/J, Alt+6/7/'/=/I/J, Shift+K, Cmd+Ctrl+W/S/=) | `crates/ui-egui/src/menus.rs:9-61` (`UI_COMMANDS`) |
 | Cmd+= Mix/Edit, Shift(+Alt)+=/- grid/nudge value, F12 record, F1-F4 and Alt+1-4 edit modes, \` cycle mode, F5-F10 tools, - nudge, Cmd+Alt+[ ] waveform zoom, Cmd+Alt+0-5 rating, Cmd+Ctrl+1-5 zoom presets, Ctrl(+Alt)(+Shift)+Up/Down track height, Ctrl+Shift+Up/Down clip gain, R/T zoom | `crates/ui-egui/src/shortcuts.rs:101-224` (`fixed`) |
+| Space Play/Stop, Shift+Space half speed, Cmd+Space record; Enter New Memory Location | `crates/ui-egui/src/shortcuts.rs:104-124` (`fixed`); registry `transport.rs:10-21`, `event.rs:87-91` |
+| Tab forward, Shift+Tab extend; back is Ctrl+Tab off macOS (the desktop owns Alt+Tab) and Alt+Tab on macOS, with Shift to extend | `crates/ui-egui/src/shortcuts.rs:170-175` |
+| Cmd+Alt+Tab Tab to Transient (toggle; on Windows the code passes it to the registry) | `crates/engine/src/cmd/options.rs:28` |
 | Single keys (Commands Keyboard Focus): A S D G F , . M / 0 O [ ] B X C V Z N 1-5 P ; L ' E, Shift+Z/P/; | `crates/ui-egui/src/shortcuts.rs:292-338` (`commands_focus`) |
 
 Commands Keyboard Focus is the default (`crates/model/src/session.rs:287`,
@@ -51,15 +54,15 @@ letters do nothing in the Mix window.
 - **Cmd+Alt+L** is registered twice: `edit.move_selection_left` (`edit.rs:71`) and
   `clip.loop` (`clip.rs:68`). `command_for` takes the first, which is **Move Edit
   Left**, so that is what is drawn. Loop... has no reachable key.
-- **Space / Ctrl+Space / Shift+Space** (play, record, half speed) and **Enter**
-  (new memory location) are handled by the code, but those keys have no overlay
-  cell.
 
 ### Skipped
 
-- **No cell:** Space, Shift+Space, Cmd+Space, Enter, Tab chords (Tab to
-  transient, Alt/Ctrl+Tab back), keypad Plus/Minus nudge, `Period n Period` (recall
-  memory location; keypad workflow), Escape (the program-mark cell).
+- **Backspace / Delete**: only the MIDI editor uses these, to delete selected notes
+  (`crates/ui-egui/src/midi_editor.rs:354`, a local key check). No global binding.
+- **No cell:** keypad Plus/Minus nudge, `Period n Period` (memory-location recall,
+  a keypad workflow), Escape (the program-mark cell).
+- **Ctrl+Tab on macOS**: `fixed` excludes it (`shortcuts.rs:172`, "Pro Tools' Go to
+  Next Clip"), and nothing in the registry claims it, so it does nothing.
 - **Shift+/** (Link Timeline and Edit Selection, `options.rs:25`): egui-winit 0.36
   resolves the *logical* key first, so Shift+/ arrives as `Key::Questionmark` and
   never equals the registry's parsed `Key::Slash`. The binding cannot fire on a
@@ -80,6 +83,9 @@ Playlist). These are drawn as `GUI+CTRL` / `CTRL+…` with `only: [macos]`.
 Off macOS, Search, Score Editor and Hide Floating are reached from the Window
 menu, as the code comment at `shortcuts.rs:51` says.
 
+Cmd+Space (Record) is Spotlight on a stock macOS, and Ctrl+Alt+Tab is a
+Windows task-switcher chord. Both are drawn as SoundCraft binds them.
+
 macOS reserves Cmd+H (Hide), Cmd+M (Minimize) and Cmd+Q (Quit). SoundCraft binds
 Cmd+H to Heal Separation and Cmd+M to Mute Clips, and the overlay draws what
 SoundCraft documents. If winit's default app menu takes the chord first, Cmd+H may
@@ -90,10 +96,11 @@ hide the app instead. This is unverified on hardware.
 | File(s) | Source | Licence |
 |---|---|---|
 | Most glyphs (see the `FLUENT` map in `fetch_icons.py`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
-| `follow, selector, scrubber, inputmon, midikeyboard, recinputonly, quantize, looprecord, consolidate, sendback, bringfront, insertsilence, heal, stripsilence, identifybeat, automation, thin, copytosend, narrowmix, trackpunch, quickpunch, score, heightup, heightdown, gainup, gaindown, cleargain, extendup, extenddown, duplicate` | [Material Symbols](https://fonts.google.com/icons) (`ms:`, weight 300) | Apache-2.0 |
-| `open, save, saveas, import, export, undo, redo, cut, copy, paste, selectall, group, ungroup, zoom, zoomin, zoomout, zoomfit, hand, newsequence` | byte-identical copies of `../premiere/icons/` (Fluent) | MIT |
+| `halfspeed, tabfwd, tabback, tabextfwd, tabextback, tabtransient, follow, selector, scrubber, inputmon, midikeyboard, recinputonly, quantize, looprecord, consolidate, sendback, bringfront, insertsilence, heal, stripsilence, identifybeat, automation, thin, copytosend, narrowmix, trackpunch, quickpunch, score, heightup, heightdown, gainup, gaindown, cleargain, extendup, extenddown, duplicate` | [Material Symbols](https://fonts.google.com/icons) (`ms:`, weight 300) | Apache-2.0 |
+| `play, open, save, saveas, import, export, undo, redo, cut, copy, paste, selectall, group, ungroup, zoom, zoomin, zoomout, zoomfit, hand, newsequence` | byte-identical copies of `../premiere/icons/` (Fluent) | MIT |
 | `blade, trim, snap, rippleedit` | `../nle_glyphs.py` (custom-drawn) | GPL-3.0-or-later |
 | `fadein, fadeout, crossfade` | drawn in `fetch_icons.py::_fade` (a clip block plus its ramp) | GPL-3.0-or-later |
+| `newmarker` (Bookmark Add) | Fluent | MIT |
 | `zoompreset1-5` (Fluent Search plus a digit), `rating0-5` (Fluent Star plus a digit) | `../number_badge.py` composites | MIT + GPL-3.0-or-later |
 | `soundcraft.png` (ESC program mark) | SoundCraft's own icon, `assets/app-icon/soundcraft.ico` @ `c0cb9934`, 64 px frame | **MIT OR Apache-2.0** |
 

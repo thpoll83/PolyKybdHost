@@ -48,7 +48,7 @@ SOUNDCRAFT_ICO = ("https://raw.githubusercontent.com/storytold/soundcraft/"
 FROM_PREMIERE = {n: "premiere" for n in (
     "open.png", "save.png", "saveas.png", "import.png", "export.png",
     "undo.png", "redo.png", "cut.png", "copy.png", "paste.png",
-    "selectall.png", "group.png", "ungroup.png", "zoom.png", "zoomin.png",
+    "selectall.png", "play.png", "group.png", "ungroup.png", "zoom.png", "zoomin.png",
     "zoomout.png", "zoomfit.png", "hand.png", "newsequence.png",
 )}
 
@@ -183,6 +183,14 @@ FLUENT = {
     "score":         "ms:queue_music",
     "timelock":      "Clock",
     "recentpl":      "History",
+    # Space / Enter / Tab
+    "halfspeed":     "ms:slow_motion_video",
+    "newmarker":     "Bookmark Add",
+    "tabfwd":        "ms:keyboard_tab",
+    "tabback":       "ms:keyboard_tab_rtl",
+    "tabextfwd":     "ms:keyboard_double_arrow_right",
+    "tabextback":    "ms:keyboard_double_arrow_left",
+    "tabtransient":  "ms:timeline",
     # number_badge bases
     "_lens":         "Search",
     "_star":         "Star",
