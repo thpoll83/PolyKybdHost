@@ -1,10 +1,17 @@
-# Jira overlay for PolyKybd (shown while a browser has a Jira issue open).
+# Jira Cloud overlay for PolyKybd (shown while a browser has Jira open).
 #
-# All artwork is RECLAIMED: the previously hand-drawn set, cut pixel-for-pixel
-# out of the old PNGs and rendered 1:1, so the Windows/Linux set is unchanged.
-# Every binding is a bare key, identical on macOS, so no macOS set is generated.
+# Icons: Microsoft Fluent UI System Icons (MIT) via webapps/fetch_icons.py,
+# replacing the earlier hand-drawn jira_* set. The ESC mark (jira_mark.png)
+# stays the reclaimed hand-drawn mark.
+#
+# Keys: the original eight, plus the ones Atlassian documents for Jira Cloud
+# (support.atlassian.com, "Use keyboard shortcuts" / "Overview of Jira Cloud
+# keyboard shortcuts"): C, /, ?, O, J/K, N/P, 1/2/3 on boards and Ctrl+K (Cmd+K
+# on macOS) for the command palette. Two-key sequences (g d, s t) cannot be
+# drawn and are left out. See SOURCES.md.
 #
 # Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/webapps/fetch_icons.py
 #   .venv/bin/python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/webapps/jira.yaml --preview /tmp/jira_preview
 app: jira
@@ -15,7 +22,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: luma
 threshold: 150
 
 program_icon: jira_mark.png
@@ -24,14 +31,29 @@ program_icon_region: [72, 40]
 program_icon_anchor: center
 program_icon_margin: 0
 
-_r: &r { region: [72, 40], anchor: center, source: reclaimed }
-
 bindings:
-  - { key: S, mods: [SHIFT], icon: jira_share.png, <<: *r, label: "Share" }
-  - { key: A, mods: [], icon: jira_assign.png, <<: *r, label: "Assign" }
-  - { key: D, mods: [], icon: jira_devstatus.png, <<: *r, label: "Development status" }
-  - { key: I, mods: [], icon: jira_assigntome.png, <<: *r, label: "Assign to me" }
-  - { key: L, mods: [], icon: jira_label.png, <<: *r, label: "Edit labels" }
-  - { key: M, mods: [], icon: jira_comment.png, <<: *r, label: "Comment" }
-  - { key: W, mods: [], icon: jira_watch.png, <<: *r, label: "Watch" }
-  - { key: ".", mods: [], icon: jira_actions.png, <<: *r, label: "Actions" }
+  # --- an open issue ---
+  - { key: A, mods: [], icon: assignee.png,   label: "Assign",              source: "ms-fluent/Person (MIT)" }
+  - { key: I, mods: [], icon: assigntome.png, label: "Assign to me",        source: "ms-fluent/Person Arrow Left (MIT)" }
+  - { key: M, mods: [], icon: comment.png,    label: "Comment",             source: "ms-fluent/Comment (MIT)" }
+  - { key: L, mods: [], icon: label.png,      label: "Edit labels",         source: "ms-fluent/Tag (MIT)" }
+  - { key: W, mods: [], icon: watch.png,      label: "Watch",               source: "ms-fluent/Eye (MIT)" }
+  - { key: D, mods: [], icon: devstatus.png,  label: "Development status",  source: "ms-fluent/Branch (MIT)" }
+  - { key: ".", mods: [], icon: actions.png,  label: "Actions",             source: "ms-fluent/More Horizontal (MIT)" }
+  - { key: S, mods: [SHIFT], icon: share.png, label: "Share",               source: "ms-fluent/Share (MIT)" }
+
+  # --- anywhere ---
+  - { key: C, mods: [], icon: createissue.png, label: "Create issue",       source: "ms-fluent/Add Circle (MIT)" }
+  - { key: "/", mods: [], icon: search.png,    label: "Search",             source: "ms-fluent/Search (MIT)" }
+  - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
+
+  # --- lists, boards and backlogs ---
+  - { key: O, mods: [], icon: openitem.png,   label: "Open issue",          source: "ms-fluent/Open (MIT)" }
+  - { key: J, mods: [], icon: nextitem.png,   label: "Next issue",          source: "ms-fluent/Chevron Down (MIT)" }
+  - { key: K, mods: [], icon: previtem.png,   label: "Previous issue",      source: "ms-fluent/Chevron Up (MIT)" }
+  - { key: N, mods: [], icon: nextfile.png,   label: "Next column",         source: "ms-fluent/Chevron Right (MIT)" }
+  - { key: P, mods: [], icon: prevfile.png,   label: "Previous column",     source: "ms-fluent/Chevron Left (MIT)" }
+  - { key: "1", mods: [], icon: backlog.png,  label: "Backlog",             source: "ms-fluent/Text Bullet List Square (MIT)" }
+  - { key: "2", mods: [], icon: board.png,    label: "Board",               source: "ms-fluent/Board (MIT)" }
+  - { key: "3", mods: [], icon: reports.png,  label: "Reports",             source: "ms-fluent/Data Bar Vertical (MIT)" }

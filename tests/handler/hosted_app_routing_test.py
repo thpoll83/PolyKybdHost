@@ -313,7 +313,7 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                       self._chrome("macos", "https://github.com/x/y/pull/1"))
         self.assertIn("confluence_template_mac.mods.png",
                       self._chrome("macos", "https://a.atlassian.net/wiki/spaces/X"))
-        self.assertIn("jira_template.mods.png",
+        self.assertIn("jira_template_mac.mods.png",
                       self._chrome("macos", "https://a.atlassian.net/browse/X-1"))
         self.assertIn("miro_template_mac.mods.png", self._chrome("macos", None, "Board - Miro"))
         self.assertIn("github_template.mods.png",
