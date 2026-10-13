@@ -235,3 +235,20 @@ bindings:
   - { key: A, mods: [CTRL, SHIFT], only: [macos], icon: suggestlayout.png, label: "Suggest auto layout" }
   - { key: K, mods: [CTRL, ALT, SHIFT], only: [windows, linux], icon: gotomain.png, label: "Go to main component" }
   - { key: K, mods: [CTRL, ALT, GUI], only: [macos], icon: gotomain.png, label: "Go to main component" }
+
+  # --- Enter / Backspace / Tab / Space (keymap.rs Selection 264, Edit 283, View 195,
+  #     Prototype 326; hold Space = pan, GESTURES 333) ---
+  - { key: ENTER, mods: [], icon: selchildren.png, label: "Select children" }
+  - { key: ENTER, mods: [SHIFT], icon: selparent.png, label: "Select parent" }
+  - { key: ENTER, mods: [CMDCTRL, ALT], icon: present.png, label: Present }
+  - { key: TAB, mods: [], icon: selnext.png, label: "Select next" }
+  - { key: TAB, mods: [SHIFT], icon: selprev.png, label: "Select previous" }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab" }
+  - { key: BACKSPACE, mods: [], label: Delete }
+  - { key: BACKSPACE, mods: [SHIFT], icon: deleteheal.png, label: "Delete and heal" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: ungroup.png, label: Ungroup }
+  - { key: SPACE, mods: [], icon: hand.png, label: "Pan (hold)" }
+  - { key: SPACE, mods: [SHIFT], icon: preview.png, label: "Preview in canvas" }
+  - { key: SPACE, mods: [CTRL], only: [windows, linux], icon: selarea.png, label: "Select area" }
+  - { key: SPACE, mods: [ALT], only: [macos], icon: selarea.png, label: "Select area" }

@@ -128,6 +128,14 @@ FLUENT = {
     "resizefit": "Arrow Fit",
     "gotomain": "Arrow Square Up Right",
     "shortcuts": "Keyboard",
+    # Enter / Tab / Space chords
+    "selchildren": "Arrow Down Right",
+    "selnext": "Arrow Right",
+    "selprev": "Arrow Left",
+    "nexttab": "Tab Desktop Multiple",
+    "prevtab": "Tab Desktop Arrow Left",
+    "present": "Play",
+    "preview": "Play Circle",
 }
 
 

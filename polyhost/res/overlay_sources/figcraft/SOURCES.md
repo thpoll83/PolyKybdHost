@@ -40,18 +40,26 @@ bindings are left out: `text.link` Cmd+K, list indent/outdent Cmd+]/[.
 | Components (321) | Create Alt+Cmd+K, Detach Alt+Cmd+B, Go to main (Mac Ctrl+Alt+Cmd+K; Win/Linux Ctrl+Alt+Shift+K). Shift+I = Assets, as in View |
 | Gestures (`GESTURES`, line 333) | Hold Z zoom tool, hold Alt+Z zoom out (`crates/ui-egui/src/canvas.rs:321`). Digits 1-9, 0 set opacity 10-90%, 100% (`shortcuts.rs:290`, `opacity_digit`; pref `number_keys_opacity`, default on, `crates/engine/src/lib.rs:604`). |
 
-The overlay binds 166 shortcuts per platform (the generator reports 167 placements,
+The overlay binds 179 shortcuts per platform (the generator reports 180 placements,
 which includes the ESC program mark): 36 no-mod, 25 Shift, 17 Alt, 8 Alt+Shift,
-29 Cmd/Ctrl, 23 Cmd/Ctrl+Shift (including the literal-Ctrl help key), 15 Cmd/Ctrl+Alt,
-1 Cmd/Ctrl+Alt+Shift, and 12 per platform from the 24 `only:` rows.
+29 Cmd/Ctrl, 22 Cmd/Ctrl+Shift, 1 literal Ctrl+Shift (`?`, help), 15 Cmd/Ctrl+Alt,
+1 Cmd/Ctrl+Alt+Shift, 12 per platform from the 24 `only:` rows, and 13 per platform on
+Enter / Tab / Backspace / Space (below).
 
-**Skipped (no keycap cell, or not a plain key):** Escape (deselect; the ESC cell is the
-program icon), Enter / Shift+Enter (select children/parent, place shape), Alt+Cmd+Enter
-(Present), Tab / Shift+Tab (next/prev layer), Ctrl+Tab / Ctrl+Shift+Tab (document tabs),
-Space / Shift+Space (pan, preview), Alt+Space or Ctrl+Space (select area; F8 is bound),
-Backspace (same command as Delete; the Delete key is bound), arrow-key nudge, resize and
-pan (the keycap legend is already an arrow), presentation-mode keys (only while
-presenting), and vector-edit / shape-builder keys (`tool_key`, mode-only).
+### Enter, Tab, Backspace, Space
+
+| Key | Chords (keymap.rs line) |
+|---|---|
+| Enter | Select children / edit / place shape (`select.children`, 269), Shift+Enter select parent (270), Alt+Cmd+Enter Present (327) |
+| Tab | Select next / previous: Tab, Shift+Tab (271-272). Document tabs: literal Ctrl+Tab, Ctrl+Shift+Tab on every OS (217-218) |
+| Backspace | Same command as Delete, because `normalize` maps Backspace to Delete (line 414): Delete (292), Shift+Backspace delete and heal (263), Cmd+Backspace ungroup (274) |
+| Space | Hold to pan (`GESTURES` "Pan the canvas", 334, as Figma's Hand on H), Shift+Space preview in canvas (328), select area (Mac Alt+Space, Win/Linux Ctrl+Space, `.win`, 279-281) |
+
+**Skipped:**
+- Escape (deselect; the ESC cell is the program icon).
+- Arrow-key nudge, resize and pan (the keycap legend is already an arrow).
+- Presentation-mode keys (only while presenting).
+- Vector-edit and shape-builder keys (`tool_key`, only in that mode).
 
 **Context notes.** `/` is cursor chat only in a live session. Otherwise it does nothing.
 Digit opacity applies only with a selection. Neither shadows another binding.
@@ -83,6 +91,9 @@ Digit opacity applies only with a selection. Neither shadows another binding.
   `grid_guides`, `menu_open`, `format_color_reset`, `unfold_more`/`unfold_less`,
   `fullscreen`, `line_curve`, `background_grid_small`, `format_list_numbered`,
   `find_replace`.
+- Enter/Tab/Space icons are Fluent: Arrow Down Right (select children, the twin of
+  select parent's Arrow Up Left), Arrow Right/Left, Tab Desktop Multiple / Tab Desktop
+  Arrow Left, Play (Present), Play Circle (preview). Space pan reuses Figma's hand.png.
 - **Composites built in `fetch_icons.py` (guarded):**
   - `weightup`/`weightdown`: Fluent Text Bold + Arrow Up/Down.
   - `removelayout`: Fluent Auto Fit Width with a strike.
