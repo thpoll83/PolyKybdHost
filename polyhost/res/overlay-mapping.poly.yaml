@@ -94,8 +94,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
-  # in the same order (first hit wins). Jira draws bare keys only, so it has no
-  # separate Mac set.
+  # in the same order (first hit wins).
   os:
     macos:
       overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
@@ -113,7 +112,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         atlassian.net/wiki:
           overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
         atlassian.net:
-          overlay: jira_template.mods.png
+          overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         bitbucket.org:
           overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
         docs.google.com/document:
@@ -134,7 +133,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Outlook:
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         Jira:
-          overlay: jira_template.mods.png
+          overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         Confluence:
           overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
         GitHub:

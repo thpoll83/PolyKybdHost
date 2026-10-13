@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the browser-hosted app overlays.
 
-One icon folder serves five sets — `github.yaml`, `gitlab.yaml`,
-`confluence.yaml`, `googledocs.yaml` and `notion.yaml`. They are grouped
+One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
+`confluence.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml` and
+`bitbucket.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
 duplicating ~30 identical PNGs five times would be pure noise in the tree.
@@ -110,6 +111,28 @@ FLUENT = {
     "filebrowser": "Folder Open",
     "diffcomments": "Comment Multiple",
     "annotations": "Note",
+    # --- Atlassian: Jira and Bitbucket (replacing the hand-drawn jira_*/bb_* art) ---
+    "watch": "Eye",
+    "share": "Share",
+    "devstatus": "Branch",
+    "actions": "More Horizontal",
+    "assigntome": "Person Arrow Left",
+    "backlog": "Text Bullet List Square",
+    "board": "Board",
+    "reports": "Data Bar Vertical",
+    "nextitem": "Chevron Down",
+    "previtem": "Chevron Up",
+    "approve": "Checkmark Circle",
+    "requestchanges": "Comment Error",
+    "overview": "Info",
+    "fileschanged": "Document Multiple",
+    "commits": "History",
+    "filetree": "Text Bullet List Tree",
+    "finishreview": "Clipboard Task",
+    "sidebyside": "Split Vertical",
+    "expandall": "Arrow Expand",
+    "wraplines": "Text Wrap",
+    "filelist": "Document Bullet List",
 }
 
 # GitHub and GitLab publish plain monochrome marks that read cleanly as a 1-bit
@@ -131,7 +154,9 @@ GEO = {"cf.png": geo_marks.ensure_confluence}
 # its nearest match, "Text Number Format", draws "ABC 123" -- that reads as
 # alphanumeric formatting, not a numbered list. This is exactly the gap Material
 # Symbols (Apache-2.0, GPL-3.0-compatible) is kept around to fill.
-MATERIAL = {"numberlist": "format_list_numbered"}
+# Fluent has no whitespace glyph either ("Text Whitespace" 404s); Bitbucket's
+# "Ignore whitespace" takes Material's space bar.
+MATERIAL = {"numberlist": "format_list_numbered", "whitespace": "space_bar"}
 
 
 def main() -> int:

@@ -1,10 +1,17 @@
-# Bitbucket pull request overlay for PolyKybd (shown while a browser has a Bitbucket pull request open).
+# Bitbucket pull request overlay for PolyKybd (shown while a browser has a
+# Bitbucket pull request open).
 #
-# All artwork is RECLAIMED: the previously hand-drawn set, cut pixel-for-pixel
-# out of the old PNGs and rendered 1:1, so the Windows/Linux set is unchanged.
-# Submit is Cmd+Enter on macOS (CMDCTRL); every other binding is a bare or Shift key.
+# Icons: Microsoft Fluent UI System Icons (MIT) via webapps/fetch_icons.py,
+# plus Material Symbols' space_bar (Apache-2.0) for "Ignore whitespace", which
+# Fluent lacks. They replace the earlier hand-drawn bb_* set. The ESC mark
+# (bitbucket_mark.png) stays the reclaimed hand-drawn mark.
+#
+# Keys: the original fourteen, plus the pull request keys in Atlassian's
+# Bitbucket Cloud table (support.atlassian.com, "Keyboard shortcuts"): R, 1/2/3,
+# F and S. Submit is Cmd+Enter on macOS (CMDCTRL). See SOURCES.md.
 #
 # Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/webapps/fetch_icons.py
 #   .venv/bin/python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/webapps/bitbucket.yaml --preview /tmp/bitbucket_preview
 app: bitbucket
@@ -15,7 +22,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: luma
 threshold: 150
 
 program_icon: bitbucket_mark.png
@@ -24,20 +31,29 @@ program_icon_region: [72, 40]
 program_icon_anchor: center
 program_icon_margin: 0
 
-_r: &r { region: [72, 40], anchor: center, source: reclaimed }
-
 bindings:
-  - { key: ENTER, mods: [CMDCTRL], icon: bb_submit.png, <<: *r, label: "Submit comment" }
-  - { key: C, mods: [SHIFT], icon: bb_comments.png, <<: *r, label: "Toggle comments" }
-  - { key: D, mods: [SHIFT], icon: bb_sidebyside.png, <<: *r, label: "Side-by-side diff" }
-  - { key: E, mods: [SHIFT], icon: bb_expand.png, <<: *r, label: "Expand all" }
-  - { key: L, mods: [SHIFT], icon: bb_wrap.png, <<: *r, label: "Wrap lines" }
-  - { key: W, mods: [SHIFT], icon: bb_whitespace.png, <<: *r, label: "Ignore whitespace" }
-  - { key: "/", mods: [SHIFT], icon: bb_help.png, <<: *r, label: "Shortcut help" }
-  - { key: A, mods: [], icon: bb_approve.png, <<: *r, label: "Approve" }
-  - { key: E, mods: [], icon: bb_edit.png, <<: *r, label: "Edit" }
-  - { key: M, mods: [], icon: bb_comment.png, <<: *r, label: "Comment" }
-  - { key: U, mods: [], icon: bb_filelist.png, <<: *r, label: "File list" }
-  - { key: W, mods: [], icon: bb_watch.png, <<: *r, label: "Watch" }
-  - { key: "[", mods: [], icon: bb_sidebar.png, <<: *r, label: "Toggle sidebar" }
-  - { key: "/", mods: [], icon: bb_search.png, <<: *r, label: "Search" }
+  # --- review ---
+  - { key: A, mods: [], icon: approve.png,        label: "Approve",          source: "ms-fluent/Checkmark Circle (MIT)" }
+  - { key: R, mods: [], icon: requestchanges.png, label: "Request changes",  source: "ms-fluent/Comment Error (MIT)" }
+  - { key: S, mods: [], icon: finishreview.png,   label: "Finish review",    source: "ms-fluent/Clipboard Task (MIT)" }
+  - { key: M, mods: [], icon: comment.png,        label: "Comment",          source: "ms-fluent/Comment (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: submit.png, label: "Submit comment", source: "ms-fluent/Send (MIT)" }
+  - { key: E, mods: [], icon: edit.png,           label: "Edit",             source: "ms-fluent/Document Edit (MIT)" }
+  - { key: W, mods: [], icon: watch.png,          label: "Watch",            source: "ms-fluent/Eye (MIT)" }
+
+  # --- tabs and navigation ---
+  - { key: "1", mods: [], icon: overview.png,     label: "Overview tab",     source: "ms-fluent/Info (MIT)" }
+  - { key: "2", mods: [], icon: fileschanged.png, label: "Files changed tab", source: "ms-fluent/Document Multiple (MIT)" }
+  - { key: "3", mods: [], icon: commits.png,      label: "Commits tab",      source: "ms-fluent/History (MIT)" }
+  - { key: F, mods: [], icon: filetree.png,       label: "File tree",        source: "ms-fluent/Text Bullet List Tree (MIT)" }
+  - { key: U, mods: [], icon: filelist.png,       label: "File list",        source: "ms-fluent/Document Bullet List (MIT)" }
+  - { key: "[", mods: [], icon: sidebar.png,      label: "Toggle sidebar",   source: "ms-fluent/Panel Left (MIT)" }
+  - { key: "/", mods: [], icon: search.png,       label: "Search",           source: "ms-fluent/Search (MIT)" }
+  - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Shortcut help",  source: "ms-fluent/Keyboard (MIT)" }
+
+  # --- the diff ---
+  - { key: C, mods: [SHIFT], icon: diffcomments.png, label: "Toggle comments", source: "ms-fluent/Comment Multiple (MIT)" }
+  - { key: D, mods: [SHIFT], icon: sidebyside.png,   label: "Side-by-side diff", source: "ms-fluent/Split Vertical (MIT)" }
+  - { key: E, mods: [SHIFT], icon: expandall.png,    label: "Expand all",      source: "ms-fluent/Arrow Expand (MIT)" }
+  - { key: L, mods: [SHIFT], icon: wraplines.png,    label: "Wrap lines",      source: "ms-fluent/Text Wrap (MIT)" }
+  - { key: W, mods: [SHIFT], icon: whitespace.png,   label: "Ignore whitespace", source: "material-symbols/space_bar (Apache-2.0)" }

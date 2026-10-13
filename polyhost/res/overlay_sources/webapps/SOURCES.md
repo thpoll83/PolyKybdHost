@@ -19,6 +19,20 @@ Every set is from the vendor's **own** documentation:
 | Confluence Cloud | <https://support.atlassian.com/confluence-cloud/docs/keyboard-shortcuts-markdown-and-autocomplete/> |
 | Google Docs | <https://support.google.com/docs/answer/179738> |
 | Notion | <https://www.notion.com/help/keyboard-shortcuts> |
+| Jira Cloud | <https://support.atlassian.com/jira-software-cloud/docs/use-keyboard-shortcuts/>, <https://support.atlassian.com/jira-service-management-cloud/docs/overview-of-jira-cloud-keyboard-shortcuts/> |
+| Bitbucket Cloud | <https://support.atlassian.com/bitbucket-cloud/docs/keyboard-shortcuts/> (pull request pages) |
+
+Jira and Bitbucket also live in this folder. Their earlier hand-drawn `jira_*`
+and `bb_*` art was replaced with Fluent in 2026-10; only the two ESC marks
+(`jira_mark.png`, `bitbucket_mark.png`) are still the reclaimed drawings. Their
+original keys were kept: Jira's `A I M L W D . Shift+S` and Bitbucket's
+`A E M U W [ / Shift+C/D/E/L/W/?` and Ctrl+Enter. The 2026-10 additions are only
+keys the Atlassian pages above list: Jira `C / ? O J K N P 1 2 3` and Ctrl+K
+(command palette), Bitbucket `R 1 2 3 F S`. Atlassian's pages were not reachable
+from the build container, so these were taken from search excerpts of them; the
+in-app `?` dialog is the check. Confluence's page-view keys were NOT added: the
+Atlassian page gives Ctrl+Alt+W/S/A/C while third-party lists give single
+letters, and a wrong keycap is worse than a missing one.
 
 ### Deliberately excluded: the `g`-then-`x` chords
 
