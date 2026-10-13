@@ -19,6 +19,14 @@ URL_HAS = "urls-contains"
 # app name needs different overlay artwork per OS. Keys are canonical OS names
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
+# `layer: false` on an entry that declares `urls-contains` turns OFF the
+# browser layering (`_layered`): a matched sub-entry then REPLACES the entry's
+# overlay, as a title sub-map does. For an app whose `urls-contains` routes on a
+# context pseudo-URL rather than a website (Blender's `blender://<mode>/<editor>`)
+# the parent overlay is not "the browser underneath" -- it is the fallback for
+# when no context is known, and drawing it dimmed under the Node Editor would
+# put 3D View keys on a board showing the Node Editor's.
+LAYER = "layer"
 FLAGS = "flags"
 OVERLAY = "overlay"
 # Key of a layered view (see `_layered`) holding the names drawn as Underlays.
@@ -302,7 +310,7 @@ def find_matching_entry(title, entry, url=None, os_name=None):
             if needle in url:
                 m = find_matching_entry(title, sub, url, os_name)
                 if m is not None:
-                    return _layered(entry, m) if has_overlay else m
+                    return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
@@ -348,7 +356,7 @@ def find_matching_entry(title, entry, url=None, os_name=None):
                             # the site layers over the browser here too. Other
                             # apps' title sub-maps keep replacing: a dialog or a
                             # mode of one app is not running inside another.
-                            if has_urls_contains and has_overlay:
+                            if has_urls_contains and has_overlay and entry.get(LAYER, True):
                                 return _layered(entry, m)
                             return m
 

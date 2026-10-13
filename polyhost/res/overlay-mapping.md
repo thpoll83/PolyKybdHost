@@ -50,6 +50,7 @@ window title (or OS) instead — see below.
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
+| `layer` | bool | `false` turns off browser layering for a `urls-contains` entry (see below). |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
@@ -79,6 +80,23 @@ standard editing keys stay on the board. A site that lists a browser file
 itself keeps it in the later position. Title sub-maps of other apps still
 replace: a mode or dialog of one app is not running inside another.
 (`handler/common.py::_layered`, `tests/handler/matcher_test.py::TestBrowserLayering`.)
+
+### `layer: false` — a context app, not a browser
+
+The layering above assumes the parent is a browser that runs underneath the
+site. Blender uses `urls-contains` too, on the `blender://<mode>/<editor>`
+pseudo-URL its add-on reports ([`blender-addon/`](../../blender-addon/README.md)),
+and there the parent overlay is the 3D View fallback for when no context is
+known. Layered, it would draw 3D View keys, dimmed, under the Node Editor's.
+`layer: false` on the entry (and on an `os:` branch that carries its own
+`urls-contains`, since a matching branch replaces the entry) makes a matched
+sub-entry **replace** the parent instead.
+(`tests/handler/matcher_test.py::TestLayerOptOut`, `tests/handler/blender_routing_test.py`.)
+
+`urls-contains` matches only a URL the host attributes to the **focused** app: a
+browser's active tab, or a context report from an app on the allow-list in
+`handler/browser_url.py` (`CONTEXT_REPORTERS`; Blender today). The entry's names
+and that list must agree; the routing test checks it.
 
 ## `os:` — per-platform artwork
 

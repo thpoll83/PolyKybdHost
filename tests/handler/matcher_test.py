@@ -235,6 +235,42 @@ class TestUrlMatching(unittest.TestCase):
             find_matching_entry("PolyKybd - Jira", e, url="https://example.com"), leaf)
 
 
+class TestLayerOptOut(unittest.TestCase):
+    """`layer: false`: a context-routed app's sub-entry REPLACES its parent.
+
+    Blender routes on `blender://<mode>/<editor>`. Its parent overlay is the 3D
+    View fallback for when no context is known, not a browser running underneath,
+    so layering it would draw 3D View keys, dimmed, under the Node Editor's.
+    """
+
+    def _app(self, layer):
+        self.ctx = named(entry(), ["node.mods.png"])
+        e = named(entry(urls_contains={"/NODE_EDITOR": self.ctx}), ["common.mods.png"])
+        if layer is not None:
+            e["layer"] = layer
+        return e
+
+    def test_layer_false_returns_the_sub_entry_alone(self):
+        got = find_matching_entry("x", self._app(False), url="blender://OBJECT/NODE_EDITOR")
+        self.assertIs(got, self.ctx)
+        self.assertEqual(got["overlay"], ["node.mods.png"])
+
+    def test_layer_false_still_falls_back_to_the_parent(self):
+        e = self._app(False)
+        self.assertIs(find_matching_entry("x", e, url=None), e)
+
+    def test_default_still_layers(self):
+        got = find_matching_entry("x", self._app(None), url="blender://OBJECT/NODE_EDITOR")
+        self.assertEqual(got["overlay"], ["common.mods.png", "node.mods.png"])
+
+    def test_layer_false_also_stops_title_fallback_layering(self):
+        ctx = named(entry(), "titled.mods.png")
+        e = named(entry(urls_contains={"x://": named(entry(), "u")},
+                        contains={"Titled": ctx}), "base")
+        e["layer"] = False
+        self.assertIs(find_matching_entry("A Titled page", e, url=None), ctx)
+
+
 class TestBrowserLayering(unittest.TestCase):
     """A web app runs inside the browser, so the browser's shortcuts stay.
 
