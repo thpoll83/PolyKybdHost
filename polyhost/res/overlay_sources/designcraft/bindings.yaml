@@ -1,0 +1,172 @@
+# DesignCraft (storytold/designcraft, InDesign-like page layout) shortcut overlays.
+#
+# Shortcuts: the app's OWN default keymap at commit e862e0a6 (SOURCES.md has
+# file:line per group) - not InDesign's. DesignCraft writes "Cmd" for egui's
+# `command` modifier (Ctrl on Windows/Linux, Cmd on macOS), so every such chord
+# is CMDCTRL here and the generator also emits designcraft_template_mac.*.
+# No default uses a literal Ctrl or the Win/GUI key.
+#
+# Dispatch (crates/ui-egui/src/menus.rs `shortcuts`): command shortcuts first
+# (first match in UI_COMMANDS, then engine command order), then single-key /
+# Shift+key tool shortcuts when no text is being edited.
+#
+# Icons: Illustrator's committed glyphs for the same actions (byte-identical
+# copies), Fluent (MIT), Material Symbols (Apache-2.0) and four drawn glyphs.
+# Program mark (ESC): DesignCraft's own app icon (MIT OR Apache-2.0).
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/designcraft/fetch_icons.py
+#   PYTHONPATH=. .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/designcraft/bindings.yaml --preview /tmp/designcraft_preview
+app: designcraft
+match: [designcraft, ai.storyteller.designcraft]
+output: designcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: designcraft.png
+program_icon_mode: luma
+program_icon_threshold: 160
+program_icon_anchor: bottom-right
+program_icon_region: [46, 40]
+program_icon_margin: 0
+
+bindings:
+  # ===== Tools, no modifier (crates/tools/src/catalog.rs) =====
+  - { key: V, mods: [], icon: select.png,       label: Selection,         source: "illustrator/select.png (Fluent Cursor, MIT)" }
+  - { key: A, mods: [], icon: directselect.png, label: "Direct selection", source: "illustrator/directselect.png (Fluent Select Object, MIT)" }
+  - { key: U, mods: [], icon: gap.png,          label: Gap,               source: "ms-fluent/Auto Fit Width (MIT)" }
+  - { key: B, mods: [], icon: collector.png,    label: "Content collector", source: "ms-fluent/Tray Item Add (MIT)" }
+  - { key: T, mods: [], icon: type.png,         label: Type,              source: "illustrator/type.png (Fluent Text T, MIT)" }
+  - { key: BACKSLASH, mods: [], icon: line.png, mode: alpha, label: Line, source: "illustrator/line.png (drawn)" }
+  - { key: P, mods: [], icon: pen.png, mode: alpha, label: Pen,           source: "illustrator/pen.png (drawn)" }
+  - { key: EQUAL, mods: [], icon: addanchor.png, mode: alpha, label: "Add anchor point", source: "custom (drawn: pen nib + plus)" }
+  - { key: MINUS, mods: [], icon: delanchor.png, mode: alpha, label: "Delete anchor point", source: "custom (drawn: pen nib + minus)" }
+  - { key: N, mods: [], icon: pencil.png,       label: Pencil,            source: "illustrator/pencil.png (Fluent Edit, MIT)" }
+  - { key: F, mods: [], icon: rectframe.png, mode: alpha, label: "Rectangle frame", source: "custom (drawn: rectangle with X)" }
+  - { key: M, mods: [], icon: rectangle.png,    label: Rectangle,         source: "illustrator/rectangle.png (Fluent Rectangle Landscape, MIT)" }
+  - { key: L, mods: [], icon: ellipse.png,      label: Ellipse,           source: "illustrator/ellipse.png (Fluent Oval, MIT)" }
+  - { key: C, mods: [], icon: scissors.png, mode: alpha, label: Scissors, source: "illustrator/scissors.png (drawn)" }
+  - { key: E, mods: [], icon: freetransform.png, label: "Free transform", source: "material-symbols/crop_free (Apache-2.0)" }
+  - { key: R, mods: [], icon: rotate.png,       label: Rotate,            source: "illustrator/rotate.png (Fluent Arrow Rotate Clockwise, MIT)" }
+  - { key: S, mods: [], icon: scale.png,        label: Scale,             source: "illustrator/scale.png (Fluent Resize, MIT)" }
+  - { key: O, mods: [], icon: shear.png, mode: alpha, label: Shear,       source: "custom (drawn: parallelogram)" }
+  - { key: G, mods: [], icon: gradient.png,     label: "Gradient swatch", source: "illustrator/gradient.png (Fluent Color Line, MIT)" }
+  - { key: I, mods: [], icon: eyedropper.png,   label: Eyedropper,        source: "illustrator/eyedropper.png (Fluent Eyedropper, MIT)" }
+  - { key: K, mods: [], icon: measure.png,      label: Measure,           source: "material-symbols/straighten (Apache-2.0)" }
+  - { key: H, mods: [], icon: hand.png,         label: Hand,              source: "illustrator/hand.png (Fluent Hand Right, MIT)" }
+  - { key: Z, mods: [], icon: zoom.png,         label: Zoom,              source: "illustrator/zoom.png (Fluent Zoom In, MIT)" }
+
+  # ===== Single-key commands (menus.rs UI_COMMANDS; edit.rs) =====
+  - { key: W, mods: [], icon: preview.png,      label: "Toggle normal/preview", source: "material-symbols/preview (Apache-2.0)" }
+  - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "illustrator/default.png (drawn)" }
+  - { key: X, mods: [], icon: togglefs.png,     label: "Toggle fill/stroke", source: "material-symbols/flip_to_front (Apache-2.0)" }
+  - { key: "/", mods: [], icon: applynone.png,  label: "Apply none",      source: "ms-fluent/Prohibited (MIT)" }
+  - { key: DELETE, mods: [], icon: clear.png,   label: Clear,             source: "ms-fluent/Delete (MIT)" }
+
+  # ===== Shift (tools + commands) =====
+  - { key: P, mods: [SHIFT], icon: pagetool.png,     label: "Page tool",       source: "ms-fluent/Document One Page (MIT)" }
+  - { key: T, mods: [SHIFT], icon: typeonpath.png,   label: "Type on a path",  source: "material-symbols/text_rotation_angleup (Apache-2.0)" }
+  - { key: C, mods: [SHIFT], icon: convertpoint.png, label: "Convert direction point", source: "material-symbols/conversion_path (Apache-2.0)" }
+  - { key: G, mods: [SHIFT], icon: gradfeather.png,  label: "Gradient feather", source: "material-symbols/gradient (Apache-2.0)" }
+  - { key: I, mods: [SHIFT], icon: colortheme.png,   label: "Color theme",     source: "ms-fluent/Color (MIT)" }
+  - { key: X, mods: [SHIFT], icon: swap.png, mode: alpha, label: "Swap fill/stroke", source: "illustrator/swap.png (drawn)" }
+  - { key: F9, mods: [SHIFT], icon: tablepanel.png,  label: "Table panel",     source: "ms-fluent/Table (MIT)" }
+
+  # ===== Cmd/Ctrl =====
+  - { key: N, mods: [CMDCTRL], icon: new.png,         label: New,               source: "illustrator/new.png (Fluent Document Add, MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,        label: Open,              source: "illustrator/open.png (Fluent Folder Open, MIT)" }
+  - { key: D, mods: [CMDCTRL], icon: place.png,       label: Place,             source: "illustrator/place.png (Fluent Image Add, MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,        label: Save,              source: "illustrator/save.png (Fluent Save, MIT)" }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png,        label: Quit,              source: "ms-fluent/Arrow Exit (MIT)" }
+  - { key: E, mods: [CMDCTRL], icon: export.png,      label: "Export PNG",      source: "ms-fluent/Arrow Export (MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: prefs.png,       label: Preferences,       source: "illustrator/prefs.png (Fluent Settings, MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: findchange.png,  label: "Find/Change",     source: "material-symbols/find_replace (Apache-2.0)" }
+  - { key: Y, mods: [CMDCTRL], icon: storyeditor.png, label: "Story editor",    source: "ms-fluent/Document Text (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",         source: "illustrator/zoomin.png (Fluent Zoom In, MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out",        source: "illustrator/zoomout.png (Fluent Zoom Out, MIT)" }
+  - { key: "0", mods: [CMDCTRL], icon: fitpage.png,   label: "Fit page",        source: "ms-fluent/Page Fit (MIT)" }
+  - { key: "1", mods: [CMDCTRL], icon: actualsize.png, label: "Actual size",    source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: H, mods: [CMDCTRL], icon: frameedges.png,  label: "Frame edges",     source: "ms-fluent/Border None (MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png,      label: Rulers,            source: "illustrator/rulers.png (Fluent Ruler, MIT)" }
+  - { key: ";", mods: [CMDCTRL], icon: guides.png, mode: alpha, label: Guides,  source: "illustrator/guides.png (drawn)" }
+  - { key: F6, mods: [CMDCTRL], icon: nextdoc.png,    label: "Next document",   source: "ms-fluent/Arrow Next (MIT)" }
+  - { key: J, mods: [CMDCTRL], icon: gotopage.png,    label: "Go to page",      source: "ms-fluent/Document Arrow Right (MIT)" }
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,        label: Undo,              source: "illustrator/undo.png (Fluent Arrow Undo, MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png,   label: "Select all",      source: "illustrator/selectall.png (Fluent Select All On, MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,        label: Copy,              source: "illustrator/copy.png (Fluent Copy, MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,         label: Cut,               source: "illustrator/cut.png (Fluent Cut, MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,       label: Paste,             source: "illustrator/paste.png (Fluent Clipboard Paste, MIT)" }
+  - { key: W, mods: [CMDCTRL],                        label: Close,             source: "concept (shared Fluent)" }
+  - { key: "]", mods: [CMDCTRL], icon: tofront.png,   label: "Bring forward",   source: "illustrator/tofront.png (Fluent Position To Front, MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: toback.png,    label: "Send backward",   source: "illustrator/toback.png (Fluent Position To Back, MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,       label: Group,             source: "illustrator/group.png (Fluent Group, MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: lock.png,        label: Lock,              source: "illustrator/lock.png (Fluent Lock Closed, MIT)" }
+  - { key: "3", mods: [CMDCTRL], icon: hide.png,      label: Hide,              source: "ms-fluent/Eye Off (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: frameopts.png,   label: "Text frame options", source: "ms-fluent/Text Box Settings (MIT)" }
+  - { key: "8", mods: [CMDCTRL], icon: compound.png,  label: "Compound path",   source: "illustrator/compound.png (Fluent Shape Subtract, MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,       label: Print,             source: "illustrator/print.png (Fluent Print, MIT)" }
+  - { key: I, mods: [CMDCTRL], icon: spelling.png,    label: "Check spelling",  source: "ms-fluent/Text Proofing Tools (MIT)" }
+
+  # ===== Cmd/Ctrl+Shift =====
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,     label: "Save as",          source: "illustrator/saveas.png (Fluent Save Edit, MIT)" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: placeopts.png,  label: "Place with options", source: "ms-fluent/Image Edit (MIT)" }
+  - { key: ";", mods: [CMDCTRL, SHIFT], icon: snapguides.png, label: "Snap to guides", source: "material-symbols/vertical_align_center (Apache-2.0)" }
+  - { key: F6, mods: [CMDCTRL, SHIFT], icon: prevdoc.png,   label: "Previous document", source: "ms-fluent/Arrow Previous (MIT)" }
+  - { key: Z, mods: [CMDCTRL, SHIFT],                       label: Redo,               source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png,   label: "Deselect all",     source: "ms-fluent/Select All Off (MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png, label: "Paste without formatting", source: "ms-fluent/Clipboard Letter (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: insertpages.png, label: "Insert pages",    source: "ms-fluent/Copy Add (MIT)" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png,  label: "Bring to front",   source: "illustrator/tofront.png (Fluent Position To Front, MIT)" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png,   label: "Send to back",     source: "illustrator/toback.png (Fluent Position To Back, MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,    label: Ungroup,            source: "illustrator/ungroup.png (Fluent Group Dismiss, MIT)" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png,   label: "Create outlines",  source: "illustrator/outlines.png (Fluent Text Effects, MIT)" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: alignleft.png,  label: "Align left",       source: "ms-fluent/Text Align Left (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: aligncenter.png, label: "Align center",    source: "ms-fluent/Text Align Center (MIT)" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: alignright.png, label: "Align right",      source: "ms-fluent/Text Align Right (MIT)" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: justify.png,    label: "Justify",          source: "ms-fluent/Text Align Justify (MIT)" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: bold.png,       label: Bold,               source: "ms-fluent/Text Bold (MIT)" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: italic.png,     label: Italic,             source: "ms-fluent/Text Italic (MIT)" }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: underline.png,  label: Underline,          source: "ms-fluent/Text Underline (MIT)" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: allcaps.png,    label: "All caps",         source: "ms-fluent/Text Case Uppercase (MIT)" }
+  - { key: ".", mods: [CMDCTRL, SHIFT], icon: sizeup.png,   label: "Increase size",    source: "ms-fluent/Font Increase (MIT)" }
+  - { key: ",", mods: [CMDCTRL, SHIFT], icon: sizedown.png, label: "Decrease size",    source: "ms-fluent/Font Decrease (MIT)" }
+
+  # ===== Cmd/Ctrl+Alt =====
+  - { key: S, mods: [CMDCTRL, ALT], icon: savecopy.png,    label: "Save a copy",      source: "ms-fluent/Save Copy (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL, ALT], icon: fitsel.png,  label: "Fit selection",    source: "ms-fluent/Zoom Fit (MIT)" }
+  - { key: "0", mods: [CMDCTRL, ALT], icon: fitspread.png, label: "Fit spread",       source: "ms-fluent/Book Open (MIT)" }
+  - { key: "'", mods: [CMDCTRL, ALT], icon: baseline.png,  label: "Baseline grid",    source: "ms-fluent/Line Horizontal 3 (MIT)" }
+  - { key: Y, mods: [CMDCTRL, ALT], icon: threads.png,     label: "Text threads",     source: "ms-fluent/Link (MIT)" }
+  - { key: I, mods: [CMDCTRL, ALT], icon: hiddenchars.png, label: "Hidden characters", source: "material-symbols/format_paragraph (Apache-2.0)" }
+  - { key: Z, mods: [CMDCTRL, ALT], icon: typical.png,     label: "Typical display",  source: "ms-fluent/Image (MIT)" }
+  - { key: H, mods: [CMDCTRL, ALT], icon: highq.png,       label: "High quality display", source: "ms-fluent/HD (MIT)" }
+  - { key: "6", mods: [CMDCTRL, ALT], icon: controlbar.png, label: "Control panel",   source: "ms-fluent/Panel Top Expand (MIT)" }
+  - { key: F, mods: [CMDCTRL, ALT], icon: findnext.png,    label: "Find next",        source: "ms-fluent/Search (MIT)" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: docsetup.png,    label: "Document setup",   source: "ms-fluent/Document Settings (MIT)" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: transformagain.png, label: "Transform again", source: "illustrator/transformagain.png (Fluent Arrow Repeat All, MIT)" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: unlockall.png,   label: "Unlock all",       source: "ms-fluent/Lock Open (MIT)" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: dropshadow.png,  label: "Drop shadow",      source: "ms-fluent/Square Shadow (MIT)" }
+  - { key: W, mods: [CMDCTRL, ALT], icon: textwrap.png,    label: "Text wrap",        source: "ms-fluent/Text Wrap (MIT)" }
+  - { key: U, mods: [CMDCTRL, ALT], icon: steprepeat.png,  label: "Step and repeat",  source: "ms-fluent/Square Multiple (MIT)" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: pasteinto.png,   label: "Paste into",       source: "ms-fluent/Clipboard Arrow Right (MIT)" }
+  - { key: "]", mods: [CMDCTRL, ALT], icon: forward.png,   label: "Select next above", source: "illustrator/forward.png (Fluent Arrow Up, MIT)" }
+  - { key: "[", mods: [CMDCTRL, ALT], icon: backward.png,  label: "Select next below", source: "illustrator/backward.png (Fluent Arrow Down, MIT)" }
+
+  # ===== Cmd/Ctrl+Alt+Shift =====
+  - { key: P, mods: [CMDCTRL, ALT, SHIFT], icon: package.png,     label: Package,            source: "ms-fluent/Folder Zip (MIT)" }
+  - { key: "0", mods: [CMDCTRL, ALT, SHIFT], icon: pasteboard.png, label: "Entire pasteboard", source: "ms-fluent/Arrow Expand (MIT)" }
+  - { key: Y, mods: [CMDCTRL, ALT, SHIFT], icon: overprint.png,   label: "Overprint preview", source: "ms-fluent/Shape Intersect (MIT)" }
+  - { key: Z, mods: [CMDCTRL, ALT, SHIFT], icon: fast.png,        label: "Fast display",     source: "ms-fluent/Flash (MIT)" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: paste.png,       label: "Paste in place",   source: "illustrator/paste.png (Fluent Clipboard Paste, MIT)" }
+  - { key: D, mods: [CMDCTRL, ALT, SHIFT], icon: duplicate.png,   label: "Duplicate object", source: "ms-fluent/Copy Select (MIT)" }
+  - { key: L, mods: [CMDCTRL, ALT, SHIFT], icon: overrideparent.png, label: "Override parent items", source: "ms-fluent/Document Edit (MIT)" }
+  - { key: "8", mods: [CMDCTRL, ALT, SHIFT], icon: releasecompound.png, label: "Release compound path", source: "material-symbols/call_split (Apache-2.0)" }
+  - { key: "]", mods: [CMDCTRL, ALT, SHIFT], icon: firstabove.png, label: "Select first above", source: "ms-fluent/Arrow Upload (MIT)" }
+  - { key: "[", mods: [CMDCTRL, ALT, SHIFT], icon: lastbelow.png,  label: "Select last below",  source: "ms-fluent/Arrow Download (MIT)" }
+  - { key: T, mods: [CMDCTRL, ALT, SHIFT], icon: createtable.png, label: "Create table",     source: "ms-fluent/Table Add (MIT)" }
