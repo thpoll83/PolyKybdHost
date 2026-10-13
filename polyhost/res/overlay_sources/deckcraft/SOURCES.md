@@ -27,7 +27,9 @@ registry's shortcuts. One spec renders both sets.
 | Print, Preferences, Command palette | Ctrl+P, Ctrl+`,`, Ctrl+Shift+P, Ctrl+F (opens the palette with an empty query) | `crates/ui-egui/src/menus.rs:38-66`, `lib.rs:134-170` (`UI_COMMANDS`) |
 | Zoom, ribbon | Ctrl+= Zoom in, Ctrl+- Zoom out, Ctrl+0 Fit, Ctrl+F1 Collapse ribbon | `menus.rs:52-56` |
 | View | Shift+F9 Gridlines, Alt+F9 Guides, Alt+F File tab | `menus.rs:31-37, 57-58` |
-| Slide show | F5 from start, Shift+F5 from current | `menus.rs:14-25` |
+| Slide show | F5 / Ctrl+Shift+Enter from start, Shift+F5 / Ctrl+Enter from current | `menus.rs:14-25`, `cmd/review.rs:20-21` |
+| Clear formatting | Ctrl+Space (`except: [macos]`: Cmd+Space is Spotlight, Ctrl+Space input switching, so the chord never reaches the app there) | `cmd/format.rs:71` |
+| Shape keys | Enter Edit text, Backspace Delete, Tab / Shift+Tab next / previous shape (with a shape selected) | `keys.rs:85-100`, `cmd/text.rs:16` |
 | Edit | Ctrl+Z/Y/X/C/V/A/D, Ctrl+Shift+V Paste text | `crates/engine/src/cmd/edit.rs:13-21` |
 | Font, paragraph | Ctrl+B/I/U, Ctrl+Shift+X strikethrough, Ctrl+Shift+= superscript, Ctrl+Shift+. / , font +/-, Shift+F3 change case, Ctrl+L/E/R/J alignment, Ctrl+Shift+C format painter | `crates/engine/src/cmd/format.rs:16-165` |
 | Hyperlink | Ctrl+K | `cmd/insert.rs:56`, `menus.rs:59` (dialog) |
@@ -37,7 +39,7 @@ registry's shortcuts. One spec renders both sets.
 | Animation, media | Alt+Shift+C Animation painter, Alt+Shift+V Apply animation, Alt+P Play media | `cmd/animation.rs:56-61`, `cmd/media.rs:13` |
 | Plain keys | Delete, F2 Edit text (with a shape selected), Home/End/PgUp/PgDn first/last/previous/next slide (with nothing selected) | `keys.rs:85-117`, `cmd/slide.rs:27-30` |
 
-That is 60 bindings: 29 Ctrl, 3 Alt, 3 Shift, 8 plain, 11 Ctrl+Shift, 3 Ctrl+Alt,
+That is 67 bindings: 31 Ctrl (Ctrl+Space Windows/Linux only), 3 Alt, 4 Shift, 11 plain, 12 Ctrl+Shift, 3 Ctrl+Alt,
 2 Alt+Shift and 1 Ctrl+Alt+Shift. ESC carries the program icon.
 
 ### Collisions resolved (only what the code actually does is drawn)
@@ -53,16 +55,17 @@ That is 60 bindings: 29 Ctrl, 3 Alt, 3 Shift, 8 plain, 11 Ctrl+Shift, 3 Ctrl+Alt
   reaches `Session::key`. If it does, Ctrl+Shift+V behaves as plain Paste.
 - **Ctrl+F** opens the command palette, as Ctrl+Shift+P does. It is not a Find, so both
   keys get the same palette icon and label.
+- **Enter, Backspace, Tab** act on the selected shape (edit text, delete, cycle
+  selection). With nothing selected, Enter is New slide and Tab selects the first shape
+  (keys.rs:107-117); while editing text they type. The shape action is drawn. Space has
+  no plain binding (it types).
 - **Arrow keys** are context dependent: they nudge a selected shape (Alt for a fine
   nudge) and change slides when nothing is selected (keys.rs:88-110). The key legend is
   already an arrow, so they are not drawn.
 
-### Not drawn: keys without a cell, or not keymap entries
+### Not drawn
 
-- No cell for Space, Enter, Tab or Backspace. That leaves out Ctrl+Space Clear
-  formatting, Ctrl+Enter and Ctrl+Shift+Enter play from current/start, Enter new slide
-  or edit text, Tab and Shift+Tab list level and selection cycling, and Backspace
-  delete. Escape is the program-icon cell.
+- Escape is the program-icon cell.
 - Caret navigation while editing text: Ctrl/Option+arrows, Ctrl+Home/End, and
   Ctrl+Backspace/Delete (keys.rs:156-200). These are generic text-field keys that
   differ per platform.
@@ -87,7 +90,8 @@ That is 60 bindings: 29 Ctrl, 3 Alt, 3 Shift, 8 plain, 11 Ctrl+Shift, 3 Ctrl+Alt
   Text Superscript, Zoom In, Zoom Out, Zoom Fit, Settings, Window Multiple, Panel Top
   Contract (20 px cut), Document Briefcase, Video Play Pause, Grid, Text Change Case,
   Rename, Delete, Arrow Previous, Arrow Next, Chevron Up, Chevron Down, Group Return,
-  Comment Add, Paint Brush Sparkle, Sparkle, Clipboard Text Edit.
+  Comment Add, Paint Brush Sparkle, Sparkle, Clipboard Text Edit, Text Clear Formatting,
+  Arrow Right, Arrow Left.
 - **Google Material Symbols (Apache-2.0)**: `manage_search` for the command palette, at
   weight 300.
 - Labels the shared renderer recognises (New, Open, Save, Print, Close, Undo, Redo,

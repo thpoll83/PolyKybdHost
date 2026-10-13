@@ -73,6 +73,9 @@ bindings:
   - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
   - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
   - { key: "0",   mods: [CMDCTRL], icon: zoomfit.png, label: "Fit to window", source: "ms-fluent/Zoom Fit (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT), via powerpoint" }
+  # Cmd+Space is Spotlight / input-source switching on macOS, so it never reaches the app there.
+  - { key: SPACE, mods: [CMDCTRL], icon: clearformat.png, label: "Clear formatting", source: "ms-fluent/Text Clear Formatting (MIT)", except: [macos] }
   - { key: F1,    mods: [CMDCTRL], icon: ribbon.png,  label: "Collapse ribbon", source: "ms-fluent/Panel Top Contract (MIT)" }
 
   # --- Alt (G channel) ---
@@ -90,6 +93,12 @@ bindings:
   - { key: F7,     mods: [], icon: spelling.png,   label: Spelling,         source: "ms-fluent/Text Grammar Checkmark (MIT), via powerpoint" }
   - { key: F2,     mods: [], icon: edittext.png,   label: "Edit text",      source: "ms-fluent/Rename (MIT)" }
   - { key: DELETE, mods: [], icon: delete.png,     label: Delete,           source: "ms-fluent/Delete (MIT)" }
+  # Enter/Backspace/Tab act on a SELECTED SHAPE (keys.rs:66-82); with nothing selected
+  # Enter is New slide and Tab selects the first shape (keys.rs:107-117). Shape context drawn.
+  - { key: ENTER,     mods: [], icon: edittext.png,  label: "Edit text",      source: "ms-fluent/Rename (MIT)" }
+  - { key: BACKSPACE, mods: [], icon: delete.png,    label: Delete,           source: "ms-fluent/Delete (MIT)" }
+  - { key: TAB,       mods: [], icon: nextshape.png, label: "Next shape",     source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: TAB, mods: [SHIFT],  icon: prevshape.png, label: "Previous shape", source: "ms-fluent/Arrow Left (MIT)" }
   # Slide navigation when no shape is selected (keys.rs:107-112).
   - { key: HOME,   mods: [], icon: firstslide.png, label: "First slide",    source: "ms-fluent/Arrow Previous (MIT)" }
   - { key: END,    mods: [], icon: lastslide.png,  label: "Last slide",     source: "ms-fluent/Arrow Next (MIT)" }
@@ -99,6 +108,7 @@ bindings:
   # --- Cmd/Ctrl+Shift (combo R) ---
   - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,        label: "Save as",       source: "ms-fluent/Save Edit (MIT), via powerpoint" }
   - { key: N, mods: [CMDCTRL, SHIFT], icon: newslide.png,      label: "New slide",     source: "ms-fluent/Slide Add (MIT), via powerpoint" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: slideshow.png, label: "Slideshow", source: "ms-fluent/Play (MIT), via powerpoint" }
   - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png,       label: "Command palette", source: "material-symbols/manage_search (Apache-2.0)" }
   - { key: C, mods: [CMDCTRL, SHIFT], icon: copyformat.png,    label: "Format painter", source: "ms-fluent/Paint Brush (MIT), via powerpoint" }
   # Cmd+Shift+V: registry order puts edit.pasteText before format.painterApply (same chord).

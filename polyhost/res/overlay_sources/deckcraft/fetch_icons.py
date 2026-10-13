@@ -72,6 +72,9 @@ FLUENT = {
     "animapply": "Sparkle",
     "pastetext": "Clipboard Text Edit",
     "palette": "ms:manage_search",
+    "clearformat": "Text Clear Formatting",
+    "nextshape": "Arrow Right",
+    "prevshape": "Arrow Left",
 }
 
 
