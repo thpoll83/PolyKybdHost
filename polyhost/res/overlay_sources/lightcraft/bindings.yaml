@@ -95,6 +95,9 @@ bindings:
   - { key: UP,    mods: [], icon: up.png,            label: "Photo above" }
   - { key: DOWN,  mods: [], icon: down.png,          label: "Photo below" }
   - { key: DELETE, mods: [], icon: delete.png,       label: "Delete photo" }
+  - { key: BACKSPACE, mods: [], icon: delete.png,    label: "Delete photo (Backspace)" }
+  - { key: ENTER, mods: [], icon: done.png,          label: "Done (tool)" }
+  - { key: SPACE, mods: [], icon: zoomtoggle.png,    label: "Toggle zoom (Space)" }
 
   # ============================================================= #
   # SHIFT                                                         #
@@ -196,6 +199,7 @@ bindings:
   - { key: N, mods: [CMDCTRL, ALT], icon: smartalbum.png,     label: "New smart album" }
   - { key: E, mods: [CMDCTRL, ALT], icon: editexternal.png,   label: "Edit in other editor" }
   - { key: R, mods: [CMDCTRL, ALT], icon: resetcrop.png,      label: "Reset crop" }
+  - { key: ENTER, mods: [CMDCTRL, ALT], icon: slideshow.png,  label: "Slideshow" }
   - { key: E, mods: [CMDCTRL, ALT, SHIFT], icon: exportprevious.png, label: "Export with previous" }
 
   # ============================================================= #

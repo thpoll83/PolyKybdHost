@@ -63,6 +63,8 @@ GLYPHS = {
     "leftpanel": "Panel Left",
     "infooverlay": "Image Alt Text",
     "secondwindow": "Window New",
+    "slideshow": "ms:slideshow",
+    "done": "Checkmark",
     # --- panels / tools ---
     "editpanel": "Options",
     "masking": "ms:masks",

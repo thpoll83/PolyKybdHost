@@ -41,18 +41,24 @@ macOS uses the same keys, with Cmd in place of Ctrl.
   Settings" (`Ctrl+Shift+H`), because egui folds Ctrl into `command` there. The cell shows
   Histogram. HDR-last is drawn only on macOS (`only: [macos]`), where Control and Cmd are separate keys.
 
-### Skipped (no overlay cell, or no single key)
-Escape (Back to grid; it is the program-icon cell), Enter (Done), Cmd+Alt+Enter (Slideshow),
-Space (zoom toggle / slideshow pause alias), Backspace (Delete photo; the forward-Delete key IS
-bound). The text-field-only Cmd+C/X/V and Cmd+A in `text_field.rs` are skipped because they
-are not app commands.
+### Enter / Backspace / Space / Tab
+- `Enter`: Done, which closes the active tool (`menus.rs:105`). `Cmd+Alt+Enter`: Slideshow (`menus.rs:149`).
+- `Backspace`: Delete photo (`library.rs:780`). LightCraft's "Delete" means the key labelled ⌫,
+  and forward Delete matches too (`shortcuts.rs:237,288`), so both cells are drawn. Masking and
+  Remove redirect it to the active mask or spot (`shortcuts.rs:469-490`).
+- `Space`: Toggle zoom alias; it also pauses or resumes a running slideshow (`shortcuts.rs:200,406-414`).
+- Tab: LightCraft binds no command to it (only dock-chrome focus traversal, `shortcuts.rs:328`).
+
+### Skipped
+Escape (Back to grid) is the program-icon cell. The text-field-only Cmd+C/X/V and Cmd+A in
+`text_field.rs` are skipped because they are not app commands.
 
 ## Icons
 
 - **Fluent UI System Icons (MIT)**, microsoft/fluentui-system-icons `main`, via `icon_fetch.fluent`:
   Grid, Image, Image Multiple, Filmstrip, Layout Column Two, Split Vertical, Layout Row Two,
   Split Horizontal, History, Zoom Fit, Print, Eye, Full Screen Maximize, Pin, Filter, Dark Theme,
-  Panel Left, Image Alt Text, Window New, Options, Info, Tag, Target, Bookmark Multiple,
+  Panel Left, Image Alt Text, Window New, Checkmark, Options, Info, Tag, Target, Bookmark Multiple,
   Bookmark Add, Branch, Branch Fork, Brightness High, Color, Sparkle, Camera, Flag,
   Dismiss Square, Flag Off, Star Off, Star, Circle, Stack Star, Group Dismiss, Arrow Rotate
   Counterclockwise/Clockwise, Arrow Reset, Crop Interim Off, Delete, Rename, Folder Open,
@@ -60,7 +66,7 @@ are not app commands.
   Copy Select, Clipboard Paste, Search, Arrow Undo, Arrow Redo, Select All On, Arrow Exit,
   Settings, Keyboard, Question Circle, Arrow Previous/Next/Up/Down.
 - **Material Symbols (Apache-2.0, weight 300)**, `ms:`: zoom_in_map, exposure, layers, grain,
-  fit_screen, compare, grid_3x3, masks, straighten, auto_fix_high, filter_b_and_w, deblur,
+  fit_screen, slideshow, compare, grid_3x3, masks, straighten, auto_fix_high, filter_b_and_w, deblur,
   hdr_on, hdr_auto, panorama, panorama_horizontal, deselect.
 - **Photoshop overlay drawings, shared byte-identically** (`icon_fetch.borrow`): brush,
   brushdec/brushinc (brush size), hardnessdec/hardnessinc (feather), healing (Remove), gradient
