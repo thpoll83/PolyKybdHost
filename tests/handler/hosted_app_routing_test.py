@@ -320,6 +320,20 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                       self._chrome("windows", "https://github.com/x/y/pull/1"))
         self.assertIn("chrome_template.mods.png", self._chrome("linux"))
 
+    def test_a_confluence_whiteboard_gets_ITS_tool_set(self):
+        """A whiteboard binds bare S/T/E/L/H/V to drawing tools, so the page
+        set (E = edit) would be wrong there. The url gate keeps the bare
+        "/whiteboard/" needle off every other site."""
+        wb = "https://a.atlassian.net/wiki/spaces/X/whiteboard/123"
+        for os_name, sfx in (("windows", ""), ("linux", ""), ("macos", "_mac")):
+            self.assertIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                          self._chrome(os_name, wb), os_name)
+            self.assertIn(f"confluence_template{sfx}.mods.png",
+                          self._chrome(os_name, "https://a.atlassian.net/wiki/spaces/X/pages/1"),
+                          os_name)
+            self.assertNotIn(f"confluence_whiteboard_template{sfx}.mods.png",
+                             self._chrome(os_name, "https://example.com/whiteboard/1"), os_name)
+
     def test_chrome_web_apps_fall_back_to_the_title_without_a_url(self):
         """No extension means no URL. The window title's brand word then picks
         the web-app set, on both the default and the macOS branch."""

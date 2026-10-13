@@ -16,7 +16,7 @@ Every set is from the vendor's **own** documentation:
 |---|---|
 | GitHub | <https://docs.github.com/en/get-started/accessibility/keyboard-shortcuts> |
 | GitLab | <https://docs.gitlab.com/ee/user/shortcuts.html> |
-| Confluence Cloud | <https://support.atlassian.com/confluence-cloud/docs/keyboard-shortcuts-markdown-and-autocomplete/> |
+| Confluence Cloud | the in-app shortcut dialog (`?`), transcribed 2026-10-13: General, Formatting, Navigation and Tables tabs for pages; Whiteboards tab for `confluence_whiteboard.yaml` |
 | Google Docs | <https://support.google.com/docs/answer/179738> |
 | Notion | <https://www.notion.com/help/keyboard-shortcuts> |
 | Jira Cloud | the in-app shortcut dialog (`?`), transcribed 2026-10-13 |
@@ -37,9 +37,24 @@ wholesale: `R` is "mark file as read/unread" (not "request changes"), `U` is
 "go to the pull requests list", Shift+E hides the enhanced word diff, and
 `1 2 3`, `F`, `S` and Shift+L are not pull request keys at all.
 
-Confluence's page-view keys were NOT added: the Atlassian page gives
-Ctrl+Alt+W/S/A/C while third-party lists give single letters, and a wrong
-keycap is worse than a missing one.
+Confluence is exactly its in-app `?` dialog (Windows/Linux, transcribed
+2026-10-13). Pages and whiteboards get separate sets: a whiteboard binds bare
+S/T/E/L/H/V to drawing tools, and the mapping routes a `/whiteboard/` URL on
+`atlassian.net/wiki` to `confluence_whiteboard_template`. The dialog binds three
+chords twice, once in page view and once in the editor; the page set shows the
+editor's meaning:
+
+| Chord | Shown (editor) | Not shown (page view) |
+|---|---|---|
+| `Ctrl+Shift+I` | Table | Open details panel |
+| `Ctrl+Shift+D` | Insert markup | Create live doc |
+| `Ctrl+Alt+E` | Align center | Select comment |
+
+Also left out: `Ctrl+Alt+[` / `]` (each is both "resize table" and "insert
+row"), the arrow-key table edits, and Alt+F9 / Alt+F10 / Shift+F10 (toolbar
+focus). Undo and redo are not in the page dialog, so the page set no longer
+draws them; the whiteboard set does (`Ctrl+Z`, `Ctrl+Shift+Z`). Strikethrough
+(`Ctrl+Shift+S`) is not in the dialog either and was dropped.
 
 ### Deliberately excluded: the `g`-then-`x` chords
 
@@ -49,14 +64,15 @@ shown.** An overlay cell depicts what one keypress does, and the firmware has no
 pending-chord state, so painting "issues" on `i` would be wrong for every press
 that isn't preceded by `g`. Same rule as the Sublime `Ctrl+K` chords.
 
-Confluence's `Win+Alt+C` (create page) is excluded too: the GUI/Win modifier
-combination is not one of the nine representable modifier variants.
+Confluence's Meta chords are excluded too: `Meta+Alt+C` (create page),
+`Meta+Alt+T` (view attachments) and `Ctrl+Meta+.` (Rovo chat). Meta is the
+Windows key there, which the OS claims for its own chords.
 
 ### Notes on specific bindings
 
 - **Confluence headings are `Ctrl+Alt+1..6`**, not `Ctrl+1..6`. A widely-copied
-  cheat sheet claims the latter; Atlassian's own page says `Ctrl+Alt`, which is
-  what shipped.
+  cheat sheet claims the latter; the in-app dialog says `Ctrl+Alt`, with
+  `Ctrl+Alt+0` for a paragraph.
 - **Google Docs `Ctrl+Alt+Shift+A`** (open discussion thread) is one of only two
   bindings in this whole batch that lands on the third (`extra`) overlay layer.
 - **GitHub `S` and `/`** both focus search, and GitLab is the same; both keys
@@ -75,15 +91,18 @@ generator writes a second `<output>_mac.*` set, in which `CMDCTRL` resolves to
 Cmd. Every one of these apps is a Cmd-for-Ctrl app, so almost every Ctrl chord
 became `CMDCTRL`. Chords with no Ctrl (GitHub `t`/`s`/`/`, GitLab `j`/`k`,
 Confluence `e`, Notion `Tab`) are the same on every platform and were left
-alone. Confluence Quick search is the exception: `Alt+Shift+Z` on Windows/Linux
-and `Ctrl+Option+Z` on the Mac (Atlassian's page, via search snippets), so it is
-two lines with disjoint `only:`.
+alone. Confluence Quick search is the exception: `Alt+Shift+Z` and `Ctrl+Alt+Q`
+on Windows/Linux (the dialog lists both) and `Ctrl+Option+Z` on the Mac
+(Atlassian's page, via search snippets), so it is three lines with disjoint
+`only:`. The other Confluence `Ctrl+Alt` chords come from the Windows dialog;
+their Mac forms (`⌘⌥` by the CMDCTRL rule) are not yet checked against the Mac
+dialog.
 
 | Set | macOS source | Result |
 |---|---|---|
 | GitHub | [`github/docs` → `content/get-started/accessibility/keyboard-shortcuts.md`](https://github.com/github/docs/blob/main/content/get-started/accessibility/keyboard-shortcuts.md). This is the source of the docs page above, and it gives a "Command … (Mac) or Ctrl … (Windows/Linux)" row for every chord. | 5 → `CMDCTRL` |
 | GitLab | [`gitlab-org/gitlab` → `doc/user/shortcuts.md`](https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/user/shortcuts.md). This is the source of the docs page, with its "macOS shortcut / Windows shortcut" columns. | 2 → `CMDCTRL` |
-| Confluence Cloud | The Atlassian page above (Mac = ⌘ for Ctrl, ⌥ for Alt, via search snippets; the page itself was unreachable). The editor's own keymap source, [`@atlaskit/editor-common` 126.1.3 `keymaps/index.js`](https://www.npmjs.com/package/@atlaskit/editor-common), declares each chord as `Mod-…`, which it renders as Ctrl on Windows and Cmd on Mac. | 16 → `CMDCTRL` |
+| Confluence Cloud | The Atlassian page above (Mac = ⌘ for Ctrl, ⌥ for Alt, via search snippets; the page itself was unreachable). The editor's own keymap source, [`@atlaskit/editor-common` 126.1.3 `keymaps/index.js`](https://www.npmjs.com/package/@atlaskit/editor-common), declares each chord as `Mod-…`, which it renders as Ctrl on Windows and Cmd on Mac. | pages 44, whiteboards 18 → `CMDCTRL` |
 | Google Docs | [Answer 179738, Mac tab](https://support.google.com/docs/answer/179738?hl=en&co=GENIE.Platform%3DDesktop), read through search snippets because the page was unreachable from the build container. | 36 → `CMDCTRL`, 2 remapped |
 | Notion | The [Notion help page](https://www.notion.com/help/keyboard-shortcuts) writes every chord as `cmd/ctrl + …`, read through search snippets. | 20 → `CMDCTRL` |
 
@@ -98,16 +117,11 @@ Nothing was dropped on macOS.
 
 **Notes and uncertainties**
 
-- **Confluence `Ctrl+Shift+I` (Insert table)**: a search snippet of Atlassian's
-  page gives `⌘+Shift+I`, so it is `CMDCTRL`. The Atlaskit editor source binds
-  *Table* to `Shift+Alt+T` instead, so the Windows chord itself is unconfirmed.
-- **Confluence `Ctrl+Shift+M`** was labelled "Code block". In the Atlaskit
-  editor, `Mod-Shift-m` is *inline code*; a code block comes from typing
-  ```` ``` ````. Relabelled "Inline code" with the Fluent `Code` icon on
-  2026-09-30. The Mac form is `⌘⇧M`.
-- **Confluence Redo `Ctrl+Y`**: the Atlaskit editor binds Redo to `Ctrl-y` on
-  Windows and `Cmd-Shift-z` on Mac, and additionally `Mod-y` (⌘Y) on both, so
-  `⌘Y` is correct.
+- **Confluence `Ctrl+Shift+I` (Table)**: the in-app dialog confirms the Windows
+  chord (Formatting tab), and also binds it to "Open details panel" in page
+  view (General tab). A search snippet of Atlassian's page gives `⌘+Shift+I`.
+- **Confluence `Ctrl+Shift+M`** is labelled "Code", the dialog's own word. In the
+  Atlaskit editor, `Mod-Shift-m` is *inline code*. The Mac form is `⌘⇧M`.
 - **Browser-reserved chords.** These are drawn on macOS exactly as their Ctrl
   twins already are on Windows:
   - Notion ⌘N (New page), ⌘⇧N (New window) and ⌘L (Copy page URL) are taken

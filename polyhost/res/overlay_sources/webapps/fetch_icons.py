@@ -2,7 +2,7 @@
 """Fetch + render icons for the browser-hosted app overlays.
 
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
-`confluence.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml` and
+`confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml` and
 `bitbucket.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -134,6 +134,42 @@ FLUENT = {
     "epicpanel": "Flash",
     "swimlanes": "Arrow Collapse All",
     "linkissue": "Link Add",
+    # --- Confluence (General, Formatting and Navigation tabs of its "?" dialog) ---
+    "notifications": "Alert",
+    "gohome": "Home",
+    "recent": "Clock",
+    "starred": "Star",
+    "spaceoverview": "Grid",
+    "blogpost": "News",
+    "quickinsert": "Slash Forward",
+    "nextcomment": "Comment Arrow Right",
+    "prevcomment": "Comment Arrow Left",
+    "nextunread": "Mail Unread",
+    "favorite": "Star Add",
+    "presenter": "Presenter",
+    "publishnote": "Note Edit",
+    "heading4": "Text Header 4",
+    "heading5": "Text Header 5",
+    "heading6": "Text Header 6",
+    "highlight": "Highlight",
+    "insertimage": "Image Add",
+    "markup": "Code Text",
+    "macro": "Puzzle Piece",
+    # --- Confluence whiteboards (Whiteboards tab) ---
+    "sticky": "Note",
+    "textbox": "Text Field",
+    "ellipse": "Circle",
+    "line": "Line",
+    "handtool": "Hand Left",
+    "select": "Cursor",
+    "delete": "Delete",
+    "zoomin": "Zoom In",
+    "zoomout": "Zoom Out",
+    "zoomreset": "Ratio One To One",
+    "zoomfit": "Zoom Fit",
+    "zoomselection": "Select Object",
+    "lock": "Lock Closed",
+    "hideui": "Eye Off",
 }
 
 # GitHub and GitLab publish plain monochrome marks that read cleanly as a 1-bit
@@ -157,7 +193,10 @@ GEO = {"cf.png": geo_marks.ensure_confluence}
 # Symbols (Apache-2.0, GPL-3.0-compatible) is kept around to fill.
 # Fluent has no whitespace glyph either ("Text Whitespace" 404s); Bitbucket's
 # "Ignore whitespace" takes Material's space bar.
-MATERIAL = {"numberlist": "format_list_numbered", "whitespace": "space_bar"}
+# Fluent has no z-order pair either ("Bring To Front", "Arrange Forward" 404);
+# Confluence whiteboards' bring to front / send to back take Material's.
+MATERIAL = {"numberlist": "format_list_numbered", "whitespace": "space_bar",
+            "bringfront": "flip_to_front", "sendback": "flip_to_back"}
 
 
 def main() -> int:
