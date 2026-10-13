@@ -76,7 +76,7 @@ bindings:
   - { key: LEFT,  mods: [ALT], icon: back.png,       label: Back }
   - { key: RIGHT, mods: [ALT], icon: forward.png,    label: Forward }
   - { key: UP,    mods: [ALT], icon: up.png,         label: "Parent folder" }
-  - { key: DOWN,  mods: [ALT], icon: down.png,       label: "Open folder" }
+  - { key: DOWN,  mods: [ALT], icon: down.png,       label: "Go down" }
   - { key: HOME,  mods: [ALT], icon: home.png,       label: Home }
   - { key: ENTER, mods: [ALT], icon: properties.png, label: Properties }
 

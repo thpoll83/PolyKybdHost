@@ -19,7 +19,7 @@ in `nautilus-application.c`, `nautilus-window.c` and `nautilus-files-view.c`.
 See SOURCES.md.
 
     pip install cairosvg Pillow
-    python polyhost/res/overlay_sources/nautilus/fetch_icons.py
+    PYTHONPATH=. python polyhost/res/overlay_sources/nautilus/fetch_icons.py
 """
 from __future__ import annotations
 
