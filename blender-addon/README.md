@@ -15,12 +15,17 @@ To **loopback only** (`http://127.0.0.1:<port>/report`), on every change of mode
 or editor and as a keep-alive every 3 s while nothing changes:
 
 ```json
-{ "app": "blender", "url": "blender://EDIT_MESH/VIEW_3D", "focused": true }
+{ "app": "blender", "url": "blender://EDIT_MESH/VIEW_3D", "focused": true,
+  "pid": 4242, "input_age": 0.4 }
 ```
 
 - `url` is a pseudo-URL: `blender://<mode>/<editor>[/<editor variant>]`, built
   from `context.mode`, `area.type` and `area.ui_type` (e.g.
   `blender://EDIT_MESH/IMAGE_EDITOR/UV`, `blender://OBJECT/NODE_EDITOR/ShaderNodeTree`).
+- `pid` is Blender's process id and `input_age` the seconds since this Blender
+  last saw a mouse or key event. With several Blenders open, the host follows the
+  one with the most recent input, so a background instance's keep-alive cannot
+  replace the mode of the one you are working in.
 - **Nothing else.** No file names, object or scene data, no window title. Keep it
   that way: the host routes on these tokens alone.
 - `token` is added only if you set one (see below).

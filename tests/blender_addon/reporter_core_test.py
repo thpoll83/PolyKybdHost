@@ -73,6 +73,9 @@ class PayloadTest(unittest.TestCase):
         self.assertEqual(body, {"app": "blender", "url": "blender://OBJECT/VIEW_3D",
                                 "focused": True})
         self.assertEqual(json.loads(core.payload("u", "t"))["token"], "t")
+        body = json.loads(core.payload("u", pid=7, input_age=1.234))
+        self.assertEqual((body["pid"], body["input_age"]), (7, 1.2))
+        self.assertNotIn("pid", json.loads(core.payload("u")))
 
 
 class SenderTest(unittest.TestCase):

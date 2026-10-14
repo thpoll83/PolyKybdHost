@@ -57,6 +57,18 @@ class TestBrowserReportServer(unittest.TestCase):
         self.assertEqual(self.reports[0]["url"], "blender://OBJECT/VIEW_3D")
         self.assertIsNone(self.reports[0]["browser"])
 
+    def test_app_report_passes_sane_instance_identity(self):
+        _post(self.port, {"app": "blender", "url": "blender://OBJECT/VIEW_3D",
+                          "focused": True, "pid": 4242, "input_age": 0.4})
+        self.assertEqual(self.reports[0]["pid"], 4242)
+        self.assertEqual(self.reports[0]["input_age"], 0.4)
+
+    def test_app_report_drops_malformed_instance_identity(self):
+        _post(self.port, {"app": "blender", "url": "blender://OBJECT/VIEW_3D",
+                          "focused": True, "pid": "4242", "input_age": -1})
+        self.assertNotIn("pid", self.reports[0])
+        self.assertNotIn("input_age", self.reports[0])
+
     def test_browser_report_carries_no_app_key(self):
         # Callbacks written before context reporters keep their signature.
         _post(self.port, {"browser": "chrome", "url": "https://a", "focused": True})

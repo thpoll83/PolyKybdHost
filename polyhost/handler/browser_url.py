@@ -135,17 +135,20 @@ class BrowserUrlProvider:
         self._max_age_s = max_age_s
         self._clock = clock
         self._macos_lookup = macos_lookup
-        # source key -> dict(url, title, focused, ts). Keys: ("browser", brand)
-        # with brand None for a report naming no recognisable browser, and
-        # ("app", token) for a context reporter. Bounded: both key spaces are
-        # closed sets.
+        # source key -> dict(url, title, focused, ts, input_ts). Keys:
+        # ("browser", brand) with brand None for a report naming no
+        # recognisable browser, and ("app", token, pid) for one running
+        # instance of a context reporter (pid None from an add-on that does not
+        # send one). Bounded: the browser keys are a closed set, and stale app
+        # instances are pruned on every app report.
         self._reports = {}
 
     # ------------------------------------------------------------------
     # Ingest (from the extension / add-on via browser_report_server)
     # ------------------------------------------------------------------
 
-    def update(self, browser=None, url=None, title=None, focused=True, app=None) -> bool:
+    def update(self, browser=None, url=None, title=None, focused=True, app=None,
+               pid=None, input_age=None) -> bool:
         """Store one report. Returns True when that source's effective URL
         changed (a real navigation / tab switch / mode change / (de)focus), so
         the caller can nudge window tracking to re-match -- this is what lets an
@@ -156,21 +159,56 @@ class BrowserUrlProvider:
         browser lost focus or the tab has no address, e.g. a new-tab page).
         A report naming an ``app`` that is not a known context reporter is
         ignored (returns False)."""
+        now = self._clock()
         if app is not None:
             token = str(app).strip().lower()
             if token not in _REPORTER_TOKENS:
                 return False
-            key = ("app", token)
-        else:
-            key = ("browser", _canonical_browser(browser))
+            prev = self._app_url(token)
+            # Drop instances that stopped reporting (Blender closed), so the
+            # per-pid key space cannot grow without bound.
+            for k in [k for k, r in self._reports.items()
+                      if k[0] == "app" and now - r["ts"] > self._max_age_s]:
+                del self._reports[k]
+            self._reports[("app", token, pid)] = {
+                "url": url or None,
+                "title": title,
+                "focused": bool(focused),
+                "ts": now,
+                # When this instance last saw user input; without input_age
+                # (older add-on) the report itself counts as the input.
+                "input_ts": now - (input_age or 0.0),
+            }
+            return self._app_url(token) != prev
+        key = ("browser", _canonical_browser(browser))
         prev = self._effective_url(key)
         self._reports[key] = {
             "url": url or None,
             "title": title,
             "focused": bool(focused),
-            "ts": self._clock(),
+            "ts": now,
         }
         return self._effective_url(key) != prev
+
+    def _fresh(self, key):
+        """Whether that source has a report inside the freshness window,
+        whatever it says (a cleared tab is still a fresh report)."""
+        r = self._reports.get(key)
+        return bool(r) and self._clock() - r["ts"] <= self._max_age_s
+
+    def _app_url(self, token):
+        """The context reporter's URL from the running instance with the most
+        recent user input. Several Blenders can be open; each re-sends on a
+        keep-alive, so "the newest report" would let a background instance
+        overwrite the one being worked in. The newest INPUT cannot."""
+        best = None
+        for k, r in self._reports.items():
+            if k[0] != "app" or k[1] != token:
+                continue
+            url = self._effective_url(k)
+            if url and (best is None or r["input_ts"] > best[0]):
+                best = (r["input_ts"], url)
+        return best[1] if best else None
 
     def _effective_url(self, key):
         """That source's URL if its report is fresh AND focused, else None."""
@@ -200,14 +238,17 @@ class BrowserUrlProvider:
           Blender's context can ever leak onto a native app's overlay."""
         token = context_reporter_for(app_name)
         if token is not None:
-            return self._effective_url(("app", token))
+            return self._app_url(token)
         if not is_browser_app(app_name):
             return None
         brand = _canonical_browser(app_name)
-        url = None
-        if brand is not None:
+        # The anonymous slot (an older extension naming no browser) answers
+        # only when this browser has no fresh report of its own. A fresh one
+        # with no URL is a cleared tab (new-tab page, lost focus) and must
+        # stay cleared, not revive another report's website.
+        if brand is not None and self._fresh(("browser", brand)):
             url = self._effective_url(("browser", brand))
-        if url is None:
+        else:
             url = self._effective_url(("browser", None))
         if url:
             return url

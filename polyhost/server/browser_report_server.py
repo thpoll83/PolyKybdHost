@@ -129,6 +129,14 @@ class _Handler(BaseHTTPRequestHandler):
         # a browser report reaches the callback exactly as before.
         if data.get("app") is not None:
             report["app"] = data.get("app")
+            # Optional instance identity (several Blenders open at once):
+            # passed only when it is a sane number, never as a raw string.
+            pid, age = data.get("pid"), data.get("input_age")
+            if isinstance(pid, int) and not isinstance(pid, bool) and 0 < pid < 2**32:
+                report["pid"] = pid
+            if (isinstance(age, (int, float)) and not isinstance(age, bool)
+                    and 0 <= age < 10**7):
+                report["input_age"] = float(age)
         try:
             self.server.on_report(**report)
         except Exception as e:  # noqa: BLE001 — never let a report crash the server

@@ -9,7 +9,12 @@ What is sent, and nothing else::
 
     POST http://127.0.0.1:<port>/report      Content-Type: application/json
     {"app": "blender", "url": "blender://EDIT_MESH/VIEW_3D", "focused": true,
-     "token": "<only if one is configured>"}
+     "pid": 4242, "input_age": 0.4, "token": "<only if one is configured>"}
+
+`pid` and `input_age` (seconds since this Blender last saw a mouse or key
+event) let the host tell several running Blenders apart: it uses the instance
+with the most recent input, so a background instance's keep-alive cannot
+overwrite the one being worked in.
 
 The URL names the interaction mode (`context.mode`) and the editor type under
 the mouse (`area.type`, plus `area.ui_type` where Blender has several editors in
@@ -94,8 +99,12 @@ class SendPolicy:
         self.last_sent = now
 
 
-def payload(url, token="") -> bytes:
+def payload(url, token="", pid=None, input_age=None) -> bytes:
     body = {"app": APP, "url": url, "focused": True}
+    if pid is not None:
+        body["pid"] = int(pid)
+    if input_age is not None:
+        body["input_age"] = round(max(0.0, float(input_age)), 1)
     if token:
         body["token"] = token
     return json.dumps(body).encode("utf-8")
@@ -119,9 +128,9 @@ class Sender:
                                         daemon=True)
         self._thread.start()
 
-    def submit(self, port, url, token=""):
+    def submit(self, port, url, token="", pid=None, input_age=None):
         with self._lock:
-            self._pending = (int(port), payload(url, token))
+            self._pending = (int(port), payload(url, token, pid, input_age))
         self._wake.set()
 
     def stop(self):

@@ -32,6 +32,17 @@ class TestBrowserUrlProvider(unittest.TestCase):
         self.p = BrowserUrlProvider(max_age_s=8.0, clock=self.clock,
                                     macos_lookup=lambda app: None)
 
+    def test_cleared_named_tab_does_not_revive_anonymous_report(self):
+        # An older extension (no browser name) reported a site; then Chrome
+        # itself reports an empty tab. The empty tab must win.
+        self.p.update(browser=None, url="https://github.com/x", focused=True)
+        self.p.update(browser="chrome", url=None, focused=True)
+        self.assertIsNone(self.p.current_url("chrome"))
+
+    def test_anonymous_report_used_when_browser_has_none_of_its_own(self):
+        self.p.update(browser=None, url="https://github.com/x", focused=True)
+        self.assertEqual(self.p.current_url("chrome"), "https://github.com/x")
+
     def test_none_when_no_report(self):
         self.assertIsNone(self.p.current_url("chrome"))
 
@@ -140,6 +151,25 @@ class TestContextReporter(unittest.TestCase):
         self.assertFalse(self.p.update(app="blender", url=self.URL, focused=True))
         self.clock.t += 5
         self.assertEqual(self.p.current_url("blender"), self.URL)
+
+    def test_background_instance_keepalive_cannot_take_over(self):
+        # Two Blenders: B is worked in (recent input), A only keeps alive.
+        a, b = "blender://OBJECT/VIEW_3D", "blender://SCULPT/VIEW_3D"
+        self.p.update(app="blender", url=b, pid=2, input_age=0.2)
+        self.clock.t += 1
+        self.p.update(app="blender", url=a, pid=1, input_age=40.0)
+        self.assertEqual(self.p.current_url("blender"), b)
+        # A gets input again: it is now the one being worked in.
+        self.clock.t += 1
+        self.assertTrue(self.p.update(app="blender", url=a, pid=1, input_age=0.0))
+        self.assertEqual(self.p.current_url("blender"), a)
+
+    def test_closed_instance_is_pruned(self):
+        self.p.update(app="blender", url=self.URL, pid=1, input_age=0.0)
+        self.clock.t += 9          # instance 1 stopped reporting
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", pid=2, input_age=5.0)
+        self.assertNotIn(("app", "blender", 1), self.p._reports)
+        self.assertEqual(self.p.current_url("blender"), "blender://OBJECT/VIEW_3D")
 
     def test_non_browser_non_reporter_app_still_ignored(self):
         self.p.update(app="blender", url=self.URL, focused=True)
