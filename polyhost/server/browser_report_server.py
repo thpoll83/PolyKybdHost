@@ -5,7 +5,9 @@ The browser extension (`browser-extension/`) can't speak the bespoke
 a WebExtension can only ``fetch()``. So this is a tiny **loopback-only** HTTP
 endpoint the extension POSTs its active-tab ``{browser, url, title, focused}`` to
 on every tab switch / focus change; the report is handed to a callback (wired to
-:class:`polyhost.handler.browser_url.BrowserUrlProvider`).
+:class:`polyhost.handler.browser_url.BrowserUrlProvider`). The Blender add-on
+(`blender-addon/`) uses the same endpoint with ``{app, url, focused}``, where
+``url`` is a ``blender://<mode>/<editor>`` pseudo-URL; same token, same gates.
 
 Security posture — deliberately minimal surface:
 
@@ -116,13 +118,27 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(403, {"ok": False, "error": "bad token"})
             return
 
+        report = {
+            "browser": data.get("browser"),
+            "url": data.get("url"),
+            "title": data.get("title"),
+            "focused": data.get("focused", True),
+        }
+        # A context reporter (the Blender add-on, `blender-addon/`) names
+        # itself with `app` instead of `browser`. Passed only when present, so
+        # a browser report reaches the callback exactly as before.
+        if data.get("app") is not None:
+            report["app"] = data.get("app")
+            # Optional instance identity (several Blenders open at once):
+            # passed only when it is a sane number, never as a raw string.
+            pid, age = data.get("pid"), data.get("input_age")
+            if isinstance(pid, int) and not isinstance(pid, bool) and 0 < pid < 2**32:
+                report["pid"] = pid
+            if (isinstance(age, (int, float)) and not isinstance(age, bool)
+                    and 0 <= age < 10**7):
+                report["input_age"] = float(age)
         try:
-            self.server.on_report(
-                browser=data.get("browser"),
-                url=data.get("url"),
-                title=data.get("title"),
-                focused=data.get("focused", True),
-            )
+            self.server.on_report(**report)
         except Exception as e:  # noqa: BLE001 — never let a report crash the server
             log = getattr(self.server, "log", None)
             if log is not None:

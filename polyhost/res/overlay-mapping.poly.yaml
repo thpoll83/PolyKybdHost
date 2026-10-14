@@ -424,6 +424,48 @@ krita:
   os:
     macos:
       overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
+# Blender: one overlay per mode / editor, routed on the `blender://<mode>/<editor>`
+# pseudo-URL the Blender add-on (blender-addon/) reports. GENERATED: copy of
+# overlay_sources/blender/mapping_stanza.yaml (gen_blender_bindings.py). `layer: false`
+# makes a context replace the fallback instead of drawing it dimmed underneath.
+# Without the add-on (or with a stale report) the 3D View `common` set applies.
+blender,org.blender.blender:
+  overlay: [blender_common_template.mods.png, blender_common_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "/NODE_EDITOR": { overlay: [blender_node_template.mods.png, blender_node_template.combo.mods.png] }
+    "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template.mods.png, blender_uv_template.combo.mods.png, blender_uv_template.extra.mods.png] }
+    "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template.mods.png, blender_dopesheet_template.combo.mods.png] }
+    "/GRAPH_EDITOR": { overlay: [blender_graph_template.mods.png, blender_graph_template.combo.mods.png] }
+    "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template.mods.png, blender_object_template.combo.mods.png, blender_object_template.extra.mods.png] }
+    "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template.mods.png, blender_edit_mesh_template.combo.mods.png, blender_edit_mesh_template.extra.mods.png] }
+    "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template.mods.png, blender_sculpt_template.combo.mods.png] }
+    "blender://POSE/VIEW_3D": { overlay: [blender_pose_template.mods.png, blender_pose_template.combo.mods.png, blender_pose_template.extra.mods.png] }
+    "blender://EDIT_ARMATURE/VIEW_3D": { overlay: [blender_edit_armature_template.mods.png, blender_edit_armature_template.combo.mods.png, blender_edit_armature_template.extra.mods.png] }
+    "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template.mods.png, blender_paint_weight_template.combo.mods.png] }
+    "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template.mods.png, blender_paint_vertex_template.combo.mods.png] }
+    "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template.mods.png, blender_paint_texture_template.combo.mods.png] }
+    "/VIEW_3D": { overlay: [blender_common_template.mods.png, blender_common_template.combo.mods.png] }
+    "blender://": { overlay: [blender_global_template.mods.png, blender_global_template.combo.mods.png] }
+  os:
+    macos:
+      overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "/NODE_EDITOR": { overlay: [blender_node_template_mac.mods.png, blender_node_template_mac.combo.mods.png, blender_node_template_mac.extra.mods.png] }
+        "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template_mac.mods.png, blender_uv_template_mac.combo.mods.png, blender_uv_template_mac.extra.mods.png, blender_uv_template_mac.gui.mods.png] }
+        "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template_mac.mods.png, blender_dopesheet_template_mac.combo.mods.png, blender_dopesheet_template_mac.extra.mods.png] }
+        "/GRAPH_EDITOR": { overlay: [blender_graph_template_mac.mods.png, blender_graph_template_mac.combo.mods.png, blender_graph_template_mac.extra.mods.png] }
+        "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template_mac.mods.png, blender_object_template_mac.combo.mods.png, blender_object_template_mac.extra.mods.png, blender_object_template_mac.gui.mods.png] }
+        "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template_mac.mods.png, blender_edit_mesh_template_mac.combo.mods.png, blender_edit_mesh_template_mac.extra.mods.png, blender_edit_mesh_template_mac.gui.mods.png] }
+        "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template_mac.mods.png, blender_sculpt_template_mac.combo.mods.png, blender_sculpt_template_mac.extra.mods.png] }
+        "blender://POSE/VIEW_3D": { overlay: [blender_pose_template_mac.mods.png, blender_pose_template_mac.combo.mods.png, blender_pose_template_mac.extra.mods.png, blender_pose_template_mac.gui.mods.png] }
+        "blender://EDIT_ARMATURE/VIEW_3D": { overlay: [blender_edit_armature_template_mac.mods.png, blender_edit_armature_template_mac.combo.mods.png, blender_edit_armature_template_mac.extra.mods.png, blender_edit_armature_template_mac.gui.mods.png] }
+        "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template_mac.mods.png, blender_paint_weight_template_mac.combo.mods.png, blender_paint_weight_template_mac.extra.mods.png] }
+        "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template_mac.mods.png, blender_paint_vertex_template_mac.combo.mods.png, blender_paint_vertex_template_mac.extra.mods.png] }
+        "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template_mac.mods.png, blender_paint_texture_template_mac.combo.mods.png, blender_paint_texture_template_mac.extra.mods.png] }
+        "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
+        "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
 ms-teams,teams,microsoft teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
   os:
