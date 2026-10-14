@@ -178,7 +178,8 @@ def _select_mode(path: Path, which: str) -> None:
     w = int(u * 0.045)
     if which == "face":
         d.rectangle([a, a, b, b], fill=255)
-        return _save(m, path)
+        _save(m, path)
+        return
     d.rectangle([a, a, b, b], outline=255, width=w)
     if which == "edge":
         d.rectangle([a - w, b - 2.4 * w, b + w, b + w], fill=255)

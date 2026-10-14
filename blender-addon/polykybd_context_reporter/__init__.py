@@ -27,6 +27,7 @@ bl_info = {  # legacy add-on install (Blender < 4.2); 4.2+ reads blender_manifes
 }
 
 import time
+import traceback
 
 import bpy
 
@@ -38,6 +39,7 @@ _state = {
     "mouse": {},          # window pointer -> (seq, x, y), window-relative pixels
     "seq": 0,             # bumps on every recorded event: newest window wins
     "tracked": set(),     # window pointers with a running tracker
+    "errors": set(),      # (type, message) already printed by _tick
 }
 
 
@@ -149,8 +151,14 @@ def _tick():
         if policy.due(url, now):
             sender.submit(prefs.port, url, prefs.token)
             policy.sent(url, now)
-    except Exception:          # noqa: BLE001 -- never let a report break Blender
-        pass
+    except Exception as e:     # noqa: BLE001 -- never let a report break Blender
+        # Swallowed so a bug here can never break Blender's UI, but printed
+        # once per distinct error, so it can be diagnosed from Blender's
+        # system console instead of overlays silently stopping to switch.
+        key = (type(e).__name__, str(e))
+        if key not in _state["errors"]:
+            _state["errors"].add(key)
+            traceback.print_exc()
     return core.POLL_S
 
 

@@ -11,6 +11,10 @@ cd "$(dirname "$0")"
 
 PKG=polykybd_context_reporter
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' "${PKG}/blender_manifest.toml")
+if [ -z "${VERSION}" ]; then
+  echo "no version = \"...\" line in ${PKG}/blender_manifest.toml" >&2
+  exit 1
+fi
 OUT="dist/${PKG}-${VERSION}.zip"
 mkdir -p dist
 # `zip` UPDATES an existing archive in place, so a deleted file would linger.
