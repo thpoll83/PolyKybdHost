@@ -70,8 +70,10 @@ Zoom in / Zoom out / Settings are drawn by the shared concept renderer.
   Apache-2.0 (GPLv3-compatible). A waving hand. Swept alpha / luma / bright at
   t150..225 and 37x32 / 40x38; `luma` t225 at 37x32 keeps the fingers apart and
   the motion lines lit.
-- `lmstudio.png`: a drawn letter frame (`LM`) from `../rect_mark.py`. LM Studio is
-  closed source and is in neither Simple Icons nor MDI, so this follows the
-  ChatGPT/Codex treatment.
+- `lmstudio.png`: a drawn generic mark (`_lmstudio_mark` in
+  `fetch_icons_localai.py`): a rounded box with five bars offset along one period
+  of a vertical sine wave, 368 lit px, legend lost 0 px. LM Studio is closed
+  source and is in neither Simple Icons nor MDI. The maintainer picked it
+  (2026-10-14) over the `LM` letter frame first drawn here.
 
 Both marks are guarded: a committed file is never overwritten by a re-run.
