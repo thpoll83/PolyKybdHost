@@ -51,9 +51,13 @@ class _WrapLabel(QLabel):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        # heightForWidth() never answers below minimumHeight(), so clear it to
+        # read the text's own height; otherwise a widened dialog could only
+        # ever keep the height its narrowest width needed.
+        old = self.minimumHeight()
+        self.setMinimumHeight(0)
         h = self.heightForWidth(self.width())
-        if h > 0 and h != self.minimumHeight():
-            self.setMinimumHeight(h)
+        self.setMinimumHeight(h if h > 0 else old)
 
 
 def confirm_update(title: str, message: str, notes: str = "", html_url: str = "",

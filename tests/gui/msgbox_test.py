@@ -28,7 +28,7 @@ class MsgboxHeightTest(unittest.TestCase):
         cls.host = host
 
     def _show(self, text):
-        from PyQt5.QtWidgets import QDialog, QLabel
+        from PyQt5.QtWidgets import QDialog, QLabel, QScrollArea
         seen = {}
 
         def fake_exec(dlg):
@@ -36,7 +36,8 @@ class MsgboxHeightTest(unittest.TestCase):
             self.app.processEvents()
             label = next(lbl for lbl in dlg.findChildren(QLabel) if lbl.text() == text)
             seen.update(dialog=dlg.height(), label=label.height(),
-                        needed=label.heightForWidth(label.width()))
+                        needed=label.heightForWidth(label.width()),
+                        scrolls=bool(dlg.findChildren(QScrollArea)))
             dlg.close()
             return QDialog.Rejected
 
@@ -48,6 +49,14 @@ class MsgboxHeightTest(unittest.TestCase):
         seen = self._show(_LONG)
         self.assertGreater(seen["needed"], 0)
         self.assertGreaterEqual(seen["label"], seen["needed"])
+
+    def test_a_message_taller_than_the_screen_scrolls(self):
+        # Capped at 80% of the available screen height, so the buttons stay
+        # on screen; the text scrolls inside instead (Greptile, #387).
+        avail = self.app.primaryScreen().availableGeometry().height()
+        seen = self._show("\n".join(f"line {i}" for i in range(400)))
+        self.assertLessEqual(seen["dialog"], int(avail * 0.8))
+        self.assertTrue(seen["scrolls"])
 
     def test_a_short_message_keeps_the_minimum_size(self):
         seen = self._show("No firmware release could be found.")

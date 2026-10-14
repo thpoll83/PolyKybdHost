@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMessageBox,
     QProgressDialog,
+    QScrollArea,
     QSizePolicy,
     QStyle,
     QVBoxLayout, )
@@ -213,6 +214,19 @@ def _msgbox(icon, title: str, text: str,
     text_w = _UPD_DLG_W - m.left() - m.right() - icon_lbl.sizeHint().width() - row.spacing()
     body_h = max(icon_lbl.sizeHint().height(), text_lbl.heightForWidth(text_w))
     need_h = m.top() + m.bottom() + body_h + outer.spacing() + btn_box.sizeHint().height()
+    # A message taller than most of the screen (a long download error, a large
+    # desktop font) scrolls instead, so the buttons stay on screen.
+    screen = QApplication.primaryScreen()
+    max_h = int(screen.availableGeometry().height() * 0.8) if screen else need_h
+    if need_h > max_h:
+        row.removeWidget(text_lbl)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidget(text_lbl)
+        row.addWidget(scroll, 1)
+        need_h = max_h
     dlg.setFixedSize(_UPD_DLG_W, max(_UPD_DLG_H, need_h))
 
     # Set default button focus

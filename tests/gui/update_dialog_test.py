@@ -30,18 +30,27 @@ class UpdateDialogMessageTest(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
-    def _message_label(self, width=None):
-        seen = {}
+    def _message_label(self, widths=()):
+        """Show the dialog, then resize it to each of `widths` in turn while it
+        is open. Returns one (height, needed, minimum) sample per state: the
+        first as shown, then one after each resize."""
+        samples = []
 
         def fake_exec(dlg):
-            if width:
-                dlg.resize(width, dlg.height())
             dlg.show()
             self.app.processEvents()
-            seen["label"] = next(lbl for lbl in dlg.findChildren(update_dialog.QLabel)
-                                 if lbl.text() == _MESSAGE)
-            seen["height"] = seen["label"].height()
-            seen["needed"] = seen["label"].heightForWidth(seen["label"].width())
+            label = next(lbl for lbl in dlg.findChildren(update_dialog.QLabel)
+                         if lbl.text() == _MESSAGE)
+
+            def sample():
+                samples.append((label.height(), label.heightForWidth(label.width()),
+                                label.minimumHeight()))
+
+            sample()
+            for w in widths:
+                dlg.resize(w, dlg.height())
+                self.app.processEvents()
+                sample()
             dlg.close()
             return QDialog.Rejected
 
@@ -49,16 +58,22 @@ class UpdateDialogMessageTest(unittest.TestCase):
             update_dialog.confirm_update("Update", _MESSAGE, notes="- n",
                                          html_url="https://example.invalid",
                                          question="Download and flash now?")
-        return seen
+        return samples
 
     def test_a_wrapped_message_is_shown_whole(self):
-        seen = self._message_label()
-        self.assertGreater(seen["needed"], 0)
-        self.assertGreaterEqual(seen["height"], seen["needed"])
+        (height, needed, _), = self._message_label()
+        self.assertGreater(needed, 0)
+        self.assertGreaterEqual(height, needed)
 
-    def test_the_height_follows_a_wider_dialog(self):
-        seen = self._message_label(width=1200)
-        self.assertGreaterEqual(seen["height"], seen["needed"])
+    def test_the_height_follows_a_live_resize(self):
+        # An open dialog, widened and narrowed back: the text fits after each
+        # change, and the minimum height drops when the wider label needs
+        # fewer lines (resizeEvent recomputes it; it is not fixed once).
+        shown, wide, narrow = self._message_label(widths=(1200, 540))
+        for height, needed, _ in (shown, wide, narrow):
+            self.assertGreaterEqual(height, needed)
+        self.assertLess(wide[2], shown[2])
+        self.assertEqual(narrow[2], shown[2])
 
 
 if __name__ == "__main__":
