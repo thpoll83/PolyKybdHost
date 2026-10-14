@@ -25,7 +25,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # overrule it (searching google.com for "jira" would otherwise load the Jira
   # overlay). Keys match whole title words; a key of several words (Claude
   # Code) matches them adjacent, and is tried before a shorter key (Claude).
-  urls-contains:
+  urls-contains: &web_urls
     miro.com:
       overlay: miro_template.mods.png
     outlook.office.com:
@@ -72,7 +72,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
   # Windows and Linux ends in "Google Chrome".
-  titles-contains:
+  titles-contains: &web_titles
     Miro:
       overlay: miro_template.mods.png
     Outlook:
@@ -114,7 +114,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   os:
     macos:
       overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
-      urls-contains:
+      urls-contains: &web_urls_mac
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         outlook.office.com:
@@ -146,7 +146,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
         chatgpt.com:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
-      titles-contains:
+      titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         Outlook:
@@ -174,6 +174,38 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
         ChatGPT:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+# Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
+# keymap, so it has its own entry, but the web-app routing is the browser
+# entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
+# A `<<:` merge keeps that map's ORDER (first hit wins) and replaces only
+# chatgpt.com/codex, whose value names the browser's own set. The `os:` branches
+# REPLACE the entry, so each repeats the routing, as the browser entry does.
+# Names: firefox(.exe) on Windows (Developer Edition and Nightly too); WM_CLASS
+# firefox / firefox-esr (Debian) / firefox-dev (Developer Edition remoting name)
+# / firefox-nightly / firefox_firefox (Ubuntu snap) and the Flatpak app id
+# org.mozilla.firefox on Linux; the display names on macOS.
+firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.firefox,firefox developer edition,firefox nightly:
+  overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
+  urls-contains:
+    <<: *web_urls
+    chatgpt.com/codex:
+      overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
+  titles-contains: *web_titles
+  os:
+    macos:
+      overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
+      urls-contains:
+        <<: *web_urls_mac
+        chatgpt.com/codex:
+          overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
+      titles-contains: *web_titles_mac
+    linux:
+      overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
+      urls-contains:
+        <<: *web_urls
+        chatgpt.com/codex:
+          overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
+      titles-contains: *web_titles
 # AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
 # forms are under the browser entry above (claude.ai, chatgpt.com). The Claude
 # desktop app shows its Chat and Code tabs in one window of one process, so one
@@ -190,7 +222,7 @@ chatgpt:
   os:
     macos:
       overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
-codex:
+codex,codex-desktop:
   overlay: [codex_template.mods.png, codex_template.combo.mods.png]
   os:
     macos:
@@ -636,3 +668,44 @@ filmcraft,ai.storyteller.filmcraft:
   os:
     macos:
       overlay: [filmcraft_template_mac.mods.png, filmcraft_template_mac.combo.mods.png, filmcraft_template_mac.extra.mods.png, filmcraft_template_mac.gui.mods.png]
+
+# VS Code forks and Zed (sources: overlay_sources/cursor|windsurf|zed/). The
+# `code` entry's title gate never sees these: the lookup is an exact match on
+# the app name. Windsurf was renamed Devin Desktop on 2026-06-02 (Devin.exe,
+# Devin.app, devin-desktop on Linux); `windsurf` covers installs from before.
+# Zed's GUI binary on Linux is zed-editor; its app id is dev.zed.Zed per channel.
+cursor:
+  overlay: [cursor_template.mods.png, cursor_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png]
+    linux:
+      overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png]
+windsurf,devin,devin-desktop:
+  overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png]
+    linux:
+      overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png]
+zed,zed preview,zed nightly,zed dev,zed-editor,dev.zed.zed,dev.zed.zed-preview,dev.zed.zed-nightly,dev.zed.zed-dev:
+  overlay: [zed_template.mods.png, zed_template.combo.mods.png, zed_template.extra.mods.png, zed_template.gui.mods.png]
+  os:
+    macos:
+      overlay: [zed_mac_template.mods.png, zed_mac_template.combo.mods.png, zed_mac_template.extra.mods.png, zed_mac_template.gui.mods.png]
+    linux:
+      overlay: [zed_linux_template.mods.png, zed_linux_template.combo.mods.png, zed_linux_template.extra.mods.png, zed_linux_template.gui.mods.png]
+
+# Local-model AI desktop apps (sources: overlay_sources/aichat/lmstudio.yaml,
+# jan.yaml). LM Studio's Linux AppImage name `lm-studio` is unconfirmed. Jan's
+# binary is Jan-Desktop (tauri mainBinaryName); its Flatpak WM class is Jan.
+lm studio,lm-studio:
+  overlay: [lmstudio_template.mods.png, lmstudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [lmstudio_template_mac.mods.png, lmstudio_template_mac.combo.mods.png, lmstudio_template_mac.extra.mods.png]
+jan,jan-desktop:
+  overlay: jan_template.mods.png
+  os:
+    macos:
+      overlay: [jan_template_mac.mods.png, jan_template_mac.combo.mods.png]
