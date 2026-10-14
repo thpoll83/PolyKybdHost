@@ -1,0 +1,205 @@
+# Mozilla Firefox shortcut overlays for PolyKybd.
+#
+# ONE spec, TWO artwork sets:
+#   firefox_template.*      Windows / Linux
+#   firefox_template_mac.*  macOS (CMDCTRL -> Cmd, plus the `only: [macos]` rows)
+#
+# Authority: Firefox's own key definitions at the RELEASE branch (158.0.1),
+# mozilla-firefox/firefox@1a0cfe22a2d8ba77e77cc8f43eaa480e34eca181:
+#   browser/base/content/browser-sets.inc.xhtml   (<keyset id="mainKeyset">)
+#   browser/locales/en-US/browser/browserSets.ftl  (the letters)
+#   devtools/startup/DevToolsStartup.sys.mjs + devtools/startup/locales/en-US/key-shortcuts.ftl
+#   toolkit/modules/ShortcutUtils.sys.mjs          (Ctrl+Tab/PgUp/PgDn, Ctrl+F4, F7)
+# `accel` there is Ctrl on Windows/Linux and Cmd on macOS -> CMDCTRL here;
+# `control` is literal Ctrl on every OS -> CTRL. XP_UNIX covers Linux AND macOS;
+# XP_GNOME is every Linux (GTK) build. Per-row file:line in SOURCES.md.
+#
+# Every action Firefox shares with Chromium reuses chrome/icons/ byte for byte
+# with the same placement (*r), so both browsers draw one identical cell.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python polyhost/res/overlay_sources/firefox/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/firefox/bindings.yaml --preview /tmp/firefox_preview
+app: firefox
+match: [firefox, firefox-esr, firefox-dev, firefox-nightly, firefox_firefox, org.mozilla.firefox,
+        firefox developer edition, firefox nightly]
+output: firefox_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+# No program_icon: ESC is left to the generic program mark (the OS icon of the
+# running firefox, else Simple Icons `firefox`), exactly as chrome_template does.
+
+# Chrome's reclaimed cells render 1:1: the old cell IS the icon.
+_r: &r { region: [72, 40], anchor: center, source: "reclaimed (chrome/icons)" }
+
+bindings:
+  # ---------------------------------------------------------------- windows & tabs
+  - { key: N,   mods: [CMDCTRL],        icon: newwindow.png,   <<: *r, label: "New window" }
+  - { key: T,   mods: [CMDCTRL],        icon: newtab.png,      <<: *r, label: "New tab" }
+  - { key: W,   mods: [CMDCTRL],        icon: closetab.png,    <<: *r, label: "Close tab" }
+  - { key: F4,  mods: [CTRL], only: [windows, linux], icon: closetab_f4.png, <<: *r, label: "Close tab" }
+  - { key: W,   mods: [CMDCTRL, SHIFT], icon: closewindow.png,  label: "Close window" }
+  - { key: P,   mods: [CMDCTRL, SHIFT], icon: incognito.png,   <<: *r, label: "Private window" }
+  - { key: T,   mods: [CMDCTRL, SHIFT], icon: reopentab.png,   <<: *r, label: "Reopen closed tab" }
+  - { key: N,   mods: [CMDCTRL, SHIFT], icon: reopenwindow.png, label: "Reopen closed window" }
+  - { key: Q,   mods: [CMDCTRL], except: [windows], icon: quit.png, label: "Quit Firefox" }
+  - { key: Q,   mods: [CTRL, SHIFT], only: [windows], icon: quit.png, label: "Quit Firefox" }
+  - { key: M,   mods: [CTRL],           icon: mute.png,        label: "Mute tab" }
+
+  # Select tab 1..8 / last: accel+N, but Alt+N on Linux (NUM_SELECT_TAB_MODIFIER).
+  - { key: "1", mods: [CMDCTRL], except: [linux], icon: tab1.png, <<: *r, label: "Tab 1" }
+  - { key: "2", mods: [CMDCTRL], except: [linux], icon: tab2.png, <<: *r, label: "Tab 2" }
+  - { key: "3", mods: [CMDCTRL], except: [linux], icon: tab3.png, <<: *r, label: "Tab 3" }
+  - { key: "4", mods: [CMDCTRL], except: [linux], icon: tab4.png, <<: *r, label: "Tab 4" }
+  - { key: "5", mods: [CMDCTRL], except: [linux], icon: tab5.png, <<: *r, label: "Tab 5" }
+  - { key: "6", mods: [CMDCTRL], except: [linux], icon: tab6.png, <<: *r, label: "Tab 6" }
+  - { key: "7", mods: [CMDCTRL], except: [linux], icon: tab7.png, <<: *r, label: "Tab 7" }
+  - { key: "8", mods: [CMDCTRL], except: [linux], icon: tab8.png, <<: *r, label: "Tab 8" }
+  - { key: "9", mods: [CMDCTRL], except: [linux], icon: lasttab.png, <<: *r, label: "Last tab" }
+  - { key: "1", mods: [ALT], only: [linux], icon: tab1.png, <<: *r, label: "Tab 1" }
+  - { key: "2", mods: [ALT], only: [linux], icon: tab2.png, <<: *r, label: "Tab 2" }
+  - { key: "3", mods: [ALT], only: [linux], icon: tab3.png, <<: *r, label: "Tab 3" }
+  - { key: "4", mods: [ALT], only: [linux], icon: tab4.png, <<: *r, label: "Tab 4" }
+  - { key: "5", mods: [ALT], only: [linux], icon: tab5.png, <<: *r, label: "Tab 5" }
+  - { key: "6", mods: [ALT], only: [linux], icon: tab6.png, <<: *r, label: "Tab 6" }
+  - { key: "7", mods: [ALT], only: [linux], icon: tab7.png, <<: *r, label: "Tab 7" }
+  - { key: "8", mods: [ALT], only: [linux], icon: tab8.png, <<: *r, label: "Tab 8" }
+  - { key: "9", mods: [ALT], only: [linux], icon: lasttab.png, <<: *r, label: "Last tab" }
+
+  # Tab cycling: literal Ctrl on every OS (ShortcutUtils checks event.ctrlKey).
+  - { key: TAB,  mods: [CTRL],        icon: nexttab.png, <<: *r, label: "Next tab" }
+  - { key: TAB,  mods: [CTRL, SHIFT], icon: prevtab.png, <<: *r, label: "Previous tab" }
+  - { key: PGDN, mods: [CTRL],        icon: nexttab.png, <<: *r, label: "Next tab" }
+  - { key: PGUP, mods: [CTRL],        icon: prevtab.png, <<: *r, label: "Previous tab" }
+  - { key: PGDN, mods: [CTRL, SHIFT], icon: movetabright.png, label: "Move tab right" }
+  - { key: PGUP, mods: [CTRL, SHIFT], icon: movetableft.png,  label: "Move tab left" }
+  # macOS extras: Cmd+Opt+arrows and Cmd+Shift+[ / ] (charCode { / }).
+  - { key: RIGHT, mods: [GUI, ALT],   only: [macos], icon: nexttab.png, <<: *r, label: "Next tab" }
+  - { key: DOWN,  mods: [GUI, ALT],   only: [macos], icon: nexttab.png, <<: *r, label: "Next tab" }
+  - { key: LEFT,  mods: [GUI, ALT],   only: [macos], icon: prevtab.png, <<: *r, label: "Previous tab" }
+  - { key: UP,    mods: [GUI, ALT],   only: [macos], icon: prevtab.png, <<: *r, label: "Previous tab" }
+  - { key: "]",   mods: [GUI, SHIFT], only: [macos], icon: nexttab.png, <<: *r, label: "Next tab" }
+  - { key: "[",   mods: [GUI, SHIFT], only: [macos], icon: prevtab.png, <<: *r, label: "Previous tab" }
+
+  # ---------------------------------------------------------------- navigation
+  - { key: L,     mods: [CMDCTRL], icon: addressbar.png, <<: *r, label: "Address bar" }
+  - { key: D,     mods: [ALT], only: [windows, linux], icon: addressbar.png, <<: *r, label: "Address bar" }
+  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: back.png,    <<: *r, label: Back }
+  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: forward.png, <<: *r, label: Forward }
+  - { key: LEFT,  mods: [GUI], only: [macos],          icon: back.png,    <<: *r, label: Back }
+  - { key: RIGHT, mods: [GUI], only: [macos],          icon: forward.png, <<: *r, label: Forward }
+  # goBackKb2 / goForwardKb2 are XP_UNIX: Ctrl+[ ] on Linux, Cmd+[ ] on macOS.
+  - { key: "[",   mods: [CMDCTRL], except: [windows], icon: back.png,    <<: *r, label: Back }
+  - { key: "]",   mods: [CMDCTRL], except: [windows], icon: forward.png, <<: *r, label: Forward }
+  - { key: HOME,  mods: [ALT], icon: home.png, label: "Home page" }
+  - { key: R,     mods: [CMDCTRL],        icon: reload.png,    <<: *r, label: Reload }
+  - { key: F5,    mods: [],               icon: reload_f5.png, <<: *r, label: Reload }
+  - { key: R,     mods: [CMDCTRL, SHIFT], icon: hardreload.png, label: "Reload (skip cache)", shared: false }
+  - { key: F5,    mods: [CTRL], only: [windows, linux], icon: hardreload.png, label: "Reload (skip cache)", shared: false }
+  - { key: DOT,   mods: [GUI],  only: [macos], icon: stop.png, label: "Stop" }
+
+  # ---------------------------------------------------------------- search & find
+  - { key: K,  mods: [CMDCTRL], icon: websearch.png, label: "Web search" }
+  - { key: E,  mods: [CTRL], only: [windows], icon: websearch.png, label: "Web search" }
+  - { key: J,  mods: [CTRL], only: [linux],   icon: websearch.png, label: "Web search" }
+  - { key: F,  mods: [GUI, ALT], only: [macos], icon: websearch.png, label: "Web search" }
+  - { key: E,  mods: [GUI], only: [macos], icon: findselection.png, label: "Find selection" }
+  - { key: F,  mods: [CMDCTRL],        icon: find.png,        <<: *r, label: Find }
+  - { key: G,  mods: [CMDCTRL],        icon: findnext.png,    <<: *r, label: "Find next" }
+  - { key: G,  mods: [CMDCTRL, SHIFT], icon: findprev.png,    <<: *r, label: "Find previous" }
+  - { key: F3, mods: [],               icon: findnext_f3.png, <<: *r, label: "Find next" }
+  - { key: F3, mods: [SHIFT],          icon: findprev_f3.png, <<: *r, label: "Find previous" }
+
+  # ---------------------------------------------------------------- current page
+  - { key: "0", mods: [CMDCTRL], icon: zoomreset.png, <<: *r, label: "Reset zoom" }
+  - { key: "-", mods: [CMDCTRL], icon: zoomout.png,   <<: *r, label: "Zoom out" }
+  - { key: "=", mods: [CMDCTRL], icon: zoomin.png,    <<: *r, label: "Zoom in" }
+  - { key: U,   mods: [CMDCTRL], icon: pagesource.png, label: "Page source" }
+  - { key: U,   mods: [GUI, ALT], only: [macos], icon: pagesource.png, label: "Page source" }
+  - { key: I,   mods: [CMDCTRL], icon: pageinfo.png, label: "Page info" }
+  - { key: F11, mods: [],        icon: fullscreen.png, <<: *r, label: "Full screen" }
+  - { key: F,   mods: [GUI, CTRL],  only: [macos], icon: fullscreen.png, <<: *r, label: "Full screen" }
+  - { key: F,   mods: [GUI, SHIFT], only: [macos], icon: fullscreen.png, <<: *r, label: "Full screen" }
+  - { key: F9,  mods: [], only: [windows], icon: reader.png, label: "Reader view" }
+  - { key: R,   mods: [CMDCTRL, ALT], except: [windows], icon: reader.png, label: "Reader view" }
+  - { key: "]", mods: [CTRL, SHIFT], only: [windows, linux], icon: pip.png, label: "Picture-in-Picture" }
+  - { key: "]", mods: [GUI, ALT, SHIFT], only: [macos], icon: pip.png, label: "Picture-in-Picture" }
+  - { key: F7,  mods: [], icon: caret.png, label: "Caret browsing" }
+  - { key: S,   mods: [CMDCTRL, SHIFT], icon: screenshot.png, label: "Screenshot" }
+  - { key: X,   mods: [CMDCTRL, SHIFT], icon: textdirection.png, label: "Switch text direction" }
+
+  # ---------------------------------------------------------------- bookmarks & history
+  - { key: D, mods: [CMDCTRL],        icon: bookmark.png, <<: *r, label: "Bookmark page" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: bmalltabs.png, label: "Bookmark all tabs" }
+  - { key: B, mods: [CMDCTRL],        icon: bmsidebar.png, label: "Bookmarks sidebar" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: bmtoolbar.png, label: "Bookmarks toolbar" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: library.png,   label: "Library (bookmarks)" }
+  - { key: H, mods: [CTRL],  only: [windows, linux], icon: history.png, <<: *r, label: "History sidebar" }
+  - { key: H, mods: [GUI, SHIFT], only: [macos],     icon: history.png, <<: *r, label: "History sidebar" }
+  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: libhistory.png, label: "Library (history)" }
+  - { key: Y, mods: [GUI], only: [macos],                  icon: libhistory.png, label: "Library (history)" }
+  - { key: DELETE, mods: [CMDCTRL, SHIFT], icon: clearhistory.png, label: "Clear recent history" }
+  - { key: BACKSPACE, mods: [GUI, SHIFT], only: [macos], icon: clearhistory.png, label: "Clear recent history" }
+
+  # ---------------------------------------------------------------- tools & sidebars
+  - { key: J, mods: [CMDCTRL], except: [linux], icon: downloads.png, <<: *r, label: Downloads }
+  - { key: Y, mods: [CTRL, SHIFT], only: [linux], icon: downloads.png, <<: *r, label: Downloads }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: addons.png, label: "Add-ons" }
+  # Win/Linux accel,alt / control,alt; macOS binds these to literal Ctrl alone.
+  - { key: X, mods: [CTRL, ALT], only: [windows, linux], icon: aichat.png,      label: "AI chatbot sidebar" }
+  - { key: U, mods: [CTRL, ALT], only: [windows, linux], icon: tabssidebar.png, label: "Open tabs sidebar" }
+  - { key: Z, mods: [CTRL, ALT], only: [windows, linux], icon: sidebar.png,     label: "Toggle sidebar" }
+  - { key: X, mods: [CTRL], only: [macos], icon: aichat.png,      label: "AI chatbot sidebar" }
+  - { key: U, mods: [CTRL], only: [macos], icon: tabssidebar.png, label: "Open tabs sidebar" }
+  - { key: Z, mods: [CTRL], only: [macos], icon: sidebar.png,     label: "Toggle sidebar" }
+
+  # ---------------------------------------------------------------- web developer
+  # Ctrl+Shift+<k> on Windows/Linux, Cmd+Opt+<k> on macOS (DevToolsStartup `modifiers`).
+  - { key: F12, mods: [], icon: devtools.png, <<: *r, label: "Developer tools" }
+  - { key: I, mods: [CTRL, SHIFT], only: [windows, linux], icon: devtools.png, <<: *r, label: "Developer tools" }
+  - { key: I, mods: [GUI, ALT],    only: [macos],          icon: devtools.png, <<: *r, label: "Developer tools" }
+  - { key: C, mods: [CTRL, SHIFT], only: [windows, linux], icon: inspector.png, label: "Inspector" }
+  - { key: C, mods: [GUI, ALT],    only: [macos],          icon: inspector.png, label: "Inspector" }
+  - { key: C, mods: [GUI, SHIFT],  only: [macos],          icon: inspector.png, label: "Inspector" }
+  - { key: K, mods: [CTRL, SHIFT], only: [windows, linux], icon: webconsole.png, label: "Web console" }
+  - { key: K, mods: [GUI, ALT],    only: [macos],          icon: webconsole.png, label: "Web console" }
+  - { key: Z, mods: [CTRL, SHIFT], only: [windows, linux], icon: debugger.png, label: "Debugger" }
+  - { key: Z, mods: [GUI, ALT],    only: [macos],          icon: debugger.png, label: "Debugger" }
+  - { key: E, mods: [CTRL, SHIFT], only: [windows, linux], icon: network.png, label: "Network monitor" }
+  - { key: E, mods: [GUI, ALT],    only: [macos],          icon: network.png, label: "Network monitor" }
+  - { key: M, mods: [CTRL, SHIFT], only: [windows, linux], icon: responsive.png, label: "Responsive design mode" }
+  - { key: M, mods: [GUI, ALT],    only: [macos],          icon: responsive.png, label: "Responsive design mode" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: browserconsole.png, label: "Browser console" }
+  - { key: I, mods: [CMDCTRL, ALT, SHIFT], icon: browsertoolbox.png, label: "Browser toolbox" }
+  - { key: F7,  mods: [SHIFT], icon: styleeditor.png,   label: "Style editor" }
+  - { key: F5,  mods: [SHIFT], icon: performance.png,   label: "Performance" }
+  - { key: F9,  mods: [SHIFT], icon: storage.png,       label: "Storage inspector" }
+  - { key: F12, mods: [SHIFT], icon: accessibility.png, label: "Accessibility inspector" }
+
+  # ---------------------------------------------------------------- macOS app menu
+  - { key: COMMA, mods: [GUI],      only: [macos], icon: settings.png,   label: "Settings" }
+  - { key: M,     mods: [GUI],      only: [macos], icon: minimize.png,   label: "Minimize" }
+  - { key: H,     mods: [GUI],      only: [macos], icon: hide.png,       label: "Hide Firefox" }
+  - { key: H,     mods: [GUI, ALT], only: [macos], icon: hideothers.png, label: "Hide others" }
+
+  # ---------------------------------------------------------------- standard editing
+  # Shared Fluent concepts, as in the Chrome set (mainKeyset key_* rows).
+  - { key: S, mods: [CMDCTRL], label: "Save", source: "concept (shared Fluent)" }
+  - { key: O, mods: [CMDCTRL], label: "Open", source: "concept (shared Fluent)" }
+  - { key: P, mods: [CMDCTRL], label: "Print", source: "concept (shared Fluent)" }
+  - { key: X, mods: [CMDCTRL], label: "Cut", source: "concept (shared Fluent)" }
+  - { key: C, mods: [CMDCTRL], label: "Copy", source: "concept (shared Fluent)" }
+  - { key: V, mods: [CMDCTRL], label: "Paste", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo", source: "concept (shared Fluent)" }
+  - { key: A, mods: [CMDCTRL], label: "Select all", source: "concept (shared Fluent)" }
+  # key_redo: accel+Y on Windows, accel+Shift+Z on XP_UNIX. On Linux Ctrl+Shift+Z
+  # is ALSO the DevTools Debugger key; the global one (Debugger) is drawn above.
+  - { key: Y, mods: [CTRL], only: [windows], label: "Redo", source: "concept (shared Fluent)" }
+  - { key: Z, mods: [GUI, SHIFT], only: [macos], label: "Redo", source: "concept (shared Fluent)" }
