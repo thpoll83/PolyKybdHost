@@ -69,7 +69,10 @@ class UpdateDialogMessageTest(unittest.TestCase):
         # An open dialog, widened and narrowed back: the text fits after each
         # change, and the minimum height drops when the wider label needs
         # fewer lines (resizeEvent recomputes it; it is not fixed once).
-        shown, wide, narrow = self._message_label(widths=(1200, 540))
+        # Pinned to 540 px first: the dialog's starting width comes from the
+        # screen (_size_to_screen), so on a wide desktop the first sample
+        # could already be unwrapped (Greptile, #387).
+        _, shown, wide, narrow = self._message_label(widths=(540, 1200, 540))
         for height, needed, _ in (shown, wide, narrow):
             self.assertGreaterEqual(height, needed)
         self.assertLess(wide[2], shown[2])
