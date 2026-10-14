@@ -273,8 +273,6 @@ def _blender_mark(path):
     from simple-icons@15.22.0), rendered by the host's own ESC renderer so the
     baked mark is pixel-identical to what the runtime path would draw. It is a
     finished 72x40 mask placed full-cell (program_icon_region [72, 40])."""
-    import numpy as np
-    from PIL import Image
     from polyhost.services import app_icons
     mask = app_icons.render_mark(str(HERE / "marks" / "si_blender.svg"))
     a = np.where(mask, 255, 0).astype("uint8")
