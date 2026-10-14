@@ -195,6 +195,7 @@ class ManualFirmwareCheckUnknownVersionTest(unittest.TestCase):
     def _checked_version(self, stub, **kw):
         with mock.patch.object(self.host, "UpdateChecker") as checker:
             self.assertTrue(self.PolyHost._start_update_check(stub, force=True, **kw))
+        checker.return_value.start.assert_called_once_with()
         return checker.call_args.kwargs["current_fw_version"]
 
     def test_unknown_version_asks_against_zero_for_the_manual_check(self):
@@ -219,7 +220,9 @@ class ManualFirmwareCheckUnknownVersionTest(unittest.TestCase):
         stub._pending_fw_release = None
         with mock.patch.object(self.host, "_msgbox") as box:
             self.PolyHost._on_fw_up_clicked(stub)
-        box.assert_called_once()
+        box.assert_called_once_with(
+            self.host.QMessageBox.Warning, "Firmware Update",
+            "The keyboard must be connected to update the firmware.")
         stub._start_update_check.assert_not_called()
 
     def test_click_starts_the_check_that_offers_the_newest(self):
