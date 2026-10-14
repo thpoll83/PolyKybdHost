@@ -100,8 +100,10 @@ class SendPolicy:
         self.last_sent = now
 
 
-def payload(url, token="", pid=None, input_age=None) -> bytes:
-    body = {"app": APP, "url": url, "focused": True}
+def payload(url, token="", pid=None, input_age=None, focused=True) -> bytes:
+    """One report. ``focused=False`` with no URL withdraws this instance's
+    context, so the host stops showing its mode when reporting is turned off."""
+    body = {"app": APP, "url": url, "focused": bool(focused)}
     if pid is not None:
         body["pid"] = int(pid)
     if input_age is not None:
@@ -130,23 +132,26 @@ class Sender:
                                         daemon=True)
         self._thread.start()
 
-    def submit(self, port, url, token="", pid=None, input_age=None):
+    def submit(self, port, url, token="", pid=None, input_age=None, focused=True):
         with self._lock:
-            self._pending = (int(port), payload(url, token, pid, input_age))
+            self._pending = (int(port), payload(url, token, pid, input_age, focused))
         self._wake.set()
 
     def stop(self):
+        """Stop the thread after it delivers the report still pending, if any
+        (the withdrawal sent on unregister). Does not wait for it."""
         self._stop = True
         self._wake.set()
 
     def _run(self):
         while True:
-            self._wake.wait()
+            if not self._stop:
+                self._wake.wait()
             self._wake.clear()
-            if self._stop:
-                return
             with self._lock:
                 job, self._pending = self._pending, None
+            if job is None and self._stop:
+                return
             if job is not None:
                 try:
                     self._post(*job)

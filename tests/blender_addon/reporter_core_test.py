@@ -79,6 +79,10 @@ class PayloadTest(unittest.TestCase):
         self.assertEqual((body["pid"], body["input_age"]), (7, 1.2))
         self.assertNotIn("pid", json.loads(core.payload("u")))
 
+    def test_withdrawal_is_an_unfocused_report_without_url(self):
+        body = json.loads(core.payload(None, pid=7, focused=False))
+        self.assertEqual((body["url"], body["focused"], body["pid"]), (None, False, 7))
+
 
 class SenderTest(unittest.TestCase):
     def test_submit_never_blocks_and_latest_wins(self):
@@ -116,6 +120,25 @@ class SenderTest(unittest.TestCase):
         self.assertTrue(posted.acquire(timeout=2))   # the thread survived "a"
         s.stop()
         self.assertEqual(len(calls), 2)
+
+    def test_stop_still_delivers_the_pending_withdrawal(self):
+        # unregister() submits the withdrawal and stops at once; a post still
+        # in flight must not make the thread exit before sending it.
+        gate, got = threading.Event(), []
+
+        def slow_post(port, body):
+            gate.wait(2)
+            got.append(json.loads(body)["focused"])
+
+        s = core.Sender(post=slow_post)
+        s.submit(1, "blender://OBJECT/VIEW_3D")
+        time.sleep(0.05)                      # the first post is now in flight
+        s.submit(1, None, focused=False)
+        s.stop()
+        gate.set()
+        s._thread.join(2)
+        self.assertFalse(s._thread.is_alive())
+        self.assertEqual(got[-1], False)
 
     def test_a_delivery_error_is_printed_once(self):
         # A wrong port or token must be diagnosable from Blender's console

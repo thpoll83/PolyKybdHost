@@ -30,8 +30,12 @@ or editor and as a keep-alive every 3 s while nothing changes:
   that way: the host routes on these tokens alone.
 - `token` is added only if you set one (see below).
 
-The add-on cannot tell whether Blender has OS focus, so it never says "unfocused".
-It does not need to: the host uses a report only while **Blender is the focused
+When you turn "Report context" off, or disable the add-on, it sends one last
+report with `"url": null, "focused": false`, so the keyboard leaves that mode's
+overlay at once instead of keeping it until the window changes.
+
+The add-on cannot tell whether Blender has OS focus, so its other reports never
+say "unfocused". They do not need to: the host uses a report only while **Blender is the focused
 application**, and only while it is fresher than 8 s (hence the 3 s keep-alive). A
 Blender in the background can never change the overlay of the app in front.
 

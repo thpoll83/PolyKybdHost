@@ -142,6 +142,13 @@ class TestContextReporter(unittest.TestCase):
             self.assertNotEqual(got, self.URL, name)
         self.assertIsNone(self.p.current_url("code"))
 
+    def test_withdrawal_clears_and_asks_for_a_rematch(self):
+        # Turning "Report context" off sends an unfocused report with no URL
+        # from the same instance: the overlay must leave that mode at once.
+        self.p.update(app="blender", url=self.URL, pid=7)
+        self.assertTrue(self.p.update(app="blender", url=None, focused=False, pid=7))
+        self.assertIsNone(self.p.current_url("blender"))
+
     def test_stale_report_ignored(self):
         self.p.update(app="blender", url=self.URL, focused=True)
         self.clock.t += 8.5

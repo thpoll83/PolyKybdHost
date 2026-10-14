@@ -42,6 +42,7 @@ _state = {
     "tracked": set(),     # window pointers with a running tracker
     "errors": set(),      # (type, message) already printed by _tick
     "last_input": None,   # time.monotonic() of the newest mouse/key event
+    "reported": False,    # a context was sent since the last withdrawal
 }
 
 
@@ -146,7 +147,10 @@ def _tick():
     try:
         prefs = _prefs()
         wm = bpy.context.window_manager
-        if prefs is None or not prefs.enabled or wm is None:
+        if prefs is not None and not prefs.enabled:
+            _withdraw(prefs)
+            return core.POLL_S
+        if prefs is None or wm is None:
             return core.POLL_S
         _ensure_trackers(wm)
         url = _current_url(wm)
@@ -156,6 +160,7 @@ def _tick():
             sender.submit(prefs.port, url, prefs.token, pid=os.getpid(),
                           input_age=None if last is None else now - last)
             policy.sent(url, now)
+            _state["reported"] = True
     except Exception as e:     # noqa: BLE001 -- never let a report break Blender
         # Swallowed so a bug here can never break Blender's UI, but printed
         # once per distinct error, so it can be diagnosed from Blender's
@@ -165,6 +170,18 @@ def _tick():
             _state["errors"].add(key)
             traceback.print_exc()
     return core.POLL_S
+
+
+def _withdraw(prefs):
+    """Tell the host this instance stopped reporting, once, so the keyboard
+    leaves the last mode's overlay instead of keeping it until the window
+    changes. The policy is reset, so re-enabling reports again at once."""
+    sender = _state["sender"]
+    if not _state.get("reported") or sender is None:
+        return
+    sender.submit(prefs.port, None, prefs.token, pid=os.getpid(), focused=False)
+    _state["reported"] = False
+    _state["policy"] = core.SendPolicy()
 
 
 @bpy.app.handlers.persistent
@@ -187,6 +204,9 @@ def register():
 
 
 def unregister():
+    prefs = _prefs()
+    if prefs is not None:
+        _withdraw(prefs)
     sender = _state["sender"]
     _state["sender"] = None
     if sender is not None:
