@@ -2077,13 +2077,16 @@ class PolyHost(QApplication):
         without the modal ``exec_()`` blocking. Works in client mode too — it
         only shows info about this host program, no device access."""
         info = self._gather_about_info()
+        # A variable, not _(info["mode"]): Babel would extract the dict key
+        # "mode" as a msgid. The values are N_() marked where they are set.
+        mode = info["mode"]
         return about_dialog.build_about_dialog(
             heading=about_dialog.heading_html(
                 info["version"],
                 " &nbsp;·&nbsp; " + _f("HID protocol P{protocol}",
                                        protocol=info["host_protocol"]),
                 f"Python {info['python']} · Qt {info['qt']} · "
-                f"{platform.system()} · {_(info['mode'])}"),
+                f"{platform.system()} · {_(mode)}"),
             description=_(
                 "Host software for the PolyKybd split keyboard with per-keycap "
                 "OLED displays — tracks the active window and pushes overlays, "

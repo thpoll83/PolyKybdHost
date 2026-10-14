@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 05:55+0000\n"
+"POT-Creation-Date: 2026-10-14 06:53+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: id\n"
@@ -397,7 +397,7 @@ msgstr "Tentang PolyKybdHost (forwarder)"
 #. TRANSLATORS: the run mode in the About dialog's environment line
 #: polyhost/forwarder.py:811
 msgid "forwarder"
-msgstr ""
+msgstr "forwarder"
 
 #: polyhost/forwarder.py:813
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
@@ -414,7 +414,7 @@ msgstr "Blog"
 #: polyhost/gui/about_dialog.py:66
 #, python-brace-format
 msgid "Version {version}"
-msgstr ""
+msgstr "Versi {version}"
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
@@ -764,7 +764,7 @@ msgstr "bawaan"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Perintah PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2265
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2268
 msgid "Open file"
 msgstr "Buka file"
 
@@ -1659,8 +1659,8 @@ msgstr "Flash dimulai — pantau baki sistem/log."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Buang semua edit tertunda pada '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2858
-#: polyhost/host.py:2899 polyhost/host.py:2926
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2861
+#: polyhost/host.py:2902 polyhost/host.py:2929
 msgid "Firmware Update"
 msgstr "Pembaruan Firmware"
 
@@ -1792,15 +1792,15 @@ msgstr "Tidak tersedia: {reason}"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:415
 msgid "Preview language:"
-msgstr ""
+msgstr "Bahasa pratinjau:"
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:427
 msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
-msgstr ""
+msgstr "Tata letak yang digunakan pratinjau untuk menggambar label tombol. Hanya pratinjau yang berubah, bukan keyboard."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:429
 msgid "Unavailable: the language table could not be loaded."
-msgstr ""
+msgstr "Tidak tersedia: tabel bahasa tidak dapat dimuat."
 
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:698
 msgid "Error"
@@ -1825,7 +1825,7 @@ msgstr "tidak ada data pratinjau (bawaan atau checkout)"
 msgid "the shipped language table is missing"
 msgstr "tabel bahasa bawaan tidak ada"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2874
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2877
 msgid "unknown"
 msgstr "tidak diketahui"
 
@@ -3024,18 +3024,18 @@ msgstr "{prefix} — firmware v{fw_version} tersedia"
 msgid "Updates"
 msgstr "Pembaruan"
 
-#: polyhost/gui/update_dialog.py:98
+#: polyhost/gui/update_dialog.py:112
 msgid "What's new"
 msgstr "Yang baru"
 
-#: polyhost/gui/update_dialog.py:101
+#: polyhost/gui/update_dialog.py:115
 #, python-brace-format
 msgid "What's new — {release_name}"
 msgstr "Yang baru — {release_name}"
 
-#: polyhost/gui/update_dialog.py:119
+#: polyhost/gui/update_dialog.py:133
 msgid "View full release notes on GitHub"
-msgstr ""
+msgstr "Lihat catatan rilis lengkap di GitHub"
 
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
@@ -3447,15 +3447,15 @@ msgstr "ada — tidak terhubung (protokol/versi)"
 
 #: polyhost/host.py:2005
 msgid "Keyboard"
-msgstr ""
+msgstr "Keyboard"
 
 #: polyhost/host.py:2006
 msgid "No keyboard connected."
-msgstr ""
+msgstr "Tidak ada keyboard yang terhubung."
 
 #: polyhost/host.py:2010
 msgid "⚠ mismatch"
-msgstr ""
+msgstr "⚠ tidak cocok"
 
 #: polyhost/host.py:2012
 #, python-brace-format
@@ -3506,20 +3506,16 @@ msgstr "<b>Konfigurasi:</b> {path}"
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Log:</b> {path}"
 
-#: polyhost/forwarder.py:808 polyhost/host.py:2083
+#: polyhost/forwarder.py:808 polyhost/host.py:2086
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protokol HID P{protocol}"
 
-#: polyhost/host.py:2086
-msgid "mode"
-msgstr ""
-
-#: polyhost/host.py:2088
+#: polyhost/host.py:2091
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Perangkat lunak host untuk keyboard split PolyKybd dengan layar OLED di setiap keycap — melacak jendela aktif dan mengirim overlay, bahasa, serta pembaruan keymap ke keyboard."
 
-#: polyhost/host.py:2114
+#: polyhost/host.py:2117
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3528,61 +3524,61 @@ msgstr ""
 "Mengubah bahasa input ke '{language}' gagal dengan:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2134 polyhost/host.py:2149
+#: polyhost/host.py:2137 polyhost/host.py:2152
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Tidak dapat menyetel {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2264
+#: polyhost/host.py:2267
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Pemetaan overlay PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2352 polyhost/host.py:2830 polyhost/host.py:2973
+#: polyhost/host.py:2355 polyhost/host.py:2833 polyhost/host.py:2976
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Perbarui firmware ke v{version}…"
 
-#: polyhost/host.py:2354 polyhost/host.py:2871 polyhost/host.py:3043
+#: polyhost/host.py:2357 polyhost/host.py:2874 polyhost/host.py:3046
 msgid "Check for firmware update…"
 msgstr "Periksa pembaruan firmware…"
 
 #: polyhost/forwarder.py:846 polyhost/forwarder.py:857
-#: polyhost/forwarder.py:863 polyhost/host.py:2372 polyhost/host.py:2493
-#: polyhost/host.py:2497
+#: polyhost/forwarder.py:863 polyhost/host.py:2375 polyhost/host.py:2496
+#: polyhost/host.py:2500
 msgid "Check for updates..."
 msgstr "Periksa pembaruan..."
 
-#: polyhost/host.py:2440
+#: polyhost/host.py:2443
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Pembaruan ke v{version} tersedia"
 
 #: polyhost/forwarder.py:859 polyhost/forwarder.py:865
-#: polyhost/forwarder.py:876 polyhost/host.py:2451 polyhost/host.py:2491
-#: polyhost/host.py:2498 polyhost/host.py:2521
+#: polyhost/forwarder.py:876 polyhost/host.py:2454 polyhost/host.py:2494
+#: polyhost/host.py:2501 polyhost/host.py:2524
 msgid "PolyKybdHost Update"
 msgstr "Pembaruan PolyKybdHost"
 
-#: polyhost/host.py:2452
+#: polyhost/host.py:2455
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Versi {version} tersedia. Klik ikon baki sistem untuk memperbarui."
 
-#: polyhost/forwarder.py:834 polyhost/host.py:2477
+#: polyhost/forwarder.py:834 polyhost/host.py:2480
 msgid "Checking for updates..."
 msgstr "Memeriksa pembaruan..."
 
-#: polyhost/host.py:2490
+#: polyhost/host.py:2493
 msgid "No updates available"
 msgstr "Tidak ada pembaruan"
 
-#: polyhost/forwarder.py:860 polyhost/host.py:2492
+#: polyhost/forwarder.py:860 polyhost/host.py:2495
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Anda menjalankan versi terbaru (v{version})."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2499
+#: polyhost/forwarder.py:866 polyhost/host.py:2502
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3597,63 +3593,63 @@ msgstr ""
 "\n"
 "Jalankan dengan --dev 1 untuk detailnya."
 
-#: polyhost/host.py:2504 polyhost/host.py:2903
+#: polyhost/host.py:2507 polyhost/host.py:2906
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Dirilis: {date}"
 
-#: polyhost/forwarder.py:847 polyhost/host.py:2505
+#: polyhost/forwarder.py:847 polyhost/host.py:2508
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Versi {version} tersedia."
 
-#: polyhost/forwarder.py:848 polyhost/host.py:2506
+#: polyhost/forwarder.py:848 polyhost/host.py:2509
 msgid "Update PolyKybdHost"
 msgstr "Perbarui PolyKybdHost"
 
-#: polyhost/host.py:2510
+#: polyhost/host.py:2513
 msgid "Download, install, and restart now?"
 msgstr "Unduh, instal, dan mulai ulang sekarang?"
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2521
+#: polyhost/forwarder.py:875 polyhost/host.py:2524
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Mengunduh v{version}…"
 
-#: polyhost/forwarder.py:916 polyhost/host.py:2646
+#: polyhost/forwarder.py:916 polyhost/host.py:2649
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Tidak dapat memulai relai pembaruan; pembaruan belum selesai. Lihat log untuk detailnya."
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2661
+#: polyhost/forwarder.py:928 polyhost/host.py:2664
 msgid "Update failed"
 msgstr "Pembaruan gagal"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2661
+#: polyhost/forwarder.py:928 polyhost/host.py:2664
 msgid "The update did not finish."
 msgstr "Pembaruan tidak selesai."
 
-#: polyhost/host.py:2841
+#: polyhost/host.py:2844
 msgid "PolyKybd Firmware Update"
 msgstr "Pembaruan Firmware PolyKybd"
 
-#: polyhost/host.py:2842
+#: polyhost/host.py:2845
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Firmware baru v{version} tersedia. Klik ikon baki sistem untuk memperbarui."
 
-#: polyhost/host.py:2859 polyhost/host.py:2900
+#: polyhost/host.py:2862 polyhost/host.py:2903
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Keyboard harus terhubung untuk memperbarui firmware."
 
-#: polyhost/host.py:2865
+#: polyhost/host.py:2868
 msgid "Checking for firmware update…"
 msgstr "Memeriksa pembaruan firmware…"
 
-#: polyhost/host.py:2879 polyhost/host.py:2889 polyhost/host.py:2892
+#: polyhost/host.py:2882 polyhost/host.py:2892 polyhost/host.py:2895
 msgid "PolyKybd Firmware"
 msgstr "Firmware PolyKybd"
 
-#: polyhost/host.py:2880
+#: polyhost/host.py:2883
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3664,55 +3660,55 @@ msgstr ""
 "\n"
 "Keyboard Anda menggunakan v{current}. Biasanya ini berarti build rilis gagal — halaman rilis akan mendapatkan firmware-nya setelah masalah itu diperbaiki."
 
-#: polyhost/host.py:2890
-msgid "No firmware release could be found."
-msgstr ""
-
 #: polyhost/host.py:2893
+msgid "No firmware release could be found."
+msgstr "Rilis firmware tidak ditemukan."
+
+#: polyhost/host.py:2896
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Anda menjalankan firmware terbaru (v{version})."
 
-#: polyhost/host.py:2905
+#: polyhost/host.py:2908
 #, python-brace-format
 msgid "Installed: v{version}"
-msgstr ""
+msgstr "Terpasang: v{version}"
 
-#: polyhost/host.py:2906
+#: polyhost/host.py:2909
 msgid "Installed: unknown (the keyboard did not report its version)"
-msgstr ""
+msgstr "Terpasang: tidak diketahui (keyboard tidak melaporkan versinya)"
 
-#: polyhost/host.py:2907
+#: polyhost/host.py:2910
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} tersedia."
 
-#: polyhost/host.py:2909
+#: polyhost/host.py:2912
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Kedua belahan diperbarui melalui HID dan boot ulang secara otomatis."
 
-#: polyhost/host.py:2910
+#: polyhost/host.py:2913
 msgid "Update PolyKybd Firmware"
 msgstr "Perbarui Firmware PolyKybd"
 
-#: polyhost/host.py:2914
+#: polyhost/host.py:2917
 msgid "Download and flash now?"
 msgstr "Unduh dan flash sekarang?"
 
-#: polyhost/host.py:2925
+#: polyhost/host.py:2928
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Mengunduh firmware v{version}…"
 
-#: polyhost/host.py:2947 polyhost/host.py:3159
+#: polyhost/host.py:2950 polyhost/host.py:3162
 msgid "Cancelling…"
 msgstr "Membatalkan…"
 
-#: polyhost/host.py:2984
+#: polyhost/host.py:2987
 msgid "Firmware Update Failed"
 msgstr "Pembaruan Firmware Gagal"
 
-#: polyhost/host.py:2985
+#: polyhost/host.py:2988
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3723,12 +3719,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3123 polyhost/host.py:3137 polyhost/host.py:3183
-#: polyhost/host.py:3192 polyhost/host.py:3198
+#: polyhost/host.py:3126 polyhost/host.py:3140 polyhost/host.py:3186
+#: polyhost/host.py:3195 polyhost/host.py:3201
 msgid "Install WinCompose"
 msgstr "Instal WinCompose"
 
-#: polyhost/host.py:3124
+#: polyhost/host.py:3127
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3738,11 +3734,11 @@ msgstr ""
 "\n"
 "Build WinCompose dari PolyKybd akan diunduh dari GitHub dan penginstalnya dijalankan (Windows akan meminta Anda mengonfirmasi)."
 
-#: polyhost/host.py:3137
+#: polyhost/host.py:3140
 msgid "Looking for the latest WinCompose release…"
 msgstr "Mencari rilis WinCompose terbaru…"
 
-#: polyhost/host.py:3184
+#: polyhost/host.py:3187
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3752,7 +3748,7 @@ msgstr ""
 "\n"
 "Halaman rilis akan terbuka di browser Anda — unduh dan jalankan setup dari sana."
 
-#: polyhost/host.py:3193
+#: polyhost/host.py:3196
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3763,7 +3759,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3199
+#: polyhost/host.py:3202
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3780,7 +3776,7 @@ msgstr ""
 "File disimpan di:\n"
 "{path}"
 
-#: polyhost/host.py:3207
+#: polyhost/host.py:3210
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Penginstal WinCompose telah dijalankan. Setelah selesai dan WinCompose berjalan, PolyKybd akan beralih menggunakannya secara otomatis."
 
