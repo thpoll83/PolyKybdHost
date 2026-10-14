@@ -509,7 +509,8 @@ def note_cleared(filename=CRASH_LOG):
         except OSError:
             same_file = False
         if same_file:
-            _stamp("session start (after clear)")
+            # A failed stamp leaves the live session unpaired, so report it.
+            return _stamp("session start (after clear)")
     return True
 
 

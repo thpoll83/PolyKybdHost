@@ -505,3 +505,11 @@ class NoteClearedTest(unittest.TestCase):
         text = active.read_text(encoding="utf-8")
         self.assertIn("crash log cleared", text)
         self.assertIn("session start (after clear)", text)
+
+    def test_a_failed_session_stamp_is_reported(self):
+        # The marker landed but the replacement session start did not: the
+        # live session is left unpaired, so this is not a success.
+        active = self.dir / "crash_log.txt"
+        self._install_handle(active)
+        with mock.patch.object(crash_log, "_stamp", return_value=False):
+            self.assertFalse(crash_log.note_cleared(str(active)))

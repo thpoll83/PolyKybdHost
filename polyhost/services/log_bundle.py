@@ -25,6 +25,7 @@ from __future__ import annotations
 import os
 import platform
 import re
+import stat
 import sys
 import zipfile
 from dataclasses import dataclass, field
@@ -174,14 +175,19 @@ class ClearResult:
     def files(self) -> int:
         return len(self.removed) + len(self.truncated)
 
-    def summary(self) -> str:
-        if not self.files:
-            return "no log files to clear"
+    @property
+    def freed_kb(self) -> int:
         # max(1, …) keeps a sub-KB clear from reading as "freed 0 KB", but it
         # must not invent a kilobyte when there was genuinely nothing to free
         # (clearing twice in a row, or a set of already-empty files).
-        freed_kb = max(1, self.bytes_freed // 1024) if self.bytes_freed else 0
-        return "cleared %d file(s), freed %d KB" % (self.files, freed_kb)
+        return max(1, self.bytes_freed // 1024) if self.bytes_freed else 0
+
+    def summary(self) -> str:
+        """English, for the log and polyctl. The log viewer builds its own
+        translated sentence from ``files`` and ``freed_kb``."""
+        if not self.files:
+            return "no log files to clear"
+        return "cleared %d file(s), freed %d KB" % (self.files, self.freed_kb)
 
 
 def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
@@ -214,10 +220,21 @@ def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
     cleared_crash = False
     for source in LOG_SOURCES:
         for path in _rotation_chain(d, source.filename):
+            # lstat, not stat: a symlink in the log directory must not lead the
+            # truncate below to empty a file outside it. Only a regular file
+            # is cleared. (A swap between this check and the truncate is not
+            # guarded; the directory is the user's own.)
             try:
-                size = path.stat().st_size
-            except OSError:
+                st = path.lstat()
+            except FileNotFoundError:
                 continue  # a rotation moved it between listing and stat
+            except OSError as exc:
+                result.errors.append("%s: %s" % (path.name, exc))
+                continue
+            if not stat.S_ISREG(st.st_mode):
+                result.errors.append("%s: not a regular file, left alone" % path.name)
+                continue
+            size = st.st_size
             try:
                 if path.name == source.filename:      # the live file
                     os.truncate(path, 0)
@@ -236,7 +253,8 @@ def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
     # success there would hide the one failure that matters.
     if cleared_crash and not crash_log.note_cleared(str(d / crash_log.CRASH_LOG)):
         result.errors.append(
-            "%s: could not record the clear marker" % crash_log.CRASH_LOG)
+            "%s: could not record the clear marker or the new session start"
+            % crash_log.CRASH_LOG)
     return result
 
 

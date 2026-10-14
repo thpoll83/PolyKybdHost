@@ -805,6 +805,34 @@ class ClearLogsTest(unittest.TestCase):
         result = lb.clear_logs(self.dir)
         self.assertIn("freed 1 KB", result.summary())
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
+    def test_a_symlinked_log_is_not_followed(self):
+        # A live log that is a symlink must not empty the file it points at,
+        # which may live anywhere.
+        other = tempfile.TemporaryDirectory()
+        self.addCleanup(other.cleanup)
+        outside = Path(other.name) / "precious.txt"
+        outside.write_text("keep me", encoding="utf-8")
+        (self.dir / "host_log.txt").symlink_to(outside)
+        result = lb.clear_logs(self.dir)
+        self.assertEqual(outside.read_text(encoding="utf-8"), "keep me")
+        self.assertTrue(any("not a regular file" in e for e in result.errors))
+
+    def test_a_stat_failure_is_reported_not_skipped(self):
+        # Only a file that vanished is skipped silently; anything else means
+        # the log was not cleared, and the caller must hear about it.
+        (self.dir / "host_log.txt").write_text("x", encoding="utf-8")
+        real_lstat = Path.lstat
+
+        def failing_lstat(path, *a, **kw):
+            if path.name == "host_log.txt":
+                raise PermissionError("denied")
+            return real_lstat(path, *a, **kw)
+
+        with mock.patch.object(Path, "lstat", failing_lstat):
+            result = lb.clear_logs(self.dir)
+        self.assertTrue(any("host_log.txt" in e for e in result.errors))
+
     def test_a_lost_crash_marker_is_reported_rather_than_swallowed(self):
         # The crash log is emptied either way; if the marker cannot be written,
         # the file is left looking like a machine that has never crashed, and

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessa
 
 from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
-from polyhost.i18n import _, _f
+from polyhost.i18n import _, _f, _nf
 from polyhost.util.log_util import LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -292,7 +292,12 @@ class LogViewerDialog(QMainWindow):
         done = QMessageBox(self)
         done.setWindowTitle(_("Clear Logs"))
         done.setIcon(QMessageBox.Warning if result.errors else QMessageBox.Information)
-        done.setText(result.summary())
+        if result.files:
+            done.setText(_nf("Cleared {n} file, freed {kb} KB.",
+                             "Cleared {n} files, freed {kb} KB.",
+                             result.files, kb=result.freed_kb))
+        else:
+            done.setText(_("No log files to clear."))
         if result.errors:
             done.setInformativeText(
                 _("Some files could not be cleared:") + "\n" + "\n".join(result.errors))
