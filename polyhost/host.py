@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMessageBox,
     QProgressDialog,
+    QScrollArea,
     QSizePolicy,
     QStyle,
     QVBoxLayout, )
@@ -173,7 +174,6 @@ def _msgbox(icon, title: str, text: str,
 
     dlg = QDialog(None)
     dlg.setWindowTitle(title)
-    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)
@@ -205,6 +205,29 @@ def _msgbox(icon, title: str, text: str,
     btn_box.accepted.connect(dlg.accept)
     btn_box.rejected.connect(dlg.reject)
     outer.addWidget(btn_box, 0, Qt.AlignRight)
+
+    # Fixed width, height grown to the text. A fixed 160 px cut the no-.bin
+    # release warning to its first third (90 px of label for 274 px of text):
+    # a top-level layout does not ask a wrapped label for its height-for-width,
+    # so the height is computed here from the label's own.
+    m = outer.contentsMargins()
+    text_w = _UPD_DLG_W - m.left() - m.right() - icon_lbl.sizeHint().width() - row.spacing()
+    body_h = max(icon_lbl.sizeHint().height(), text_lbl.heightForWidth(text_w))
+    need_h = m.top() + m.bottom() + body_h + outer.spacing() + btn_box.sizeHint().height()
+    # A message taller than most of the screen (a long download error, a large
+    # desktop font) scrolls instead, so the buttons stay on screen.
+    screen = QApplication.primaryScreen()
+    max_h = int(screen.availableGeometry().height() * 0.8) if screen else need_h
+    if need_h > max_h:
+        row.removeWidget(text_lbl)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidget(text_lbl)
+        row.addWidget(scroll, 1)
+        need_h = max_h
+    dlg.setFixedSize(_UPD_DLG_W, max(_UPD_DLG_H, need_h))
 
     # Set default button focus
     if default is not None:
@@ -2077,13 +2100,16 @@ class PolyHost(QApplication):
         without the modal ``exec_()`` blocking. Works in client mode too — it
         only shows info about this host program, no device access."""
         info = self._gather_about_info()
+        # A variable, not _(info["mode"]): Babel would extract the dict key
+        # "mode" as a msgid. The values are N_() marked where they are set.
+        mode = info["mode"]
         return about_dialog.build_about_dialog(
             heading=about_dialog.heading_html(
                 info["version"],
                 " &nbsp;·&nbsp; " + _f("HID protocol P{protocol}",
                                        protocol=info["host_protocol"]),
                 f"Python {info['python']} · Qt {info['qt']} · "
-                f"{platform.system()} · {_(info['mode'])}"),
+                f"{platform.system()} · {_(mode)}"),
             description=_(
                 "Host software for the PolyKybd split keyboard with per-keycap "
                 "OLED displays — tracks the active window and pushes overlays, "
