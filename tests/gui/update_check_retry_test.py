@@ -170,5 +170,76 @@ class NewerFirmwareCheckForUpdatesTest(unittest.TestCase):
         self.assertTrue(stub._await_manual_prompt)
 
 
+@unittest.skipUnless(os.environ.get("DISPLAY"),
+                     "polyhost.host imports pynput, which needs an X server")
+class ManualFirmwareCheckUnknownVersionTest(unittest.TestCase):
+    """"Check for firmware update…" with a keyboard whose version is not known.
+
+    The check used to run host-only: nothing answered the manual ask, so no
+    dialog appeared and the menu row stayed on "Checking for firmware update…"
+    (field report, 2026-10-14). It now offers the newest release."""
+
+    def setUp(self):
+        from polyhost import host
+        self.host = host
+        self.PolyHost = host.PolyHost
+
+    def _stub(self, fw_version=None, allowed=True):
+        stub = mock.MagicMock()
+        stub.kb_sw_version = fw_version
+        stub._fw_actions_allowed.return_value = allowed
+        stub._update_check_fw_retry = False
+        stub._update_checker = None
+        return stub
+
+    def _checked_version(self, stub, **kw):
+        with mock.patch.object(self.host, "UpdateChecker") as checker:
+            self.assertTrue(self.PolyHost._start_update_check(stub, force=True, **kw))
+        return checker.call_args.kwargs["current_fw_version"]
+
+    def test_unknown_version_asks_against_zero_for_the_manual_check(self):
+        self.assertEqual(self._checked_version(self._stub(), fw_any=True), "0")
+
+    def test_automatic_check_with_unknown_version_stays_host_only(self):
+        self.assertIsNone(self._checked_version(self._stub()))
+
+    def test_without_a_keyboard_nothing_is_offered(self):
+        self.assertIsNone(self._checked_version(self._stub(allowed=False), fw_any=True))
+
+    def test_known_version_is_compared_as_is(self):
+        self.assertEqual(self._checked_version(self._stub("1.9.0"), fw_any=True), "1.9.0")
+
+    def test_in_process_version_list_becomes_a_string(self):
+        # PolyCore.kb_sw_version is get_sw_version_number(): a list of ints.
+        self.assertEqual(self._checked_version(self._stub([1, 9, 0])), "1.9.0")
+
+    def test_click_without_a_keyboard_says_so_instead_of_hanging(self):
+        stub = self._stub(allowed=False)
+        stub._fw_up_downloader = None
+        stub._pending_fw_release = None
+        with mock.patch.object(self.host, "_msgbox") as box:
+            self.PolyHost._on_fw_up_clicked(stub)
+        box.assert_called_once()
+        stub._start_update_check.assert_not_called()
+
+    def test_click_starts_the_check_that_offers_the_newest(self):
+        stub = self._stub()
+        stub._fw_up_downloader = None
+        stub._pending_fw_release = None
+        stub._start_update_check.return_value = True
+        self.PolyHost._on_fw_up_clicked(stub)
+        stub._start_update_check.assert_called_once_with(force=True, fw_any=True)
+        self.assertTrue(stub._await_manual_fw_prompt)
+
+    def test_version_string_helper(self):
+        f = self.host._fw_version_str
+        self.assertEqual(f([1, 9, 0]), "1.9.0")
+        self.assertEqual(f((1, 10, 2)), "1.10.2")
+        self.assertEqual(f("1.9.0"), "1.9.0")
+        self.assertIsNone(f(None))
+        self.assertIsNone(f([]))
+        self.assertIsNone(f(""))
+
+
 if __name__ == "__main__":
     unittest.main()
