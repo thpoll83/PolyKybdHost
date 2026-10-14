@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- vendor-id 0x2021; product-id 0x2007 = split72, 0x2008 = split42 -->
+    <usb-device vendor-id="8225" product-id="8199" />
+    <usb-device vendor-id="8225" product-id="8200" />
+</resources>
