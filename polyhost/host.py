@@ -129,6 +129,20 @@ _UPD_DLG_W = 400
 _UPD_DLG_H = 160
 
 
+def _fw_version_str(version):
+    """The keyboard's firmware version as the ``"1.9.0"`` string the update
+    check compares, or None when it is not known.
+
+    ⚠️ The two modes hand it over in different types: in-process,
+    ``PolyCore.kb_sw_version`` is ``get_sw_version_number()``, a LIST of ints;
+    in client mode it is the daemon status' ``fw_version`` STRING.
+    ``check_fw_latest`` needs the string (it calls ``.lstrip``), so a list
+    reaching it crashed the firmware check."""
+    if isinstance(version, (list, tuple)):
+        return ".".join(str(x) for x in version) or None
+    return str(version) if version else None
+
+
 def _fmt_release_date(published_at: str) -> str:
     """Return a human-readable date string from an ISO 8601 timestamp, or '' on failure."""
     if not published_at:
@@ -2255,7 +2269,8 @@ class PolyHost(QApplication):
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
         self.core.save_overlay_mapping(filename)
 
-    def _start_update_check(self, on_no_update=None, on_check_error=None, force=False):
+    def _start_update_check(self, on_no_update=None, on_check_error=None, force=False,
+                            fw_any=False):
         """Start a background update check.
 
         ``on_no_update`` is called when the check succeeds but finds no newer release.
@@ -2263,6 +2278,11 @@ class PolyHost(QApplication):
         call itself fails — distinct from "no update available".
         Both are None for the automatic periodic check (silent failure).
         ``force`` bypasses the throttle for user-initiated (menu) checks.
+        ``fw_any`` (the manual firmware check only): when the keyboard is there
+        but its version is unknown, compare against "0" so the NEWEST release is
+        offered instead of skipping firmware. Without it the check ran
+        host-only, nothing ever answered the manual ask, and the menu stayed on
+        "Checking for firmware update…" with no dialog at all.
         """
         # Throttle AUTOMATIC checks (startup / 6 h timer / on-connect). GitHub's
         # unauthenticated API allows only ~60 requests/hour per IP, and a connect
@@ -2282,7 +2302,10 @@ class PolyHost(QApplication):
         # in-process and client mode — self.keeb itself is None in client mode).
         # The firmware check runs in both modes now: the client downloads the
         # release and flashes it via the daemon's fw.flash RPC.
-        fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
+        fw_version = _fw_version_str(self.kb_sw_version) if self._fw_actions_allowed() else None
+        if fw_any and fw_version is None and self._fw_actions_allowed():
+            self.log.info("Firmware version not known: the manual check offers the newest release.")
+            fw_version = "0"
         if self._update_checker is not None and self._update_checker.is_alive():
             # A check is already in flight with its own (auto) callbacks — do
             # NOT start a second. Returns False so a manual caller knows its
@@ -2829,10 +2852,16 @@ class PolyHost(QApplication):
         if self._pending_fw_release is not None:
             self._fallback_prompt(self._prompt_and_flash, self._pending_fw_release)
             return
+        if not self._fw_actions_allowed():
+            # Without a keyboard the check could only run host-only, and nothing
+            # would ever answer this click. Say why instead.
+            _msgbox(QMessageBox.Warning, _("Firmware Update"),
+                    _("The keyboard must be connected to update the firmware."))
+            return
         # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
         # and the _fw_no_update closure in _start_update_check. Only flip the UI
         # if a run actually started (see _on_update_clicked).
-        if self._start_update_check(force=True):
+        if self._start_update_check(force=True, fw_any=True):
             self.firmware_update_action.setText(_("Checking for firmware update…"))
             self.firmware_update_action.setEnabled(False)
             self._await_manual_fw_prompt = True
@@ -2841,7 +2870,8 @@ class PolyHost(QApplication):
         self._await_manual_fw_prompt = False
         self.firmware_update_action.setText(_("Check for firmware update…"))
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
-        fw_version = self.kb_sw_version if self._fw_actions_allowed() else _("unknown")
+        known = _fw_version_str(self.kb_sw_version) if self._fw_actions_allowed() else None
+        fw_version = known or _("unknown")
         if blocked is not None:
             # A newer release exists but its build never produced a .bin, so
             # there is nothing to flash. Saying "you are running the latest
@@ -2853,6 +2883,11 @@ class PolyHost(QApplication):
                        "release build failed — the release page will get its firmware "
                        "once that is fixed.", version=blocked.version, current=fw_version)
                     + (f"\n\n{blocked.html_url}" if blocked.html_url else ""))
+            return
+        if known is None:
+            # Asked against "0", so "no update" means no release was found at all.
+            _msgbox(QMessageBox.Warning, _("PolyKybd Firmware"),
+                    _("No firmware release could be found."))
             return
         _msgbox(QMessageBox.Information, _("PolyKybd Firmware"),
                 _f("You are running the latest firmware (v{version}).", version=fw_version))
@@ -2866,8 +2901,11 @@ class PolyHost(QApplication):
             return
         date_str = _fmt_release_date(release.published_at)
         info = _f("Released: {date}", date=date_str) + "\n" if date_str else ""
+        current = _fw_version_str(self.kb_sw_version)
+        installed = (_f("Installed: v{version}", version=current) if current
+                     else _("Installed: unknown (the keyboard did not report its version)"))
         message = (_f("Firmware {version} is available.", version=release.version) + "\n"
-                   + info + "\n"
+                   + info + installed + "\n\n"
                    + _("Both halves update over HID and reboot automatically."))
         if not confirm_update(_("Update PolyKybd Firmware"), message,
                               notes=getattr(release, "notes", ""),

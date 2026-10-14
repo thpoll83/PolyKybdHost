@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-12 21:00+0000\n"
+"POT-Creation-Date: 2026-10-14 05:55+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -763,7 +763,7 @@ msgstr "birlikte gelen"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd komutları (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2251
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2265
 msgid "Open file"
 msgstr "Dosya aç"
 
@@ -1168,7 +1168,7 @@ msgstr "Oluşturulan glifi koru (bellekteki demete eklenir; denetçinin “Farkl
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
 #: polyhost/gui/hid_fw_up_dialog.py:197
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92 polyhost/host.py:227
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92 polyhost/host.py:241
 msgid "Cancel"
 msgstr "İptal"
 
@@ -1652,8 +1652,8 @@ msgstr "Yazma başladı — sistem tepsisini/günlüğü izleyin."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "'{label}' için bekleyen tüm düzenlemeler atılsın mı?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2864
-#: polyhost/host.py:2888
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2858
+#: polyhost/host.py:2899 polyhost/host.py:2926
 msgid "Firmware Update"
 msgstr "Ürün Yazılımı Güncellemesi"
 
@@ -1818,7 +1818,7 @@ msgstr "önizleme verisi yok (birlikte gelen veya kaynak kopyası)"
 msgid "the shipped language table is missing"
 msgstr "birlikte gelen dil tablosu eksik"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2844
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2874
 msgid "unknown"
 msgstr "bilinmiyor"
 
@@ -2456,7 +2456,7 @@ msgstr "Eşleşme yok"
 msgid "{index} of {total}"
 msgstr "{index} / {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1885
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1899
 msgid "Mock keyboard"
 msgstr "Sanal klavye"
 
@@ -2747,7 +2747,7 @@ msgstr "Gecikme"
 msgid "Dev"
 msgstr "Geliştirme"
 
-#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:800
+#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:814
 msgid "Developer"
 msgstr "Geliştirici"
 
@@ -3004,7 +3004,7 @@ msgstr "{prefix} — ana uygulama v{host_version} kullanılabilir"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — ürün yazılımı v{fw_version} kullanılabilir"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:694
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:708
 msgid "Updates"
 msgstr "Güncellemeler"
 
@@ -3085,233 +3085,233 @@ msgstr "Orta"
 msgid "Large"
 msgstr "Büyük"
 
-#: polyhost/host.py:253
+#: polyhost/host.py:267
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "Klavyenin yazı tipi paketi güncelleniyor — lütfen bekleyin, bağlantıyı kesmeyin…"
 
-#: polyhost/host.py:254
+#: polyhost/host.py:268
 #, python-brace-format
 msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — yazı tipi paketi güncelleniyor (%{percent})"
 
-#: polyhost/host.py:255
+#: polyhost/host.py:269
 msgid "Keyboard font pack is up to date."
 msgstr "Klavyenin yazı tipi paketi güncel."
 
-#: polyhost/host.py:256
+#: polyhost/host.py:270
 #, python-brace-format
 msgid "Font pack update failed: {error}"
 msgstr "Yazı tipi paketi güncellemesi başarısız: {error}"
 
-#: polyhost/host.py:259
+#: polyhost/host.py:273
 msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "Klavyenin oyun verileri güncelleniyor — lütfen bekleyin, bağlantıyı kesmeyin…"
 
-#: polyhost/host.py:260
+#: polyhost/host.py:274
 #, python-brace-format
 msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — oyun verileri güncelleniyor (%{percent})"
 
-#: polyhost/host.py:261
+#: polyhost/host.py:275
 msgid "Keyboard game data is up to date."
 msgstr "Klavyenin oyun verileri güncel."
 
-#: polyhost/host.py:262
+#: polyhost/host.py:276
 #, python-brace-format
 msgid "Game data update failed: {error}"
 msgstr "Oyun verileri güncellemesi başarısız: {error}"
 
-#: polyhost/host.py:265
+#: polyhost/host.py:279
 msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "Klavyenin motor paketi güncelleniyor — lütfen bekleyin, bağlantıyı kesmeyin…"
 
-#: polyhost/host.py:266
+#: polyhost/host.py:280
 #, python-brace-format
 msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — motor paketi güncelleniyor (%{percent})"
 
-#: polyhost/host.py:267
+#: polyhost/host.py:281
 msgid "Keyboard engine pack is up to date."
 msgstr "Klavyenin motor paketi güncel."
 
-#: polyhost/host.py:268
+#: polyhost/host.py:282
 #, python-brace-format
 msgid "Engine pack update failed: {error}"
 msgstr "Motor paketi güncellemesi başarısız: {error}"
 
-#: polyhost/host.py:454 polyhost/host.py:1446
+#: polyhost/host.py:468 polyhost/host.py:1460
 msgid "Waiting for PolyKybd..."
 msgstr "PolyKybd bekleniyor..."
 
-#: polyhost/host.py:455 polyhost/host.py:1298
+#: polyhost/host.py:469 polyhost/host.py:1312
 msgid "Press to pause connection"
 msgstr "Bağlantıyı duraklatmak için basın"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:458
+#: polyhost/forwarder.py:308 polyhost/host.py:472
 msgid "Quit"
 msgstr "Çık"
 
-#: polyhost/host.py:467
+#: polyhost/host.py:481
 msgid "Quit && stop background daemon"
 msgstr "Çık && arka plan hizmetini durdur"
 
-#: polyhost/forwarder.py:275 polyhost/host.py:472
+#: polyhost/forwarder.py:275 polyhost/host.py:486
 msgid "About"
 msgstr "Hakkında"
 
-#: polyhost/forwarder.py:264 polyhost/host.py:476
+#: polyhost/forwarder.py:264 polyhost/host.py:490
 msgid "Settings..."
 msgstr "Ayarlar..."
 
-#: polyhost/forwarder.py:279 polyhost/host.py:480
+#: polyhost/forwarder.py:279 polyhost/host.py:494
 msgid "Log file..."
 msgstr "Günlük dosyası..."
 
-#: polyhost/forwarder.py:285 polyhost/host.py:489
+#: polyhost/forwarder.py:285 polyhost/host.py:503
 msgid "Report a Problem..."
 msgstr "Sorun Bildir..."
 
-#: polyhost/forwarder.py:291 polyhost/host.py:508
+#: polyhost/forwarder.py:291 polyhost/host.py:522
 msgid "Collect logs..."
 msgstr "Günlükleri topla..."
 
-#: polyhost/host.py:517
+#: polyhost/host.py:531
 msgid "Read keyboard crash record"
 msgstr "Klavye çökme kaydını oku"
 
-#: polyhost/host.py:519
+#: polyhost/host.py:533
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Klavyenin son çökme kaydını her iki yarıdan oku ve panoya kopyala."
 
-#: polyhost/host.py:524
+#: polyhost/host.py:538
 msgid "Inspect Font Packs..."
 msgstr "Yazı Tipi Paketlerini İncele..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:245 polyhost/forwarder.py:366 polyhost/host.py:538
-#: polyhost/host.py:1300
+#: polyhost/forwarder.py:245 polyhost/forwarder.py:366 polyhost/host.py:552
+#: polyhost/host.py:1314
 msgid "Pause"
 msgstr "Duraklat"
 
-#: polyhost/host.py:548
+#: polyhost/host.py:562
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Ürün yazılımı bu uygulamadan daha yeni — güvenli mod…"
 
-#: polyhost/host.py:550
+#: polyhost/host.py:564
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Ürün yazılımı bu ana uygulamadan daha yeni olan bir klavyenin nasıl ele alınacağını seçin."
 
-#: polyhost/host.py:586
+#: polyhost/host.py:600
 msgid "Idle Display"
 msgstr "Boşta Ekranı"
 
-#: polyhost/host.py:589
+#: polyhost/host.py:603
 msgid "Pulse (legacy)"
 msgstr "Nabız (eski)"
 
-#: polyhost/host.py:591
+#: polyhost/host.py:605
 msgid "Jitter (move legend)"
 msgstr "Titreşim (etiketi kaydır)"
 
-#: polyhost/host.py:595
+#: polyhost/host.py:609
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (tanıtım demosu)"
 
-#: polyhost/host.py:599
+#: polyhost/host.py:613
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:619
+#: polyhost/host.py:633
 msgid "Idle After"
 msgstr "Boşta Kalma Süresi"
 
-#: polyhost/host.py:640
+#: polyhost/host.py:654
 msgid "Keycap Script"
 msgstr "Tuş Kapağı Yazısı"
 
-#: polyhost/host.py:668
+#: polyhost/host.py:682
 msgid "Keycap Size"
 msgstr "Tuş Kapağı Boyutu"
 
-#: polyhost/host.py:686
+#: polyhost/host.py:700
 msgid "Configure Keymap"
 msgstr "Tuş Haritasını Yapılandır"
 
-#: polyhost/host.py:696
+#: polyhost/host.py:710
 msgid "Check for host update..."
 msgstr "Ana uygulama güncellemesini denetle..."
 
-#: polyhost/host.py:735
+#: polyhost/host.py:749
 msgid "Check for keyboard firmware update…"
 msgstr "Klavye ürün yazılımı güncellemesini denetle…"
 
-#: polyhost/host.py:744
+#: polyhost/host.py:758
 msgid "Keyboard fonts"
 msgstr "Klavye yazı tipleri"
 
-#: polyhost/host.py:778
+#: polyhost/host.py:792
 msgid "Install WinCompose…"
 msgstr "WinCompose'u yükle…"
 
-#: polyhost/host.py:802
+#: polyhost/host.py:816
 msgid "Change System Input Language"
 msgstr "Sistem Giriş Dilini Değiştir"
 
-#: polyhost/host.py:808
+#: polyhost/host.py:822
 msgid "Inspect MRU Cache..."
 msgstr "MRU Önbelleğini İncele..."
 
-#: polyhost/host.py:814
+#: polyhost/host.py:828
 msgid "Mock Keyboard..."
 msgstr "Sanal Klavye..."
 
-#: polyhost/host.py:822
+#: polyhost/host.py:836
 msgid "Refresh unicode input mode"
 msgstr "Unicode giriş modunu yenile"
 
-#: polyhost/host.py:826
+#: polyhost/host.py:840
 msgid "Save MRU cache now"
 msgstr "MRU önbelleğini şimdi kaydet"
 
-#: polyhost/forwarder.py:301 polyhost/host.py:840
+#: polyhost/forwarder.py:301 polyhost/host.py:854
 msgid "Help && About"
 msgstr "Yardım && Hakkında"
 
-#: polyhost/forwarder.py:297 polyhost/host.py:849
+#: polyhost/forwarder.py:297 polyhost/host.py:863
 msgid "Open config folder"
 msgstr "Yapılandırma klasörünü aç"
 
-#: polyhost/host.py:962
+#: polyhost/host.py:976
 msgid "System language query not supported for this platform."
 msgstr "Sistem dili sorgusu bu platformda desteklenmiyor."
 
-#: polyhost/host.py:1161
+#: polyhost/host.py:1175
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "Klavye yazı tiplerini yeniden dene (başarısız: {n})…"
 
-#: polyhost/host.py:1163
+#: polyhost/host.py:1177
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Son denemesi başarısız olan yazı tipi demetlerini yeniden yaz: {bundles}"
 
-#: polyhost/host.py:1169
+#: polyhost/host.py:1183
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "Klavye yazı tiplerini güncelle ({n})…"
 
-#: polyhost/host.py:1171
+#: polyhost/host.py:1185
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Klavyede eksik olan, geride kalan veya yazılamayan yazı tipi demetlerini yaz: {bundles}"
 
-#: polyhost/host.py:1176
+#: polyhost/host.py:1190
 msgid "Keyboard fonts: up to date"
 msgstr "Klavye yazı tipleri: güncel"
 
-#: polyhost/host.py:1177
+#: polyhost/host.py:1191
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3319,65 +3319,65 @@ msgstr ""
 "Birlikte gelen tüm yazı tipi demetleri zaten klavyede.\n"
 "Tuş kapakları hâlâ yanlış görüntüleniyorsa Geliştirici → Yazı Tipi Paketi → Tüm demetleri yeniden yaz ile yeniden göndermeye zorlayabilirsiniz."
 
-#: polyhost/forwarder.py:711 polyhost/host.py:1207
+#: polyhost/forwarder.py:711 polyhost/host.py:1221
 msgid "Config folder"
 msgstr "Yapılandırma klasörü"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1292
+#: polyhost/host.py:1306
 msgid "Reconnect"
 msgstr "Yeniden bağlan"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:366 polyhost/host.py:1295
+#: polyhost/forwarder.py:366 polyhost/host.py:1309
 msgid "Resume"
 msgstr "Sürdür"
 
-#: polyhost/host.py:1374 polyhost/host.py:1438
+#: polyhost/host.py:1388 polyhost/host.py:1452
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "İşletim sistemi dili değiştirilemedi: {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1462
+#: polyhost/host.py:1476
 msgid "Firmware image (*.bin)"
 msgstr "Ürün yazılımı görüntüsü (*.bin)"
 
-#: polyhost/host.py:1463
+#: polyhost/host.py:1477
 msgid "Select firmware .bin"
 msgstr "Ürün yazılımı .bin dosyasını seç"
 
-#: polyhost/host.py:1514
+#: polyhost/host.py:1528
 msgid "Firmware apply failed"
 msgstr "Ürün yazılımı uygulama başarısız"
 
-#: polyhost/host.py:1515
+#: polyhost/host.py:1529
 msgid "Firmware flash failed"
 msgstr "Ürün yazılımı yazma başarısız"
 
-#: polyhost/host.py:1563 polyhost/host.py:1616
+#: polyhost/host.py:1577 polyhost/host.py:1630
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Seçilen dil: {language} {country}"
 
-#: polyhost/host.py:1672
+#: polyhost/host.py:1686
 msgid "PolyHost settings"
 msgstr "PolyHost ayarları"
 
-#: polyhost/host.py:1673
+#: polyhost/host.py:1687
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Ayarlar uygulandı, ancak ayar dosyasına kaydedilemedi. Dosya başka bir program tarafından açık tutuluyor olabilir. Yeniden denemek için daha sonra bir ayarı tekrar değiştirin veya günlüğe bakın."
 
-#: polyhost/host.py:1775
+#: polyhost/host.py:1789
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: okunamayan kayıt {record}"
 
-#: polyhost/host.py:1778
+#: polyhost/host.py:1792
 msgid "Neither keyboard half holds a crash record."
 msgstr "Hiçbir klavye yarısında çökme kaydı yok."
 
-#: polyhost/host.py:1780
+#: polyhost/host.py:1794
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3388,118 +3388,118 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1782
+#: polyhost/host.py:1796
 msgid "Keyboard crash record"
 msgstr "Klavye çökme kaydı"
 
-#: polyhost/host.py:1791
+#: polyhost/host.py:1805
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Panoya kopyalandı. Okunamayanlar: {errors}"
 
-#: polyhost/host.py:1876
+#: polyhost/host.py:1890
 msgid "MRU Cache"
 msgstr "MRU Önbelleği"
 
-#: polyhost/host.py:1876
+#: polyhost/host.py:1890
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU önbelleği etkin değil (cihaz bağlı değil veya MRU modu devre dışı)."
 
-#: polyhost/host.py:1925
+#: polyhost/host.py:1939
 msgid "daemon client"
 msgstr "arka plan hizmeti istemcisi"
 
-#: polyhost/host.py:1925
+#: polyhost/host.py:1939
 msgid "standalone"
 msgstr "bağımsız"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:772 polyhost/host.py:1981
+#: polyhost/forwarder.py:772 polyhost/host.py:1995
 msgid "paused"
 msgstr "duraklatıldı"
 
-#: polyhost/host.py:1983
+#: polyhost/host.py:1997
 msgid "connected"
 msgstr "bağlı"
 
-#: polyhost/host.py:1984
+#: polyhost/host.py:1998
 msgid "present — not connected (protocol/version)"
 msgstr "mevcut — bağlı değil (protokol/sürüm)"
 
-#: polyhost/host.py:1991
+#: polyhost/host.py:2005
 msgid "Keyboard"
 msgstr ""
 
-#: polyhost/host.py:1992
+#: polyhost/host.py:2006
 msgid "No keyboard connected."
 msgstr ""
 
-#: polyhost/host.py:1996
+#: polyhost/host.py:2010
 msgid "⚠ mismatch"
 msgstr ""
 
-#: polyhost/host.py:1998
+#: polyhost/host.py:2012
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} dil yüklendi"
 
-#: polyhost/host.py:2001
+#: polyhost/host.py:2015
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Bağlı klavye:</b> {name} {state}"
 
-#: polyhost/host.py:2003
+#: polyhost/host.py:2017
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Ürün yazılımı:</b> {firmware} &nbsp;·&nbsp; protokol {protocol}"
 
-#: polyhost/host.py:2005
+#: polyhost/host.py:2019
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Donanım:</b> {hardware}"
 
-#: polyhost/host.py:2006
+#: polyhost/host.py:2020
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Dil:</b> {language}"
 
-#: polyhost/host.py:2013
+#: polyhost/host.py:2027
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Çalışma süresi:</b> {uptime}"
 
-#: polyhost/host.py:2015
+#: polyhost/host.py:2029
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Kaplama eşlemeleri:</b> {n} uygulama"
 
-#: polyhost/forwarder.py:789 polyhost/host.py:2017
+#: polyhost/forwarder.py:789 polyhost/host.py:2031
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Yapılandırma:</b> {path}"
 
-#: polyhost/forwarder.py:790 polyhost/host.py:2018
+#: polyhost/forwarder.py:790 polyhost/host.py:2032
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Günlükler:</b> {path}"
 
-#: polyhost/forwarder.py:808 polyhost/host.py:2069
+#: polyhost/forwarder.py:808 polyhost/host.py:2083
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID protokolü P{protocol}"
 
-#: polyhost/host.py:2072
+#: polyhost/host.py:2086
 msgid "mode"
 msgstr ""
 
-#: polyhost/host.py:2074
+#: polyhost/host.py:2088
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Her tuş kapağında OLED ekran bulunan PolyKybd bölünmüş klavye için ana bilgisayar yazılımı — etkin pencereyi izler ve kaplamaları, dil ve tuş haritası güncellemelerini klavyeye gönderir."
 
-#: polyhost/host.py:2100
+#: polyhost/host.py:2114
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3508,61 +3508,61 @@ msgstr ""
 "Giriş dili değiştirilemedi ('{language}'). Hata:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2120 polyhost/host.py:2135
+#: polyhost/host.py:2134 polyhost/host.py:2149
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Ayarlanamadı: {language} — {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2250
+#: polyhost/host.py:2264
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd kaplama eşlemesi (*.poly.yaml)"
 
-#: polyhost/host.py:2329 polyhost/host.py:2807 polyhost/host.py:2935
+#: polyhost/host.py:2352 polyhost/host.py:2830 polyhost/host.py:2973
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Ürün yazılımını güncelle: v{version}…"
 
-#: polyhost/host.py:2331 polyhost/host.py:2842 polyhost/host.py:3005
+#: polyhost/host.py:2354 polyhost/host.py:2871 polyhost/host.py:3043
 msgid "Check for firmware update…"
 msgstr "Ürün yazılımı güncellemesini denetle…"
 
 #: polyhost/forwarder.py:846 polyhost/forwarder.py:857
-#: polyhost/forwarder.py:863 polyhost/host.py:2349 polyhost/host.py:2470
-#: polyhost/host.py:2474
+#: polyhost/forwarder.py:863 polyhost/host.py:2372 polyhost/host.py:2493
+#: polyhost/host.py:2497
 msgid "Check for updates..."
 msgstr "Güncellemeleri denetle..."
 
-#: polyhost/host.py:2417
+#: polyhost/host.py:2440
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Güncelleme kullanılabilir: v{version}"
 
 #: polyhost/forwarder.py:859 polyhost/forwarder.py:865
-#: polyhost/forwarder.py:876 polyhost/host.py:2428 polyhost/host.py:2468
-#: polyhost/host.py:2475 polyhost/host.py:2498
+#: polyhost/forwarder.py:876 polyhost/host.py:2451 polyhost/host.py:2491
+#: polyhost/host.py:2498 polyhost/host.py:2521
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost Güncellemesi"
 
-#: polyhost/host.py:2429
+#: polyhost/host.py:2452
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Sürüm {version} kullanılabilir. Güncellemek için sistem tepsisi simgesine tıklayın."
 
-#: polyhost/forwarder.py:834 polyhost/host.py:2454
+#: polyhost/forwarder.py:834 polyhost/host.py:2477
 msgid "Checking for updates..."
 msgstr "Güncellemeler denetleniyor..."
 
-#: polyhost/host.py:2467
+#: polyhost/host.py:2490
 msgid "No updates available"
 msgstr "Güncelleme yok"
 
-#: polyhost/forwarder.py:860 polyhost/host.py:2469
+#: polyhost/forwarder.py:860 polyhost/host.py:2492
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "En son sürümü kullanıyorsunuz (v{version})."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2476
+#: polyhost/forwarder.py:866 polyhost/host.py:2499
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3577,59 +3577,63 @@ msgstr ""
 "\n"
 "Ayrıntılar için --dev 1 ile çalıştırın."
 
-#: polyhost/host.py:2481 polyhost/host.py:2868
+#: polyhost/host.py:2504 polyhost/host.py:2903
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Yayım tarihi: {date}"
 
-#: polyhost/forwarder.py:847 polyhost/host.py:2482
+#: polyhost/forwarder.py:847 polyhost/host.py:2505
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Sürüm {version} kullanılabilir."
 
-#: polyhost/forwarder.py:848 polyhost/host.py:2483
+#: polyhost/forwarder.py:848 polyhost/host.py:2506
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost'u Güncelle"
 
-#: polyhost/host.py:2487
+#: polyhost/host.py:2510
 msgid "Download, install, and restart now?"
 msgstr "Şimdi indirilsin, yüklensin ve yeniden başlatılsın mı?"
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2498
+#: polyhost/forwarder.py:875 polyhost/host.py:2521
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "İndiriliyor: v{version}…"
 
-#: polyhost/forwarder.py:916 polyhost/host.py:2623
+#: polyhost/forwarder.py:916 polyhost/host.py:2646
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Güncelleme aktarımı başlatılamadı; güncelleme tamamlanmadı. Ayrıntılar için günlüğe bakın."
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2638
+#: polyhost/forwarder.py:928 polyhost/host.py:2661
 msgid "Update failed"
 msgstr "Güncelleme başarısız"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2638
+#: polyhost/forwarder.py:928 polyhost/host.py:2661
 msgid "The update did not finish."
 msgstr "Güncelleme tamamlanmadı."
 
-#: polyhost/host.py:2818
+#: polyhost/host.py:2841
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd Ürün Yazılımı Güncellemesi"
 
-#: polyhost/host.py:2819
+#: polyhost/host.py:2842
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Yeni ürün yazılımı v{version} kullanılabilir. Güncellemek için sistem tepsisi simgesine tıklayın."
 
-#: polyhost/host.py:2836
+#: polyhost/host.py:2859 polyhost/host.py:2900
+msgid "The keyboard must be connected to update the firmware."
+msgstr "Ürün yazılımını güncellemek için klavyenin bağlı olması gerekir."
+
+#: polyhost/host.py:2865
 msgid "Checking for firmware update…"
 msgstr "Ürün yazılımı güncellemesi denetleniyor…"
 
-#: polyhost/host.py:2849 polyhost/host.py:2857
+#: polyhost/host.py:2879 polyhost/host.py:2889 polyhost/host.py:2892
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd Ürün Yazılımı"
 
-#: polyhost/host.py:2850
+#: polyhost/host.py:2880
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3640,46 +3644,55 @@ msgstr ""
 "\n"
 "Klavyenizdeki sürüm: v{current}. Bu genellikle sürüm derlemesinin başarısız olduğu anlamına gelir — sorun giderildiğinde sürüm sayfasına ürün yazılımı eklenecektir."
 
-#: polyhost/host.py:2858
+#: polyhost/host.py:2890
+msgid "No firmware release could be found."
+msgstr ""
+
+#: polyhost/host.py:2893
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "En son ürün yazılımını kullanıyorsunuz (v{version})."
 
-#: polyhost/host.py:2865
-msgid "The keyboard must be connected to update the firmware."
-msgstr "Ürün yazılımını güncellemek için klavyenin bağlı olması gerekir."
+#: polyhost/host.py:2905
+#, python-brace-format
+msgid "Installed: v{version}"
+msgstr ""
 
-#: polyhost/host.py:2869
+#: polyhost/host.py:2906
+msgid "Installed: unknown (the keyboard did not report its version)"
+msgstr ""
+
+#: polyhost/host.py:2907
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Ürün yazılımı {version} kullanılabilir."
 
-#: polyhost/host.py:2871
+#: polyhost/host.py:2909
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Her iki yarı da HID üzerinden güncellenir ve otomatik olarak yeniden başlar."
 
-#: polyhost/host.py:2872
+#: polyhost/host.py:2910
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd Ürün Yazılımını Güncelle"
 
-#: polyhost/host.py:2876
+#: polyhost/host.py:2914
 msgid "Download and flash now?"
 msgstr "Şimdi indirilip yazılsın mı?"
 
-#: polyhost/host.py:2887
+#: polyhost/host.py:2925
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Ürün yazılımı indiriliyor: v{version}…"
 
-#: polyhost/host.py:2909 polyhost/host.py:3121
+#: polyhost/host.py:2947 polyhost/host.py:3159
 msgid "Cancelling…"
 msgstr "İptal ediliyor…"
 
-#: polyhost/host.py:2946
+#: polyhost/host.py:2984
 msgid "Firmware Update Failed"
 msgstr "Ürün Yazılımı Güncellemesi Başarısız"
 
-#: polyhost/host.py:2947
+#: polyhost/host.py:2985
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3690,12 +3703,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3085 polyhost/host.py:3099 polyhost/host.py:3145
-#: polyhost/host.py:3154 polyhost/host.py:3160
+#: polyhost/host.py:3123 polyhost/host.py:3137 polyhost/host.py:3183
+#: polyhost/host.py:3192 polyhost/host.py:3198
 msgid "Install WinCompose"
 msgstr "WinCompose'u Yükle"
 
-#: polyhost/host.py:3086
+#: polyhost/host.py:3124
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3705,11 +3718,11 @@ msgstr ""
 "\n"
 "WinCompose'un PolyKybd derlemesi GitHub'dan indirilecek ve yükleyicisi başlatılacak (Windows sizden onay isteyecek)."
 
-#: polyhost/host.py:3099
+#: polyhost/host.py:3137
 msgid "Looking for the latest WinCompose release…"
 msgstr "En son WinCompose sürümü aranıyor…"
 
-#: polyhost/host.py:3146
+#: polyhost/host.py:3184
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3719,7 +3732,7 @@ msgstr ""
 "\n"
 "Sürümler sayfası tarayıcınızda açılacak — kurulum dosyasını oradan indirip çalıştırın."
 
-#: polyhost/host.py:3155
+#: polyhost/host.py:3193
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3730,7 +3743,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3161
+#: polyhost/host.py:3199
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3747,7 +3760,7 @@ msgstr ""
 "Kaydedildiği yer:\n"
 "{path}"
 
-#: polyhost/host.py:3169
+#: polyhost/host.py:3207
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose yükleyicisi başladı. Yükleme bittiğinde ve WinCompose çalıştığında PolyKybd otomatik olarak ona geçecek."
 
