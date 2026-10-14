@@ -124,6 +124,10 @@ def _resolve(path: Path, depth: dict):
             ch = _parse(k)
             if ch is None:
                 continue
+            if line == 0:
+                # The line number is each binding's audit trail in `source:`;
+                # never let it silently become 0.
+                raise ValueError(f"{path.name}: no source line found for {k!r} in {c!r}")
             d = depth[c]
             if ch in cells and cells[ch][0] > d:
                 continue
