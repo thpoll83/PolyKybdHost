@@ -1,5 +1,14 @@
 # Zed overlay: sources and licences
 
+## Folder layout (two files more than usual, on purpose)
+
+Besides the usual `bindings.yaml`, `fetch_icons.py`, `SOURCES.md` and `icons/`,
+this folder holds `derive_bindings.py` and `derive_table.yaml`. Zed ships three
+JSON keymaps, and `bindings.yaml` is GENERATED from them so a Zed update is a
+re-run, not a hand edit. `derive_table.yaml` holds the hand-chosen parts (label
+and icon per action, skip lists), so they survive a regeneration. The generator
+stays beside its output, as `gen_blender_bindings.py` does for Blender.
+
 ## Shortcuts
 
 Authority: Zed's own default keymaps, read from source at

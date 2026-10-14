@@ -40,7 +40,7 @@ PUNCT = set("-=[]\\;',./`")
 MODORDER = ["CMDCTRL", "CTRL", "GUI", "ALT", "SHIFT"]
 
 
-def strip_jsonc(s: str) -> str:
+def _strip_jsonc(s: str) -> str:
     out, i, n, ins = [], 0, len(s), False
     while i < n:
         c = s[i]
@@ -64,7 +64,7 @@ def strip_jsonc(s: str) -> str:
     return re.sub(r",(\s*[\]}])", r"\1", "".join(out))
 
 
-def parse(k: str):
+def _parse(k: str):
     """Zed keystroke -> (frozenset(mods), key token), or None if not drawable."""
     if " " in k:
         return None
@@ -88,7 +88,7 @@ def parse(k: str):
     return frozenset(mods), key
 
 
-def act(a):
+def _act(a):
     if a is None:
         return None
     if isinstance(a, list):
@@ -96,7 +96,7 @@ def act(a):
     return a
 
 
-def raw_lines(text: str):
+def _raw_lines(text: str):
     out = []
     for i, line in enumerate(text.splitlines(), 1):
         m = re.match(r'\s*"((?:[^"\\]|\\.)+)"\s*:\s*(?!\{)', line)
@@ -105,11 +105,11 @@ def raw_lines(text: str):
     return out
 
 
-def resolve(path: Path, depth: dict):
+def _resolve(path: Path, depth: dict):
     """{chord: (action, line)} for one platform keymap."""
     text = path.read_text(encoding="utf-8")
-    rl, ptr, cells = raw_lines(text), 0, {}
-    for blk in json.loads(strip_jsonc(text)):
+    rl, ptr, cells = _raw_lines(text), 0, {}
+    for blk in json.loads(_strip_jsonc(text)):
         c = blk.get("context")
         for k, a in blk.get("bindings", {}).items():
             j = ptr
@@ -121,7 +121,7 @@ def resolve(path: Path, depth: dict):
                 line = 0
             if c not in depth:
                 continue
-            ch = parse(k)
+            ch = _parse(k)
             if ch is None:
                 continue
             d = depth[c]
@@ -129,7 +129,7 @@ def resolve(path: Path, depth: dict):
                 continue
             if d < 0 and (ch in cells or a is None):
                 continue
-            cells[ch] = (d, act(a), line)
+            cells[ch] = (d, _act(a), line)
     return {ch: (a, line) for ch, (d, a, line) in cells.items() if a is not None}
 
 
@@ -147,7 +147,7 @@ def main() -> int:
     def lookup(a):
         return A.get(a) or A.get(a.split(" ", 1)[0])
 
-    P = {p: resolve(kdir / f"default-{p}.json", depth) for p in PLATS}
+    P = {p: _resolve(kdir / f"default-{p}.json", depth) for p in PLATS}
     unknown, skipped = collections.Counter(), collections.Counter()
     groups = collections.defaultdict(dict)
     for p in PLATS:
