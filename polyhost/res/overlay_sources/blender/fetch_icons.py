@@ -34,7 +34,7 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[3]))
 
-from polyhost.res.overlay_sources import icon_fetch, program_marks  # noqa: E402
+from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 
 PX = icon_fetch.RENDER_PX
 
@@ -267,6 +267,21 @@ DRAWN = {
 }
 
 
+def _blender_mark(path):
+    """ESC mark: Simple Icons' Blender logo (marks/si_blender.svg, vendored
+    from simple-icons@15.22.0), rendered by the host's own ESC renderer so the
+    baked mark is pixel-identical to what the runtime path would draw. It is a
+    finished 72x40 mask placed full-cell (program_icon_region [72, 40])."""
+    import numpy as np
+    from PIL import Image
+    from polyhost.services import app_icons
+    mask = app_icons.render_mark(str(HERE / "marks" / "si_blender.svg"))
+    a = np.where(mask, 255, 0).astype("uint8")
+    rgba = np.dstack([a, a, a, a])
+    Image.fromarray(rgba, "RGBA").save(path)
+    print(f"  {path.name}  <- marks/si_blender.svg ({int(mask.sum())} px)")
+
+
 def main() -> int:
     out = HERE / "icons"
     out.mkdir(exist_ok=True)
@@ -283,7 +298,7 @@ def main() -> int:
             draw(out / name)
             print(f"  {name}  <- drawn")
     icon_fetch.borrow(BORROWED, out)
-    program_marks.ensure(out / "blender_mark.png", "Bl")
+    _blender_mark(out / "blender_mark.png")
     return 0
 
 

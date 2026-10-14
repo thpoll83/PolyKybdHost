@@ -385,14 +385,15 @@ def write_spec(ctx, desc, stack, bindings, tag, commit) -> str:
         "margin": 0,
         "mode": "luma",
         "threshold": 150,
-        # A generic drawn "Bl" tile, NOT Blender's logo: the Blender Foundation's
-        # logo policy requires it "unaltered ... in original colors" and allows
-        # commercial use only by permission, and a 1-bit keycap reduction is an
-        # alteration. See SOURCES.md.
+        # Simple Icons' Blender logo (marks/si_blender.svg), the same mark the
+        # host's runtime ESC path would fetch as si:blender, baked so it shows
+        # offline and cannot lose to the OS icon. A finished 72x40 mask, so it
+        # is placed full-cell. Chosen by the maintainer over a drawn "Bl" tile
+        # (707 lit px, too heavy). See SOURCES.md.
         "program_icon": "blender_mark.png",
         "program_icon_mode": "alpha",
         "program_icon_anchor": "bottom-right",
-        "program_icon_region": [37, 32],
+        "program_icon_region": [72, 40],
         "program_icon_margin": 0,
         "bindings": bindings,
     }

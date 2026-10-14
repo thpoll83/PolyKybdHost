@@ -19,8 +19,8 @@ program_icon: blender_mark.png
 program_icon_mode: alpha
 program_icon_anchor: bottom-right
 program_icon_region:
-- 37
-- 32
+- 72
+- 40
 program_icon_margin: 0
 bindings:
 - key: A

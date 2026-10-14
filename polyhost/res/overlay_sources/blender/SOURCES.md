@@ -96,12 +96,15 @@ lower keymap's action that would never run. Everything left out is listed in
 
 ## Program mark (ESC)
 
-`blender_mark.png` is a generic drawn **"Bl"** tile (`program_marks.letter_mark`),
-**not Blender's logo**. The Blender logo usage policy
-(https://www.blender.org/about/logo/) allows the logo only "unaltered, without
-fancy enhancements, in original colors, original typography, and always
-complete", and says commercial use is generally not allowed without asking. A
-1-bit, 37×32 px keycap reduction is an alteration by definition (no colour,
-redrawn), and PolyKybd is a commercial product, so the real logo is not shipped.
-Asking the Blender Foundation for permission is an open option for the
-maintainer.
+`blender_mark.png` is **Simple Icons' Blender mark** (`marks/si_blender.svg`,
+vendored from simple-icons@15.22.0, CC0-1.0 for the SVG data), rendered by the
+host's own ESC renderer (`app_icons.render_mark`), so it is pixel-identical to
+what the runtime path draws for `si:blender`: 538 lit px, x 34..71, legend lost
+0 px. It is baked so it shows offline and cannot lose the runtime contest to the
+OS icon. The maintainer chose it (2026-10-14) over a drawn "Bl" tile, which lit
+707 px and read too heavy.
+
+The Blender logo is a trademark of the Blender Foundation
+(https://www.blender.org/about/logo/). The host already shows Simple Icons
+brand marks for other apps' ESC keys (Firefox, Cursor), and this follows the
+same practice; the maintainer may still ask the Foundation for permission.
