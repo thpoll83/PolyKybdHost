@@ -56,7 +56,10 @@ def strip_jsonc(s: str) -> str:
         if s.startswith("//", i):
             j = s.find("\n", i); i = n if j < 0 else j; continue
         if s.startswith("/*", i):
-            i = s.find("*/", i) + 2; continue
+            j = s.find("*/", i + 2)
+            if j < 0:
+                raise ValueError(f"unterminated /* comment at offset {i}")
+            i = j + 2; continue
         out.append(c); i += 1
     return re.sub(r",(\s*[\]}])", r"\1", "".join(out))
 
