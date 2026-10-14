@@ -114,8 +114,8 @@ def _ensure_trackers(wm):
         try:
             with bpy.context.temp_override(window=win, screen=win.screen):
                 bpy.ops.polykybd.track_mouse('INVOKE_DEFAULT')
-        except Exception:     # noqa: BLE001 -- e.g. a window mid-teardown; retry next tick
-            pass
+        except Exception as e:     # noqa: BLE001 -- e.g. a window mid-teardown; retry next tick
+            _print_once(e)
 
 
 def _current_url(wm):
@@ -162,14 +162,19 @@ def _tick():
             policy.sent(url, now)
             _state["reported"] = True
     except Exception as e:     # noqa: BLE001 -- never let a report break Blender
-        # Swallowed so a bug here can never break Blender's UI, but printed
-        # once per distinct error, so it can be diagnosed from Blender's
-        # system console instead of overlays silently stopping to switch.
-        key = (type(e).__name__, str(e))
-        if key not in _state["errors"]:
-            _state["errors"].add(key)
-            traceback.print_exc()
+        _print_once(e)
     return core.POLL_S
+
+
+def _print_once(e):
+    """Print the traceback of an error swallowed so it cannot break Blender's
+    UI, once per distinct error, so it can be diagnosed from Blender's system
+    console instead of overlays silently stopping to switch. Call from an
+    except block."""
+    key = (type(e).__name__, str(e))
+    if key not in _state["errors"]:
+        _state["errors"].add(key)
+        traceback.print_exc()
 
 
 def _withdraw(prefs):

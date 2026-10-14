@@ -221,9 +221,13 @@ class TestConcurrentReports(unittest.TestCase):
 
         def report():
             n = 0
-            while not stop.is_set():
-                n += 1
-                p.update(app="blender", url=f"blender://M{n}/VIEW_3D", pid=n // 4)
+            try:
+                while not stop.is_set():
+                    n += 1
+                    p.update(app="blender", url=f"blender://M{n}/VIEW_3D", pid=n // 4)
+            except Exception as e:      # noqa: BLE001 -- the assertion reports it
+                errors.append(e)
+                stop.set()
 
         def lookup():
             try:
