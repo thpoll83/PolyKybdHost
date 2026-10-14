@@ -287,7 +287,10 @@ def main() -> int:
     only = set(sys.argv[1:])
     todo = {k: v for k, v in ICONS.items() if not only or k in only}
     icon_fetch.fluent(todo, out)
-    _play_reverse(out / "play_reverse.png", out)
+    # Mirrors play.png, which exists only once "play" has been fetched; a run
+    # limited to other stems on a fresh icons/ must not fail on it.
+    if (out / "play.png").exists():
+        _play_reverse(out / "play_reverse.png", out)
     # Drawn and borrowed glyphs are guarded: the committed file is the source of
     # truth once it exists, so a hand-tuned one survives. The program mark is
     # NOT guarded: it is rebuilt from the vendored marks/si_blender.svg every
