@@ -149,6 +149,14 @@ class TestContextReporter(unittest.TestCase):
         self.assertTrue(self.p.update(app="blender", url=None, focused=False, pid=7))
         self.assertIsNone(self.p.current_url("blender"))
 
+    def test_withdrawal_does_not_hand_over_to_a_background_instance(self):
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", pid=1, input_age=60.0)
+        self.p.update(app="blender", url=self.URL, pid=2, input_age=0.0)
+        self.clock.t += 1.0
+        self.p.update(app="blender", url=None, focused=False, pid=2)   # pid 2 turned off
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", pid=1, input_age=61.0)
+        self.assertIsNone(self.p.current_url("blender"))
+
     def test_stale_report_ignored(self):
         self.p.update(app="blender", url=self.URL, focused=True)
         self.clock.t += 8.5

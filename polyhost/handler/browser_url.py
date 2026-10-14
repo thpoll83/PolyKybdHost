@@ -208,15 +208,18 @@ class BrowserUrlProvider:
         """The context reporter's URL from the running instance with the most
         recent user input. Several Blenders can be open; each re-sends on a
         keep-alive, so "the newest report" would let a background instance
-        overwrite the one being worked in. The newest INPUT cannot."""
+        overwrite the one being worked in. The newest INPUT cannot.
+
+        The winner is picked BEFORE looking at its URL: an instance that
+        withdrew its context (reporting turned off) stays the newest and
+        answers None, instead of handing the keyboard to a background one."""
         best = None
         for k, r in self._reports.items():
-            if k[0] != "app" or k[1] != token:
+            if k[0] != "app" or k[1] != token or not self._fresh(k):
                 continue
-            url = self._effective_url(k)
-            if url and (best is None or r["input_ts"] > best[0]):
-                best = (r["input_ts"], url)
-        return best[1] if best else None
+            if best is None or r["input_ts"] > best[0]:
+                best = (r["input_ts"], k)
+        return self._effective_url(best[1]) if best else None
 
     def _effective_url(self, key):
         """That source's URL if its report is fresh AND focused, else None."""
