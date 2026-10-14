@@ -102,17 +102,18 @@ class SenderTest(unittest.TestCase):
         self.assertLessEqual(len(got), 2)   # the in-flight one, then only the latest
 
     def test_a_failing_post_does_not_kill_the_thread(self):
-        calls = []
+        calls, posted = [], threading.Semaphore(0)
 
         def boom(port, body):
             calls.append(1)
+            posted.release()
             raise OSError("refused")
 
         s = core.Sender(post=boom)
         s.submit(1, "a")
-        time.sleep(0.05)
+        self.assertTrue(posted.acquire(timeout=2))
         s.submit(1, "b")
-        time.sleep(0.05)
+        self.assertTrue(posted.acquire(timeout=2))   # the thread survived "a"
         s.stop()
         self.assertEqual(len(calls), 2)
 
