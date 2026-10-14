@@ -17,8 +17,8 @@ Every stem `actions.yaml` names lives here. Three sources:
   from gimp); they are white-on-transparent, so their actions.yaml entries say
   `mode: alpha` -- in `luma` they would render as EMPTY cells.
 
-The ESC program mark is a generic "Bl" tile, NOT Blender's logo -- see
-SOURCES.md for the logo-policy reading behind that.
+The ESC program mark is Simple Icons' Blender mark (marks/si_blender.svg),
+rendered by the host's own ESC renderer; SOURCES.md has the provenance.
 
     pip install cairosvg
     python polyhost/res/overlay_sources/blender/fetch_icons.py
@@ -290,8 +290,10 @@ def main() -> int:
     todo = {k: v for k, v in ICONS.items() if not only or k in only}
     icon_fetch.fluent(todo, out)
     _play_reverse(out / "play_reverse.png", out)
-    # Drawn and borrowed glyphs and the program mark are guarded: the committed
-    # file is the source of truth once it exists, so a hand-tuned one survives.
+    # Drawn and borrowed glyphs are guarded: the committed file is the source of
+    # truth once it exists, so a hand-tuned one survives. The program mark is
+    # NOT guarded: it is rebuilt from the vendored marks/si_blender.svg every
+    # run, deterministically, so the SVG is its source of truth.
     for name, draw in DRAWN.items():
         if (out / name).exists():
             print(f"  {name}  <- committed asset (left as-is)")
