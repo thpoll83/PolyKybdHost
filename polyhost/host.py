@@ -173,7 +173,6 @@ def _msgbox(icon, title: str, text: str,
 
     dlg = QDialog(None)
     dlg.setWindowTitle(title)
-    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)
@@ -205,6 +204,16 @@ def _msgbox(icon, title: str, text: str,
     btn_box.accepted.connect(dlg.accept)
     btn_box.rejected.connect(dlg.reject)
     outer.addWidget(btn_box, 0, Qt.AlignRight)
+
+    # Fixed width, height grown to the text. A fixed 160 px cut the no-.bin
+    # release warning to its first third (90 px of label for 274 px of text):
+    # a top-level layout does not ask a wrapped label for its height-for-width,
+    # so the height is computed here from the label's own.
+    m = outer.contentsMargins()
+    text_w = _UPD_DLG_W - m.left() - m.right() - icon_lbl.sizeHint().width() - row.spacing()
+    body_h = max(icon_lbl.sizeHint().height(), text_lbl.heightForWidth(text_w))
+    need_h = m.top() + m.bottom() + body_h + outer.spacing() + btn_box.sizeHint().height()
+    dlg.setFixedSize(_UPD_DLG_W, max(_UPD_DLG_H, need_h))
 
     # Set default button focus
     if default is not None:
