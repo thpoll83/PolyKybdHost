@@ -253,6 +253,19 @@ and relative links were adjusted to suit a standalone file.
   changed", which is all a whole-file write knows. Add the side effect to the hook,
   never to a caller.
 
+- ⚠️ **A wrapped `QLabel` in a dialog must be sized from `heightForWidth()`, and
+  that call never answers below the label's `minimumHeight()`** (#387, 2026-10-14).
+  A top-level layout does not ask a label for its height-for-width, so a label that
+  wraps keeps a one-line height and loses its last lines. The "release has no
+  firmware file" warning showed a third of its text in the fixed 400×160 box. In
+  `_WrapLabel.resizeEvent` (`gui/update_dialog.py`), reset the minimum to 0, measure,
+  then set it. Setting the minimum straight from `heightForWidth()` only ratchets up,
+  so a widened dialog keeps the narrow height (Greptile found it;
+  `test_the_height_follows_a_live_resize` pins it at widths 540, 1200, 540).
+  `host._msgbox` computes its height the same way, caps it at 80% of
+  `availableGeometry()`, and moves the label into a `QScrollArea` above that cap.
+  Pin any width a test depends on: the dialog's starting width comes from the screen.
+
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
