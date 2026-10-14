@@ -1,4 +1,6 @@
 """BrowserUrlProvider — freshness / focus / browser gating (Qt-free)."""
+import sys
+import threading
 import unittest
 
 from polyhost.handler.browser_url import BrowserUrlProvider, is_browser_app
@@ -197,6 +199,47 @@ class TestContextReporter(unittest.TestCase):
         self.assertFalse(self.p.update(app="maya", url="maya://x", focused=True))
         self.assertIsNone(self.p.current_url("maya"))
         self.assertEqual(self.p._reports, {})
+
+
+class TestConcurrentReports(unittest.TestCase):
+    """update() runs on the report server's threads, current_url() on window
+    tracking's. A lookup walking the instances while a report adds or prunes
+    one must not raise (Greptile, #382)."""
+
+    def test_lookup_during_reports_never_raises(self):
+        # Every 4th report comes from a new instance: a short max_age makes
+        # each one prune the others, so the dict changes size constantly.
+        p = BrowserUrlProvider(max_age_s=0.0005, macos_lookup=lambda _: None)
+        errors, stop = [], threading.Event()
+
+        def report():
+            n = 0
+            while not stop.is_set():
+                n += 1
+                p.update(app="blender", url=f"blender://M{n}/VIEW_3D", pid=n // 4)
+
+        def lookup():
+            try:
+                while not stop.is_set():
+                    p.current_url("blender")
+            except Exception as e:      # noqa: BLE001 -- the assertion reports it
+                errors.append(e)
+                stop.set()
+
+        old = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            threads = [threading.Thread(target=report) for _ in range(2)]
+            threads.append(threading.Thread(target=lookup))
+            for t in threads:
+                t.start()
+            stop.wait(1.5)
+            stop.set()
+            for t in threads:
+                t.join()
+        finally:
+            sys.setswitchinterval(old)
+        self.assertEqual(errors, [])
 
 
 if __name__ == "__main__":

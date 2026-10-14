@@ -39,6 +39,7 @@ background browser's tab can never override the overlay for the foreground app,
 and a stale report can never linger — worst case it returns ``None`` and
 matching degrades to app-name + title exactly as before this feature existed.
 """
+import threading
 import time
 
 from polyhost.services import browser_url_macos
@@ -142,6 +143,9 @@ class BrowserUrlProvider:
         # send one). Bounded: the browser keys are a closed set, and stale app
         # instances are pruned on every app report.
         self._reports = {}
+        # update() runs on the report server's request threads and
+        # current_url() on window tracking's: both walk _reports.
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # Ingest (from the extension / add-on via browser_report_server)
@@ -159,6 +163,10 @@ class BrowserUrlProvider:
         browser lost focus or the tab has no address, e.g. a new-tab page).
         A report naming an ``app`` that is not a known context reporter is
         ignored (returns False)."""
+        with self._lock:
+            return self._update(browser, url, title, focused, app, pid, input_age)
+
+    def _update(self, browser, url, title, focused, app, pid, input_age):
         now = self._clock()
         if app is not None:
             token = str(app).strip().lower()
@@ -237,10 +245,22 @@ class BrowserUrlProvider:
         * Any other app gets ``None``, so neither a website nor a background
           Blender's context can ever leak onto a native app's overlay."""
         token = context_reporter_for(app_name)
+        if token is None and not is_browser_app(app_name):
+            return None
+        with self._lock:
+            url = self._report_url(token, app_name)
+        if url or token is not None:
+            return url
+        # No fresh matching extension report — try the zero-install macOS path.
+        try:
+            return self._macos_lookup(app_name)
+        except Exception:
+            return None
+
+    def _report_url(self, token, app_name):
+        """The answer current_url() takes from stored reports (lock held)."""
         if token is not None:
             return self._app_url(token)
-        if not is_browser_app(app_name):
-            return None
         brand = _canonical_browser(app_name)
         # The anonymous slot (an older extension naming no browser) answers
         # only when this browser has no fresh report of its own. A fresh one
@@ -250,10 +270,4 @@ class BrowserUrlProvider:
             url = self._effective_url(("browser", brand))
         else:
             url = self._effective_url(("browser", None))
-        if url:
-            return url
-        # No fresh matching extension report — try the zero-install macOS path.
-        try:
-            return self._macos_lookup(app_name)
-        except Exception:
-            return None
+        return url
