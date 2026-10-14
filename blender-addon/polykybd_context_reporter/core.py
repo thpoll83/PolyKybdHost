@@ -25,6 +25,7 @@ these tokens alone.
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import urllib.error
 import urllib.request
@@ -124,6 +125,7 @@ class Sender:
         self._wake = threading.Event()
         self._pending = None
         self._stop = False
+        self._seen = set()        # (type, message) of delivery errors already printed
         self._thread = threading.Thread(target=self._run, name="polykybd-reporter",
                                         daemon=True)
         self._thread.start()
@@ -148,8 +150,15 @@ class Sender:
             if job is not None:
                 try:
                     self._post(*job)
-                except Exception:   # noqa: BLE001 -- host down / port wrong: retry later
-                    pass
+                except Exception as e:   # noqa: BLE001 -- the thread must survive; retry later
+                    # Printed once per distinct error to Blender's system
+                    # console, so a wrong port or token (HTTP 403) is
+                    # diagnosable without a line every keep-alive.
+                    key = (type(e).__name__, str(e))
+                    if key not in self._seen:
+                        self._seen.add(key)
+                        print(f"PolyKybd Context Reporter: report not delivered: "
+                              f"{type(e).__name__}: {e}", file=sys.stderr)
 
 
 def _http_post(port, body):

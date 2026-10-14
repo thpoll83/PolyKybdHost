@@ -1,5 +1,7 @@
 """The Blender add-on's bpy-free core (blender-addon/polykybd_context_reporter/core.py)."""
+import contextlib
 import importlib.util
+import io
 import json
 import threading
 import time
@@ -113,6 +115,21 @@ class SenderTest(unittest.TestCase):
         time.sleep(0.05)
         s.stop()
         self.assertEqual(len(calls), 2)
+
+    def test_a_delivery_error_is_printed_once(self):
+        # A wrong port or token must be diagnosable from Blender's console
+        # without a line on every keep-alive.
+        def refused(port, body):
+            raise OSError("refused")
+
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            s = core.Sender(post=refused)
+            for url in ("a", "b", "c"):
+                s.submit(1, url)
+                time.sleep(0.05)
+            s.stop()
+        self.assertEqual(err.getvalue().count("report not delivered: OSError: refused"), 1)
 
 
 if __name__ == "__main__":
