@@ -773,14 +773,14 @@ class TemplateGapFillTest(unittest.TestCase):
         self.assertIn("shortcuts not read: generic_overlays_fill_shortcuts is off",
                       said[0])
 
-    def test_the_summary_SAYS_the_read_ran(self):
+    def test_the_summary_SAYS_filling_is_on(self):
         core = make_core(mask=_mask(), shortcuts=_sc(),
                          settings={"generic_overlays_fill_shortcuts": True})
         core.overlay_handler.covered_by_template.return_value = True
         core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
         said = self._summary(core)
         self.assertEqual(len(said), 1, said)
-        self.assertIn("template file(s), shortcuts read)", said[0])
+        self.assertIn("template file(s), shortcut filling on)", said[0])
 
     def test_an_app_with_NO_template_is_still_read(self):
         """The switch is about template-covered apps only."""

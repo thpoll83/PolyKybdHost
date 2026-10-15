@@ -1141,7 +1141,7 @@ class PolyCore(Observable):
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
             f"filling the gaps in {len(template_files)} template file(s), "
-            + ("shortcuts read" if self.poly_settings.get(
+            + ("shortcut filling on" if self.poly_settings.get(
                 "generic_overlays_fill_shortcuts") else
                "shortcuts not read: generic_overlays_fill_shortcuts is off")
             if template_files else "no template overlay")
