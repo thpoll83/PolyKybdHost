@@ -364,12 +364,17 @@ class ShortcutIconFetcher:
         if harvested_under is None:
             return None
         if harvested_under == title:
-            # The served answer IS this title's. Read it again only once it
-            # has aged out of the per-title cache.
+            # The served answer is filed under this title. Read it again once
+            # it has aged out of the per-title cache -- or if it never entered
+            # it: an answer whose window changed mid-read is filed under the
+            # title the read STARTED with but may be another tab's (Revix,
+            # #393).
             entry = self._by_title.get(key, {}).get(title)
-            if entry is None or _now() - entry[2] < TITLE_CACHE_SECONDS:
+            if entry is not None and _now() - entry[2] < TITLE_CACHE_SECONDS:
                 return None
-            why = (f"the answer for {title_tag(title)} is over "
+            why = (f"the answer for {title_tag(title)} was not cached"
+                   if entry is None else
+                   f"the answer for {title_tag(title)} is over "
                    f"{TITLE_CACHE_SECONDS // 60} min old")
         else:
             why = f"new {title_tag(title)}, not cached"

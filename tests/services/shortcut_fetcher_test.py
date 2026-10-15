@@ -1019,6 +1019,13 @@ class TitleReharvestTest(unittest.TestCase):
         key = next(iter(self.fetcher._overlays))
         self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
         self.assertEqual(self.ask("tab B"), DOCUMENT, "still served meanwhile")
+        # Back on tab A, the uncached answer (tab B's, read under A) must not
+        # stand for A: it is read again once the floor passes (Revix, #393).
+        self.now += shortcut_fetcher.REHARVEST_MIN_GAP
+        self.ask("tab A")
+        self.idle()
+        self.assertEqual(self.calls[-1], "tab A")
+        self.assertEqual(len(self.calls), 3)
 
     def test_an_OLD_process_answer_does_not_refill_the_cache(self):
         self.answers = [DOCUMENT, WELCOME]
