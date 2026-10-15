@@ -259,6 +259,19 @@ class ConcurrentWriterTest(unittest.TestCase):
         # And the save still landed -- losing the write is not the alternative.
         self.assertEqual(settings.read_setting("browser_report_port"), 10001)
 
+    def test_a_RESET_over_an_unreadable_file_preserves_it_too(self):
+        """restore_defaults() skips the merge, not the move-aside (Revix, #393)."""
+        a = settings.PolySettings()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+        a.restore_defaults()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1,
+                         f"the reset destroyed it: {os.listdir(self._tmp.name)}")
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt)
+
     def test_a_SECOND_corruption_does_not_DESTROY_the_first_copy(self):
         """⚠️ The kept name was `…unreadable-{strftime("%Y%m%d-%H%M%S")}`, i.e.
         one-second resolution, and `os.replace` overwrites silently. Two

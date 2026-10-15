@@ -622,7 +622,16 @@ class PolySettings:
         on_disk, state = self._read_file_ex()
         if self._reset_pending:
             # restore_defaults(): nothing stays chosen, in any process's file,
-            # except what this process changed after the reset.
+            # except what this process changed after the reset. Other
+            # processes' choices go too; that is what a reset means.
+            # ⚠️ An UNREADABLE file is still moved aside first, as on every
+            # other save: the reset discards choices, not the only copy of a
+            # file nobody could read (Revix, #393).
+            if state == self.READ_UNREADABLE and not self._preserve_unreadable():
+                self.log.error(
+                    "Not resetting settings: %s could not be read and could "
+                    "not be moved aside, so writing would destroy it.", self.path)
+                return False
             on_disk, state = {SETTINGS_FORMAT_KEY: SETTINGS_FORMAT}, self.READ_OK
         if on_disk is None:
             # We cannot see the current file. Merging against defaults would
