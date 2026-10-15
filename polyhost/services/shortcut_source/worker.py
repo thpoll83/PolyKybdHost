@@ -40,6 +40,7 @@ def answer(request: dict) -> dict:
     except Exception as exc:  # the backend's own guard should catch this
         found = []
         reason["why"] = f"the UIA harvest raised: {type(exc).__name__}: {exc}"
+        reason["retry"] = True
         traceback.print_exc(file=sys.stderr)
     return {
         "id": request.get("id"),
@@ -62,6 +63,8 @@ def main(stdin=None, stdout=None) -> int:
         # (stderr is forwarded) instead of a helper that silently vanished.
         faulthandler.enable(file=sys.stderr)
     except Exception:
+        # No usable stderr (no handle to write to): harvest without the dumps
+        # rather than not at all.
         pass
     try:
         for line in iter(stdin.readline, b""):

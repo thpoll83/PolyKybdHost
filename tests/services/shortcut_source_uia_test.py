@@ -267,6 +267,22 @@ class RootWindowTest(unittest.TestCase):
         self.assertTrue(reason["retry"])
         self.assertIn(f"0x{198342:X}", reason["why"])
 
+    def test_an_UNREADABLE_pid_is_refused_too(self):
+        _, walked, reason = self.run_it(_FakeUia(window_pid=None), pid=4242,
+                                        hwnd=198342)
+        self.assertEqual(walked, [])
+        self.assertTrue(reason["retry"])
+
+    def test_a_walk_that_RAISES_is_did_not_look(self):
+        """The window can close mid-walk; that is not "no shortcuts"."""
+        reason = {}
+        with patch.object(uia, "_uia", return_value=(None, _FakeUia())), \
+             patch.object(uia, "uia_shortcuts", side_effect=OSError("gone")):
+            self.assertEqual(uia.shortcuts_for_app("chrome", reason=reason,
+                                                   pid=4242, hwnd=1), [])
+        self.assertTrue(reason["retry"])
+        self.assertIn("gone", reason["why"])
+
     def test_NO_handle_falls_back_to_the_focused_window_and_checks_its_pid(self):
         _, walked, reason = self.run_it(_FakeUia(focused_pid=999), pid=999)
         self.assertEqual(walked, ["focused"])

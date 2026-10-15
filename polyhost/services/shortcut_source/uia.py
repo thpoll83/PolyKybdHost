@@ -257,7 +257,9 @@ def shortcuts_for_app(name: str = "", reason: dict | None = None,
         root_pid = _current(top, "CurrentProcessId")
         reason["root_pid"] = root_pid
         reason["root_class"] = _current(top, "CurrentClassName")
-        if pid is not None and root_pid is not None and int(root_pid) != int(pid):
+        if pid is not None and (root_pid is None or int(root_pid) != int(pid)):
+            # An unreadable pid is refused too: an unverified window could be
+            # any application's (Sourcery, #393).
             reason["why"] = (f"the window read belongs to pid {root_pid}, not "
                              f"to pid {pid} the read was for")
             reason["retry"] = True
@@ -266,7 +268,10 @@ def shortcuts_for_app(name: str = "", reason: dict | None = None,
         reason["elements"] = count
         return found
     except Exception as exc:
+        # Retried, never cached as "no shortcuts": the commonest cause is the
+        # window closing mid-walk (Sourcery and Greptile, #393).
         reason["why"] = f"the UIA walk failed: {type(exc).__name__}: {exc}"
+        reason["retry"] = True
         return []
 
 

@@ -103,10 +103,16 @@ class HelperClient:
         self._next_id = 0
         # Set by `stop()`, so the read it interrupts is not logged as a crash.
         self._stopping = False
+        # Set by `stop()` for good: no helper may start after it (Sourcery,
+        # #393: a harvest holding the lock could otherwise start one while
+        # `stop()` waited for that lock, and it would outlive shutdown).
+        self._closed = False
 
     # -- process lifecycle --------------------------------------------------
 
     def _start(self):
+        if self._closed:
+            raise RuntimeError("the harvest helper was stopped")
         command = self._command or [python_for_helper(), "-m",
                                     "polyhost.services.shortcut_source.worker"]
         kwargs = {}
@@ -125,6 +131,11 @@ class HelperClient:
             log.warning("Shortcut harvest helper could not be started (%s): "
                         "%s: %s", command[0], type(exc).__name__, exc)
             raise
+        if self._closed:
+            # `stop()` ran while this one was starting: it saw no process to
+            # kill, so this is the only place that can.
+            proc.kill()
+            raise RuntimeError("the harvest helper was stopped")
         lines: queue.Queue = queue.Queue()
         threading.Thread(target=self._read, args=(proc, lines),
                          name="poly-shortcut-helper-reader", daemon=True).start()
@@ -142,6 +153,8 @@ class HelperClient:
             for line in iter(proc.stdout.readline, b""):
                 lines.put(line)
         except Exception:
+            # The pipe was closed under us (`_kill`): that is the end of the
+            # helper either way, and the None below says so to the waiter.
             pass
         lines.put(None)
 
@@ -159,6 +172,7 @@ class HelperClient:
                     log.warning("Shortcut harvest helper (pid %s): %s",
                                 proc.pid, line)
         except Exception:
+            # The pipe was closed under us (`_kill`); nothing is left to read.
             pass
 
     def _kill(self):
@@ -169,11 +183,14 @@ class HelperClient:
             proc.kill()
             proc.wait(timeout=2)
         except Exception:
+            # Already dead, or not reaped within 2 s: either way it is no
+            # longer ours, and the next harvest starts a fresh helper.
             pass
         for pipe in (proc.stdin, proc.stdout, proc.stderr):
             try:
                 pipe.close()
             except Exception:
+                # Closing a pipe of a dead process can fail; nothing to undo.
                 pass
 
     def stop(self):
@@ -184,12 +201,14 @@ class HelperClient:
         and shutting the host down must not wait that out. The in-flight
         harvest then reads end-of-file and answers "the helper exited".
         """
+        self._closed = True
         proc = self._proc
         if proc is not None:
             self._stopping = True
             try:
                 proc.kill()
             except Exception:
+                # Already exited; `_kill` below still closes its pipes.
                 pass
         if self._lock.acquire(timeout=2):
             try:
@@ -313,7 +332,10 @@ def _describe_root(answer: dict) -> str:
     if answer.get("root_pid") is not None:
         parts.append(f"pid {answer['root_pid']}")
     if answer.get("root_class"):
-        parts.append(f"class {answer['root_class']}")
+        # Escaped: any local app chooses its class name, and a CR/LF in it
+        # would forge lines in the host log (Sourcery, #393).
+        cls = str(answer["root_class"])[:80].encode("unicode_escape").decode("ascii")
+        parts.append(f"class {cls}")
     return f"{where} ({', '.join(parts)})" if parts else where
 
 
@@ -336,8 +358,13 @@ def harvest(app: str, reason: dict | None = None, pid: int | None = None,
 
 
 def stop() -> None:
-    """End the helper if one runs. Never raises."""
+    """End the helper if one runs. Never raises.
+
+    The stopped client is dropped, so a later harvest (a new fetcher) gets a
+    fresh one rather than a client that refuses to start.
+    """
+    global _client
     with _client_lock:
-        current = _client
+        current, _client = _client, None
     if current is not None:
         current.stop()

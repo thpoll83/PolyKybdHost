@@ -176,6 +176,28 @@ class HelperClientTest(unittest.TestCase):
         self.assertFalse(any("WARNING" in x and "exited" in x for x in logs.output),
                          logs.output)
 
+    def test_NO_helper_starts_after_stop(self):
+        """A harvest waiting on the lock must not start one after shutdown."""
+        self.client.stop()
+        reason = {}
+        self.assertEqual(self.client.harvest("chrome", reason=reason), [])
+        self.assertIsNone(self.client._proc)
+        self.assertTrue(reason["retry"])
+
+    def test_after_stop_nothing_is_even_SPAWNED(self):
+        spawned = []
+        client = out_of_process.HelperClient(
+            command=["x"], popen=lambda *a, **k: spawned.append(a))
+        client.stop()
+        client.harvest("chrome")
+        self.assertEqual(spawned, [])
+
+    def test_module_stop_hands_out_a_FRESH_client_afterwards(self):
+        first = out_of_process.client()
+        out_of_process.stop()
+        self.assertIsNot(out_of_process.client(), first)
+        out_of_process.stop()
+
     def test_stop_twice_is_harmless(self):
         self.client.harvest("a")
         self.client.stop()
@@ -192,6 +214,16 @@ class DecodeTest(unittest.TestCase):
 
     def test_not_a_list_is_nothing(self):
         self.assertEqual(out_of_process.decode({"a": 1}), [])
+
+
+class DescribeRootTest(unittest.TestCase):
+
+    def test_a_class_name_cannot_forge_log_lines(self):
+        got = out_of_process._describe_root(
+            {"hwnd": 1, "root_pid": 2, "root_class": "X\r\nINFO forged"})
+        self.assertNotIn("\n", got)
+        self.assertNotIn("\r", got)
+        self.assertIn("X\\r\\nINFO forged", got)
 
 
 class PythonForHelperTest(unittest.TestCase):
@@ -266,6 +298,7 @@ class WorkerTest(unittest.TestCase):
         self.assertIn("OSError", err.getvalue(), "the traceback goes to stderr")
         self.assertEqual((answer["id"], answer["shortcuts"]), (4, []))
         self.assertIn("boom", answer["why"])
+        self.assertTrue(answer["retry"], "a raising walk is did-not-look")
 
 
 class RoutingTest(unittest.TestCase):

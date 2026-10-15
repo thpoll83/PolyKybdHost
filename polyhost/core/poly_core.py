@@ -643,6 +643,11 @@ class PolyCore(Observable):
             query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             self._tick_query_s = time.monotonic() - query_started
+            shortcut_icons = getattr(self, "_shortcut_icons", None)
+            if shortcut_icons is not None:
+                # Every tick, not only on the generic path: a shortcut read of
+                # an app focus has left is cancelled by it (shortcut_fetcher).
+                shortcut_icons.note_focus(handler.focused_app()[0])
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")

@@ -1049,9 +1049,18 @@ focus when the read RUNS. Three layers now:
 | `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
 | `… the cached answer for title #… is N min old, dropped` | an entry expired |
 
-⚠️ A title is logged as a hash and its length, never as text. Titles name
-documents, and the bundle redacts only the line formats it knows. The length
-matches the `<redacted:N chars>` of the `Active App Changed` lines.
+| `… the window changed during the read (title #…), answer not cached` | the title or process changed mid-read; the answer is used but kept out of the 30-minute cache (Chrome's tabs share one window handle) |
+
+⚠️ A title is logged as a keyed hash and its length, never as text. Titles
+name documents, and the bundle redacts only the line formats it knows. The key
+is random per process, so the hash links lines within one run and a bundle
+reader cannot confirm a guessed title against it. The length matches the
+`<redacted:N chars>` of the `Active App Changed` lines.
+
+The core reports the focused app to the fetcher on every tick
+(`ShortcutIconFetcher.note_focus`), not only when it asks for shortcuts, so a
+read of an app focus has left is cancelled even when the new window is
+template-covered or unnamed.
 
 ⚠️ The helper's UIA calls (`ElementFromHandle`, the process check, the walk)
 have not run on Windows yet. The pipe protocol, cancel, stop, the per-title

@@ -66,7 +66,9 @@ passes `cancel`). Only the out-of-process UIA harvest can honour it; see
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
+import os
 import sys
 import threading
 import time
@@ -86,17 +88,25 @@ REHARVEST_MIN_GAP = 3.0
 TITLE_CACHE_SECONDS = 30 * 60
 
 
+#: Keys `title_tag`'s hash. Random per process and never written anywhere, so a
+#: log reader cannot test guessed titles against a logged hash (Sourcery, #393).
+_TITLE_KEY = os.urandom(16)
+
+
 def title_tag(title: str | None) -> str:
-    """A window title as the log may show it: a short hash and the length.
+    """A window title as the log may show it: a short keyed hash and the length.
 
     ⚠️ Never the title itself. Titles name documents, and the log bundle masks
     them only in the lines it knows; a new line format would leak them. The
     length matches the `<redacted:N chars>` of the window-change lines, and the
-    hash ties this module's lines for one title together.
+    hash ties this module's lines for one title together within one run.
+    ⚠️ Keyed (HMAC with `_TITLE_KEY`), not a plain hash: an unkeyed one lets
+    anyone holding the bundle confirm a guessed title offline.
     """
     if title is None:
         return "no title"
-    digest = hashlib.sha1(title.encode("utf-8", "replace")).hexdigest()[:6]
+    digest = hmac.new(_TITLE_KEY, title.encode("utf-8", "replace"),
+                      hashlib.sha256).hexdigest()[:6]
     return f"title #{digest} ({len(title)} chars)"
 
 
@@ -172,9 +182,13 @@ class ShortcutIconFetcher:
         # stays the answer being SERVED; this is where a revisited title's
         # answer is taken back from.
         self._by_title: dict[str, dict[str, tuple]] = {}
-        # The app the caller last asked about: the focused one. A harvest of
-        # any other app is cancelled (`_resolve`).
+        # The focused app, from `note_focus` (every tick) and `overlays_for`.
+        # A harvest of any other app is cancelled (`_resolve`).
         self._focused: str | None = None
+        # The window handle the harvest in flight was asked for, taken with
+        # its title when it was dequeued (`_run_queue`). Only the one harvest
+        # thread reads or writes it.
+        self._harvest_hwnd: int | None = None
         # app -> the focused window's handle (Windows): which window to read.
         self._hwnds: dict[str, int] = {}
 
@@ -222,6 +236,10 @@ class ShortcutIconFetcher:
         self._focused = app
         if hwnd is not None:
             self._hwnds[app] = int(hwnd)
+        else:
+            # ⚠️ Not the previous window's handle: the harvest would read a
+            # window that is no longer the focused one (Revix, #393).
+            self._hwnds.pop(app, None)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if pid is not None:
@@ -260,6 +278,18 @@ class ShortcutIconFetcher:
         self._ensure_thread()
         self._wake.set()
         return cached
+
+    def note_focus(self, app: str | None):
+        """The app the window tracker sees focused NOW, called on every tick.
+
+        `overlays_for` alone is not called for every focus: the core skips it
+        while a template covers the window with gap filling off, and while no
+        app is named. A read of the app focus has LEFT is cancelled by this
+        (`_resolve`'s `cancel`), so a long Chrome walk no longer runs on behind
+        such a window (Greptile, Sourcery and Revix, #393). None (nothing
+        named) also cancels.
+        """
+        self._focused = app
 
     def _serve_title(self, key: str, title: str):
         """Under `_lock`: serve the cached answer for `title`, if it has one.
@@ -340,7 +370,8 @@ class ShortcutIconFetcher:
                          self._harvested_at.get(key, 0.0) + REHARVEST_MIN_GAP)
         return why if _now() >= not_before else None
 
-    def _note_result(self, key: str, overlays: dict | None, title: str | None):
+    def _note_result(self, key: str, overlays: dict | None, title: str | None,
+                     remember: bool = True):
         """Under `_lock`: record a harvest and move the backoff.
 
         Only a RE-harvest moves it -- the first answer for a key has nothing
@@ -363,7 +394,8 @@ class ShortcutIconFetcher:
         # "" for a harvest made under no title, so a title that appears later
         # still differs from it. `focused_title()` never reports "".
         self._harvest_title[key] = title if title is not None else ""
-        self._remember_title(key, self._harvest_title[key], overlays)
+        if remember:
+            self._remember_title(key, self._harvest_title[key], overlays)
         if previous is None:
             self._backoff.pop(key, None)
             return
@@ -455,6 +487,10 @@ class ShortcutIconFetcher:
                     # the answer and queues the one follow-up.
                     harvesting_title = self._titles.get(key.split("\x00", 1)[0])
                     harvesting_pid = self._pids.get(key.split("\x00", 1)[0])
+                    # ⚠️ Taken WITH the title, under the same lock: a handle
+                    # read later could name a newer window than the title the
+                    # answer is filed under (Sourcery, #393).
+                    self._harvest_hwnd = self._hwnds.get(key.split("\x00", 1)[0])
             if key is None:
                 self._wake.clear()
                 if not self._wake.wait(IDLE_SECONDS):
@@ -471,7 +507,20 @@ class ShortcutIconFetcher:
                 # and the app is never re-harvested however long it is focused.
                 # Exactly the distinction the relay path is warned about in
                 # `overlays_for`, one layer down.
-                self._note_result(key, overlays, harvesting_title)
+                # ⚠️ Kept in the per-title cache only if the title and the
+                # process held for the whole read. Chrome's tabs share ONE
+                # window handle, so a tab switch mid-read gives an answer for
+                # tab B that would be filed under tab A for 30 minutes
+                # (Greptile, #393); and an old process's answer must not
+                # refill the cache its restart cleared (Sourcery, #393). The
+                # answer is still served now, as it was before the cache.
+                held = (self._titles.get(app) == harvesting_title
+                        and self._pids.get(app) == harvesting_pid)
+                if overlays is not None and not held:
+                    self.log.info("Shortcut icons for '%s': the window changed "
+                                  "during the read (%s), answer not cached",
+                                  app, title_tag(harvesting_title))
+                self._note_result(key, overlays, harvesting_title, remember=held)
                 self._inflight.discard(key)
                 if (overlays is not None
                         and self._pids.get(app) != harvesting_pid):
@@ -535,8 +584,8 @@ class ShortcutIconFetcher:
             # was looking at any more (2026-10-15).
             shortcuts = shortcut_source.harvest(
                 app, reason=reason, pid=self._pids.get(app),
-                cancel=lambda: self._focused not in (None, app),
-                hwnd=self._hwnds.get(app))
+                cancel=lambda: self._focused != app,
+                hwnd=self._harvest_hwnd)
             if not shortcuts:
                 # ⚠️ The backend's own sentence when it has one. *"The app
                 # exposes no accelerators"* is true of exactly ONE of the six

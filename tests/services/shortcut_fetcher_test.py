@@ -1003,6 +1003,48 @@ class TitleReharvestTest(unittest.TestCase):
         self.assertTrue(any("min old, dropped" in x for x in logs.output),
                         logs.output)
 
+    def test_a_title_that_CHANGED_during_the_read_is_not_cached(self):
+        """Chrome's tabs share one window: a tab switch mid-read gives tab B's
+        answer, which must not be filed under tab A (Greptile, #393)."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.gate = threading.Event()
+        self.calls.append("pre")           # gate the FIRST real harvest
+        self.ask("tab A")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask("tab B")                  # the tab switches mid-read
+        self.gate.set()
+        self.idle()
+        key = next(iter(self.fetcher._overlays))
+        self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
+        self.assertEqual(self.ask("tab B"), DOCUMENT, "still served meanwhile")
+
+    def test_an_OLD_process_answer_does_not_refill_the_cache(self):
+        self.answers = [DOCUMENT, WELCOME]
+        self.gate = threading.Event()
+        self.calls.append("pre")
+        self.ask_as(100, "tab A")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask_as(200, "tab A")          # restarted mid-read
+        self.gate.set()
+        self.idle()
+        key = next(iter(self.fetcher._overlays))
+        self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
+
+    def test_the_title_hash_is_KEYED(self):
+        """An unkeyed hash lets a bundle reader confirm a guessed title."""
+        import hashlib
+        title = "Secret plan.docx - Word"
+        plain = hashlib.sha1(title.encode()).hexdigest()[:6]
+        tag = shortcut_fetcher.title_tag(title)
+        self.assertNotIn(plain, tag)
+        self.assertEqual(tag, shortcut_fetcher.title_tag(title), "stable in a run")
+        with patch.object(shortcut_fetcher, "_TITLE_KEY", b"another key"):
+            self.assertNotEqual(shortcut_fetcher.title_tag(title), tag)
+
     def test_forget_drops_the_per_title_answers(self):
         self.first()
         self.fetcher.forget()
@@ -1049,6 +1091,38 @@ class CancelTest(unittest.TestCase):
             while not seen and time.monotonic() < end:
                 time.sleep(0.01)
         self.assertEqual(seen, {"pid": 7, "hwnd": 198342})
+
+    def test_note_focus_CANCELS_a_read_of_the_app_left(self):
+        """Focus can move to a window `overlays_for` is never called for
+        (template-covered, unnamed): the core reports it every tick."""
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = []
+
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
+            seen.append(cancel())
+            fetcher.note_focus("explorer")
+            seen.append(cancel())
+            fetcher.note_focus(None)
+            seen.append(cancel())
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("chrome")
+            end = time.monotonic() + 2
+            while len(seen) < 3 and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, [False, True, True])
+
+    def test_a_call_WITHOUT_a_handle_drops_the_old_one(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        with patch.object(fetcher, "_resolve", side_effect=lambda *a: {}):
+            fetcher.overlays_for("zoom", hwnd=1)
+            fetcher.overlays_for("zoom")
+        self.assertNotIn("zoom", fetcher._hwnds)
 
     def test_stop_ends_the_HELPER_when_one_was_started(self):
         from polyhost.services.shortcut_source import out_of_process

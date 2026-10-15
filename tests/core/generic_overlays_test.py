@@ -517,6 +517,14 @@ class ForwardedShortcutsTest(unittest.TestCase):
         self.assertEqual(
             core._shortcut_icons.overlays_for.call_args.kwargs["hwnd"], 198342)
 
+    def test_EVERY_tick_reports_focus_even_with_generic_overlays_OFF(self):
+        """A shortcut read of an app focus left is cancelled by this, so it
+        must not depend on the generic path running (#393)."""
+        core = make_core(mask=_mask(), settings={"generic_overlays_enabled": False})
+        _tick(core)
+        core._shortcut_icons.note_focus.assert_called_once_with("gimp")
+        core._shortcut_icons.overlays_for.assert_not_called()
+
     def test_a_LOCAL_window_passes_its_PID_to_the_HARVEST_too(self):
         """⚠️ The same pid the OS-icon route takes. Without it the macOS
         backend harvests whatever NSWorkspace calls frontmost — a value frozen
