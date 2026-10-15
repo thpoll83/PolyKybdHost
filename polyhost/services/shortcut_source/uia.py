@@ -217,8 +217,11 @@ def shortcuts_for_app(name: str = "", reason: dict | None = None,
 
     Returns [] on any failure, for the reason the AT-SPI side does.
 
-    `reason` and `pid` are accepted and unused -- see the note on the AT-SPI
-    side for why all three backends carry them regardless.
+    `pid` is accepted and unused -- see the note on the AT-SPI side for why
+    all three backends carry it regardless. `reason`, when given, gets
+    `elements`: how many UI elements the walk read, which is what makes a slow
+    harvest explainable from a log (a long chat page in Chrome is tens of
+    thousands), and `why` when the walk failed.
     """
     try:
         _, iuia = _uia()
@@ -235,7 +238,11 @@ def shortcuts_for_app(name: str = "", reason: dict | None = None,
             if parent is None or iuia.CompareElements(parent, desktop):
                 break
             top = parent
-        found, _count = uia_shortcuts(iuia, top, cache_request)
+        found, count = uia_shortcuts(iuia, top, cache_request)
+        if reason is not None:
+            reason["elements"] = count
         return found
-    except Exception:
+    except Exception as exc:
+        if reason is not None:
+            reason["why"] = f"the UIA walk failed: {type(exc).__name__}: {exc}"
         return []

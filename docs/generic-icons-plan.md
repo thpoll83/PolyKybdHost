@@ -977,8 +977,9 @@ until the new one lands. Four guards bound the cost (`shortcut_fetcher.py`):
 2. a 3 s floor between re-harvests of one app, whatever they returned, for a
    title that cycles in seconds (a clock, a progress counter);
 3. a backoff when a re-harvest finds the same shortcuts, 5 s doubling to
-   2 min, reset by a changed answer. A terminal or browser settles at one walk
-   every 2 min;
+   2 min, reset by a changed answer. A terminal settles at one walk every
+   2 min. ⚠️ A browser does NOT: each tab answers differently, so the reset
+   fires on every tab switch (see the per-title cache below);
 4. a **new pid** re-harvests once, past the title test and the floor (not the
    backoff): a second Kate inherited the first one's 20 s backoff and showed
    the first one's 97-shortcut answer on its own welcome page for 12 s.
@@ -998,6 +999,30 @@ windows pass no title and never re-harvest; their answer is relayed.
 
 ⚠️ GTK may behave differently; re-run the event probe before building on
 events for another toolkit.
+
+**A browser walked again on every tab switch, and the walk froze the host**
+(Windows, Chrome, 2026-10-15 log bundle). The backoff above never engaged,
+because each tab's shortcuts differ: 31 full UIA walks of Chrome in 38 minutes.
+One walk of a long Claude Code tab took about 2 min 17 s, and during it the
+daemon's window-tracking tick took 63.9 s, 38.4 s and 89.1 s, the brightness
+request 12 s instead of 0.3 s, and the tray menu (an RPC into the daemon) was as
+slow to open. No tab switch reached the keyboard in that time. The walk already
+ran on its own thread; three unrelated threads stalling together is the Python
+interpreter lock, which all threads of one process share. Two changes:
+
+* **The UIA walk runs in a helper process**
+  (`shortcut_source/out_of_process.py`, `worker.py`): JSON lines over its
+  stdin/stdout, started once and kept. Focus leaving the app kills it
+  mid-walk, and the next harvest starts a fresh one. COM leaves the daemon with
+  it. Each walk logs `Shortcut harvest for '<app>': N UI element(s) read in
+  T s`, so a slow one is explained by the next bundle.
+* **Every answer is kept per window title for 30 minutes** (the maintainer's
+  number, `TITLE_CACHE_SECONDS`). Returning to a tab seen in that time costs no
+  walk. An older entry is dropped and its title is read again, so a page that
+  gained a shortcut without retitling is at most 30 minutes stale.
+
+⚠️ The helper's UIA call has not run on Windows yet; only the pipe protocol,
+the cancel and the cache are tested (with a stand-in helper process).
 
 ## Part F — what could still fail
 

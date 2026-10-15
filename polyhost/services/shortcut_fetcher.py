@@ -48,11 +48,25 @@ shortcuts on the welcome page for 12 s (Plasma, 2026-10-09).
 The old answer keeps being served until the new one lands. An event listener
 was measured as the alternative and rejected: Qt emits no
 object:children-changed when its menus are rebuilt.
+
+⚠️ EVERY ANSWER IS ALSO KEPT PER TITLE, for `TITLE_CACHE_SECONDS` (30 min), so
+coming BACK to a title costs no harvest. A browser retitles on every tab
+switch, and each tab answers differently, so the backoff above never engaged:
+31 full UIA walks of Chrome in 38 minutes, the slowest over two minutes
+(2026-10-15). Now a tab seen in the last 30 minutes is served from here. An
+entry that old is read again when its title is next focused, and dropped from
+the cache in the meantime, so a page that gained a shortcut without retitling
+(a permission prompt's "Allow once") is at most 30 minutes stale.
+
+A harvest still in flight when focus leaves its app is CANCELLED (`_resolve`
+passes `cancel`). Only the out-of-process UIA harvest can honour it; see
+`shortcut_source.out_of_process`.
 """
 
 from __future__ import annotations
 
 import logging
+import sys
 import threading
 import time
 
@@ -66,6 +80,9 @@ REHARVEST_BACKOFF_FIRST = 5.0
 REHARVEST_BACKOFF_MAX = 120.0
 #: The floor between two re-harvests of one app, whatever they returned.
 REHARVEST_MIN_GAP = 3.0
+#: How long an answer is served for a title it was harvested under. The
+#: maintainer's number (2026-10-15): see the module docstring.
+TITLE_CACHE_SECONDS = 30 * 60
 
 
 def _now() -> float:
@@ -135,6 +152,14 @@ class ShortcutIconFetcher:
         # a fresh instance starts on its own page (Kate's welcome page), and
         # the old instance's backoff kept its answer on screen for 12 s.
         self._restarted: set[str] = set()
+        # key -> {title: (overlays, signature, harvested_at)}: every answer,
+        # per title it was harvested under, for TITLE_CACHE_SECONDS. `_overlays`
+        # stays the answer being SERVED; this is where a revisited title's
+        # answer is taken back from.
+        self._by_title: dict[str, dict[str, tuple]] = {}
+        # The app the caller last asked about: the focused one. A harvest of
+        # any other app is cancelled (`_resolve`).
+        self._focused: str | None = None
 
     # ------------------------------------------------------------------
 
@@ -171,6 +196,7 @@ class ShortcutIconFetcher:
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
+        self._focused = app
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if pid is not None:
@@ -187,9 +213,14 @@ class ShortcutIconFetcher:
                         if k.startswith(prefix):
                             self._restarted.add(k)
                             self._backoff.pop(k, None)
+                            # The old process's per-title answers say nothing
+                            # about the new one's pages.
+                            self._by_title.pop(k, None)
             if title is not None:
                 self._titles[app] = title
             if key in self._overlays:
+                if title is not None:
+                    self._serve_title(key, title)
                 cached = self._overlays[key]
                 if not self._wants_reharvest(key, title):
                     return cached
@@ -201,6 +232,42 @@ class ShortcutIconFetcher:
         self._ensure_thread()
         self._wake.set()
         return cached
+
+    def _serve_title(self, key: str, title: str):
+        """Under `_lock`: serve the cached answer for `title`, if it has one.
+
+        Switches what `_overlays[key]` serves and what it counts as harvested
+        under, so `_wants_reharvest` sees an unchanged title and asks nothing.
+        An entry past TITLE_CACHE_SECONDS is dropped instead, and the title
+        then reads as new: the ordinary re-harvest rules take it from there.
+        """
+        if self._harvest_title.get(key) == title or key in self._restarted:
+            return
+        entry = self._title_entry(key, title)
+        if entry is None:
+            return
+        self._overlays[key], self._drew[key], _ = entry
+        self._harvest_title[key] = title
+
+    def _title_entry(self, key: str, title: str):
+        """Under `_lock`: the fresh per-title entry, or None. Drops a stale one."""
+        titles = self._by_title.get(key)
+        entry = titles.get(title) if titles else None
+        if entry is None:
+            return None
+        if _now() - entry[2] >= TITLE_CACHE_SECONDS:
+            del titles[title]
+            return None
+        return entry
+
+    def _remember_title(self, key: str, title: str, overlays: dict):
+        """Under `_lock`: keep this answer for `title`, and evict the expired."""
+        now = _now()
+        titles = self._by_title.setdefault(key, {})
+        for old in [t for t, e in titles.items()
+                    if now - e[2] >= TITLE_CACHE_SECONDS]:
+            del titles[old]
+        titles[title] = (overlays, self._drew[key], now)
 
     def _wants_reharvest(self, key: str, title: str | None) -> bool:
         """Under `_lock`: has the title or the process moved on from the
@@ -217,8 +284,14 @@ class ShortcutIconFetcher:
         if title is None:
             return False
         harvested_under = self._harvest_title.get(key)
-        if harvested_under is None or harvested_under == title:
+        if harvested_under is None:
             return False
+        if harvested_under == title:
+            # The served answer IS this title's. Read it again only once it
+            # has aged out of the per-title cache.
+            entry = self._by_title.get(key, {}).get(title)
+            if entry is None or _now() - entry[2] < TITLE_CACHE_SECONDS:
+                return False
         not_before = max(not_before,
                          self._harvested_at.get(key, 0.0) + REHARVEST_MIN_GAP)
         return _now() >= not_before
@@ -246,6 +319,7 @@ class ShortcutIconFetcher:
         # "" for a harvest made under no title, so a title that appears later
         # still differs from it. `focused_title()` never reports "".
         self._harvest_title[key] = title if title is not None else ""
+        self._remember_title(key, self._harvest_title[key], overlays)
         if previous is None:
             self._backoff.pop(key, None)
             return
@@ -275,6 +349,7 @@ class ShortcutIconFetcher:
             self._backoff.clear()
             self._harvested_at.clear()
             self._restarted.clear()
+            self._by_title.clear()
         self._told.clear()
 
     def stop(self):
@@ -287,6 +362,12 @@ class ShortcutIconFetcher:
         self._wake.set()
         if thread is not None:
             thread.join(timeout=2)
+        # The UIA helper process, if this process ever started one. Looked up
+        # rather than imported: a platform that never harvested out of process
+        # has nothing to stop.
+        helper = sys.modules.get("polyhost.services.shortcut_source.out_of_process")
+        if helper is not None:
+            helper.stop()
 
     # ------------------------------------------------------------------
 
@@ -405,8 +486,12 @@ class ShortcutIconFetcher:
                 self._say(app, unusable)
                 return {}
             reason: dict = {}
-            shortcuts = shortcut_source.harvest(app, reason=reason,
-                                                pid=self._pids.get(app))
+            # ⚠️ Cancelled once focus has left this app: a read that took two
+            # minutes on a long Chrome tab otherwise ran on for a tab nobody
+            # was looking at any more (2026-10-15).
+            shortcuts = shortcut_source.harvest(
+                app, reason=reason, pid=self._pids.get(app),
+                cancel=lambda: self._focused not in (None, app))
             if not shortcuts:
                 # ⚠️ The backend's own sentence when it has one. *"The app
                 # exposes no accelerators"* is true of exactly ONE of the six

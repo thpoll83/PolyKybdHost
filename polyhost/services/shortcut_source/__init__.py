@@ -106,6 +106,16 @@ def release_thread() -> None:
         pass
 
 
+def _out_of_process(name: str) -> bool:
+    """Does this backend's harvest run in the helper process?
+
+    Only UIA. `harvest()` and `unavailable_reason()` then never import the
+    in-process `uia` module, so `release_thread()` finds nothing to free in the
+    host: see `shortcut_source.out_of_process`.
+    """
+    return name == "uia"
+
+
 def unavailable_reason() -> str | None:
     """WHY no backend is usable here, or None when one is.
 
@@ -121,6 +131,14 @@ def unavailable_reason() -> str | None:
         # `backend_name()` answers for whatever `sys.platform` says, and a new
         # platform must degrade to a sentence rather than an AttributeError.
         return "this platform has no accessibility backend"
+    if _out_of_process(name):
+        # ⚠️ Not `uia.available()`: that builds an IUIAutomation object, and
+        # with it a COM apartment, in THIS process -- the thing the helper
+        # exists to keep out. The helper names any later failure itself.
+        import importlib.util
+        if importlib.util.find_spec("comtypes") is None:
+            return "the uia backend needs comtypes, which is not installed"
+        return None
     try:
         backend = _backend_module(name)
     except Exception as exc:
@@ -134,7 +152,7 @@ def unavailable_reason() -> str | None:
 
 
 def harvest(app: str, reason: dict | None = None,
-            pid: int | None = None) -> list:
+            pid: int | None = None, cancel=None) -> list:
     """Shortcuts for the focused app, or [] — the one call the core makes.
 
     ⚠️ **An empty list has six different meanings on macOS and the caller
@@ -152,7 +170,14 @@ def harvest(app: str, reason: dict | None = None,
     called frontmost -- a value that is frozen on the worker thread, so without
     a pid exactly one app on the machine can ever harvest. Pass it whenever the
     caller has one; only `macos` uses it today.
+
+    `cancel`, a callable, lets the caller abandon a harvest that is no longer
+    wanted. Only the out-of-process UIA harvest can honour it (it kills the
+    helper); an abandoned harvest answers [] with `reason["retry"]` set.
     """
+    if _out_of_process(backend_name()):
+        from polyhost.services.shortcut_source import out_of_process
+        return out_of_process.harvest(app, reason=reason, pid=pid, cancel=cancel)
     backend = pick()
     if backend is None:
         return []

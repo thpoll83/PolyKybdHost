@@ -300,7 +300,7 @@ class EmptyHarvestReasonTest(unittest.TestCase):
         said = []
         f._say = lambda app, why: said.append(why)
 
-        def harvest(app, reason=None, pid=None):
+        def harvest(app, reason=None, pid=None, cancel=None):
             if reason is not None and self._reason:
                 reason.update(self._reason)
             return list(harvested)
@@ -355,7 +355,7 @@ class PidPassThroughTest(unittest.TestCase):
         f._say = lambda *a: None
         seen = {}
 
-        def harvest(app, reason=None, pid=None):
+        def harvest(app, reason=None, pid=None, cancel=None):
             seen["pid"] = pid
             return []
 
@@ -913,6 +913,103 @@ class TitleReharvestTest(unittest.TestCase):
             self.ask_as(100, "a")
         self.idle()
         self.assertEqual(len(self.calls), 1)
+
+    # -- the per-title cache (2026-10-15: 31 walks of Chrome in 38 min) ------
+
+    def test_a_REVISITED_title_is_served_without_a_harvest(self):
+        """A browser retitles per tab; switching back to a tab is free."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.assertEqual(self.ask("tab B"), DOCUMENT)
+        for _ in range(3):
+            self.now += 10
+            self.assertEqual(self.ask("tab A"), WELCOME)
+            self.assertEqual(self.ask("tab B"), DOCUMENT)
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B"])
+
+    def test_a_title_cached_LONGER_than_30_min_is_read_again(self):
+        self.answers = [WELCOME, DOCUMENT, DOCUMENT]
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        self.assertEqual(self.ask("tab A"), DOCUMENT)   # stale: not served
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B", "tab A"])
+
+    def test_the_FOCUSED_title_is_read_again_after_30_min(self):
+        self.answers = [WELCOME, DOCUMENT]
+        self.first()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS - 1
+        self.ask("Welcome - Kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+        self.now += 1
+        self.assertEqual(self.ask("Welcome - Kate"), WELCOME)  # served meanwhile
+        self.idle()
+        self.assertEqual(self.ask("Welcome - Kate"), DOCUMENT)
+        self.assertEqual(len(self.calls), 2)
+
+    def test_expired_titles_are_EVICTED(self):
+        self.first("tab A")
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        self.ask("tab B")
+        self.idle()
+        key = next(iter(self.fetcher._by_title))
+        self.assertEqual(set(self.fetcher._by_title[key]), {"tab B"})
+
+    def test_a_NEW_pid_drops_the_per_title_answers(self):
+        self.answers = [WELCOME, DOCUMENT, DOCUMENT]
+        self.ask_as(100, "tab A")
+        self.idle()
+        self.now += 10
+        self.ask_as(100, "tab B")
+        self.idle()
+        self.now += 10
+        self.ask_as(200, "tab A")          # restart: tab A is NOT served cached
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B", "tab A"])
+
+    def test_forget_drops_the_per_title_answers(self):
+        self.first()
+        self.fetcher.forget()
+        self.assertEqual(self.fetcher._by_title, {})
+
+
+class CancelTest(unittest.TestCase):
+    """A harvest is cancelled once focus has left its app."""
+
+    def test_cancel_turns_true_when_ANOTHER_app_is_focused(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = {}
+
+        def harvest(app, reason=None, pid=None, cancel=None):
+            seen["before"] = cancel()
+            fetcher._focused = "slack"
+            seen["after"] = cancel()
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("chrome")
+            end = time.monotonic() + 2
+            while "after" not in seen and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, {"before": False, "after": True})
+
+    def test_stop_ends_the_HELPER_when_one_was_started(self):
+        from polyhost.services.shortcut_source import out_of_process
+        fetcher = ShortcutIconFetcher()
+        with patch.object(out_of_process, "stop") as stop:
+            fetcher.stop()
+        stop.assert_called_once_with()
 
 
 if __name__ == "__main__":
