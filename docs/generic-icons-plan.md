@@ -1021,8 +1021,41 @@ interpreter lock, which all threads of one process share. Two changes:
   walk. An older entry is dropped and its title is read again, so a page that
   gained a shortcut without retitling is at most 30 minutes stale.
 
-⚠️ The helper's UIA call has not run on Windows yet; only the pipe protocol,
-the cancel and the cache are tested (with a stand-in helper process).
+**A read could land on the wrong application.** The same bundle filed
+Chrome's "Address and search bar" under Zoom: the read was queued for Zoom at
+15:43 and ran at 15:50, and UIA's `GetFocusedElement()` answers whatever has
+focus when the read RUNS. Three layers now:
+
+1. the host passes the focused window's handle (`OverlayHandler.focused_handle()`,
+   Windows only) and the helper starts from `ElementFromHandle(hwnd)`;
+2. the helper compares the read window's process with the pid it was asked
+   about; a mismatch, or a closed window, is "did not look" (retried, never
+   cached);
+3. a read whose app lost focus while it waited in the queue is dropped before
+   it reaches the helper.
+
+**What the log shows** (all at INFO or above, so a log bundle carries it):
+
+| line | meaning |
+|---|---|
+| `Shortcut harvest helper started (pid N, <python>)` | the helper process started |
+| `Shortcut harvest for 'chrome': window 0x306C6 (pid 4242, class Chrome_WidgetWin_1) -> N UI element(s) read in T s, K shortcut(s)` | one read: which window, how big, how long |
+| `… (the window read belongs to pid X, not to pid Y …)` | layer 2 refused the read |
+| `Shortcut harvest for 'zoom' skipped: focus moved on before it started` | layer 3 |
+| `Shortcut harvest for 'chrome' abandoned: focus moved on (helper stopped)` | killed mid-read |
+| `Shortcut harvest helper exited (code N) while reading 'app'` | the helper died |
+| `Shortcut harvest helper (pid N): <text>` (WARNING) | anything the helper wrote to stderr: a traceback, a `faulthandler` dump |
+| `Shortcut icons for 'chrome': reading it again (new title #a1b2c3 (30 chars), not cached)` | why a read was queued |
+| `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
+| `… the cached answer for title #… is N min old, dropped` | an entry expired |
+
+⚠️ A title is logged as a hash and its length, never as text. Titles name
+documents, and the bundle redacts only the line formats it knows. The length
+matches the `<redacted:N chars>` of the `Active App Changed` lines.
+
+⚠️ The helper's UIA calls (`ElementFromHandle`, the process check, the walk)
+have not run on Windows yet. The pipe protocol, cancel, stop, the per-title
+cache and the root selection are tested with stand-ins.
 
 ## Part F — what could still fail
 

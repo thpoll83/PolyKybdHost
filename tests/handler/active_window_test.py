@@ -369,6 +369,48 @@ class FocusedTitleTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedHandleTest(unittest.TestCase):
+    """The window the Windows shortcut harvest reads (2026-10-15: a read
+    queued for Zoom ran on Chrome)."""
+
+    def _handler(self, handle=198342, remote=False, raises=False):
+        h = OverlayHandler({})
+        h.win = MagicMock()
+        if raises:
+            h.win.getHandle.side_effect = RuntimeError("gone")
+        else:
+            h.win.getHandle.return_value = handle
+        h.is_remote_mapping_entry = lambda: remote
+        h.remote_handler = MagicMock() if remote else None
+        return h
+
+    def on(self, system):
+        return patch("polyhost.handler.active_window.platform.system",
+                     return_value=system)
+
+    def test_a_LOCAL_window_on_Windows_answers_its_handle(self):
+        with self.on("Windows"):
+            self.assertEqual(self._handler().focused_handle(), 198342)
+
+    def test_OTHER_platforms_answer_nothing(self):
+        """macOS derives the handle from the title; it names no window."""
+        for system in ("Darwin", "Linux"):
+            with self.on(system):
+                self.assertIsNone(self._handler().focused_handle(), system)
+
+    def test_a_FORWARDED_window_answers_nothing(self):
+        with self.on("Windows"):
+            self.assertIsNone(self._handler(remote=True).focused_handle())
+
+    def test_NO_window_and_a_RAISING_backend_answer_nothing(self):
+        with self.on("Windows"):
+            h = self._handler()
+            h.win = None
+            self.assertIsNone(h.focused_handle())
+            self.assertIsNone(self._handler(raises=True).focused_handle())
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class LosingTheWindowTest(unittest.TestCase):
     """What happens when the backend stops reporting a window at all.
 

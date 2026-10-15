@@ -851,9 +851,13 @@ class PolyCore(Observable):
             # Save/Undo/Copy only once a document opens (shortcut_fetcher).
             # getattr: test doubles and older handlers have no focused_title.
             title_of = getattr(handler, "focused_title", None)
+            # `hwnd` makes the Windows harvest read THIS window rather than
+            # whatever has focus when the read runs (shortcut_fetcher).
+            handle_of = getattr(handler, "focused_handle", None)
             shortcuts = self._shortcut_icons.overlays_for(
                 name, pid=handler.focused_pid(),
-                title=title_of() if callable(title_of) else None)
+                title=title_of() if callable(title_of) else None,
+                hwnd=handle_of() if callable(handle_of) else None)
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             if mask is not None and not shortcuts:

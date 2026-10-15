@@ -206,23 +206,28 @@ def available() -> bool:
 
 
 def shortcuts_for_app(name: str = "", reason: dict | None = None,
-                      pid: int | None = None) -> list[Shortcut]:
-    """Every shortcut the FOCUSED top-level window exposes.
+                      pid: int | None = None,
+                      hwnd: int | None = None) -> list[Shortcut]:
+    """Every shortcut the caller's top-level window exposes.
 
-    ⚠️ `name` is accepted and ignored, so the two backends share one signature.
-    UIA answers "what has focus" directly and far more cheaply than it answers
-    "find the window called X" -- and the caller only ever asks about the app it
-    already believes is focused, so resolving by name would be a second, slower
-    opinion about the same thing.
+    ⚠️ `hwnd` is the window to read, and the walk starts there whenever the
+    caller has one. Without it the walk starts from whatever has focus when it
+    RUNS, which is not the app the read was queued for once focus has moved:
+    a read queued for Zoom ran seven minutes later on Chrome and filed
+    Chrome's "Address and search bar" under Zoom (2026-10-15). `name` is
+    accepted and ignored, so the backends share one signature.
 
-    Returns [] on any failure, for the reason the AT-SPI side does.
+    ⚠️ `pid`, when given, must own the window that was read: a closed window's
+    handle can be reused, and the focused-element fallback can land anywhere.
+    A mismatch reads as "did not look" (`reason["retry"]`), never as an app
+    with no shortcuts.
 
-    `pid` is accepted and unused -- see the note on the AT-SPI side for why
-    all three backends carry it regardless. `reason`, when given, gets
-    `elements`: how many UI elements the walk read, which is what makes a slow
-    harvest explainable from a log (a long chat page in Chrome is tens of
-    thousands), and `why` when the walk failed.
+    Returns [] on any failure, for the reason the AT-SPI side does. `reason`,
+    when given, gets `elements` (how many UI elements the walk read: a long
+    chat page in Chrome is tens of thousands), `root_pid` and `root_class`
+    (which window was read), and `why` when the walk refused or failed.
     """
+    reason = reason if reason is not None else {}
     try:
         _, iuia = _uia()
         cache_request = iuia.CreateCacheRequest()
@@ -230,19 +235,44 @@ def shortcuts_for_app(name: str = "", reason: dict | None = None,
             cache_request.AddProperty(prop)
         desktop = iuia.GetRootElement()
         walker = iuia.ControlViewWalker
-        top = iuia.GetFocusedElement()
+        if hwnd:
+            try:
+                top = iuia.ElementFromHandle(int(hwnd))
+            except Exception as exc:
+                reason["why"] = (f"window 0x{int(hwnd):X} could not be read "
+                                 f"(closed?): {type(exc).__name__}: {exc}")
+                reason["retry"] = True
+                return []
+        else:
+            top = iuia.GetFocusedElement()
         if top is None:
+            reason["why"] = "no window to read"
+            reason["retry"] = True
             return []
         while True:
             parent = walker.GetParentElement(top)
             if parent is None or iuia.CompareElements(parent, desktop):
                 break
             top = parent
+        root_pid = _current(top, "CurrentProcessId")
+        reason["root_pid"] = root_pid
+        reason["root_class"] = _current(top, "CurrentClassName")
+        if pid is not None and root_pid is not None and int(root_pid) != int(pid):
+            reason["why"] = (f"the window read belongs to pid {root_pid}, not "
+                             f"to pid {pid} the read was for")
+            reason["retry"] = True
+            return []
         found, count = uia_shortcuts(iuia, top, cache_request)
-        if reason is not None:
-            reason["elements"] = count
+        reason["elements"] = count
         return found
     except Exception as exc:
-        if reason is not None:
-            reason["why"] = f"the UIA walk failed: {type(exc).__name__}: {exc}"
+        reason["why"] = f"the UIA walk failed: {type(exc).__name__}: {exc}"
         return []
+
+
+def _current(element, prop: str):
+    """`element.<prop>`, or None when UIA cannot answer it. Never raises."""
+    try:
+        return getattr(element, prop)
+    except Exception:
+        return None

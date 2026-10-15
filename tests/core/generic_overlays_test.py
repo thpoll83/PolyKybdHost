@@ -508,6 +508,15 @@ class ForwardedShortcutsTest(unittest.TestCase):
         self.assertEqual(call.args, ("gimp",))
         self.assertNotIn("harvested", call.kwargs)
 
+    def test_a_LOCAL_window_passes_its_HANDLE_to_the_HARVEST(self):
+        """The Windows harvest reads this window, not whatever has focus when
+        the read runs (2026-10-15: Chrome's shortcuts filed under Zoom)."""
+        core = make_core(mask=_mask())
+        core.overlay_handler.focused_handle.return_value = 198342
+        _tick(core)
+        self.assertEqual(
+            core._shortcut_icons.overlays_for.call_args.kwargs["hwnd"], 198342)
+
     def test_a_LOCAL_window_passes_its_PID_to_the_HARVEST_too(self):
         """⚠️ The same pid the OS-icon route takes. Without it the macOS
         backend harvests whatever NSWorkspace calls frontmost — a value frozen

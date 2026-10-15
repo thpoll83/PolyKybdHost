@@ -23,8 +23,9 @@ from polyhost.services.shortcut_source.model import Shortcut
 SAVE = {"label": "Save", "role": "menu item", "accel": "Ctrl+S", "mods": 1,
         "keysym": "s", "hid": 0x16, "displayable": True}
 
-# Answers every request with one Save shortcut, unless the app is "hang" (never
-# answers) or "die" (exits).
+# Answers every request with one Save shortcut and echoes the window it was
+# asked for, unless the app is "hang" (never answers), "die" (exits 3),
+# "stderr" (complains on stderr first) or "mismatch" (refuses, retry).
 FAKE_HELPER = textwrap.dedent(f"""
     import json, sys, time
     for line in iter(sys.stdin.buffer.readline, b""):
@@ -33,8 +34,16 @@ FAKE_HELPER = textwrap.dedent(f"""
             time.sleep(60)
         if req["app"] == "die":
             sys.exit(3)
+        if req["app"] == "stderr":
+            sys.stderr.write("Traceback: boom in UIA\\n")
+            sys.stderr.flush()
         out = {{"id": req["id"], "shortcuts": [{SAVE!r}], "elements": 1234,
-               "seconds": 0.5, "why": None}}
+               "seconds": 0.5, "why": None, "retry": False,
+               "hwnd": req.get("hwnd"), "root_pid": 4242,
+               "root_class": "Chrome_WidgetWin_1"}}
+        if req["app"] == "mismatch":
+            out.update(shortcuts=[], elements=None, retry=True,
+                       why="the window read belongs to pid 1, not to pid 2")
         sys.stdout.buffer.write(json.dumps(out).encode() + b"\\n")
         sys.stdout.buffer.flush()
 """)
@@ -110,6 +119,63 @@ class HelperClientTest(unittest.TestCase):
         self.assertEqual(result["found"], [])
         self.assertIn("exited", result["why"])
 
+    def test_the_WINDOW_reaches_the_helper_and_the_log_names_it(self):
+        with self.assertLogs("PolyHost", logging.INFO) as logs:
+            self.client.harvest("chrome", pid=4242, hwnd=198342)
+        line = next(x for x in logs.output if "UI element(s) read" in x)
+        self.assertIn(f"window 0x{198342:X} (pid 4242, class Chrome_WidgetWin_1)",
+                      line)
+
+    def test_a_REFUSED_read_keeps_its_reason_and_retry(self):
+        reason = {}
+        with self.assertLogs("PolyHost", logging.INFO) as logs:
+            self.assertEqual(self.client.harvest("mismatch", reason=reason), [])
+        self.assertTrue(reason["retry"])
+        self.assertIn("pid 1", reason["why"])
+        self.assertTrue(any("not to pid 2" in x for x in logs.output), logs.output)
+
+    def test_the_helpers_STDERR_reaches_the_host_log(self):
+        """A traceback or faulthandler dump in the helper is otherwise lost."""
+        with self.assertLogs("PolyHost", logging.WARNING) as logs:
+            self.client.harvest("stderr")
+            end = time.monotonic() + 3
+            while (not any("boom in UIA" in x for x in logs.output)
+                   and time.monotonic() < end):
+                time.sleep(0.02)
+        self.assertTrue(any("boom in UIA" in x for x in logs.output), logs.output)
+
+    def test_the_EXIT_CODE_is_logged(self):
+        with self.assertLogs("PolyHost", logging.WARNING) as logs:
+            self.client.harvest("die")
+        self.assertTrue(any("exited (code 3)" in x for x in logs.output),
+                        logs.output)
+
+    def test_a_read_already_STALE_never_reaches_the_helper(self):
+        """2026-10-15: queued for Zoom, it ran seven minutes later on Chrome."""
+        reason = {}
+        with self.assertLogs("PolyHost", logging.INFO) as logs:
+            self.assertEqual(self.client.harvest("zoom", reason=reason,
+                                                 cancel=lambda: True), [])
+        self.assertIsNone(self.client._proc, "no helper may be started")
+        self.assertTrue(reason["retry"])
+        self.assertTrue(any("skipped" in x for x in logs.output), logs.output)
+
+    def test_a_read_the_HOST_stopped_is_not_logged_as_a_crash(self):
+        import threading
+        thread = threading.Thread(target=lambda: self.client.harvest("hang"))
+        with self.assertLogs("PolyHost", logging.INFO) as logs:
+            thread.start()
+            end = time.monotonic() + 5
+            while self.client._proc is None and time.monotonic() < end:
+                time.sleep(0.01)
+            time.sleep(0.3)
+            self.client.stop()
+            thread.join(5)
+        self.assertTrue(any("the host stopped the helper" in x for x in logs.output),
+                        logs.output)
+        self.assertFalse(any("WARNING" in x and "exited" in x for x in logs.output),
+                         logs.output)
+
     def test_stop_twice_is_harmless(self):
         self.client.harvest("a")
         self.client.stop()
@@ -153,15 +219,31 @@ class WorkerTest(unittest.TestCase):
         out = io.BytesIO()
         stdin = io.BytesIO(b"".join(lines))
 
-        def walk(name, reason=None, pid=None):
+        def walk(name, reason=None, pid=None, hwnd=None):
             reason["elements"] = 99
             return [Shortcut(**SAVE)]
 
         from polyhost.services.shortcut_source import uia
         with patch.object(uia, "shortcuts_for_app", side_effect=walk), \
                 patch.object(uia, "release_thread") as release:
-            worker.main(stdin=stdin, stdout=out)
+            with patch.object(worker.sys, "stderr", io.StringIO()):
+                worker.main(stdin=stdin, stdout=out)
         return [json.loads(x) for x in out.getvalue().splitlines()], release
+
+    def test_the_WINDOW_and_the_ROOT_travel_both_ways(self):
+        from polyhost.services.shortcut_source import uia
+        seen = {}
+
+        def walk(name, reason=None, pid=None, hwnd=None):
+            seen.update(pid=pid, hwnd=hwnd)
+            reason.update(root_pid=7, root_class="Zoom", retry=True, why="x")
+            return []
+
+        with patch.object(uia, "shortcuts_for_app", side_effect=walk):
+            answer = worker.answer({"id": 1, "app": "zoom", "pid": 7, "hwnd": 99})
+        self.assertEqual(seen, {"pid": 7, "hwnd": 99})
+        self.assertEqual((answer["hwnd"], answer["root_pid"], answer["root_class"],
+                          answer["retry"]), (99, 7, "Zoom", True))
 
     def test_one_answer_per_request_and_junk_skipped(self):
         answers, release = self.run_worker(
@@ -178,8 +260,10 @@ class WorkerTest(unittest.TestCase):
 
     def test_a_raising_walk_is_an_answer_with_a_reason(self):
         from polyhost.services.shortcut_source import uia
-        with patch.object(uia, "shortcuts_for_app", side_effect=OSError("boom")):
+        with patch.object(uia, "shortcuts_for_app", side_effect=OSError("boom")), \
+                patch.object(worker.sys, "stderr", io.StringIO()) as err:
             answer = worker.answer({"id": 4, "app": "x"})
+        self.assertIn("OSError", err.getvalue(), "the traceback goes to stderr")
         self.assertEqual((answer["id"], answer["shortcuts"]), (4, []))
         self.assertIn("boom", answer["why"])
 
@@ -193,9 +277,10 @@ class RoutingTest(unittest.TestCase):
                 patch.object(out_of_process, "harvest", return_value=["x"]) as via, \
                 patch.object(shortcut_source, "pick") as pick:
             cancel = lambda: False  # noqa: E731
-            self.assertEqual(shortcut_source.harvest("chrome", pid=3, cancel=cancel),
-                             ["x"])
-        via.assert_called_once_with("chrome", reason=None, pid=3, cancel=cancel)
+            self.assertEqual(shortcut_source.harvest("chrome", pid=3, cancel=cancel,
+                                                     hwnd=77), ["x"])
+        via.assert_called_once_with("chrome", reason=None, pid=3, cancel=cancel,
+                                    hwnd=77)
         pick.assert_not_called()
 
     def test_uia_availability_does_not_import_the_backend(self):

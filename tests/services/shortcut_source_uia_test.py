@@ -194,6 +194,87 @@ class FirstImportRaceTest(_UiaFakes):
         self.assertEqual(self.calls, ["init"])
 
 
+class _Element:
+    def __init__(self, name, pid, cls="Cls"):
+        self.name, self.CurrentProcessId, self.CurrentClassName = name, pid, cls
+
+
+class _FakeUia:
+    """Just enough IUIAutomation for `shortcuts_for_app` to pick its root."""
+
+    def __init__(self, window_pid=4242, focused_pid=999, handle_raises=False):
+        self.desktop = _Element("desktop", 0)
+        self.window = _Element("window", window_pid, "Chrome_WidgetWin_1")
+        self.focused = _Element("focused", focused_pid)
+        self.handle_raises = handle_raises
+        self.ControlViewWalker = types.SimpleNamespace(
+            GetParentElement=lambda el: self.desktop)
+
+    def CreateCacheRequest(self):
+        return types.SimpleNamespace(AddProperty=lambda prop: None)
+
+    def GetRootElement(self):
+        return self.desktop
+
+    def CompareElements(self, a, b):
+        return a is b
+
+    def ElementFromHandle(self, hwnd):
+        if self.handle_raises:
+            raise OSError("invalid window handle")
+        self.asked = hwnd
+        return self.window
+
+    def GetFocusedElement(self):
+        return self.focused
+
+
+class RootWindowTest(unittest.TestCase):
+    """Which window the read starts from (2026-10-15: a read queued for Zoom
+    ran on Chrome, because it read whatever had focus when it RAN)."""
+
+    def run_it(self, fake, **kw):
+        walked = []
+
+        def shortcuts(iuia, root, cache_request):
+            walked.append(root.name)
+            return [], 1234
+
+        reason = {}
+        with patch.object(uia, "_uia", return_value=(None, fake)), \
+             patch.object(uia, "uia_shortcuts", side_effect=shortcuts):
+            found = uia.shortcuts_for_app("chrome", reason=reason, **kw)
+        return found, walked, reason
+
+    def test_the_HANDLE_is_read_not_the_focused_window(self):
+        fake = _FakeUia()
+        _, walked, reason = self.run_it(fake, pid=4242, hwnd=198342)
+        self.assertEqual((walked, fake.asked), (["window"], 198342))
+        self.assertEqual((reason["root_pid"], reason["root_class"],
+                          reason["elements"]), (4242, "Chrome_WidgetWin_1", 1234))
+
+    def test_a_window_of_ANOTHER_process_is_refused_as_did_not_look(self):
+        _, walked, reason = self.run_it(_FakeUia(window_pid=1), pid=4242,
+                                        hwnd=198342)
+        self.assertEqual(walked, [])
+        self.assertTrue(reason["retry"])
+        self.assertIn("pid 1", reason["why"])
+
+    def test_a_CLOSED_window_is_did_not_look(self):
+        _, walked, reason = self.run_it(_FakeUia(handle_raises=True), pid=4242,
+                                        hwnd=198342)
+        self.assertEqual(walked, [])
+        self.assertTrue(reason["retry"])
+        self.assertIn(f"0x{198342:X}", reason["why"])
+
+    def test_NO_handle_falls_back_to_the_focused_window_and_checks_its_pid(self):
+        _, walked, reason = self.run_it(_FakeUia(focused_pid=999), pid=999)
+        self.assertEqual(walked, ["focused"])
+        _, walked, reason = self.run_it(_FakeUia(focused_pid=999), pid=4242)
+        self.assertEqual(walked, [])
+        self.assertTrue(reason["retry"])
+
+
 class ReleaseDispatchTest(unittest.TestCase):
     """`shortcut_source.release_thread()` is what the fetcher thread calls."""
 

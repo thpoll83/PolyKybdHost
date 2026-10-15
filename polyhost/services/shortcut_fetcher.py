@@ -65,6 +65,7 @@ passes `cancel`). Only the out-of-process UIA harvest can honour it; see
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import sys
 import threading
@@ -83,6 +84,20 @@ REHARVEST_MIN_GAP = 3.0
 #: How long an answer is served for a title it was harvested under. The
 #: maintainer's number (2026-10-15): see the module docstring.
 TITLE_CACHE_SECONDS = 30 * 60
+
+
+def title_tag(title: str | None) -> str:
+    """A window title as the log may show it: a short hash and the length.
+
+    ⚠️ Never the title itself. Titles name documents, and the log bundle masks
+    them only in the lines it knows; a new line format would leak them. The
+    length matches the `<redacted:N chars>` of the window-change lines, and the
+    hash ties this module's lines for one title together.
+    """
+    if title is None:
+        return "no title"
+    digest = hashlib.sha1(title.encode("utf-8", "replace")).hexdigest()[:6]
+    return f"title #{digest} ({len(title)} chars)"
 
 
 def _now() -> float:
@@ -160,11 +175,13 @@ class ShortcutIconFetcher:
         # The app the caller last asked about: the focused one. A harvest of
         # any other app is cancelled (`_resolve`).
         self._focused: str | None = None
+        # app -> the focused window's handle (Windows): which window to read.
+        self._hwnds: dict[str, int] = {}
 
     # ------------------------------------------------------------------
 
     def overlays_for(self, app: str, harvested=None, pid: int | None = None,
-                     title: str | None = None) -> dict:
+                     title: str | None = None, hwnd: int | None = None) -> dict:
         """{source_name: {(modifier, keycode): mask}} for an app; {} until known.
 
         ⚠️ Keyed on the app name AND the render settings, because a height or
@@ -191,12 +208,20 @@ class ShortcutIconFetcher:
         cached answer was harvested under queues a re-harvest while the cached
         answer keeps being returned; see the module docstring. None (a
         forwarded window, or a caller that has none) never re-harvests.
+
+        `hwnd` is the focused window's handle (Windows). The harvest reads THAT
+        window rather than whatever has focus when it runs: a read queued for
+        Zoom ran seven minutes later on Chrome and filed Chrome's shortcuts
+        under Zoom (2026-10-15). Like `pid`, it says which window to read and is
+        not part of the cache key.
         """
         if not app or not enabled():
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
         self._focused = app
+        if hwnd is not None:
+            self._hwnds[app] = int(hwnd)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if pid is not None:
@@ -222,8 +247,11 @@ class ShortcutIconFetcher:
                 if title is not None:
                     self._serve_title(key, title)
                 cached = self._overlays[key]
-                if not self._wants_reharvest(key, title):
+                why = self._reharvest_reason(key, title)
+                if why is None:
                     return cached
+                self.log.info("Shortcut icons for '%s': reading it again (%s)",
+                              app, why)
                 self._queue.append(key)
             else:
                 cached = {}
@@ -246,8 +274,12 @@ class ShortcutIconFetcher:
         entry = self._title_entry(key, title)
         if entry is None:
             return
-        self._overlays[key], self._drew[key], _ = entry
+        self._overlays[key], self._drew[key], at = entry
         self._harvest_title[key] = title
+        self.log.info("Shortcut icons for '%s': %s served from the cache "
+                      "(read %d s ago, %d icon source(s)), no read",
+                      key.split("\x00", 1)[0], title_tag(title), _now() - at,
+                      len(entry[0]))
 
     def _title_entry(self, key: str, title: str):
         """Under `_lock`: the fresh per-title entry, or None. Drops a stale one."""
@@ -257,6 +289,9 @@ class ShortcutIconFetcher:
             return None
         if _now() - entry[2] >= TITLE_CACHE_SECONDS:
             del titles[title]
+            self.log.info("Shortcut icons for '%s': the cached answer for %s is "
+                          "%d min old, dropped", key.split("\x00", 1)[0],
+                          title_tag(title), (_now() - entry[2]) // 60)
             return None
         return entry
 
@@ -271,30 +306,39 @@ class ShortcutIconFetcher:
 
     def _wants_reharvest(self, key: str, title: str | None) -> bool:
         """Under `_lock`: has the title or the process moved on from the
-        cached answer's?
+        cached answer's? See `_reharvest_reason`."""
+        return self._reharvest_reason(key, title) is not None
+
+    def _reharvest_reason(self, key: str, title: str | None) -> str | None:
+        """Under `_lock`: why the cached answer must be read again, or None.
 
         A new pid skips the title test and the floor, but not the backoff,
-        so a backend that keeps answering None for it still slows down.
+        so a backend that keeps answering None for it still slows down. The
+        reason is a sentence for the log line that queues the read.
         """
         if key in self._queue or key in self._inflight:
-            return False
+            return None
         _, not_before = self._backoff.get(key, (0.0, 0.0))
         if key in self._restarted:
-            return _now() >= not_before
+            return "the app runs as a new process" if _now() >= not_before else None
         if title is None:
-            return False
+            return None
         harvested_under = self._harvest_title.get(key)
         if harvested_under is None:
-            return False
+            return None
         if harvested_under == title:
             # The served answer IS this title's. Read it again only once it
             # has aged out of the per-title cache.
             entry = self._by_title.get(key, {}).get(title)
             if entry is None or _now() - entry[2] < TITLE_CACHE_SECONDS:
-                return False
+                return None
+            why = (f"the answer for {title_tag(title)} is over "
+                   f"{TITLE_CACHE_SECONDS // 60} min old")
+        else:
+            why = f"new {title_tag(title)}, not cached"
         not_before = max(not_before,
                          self._harvested_at.get(key, 0.0) + REHARVEST_MIN_GAP)
-        return _now() >= not_before
+        return why if _now() >= not_before else None
 
     def _note_result(self, key: str, overlays: dict | None, title: str | None):
         """Under `_lock`: record a harvest and move the backoff.
@@ -491,7 +535,8 @@ class ShortcutIconFetcher:
             # was looking at any more (2026-10-15).
             shortcuts = shortcut_source.harvest(
                 app, reason=reason, pid=self._pids.get(app),
-                cancel=lambda: self._focused not in (None, app))
+                cancel=lambda: self._focused not in (None, app),
+                hwnd=self._hwnds.get(app))
             if not shortcuts:
                 # ⚠️ The backend's own sentence when it has one. *"The app
                 # exposes no accelerators"* is true of exactly ONE of the six

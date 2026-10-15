@@ -300,7 +300,7 @@ class EmptyHarvestReasonTest(unittest.TestCase):
         said = []
         f._say = lambda app, why: said.append(why)
 
-        def harvest(app, reason=None, pid=None, cancel=None):
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
             if reason is not None and self._reason:
                 reason.update(self._reason)
             return list(harvested)
@@ -355,7 +355,7 @@ class PidPassThroughTest(unittest.TestCase):
         f._say = lambda *a: None
         seen = {}
 
-        def harvest(app, reason=None, pid=None, cancel=None):
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
             seen["pid"] = pid
             return []
 
@@ -975,6 +975,34 @@ class TitleReharvestTest(unittest.TestCase):
         self.idle()
         self.assertEqual(self.calls, ["tab A", "tab B", "tab A"])
 
+    def test_the_log_names_a_title_by_HASH_never_by_text(self):
+        """Titles name documents; the bundle masks only lines it knows."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.first("Secret plan.docx - Word")
+        self.now += 10
+        with self.assertLogs("PolyHost", "INFO") as logs:
+            self.ask("Budget.xlsx - Excel")
+            self.idle()
+            self.now += 10
+            self.ask("Secret plan.docx - Word")
+        text = "\n".join(logs.output)
+        self.assertNotIn("Secret", text)
+        self.assertNotIn("Budget", text)
+        self.assertIn(shortcut_fetcher.title_tag("Budget.xlsx - Excel"), text)
+        self.assertIn("reading it again (new title #", text)
+        self.assertIn("served from the cache", text)
+
+    def test_an_expired_answer_SAYS_it_was_dropped(self):
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        with self.assertLogs("PolyHost", "INFO") as logs:
+            self.ask("tab A")
+        self.assertTrue(any("min old, dropped" in x for x in logs.output),
+                        logs.output)
+
     def test_forget_drops_the_per_title_answers(self):
         self.first()
         self.fetcher.forget()
@@ -989,7 +1017,7 @@ class CancelTest(unittest.TestCase):
         self.addCleanup(fetcher.stop)
         seen = {}
 
-        def harvest(app, reason=None, pid=None, cancel=None):
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
             seen["before"] = cancel()
             fetcher._focused = "slack"
             seen["after"] = cancel()
@@ -1003,6 +1031,24 @@ class CancelTest(unittest.TestCase):
             while "after" not in seen and time.monotonic() < end:
                 time.sleep(0.01)
         self.assertEqual(seen, {"before": False, "after": True})
+
+    def test_the_WINDOW_HANDLE_reaches_the_harvest(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = {}
+
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
+            seen.update(pid=pid, hwnd=hwnd)
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("zoom", pid=7, hwnd=198342)
+            end = time.monotonic() + 2
+            while not seen and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, {"pid": 7, "hwnd": 198342})
 
     def test_stop_ends_the_HELPER_when_one_was_started(self):
         from polyhost.services.shortcut_source import out_of_process
