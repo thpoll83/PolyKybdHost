@@ -234,14 +234,17 @@ class ShortcutIconFetcher:
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
         self._focused = app
-        if hwnd is not None:
-            self._hwnds[app] = int(hwnd)
-        else:
-            # ⚠️ Not the previous window's handle: the harvest would read a
-            # window that is no longer the focused one (Revix, #393).
-            self._hwnds.pop(app, None)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
+            # Under the lock with `_titles`, which `_run_queue` snapshots
+            # together with it: written outside, a dequeue in between could
+            # pair the new window with the old title (Revix, #393).
+            if hwnd is not None:
+                self._hwnds[app] = int(hwnd)
+            else:
+                # ⚠️ Not the previous window's handle: the harvest would read
+                # a window that is no longer the focused one (Revix, #393).
+                self._hwnds.pop(app, None)
             if pid is not None:
                 # ⚠️ Keyed on the app alone and deliberately NOT part of the
                 # cache key, exactly like `_harvested`: a pid says WHICH
