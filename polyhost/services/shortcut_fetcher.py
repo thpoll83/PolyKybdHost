@@ -273,7 +273,9 @@ class ShortcutIconFetcher:
                 self._queue.append(key)
             else:
                 cached = {}
-                if key not in self._queue and key not in self._inflight:
+                _, not_before = self._backoff.get(key, (0.0, 0.0))
+                if (key not in self._queue and key not in self._inflight
+                        and _now() >= not_before):
                     self._queue.append(key)
         self._ensure_thread()
         self._wake.set()
@@ -374,9 +376,9 @@ class ShortcutIconFetcher:
                      remember: bool = True):
         """Under `_lock`: record a harvest and move the backoff.
 
-        Only a RE-harvest moves it -- the first answer for a key has nothing
-        to compare against. None ("did not look") backs off like an unchanged
-        answer, so a backend that keeps failing for a focused app slows down,
+        Only a RE-harvest's ANSWER moves it -- the first answer for a key has
+        nothing to compare against. None ("did not look") always backs off,
+        first read included, so a backend that keeps failing for a focused app slows down,
         but it records NOTHING else: the title or pid it was asked for stays
         pending and is retried once the backoff passes.
         """
@@ -385,8 +387,11 @@ class ShortcutIconFetcher:
         previous = None if restarted else self._drew.get(key)
         self._harvested_at[key] = _now()
         if overlays is None:
-            if previous is not None or restarted:
-                self._back_off(key)
+            # ⚠️ Every time, the FIRST read too: `overlays_for` re-queues an
+            # uncached app on every tick, so a first read that keeps failing
+            # (UIA raising, an unreadable pid) would otherwise repeat every
+            # 250 ms (Greptile, #393).
+            self._back_off(key)
             return
         self._restarted.discard(key)
         self._overlays[key] = overlays

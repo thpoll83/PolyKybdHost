@@ -1034,6 +1034,21 @@ class TitleReharvestTest(unittest.TestCase):
         key = next(iter(self.fetcher._overlays))
         self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
 
+    def test_a_FAILING_first_read_backs_off_instead_of_repeating(self):
+        """It used to re-queue on every tick (250 ms) (Greptile, #393)."""
+        self.answers = [None, WELCOME]
+        self.ask("tab A")
+        self.idle()
+        for _ in range(5):                 # ticks inside the backoff
+            self.ask("tab A")
+            self.idle()
+        self.assertEqual(len(self.calls), 1)
+        self.now += shortcut_fetcher.REHARVEST_BACKOFF_FIRST
+        self.ask("tab A")
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.ask("tab A"), WELCOME)
+
     def test_the_title_hash_is_KEYED(self):
         """An unkeyed hash lets a bundle reader confirm a guessed title."""
         import hashlib

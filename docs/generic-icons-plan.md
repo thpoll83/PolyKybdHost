@@ -1049,7 +1049,6 @@ focus when the read RUNS. Three layers now:
 | `Shortcut icons for 'chrome': reading it again (new title #a1b2c3 (30 chars), not cached)` | why a read was queued |
 | `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
 | `… the cached answer for title #… is N min old, dropped` | an entry expired |
-
 | `… the window changed during the read (title #…), answer not cached` | the title or process changed mid-read; the answer is used but kept out of the 30-minute cache (Chrome's tabs share one window handle) |
 
 ⚠️ A title is logged as a keyed hash and its length, never as text. Titles
