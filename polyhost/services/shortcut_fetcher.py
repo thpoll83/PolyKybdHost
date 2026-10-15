@@ -252,6 +252,11 @@ class ShortcutIconFetcher:
                 self._pids[app] = int(pid)
                 if previous_pid is not None and previous_pid != int(pid):
                     prefix = f"{app}\x00"
+                    # A failed FIRST read has a backoff and no answer: the
+                    # new process must not inherit it (Greptile, #393).
+                    for k in [k for k in self._backoff
+                              if k.startswith(prefix) and k not in self._overlays]:
+                        del self._backoff[k]
                     for k in self._overlays:
                         if k.startswith(prefix):
                             self._restarted.add(k)

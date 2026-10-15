@@ -1049,6 +1049,15 @@ class TitleReharvestTest(unittest.TestCase):
         self.assertEqual(len(self.calls), 2)
         self.assertEqual(self.ask("tab A"), WELCOME)
 
+    def test_a_RESTART_drops_a_failed_first_reads_backoff(self):
+        self.answers = [None, WELCOME]
+        self.ask_as(100, "tab A")
+        self.idle()
+        self.assertEqual(self.ask_as(200, "tab A"), {})   # new process, at once
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.ask_as(200, "tab A"), WELCOME)
+
     def test_the_title_hash_is_KEYED(self):
         """An unkeyed hash lets a bundle reader confirm a guessed title."""
         import hashlib
