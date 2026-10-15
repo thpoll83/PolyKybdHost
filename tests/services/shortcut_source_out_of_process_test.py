@@ -84,6 +84,21 @@ class HelperClientTest(unittest.TestCase):
         self.assertLess(time.monotonic() - started, 5)
         self.assertIsNotNone(proc.poll(), "the helper must be dead")
 
+    def test_a_HUNG_helper_is_killed_at_the_deadline(self):
+        """Focus stays on the app, so only the deadline can end it."""
+        self.client.harvest("warm-up")
+        proc = self.client._proc
+        reason = {}
+        with patch.object(out_of_process, "HARVEST_TIMEOUT_SECONDS", 0.5), \
+                self.assertLogs("PolyHost", logging.WARNING) as logs:
+            started = time.monotonic()
+            self.assertEqual(self.client.harvest("hang", reason=reason), [])
+        self.assertLess(time.monotonic() - started, 5)
+        self.assertTrue(reason["retry"])
+        self.assertIsNotNone(proc.poll(), "the helper must be dead")
+        self.assertTrue(any("no answer in" in x for x in logs.output), logs.output)
+        self.assertEqual(self.client.harvest("chrome"), [Shortcut(**SAVE)])
+
     def test_after_a_cancel_the_next_harvest_starts_a_FRESH_helper(self):
         started = time.monotonic()
         self.client.harvest("hang", cancel=lambda: time.monotonic() - started > 0.3)

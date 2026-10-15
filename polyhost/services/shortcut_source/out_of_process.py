@@ -45,11 +45,17 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 
 from polyhost.services.shortcut_source.model import Shortcut
 
 #: How often a waiting harvest checks `cancel()` and whether the helper died.
 POLL_SECONDS = 0.25
+#: The longest one read may take before the helper is killed and the read
+#: retried under the fetcher's backoff. The maintainer's number (2026-10-15);
+#: the longest read measured in the field was ~2 min 17 s, a long Claude Code
+#: tab in Chrome. Bounds a helper that hangs while its app stays focused.
+HARVEST_TIMEOUT_SECONDS = 3 * 60
 
 _FIELDS = {f.name for f in dataclasses.fields(Shortcut)}
 
@@ -250,9 +256,17 @@ class HelperClient:
             self._kill()
             return self._abandoned(reason, f"the harvest helper could not be "
                                            f"reached: {type(exc).__name__}: {exc}")
+        deadline = time.monotonic() + HARVEST_TIMEOUT_SECONDS
         while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self._kill()
+                log.warning("Shortcut harvest for '%s' abandoned: no answer in "
+                            "%d s (helper stopped)", app, HARVEST_TIMEOUT_SECONDS)
+                return self._abandoned(reason, f"no answer in "
+                                               f"{HARVEST_TIMEOUT_SECONDS} s")
             try:
-                line = self._lines.get(timeout=POLL_SECONDS)
+                line = self._lines.get(timeout=min(POLL_SECONDS, remaining))
             except queue.Empty:
                 if cancel is not None and cancel():
                     self._kill()

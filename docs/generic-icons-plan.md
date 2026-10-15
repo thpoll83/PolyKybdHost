@@ -1044,6 +1044,7 @@ focus when the read RUNS. Three layers now:
 | `Shortcut harvest for 'zoom' skipped: focus moved on before it started` | layer 3 |
 | `Shortcut harvest for 'chrome' abandoned: focus moved on (helper stopped)` | killed mid-read |
 | `Shortcut harvest helper exited (code N) while reading 'app'` | the helper died |
+| `Shortcut harvest for 'app' abandoned: no answer in 180 s (helper stopped)` (WARNING) | the read hit `HARVEST_TIMEOUT_SECONDS` (3 min, the maintainer's number); retried under the backoff |
 | `Shortcut harvest helper (pid N): <text>` (WARNING) | anything the helper wrote to stderr: a traceback, a `faulthandler` dump |
 | `Shortcut icons for 'chrome': reading it again (new title #a1b2c3 (30 chars), not cached)` | why a read was queued |
 | `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
