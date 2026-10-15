@@ -408,6 +408,12 @@ class SettingsChangeTest(unittest.TestCase):
         core.note_settings_changed({"shortcut_icon_height"})
         self.assertIsNone(core._generic_on_device)
 
+    def test_the_FILL_SHORTCUTS_switch_takes_effect_at_once(self):
+        # The client-mode dialog sends one key at a time (`settings_set`).
+        core = self._core()
+        core.note_settings_changed({"generic_overlays_fill_shortcuts"})
+        self.assertIsNone(core._generic_on_device)
+
     def test_an_UNRELATED_setting_costs_no_re_harvest(self):
         core = self._core()
         core.note_settings_changed({"ui_theme"})
@@ -750,6 +756,31 @@ class TemplateGapFillTest(unittest.TestCase):
         core._shortcut_icons.overlays_for.assert_called_once()
         _, synthetic = self._sent(core)
         self.assertGreater(len(synthetic), 1, "mark and shortcut icons")
+
+    def _summary(self, core):
+        with self.assertLogs(core.log, level="INFO") as caught:
+            _tick(core)
+        return [m for m in caught.output if "Generic overlays for" in m]
+
+    def test_the_summary_SAYS_the_read_was_skipped(self):
+        """The default trial reads this line: it must tell "not read" from
+        "read and found nothing"."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        said = self._summary(core)
+        self.assertEqual(len(said), 1, said)
+        self.assertIn("shortcuts not read: generic_overlays_fill_shortcuts is off",
+                      said[0])
+
+    def test_the_summary_SAYS_the_read_ran(self):
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_shortcuts": True})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        said = self._summary(core)
+        self.assertEqual(len(said), 1, said)
+        self.assertIn("template file(s), shortcuts read)", said[0])
 
     def test_an_app_with_NO_template_is_still_read(self):
         """The switch is about template-covered apps only."""

@@ -1140,7 +1140,10 @@ class PolyCore(Observable):
             "(%s).",
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
-            f"filling the gaps in {len(template_files)} template file(s)"
+            f"filling the gaps in {len(template_files)} template file(s), "
+            + ("shortcuts read" if self.poly_settings.get(
+                "generic_overlays_fill_shortcuts") else
+               "shortcuts not read: generic_overlays_fill_shortcuts is off")
             if template_files else "no template overlay")
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
@@ -2768,6 +2771,10 @@ class PolyCore(Observable):
         # tick would otherwise read the cached signature and report it as
         # already on the device. `_forget_generic_overlays` clears exactly that.
         "generic_overlays_enabled", "generic_overlays_fill_gaps",
+        # And `fill_shortcuts`, for the same reason: the client-mode dialog
+        # sends one key at a time (`settings_set`), so a switch missing here
+        # took effect only at the next app switch.
+        "generic_overlays_fill_shortcuts",
         "shortcut_icons_enabled", "shortcut_icon_auto_fetch",
         "shortcut_icon_height", "shortcut_icon_placement",
     })

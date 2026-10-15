@@ -1050,6 +1050,7 @@ focus when the read RUNS. Three layers now:
 | `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
 | `… the cached answer for title #… is N min old, dropped` | an entry expired |
 | `… the window changed during the read (title #…), answer not cached` | the title or process changed mid-read; the answer is used but kept out of the 30-minute cache (Chrome's tabs share one window handle) |
+| `Generic overlays for 'chrome': mark … on ESC, N shortcut icon(s) on K key(s) (filling the gaps in 4 template file(s), shortcuts not read: generic_overlays_fill_shortcuts is off)` | a templated app: whether its shortcuts were read. With the switch on it ends `shortcuts read`, and N is what the read added on top of the template |
 
 ⚠️ A title is logged as a keyed hash and its length, never as text. Titles
 name documents, and the bundle redacts only the line formats it knows. The key
