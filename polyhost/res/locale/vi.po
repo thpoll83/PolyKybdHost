@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-15 20:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -996,7 +996,7 @@ msgid "HarfBuzz sequence"
 msgstr "Chuỗi HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:76 polyhost/gui/settings_dialog.py:84
 msgid "Mode"
 msgstr "Chế độ"
 
@@ -1689,7 +1689,7 @@ msgstr "Đang áp dụng — kích hoạt firmware đã lưu tạm…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Đang hủy — chờ phần dữ liệu hiện tại hoàn tất…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:75
 msgid "Language"
 msgstr "Ngôn ngữ"
 
@@ -2872,122 +2872,126 @@ msgid "Overlays Fill Gaps"
 msgstr "Lớp phủ lấp chỗ trống"
 
 #: polyhost/gui/settings_dialog.py:67
+msgid "Overlays Fill Shortcuts"
+msgstr "Lớp phủ bổ sung phím tắt"
+
+#: polyhost/gui/settings_dialog.py:68
 msgid "Icons Enabled"
 msgstr "Bật biểu tượng"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Icon Auto Fetch"
 msgstr "Tự động tải biểu tượng"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Enable Accessibility"
 msgstr "Bật trợ năng"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Hid Message Before Delay"
 msgstr "Số thông điệp HID trước khi trễ"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Time After Max Hid Messages"
 msgstr "Thời gian chờ sau số thông điệp HID tối đa"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Reconnect Retries"
 msgstr "Số lần thử kết nối lại"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Theme"
 msgstr "Giao diện màu"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Mock Enabled"
 msgstr "Bật mô phỏng"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Mock Primary"
 msgstr "Mô phỏng làm thiết bị chính"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Protocol"
 msgstr "Giao thức mô phỏng"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "Chạy nhận diện cửa sổ khi chưa kết nối PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Win Native Set Language"
 msgstr "Đặt ngôn ngữ kiểu gốc Windows"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Legacy Plaintext Relay"
 msgstr "Chuyển tiếp văn bản thuần kiểu cũ"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Report Network Enabled"
 msgstr "Bật báo cáo qua mạng"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Auto Flash"
 msgstr "Tự động nạp"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Path"
 msgstr "Đường dẫn"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Url Detection"
 msgstr "Nhận diện URL"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Local Enabled"
 msgstr "Bật báo cáo cục bộ"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Port"
 msgstr "Cổng báo cáo"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Token"
 msgstr "Token báo cáo"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Enabled"
 msgstr "Bật"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Endpoint"
 msgstr "Điểm cuối"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Install Id"
 msgstr "ID cài đặt"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Scan Keyboard Console"
 msgstr "Quét console bàn phím"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Scan Host Logs"
 msgstr "Quét nhật ký host"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Level"
 msgstr "Mức quét"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "PolyKybd Settings"
 msgstr "Cài đặt PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Some settings might need a restart to take effect."
 msgstr "Một số cài đặt có thể cần khởi động lại để có hiệu lực."
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:238
 msgid "Reset glyph script to Standard"
 msgstr "Đặt lại bộ chữ glyph về Tiêu chuẩn"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
 msgstr "Tắt mọi thiết lập bộ chữ giả tưởng/thay thế và hiển thị lại ký hiệu ngôn ngữ bình thường."
 

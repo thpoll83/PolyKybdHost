@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-15 20:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -996,7 +996,7 @@ msgid "HarfBuzz sequence"
 msgstr "HarfBuzz シーケンス"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:76 polyhost/gui/settings_dialog.py:84
 msgid "Mode"
 msgstr "モード"
 
@@ -1689,7 +1689,7 @@ msgstr "適用中 — ステージング済みファームウェアを有効化�
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "キャンセル中 — 現在のチャンクの完了を待っています…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:75
 msgid "Language"
 msgstr "言語"
 
@@ -2872,122 +2872,126 @@ msgid "Overlays Fill Gaps"
 msgstr "オーバーレイで空きを埋める"
 
 #: polyhost/gui/settings_dialog.py:67
+msgid "Overlays Fill Shortcuts"
+msgstr "オーバーレイでショートカットを補う"
+
+#: polyhost/gui/settings_dialog.py:68
 msgid "Icons Enabled"
 msgstr "アイコンを有効にする"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Icon Auto Fetch"
 msgstr "アイコンを自動取得"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Enable Accessibility"
 msgstr "アクセシビリティを有効にする"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Hid Message Before Delay"
 msgstr "遅延前の HID メッセージ数"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Time After Max Hid Messages"
 msgstr "最大 HID メッセージ後の待ち時間"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Reconnect Retries"
 msgstr "再接続の試行回数"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Theme"
 msgstr "テーマ"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Mock Enabled"
 msgstr "模擬キーボードを有効にする"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Mock Primary"
 msgstr "模擬キーボードをプライマリにする"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Protocol"
 msgstr "模擬キーボードのプロトコル"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "PolyKybd に未接続でもウィンドウ検出を実行"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Win Native Set Language"
 msgstr "Windows ネイティブで言語を設定"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Legacy Plaintext Relay"
 msgstr "従来の平文リレー"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Report Network Enabled"
 msgstr "ネットワーク通知を有効にする"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Auto Flash"
 msgstr "自動書き込み"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Path"
 msgstr "パス"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Url Detection"
 msgstr "URL の検出"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Local Enabled"
 msgstr "ローカル通知を有効にする"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Port"
 msgstr "通知ポート"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Token"
 msgstr "通知トークン"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Enabled"
 msgstr "有効"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Endpoint"
 msgstr "エンドポイント"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Install Id"
 msgstr "インストール ID"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Scan Keyboard Console"
 msgstr "キーボードコンソールをスキャン"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Scan Host Logs"
 msgstr "ホストのログをスキャン"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Level"
 msgstr "スキャンレベル"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "PolyKybd Settings"
 msgstr "PolyKybd の設定"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Some settings might need a restart to take effect."
 msgstr "一部の設定は、反映に再起動が必要な場合があります。"
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:238
 msgid "Reset glyph script to Standard"
 msgstr "グリフスクリプトを標準にリセット"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
 msgstr "ファンタジー / 代替スクリプトの上書きをすべてオフにし、通常の言語の凡例表示に戻します。"
 

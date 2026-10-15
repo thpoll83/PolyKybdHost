@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-15 20:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -996,7 +996,7 @@ msgid "HarfBuzz sequence"
 msgstr "HarfBuzz 시퀀스"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:76 polyhost/gui/settings_dialog.py:84
 msgid "Mode"
 msgstr "모드"
 
@@ -1689,7 +1689,7 @@ msgstr "적용하는 중 — 스테이징된 펌웨어를 활성화하는 중…
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "취소하는 중 — 현재 청크가 끝나기를 기다리는 중…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:75
 msgid "Language"
 msgstr "언어"
 
@@ -2872,122 +2872,126 @@ msgid "Overlays Fill Gaps"
 msgstr "오버레이로 빈 곳 채우기"
 
 #: polyhost/gui/settings_dialog.py:67
+msgid "Overlays Fill Shortcuts"
+msgstr "오버레이로 단축키 채우기"
+
+#: polyhost/gui/settings_dialog.py:68
 msgid "Icons Enabled"
 msgstr "아이콘 사용"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Icon Auto Fetch"
 msgstr "아이콘 자동 가져오기"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Enable Accessibility"
 msgstr "접근성 사용"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Hid Message Before Delay"
 msgstr "지연 전 HID 메시지 수"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Time After Max Hid Messages"
 msgstr "최대 HID 메시지 후 대기 시간"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Reconnect Retries"
 msgstr "다시 연결 재시도 횟수"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Theme"
 msgstr "테마"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Mock Enabled"
 msgstr "모의 장치 사용"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Mock Primary"
 msgstr "모의 장치를 기본으로"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Protocol"
 msgstr "모의 장치 프로토콜"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "PolyKybd에 연결되지 않았을 때도 창 감지 실행"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Win Native Set Language"
 msgstr "Windows 기본 방식으로 언어 설정"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Legacy Plaintext Relay"
 msgstr "레거시 일반 텍스트 릴레이"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Report Network Enabled"
 msgstr "네트워크 보고 사용"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Auto Flash"
 msgstr "자동 플래시"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Path"
 msgstr "경로"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Url Detection"
 msgstr "URL 감지"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Local Enabled"
 msgstr "로컬 보고 사용"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Port"
 msgstr "보고 포트"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Token"
 msgstr "보고 토큰"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Enabled"
 msgstr "사용"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Endpoint"
 msgstr "엔드포인트"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Install Id"
 msgstr "설치 ID"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Scan Keyboard Console"
 msgstr "키보드 콘솔 검사"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Scan Host Logs"
 msgstr "호스트 로그 검사"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Level"
 msgstr "검사 수준"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "PolyKybd Settings"
 msgstr "PolyKybd 설정"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Some settings might need a restart to take effect."
 msgstr "일부 설정은 다시 시작해야 적용될 수 있습니다."
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:238
 msgid "Reset glyph script to Standard"
 msgstr "글리프 문자 체계를 표준으로 재설정"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
 msgstr "판타지/대체 문자 체계 재정의를 끄고 일반 언어 범례를 다시 표시합니다."
 

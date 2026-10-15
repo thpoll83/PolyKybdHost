@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-15 20:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -999,7 +999,7 @@ msgid "HarfBuzz sequence"
 msgstr "HarfBuzz-reeks"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:76 polyhost/gui/settings_dialog.py:84
 msgid "Mode"
 msgstr "Modus"
 
@@ -1696,7 +1696,7 @@ msgstr "Toepassen — de klaargezette firmware wordt geactiveerd…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Annuleren — wachten tot het huidige blok klaar is…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:75
 msgid "Language"
 msgstr "Taal"
 
@@ -2889,122 +2889,126 @@ msgid "Overlays Fill Gaps"
 msgstr "Overlays vullen gaten"
 
 #: polyhost/gui/settings_dialog.py:67
+msgid "Overlays Fill Shortcuts"
+msgstr "Overlays vullen sneltoetsen aan"
+
+#: polyhost/gui/settings_dialog.py:68
 msgid "Icons Enabled"
 msgstr "Pictogrammen ingeschakeld"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Icon Auto Fetch"
 msgstr "Pictogrammen automatisch ophalen"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Enable Accessibility"
 msgstr "Toegankelijkheid inschakelen"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Hid Message Before Delay"
 msgstr "HID-berichten vóór vertraging"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Time After Max Hid Messages"
 msgstr "Tijd na max. HID-berichten"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Reconnect Retries"
 msgstr "Pogingen om opnieuw te verbinden"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Theme"
 msgstr "Thema"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Mock Enabled"
 msgstr "Mock ingeschakeld"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Mock Primary"
 msgstr "Mock primair"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Protocol"
 msgstr "Mock-protocol"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "Vensterdetectie uitvoeren als niet verbonden met PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Win Native Set Language"
 msgstr "Taal instellen via native Windows"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Legacy Plaintext Relay"
 msgstr "Verouderde plaintext-relay"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Report Network Enabled"
 msgstr "Netwerkrapportage ingeschakeld"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Auto Flash"
 msgstr "Automatisch flashen"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Path"
 msgstr "Pad"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Url Detection"
 msgstr "URL-detectie"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Local Enabled"
 msgstr "Lokale rapportage ingeschakeld"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Port"
 msgstr "Rapportagepoort"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Token"
 msgstr "Rapportagetoken"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Enabled"
 msgstr "Ingeschakeld"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Endpoint"
 msgstr "Eindpunt"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Install Id"
 msgstr "Installatie-ID"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Scan Keyboard Console"
 msgstr "Toetsenbordconsole scannen"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Scan Host Logs"
 msgstr "Host-logbestanden scannen"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Level"
 msgstr "Scanniveau"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "PolyKybd Settings"
 msgstr "PolyKybd-instellingen"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Some settings might need a restart to take effect."
 msgstr "Sommige instellingen worden mogelijk pas na een herstart van kracht."
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:238
 msgid "Reset glyph script to Standard"
 msgstr "Glyph-schrift terugzetten naar Standaard"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
 msgstr "Elke fantasy-/alternatieve schriftvervanging uitschakelen en weer de normale taallegenda's tonen."
 

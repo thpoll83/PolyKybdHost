@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-15 20:07+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -1002,7 +1002,7 @@ msgid "HarfBuzz sequence"
 msgstr "Послідовність HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:76 polyhost/gui/settings_dialog.py:84
 msgid "Mode"
 msgstr "Режим"
 
@@ -1703,7 +1703,7 @@ msgstr "Застосування — активація підготовлено
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Скасування — очікування завершення поточного фрагмента…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:75
 msgid "Language"
 msgstr "Мова"
 
@@ -2906,122 +2906,126 @@ msgid "Overlays Fill Gaps"
 msgstr "Накладки заповнюють прогалини"
 
 #: polyhost/gui/settings_dialog.py:67
+msgid "Overlays Fill Shortcuts"
+msgstr "Накладки доповнюють скорочення"
+
+#: polyhost/gui/settings_dialog.py:68
 msgid "Icons Enabled"
 msgstr "Значки ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Icon Auto Fetch"
 msgstr "Автозавантаження значків"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Enable Accessibility"
 msgstr "Увімкнути спеціальні можливості"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Hid Message Before Delay"
 msgstr "Повідомлень HID до затримки"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Time After Max Hid Messages"
 msgstr "Час після макс. кількості повідомлень HID"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Reconnect Retries"
 msgstr "Спроб повторного під’єднання"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Theme"
 msgstr "Тема"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Mock Enabled"
 msgstr "Імітацію ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Mock Primary"
 msgstr "Імітація як основний пристрій"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Protocol"
 msgstr "Протокол імітації"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "Визначати вікна, навіть якщо PolyKybd не під’єднано"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Win Native Set Language"
 msgstr "Нативне встановлення мови Windows"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Legacy Plaintext Relay"
 msgstr "Застаріла незашифрована ретрансляція"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Report Network Enabled"
 msgstr "Мережеві звіти ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Auto Flash"
 msgstr "Автоматичне прошивання"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Path"
 msgstr "Шлях"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Url Detection"
 msgstr "Визначення URL"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Local Enabled"
 msgstr "Локальні звіти ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Port"
 msgstr "Порт звітів"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Token"
 msgstr "Токен звітів"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Enabled"
 msgstr "Увімкнено"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Endpoint"
 msgstr "Кінцева точка"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Install Id"
 msgstr "ID інсталяції"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Scan Keyboard Console"
 msgstr "Сканувати консоль клавіатури"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Scan Host Logs"
 msgstr "Сканувати журнали хоста"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Level"
 msgstr "Рівень сканування"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "PolyKybd Settings"
 msgstr "Параметри PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Some settings might need a restart to take effect."
 msgstr "Для застосування деяких параметрів може знадобитися перезапуск."
 
-#: polyhost/gui/settings_dialog.py:237
+#: polyhost/gui/settings_dialog.py:238
 msgid "Reset glyph script to Standard"
 msgstr "Скинути шрифт написів до стандартного"
 
-#: polyhost/gui/settings_dialog.py:238
+#: polyhost/gui/settings_dialog.py:239
 msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
 msgstr "Вимкнути будь-яку заміну фантастичним/альтернативним письмом і знову показувати звичайні написи мови."
 

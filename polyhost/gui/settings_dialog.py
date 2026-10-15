@@ -64,6 +64,7 @@ SETTING_LABELS = {
     "brightness_gamma": N_("Gamma"),
     "generic_overlays_enabled": N_("Overlays Enabled"),
     "generic_overlays_fill_gaps": N_("Overlays Fill Gaps"),
+    "generic_overlays_fill_shortcuts": N_("Overlays Fill Shortcuts"),
     "shortcut_icons_enabled": N_("Icons Enabled"),
     "shortcut_icon_auto_fetch": N_("Icon Auto Fetch"),
     "shortcut_enable_accessibility": N_("Enable Accessibility"),

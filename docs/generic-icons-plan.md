@@ -1062,6 +1062,15 @@ The core reports the focused app to the fetcher on every tick
 read of an app focus has left is cancelled even when the new window is
 template-covered or unnamed.
 
+**An app a template covers gets the ESC mark and no read** (maintainer's call,
+2026-10-15). `generic_overlays_fill_gaps` still fills the template's blank ESC
+with the program mark, and the new `generic_overlays_fill_shortcuts` (default
+OFF) decides whether the shortcuts are read and drawn too. Chrome is
+template-covered: its 31 reads in the log added at most four icons, all on the
+Claude Code tab, while one read took over two minutes. Apps with no template
+are still read. The default reaches existing installs because `settings.yaml`
+now holds only chosen values (`CLAUDE.md` → Tray, settings and the forwarder).
+
 ⚠️ The helper's UIA calls (`ElementFromHandle`, the process check, the walk)
 have not run on Windows yet. The pipe protocol, cancel, stop, the per-title
 cache and the root selection are tested with stand-ins.

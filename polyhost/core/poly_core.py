@@ -832,7 +832,16 @@ class PolyCore(Observable):
         # {source_name: {(modifier_value, keycode): mask}} -- one entry per
         # CONCEPT, shared across every key that concept lands on and across
         # applications, which is what makes Save cost one pool slot board-wide.
-        if handler.is_remote_mapping_entry():
+        if template_files and not self.poly_settings.get(
+                "generic_overlays_fill_shortcuts"):
+            # ⚠️ A TEMPLATE covers this app: fill the ESC mark only, and read
+            # no shortcuts (`generic_overlays_fill_shortcuts`, off by default).
+            # The rule in `_generic_signature` lets a mark ride with a template
+            # and no shortcuts, so ESC keeps the app's logo; what is skipped is
+            # the read, which on Chrome took minutes for a handful of page
+            # shortcuts (field, 2026-10-15).
+            shortcuts = {}
+        elif handler.is_remote_mapping_entry():
             remote = getattr(handler, "remote_handler", None)
             relayed = (remote.forwarded_shortcuts(name)
                        if remote is not None else None)

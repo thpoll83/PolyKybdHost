@@ -186,6 +186,11 @@ per-application ESC mark has a rule of **no per-application configuration**:
   lock, and never raises.** Daemon and tray both save, so a whole-file rewrite reverts the
   other. It returns whether it wrote; check it before telling the user a change was
   saved.
+- ⚠️ **`settings.yaml` holds only the values someone chose** (`settings_format: 2`);
+  every other key is `DEFAULT_SETTINGS`, read at each start. So a changed default
+  reaches every user who never set that key. `read_setting()` falls back to
+  `DEFAULT_SETTINGS`, not the caller's default. An old full file is migrated once
+  (values equal to today's default are dropped).
 - ⚠️ **The forwarder is a second tray app on a different machine.** A feature added to
   `host.py` is absent there until wired separately. Its settings are an allow-list
   (`FORWARDER_SETTING_KEYS`). Put process-wide Qt identity in `main_app`.
