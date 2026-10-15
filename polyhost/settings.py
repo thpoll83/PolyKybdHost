@@ -555,6 +555,11 @@ class PolySettings:
         # aliasing it here would let the next ordinary settings write mutate the
         # shipped defaults for the life of the process.
         self.collection = dict(self.defaults)
+        # The baseline moves to the defaults too, so `mine` in `_save_merged`
+        # is what changed SINCE the reset. A reset whose save fails stays
+        # pending, and a setting changed before the retry must ride along
+        # with it rather than be wiped (CodeRabbit, #393).
+        self._baseline = dict(self.defaults)
         self._reset_pending = True
         self.save()
 
@@ -616,9 +621,9 @@ class PolySettings:
                 if k not in self._baseline or self._baseline[k] != v}
         on_disk, state = self._read_file_ex()
         if self._reset_pending:
-            # restore_defaults(): nothing stays chosen, in any process's file.
-            on_disk, state, mine = {SETTINGS_FORMAT_KEY: SETTINGS_FORMAT}, \
-                self.READ_OK, {}
+            # restore_defaults(): nothing stays chosen, in any process's file,
+            # except what this process changed after the reset.
+            on_disk, state = {SETTINGS_FORMAT_KEY: SETTINGS_FORMAT}, self.READ_OK
         if on_disk is None:
             # We cannot see the current file. Merging against defaults would
             # reset every key we did not ourselves change, so write what we

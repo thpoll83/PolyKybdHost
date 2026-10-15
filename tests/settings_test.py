@@ -741,6 +741,25 @@ class SaveFailureTest(_TempConfigDirCase):
             self.assertIn("browser_report_port: 10004", f.read())
 
 
+    def test_a_change_after_a_FAILED_reset_survives_the_retry(self):
+        """The reset stays pending after a failed save; the next save carries
+        out the reset AND keeps what was changed since (CodeRabbit, #393)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with self._replace_refused() as refused:
+            a.restore_defaults()
+        self.assertTrue(refused.called)
+        a.collection["browser_report_port"] = 10004
+        a.save()
+        import yaml
+        with open(a.path, encoding="utf-8") as f:
+            on_disk = yaml.safe_load(f)
+        self.assertEqual(on_disk, {settings.SETTINGS_FORMAT_KEY:
+                                   settings.SETTINGS_FORMAT,
+                                   "browser_report_port": 10004})
+
+
 class SaveReportsFailureTest(_TempConfigDirCase):
     """save() never raises, so it must SAY when it did not write: a privacy
     switch turned off in the dialog is read back from the FILE by other

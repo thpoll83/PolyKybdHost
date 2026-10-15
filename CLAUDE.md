@@ -188,8 +188,9 @@ per-application ESC mark has a rule of **no per-application configuration**:
   saved.
 - ⚠️ **`settings.yaml` holds only the values someone chose** (`settings_format: 2`);
   every other key is `DEFAULT_SETTINGS`, read at each start. So a changed default
-  reaches every user who never set that key. `read_setting()` falls back to
-  `DEFAULT_SETTINGS`, not the caller's default. An old full file is migrated once
+  reaches every user who never set that key. For a known key `read_setting()`
+  falls back to `DEFAULT_SETTINGS`, not the caller's default; only an unknown key gets
+  the caller's. An old full file is migrated once
   (values equal to today's default are dropped).
 - ⚠️ **The forwarder is a second tray app on a different machine.** A feature added to
   `host.py` is absent there until wired separately. Its settings are an allow-list
