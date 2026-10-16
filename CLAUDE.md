@@ -252,6 +252,13 @@ per-application ESC mark has a rule of **no per-application configuration**:
 - **Launchers live in the platformdirs config dir, not the checkout.** The Windows task
   is named `PolyHost`.
 - **`updater.preflight()` runs before the download**, for the tray, daemon and `polyctl`.
+- ⚠️ **Every macOS entry point must set its activation policy, the daemon included.**
+  A non-bundled Python process that calls the window-server APIs gets a Dock tile with
+  the interpreter's generic rocket icon, and the daemon calls plenty of them (pywinctl,
+  the Quartz window list, the Accessibility reads). `run_headless` sets
+  `macos_ui.hide_dock_icon()` after the endpoint claim and before `HeadlessHost`;
+  `host.py` and `forwarder.py` always did.
+  [`docs/architecture.md`](docs/architecture.md).
 
 ## When something is reported broken
 

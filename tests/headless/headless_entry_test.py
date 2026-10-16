@@ -462,6 +462,90 @@ class TestHeadlessImportsNoQt(unittest.TestCase):
         self.assertIn("NOQT_OK", proc.stdout)
 
 
+class TheDaemonMustOwnNoDockTileOnMacOSTest(unittest.TestCase):
+    """`run_headless` sets the macOS accessory activation policy.
+
+    A `python -m polyhost --headless` daemon has no bundle, so the Dock tile it
+    gets for calling the window-server APIs shows the interpreter's generic
+    rocket icon. It calls plenty of them -- pywinctl's AppKit reads, the Quartz
+    window list in `own_process`, the Accessibility reads in
+    `handler.active_window` and in the shortcut harvest -- and it was the one
+    entry point that never declared itself an accessory app (`host.py` and
+    `forwarder.py` both did). Reported from the field on 2026-10-16, right
+    after the real-time accept timer made app switches reach the keyboard
+    again: before that the switches were barely accepted, so the paths that
+    register the process barely ran.
+
+    ⚠️ The ORDER is the half worth pinning. The policy must be in place before
+    any worker thread reaches AppKit, so it is set before `HeadlessHost` is
+    built -- and after the endpoint claim, so a daemon that loses the race
+    exits having created no NSApplication at all.
+    """
+
+    def _run(self, system):
+        """`run_headless` against a stub host, with the given `platform.system`.
+
+        Returns the call order as a list of marks. The logging and cwd dance is
+        the file's existing idiom for driving `run_headless`: it installs root
+        handlers that write `daemon_log.txt` into the working directory.
+        """
+        from polyhost.headless import run_headless
+        from polyhost.util import macos_ui
+
+        order = []
+
+        class _StubHost:
+            def __init__(self, *a, **kw):
+                order.append("host")
+
+            def run(self):
+                pass
+
+        root = logging.getLogger()
+        saved_handlers, saved_level = root.handlers[:], root.level
+        root.handlers.clear()
+        keeb = logging.getLogger("PolyKybdConsole")
+        saved_keeb = keeb.handlers[:]
+        keeb.handlers.clear()
+
+        cwd = os.getcwd()
+        tmp = tempfile.mkdtemp(prefix="poly_dock_")
+        addr = os.path.join(tmp, "p.sock")
+        try:
+            os.chdir(tmp)
+            with mock.patch.object(protocol, "endpoint_address", return_value=addr), \
+                 mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"), \
+                 mock.patch("platform.system", return_value=system), \
+                 mock.patch.object(macos_ui, "hide_dock_icon",
+                                   side_effect=lambda: order.append("policy") or True), \
+                 mock.patch("polyhost.headless.HeadlessHost", _StubHost):
+                run_headless(logging.INFO)
+        finally:
+            os.chdir(cwd)
+            for lg, saved in ((root, saved_handlers), (keeb, saved_keeb)):
+                for h in lg.handlers:
+                    try:
+                        h.close()
+                    except Exception:
+                        # Best-effort, as in the sibling tests: the temp dir
+                        # these handlers write into is removed just below, so a
+                        # handler that refuses to close changes nothing -- and
+                        # must not replace the test's own result.
+                        pass
+                lg.handlers[:] = saved
+            root.setLevel(saved_level)
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+        return order
+
+    def test_the_policy_is_set_BEFORE_the_host_is_built(self):
+        self.assertEqual(self._run("Darwin"), ["policy", "host"])
+
+    def test_no_activation_policy_is_touched_off_macOS(self):
+        """AppKit is not importable on Linux or Windows, and a call there would
+        be an ImportError swallowed by `macos_ui` -- quiet, but still a call
+        this entry point has no business making."""
+        self.assertEqual(self._run("Linux"), ["host"])
 
 
 class TestRelaunchDropsTheClaim(unittest.TestCase):
