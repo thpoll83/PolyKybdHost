@@ -139,5 +139,88 @@ class LanguageRestartDecisionTest(unittest.TestCase):
         self.assertTrue(self._needs_restart("auto", ["fr-FR"], "de"))
 
 
+
+class DescriptionTest(unittest.TestCase):
+    """Every setting has a description, shown as its tooltip."""
+
+    def test_every_default_setting_has_a_description(self):
+        from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS
+        from polyhost.settings import DEFAULT_SETTINGS
+        self.assertEqual(set(DEFAULT_SETTINGS) - set(SETTING_DESCRIPTIONS), set())
+
+    def test_no_description_for_a_setting_that_does_not_exist(self):
+        from polyhost.gui.settings_dialog import SETTING_DESCRIPTIONS
+        from polyhost.settings import DEFAULT_SETTINGS
+        self.assertEqual(set(SETTING_DESCRIPTIONS) - set(DEFAULT_SETTINGS), set())
+
+    def test_the_tooltip_is_escaped_rich_text(self):
+        from unittest import mock
+        from polyhost.gui import settings_dialog
+        with mock.patch.dict(settings_dialog.SETTING_DESCRIPTIONS,
+                             {"x_y": "a < b & c"}):
+            self.assertEqual(settings_dialog.setting_tooltip("x_y"),
+                             "<p>a &lt; b &amp; c</p>")
+        self.assertEqual(settings_dialog.setting_tooltip("no_such_key"), "")
+
+
+class DialogSizeTest(unittest.TestCase):
+    """Half the screen, with the old 640x480 as the minimum."""
+
+    def test_half_of_a_large_screen(self):
+        from PyQt5.QtCore import QSize
+        from polyhost.gui.settings_dialog import initial_dialog_size
+        self.assertEqual(initial_dialog_size(QSize(2560, 1400)), QSize(1280, 700))
+
+    def test_never_below_the_old_size(self):
+        from PyQt5.QtCore import QSize
+        from polyhost.gui.settings_dialog import initial_dialog_size
+        self.assertEqual(initial_dialog_size(QSize(1024, 768)), QSize(640, 480))
+        self.assertEqual(initial_dialog_size(QSize(1600, 800)), QSize(800, 480))
+
+
+@unittest.skipUnless(os.environ.get("DISPLAY")
+                     or os.environ.get("QT_QPA_PLATFORM") == "offscreen",
+                     "building the dialog needs a display (xvfb-run)")
+class BuiltDialogTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        from PyQt5.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _dialog(self):
+        from polyhost.gui.settings_dialog import SettingsDialog
+        from polyhost.settings import DEFAULT_SETTINGS
+        dlg = SettingsDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg.setup(dict(DEFAULT_SETTINGS), developer_mode=True)
+        return dlg
+
+    def test_every_editor_and_its_label_carry_the_tooltip(self):
+        from PyQt5.QtWidgets import QLabel
+        from polyhost.gui.settings_dialog import setting_tooltip
+        dlg = self._dialog()
+        labels = {lbl.toolTip() for lbl in dlg.findChildren(QLabel)}
+        for key, widget in dlg.edit_widgets.items():
+            with self.subTest(key=key):
+                self.assertEqual(widget.toolTip(), setting_tooltip(key))
+                self.assertIn(setting_tooltip(key), labels)
+
+    def test_opens_at_least_at_the_old_size(self):
+        dlg = self._dialog()
+        self.assertGreaterEqual(dlg.width(), 640)
+        self.assertGreaterEqual(dlg.height(), 480)
+        self.assertEqual((dlg.minimumWidth(), dlg.minimumHeight()), (640, 480))
+
+    def test_no_push_button_besides_ok_and_cancel(self):
+        """The glyph-script reset button is gone: the tray's Keycap Script menu
+        has Standard as its first entry."""
+        from PyQt5.QtWidgets import QDialogButtonBox, QPushButton
+        dlg = self._dialog()
+        box = dlg.findChild(QDialogButtonBox)
+        extra = [b for b in dlg.findChildren(QPushButton) if b.parent() is not box]
+        self.assertEqual(extra, [])
+
+
 if __name__ == "__main__":
     unittest.main()

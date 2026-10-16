@@ -1,11 +1,13 @@
+import html
 import string
 from collections import defaultdict
 
 from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QCursor, QGuiApplication
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
-    QScrollArea, QPushButton, QComboBox
+    QScrollArea, QComboBox
 )
 
 from polyhost import i18n
@@ -63,8 +65,8 @@ SETTING_LABELS = {
     "irradiance_prescaler": N_("Prescaler"),
     "brightness_gamma": N_("Gamma"),
     "generic_overlays_enabled": N_("Overlays Enabled"),
-    "generic_overlays_fill_gaps": N_("Overlays Fill Gaps"),
-    "generic_overlays_fill_shortcuts": N_("Overlays Fill Shortcuts"),
+    "generic_overlays_fill_gaps": N_("Overlays Add Escape Mark"),
+    "generic_overlays_fill_shortcuts": N_("Overlays Add Shortcut Icons"),
     "shortcut_icons_enabled": N_("Icons Enabled"),
     "shortcut_icon_auto_fetch": N_("Icon Auto Fetch"),
     "shortcut_enable_accessibility": N_("Enable Accessibility"),
@@ -96,6 +98,137 @@ SETTING_LABELS = {
     "problem_scan_host_logs": N_("Scan Host Logs"),
     "problem_scan_level": N_("Scan Level"),
 }
+
+
+# One sentence or two per setting, shown as the tooltip on its label and its
+# editor. tests/gui/settings_dialog_test.py fails on a DEFAULT_SETTINGS key
+# missing here, so a new setting cannot ship without one.
+SETTING_DESCRIPTIONS = {
+    "unicode_send_composition_mode": N_(
+        "Tells the keyboard how this computer takes Unicode input (for example "
+        "WinCompose), on connect and whenever it changes. Off: the keyboard keeps "
+        "the mode it has stored."),
+    "brightness_set_daylight_dependent": N_(
+        "Sets the keycap brightness from the daylight at your location, every ten "
+        "minutes."),
+    "brightness_allow_online_irradiance_request": N_(
+        "Asks open-meteo.com for this hour's sunlight at your location, including "
+        "clouds. Off: the host computes a cloudless-sky value from the location "
+        "and time."),
+    "brightness_allow_online_location_lookup": N_(
+        "Looks up your approximate location from your IP address (ip-api.com), "
+        "once per run. Off: the brightness follows the hour of the day."),
+    "irradiance_min": N_("The sunlight value that gives the dimmest brightness level."),
+    "irradiance_max": N_(
+        "The sunlight value that gives the brightest level. Lower it to reach full "
+        "brightness on a cloudy day."),
+    "irradiance_prescaler": N_("Multiplies the sunlight value before Min and Max apply."),
+    "brightness_gamma": N_(
+        "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, "
+        "below 1 brighter. The dimmest and brightest levels do not change."),
+    "generic_overlays_enabled": N_(
+        "Icons for apps without their own overlay: the app's mark on Escape and an "
+        "icon for each of its shortcuts. Off: nothing generic is drawn for any app."),
+    "generic_overlays_fill_gaps": N_(
+        "An app with its own overlay also gets its mark on Escape, when the overlay "
+        "leaves Escape blank."),
+    "generic_overlays_fill_shortcuts": N_(
+        "An app with its own overlay is also read for its shortcuts, with icons on "
+        "the keys the overlay leaves blank. Reading a large app, such as a browser "
+        "with a long page, can take minutes."),
+    "shortcut_icons_enabled": N_(
+        "Reads the focused app's shortcuts to draw an icon for each. Off: no app is "
+        "read and nothing generic is drawn."),
+    "shortcut_icon_auto_fetch": N_(
+        "Downloads icons that are missing. Off: icons already downloaded keep "
+        "working, new ones are skipped."),
+    "shortcut_enable_accessibility": N_(
+        "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps "
+        "publish their shortcuts. Off: only apps that publish them anyway (GTK) are "
+        "read."),
+    "max_hid_message_before_delay": N_(
+        "USB transport: how many image messages are sent before a short pause, so "
+        "the keyboard keeps reacting to typing. Change it only when asked to while "
+        "reporting a problem."),
+    "delay_time_after_max_hid_messages": N_(
+        "USB transport: the length of that pause, in seconds. Change it only when "
+        "asked to while reporting a problem."),
+    "hid_reconnect_retries": N_(
+        "How many times the host asks the keyboard for its ID before it reopens the "
+        "USB connection."),
+    "ui_theme": N_(
+        "The look of the tray menu and dialogs. Automatic follows the desktop's "
+        "light or dark setting."),
+    "ui_language": N_(
+        "The language of the menus and dialogs. Applies when the tray app restarts."),
+    "developer_mode": N_(
+        "Shows the Developer submenu in the tray menu and the developer settings in "
+        "this dialog."),
+    "dev_mock_enabled": N_("Adds a simulated keyboard next to the real one."),
+    "dev_mock_primary": N_(
+        "Uses a simulated keyboard instead of a real one, so the app runs without "
+        "hardware."),
+    "dev_mock_protocol": N_(
+        "The protocol version the simulated keyboard reports. 0 uses the newest "
+        "version this host knows."),
+    "dev_run_window_detection_if_not_connected_to_poly_kybd": N_(
+        "Tracks the active window even when no keyboard is connected."),
+    "dev_win_native_set_language": N_(
+        "Windows only, experimental. Switches the input language with Win32 calls "
+        "instead of the standard method, and falls back to it on a failure."),
+    "dev_legacy_plaintext_relay": N_(
+        "Accepts window reports from old forwarders over unencrypted, "
+        "unauthenticated TCP (port 50162) on every network interface. Turn it on "
+        "only for an old forwarder."),
+    "daemon_mode": N_(
+        "Runs the keyboard connection in a background process that the tray app "
+        "connects to, so the connection stays up when the tray app restarts."),
+    "window_report_network_enabled": N_(
+        "Accepts window reports from a forwarder on another computer. Opens a "
+        "network port. Applies after a restart."),
+    "fontpack_auto_flash": N_(
+        "Flashes missing or outdated font-pack bundles when the keyboard connects."),
+    "fontpack_path": N_(
+        "A .plyf file to flash instead of the font pack that ships with the app. "
+        "Empty uses the shipped pack."),
+    "browser_url_detection": N_(
+        "Matches overlays to the website in the focused browser tab. Off: browser "
+        "overlays match on the window title only."),
+    "browser_report_local_enabled": N_(
+        "Runs the receiver the browser extension reports to. It listens on "
+        "127.0.0.1 only."),
+    "browser_report_port": N_(
+        "The receiver's port. It must match the Host port in the browser extension."),
+    "browser_report_token": N_(
+        "A shared secret. When set, the browser extension must send the same token."),
+    "telemetry_enabled": N_(
+        "Sends one anonymous usage report per day: versions, operating system and a "
+        "few counters. Never window titles or app names."),
+    "telemetry_endpoint": N_("Where the usage report goes. Empty sends nothing."),
+    "telemetry_install_id": N_(
+        "The random ID of this installation, created with the first report. Delete "
+        "it to count as a new installation."),
+    "problem_scan_keyboard_console": N_(
+        "Watches the keyboard's console for known failure messages and offers to "
+        "report a problem."),
+    "problem_scan_host_logs": N_("Watches this app's own log for known failure messages."),
+    "problem_scan_level": N_("What counts as a problem: errors only, or errors and warnings."),
+}
+
+# The size the dialog had before it followed the screen. It stays the minimum.
+MIN_DIALOG_SIZE = QSize(640, 480)
+
+
+def setting_tooltip(full_key):
+    """The translated description as rich text, so Qt wraps it, or ""."""
+    text = SETTING_DESCRIPTIONS.get(full_key)
+    return f"<p>{html.escape(_(text))}</p>" if text else ""
+
+
+def initial_dialog_size(available):
+    """Half the available screen area, never below `MIN_DIALOG_SIZE`."""
+    return QSize(max(MIN_DIALOG_SIZE.width(), available.width() // 2),
+                 max(MIN_DIALOG_SIZE.height(), available.height() // 2))
 
 
 def split_key(full_key):
@@ -172,11 +305,18 @@ class SettingsDialog(QDialog):
         self._all_settings = {}
 
     def sizeHint(self):
-        return QSize(640, 480)
+        return MIN_DIALOG_SIZE
 
-    def setup(self, settings_dict, developer_mode=False, reset_glyph_script=None):
+    def _fit_to_screen(self):
+        """Open at half the screen the cursor is on, with the old size as minimum."""
+        self.setMinimumSize(MIN_DIALOG_SIZE)
+        screen = (QGuiApplication.screenAt(QCursor.pos())
+                  or QGuiApplication.primaryScreen())
+        if screen is not None:
+            self.resize(initial_dialog_size(screen.availableGeometry().size()))
+
+    def setup(self, settings_dict, developer_mode=False):
         self._all_settings = dict(settings_dict)
-        self._reset_glyph_script = reset_glyph_script
         # No setWindowIcon here: the dialog inherits QApplication's, which
         # IconStateManager already sets to the right mark for whichever app
         # opened it (the P for the tray app, the F for the forwarder). Pinning
@@ -187,6 +327,8 @@ class SettingsDialog(QDialog):
 
         title_label = QLabel(_("Some settings might need a restart to take effect."))
         title_label.setAlignment(Qt.AlignCenter)
+        # Wraps rather than clips: the German sentence is wider than 640 px.
+        title_label.setWordWrap(True)
         main_layout.addWidget(title_label)
 
         scroll = QScrollArea()
@@ -213,6 +355,10 @@ class SettingsDialog(QDialog):
                 label = QLabel(setting_label(full_key))
                 label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
                 widget = create_editor(value, full_key)
+                tooltip = setting_tooltip(full_key)
+                if tooltip:
+                    label.setToolTip(tooltip)
+                    widget.setToolTip(tooltip)
 
                 field_container = QWidget()
                 field_layout = QHBoxLayout()
@@ -231,18 +377,9 @@ class SettingsDialog(QDialog):
         scroll.setWidget(scroll_contents)
         main_layout.addWidget(scroll)
 
-        # Glyph-script reset — a direct device action (fires immediately, not tied
-        # to OK/Cancel). Only shown when a callback is provided (device present /
-        # firmware v9+). Puts the keycaps back to the normal language legends.
-        if self._reset_glyph_script is not None:
-            reset_btn = QPushButton(_("Reset glyph script to Standard"))
-            reset_btn.setToolTip(_("Turn off any fantasy/alternative script override "
-                                   "and show the normal language legends again."))
-            reset_btn.clicked.connect(self._reset_glyph_script)
-            main_layout.addWidget(reset_btn, alignment=Qt.AlignCenter)
-
-        # The startup ("Eden") animation replay used to sit here as a button. It
-        # is a one-off demo action, not a setting — it now lives only in
+        # No device actions here: this dialog edits settings. The glyph-script
+        # reset button was removed (2026-10-16) because the tray's Keycap Script
+        # menu has "Standard" as its first entry; the Eden replay lives in
         # `polyctl replay-anim`.
 
         # Add buttons
@@ -250,6 +387,7 @@ class SettingsDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons, alignment=Qt.AlignCenter)
+        self._fit_to_screen()
 
     def get_updated_settings(self):
         updated = dict(self._all_settings)
