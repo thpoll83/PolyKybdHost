@@ -29,9 +29,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     miro.com:
       overlay: miro_template.mods.png
     outlook.office.com:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     outlook.live.com:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     github.com:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     gitlab.com:
@@ -76,7 +76,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     Miro:
       overlay: miro_template.mods.png
     Outlook:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     Jira:
       overlay: jira_template.mods.png
     Confluence:

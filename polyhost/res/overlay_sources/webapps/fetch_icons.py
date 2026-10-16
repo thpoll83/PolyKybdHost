@@ -2,7 +2,7 @@
 """Fetch + render icons for the browser-hosted app overlays.
 
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
-`confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml` and
+`confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml` and
 `bitbucket.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -170,6 +170,31 @@ FLUENT = {
     "zoomselection": "Select Object",
     "lock": "Lock Closed",
     "hideui": "Eye Off",
+    # --- Outlook on the web (replacing the reclaimed hand-drawn owa_* art) ---
+    "mailnew": "Mail Add",
+    "mailreply": "Arrow Reply",
+    "mailreplyall": "Arrow Reply All",
+    "mailforward": "Arrow Forward",
+    "mailarchive": "Archive",
+    "mailread": "Mail Read",
+    "mailunread": "Mail Unread",
+    "mailflag": "Flag",
+    "deleteperm": "Delete Dismiss",
+    "openwindow": "Window New",
+    "mailview": "Mail Inbox",
+    "calview": "Calendar",
+    "copilot": "Sparkle",
+    "peopleview": "People",
+    "newcontact": "Person Add",
+    "editcontact": "Person Edit",
+    "newcontactlist": "People Add",
+    "caltoday": "Calendar Today",
+    "calday": "Calendar Day",
+    "calworkweek": "Calendar Work Week",
+    "calweek": "Calendar Week Numbers",
+    "calmonth": "Calendar Month",
+    "calprev": "Arrow Previous",
+    "calnext": "Arrow Next",
 }
 
 # GitHub and GitLab publish plain monochrome marks that read cleanly as a 1-bit
