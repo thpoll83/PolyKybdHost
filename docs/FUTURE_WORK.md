@@ -197,15 +197,16 @@ display mapping it already sends.
 **Status:** not done. Compared by reading the code on 2026-10-16 (#393); no Linux
 or macOS walk has ever been timed.
 
-#393 fixed two Windows faults: a UIA walk on a daemon thread stalled the whole
-host (most likely through the interpreter lock), and a read could be filed under the wrong app.
+PolyKybdHost#393 fixed two Windows faults: a UIA walk on a daemon thread stalled
+the whole host (most likely through the interpreter lock), and a read could be
+filed under the wrong app.
 The three backends in `polyhost/services/shortcut_source/` compare like this:
 
 | | Windows (`uia.py`) | Linux (`atspi.py`) | macOS (`macos.py`) |
 |---|---|---|---|
 | What it reads | the whole window, web content included, no cap | the app's whole tree, web content included, up to 4000 nodes, depth 24 | the menu bar only, up to 3000 items |
 | Where it runs | helper process | daemon thread | daemon thread |
-| Which app | window handle, then a process-id check | first accessible app whose name contains the requested name; `pid` is unused | process id, then a name check |
+| Which app | window handle, then a process-id check | first accessible app whose name contains the requested name, or is contained in it; `pid` is unused | process id, then a name check |
 
 macOS is not at risk: a menu bar is a few hundred items and does not grow with
 page content. Linux has both risks in a smaller form. A 4000-node walk of a

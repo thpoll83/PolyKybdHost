@@ -155,9 +155,11 @@ These are the ones that have produced wrong diagnoses:
 - **Shortcut icons wrong, missing or slow** (keycaps keep one app's icons, the
   tray is slow to open): read the `Shortcut harvest for '<app>'` and `Generic
   overlays for '<app>'` lines against the table in `docs/generic-icons-plan.md`
-  → *What the log shows* (under *A browser walked again on every tab switch*). Each read logs its window, element count and
-  seconds; a refused read names both process ids. Then check the daemon's tick
-  times in the same minutes. Two bundles on 2026-10-16 were judged this way:
+  → *What the log shows* (under *A browser walked again on every tab switch*).
+  Only the Windows helper writes `Shortcut harvest for` lines, so their absence
+  on Linux or macOS is not a failure. Each read logs its window, element count and
+  seconds; a refused read names both process ids. On every platform, check the
+  daemon's `Window-tracking tick took` warnings in the same minutes. Two bundles on 2026-10-16 were judged this way:
   reads of 0.001–0.44 s and no tick stall meant the helper process was working.
 
 ## 4. Check the settings for drift between runs
