@@ -218,8 +218,13 @@ Per-platform implementations:
     decides the fix SHAPE: fall back to the app NAME and draw, never special-case
     apps. The path needs only the name and the pid, which the OS knows even when
     the window backend does not. It still returns `DISABLE` and clears
-    `current_entry`, because with no window there is no TITLE and a template entry
-    cannot be evaluated.
+    `current_entry` first, because the overlays on the board belong to the app the
+    user has left; what replaces them is then decided by the template match
+    described above, which a TITLE-CONSTRAINED entry fails without a window and a
+    title-independent one passes. ⚠️ This sentence used to end at *"a template
+    entry cannot be evaluated"*, which was the premise the bullet above
+    overturned, left standing two bullets later in the same file (CodeRabbit,
+    #397). Nothing in CI reads Markdown.
   - ⚠️ **The macOS query costs two `osascript` processes per tick, and the accept
     timer used to count the NOMINAL cycle.** PyWinCtl 0.4.1 spends one `osascript`
     in `getActiveWindow()` and another in `MacOSWindow.__init__`
