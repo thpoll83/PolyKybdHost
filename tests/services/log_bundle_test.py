@@ -117,6 +117,27 @@ class EnvironmentDetailTest(unittest.TestCase):
         self.assertIn("OS ", text)
         self.assertIn("Host protocol", text)
 
+    def test_it_names_the_WINDOW_BACKEND_version(self):
+        """⚠️ `PyWinCtl` is unpinned, and its macOS behaviour decides whether
+        app switches reach the keyboard at all. Reading the 2026-10-16 bundle
+        meant downloading three releases to work out which one had produced
+        the log."""
+        self.assertIn("Window backend   : PyWinCtl ", lb.environment_text())
+
+    def test_the_backend_version_is_read_WITHOUT_importing_pywinctl(self):
+        """It needs a display and can `sys.exit()` without one.
+
+        ⚠️ The assertion is that the LINE STILL APPEARS while the import is
+        blocked. Asserting some other line was there instead made the test
+        vacuous: the `except` swallows the ImportError, so an
+        `import pywinctl` added to that code path dropped the backend line
+        and the test still passed (Revix, #397 — verified by mutation).
+        """
+        with mock.patch.dict("sys.modules", {"pywinctl": None}), \
+             mock.patch("importlib.metadata.version", return_value="9.9.9-probe"):
+            text = lb.environment_text()
+        self.assertIn("Window backend   : PyWinCtl 9.9.9-probe", text)
+
     def test_slow_probes_are_opt_in(self):
         """The autostart probe shells out on Windows, so a GUI-thread caller
         must be able to leave it out."""

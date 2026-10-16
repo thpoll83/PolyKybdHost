@@ -59,6 +59,27 @@ control-socket method.
   `window_report_server`, `browser_report_server`) before designing a fix.
 - ⚠️ **The network `WindowReportServer` serves one method and holds no `PolyCore`.**
   That separation is the security boundary.
+- ⚠️ **An EMPTY window title and NO window are different, and the matcher answers them
+  differently.** `find_matching_entry` skips a declared `title:` regex when the title is
+  falsy, on purpose (macOS and some Wayland setups report no titles at all). A caller
+  with no window passes `title_known=False`, which makes that constraint FAIL instead:
+  without it, `kicad:`'s `title: PCB Editor` would draw the PCB overlay for the
+  schematic editor too. The windowless path evaluates templates on that flag, so an
+  app-name-only entry still gets its artwork -- VS Code's macOS branch carries three
+  templates and no `title:`, and was never evaluated before (2026-10-16 bundle).
+- ⚠️ **On macOS the window tick costs seconds, not milliseconds, and the accept timer
+  must count REAL time.** pywinctl spends two `osascript` processes per
+  `getActiveWindow()`; a tick measured 2.30 s median against a 250 ms cycle. Accepting
+  a switch takes six ticks, so a timer that added the nominal cycle turned a 1 s
+  debounce into 15.3 s and the keyboard stopped following the active app
+  (2026-10-16 bundle). Never add an attribute read of a macOS window to that path, and
+  never count ticks where you mean time. `_macos_can_skip_tick()` skips the query while
+  the same app is in front, from `focused_app_pid()` (`AXFocusedApplication`, in
+  process). ⚠️ Not the Quartz window list, which answers about a WINDOW and would skip
+  an app activated with every window minimized for ever, and not
+  `NSWorkspace.frontmostApplication`, which reads stale off the main thread. A pid does
+  not move on a retitle, so a mapping entry matching on a title or a URL still pays on
+  every tick. [`docs/architecture.md`](docs/architecture.md).
 
 ## Threading (HID worker)
 
@@ -231,6 +252,13 @@ per-application ESC mark has a rule of **no per-application configuration**:
 - **Launchers live in the platformdirs config dir, not the checkout.** The Windows task
   is named `PolyHost`.
 - **`updater.preflight()` runs before the download**, for the tray, daemon and `polyctl`.
+- ⚠️ **Every macOS entry point must set its activation policy, the daemon included.**
+  A non-bundled Python process that calls the window-server APIs gets a Dock tile with
+  the interpreter's generic rocket icon, and the daemon calls plenty of them (pywinctl,
+  the Quartz window list, the Accessibility reads). `run_headless` sets
+  `macos_ui.hide_dock_icon()` after the endpoint claim and before `HeadlessHost`;
+  `host.py` and `forwarder.py` always did.
+  [`docs/architecture.md`](docs/architecture.md).
 
 ## When something is reported broken
 

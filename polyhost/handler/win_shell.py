@@ -15,7 +15,10 @@ future shell template a key of its own.
 ⚠️ It goes by the Win32 window CLASS, not the title. A title gate cannot do it:
 `find_matching_entry` skips a `title:` regex when the title is empty, on
 purpose, because macOS without screen-recording permission and some Wayland
-setups report no titles at all -- and the taskbar's title IS empty.
+setups report no titles at all -- and the taskbar's title IS empty. (That
+leniency is for an EMPTY title and stays. A caller with NO WINDOW passes
+`title_known=False` instead, which fails a declared constraint rather than
+skipping it -- see `common.find_matching_entry`.)
 
 ⚠️ `window_class()` is a ctypes call this suite cannot execute. The decision is
 unit-tested with an injected reader; the call itself needs a hardware round.

@@ -189,6 +189,9 @@ class PolyForwarder(QApplication):
         self.wants_restart = False
         self.title = None
         self.last_update_msec = 0
+        # When the previous tick ran, so the accept timer and the heartbeat
+        # count real time (see `active_window_reporter`).
+        self._last_tick_at = None
         # Whether the last report reached the keyboard machine. None = nothing
         # sent yet. The tray icon and the status row both read it, so a relay
         # that is quietly failing is visible without opening the log — the
@@ -953,8 +956,25 @@ class PolyForwarder(QApplication):
             if not self.is_closing:
                 QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
             return
-        self.last_update_msec += UPDATE_CYCLE_MSEC
-        self.heartbeat_msec += UPDATE_CYCLE_MSEC
+        # ⚠️ The accept timer counts REAL time, floored at the nominal cycle.
+        # Adding the nominal alone assumed the tick cost nothing: it takes six
+        # ticks to accept a switch, so on macOS, where pywinctl spends two
+        # `osascript` processes per `getActiveWindow()` and a tick measured
+        # 2.30 s median, a 1 s debounce became 15 s and any app the user left
+        # sooner never reached the keyboard at all (field bundle 2026-10-16).
+        # The same fix and the same reasoning as
+        # `handler.active_window.OverlayHandler._tick_elapsed_msec` -- this is
+        # the second copy of that timer, on the other machine.
+        #
+        # `heartbeat_msec` counts the same way, and had the same inflation:
+        # HEARTBEAT_MSEC is 15 s, and 60 ticks of 2.5 s made the resend that
+        # lets the keyboard machine catch up fire every 150 s instead.
+        now = time.monotonic()
+        previous, self._last_tick_at = self._last_tick_at, now
+        elapsed = (UPDATE_CYCLE_MSEC if previous is None
+                   else max(UPDATE_CYCLE_MSEC, int((now - previous) * 1000)))
+        self.last_update_msec += elapsed
+        self.heartbeat_msec += elapsed
         win = pwc.getActiveWindow()
         if win:
             try:

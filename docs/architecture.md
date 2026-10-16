@@ -14,7 +14,7 @@ and relative links were adjusted to suit a standalone file.
 - `polyhost/host.py` — `PolyHost(QApplication)`: Normal-mode **Qt client**. Owns `PolyCore`, the tray icon, menus and dialogs; subscribes to core events and marshals them onto the Qt main thread via `WorkerBridge.job_done` (the event names match `_on_job_done`'s dispatch). Connection state (`connected`/`device_present`/`paused`/`last_applied_connected`/`kb_sw_version`/`mapping`) are **properties over the core** — the core is the single source of truth. The active-window QTimer stays on the main thread (pywinctl/macOS constraint) and just calls `core.tick_window_tracking()`.
 - `polyhost/server/` — **control socket** (headless-core H2). `protocol.py`: stdlib `multiprocessing.connection` transport (UDS / Windows named pipe + authkey), UTF-8 JSON framing, JSON-RPC message shapes, the `hello` version gate, platformdirs endpoint+authkey (0600), and the canonical `M_*` method-name constants. `control_server.py`: `ControlServer` — accept loop + per-connection reader threads, a method registry dispatching to `PolyCore` (core `(ok,payload)` failures → JSON-RPC `ERR_DEVICE`), and core-event fan-out to subscribed clients. `instance.py`: the socket doubles as the single-instance lock. `PolyHost` embeds a `ControlServer` (M1); the CLI/headless server reuse it. `window_report_server.py`/`window_report_client.py` (H4d): a **separate, opt-in** `AF_INET` listener (`WindowReportServer`, port `WINDOW_REPORT_PORT=50163`) that serves **only** `window.report` — same `hello`+authkey gating, but a **separate authkey** (`window_report_authkey_path()`) and **no `PolyCore` reference** (only an injected `report_window` callback), so the network surface can never reach device control/flash/bootloader. `HeadlessHost` starts it only when `window_report_network_enabled` is set (default False); the forwarder pushes to it with `--report-rpc`. The legacy plaintext TCP relay (port 50162, `remote_window.receive_from_forwarder`) is **unauthenticated and binds all interfaces**, so it is now **off by default** — `RemoteHandler.listen_to_forwarder()` only binds it when the `dev_legacy_plaintext_relay` setting opts in (threaded `PolyCore.settings_get` → `OverlayHandler` → `RemoteHandler`); with remote entries mapped but the relay disabled it warns **once** pointing to the authenticated path (suppressed when `window_report_network_enabled` is already on, since reports then arrive over RPC — both transports funnel through the same `RemoteHandler.report_window` → `remote_changed`/`_match_remote`, so remote-entry matching is transport-agnostic). The `dev_` prefix hides the setting in the settings dialog unless developer mode is on (`settings_dialog.py` skips `dev_*` keys when `developer_mode` is False). The `window.report` control-socket path (authkey-gated) supersedes it.
 - `polyhost/cli/polyctl.py` — **`polyctl`** console-script (stdlib-only, never imports Qt): `status`, `lang list|set`, `brightness`, `idle`, **`idle-style [pulse|jitter]`** (get/set the idle anti-burn-in style over HID cmd 28 — `M_IDLE_STYLE_GET/SET` → `PolyCore.get/set_idle_style` → `PolyKybd`, firmware v4+), `overlay …`, `keymap …`, `commands`, `fw version`, **`fw flash <bin> [--apply]`**, `pause|resume`, `mru save`, `settings get|set`, **`update check|install`**, **`window report`**, `watch`, `shutdown`. Long ops (`fw flash`, `update install`) subscribe to events and stream progress to a terminal event — `RpcClient` exposes `subscribe_events()`/`events()` (the latter ends on `EOFError`/`OSError`); `watch()` builds on them. Talks the `protocol.py` wire format to the control socket.
-- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--dev 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--dev 2`, not `--dev 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side).
+- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--dev 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--dev 2`, not `--dev 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side). ⚠️ **On macOS `run_headless` sets the accessory activation policy (`macos_ui.hide_dock_icon`) before it builds the host**, and it was the one entry point that did not — `host.py` and `forwarder.py` always have. A non-bundled Python process that calls the window-server APIs gets a Dock tile, and the daemon calls plenty of them: pywinctl's AppKit reads, the Quartz window list in `own_process`, and the Accessibility reads in `handler/active_window.py` and the shortcut harvest. The tile shows the interpreter's generic rocket icon, since the daemon has no bundle (the same root cause as the tray balloons that reach nobody). Reported from the field on 2026-10-16, right after the real-time accept timer made app switches reach the keyboard again: the switches had barely been accepted before, so the paths that register the process had barely run. Which call does the registering is not established and the fix does not depend on it. It is set **after** the endpoint claim, so a daemon that loses the race exits having created no `NSApplication` at all, and **before** `HeadlessHost`, so the policy is in place before any worker thread reaches AppKit (`tests/headless/headless_entry_test.py` pins both ends).
 - `polyhost/client/remote_core.py` — **`RemoteCore`** (H4a): the GUI-as-socket-client adapter. `python -m polyhost --connect[=ENDPOINT]` runs the tray GUI as a pure client of a core in another process — `RemoteCore` mirrors the subset of the `PolyCore` API `host.py` consumes, over the control socket (two connections: one for request/response, one for the event subscription), and re-emits server events to the same `subscribe`/`emit` seam. State is cached from `status.get` + `status_changed`. `PolyHost(client_mode=, endpoint=)` builds it instead of a `PolyCore`, renders from `status_changed` (not `apply_reconnect`), does the **client-side** OS-language switch. ⚠️ **This note used to say it "guards every device-coupled menu (cmd menu / layout editor / keyboard-firmware release / MRU debug)" — that is STALE and was believed while designing a feature around it (2026-08-27).** Those were progressively moved onto RPC and now work in client mode: the cmd menu is built unconditionally and its flash/apply paths route through `_client_flash_firmware` / `_client_apply_staged`, the keyboard-firmware release check is an ordinary Updates row, the settings dialog + "Flash firmware .bin…" go over `fw.flash`, and the **layout editor runs on `core.keymap_*`** — its own comment says *"works in either mode (H4a-2)"*. The only things still `if not self.client_mode:` are the Developer tool that reads the in-process `device_mgr` directly (**Inspect MRU Cache**), plus the device-owning startup itself. (**Dump Mock Bitmaps** was the second one; the **Mock Keyboard** board view replaced it and reads `core.mock_keycaps` over RPC — see [`mock-device.md`](mock-device.md).) **The rule to carry forward: a new device-coupled GUI surface is expected to work in client mode over RPC** — client mode is the default under daemon-by-default, so anything gated off it is unreachable out of the box. Quitting the client closes its sockets only — the daemon keeps running.
 - `polyhost/forwarder.py` — `PolyForwarder`: Forwarder mode; no device access, only TCP window reporting
 
@@ -186,6 +186,29 @@ Per-platform implementations:
     measurement was never written down, which is the whole reason it happened
     twice — the property reads correctly often enough that one good log line
     looks like evidence.
+  - ⚠️ **"The title is EMPTY" and "there is NO title" need opposite answers.**
+    `find_matching_entry` skips a declared `title:` regex when the title is
+    falsy, on purpose: macOS without screen-recording permission and some
+    Wayland setups report no titles at all, and gating on one would lose every
+    entry there (`handler/win_shell.py`). With no WINDOW the same leniency is a
+    false positive — `kicad:` declares `title: PCB Editor` to tell the PCB
+    editor from the schematic editor — so the windowless path passes
+    `title_known=False`, which makes a declared constraint FAIL rather than be
+    skipped. The flag propagates through all five recursive calls, so an `os:`
+    branch is judged by its own constraints. The word sub-maps
+    (`titles-startswith` and friends) need no flag: they already match nothing
+    without a title and fall through to the parent's own overlay, which is
+    correct for a refinement rather than a constraint. ⚠️ **The windowless
+    branch used to skip the template path wholesale**, on the premise that no
+    window means no match — true only of title-matching entries. VS Code's own
+    `os: macos:` branch carries three templates and deliberately no `title:`,
+    because a macOS window title does not name the app, and it was never once
+    evaluated: the keycaps stayed blank while the log read *"no template covers
+    it"* (field, 2026-10-16). Verified against the shipped mapping rather than a
+    fixture, in `tests/handler/matcher_test.py` →
+    `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
+    `claude`, `zed` and `cursor` all resolve their macOS templates with no
+    window, and `kicad` correctly does not.
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
@@ -195,8 +218,55 @@ Per-platform implementations:
     decides the fix SHAPE: fall back to the app NAME and draw, never special-case
     apps. The path needs only the name and the pid, which the OS knows even when
     the window backend does not. It still returns `DISABLE` and clears
-    `current_entry`, because with no window there is no TITLE and a template entry
-    cannot be evaluated.
+    `current_entry` first, because the overlays on the board belong to the app the
+    user has left; what replaces them is then decided by the template match
+    described above, which a TITLE-CONSTRAINED entry fails without a window and a
+    title-independent one passes. ⚠️ This sentence used to end at *"a template
+    entry cannot be evaluated"*, which was the premise the bullet above
+    overturned, left standing two bullets later in the same file (CodeRabbit,
+    #397). Nothing in CI reads Markdown.
+  - ⚠️ **The macOS query costs two `osascript` processes per tick, and the accept
+    timer used to count the NOMINAL cycle.** PyWinCtl 0.4.1 spends one `osascript`
+    in `getActiveWindow()` and another in `MacOSWindow.__init__`
+    (`getProcName`), and a changed tick added five more
+    (`getHandle()`, `title`, `getPID()` and two that `log_win` spent re-reading
+    the window it was logging). Measured in the field bundle of 2026-10-16:
+    **tick 2.30 s median, of which 1.60 s is the query**, against a 250 ms cycle.
+    Accepting a switch takes six ticks (reset to 0, then five 250 ms steps past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC` 1000), so the 1 s debounce became **15.3 s of
+    uninterrupted focus** — and every app the user left sooner never reached the
+    keyboard, with nothing logged. That bundle has 132 slow-tick warnings across
+    42 minutes with no app-identity line between them, and the board kept the
+    icons of an app left 1 h 51 min earlier. Three fixes:
+    `OverlayHandler._tick_elapsed_msec` counts real time floored at the nominal
+    cycle (the floor is what keeps the tests, which tick with no delay, able to
+    accept anything); `log_win` takes the title and handle it is given instead of
+    re-reading them; and `_macos_can_skip_tick` skips the query altogether while
+    the same application is still in front, from `focused_app_pid()` — one
+    in-process `AXFocusedApplication` read, under the Accessibility grant the
+    shortcut harvest already needs, and `None` without it (the tick then behaves
+    as it did before the detector existed). ⚠️ **The Quartz window list was
+    tried first and rejected**: `CGWindowListCopyWindowInfo`'s topmost layer-0
+    window is cheaper still, but it answers about a WINDOW, so activating an app
+    whose windows are all minimized would never move it and the switch would be
+    skipped *indefinitely* — the symptom being fixed. ⚠️ **Not
+    `NSWorkspace.frontmostApplication` either**, for the reason in the bullet
+    above it. A pid does not move when a window retitles, so the skip is refused
+    for an app whose mapping entry matches on a title or a URL
+    (`Flags.HAS_TITLE`/`HAS_TITLES_*`/`HAS_URL`/`HAS_URLS_CONTAINS`, and
+    `HAS_OS` conservatively — 14 of the 69 shipped entries), and refused until
+    the full path has RESOLVED that pid — a changed pid clears the marker and
+    the window branch sets it only once its accept timer matures, so the
+    debounce ticks keep querying and a switch waiting to be accepted cannot be
+    skipped into limbo. ⚠️ It must NOT cross-check against `focused_pid()`:
+    `window_pid` is `MacOSWindow.getPID()`, one more `osascript` through a
+    shell, which would have spent most of the saving. What it gives up: a
+    retitle on a title-INDEPENDENT app is seen on the next tick that is not
+    skipped, which can delay the shortcut harvest's re-harvest-on-retitle
+    (Kate's menus). A change of APPLICATION is never delayed.
+    ⚠️ `polyhost/forwarder.py`
+    holds the **second copy** of that timer, on the other machine, and had the
+    same inflation — there it also stretched `HEARTBEAT_MSEC` (15 s) to 150 s.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch
