@@ -697,9 +697,20 @@ class TestSafeExtract(unittest.TestCase):
         levels down so that `../../evil.txt` lands inside the temp directory,
         where its absence can be asserted without depending on what else is
         in the system temp directory.
+
+        ⚠️ The UNPATCHED case's expected type is derived from the same
+        condition `_safe_extract` tests, never written as a constant. Pinning
+        it to `FilterError` made the test fail on the 3.10 and 3.11 this
+        project still supports (README: "Requires Python 3.10 or newer"),
+        where that branch is not taken -- the very mistake this test was being
+        fixed for, repeated one line down (Greptile P1, #403). And
+        `tarfile.FilterError` is only named when it exists: the filters landed
+        in 3.12 and were backported to 3.10.12/3.11.4, so on an older patch
+        release the constant itself is an AttributeError.
         """
-        for pinned, expected in ((None, tarfile.FilterError),
-                                 ((3, 11, 0), RuntimeError)):
+        live = (tarfile.FilterError if sys.version_info >= (3, 12)
+                else RuntimeError)
+        for pinned, expected in ((None, live), ((3, 11, 0), RuntimeError)):
             with self.subTest(version_info=pinned or "real"):
                 with tempfile.TemporaryDirectory() as td:
                     tar_path = Path(td) / "evil.tar.gz"
