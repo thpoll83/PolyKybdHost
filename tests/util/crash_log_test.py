@@ -348,8 +348,6 @@ class DumpWatchTest(CrashLogTestBase):
         self.assertNotIn("poly-crash-watch", names)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TrimTest(unittest.TestCase):
@@ -513,3 +511,7 @@ class NoteClearedTest(unittest.TestCase):
         self._install_handle(active)
         with mock.patch.object(crash_log, "_stamp", return_value=False):
             self.assertFalse(crash_log.note_cleared(str(active)))
+
+
+if __name__ == "__main__":
+    unittest.main()

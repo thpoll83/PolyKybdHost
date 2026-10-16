@@ -196,8 +196,6 @@ class TestImConverterGolden(unittest.TestCase):
                             % (keycode, mod, filename))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestExtraModsChannels(unittest.TestCase):
@@ -274,3 +272,7 @@ class TestExtraModsChannels(unittest.TestCase):
         self.assertEqual(sorted(m.value for m in conv.image),
                          sorted(m.value for m in (Modifier.NO_MOD, Modifier.CTRL,
                                                   Modifier.ALT, Modifier.SHIFT)))
+
+
+if __name__ == "__main__":
+    unittest.main()

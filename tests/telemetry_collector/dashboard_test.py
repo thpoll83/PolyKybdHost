@@ -258,8 +258,6 @@ class Render(unittest.TestCase):
         self.assertIn("No data", dash.svg_bars([]))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class LinuxBreakdown(unittest.TestCase):
@@ -291,3 +289,7 @@ class LinuxBreakdown(unittest.TestCase):
     def test_no_linux_rows_is_empty_not_an_error(self):
         rows = [row("a", "2026-09-14", os="Windows")]
         self.assertEqual(dash.linux_breakdown(rows, "desktop"), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

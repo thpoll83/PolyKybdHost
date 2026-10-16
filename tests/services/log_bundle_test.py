@@ -706,8 +706,6 @@ class WindowsDumpSummaryTest(unittest.TestCase):
         self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ClearLogsTest(unittest.TestCase):
@@ -872,3 +870,7 @@ class ClearLogsTest(unittest.TestCase):
         summary = lb.crash_summary(self.dir)
         self.assertIn("cleared", summary)
         self.assertIn("nothing before that is on file", summary)
+
+
+if __name__ == "__main__":
+    unittest.main()

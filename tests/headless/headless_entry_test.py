@@ -548,11 +548,6 @@ class TheDaemonMustOwnNoDockTileOnMacOSTest(unittest.TestCase):
         self.assertEqual(self._run("Linux"), ["host"])
 
 
-if __name__ == "__main__":
-    import unittest.mock  # noqa
-    unittest.main()
-
-
 class TestRelaunchDropsTheClaim(unittest.TestCase):
     """The daemon must let go of the endpoint BEFORE it spawns its replacement.
 
@@ -619,3 +614,7 @@ class TestRelaunchDropsTheClaim(unittest.TestCase):
         self.addCleanup(host.stop)
         host._restart_if_requested()
         claim.release.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()
