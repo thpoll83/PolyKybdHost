@@ -4,6 +4,7 @@ import platform
 import re
 import subprocess
 import time
+import unicodedata
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
@@ -136,10 +137,6 @@ def frontmost_app():
 _AX_FOCUSED_APPLICATION = "AXFocusedApplication"
 _AX_ERROR_SUCCESS = 0
 
-#: One warning per process when the detector itself breaks; see
-#: `focused_app_pid`. A per-tick log line would be 150 an hour.
-_AX_FAILED_ONCE = False
-
 
 def _ax_system_wide_api():
     """The three pyobjc symbols the focus detector needs, imported late.
@@ -204,9 +201,14 @@ def focused_app_pid():
         # coming back with nothing in the log to explain it (Revix, #397). A
         # missing Accessibility grant is NOT this: that returns None from the
         # error check above, which is a normal state and stays quiet.
-        global _AX_FAILED_ONCE
-        if not _AX_FAILED_ONCE:
-            _AX_FAILED_ONCE = True
+        # ⚠️ The once-flag lives on the FUNCTION, not in a module global. A
+        # global here needed a `global` statement whose only reader was this
+        # block, which CodeQL reads as an unused global
+        # (py/unused-global-variable, #397); the state belongs to the one
+        # function that owns it either way. One warning per process: a
+        # per-tick line would be ~150 an hour.
+        if not getattr(focused_app_pid, "warned_broken", False):
+            focused_app_pid.warned_broken = True
             logging.getLogger("PolyHost").warning(
                 "The macOS focus detector raised, so the window tick falls "
                 "back to querying pywinctl every time (slower switches). This "
@@ -216,7 +218,7 @@ def focused_app_pid():
 
 
 def _log_safe(text):
-    r"""`text` with its CONTROL characters escaped, ordinary Unicode intact.
+    r"""`text` with its CONTROL characters escaped, everything else intact.
 
     ⚠️ A window title is attacker-influenceable -- a web page chooses its own
     -- and it is logged verbatim into a support bundle. A newline in one would
@@ -226,12 +228,21 @@ def _log_safe(text):
     effect of being a bytes repr and mangled every non-ASCII title into
     `\xNN` along the way: a German or Japanese title became unreadable, and a
     bundle reader could not tell the quoting from the window's own.
-    `str.isprintable()` is False for exactly the control characters and True
-    for printable Unicode, so it draws the line in the right place.
+
+    ⚠️ NOT `str.isprintable()` either, which is the first thing this reached
+    for and is wrong in a way that matters: it is False for every Unicode
+    SPACE SEPARATOR except ASCII space, so NBSP, en-space and the ideographic
+    space U+3000 were escaped too (Revix, #397). Those cannot split a log
+    record and they appear in ordinary French and Japanese titles.
+
+    So the test is the Unicode category: `C*` is escaped -- Cc control, Cf
+    format (which usefully covers the bidi overrides, the other way to make a
+    log line read as something it is not), Cs/Co/Cn -- and everything else,
+    `Zs` separators included, is left alone.
     """
     if text is None:
         return None
-    return "".join(c if c.isprintable() or c == " " else repr(c)[1:-1]
+    return "".join(c if unicodedata.category(c)[0] != "C" else repr(c)[1:-1]
                    for c in str(text))
 
 

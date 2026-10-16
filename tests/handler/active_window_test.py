@@ -1228,7 +1228,8 @@ class TheFocusDetectorTest(unittest.TestCase):
         not per tick: a tick logs ~150 times an hour.
         """
         mod = "polyhost.handler.active_window"
-        with patch(mod + "._AX_FAILED_ONCE", False), \
+        with patch.object(aw_focused_app_pid, "warned_broken", False,
+                          create=True), \
              patch(mod + "._IS_MACOS", True), \
              patch(mod + "._ax_system_wide_api",
                    side_effect=RuntimeError("AX gone")):
@@ -1245,7 +1246,8 @@ class TheFocusDetectorTest(unittest.TestCase):
         api = (MagicMock(return_value="sw"),
                MagicMock(return_value=(-25211, None)),
                MagicMock())
-        with patch(mod + "._AX_FAILED_ONCE", False), \
+        with patch.object(aw_focused_app_pid, "warned_broken", False,
+                          create=True), \
              patch(mod + "._IS_MACOS", True), \
              patch(mod + "._ax_system_wide_api", return_value=api):
             logger = logging.getLogger("PolyHost")
@@ -1472,6 +1474,28 @@ class AWindowTitleCannotSPLITALogRecordTest(unittest.TestCase):
         with self.assertLogs(handler.log, level="INFO") as captured:
             handler.log_win("app", "a\rb\tc", 1)
         self.assertIn("a\\rb\\tc", captured.output[0])
+
+    def test_UNICODE_SPACES_survive(self):
+        """⚠️ `str.isprintable()` is False for every space separator but the
+        ASCII one, so the first version escaped NBSP, en-space and the
+        ideographic space U+3000 (Revix, #397). None of them can split a
+        record, and all three appear in ordinary French and Japanese titles."""
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "Fichier\u00a0: a\u3000b c\u2002d", 1)
+        self.assertIn("Fichier\u00a0: a\u3000b c\u2002d", captured.output[0])
+
+    def test_a_BIDI_OVERRIDE_is_escaped(self):
+        # Category Cf. The other way to make a log line read as something it
+        # is not, and the reason the test is the category rather than "is it a
+        # control character".
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "safe\u202egnp.exe", 1)
+        self.assertNotIn("\u202e", captured.output[0])
+        self.assertIn("\\u202e", captured.output[0])
 
     def test_ORDINARY_unicode_stays_readable(self):
         # The reason this is not `.encode('utf-8')`: that mangled every
