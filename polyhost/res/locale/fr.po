@@ -2451,11 +2451,11 @@ msgstr "Enregistrer tous les journaux dans un .zip, ou les copier dans le presse
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Effacer les journaux..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Vider tous les fichiers journaux, y compris le journal des plantages"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2468,34 +2468,34 @@ msgstr "Recharger"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Effacer les journaux"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Vider tous les fichiers journaux ?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Cela efface l'historique de tous les onglets, y compris le journal des plantages — la trace des plantages de cette application. Cette action est irréversible, et un rapport de problème envoyé ensuite ne contiendra rien d'antérieur à maintenant."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Collecter d'abord..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{n} fichier vidé, {kb} KB libérés."
+msgstr[1] "{n} fichiers vidés, {kb} KB libérés."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Aucun fichier journal à effacer."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Certains fichiers n'ont pas pu être vidés :"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

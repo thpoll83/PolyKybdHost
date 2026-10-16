@@ -2465,11 +2465,11 @@ msgstr "Uložit všechny protokoly jako .zip, nebo je zkopírovat do schránky"
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Vymazat protokoly..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Vyprázdnit všechny soubory protokolů včetně protokolu pádů"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2482,35 +2482,35 @@ msgstr "Znovu načíst"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Vymazat protokoly"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Vyprázdnit všechny soubory protokolů?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Tím se vymaže historie všech karet včetně protokolu pádů — záznamu o tom, zda tato aplikace spadla. Tuto akci nelze vrátit zpět a hlášení problému odeslané později nebude obsahovat nic z doby před tímto okamžikem."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Nejprve shromáždit..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Vymazán {n} soubor, uvolněno {kb} KB."
+msgstr[1] "Vymazány {n} soubory, uvolněno {kb} KB."
+msgstr[2] "Vymazáno {n} souborů, uvolněno {kb} KB."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Žádné soubory protokolů k vymazání."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Některé soubory nebylo možné vyprázdnit:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

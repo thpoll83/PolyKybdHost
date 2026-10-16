@@ -2465,11 +2465,11 @@ msgstr "Zapisz wszystkie dzienniki jako .zip lub skopiuj je do schowka"
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Wyczyść dzienniki..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Opróżnij wszystkie pliki dzienników, w tym dziennik awarii"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2482,35 +2482,35 @@ msgstr "Wczytaj ponownie"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Wyczyść dzienniki"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Opróżnić wszystkie pliki dzienników?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Spowoduje to wyczyszczenie historii wszystkich kart, w tym dziennika awarii — zapisu tego, czy ta aplikacja uległa awarii. Tej operacji nie można cofnąć, a zgłoszenie problemu wysłane później nie będzie zawierać niczego sprzed tej chwili."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Najpierw zbierz..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Wyczyszczono {n} plik, zwolniono {kb} KB."
+msgstr[1] "Wyczyszczono {n} pliki, zwolniono {kb} KB."
+msgstr[2] "Wyczyszczono {n} plików, zwolniono {kb} KB."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Brak plików dzienników do wyczyszczenia."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Nie udało się wyczyścić niektórych plików:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

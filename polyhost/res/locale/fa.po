@@ -2437,11 +2437,11 @@ msgstr "ذخیرهٔ همهٔ لاگ‌ها به‌صورت .zip، یا کپی �
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "پاک کردن لاگ‌ها..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "خالی کردن همهٔ فایل‌های لاگ، از جمله لاگ خرابی"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2454,33 +2454,33 @@ msgstr "بارگذاری دوباره"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "پاک کردن لاگ‌ها"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "همهٔ فایل‌های لاگ خالی شوند؟"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "با این کار تاریخچهٔ پشت همهٔ زبانه‌ها پاک می‌شود، از جمله لاگ خرابی — یعنی سابقهٔ اینکه این برنامه از کار افتاده است یا نه. این کار قابل بازگشت نیست، و گزارش مشکلی که پس از این ارسال شود هیچ چیزی از پیش از این لحظه نخواهد داشت."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "اول جمع‌آوری..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
+msgstr[0] "{n} فایل پاک شد و {kb} KB آزاد شد."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "هیچ فایل لاگی برای پاک کردن وجود ندارد."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "برخی فایل‌ها پاک نشدند:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

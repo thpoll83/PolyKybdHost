@@ -2451,11 +2451,11 @@ msgstr "Alle logbestanden opslaan als .zip, of naar het klembord kopiëren"
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Logbestanden wissen..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Alle logbestanden leegmaken, inclusief het crashlogbestand"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2468,34 +2468,34 @@ msgstr "Opnieuw laden"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Logbestanden wissen"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Alle logbestanden leegmaken?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Hiermee wordt de geschiedenis van elk tabblad gewist, inclusief het crashlogbestand — de registratie of deze app is gecrasht. Dit kan niet ongedaan worden gemaakt, en een probleemmelding die u daarna indient, bevat niets van vóór dit moment."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Eerst verzamelen..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{n} bestand gewist, {kb} KB vrijgemaakt."
+msgstr[1] "{n} bestanden gewist, {kb} KB vrijgemaakt."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Geen logbestanden om te wissen."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Sommige bestanden konden niet worden gewist:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

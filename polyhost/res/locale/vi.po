@@ -2437,11 +2437,11 @@ msgstr "Lưu mọi nhật ký thành tệp .zip, hoặc sao chép vào bộ nh�
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Xóa nhật ký..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Làm trống mọi tệp nhật ký, kể cả nhật ký sự cố"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2454,33 +2454,33 @@ msgstr "Tải lại"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Xóa nhật ký"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Làm trống mọi tệp nhật ký?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Thao tác này xóa lịch sử của mọi thẻ, kể cả nhật ký sự cố — bản ghi cho biết ứng dụng này đã từng gặp sự cố hay chưa. Không thể hoàn tác, và báo cáo sự cố gửi sau đó sẽ không chứa gì từ trước thời điểm này."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Thu thập trước..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
+msgstr[0] "Đã xóa {n} tệp, giải phóng {kb} KB."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Không có tệp nhật ký nào để xóa."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Không thể làm trống một số tệp:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

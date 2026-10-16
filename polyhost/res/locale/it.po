@@ -2451,11 +2451,11 @@ msgstr "Salva tutti i log come .zip o copiali negli Appunti"
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Cancella log..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Svuota tutti i file di log, compreso il log dei crash"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2468,34 +2468,34 @@ msgstr "Ricarica"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Cancella log"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Svuotare tutti i file di log?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Questa operazione cancella la cronologia di tutte le schede, compreso il log dei crash, che registra se questa app si è arrestata in modo anomalo. L'operazione non può essere annullata e una segnalazione del problema inviata in seguito non conterrà nulla di precedente a questo momento."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Prima raccogli..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{n} file svuotato, {kb} KB liberati."
+msgstr[1] "{n} file svuotati, {kb} KB liberati."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Nessun file di log da cancellare."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Non è stato possibile svuotare alcuni file:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

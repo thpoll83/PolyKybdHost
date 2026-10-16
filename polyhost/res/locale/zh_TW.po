@@ -2437,11 +2437,11 @@ msgstr "將所有記錄檔儲存為 .zip，或複製到剪貼簿"
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "清除記錄檔..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "清空所有記錄檔，包括當機記錄檔"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2454,33 +2454,33 @@ msgstr "重新載入"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "清除記錄檔"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "要清空所有記錄檔嗎？"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "這會清除所有分頁背後的歷史記錄，包括當機記錄檔——也就是記錄此應用程式是否曾當機的檔案。此動作無法復原，之後提交的問題回報將不包含此刻之前的任何內容。"
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "先收集..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
+msgstr[0] "已清空 {n} 個檔案，釋放了 {kb} KB。"
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "沒有可清除的記錄檔。"
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "部分檔案無法清空："
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format

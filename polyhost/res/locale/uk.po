@@ -2465,11 +2465,11 @@ msgstr "Зберегти всі журнали як .zip або скопіюва
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Очистити журнали..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Очистити всі файли журналів, зокрема журнал збоїв"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2482,35 +2482,35 @@ msgstr "Перезавантажити"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Очистити журнали"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Очистити всі файли журналів?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Буде видалено історію всіх вкладок, зокрема журнал збоїв — запис про те, чи траплялися збої цього застосунку. Цю дію не можна скасувати, і звіт про проблему, надісланий пізніше, не міститиме нічого з часу до цього моменту."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Спершу зібрати..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Очищено {n} файл, звільнено {kb} KB."
+msgstr[1] "Очищено {n} файли, звільнено {kb} KB."
+msgstr[2] "Очищено {n} файлів, звільнено {kb} KB."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Немає файлів журналів для очищення."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Не вдалося очистити деякі файли:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format
