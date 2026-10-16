@@ -835,7 +835,7 @@ class PolyCore(Observable):
         if template_files and not self.poly_settings.get(
                 "generic_overlays_fill_shortcuts"):
             # ⚠️ A TEMPLATE covers this app: fill the ESC mark only, and read
-            # no shortcuts (`generic_overlays_fill_shortcuts`, off by default).
+            # no shortcuts (`generic_overlays_fill_shortcuts` off; on by default).
             # The rule in `_generic_signature` lets a mark ride with a template
             # and no shortcuts, so ESC keeps the app's logo; what is skipped is
             # the read, which on Chrome took minutes for a handful of page

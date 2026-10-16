@@ -1063,14 +1063,17 @@ The core reports the focused app to the fetcher on every tick
 read of an app focus has left is cancelled even when the new window is
 template-covered or unnamed.
 
-**An app a template covers gets the ESC mark and no read** (maintainer's call,
-2026-10-15). `generic_overlays_fill_gaps` still fills the template's blank ESC
-with the program mark, and the new `generic_overlays_fill_shortcuts` (default
-OFF) decides whether the shortcuts are read and drawn too. Chrome is
-template-covered: its 31 reads in the log added at most four icons, all on the
-Claude Code tab, while one read took over two minutes. Apps with no template
-are still read. The default reaches existing installs because `settings.yaml`
-now holds only chosen values (`CLAUDE.md` → Tray, settings and the forwarder).
+**An app a template covers: the switch** (maintainer's call). `generic_overlays_fill_gaps`
+fills the template's blank ESC with the program mark, and the new
+`generic_overlays_fill_shortcuts` decides whether the shortcuts are read and
+drawn too. It shipped OFF on 2026-10-15: Chrome is template-covered, its 31 reads
+in the first log added at most four icons, and one read took over two minutes.
+It is ON again since 2026-10-16. Two field logs on c660c70e (1 h 6 min) showed
+every read at 0.03-0.44 s in the helper, the largest 1,122 elements (VS Code),
+no stalled tick, and the reads adding 7 icons on VS Code and 4 on the Claude
+Code tab over their templates. Either default reaches existing installs because
+`settings.yaml` holds only chosen values (`CLAUDE.md` → Tray, settings and the
+forwarder).
 
 ⚠️ The helper's UIA calls (`ElementFromHandle`, the process check, the walk)
 have not run on Windows yet. The pipe protocol, cancel, stop, the per-title

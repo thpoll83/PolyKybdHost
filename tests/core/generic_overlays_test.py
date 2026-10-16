@@ -734,11 +734,11 @@ class TemplateGapFillTest(unittest.TestCase):
         call = entry.device.send_overlays_mru.call_args
         return call.args[0], call.kwargs["synthetic"]
 
-    def test_by_DEFAULT_a_covered_app_gets_the_MARK_and_NO_shortcut_read(self):
-        """`generic_overlays_fill_shortcuts` ships OFF (2026-10-15): the
-        template draws the app's shortcuts, the read cost minutes on Chrome,
-        and ESC still gets the app's logo."""
-        core = make_core(mask=_mask(), shortcuts=_sc())
+    def test_with_fill_shortcuts_OFF_a_covered_app_gets_the_MARK_and_NO_read(self):
+        """`generic_overlays_fill_shortcuts` off: the template draws the app's
+        shortcuts, ESC still gets the app's logo, and nothing is read."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_shortcuts": False})
         core.overlay_handler.covered_by_template.return_value = True
         core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
         _tick(core)
@@ -747,9 +747,9 @@ class TemplateGapFillTest(unittest.TestCase):
         self.assertTrue(filenames[0].endswith("chrome_template.mods.png"))
         self.assertEqual(list(synthetic), ["@prog:si:gimp"], "the mark only")
 
-    def test_with_fill_shortcuts_ON_a_covered_app_is_read_and_drawn(self):
-        core = make_core(mask=_mask(), shortcuts=_sc(),
-                         settings={"generic_overlays_fill_shortcuts": True})
+    def test_by_DEFAULT_a_covered_app_is_read_and_drawn(self):
+        """On by default again since 2026-10-16, after the hardware trial."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
         core.overlay_handler.covered_by_template.return_value = True
         core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
         _tick(core)
@@ -763,9 +763,9 @@ class TemplateGapFillTest(unittest.TestCase):
         return [m for m in caught.output if "Generic overlays for" in m]
 
     def test_the_summary_SAYS_the_read_was_skipped(self):
-        """The default trial reads this line: it must tell "not read" from
-        "read and found nothing"."""
-        core = make_core(mask=_mask(), shortcuts=_sc())
+        """The line must tell "not read" from "read and found nothing"."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_shortcuts": False})
         core.overlay_handler.covered_by_template.return_value = True
         core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
         said = self._summary(core)
@@ -774,8 +774,7 @@ class TemplateGapFillTest(unittest.TestCase):
                       said[0])
 
     def test_the_summary_SAYS_filling_is_on(self):
-        core = make_core(mask=_mask(), shortcuts=_sc(),
-                         settings={"generic_overlays_fill_shortcuts": True})
+        core = make_core(mask=_mask(), shortcuts=_sc())
         core.overlay_handler.covered_by_template.return_value = True
         core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
         said = self._summary(core)
@@ -834,7 +833,7 @@ class GenericOverlayMasterSwitchTest(unittest.TestCase):
         if either default flips."""
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_enabled"], True)
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_gaps"], True)
-        self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_shortcuts"], False)
+        self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_shortcuts"], True)
 
     def test_it_drops_the_NEGATIVE_cache_of_the_mark_fetcher(self):
         """⚠️ `forget_misses`, and the name matters. `forget` does not exist on

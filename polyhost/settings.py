@@ -169,13 +169,13 @@ DEFAULT_SETTINGS = {
         # whatever is already cached.
         "generic_overlays_enabled": True,
         "generic_overlays_fill_gaps": True,
-        # ⚠️ OFF since 2026-10-15 (maintainer's call): on an app a template
-        # covers, the fill draws the ESC mark only and reads no shortcuts. The
-        # template already draws that app's own shortcuts, and reading the
-        # rest cost the most: Chrome is template-covered, a read of one long
-        # tab took over two minutes, and 31 reads in 38 minutes added at most
-        # four icons, all on one tab (docs/generic-icons-plan.md).
-        "generic_overlays_fill_shortcuts": False,
+        # ON again since 2026-10-16 (maintainer's call, after a hardware
+        # trial). It was off for a day because a read of one long Chrome tab
+        # froze the host for over two minutes. With the read in the helper
+        # process, 1 h of field logs showed every read at 0.03-0.44 s and no
+        # stalled tick, and the reads added 7 icons on VS Code and 4 on the
+        # Claude Code tab over their templates (docs/generic-icons-plan.md).
+        "generic_overlays_fill_shortcuts": True,
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
         # Linux only: before the first harvest, switch the session's
