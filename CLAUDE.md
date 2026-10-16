@@ -84,6 +84,16 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
   A violation kills the headless daemon with a native access violation and no log line
   (twice, tell: `0x80010108` dumps in `crash_log.txt`).
   `polyhost/services/shortcut_source/uia.py` is the pattern.
+- ⚠️ **A long accessibility-tree walk through comtypes on a background thread stalled
+  the whole daemon.** One 2 min 17 s UIA walk of a Chrome tab made the window tick
+  take 63.9 s, 38.4 s and 89.1 s, and the tray menu as slow (2026-10-15). Three
+  unrelated threads stalling together points at the interpreter lock; that cause is
+  inferred, not measured. Moving the walk to a helper process
+  (`shortcut_source/out_of_process.py`) removed the stalls in two field bundles
+  (2026-10-16). Ordinary background Python work does not need this. A walk of
+  thousands of native calls (comtypes, pywin32, D-Bus) does. History and log lines:
+  [`docs/generic-icons-plan.md`](docs/generic-icons-plan.md) → *A browser walked again
+  on every tab switch*.
 
 ## Protocol and the connect gate
 
@@ -173,7 +183,10 @@ per-application ESC mark has a rule of **no per-application configuration**:
   module-level `M_()` template, shown through `translate_message()`. A new message there
   that is an inline f-string shows in English and no test notices. ⚠️ A function that calls `_()` must not
   also assign `_` (`ok, _ = f()`): Python makes `_` local and the call raises
-  `UnboundLocalError`.
+  `UnboundLocalError`. ⚠️ `tests/i18n_test.py` passes with EMPTY translations, so a
+  merged PR can ship English strings: the 8 Clear Logs strings of #391 reached 1.17.20
+  untranslated. Before a release, `translate-ui-catalogs`' `list_untranslated.py` must
+  report 0.
 - **Developer mode adds a submenu and rearranges nothing.** It is a persisted setting,
   separate from log verbosity.
 - ⚠️ **`managed_connection_status` disables every top-level action first.** Re-enable a
