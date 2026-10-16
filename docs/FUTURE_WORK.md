@@ -198,7 +198,7 @@ display mapping it already sends.
 or macOS walk has ever been timed.
 
 #393 fixed two Windows faults: a UIA walk on a daemon thread stalled the whole
-host through the interpreter lock, and a read could be filed under the wrong app.
+host (most likely through the interpreter lock), and a read could be filed under the wrong app.
 The three backends in `polyhost/services/shortcut_source/` compare like this:
 
 | | Windows (`uia.py`) | Linux (`atspi.py`) | macOS (`macos.py`) |
@@ -209,12 +209,15 @@ The three backends in `polyhost/services/shortcut_source/` compare like this:
 
 macOS is not at risk: a menu bar is a few hundred items and does not grow with
 page content. Linux has both risks in a smaller form. A 4000-node walk of a
-browser over D-Bus can still hold the lock for seconds, and two apps whose names
+browser over D-Bus may stall the daemon the same way, and two apps whose names
 share a substring can swap answers. What would settle it: a log bundle from a
-Linux run with Firefox or Chromium, read for `Shortcut harvest for` times and for
-tick stalls. If either shows up, the helper is UIA-only today: `worker.py` calls
-`uia.shortcuts_for_app` and `shortcut_source.harvest()` routes only `"uia"` to
-`out_of_process`, so both need a backend name.
+Linux run with Firefox or Chromium, read for `Window-tracking tick took` warnings
+(`poly_core.py`, every platform) in the minutes after an app switch. The Linux walk
+logs no time of its own today: only the Windows helper writes the `Shortcut harvest
+for` lines, so a direct measurement needs a timing line around the
+`atspi.shortcuts_for_app` call first. Moving the Linux walk into the helper needs
+two changes: `worker.py` calls only `uia.shortcuts_for_app`, and
+`shortcut_source.harvest()` routes only `"uia"` to `out_of_process`.
 
 ---
 
