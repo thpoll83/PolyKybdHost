@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-16 06:01+0000\n"
+"POT-Creation-Date: 2026-10-16 06:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -3041,126 +3041,126 @@ msgid "An app with its own overlay is also read for its shortcuts, with icons on
 msgstr "Les raccourcis d'une application qui a sa propre superposition sont aussi lus, avec des icônes sur les touches que la superposition laisse vides. La lecture d'une grande application, comme un navigateur avec une longue page, peut prendre plusieurs minutes."
 
 #: polyhost/gui/settings_dialog.py:140
-msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and nothing generic is drawn."
-msgstr "Lit les raccourcis de l'application active pour dessiner une icône pour chacun. Désactivé : aucune application n'est lue et rien de générique n'est dessiné."
+msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
+msgstr "Lit les raccourcis de l'application active pour dessiner une icône pour chacun. Désactivé : aucune application n'est lue et aucune icône de raccourci n'est dessinée. Pour retirer toutes les icônes génériques, logo sur Échap compris, désactivez « Superpositions activées »."
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:144
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "Télécharge les icônes manquantes. Désactivé : les icônes déjà téléchargées restent utilisables, les nouvelles sont ignorées."
 
-#: polyhost/gui/settings_dialog.py:146
+#: polyhost/gui/settings_dialog.py:147
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Linux uniquement. Active le réglage d'accessibilité du bureau pour que les applications Qt et KDE publient leurs raccourcis. Désactivé : seules les applications qui les publient de toute façon (GTK) sont lues."
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:151
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Transport USB : nombre de messages d'image envoyés avant une courte pause, pour que le clavier continue de réagir à la frappe. Ne le modifiez que si on vous le demande lors du signalement d'un problème."
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:155
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Transport USB : durée de cette pause, en secondes. Ne la modifiez que si on vous le demande lors du signalement d'un problème."
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:158
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "Nombre de fois où l'hôte demande son ID au clavier avant de rouvrir la connexion USB."
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:161
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "L'apparence du menu de la zone de notification et des boîtes de dialogue. Automatique suit le réglage clair ou sombre du bureau."
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:164
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "La langue des menus et des boîtes de dialogue. S'applique au redémarrage de l'application de la zone de notification."
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:166
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "Affiche le sous-menu Développeur dans le menu de la zone de notification et les paramètres de développement dans cette boîte de dialogue."
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:168
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Ajoute un clavier simulé à côté du vrai."
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Utilise un clavier simulé au lieu d'un vrai, pour que l'application fonctionne sans matériel."
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:173
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "La version de protocole indiquée par le clavier simulé. 0 utilise la version la plus récente connue de cet hôte."
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:176
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Suit la fenêtre active même lorsqu'aucun clavier n'est connecté."
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:178
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Windows uniquement, expérimental. Change la langue de saisie par des appels Win32 au lieu de la méthode standard, et revient à celle-ci en cas d'échec."
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:181
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Accepte les rapports de fenêtre d'anciens relais via TCP non chiffré et non authentifié (port 50162) sur toutes les interfaces réseau. Activez-le uniquement pour un ancien relais."
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Exécute la connexion au clavier dans un processus en arrière-plan auquel l'application de la zone de notification se connecte, pour que la connexion reste active lorsque cette application redémarre."
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "Accepte les rapports de fenêtre d'un relais sur un autre ordinateur. Ouvre un port réseau. S'applique après un redémarrage."
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:191
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "Flashe les paquets du pack de polices manquants ou obsolètes lorsque le clavier se connecte."
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:193
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "Un fichier .plyf à flasher à la place du pack de polices fourni avec l'application. Vide : le pack fourni est utilisé."
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:196
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "Associe les superpositions au site web de l'onglet actif du navigateur. Désactivé : les superpositions de navigateur sont associées uniquement d'après le titre de la fenêtre."
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:199
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "Exécute le récepteur auquel l'extension de navigateur envoie ses rapports. Il écoute uniquement sur 127.0.0.1."
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:202
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Le port du récepteur. Il doit correspondre à « Host port » dans l'extension de navigateur."
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:204
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Un secret partagé. S'il est défini, l'extension de navigateur doit envoyer le même jeton."
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:206
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Envoie un rapport d'utilisation anonyme par jour : versions, système d'exploitation et quelques compteurs. Jamais de titres de fenêtre ni de noms d'application."
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:208
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "Destination du rapport d'utilisation. Vide : rien n'est envoyé."
 
-#: polyhost/gui/settings_dialog.py:209
+#: polyhost/gui/settings_dialog.py:210
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "L'ID aléatoire de cette installation, créé avec le premier rapport. Supprimez-le pour être compté comme une nouvelle installation."
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:213
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "Surveille la console du clavier pour détecter des messages d'échec connus et propose de signaler un problème."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:215
 msgid "Watches this app's own log for known failure messages."
 msgstr "Surveille le journal de cette application pour détecter des messages d'échec connus."
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:216
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Ce qui compte comme un problème : les erreurs seulement, ou les erreurs et les avertissements."
 
-#: polyhost/gui/settings_dialog.py:303
+#: polyhost/gui/settings_dialog.py:304
 msgid "PolyKybd Settings"
 msgstr "Paramètres de PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:329
 msgid "Some settings might need a restart to take effect."
 msgstr "Certains paramètres peuvent nécessiter un redémarrage pour prendre effet."
 

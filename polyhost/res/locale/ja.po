@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-16 06:01+0000\n"
+"POT-Creation-Date: 2026-10-16 06:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -3024,126 +3024,126 @@ msgid "An app with its own overlay is also read for its shortcuts, with icons on
 msgstr "専用のオーバーレイがあるアプリからもショートカットを読み取り、オーバーレイが空けているキーにアイコンを表示します。大きなアプリ (長いページを開いたブラウザーなど) の読み取りには数分かかることがあります。"
 
 #: polyhost/gui/settings_dialog.py:140
-msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and nothing generic is drawn."
-msgstr "フォーカスのあるアプリのショートカットを読み取り、それぞれにアイコンを描画します。オフの場合: アプリは読み取られず、汎用の表示も描画されません。"
+msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
+msgstr "フォーカスのあるアプリのショートカットを読み取り、それぞれにアイコンを描画します。オフの場合: アプリは読み取られず、ショートカットのアイコンも描画されません。Esc キーのマークを含むすべての汎用アイコンを消すには、「オーバーレイを有効にする」をオフにしてください。"
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:144
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "不足しているアイコンをダウンロードします。オフの場合: ダウンロード済みのアイコンは引き続き使えますが、新しいアイコンは取得しません。"
 
-#: polyhost/gui/settings_dialog.py:146
+#: polyhost/gui/settings_dialog.py:147
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Linux のみ。デスクトップのアクセシビリティ設定をオンにして、Qt と KDE のアプリがショートカットを公開するようにします。オフの場合: もともと公開しているアプリ (GTK) だけが読み取られます。"
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:151
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 転送: 短い休止を入れるまでに送る画像メッセージの数です。キーボードが入力への反応を保てるようにするためのものです。問題の報告中に依頼された場合にのみ変更してください。"
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:155
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 転送: その休止の長さ (秒) です。問題の報告中に依頼された場合にのみ変更してください。"
 
-#: polyhost/gui/settings_dialog.py:157
+#: polyhost/gui/settings_dialog.py:158
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "USB 接続を開き直すまでに、ホストがキーボードに ID を問い合わせる回数です。"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:161
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "トレイメニューとダイアログの外観です。「自動」はデスクトップのライト / ダーク設定に従います。"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:164
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "メニューとダイアログの言語です。トレイアプリの再起動時に反映されます。"
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:166
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "トレイメニューに「開発者」サブメニューを、このダイアログに開発者向け設定を表示します。"
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:168
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "実際のキーボードとは別に、模擬キーボードを追加します。"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "実際のキーボードの代わりに模擬キーボードを使い、ハードウェアなしでアプリを動かします。"
 
-#: polyhost/gui/settings_dialog.py:172
+#: polyhost/gui/settings_dialog.py:173
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "模擬キーボードが報告するプロトコルバージョンです。0 にすると、このホストが知っている最新のバージョンを使います。"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:176
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "キーボードが接続されていなくても、アクティブなウィンドウを追跡します。"
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:178
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Windows のみ、試験的。標準の方法の代わりに Win32 呼び出しで入力言語を切り替え、失敗した場合は標準の方法に戻ります。"
 
-#: polyhost/gui/settings_dialog.py:180
+#: polyhost/gui/settings_dialog.py:181
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "古いフォワーダーからのウィンドウ通知を、暗号化も認証もない TCP (ポート 50162) で、すべてのネットワークインターフェイス上で受け付けます。古いフォワーダーを使う場合にのみオンにしてください。"
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "キーボードとの接続をバックグラウンドプロセスで実行し、トレイアプリはそこに接続します。これにより、トレイアプリが再起動しても接続が維持されます。"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "別のコンピューター上のフォワーダーからのウィンドウ通知を受け付けます。ネットワークポートを開きます。再起動後に反映されます。"
 
-#: polyhost/gui/settings_dialog.py:190
+#: polyhost/gui/settings_dialog.py:191
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "キーボードの接続時に、不足しているフォントパックバンドルや古いバンドルを書き込みます。"
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:193
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "アプリに同梱されたフォントパックの代わりに書き込む .plyf ファイルです。空の場合は同梱のパックを使います。"
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:196
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "フォーカスのあるブラウザータブの Web サイトにオーバーレイを合わせます。オフの場合: ブラウザーのオーバーレイはウィンドウタイトルだけで照合されます。"
 
-#: polyhost/gui/settings_dialog.py:198
+#: polyhost/gui/settings_dialog.py:199
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "ブラウザー拡張機能の通知先となる受信機能を実行します。127.0.0.1 でのみ待ち受けます。"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:202
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "受信機能のポートです。ブラウザー拡張機能の Host port と一致させる必要があります。"
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:204
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "共有シークレットです。設定した場合、ブラウザー拡張機能は同じトークンを送る必要があります。"
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:206
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "匿名の利用状況レポートを 1 日 1 回送信します: バージョン、オペレーティングシステム、いくつかのカウンターです。ウィンドウタイトルやアプリ名は決して送信しません。"
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:208
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "利用状況レポートの送信先です。空の場合は何も送信しません。"
 
-#: polyhost/gui/settings_dialog.py:209
+#: polyhost/gui/settings_dialog.py:210
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "このインストールのランダムな ID で、最初のレポートの送信時に作成されます。削除すると新しいインストールとして数えられます。"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:213
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "キーボードのコンソールを監視して既知の障害メッセージを検出し、問題の報告を提案します。"
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:215
 msgid "Watches this app's own log for known failure messages."
 msgstr "このアプリ自身のログを監視して、既知の障害メッセージを検出します。"
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:216
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "問題とみなす範囲: エラーのみ、またはエラーと警告。"
 
-#: polyhost/gui/settings_dialog.py:303
+#: polyhost/gui/settings_dialog.py:304
 msgid "PolyKybd Settings"
 msgstr "PolyKybd の設定"
 
-#: polyhost/gui/settings_dialog.py:328
+#: polyhost/gui/settings_dialog.py:329
 msgid "Some settings might need a restart to take effect."
 msgstr "一部の設定は、反映に再起動が必要な場合があります。"
 

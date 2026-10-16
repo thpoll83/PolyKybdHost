@@ -138,7 +138,8 @@ SETTING_DESCRIPTIONS = {
         "with a long page, can take minutes."),
     "shortcut_icons_enabled": N_(
         "Reads the focused app's shortcuts to draw an icon for each. Off: no app is "
-        "read and nothing generic is drawn."),
+        "read and no shortcut icons are drawn. To remove every generic icon, the "
+        "Escape mark included, turn off Overlays Enabled."),
     "shortcut_icon_auto_fetch": N_(
         "Downloads icons that are missing. Off: icons already downloaded keep "
         "working, new ones are skipped."),
