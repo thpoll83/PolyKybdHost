@@ -15,7 +15,7 @@ so this skips in a headless/CI environment and runs on a real desktop.
 import os
 import subprocess
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 try:
     from polyhost.handler.active_window import (
@@ -1132,8 +1132,14 @@ class LoggingTheWindowCostsNoExtraAppleScriptTest(unittest.TestCase):
     """
 
     def test_the_tick_reads_title_and_handle_ONCE_each(self):
+        # ⚠️ `title` is a PropertyMock, not an attribute. Assigning
+        # `win.title = "Notes"` counts no reads, so the handle count was the
+        # only thing asserted and a regression that re-read `win.title` --
+        # which is what this test exists to catch, since each read is an
+        # `osascript` on macOS -- passed (Revix, #397).
         win = MagicMock()
-        win.title = "Notes"
+        title = PropertyMock(return_value="Notes")
+        type(win).title = title
         win.getHandle.return_value = ("Notes", "Notes")
         win.getAppName.return_value = "Notes"
         handler = OverlayHandler({})
@@ -1144,7 +1150,8 @@ class LoggingTheWindowCostsNoExtraAppleScriptTest(unittest.TestCase):
              patch(mod + ".pwc.getActiveWindow", return_value=win):
             for _ in range(6):
                 handler._decide_active_window(250, 1000)
-        self.assertEqual(win.getHandle.call_count, 1)
+        self.assertEqual(win.getHandle.call_count, 1, "handle read more than once")
+        self.assertEqual(title.call_count, 1, "title read more than once")
 
     def test_the_title_is_logged_as_TEXT_not_as_a_bytes_repr(self):
         # `title.encode('utf-8')` rendered an empty title as `b''` and a real
