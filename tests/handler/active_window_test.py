@@ -12,9 +12,11 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import itertools
 import logging
 import os
 import subprocess
+import time
 import unittest
 from unittest.mock import MagicMock, PropertyMock, patch
 
@@ -955,11 +957,19 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
         return win
 
     def _switches_after(self, clock):
-        """Ticks spent before a switch to a second app is reported."""
+        """Ticks spent before a switch to a second app is reported.
+
+        ⚠️ Patches `active_window._monotonic`, the module's own alias, NOT
+        `time.monotonic` through the module object -- that is the same
+        function object the whole process uses, and this suite runs threads,
+        so anything else calling it during a faked tick would get the fake
+        value (Revix, #397). The clock is also unbounded: a finite generator
+        raised StopIteration once the ticks outnumbered it.
+        """
         handler = OverlayHandler({})
         mod = "polyhost.handler.active_window"
         first, second = self._win("Chess"), self._win("Maps")
-        with patch(mod + ".time.monotonic", side_effect=clock), \
+        with patch(mod + "._monotonic", side_effect=clock), \
              patch(mod + ".app_name_for", side_effect=lambda w: w.getAppName()), \
              patch(mod + ".own_front_app", return_value=None), \
              patch(mod + "._IS_MACOS", False):
@@ -978,8 +988,22 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
     def test_a_SLOW_tick_accepts_the_switch_in_two_ticks(self):
         # 2.5 s per tick, the measured macOS cost: one tick is already past the
         # 1000 ms threshold, so the switch lands on the tick after the reset.
-        clock = (n * 2.5 for n in range(1000))
+        clock = itertools.count(0.0, 2.5)          # unbounded
         self.assertEqual(self._switches_after(lambda: next(clock)), 2)
+
+    def test_the_faked_clock_does_NOT_leak_into_the_process(self):
+        """⚠️ The reason the module aliases `time.monotonic`.
+
+        `patch("...active_window.time.monotonic")` reaches the same function
+        object the whole process uses, and this suite runs threads, so a faked
+        tick would hand the fake value to anything else asking the time
+        (Revix, #397). Patching the module's own alias cannot.
+        """
+        mod = "polyhost.handler.active_window"
+        real = time.monotonic
+        with patch(mod + "._monotonic", return_value=1.0):
+            self.assertIs(time.monotonic, real, "the process clock was replaced")
+            self.assertNotEqual(time.monotonic(), 1.0)
 
     def test_the_NOMINAL_cycle_is_still_the_floor(self):
         # A caller that ticks faster than it says it does keeps the old count,
@@ -1308,6 +1332,30 @@ class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
         handler, _ = self._tick({"code": {"overlay": "vscode.png"}})
         self.assertEqual(handler.app_name, "code")
 
+    def test_force_resend_RESENDS_a_windowless_app_template(self):
+        """⚠️ `force_resend()` must forget the windowless app too.
+
+        This branch only runs when `self.win` exists or the app differs from
+        `self.windowless_app`. `force_resend()` cleared `win` and `last_entry`
+        but left `windowless_app`, so after a reconnect -- with the same
+        windowless app still focused -- both halves were false, the branch was
+        skipped, and the template it had matched was never resent. The board
+        had just been cleared, so it stayed blank until focus changed
+        (Greptile P1, #397). Newly reachable because this branch can match a
+        template at all now.
+        """
+        handler, (data, cmd) = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        handler.force_resend()
+        mod = self.MOD
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=("Code", 909)):
+            again, cmd_again = handler._decide_active_window(250, 1000)
+        self.assertEqual(cmd_again, OverlayCommand.OFF_ON,
+                         "the resend never reached the windowless app")
+        self.assertIsNotNone(again)
+
     def test_a_match_with_NOTHING_to_draw_does_not_keep_the_last_app_up(self):
         # Same rule as the window branch: `last_entry` is dropped so returning
         # is a full OFF_ON, never an ENABLE of another app's mapping.
@@ -1542,6 +1590,50 @@ class AWindowlessAppMustNotInheritTheLastURLTest(unittest.TestCase):
                           "the last window's tab outlived its window")
         self.assertEqual(handler.current_entry["overlay"], "photos.png",
                          "Gmail's overlay was drawn for Photos")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
+    """The regression guard, against the REAL mapping rather than a fixture.
+
+    A fixture cannot catch the thing that actually broke: the shipped `code:`
+    entry's shape. Its macOS branch carries three templates and no `title:`,
+    and nothing evaluated it.
+
+    ⚠️ It lives HERE, not in `matcher_test.py`, and that is the point of the
+    move. That file is display-free by design -- its docstring says so -- and
+    building an annotated mapping needs `OverlayHandler`, which imports
+    pywinctl at module load. An unguarded import there made two previously
+    display-free tests raise in `setUpClass` on a headless machine instead of
+    skipping (Greptile P1, #397). This file already carries the guard.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+        with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
+            cls.handler = OverlayHandler(yaml.safe_load(fh))
+
+    def _match(self, app, title=None, title_known=False):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(app, self.handler.mapping)
+        self.assertIsNotNone(key, f"{app} has no mapping key")
+        return find_matching_entry(title, self.handler.mapping[key], None,
+                                   OsType.MACOS, title_known=title_known)
+
+    def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
+        got = self._match("code")
+        self.assertIsNotNone(got, "the reported failure: no template for 'code'")
+        self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
+                        got.get("overlay"))
+
+    def test_KICAD_does_NOT_resolve_without_its_title(self):
+        # ⚠️ The false positive the flag exists to prevent: `kicad:` declares
+        # `title: PCB Editor` to tell the PCB editor from the schematic editor.
+        self.assertIsNone(self._match("kicad"))
+        self.assertIsNotNone(self._match("kicad", title="PCB Editor",
+                                         title_known=True))
 
 
 if __name__ == "__main__":

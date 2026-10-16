@@ -24,6 +24,12 @@ _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
 #: tests patch this name to exercise the macOS early-out off a Mac.
 _IS_MACOS = platform.system() == "Darwin"
 
+#: Aliased so a test can replace THIS module's clock. Patching
+#: `time.monotonic` through the module object replaces it process-wide, and
+#: this suite runs threads -- anything else calling it during a faked tick
+#: would get the fake value (Revix, #397).
+_monotonic = time.monotonic
+
 #: The title/URL flags. An entry carrying any of them needs the window title on
 #: every tick, so the macOS early-out below never skips one.
 _TITLE_FLAGS = (
@@ -563,7 +569,7 @@ class OverlayHandler:
         `tests/handler/active_window_test.py`, driving the loop with no delay
         at all -- would otherwise accumulate ~0 and never accept anything.
         """
-        now = time.monotonic()
+        now = _monotonic()
         previous, self._last_tick_at = self._last_tick_at, now
         if previous is None:
             return update_cycle_time_msec
@@ -1028,6 +1034,12 @@ class OverlayHandler:
         # app stayed in front, so the board stayed blank until the user switched
         # apps (Greptile P1 and CodeRabbit, independently, #397).
         self._macos_resolved = False
+        # ⚠️ And the WINDOWLESS app, for the same reason one level up: that
+        # branch only runs when `win` exists or the app differs from
+        # `windowless_app`, so leaving this set skipped the branch entirely and
+        # the template it had matched was never resent (Greptile P1, #397).
+        self.windowless_app = None
+        self.windowless_pid = None
         self.remote_handler.reset_for_resend()
 
     def close(self):

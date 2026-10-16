@@ -556,40 +556,5 @@ class NoTitleAtAllIsNotAnEmptyTitleTest(unittest.TestCase):
         self.assertIs(find_matching_entry(None, e, title_known=False), e)
 
 
-class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
-    """The regression guard, against the REAL mapping rather than a fixture.
-
-    A fixture cannot catch the thing that actually broke: the shipped `code:`
-    entry's shape. Its macOS branch carries three templates and no `title:`,
-    and nothing evaluated it.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        import yaml
-        from polyhost.handler.active_window import OverlayHandler
-        with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
-            cls.handler = OverlayHandler(yaml.safe_load(fh))
-
-    def _match(self, app, title=None, title_known=False):
-        key = mapping_key(app, self.handler.mapping)
-        self.assertIsNotNone(key, f"{app} has no mapping key")
-        return find_matching_entry(title, self.handler.mapping[key], None,
-                                   OsType.MACOS, title_known=title_known)
-
-    def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
-        got = self._match("code")
-        self.assertIsNotNone(got, "the reported failure: no template for 'code'")
-        self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
-                        got.get("overlay"))
-
-    def test_KICAD_does_NOT_resolve_without_its_title(self):
-        # ⚠️ The false positive the flag exists to prevent: `kicad:` declares
-        # `title: PCB Editor` to tell the PCB editor from the schematic editor.
-        self.assertIsNone(self._match("kicad"))
-        self.assertIsNotNone(self._match("kicad", title="PCB Editor",
-                                         title_known=True))
-
-
 if __name__ == "__main__":
     unittest.main()
