@@ -632,6 +632,21 @@ def environment_text(include_slow: bool = False,
         f"Python           : {platform.python_version()} ({sys.executable})",
         f"OS               : {os_detail()} ({platform.machine()})",
     ]
+    # ⚠️ `PyWinCtl` is UNPINNED in requirements.txt, and its macOS behaviour is
+    # what an "apps do not reach the keyboard" report turns on: how many
+    # `osascript` processes a tick spends, and whether `getActiveWindow()`
+    # answers at all, are both version-specific. Working that out for the
+    # 2026-10-16 bundle meant downloading three releases from PyPI and reading
+    # their sources to match the log, because nothing in the bundle said.
+    # ⚠️ Read from the DISTRIBUTION metadata, never by importing the package:
+    # pywinctl needs a display and can `sys.exit()` without one, and
+    # diagnostics must not be able to break a bug report.
+    try:
+        import importlib.metadata
+        lines.append("Window backend   : PyWinCtl "
+                     + importlib.metadata.version("PyWinCtl"))
+    except Exception:  # noqa: BLE001 — diagnostics must never break the bundle
+        pass
     session = session_detail()
     if session:
         lines.append(f"Desktop session  : {session}")

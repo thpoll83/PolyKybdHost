@@ -117,6 +117,18 @@ class EnvironmentDetailTest(unittest.TestCase):
         self.assertIn("OS ", text)
         self.assertIn("Host protocol", text)
 
+    def test_it_names_the_WINDOW_BACKEND_version(self):
+        """⚠️ `PyWinCtl` is unpinned, and its macOS behaviour decides whether
+        app switches reach the keyboard at all. Reading the 2026-10-16 bundle
+        meant downloading three releases to work out which one had produced
+        the log."""
+        self.assertIn("Window backend   : PyWinCtl ", lb.environment_text())
+
+    def test_the_backend_version_is_read_WITHOUT_importing_pywinctl(self):
+        """It needs a display and can `sys.exit()` without one."""
+        with mock.patch.dict("sys.modules", {"pywinctl": None}):
+            self.assertIn("PolyHost version", lb.environment_text())
+
     def test_slow_probes_are_opt_in(self):
         """The autostart probe shells out on Windows, so a GUI-thread caller
         must be able to leave it out."""

@@ -59,6 +59,19 @@ control-socket method.
   `window_report_server`, `browser_report_server`) before designing a fix.
 - ⚠️ **The network `WindowReportServer` serves one method and holds no `PolyCore`.**
   That separation is the security boundary.
+- ⚠️ **On macOS the window tick costs seconds, not milliseconds, and the accept timer
+  must count REAL time.** pywinctl spends two `osascript` processes per
+  `getActiveWindow()`; a tick measured 2.30 s median against a 250 ms cycle. Accepting
+  a switch takes six ticks, so a timer that added the nominal cycle turned a 1 s
+  debounce into 15.3 s and the keyboard stopped following the active app
+  (2026-10-16 bundle). Never add an attribute read of a macOS window to that path, and
+  never count ticks where you mean time. `_macos_can_skip_tick()` skips the query while
+  the same app is in front, from `focused_app_pid()` (`AXFocusedApplication`, in
+  process). ⚠️ Not the Quartz window list, which answers about a WINDOW and would skip
+  an app activated with every window minimized for ever, and not
+  `NSWorkspace.frontmostApplication`, which reads stale off the main thread. A pid does
+  not move on a retitle, so a mapping entry matching on a title or a URL still pays on
+  every tick. [`docs/architecture.md`](docs/architecture.md).
 
 ## Threading (HID worker)
 

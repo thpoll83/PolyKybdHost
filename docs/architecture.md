@@ -197,6 +197,48 @@ Per-platform implementations:
     the window backend does not. It still returns `DISABLE` and clears
     `current_entry`, because with no window there is no TITLE and a template entry
     cannot be evaluated.
+  - ⚠️ **The macOS query costs two `osascript` processes per tick, and the accept
+    timer used to count the NOMINAL cycle.** PyWinCtl 0.4.1 spends one `osascript`
+    in `getActiveWindow()` and another in `MacOSWindow.__init__`
+    (`getProcName`), and a changed tick added five more
+    (`getHandle()`, `title`, `getPID()` and two that `log_win` spent re-reading
+    the window it was logging). Measured in the field bundle of 2026-10-16:
+    **tick 2.30 s median, of which 1.60 s is the query**, against a 250 ms cycle.
+    Accepting a switch takes six ticks (reset to 0, then five 250 ms steps past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC` 1000), so the 1 s debounce became **15.3 s of
+    uninterrupted focus** — and every app the user left sooner never reached the
+    keyboard, with nothing logged. That bundle has 132 slow-tick warnings across
+    42 minutes with no app-identity line between them, and the board kept the
+    icons of an app left 1 h 51 min earlier. Three fixes:
+    `OverlayHandler._tick_elapsed_msec` counts real time floored at the nominal
+    cycle (the floor is what keeps the tests, which tick with no delay, able to
+    accept anything); `log_win` takes the title and handle it is given instead of
+    re-reading them; and `_macos_can_skip_tick` skips the query altogether while
+    the same application is still in front, from `focused_app_pid()` — one
+    in-process `AXFocusedApplication` read, under the Accessibility grant the
+    shortcut harvest already needs, and `None` without it (the tick then behaves
+    as it did before the detector existed). ⚠️ **The Quartz window list was
+    tried first and rejected**: `CGWindowListCopyWindowInfo`'s topmost layer-0
+    window is cheaper still, but it answers about a WINDOW, so activating an app
+    whose windows are all minimized would never move it and the switch would be
+    skipped *indefinitely* — the symptom being fixed. ⚠️ **Not
+    `NSWorkspace.frontmostApplication` either**, for the reason in the bullet
+    above it. A pid does not move when a window retitles, so the skip is refused
+    for an app whose mapping entry matches on a title or a URL
+    (`Flags.HAS_TITLE`/`HAS_TITLES_*`/`HAS_URL`/`HAS_URLS_CONTAINS`, and
+    `HAS_OS` conservatively — 14 of the 69 shipped entries), and refused until
+    the full path has RESOLVED that pid — a changed pid clears the marker and
+    the window branch sets it only once its accept timer matures, so the
+    debounce ticks keep querying and a switch waiting to be accepted cannot be
+    skipped into limbo. ⚠️ It must NOT cross-check against `focused_pid()`:
+    `window_pid` is `MacOSWindow.getPID()`, one more `osascript` through a
+    shell, which would have spent most of the saving. What it gives up: a
+    retitle on a title-INDEPENDENT app is seen on the next tick that is not
+    skipped, which can delay the shortcut harvest's re-harvest-on-retitle
+    (Kate's menus). A change of APPLICATION is never delayed.
+    ⚠️ `polyhost/forwarder.py`
+    holds the **second copy** of that timer, on the other machine, and had the
+    same inflation — there it also stretched `HEARTBEAT_MSEC` (15 s) to 150 s.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch

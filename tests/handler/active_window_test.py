@@ -20,8 +20,9 @@ from unittest.mock import MagicMock, patch
 try:
     from polyhost.handler.active_window import (
         OverlayHandler, _handle_identifies,
+        focused_app_pid as aw_focused_app_pid,
         frontmost_app as aw_frontmost_app,
-        _FRONTMOST_SCRIPT,
+        _AX_FOCUSED_APPLICATION, _FRONTMOST_SCRIPT,
     )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
@@ -926,3 +927,287 @@ class NoMachineChooserIsNotASessionTest(unittest.TestCase):
         self.assertFalse(handler.is_remote_mapping_entry())
         self.assertEqual(cmd, OverlayCommand.DISABLE)
 
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
+    """⚠️ It used to add the NOMINAL cycle whatever the tick really cost.
+
+    Accepting a switch takes six ticks: the tick that notices the window moved
+    resets the timer to 0, then five 250 ms steps carry it past the 1000 ms
+    threshold. At the stated cycle that is 3 s. On macOS a tick measured
+    **2.30 s median** -- pywinctl spends two `osascript` processes per
+    `getActiveWindow()` -- so the same six ticks were 15.3 s of uninterrupted
+    focus, and every app the user left sooner never reached the keyboard at
+    all. The field bundle of 2026-10-16 has 132 slow-tick warnings across 42
+    minutes with not one app-identity line between them.
+
+    The nominal cycle stays the FLOOR, because the tests here drive the loop
+    with no delay at all and would otherwise accumulate nothing.
+    """
+
+    @staticmethod
+    def _win(app):
+        win = MagicMock()
+        win.title = ""
+        win.getHandle.return_value = ("", "")
+        win.getAppName.return_value = app
+        return win
+
+    def _switches_after(self, clock):
+        """Ticks spent before a switch to a second app is reported."""
+        handler = OverlayHandler({})
+        mod = "polyhost.handler.active_window"
+        first, second = self._win("Chess"), self._win("Maps")
+        with patch(mod + ".time.monotonic", side_effect=clock), \
+             patch(mod + ".app_name_for", side_effect=lambda w: w.getAppName()), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + "._IS_MACOS", False):
+            with patch(mod + ".pwc.getActiveWindow", return_value=first):
+                for _ in range(8):
+                    handler._decide_active_window(250, 1000)
+            with patch(mod + ".pwc.getActiveWindow", return_value=second), \
+                 self.assertLogs(handler.log, level="INFO") as captured:
+                for ticks in range(1, 9):
+                    handler._decide_active_window(250, 1000)
+                    if any("Active App Changed: \"Maps\"" in line
+                           for line in captured.output):
+                        return ticks
+        return None
+
+    def test_a_SLOW_tick_accepts_the_switch_in_two_ticks(self):
+        # 2.5 s per tick, the measured macOS cost: one tick is already past the
+        # 1000 ms threshold, so the switch lands on the tick after the reset.
+        clock = (n * 2.5 for n in range(1000))
+        self.assertEqual(self._switches_after(lambda: next(clock)), 2)
+
+    def test_the_NOMINAL_cycle_is_still_the_floor(self):
+        # A caller that ticks faster than it says it does keeps the old count,
+        # which is what every other test in this file relies on.
+        self.assertEqual(self._switches_after(lambda: 100.0), 6)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheMacOSTickSkipsTheAppleScriptQueryTest(unittest.TestCase):
+    """The Quartz early-out: is the same application still in front?
+
+    `pywinctl.getActiveWindow()` costs two `osascript` processes on macOS and
+    ran on every tick for ever. `own_process.focused_app_pid()`
+    answers the same question for the common case with one in-process Quartz
+    call, so a settled board costs nothing.
+
+    ⚠️ Quartz cannot read a window NAME without Screen Recording permission,
+    so each condition below is load-bearing: the skip must not survive a
+    retitle that the overlay match depends on.
+    """
+
+    MAPPING = {
+        "finder": {"overlay": "finder.png"},
+        "google chrome": {"titles-contains": {"github": {"overlay": "gh.png"}}},
+    }
+
+    def _settled(self, app="finder", pid=4321):
+        """A handler that already resolved `app`, as a settled board has."""
+        handler = OverlayHandler(dict(self.MAPPING))
+        win = MagicMock()
+        win.getPID.return_value = pid
+        handler.set_win(win, "", app.title())
+        handler.app_name = app
+        handler._macos_front = pid
+        handler._macos_resolved = True
+        return handler
+
+    @staticmethod
+    def _gate(handler, identity):
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".focused_app_pid", return_value=identity):
+            return handler._macos_can_skip_tick()
+
+    def test_an_UNCHANGED_front_app_skips_the_query(self):
+        handler = self._settled()
+        self.assertTrue(self._gate(handler, 4321))
+
+    def test_a_CHANGED_front_app_spends_the_query(self):
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, 9999))
+
+    def test_an_entry_matching_on_TITLES_never_skips(self):
+        # Chrome's overlay is keyed on `titles-contains`, and a tab switch
+        # retitles the window without moving the topmost window at all. 14 of
+        # the 69 shipped entries are like this.
+        handler = self._settled(app="google chrome")
+        self.assertFalse(self._gate(handler, 4321))
+
+    def test_an_UNRESOLVED_identity_spends_the_query(self):
+        # ⚠️ The starvation case. A changed identity clears the marker, and the
+        # window branch sets it only once its accept timer matures -- so the
+        # debounce ticks must keep querying. Without the marker a switch could
+        # be skipped into limbo: the identity is already the new app's while
+        # the handler still believes the old one is focused.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, 9999))   # clears it
+        self.assertFalse(self._gate(handler, 9999))   # still owed
+
+    def test_it_never_asks_pywinctl_for_the_PID(self):
+        # `window_pid` is `MacOSWindow.getPID()`, one more `osascript` through a
+        # shell. A cross-check there would have cost most of the saving.
+        handler = self._settled()
+        handler.win.getPID.reset_mock()
+        self.assertTrue(self._gate(handler, 4321))
+        handler.win.getPID.assert_not_called()
+
+    def test_an_UNGRANTED_accessibility_read_spends_the_query(self):
+        # None is never "unchanged", so a machine with no grant behaves
+        # exactly as it did before the detector existed.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, None))
+        self.assertFalse(self._gate(handler, None))
+
+    def test_NONE_stays_unskippable_even_after_a_resolve(self):
+        # ⚠️ The `front is None` guard, and the one mutation that survived
+        # without this test. Comparing None to a stored None reads "unchanged",
+        # so once the full path had marked anything resolved, a machine with no
+        # Accessibility grant would skip EVERY tick from then on and the
+        # keyboard would never follow the active app again.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, None))   # stores None
+        handler._macos_resolved = True                # the full path resolved
+        self.assertFalse(self._gate(handler, None))
+
+    def test_the_FIRST_tick_of_a_session_spends_the_query(self):
+        # No identity and no marker yet, so there is no belief to confirm.
+        handler = OverlayHandler(dict(self.MAPPING))
+        self.assertFalse(self._gate(handler, 4321))
+
+    def test_a_resolved_tick_ARMS_the_skip_for_the_next_one(self):
+        # The window branch sets the marker where it commits to a window, so a
+        # real tick followed by an unchanged identity costs nothing.
+        handler = OverlayHandler(dict(self.MAPPING))
+        win = MagicMock()
+        win.title = ""
+        win.getHandle.return_value = ("", "")
+        win.getAppName.return_value = "Finder"
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".app_name_for", return_value="Finder"), \
+             patch(mod + ".focused_app_pid", return_value=4321), \
+             patch(mod + ".pwc.getActiveWindow", return_value=win) as query:
+            for _ in range(8):
+                handler._decide_active_window(250, 1000)
+        # Six ticks to accept the window, then the rest skip.
+        self.assertEqual(query.call_count, 6)
+
+    def test_a_skipped_tick_does_NOT_call_getActiveWindow(self):
+        handler = self._settled()
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + ".focused_app_pid", return_value=4321), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".pwc.getActiveWindow") as query:
+            data, cmd = handler._decide_active_window(250, 1000)
+        query.assert_not_called()
+        self.assertIsNone(data)
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_OTHER_platforms_never_consult_it(self):
+        handler = self._settled()
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", False), \
+             patch(mod + ".focused_app_pid") as quartz, \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".pwc.getActiveWindow", return_value=None):
+            handler._decide_active_window(250, 1000)
+        quartz.assert_not_called()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class LoggingTheWindowCostsNoExtraAppleScriptTest(unittest.TestCase):
+    """⚠️ `log_win` used to RE-READ the window it was logging.
+
+    It called `self.win.title` and `self.win.getHandle()` again, and on macOS
+    each is an `osascript` subprocess -- `getHandle()` reads `title` inside
+    itself, so the log line alone was three AppleScript round trips of the
+    seven a changed tick spent. The caller already holds both values.
+    """
+
+    def test_the_tick_reads_title_and_handle_ONCE_each(self):
+        win = MagicMock()
+        win.title = "Notes"
+        win.getHandle.return_value = ("Notes", "Notes")
+        win.getAppName.return_value = "Notes"
+        handler = OverlayHandler({})
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", False), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".app_name_for", return_value="Notes"), \
+             patch(mod + ".pwc.getActiveWindow", return_value=win):
+            for _ in range(6):
+                handler._decide_active_window(250, 1000)
+        self.assertEqual(win.getHandle.call_count, 1)
+
+    def test_the_title_is_logged_as_TEXT_not_as_a_bytes_repr(self):
+        # `title.encode('utf-8')` rendered an empty title as `b''` and a real
+        # one as `b'NoMachine Software Update'`, so a bundle reader had to work
+        # out that the quoting was the log's own.
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("nxrunner", "NoMachine Software Update", ("", ""))
+        self.assertIn('Title: "NoMachine Software Update"', captured.output[0])
+        self.assertNotIn("b'", captured.output[0])
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheFocusDetectorTest(unittest.TestCase):
+    """`focused_app_pid()` — the one call a skipped macOS tick makes.
+
+    ⚠️ Two cheaper or more obvious sources were rejected, and the reasons are
+    the point of this class: the Quartz window list answers about a WINDOW, so
+    activating an app whose windows are all minimized would never move it and
+    the switch would be skipped indefinitely; and
+    `NSWorkspace.frontmostApplication` reads stale off the main thread, which
+    this project has measured wrong twice.
+    """
+
+    def _read(self, err=0, app=object(), pid_err=0, pid=4321, macos=True):
+        mod = "polyhost.handler.active_window"
+        api = (MagicMock(return_value="systemwide"),
+               MagicMock(return_value=(err, app)),
+               MagicMock(return_value=(pid_err, pid)))
+        with patch(mod + "._IS_MACOS", macos), \
+             patch(mod + "._ax_system_wide_api", return_value=api) as factory:
+            return aw_focused_app_pid(), api, factory
+
+    def test_it_answers_the_focused_application_pid(self):
+        found, api, _ = self._read()
+        self.assertEqual(found, 4321)
+        api[1].assert_called_once_with("systemwide", _AX_FOCUSED_APPLICATION, None)
+
+    def test_it_asks_for_the_FOCUSED_APPLICATION_not_a_window(self):
+        # A window attribute would miss an app activated with every window
+        # minimized, and the skip would then never end.
+        self.assertEqual(_AX_FOCUSED_APPLICATION, "AXFocusedApplication")
+
+    def test_an_AX_ERROR_answers_NOTHING(self):
+        # -25211 is kAXErrorAPIDisabled: no Accessibility grant.
+        self.assertIsNone(self._read(err=-25211, app=None)[0])
+
+    def test_a_FAILED_pid_read_answers_NOTHING(self):
+        self.assertIsNone(self._read(pid_err=-25200)[0])
+
+    def test_pid_ZERO_answers_NOTHING(self):
+        # 0 is never a real application pid, and reads as falsy downstream.
+        self.assertIsNone(self._read(pid=0)[0])
+
+    def test_OTHER_platforms_never_import_pyobjc(self):
+        found, _, factory = self._read(macos=False)
+        self.assertIsNone(found)
+        factory.assert_not_called()
+
+    def test_a_RAISING_read_answers_NOTHING(self):
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api",
+                   side_effect=ImportError("no pyobjc")):
+            self.assertIsNone(aw_focused_app_pid())
