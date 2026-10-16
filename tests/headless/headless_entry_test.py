@@ -462,9 +462,6 @@ class TestHeadlessImportsNoQt(unittest.TestCase):
         self.assertIn("NOQT_OK", proc.stdout)
 
 
-if __name__ == "__main__":
-    import unittest.mock  # noqa
-    unittest.main()
 
 
 class TestRelaunchDropsTheClaim(unittest.TestCase):
@@ -533,3 +530,7 @@ class TestRelaunchDropsTheClaim(unittest.TestCase):
         self.addCleanup(host.stop)
         host._restart_if_requested()
         claim.release.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()

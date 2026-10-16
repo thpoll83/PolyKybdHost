@@ -362,8 +362,6 @@ class StatusDisplayTest(unittest.TestCase):
                                      % (side, name))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ExportIsCurrentTest(unittest.TestCase):
@@ -392,3 +390,7 @@ class ExportIsCurrentTest(unittest.TestCase):
         self.assertEqual(0, res.returncode,
                          "%s\n%s\nRe-run: python scripts/export_board_outline.py"
                          % (res.stdout, res.stderr))
+
+
+if __name__ == "__main__":
+    unittest.main()

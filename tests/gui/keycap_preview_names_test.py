@@ -173,8 +173,6 @@ class ResolveNameTest(unittest.TestCase):
         self.assertEqual(p._resolve_name(0x47, "KC_SCRL_BRMD"), "KC_SCROLL_LOCK")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class SourceInfoTest(unittest.TestCase):
@@ -522,3 +520,7 @@ class ReportedKeycapsRenderTest(unittest.TestCase):
         right = sum(1 for y in range(img.height()) for x in range(40, img.width())
                     if img.pixel(x, y) & 0xFFFFFF != 0x080A0E)
         self.assertGreater(right, 40, f"no badge beside the text ({right} px)")
+
+
+if __name__ == "__main__":
+    unittest.main()

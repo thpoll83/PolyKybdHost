@@ -892,8 +892,6 @@ class PolyKybdMarkTest(unittest.TestCase):
         self.assertEqual(tuple("".join(row) for row in grid), ai.POLYKYBD_KEYS)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ShippedMarkTest(unittest.TestCase):
@@ -1308,3 +1306,7 @@ class PolarityOutranksScoreTest(unittest.TestCase):
                                             allow_network=False)
             self.assertEqual(name, "si:inkscape")
             self.assertIsNotNone(mask)
+
+
+if __name__ == "__main__":
+    unittest.main()
