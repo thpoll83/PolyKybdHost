@@ -192,6 +192,32 @@ display mapping it already sends.
 
 ---
 
+## Move the Linux AT-SPI walk out of the daemon process too
+
+**Status:** not done. Compared by reading the code on 2026-10-16 (#393); no Linux
+or macOS walk has ever been timed.
+
+#393 fixed two Windows faults: a UIA walk on a daemon thread stalled the whole
+host through the interpreter lock, and a read could be filed under the wrong app.
+The three backends in `polyhost/services/shortcut_source/` compare like this:
+
+| | Windows (`uia.py`) | Linux (`atspi.py`) | macOS (`macos.py`) |
+|---|---|---|---|
+| What it reads | the whole window, web content included, no cap | the app's whole tree, web content included, up to 4000 nodes, depth 24 | the menu bar only, up to 3000 items |
+| Where it runs | helper process | daemon thread | daemon thread |
+| Which app | window handle, then a process-id check | first accessible app whose name contains the requested name; `pid` is unused | process id, then a name check |
+
+macOS is not at risk: a menu bar is a few hundred items and does not grow with
+page content. Linux has both risks in a smaller form. A 4000-node walk of a
+browser over D-Bus can still hold the lock for seconds, and two apps whose names
+share a substring can swap answers. What would settle it: a log bundle from a
+Linux run with Firefox or Chromium, read for `Shortcut harvest for` times and for
+tick stalls. If either shows up, the helper is UIA-only today: `worker.py` calls
+`uia.shortcuts_for_app` and `shortcut_source.harvest()` routes only `"uia"` to
+`out_of_process`, so both need a backend name.
+
+---
+
 ## Why Kate reported 97 shortcuts on a welcome page
 
 **Status:** not investigated. Found on hardware 2026-10-09 (#340).
