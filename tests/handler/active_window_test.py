@@ -842,10 +842,6 @@ class PolyHostsOwnWindowTest(unittest.TestCase):
         self.assertEqual(handler.focused_app(), ("polyhost", None))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
     """⚠️ A mapped window with no overlay must not leave the last app's keycaps up.
@@ -1362,10 +1358,6 @@ class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
         self.assertIsNone(handler.current_entry)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class TheSkipMustNotSWALLOWAForcedRefreshTest(unittest.TestCase):
     """⚠️ Every reset that exists to force a re-match must disarm the skip.
@@ -1489,10 +1481,6 @@ class AWindowTitleCannotSPLITALogRecordTest(unittest.TestCase):
         with self.assertLogs(handler.log, level="INFO") as captured:
             handler.log_win("app", "Dokument – Übersicht 日本語", 1)
         self.assertIn("Dokument – Übersicht 日本語", captured.output[0])
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
