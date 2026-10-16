@@ -21,6 +21,7 @@ Every set is from the vendor's **own** documentation:
 | Notion | <https://www.notion.com/help/keyboard-shortcuts> |
 | Jira Cloud | the in-app shortcut dialog (`?`), transcribed 2026-10-13 |
 | Bitbucket Cloud | the in-app shortcut dialog (`?`), transcribed 2026-10-13: "Within A Pull Request", "Diff View" and "Global" |
+| Outlook on the web | Microsoft's "Keyboard shortcuts for Outlook", tab "Outlook on the web", <https://support.microsoft.com/en-us/office/keyboard-shortcuts-for-outlook-3cdeb221-7ae5-4c1d-8c1d-9e63216c1efd>, transcribed 2026-10-16 |
 
 Jira and Bitbucket also live in this folder. Their earlier hand-drawn `jira_*`
 and `bb_*` art was replaced with Fluent in 2026-10; only the two ESC marks
@@ -55,6 +56,30 @@ row"), the arrow-key table edits, and Alt+F9 / Alt+F10 / Shift+F10 (toolbar
 focus). Undo and redo are not in the page dialog, so the page set no longer
 draws them; the whiteboard set does (`Ctrl+Z`, `Ctrl+Shift+Z`). Strikethrough
 (`Ctrl+Shift+S`) is not in the dialog either and was dropped.
+
+### Outlook on the web
+
+`web_outlook.yaml` had 8 keys of reclaimed hand-drawn art (`owa_*`). In 2026-10
+it moved to Fluent and to 45 keys, all from the "Outlook on the web" tab of
+Microsoft's page (the default shortcut set). Only the ESC mark (`owa_mark.png`)
+is still the reclaimed drawing.
+
+- **Ctrl+U** is "mark unread" in the message list and "underline" in the
+  editor. Bare `U` already shows Mark unread, so Ctrl+U shows Underline.
+- **Ctrl+Shift+3** is "Go to Copilot" on the current page and is drawn with
+  Fluent `Sparkle` (Fluent has no Copilot glyph).
+- **Shift+N / Shift+E / Shift+L** are People-module keys (new contact, edit
+  contact, new contact list). The page lists them only under People.
+- Left out: the arrow, Home/End and PageUp/PageDown navigation, Tab/F6 focus
+  moves, Alt+. / Alt+H / Alt+V ribbon focus, Shift+F5 (browser refresh), and
+  the calendar's Alt+Up/Down and Alt+PageUp/PageDown, whose page rows name the
+  opposite direction from the arrow on the key.
+- **macOS**: the page gives Windows chords only. Single keys and the standard
+  editor chords (Cmd+S/K/B/I/U/X/C/V/Z/A) are drawn. Ctrl+R and Ctrl+Enter keep
+  their earlier `CMDCTRL` binding. Every other Ctrl or Alt chord is
+  `except: [macos]`, because there is no confirmed Mac chord and the Cmd form
+  collides with the browser (⌘Q quits, ⌘⇧R reloads, ⌘Y opens history).
+  `Insert` (Flag) is left off too: Mac keyboards have no Insert key.
 
 ### Deliberately excluded: the `g`-then-`x` chords
 
