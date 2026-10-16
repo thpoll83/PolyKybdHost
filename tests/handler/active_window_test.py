@@ -585,9 +585,12 @@ class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
     never needed the window: it needs the app's NAME and PID, which
     `NSWorkspace` knows without one.
 
-    What is genuinely lost is the TITLE, so a template entry that matches on one
-    cannot be evaluated -- hence the DISABLE these tests also pin. The generic
-    path draws; the template path correctly stands down.
+    What is genuinely lost is the TITLE, so an entry that MATCHES on one cannot
+    be evaluated and must fail -- but an entry that declares none is fine, and
+    those are evaluated here (`title_known=False`; see
+    `TheWindowlessBranchStillMatchesATemplateTest`). The DISABLE these tests
+    pin is the empty-mapping case: nothing matched, so the generic path draws
+    and the template path stands down.
     """
 
     MOD = "polyhost.handler.active_window"
@@ -1218,3 +1221,107 @@ class TheFocusDetectorTest(unittest.TestCase):
              patch(mod + "._ax_system_wide_api",
                    side_effect=ImportError("no pyobjc")):
             self.assertIsNone(aw_focused_app_pid())
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
+    """An app pywinctl cannot see still gets its hand-made artwork.
+
+    ⚠️ **The branch used to skip the template path wholesale**, on the premise
+    that no window means no title means no match. True only of the entries that
+    MATCH on a title. VS Code's own `os: macos:` branch carries three templates
+    and deliberately no `title:` -- a macOS window title does not name the app
+    -- and it was never once evaluated: the keycaps stayed blank while the log
+    said "no template covers it" (field, 2026-10-16).
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _tick(self, mapping, app=("Code", 909), times=1):
+        # ⚠️ ONE tick by default. This branch has no debounce of its own -- it
+        # acts on the first tick that reaches it -- so a second tick finds
+        # nothing changed and answers NONE, which would mask the decision.
+        handler = OverlayHandler(mapping)
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=app):
+            for _ in range(times):
+                out = handler._decide_active_window(10, 5)
+        return handler, out
+
+    def test_an_APP_NAME_only_entry_is_drawn(self):
+        handler, (data, cmd) = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        self.assertIsNotNone(data)
+        self.assertEqual(handler.current_entry["overlay"], "vscode.png")
+
+    def test_a_TITLE_constrained_entry_is_NOT_drawn(self):
+        # The false positive the flag exists to prevent: with no title there is
+        # nothing to test the constraint against, so it fails.
+        handler, (data, cmd) = self._tick(
+            {"code": {"overlay": "vscode.png", "title": ".* Visual Studio Code"}})
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(data)
+        self.assertIsNone(handler.current_entry)
+
+    def test_an_app_with_NO_entry_still_disables_for_the_generic_path(self):
+        handler, (data, cmd) = self._tick({"other": {"overlay": "x.png"}})
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertEqual(handler.focused_app()[0], "code")
+
+    def test_the_matched_app_name_is_the_one_the_generic_path_asks_about(self):
+        # `app_name` is why that field exists: "no template covers this app"
+        # and "draw a generic mark for it" must mean the same application.
+        handler, _ = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(handler.app_name, "code")
+
+    def test_a_match_with_NOTHING_to_draw_does_not_keep_the_last_app_up(self):
+        # Same rule as the window branch: `last_entry` is dropped so returning
+        # is a full OFF_ON, never an ENABLE of another app's mapping.
+        handler, (data, cmd) = self._tick({"code": {"remote": "1.2.3.4"}})
+        self.assertIsNone(data)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(handler.last_entry)
+
+    def _real_mapping_tick(self, os_type):
+        """The reported case, end to end, on the SHIPPED mapping.
+
+        ⚠️ A matcher-level probe is not enough here: the handler supplies the
+        OS itself (`_active_os`), and that is what decides which branch of
+        `code:` is judged. The first version of this fix looked correct at the
+        matcher and still answered DISABLE through the handler, because the
+        test machine resolved to Linux.
+        """
+        import yaml
+        import polyhost.handler.active_window as module
+        with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
+            handler = OverlayHandler(yaml.safe_load(fh))
+        with patch.object(module.pwc, "getActiveWindow", return_value=None), \
+             patch.object(module, "own_front_app", return_value=None), \
+             patch.object(module, "frontmost_app", return_value=("Code", 909)), \
+             patch.object(module.OverlayHandler, "_active_os", lambda s: os_type):
+            data, cmd = handler._decide_active_window(250, 1000)
+        return handler, data, cmd
+
+    def test_VS_CODE_gets_its_mac_templates_with_no_window(self):
+        from polyhost.device.command_ids import OsType
+        handler, data, cmd = self._real_mapping_tick(OsType.MACOS)
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        self.assertIsNotNone(data, "the reported failure: nothing drawn for 'code'")
+        self.assertTrue(
+            any("vscode_mac_template" in f for f in handler.current_entry["overlay"]),
+            handler.current_entry.get("overlay"))
+
+    def test_VS_CODE_on_LINUX_still_needs_its_title(self):
+        # The same entry's `linux:` branch DOES declare
+        # `title: .* Visual Studio Code`, so with no window it must not fire --
+        # the per-OS half of the same rule.
+        from polyhost.device.command_ids import OsType
+        handler, data, cmd = self._real_mapping_tick(OsType.LINUX)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(data)
+        self.assertIsNone(handler.current_entry)
+
+
+if __name__ == "__main__":
+    unittest.main()

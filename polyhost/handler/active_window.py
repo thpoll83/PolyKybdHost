@@ -387,14 +387,19 @@ class OverlayHandler:
         except Exception:            # never let OS detection break window matching
             return None
 
-    def try_to_match_window(self, name, entry):
+    def try_to_match_window(self, name, entry, title_known=True):
         # The recursion lives in common.find_matching_entry (shared with the
         # remote path); here we add the ENABLE-vs-OFF_ON decision and the
         # current/last-entry bookkeeping. A re-enter of the same matched entry
         # is ENABLE (overlays already mapped); a different one is a full OFF_ON.
+        #
+        # `title_known=False` is the windowless path: an entry declaring a
+        # `title` regex then fails rather than having it skipped. See
+        # `common.find_matching_entry`.
         try:
             matched = find_matching_entry(self.title, entry, self.current_url,
-                                          self._active_os())
+                                          self._active_os(),
+                                          title_known=title_known)
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
@@ -711,11 +716,16 @@ class OverlayHandler:
             # -- and the overlay path never needed the window itself: it needs
             # the app's name and pid, which `frontmost_app()` knows.
             #
-            # What is lost without a window is the TITLE, so a template entry
-            # that matches on one cannot be evaluated. That is why this still
-            # returns DISABLE and leaves `current_entry` cleared: the generic
-            # path draws (`focused_app`/`focused_pid` answer from here), the
-            # template path correctly does not.
+            # ⚠️ What is lost without a window is the TITLE -- and that rules
+            # out only the entries that MATCH on one. This branch used to skip
+            # the template path wholesale, which cost every app pywinctl cannot
+            # see its hand-made artwork: VS Code's own `os: macos:` branch
+            # carries three templates and deliberately NO `title:`, because a
+            # macOS window title does not name the app, and it was never once
+            # evaluated (field, 2026-10-16 -- the keycaps stayed blank while the
+            # log said "no template covers it"). The match below runs with
+            # `title_known=False`, so a title-constrained entry fails and an
+            # app-name-only entry fires.
             name, pid = own if own is not None else frontmost_app()
             app = own_app_name(name.lower(), pid) if name else None
             # Resolved either way: this branch acts on the first tick that
@@ -748,6 +758,29 @@ class OverlayHandler:
                 # drops a DISABLE while the device already has overlays off, so
                 # this costs a bridge-sync only when something really is drawn.
                 self.current_entry = None
+                # The app name is all this path has, and for an entry that
+                # declares no title it is all the matcher needs. `self.app_name`
+                # is set so the generic path asks about the same application the
+                # mapping was tested against -- the reason that field exists.
+                self.app_name = app
+                key = mapping_key(app, self.mapping) if app else None
+                if key is not None:
+                    found, cmd = self.try_to_match_window(
+                        app, self.mapping[key], title_known=False)
+                    if found:
+                        data = self.get_overlay_data()
+                        if data is not None:
+                            self.log.info(
+                                "Changing to %s (no window, matched on the app "
+                                "name alone)", app)
+                            return data, cmd
+                        # ⚠️ A match with nothing to draw must not leave the
+                        # last app's keycaps up -- the same rule as the window
+                        # branch, and `last_entry` is dropped for the same
+                        # reason: returning here must be a full OFF_ON, never an
+                        # ENABLE of a mapping another app left behind.
+                        self.last_entry = None
+                        self.current_entry = None
                 return None, OverlayCommand.DISABLE
 
         # self.log.info("Nothing at all")

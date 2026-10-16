@@ -186,6 +186,29 @@ Per-platform implementations:
     measurement was never written down, which is the whole reason it happened
     twice — the property reads correctly often enough that one good log line
     looks like evidence.
+  - ⚠️ **"The title is EMPTY" and "there is NO title" need opposite answers.**
+    `find_matching_entry` skips a declared `title:` regex when the title is
+    falsy, on purpose: macOS without screen-recording permission and some
+    Wayland setups report no titles at all, and gating on one would lose every
+    entry there (`handler/win_shell.py`). With no WINDOW the same leniency is a
+    false positive — `kicad:` declares `title: PCB Editor` to tell the PCB
+    editor from the schematic editor — so the windowless path passes
+    `title_known=False`, which makes a declared constraint FAIL rather than be
+    skipped. The flag propagates through all five recursive calls, so an `os:`
+    branch is judged by its own constraints. The word sub-maps
+    (`titles-startswith` and friends) need no flag: they already match nothing
+    without a title and fall through to the parent's own overlay, which is
+    correct for a refinement rather than a constraint. ⚠️ **The windowless
+    branch used to skip the template path wholesale**, on the premise that no
+    window means no match — true only of title-matching entries. VS Code's own
+    `os: macos:` branch carries three templates and deliberately no `title:`,
+    because a macOS window title does not name the app, and it was never once
+    evaluated: the keycaps stayed blank while the log read *"no template covers
+    it"* (field, 2026-10-16). Verified against the shipped mapping rather than a
+    fixture, in `tests/handler/matcher_test.py` →
+    `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
+    `claude`, `zed` and `cursor` all resolve their macOS templates with no
+    window, and `kicad` correctly does not.
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
