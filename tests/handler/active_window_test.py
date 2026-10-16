@@ -1325,3 +1325,132 @@ class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheSkipMustNotSWALLOWAForcedRefreshTest(unittest.TestCase):
+    """⚠️ Every reset that exists to force a re-match must disarm the skip.
+
+    The skip answers "the same app is in front, so nothing changed" -- true of
+    the OS, and irrelevant to a caller that has just thrown away what the
+    handler knew. `force_resend()` runs after a device reconnect, when the
+    keyboard's overlays have been cleared; `invalidate_window_cache()` runs
+    when a browser SPA navigates without retitling. Both ask for a re-match on
+    the next tick, and the skip would have returned before either reached the
+    window query -- leaving a cleared keyboard blank until the user switched
+    apps (Greptile P1 and CodeRabbit, independently, #397).
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _settled_on_finder(self):
+        handler = OverlayHandler({})
+        win = MagicMock()
+        handler.set_win(win, "", "Finder")
+        handler.app_name = "finder"
+        handler._macos_front = 4321
+        handler._macos_resolved = True
+        return handler
+
+    def _ticks_the_query(self, handler):
+        """Did the next tick reach `pwc.getActiveWindow()`?"""
+        with patch(self.MOD + "._IS_MACOS", True), \
+             patch(self.MOD + ".focused_app_pid", return_value=4321), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".pwc.getActiveWindow", return_value=None) as query:
+            handler._decide_active_window(250, 1000)
+        return query.called
+
+    def test_the_skip_is_armed_to_begin_with(self):
+        # Guards the premise of the two tests below.
+        self.assertFalse(self._ticks_the_query(self._settled_on_finder()))
+
+    def test_force_resend_disarms_it(self):
+        handler = self._settled_on_finder()
+        handler.force_resend()
+        self.assertTrue(self._ticks_the_query(handler),
+                        "the OFF_ON force_resend asked for never ran")
+
+    def test_invalidate_window_cache_disarms_it(self):
+        handler = self._settled_on_finder()
+        handler.invalidate_window_cache()
+        self.assertTrue(self._ticks_the_query(handler),
+                        "the new URL was never re-matched")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppNeverArmsTheSkipTest(unittest.TestCase):
+    """⚠️ A pid does not change when an app GAINS a window.
+
+    The windowless branch used to arm the skip, which made the state
+    permanent: the user opens or restores a window in the same app, the pid is
+    unchanged, so every later tick returned before the query and the window was
+    never seen -- and with it the app's title, its template and its harvest
+    (Greptile P1, #397). The branch is reached precisely when there is
+    something still to find, so it is the one place the skip must not arm.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def test_a_window_APPEARING_is_noticed(self):
+        handler = OverlayHandler({})
+        win = MagicMock()
+        win.title = "main.py"
+        win.getHandle.return_value = ("Code", "main.py")
+        win.getAppName.return_value = "Code"
+        with patch(self.MOD + "._IS_MACOS", True), \
+             patch(self.MOD + ".focused_app_pid", return_value=909), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=("Code", 909)), \
+             patch(self.MOD + ".app_name_for", return_value="Code"):
+            # No window: the app is named from the OS.
+            with patch(self.MOD + ".pwc.getActiveWindow", return_value=None):
+                handler._decide_active_window(250, 1000)
+            self.assertEqual(handler.focused_app()[0], "code")
+            # Same app, same pid -- and now it has a window.
+            with patch(self.MOD + ".pwc.getActiveWindow", return_value=win) as query:
+                for _ in range(8):
+                    handler._decide_active_window(250, 1000)
+        self.assertTrue(query.called, "the window was never looked for again")
+        self.assertEqual(handler.title, "main.py")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowTitleCannotSPLITALogRecordTest(unittest.TestCase):
+    """⚠️ A window title is attacker-influenceable: a web page picks it.
+
+    Logging it as text rather than as a bytes repr -- which is the readability
+    fix this PR made -- also stopped escaping control characters, so a title
+    carrying a newline could forge an extra log line and split one app-change
+    record in a support bundle (Greptile P2, #397). Ordinary Unicode must stay
+    readable; only the control characters are escaped.
+    """
+
+    def test_a_NEWLINE_in_a_title_does_not_start_a_new_line(self):
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("evil", "real title\nINFO    forged line", ("", ""))
+        self.assertEqual(len(captured.output), 1)
+        self.assertNotIn("\n", captured.output[0])
+        self.assertIn("\\n", captured.output[0])
+
+    def test_a_CARRIAGE_RETURN_and_a_TAB_are_escaped_too(self):
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "a\rb\tc", 1)
+        self.assertIn("a\\rb\\tc", captured.output[0])
+
+    def test_ORDINARY_unicode_stays_readable(self):
+        # The reason this is not `.encode('utf-8')`: that mangled every
+        # non-ASCII title into \xNN escapes.
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "Dokument – Übersicht 日本語", 1)
+        self.assertIn("Dokument – Übersicht 日本語", captured.output[0])
+
+
+if __name__ == "__main__":
+    unittest.main()

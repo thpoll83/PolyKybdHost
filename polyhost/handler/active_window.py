@@ -197,6 +197,26 @@ def focused_app_pid():
         return None
 
 
+def _log_safe(text):
+    r"""`text` with its CONTROL characters escaped, ordinary Unicode intact.
+
+    ⚠️ A window title is attacker-influenceable -- a web page chooses its own
+    -- and it is logged verbatim into a support bundle. A newline in one would
+    forge an extra log line and split the app-change record (Greptile, #397).
+
+    ⚠️ NOT `text.encode("utf-8")`, which escaped newlines only as a side
+    effect of being a bytes repr and mangled every non-ASCII title into
+    `\xNN` along the way: a German or Japanese title became unreadable, and a
+    bundle reader could not tell the quoting from the window's own.
+    `str.isprintable()` is False for exactly the control characters and True
+    for printable Unicode, so it draws the line in the right place.
+    """
+    if text is None:
+        return None
+    return "".join(c if c.isprintable() or c == " " else repr(c)[1:-1]
+                   for c in str(text))
+
+
 def _handle_identifies(handle):
     """True when ``handle`` names a particular window.
 
@@ -450,7 +470,7 @@ class OverlayHandler:
         there is no reason to demand a number of it.
         """
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %s",
-                      raw_app_name, title, handle)
+                      raw_app_name, _log_safe(title), handle)
 
     def _is_redundant_overlay_cmd(self, cmd):
         """True when ``cmd`` asks for the overlay state the device is already in
@@ -728,9 +748,15 @@ class OverlayHandler:
             # app-name-only entry fires.
             name, pid = own if own is not None else frontmost_app()
             app = own_app_name(name.lower(), pid) if name else None
-            # Resolved either way: this branch acts on the first tick that
-            # reaches it, with no debounce of its own.
-            self._macos_resolved = True
+            # ⚠️ This branch deliberately does NOT arm the macOS skip, and it
+            # is the one place that must not. A pid does not change when an app
+            # GAINS a window, so arming it here made the state permanent: the
+            # user opens or restores a window in the same app and every later
+            # tick returned before the query, so the window -- and with it the
+            # title, the template and the harvest -- was never seen again
+            # (Greptile P1, #397). Reaching here means there is still something
+            # to find, so the query keeps being paid.
+            self._macos_resolved = False
             if self.win is not None or app != self.windowless_app:
                 self.set_win()
                 self.windowless_app, self.windowless_pid = app, pid
@@ -945,6 +971,9 @@ class OverlayHandler:
         already been focused, so the re-match fires promptly)."""
         self.title = None
         self.handle = None
+        # ⚠️ And disarm the macOS skip, or it answers "same app, nothing
+        # changed" and returns before the re-match this exists to force.
+        self._macos_resolved = False
 
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""
@@ -956,6 +985,12 @@ class OverlayHandler:
         # The device's overlays were reset/cleared on (re)connect, so the next
         # match must be allowed to enable them again (don't suppress).
         self.overlays_enabled = False
+        # ⚠️ Same reason as `invalidate_window_cache`, and worse here: the
+        # keyboard has just been CLEARED. The macOS skip would have returned
+        # before the window query on every tick while the same title-independent
+        # app stayed in front, so the board stayed blank until the user switched
+        # apps (Greptile P1 and CodeRabbit, independently, #397).
+        self._macos_resolved = False
         self.remote_handler.reset_for_resend()
 
     def close(self):
