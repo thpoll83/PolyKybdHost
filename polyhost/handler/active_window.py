@@ -136,6 +136,10 @@ def frontmost_app():
 _AX_FOCUSED_APPLICATION = "AXFocusedApplication"
 _AX_ERROR_SUCCESS = 0
 
+#: One warning per process when the detector itself breaks; see
+#: `focused_app_pid`. A per-tick log line would be 150 an hour.
+_AX_FAILED_ONCE = False
+
 
 def _ax_system_wide_api():
     """The three pyobjc symbols the focus detector needs, imported late.
@@ -194,6 +198,20 @@ def focused_app_pid():
         err, pid = get_pid(app, None)
         return pid if err == _AX_ERROR_SUCCESS and pid else None
     except Exception:  # noqa: BLE001 - a detector must never raise
+        # ⚠️ Said ONCE, and the reason it is said at all: without it a pyobjc
+        # upgrade or an AX rename would silently revert the tick to the slow
+        # path, and the only symptom would be the multi-second switch lag
+        # coming back with nothing in the log to explain it (Revix, #397). A
+        # missing Accessibility grant is NOT this: that returns None from the
+        # error check above, which is a normal state and stays quiet.
+        global _AX_FAILED_ONCE
+        if not _AX_FAILED_ONCE:
+            _AX_FAILED_ONCE = True
+            logging.getLogger("PolyHost").warning(
+                "The macOS focus detector raised, so the window tick falls "
+                "back to querying pywinctl every time (slower switches). This "
+                "is a broken detector, not a missing Accessibility grant.",
+                exc_info=True)
         return None
 
 
@@ -383,6 +401,14 @@ class OverlayHandler:
         self.title = title
         self.handle = handle
         self.app_name = None
+        # ⚠️ The URL belongs to the WINDOW, so it goes with it. The windowless
+        # match reads `self.current_url` from state rather than an argument, and
+        # leaving it set meant matching against whatever tab the PREVIOUS
+        # window reported -- a `urls-contains` branch is still live with no
+        # title, so a web-app's overlay could be drawn for an unrelated
+        # windowless app (Revix, #397). The window branch re-reads it from
+        # `url_provider` a few lines below, so nothing is lost there.
+        self.current_url = None
         # The window path and the windowless one are alternatives, never both:
         # whichever ran last is the answer, so entering one clears the other.
         self.windowless_app = None

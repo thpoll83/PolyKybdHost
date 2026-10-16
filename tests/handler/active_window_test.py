@@ -12,6 +12,7 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import logging
 import os
 import subprocess
 import unittest
@@ -1222,6 +1223,40 @@ class TheFocusDetectorTest(unittest.TestCase):
                    side_effect=ImportError("no pyobjc")):
             self.assertIsNone(aw_focused_app_pid())
 
+    def test_a_BROKEN_detector_says_so_ONCE(self):
+        """⚠️ Silence here would hide the fix reverting itself.
+
+        A pyobjc upgrade or an AX rename returns the tick to querying pywinctl
+        every time, and the only symptom would be the multi-second switch lag
+        coming back with nothing in the log (Revix, #397). Once per process,
+        not per tick: a tick logs ~150 times an hour.
+        """
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._AX_FAILED_ONCE", False), \
+             patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api",
+                   side_effect=RuntimeError("AX gone")):
+            with self.assertLogs("PolyHost", level="WARNING") as captured:
+                for _ in range(3):
+                    self.assertIsNone(aw_focused_app_pid())
+        self.assertEqual(len(captured.output), 1, captured.output)
+        self.assertIn("not a missing Accessibility grant", captured.output[0])
+
+    def test_a_MISSING_grant_stays_quiet(self):
+        # -25211 is kAXErrorAPIDisabled: a normal state on an ungranted
+        # machine, and not something to warn about every start.
+        mod = "polyhost.handler.active_window"
+        api = (MagicMock(return_value="sw"),
+               MagicMock(return_value=(-25211, None)),
+               MagicMock())
+        with patch(mod + "._AX_FAILED_ONCE", False), \
+             patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api", return_value=api):
+            logger = logging.getLogger("PolyHost")
+            with patch.object(logger, "warning") as warn:
+                self.assertIsNone(aw_focused_app_pid())
+        warn.assert_not_called()
+
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
@@ -1293,13 +1328,17 @@ class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
         test machine resolved to Linux.
         """
         import yaml
-        import polyhost.handler.active_window as module
+        # ⚠️ Patched by STRING target, not via a second `import ... as module`:
+        # CodeQL flags a module imported with both `import` and `import from`
+        # (py/import-and-import-from), and this file already uses the
+        # `from ... import` form at the top.
+        mod = "polyhost.handler.active_window"
         with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
             handler = OverlayHandler(yaml.safe_load(fh))
-        with patch.object(module.pwc, "getActiveWindow", return_value=None), \
-             patch.object(module, "own_front_app", return_value=None), \
-             patch.object(module, "frontmost_app", return_value=("Code", 909)), \
-             patch.object(module.OverlayHandler, "_active_os", lambda s: os_type):
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=("Code", 909)), \
+             patch(mod + ".OverlayHandler._active_os", lambda s: os_type):
             data, cmd = handler._decide_active_window(250, 1000)
         return handler, data, cmd
 
@@ -1450,6 +1489,47 @@ class AWindowTitleCannotSPLITALogRecordTest(unittest.TestCase):
         with self.assertLogs(handler.log, level="INFO") as captured:
             handler.log_win("app", "Dokument – Übersicht 日本語", 1)
         self.assertIn("Dokument – Übersicht 日本語", captured.output[0])
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppMustNotInheritTheLastURLTest(unittest.TestCase):
+    """⚠️ `try_to_match_window` reads `self.current_url`, not an argument.
+
+    `set_win()` cleared `win`, `title`, `handle` and `app_name` but not
+    `current_url`, so the windowless match ran against whatever tab the
+    PREVIOUS window had reported. With `title_known=False` a `urls-contains`
+    branch is still live, so a browser web-app's overlay could be drawn for a
+    completely different, windowless application (Revix, #397).
+
+    ⚠️ Revix also named why the other tests miss it: they all start from a
+    clean handler, where `current_url` is already None. This one does not.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    MAPPING = {
+        # Shaped like the shipped browser entries: a default overlay plus a
+        # per-site branch keyed on the URL.
+        "photos": {"overlay": "photos.png",
+                   "urls-contains": {"mail.google.com": {"overlay": "gmail.png"}}},
+    }
+
+    def test_a_STALE_url_does_not_pick_a_web_app_overlay(self):
+        handler = OverlayHandler(dict(self.MAPPING))
+        # The previous window was a browser on Gmail.
+        handler.current_url = "https://mail.google.com/u/0"
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=("Photos", 11)):
+            handler._decide_active_window(250, 1000)
+        self.assertIsNone(handler.current_url,
+                          "the last window's tab outlived its window")
+        self.assertEqual(handler.current_entry["overlay"], "photos.png",
+                         "Gmail's overlay was drawn for Photos")
 
 
 if __name__ == "__main__":
