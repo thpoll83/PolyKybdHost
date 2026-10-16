@@ -1671,12 +1671,7 @@ class PolyHost(QApplication):
         # Client mode edits the DAEMON's settings over RPC (the local file may
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
-        # Offer the glyph-script reset button when the connected firmware supports
-        # glyph scripts (v9+; works over RPC in client mode too); it force-restores
-        # the normal language legends. Gated on the capability, not mere presence,
-        # so a keyboard too old for cmd 30 doesn't show a button that only errors.
-        reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
-        dlg.setup(current, self.developer_mode, reset_glyph_script=reset_cb)
+        dlg.setup(current, self.developer_mode)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             saved = True
@@ -2274,15 +2269,6 @@ class PolyHost(QApplication):
             # checkmark to the device's actual size so the menu doesn't lie.
             self.report_device_result("Error", f"Could not set keycap size: {msg}")
             self.refresh_glyph_size_menu()
-
-    def reset_glyph_script_to_standard(self):
-        """Force the glyph script back to Standard (used by the settings-dialog
-        'Reset script to Standard' button)."""
-        ok, msg = self.core.set_glyph_script(GlyphScript.STANDARD.value)
-        if ok:
-            self.log.info("Glyph script reset to standard.")
-        else:
-            self.report_device_result("Error", f"Could not reset glyph script: {msg}")
 
     def read_overlay_mapping_file(self, file):
         if not file:

@@ -14,10 +14,9 @@ and relative links were adjusted to suit a standalone file.
   BRAILLE=10`. Wired like idle-style (cmd 28): `PolyKybd.get/set_glyph_script` +
   `GLYPH_SCRIPT_MIN_PROTOCOL=9`, `PolyCore.get/set_glyph_script`, `M_GLYPH_SCRIPT_GET/SET`,
   `RemoteCore`, and `polyctl glyph-script [standard|tengwar|runes|…|braille]` (choices
-  derived from the enum). GUI: the tray **"Glyph Script"** submenu (radio, built from
-  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`) **plus** a **"Reset glyph script to
-  Standard"** button in the settings dialog (`SettingsDialog.setup(reset_glyph_script=…)`,
-  shown only when a device is present). Firmware persists the choice; the glyphs need
+  derived from the enum). GUI: the tray **"Keycap Script"** submenu (radio, built from
+  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`); its first entry, Standard, is the
+  reset. (A settings-dialog reset button duplicated it and was removed 2026-10-16.) Firmware persists the choice; the glyphs need
   the `fantasy` bundle flashed (auto on connect; regrown to `content_version 2` for the
   expansion — reshipped `polyhost/res/fontpack/fantasy.plyf` + `bundles.json`).
   **Open-ended index (v10+):** the firmware accepts ANY glyph-script byte `0..0xFE` and

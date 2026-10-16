@@ -623,6 +623,30 @@ class OverlayHandler:
             title = title.decode("utf-8", "replace")
         return title or None
 
+    def focused_handle(self):
+        """The focused LOCAL window's handle on Windows, or None.
+
+        What the UIA shortcut harvest reads instead of "whatever has focus when
+        the read runs": a read queued for Zoom ran minutes later on Chrome and
+        filed Chrome's shortcuts under Zoom (2026-10-15). None elsewhere --
+        on macOS pywinctl derives the handle from the title
+        (`_handle_identifies`), and the other backends harvest by pid or
+        name -- and None for a forwarded window, which runs on the other
+        machine.
+        """
+        if platform.system() != "Windows":
+            return None
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            return None
+        if not self.win:
+            return None
+        try:
+            handle = self.win.getHandle()
+            return int(handle) if handle else None
+        except Exception:
+            return None
+
     def _win_pid(self):
         """The focused local window's pid, or None if it cannot be read."""
         return window_pid(self.win) if self.win else None

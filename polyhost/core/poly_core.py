@@ -643,6 +643,11 @@ class PolyCore(Observable):
             query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             self._tick_query_s = time.monotonic() - query_started
+            shortcut_icons = getattr(self, "_shortcut_icons", None)
+            if shortcut_icons is not None:
+                # Every tick, not only on the generic path: a shortcut read of
+                # an app focus has left is cancelled by it (shortcut_fetcher).
+                shortcut_icons.note_focus(handler.focused_app()[0])
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")
@@ -827,7 +832,16 @@ class PolyCore(Observable):
         # {source_name: {(modifier_value, keycode): mask}} -- one entry per
         # CONCEPT, shared across every key that concept lands on and across
         # applications, which is what makes Save cost one pool slot board-wide.
-        if handler.is_remote_mapping_entry():
+        if template_files and not self.poly_settings.get(
+                "generic_overlays_fill_shortcuts"):
+            # ⚠️ A TEMPLATE covers this app: fill the ESC mark only, and read
+            # no shortcuts (`generic_overlays_fill_shortcuts` off; on by default).
+            # The rule in `_generic_signature` lets a mark ride with a template
+            # and no shortcuts, so ESC keeps the app's logo; what is skipped is
+            # the read, which on Chrome took minutes for a handful of page
+            # shortcuts (field, 2026-10-15).
+            shortcuts = {}
+        elif handler.is_remote_mapping_entry():
             remote = getattr(handler, "remote_handler", None)
             relayed = (remote.forwarded_shortcuts(name)
                        if remote is not None else None)
@@ -851,9 +865,13 @@ class PolyCore(Observable):
             # Save/Undo/Copy only once a document opens (shortcut_fetcher).
             # getattr: test doubles and older handlers have no focused_title.
             title_of = getattr(handler, "focused_title", None)
+            # `hwnd` makes the Windows harvest read THIS window rather than
+            # whatever has focus when the read runs (shortcut_fetcher).
+            handle_of = getattr(handler, "focused_handle", None)
             shortcuts = self._shortcut_icons.overlays_for(
                 name, pid=handler.focused_pid(),
-                title=title_of() if callable(title_of) else None)
+                title=title_of() if callable(title_of) else None,
+                hwnd=handle_of() if callable(handle_of) else None)
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             if mask is not None and not shortcuts:
@@ -1122,7 +1140,10 @@ class PolyCore(Observable):
             "(%s).",
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
-            f"filling the gaps in {len(template_files)} template file(s)"
+            f"filling the gaps in {len(template_files)} template file(s), "
+            + ("shortcut filling on" if self.poly_settings.get(
+                "generic_overlays_fill_shortcuts") else
+               "shortcuts not read: generic_overlays_fill_shortcuts is off")
             if template_files else "no template overlay")
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
@@ -2750,6 +2771,10 @@ class PolyCore(Observable):
         # tick would otherwise read the cached signature and report it as
         # already on the device. `_forget_generic_overlays` clears exactly that.
         "generic_overlays_enabled", "generic_overlays_fill_gaps",
+        # And `fill_shortcuts`, for the same reason: the client-mode dialog
+        # sends one key at a time (`settings_set`), so a switch missing here
+        # took effect only at the next app switch.
+        "generic_overlays_fill_shortcuts",
         "shortcut_icons_enabled", "shortcut_icon_auto_fetch",
         "shortcut_icon_height", "shortcut_icon_placement",
     })

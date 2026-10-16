@@ -35,7 +35,15 @@ class ReadSettingTest(unittest.TestCase):
 
     def test_missing_file_returns_the_default(self):
         self.assertEqual(settings.read_setting("developer_mode", False), False)
-        self.assertEqual(settings.read_setting("developer_mode", "fallback"), "fallback")
+        self.assertEqual(settings.read_setting("not_a_real_setting", "fallback"),
+                         "fallback")
+
+    def test_a_KNOWN_key_falls_back_to_the_SHIPPED_default_not_the_callers(self):
+        """The file holds only chosen values, so an absent key is normal; a
+        caller's own fallback must not override a changed default."""
+        self._write("daemon_mode: true\n")
+        with mock.patch.dict(settings.DEFAULT_SETTINGS, {"developer_mode": True}):
+            self.assertIs(settings.read_setting("developer_mode", False), True)
 
     def test_missing_key_returns_the_default(self):
         # An older config predating the key — must not blow up the launch.
@@ -250,6 +258,19 @@ class ConcurrentWriterTest(unittest.TestCase):
             self.assertEqual(f.read(), corrupt)   # byte-for-byte, recoverable
         # And the save still landed -- losing the write is not the alternative.
         self.assertEqual(settings.read_setting("browser_report_port"), 10001)
+
+    def test_a_RESET_over_an_unreadable_file_preserves_it_too(self):
+        """restore_defaults() skips the merge, not the move-aside (Revix, #393)."""
+        a = settings.PolySettings()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+        a.restore_defaults()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1,
+                         f"the reset destroyed it: {os.listdir(self._tmp.name)}")
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt)
 
     def test_a_SECOND_corruption_does_not_DESTROY_the_first_copy(self):
         """⚠️ The kept name was `…unreadable-{strftime("%Y%m%d-%H%M%S")}`, i.e.
@@ -553,6 +574,107 @@ class ConcurrentWriterTest(unittest.TestCase):
 
 
 
+class ChosenValuesOnlyTest(unittest.TestCase):
+    """The file holds only the values someone CHOSE, so a changed default
+    reaches everyone who never set that key (2026-10-15: the old format wrote
+    every default into the file and pinned it there)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        patcher = mock.patch.object(
+            settings, "user_config_dir", return_value=self._tmp.name)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.path = os.path.join(self._tmp.name, settings.CONFIG_FILENAME)
+
+    def file(self):
+        import yaml
+        with open(self.path, encoding="utf-8") as f:
+            return yaml.safe_load(f)
+
+    def test_a_fresh_file_holds_no_defaults(self):
+        settings.PolySettings()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT})
+
+    def test_only_the_CHANGED_key_is_written(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT,
+                                       "hid_reconnect_retries": 9})
+
+    def test_a_CHANGED_DEFAULT_reaches_a_key_nobody_set(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with mock.patch.dict(settings.DEFAULT_SETTINGS,
+                             {"browser_report_port": 12345,
+                              "hid_reconnect_retries": 1}):
+            b = settings.PolySettings()
+            self.assertEqual(b.get("browser_report_port"), 12345)
+            self.assertEqual(settings.read_setting("browser_report_port"), 12345)
+            self.assertEqual(b.get("hid_reconnect_retries"), 9, "a choice stays")
+
+    def test_set_all_with_UNCHANGED_values_pins_nothing(self):
+        """The settings dialog hands back every key; only the changed ones
+        are choices."""
+        a = settings.PolySettings()
+        everything = dict(a.get_all())
+        everything["hid_reconnect_retries"] = 9
+        a.set_all(everything)
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"hid_reconnect_retries"})
+
+    def test_an_OLD_format_file_keeps_only_what_differs_from_the_default(self):
+        import yaml
+        old = dict(settings.DEFAULT_SETTINGS)
+        old["hid_reconnect_retries"] = 9                 # a real choice
+        with open(self.path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(old, f)
+        a = settings.PolySettings()                      # loads and saves
+        self.assertEqual(a.get_all(), {**settings.DEFAULT_SETTINGS,
+                                       "hid_reconnect_retries": 9})
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT,
+                                       "hid_reconnect_retries": 9})
+
+    def test_an_old_format_file_written_by_ANOTHER_process_is_migrated_too(self):
+        import yaml
+        a = settings.PolySettings()
+        old = dict(settings.DEFAULT_SETTINGS, browser_report_port=10000)
+        with open(self.path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(old, f)                       # an older host saved
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"browser_report_port", "hid_reconnect_retries"})
+
+    def test_restore_defaults_EMPTIES_the_file(self):
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        a.restore_defaults()
+        self.assertEqual(self.file(), {settings.SETTINGS_FORMAT_KEY:
+                                       settings.SETTINGS_FORMAT})
+        a.collection["browser_report_port"] = 10000      # and saving still works
+        a.save()
+        self.assertEqual(set(self.file()) - {settings.SETTINGS_FORMAT_KEY},
+                         {"browser_report_port"})
+
+    def test_a_value_set_BACK_to_the_default_stays_a_choice(self):
+        """Choosing today's default pins it, if the default moves later."""
+        a = settings.PolySettings()
+        default = a.defaults["hid_reconnect_retries"]
+        a.collection["hid_reconnect_retries"] = default + 1
+        a.save()
+        a.collection["hid_reconnect_retries"] = default
+        a.save()
+        self.assertEqual(self.file().get("hid_reconnect_retries"), default)
+
+
 class ReplaceRetryTest(unittest.TestCase):
     """Windows refuses to replace a file another process has open, and the
     daemon, a virus scanner or the indexer can hold settings.yaml for a moment.
@@ -630,6 +752,25 @@ class SaveFailureTest(_TempConfigDirCase):
         a.save()                                 # the holder has let go
         with open(a.path, encoding="utf-8") as f:
             self.assertIn("browser_report_port: 10004", f.read())
+
+
+    def test_a_change_after_a_FAILED_reset_survives_the_retry(self):
+        """The reset stays pending after a failed save; the next save carries
+        out the reset AND keeps what was changed since (CodeRabbit, #393)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        with self._replace_refused() as refused:
+            a.restore_defaults()
+        self.assertTrue(refused.called)
+        a.collection["browser_report_port"] = 10004
+        a.save()
+        import yaml
+        with open(a.path, encoding="utf-8") as f:
+            on_disk = yaml.safe_load(f)
+        self.assertEqual(on_disk, {settings.SETTINGS_FORMAT_KEY:
+                                   settings.SETTINGS_FORMAT,
+                                   "browser_report_port": 10004})
 
 
 class SaveReportsFailureTest(_TempConfigDirCase):

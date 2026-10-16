@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-14 19:16+0000\n"
+"POT-Creation-Date: 2026-10-16 06:14+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -507,7 +507,7 @@ msgstr "Не вдалося зупинити: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Помилка:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:50
 msgid "Brightness"
 msgstr "Яскравість"
 
@@ -765,7 +765,7 @@ msgstr "у комплекті"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Команди PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2291
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2277
 msgid "Open file"
 msgstr "Відкрити файл"
 
@@ -1002,7 +1002,7 @@ msgid "HarfBuzz sequence"
 msgstr "Послідовність HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:78 polyhost/gui/settings_dialog.py:86
 msgid "Mode"
 msgstr "Режим"
 
@@ -1667,8 +1667,8 @@ msgstr "Прошивання почалося — стежте за значко
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Відкинути всі незбережені зміни в '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2884
-#: polyhost/host.py:2925 polyhost/host.py:2952
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2870
+#: polyhost/host.py:2911 polyhost/host.py:2938
 msgid "Firmware Update"
 msgstr "Оновлення мікропрограми"
 
@@ -1703,7 +1703,7 @@ msgstr "Застосування — активація підготовлено
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Скасування — очікування завершення поточного фрагмента…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:77
 msgid "Language"
 msgstr "Мова"
 
@@ -1833,7 +1833,7 @@ msgstr "немає даних для попереднього перегляду
 msgid "the shipped language table is missing"
 msgstr "таблиця мов із комплекту відсутня"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2900
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2886
 msgid "unknown"
 msgstr "невідомо"
 
@@ -2465,11 +2465,11 @@ msgstr "Зберегти всі журнали як .zip або скопіюва
 
 #: polyhost/gui/log_viewer.py:211
 msgid "Clear Logs..."
-msgstr ""
+msgstr "Очистити журнали..."
 
 #: polyhost/gui/log_viewer.py:212
 msgid "Empty every log file, including the crash log"
-msgstr ""
+msgstr "Очистити всі файли журналів, зокрема журнал збоїв"
 
 #: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
@@ -2482,35 +2482,35 @@ msgstr "Перезавантажити"
 #: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
 #: polyhost/gui/log_viewer.py:293
 msgid "Clear Logs"
-msgstr ""
+msgstr "Очистити журнали"
 
 #: polyhost/gui/log_viewer.py:264
 msgid "Empty every log file?"
-msgstr ""
+msgstr "Очистити всі файли журналів?"
 
 #: polyhost/gui/log_viewer.py:266
 msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
-msgstr ""
+msgstr "Буде видалено історію всіх вкладок, зокрема журнал збоїв — запис про те, чи траплялися збої цього застосунку. Цю дію не можна скасувати, і звіт про проблему, надісланий пізніше, не міститиме нічого з часу до цього моменту."
 
 #: polyhost/gui/log_viewer.py:271
 msgid "Collect First..."
-msgstr ""
+msgstr "Спершу зібрати..."
 
 #: polyhost/gui/log_viewer.py:296
 #, python-brace-format
 msgid "Cleared {n} file, freed {kb} KB."
 msgid_plural "Cleared {n} files, freed {kb} KB."
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "Очищено {n} файл, звільнено {kb} KB."
+msgstr[1] "Очищено {n} файли, звільнено {kb} KB."
+msgstr[2] "Очищено {n} файлів, звільнено {kb} KB."
 
 #: polyhost/gui/log_viewer.py:300
 msgid "No log files to clear."
-msgstr ""
+msgstr "Немає файлів журналів для очищення."
 
 #: polyhost/gui/log_viewer.py:303
 msgid "Some files could not be cleared:"
-msgstr ""
+msgstr "Не вдалося очистити деякі файли:"
 
 #: polyhost/gui/log_viewer.py:313
 #, python-brace-format
@@ -2526,7 +2526,7 @@ msgstr "Немає збігів"
 msgid "{index} of {total}"
 msgstr "{index} з {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1922
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1917
 msgid "Mock keyboard"
 msgstr "Імітована клавіатура"
 
@@ -2776,254 +2776,410 @@ msgstr "<b>Долучіть файл журналу</b> (кнопка лівор
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "Натисніть Submit. (Файл журналу не створено — див. вище.)"
 
-#: polyhost/gui/settings_dialog.py:26
+#: polyhost/gui/settings_dialog.py:28
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "Автоматично ({language})"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:38
 msgid "Automatic"
 msgstr "Автоматично"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:38
 msgid "Light"
 msgstr "Світла"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:38
 msgid "Dark"
 msgstr "Темна"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:40
 msgid "Errors"
 msgstr "Помилки"
 
-#: polyhost/gui/settings_dialog.py:39
+#: polyhost/gui/settings_dialog.py:41
 msgid "Errors and warnings"
 msgstr "Помилки та попередження"
 
-#: polyhost/gui/settings_dialog.py:47
+#: polyhost/gui/settings_dialog.py:49
 msgid "General"
 msgstr "Загальні"
 
-#: polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/settings_dialog.py:50
 msgid "Browser"
 msgstr "Браузер"
 
-#: polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/settings_dialog.py:50
 msgid "Daemon"
 msgstr "Фонова служба"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:51
 msgid "Delay"
 msgstr "Затримка"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:51
 msgid "Dev"
 msgstr "Розробка"
 
-#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:837
+#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:837
 msgid "Developer"
 msgstr "Розробник"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:52
 msgid "Fontpack"
 msgstr "Пакет шрифтів"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:52
 msgid "Generic"
 msgstr "Універсальні"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:52
 msgid "Hid"
 msgstr "HID"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:53
 msgid "Irradiance"
 msgstr "Освітленість"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:53
 msgid "Problem"
 msgstr "Проблеми"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/gui/settings_dialog.py:62
+#: polyhost/gui/settings_dialog.py:53 polyhost/gui/settings_dialog.py:64
 msgid "Max"
 msgstr "Макс."
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:54
 msgid "Shortcut"
 msgstr "Скорочення"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:54
 msgid "Telemetry"
 msgstr "Телеметрія"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:54
 msgid "Ui"
 msgstr "Інтерфейс"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:55
 msgid "Unicode"
 msgstr "Юнікод"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:55
 msgid "Window"
 msgstr "Вікно"
 
-#: polyhost/gui/settings_dialog.py:57
+#: polyhost/gui/settings_dialog.py:59
 msgid "Send Composition Mode"
 msgstr "Режим надсилання композиції"
 
-#: polyhost/gui/settings_dialog.py:58
+#: polyhost/gui/settings_dialog.py:60
 msgid "Set Daylight Dependent"
 msgstr "Залежно від денного світла"
 
-#: polyhost/gui/settings_dialog.py:59
+#: polyhost/gui/settings_dialog.py:61
 msgid "Allow Online Irradiance Request"
 msgstr "Дозволити онлайн-запит освітленості"
 
-#: polyhost/gui/settings_dialog.py:60
+#: polyhost/gui/settings_dialog.py:62
 msgid "Allow Online Location Lookup"
 msgstr "Дозволити онлайн-визначення розташування"
 
-#: polyhost/gui/settings_dialog.py:61
+#: polyhost/gui/settings_dialog.py:63
 msgid "Min"
 msgstr "Мін."
 
-#: polyhost/gui/settings_dialog.py:63
+#: polyhost/gui/settings_dialog.py:65
 msgid "Prescaler"
 msgstr "Попередній дільник"
 
-#: polyhost/gui/settings_dialog.py:64
+#: polyhost/gui/settings_dialog.py:66
 msgid "Gamma"
 msgstr "Гамма"
 
-#: polyhost/gui/settings_dialog.py:65
+#: polyhost/gui/settings_dialog.py:67
 msgid "Overlays Enabled"
 msgstr "Накладки ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:66
-msgid "Overlays Fill Gaps"
-msgstr "Накладки заповнюють прогалини"
+#: polyhost/gui/settings_dialog.py:68
+msgid "Overlays Add Escape Mark"
+msgstr "Накладки: логотип на Escape"
 
-#: polyhost/gui/settings_dialog.py:67
+#: polyhost/gui/settings_dialog.py:69
+msgid "Overlays Add Shortcut Icons"
+msgstr "Накладки: значки скорочень"
+
+#: polyhost/gui/settings_dialog.py:70
 msgid "Icons Enabled"
 msgstr "Значки ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:71
 msgid "Icon Auto Fetch"
 msgstr "Автозавантаження значків"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:72
 msgid "Enable Accessibility"
 msgstr "Увімкнути спеціальні можливості"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:73
 msgid "Hid Message Before Delay"
 msgstr "Повідомлень HID до затримки"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:74
 msgid "Time After Max Hid Messages"
 msgstr "Час після макс. кількості повідомлень HID"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:75
 msgid "Reconnect Retries"
 msgstr "Спроб повторного під’єднання"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:76
 msgid "Theme"
 msgstr "Тема"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:79
 msgid "Mock Enabled"
 msgstr "Імітацію ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:80
 msgid "Mock Primary"
 msgstr "Імітація як основний пристрій"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:81
 msgid "Mock Protocol"
 msgstr "Протокол імітації"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:83
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "Визначати вікна, навіть якщо PolyKybd не під’єднано"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:84
 msgid "Win Native Set Language"
 msgstr "Нативне встановлення мови Windows"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:85
 msgid "Legacy Plaintext Relay"
 msgstr "Застаріла незашифрована ретрансляція"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:87
 msgid "Report Network Enabled"
 msgstr "Мережеві звіти ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:88
 msgid "Auto Flash"
 msgstr "Автоматичне прошивання"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:89
 msgid "Path"
 msgstr "Шлях"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:90
 msgid "Url Detection"
 msgstr "Визначення URL"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:91
 msgid "Report Local Enabled"
 msgstr "Локальні звіти ввімкнено"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:92
 msgid "Report Port"
 msgstr "Порт звітів"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:93
 msgid "Report Token"
 msgstr "Токен звітів"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:94
 msgid "Enabled"
 msgstr "Увімкнено"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:95
 msgid "Endpoint"
 msgstr "Кінцева точка"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:96
 msgid "Install Id"
 msgstr "ID інсталяції"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:97
 msgid "Scan Keyboard Console"
 msgstr "Сканувати консоль клавіатури"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:98
 msgid "Scan Host Logs"
 msgstr "Сканувати журнали хоста"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:99
 msgid "Scan Level"
 msgstr "Рівень сканування"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:108
+msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
+msgstr "Повідомляє клавіатурі, як цей комп’ютер приймає введення Юнікоду (наприклад, через WinCompose), під час під’єднання та щоразу, коли це змінюється. Вимкнено: клавіатура зберігає режим, записаний у ній."
+
+#: polyhost/gui/settings_dialog.py:112
+msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
+msgstr "Встановлює яскравість ковпачків за денним світлом у вашому розташуванні, кожні десять хвилин."
+
+#: polyhost/gui/settings_dialog.py:115
+msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
+msgstr "Запитує в open-meteo.com сонячне світло у вашому розташуванні на поточну годину з урахуванням хмарності. Вимкнено: хост обчислює значення для безхмарного неба за розташуванням і часом."
+
+#: polyhost/gui/settings_dialog.py:119
+msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
+msgstr "Визначає ваше приблизне розташування за IP-адресою (ip-api.com), один раз за запуск. Вимкнено: яскравість залежить від години доби."
+
+#: polyhost/gui/settings_dialog.py:121
+msgid "The sunlight value that gives the dimmest brightness level."
+msgstr "Значення сонячного світла, за якого яскравість найнижча."
+
+#: polyhost/gui/settings_dialog.py:123
+msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
+msgstr "Значення сонячного світла, за якого яскравість найвища. Зменште його, щоб досягати повної яскравості в похмурий день."
+
+#: polyhost/gui/settings_dialog.py:125
+msgid "Multiplies the sunlight value before Min and Max apply."
+msgstr "Множить значення сонячного світла перед застосуванням «Мін.» і «Макс.»."
+
+#: polyhost/gui/settings_dialog.py:127
+msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
+msgstr "Задає форму кривої денного світла. Більше 1 — середина дня темніша, менше 1 — яскравіша. Найнижчий і найвищий рівні не змінюються."
+
+#: polyhost/gui/settings_dialog.py:130
+msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
+msgstr "Значки для програм без власної накладки: логотип програми на Escape і значок для кожного її скорочення. Вимкнено: універсальні значки не малюються для жодної програми."
+
+#: polyhost/gui/settings_dialog.py:133
+msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
+msgstr "Програма з власною накладкою теж отримує свій логотип на Escape, якщо накладка залишає Escape порожньою."
+
+#: polyhost/gui/settings_dialog.py:136
+msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
+msgstr "У програми з власною накладкою теж зчитуються скорочення, і значки з’являються на клавішах, які накладка залишає порожніми. Зчитування великої програми, наприклад браузера з довгою сторінкою, може тривати кілька хвилин."
+
+#: polyhost/gui/settings_dialog.py:140
+msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
+msgstr "Зчитує скорочення активної програми, щоб намалювати значок для кожного. Вимкнено: програми не зчитуються, значки скорочень не малюються. Щоб прибрати всі універсальні значки, разом із логотипом на Escape, вимкніть «Накладки ввімкнено»."
+
+#: polyhost/gui/settings_dialog.py:144
+msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
+msgstr "Завантажує відсутні значки. Вимкнено: уже завантажені значки працюють і далі, нові пропускаються."
+
+#: polyhost/gui/settings_dialog.py:147
+msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
+msgstr "Лише Linux. Вмикає перемикач спеціальних можливостей робочого столу, щоб програми Qt і KDE публікували свої скорочення. Вимкнено: зчитуються лише програми, які публікують їх і так (GTK)."
+
+#: polyhost/gui/settings_dialog.py:151
+msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
+msgstr "Передавання через USB: скільки повідомлень із зображеннями надсилається перед короткою паузою, щоб клавіатура й далі реагувала на введення. Змінюйте це значення, лише якщо вас про це попросять під час повідомлення про проблему."
+
+#: polyhost/gui/settings_dialog.py:155
+msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
+msgstr "Передавання через USB: тривалість цієї паузи в секундах. Змінюйте це значення, лише якщо вас про це попросять під час повідомлення про проблему."
+
+#: polyhost/gui/settings_dialog.py:158
+msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
+msgstr "Скільки разів хост запитує в клавіатури її ID, перш ніж знову відкрити USB-з’єднання."
+
+#: polyhost/gui/settings_dialog.py:161
+msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
+msgstr "Вигляд меню в області сповіщень і діалогових вікон. «Автоматично» відповідає світлому або темному налаштуванню робочого столу."
+
+#: polyhost/gui/settings_dialog.py:164
+msgid "The language of the menus and dialogs. Applies when the tray app restarts."
+msgstr "Мова меню та діалогових вікон. Застосовується після перезапуску програми в області сповіщень."
+
+#: polyhost/gui/settings_dialog.py:166
+msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
+msgstr "Показує підменю «Розробник» у меню області сповіщень і параметри розробника в цьому вікні."
+
+#: polyhost/gui/settings_dialog.py:168
+msgid "Adds a simulated keyboard next to the real one."
+msgstr "Додає імітовану клавіатуру поруч зі справжньою."
+
+#: polyhost/gui/settings_dialog.py:170
+msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
+msgstr "Використовує імітовану клавіатуру замість справжньої, щоб програма працювала без обладнання."
+
+#: polyhost/gui/settings_dialog.py:173
+msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
+msgstr "Версія протоколу, яку повідомляє імітована клавіатура. 0 — найновіша версія, відома цьому хосту."
+
+#: polyhost/gui/settings_dialog.py:176
+msgid "Tracks the active window even when no keyboard is connected."
+msgstr "Відстежує активне вікно, навіть коли клавіатуру не під’єднано."
+
+#: polyhost/gui/settings_dialog.py:178
+msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
+msgstr "Лише Windows, експериментально. Перемикає мову введення викликами Win32 замість стандартного способу, а в разі помилки повертається до нього."
+
+#: polyhost/gui/settings_dialog.py:181
+msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
+msgstr "Приймає відомості про вікна від старих ретрансляторів через незашифрований TCP без автентифікації (порт 50162) на всіх мережевих інтерфейсах. Вмикайте лише для старого ретранслятора."
+
+#: polyhost/gui/settings_dialog.py:185
+msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
+msgstr "Виконує з’єднання з клавіатурою у фоновому процесі, до якого під’єднується програма в області сповіщень, щоб з’єднання зберігалося під час перезапуску цієї програми."
+
+#: polyhost/gui/settings_dialog.py:188
+msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
+msgstr "Приймає відомості про вікна від ретранслятора на іншому комп’ютері. Відкриває мережевий порт. Застосовується після перезапуску."
+
+#: polyhost/gui/settings_dialog.py:191
+msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
+msgstr "Прошиває відсутні або застарілі набори пакета шрифтів під час під’єднання клавіатури."
+
+#: polyhost/gui/settings_dialog.py:193
+msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
+msgstr "Файл .plyf для прошивання замість пакета шрифтів, що постачається з програмою. Порожнє значення — використовується пакет, що постачається."
+
+#: polyhost/gui/settings_dialog.py:196
+msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
+msgstr "Зіставляє накладки з вебсайтом в активній вкладці браузера. Вимкнено: накладки браузера зіставляються лише за заголовком вікна."
+
+#: polyhost/gui/settings_dialog.py:199
+msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
+msgstr "Запускає приймач, якому надсилає відомості розширення браузера. Він слухає лише 127.0.0.1."
+
+#: polyhost/gui/settings_dialog.py:202
+msgid "The receiver's port. It must match the Host port in the browser extension."
+msgstr "Порт приймача. Він має збігатися з полем «Host port» у розширенні браузера."
+
+#: polyhost/gui/settings_dialog.py:204
+msgid "A shared secret. When set, the browser extension must send the same token."
+msgstr "Спільний секрет. Якщо його задано, розширення браузера має надсилати той самий токен."
+
+#: polyhost/gui/settings_dialog.py:206
+msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
+msgstr "Надсилає один анонімний звіт про використання на день: версії, операційна система та кілька лічильників. Ніколи — заголовки вікон чи назви програм."
+
+#: polyhost/gui/settings_dialog.py:208
+msgid "Where the usage report goes. Empty sends nothing."
+msgstr "Куди надсилається звіт про використання. Порожнє значення — нічого не надсилається."
+
+#: polyhost/gui/settings_dialog.py:210
+msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
+msgstr "Випадковий ID цієї інсталяції, створений разом із першим звітом. Видаліть його, щоб вважатися новою інсталяцією."
+
+#: polyhost/gui/settings_dialog.py:213
+msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
+msgstr "Стежить за консоллю клавіатури щодо відомих повідомлень про збої та пропонує повідомити про проблему."
+
+#: polyhost/gui/settings_dialog.py:215
+msgid "Watches this app's own log for known failure messages."
+msgstr "Стежить за власним журналом цієї програми щодо відомих повідомлень про збої."
+
+#: polyhost/gui/settings_dialog.py:216
+msgid "What counts as a problem: errors only, or errors and warnings."
+msgstr "Що вважається проблемою: лише помилки чи помилки та попередження."
+
+#: polyhost/gui/settings_dialog.py:304
 msgid "PolyKybd Settings"
 msgstr "Параметри PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:329
 msgid "Some settings might need a restart to take effect."
 msgstr "Для застосування деяких параметрів може знадобитися перезапуск."
-
-#: polyhost/gui/settings_dialog.py:237
-msgid "Reset glyph script to Standard"
-msgstr "Скинути шрифт написів до стандартного"
-
-#: polyhost/gui/settings_dialog.py:238
-msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
-msgstr "Вимкнути будь-яку заміну фантастичним/альтернативним письмом і знову показувати звичайні написи мови."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -3438,24 +3594,24 @@ msgstr "Не вдалося прошити мікропрограму"
 msgid "Selected Language: {language} {country}"
 msgstr "Вибрана мова: {language} {country}"
 
-#: polyhost/host.py:1709
+#: polyhost/host.py:1704
 msgid "PolyHost settings"
 msgstr "Параметри PolyHost"
 
-#: polyhost/host.py:1710
+#: polyhost/host.py:1705
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Параметри застосовано, але не вдалося зберегти їх у файл параметрів. Можливо, файл тримає відкритим інша програма. Змініть параметр пізніше, щоб повторити спробу, або перегляньте журнал."
 
-#: polyhost/host.py:1812
+#: polyhost/host.py:1807
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: нечитабельний запис {record}"
 
-#: polyhost/host.py:1815
+#: polyhost/host.py:1810
 msgid "Neither keyboard half holds a crash record."
 msgstr "Жодна половина клавіатури не має запису про збій."
 
-#: polyhost/host.py:1817
+#: polyhost/host.py:1812
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3466,58 +3622,58 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1819
+#: polyhost/host.py:1814
 msgid "Keyboard crash record"
 msgstr "Запис про збій клавіатури"
 
-#: polyhost/host.py:1828
+#: polyhost/host.py:1823
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Скопійовано в буфер обміну. Не прочитано: {errors}"
 
-#: polyhost/host.py:1913
+#: polyhost/host.py:1908
 msgid "MRU Cache"
 msgstr "Кеш MRU"
 
-#: polyhost/host.py:1913
+#: polyhost/host.py:1908
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "Кеш MRU неактивний (пристрій не під’єднано або режим MRU вимкнено)."
 
-#: polyhost/host.py:1962
+#: polyhost/host.py:1957
 msgid "daemon client"
 msgstr "клієнт фонової служби"
 
-#: polyhost/host.py:1962
+#: polyhost/host.py:1957
 msgid "standalone"
 msgstr "автономно"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:772 polyhost/host.py:2018
+#: polyhost/forwarder.py:772 polyhost/host.py:2013
 msgid "paused"
 msgstr "призупинено"
 
-#: polyhost/host.py:2020
+#: polyhost/host.py:2015
 msgid "connected"
 msgstr "під’єднано"
 
-#: polyhost/host.py:2021
+#: polyhost/host.py:2016
 msgid "present — not connected (protocol/version)"
 msgstr "наявна — не під’єднано (протокол/версія)"
 
-#: polyhost/host.py:2028
+#: polyhost/host.py:2023
 msgid "Keyboard"
 msgstr "Клавіатура"
 
-#: polyhost/host.py:2029
+#: polyhost/host.py:2024
 msgid "No keyboard connected."
 msgstr "Клавіатуру не під’єднано."
 
-#: polyhost/host.py:2033
+#: polyhost/host.py:2028
 msgid "⚠ mismatch"
 msgstr "⚠ невідповідність"
 
-#: polyhost/host.py:2035
+#: polyhost/host.py:2030
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
@@ -3525,32 +3681,32 @@ msgstr[0] "Завантажено {n} мову"
 msgstr[1] "Завантажено {n} мови"
 msgstr[2] "Завантажено {n} мов"
 
-#: polyhost/host.py:2038
+#: polyhost/host.py:2033
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Під’єднана клавіатура:</b> {name} {state}"
 
-#: polyhost/host.py:2040
+#: polyhost/host.py:2035
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Мікропрограма:</b> {firmware} &nbsp;·&nbsp; протокол {protocol}"
 
-#: polyhost/host.py:2042
+#: polyhost/host.py:2037
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Апаратне забезпечення:</b> {hardware}"
 
-#: polyhost/host.py:2043
+#: polyhost/host.py:2038
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Мова:</b> {language}"
 
-#: polyhost/host.py:2050
+#: polyhost/host.py:2045
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Час роботи:</b> {uptime}"
 
-#: polyhost/host.py:2052
+#: polyhost/host.py:2047
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
@@ -3558,26 +3714,26 @@ msgstr[0] "<b>Призначення накладок:</b> {n} програма"
 msgstr[1] "<b>Призначення накладок:</b> {n} програми"
 msgstr[2] "<b>Призначення накладок:</b> {n} програм"
 
-#: polyhost/forwarder.py:789 polyhost/host.py:2054
+#: polyhost/forwarder.py:789 polyhost/host.py:2049
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Конфігурація:</b> {path}"
 
-#: polyhost/forwarder.py:790 polyhost/host.py:2055
+#: polyhost/forwarder.py:790 polyhost/host.py:2050
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Журнали:</b> {path}"
 
-#: polyhost/forwarder.py:808 polyhost/host.py:2109
+#: polyhost/forwarder.py:808 polyhost/host.py:2104
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Протокол HID P{protocol}"
 
-#: polyhost/host.py:2114
+#: polyhost/host.py:2109
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Програма-хост для розділеної клавіатури PolyKybd з OLED-дисплеєм на кожному ковпачку — стежить за активним вікном і надсилає на клавіатуру накладки, мову та оновлення карти клавіш."
 
-#: polyhost/host.py:2140
+#: polyhost/host.py:2135
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3586,61 +3742,61 @@ msgstr ""
 "Не вдалося змінити мову введення на '{language}', помилка:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2160 polyhost/host.py:2175
+#: polyhost/host.py:2155 polyhost/host.py:2170
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Не вдалося встановити {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2290
+#: polyhost/host.py:2276
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Призначення накладок PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2378 polyhost/host.py:2856 polyhost/host.py:2999
+#: polyhost/host.py:2364 polyhost/host.py:2842 polyhost/host.py:2985
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Оновити мікропрограму до v{version}…"
 
-#: polyhost/host.py:2380 polyhost/host.py:2897 polyhost/host.py:3069
+#: polyhost/host.py:2366 polyhost/host.py:2883 polyhost/host.py:3055
 msgid "Check for firmware update…"
 msgstr "Перевірити оновлення мікропрограми…"
 
 #: polyhost/forwarder.py:846 polyhost/forwarder.py:857
-#: polyhost/forwarder.py:863 polyhost/host.py:2398 polyhost/host.py:2519
-#: polyhost/host.py:2523
+#: polyhost/forwarder.py:863 polyhost/host.py:2384 polyhost/host.py:2505
+#: polyhost/host.py:2509
 msgid "Check for updates..."
 msgstr "Перевірити оновлення..."
 
-#: polyhost/host.py:2466
+#: polyhost/host.py:2452
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Доступне оновлення до v{version}"
 
 #: polyhost/forwarder.py:859 polyhost/forwarder.py:865
-#: polyhost/forwarder.py:876 polyhost/host.py:2477 polyhost/host.py:2517
-#: polyhost/host.py:2524 polyhost/host.py:2547
+#: polyhost/forwarder.py:876 polyhost/host.py:2463 polyhost/host.py:2503
+#: polyhost/host.py:2510 polyhost/host.py:2533
 msgid "PolyKybdHost Update"
 msgstr "Оновлення PolyKybdHost"
 
-#: polyhost/host.py:2478
+#: polyhost/host.py:2464
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Доступна версія {version}. Клацніть значок в області сповіщень, щоб оновити."
 
-#: polyhost/forwarder.py:834 polyhost/host.py:2503
+#: polyhost/forwarder.py:834 polyhost/host.py:2489
 msgid "Checking for updates..."
 msgstr "Перевірка оновлень..."
 
-#: polyhost/host.py:2516
+#: polyhost/host.py:2502
 msgid "No updates available"
 msgstr "Оновлень немає"
 
-#: polyhost/forwarder.py:860 polyhost/host.py:2518
+#: polyhost/forwarder.py:860 polyhost/host.py:2504
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "У вас найновіша версія (v{version})."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2525
+#: polyhost/forwarder.py:866 polyhost/host.py:2511
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3655,63 +3811,63 @@ msgstr ""
 "\n"
 "Запустіть із --dev 1, щоб отримати подробиці."
 
-#: polyhost/host.py:2530 polyhost/host.py:2929
+#: polyhost/host.py:2516 polyhost/host.py:2915
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Випущено: {date}"
 
-#: polyhost/forwarder.py:847 polyhost/host.py:2531
+#: polyhost/forwarder.py:847 polyhost/host.py:2517
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Доступна версія {version}."
 
-#: polyhost/forwarder.py:848 polyhost/host.py:2532
+#: polyhost/forwarder.py:848 polyhost/host.py:2518
 msgid "Update PolyKybdHost"
 msgstr "Оновити PolyKybdHost"
 
-#: polyhost/host.py:2536
+#: polyhost/host.py:2522
 msgid "Download, install, and restart now?"
 msgstr "Завантажити, інсталювати й перезапустити зараз?"
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2547
+#: polyhost/forwarder.py:875 polyhost/host.py:2533
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Завантаження v{version}…"
 
-#: polyhost/forwarder.py:916 polyhost/host.py:2672
+#: polyhost/forwarder.py:916 polyhost/host.py:2658
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Не вдалося запустити ретранслятор оновлення; оновлення не завершено. Подробиці див. у журналі."
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2687
+#: polyhost/forwarder.py:928 polyhost/host.py:2673
 msgid "Update failed"
 msgstr "Не вдалося оновити"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2687
+#: polyhost/forwarder.py:928 polyhost/host.py:2673
 msgid "The update did not finish."
 msgstr "Оновлення не завершено."
 
-#: polyhost/host.py:2867
+#: polyhost/host.py:2853
 msgid "PolyKybd Firmware Update"
 msgstr "Оновлення мікропрограми PolyKybd"
 
-#: polyhost/host.py:2868
+#: polyhost/host.py:2854
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Доступна нова мікропрограма v{version}. Клацніть значок в області сповіщень, щоб оновити."
 
-#: polyhost/host.py:2885 polyhost/host.py:2926
+#: polyhost/host.py:2871 polyhost/host.py:2912
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Щоб оновити мікропрограму, клавіатуру має бути під’єднано."
 
-#: polyhost/host.py:2891
+#: polyhost/host.py:2877
 msgid "Checking for firmware update…"
 msgstr "Перевірка оновлень мікропрограми…"
 
-#: polyhost/host.py:2905 polyhost/host.py:2915 polyhost/host.py:2918
+#: polyhost/host.py:2891 polyhost/host.py:2901 polyhost/host.py:2904
 msgid "PolyKybd Firmware"
 msgstr "Мікропрограма PolyKybd"
 
-#: polyhost/host.py:2906
+#: polyhost/host.py:2892
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3722,55 +3878,55 @@ msgstr ""
 "\n"
 "На вашій клавіатурі v{current}. Зазвичай це означає, що збирання випуску не вдалося, — мікропрограма з’явиться на сторінці випуску, щойно це виправлять."
 
-#: polyhost/host.py:2916
+#: polyhost/host.py:2902
 msgid "No firmware release could be found."
 msgstr "Випуск мікропрограми не знайдено."
 
-#: polyhost/host.py:2919
+#: polyhost/host.py:2905
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "У вас найновіша мікропрограма (v{version})."
 
-#: polyhost/host.py:2931
+#: polyhost/host.py:2917
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Встановлено: v{version}"
 
-#: polyhost/host.py:2932
+#: polyhost/host.py:2918
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Встановлено: невідомо (клавіатура не повідомила свою версію)"
 
-#: polyhost/host.py:2933
+#: polyhost/host.py:2919
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Доступна мікропрограма {version}."
 
-#: polyhost/host.py:2935
+#: polyhost/host.py:2921
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Обидві половини оновлюються через HID і автоматично перезавантажуються."
 
-#: polyhost/host.py:2936
+#: polyhost/host.py:2922
 msgid "Update PolyKybd Firmware"
 msgstr "Оновити мікропрограму PolyKybd"
 
-#: polyhost/host.py:2940
+#: polyhost/host.py:2926
 msgid "Download and flash now?"
 msgstr "Завантажити й прошити зараз?"
 
-#: polyhost/host.py:2951
+#: polyhost/host.py:2937
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Завантаження мікропрограми v{version}…"
 
-#: polyhost/host.py:2973 polyhost/host.py:3185
+#: polyhost/host.py:2959 polyhost/host.py:3171
 msgid "Cancelling…"
 msgstr "Скасування…"
 
-#: polyhost/host.py:3010
+#: polyhost/host.py:2996
 msgid "Firmware Update Failed"
 msgstr "Не вдалося оновити мікропрограму"
 
-#: polyhost/host.py:3011
+#: polyhost/host.py:2997
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3781,12 +3937,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3149 polyhost/host.py:3163 polyhost/host.py:3209
-#: polyhost/host.py:3218 polyhost/host.py:3224
+#: polyhost/host.py:3135 polyhost/host.py:3149 polyhost/host.py:3195
+#: polyhost/host.py:3204 polyhost/host.py:3210
 msgid "Install WinCompose"
 msgstr "Інсталювати WinCompose"
 
-#: polyhost/host.py:3150
+#: polyhost/host.py:3136
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3796,11 +3952,11 @@ msgstr ""
 "\n"
 "Збірку WinCompose від PolyKybd буде завантажено з GitHub і запущено її інсталятор (Windows попросить підтвердження)."
 
-#: polyhost/host.py:3163
+#: polyhost/host.py:3149
 msgid "Looking for the latest WinCompose release…"
 msgstr "Пошук останнього випуску WinCompose…"
 
-#: polyhost/host.py:3210
+#: polyhost/host.py:3196
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3810,7 +3966,7 @@ msgstr ""
 "\n"
 "У браузері відкриється сторінка випусків — завантажте й запустіть інсталятор звідти."
 
-#: polyhost/host.py:3219
+#: polyhost/host.py:3205
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3821,7 +3977,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3225
+#: polyhost/host.py:3211
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3838,7 +3994,7 @@ msgstr ""
 "Його збережено в:\n"
 "{path}"
 
-#: polyhost/host.py:3233
+#: polyhost/host.py:3219
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
 

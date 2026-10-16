@@ -300,7 +300,7 @@ class EmptyHarvestReasonTest(unittest.TestCase):
         said = []
         f._say = lambda app, why: said.append(why)
 
-        def harvest(app, reason=None, pid=None):
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
             if reason is not None and self._reason:
                 reason.update(self._reason)
             return list(harvested)
@@ -355,7 +355,7 @@ class PidPassThroughTest(unittest.TestCase):
         f._say = lambda *a: None
         seen = {}
 
-        def harvest(app, reason=None, pid=None):
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
             seen["pid"] = pid
             return []
 
@@ -913,6 +913,254 @@ class TitleReharvestTest(unittest.TestCase):
             self.ask_as(100, "a")
         self.idle()
         self.assertEqual(len(self.calls), 1)
+
+    # -- the per-title cache (2026-10-15: 31 walks of Chrome in 38 min) ------
+
+    def test_a_REVISITED_title_is_served_without_a_harvest(self):
+        """A browser retitles per tab; switching back to a tab is free."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.assertEqual(self.ask("tab B"), DOCUMENT)
+        for _ in range(3):
+            self.now += 10
+            self.assertEqual(self.ask("tab A"), WELCOME)
+            self.assertEqual(self.ask("tab B"), DOCUMENT)
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B"])
+
+    def test_a_title_cached_LONGER_than_30_min_is_read_again(self):
+        self.answers = [WELCOME, DOCUMENT, DOCUMENT]
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        self.assertEqual(self.ask("tab A"), DOCUMENT)   # stale: not served
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B", "tab A"])
+
+    def test_the_FOCUSED_title_is_read_again_after_30_min(self):
+        self.answers = [WELCOME, DOCUMENT]
+        self.first()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS - 1
+        self.ask("Welcome - Kate")
+        self.idle()
+        self.assertEqual(len(self.calls), 1)
+        self.now += 1
+        self.assertEqual(self.ask("Welcome - Kate"), WELCOME)  # served meanwhile
+        self.idle()
+        self.assertEqual(self.ask("Welcome - Kate"), DOCUMENT)
+        self.assertEqual(len(self.calls), 2)
+
+    def test_expired_titles_are_EVICTED(self):
+        self.first("tab A")
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        self.ask("tab B")
+        self.idle()
+        key = next(iter(self.fetcher._by_title))
+        self.assertEqual(set(self.fetcher._by_title[key]), {"tab B"})
+
+    def test_a_NEW_pid_drops_the_per_title_answers(self):
+        self.answers = [WELCOME, DOCUMENT, DOCUMENT]
+        self.ask_as(100, "tab A")
+        self.idle()
+        self.now += 10
+        self.ask_as(100, "tab B")
+        self.idle()
+        self.now += 10
+        self.ask_as(200, "tab A")          # restart: tab A is NOT served cached
+        self.idle()
+        self.assertEqual(self.calls, ["tab A", "tab B", "tab A"])
+
+    def test_the_log_names_a_title_by_HASH_never_by_text(self):
+        """Titles name documents; the bundle masks only lines it knows."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.first("Secret plan.docx - Word")
+        self.now += 10
+        with self.assertLogs("PolyHost", "INFO") as logs:
+            self.ask("Budget.xlsx - Excel")
+            self.idle()
+            self.now += 10
+            self.ask("Secret plan.docx - Word")
+        text = "\n".join(logs.output)
+        self.assertNotIn("Secret", text)
+        self.assertNotIn("Budget", text)
+        self.assertIn(shortcut_fetcher.title_tag("Budget.xlsx - Excel"), text)
+        self.assertIn("reading it again (new title #", text)
+        self.assertIn("served from the cache", text)
+
+    def test_an_expired_answer_SAYS_it_was_dropped(self):
+        self.first("tab A")
+        self.now += 10
+        self.ask("tab B")
+        self.idle()
+        self.now += shortcut_fetcher.TITLE_CACHE_SECONDS
+        with self.assertLogs("PolyHost", "INFO") as logs:
+            self.ask("tab A")
+        self.assertTrue(any("min old, dropped" in x for x in logs.output),
+                        logs.output)
+
+    def test_a_title_that_CHANGED_during_the_read_is_not_cached(self):
+        """Chrome's tabs share one window: a tab switch mid-read gives tab B's
+        answer, which must not be filed under tab A (Greptile, #393)."""
+        self.answers = [WELCOME, DOCUMENT]
+        self.gate = threading.Event()
+        self.calls.append("pre")           # gate the FIRST real harvest
+        self.ask("tab A")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask("tab B")                  # the tab switches mid-read
+        self.gate.set()
+        self.idle()
+        key = next(iter(self.fetcher._overlays))
+        self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
+        self.assertEqual(self.ask("tab B"), DOCUMENT, "still served meanwhile")
+        # Back on tab A, the uncached answer (tab B's, read under A) must not
+        # stand for A: it is read again once the floor passes (Revix, #393).
+        self.now += shortcut_fetcher.REHARVEST_MIN_GAP
+        self.ask("tab A")
+        self.idle()
+        self.assertEqual(self.calls[-1], "tab A")
+        self.assertEqual(len(self.calls), 3)
+
+    def test_an_OLD_process_answer_does_not_refill_the_cache(self):
+        self.answers = [DOCUMENT, WELCOME]
+        self.gate = threading.Event()
+        self.calls.append("pre")
+        self.ask_as(100, "tab A")
+        end = time.monotonic() + 2
+        while len(self.calls) < 2 and time.monotonic() < end:
+            time.sleep(0.005)
+        self.ask_as(200, "tab A")          # restarted mid-read
+        self.gate.set()
+        self.idle()
+        key = next(iter(self.fetcher._overlays))
+        self.assertNotIn("tab A", self.fetcher._by_title.get(key, {}))
+
+    def test_a_FAILING_first_read_backs_off_instead_of_repeating(self):
+        """It used to re-queue on every tick (250 ms) (Greptile, #393)."""
+        self.answers = [None, WELCOME]
+        self.ask("tab A")
+        self.idle()
+        for _ in range(5):                 # ticks inside the backoff
+            self.ask("tab A")
+            self.idle()
+        self.assertEqual(len(self.calls), 1)
+        self.now += shortcut_fetcher.REHARVEST_BACKOFF_FIRST
+        self.ask("tab A")
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.ask("tab A"), WELCOME)
+
+    def test_a_RESTART_drops_a_failed_first_reads_backoff(self):
+        self.answers = [None, WELCOME]
+        self.ask_as(100, "tab A")
+        self.idle()
+        self.assertEqual(self.ask_as(200, "tab A"), {})   # new process, at once
+        self.idle()
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.ask_as(200, "tab A"), WELCOME)
+
+    def test_the_title_hash_is_KEYED(self):
+        """An unkeyed hash lets a bundle reader confirm a guessed title."""
+        import hashlib
+        title = "Secret plan.docx - Word"
+        plain = hashlib.sha1(title.encode()).hexdigest()[:6]
+        tag = shortcut_fetcher.title_tag(title)
+        self.assertNotIn(plain, tag)
+        self.assertEqual(tag, shortcut_fetcher.title_tag(title), "stable in a run")
+        with patch.object(shortcut_fetcher, "_TITLE_KEY", b"another key"):
+            self.assertNotEqual(shortcut_fetcher.title_tag(title), tag)
+
+    def test_forget_drops_the_per_title_answers(self):
+        self.first()
+        self.fetcher.forget()
+        self.assertEqual(self.fetcher._by_title, {})
+
+
+class CancelTest(unittest.TestCase):
+    """A harvest is cancelled once focus has left its app."""
+
+    def test_cancel_turns_true_when_ANOTHER_app_is_focused(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = {}
+
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
+            seen["before"] = cancel()
+            fetcher._focused = "slack"
+            seen["after"] = cancel()
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("chrome")
+            end = time.monotonic() + 2
+            while "after" not in seen and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, {"before": False, "after": True})
+
+    def test_the_WINDOW_HANDLE_reaches_the_harvest(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = {}
+
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
+            seen.update(pid=pid, hwnd=hwnd)
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("zoom", pid=7, hwnd=198342)
+            end = time.monotonic() + 2
+            while not seen and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, {"pid": 7, "hwnd": 198342})
+
+    def test_note_focus_CANCELS_a_read_of_the_app_left(self):
+        """Focus can move to a window `overlays_for` is never called for
+        (template-covered, unnamed): the core reports it every tick."""
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        seen = []
+
+        def harvest(app, reason=None, pid=None, cancel=None, hwnd=None):
+            seen.append(cancel())
+            fetcher.note_focus("explorer")
+            seen.append(cancel())
+            fetcher.note_focus(None)
+            seen.append(cancel())
+            return []
+
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+                patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            fetcher.overlays_for("chrome")
+            end = time.monotonic() + 2
+            while len(seen) < 3 and time.monotonic() < end:
+                time.sleep(0.01)
+        self.assertEqual(seen, [False, True, True])
+
+    def test_a_call_WITHOUT_a_handle_drops_the_old_one(self):
+        fetcher = ShortcutIconFetcher()
+        self.addCleanup(fetcher.stop)
+        with patch.object(fetcher, "_resolve", side_effect=lambda *a: {}):
+            fetcher.overlays_for("zoom", hwnd=1)
+            fetcher.overlays_for("zoom")
+        self.assertNotIn("zoom", fetcher._hwnds)
+
+    def test_stop_ends_the_HELPER_when_one_was_started(self):
+        from polyhost.services.shortcut_source import out_of_process
+        fetcher = ShortcutIconFetcher()
+        with patch.object(out_of_process, "stop") as stop:
+            fetcher.stop()
+        stop.assert_called_once_with()
 
 
 if __name__ == "__main__":
