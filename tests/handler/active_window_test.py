@@ -989,16 +989,16 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class TheMacOSTickSkipsTheAppleScriptQueryTest(unittest.TestCase):
-    """The Quartz early-out: is the same application still in front?
+    """The Accessibility early-out: is the same application still in front?
 
     `pywinctl.getActiveWindow()` costs two `osascript` processes on macOS and
-    ran on every tick for ever. `own_process.focused_app_pid()`
-    answers the same question for the common case with one in-process Quartz
-    call, so a settled board costs nothing.
+    ran on every tick for ever. `active_window.focused_app_pid()` answers the
+    same question with one in-process `AXFocusedApplication` read, so a
+    settled board costs nothing.
 
-    ⚠️ Quartz cannot read a window NAME without Screen Recording permission,
-    so each condition below is load-bearing: the skip must not survive a
-    retitle that the overlay match depends on.
+    ⚠️ A pid does not change when a window RETITLES, so each condition below
+    is load-bearing: the skip must not survive a retitle the overlay match
+    depends on.
     """
 
     MAPPING = {

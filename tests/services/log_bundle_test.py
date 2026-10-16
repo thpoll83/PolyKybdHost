@@ -125,9 +125,18 @@ class EnvironmentDetailTest(unittest.TestCase):
         self.assertIn("Window backend   : PyWinCtl ", lb.environment_text())
 
     def test_the_backend_version_is_read_WITHOUT_importing_pywinctl(self):
-        """It needs a display and can `sys.exit()` without one."""
-        with mock.patch.dict("sys.modules", {"pywinctl": None}):
-            self.assertIn("PolyHost version", lb.environment_text())
+        """It needs a display and can `sys.exit()` without one.
+
+        ⚠️ The assertion is that the LINE STILL APPEARS while the import is
+        blocked. Asserting some other line was there instead made the test
+        vacuous: the `except` swallows the ImportError, so an
+        `import pywinctl` added to that code path dropped the backend line
+        and the test still passed (Revix, #397 — verified by mutation).
+        """
+        with mock.patch.dict("sys.modules", {"pywinctl": None}), \
+             mock.patch("importlib.metadata.version", return_value="9.9.9-probe"):
+            text = lb.environment_text()
+        self.assertIn("Window backend   : PyWinCtl 9.9.9-probe", text)
 
     def test_slow_probes_are_opt_in(self):
         """The autostart probe shells out on Windows, so a GUI-thread caller
