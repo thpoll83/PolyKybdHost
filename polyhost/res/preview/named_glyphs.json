@@ -1,5 +1,5 @@
 {
- "fw_version": "1.0.0",
+ "fw_version": "1.9.3",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -3290,6 +3290,9 @@
   "ICON_DOWN": [
    1048583
   ],
+  "ICON_EISU_KANA": [
+   1048615
+  ],
   "ICON_EXPLORER": [
    1048609
   ],
@@ -3317,6 +3320,162 @@
   "ICON_GIF": [
    127916
   ],
+  "ICON_HAN_YEONG": [
+   1048614
+  ],
+  "ICON_HINT_ACCESSIBILITY": [
+   1048871
+  ],
+  "ICON_HINT_APP_SWITCH": [
+   1048846
+  ],
+  "ICON_HINT_CAST": [
+   1048858
+  ],
+  "ICON_HINT_CLIP_HISTORY": [
+   1048833
+  ],
+  "ICON_HINT_CLOSE": [
+   1048838
+  ],
+  "ICON_HINT_COPILOT": [
+   1048881
+  ],
+  "ICON_HINT_DESKTOP_CLOSE": [
+   1048854
+  ],
+  "ICON_HINT_DESKTOP_NEW": [
+   1048851
+  ],
+  "ICON_HINT_DESKTOP_NEXT": [
+   1048853
+  ],
+  "ICON_HINT_DESKTOP_PREV": [
+   1048852
+  ],
+  "ICON_HINT_DICTATION": [
+   1048872
+  ],
+  "ICON_HINT_DISPLAY": [
+   1048850
+  ],
+  "ICON_HINT_EMOJI": [
+   1048876
+  ],
+  "ICON_HINT_EXPLORER": [
+   1048870
+  ],
+  "ICON_HINT_FEEDBACK": [
+   1048880
+  ],
+  "ICON_HINT_FULLSCREEN": [
+   1048841
+  ],
+  "ICON_HINT_GAME_BAR": [
+   1048879
+  ],
+  "ICON_HINT_GFX_RESTART": [
+   1048855
+  ],
+  "ICON_HINT_LINE_END": [
+   1048837
+  ],
+  "ICON_HINT_LINE_START": [
+   1048836
+  ],
+  "ICON_HINT_LOCK": [
+   1048863
+  ],
+  "ICON_HINT_MAXIMIZE": [
+   1048840
+  ],
+  "ICON_HINT_MINIMIZE": [
+   1048839
+  ],
+  "ICON_HINT_MINIMIZE_ALL": [
+   1048842
+  ],
+  "ICON_HINT_MINIMIZE_OTHERS": [
+   1048843
+  ],
+  "ICON_HINT_NARRATOR": [
+   1048874
+  ],
+  "ICON_HINT_NETWORK": [
+   1048857
+  ],
+  "ICON_HINT_PEEK_DESKTOP": [
+   1048849
+  ],
+  "ICON_HINT_QUICK_ASSIST": [
+   1048882
+  ],
+  "ICON_HINT_QUICK_MENU": [
+   1048868
+  ],
+  "ICON_HINT_QUICK_SETTINGS": [
+   1048866
+  ],
+  "ICON_HINT_RUN": [
+   1048864
+  ],
+  "ICON_HINT_SCREENSHOT": [
+   1048859
+  ],
+  "ICON_HINT_SCREEN_RECORD": [
+   1048861
+  ],
+  "ICON_HINT_SEARCH": [
+   1048832
+  ],
+  "ICON_HINT_SETTINGS": [
+   1048865
+  ],
+  "ICON_HINT_SHOW_DESKTOP": [
+   1048848
+  ],
+  "ICON_HINT_SNAP_LEFT": [
+   1048844
+  ],
+  "ICON_HINT_SNAP_RIGHT": [
+   1048845
+  ],
+  "ICON_HINT_SNIP": [
+   1048860
+  ],
+  "ICON_HINT_SPEECH_REC": [
+   1048873
+  ],
+  "ICON_HINT_SYSTEM_PROPS": [
+   1048856
+  ],
+  "ICON_HINT_TASK_CYCLE": [
+   1048869
+  ],
+  "ICON_HINT_TEXT_RECOG": [
+   1048862
+  ],
+  "ICON_HINT_TRAY": [
+   1048867
+  ],
+  "ICON_HINT_VOLUME_MIXER": [
+   1048875
+  ],
+  "ICON_HINT_WINDOW_SWITCH": [
+   1048847
+  ],
+  "ICON_HINT_WORD_LEFT": [
+   1048834
+  ],
+  "ICON_HINT_WORD_RIGHT": [
+   1048835
+  ],
+  "ICON_HINT_ZOOM_IN": [
+   1048877
+  ],
+  "ICON_HINT_ZOOM_OUT": [
+   1048878
+  ],
   "ICON_HOLD_DOWN": [
    1048579
   ],
@@ -3325,6 +3484,9 @@
   ],
   "ICON_INTL_PICKER_SMALL": [
    1048577
+  ],
+  "ICON_KATAKANA": [
+   1048616
   ],
   "ICON_LAUNCHER": [
    9776

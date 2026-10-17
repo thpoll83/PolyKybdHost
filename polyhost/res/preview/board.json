@@ -1,5 +1,5 @@
 {
- "fw_version": "1.3.2",
+ "fw_version": "1.9.3",
  "keys": [
   {
    "keycode": 41,
@@ -56,13 +56,13 @@
    "token": "KC_5"
   },
   {
-   "keycode": 100,
+   "keycode": 32680,
    "label": "6",
    "matrix": [
     0,
     6
    ],
-   "token": "KC_NUBS"
+   "token": "KC_IME"
   },
   {
    "keycode": 43,

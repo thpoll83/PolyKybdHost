@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import shutil
@@ -677,19 +678,61 @@ def _build_tarball(path: Path, top_dir: str, files: dict):
 class TestSafeExtract(unittest.TestCase):
 
     def test_rejects_path_traversal(self):
-        with tempfile.TemporaryDirectory() as td:
-            tar_path = Path(td) / "evil.tar.gz"
-            with tarfile.open(tar_path, "w:gz") as tar:
-                data = b"pwn"
-                info = tarfile.TarInfo(name="../../evil.txt")
-                info.size = len(data)
-                tar.addfile(info, io.BytesIO(data))
+        """Both branches of `_safe_extract` refuse it, and neither writes
+        outside `dest`.
 
-            dest = Path(td) / "out"
-            dest.mkdir()
-            with tarfile.open(tar_path, "r:gz") as tar:
-                with self.assertRaises(RuntimeError):
-                    updater._safe_extract(tar, dest)
+        ⚠️ The exception TYPE differs by branch, and asserting one of them hid
+        the other. Below Python 3.12 the refusal is our own `RuntimeError`;
+        from 3.12 the work is delegated to `extractall(filter="data")`, which
+        raises `tarfile.FilterError` (`OutsideDestinationError` here). This
+        test asserted `RuntimeError` without pinning the version the way its
+        symlink sibling does, so on 3.13 it ERRORED -- while the traversal was
+        in fact being refused, and the caller (`UpdateInstaller`, `except
+        Exception`) handled either type identically. A test that fails when the
+        code is right costs the next reader the time to prove it is a false
+        alarm, which is what happened here.
+
+        So the assertion is the PROPERTY rather than a type: something is
+        raised, and the escaping path does not exist afterwards. `dest` is two
+        levels down so that `../../evil.txt` lands inside the temp directory,
+        where its absence can be asserted without depending on what else is
+        in the system temp directory.
+
+        ⚠️ The UNPATCHED case's expected type is derived from the same
+        condition `_safe_extract` tests, never written as a constant. Pinning
+        it to `FilterError` made the test fail on the 3.10 and 3.11 this
+        project still supports (README: "Requires Python 3.10 or newer"),
+        where that branch is not taken -- the very mistake this test was being
+        fixed for, repeated one line down (Greptile P1, #403). And
+        `tarfile.FilterError` is only named when it exists: the filters landed
+        in 3.12 and were backported to 3.10.12/3.11.4, so on an older patch
+        release the constant itself is an AttributeError.
+        """
+        live = (tarfile.FilterError if sys.version_info >= (3, 12)
+                else RuntimeError)
+        for pinned, expected in ((None, live), ((3, 11, 0), RuntimeError)):
+            with self.subTest(version_info=pinned or "real"):
+                with tempfile.TemporaryDirectory() as td:
+                    tar_path = Path(td) / "evil.tar.gz"
+                    with tarfile.open(tar_path, "w:gz") as tar:
+                        data = b"pwn"
+                        info = tarfile.TarInfo(name="../../evil.txt")
+                        info.size = len(data)
+                        tar.addfile(info, io.BytesIO(data))
+
+                    dest = Path(td) / "a" / "b" / "out"
+                    dest.mkdir(parents=True)
+                    escaped = Path(td) / "a" / "evil.txt"
+                    ctx = (mock.patch("polyhost.services.updater.sys") if pinned
+                           else contextlib.nullcontext())
+                    with ctx as fake_sys:
+                        if pinned:
+                            fake_sys.version_info = pinned
+                        with tarfile.open(tar_path, "r:gz") as tar:
+                            with self.assertRaises(expected):
+                                updater._safe_extract(tar, dest)
+                    self.assertFalse(escaped.exists(),
+                                     "the member was written outside dest")
 
     def test_rejects_symlink_member(self):
         with tempfile.TemporaryDirectory() as td:
