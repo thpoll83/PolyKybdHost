@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-16 06:14+0000\n"
+"POT-Creation-Date: 2026-10-18 21:44+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -297,113 +297,113 @@ msgstr ""
 msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
 msgstr "{prefix} — نیمهٔ USB پاسخ داد، اما نیمهٔ دیگر صفحه‌کلید تأیید نکرد که {what} را در 90 s پاک کرده است. کابل بین دو نیمه را بررسی کنید. اگر نیمهٔ دیگر خاموش بماند، میان‌افزاری اجرا نمی‌کند و باید فایل .uf2 میان‌افزار را به‌صورت دستی روی آن کپی کرد."
 
-#: polyhost/forwarder.py:240
+#: polyhost/forwarder.py:243
 msgid "Press to pause forwarding"
 msgstr "برای مکث ارسال کلیک کنید"
 
-#: polyhost/forwarder.py:247
+#: polyhost/forwarder.py:250
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "ارسال پنجرهٔ فعال این رایانه به رایانهٔ صفحه‌کلید متوقف شود."
 
-#: polyhost/forwarder.py:259
+#: polyhost/forwarder.py:262
 msgid "Check for host update…"
 msgstr "بررسی به‌روزرسانی میزبان…"
 
-#: polyhost/forwarder.py:340
+#: polyhost/forwarder.py:343
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "بدون میزبان (در انتظار {path})"
 
-#: polyhost/forwarder.py:341
+#: polyhost/forwarder.py:344
 msgid "no host configured"
 msgstr "میزبانی پیکربندی نشده است"
 
-#: polyhost/forwarder.py:344
+#: polyhost/forwarder.py:347
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (ارسال‌کننده) → {target}"
 
-#: polyhost/forwarder.py:349
+#: polyhost/forwarder.py:352
 msgid "Forwarding paused"
 msgstr "ارسال متوقف شد"
 
-#: polyhost/forwarder.py:352
+#: polyhost/forwarder.py:355
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "در حال ارسال به {target}…"
 
-#: polyhost/forwarder.py:354
+#: polyhost/forwarder.py:357
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "ارسال به {target}"
 
-#: polyhost/forwarder.py:355
+#: polyhost/forwarder.py:358
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "دسترسی به {target} ممکن نیست"
 
-#: polyhost/forwarder.py:748
+#: polyhost/forwarder.py:751
 msgid "PolyForwarder settings"
 msgstr "تنظیمات PolyForwarder"
 
-#: polyhost/forwarder.py:749
+#: polyhost/forwarder.py:752
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "تنظیمات در فایل تنظیمات ذخیره نشد، بنابراین اعمال نخواهد شد. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. دوباره تلاش کنید یا لاگ را ببینید."
 
-#: polyhost/forwarder.py:768
+#: polyhost/forwarder.py:771
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC احراز هویت‌شده (درگاه {port})"
 
-#: polyhost/forwarder.py:770
+#: polyhost/forwarder.py:773
 msgid "legacy plaintext TCP relay"
 msgstr "رلهٔ قدیمی TCP متن ساده"
 
-#: polyhost/forwarder.py:773
+#: polyhost/forwarder.py:776
 msgid "reaching the keyboard machine"
 msgstr "در ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:774
+#: polyhost/forwarder.py:777
 msgid "not reaching the keyboard machine"
 msgstr "بدون ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:775
+#: polyhost/forwarder.py:778
 msgid "starting up"
 msgstr "در حال راه‌اندازی"
 
-#: polyhost/forwarder.py:777
+#: polyhost/forwarder.py:780
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>حالت:</b> ارسال‌کننده — هیچ صفحه‌کلیدی به این رایانه وصل نیست"
 
-#: polyhost/forwarder.py:778
+#: polyhost/forwarder.py:781
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>مقصد:</b> {target}"
 
-#: polyhost/forwarder.py:780
+#: polyhost/forwarder.py:783
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>گزارش‌های پنجره:</b> {transport}"
 
-#: polyhost/forwarder.py:783
+#: polyhost/forwarder.py:786
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>فایل میزبان:</b> {path}"
 
-#: polyhost/forwarder.py:804
+#: polyhost/forwarder.py:807
 msgid "About PolyKybdHost (forwarder)"
 msgstr "دربارهٔ PolyKybdHost (ارسال‌کننده)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:811
+#: polyhost/forwarder.py:814
 msgid "forwarder"
 msgstr "ارسال‌کننده"
 
-#: polyhost/forwarder.py:813
+#: polyhost/forwarder.py:816
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "حالت ارسال‌کننده: این رایانه صفحه‌کلید ندارد. پنجرهٔ فعال اینجا را دنبال می‌کند و آن را به PolyKybdHost در حال اجرا روی رایانه‌ای که صفحه‌کلید به آن وصل است می‌فرستد."
 
-#: polyhost/forwarder.py:852
+#: polyhost/forwarder.py:855
 msgid "Download, install, and restart the forwarder now?"
 msgstr "ارسال‌کننده اکنون بارگیری، نصب و دوباره راه‌اندازی شود؟"
 
@@ -763,7 +763,7 @@ msgstr "همراه برنامه"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "فرمان‌های PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2277
+#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2319
 msgid "Open file"
 msgstr "باز کردن فایل"
 
@@ -1653,8 +1653,8 @@ msgstr "فلش شروع شد — سینی سیستم/لاگ را دنبال کن
 msgid "Discard all pending edits to '{label}'?"
 msgstr "همهٔ ویرایش‌های در انتظار «{label}» کنار گذاشته شوند؟"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2870
-#: polyhost/host.py:2911 polyhost/host.py:2938
+#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2913
+#: polyhost/host.py:2954 polyhost/host.py:2981
 msgid "Firmware Update"
 msgstr "به‌روزرسانی میان‌افزار"
 
@@ -1667,7 +1667,7 @@ msgstr "<b>فایل:</b> {path}"
 msgid "Applying staged firmware…"
 msgstr "در حال اعمال میان‌افزار آماده‌شده…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:170
 msgid "Starting…"
 msgstr "در حال شروع…"
 
@@ -1819,7 +1819,7 @@ msgstr "داده‌ای برای پیش‌نمایش نیست (نه همراه �
 msgid "the shipped language table is missing"
 msgstr "جدول زبان همراه برنامه موجود نیست"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2886
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2929
 msgid "unknown"
 msgstr "نامشخص"
 
@@ -2496,7 +2496,7 @@ msgstr "موردی یافت نشد"
 msgid "{index} of {total}"
 msgstr "{index} از {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1917
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1945
 msgid "Mock keyboard"
 msgstr "صفحه‌کلید شبیه‌سازی‌شده"
 
@@ -2787,7 +2787,7 @@ msgstr "تأخیر"
 msgid "Dev"
 msgstr "توسعه"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:837
+#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:840
 msgid "Developer"
 msgstr "توسعه‌دهنده"
 
@@ -3200,7 +3200,7 @@ msgstr "{prefix} — میزبان v{host_version} در دسترس است"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — میان‌افزار v{fw_version} در دسترس است"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:731
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:734
 msgid "Updates"
 msgstr "به‌روزرسانی‌ها"
 
@@ -3335,179 +3335,179 @@ msgstr "بستهٔ موتور صفحه‌کلید به‌روز است."
 msgid "Engine pack update failed: {error}"
 msgstr "به‌روزرسانی بستهٔ موتور ناموفق بود: {error}"
 
-#: polyhost/host.py:491 polyhost/host.py:1483
+#: polyhost/host.py:494 polyhost/host.py:1511
 msgid "Waiting for PolyKybd..."
 msgstr "در انتظار PolyKybd..."
 
-#: polyhost/host.py:492 polyhost/host.py:1335
+#: polyhost/host.py:495 polyhost/host.py:1361
 msgid "Press to pause connection"
 msgstr "برای مکث اتصال کلیک کنید"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:495
+#: polyhost/forwarder.py:311 polyhost/host.py:498
 msgid "Quit"
 msgstr "خروج"
 
-#: polyhost/host.py:504
+#: polyhost/host.py:507
 msgid "Quit && stop background daemon"
 msgstr "خروج && توقف سرویس پس‌زمینه"
 
-#: polyhost/forwarder.py:275 polyhost/host.py:509
+#: polyhost/forwarder.py:278 polyhost/host.py:512
 msgid "About"
 msgstr "درباره"
 
-#: polyhost/forwarder.py:264 polyhost/host.py:513
+#: polyhost/forwarder.py:267 polyhost/host.py:516
 msgid "Settings..."
 msgstr "تنظیمات..."
 
-#: polyhost/forwarder.py:279 polyhost/host.py:517
+#: polyhost/forwarder.py:282 polyhost/host.py:520
 msgid "Log file..."
 msgstr "فایل لاگ..."
 
-#: polyhost/forwarder.py:285 polyhost/host.py:526
+#: polyhost/forwarder.py:288 polyhost/host.py:529
 msgid "Report a Problem..."
 msgstr "گزارش مشکل..."
 
-#: polyhost/forwarder.py:291 polyhost/host.py:545
+#: polyhost/forwarder.py:294 polyhost/host.py:548
 msgid "Collect logs..."
 msgstr "جمع‌آوری لاگ‌ها..."
 
-#: polyhost/host.py:554
+#: polyhost/host.py:557
 msgid "Read keyboard crash record"
 msgstr "خواندن سابقهٔ خرابی صفحه‌کلید"
 
-#: polyhost/host.py:556
+#: polyhost/host.py:559
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "آخرین سابقهٔ خرابی صفحه‌کلید از هر دو نیمه خوانده و در کلیپ‌بورد کپی شود."
 
-#: polyhost/host.py:561
+#: polyhost/host.py:564
 msgid "Inspect Font Packs..."
 msgstr "بررسی بسته‌های فونت..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:245 polyhost/forwarder.py:366 polyhost/host.py:575
-#: polyhost/host.py:1337
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:578
+#: polyhost/host.py:1363
 msgid "Pause"
 msgstr "مکث"
 
-#: polyhost/host.py:585
+#: polyhost/host.py:588
 msgid "Firmware newer than this app — safe mode…"
 msgstr "میان‌افزار جدیدتر از این برنامه — حالت امن…"
 
-#: polyhost/host.py:587
+#: polyhost/host.py:590
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "نحوهٔ برخورد با صفحه‌کلیدی که میان‌افزارش از این برنامهٔ میزبان جدیدتر است را انتخاب کنید."
 
-#: polyhost/host.py:623
+#: polyhost/host.py:626
 msgid "Idle Display"
 msgstr "نمایش در حالت بیکاری"
 
-#: polyhost/host.py:626
+#: polyhost/host.py:629
 msgid "Pulse (legacy)"
 msgstr "تپش (قدیمی)"
 
-#: polyhost/host.py:628
+#: polyhost/host.py:631
 msgid "Jitter (move legend)"
 msgstr "لرزش (جابه‌جایی نوشته)"
 
-#: polyhost/host.py:632
+#: polyhost/host.py:635
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (نمایش دمو)"
 
-#: polyhost/host.py:636
+#: polyhost/host.py:639
 msgid "Eden"
 msgstr "عدن"
 
-#: polyhost/host.py:656
+#: polyhost/host.py:659
 msgid "Idle After"
 msgstr "بیکاری پس از"
 
-#: polyhost/host.py:677
+#: polyhost/host.py:680
 msgid "Keycap Script"
 msgstr "خط کلاهک"
 
-#: polyhost/host.py:705
+#: polyhost/host.py:708
 msgid "Keycap Size"
 msgstr "اندازهٔ کلاهک"
 
-#: polyhost/host.py:723
+#: polyhost/host.py:726
 msgid "Configure Keymap"
 msgstr "پیکربندی نقشهٔ کلید"
 
-#: polyhost/host.py:733
+#: polyhost/host.py:736
 msgid "Check for host update..."
 msgstr "بررسی به‌روزرسانی میزبان..."
 
-#: polyhost/host.py:772
+#: polyhost/host.py:775
 msgid "Check for keyboard firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار صفحه‌کلید…"
 
-#: polyhost/host.py:781
+#: polyhost/host.py:784
 msgid "Keyboard fonts"
 msgstr "فونت‌های صفحه‌کلید"
 
-#: polyhost/host.py:815
+#: polyhost/host.py:818
 msgid "Install WinCompose…"
 msgstr "نصب WinCompose…"
 
-#: polyhost/host.py:839
+#: polyhost/host.py:842
 msgid "Change System Input Language"
 msgstr "تغییر زبان ورودی سیستم"
 
-#: polyhost/host.py:845
+#: polyhost/host.py:848
 msgid "Inspect MRU Cache..."
 msgstr "بررسی حافظهٔ نهان MRU..."
 
-#: polyhost/host.py:851
+#: polyhost/host.py:854
 msgid "Mock Keyboard..."
 msgstr "صفحه‌کلید شبیه‌سازی‌شده..."
 
-#: polyhost/host.py:859
+#: polyhost/host.py:862
 msgid "Refresh unicode input mode"
 msgstr "تازه‌سازی حالت ورودی یونیکد"
 
-#: polyhost/host.py:863
+#: polyhost/host.py:866
 msgid "Save MRU cache now"
 msgstr "ذخیرهٔ حافظهٔ نهان MRU اکنون"
 
-#: polyhost/forwarder.py:301 polyhost/host.py:877
+#: polyhost/forwarder.py:304 polyhost/host.py:880
 msgid "Help && About"
 msgstr "راهنما && درباره"
 
-#: polyhost/forwarder.py:297 polyhost/host.py:886
+#: polyhost/forwarder.py:300 polyhost/host.py:889
 msgid "Open config folder"
 msgstr "باز کردن پوشهٔ پیکربندی"
 
-#: polyhost/host.py:999
+#: polyhost/host.py:1002
 msgid "System language query not supported for this platform."
 msgstr "پرس‌وجوی زبان سیستم در این سکو پشتیبانی نمی‌شود."
 
-#: polyhost/host.py:1198
+#: polyhost/host.py:1201
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "تلاش دوباره برای فونت‌های صفحه‌کلید ({n} ناموفق)…"
 
-#: polyhost/host.py:1200
+#: polyhost/host.py:1203
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "مجموعه‌های فونتی که آخرین تلاششان ناموفق بود دوباره فلش شوند: {bundles}"
 
-#: polyhost/host.py:1206
+#: polyhost/host.py:1209
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "به‌روزرسانی فونت‌های صفحه‌کلید ({n})…"
 
-#: polyhost/host.py:1208
+#: polyhost/host.py:1211
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "فلش مجموعه‌های فونتی که صفحه‌کلید ندارد، نسخهٔ قدیمی‌شان را دارد، یا دریافتشان ناموفق بود: {bundles}"
 
-#: polyhost/host.py:1213
+#: polyhost/host.py:1216
 msgid "Keyboard fonts: up to date"
 msgstr "فونت‌های صفحه‌کلید: به‌روز"
 
-#: polyhost/host.py:1214
+#: polyhost/host.py:1217
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3515,65 +3515,76 @@ msgstr ""
 "همهٔ مجموعه‌های فونت همراه برنامه از قبل روی صفحه‌کلید هستند.\n"
 "اگر کلاهک‌ها هنوز نادرست نمایش داده می‌شوند، توسعه‌دهنده ← بستهٔ فونت ← فلش دوبارهٔ همهٔ مجموعه‌ها ارسال دوباره را اجباری می‌کند."
 
-#: polyhost/forwarder.py:711 polyhost/host.py:1244
+#: polyhost/forwarder.py:714 polyhost/host.py:1247
 msgid "Config folder"
 msgstr "پوشهٔ پیکربندی"
 
+#. TRANSLATORS: tray tooltip line; the bulk pipe is the fast USB channel.
+#: polyhost/host.py:1341
+msgid "Connected over the bulk pipe"
+msgstr ""
+
+#. TRANSLATORS: tray tooltip line; raw HID is the slow, always-available
+#. channel.
+#: polyhost/host.py:1343
+msgid "Connected over HID only"
+msgstr ""
+
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1329
+#: polyhost/host.py:1355
 msgid "Reconnect"
 msgstr "اتصال مجدد"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:366 polyhost/host.py:1332
+#: polyhost/forwarder.py:369 polyhost/host.py:1358
 msgid "Resume"
 msgstr "ازسرگیری"
 
-#: polyhost/host.py:1411 polyhost/host.py:1475
+#: polyhost/host.py:1438 polyhost/host.py:1503
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "تغییر زبان سیستم‌عامل {language} ممکن نشد."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1499
+#: polyhost/host.py:1527
 msgid "Firmware image (*.bin)"
 msgstr "تصویر میان‌افزار (*.bin)"
 
-#: polyhost/host.py:1500
+#: polyhost/host.py:1528
 msgid "Select firmware .bin"
 msgstr "انتخاب فایل .bin میان‌افزار"
 
-#: polyhost/host.py:1551
+#: polyhost/host.py:1579
 msgid "Firmware apply failed"
 msgstr "اعمال میان‌افزار ناموفق بود"
 
-#: polyhost/host.py:1552
+#: polyhost/host.py:1580
 msgid "Firmware flash failed"
 msgstr "فلش میان‌افزار ناموفق بود"
 
-#: polyhost/host.py:1600 polyhost/host.py:1653
+#: polyhost/host.py:1628 polyhost/host.py:1681
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "زبان انتخاب‌شده: {language} {country}"
 
-#: polyhost/host.py:1704
+#: polyhost/host.py:1732
 msgid "PolyHost settings"
 msgstr "تنظیمات PolyHost"
 
-#: polyhost/host.py:1705
+#: polyhost/host.py:1733
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "تنظیمات اعمال شدند، اما در فایل تنظیمات ذخیره نشدند. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. برای تلاش دوباره بعداً یک تنظیم را دوباره تغییر دهید، یا لاگ را ببینید."
 
-#: polyhost/host.py:1807
+#: polyhost/host.py:1835
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: سابقهٔ ناخوانا {record}"
 
-#: polyhost/host.py:1810
+#: polyhost/host.py:1838
 msgid "Neither keyboard half holds a crash record."
 msgstr "هیچ‌یک از دو نیمهٔ صفحه‌کلید سابقهٔ خرابی ندارد."
 
-#: polyhost/host.py:1812
+#: polyhost/host.py:1840
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3584,114 +3595,129 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1814
+#: polyhost/host.py:1842
 msgid "Keyboard crash record"
 msgstr "سابقهٔ خرابی صفحه‌کلید"
 
-#: polyhost/host.py:1823
+#: polyhost/host.py:1851
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "در کلیپ‌بورد کپی شد. خوانده نشد: {errors}"
 
-#: polyhost/host.py:1908
+#: polyhost/host.py:1936
 msgid "MRU Cache"
 msgstr "حافظهٔ نهان MRU"
 
-#: polyhost/host.py:1908
+#: polyhost/host.py:1936
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "حافظهٔ نهان MRU فعال نیست (دستگاه متصل نیست یا حالت MRU غیرفعال است)."
 
-#: polyhost/host.py:1957
+#: polyhost/host.py:1985
 msgid "daemon client"
 msgstr "کلاینت سرویس پس‌زمینه"
 
-#: polyhost/host.py:1957
+#: polyhost/host.py:1985
 msgid "standalone"
 msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:772 polyhost/host.py:2013
+#: polyhost/forwarder.py:775 polyhost/host.py:2042
 msgid "paused"
 msgstr "مکث‌شده"
 
-#: polyhost/host.py:2015
+#: polyhost/host.py:2044
 msgid "connected"
 msgstr "متصل"
 
-#: polyhost/host.py:2016
+#: polyhost/host.py:2045
 msgid "present — not connected (protocol/version)"
 msgstr "موجود — متصل نیست (پروتکل/نسخه)"
 
-#: polyhost/host.py:2023
+#: polyhost/host.py:2052
 msgid "Keyboard"
 msgstr "صفحه‌کلید"
 
-#: polyhost/host.py:2024
+#: polyhost/host.py:2053
 msgid "No keyboard connected."
 msgstr "هیچ صفحه‌کلیدی متصل نیست."
 
-#: polyhost/host.py:2028
+#: polyhost/host.py:2057
 msgid "⚠ mismatch"
 msgstr "⚠ ناهمخوانی"
 
-#: polyhost/host.py:2030
+#: polyhost/host.py:2059
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} زبان بارگذاری شد"
 
-#: polyhost/host.py:2033
+#: polyhost/host.py:2062
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>صفحه‌کلید متصل:</b> {name} {state}"
 
-#: polyhost/host.py:2035
+#: polyhost/host.py:2064
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>میان‌افزار:</b> {firmware} &nbsp;·&nbsp; پروتکل {protocol}"
 
-#: polyhost/host.py:2037
+#: polyhost/host.py:2066
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>سخت‌افزار:</b> {hardware}"
 
-#: polyhost/host.py:2038
+#: polyhost/host.py:2067
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>زبان:</b> {language}"
 
-#: polyhost/host.py:2045
+#: polyhost/host.py:2070
+#, python-brace-format
+msgid "<b>Channel:</b> {channel}"
+msgstr ""
+
+#. TRANSLATORS: the fast USB channel (CDC bulk endpoints) is in use.
+#: polyhost/host.py:2080
+msgid "bulk pipe"
+msgstr ""
+
+#. TRANSLATORS: only the raw HID channel is in use.
+#: polyhost/host.py:2082
+msgid "HID only"
+msgstr ""
+
+#: polyhost/host.py:2087
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>مدت کارکرد:</b> {uptime}"
 
-#: polyhost/host.py:2047
+#: polyhost/host.py:2089
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>نگاشت‌های هم‌پوشانی:</b> {n} برنامه"
 
-#: polyhost/forwarder.py:789 polyhost/host.py:2049
+#: polyhost/forwarder.py:792 polyhost/host.py:2091
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>پیکربندی:</b> {path}"
 
-#: polyhost/forwarder.py:790 polyhost/host.py:2050
+#: polyhost/forwarder.py:793 polyhost/host.py:2092
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>لاگ‌ها:</b> {path}"
 
-#: polyhost/forwarder.py:808 polyhost/host.py:2104
+#: polyhost/forwarder.py:811 polyhost/host.py:2146
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "پروتکل HID P{protocol}"
 
-#: polyhost/host.py:2109
+#: polyhost/host.py:2151
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "نرم‌افزار میزبان برای صفحه‌کلید دوتکهٔ PolyKybd با نمایشگرهای OLED روی هر کلاهک — پنجرهٔ فعال را دنبال می‌کند و هم‌پوشانی‌ها، زبان و به‌روزرسانی‌های نقشهٔ کلید را به صفحه‌کلید می‌فرستد."
 
-#: polyhost/host.py:2135
+#: polyhost/host.py:2177
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3700,61 +3726,61 @@ msgstr ""
 "تغییر زبان ورودی به «{language}» با این خطا ناموفق بود:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2155 polyhost/host.py:2170
+#: polyhost/host.py:2197 polyhost/host.py:2212
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "تنظیم {language} ممکن نشد: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2276
+#: polyhost/host.py:2318
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "نگاشت هم‌پوشانی PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2364 polyhost/host.py:2842 polyhost/host.py:2985
+#: polyhost/host.py:2406 polyhost/host.py:2885 polyhost/host.py:3028
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 
-#: polyhost/host.py:2366 polyhost/host.py:2883 polyhost/host.py:3055
+#: polyhost/host.py:2408 polyhost/host.py:2926 polyhost/host.py:3098
 msgid "Check for firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
-#: polyhost/forwarder.py:846 polyhost/forwarder.py:857
-#: polyhost/forwarder.py:863 polyhost/host.py:2384 polyhost/host.py:2505
-#: polyhost/host.py:2509
+#: polyhost/forwarder.py:849 polyhost/forwarder.py:860
+#: polyhost/forwarder.py:866 polyhost/host.py:2426 polyhost/host.py:2547
+#: polyhost/host.py:2551
 msgid "Check for updates..."
 msgstr "بررسی به‌روزرسانی‌ها..."
 
-#: polyhost/host.py:2452
+#: polyhost/host.py:2494
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "به‌روزرسانی به v{version} در دسترس است"
 
-#: polyhost/forwarder.py:859 polyhost/forwarder.py:865
-#: polyhost/forwarder.py:876 polyhost/host.py:2463 polyhost/host.py:2503
-#: polyhost/host.py:2510 polyhost/host.py:2533
+#: polyhost/forwarder.py:862 polyhost/forwarder.py:868
+#: polyhost/forwarder.py:879 polyhost/host.py:2505 polyhost/host.py:2545
+#: polyhost/host.py:2552 polyhost/host.py:2575
 msgid "PolyKybdHost Update"
 msgstr "به‌روزرسانی PolyKybdHost"
 
-#: polyhost/host.py:2464
+#: polyhost/host.py:2506
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "نسخهٔ {version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/forwarder.py:834 polyhost/host.py:2489
+#: polyhost/forwarder.py:837 polyhost/host.py:2531
 msgid "Checking for updates..."
 msgstr "در حال بررسی به‌روزرسانی‌ها..."
 
-#: polyhost/host.py:2502
+#: polyhost/host.py:2544
 msgid "No updates available"
 msgstr "به‌روزرسانی‌ای در دسترس نیست"
 
-#: polyhost/forwarder.py:860 polyhost/host.py:2504
+#: polyhost/forwarder.py:863 polyhost/host.py:2546
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "شما آخرین نسخه (v{version}) را اجرا می‌کنید."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2511
+#: polyhost/forwarder.py:869 polyhost/host.py:2553
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3769,63 +3795,63 @@ msgstr ""
 "\n"
 "برای جزئیات با --dev 1 اجرا کنید."
 
-#: polyhost/host.py:2516 polyhost/host.py:2915
+#: polyhost/host.py:2558 polyhost/host.py:2958
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "تاریخ انتشار: {date}"
 
-#: polyhost/forwarder.py:847 polyhost/host.py:2517
+#: polyhost/forwarder.py:850 polyhost/host.py:2559
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "نسخهٔ {version} در دسترس است."
 
-#: polyhost/forwarder.py:848 polyhost/host.py:2518
+#: polyhost/forwarder.py:851 polyhost/host.py:2560
 msgid "Update PolyKybdHost"
 msgstr "به‌روزرسانی PolyKybdHost"
 
-#: polyhost/host.py:2522
+#: polyhost/host.py:2564
 msgid "Download, install, and restart now?"
 msgstr "اکنون بارگیری، نصب و راه‌اندازی مجدد شود؟"
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2533
+#: polyhost/forwarder.py:878 polyhost/host.py:2575
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "در حال بارگیری v{version}…"
 
-#: polyhost/forwarder.py:916 polyhost/host.py:2658
+#: polyhost/forwarder.py:919 polyhost/host.py:2700
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "رلهٔ به‌روزرسانی شروع نشد؛ به‌روزرسانی ناقص است. برای جزئیات لاگ را ببینید."
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2673
+#: polyhost/forwarder.py:931 polyhost/host.py:2715
 msgid "Update failed"
 msgstr "به‌روزرسانی ناموفق بود"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2673
+#: polyhost/forwarder.py:931 polyhost/host.py:2715
 msgid "The update did not finish."
 msgstr "به‌روزرسانی کامل نشد."
 
-#: polyhost/host.py:2853
+#: polyhost/host.py:2896
 msgid "PolyKybd Firmware Update"
 msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
-#: polyhost/host.py:2854
+#: polyhost/host.py:2897
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "میان‌افزار جدید v{version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/host.py:2871 polyhost/host.py:2912
+#: polyhost/host.py:2914 polyhost/host.py:2955
 msgid "The keyboard must be connected to update the firmware."
 msgstr "برای به‌روزرسانی میان‌افزار، صفحه‌کلید باید متصل باشد."
 
-#: polyhost/host.py:2877
+#: polyhost/host.py:2920
 msgid "Checking for firmware update…"
 msgstr "در حال بررسی به‌روزرسانی میان‌افزار…"
 
-#: polyhost/host.py:2891 polyhost/host.py:2901 polyhost/host.py:2904
+#: polyhost/host.py:2934 polyhost/host.py:2944 polyhost/host.py:2947
 msgid "PolyKybd Firmware"
 msgstr "میان‌افزار PolyKybd"
 
-#: polyhost/host.py:2892
+#: polyhost/host.py:2935
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3836,55 +3862,55 @@ msgstr ""
 "\n"
 "صفحه‌کلید شما روی v{current} است. معمولاً این یعنی ساخت نسخهٔ انتشار ناموفق بوده است — پس از رفع آن، فایل میان‌افزار به صفحهٔ انتشار افزوده می‌شود."
 
-#: polyhost/host.py:2902
+#: polyhost/host.py:2945
 msgid "No firmware release could be found."
 msgstr "هیچ نسخهٔ منتشرشده‌ای از میان‌افزار پیدا نشد."
 
-#: polyhost/host.py:2905
+#: polyhost/host.py:2948
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "شما آخرین میان‌افزار (v{version}) را اجرا می‌کنید."
 
-#: polyhost/host.py:2917
+#: polyhost/host.py:2960
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "نصب‌شده: v{version}"
 
-#: polyhost/host.py:2918
+#: polyhost/host.py:2961
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "نصب‌شده: نامشخص (صفحه‌کلید نسخهٔ خود را گزارش نکرد)"
 
-#: polyhost/host.py:2919
+#: polyhost/host.py:2962
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "میان‌افزار {version} در دسترس است."
 
-#: polyhost/host.py:2921
+#: polyhost/host.py:2964
 msgid "Both halves update over HID and reboot automatically."
 msgstr "هر دو نیمه از طریق HID به‌روز شده و خودکار دوباره راه‌اندازی می‌شوند."
 
-#: polyhost/host.py:2922
+#: polyhost/host.py:2965
 msgid "Update PolyKybd Firmware"
 msgstr "به‌روزرسانی میان‌افزار PolyKybd"
 
-#: polyhost/host.py:2926
+#: polyhost/host.py:2969
 msgid "Download and flash now?"
 msgstr "اکنون بارگیری و فلش شود؟"
 
-#: polyhost/host.py:2937
+#: polyhost/host.py:2980
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "در حال بارگیری میان‌افزار v{version}…"
 
-#: polyhost/host.py:2959 polyhost/host.py:3171
+#: polyhost/host.py:3002 polyhost/host.py:3214
 msgid "Cancelling…"
 msgstr "در حال لغو…"
 
-#: polyhost/host.py:2996
+#: polyhost/host.py:3039
 msgid "Firmware Update Failed"
 msgstr "به‌روزرسانی میان‌افزار ناموفق بود"
 
-#: polyhost/host.py:2997
+#: polyhost/host.py:3040
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3895,12 +3921,12 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3135 polyhost/host.py:3149 polyhost/host.py:3195
-#: polyhost/host.py:3204 polyhost/host.py:3210
+#: polyhost/host.py:3178 polyhost/host.py:3192 polyhost/host.py:3238
+#: polyhost/host.py:3247 polyhost/host.py:3253
 msgid "Install WinCompose"
 msgstr "نصب WinCompose"
 
-#: polyhost/host.py:3136
+#: polyhost/host.py:3179
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3910,11 +3936,11 @@ msgstr ""
 "\n"
 "نسخهٔ PolyKybd از WinCompose از GitHub بارگیری و نصب‌کنندهٔ آن اجرا می‌شود (Windows از شما تأیید می‌خواهد)."
 
-#: polyhost/host.py:3149
+#: polyhost/host.py:3192
 msgid "Looking for the latest WinCompose release…"
 msgstr "در حال جست‌وجوی آخرین نسخهٔ WinCompose…"
 
-#: polyhost/host.py:3196
+#: polyhost/host.py:3239
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3924,7 +3950,7 @@ msgstr ""
 "\n"
 "صفحهٔ انتشارها در مرورگر شما باز می‌شود — برنامهٔ نصب را از آنجا بارگیری و اجرا کنید."
 
-#: polyhost/host.py:3205
+#: polyhost/host.py:3248
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3935,7 +3961,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3211
+#: polyhost/host.py:3254
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3952,7 +3978,7 @@ msgstr ""
 "در این مسیر ذخیره شد:\n"
 "{path}"
 
-#: polyhost/host.py:3219
+#: polyhost/host.py:3262
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "نصب‌کنندهٔ WinCompose اجرا شد. پس از پایان نصب و اجرای WinCompose، PolyKybd خودکار به آن تغییر می‌کند."
 

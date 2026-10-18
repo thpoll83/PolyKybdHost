@@ -375,6 +375,9 @@ class PolyHost(QApplication):
         # The tray's resting tooltip, and what _refresh_tray_tooltip falls back
         # to once a flash or a pending update stops claiming it.
         self._idle_tooltip = f"PolyKybdHost {__version__}"
+        # Channel to the keyboard as the core last reported it: "pipe", "hid"
+        # or None. Colours the tray mark and names itself in the tooltip.
+        self._transport = None
         self.icon_manager = IconStateManager(self, False, self._idle_tooltip)
         self._tray_waiter = TrayVisibilityWaiter(
             show=lambda: self.tray.setVisible(True),
@@ -1312,9 +1315,32 @@ class PolyHost(QApplication):
             # is disconnected or the menu is otherwise greyed out.
             self.exit_with_daemon.setEnabled(True)
         if self.connected:
+            self.icon_manager.set_transport(self._transport)
             self.icon_manager.set_connected()
         else:
             self.icon_manager.set_disconnected()
+
+    def _set_transport(self, transport):
+        """Record the channel the core reports ("pipe" / "hid" / None) and
+        refresh what shows it: the mark's colour (managed_connection_status)
+        and the resting tooltip. Both modes feed this: the standalone probe
+        snapshot and the daemon's status_changed payload."""
+        if transport == self._transport:
+            return
+        self._transport = transport
+        self._refresh_tray_tooltip()
+
+    def _transport_tooltip(self) -> str:
+        """The resting tooltip's second line, naming the channel in use. The
+        pipe is optional (older firmware, a blocked serial class, a KVM, a
+        busy port), so "HID only" is a state, not a fault."""
+        if not self.connected or self._transport is None:
+            return ""
+        if self._transport == "pipe":
+            # TRANSLATORS: tray tooltip line; the bulk pipe is the fast USB channel.
+            return _("Connected over the bulk pipe")
+        # TRANSLATORS: tray tooltip line; raw HID is the slow, always-available channel.
+        return _("Connected over HID only")
 
     def report_device_result(self, title, msg, result=False):
         # Logs only; no UI popup. Errors go to warning, anything else to info.
@@ -1347,6 +1373,7 @@ class PolyHost(QApplication):
         tree exactly, then drives the language-changed flow."""
         if self.paused:
             return
+        self._set_transport(snapshot.get("transport"))
         # Operational half (state, decision tree, post-connect jobs, cache
         # resets) is the core's; this method renders the result: status
         # entry, language menu, OS-language switch, update-check kick-off.
@@ -1431,6 +1458,7 @@ class PolyHost(QApplication):
         first connected render rather than only on state_changed."""
         if self.paused or not isinstance(payload, dict):
             return
+        self._set_transport(payload.get("transport"))
         # Cache the daemon-reported per-feature capabilities for menu gating; the
         # daemon carries them on every status_changed (a state-change event may be
         # missed by a late-attaching client, so fall back to the status snapshot).
@@ -1968,6 +1996,7 @@ class PolyHost(QApplication):
             "lang": st.get("current_lang") or "?",
             "n_lang": n_lang,
             "kb_proto": st.get("protocol"),
+            "transport": st.get("transport"),
             "n_maps": n_maps,
             "config_dir": platformdirs.user_config_dir("PolyHost"),
             "log_dir": os.getcwd(),
@@ -2037,7 +2066,20 @@ class PolyHost(QApplication):
             _f("<b>Hardware:</b> {hardware}", hardware=info["hw"]),
             _f("<b>Language:</b> {language}", language=lang_line),
         ]
+        if info.get("transport"):
+            rows.append(_f("<b>Channel:</b> {channel}",
+                           channel=_(self._transport_word(info["transport"]))))
         return about_dialog.rows_html(rows)
+
+    @staticmethod
+    def _transport_word(transport: str) -> str:
+        # English: the diagnostics text uses it as is; the About dialog
+        # translates it with _() where it is shown.
+        if transport == "pipe":
+            # TRANSLATORS: the fast USB channel (CDC bulk endpoints) is in use.
+            return N_("bulk pipe")
+        # TRANSLATORS: only the raw HID channel is in use.
+        return N_("HID only")
 
     def _about_env_html(self, info: dict) -> str:
         """Host environment block: uptime, overlay-mapping count (when known),
@@ -2762,11 +2804,12 @@ class PolyHost(QApplication):
         stored tooltip when a warning expires — a direct write survives only
         until the next `set_warning`, after which the marker is gone for good
         (CodeRabbit, #257)."""
-        self.icon_manager.set_base_tooltip(
-            self._fontpack_tooltip
-            or updates_tooltip(getattr(self._pending_release, "version", None),
-                               getattr(self._pending_fw_release, "version", None))
-            or self._idle_tooltip)
+        resting = (self._fontpack_tooltip
+                   or updates_tooltip(getattr(self._pending_release, "version", None),
+                                      getattr(self._pending_fw_release, "version", None))
+                   or self._idle_tooltip)
+        transport = self._transport_tooltip()
+        self.icon_manager.set_base_tooltip(f"{resting}\n{transport}" if transport else resting)
 
     # ------------------------------------------------------------------
     # Font-pack flash progress (auto on connect, or manual via polyctl)

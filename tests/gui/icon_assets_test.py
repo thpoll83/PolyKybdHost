@@ -25,8 +25,10 @@ _SKIP = ("res/overlay_sources",)
 # The tray app's mark spells a P in negative space; the forwarder's an F. The
 # think/warn states clear every inner key, so they carry no letter and exist
 # once -- IconStateManager hands both apps the same two.
-BRAND_VARIANTS = ("pcolor", "pgray", "fcolor", "fgray", "pthink", "pwarn")
-BRAND_LETTER_VARIANTS = ("pcolor", "pgray", "fcolor", "fgray")
+# "phid" is the connected mark in violet: raw HID only, no bulk pipe. Tray app
+# only, since the forwarder has no keyboard and so no transport to show.
+BRAND_VARIANTS = ("pcolor", "pgray", "phid", "fcolor", "fgray", "pthink", "pwarn")
+BRAND_LETTER_VARIANTS = ("pcolor", "pgray", "phid", "fcolor", "fgray")
 BRAND_SVG = {f"{v}.svg" for v in BRAND_VARIANTS}
 BRAND_LADDER = (16, 24, 32, 48, 64, 128, 256)
 BRAND_ICO_SIZES = (16, 20, 24, 32, 48, 64, 128, 256)

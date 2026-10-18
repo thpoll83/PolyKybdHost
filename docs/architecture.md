@@ -377,6 +377,22 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
 
+### Transport probe (bulk pipe vs HID only)
+
+A `POLYKYBD_BULK_PIPE` firmware enumerates a CDC serial interface next to raw HID
+(qmk `keyboards/polykybd/BULK_PIPE.md`). The host treats it as optional: nothing
+in the HID protocol announces it, so `PolyKybd.probe_bulk_pipe()`
+(`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw and PINGs it,
+on the HID worker thread like all device I/O. An absent, busy or mute port is
+"hid". The core probes on every fresh connect (`state_changed` or `fresh_boot`)
+and re-probes on the next `PIPE_PROBE_RETRIES` steady-state probes while HID
+only, because on Linux the tty node can appear after the hidraw node. The
+result is `transport` ("pipe" / "hid" / None) on `status_changed` and in
+`get_status()` (with the PING reply as `pipe`), so the daemon-plus-client split,
+`RemoteCore` and `polyctl status` all see it. The tray colours its mark by it
+(`IconStateManager.set_transport`) and names it in the resting tooltip and the
+About dialog. Nothing is sent over the pipe yet.
+
 ## Architecture (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._

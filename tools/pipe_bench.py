@@ -27,75 +27,14 @@ import sys
 import time
 import zlib
 
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+from polyhost.device.bulk_pipe import (  # noqa: E402  (framing lives with the host's probe)
+    CMD_ECHO, CMD_PING, CMD_RESET, CMD_SINK, CMD_STAT, MAGIC, REPLY, STAT_FIELDS,
+    FrameParser, pack_frame, parse_stat, sink_crc_chain)
+
 VID = 0x2021
 KNOWN_PIDS = (0x2007, 0x2008)
-
-CMD_PING, CMD_SINK, CMD_STAT, CMD_RESET, CMD_ECHO = 0x01, 0x02, 0x03, 0x04, 0x05
-REPLY = 0x80
-MAGIC = b"PB"
-STAT_FIELDS = ("sink_bytes", "frames_ok", "frames_bad", "resync_bytes",
-               "sink_crc", "first_ms", "last_ms")
-
-
-def pack_frame(cmd: int, payload: bytes = b"") -> bytes:
-    """One wire frame. The CRC covers cmd, the length bytes and the payload."""
-    body = bytes([cmd]) + struct.pack("<H", len(payload)) + payload
-    return MAGIC + body + struct.pack("<I", zlib.crc32(body) & 0xFFFFFFFF)
-
-
-class FrameParser:
-    """Incremental parser for the reply stream (the firmware's state machine,
-    mirrored, so a reply split across reads still assembles)."""
-
-    def __init__(self):
-        self.buf = bytearray()
-        self.dropped = 0
-
-    def feed(self, data: bytes):
-        """Return the list of (cmd, payload) frames completed by `data`."""
-        self.buf += data
-        frames = []
-        while True:
-            start = self.buf.find(MAGIC)
-            if start < 0:
-                # Keep a trailing 'P' in case the 'B' is still in flight.
-                keep = 1 if self.buf.endswith(b"P") else 0
-                self.dropped += len(self.buf) - keep
-                del self.buf[:len(self.buf) - keep]
-                return frames
-            if start:
-                self.dropped += start
-                del self.buf[:start]
-            if len(self.buf) < 5:
-                return frames
-            cmd = self.buf[2]
-            length = struct.unpack_from("<H", self.buf, 3)[0]
-            end = 5 + length + 4
-            if len(self.buf) < end:
-                return frames
-            body = bytes(self.buf[2:5 + length])
-            crc = struct.unpack_from("<I", self.buf, 5 + length)[0]
-            if zlib.crc32(body) & 0xFFFFFFFF == crc:
-                frames.append((cmd, body[3:]))
-                del self.buf[:end]
-            else:
-                # Not a frame after all: skip the magic and hunt again.
-                self.dropped += 2
-                del self.buf[:2]
-
-
-def sink_crc_chain(chunks) -> int:
-    """The CRC the firmware reports in STAT: crc32 chained over every SINK byte."""
-    crc = 0
-    for chunk in chunks:
-        crc = zlib.crc32(chunk, crc) & 0xFFFFFFFF
-    return crc
-
-
-def parse_stat(payload: bytes) -> dict:
-    if len(payload) != 4 * len(STAT_FIELDS):
-        raise ValueError(f"STAT reply has {len(payload)} bytes, expected {4 * len(STAT_FIELDS)}")
-    return dict(zip(STAT_FIELDS, struct.unpack("<" + "I" * len(STAT_FIELDS), payload)))
 
 
 def find_port() -> str:

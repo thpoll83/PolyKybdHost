@@ -135,6 +135,11 @@ with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.m
   firmware appends anything new after it.
 - ⚠️ **The raw channel is strictly request/response**, and the stale-reply drain relies
   on it.
+- **The bulk pipe is optional and probed, never assumed.** `probe_bulk_pipe()`
+  (`device/bulk_pipe.py`) finds the CDC port by VID/PID and PINGs it; absent, busy
+  and mute ports all read as `transport == "hid"`, and the tray wears the violet
+  `phid` mark. Nothing in the HID protocol announces the pipe.
+  [`docs/architecture.md`](docs/architecture.md) → *Transport probe*.
 - ⚠️ **`expect(Cmd.X)` also matches a NACK.** On a closed range, read the verdict at
   `reply[2]` before reporting success. `set_idle_timeout` does; `set_glyph_size`,
   `set_idle_style` and `set_glyph_script` don't yet.

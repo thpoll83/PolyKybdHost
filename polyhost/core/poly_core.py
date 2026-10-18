@@ -32,6 +32,7 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
+from polyhost.device import bulk_pipe
 from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
@@ -56,6 +57,9 @@ RECONNECT_CYCLE_MSEC = 1000
 # after the last overlay activity; a genuine disconnect is still caught once the
 # window lapses (sends stop, so the timestamp goes stale within this window).
 OVERLAY_PROBE_COOLDOWN_S = 1.0
+# Steady-state reconnect probes (1 s apart) that re-look for the bulk pipe
+# after a connect that found none, for the tty node arriving late.
+PIPE_PROBE_RETRIES = 5
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
@@ -161,6 +165,7 @@ class PolyCore(Observable):
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        self._pipe_probes_left = 0
         # monotonic timestamp of the last overlay/MRU send or enable/disable, so
         # the reconnect probe can skip the keyboard's post-send deaf window.
         self._last_overlay_activity = 0.0
@@ -1626,6 +1631,21 @@ class PolyCore(Observable):
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
+        if connected_now:
+            # Bulk pipe (optional second channel): probed on a fresh connect, and
+            # re-probed on the next few steady-state probes while HID only,
+            # because on Linux the tty node can appear after the hidraw node.
+            # A port that is absent, busy or mute is "hid"; see device/bulk_pipe.py.
+            if snapshot["state_changed"] or snapshot["fresh_boot"]:
+                self.keeb.forget_bulk_pipe()
+                self._pipe_probes_left = PIPE_PROBE_RETRIES
+            elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
+                  and self._pipe_probes_left > 0):
+                self._pipe_probes_left -= 1
+                self.keeb.probe_bulk_pipe()
+        else:
+            self.keeb.forget_bulk_pipe()
+        snapshot["transport"] = self.keeb.get_transport()
         if not connected_now:
             # Going disconnected: do NOT query version/languages — stale late
             # replies from the failed probe can make query_version_info
@@ -1641,6 +1661,7 @@ class PolyCore(Observable):
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()
+        snapshot["transport"] = self.keeb.probe_bulk_pipe()
         snapshot.update({
             "version_ok": version_ok,
             "version_msg": version_msg,
@@ -1866,6 +1887,10 @@ class PolyCore(Observable):
             "safe_mode": self.safe_mode,
             "newer_fw_pending": bool(
                 (applied["decision"] or {}).get("newer_fw_pending")),
+            # Which channel the host has to the keyboard: "pipe" (bulk pipe
+            # found and answering), "hid" (raw HID only), None while
+            # disconnected. The tray colours its mark by it.
+            "transport": self.keeb.get_transport(),
         })
         return applied
 
@@ -2154,6 +2179,8 @@ class PolyCore(Observable):
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,
             "window_backend": self.window_backend,
+            "transport": self.keeb.get_transport(),
+            "pipe": self.keeb.get_pipe_info(),
         }
 
     def list_languages(self):
