@@ -134,6 +134,18 @@ class TestHidFwUpDialogGlide(unittest.TestCase):
         self.assertEqual(self.dlg._catchup_speed, 0.0)
         self.assertFalse(self.dlg._behind)
 
+    def test_glide_follows_the_measured_transfer_rate(self):
+        # Reports at 9 %/s (the bulk pipe): the glide runs at that rate, not the
+        # 2.3 %/s floor sized for HID, so the bar moves between reports instead
+        # of stalling and jumping.
+        self.dlg.feed_progress(2, "chunks")
+        self.assertEqual(self.dlg._glide_speed(3.0), HidFwUpDialog._GLIDE_SPEED)
+        self.now += 2.0
+        self.dlg.feed_progress(20, "chunks")
+        self.dlg._behind = False
+        self.assertAlmostEqual(self.dlg._observed_rate, 9.0, places=6)
+        self.assertAlmostEqual(self.dlg._glide_speed(3.0), 9.0, places=6)
+
     def test_small_gap_keeps_normal_glide(self):
         self.assertEqual(self.dlg._glide_speed(3.0), HidFwUpDialog._GLIDE_SPEED)
         self.assertGreater(self.dlg._glide_speed(20.0),

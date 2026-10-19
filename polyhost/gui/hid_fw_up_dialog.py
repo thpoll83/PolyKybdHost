@@ -96,7 +96,12 @@ class HidFwUpDialog(QDialog):
     # ticks arrive late, and a fixed per-tick step then slowed the bar below the
     # real transfer rate, so it fell behind and never caught up.
     _ANIM_TICK_MS = 5
-    _GLIDE_SPEED  = 2.3    # %/s at normal speed
+    _GLIDE_SPEED  = 2.3    # %/s at normal speed: the floor, sized for a 50 s HID transfer
+    # The glide follows the transfer's own rate once it is measurable: the percent
+    # reported so far over the time since the first chunk report. Over the bulk
+    # pipe the chunks take ~10 s (about 9 %/s), four times the floor, and a bar
+    # gliding at the floor between reports stalled and jumped (2026-10-19).
+    _RATE_AFTER_S = 0.5
 
     # If a newer progress report arrives while the bar is still catching up to
     # the previous target, the bar has fallen behind the real transfer — glide
@@ -153,6 +158,8 @@ class HidFwUpDialog(QDialog):
 
         # ETA tracking for the chunk-transfer phase (pct 2–98).
         self._transfer_start_time = None  # monotonic, set when chunks begin flowing
+        self._transfer_first_pct  = 0     # the pct of that first report
+        self._observed_rate       = 0.0   # %/s the reports have been arriving at
         self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
         self._positioned          = False  # move-to-corner only on the first showEvent
 
@@ -304,10 +311,15 @@ class HidFwUpDialog(QDialog):
         self._last_reported_pct = max(self._last_reported_pct, pct)
         if self._transfer_start_time is None and pct < 98:
             self._transfer_start_time = time.monotonic()
+            self._transfer_first_pct = pct
             self._eta_timer.start()
         elif pct >= 98:
             self._eta_timer.stop()
             self._eta_label.setText("")
+        if self._transfer_start_time is not None:
+            elapsed = time.monotonic() - self._transfer_start_time
+            if elapsed >= self._RATE_AFTER_S and pct > self._transfer_first_pct:
+                self._observed_rate = (pct - self._transfer_first_pct) / elapsed
 
     def _show_pct(self, pct: float):
         """Render a percentage on the bar at 10x resolution with one decimal."""
@@ -338,7 +350,7 @@ class HidFwUpDialog(QDialog):
 
     def _glide_speed(self, gap: float) -> float:
         """%/s for a bar `gap` percent behind the latest report."""
-        speed = self._GLIDE_SPEED
+        speed = max(self._GLIDE_SPEED, self._observed_rate)
         if self._behind:
             speed *= self._CATCHUP_FACTOR
         # Latched, not recomputed per tick: gap / _LAG_CATCHUP_S on every tick

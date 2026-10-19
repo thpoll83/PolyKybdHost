@@ -351,7 +351,7 @@ def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
         shown = [0]
 
         def _progress(offset):
-            if offset - shown[0] >= 32 * 1024 or offset >= fw_size:
+            if offset - shown[0] >= 16 * 1024 or offset >= fw_size:
                 shown[0] = offset
                 report(2 + int(96 * offset / fw_size),
                        MSG_LINK_SENDING.format(kb=offset // 1024, total_kb=fw_size // 1024))
