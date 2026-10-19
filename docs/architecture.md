@@ -402,9 +402,17 @@ path can be tested by hand on a keyboard that has the pipe; `note_settings_chang
 applies it to the live connection, in both directions, without a reconnect.
 
 The firmware update's CHUNK phase runs on the pipe when the probe found one
-(`PolyCore.flash_firmware` passes `get_pipe_info()["port"]` to
+(`PolyCore.flash_firmware` passes `pipe_port_for_update()` to
 `hid_fw_up.flash_firmware(pipe_port=...)`; the in-process dialog gets it from
-`cmd_menu`). `bulk_pipe.stream_firmware` sends `FW_CHUNK` frames of 236 bytes,
+`cmd_menu`). Every resource flash does the same: `flash_fontpack`,
+`install_doomwad`, `install_doompack`, the multi-bundle pass and the wipe hand
+`pipe_port_for_update()` to the `hid_fontpack` flashers, whose `_stream_slot`
+runs the chunks through `hid_fw_up.stream_over_pipe` after `FONTPACK_BEGIN`
+and continues over HID from the keyboard's cursor when the pipe stops. The
+firmware writes a `FW_CHUNK` frame into whatever target BEGIN selected, so no
+resource needs a pipe command of its own. `pipe_port_for_update()` answers None
+while `dev_force_hid_link` is on, which is how the HID path of every transfer
+is forced by hand. `bulk_pipe.stream_firmware` sends `FW_CHUNK` frames of 236 bytes,
 4 frames ahead of their replies (the firmware handles a frame inside its USB
 drain, so an unpaced stream would keep its main loop there; `poly_pipe.h`), and
 every reply carries the keyboard's cursor: an ACK advances, a NACK rewinds to

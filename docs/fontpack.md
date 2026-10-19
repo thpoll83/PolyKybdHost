@@ -17,6 +17,17 @@ and relative links were adjusted to suit a standalone file.
   physical reconnect after a wipe re-checks; do **NOT** reintroduce a once-per-process
   guard (that broke re-flash after wipe). `polyctl fontpack status|sync|flash <id>|wipe [id]`
   is the manual path; the tray surfaces flash progress (`_on_fontpack_progress/done`).
+  - **The transport.** BEGIN and COMMIT go over HID. The chunks go over the bulk pipe
+    as `FW_CHUNK` frames when `PolyCore.pipe_port_for_update()` names a port (the
+    probe found the keyboard's CDC port and the developer setting `dev_force_hid_link`
+    is off), else over 56-byte `FONTPACK_CHUNK` reports. The firmware writes a pipe
+    frame into whatever target BEGIN selected, so the pipe needs no command of its
+    own for a resource; `hid_fontpack._stream_slot` calls `hid_fw_up.stream_over_pipe`
+    and its HID loop continues from the keyboard's cursor when the pipe stops
+    (`docs/architecture.md` → *Transport probe*). The game data and the engine pack
+    (`flash_doomwad`, `flash_doompack`) take the same `pipe_port`. The nine shipped
+    bundles are about 743 KB together, which the HID path sends in about a minute
+    and the pipe in about a quarter of that; the slot erases are unchanged.
   Firmware-side architecture (slots, layout header, GET_ID block) is in the qmk repo's
   CLAUDE.md "Font pack" section.
   - ⚠️ **A bundle can report a FAILED flash and still read as UP TO DATE, so the version

@@ -144,8 +144,12 @@ together with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protoc
   `phid` mark. The tooltip shows the measured rate ("0.6 MB/s link"), never
   the words "bulk pipe". Nothing in the HID protocol announces the pipe; a pipe
   command is gated on the PING protocol (`PIPE_PROTO_*`), not on `__protocol__`.
-  The firmware update's chunks go over it (`stream_firmware`, 4 frames in
-  flight, never unpaced) and fall back to HID from the keyboard's cursor.
+  The firmware update's chunks and every resource flash's chunks (font packs,
+  the icon library, game data, engine pack) go over it (`stream_firmware`, 4
+  frames in flight, never unpaced) and fall back to HID from the keyboard's
+  cursor. ⚠️ A flash path takes its port from `PolyCore.pipe_port_for_update()`
+  and nowhere else: that is the one place `dev_force_hid_link` turns the fast
+  link off, and a path that reads the cache directly ignores the switch.
   [`docs/architecture.md`](docs/architecture.md) → *Transport probe*.
 - ⚠️ **`expect(Cmd.X)` also matches a NACK.** On a closed range, read the verdict at
   `reply[2]` before reporting success. `set_idle_timeout` does; `set_glyph_size`,

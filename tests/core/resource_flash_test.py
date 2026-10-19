@@ -30,6 +30,10 @@ def make_core(*, connected=True, device_present=True, paused=False):
     core.worker = mock.MagicMock()
     core.keeb = mock.MagicMock()
     core.telemetry = mock.MagicMock()
+    # Every resource flash asks pipe_port_for_update(), which reads the
+    # dev_force_hid_link setting before the cached pipe port.
+    core.poly_settings = mock.MagicMock()
+    core.poly_settings.get.return_value = False
     return core
 
 
