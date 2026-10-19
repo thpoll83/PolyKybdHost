@@ -2147,8 +2147,8 @@ msgid "Steps…"
 msgstr "Adımlar…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:190
-msgid "Build the macro out of key presses, chords and pauses — or record them"
-msgstr "Makroyu tuş basışları, akorlar ve duraklamalardan oluşturun — veya bunları kaydedin"
+msgid "Build the macro out of key presses, key combinations and pauses — or record them"
+msgstr "Makroyu tuş basışları, tuş kombinasyonları ve duraklamalardan oluşturun — veya bunları kaydedin"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:205
 msgid "How the keycap will look"

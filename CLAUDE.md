@@ -51,7 +51,7 @@ control-socket method.
   JSON-serializable payloads (guarded by `tests/core/import_guard_test.py`).
 - **A new device-coupled GUI surface must work in client mode over RPC.** Client mode is
   the default under daemon-by-default.
-- ⚠️ **Six pieces of plumbing are shared because copies drifted**: `MpcListenerServer`,
+- ⚠️ **Six helpers are shared because separate copies diverged**: `MpcListenerServer`,
   `UpdateProgressController`, `gui/theme.apply_theme`, `util/observable.Observable`,
   `util/filelock`, `PolyCore._flash_resource`. Use them. Extracting one drops the inline
   comments that passed review, so re-run the checks on the extracted copy.
@@ -59,13 +59,13 @@ control-socket method.
   `window_report_server`, `browser_report_server`) before designing a fix.
 - ⚠️ **The network `WindowReportServer` serves one method and holds no `PolyCore`.**
   That separation is the security boundary.
-- ⚠️ **An EMPTY window title and NO window are different, and the matcher answers them
+- ⚠️ **An EMPTY window title and NO window are different, and the matcher treats them
   differently.** `find_matching_entry` skips a declared `title:` regex when the title is
   falsy, on purpose (macOS and some Wayland setups report no titles at all). A caller
   with no window passes `title_known=False`, which makes that constraint FAIL instead:
   without it, `kicad:`'s `title: PCB Editor` would draw the PCB overlay for the
   schematic editor too. The windowless path evaluates templates on that flag, so an
-  app-name-only entry still gets its artwork -- VS Code's macOS branch carries three
+  app-name-only entry still gets its artwork -- VS Code's macOS branch has three
   templates and no `title:`, and was never evaluated before (2026-10-16 bundle).
 - ⚠️ **On macOS the window tick costs seconds, not milliseconds, and the accept timer
   must count REAL time.** pywinctl spends two `osascript` processes per
@@ -78,8 +78,8 @@ control-socket method.
   process). ⚠️ Not the Quartz window list, which answers about a WINDOW and would skip
   an app activated with every window minimized for ever, and not
   `NSWorkspace.frontmostApplication`, which reads stale off the main thread. A pid does
-  not move on a retitle, so a mapping entry matching on a title or a URL still pays on
-  every tick. [`docs/architecture.md`](docs/architecture.md).
+  not move on a retitle, so a mapping entry matching on a title or a URL still runs the
+  query on every tick. [`docs/architecture.md`](docs/architecture.md).
 
 ## Threading (HID worker)
 
@@ -89,21 +89,23 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 
 - **No synchronous language enumeration at startup.** The first probe must see
   False→True and run the full fresh-connect flow.
-- **The probe is debounced (3 strikes).** The keyboard goes deaf for hundreds of ms after
-  a large overlay transfer, and one failed probe would start a wipe-and-resend loop.
+- **The probe is debounced (3 strikes).** The keyboard stops responding for hundreds of
+  ms after a large overlay transfer, and one failed probe would start a wipe-and-resend
+  loop.
 - ⚠️ **Nothing the firmware prints during a flash reaches the host.** Use
   `tools/poly_console.py` in a second terminal. A timestamp gap spanning the flash is
   expected.
 - **`FW_UP_COMMIT` has four status bytes**: `.` accepted, `?` waiting for the physical
   ACCEPT/REJECT (re-poll), `S` not validly signed, `!` CRC mismatch. Don't collapse them.
   The host may cancel the prompt, never accept it.
-- **`polyctl fw version` is a live query (cmd 0x43)** and fails loudly mid-flash.
+- **`polyctl fw version` is a live query (cmd 0x43)** and fails with an error during a
+  flash.
 - **No blocking the main thread with network I/O either.**
 - ⚠️ **A modal opened from a bridge handler dispatches the other queued bridge events.**
   Route every dialog a bridge event can open through one serializer (#257).
 - ⚠️ **A COM object never crosses a thread; every thread that calls COM initializes it.**
   A violation kills the headless daemon with a native access violation and no log line
-  (twice, tell: `0x80010108` dumps in `crash_log.txt`).
+  (seen twice; the sign is `0x80010108` dumps in `crash_log.txt`).
   `polyhost/services/shortcut_source/uia.py` is the pattern.
 - ⚠️ **A long accessibility-tree walk through comtypes on a background thread stalled
   the whole daemon.** One 2 min 17 s UIA walk of a Chrome tab made the window tick
@@ -120,12 +122,13 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 
 The host connects to any firmware with protocol ≥ `MIN_SUPPORTED_PROTOCOL` (2), then
 gates each feature with `FEATURE_MIN_PROTOCOL` (`device/poly_kybd.py`). `__protocol__`
-(`polyhost/_version.py`) is the newest protocol the host knows, 23 today, in lockstep
-with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.md).
+(`polyhost/_version.py`) is the newest protocol the host knows, 23 today, changed
+together with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.md).
 
 - ⚠️ **Every new device command must be version-gated**: the `FEATURE_MIN_PROTOCOL`
   entry, `self.supports()` in both accessors, the GUI menu gate, `polyctl`, and the
-  protocol bump on both sides. An ungated command NACKs at runtime on older firmware.
+  protocol version increase on both sides. An ungated command NACKs at runtime on older
+  firmware.
   `tests/device/protocol_gate_sweep_test.py` and `tests/core/core_protocol_sweep_test.py`
   enforce it: a new `Cmd` needs `CMD_MIN_PROTOCOL` in `device/mock_firmware.py`, a new
   `PolyKybd` method a `CALLS` entry. The `add-gated-hid-command` skill does the whole job.
@@ -184,7 +187,7 @@ Key geometry, the case plate, preview modes and their data:
 
 - **Key geometry comes from the KLE** (`polyhost/res/polykybd-split72.json`), not QMK's
   `layouts` grid. The plate is the case SVG, not `Edge.Cuts`.
-- ⚠️ **"Why is this preview wrong?" → run `python tools/preview_doctor.py` first.** Three
+- ⚠️ **For a wrong preview, run `python tools/preview_doctor.py` first.** Three
   reports were one stale clone.
 
 ## Tray, settings and the forwarder
@@ -212,8 +215,8 @@ per-application ESC mark has a rule of **no per-application configuration**:
   separate from log verbosity.
 - ⚠️ **`managed_connection_status` disables every top-level action first.** Re-enable a
   new group parent there.
-- ⚠️ **A tray balloon reaches nobody on macOS** (no bundle id). Never make a balloon the
-  only carrier of anything; `_balloons_reach_user()` is the gate. `IconStateManager` owns
+- ⚠️ **A tray balloon is not shown on macOS** (no bundle id). Never make a balloon the
+  only way to show anything; `_balloons_reach_user()` is the gate. `IconStateManager` owns
   the tooltip; use `set_base_tooltip`.
 - **Settings side effects go through one hook, `PolyCore.note_settings_changed()`.**
 - ⚠️ **`PolySettings.save()` merges per key against the file, under a cross-process
@@ -230,10 +233,10 @@ per-application ESC mark has a rule of **no per-application configuration**:
   `host.py` is absent there until wired separately. Its settings are an allow-list
   (`FORWARDER_SETTING_KEYS`). Put process-wide Qt identity in `main_app`.
 - ⚠️ **A wrong icon name fails silently** (`tests/gui/icon_assets_test.py` guards it).
-- ⚠️ **Check whether a platform path ever did its job before muting it** (macOS language
+- ⚠️ **Check whether a platform path ever did its job before disabling it** (macOS language
   switching never once switched an input source).
 - **Input helpers**: `LangComp(platform)` requires its argument, and
-  `get_current_language` and `set_language` answer in one namespace. Details in
+  `get_current_language` and `set_language` use one namespace. Details in
   `docs/architecture.md` → *Platform input abstraction*.
 
 ## Updates, autostart and the daemon
@@ -249,12 +252,12 @@ per-application ESC mark has a rule of **no per-application configuration**:
 - **The daemon applies a GUI self-update, not the client**, and the GUI waits for the
   endpoint to go down and back up before relaunching.
 - ⚠️ **Every relaunch goes through `spawn_detached()`**, with `pythonw.exe` on Windows.
-- **Launchers live in the platformdirs config dir, not the checkout.** The Windows task
+- **Launchers are in the platformdirs config dir, not the checkout.** The Windows task
   is named `PolyHost`.
 - **`updater.preflight()` runs before the download**, for the tray, daemon and `polyctl`.
 - ⚠️ **Every macOS entry point must set its activation policy, the daemon included.**
   A non-bundled Python process that calls the window-server APIs gets a Dock tile with
-  the interpreter's generic rocket icon, and the daemon calls plenty of them (pywinctl,
+  the interpreter's generic rocket icon, and the daemon calls many of them (pywinctl,
   the Quartz window list, the Accessibility reads). `run_headless` sets
   `macos_ui.hide_dock_icon()` after the endpoint claim and before `HeadlessHost`;
   `host.py` and `forwarder.py` always did.
@@ -267,7 +270,7 @@ Logs, crash reporting, the problem report and forwarding's silent failures:
 [`docs/telemetry-internals.md`](docs/telemetry-internals.md). Reading a log bundle is the
 `triage-log-bundle` skill.
 
-- ⚠️ **A new log file reaches nobody unless `LOG_SOURCES` lists it**, and its lines need
+- ⚠️ **A new log file is not collected unless `LOG_SOURCES` lists it**, and its lines need
   a timestamp prefix `slice_lines` can read.
 - ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`.** `faulthandler` holds its
   descriptor. Clear it by truncation.
@@ -290,7 +293,7 @@ Tests are unittest, not pytest; GUI tests need `xvfb-run -a`.
   mojibake. Files the user owns keep the platform default. Re-run the AST sweep over the
   whole tree; three hits remain, all user-owned.
 - ⚠️ **The suite cannot execute the platform input paths** (Win32, Carbon, pynput). A
-  green board says nothing about them; budget a hardware round.
+  passing suite says nothing about them; plan a test on hardware.
 - ⚠️ **A `skipUnless` guard that checks less than the code needs can hang the suite** on
   a modal dialog. Derive the guard from the function the code calls.
 - ⚠️ **A change to concurrent file access is not done when the tests pass.** Mutation-sweep
@@ -312,6 +315,6 @@ mechanics and the `release-notes` branch: [`docs/releases.md`](docs/releases.md)
 - ⚠️ **Here `release.yml`'s version check detects rather than prevents.** This workflow
   uploads nothing, and the release is public before the step runs. The tarball users
   install is `archive/refs/tags/<tag>.tar.gz`, so withdrawing a bad one is manual.
-- ⚠️ **The bump lands through its own auto-merged PR, because `main` requires a PR.** It
+- ⚠️ **The version bump arrives as its own auto-merged PR, because `main` requires a PR.** It
   depends on "Allow GitHub Actions to create and approve pull requests" and on the `main`
   rule requiring nothing more than a PR.
