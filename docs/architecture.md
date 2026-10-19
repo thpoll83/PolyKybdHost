@@ -382,16 +382,22 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 A `POLYKYBD_BULK_PIPE` firmware enumerates a CDC serial interface next to raw HID
 (qmk `keyboards/polykybd/BULK_PIPE.md`). The host treats it as optional: nothing
 in the HID protocol announces it, so `PolyKybd.probe_bulk_pipe()`
-(`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw and PINGs it,
-on the HID worker thread like all device I/O. An absent, busy or mute port is
-"hid". The core probes on every fresh connect (`state_changed` or `fresh_boot`)
+(`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw, PINGs it and
+measures the rate (`measure_rate`: RESET, 128 KB of SINK frames, STAT; the
+device-side first/last timestamps give the rate, about 0.2 s on the rig), on
+the HID worker thread like all device I/O. An absent, busy or mute port is
+"hid", and so is a port whose stream arrives with a bad CRC or a dropped frame. The core probes on every fresh connect (`state_changed` or `fresh_boot`)
 and re-probes on the next `PIPE_PROBE_RETRIES` steady-state probes while HID
 only, because on Linux the tty node can appear after the hidraw node. The
-result is `transport` ("pipe" / "hid" / None) on `status_changed` and in
-`get_status()` (with the PING reply as `pipe`), so the daemon-plus-client split,
-`RemoteCore` and `polyctl status` all see it. The tray colours its mark by it
-(`IconStateManager.set_transport`) and names it in the resting tooltip and the
-About dialog. Nothing is sent over the pipe yet.
+result is `transport` ("pipe" / "hid" / None) and `link_rate_mbps` on
+`status_changed` and in `get_status()` (with the PING reply as `pipe`), so the
+daemon-plus-client split, `RemoteCore` and `polyctl status` all see it. The tray
+colours its mark by it (`IconStateManager.set_transport`) and shows the measured
+rate in the resting tooltip and the About dialog ("0.6 MB/s link", or "HID
+link, up to 64 KB/s"). The words "bulk pipe" never reach the user
+(maintainer's rule, 2026-10-19): user-facing text states the rate. Nothing but
+the probe is sent over the pipe yet; firmware update, font packs and overlays
+still go over raw HID.
 
 ## Architecture (the CLAUDE.md summary)
 

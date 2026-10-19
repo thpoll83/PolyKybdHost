@@ -32,6 +32,13 @@ REPLY = 0x80
 STAT_FIELDS = ("sink_bytes", "frames_ok", "frames_bad", "resync_bytes",
                "sink_crc", "first_ms", "last_ms")
 PROBE_TIMEOUT_S = 0.5
+# The probe streams this much after the PING and reads the keyboard's own byte
+# count, CRC and clock back: the rate the user sees is measured on this
+# machine, and a port that drops or corrupts bytes is treated as no link.
+# 128 KB is ~0.2 s at the rig's 0.6 MB/s.
+PROBE_STREAM_BYTES = 128 * 1024
+PROBE_FRAME_BYTES = 4096
+HID_LINK_KBPS = 64  # one 64-byte report per 1 ms USB frame: the HID channel's ceiling
 
 log = logging.getLogger("PolyHost")
 
@@ -164,6 +171,11 @@ def probe(port: str, timeout: float = PROBE_TIMEOUT_S, serial_open=None):
             log.info("Bulk pipe %s opened but did not answer PING: HID only", port)
             return None
         info = parse_ping(reply)
+        rate = measure_rate(ser, timeout=timeout)
+        if rate is None:
+            log.warning("Bulk pipe %s answered PING but the stream did not arrive intact: HID only", port)
+            return None
+        info["rate_mbps"] = rate
     except Exception as exc:  # noqa: BLE001 — a malformed reply is "no pipe", not a crash
         log.warning("Bulk pipe %s answered garbage (%s): HID only", port, exc)
         return None
@@ -174,6 +186,38 @@ def probe(port: str, timeout: float = PROBE_TIMEOUT_S, serial_open=None):
             pass
     info["port"] = port
     return info
+
+
+def measure_rate(ser, nbytes: int = PROBE_STREAM_BYTES, frame: int = PROBE_FRAME_BYTES,
+                 timeout: float = PROBE_TIMEOUT_S):
+    """Stream ``nbytes`` of SINK frames and return the rate in MB/s from the
+    keyboard's clock, or None when the keyboard did not count every byte with
+    the right CRC (or never answered RESET / STAT)."""
+    if request(ser, CMD_RESET, timeout=timeout) is None:
+        return None
+    block = bytes((i * 7919 + 13) & 0xFF for i in range(frame))
+    frames = max(1, nbytes // frame)
+    wire = pack_frame(CMD_SINK, block) * frames
+    expect = sink_crc_chain([block] * frames)
+    t0 = time.perf_counter()
+    for i in range(0, len(wire), 65536):
+        ser.write(wire[i:i + 65536])
+    reply = request(ser, CMD_STAT, timeout=max(timeout, 5.0))
+    host_s = time.perf_counter() - t0
+    if reply is None:
+        return None
+    st = parse_stat(reply)
+    payload = frames * frame
+    if st["sink_bytes"] != payload or st["sink_crc"] != expect or st["frames_bad"]:
+        return None
+    dev_s = (st["last_ms"] - st["first_ms"]) / 1000.0
+    seconds = dev_s if dev_s > 0 else host_s
+    return payload / seconds / 1e6 if seconds > 0 else None
+
+
+def rate_label(rate_mbps) -> str:
+    """"0.6 MB/s" / "1.2 MB/s" / "12 MB/s": one decimal below 10."""
+    return f"{rate_mbps:.0f} MB/s" if rate_mbps >= 10 else f"{rate_mbps:.1f} MB/s"
 
 
 def detect(vid: int, pids, comports=None, serial_open=None):

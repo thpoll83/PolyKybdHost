@@ -140,6 +140,10 @@ MSG_APPLY_NO_RECONNECT = M_(
     "Keyboard did not reconnect within 30 s after apply.\n"
     "If it does not come back on its own, hold BOOTSEL on the "
     "master half and re-flash the .uf2.")
+MSG_APPLY_NO_REBOOT = M_(
+    "The keyboard acknowledged APPLY but did not reboot within 10 s.\n"
+    "The staged image was not applied; the keyboard still runs its "
+    "current firmware. Try the apply again.")
 MSG_APPLY_DONE = M_("Done. Keyboard reconnected on the applied firmware.")
 MSG_APPLIED_OK = M_(
     "Firmware applied — the keyboard rebooted and reconnected.\n\n"
@@ -602,9 +606,16 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
         return False, MSG_APPLY_UNAVAILABLE
 
     # Either an ACK ('.') or no reply (the device already accepted and is rebooting
-    # with USB torn down): in both cases wait for it to come back.
+    # with USB torn down): in both cases wait for it to LEAVE and come back.
+    # wait_for_reconnect() would re-open the old device before its USB tear-down
+    # and report success 80 ms after APPLY (field, 2026-10-19); the two-phase
+    # wait holds the exclusive flash job until the new firmware enumerates, so
+    # nothing else writes to a dying handle meanwhile.
     report(50, MSG_APPLYING)
-    if not hid.wait_for_reconnect(timeout_s=30):
+    outcome = hid.wait_for_reboot(timeout_s=30)
+    if outcome == hid.REBOOT_NEVER_LEFT:
+        return False, MSG_APPLY_NO_REBOOT
+    if outcome != hid.REBOOT_RECONNECTED:
         return False, MSG_APPLY_NO_RECONNECT
     hid.drain_replies()
 

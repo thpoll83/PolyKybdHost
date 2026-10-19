@@ -328,9 +328,9 @@ class PolyKybd:
         transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
         if transport != self.transport:
             if info:
-                self.log.info("Bulk pipe on %s: firmware %s, %d-byte packets, queue %d",
-                              info.get("port"), info.get("fw"), info.get("epsize", 0),
-                              info.get("out_capacity", 0))
+                self.log.info("Bulk pipe on %s: %.2f MB/s measured, firmware %s, %d-byte packets, queue %d",
+                              info.get("port"), info.get("rate_mbps", 0.0), info.get("fw"),
+                              info.get("epsize", 0), info.get("out_capacity", 0))
             else:
                 self.log.info("No bulk pipe: raw HID only")
         self.pipe_info = info
@@ -342,8 +342,12 @@ class PolyKybd:
         return self.transport
 
     def get_pipe_info(self):
-        """Cached PING reply of the bulk pipe, or None."""
+        """Cached PING reply of the bulk pipe (with the measured rate), or None."""
         return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        """Measured rate of the bulk pipe in MB/s, or None without one."""
+        return (self.pipe_info or {}).get("rate_mbps")
 
     def forget_bulk_pipe(self):
         """Drop the cached transport (disconnect / re-enumeration)."""

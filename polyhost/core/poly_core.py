@@ -1891,6 +1891,7 @@ class PolyCore(Observable):
             # found and answering), "hid" (raw HID only), None while
             # disconnected. The tray colours its mark by it.
             "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
         })
         return applied
 
@@ -2180,6 +2181,7 @@ class PolyCore(Observable):
             "host_version": __version__,
             "window_backend": self.window_backend,
             "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
             "pipe": self.keeb.get_pipe_info(),
         }
 

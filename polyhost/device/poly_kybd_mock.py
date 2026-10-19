@@ -680,7 +680,8 @@ class PolyKybdMock:
         self._log_call("probe_bulk_pipe")
         if self.pipe_available:
             self.pipe_info = {"port": "mock", "proto": 1, "max_payload": 512,
-                              "epsize": 64, "out_capacity": 8, "fw": "mock"}
+                              "epsize": 64, "out_capacity": 8, "fw": "mock",
+                              "rate_mbps": 1.0}
             self.transport = "pipe"
         else:
             self.pipe_info = None
@@ -692,6 +693,9 @@ class PolyKybdMock:
 
     def get_pipe_info(self):
         return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        return (self.pipe_info or {}).get("rate_mbps")
 
     def forget_bulk_pipe(self):
         self.pipe_info = None

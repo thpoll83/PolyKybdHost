@@ -423,6 +423,61 @@ class HidHelper:
             time.sleep(0.5)
         return False
 
+    REBOOT_RECONNECTED = "reconnected"
+    REBOOT_NEVER_LEFT = "never-left"
+    REBOOT_NO_RETURN = "no-return"
+
+    def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10,
+                        poll_s: float = 0.1, clock=time.monotonic, sleep=time.sleep) -> str:
+        """Wait for the device to LEAVE the bus and come back, then re-open it.
+
+        ``wait_for_reconnect`` re-opens the first raw interface it finds, and
+        right after FW_UP_APPLY that is still the OLD device: the keyboard
+        acknowledges, then takes hundreds of milliseconds to tear USB down. On
+        2026-10-19 the apply dialog reported "reconnected" 80 ms after sending
+        APPLY, 3.5 minutes before the keyboard actually came back, and an
+        overlay send then ran into the dying handle. So this waits in two
+        phases: gone (no raw interface enumerated, up to ``gone_timeout_s``),
+        then back (``timeout_s``).
+
+        Returns REBOOT_RECONNECTED with the interface open, REBOOT_NEVER_LEFT
+        when the device stayed enumerated for ``gone_timeout_s`` (the apply did
+        not reboot it), or REBOOT_NO_RETURN when it left and did not come back.
+        A device already absent at the first look counts as gone.
+        """
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:
+                    pass
+                self.interface = None
+
+        def raw_interfaces():
+            return [i for i in self._enumerate(self.settings.VID)
+                    if i['product_id'] in self.settings.KNOWN_PIDS
+                    and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
+                    and i['usage'] == self.settings.HID_RAW_USAGE]
+
+        deadline = clock() + gone_timeout_s
+        while raw_interfaces():
+            if clock() >= deadline:
+                return self.REBOOT_NEVER_LEFT
+            sleep(poll_s)
+
+        deadline = clock() + timeout_s
+        while clock() < deadline:
+            raw = raw_interfaces()
+            if raw:
+                try:
+                    with self.lock:
+                        self.interface = self._open(raw[0])
+                    return self.REBOOT_RECONNECTED
+                except Exception:
+                    pass
+            sleep(0.5)
+        return self.REBOOT_NO_RETURN
+
     def send_and_read(self, data: bytearray, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
@@ -461,4 +516,7 @@ class DisconnectedHid(HidHelper):
 
     def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
         return False
+
+    def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10, **_kw) -> str:
+        return HidHelper.REBOOT_NO_RETURN
 

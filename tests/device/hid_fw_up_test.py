@@ -22,6 +22,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
+from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fw_up import (
     get_fw_version,
     flash_firmware,
@@ -132,10 +133,18 @@ def _version_reply(version: str, fw_size: int, fw_crc: int) -> bytearray:
     return _ack_reply(CMD_FW_UP_GET_VERSION, bytes(extra))
 
 
-def _make_hid(side_effects, reconnect=False):
+def _make_hid(side_effects, reconnect=False, reboot=None):
     hid = MagicMock()
     hid.send_and_read.side_effect = side_effects
     hid.wait_for_reconnect.return_value = reconnect
+    # The apply step's two-phase wait. Real constants, so the comparison in
+    # apply_staged_firmware is against strings and not against MagicMock attrs.
+    hid.REBOOT_RECONNECTED = HidHelper.REBOOT_RECONNECTED
+    hid.REBOOT_NEVER_LEFT = HidHelper.REBOOT_NEVER_LEFT
+    hid.REBOOT_NO_RETURN = HidHelper.REBOOT_NO_RETURN
+    if reboot is None:
+        reboot = HidHelper.REBOOT_RECONNECTED if reconnect else HidHelper.REBOOT_NO_RETURN
+    hid.wait_for_reboot.return_value = reboot
     return hid
 
 
@@ -1024,7 +1033,19 @@ class TestApplyStagedFirmware(unittest.TestCase):
         ok, msg = apply_staged_firmware(hid)
         self.assertTrue(ok)
         self.assertIn("reconnected", msg)
-        hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
+        hid.wait_for_reboot.assert_called_once_with(timeout_s=30)
+        # The single-phase wait re-opens the OLD device before its tear-down.
+        hid.wait_for_reconnect.assert_not_called()
+
+    def test_a_device_that_never_leaves_the_bus_is_not_applied(self):
+        # Field, 2026-10-19: APPLY acknowledged, dialog said "reconnected" 80 ms
+        # later, real reconnect 3.5 minutes on. The two-phase wait names it.
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))],
+                        reboot=HidHelper.REBOOT_NEVER_LEFT)
+        ok, msg = apply_staged_firmware(hid)
+        self.assertFalse(ok)
+        self.assertIn("did not reboot", msg)
+        self.assertEqual(hid.drain_replies.call_count, 1)
 
     def test_nack_is_safe_noop_without_reconnect_wait(self):
         # '!' means "no valid staged image / in-app apply not built in":
@@ -1033,7 +1054,7 @@ class TestApplyStagedFirmware(unittest.TestCase):
         ok, msg = apply_staged_firmware(hid)
         self.assertFalse(ok)
         self.assertIn("not available", msg)
-        hid.wait_for_reconnect.assert_not_called()
+        hid.wait_for_reboot.assert_not_called()
 
     def test_no_reply_treated_as_rebooting(self):
         # USB torn down right after accepting the command — empty reply,
@@ -1041,7 +1062,7 @@ class TestApplyStagedFirmware(unittest.TestCase):
         hid = _make_hid([(True, bytearray())], reconnect=True)
         ok, _ = apply_staged_firmware(hid)
         self.assertTrue(ok)
-        hid.wait_for_reconnect.assert_called_once()
+        hid.wait_for_reboot.assert_called_once()
 
     def test_hid_failure_still_waits_for_reconnect(self):
         # A failed send (device already re-enumerating) is not a NACK —
@@ -1049,7 +1070,7 @@ class TestApplyStagedFirmware(unittest.TestCase):
         hid = _make_hid([(False, bytearray())], reconnect=True)
         ok, _ = apply_staged_firmware(hid)
         self.assertTrue(ok)
-        hid.wait_for_reconnect.assert_called_once()
+        hid.wait_for_reboot.assert_called_once()
 
     def test_reconnect_timeout_fails_with_recovery_hint(self):
         hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=False)
