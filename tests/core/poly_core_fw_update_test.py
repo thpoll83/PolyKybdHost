@@ -17,6 +17,9 @@ from polyhost.core.poly_core import PolyCore
 def make_core(*, connected=True, device_present=True, paused=False):
     core = PolyCore.__new__(PolyCore)
     core.log = logging.getLogger("test.polycore.fw")
+    # pipe_port_for_update reads the dev_force_hid_link setting before the cache.
+    core.poly_settings = mock.MagicMock()
+    core.poly_settings.get.return_value = False
     core.connected = connected
     core.device_present = device_present
     core.paused = paused

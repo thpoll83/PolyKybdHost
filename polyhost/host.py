@@ -3086,7 +3086,7 @@ class PolyHost(QApplication):
             try:
                 dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True,
                                    tray_icon=self.tray,
-                                   pipe_port=(self.keeb.get_pipe_info() or {}).get("port"))
+                                   pipe_port=self.core.pipe_port_for_update())
                 dlg.exec_()
             finally:
                 discard_fw_download(bin_path)

@@ -66,6 +66,7 @@ EXEMPT = {
     "install_doomwad": _TRANSPORT,
     "apply_reconnect": "driven by every scenario below",
     "get_status": "reads cached state only",
+    "pipe_port_for_update": "reads the cached pipe info and a setting only",
     "macro_set": "whole-buffer read-modify-write over the macro accessors, which are swept",
     "set_newer_firmware_policy": "reads the cached protocol only",
     "shutdown": "tears the core down",

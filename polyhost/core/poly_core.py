@@ -2807,6 +2807,17 @@ class PolyCore(Observable):
         """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""
         return bool(self.poly_settings.get("dev_force_hid_link"))
 
+    def pipe_port_for_update(self):
+        """The serial port a firmware update sends its chunks on, or None for
+        HID. The one place every flash path asks, and it reads the setting
+        itself: a probe already running on the worker when the setting was
+        turned on can still write the port into the cache after
+        _refresh_link_choice() cleared it, so the cache alone is not the
+        answer while the setting is on."""
+        if self._hid_link_forced():
+            return None
+        return (self.keeb.get_pipe_info() or {}).get("port")
+
     def _refresh_link_choice(self):
         """Apply ``dev_force_hid_link`` to the live connection: forced on, the
         keyboard reads as HID only at once; forced off, the cached transport is
@@ -3016,7 +3027,7 @@ class PolyCore(Observable):
             # is a plain string, so the job needs no device object for it); BEGIN,
             # SIGNATURE, COMMIT and APPLY stay on HID. hid_fw_up falls back to HID
             # from the keyboard's cursor if the pipe stops mid-stream.
-            pipe_port = (self.keeb.get_pipe_info() or {}).get("port")
+            pipe_port = self.pipe_port_for_update()
             fok, fmsg = hid_fw_up.flash_firmware(
                 self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag,
                 pipe_port=pipe_port)

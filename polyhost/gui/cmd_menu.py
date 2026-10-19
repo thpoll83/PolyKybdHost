@@ -592,7 +592,7 @@ class CommandsSubMenu:
         with self._paused_polling():
             dlg = HidFwUpDialog(self.parent.keeb.hid, bin_path, apply_after=apply_after,
                                 tray_icon=getattr(self.parent, 'tray', None),
-                                pipe_port=(self.parent.keeb.get_pipe_info() or {}).get("port"))
+                                pipe_port=self._core.pipe_port_for_update())
             dlg.exec_()
 
     def apply_staged_firmware_action(self):

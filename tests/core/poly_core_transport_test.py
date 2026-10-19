@@ -113,6 +113,15 @@ class SteadyStateProbeTest(unittest.TestCase):
         core.keeb.forget_bulk_pipe.assert_called()
         self.assertEqual(core._pipe_probes_left, 5)
 
+    def test_update_port_reads_the_setting_not_only_the_cache(self):
+        # A probe that finished after the setting was turned on left the port in
+        # the cache; the flash paths still get None while the setting is on.
+        core = _probe_core("pipe", 0.6)
+        core.keeb.get_pipe_info.return_value = {"port": "/dev/ttyACM0", "rate_mbps": 0.6}
+        self.assertEqual(core.pipe_port_for_update(), "/dev/ttyACM0")
+        core.poly_settings.get.side_effect = lambda k: {"dev_force_hid_link": True}.get(k, False)
+        self.assertIsNone(core.pipe_port_for_update())
+
     def test_a_keyboard_on_the_pipe_is_not_reprobed(self):
         core = _probe_core("pipe", 0.6)
         core._pipe_probes_left = 2
