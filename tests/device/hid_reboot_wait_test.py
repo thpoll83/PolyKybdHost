@@ -87,12 +87,19 @@ class WaitForRebootTest(unittest.TestCase):
         # Two keyboards: the flashed one ("old") leaves while the other stays.
         other = [dict(_raw(self.s)[0], path=b"other")]
         both = _raw(self.s) + other
-        h = _Helper([both, other, other, both])
+        # The script: both present (the bystander snapshot and the first gone
+        # poll), the flashed one gone, still gone in the return phase, back
+        # under a NEW path (a re-enumerated device may not keep its old one).
+        back = other + [dict(_raw(self.s)[0], path=b"new")]
+        h = _Helper([both, both, other, other, back])
         h.interface = type("_Dev", (), {"close": lambda self: None})()
         h.interface_path = b"old"
         out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep, gone_timeout_s=10)
         self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
         self.assertLess(self.clock.t, 10)
+        # The return phase skipped the bystander while it was the only device
+        # listed, and opened the returning one, whatever its path.
+        self.assertEqual([i["path"] for i in h.opened], [b"new"])
 
     def test_an_enumeration_error_is_unknown_not_absent(self):
         # An error before the old device left must not end the gone phase

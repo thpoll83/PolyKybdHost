@@ -456,13 +456,6 @@ class HidHelper:
         # A second PolyKybd on the bus (not a supported setup, but possible) would
         # otherwise keep the list non-empty while the flashed one reboots.
         gone_path = getattr(self, "interface_path", None) if self.interface else None
-        with self.lock:
-            if self.interface:
-                try:
-                    self.interface.close()
-                except Exception:  # noqa: BLE001 — a handle to a device that is rebooting; nothing to do with the error
-                    pass
-                self.interface = None
 
         def raw_interfaces():
             # Raises: hid.enumerate fails on USB churn, which a reboot is. An
@@ -473,6 +466,25 @@ class HidHelper:
                     if i['product_id'] in self.settings.KNOWN_PIDS
                     and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
                     and i['usage'] == self.settings.HID_RAW_USAGE]
+
+        # The other raw interfaces on the bus right now are not the flashed
+        # keyboard, so the return phase must not open one of them: once the
+        # flashed one has left, they are all the enumeration lists. The
+        # returning device may come back under another path, so it is matched
+        # by exclusion, not by gone_path.
+        bystanders = set()
+        if gone_path is not None:
+            try:
+                bystanders = {i.get('path') for i in raw_interfaces()} - {gone_path}
+            except Exception as e:  # noqa: BLE001 — see raw_interfaces; no snapshot means no exclusion
+                log.debug("Enumeration failed before the reboot wait: %s", e)
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:  # noqa: BLE001 — a handle to a device that is rebooting; nothing to do with the error
+                    pass
+                self.interface = None
 
         def still_there():
             try:
@@ -497,6 +509,7 @@ class HidHelper:
             except Exception as e:  # noqa: BLE001 — see raw_interfaces
                 log.debug("Enumeration failed during the reboot wait: %s", e)
                 raw = []
+            raw = [i for i in raw if i.get('path') not in bystanders]
             if raw:
                 try:
                     with self.lock:
