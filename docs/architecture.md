@@ -420,7 +420,7 @@ the cursor, a quiet window is resolved with an empty-frame cursor probe. BEGIN,
 SIGNATURE, COMMIT and APPLY stay on HID. A port that is busy, a firmware whose
 PING reports pipe protocol 1, or a pipe that stops mid-image hand the rest to the
 HID chunk loop, which runs on offsets (not chunk indexes) and continues from the
-cursor. Font packs and overlays still go over raw HID.
+cursor. Overlays still go over raw HID.
 
 ## Architecture (the CLAUDE.md summary)
 
