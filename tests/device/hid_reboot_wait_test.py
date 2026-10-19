@@ -94,7 +94,10 @@ class WaitForRebootTest(unittest.TestCase):
         self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
         self.assertLess(self.clock.t, 10)
 
-    def test_an_enumeration_error_counts_as_absent_and_is_retried(self):
+    def test_an_enumeration_error_is_unknown_not_absent(self):
+        # An error before the old device left must not end the gone phase
+        # (the next good enumeration would reopen the OLD device); one after
+        # it left is retried in the return phase.
         raw = _raw(self.s)
 
         class _Raising(_Helper):
@@ -104,7 +107,13 @@ class WaitForRebootTest(unittest.TestCase):
                     raise OSError("usb churn")
                 return nxt
 
-        h = _Raising([raw, "raise", "raise", raw])
+        h = _Raising([raw, "raise", raw])          # error, then still there, for ever
+        out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep, gone_timeout_s=10)
+        self.assertEqual(out, HidHelper.REBOOT_NEVER_LEFT)
+        self.assertEqual(h.opened, [])
+
+        self.clock.t = 0.0
+        h = _Raising([raw, [], "raise", "raise", raw])   # gone, errors, back
         out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep)
         self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
         self.assertEqual(len(h.opened), 1)

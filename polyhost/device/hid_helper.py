@@ -465,18 +465,21 @@ class HidHelper:
                 self.interface = None
 
         def raw_interfaces():
-            try:
-                found = self._enumerate(self.settings.VID)
-            except Exception as e:  # noqa: BLE001 — hid.enumerate raises on USB churn, which a reboot is
-                log.debug("Enumeration failed during the reboot wait: %s", e)
-                return []
-            return [i for i in found
+            # Raises: hid.enumerate fails on USB churn, which a reboot is. An
+            # error is "unknown", not "absent": the gone phase keeps waiting and
+            # the return phase retries, so a churn error before the old device
+            # left cannot end the wait and let the old device be reopened.
+            return [i for i in self._enumerate(self.settings.VID)
                     if i['product_id'] in self.settings.KNOWN_PIDS
                     and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
                     and i['usage'] == self.settings.HID_RAW_USAGE]
 
         def still_there():
-            raw = raw_interfaces()
+            try:
+                raw = raw_interfaces()
+            except Exception as e:  # noqa: BLE001 — see raw_interfaces
+                log.debug("Enumeration failed during the reboot wait: %s", e)
+                return True
             if gone_path is None:
                 return bool(raw)
             return any(i.get('path') == gone_path for i in raw)
@@ -489,7 +492,11 @@ class HidHelper:
 
         deadline = clock() + timeout_s
         while clock() < deadline:
-            raw = raw_interfaces()
+            try:
+                raw = raw_interfaces()
+            except Exception as e:  # noqa: BLE001 — see raw_interfaces
+                log.debug("Enumeration failed during the reboot wait: %s", e)
+                raw = []
             if raw:
                 try:
                     with self.lock:
