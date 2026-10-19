@@ -31,6 +31,7 @@ from PyQt5.QtWidgets import (
 from polyhost import i18n
 from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
+from polyhost.device import bulk_pipe
 from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.file_dialogs import get_open_file_name
@@ -375,6 +376,10 @@ class PolyHost(QApplication):
         # The tray's resting tooltip, and what _refresh_tray_tooltip falls back
         # to once a flash or a pending update stops claiming it.
         self._idle_tooltip = f"PolyKybdHost {__version__}"
+        # Channel to the keyboard as the core last reported it: "pipe", "hid"
+        # or None. Colours the tray mark and names itself in the tooltip.
+        self._transport = None
+        self._link_rate_mbps = None
         self.icon_manager = IconStateManager(self, False, self._idle_tooltip)
         self._tray_waiter = TrayVisibilityWaiter(
             show=lambda: self.tray.setVisible(True),
@@ -1312,9 +1317,40 @@ class PolyHost(QApplication):
             # is disconnected or the menu is otherwise greyed out.
             self.exit_with_daemon.setEnabled(True)
         if self.connected:
+            self.icon_manager.set_transport(self._transport)
             self.icon_manager.set_connected()
         else:
             self.icon_manager.set_disconnected()
+
+    def _set_transport(self, transport, rate_mbps=None):
+        """Record the channel the core reports ("pipe" / "hid" / None) with the
+        measured rate, and refresh what shows it: the mark's colour
+        (managed_connection_status) and the resting tooltip. Both modes feed
+        this: the standalone probe snapshot and the daemon's status_changed."""
+        if transport == self._transport and rate_mbps == self._link_rate_mbps:
+            return
+        self._transport = transport
+        self._link_rate_mbps = rate_mbps
+        self._refresh_tray_tooltip()
+
+    def _link_text(self, transport, rate_mbps) -> str:
+        """What the user reads about the link: the measured rate of the fast
+        channel, or the HID ceiling. Never a protocol name: "bulk pipe" means
+        nothing to a user, a number does. The fast channel is optional (older
+        firmware, a blocked serial class, a KVM, a busy port), so the HID line
+        is a state, not a fault."""
+        if transport == "pipe" and rate_mbps:
+            # TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
+            return _f("{rate} link", rate=bulk_pipe.rate_label(rate_mbps))
+        # TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
+        return _f("HID link, up to {kbps} KB/s", kbps=bulk_pipe.HID_LINK_KBPS)
+
+    def _transport_tooltip(self) -> str:
+        """The resting tooltip's second line, naming the link in use."""
+        if not self.connected or self._transport is None:
+            return ""
+        # TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up to 64 KB/s".
+        return _f("Connected: {link}", link=self._link_text(self._transport, self._link_rate_mbps))
 
     def report_device_result(self, title, msg, result=False):
         # Logs only; no UI popup. Errors go to warning, anything else to info.
@@ -1351,6 +1387,10 @@ class PolyHost(QApplication):
         # resets) is the core's; this method renders the result: status
         # entry, language menu, OS-language switch, update-check kick-off.
         applied = self.core.apply_reconnect(snapshot)
+        # After apply_reconnect, so the tooltip it refreshes sees the new
+        # connection state: before it, a fresh connect reads as disconnected and
+        # the "Connected: … link" line never appears.
+        self._set_transport(snapshot.get("transport"), snapshot.get("link_rate_mbps"))
         if applied is None:
             return
         # Refresh the cached per-feature capabilities from the (now-populated)
@@ -1431,6 +1471,7 @@ class PolyHost(QApplication):
         first connected render rather than only on state_changed."""
         if self.paused or not isinstance(payload, dict):
             return
+        self._set_transport(payload.get("transport"), payload.get("link_rate_mbps"))
         # Cache the daemon-reported per-feature capabilities for menu gating; the
         # daemon carries them on every status_changed (a state-change event may be
         # missed by a late-attaching client, so fall back to the status snapshot).
@@ -1968,6 +2009,8 @@ class PolyHost(QApplication):
             "lang": st.get("current_lang") or "?",
             "n_lang": n_lang,
             "kb_proto": st.get("protocol"),
+            "transport": st.get("transport"),
+            "link_rate_mbps": st.get("link_rate_mbps"),
             "n_maps": n_maps,
             "config_dir": platformdirs.user_config_dir("PolyHost"),
             "log_dir": os.getcwd(),
@@ -2037,6 +2080,9 @@ class PolyHost(QApplication):
             _f("<b>Hardware:</b> {hardware}", hardware=info["hw"]),
             _f("<b>Language:</b> {language}", language=lang_line),
         ]
+        if info.get("transport"):
+            rows.append(_f("<b>Link:</b> {link}",
+                           link=self._link_text(info["transport"], info.get("link_rate_mbps"))))
         return about_dialog.rows_html(rows)
 
     def _about_env_html(self, info: dict) -> str:
@@ -2762,11 +2808,12 @@ class PolyHost(QApplication):
         stored tooltip when a warning expires — a direct write survives only
         until the next `set_warning`, after which the marker is gone for good
         (CodeRabbit, #257)."""
-        self.icon_manager.set_base_tooltip(
-            self._fontpack_tooltip
-            or updates_tooltip(getattr(self._pending_release, "version", None),
-                               getattr(self._pending_fw_release, "version", None))
-            or self._idle_tooltip)
+        resting = (self._fontpack_tooltip
+                   or updates_tooltip(getattr(self._pending_release, "version", None),
+                                      getattr(self._pending_fw_release, "version", None))
+                   or self._idle_tooltip)
+        transport = self._transport_tooltip()
+        self.icon_manager.set_base_tooltip(f"{resting}\n{transport}" if transport else resting)
 
     # ------------------------------------------------------------------
     # Font-pack flash progress (auto on connect, or manual via polyctl)
@@ -3038,7 +3085,8 @@ class PolyHost(QApplication):
         with self.worker.exclusive():
             try:
                 dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True,
-                                   tray_icon=self.tray)
+                                   tray_icon=self.tray,
+                                   pipe_port=self.core.pipe_port_for_update())
                 dlg.exec_()
             finally:
                 discard_fw_download(bin_path)

@@ -1005,6 +1005,18 @@ class MockHidHelper(HidHelper):
         self.interface = self.firmware
         return True
 
+    def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10, **_kw) -> str:
+        """The two-phase wait of HidHelper: an APPLY that is pending reboots
+        the emulated keyboard and counts as gone-and-back; nothing pending
+        means the device never left the bus."""
+        if self.firmware.faults.disconnected:
+            return HidHelper.REBOOT_NO_RETURN
+        if not self.firmware._apply_pending:
+            return HidHelper.REBOOT_NEVER_LEFT
+        self.firmware.reboot()
+        self.interface = self.firmware
+        return HidHelper.REBOOT_RECONNECTED
+
     def reopen_console(self) -> bool:
         return False
 

@@ -32,6 +32,7 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
+from polyhost.device import bulk_pipe
 from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
@@ -56,6 +57,9 @@ RECONNECT_CYCLE_MSEC = 1000
 # after the last overlay activity; a genuine disconnect is still caught once the
 # window lapses (sends stop, so the timestamp goes stale within this window).
 OVERLAY_PROBE_COOLDOWN_S = 1.0
+# Steady-state reconnect probes (1 s apart) that re-look for the bulk pipe
+# after a connect that found none, for the tty node arriving late.
+PIPE_PROBE_RETRIES = 5
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
@@ -161,6 +165,7 @@ class PolyCore(Observable):
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        self._pipe_probes_left = 0
         # monotonic timestamp of the last overlay/MRU send or enable/disable, so
         # the reconnect probe can skip the keyboard's post-send deaf window.
         self._last_overlay_activity = 0.0
@@ -1623,6 +1628,27 @@ class PolyCore(Observable):
         # the firmware that had just been replaced, until the app was restarted.
         # The marker is popped once per keyboard boot, so this costs one extra
         # version+lang query per reboot and nothing in steady state.
+        # Bulk pipe (optional second channel): probed on a fresh connect (below,
+        # after the version block), and re-probed on the next few steady-state
+        # probes while HID only, because on Linux the tty node can appear after
+        # the hidraw node. A port that is absent, busy or mute is "hid"; see
+        # device/bulk_pipe.py. This runs BEFORE the steady-state return so the
+        # retries happen and every published snapshot names the transport: the
+        # tray reads it from each one, and a snapshot without the key would
+        # clear the mark one second after connect.
+        if not connected_now:
+            self.keeb.forget_bulk_pipe()
+        elif self._hid_link_forced():
+            self.keeb.use_hid_only()
+        elif snapshot["state_changed"] or snapshot["fresh_boot"]:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
+        elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
+              and self._pipe_probes_left > 0):
+            self._pipe_probes_left -= 1
+            self.keeb.probe_bulk_pipe()
+        snapshot["transport"] = self.keeb.get_transport()
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -1641,6 +1667,9 @@ class PolyCore(Observable):
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()
+        snapshot["transport"] = (self.keeb.use_hid_only() if self._hid_link_forced()
+                                 else self.keeb.probe_bulk_pipe())
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         snapshot.update({
             "version_ok": version_ok,
             "version_msg": version_msg,
@@ -1866,6 +1895,11 @@ class PolyCore(Observable):
             "safe_mode": self.safe_mode,
             "newer_fw_pending": bool(
                 (applied["decision"] or {}).get("newer_fw_pending")),
+            # Which channel the host has to the keyboard: "pipe" (bulk pipe
+            # found and answering), "hid" (raw HID only), None while
+            # disconnected. The tray colours its mark by it.
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
         })
         return applied
 
@@ -2154,6 +2188,9 @@ class PolyCore(Observable):
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,
             "window_backend": self.window_backend,
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
+            "pipe": self.keeb.get_pipe_info(),
         }
 
     def list_languages(self):
@@ -2763,6 +2800,36 @@ class PolyCore(Observable):
             self._refresh_unicode_watch()
         if keys is None or self._GENERIC_ICON_SETTING_KEYS.intersection(keys):
             self._forget_generic_overlays()
+        if keys is None or "dev_force_hid_link" in keys:
+            self._refresh_link_choice()
+
+    def _hid_link_forced(self) -> bool:
+        """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""
+        return bool(self.poly_settings.get("dev_force_hid_link"))
+
+    def pipe_port_for_update(self):
+        """The serial port a firmware update sends its chunks on, or None for
+        HID. The one place every flash path asks, and it reads the setting
+        itself: a probe already running on the worker when the setting was
+        turned on can still write the port into the cache after
+        _refresh_link_choice() cleared it, so the cache alone is not the
+        answer while the setting is on."""
+        if self._hid_link_forced():
+            return None
+        return (self.keeb.get_pipe_info() or {}).get("port")
+
+    def _refresh_link_choice(self):
+        """Apply ``dev_force_hid_link`` to the live connection: forced on, the
+        keyboard reads as HID only at once; forced off, the cached transport is
+        dropped and the next steady-state probes look for the pipe again, so
+        neither direction needs a reconnect. Runs on whichever thread the
+        settings writer is on; the keyboard layer's two setters touch no
+        device, and the probe itself happens on the worker's next cycle."""
+        if self._hid_link_forced():
+            self.keeb.use_hid_only()
+        else:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
 
     _GENERIC_ICON_SETTING_KEYS = frozenset({
         # ⚠️ The two outer switches belong here as much as the inner ones, and
@@ -2956,8 +3023,14 @@ class PolyCore(Observable):
                     cancel_flag[0] = True      # relay supersede/suspend to hid_fw_up
                 self.emit("fw_flash_progress", {"pct": pct, "msg": m})
 
+            # The chunks go over the bulk pipe when the probe found one (the port
+            # is a plain string, so the job needs no device object for it); BEGIN,
+            # SIGNATURE, COMMIT and APPLY stay on HID. hid_fw_up falls back to HID
+            # from the keyboard's cursor if the pipe stops mid-stream.
+            pipe_port = self.pipe_port_for_update()
             fok, fmsg = hid_fw_up.flash_firmware(
-                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag,
+                pipe_port=pipe_port)
             self.emit("fw_flash_done", {"ok": bool(fok), "msg": fmsg})
             if fok and apply:
                 aok, amsg = hid_fw_up.apply_staged_firmware(

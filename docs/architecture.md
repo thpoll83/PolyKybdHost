@@ -377,6 +377,43 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
 
+### Transport probe (bulk pipe vs HID only)
+
+A `POLYKYBD_BULK_PIPE` firmware enumerates a CDC serial interface next to raw HID
+(qmk `keyboards/polykybd/BULK_PIPE.md`). The host treats it as optional: nothing
+in the HID protocol announces it, so `PolyKybd.probe_bulk_pipe()`
+(`device/bulk_pipe.py`) finds the port by VID/PID, opens it raw, PINGs it and
+measures the rate (`measure_rate`: RESET, 128 KB of SINK frames, STAT; the
+device-side first/last timestamps give the rate, about 0.2 s on the rig), on
+the HID worker thread like all device I/O. An absent, busy or mute port is
+"hid", and so is a port whose stream arrives with a bad CRC or a dropped frame. The core probes on every fresh connect (`state_changed` or `fresh_boot`)
+and re-probes on the next `PIPE_PROBE_RETRIES` steady-state probes while HID
+only, because on Linux the tty node can appear after the hidraw node. The
+result is `transport` ("pipe" / "hid" / None) and `link_rate_mbps` on
+`status_changed` and in `get_status()` (with the PING reply as `pipe`), so the
+daemon-plus-client split, `RemoteCore` and `polyctl status` all see it. The tray
+colours its mark by it (`IconStateManager.set_transport`) and shows the measured
+rate in the resting tooltip and the About dialog ("0.6 MB/s link", or "HID
+link, up to 64 KB/s"). The words "bulk pipe" never reach the user
+(maintainer's rule, 2026-10-19): user-facing text states the rate. The
+developer setting `dev_force_hid_link` (settings dialog, Developer section)
+skips the probe and records HID only (`PolyKybd.use_hid_only()`), so the HID
+path can be tested by hand on a keyboard that has the pipe; `note_settings_changed`
+applies it to the live connection, in both directions, without a reconnect.
+
+The firmware update's CHUNK phase runs on the pipe when the probe found one
+(`PolyCore.flash_firmware` passes `get_pipe_info()["port"]` to
+`hid_fw_up.flash_firmware(pipe_port=...)`; the in-process dialog gets it from
+`cmd_menu`). `bulk_pipe.stream_firmware` sends `FW_CHUNK` frames of 236 bytes,
+4 frames ahead of their replies (the firmware handles a frame inside its USB
+drain, so an unpaced stream would keep its main loop there; `poly_pipe.h`), and
+every reply carries the keyboard's cursor: an ACK advances, a NACK rewinds to
+the cursor, a quiet window is resolved with an empty-frame cursor probe. BEGIN,
+SIGNATURE, COMMIT and APPLY stay on HID. A port that is busy, a firmware whose
+PING reports pipe protocol 1, or a pipe that stops mid-image hand the rest to the
+HID chunk loop, which runs on offsets (not chunk indexes) and continues from the
+cursor. Font packs and overlays still go over raw HID.
+
 ## Architecture (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._

@@ -670,6 +670,43 @@ class PolyKybdMock:
         self._log_call("read_serial")
         return None
 
+    # Bulk pipe parity with PolyKybd. The mock has no serial port; a test that
+    # wants the "pipe" transport sets `pipe_available = True` first.
+    pipe_available = False
+    pipe_info = None
+    transport = None
+
+    def probe_bulk_pipe(self) -> str:
+        self._log_call("probe_bulk_pipe")
+        if self.pipe_available:
+            self.pipe_info = {"port": "mock", "proto": 1, "max_payload": 512,
+                              "epsize": 64, "out_capacity": 8, "fw": "mock",
+                              "rate_mbps": 1.0}
+            self.transport = "pipe"
+        else:
+            self.pipe_info = None
+            self.transport = "hid"
+        return self.transport
+
+    def use_hid_only(self) -> str:
+        self._log_call("use_hid_only")
+        self.pipe_info = None
+        self.transport = "hid"
+        return self.transport
+
+    def get_transport(self):
+        return self.transport
+
+    def get_pipe_info(self):
+        return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        return (self.pipe_info or {}).get("rate_mbps")
+
+    def forget_bulk_pipe(self):
+        self.pipe_info = None
+        self.transport = None
+
     def get_console_output(self, flush_and_return=True):
         return "" if flush_and_return else None
 

@@ -22,6 +22,10 @@ class IconStateManager:
         parent.tray.setToolTip(tooltip)
 
         self.connected = get_icon(f"{prefix}color.png")
+        # Connected over raw HID only (no bulk pipe): the same mark in violet.
+        # Only the tray app has a keyboard, so only the P mark has the variant.
+        self.connected_hid = get_icon("phid.png") if prefix == "p" else self.connected
+        self._hid_only = False
         self.disconnected = get_icon(f"{prefix}gray.png")
         self.wait = get_icon("pthink.png")
         self.warn = get_icon("pwarn.png")
@@ -53,6 +57,16 @@ class IconStateManager:
         """ Set icon for connected state """
         if not self._is_connected:
             self._is_connected = True
+            self.dirty_flag = True
+        self.update()
+
+    def set_transport(self, transport):
+        """Colour the connected mark by the channel in use: violet for "hid"
+        (raw HID only), the blue sweep for "pipe". None keeps the blue, so a
+        core that predates the transport field changes nothing."""
+        hid_only = transport == "hid"
+        if hid_only != self._hid_only:
+            self._hid_only = hid_only
             self.dirty_flag = True
         self.update()
 
@@ -109,8 +123,9 @@ class IconStateManager:
                 self.dirty_flag = True
             elif self.dirty_flag:
                 if self._is_connected:
-                    self.parent.setWindowIcon(self.connected)
-                    self.parent.tray.setIcon(self.connected)
+                    icon = self.connected_hid if self._hid_only else self.connected
+                    self.parent.setWindowIcon(icon)
+                    self.parent.tray.setIcon(icon)
                 else:
                     self.parent.setWindowIcon(self.disconnected)
                     self.parent.tray.setIcon(self.disconnected)

@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.serial_helper import SerialHelper
+from polyhost.device import bulk_pipe
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
@@ -227,6 +227,12 @@ class PolyKybd:
         self.current_lang = None
         self.hid = None
         self.serial = None
+        # The bulk pipe (device/bulk_pipe.py): None until probed, then the
+        # PING reply dict when the firmware offers the pipe and the host could
+        # open it. `transport` is what the tray shows: "pipe", "hid", or None
+        # while disconnected / not yet probed.
+        self.pipe_info = None
+        self.transport = None
         self.name = None
         self.sw_version = None
         self.sw_version_num = None
@@ -272,12 +278,11 @@ class PolyKybd:
         a flash — so this must never propagate out of connect()."""
         try:
             self.hid = HidHelper(self.device_settings)
-            self.serial = SerialHelper(self.device_settings)
             return True
         except Exception as e:
             self.log.warning("Failed to open HID device: %s", e)
             self.hid = DisconnectedHid(self.device_settings)
-            self.serial = None
+            self.forget_bulk_pipe()
             return False
 
     def connect(self):
@@ -309,9 +314,55 @@ class PolyKybd:
             return self.hid.interface_acquired()
 
     def read_serial(self):
-        if self.serial:
-            return self.serial.read_all()
+        # Kept for the console periodic's call shape; the serial side of the
+        # keyboard is the bulk pipe now (probe_bulk_pipe), which carries framed
+        # data and never free text.
         return None
+
+    def probe_bulk_pipe(self) -> str:
+        """Look for the firmware's bulk pipe and PING it (serial I/O, worker
+        thread). Returns the transport in use, ``bulk_pipe.TRANSPORT_PIPE`` or
+        ``bulk_pipe.TRANSPORT_HID``, and caches it with the PING reply. Absent,
+        busy and mute ports all read as HID only; the pipe is optional."""
+        info = bulk_pipe.detect(self.device_settings.VID, self.device_settings.KNOWN_PIDS)
+        transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
+        if transport != self.transport:
+            if info:
+                self.log.info("Bulk pipe on %s: %.2f MB/s measured, firmware %s, %d-byte packets, queue %d",
+                              info.get("port"), info.get("rate_mbps", 0.0), info.get("fw"),
+                              info.get("epsize", 0), info.get("out_capacity", 0))
+            else:
+                self.log.info("No bulk pipe: raw HID only")
+        self.pipe_info = info
+        self.transport = transport
+        return transport
+
+    def use_hid_only(self) -> str:
+        """Record the transport as HID only without probing (the
+        ``dev_force_hid_link`` setting): the pipe is left alone and the
+        firmware update takes the HID path. Returns the transport."""
+        if self.transport != bulk_pipe.TRANSPORT_HID or self.pipe_info is not None:
+            self.log.info("Fast link disabled by the dev_force_hid_link setting: raw HID only")
+        self.pipe_info = None
+        self.transport = bulk_pipe.TRANSPORT_HID
+        return self.transport
+
+    def get_transport(self):
+        """Cached transport from the last probe: "pipe", "hid", or None."""
+        return self.transport
+
+    def get_pipe_info(self):
+        """Cached PING reply of the bulk pipe (with the measured rate), or None."""
+        return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        """Measured rate of the bulk pipe in MB/s, or None without one."""
+        return (self.pipe_info or {}).get("rate_mbps")
+
+    def forget_bulk_pipe(self):
+        """Drop the cached transport (disconnect / re-enumeration)."""
+        self.pipe_info = None
+        self.transport = None
 
     def get_console_output(self, flush_and_return=True) -> str | None:
         try:

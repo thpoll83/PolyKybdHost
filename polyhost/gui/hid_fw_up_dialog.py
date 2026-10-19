@@ -24,10 +24,11 @@ class _HidFwUpWorker(QThread):
     progress = pyqtSignal(int, str)   # (percent, status_message)
     finished = pyqtSignal(bool, str)  # (success, message)
 
-    def __init__(self, hid, bin_path: str):
+    def __init__(self, hid, bin_path: str, pipe_port: str = None):
         super().__init__()
         self.hid      = hid
         self.bin_path = bin_path
+        self.pipe_port = pipe_port   # the bulk pipe's serial port, or None for HID only
         self._cancel  = [False]   # mutable flag checked between chunks
 
     def cancel(self):
@@ -38,6 +39,7 @@ class _HidFwUpWorker(QThread):
             self.hid, self.bin_path,
             progress_cb=lambda pct, m: self.progress.emit(pct, m),
             cancel_flag=self._cancel,
+            pipe_port=self.pipe_port,
         )
         self.finished.emit(ok, msg)
 
@@ -94,7 +96,12 @@ class HidFwUpDialog(QDialog):
     # ticks arrive late, and a fixed per-tick step then slowed the bar below the
     # real transfer rate, so it fell behind and never caught up.
     _ANIM_TICK_MS = 5
-    _GLIDE_SPEED  = 2.3    # %/s at normal speed
+    _GLIDE_SPEED  = 2.3    # %/s at normal speed: the floor, sized for a 50 s HID transfer
+    # The glide follows the transfer's own rate once it is measurable: the percent
+    # reported so far over the time since the first chunk report. Over the bulk
+    # pipe the chunks take ~10 s (about 9 %/s), four times the floor, and a bar
+    # gliding at the floor between reports stalled and jumped (2026-10-19).
+    _RATE_AFTER_S = 0.5
 
     # If a newer progress report arrives while the bar is still catching up to
     # the previous target, the bar has fallen behind the real transfer — glide
@@ -121,10 +128,11 @@ class HidFwUpDialog(QDialog):
     _SUCCESS_AUTOCLOSE_MS = 1500
 
     def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None,
-                 external=False, apply_only=False):
+                 external=False, apply_only=False, pipe_port=None):
         super().__init__(parent)
         self.log         = logging.getLogger('PolyHost')
         self._hid        = hid
+        self._pipe_port  = pipe_port   # bulk pipe port for the chunks (in-process flash only)
         self._apply_after = apply_after
         self._tray_icon  = tray_icon
         # external: the flash runs elsewhere (the daemon, over RPC) and progress
@@ -148,9 +156,11 @@ class HidFwUpDialog(QDialog):
         self._last_tick      = None  # monotonic time of the previous animation tick
         self._catchup_speed  = 0.0   # %/s latched when the lag passed _MAX_LAG_PCT
 
-        # ETA tracking for the chunk-transfer phase (pct 2–98).
+        # ETA tracking for the chunk-transfer phase (pct 2–100).
         self._transfer_start_time = None  # monotonic, set when chunks begin flowing
-        self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
+        self._transfer_first_pct  = 0     # the pct of that first report
+        self._observed_rate       = 0.0   # %/s the reports have been arriving at
+        self._last_reported_pct   = 0     # latest pct in [2, 100) — drives ETA calculation
         self._positioned          = False  # move-to-corner only on the first showEvent
 
         self.setWindowTitle(_("Firmware Update"))
@@ -210,7 +220,7 @@ class HidFwUpDialog(QDialog):
                 # No staging phase — open straight into the apply spinner.
                 self._set_busy(True)
         else:
-            self._worker = _HidFwUpWorker(hid, bin_path)
+            self._worker = _HidFwUpWorker(hid, bin_path, pipe_port)
             self._worker.progress.connect(self._on_progress)
             self._worker.finished.connect(self._on_finished)
             self._worker.start()
@@ -249,11 +259,11 @@ class HidFwUpDialog(QDialog):
             self._eta_label.setText("")
             return
         pct = self._last_reported_pct
-        if pct >= 98 or pct < 2:
+        if pct >= 100 or pct < 2:
             self._eta_label.setText("")
             return
         elapsed       = time.monotonic() - self._transfer_start_time
-        fraction_done = (pct - 2) / 96.0
+        fraction_done = (pct - 2) / 98.0
         # Wait for at least 5 % chunk progress and 2 s elapsed before showing
         # an estimate — early values are noisy and misleadingly large.
         if fraction_done < 0.05 or elapsed < 2.0:
@@ -299,12 +309,17 @@ class HidFwUpDialog(QDialog):
 
         # ETA: record when chunk transfer started and keep the latest pct.
         self._last_reported_pct = max(self._last_reported_pct, pct)
-        if self._transfer_start_time is None and pct < 98:
+        if self._transfer_start_time is None and pct < 100:
             self._transfer_start_time = time.monotonic()
+            self._transfer_first_pct = pct
             self._eta_timer.start()
-        elif pct >= 98:
+        elif pct >= 100:
             self._eta_timer.stop()
             self._eta_label.setText("")
+        if self._transfer_start_time is not None:
+            elapsed = time.monotonic() - self._transfer_start_time
+            if elapsed >= self._RATE_AFTER_S and pct > self._transfer_first_pct:
+                self._observed_rate = (pct - self._transfer_first_pct) / elapsed
 
     def _show_pct(self, pct: float):
         """Render a percentage on the bar at 10x resolution with one decimal."""
@@ -335,7 +350,7 @@ class HidFwUpDialog(QDialog):
 
     def _glide_speed(self, gap: float) -> float:
         """%/s for a bar `gap` percent behind the latest report."""
-        speed = self._GLIDE_SPEED
+        speed = max(self._GLIDE_SPEED, self._observed_rate)
         if self._behind:
             speed *= self._CATCHUP_FACTOR
         # Latched, not recomputed per tick: gap / _LAG_CATCHUP_S on every tick

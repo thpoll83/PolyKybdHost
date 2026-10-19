@@ -987,27 +987,27 @@ def keeb_payload() -> int:
 
 class TestConnect(unittest.TestCase):
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_first_connect_opens_interfaces(self, MockHid, MockSerial):
+    def test_first_connect_opens_interfaces(self, MockHid):
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
         self.assertTrue(keeb.connect())
         MockHid.assert_called_once()
-        MockSerial.assert_called_once()
+        # The bulk pipe is probed by the core after the connect, not here.
+        self.assertIsNone(keeb.get_transport())
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_first_connect_failure_leaves_clean_state(self, MockHid, MockSerial):
+    def test_first_connect_failure_leaves_clean_state(self, MockHid):
         MockHid.side_effect = RuntimeError("no permission")
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        keeb.transport, keeb.pipe_info = "pipe", {"port": "COM7"}   # stale from before
         self.assertFalse(keeb.connect())
         self.assertIsInstance(keeb.hid, DisconnectedHid)
         self.assertFalse(keeb.hid.interface_acquired())
-        self.assertIsNone(keeb.serial)
+        self.assertIsNone(keeb.get_transport())
+        self.assertIsNone(keeb.get_pipe_info())
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_a_job_after_a_failed_open_fails_instead_of_raising(self, MockHid, MockSerial):
+    def test_a_job_after_a_failed_open_fails_instead_of_raising(self, MockHid):
         # The field case (2026-10-01): the device vanished while the firmware
         # rebooted after a flash, re-enumeration found nothing, and an overlay
         # job already queued called set_idle on a None handle.
@@ -1021,9 +1021,8 @@ class TestConnect(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(keeb.get_console_output(), "")
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_after_a_failed_open_the_next_connect_opens_afresh(self, MockHid, MockSerial):
+    def test_after_a_failed_open_the_next_connect_opens_afresh(self, MockHid):
         # No GET_ID retry loop against a handle that has no device behind it.
         MockHid.side_effect = RuntimeError("gone")
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
