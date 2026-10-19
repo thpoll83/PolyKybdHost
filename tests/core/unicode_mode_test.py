@@ -441,7 +441,7 @@ class SettingsChangedTest(unittest.TestCase):
         core = self._core()
         self._run(core, None)
         self.assertEqual(core._did,
-                         ["brightness", "watcher", ("apply", InputMethod.WinCompose)])
+                         ["brightness", "watcher", ("apply", InputMethod.WinCompose), "link"])
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
