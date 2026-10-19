@@ -100,6 +100,12 @@ MSG_CHUNK_FAILED = M_(
 MSG_CHUNK_RETRY = M_("Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…")
 MSG_LINK_SENDING = M_("Sending over the fast link: {kb} KB of {total_kb} KB…")
 MSG_LINK_FALLBACK = M_("Fast link stopped ({reason}); continuing over HID from {kb} KB.")
+# The {reason} values of MSG_LINK_FALLBACK. bulk_pipe.stream_firmware returns the
+# last three as plain strings; registering the same text here is what lets
+# translate_message() translate them inside the message.
+MSG_LINK_NOT_OPENABLE = M_("port not openable")
+MSG_LINK_PROTO_OLD = M_("pipe protocol too old")
+MSG_LINK_PORT_ERROR = M_("port error")
 MSG_SIG_UNREADABLE_UNSIGNED = M_("Could not read {sig}: {error} — flashing unsigned.")
 MSG_SENDING_SIG = M_("Sending image signature…")
 MSG_SIG_IGNORED = M_("Ignoring {sig} — expected {expected} bytes, got {size}.")
@@ -339,14 +345,14 @@ def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
         ser = serial_open(pipe_port)
     except Exception as exc:  # noqa: BLE001 — busy or gone: HID carries the image
         log.info("Bulk pipe %s not openable for the firmware chunks (%s): using HID", pipe_port, exc)
-        return False, 0, "port not openable"
+        return False, 0, MSG_LINK_NOT_OPENABLE
     try:
         reply = bulk_pipe.request(ser, bulk_pipe.CMD_PING)
         proto = bulk_pipe.parse_ping(reply)["proto"] if reply is not None else 0
         if proto < bulk_pipe.PIPE_PROTO_FW_CHUNK:
             log.info("Bulk pipe %s reports protocol %d, firmware chunks need %d: using HID",
                      pipe_port, proto, bulk_pipe.PIPE_PROTO_FW_CHUNK)
-            return False, 0, "pipe protocol too old"
+            return False, 0, MSG_LINK_PROTO_OLD
         report(2, MSG_LINK_SENDING.format(kb=0, total_kb=fw_size // 1024))
         shown = [0]
 
@@ -369,7 +375,7 @@ def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
         return ok, offset, reason
     except Exception as exc:  # noqa: BLE001 — a vanished port mid-stream is a fallback, not a crash
         log.warning("Bulk pipe %s failed mid-stream (%s): HID continues", pipe_port, exc)
-        return False, 0, "port error"
+        return False, 0, MSG_LINK_PORT_ERROR
     finally:
         try:
             ser.close()

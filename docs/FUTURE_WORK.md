@@ -236,3 +236,21 @@ instance would answer it.
 shortcuts. That cap had no measurement behind it. The one limit now is 600 distinct
 images per switch, enforced in the send path; see the comment at the top of
 `shortcut_overlays.py`.)
+
+## Font packs, engine packs and overlays over the fast link
+
+**Status:** follow-up PRs, agreed 2026-10-19. PolyKybdHost#407 moves only the
+firmware image's CHUNK step onto the bulk pipe (`FW_CHUNK`, 236-byte frames); the
+font-pack bundles, the icon library, the `.plyx` engine pack and the overlays still
+go over 56-byte raw HID reports.
+
+**What each one needs.** The firmware's `FW_CHUNK` handler writes into whatever
+target the preceding BEGIN selected, so a resource staged through
+`FONTPACK_BEGIN` would already accept its chunks over the pipe; the host side is
+`PolyCore._flash_resource` taking the same `stream_firmware` call as
+`hid_fw_up.flash_firmware`, from the keyboard's cursor, with the HID loop as the
+fallback. Overlays are a different protocol (cmd 41/42 reports, per-switch
+images with the MRU claim pass), so they need their own pipe command and a
+decision on whether the per-switch rate limit still applies. Measure a font-pack
+reship first: the pack's own flash erase, not the transfer, may be the larger
+part of its time, in which case the pipe buys little there.

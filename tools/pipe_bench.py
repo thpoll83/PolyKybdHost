@@ -78,7 +78,8 @@ class Pipe:
 
 def bench_sink(pipe: Pipe, total_bytes: int, frame_payload: int, write_chunk: int) -> dict:
     """Stream `total_bytes` of SINK payload, then read the keyboard's own count."""
-    stats0 = parse_stat(pipe.request(CMD_RESET) and pipe.request(CMD_STAT))
+    pipe.request(CMD_RESET)      # its reply has no body, so it cannot gate the next call
+    stats0 = parse_stat(pipe.request(CMD_STAT))
     assert stats0["sink_bytes"] == 0, stats0
     # Deterministic but incompressible-looking payload: a 64 KB pseudo-random block.
     import random

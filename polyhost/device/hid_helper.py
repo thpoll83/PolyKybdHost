@@ -158,6 +158,13 @@ class HidHelper:
     def _open(self, info):
         return hid.Device(path=info['path'])
 
+    def _open_raw(self, info):
+        """Open the raw interface and remember its path: wait_for_reboot waits
+        for THIS device to leave the bus, not for every PolyKybd on it."""
+        dev = self._open(info)
+        self.interface_path = info.get('path')
+        return dev
+
     def __init__(self, settings):
         self.settings = settings
         self.lock = threading.Lock()
@@ -168,7 +175,7 @@ class HidHelper:
 
         if len(raw_hid_interfaces) != 0:
             try:
-                self.interface = self._open(raw_hid_interfaces[0])
+                self.interface = self._open_raw(raw_hid_interfaces[0])
             except hid.HIDException as e:
                 print(PERMISSION_MSG)
                 raise e
@@ -416,7 +423,7 @@ class HidHelper:
             if raw:
                 try:
                     with self.lock:
-                        self.interface = self._open(raw[0])
+                        self.interface = self._open_raw(raw[0])
                     return True
                 except Exception:
                     pass
@@ -445,22 +452,37 @@ class HidHelper:
         not reboot it), or REBOOT_NO_RETURN when it left and did not come back.
         A device already absent at the first look counts as gone.
         """
+        # The device that was open, by path: the gone phase waits for THAT one.
+        # A second PolyKybd on the bus (not a supported setup, but possible) would
+        # otherwise keep the list non-empty while the flashed one reboots.
+        gone_path = getattr(self, "interface_path", None) if self.interface else None
         with self.lock:
             if self.interface:
                 try:
                     self.interface.close()
-                except Exception:
+                except Exception:  # noqa: BLE001 — a handle to a device that is rebooting; nothing to do with the error
                     pass
                 self.interface = None
 
         def raw_interfaces():
-            return [i for i in self._enumerate(self.settings.VID)
+            try:
+                found = self._enumerate(self.settings.VID)
+            except Exception as e:  # noqa: BLE001 — hid.enumerate raises on USB churn, which a reboot is
+                log.debug("Enumeration failed during the reboot wait: %s", e)
+                return []
+            return [i for i in found
                     if i['product_id'] in self.settings.KNOWN_PIDS
                     and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
                     and i['usage'] == self.settings.HID_RAW_USAGE]
 
+        def still_there():
+            raw = raw_interfaces()
+            if gone_path is None:
+                return bool(raw)
+            return any(i.get('path') == gone_path for i in raw)
+
         deadline = clock() + gone_timeout_s
-        while raw_interfaces():
+        while still_there():
             if clock() >= deadline:
                 return self.REBOOT_NEVER_LEFT
             sleep(poll_s)
@@ -471,7 +493,7 @@ class HidHelper:
             if raw:
                 try:
                     with self.lock:
-                        self.interface = self._open(raw[0])
+                        self.interface = self._open_raw(raw[0])
                     return self.REBOOT_RECONNECTED
                 except Exception:
                     pass

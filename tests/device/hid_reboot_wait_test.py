@@ -83,6 +83,32 @@ class WaitForRebootTest(unittest.TestCase):
         h, out = self._wait([[], raw])
         self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
 
+    def test_waits_for_the_opened_device_not_another_keyboard(self):
+        # Two keyboards: the flashed one ("old") leaves while the other stays.
+        other = [dict(_raw(self.s)[0], path=b"other")]
+        both = _raw(self.s) + other
+        h = _Helper([both, other, other, both])
+        h.interface = type("_Dev", (), {"close": lambda self: None})()
+        h.interface_path = b"old"
+        out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep, gone_timeout_s=10)
+        self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
+        self.assertLess(self.clock.t, 10)
+
+    def test_an_enumeration_error_counts_as_absent_and_is_retried(self):
+        raw = _raw(self.s)
+
+        class _Raising(_Helper):
+            def _enumerate(self, vid):
+                nxt = super()._enumerate(vid)
+                if nxt == "raise":
+                    raise OSError("usb churn")
+                return nxt
+
+        h = _Raising([raw, "raise", "raise", raw])
+        out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep)
+        self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
+        self.assertEqual(len(h.opened), 1)
+
     def test_a_non_raw_interface_does_not_count_as_present(self):
         console = [{"product_id": self.s.KNOWN_PIDS[0], "usage_page": self.s.HID_CONSOLE_USAGE_PAGE,
                     "usage": self.s.HID_CONSOLE_USAGE, "path": b"console"}]

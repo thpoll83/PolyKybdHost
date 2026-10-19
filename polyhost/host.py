@@ -1383,11 +1383,14 @@ class PolyHost(QApplication):
         tree exactly, then drives the language-changed flow."""
         if self.paused:
             return
-        self._set_transport(snapshot.get("transport"), snapshot.get("link_rate_mbps"))
         # Operational half (state, decision tree, post-connect jobs, cache
         # resets) is the core's; this method renders the result: status
         # entry, language menu, OS-language switch, update-check kick-off.
         applied = self.core.apply_reconnect(snapshot)
+        # After apply_reconnect, so the tooltip it refreshes sees the new
+        # connection state: before it, a fresh connect reads as disconnected and
+        # the "Connected: … link" line never appears.
+        self._set_transport(snapshot.get("transport"), snapshot.get("link_rate_mbps"))
         if applied is None:
             return
         # Refresh the cached per-feature capabilities from the (now-populated)
@@ -3082,7 +3085,8 @@ class PolyHost(QApplication):
         with self.worker.exclusive():
             try:
                 dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True,
-                                   tray_icon=self.tray)
+                                   tray_icon=self.tray,
+                                   pipe_port=(self.keeb.get_pipe_info() or {}).get("port"))
                 dlg.exec_()
             finally:
                 discard_fw_download(bin_path)

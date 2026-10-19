@@ -290,77 +290,84 @@ def stream_firmware(ser, fw_bytes: bytes, start: int = 0, chunk: int = FW_CHUNK_
     attempts = rewinds = 0
     parser = FrameParser()
     last_reply = clock()
-    while True:
-        if cancelled is not None and cancelled():
-            return False, confirmed, "cancelled"
-        if confirmed >= total:
-            return True, total, None
-        if drain == 0:
-            while in_flight < window and offset < total:
-                n = min(chunk, total - offset)
-                ser.write(fw_chunk_frame(offset, fw_bytes[offset:offset + n]))
-                offset += n
-                in_flight += 1
-        data = ser.read(max(1, getattr(ser, "in_waiting", 0) or 1))
-        if data:
-            for cmd, body in parser.feed(data):
-                if cmd != (CMD_FW_CHUNK | REPLY):
-                    continue
-                parsed = parse_fw_chunk_reply(body)
-                if parsed is None:
-                    continue
-                last_reply = clock()
-                acked, cursor = parsed
-                if drain:
-                    drain -= 1
+    # The port can vanish mid-stream (a USB dropout, the keyboard rebooting on a
+    # fault). That ends the fast link at the last confirmed cursor; HID continues
+    # from there, so the chunks already acknowledged are not sent twice.
+    try:
+        while True:
+            if cancelled is not None and cancelled():
+                return False, confirmed, "cancelled"
+            if confirmed >= total:
+                return True, total, None
+            if drain == 0:
+                while in_flight < window and offset < total:
+                    n = min(chunk, total - offset)
+                    ser.write(fw_chunk_frame(offset, fw_bytes[offset:offset + n]))
+                    offset += n
+                    in_flight += 1
+            data = ser.read(max(1, getattr(ser, "in_waiting", 0) or 1))
+            if data:
+                for cmd, body in parser.feed(data):
+                    if cmd != (CMD_FW_CHUNK | REPLY):
+                        continue
+                    parsed = parse_fw_chunk_reply(body)
+                    if parsed is None:
+                        continue
+                    last_reply = clock()
+                    acked, cursor = parsed
+                    if drain:
+                        drain -= 1
+                        in_flight = max(0, in_flight - 1)
+                        confirmed = max(confirmed, min(cursor, total))
+                        if drain == 0:
+                            offset = confirmed
+                            in_flight = 0
+                        continue
                     in_flight = max(0, in_flight - 1)
-                    confirmed = max(confirmed, min(cursor, total))
-                    if drain == 0:
-                        offset = confirmed
-                        in_flight = 0
-                    continue
-                in_flight = max(0, in_flight - 1)
-                if acked:
-                    if cursor > confirmed:
-                        confirmed = cursor
-                        attempts = 0
-                        if progress is not None:
-                            progress(confirmed)
-                    continue
-                # NACK: the keyboard's cursor is authoritative. Let the replies to
-                # the other in-flight frames pass, then restart from the cursor.
-                rewinds += 1
-                if rewinds > FW_CHUNK_MAX_REWINDS:
-                    return False, cursor, "keyboard rejected the chunk"
-                if cursor <= confirmed:
-                    attempts += 1
-                    if attempts >= FW_CHUNK_ATTEMPTS:
+                    if acked:
+                        if cursor > confirmed:
+                            confirmed = cursor
+                            attempts = 0
+                            if progress is not None:
+                                progress(confirmed)
+                        continue
+                    # NACK: the keyboard's cursor is authoritative. Let the replies to
+                    # the other in-flight frames pass, then restart from the cursor.
+                    rewinds += 1
+                    if rewinds > FW_CHUNK_MAX_REWINDS:
                         return False, cursor, "keyboard rejected the chunk"
-                confirmed = max(confirmed, cursor) if cursor <= total else confirmed
-                if in_flight:
-                    drain = in_flight
-                else:
-                    offset = cursor
-            continue
-        quiet = clock() - last_reply
-        if drain and quiet >= FW_CHUNK_DRAIN_S:
-            # A frame the keyboard dropped never gets a reply, so a drain can wait
-            # for one that is not coming. The NACK already gave the cursor.
-            drain = in_flight = 0
-            offset = confirmed
+                    if cursor <= confirmed:
+                        attempts += 1
+                        if attempts >= FW_CHUNK_ATTEMPTS:
+                            return False, cursor, "keyboard rejected the chunk"
+                    confirmed = max(confirmed, cursor) if cursor <= total else confirmed
+                    if in_flight:
+                        drain = in_flight
+                    else:
+                        offset = cursor
+                continue
+            quiet = clock() - last_reply
+            if drain and quiet >= FW_CHUNK_DRAIN_S:
+                # A frame the keyboard dropped never gets a reply, so a drain can wait
+                # for one that is not coming. The NACK already gave the cursor.
+                drain = in_flight = 0
+                offset = confirmed
+                last_reply = clock()
+                continue
+            if quiet < timeout:
+                continue
+            # Quiet for the whole timeout with frames outstanding: a dropped frame or
+            # a gone keyboard. Probe the cursor; no answer means the keyboard is gone.
+            attempts += 1
+            if attempts >= FW_CHUNK_ATTEMPTS:
+                return False, confirmed, "no reply from the keyboard"
+            reply = request(ser, CMD_FW_CHUNK, b"", timeout=timeout, clock=clock)
+            parsed = parse_fw_chunk_reply(reply) if reply is not None else None
+            if parsed is None:
+                return False, confirmed, "no reply from the keyboard"
             last_reply = clock()
-            continue
-        if quiet < timeout:
-            continue
-        # Quiet for the whole timeout with frames outstanding: a dropped frame or
-        # a gone keyboard. Probe the cursor; no answer means the keyboard is gone.
-        attempts += 1
-        if attempts >= FW_CHUNK_ATTEMPTS:
-            return False, confirmed, "no reply from the keyboard"
-        reply = request(ser, CMD_FW_CHUNK, b"", timeout=timeout, clock=clock)
-        parsed = parse_fw_chunk_reply(reply) if reply is not None else None
-        if parsed is None:
-            return False, confirmed, "no reply from the keyboard"
-        last_reply = clock()
-        offset = confirmed = max(confirmed, parsed[1])
-        in_flight = drain = 0
+            offset = confirmed = max(confirmed, parsed[1])
+            in_flight = drain = 0
+    except OSError as exc:   # pyserial's SerialException is an OSError
+        log.warning("Bulk pipe failed mid-stream at offset %d: %s", confirmed, exc)
+        return False, confirmed, "port error"

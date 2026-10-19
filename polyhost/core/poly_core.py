@@ -1628,14 +1628,15 @@ class PolyCore(Observable):
         # the firmware that had just been replaced, until the app was restarted.
         # The marker is popped once per keyboard boot, so this costs one extra
         # version+lang query per reboot and nothing in steady state.
-        if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
-            return snapshot
-
+        # Bulk pipe (optional second channel): probed on a fresh connect (below,
+        # after the version block), and re-probed on the next few steady-state
+        # probes while HID only, because on Linux the tty node can appear after
+        # the hidraw node. A port that is absent, busy or mute is "hid"; see
+        # device/bulk_pipe.py. This runs BEFORE the steady-state return so the
+        # retries happen and every published snapshot names the transport: the
+        # tray reads it from each one, and a snapshot without the key would
+        # clear the mark one second after connect.
         if connected_now:
-            # Bulk pipe (optional second channel): probed on a fresh connect, and
-            # re-probed on the next few steady-state probes while HID only,
-            # because on Linux the tty node can appear after the hidraw node.
-            # A port that is absent, busy or mute is "hid"; see device/bulk_pipe.py.
             if snapshot["state_changed"] or snapshot["fresh_boot"]:
                 self.keeb.forget_bulk_pipe()
                 self._pipe_probes_left = PIPE_PROBE_RETRIES
@@ -1646,6 +1647,10 @@ class PolyCore(Observable):
         else:
             self.keeb.forget_bulk_pipe()
         snapshot["transport"] = self.keeb.get_transport()
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
+        if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
+            return snapshot
+
         if not connected_now:
             # Going disconnected: do NOT query version/languages — stale late
             # replies from the failed probe can make query_version_info
@@ -1662,6 +1667,7 @@ class PolyCore(Observable):
 
         version_ok, version_msg = self.keeb.query_version_info()
         snapshot["transport"] = self.keeb.probe_bulk_pipe()
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         snapshot.update({
             "version_ok": version_ok,
             "version_msg": version_msg,

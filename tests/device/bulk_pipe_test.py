@@ -251,6 +251,26 @@ class FirmwareStreamTest(unittest.TestCase):
         self.assertEqual(bytes(ser.staged), self.IMAGE)
         self.assertEqual(ser.fw_frames, 9)   # 1924 bytes from 300: 8 full frames + 1 partial
 
+    def test_a_port_error_mid_stream_keeps_the_confirmed_cursor(self):
+        # The port vanishes after the first replies: the stream ends with the
+        # keyboard's cursor, not 0, so HID continues without re-sending the
+        # chunks the keyboard already acknowledged.
+        ser = FakeSerial(image_size=len(self.IMAGE))
+        real_read = ser.read
+
+        def read(n):
+            if ser.fw_frames >= 6:
+                raise OSError("device reports readiness to read but returned no data")
+            return real_read(n)
+
+        ser.read = read
+        ok, offset, reason = bp.stream_firmware(ser, self.IMAGE)
+        self.assertFalse(ok)
+        self.assertEqual(reason, "port error")
+        self.assertGreater(offset, 0)
+        self.assertEqual(offset, ser.cursor if ser.cursor <= offset else offset)
+        self.assertEqual(self.IMAGE[:offset], bytes(ser.staged[:offset]))
+
     def test_a_lost_frame_is_recovered_from_the_cursor(self):
         # Frame 3 never reaches the keyboard: frames 4.. are NACKed with the
         # cursor, the drain ends after the short wait, and the stream resumes.

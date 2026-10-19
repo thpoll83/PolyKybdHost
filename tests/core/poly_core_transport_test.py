@@ -45,5 +45,51 @@ class TransportOnStatusTest(unittest.TestCase):
         self.assertEqual(st["link_rate_mbps"], 0.6)
 
 
+def _probe_core(transport="hid", rate=None):
+    """A bare core whose keyboard answers a steady-state probe (connected
+    before and after, no fresh boot), so _reconnect_probe takes the early
+    return. ``transport`` is what the keyboard layer has cached."""
+    core = make_core(connected=True)
+    core._last_overlay_activity = -1e9
+    core._pipe_probes_left = 0
+    core.keeb.hid = None
+    core.keeb.connect.return_value = True
+    core.keeb.query_current_lang.return_value = (True, "enUS")
+    core.keeb.pop_fresh_boot.return_value = False
+    core.keeb.get_transport.return_value = transport
+    core.keeb.get_link_rate_mbps.return_value = rate
+    return core
+
+
+class SteadyStateProbeTest(unittest.TestCase):
+    """The pipe block runs BEFORE the steady-state early return: every published
+    snapshot names the transport (the tray reads it from each one, and a snapshot
+    without the key cleared the mark one second after connect), and the bounded
+    re-probes for a tty node that appears after the hidraw node actually run."""
+
+    def test_steady_state_snapshot_carries_the_cached_transport(self):
+        core = _probe_core("pipe", 0.6)
+        snap = core._reconnect_probe(lambda: False)
+        self.assertFalse(snap["state_changed"])
+        self.assertEqual(snap["transport"], "pipe")
+        self.assertEqual(snap["link_rate_mbps"], 0.6)
+        core.keeb.probe_bulk_pipe.assert_not_called()
+
+    def test_hid_only_keyboard_is_reprobed_a_bounded_number_of_times(self):
+        core = _probe_core("hid")
+        core._pipe_probes_left = 2
+        for _ in range(4):
+            core._reconnect_probe(lambda: False)
+        self.assertEqual(core.keeb.probe_bulk_pipe.call_count, 2)
+        self.assertEqual(core._pipe_probes_left, 0)
+
+    def test_a_keyboard_on_the_pipe_is_not_reprobed(self):
+        core = _probe_core("pipe", 0.6)
+        core._pipe_probes_left = 2
+        core._reconnect_probe(lambda: False)
+        core.keeb.probe_bulk_pipe.assert_not_called()
+        self.assertEqual(core._pipe_probes_left, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
