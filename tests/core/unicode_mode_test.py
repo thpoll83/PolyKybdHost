@@ -391,6 +391,8 @@ class SettingsChangedTest(unittest.TestCase):
         core._did = []
         core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)
         core._forget_generic_overlays = lambda: PolyCore._forget_generic_overlays(core)
+        # The fourth side effect (dev_force_hid_link); recorded, not exercised here.
+        core._refresh_link_choice = lambda: core._did.append("link")
         return core
 
     def _run(self, core, keys, mode=InputMethod.WinCompose):

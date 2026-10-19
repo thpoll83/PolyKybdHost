@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-19 11:56+0000\n"
+"POT-Creation-Date: 2026-10-19 12:11+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -989,7 +989,7 @@ msgid "HarfBuzz sequence"
 msgstr ""
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:78 polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:78 polyhost/gui/settings_dialog.py:87
 msgid "Mode"
 msgstr ""
 
@@ -2899,223 +2899,231 @@ msgstr ""
 msgid "Legacy Plaintext Relay"
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:87
-msgid "Report Network Enabled"
+#: polyhost/gui/settings_dialog.py:86
+msgid "Force HID Link"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:88
-msgid "Auto Flash"
+msgid "Report Network Enabled"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:89
-msgid "Path"
+msgid "Auto Flash"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:90
-msgid "Url Detection"
+msgid "Path"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:91
-msgid "Report Local Enabled"
+msgid "Url Detection"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:92
-msgid "Report Port"
+msgid "Report Local Enabled"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:93
-msgid "Report Token"
+msgid "Report Port"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:94
-msgid "Enabled"
+msgid "Report Token"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:95
-msgid "Endpoint"
+msgid "Enabled"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:96
-msgid "Install Id"
+msgid "Endpoint"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:97
-msgid "Scan Keyboard Console"
+msgid "Install Id"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:98
-msgid "Scan Host Logs"
+msgid "Scan Keyboard Console"
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:99
+msgid "Scan Host Logs"
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:100
 msgid "Scan Level"
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:108
+#: polyhost/gui/settings_dialog.py:109
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:112
+#: polyhost/gui/settings_dialog.py:113
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:115
+#: polyhost/gui/settings_dialog.py:116
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:119
+#: polyhost/gui/settings_dialog.py:120
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:121
+#: polyhost/gui/settings_dialog.py:122
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:123
+#: polyhost/gui/settings_dialog.py:124
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:125
+#: polyhost/gui/settings_dialog.py:126
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:127
+#: polyhost/gui/settings_dialog.py:128
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:131
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:134
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:137
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:140
+#: polyhost/gui/settings_dialog.py:141
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:144
+#: polyhost/gui/settings_dialog.py:145
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:148
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:151
+#: polyhost/gui/settings_dialog.py:152
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:155
+#: polyhost/gui/settings_dialog.py:156
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:159
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:162
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:165
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:167
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:168
+#: polyhost/gui/settings_dialog.py:169
 msgid "Adds a simulated keyboard next to the real one."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:170
+#: polyhost/gui/settings_dialog.py:171
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:174
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:177
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:179
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:181
-msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
+#: polyhost/gui/settings_dialog.py:182
+msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr ""
 
 #: polyhost/gui/settings_dialog.py:185
+msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
+msgstr ""
+
+#: polyhost/gui/settings_dialog.py:189
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:188
+#: polyhost/gui/settings_dialog.py:192
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:195
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:197
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:200
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:203
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:206
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:208
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:206
+#: polyhost/gui/settings_dialog.py:210
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:208
+#: polyhost/gui/settings_dialog.py:212
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:214
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:213
+#: polyhost/gui/settings_dialog.py:217
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:215
+#: polyhost/gui/settings_dialog.py:219
 msgid "Watches this app's own log for known failure messages."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:220
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:304
+#: polyhost/gui/settings_dialog.py:308
 msgid "PolyKybd Settings"
 msgstr ""
 
-#: polyhost/gui/settings_dialog.py:329
+#: polyhost/gui/settings_dialog.py:333
 msgid "Some settings might need a restart to take effect."
 msgstr ""
 

@@ -688,6 +688,12 @@ class PolyKybdMock:
             self.transport = "hid"
         return self.transport
 
+    def use_hid_only(self) -> str:
+        self._log_call("use_hid_only")
+        self.pipe_info = None
+        self.transport = "hid"
+        return self.transport
+
     def get_transport(self):
         return self.transport
 

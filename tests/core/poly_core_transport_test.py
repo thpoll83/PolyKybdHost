@@ -83,6 +83,36 @@ class SteadyStateProbeTest(unittest.TestCase):
         self.assertEqual(core.keeb.probe_bulk_pipe.call_count, 2)
         self.assertEqual(core._pipe_probes_left, 0)
 
+    def test_forced_hid_link_skips_the_probe_on_every_path(self):
+        # dev_force_hid_link: the fresh connect and the steady-state probes record
+        # HID only without touching the port, and the snapshot says "hid".
+        core = _probe_core("hid")
+        core.poly_settings.get.side_effect = lambda k: {"dev_force_hid_link": True}.get(k, False)
+        core.keeb.use_hid_only.return_value = "hid"
+        core._pipe_probes_left = 3
+        snap = core._reconnect_probe(lambda: False)
+        self.assertEqual(snap["transport"], "hid")
+        core.keeb.probe_bulk_pipe.assert_not_called()
+        core.keeb.use_hid_only.assert_called()
+        core.last_applied_connected = False          # the next probe is a fresh connect
+        core.keeb.query_version_info.return_value = (True, "")
+        core.keeb.enumerate_lang.return_value = (True, ["enUS"])
+        snap = core._reconnect_probe(lambda: False)
+        self.assertTrue(snap["state_changed"])
+        self.assertEqual(snap["transport"], "hid")
+        core.keeb.probe_bulk_pipe.assert_not_called()
+
+    def test_settings_change_applies_the_link_choice_without_a_reconnect(self):
+        core = _probe_core("pipe", 0.6)
+        forced = {"dev_force_hid_link": True}
+        core.poly_settings.get.side_effect = lambda k: forced.get(k, False)
+        core.note_settings_changed({"dev_force_hid_link"})
+        core.keeb.use_hid_only.assert_called_once()
+        forced["dev_force_hid_link"] = False
+        core.note_settings_changed({"dev_force_hid_link"})
+        core.keeb.forget_bulk_pipe.assert_called()
+        self.assertEqual(core._pipe_probes_left, 5)
+
     def test_a_keyboard_on_the_pipe_is_not_reprobed(self):
         core = _probe_core("pipe", 0.6)
         core._pipe_probes_left = 2

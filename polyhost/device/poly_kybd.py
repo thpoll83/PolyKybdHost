@@ -337,6 +337,16 @@ class PolyKybd:
         self.transport = transport
         return transport
 
+    def use_hid_only(self) -> str:
+        """Record the transport as HID only without probing (the
+        ``dev_force_hid_link`` setting): the pipe is left alone and the
+        firmware update takes the HID path. Returns the transport."""
+        if self.transport != bulk_pipe.TRANSPORT_HID or self.pipe_info is not None:
+            self.log.info("Fast link disabled by the dev_force_hid_link setting: raw HID only")
+        self.pipe_info = None
+        self.transport = bulk_pipe.TRANSPORT_HID
+        return self.transport
+
     def get_transport(self):
         """Cached transport from the last probe: "pipe", "hid", or None."""
         return self.transport

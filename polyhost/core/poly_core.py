@@ -1636,16 +1636,17 @@ class PolyCore(Observable):
         # retries happen and every published snapshot names the transport: the
         # tray reads it from each one, and a snapshot without the key would
         # clear the mark one second after connect.
-        if connected_now:
-            if snapshot["state_changed"] or snapshot["fresh_boot"]:
-                self.keeb.forget_bulk_pipe()
-                self._pipe_probes_left = PIPE_PROBE_RETRIES
-            elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
-                  and self._pipe_probes_left > 0):
-                self._pipe_probes_left -= 1
-                self.keeb.probe_bulk_pipe()
-        else:
+        if not connected_now:
             self.keeb.forget_bulk_pipe()
+        elif self._hid_link_forced():
+            self.keeb.use_hid_only()
+        elif snapshot["state_changed"] or snapshot["fresh_boot"]:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
+        elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
+              and self._pipe_probes_left > 0):
+            self._pipe_probes_left -= 1
+            self.keeb.probe_bulk_pipe()
         snapshot["transport"] = self.keeb.get_transport()
         snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
@@ -1666,7 +1667,8 @@ class PolyCore(Observable):
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()
-        snapshot["transport"] = self.keeb.probe_bulk_pipe()
+        snapshot["transport"] = (self.keeb.use_hid_only() if self._hid_link_forced()
+                                 else self.keeb.probe_bulk_pipe())
         snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         snapshot.update({
             "version_ok": version_ok,
@@ -2798,6 +2800,25 @@ class PolyCore(Observable):
             self._refresh_unicode_watch()
         if keys is None or self._GENERIC_ICON_SETTING_KEYS.intersection(keys):
             self._forget_generic_overlays()
+        if keys is None or "dev_force_hid_link" in keys:
+            self._refresh_link_choice()
+
+    def _hid_link_forced(self) -> bool:
+        """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""
+        return bool(self.poly_settings.get("dev_force_hid_link"))
+
+    def _refresh_link_choice(self):
+        """Apply ``dev_force_hid_link`` to the live connection: forced on, the
+        keyboard reads as HID only at once; forced off, the cached transport is
+        dropped and the next steady-state probes look for the pipe again, so
+        neither direction needs a reconnect. Runs on whichever thread the
+        settings writer is on; the keyboard layer's two setters touch no
+        device, and the probe itself happens on the worker's next cycle."""
+        if self._hid_link_forced():
+            self.keeb.use_hid_only()
+        else:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
 
     _GENERIC_ICON_SETTING_KEYS = frozenset({
         # ⚠️ The two outer switches belong here as much as the inner ones, and

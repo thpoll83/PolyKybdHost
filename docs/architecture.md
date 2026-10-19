@@ -395,7 +395,11 @@ daemon-plus-client split, `RemoteCore` and `polyctl status` all see it. The tray
 colours its mark by it (`IconStateManager.set_transport`) and shows the measured
 rate in the resting tooltip and the About dialog ("0.6 MB/s link", or "HID
 link, up to 64 KB/s"). The words "bulk pipe" never reach the user
-(maintainer's rule, 2026-10-19): user-facing text states the rate.
+(maintainer's rule, 2026-10-19): user-facing text states the rate. The
+developer setting `dev_force_hid_link` (settings dialog, Developer section)
+skips the probe and records HID only (`PolyKybd.use_hid_only()`), so the HID
+path can be tested by hand on a keyboard that has the pipe; `note_settings_changed`
+applies it to the live connection, in both directions, without a reconnect.
 
 The firmware update's CHUNK phase runs on the pipe when the probe found one
 (`PolyCore.flash_firmware` passes `get_pipe_info()["port"]` to

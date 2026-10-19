@@ -131,7 +131,7 @@ CALLER_GATED = {
 # is covered by tests/device/bulk_pipe_test.py with a fake port.
 NO_DEVICE_IO = {"supports", "capabilities",
                 "probe_bulk_pipe", "get_transport", "get_pipe_info", "get_link_rate_mbps",
-                "forget_bulk_pipe"}
+                "forget_bulk_pipe", "use_hid_only"}
 
 
 def _keyboard(protocol):

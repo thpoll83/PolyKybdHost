@@ -83,6 +83,7 @@ SETTING_LABELS = {
         N_("Run Window Detection If Not Connected To Poly Kybd"),
     "dev_win_native_set_language": N_("Win Native Set Language"),
     "dev_legacy_plaintext_relay": N_("Legacy Plaintext Relay"),
+    "dev_force_hid_link": N_("Force HID Link"),
     "daemon_mode": N_("Mode"),
     "window_report_network_enabled": N_("Report Network Enabled"),
     "fontpack_auto_flash": N_("Auto Flash"),
@@ -177,6 +178,9 @@ SETTING_DESCRIPTIONS = {
     "dev_win_native_set_language": N_(
         "Windows only, experimental. Switches the input language with Win32 calls "
         "instead of the standard method, and falls back to it on a failure."),
+    "dev_force_hid_link": N_(
+        "Uses the USB HID channel only, as if the keyboard had no fast link: "
+        "firmware updates go over HID. For testing the HID path by hand."),
     "dev_legacy_plaintext_relay": N_(
         "Accepts window reports from old forwarders over unencrypted, "
         "unauthenticated TCP (port 50162) on every network interface. Turn it on "

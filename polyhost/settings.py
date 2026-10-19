@@ -226,6 +226,11 @@ DEFAULT_SETTINGS = {
         # forwarder and understand the exposure. `dev_`-prefixed, so it is hidden
         # in the settings dialog unless developer mode is on.
         "dev_legacy_plaintext_relay": False,
+        # Use raw HID only, as if the keyboard had no fast link: the bulk pipe
+        # is not probed and the firmware update's chunks go over HID. For
+        # testing the HID path and the fallback by hand. Takes effect on the
+        # next probe (about a second), no reconnect needed.
+        "dev_force_hid_link": False,
         # Daemon-by-default (headless-core H4b): when True, a plain GUI
         # launch runs the operational core in a separate headless daemon and
         # attaches this GUI to it as a client (spawning the daemon if none is
