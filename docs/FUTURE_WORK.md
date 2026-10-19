@@ -237,20 +237,20 @@ shortcuts. That cap had no measurement behind it. The one limit now is 600 disti
 images per switch, enforced in the send path; see the comment at the top of
 `shortcut_overlays.py`.)
 
-## Font packs, engine packs and overlays over the fast link
+## Overlays over the fast link
 
-**Status:** follow-up PRs, agreed 2026-10-19. PolyKybdHost#407 moves only the
-firmware image's CHUNK step onto the bulk pipe (`FW_CHUNK`, 236-byte frames); the
-font-pack bundles, the icon library, the `.plyx` engine pack and the overlays still
-go over 56-byte raw HID reports.
+**Status:** follow-up, agreed 2026-10-19. The firmware image's CHUNK step
+(PolyKybdHost#407) and every resource that rides the font-pack transport (the
+font-pack bundles, the icon library, the `.whx` game data and the `.plyx` engine
+pack; the follow-up PR after #407) send their chunks over the bulk pipe when the
+probe found one, and over 56-byte HID reports otherwise or when the developer
+setting `dev_force_hid_link` is on. The overlays (cmd 16 to 19 and 41, per-switch
+images with the MRU claim pass) still go over HID only.
 
-**What each one needs.** The firmware's `FW_CHUNK` handler writes into whatever
-target the preceding BEGIN selected, so a resource staged through
-`FONTPACK_BEGIN` would already accept its chunks over the pipe; the host side is
-`PolyCore._flash_resource` taking the same `stream_firmware` call as
-`hid_fw_up.flash_firmware`, from the keyboard's cursor, with the HID loop as the
-fallback. Overlays are a different protocol (cmd 41/42 reports, per-switch
-images with the MRU claim pass), so they need their own pipe command and a
-decision on whether the per-switch rate limit still applies. Measure a font-pack
-reship first: the pack's own flash erase, not the transfer, may be the larger
-part of its time, in which case the pipe buys little there.
+**What it needs.** Overlays are a different protocol: no BEGIN selects a target,
+each report names its own key and segment, and the send path rate-limits per
+switch. So they need their own pipe command on both ends (a new pipe protocol
+version in the PING reply, gated like `FW_CHUNK`), a decision on whether the
+per-switch rate limit still applies on the pipe, and a measurement of what an app
+switch costs today on HID before any of it is written: a switch sends at most 600
+images of 360 bytes, and the common case is far below that.

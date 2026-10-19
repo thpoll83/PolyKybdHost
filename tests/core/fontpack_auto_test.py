@@ -17,8 +17,11 @@ except Exception:   # noqa: BLE001 — heavy optional deps (numpy/PIL/pvlib/…)
     _HAVE_CORE = False
 
 
-def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None):
-    """Minimal stand-in exposing exactly what the two methods touch."""
+def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
+               pipe_port=None):
+    """Minimal stand-in exposing exactly what the two methods touch. ``pipe_port``
+    is what pipe_port_for_update() answers: the bundle pass hands it to every
+    flash, None meaning HID (no pipe, or dev_force_hid_link on)."""
     settings = {"fontpack_auto_flash": auto, "fontpack_path": ""}
     submitted = []
     emitted = []
@@ -30,6 +33,7 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None):
         emit=lambda name, payload: emitted.append((name, payload)),
         _fontpack_flash_in_progress=in_progress,
         _fontpack_failed=dict(failed or {}),
+        pipe_port_for_update=lambda: pipe_port,
     )
     # The real implementations, bound to the stand-in — these are what the tests
     # below exercise; only _maybe_auto_flash_fontpack's submit is stubbed.
@@ -105,6 +109,17 @@ class TestAutocheckJob(unittest.TestCase):
         done = [e for e in core._emitted if e[0] == "fontpack_flash_done"]
         self.assertEqual(len(done), 1)
         self.assertTrue(done[0][1]["ok"] and done[0][1]["auto"])
+
+    def test_every_bundle_flash_takes_the_update_port(self):
+        # The pass asks pipe_port_for_update() per bundle: the probed port when
+        # there is one, None (HID) when the developer setting forces HID.
+        core = _fake_core(device_versions={}, pipe_port="/dev/ttyACM0")
+        ff = self._run(core, _MANIFEST)
+        self.assertEqual([c.kwargs["pipe_port"] for c in ff.call_args_list],
+                         ["/dev/ttyACM0", "/dev/ttyACM0"])
+        core = _fake_core(device_versions={}, pipe_port=None)
+        ff = self._run(core, _MANIFEST)
+        self.assertEqual([c.kwargs["pipe_port"] for c in ff.call_args_list], [None, None])
 
     def test_missing_versions_flash_all(self):
         # Empty version map (pre-pack device or absent bundles) → flash both.

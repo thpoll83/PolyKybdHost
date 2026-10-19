@@ -835,5 +835,161 @@ class TestValidateDoompack(unittest.TestCase):
         self.assertEqual(DOOMPACK_BUNDLE_ID, 0x7E)
 
 
+# ---------------------------------------------------------------------------
+# _stream_slot over the bulk pipe (pipe_port given)
+# ---------------------------------------------------------------------------
+
+class TestFlashFontpackOverThePipe(unittest.TestCase):
+    """The CHUNK phase of a resource flash over the bulk pipe: no HID chunk is
+    sent, and the HID loop continues from the keyboard's cursor when the pipe
+    stops or predates FW_CHUNK. Same contract as the firmware update's."""
+
+    def setUp(self):
+        from tests.device.bulk_pipe_test import FakeSerial
+        from polyhost.device import bulk_pipe
+        self.bulk_pipe = bulk_pipe
+        self.FakeSerial = FakeSerial
+        # 236 * 2 + 100 bytes: three pipe frames, the last one partial.
+        self.pack = _make_pack(body=b'\x5a' * (236 * 2 + 100 - 32))
+        self.path = _write_bin(self.pack)
+
+    def tearDown(self):
+        os.unlink(self.path)
+
+    def test_chunks_go_over_the_pipe_and_not_over_hid(self):
+        fake = self.FakeSerial(image_size=len(self.pack))
+        hid = _make_hid([(True, _ack_reply(CMD_FONTPACK_BEGIN)), (True, _ack_reply(CMD_FONTPACK_COMMIT))])
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake):
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+        self.assertEqual(bytes(fake.staged), self.pack)
+        self.assertTrue(fake.closed)
+        cmds = [c.args[0][1] for c in hid.send_and_read.call_args_list]
+        self.assertEqual(cmds, [CMD_FONTPACK_BEGIN, CMD_FONTPACK_COMMIT])
+
+    def test_no_pipe_port_sends_every_chunk_over_hid(self):
+        # The HID path is the fallback and what dev_force_hid_link selects (the
+        # core then passes None): nothing opens a serial port.
+        hid = _flash_hid(self.pack)
+        with patch.object(self.bulk_pipe, "open_port") as open_port:
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port=None)
+        self.assertTrue(ok, msg)
+        open_port.assert_not_called()
+        cmds = [c.args[0][1] for c in hid.send_and_read.call_args_list]
+        self.assertEqual(cmds.count(CMD_FONTPACK_CHUNK), _chunks(self.pack))
+
+    def test_old_pipe_protocol_falls_back_to_hid_for_the_whole_pack(self):
+        fake = self.FakeSerial(image_size=len(self.pack), proto=1)
+        hid = _flash_hid(self.pack)
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake):
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+        self.assertEqual(fake.fw_frames, 0)
+        cmds = [c.args[0][1] for c in hid.send_and_read.call_args_list]
+        self.assertEqual(cmds.count(CMD_FONTPACK_CHUNK), _chunks(self.pack))
+
+    def test_unopenable_port_falls_back_to_hid(self):
+        def boom(port):
+            raise OSError("busy")
+        hid = _flash_hid(self.pack)
+        with patch.object(self.bulk_pipe, "open_port", boom):
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+
+    def test_pipe_that_stops_mid_stream_hands_the_rest_to_hid_from_the_cursor(self):
+        # The keyboard answers the first frame and then goes quiet on the pipe:
+        # HID continues from offset 236, so the chunk offsets are NOT multiples
+        # of 56 (the firmware only requires the cursor).
+        clock = [0.0]
+
+        def fake_clock():
+            clock[0] += 0.5
+            return clock[0]
+
+        fake = self.FakeSerial(image_size=len(self.pack), drop_fw_frames=set(range(2, 100)))
+        rest = len(self.pack) - 236
+        n_hid = (rest + FONTPACK_CHUNK_SIZE - 1) // FONTPACK_CHUNK_SIZE
+        hid = _make_hid([(True, _ack_reply(CMD_FONTPACK_BEGIN))]
+                        + [(True, _ack_reply(CMD_FONTPACK_CHUNK))] * n_hid
+                        + [(True, _ack_reply(CMD_FONTPACK_COMMIT))])
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake), \
+             patch("polyhost.device.bulk_pipe.time.monotonic", fake_clock):
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+        chunk_calls = [c.args[0] for c in hid.send_and_read.call_args_list
+                       if c.args[0][1] == CMD_FONTPACK_CHUNK]
+        offsets = [struct.unpack_from("<I", bytes(p), 2)[0] for p in chunk_calls]
+        self.assertEqual(offsets, [236 + k * FONTPACK_CHUNK_SIZE for k in range(n_hid)])
+        tail = rest - (n_hid - 1) * FONTPACK_CHUNK_SIZE
+        self.assertEqual(bytes(chunk_calls[-1][6:6 + tail]),
+                         self.pack[236 + (n_hid - 1) * FONTPACK_CHUNK_SIZE:])
+
+    def test_hid_rewind_to_an_offset_off_the_chunk_grid_is_honoured(self):
+        # After a pipe stop the HID loop runs on offsets, so a NACK that names a
+        # cursor between chunk boundaries rewinds to exactly that byte. The fake
+        # answers by command, so COMMIT gets its own reply and nothing is left
+        # over: the chunk offsets and the single COMMIT are asserted exactly.
+        pack = self.pack
+        sent, cmds = [], []
+        nacked = [False]
+
+        def nack_resume(resume):
+            buf = _nack_reply(CMD_FONTPACK_CHUNK)
+            struct.pack_into('<I', buf, 3, resume)
+            return buf
+
+        def side_effect(pkt, timeout):
+            cmds.append(pkt[1])
+            if pkt[1] == CMD_FONTPACK_CHUNK:
+                sent.append(struct.unpack_from('<I', pkt, 2)[0])
+                if len(sent) == 4 and not nacked[0]:
+                    nacked[0] = True
+                    return True, nack_resume(100)
+            return True, _ack_reply(pkt[1])
+
+        with patch('polyhost.device.hid_fontpack.time.sleep'):
+            hid = MagicMock()
+            hid.send_and_read.side_effect = side_effect
+            ok, msg, _st = flash_fontpack(hid, self.path, pipe_port=None)
+        self.assertTrue(ok, msg)
+        after = [100 + 56 * k for k in range((len(pack) - 100 + 55) // 56)]
+        self.assertEqual(sent, [0, 56, 112, 168] + after)
+        self.assertEqual(cmds[0], CMD_FONTPACK_BEGIN)
+        self.assertEqual(cmds[-1], CMD_FONTPACK_COMMIT)
+        self.assertEqual(cmds.count(CMD_FONTPACK_COMMIT), 1)
+
+    def test_cancel_during_the_pipe_stream_cleans_up(self):
+        # The cancel lands once BEGIN was answered, so the stream is what sees it
+        # (a cancel before BEGIN returns before any port is opened).
+        fake = self.FakeSerial(image_size=len(self.pack))
+        cancel = [False]
+        replies = iter([(True, _ack_reply(CMD_FONTPACK_BEGIN)), (True, _ack_reply(CMD_FONTPACK_COMMIT))])
+
+        def side_effect(pkt, timeout):
+            if pkt[1] == CMD_FONTPACK_BEGIN:
+                cancel[0] = True
+            return next(replies)
+
+        hid = MagicMock()
+        hid.send_and_read.side_effect = side_effect
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake):
+            ok, msg, status = flash_fontpack(hid, self.path, pipe_port="/dev/ttyACM9", cancel_flag=cancel)
+        self.assertFalse(ok)
+        self.assertEqual(status, "cancelled")
+        self.assertTrue(fake.closed)
+        # The abort COMMIT went out so both halves leave fw_up mode.
+        self.assertEqual(hid.send_and_read.call_args_list[-1][0][0][1], CMD_FONTPACK_COMMIT)
+
+    def test_game_data_and_engine_pack_take_the_port_too(self):
+        from polyhost.device.hid_fontpack import flash_doomwad, flash_doompack, DOOMWAD_MAGIC, DOOMPACK_MAGIC
+        for flasher, image in ((flash_doomwad, DOOMWAD_MAGIC + b"\x11" * 60),
+                               (flash_doompack, DOOMPACK_MAGIC + b"\x00" * 60)):
+            with patch("polyhost.device.hid_fontpack._stream_slot",
+                       return_value=(True, "", _ack_reply(CMD_FONTPACK_COMMIT), "ok")) as stream:
+                ok, _msg, _st = flasher(MagicMock(), image, pipe_port="/dev/ttyACM9")
+            self.assertTrue(ok)
+            self.assertEqual(stream.call_args.kwargs["pipe_port"], "/dev/ttyACM9")
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -326,7 +326,7 @@ def commit_error_text(status: str, what: str) -> str:
             "Try again.")
 
 
-def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
+def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled, pipe_port=None):
     """Shared BEGIN -> N*CHUNK -> COMMIT stream to one resource slot (both halves).
 
     `what` flavours the progress text ("font pack" / "game data"). Returns
@@ -335,6 +335,14 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     `status` is a COMMIT_* outcome, or the stage that failed earlier
     ("cancelled"/"begin"/"chunk", or STATUS_SPLIT_LINK), so a caller can tell a data failure from a
     link failure without re-parsing the message.
+
+    `pipe_port` is the keyboard's bulk-pipe serial port (``PolyCore.pipe_port_for_update()``)
+    or None. With one, the chunks go over the pipe as FW_CHUNK frames (236 bytes each,
+    the same frames the firmware update uses: the firmware writes them into whatever
+    target BEGIN selected) and the HID chunk loop continues from the keyboard's cursor
+    if the pipe stops. BEGIN and COMMIT always go over HID. None, which the core passes
+    when the keyboard has no pipe or the developer setting ``dev_force_hid_link`` is
+    on, sends every chunk over HID.
     """
     pack_size = len(pack_bytes)
     pack_crc  = binascii.crc32(pack_bytes) & 0xFFFFFFFF   # whole-image transport CRC (firmware fw_staging verifies this)
@@ -393,20 +401,38 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
 
     report(2, f"Region erased. Sending {total_chunks} chunks…")
 
-    # -- FONTPACK_CHUNK x N -- (identical relay/resume protocol to firmware update)
+    def _pct(offset):
+        return 2 + int(96 * min(offset, pack_size) / pack_size)
+
+    # -- the chunks over the bulk pipe, when the keyboard has one --
+    offset = 0
+    if pipe_port:
+        from polyhost.device.hid_fw_up import stream_over_pipe
+        ok, offset, reason = stream_over_pipe(pipe_port, pack_bytes, report, cancelled, pct=_pct)
+        if cancelled():
+            _abort_cleanup(hid)
+            hid.close_interface()
+            return False, "Flash cancelled by user.", None, "cancelled"
+        if not ok:
+            report(_pct(offset), f"Fast link stopped ({reason}); continuing over HID from {offset // 1024} KB.")
+            hid.drain_replies()
+
+    # -- FONTPACK_CHUNK x N over HID (all of them, or the rest after the pipe stopped) --
+    # Identical relay/resume protocol to the firmware update. The loop runs on
+    # offsets, not chunk indexes: the firmware only requires the keyboard's cursor,
+    # which is what lets HID continue from wherever the pipe stopped.
     _CHUNK_TIMEOUT  = 8000
     _CHUNK_ATTEMPTS = 8
     _MAX_REWINDS    = 100
-    i        = 0
     attempts = 0
     rewinds  = 0
-    while i < total_chunks:
+    while offset < pack_size:
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
             return False, "Flash cancelled by user.", None, "cancelled"
 
-        offset    = i * FONTPACK_CHUNK_SIZE
+        i         = offset // FONTPACK_CHUNK_SIZE
         raw_chunk = pack_bytes[offset:offset + FONTPACK_CHUNK_SIZE]
         padded    = raw_chunk + b'\xff' * (FONTPACK_CHUNK_SIZE - len(raw_chunk))
         pkt       = bytearray([HID_POLYKYBD, CMD_FONTPACK_CHUNK]) + struct.pack('<I', offset) + padded
@@ -414,21 +440,20 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
         if ok and len(reply) >= 3 and reply[2] == ord('.'):
             attempts = 0
-            if i % 100 == 0 or i == total_chunks - 1:
-                pct = 2 + int(96 * (i + 1) / total_chunks)
-                report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FONTPACK_CHUNK_SIZE) // 1024} KB sent)…")
-            i += 1
+            offset  += len(raw_chunk)
+            if i % 100 == 0 or offset >= pack_size:
+                report(_pct(offset), f"Chunk {i + 1}/{total_chunks} ({offset // 1024} KB sent)…")
             continue
 
         # NACK carries the keyboard's resume offset (lower of the two halves' cursors).
         resume = struct.unpack_from('<I', reply, 3)[0] if ok and len(reply) >= 7 else 0
         if (ok and len(reply) >= 7 and reply[2] == ord('!')
-                and 0 < resume < offset and resume % FONTPACK_CHUNK_SIZE == 0
-                and rewinds < _MAX_REWINDS):
+                and 0 < resume < offset and rewinds < _MAX_REWINDS):
             rewinds += 1
             attempts = 0
-            i = resume // FONTPACK_CHUNK_SIZE
-            report(2 + int(96 * (i + 1) / total_chunks),
+            offset = resume
+            i = offset // FONTPACK_CHUNK_SIZE
+            report(_pct(offset),
                    f"Keyboard halves resynced — rewinding to chunk {i + 1}/{total_chunks} "
                    f"(offset {resume}, resync {rewinds})…")
             time.sleep(0.05)
@@ -446,7 +471,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
                 "then try again — the flash resumes from scratch and is safe to repeat."
             ), None, "chunk"
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
-        report(2 + int(96 * (i + 1) / total_chunks),
+        report(_pct(offset),
                f"Chunk {i + 1}/{total_chunks} — retry {attempts}/{_CHUNK_ATTEMPTS - 1} "
                f"(waiting {int(pause * 1000)} ms)…")
         time.sleep(pause)
@@ -472,7 +497,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
 
 
 def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
-                   bundle_id: int = 0) -> tuple[bool, str, str]:
+                   bundle_id: int = 0, pipe_port: str = None) -> tuple[bool, str, str]:
     """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
 
     Args:
@@ -482,6 +507,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
         bundle_id:    Which bundle slot to flash (index in res/fontpack/bundles.json;
                       firmware resolves it to a fixed flash slot). 0 by default.
+        pipe_port:    The keyboard's bulk-pipe serial port or None (see _stream_slot).
 
     Returns:
         (ok, msg, status) — status is a COMMIT_* outcome (or the failing stage /
@@ -506,7 +532,8 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
     what = "icon record(s)" if info.get("magic") == "PlyI" else "fonts"
     report(0, f"Sending FONTPACK_BEGIN — {len(pack_bytes) // 1024} KB, "
               f"content v{info['content_version']}, {info['font_count']} {what}…")
-    ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
+    ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled,
+                                          pipe_port=pipe_port)
     if not ok:
         return False, err, status
 
@@ -530,7 +557,8 @@ def validate_doomwad(whx_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
+def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None,
+                  pipe_port: str = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's WHX game data to BOTH halves over HID.
 
     Rides the font-pack BEGIN/CHUNK/COMMIT transport with the DOOMWAD pseudo
@@ -560,7 +588,8 @@ def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = N
         return False, reason, "validate"
 
     report(0, f"Sending game data — {len(whx_bytes) // 1024} KB…")
-    ok, err, _reply, status = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled,
+                                           pipe_port=pipe_port)
     if not ok:
         return False, err, status
 
@@ -585,7 +614,8 @@ def validate_doompack(pack_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
+def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None,
+                   pipe_port: str = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's executable engine pack (.plyx) to BOTH
     halves over HID — the slave's lockstep drone runs the same engine.
 
@@ -615,7 +645,8 @@ def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list =
         return False, reason, "validate"
 
     report(0, f"Sending engine pack — {len(pack_bytes) // 1024} KB…")
-    ok, err, _reply, status = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled,
+                                           pipe_port=pipe_port)
     if not ok:
         return False, err, status
 

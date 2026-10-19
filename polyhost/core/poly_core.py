@@ -3048,7 +3048,9 @@ class PolyCore(Observable):
         """Shared body of every resource flash that rides the font-pack transport.
 
         The font-pack bundle, the doom game data (``.whx``) and the doom engine
-        pack (``.plyx``) all take the same route to the keyboard and differ in
+        pack (``.plyx``) all take the same route to the keyboard (BEGIN and COMMIT
+        over HID, the chunks over the bulk pipe when :meth:`pipe_port_for_update`
+        names one, else over HID) and differ in
         only four things — the "cannot read" noun, the validator, how the flash
         engine is invoked, and the ``kind`` tag on the events. Everything else is
         identical and lives here: the firmware-action gate, fail-fast reading +
@@ -3106,7 +3108,7 @@ class PolyCore(Observable):
             # The bundle flasher re-opens the path itself (it streams the file).
             run=lambda data, progress, flag: hid_fontpack.flash_fontpack(
                 self.keeb.hid, path, progress_cb=progress, cancel_flag=flag,
-                bundle_id=bundle_id),
+                bundle_id=bundle_id, pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_FONTPACK,
             # Counts the ATTEMPT, not the outcome — see flash_firmware.
             telemetry_counter="fontpack_flashes")
@@ -3126,7 +3128,8 @@ class PolyCore(Observable):
             noun="game-data file",
             validate=hid_fontpack.validate_doomwad,
             run=lambda data, progress, flag: hid_fontpack.flash_doomwad(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMWAD)
 
     def install_doompack(self, path):
@@ -3143,7 +3146,8 @@ class PolyCore(Observable):
             noun="engine-pack file",
             validate=hid_fontpack.validate_doompack,
             run=lambda data, progress, flag: hid_fontpack.flash_doompack(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMPACK)
 
     def flash_fontpack_bundle(self, bundle):
@@ -3221,7 +3225,8 @@ class PolyCore(Observable):
                               b["id"], b["index"], i + 1, n)
                 fok, fmsg, _status = hid_fontpack.flash_fontpack(
                     self.keeb.hid, path, progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 # Carry on through a failure, like the flash pass: one slot refusing
                 # says nothing about the rest, and stopping leaves a half-wiped pack
                 # with no report of which slots were reached.
@@ -3354,7 +3359,8 @@ class PolyCore(Observable):
                               i + 1, n)
                 fok, fmsg, fstatus = hid_fontpack.flash_fontpack(
                     self.keeb.hid, b["path"], progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 if fok:
                     done.append(b["id"])
                     self._fontpack_failed.pop(b["index"], None)

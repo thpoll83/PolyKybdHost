@@ -332,15 +332,22 @@ def _abort_cleanup(hid) -> None:
         pass
 
 
-def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
-    """The CHUNK phase over the bulk pipe. Returns ``(ok, offset, reason)`` like
-    ``bulk_pipe.stream_firmware``; ``offset`` is where HID continues from when the
-    pipe could not finish. A port that cannot be opened, or whose firmware
-    predates FW_CHUNK (pipe protocol 2), hands the whole image to HID."""
+def stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None, pct=None):
+    """The CHUNK phase over the bulk pipe, for the firmware image and for every
+    resource that rides the font-pack transport (the firmware writes a FW_CHUNK
+    frame into whatever target the preceding BEGIN selected). Returns
+    ``(ok, offset, reason)`` like ``bulk_pipe.stream_firmware``; ``offset`` is
+    where HID continues from when the pipe could not finish. A port that cannot
+    be opened, or whose firmware predates FW_CHUNK (pipe protocol 2), hands the
+    whole image to HID. ``pct(offset)`` maps a byte offset to the caller's
+    progress scale; the default is the firmware update's (2..100)."""
     from polyhost.device import bulk_pipe
     fw_size = len(fw_bytes)
     if serial_open is None:
         serial_open = bulk_pipe.open_port
+    if pct is None:
+        def pct(offset):
+            return 2 + int(98 * offset / fw_size)
     try:
         ser = serial_open(pipe_port)
     except Exception as exc:  # noqa: BLE001 — busy or gone: HID carries the image
@@ -359,7 +366,7 @@ def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
         def _progress(offset):
             if offset - shown[0] >= 16 * 1024 or offset >= fw_size:
                 shown[0] = offset
-                report(2 + int(98 * offset / fw_size),
+                report(pct(offset),
                        MSG_LINK_SENDING.format(kb=offset // 1024, total_kb=fw_size // 1024))
 
         t0 = time.monotonic()
@@ -505,7 +512,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # -- the chunks over the bulk pipe, when the keyboard has one --
     offset = 0
     if pipe_port:
-        ok, offset, reason = _stream_over_pipe(pipe_port, fw_bytes, report, cancelled)
+        ok, offset, reason = stream_over_pipe(pipe_port, fw_bytes, report, cancelled)
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()

@@ -109,6 +109,56 @@ class TestFlashFirmware(unittest.TestCase):
         self.assertNotIn("fw_apply_done", [n for n, _ in seen])
 
 
+class TestResourceFlashLink(unittest.TestCase):
+    """Every resource flash (font pack, game data, engine pack) sends its chunks
+    on the port pipe_port_for_update() names, and over HID when the developer
+    setting forces HID: the same one place the firmware update asks."""
+
+    def _run(self, core, method, engine, image):
+        with mock.patch("builtins.open", mock.mock_open(read_data=image)), \
+             mock.patch.object(poly_core.hid_fontpack, engine,
+                               return_value=(True, "done", "ok")) as m_flash:
+            ok, payload = method("res.bin")
+            self.assertTrue(ok, payload)
+            core.worker.submit.call_args.args[1](mock.MagicMock(is_set=lambda: False))
+        return m_flash.call_args.kwargs
+
+    def _core(self, forced=False, port="/dev/ttyACM0"):
+        core = make_core()
+        core.poly_settings.get.return_value = forced
+        core.keeb.get_pipe_info.return_value = {"port": port}
+        return core
+
+    def test_font_pack_chunks_go_on_the_probed_port(self):
+        core = self._core()
+        with mock.patch.object(poly_core.hid_fontpack, "validate_fontpack", return_value=(True, "")):
+            kw = self._run(core, core.flash_fontpack, "flash_fontpack", b"PlyF")
+        self.assertEqual(kw["pipe_port"], "/dev/ttyACM0")
+
+    def test_game_data_and_engine_pack_go_on_the_probed_port(self):
+        core = self._core()
+        with mock.patch.object(poly_core.hid_fontpack, "validate_doomwad", return_value=(True, "")):
+            kw = self._run(core, core.install_doomwad, "flash_doomwad", b"IWHX")
+        self.assertEqual(kw["pipe_port"], "/dev/ttyACM0")
+        core = self._core()
+        with mock.patch.object(poly_core.hid_fontpack, "validate_doompack", return_value=(True, "")):
+            kw = self._run(core, core.install_doompack, "flash_doompack", b"PlyX")
+        self.assertEqual(kw["pipe_port"], "/dev/ttyACM0")
+
+    def test_forced_hid_passes_no_port(self):
+        core = self._core(forced=True)
+        with mock.patch.object(poly_core.hid_fontpack, "validate_fontpack", return_value=(True, "")):
+            kw = self._run(core, core.flash_fontpack, "flash_fontpack", b"PlyF")
+        self.assertIsNone(kw["pipe_port"])
+
+    def test_no_pipe_passes_no_port(self):
+        core = self._core(port=None)
+        core.keeb.get_pipe_info.return_value = None
+        with mock.patch.object(poly_core.hid_fontpack, "validate_fontpack", return_value=(True, "")):
+            kw = self._run(core, core.flash_fontpack, "flash_fontpack", b"PlyF")
+        self.assertIsNone(kw["pipe_port"])
+
+
 _REL = mock.MagicMock(version="0.9.0", html_url="http://x/rel", tarball_url="http://x/t")
 
 
