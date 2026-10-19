@@ -926,34 +926,37 @@ class TestFlashFontpackOverThePipe(unittest.TestCase):
 
     def test_hid_rewind_to_an_offset_off_the_chunk_grid_is_honoured(self):
         # After a pipe stop the HID loop runs on offsets, so a NACK that names a
-        # cursor between chunk boundaries rewinds to exactly that byte.
+        # cursor between chunk boundaries rewinds to exactly that byte. The fake
+        # answers by command, so COMMIT gets its own reply and nothing is left
+        # over: the chunk offsets and the single COMMIT are asserted exactly.
         pack = self.pack
-        n = _chunks(pack)
-        sent = []
+        sent, cmds = [], []
+        nacked = [False]
 
         def nack_resume(resume):
             buf = _nack_reply(CMD_FONTPACK_CHUNK)
             struct.pack_into('<I', buf, 3, resume)
             return buf
 
-        replies = iter([(True, _ack_reply(CMD_FONTPACK_BEGIN))]
-                       + [(True, _ack_reply(CMD_FONTPACK_CHUNK))] * 3
-                       + [(True, nack_resume(100))]
-                       + [(True, _ack_reply(CMD_FONTPACK_CHUNK))] * (n + 2)
-                       + [(True, _ack_reply(CMD_FONTPACK_COMMIT))])
-
         def side_effect(pkt, timeout):
+            cmds.append(pkt[1])
             if pkt[1] == CMD_FONTPACK_CHUNK:
                 sent.append(struct.unpack_from('<I', pkt, 2)[0])
-            return next(replies)
+                if len(sent) == 4 and not nacked[0]:
+                    nacked[0] = True
+                    return True, nack_resume(100)
+            return True, _ack_reply(pkt[1])
 
         with patch('polyhost.device.hid_fontpack.time.sleep'):
             hid = MagicMock()
             hid.send_and_read.side_effect = side_effect
             ok, msg, _st = flash_fontpack(hid, self.path, pipe_port=None)
         self.assertTrue(ok, msg)
-        self.assertEqual(sent[:5], [0, 56, 112, 168, 100])
-        self.assertEqual(sent[5], 156)
+        after = [100 + 56 * k for k in range((len(pack) - 100 + 55) // 56)]
+        self.assertEqual(sent, [0, 56, 112, 168] + after)
+        self.assertEqual(cmds[0], CMD_FONTPACK_BEGIN)
+        self.assertEqual(cmds[-1], CMD_FONTPACK_COMMIT)
+        self.assertEqual(cmds.count(CMD_FONTPACK_COMMIT), 1)
 
     def test_cancel_during_the_pipe_stream_cleans_up(self):
         # The cancel lands once BEGIN was answered, so the stream is what sees it
