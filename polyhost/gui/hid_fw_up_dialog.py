@@ -156,11 +156,11 @@ class HidFwUpDialog(QDialog):
         self._last_tick      = None  # monotonic time of the previous animation tick
         self._catchup_speed  = 0.0   # %/s latched when the lag passed _MAX_LAG_PCT
 
-        # ETA tracking for the chunk-transfer phase (pct 2–98).
+        # ETA tracking for the chunk-transfer phase (pct 2–100).
         self._transfer_start_time = None  # monotonic, set when chunks begin flowing
         self._transfer_first_pct  = 0     # the pct of that first report
         self._observed_rate       = 0.0   # %/s the reports have been arriving at
-        self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
+        self._last_reported_pct   = 0     # latest pct in [2, 100) — drives ETA calculation
         self._positioned          = False  # move-to-corner only on the first showEvent
 
         self.setWindowTitle(_("Firmware Update"))
@@ -259,11 +259,11 @@ class HidFwUpDialog(QDialog):
             self._eta_label.setText("")
             return
         pct = self._last_reported_pct
-        if pct >= 98 or pct < 2:
+        if pct >= 100 or pct < 2:
             self._eta_label.setText("")
             return
         elapsed       = time.monotonic() - self._transfer_start_time
-        fraction_done = (pct - 2) / 96.0
+        fraction_done = (pct - 2) / 98.0
         # Wait for at least 5 % chunk progress and 2 s elapsed before showing
         # an estimate — early values are noisy and misleadingly large.
         if fraction_done < 0.05 or elapsed < 2.0:
@@ -309,11 +309,11 @@ class HidFwUpDialog(QDialog):
 
         # ETA: record when chunk transfer started and keep the latest pct.
         self._last_reported_pct = max(self._last_reported_pct, pct)
-        if self._transfer_start_time is None and pct < 98:
+        if self._transfer_start_time is None and pct < 100:
             self._transfer_start_time = time.monotonic()
             self._transfer_first_pct = pct
             self._eta_timer.start()
-        elif pct >= 98:
+        elif pct >= 100:
             self._eta_timer.stop()
             self._eta_label.setText("")
         if self._transfer_start_time is not None:

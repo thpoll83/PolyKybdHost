@@ -353,7 +353,7 @@ def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
         def _progress(offset):
             if offset - shown[0] >= 16 * 1024 or offset >= fw_size:
                 shown[0] = offset
-                report(2 + int(96 * offset / fw_size),
+                report(2 + int(98 * offset / fw_size),
                        MSG_LINK_SENDING.format(kb=offset // 1024, total_kb=fw_size // 1024))
 
         t0 = time.monotonic()
@@ -494,7 +494,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     report(2, MSG_STAGING_ERASED.format(chunks=total_chunks))
 
     def _pct(offset):
-        return 2 + int(96 * min(offset, fw_size) / fw_size)
+        return 2 + int(98 * min(offset, fw_size) / fw_size)
 
     # -- the chunks over the bulk pipe, when the keyboard has one --
     offset = 0
@@ -618,7 +618,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # running its current firmware — activation is a separate, future step.
     # (FW-2: the firmware also verifies the Ed25519 signature here — currently
     # FW-2: the firmware also verifies the Ed25519 signature here.
-    report(98, MSG_VERIFYING)
+    report(100, MSG_VERIFYING)
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
 
@@ -627,7 +627,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # physical keypress. Re-poll COMMIT until it resolves; the staged image and
     # its CRC are untouched between polls, so this is free on the keyboard side.
     if ok and len(reply) >= 3 and reply[2] == COMMIT_AWAITING_CONFIRM:
-        report(98, MSG_CONFIRM_ON_KEYBOARD)
+        report(100, MSG_CONFIRM_ON_KEYBOARD)
         deadline = time.monotonic() + CONFIRM_POLL_TIMEOUT_S
         while time.monotonic() < deadline:
             time.sleep(CONFIRM_POLL_INTERVAL_S)
