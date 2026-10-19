@@ -680,6 +680,10 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
 
     report(0, MSG_SENDING_APPLY)
     hid.drain_replies()
+    # The other keyboards on the bus, BEFORE APPLY goes out: the reboot wait
+    # skips them, and a keyboard that rebooted and came back under a new path
+    # while the 5 s reply wait ran must not be among them.
+    others = hid.other_raw_paths()
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
 
@@ -697,7 +701,7 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     # wait holds the exclusive flash job until the new firmware enumerates, so
     # nothing else writes to a dying handle meanwhile.
     report(50, MSG_APPLYING)
-    outcome = hid.wait_for_reboot(timeout_s=30)
+    outcome = hid.wait_for_reboot(timeout_s=30, others=others)
     if outcome == hid.REBOOT_NEVER_LEFT:
         return False, MSG_APPLY_NO_REBOOT
     if outcome != hid.REBOOT_RECONNECTED:

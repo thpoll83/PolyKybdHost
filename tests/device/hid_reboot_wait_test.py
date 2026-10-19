@@ -101,6 +101,46 @@ class WaitForRebootTest(unittest.TestCase):
         # listed, and opened the returning one, whatever its path.
         self.assertEqual([i["path"] for i in h.opened], [b"new"])
 
+    def test_a_snapshot_taken_before_apply_lets_an_early_return_reconnect(self):
+        # The keyboard rebooted and came back under a NEW path while APPLY's
+        # reply was awaited. With the caller's snapshot (taken before APPLY,
+        # when only "other" was beside it) the return phase opens the new path;
+        # a snapshot taken at entry would list the new path as a bystander and
+        # the wait would report no return.
+        other = [dict(_raw(self.s)[0], path=b"other")]
+        new = [dict(_raw(self.s)[0], path=b"new")]
+        h = _Helper([other + new])
+        h.interface = type("_Dev", (), {"close": lambda self: None})()
+        h.interface_path = b"old"
+        out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep, others={b"other"})
+        self.assertEqual(out, HidHelper.REBOOT_RECONNECTED)
+        self.assertEqual([i["path"] for i in h.opened], [b"new"])
+
+        self.clock.t = 0.0
+        h = _Helper([other + new])
+        h.interface = type("_Dev", (), {"close": lambda self: None})()
+        h.interface_path = b"old"
+        out = h.wait_for_reboot(clock=self.clock, sleep=self.clock.sleep, timeout_s=5)
+        self.assertEqual(out, HidHelper.REBOOT_NO_RETURN)
+
+    def test_other_raw_paths_excludes_the_open_device_and_is_empty_on_error(self):
+        other = [dict(_raw(self.s)[0], path=b"other")]
+        h = _Helper([_raw(self.s) + other])
+        h.interface = object()
+        h.interface_path = b"old"
+        self.assertEqual(h.other_raw_paths(), {b"other"})
+        h.interface = None
+        self.assertEqual(h.other_raw_paths(), set())
+
+        class _Raising(_Helper):
+            def _enumerate(self, vid):
+                raise OSError("usb churn")
+
+        h = _Raising([[]])
+        h.interface = object()
+        h.interface_path = b"old"
+        self.assertEqual(h.other_raw_paths(), set())
+
     def test_an_enumeration_error_is_unknown_not_absent(self):
         # An error before the old device left must not end the gone phase
         # (the next good enumeration would reopen the OLD device); one after

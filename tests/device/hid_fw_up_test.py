@@ -1033,9 +1033,20 @@ class TestApplyStagedFirmware(unittest.TestCase):
         ok, msg = apply_staged_firmware(hid)
         self.assertTrue(ok)
         self.assertIn("reconnected", msg)
-        hid.wait_for_reboot.assert_called_once_with(timeout_s=30)
+        hid.wait_for_reboot.assert_called_once_with(timeout_s=30, others=hid.other_raw_paths.return_value)
         # The single-phase wait re-opens the OLD device before its tear-down.
         hid.wait_for_reconnect.assert_not_called()
+
+    def test_the_other_keyboards_are_snapshotted_before_apply_goes_out(self):
+        # Taken after APPLY, the snapshot could hold the flashed keyboard's new
+        # path (a reboot during the lost-reply wait) and the wait would never
+        # reopen it.
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        hid.other_raw_paths.return_value = {b"other"}
+        apply_staged_firmware(hid)
+        names = [c[0] for c in hid.method_calls]
+        self.assertLess(names.index("other_raw_paths"), names.index("send_and_read"))
+        hid.wait_for_reboot.assert_called_once_with(timeout_s=30, others={b"other"})
 
     def test_a_device_that_never_leaves_the_bus_is_not_applied(self):
         # Field, 2026-10-19: APPLY acknowledged, dialog said "reconnected" 80 ms

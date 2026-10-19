@@ -434,8 +434,32 @@ class HidHelper:
     REBOOT_NEVER_LEFT = "never-left"
     REBOOT_NO_RETURN = "no-return"
 
+    def _raw_interfaces(self):
+        """The raw PolyKybd interfaces on the bus now. Raises: hid.enumerate
+        fails on USB churn, which a reboot is."""
+        return [i for i in self._enumerate(self.settings.VID)
+                if i['product_id'] in self.settings.KNOWN_PIDS
+                and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
+                and i['usage'] == self.settings.HID_RAW_USAGE]
+
+    def other_raw_paths(self) -> set:
+        """The paths of the raw PolyKybd interfaces on the bus that are not the
+        open one. ``wait_for_reboot`` skips them in its return phase; take the
+        snapshot BEFORE the command that reboots the keyboard, or a keyboard
+        that rebooted and came back under a new path while that command's
+        reply was awaited counts as a bystander and is never reopened. Empty
+        when nothing is open or the enumeration fails (no exclusion then)."""
+        if not self.interface:
+            return set()
+        try:
+            return {i.get('path') for i in self._raw_interfaces()} - {getattr(self, "interface_path", None)}
+        except Exception as e:  # noqa: BLE001 — see _raw_interfaces; no snapshot means no exclusion
+            log.debug("Enumeration failed before the reboot wait: %s", e)
+            return set()
+
     def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10,
-                        poll_s: float = 0.1, clock=time.monotonic, sleep=time.sleep) -> str:
+                        poll_s: float = 0.1, clock=time.monotonic, sleep=time.sleep,
+                        others=None) -> str:
         """Wait for the device to LEAVE the bus and come back, then re-open it.
 
         ``wait_for_reconnect`` re-opens the first raw interface it finds, and
@@ -451,6 +475,10 @@ class HidHelper:
         when the device stayed enumerated for ``gone_timeout_s`` (the apply did
         not reboot it), or REBOOT_NO_RETURN when it left and did not come back.
         A device already absent at the first look counts as gone.
+
+        ``others`` is the :meth:`other_raw_paths` snapshot the caller took before
+        sending the command that reboots the keyboard; None takes it now, which
+        is right only when the keyboard cannot have come back yet.
         """
         # The device that was open, by path: the gone phase waits for THAT one.
         # A second PolyKybd on the bus (not a supported setup, but possible) would
@@ -458,26 +486,18 @@ class HidHelper:
         gone_path = getattr(self, "interface_path", None) if self.interface else None
 
         def raw_interfaces():
-            # Raises: hid.enumerate fails on USB churn, which a reboot is. An
-            # error is "unknown", not "absent": the gone phase keeps waiting and
-            # the return phase retries, so a churn error before the old device
-            # left cannot end the wait and let the old device be reopened.
-            return [i for i in self._enumerate(self.settings.VID)
-                    if i['product_id'] in self.settings.KNOWN_PIDS
-                    and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
-                    and i['usage'] == self.settings.HID_RAW_USAGE]
+            # An enumeration error is "unknown", not "absent": the gone phase
+            # keeps waiting and the return phase retries, so a churn error before
+            # the old device left cannot end the wait and let the old device be
+            # reopened.
+            return self._raw_interfaces()
 
-        # The other raw interfaces on the bus right now are not the flashed
-        # keyboard, so the return phase must not open one of them: once the
-        # flashed one has left, they are all the enumeration lists. The
-        # returning device may come back under another path, so it is matched
-        # by exclusion, not by gone_path.
-        bystanders = set()
-        if gone_path is not None:
-            try:
-                bystanders = {i.get('path') for i in raw_interfaces()} - {gone_path}
-            except Exception as e:  # noqa: BLE001 — see raw_interfaces; no snapshot means no exclusion
-                log.debug("Enumeration failed before the reboot wait: %s", e)
+        # The other raw interfaces on the bus are not the flashed keyboard, so
+        # the return phase must not open one of them: once the flashed one has
+        # left, they are all the enumeration lists. The returning device may
+        # come back under another path, so it is matched by exclusion, not by
+        # gone_path.
+        bystanders = set(others) if others is not None else self.other_raw_paths()
         with self.lock:
             if self.interface:
                 try:
@@ -561,4 +581,7 @@ class DisconnectedHid(HidHelper):
 
     def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10, **_kw) -> str:
         return HidHelper.REBOOT_NO_RETURN
+
+    def other_raw_paths(self) -> set:
+        return set()
 
