@@ -9,7 +9,7 @@ paths:
 Full notes: `docs/hid-worker-refactor.md` · `docs/fontpack.md`.
 
 - ⚠️ **Nothing the firmware prints during a flash is observable from the host.** QMK
-  drops console output nobody drains. The tell is a gap in the firmware console
+  drops console output that nothing reads. The sign is a gap in the firmware console
   timestamps spanning the flash; use `tools/poly_console.py` in a second terminal.
 - **`FW_UP_COMMIT` has FOUR status bytes** — `.` ok, `?` awaiting the physical
   keypress (re-poll, not failed), `S` not validly signed, `!` staged-CRC mismatch.

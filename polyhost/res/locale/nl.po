@@ -2157,7 +2157,7 @@ msgid "Steps…"
 msgstr "Stappen…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:190
-msgid "Build the macro out of key presses, chords and pauses — or record them"
+msgid "Build the macro out of key presses, key combinations and pauses — or record them"
 msgstr "De macro opbouwen uit toetsaanslagen, toetscombinaties en pauzes — of ze opnemen"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:205
