@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-19 05:34+0000\n"
+"POT-Creation-Date: 2026-10-19 06:17+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: nl\n"
@@ -33,26 +33,26 @@ msgstr "{minutes} min"
 msgid "{seconds} sec"
 msgstr "{seconds} s"
 
-#: polyhost/device/hid_fw_up.py:40
+#: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
 msgstr "Bestand is te klein ({size} bytes) voor een geldig RP2040-firmware-image (minstens 264 bytes verwacht voor boot2 + ARM-vectortabel)."
 
-#: polyhost/device/hid_fw_up.py:43
+#: polyhost/device/hid_fw_up.py:46
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
 msgstr "Ongeldige RP2040 boot2 CRC32 (bestand bevat {stored}, berekend {computed}). Dit lijkt geen geldige RP2040 QMK-firmware-.bin te zijn. Kies de .bin die door 'qmk compile' is gemaakt, geen .uf2, .hex of ander formaat."
 
-#: polyhost/device/hid_fw_up.py:48
+#: polyhost/device/hid_fw_up.py:51
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
 msgstr "Ongeldige ARM-vectortabel: initiële SP {sp} ligt buiten het RP2040-SRAM ({sram}). Dit lijkt geen geldig RP2040-firmwarebestand te zijn."
 
-#: polyhost/device/hid_fw_up.py:51
+#: polyhost/device/hid_fw_up.py:54
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
 msgstr "Dit firmwarebestand lijkt niet voor PolyKybd te zijn gebouwd. Er is geen PolyKybd-identificatietekenreeks in gevonden. Kies firmware die met 'qmk compile' voor 'polykybd/split72' is gecompileerd."
 
-#: polyhost/device/hid_fw_up.py:56
+#: polyhost/device/hid_fw_up.py:59
 #, python-brace-format
 msgid ""
 "No signature file was found next to this image ({sig}).\n"
@@ -67,60 +67,60 @@ msgstr ""
 "\n"
 "Wilde u een release flashen, download dan eerst het bijbehorende '.sig'-bestand in dezelfde map als de '.bin'."
 
-#: polyhost/device/hid_fw_up.py:62
+#: polyhost/device/hid_fw_up.py:65
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
 msgstr "Kan {sig} niet lezen: {error}"
 
-#: polyhost/device/hid_fw_up.py:64
+#: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
 msgstr "{sig} is {size} bytes, maar een handtekening is precies {expected}. Het bestand wordt genegeerd en het toetsenbord vraagt u het image fysiek te bevestigen."
 
-#: polyhost/device/hid_fw_up.py:66
+#: polyhost/device/hid_fw_up.py:69
 msgid "Firmware file is empty."
 msgstr "Firmwarebestand is leeg."
 
-#: polyhost/device/hid_fw_up.py:67
+#: polyhost/device/hid_fw_up.py:70
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
 msgstr "Firmware te groot: {size} bytes (max. {max_kb} KB)."
 
-#: polyhost/device/hid_fw_up.py:68
+#: polyhost/device/hid_fw_up.py:71
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
 msgstr "FW_UP_BEGIN verzenden — {kb} KB, CRC32 {crc}…"
 
-#: polyhost/device/hid_fw_up.py:69
+#: polyhost/device/hid_fw_up.py:72
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
 msgstr "{step} — {elapsed} s verstreken (≈10–20 s)…"
 
-#: polyhost/device/hid_fw_up.py:70
+#: polyhost/device/hid_fw_up.py:73
 msgid "Erasing staging area — keyboard will reconnect when done"
 msgstr "Klaarzetgebied wissen — het toetsenbord maakt opnieuw verbinding als het klaar is"
 
-#: polyhost/device/hid_fw_up.py:71
+#: polyhost/device/hid_fw_up.py:74
 msgid "Erasing staging area (both halves)"
 msgstr "Klaarzetgebied wissen (beide helften)"
 
-#: polyhost/device/hid_fw_up.py:72
+#: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out"
 msgstr "Time-out bij FW_UP_BEGIN"
 
-#: polyhost/device/hid_fw_up.py:73
+#: polyhost/device/hid_fw_up.py:76
 msgid "staging area"
 msgstr "het klaarzetgebied"
 
-#: polyhost/device/hid_fw_up.py:75
+#: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
 msgstr "Time-out bij FW_UP_BEGIN — het toetsenbord heeft het wissen niet binnen 90 s voltooid.  Controleer de USB-kabel en probeer het opnieuw."
 
-#: polyhost/device/hid_fw_up.py:78
+#: polyhost/device/hid_fw_up.py:81
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
 msgstr "FW_UP_BEGIN mislukt — het toetsenbord heeft niet binnen 30 s opnieuw verbinding gemaakt.  Controleer de USB-kabel en probeer het opnieuw."
 
-#: polyhost/device/hid_fw_up.py:81
+#: polyhost/device/hid_fw_up.py:84
 msgid ""
 "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
 "Ensure both keyboard halves are connected and powered on.\n"
@@ -132,34 +132,34 @@ msgstr ""
 "Als de slave-helft oude firmware heeft (zonder ondersteuning voor firmware-updates via HID), moet die\n"
 "eerst handmatig via UF2 worden geflasht voordat de firmware-update via HID werkt."
 
-#: polyhost/device/hid_fw_up.py:85
+#: polyhost/device/hid_fw_up.py:88
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
 msgstr "Klaarzetgebied gewist. {chunks} blokken verzenden…"
 
-#: polyhost/device/hid_fw_up.py:86
+#: polyhost/device/hid_fw_up.py:89
 msgid "Update cancelled by user."
 msgstr "Update geannuleerd door gebruiker."
 
-#: polyhost/device/hid_fw_up.py:87
+#: polyhost/device/hid_fw_up.py:90
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
 msgstr "Blok {n}/{total} ({kb} KB verzonden)…"
 
-#: polyhost/device/hid_fw_up.py:89
+#: polyhost/device/hid_fw_up.py:92
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
 msgstr "Toetsenbordhelften opnieuw gesynchroniseerd — terug naar blok {n}/{total} (offset {offset}, resync {resync})…"
 
-#: polyhost/device/hid_fw_up.py:91
+#: polyhost/device/hid_fw_up.py:94
 msgid "keyboard rejected the chunk"
 msgstr "het toetsenbord heeft het blok geweigerd"
 
-#: polyhost/device/hid_fw_up.py:92
+#: polyhost/device/hid_fw_up.py:95
 msgid "no reply from the keyboard"
 msgstr "geen antwoord van het toetsenbord"
 
-#: polyhost/device/hid_fw_up.py:94
+#: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
@@ -168,34 +168,44 @@ msgstr ""
 "FW_UP_CHUNK mislukt bij offset {offset} na {attempts} pogingen — {reason}.\n"
 "Zorg dat beide toetsenbordhelften zijn aangesloten en dezelfde firmware draaien en probeer het opnieuw — de update begint opnieuw vanaf het begin en kan veilig worden herhaald."
 
-#: polyhost/device/hid_fw_up.py:97
+#: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
 msgstr "Blok {n}/{total} — nieuwe poging {attempt}/{max_attempts} ({ms} ms wachten)…"
 
-#: polyhost/device/hid_fw_up.py:98
+#: polyhost/device/hid_fw_up.py:101
+#, python-brace-format
+msgid "Sending over the fast link: {kb} KB of {total_kb} KB…"
+msgstr "Verzenden via de snelle verbinding: {kb} KB van {total_kb} KB…"
+
+#: polyhost/device/hid_fw_up.py:102
+#, python-brace-format
+msgid "Fast link stopped ({reason}); continuing over HID from {kb} KB."
+msgstr "Snelle verbinding gestopt ({reason}); gaat verder via HID vanaf {kb} KB."
+
+#: polyhost/device/hid_fw_up.py:103
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
 msgstr "Kan {sig} niet lezen: {error} — er wordt zonder handtekening geflasht."
 
-#: polyhost/device/hid_fw_up.py:99
+#: polyhost/device/hid_fw_up.py:104
 msgid "Sending image signature…"
 msgstr "Handtekening van image verzenden…"
 
-#: polyhost/device/hid_fw_up.py:100
+#: polyhost/device/hid_fw_up.py:105
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
 msgstr "{sig} wordt genegeerd — {expected} bytes verwacht, {size} ontvangen."
 
-#: polyhost/device/hid_fw_up.py:101
+#: polyhost/device/hid_fw_up.py:106
 msgid "Verifying the staged image (CRC32)…"
 msgstr "Klaargezet image verifiëren (CRC32)…"
 
-#: polyhost/device/hid_fw_up.py:103
+#: polyhost/device/hid_fw_up.py:108
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
 msgstr "Deze firmware is niet ondertekend. Bevestig op het TOETSENBORD: druk op de gemarkeerde toets A (accepteren) of R (weigeren)."
 
-#: polyhost/device/hid_fw_up.py:106
+#: polyhost/device/hid_fw_up.py:111
 msgid ""
 "Timed out waiting for confirmation on the keyboard.\n"
 "\n"
@@ -205,7 +215,7 @@ msgstr ""
 "\n"
 "Het toetsenbord vraagt om een fysieke ACCEPT/REJECT omdat dit image niet geldig is ondertekend. Start het flashen opnieuw en druk binnen een minuut op de gemarkeerde toets A op de linkerhelft."
 
-#: polyhost/device/hid_fw_up.py:111
+#: polyhost/device/hid_fw_up.py:116
 #, python-brace-format
 msgid ""
 "The keyboard refused this firmware: the signature does not match the image.\n"
@@ -220,7 +230,7 @@ msgstr ""
 "\n"
 "Op het toetsenbord kunt u dit bewust niet alsnog bevestigen: een handtekening die niet klopt, betekent dat het bestand niet is wat het beweert te zijn."
 
-#: polyhost/device/hid_fw_up.py:120
+#: polyhost/device/hid_fw_up.py:125
 msgid ""
 "The keyboard refused this firmware: it is not signed.\n"
 "\n"
@@ -234,15 +244,15 @@ msgstr ""
 "\n"
 "Om een zelf gecompileerde build te flashen: flash opnieuw en druk op de gemarkeerde toets A (accepteren) op het toetsenbord wanneer daarom wordt gevraagd."
 
-#: polyhost/device/hid_fw_up.py:125
+#: polyhost/device/hid_fw_up.py:130
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 msgstr "FW_UP_COMMIT mislukt — CRC komt niet overeen op het toetsenbord. Probeer het opnieuw."
 
-#: polyhost/device/hid_fw_up.py:126
+#: polyhost/device/hid_fw_up.py:131
 msgid "Done. New firmware staged and verified on the keyboard."
 msgstr "Klaar. Nieuwe firmware klaargezet en geverifieerd op het toetsenbord."
 
-#: polyhost/device/hid_fw_up.py:128
+#: polyhost/device/hid_fw_up.py:133
 msgid ""
 "Firmware staged and verified successfully.\n"
 "\n"
@@ -252,11 +262,11 @@ msgstr ""
 "\n"
 "Het nieuwe image is opgeslagen en met CRC gecontroleerd op het toetsenbord, maar is nog niet actief — het toetsenbord draait nog steeds de huidige firmware. Het activeren van het klaargezette image is een aparte stap."
 
-#: polyhost/device/hid_fw_up.py:132
+#: polyhost/device/hid_fw_up.py:137
 msgid "Sending FW_UP_APPLY…"
 msgstr "FW_UP_APPLY verzenden…"
 
-#: polyhost/device/hid_fw_up.py:134
+#: polyhost/device/hid_fw_up.py:139
 msgid ""
 "Apply is not available.\n"
 "\n"
@@ -266,11 +276,11 @@ msgstr ""
 "\n"
 "Het toetsenbord meldde geen geldig klaargezet image, of deze firmware is gebouwd zonder toepassen vanuit de app (FW_UP_INAPP_APPLY=no). Het klaargezette image is ongewijzigd."
 
-#: polyhost/device/hid_fw_up.py:138
+#: polyhost/device/hid_fw_up.py:143
 msgid "Applying — keyboard is erasing its flash and rebooting…"
 msgstr "Toepassen — het toetsenbord wist zijn flashgeheugen en start opnieuw op…"
 
-#: polyhost/device/hid_fw_up.py:140
+#: polyhost/device/hid_fw_up.py:145
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
@@ -278,7 +288,7 @@ msgstr ""
 "Het toetsenbord heeft binnen 30 s na het toepassen geen verbinding meer gemaakt.\n"
 "Als het niet vanzelf terugkomt, houd dan BOOTSEL ingedrukt op de master-helft en flash de .uf2 opnieuw."
 
-#: polyhost/device/hid_fw_up.py:144
+#: polyhost/device/hid_fw_up.py:149
 msgid ""
 "The keyboard acknowledged APPLY but did not reboot within 10 s.\n"
 "The staged image was not applied; the keyboard still runs its current firmware. Try the apply again."
@@ -286,11 +296,11 @@ msgstr ""
 "Het toetsenbord heeft APPLY bevestigd, maar is niet binnen 10 s opnieuw opgestart.\n"
 "Het klaargezette image is niet toegepast; het toetsenbord draait nog steeds de huidige firmware. Probeer het toepassen opnieuw."
 
-#: polyhost/device/hid_fw_up.py:147
+#: polyhost/device/hid_fw_up.py:152
 msgid "Done. Keyboard reconnected on the applied firmware."
 msgstr "Klaar. Het toetsenbord is opnieuw verbonden met de toegepaste firmware."
 
-#: polyhost/device/hid_fw_up.py:149
+#: polyhost/device/hid_fw_up.py:154
 msgid ""
 "Firmware applied — the keyboard rebooted and reconnected.\n"
 "\n"
@@ -482,7 +492,7 @@ msgstr "Kopiëren naar klembord"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:224
+#: polyhost/gui/hid_fw_up_dialog.py:473 polyhost/gui/log_viewer.py:224
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -776,12 +786,12 @@ msgstr "PolyKybd-opdrachten (*.poly.cmd)"
 msgid "Open file"
 msgstr "Bestand openen"
 
-#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:630
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "Niet verbonden"
 
-#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:631
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd is niet verbonden. Sluit het toetsenbord aan en probeer het opnieuw."
 
@@ -852,19 +862,19 @@ msgstr "Geselecteerd bestand:<br>{path}"
 msgid "Continue?"
 msgstr "Doorgaan?"
 
-#: polyhost/gui/cmd_menu.py:607
+#: polyhost/gui/cmd_menu.py:608
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>De klaargezette firmware toepassen?</b><br><br>Beide toetsenbordhelften installeren het eerder klaargezette image en starten automatisch opnieuw op met de nieuwe firmware (opnieuw aansluiten is niet nodig).<br><br>Als deze firmware niet is gebouwd met toepassen-vanuit-de-app, meldt het toetsenbord veilig dat toepassen niet beschikbaar is en blijft het klaargezette image ongewijzigd.<br><br>Doorgaan?"
 
-#: polyhost/gui/cmd_menu.py:616
+#: polyhost/gui/cmd_menu.py:617
 msgid "Apply Staged Firmware"
 msgstr "Klaargezette firmware toepassen"
 
-#: polyhost/gui/cmd_menu.py:641
+#: polyhost/gui/cmd_menu.py:642
 msgid "Firmware Applied"
 msgstr "Firmware toegepast"
 
-#: polyhost/gui/cmd_menu.py:643
+#: polyhost/gui/cmd_menu.py:644
 msgid "Apply Failed"
 msgstr "Toepassen mislukt"
 
@@ -1178,7 +1188,7 @@ msgstr "De gebouwde glyph behouden (in het geheugen aan de bundel toegevoegd; sl
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:197
+#: polyhost/gui/hid_fw_up_dialog.py:200
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
 #: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
 msgid "Cancel"
@@ -1668,39 +1678,39 @@ msgstr "Flashen gestart — volg het systeemvak/logbestand."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Alle openstaande bewerkingen aan '{label}' verwerpen?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2914
+#: polyhost/gui/hid_fw_up_dialog.py:159 polyhost/host.py:2914
 #: polyhost/host.py:2955 polyhost/host.py:2982
 msgid "Firmware Update"
 msgstr "Firmware-update"
 
-#: polyhost/gui/hid_fw_up_dialog.py:165
+#: polyhost/gui/hid_fw_up_dialog.py:168
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>Bestand:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Applying staged firmware…"
 msgstr "Klaargezette firmware toepassen…"
 
-#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Starting…"
 msgstr "Starten…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:263
+#: polyhost/gui/hid_fw_up_dialog.py:266
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "nog ~{seconds} s"
 
-#: polyhost/gui/hid_fw_up_dialog.py:268
+#: polyhost/gui/hid_fw_up_dialog.py:271
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "nog ~{minutes} min {seconds} s"
 
-#: polyhost/gui/hid_fw_up_dialog.py:400
+#: polyhost/gui/hid_fw_up_dialog.py:403
 msgid "Applying — activating the staged firmware…"
 msgstr "Toepassen — de klaargezette firmware wordt geactiveerd…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:480
+#: polyhost/gui/hid_fw_up_dialog.py:483
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Annuleren — wachten tot het huidige blok klaar is…"
 

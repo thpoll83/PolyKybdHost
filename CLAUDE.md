@@ -139,7 +139,10 @@ with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.m
   (`device/bulk_pipe.py`) finds the CDC port by VID/PID and PINGs it; absent, busy
   and mute ports all read as `transport == "hid"`, and the tray wears the violet
   `phid` mark. The tooltip shows the measured rate ("0.6 MB/s link"), never
-  the words "bulk pipe". Nothing in the HID protocol announces the pipe.
+  the words "bulk pipe". Nothing in the HID protocol announces the pipe; a pipe
+  command is gated on the PING protocol (`PIPE_PROTO_*`), not on `__protocol__`.
+  The firmware update's chunks go over it (`stream_firmware`, 4 frames in
+  flight, never unpaced) and fall back to HID from the keyboard's cursor.
   [`docs/architecture.md`](docs/architecture.md) → *Transport probe*.
 - ⚠️ **`expect(Cmd.X)` also matches a NACK.** On a closed range, read the verdict at
   `reply[2]` before reporting success. `set_idle_timeout` does; `set_glyph_size`,

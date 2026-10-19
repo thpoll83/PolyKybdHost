@@ -2985,8 +2985,14 @@ class PolyCore(Observable):
                     cancel_flag[0] = True      # relay supersede/suspend to hid_fw_up
                 self.emit("fw_flash_progress", {"pct": pct, "msg": m})
 
+            # The chunks go over the bulk pipe when the probe found one (the port
+            # is a plain string, so the job needs no device object for it); BEGIN,
+            # SIGNATURE, COMMIT and APPLY stay on HID. hid_fw_up falls back to HID
+            # from the keyboard's cursor if the pipe stops mid-stream.
+            pipe_port = (self.keeb.get_pipe_info() or {}).get("port")
             fok, fmsg = hid_fw_up.flash_firmware(
-                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag,
+                pipe_port=pipe_port)
             self.emit("fw_flash_done", {"ok": bool(fok), "msg": fmsg})
             if fok and apply:
                 aok, amsg = hid_fw_up.apply_staged_firmware(

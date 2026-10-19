@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-19 05:34+0000\n"
+"POT-Creation-Date: 2026-10-19 06:17+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -33,26 +33,26 @@ msgstr "{minutes} 分鐘"
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
 
-#: polyhost/device/hid_fw_up.py:40
+#: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
 msgstr "檔案太小（{size} 位元組），不是有效的 RP2040 韌體映像檔（boot2 + ARM 向量表至少需要 264 位元組）。"
 
-#: polyhost/device/hid_fw_up.py:43
+#: polyhost/device/hid_fw_up.py:46
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
 msgstr "RP2040 boot2 CRC32 無效（檔案中為 {stored}，計算值為 {computed}）。這似乎不是有效的 RP2040 QMK 韌體 .bin。請確認選擇的是 'qmk compile' 產生的 .bin，而不是 .uf2、.hex 或其他格式。"
 
-#: polyhost/device/hid_fw_up.py:48
+#: polyhost/device/hid_fw_up.py:51
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
 msgstr "ARM 向量表無效：初始 SP {sp} 超出 RP2040 SRAM 範圍（{sram}）。這似乎不是有效的 RP2040 韌體二進位檔。"
 
-#: polyhost/device/hid_fw_up.py:51
+#: polyhost/device/hid_fw_up.py:54
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
 msgstr "此韌體二進位檔似乎不是為 PolyKybd 建置的。在二進位檔中找不到 PolyKybd 識別字串。請確認選擇的是使用 'qmk compile' 為 'polykybd/split72' 編譯的韌體。"
 
-#: polyhost/device/hid_fw_up.py:56
+#: polyhost/device/hid_fw_up.py:59
 #, python-brace-format
 msgid ""
 "No signature file was found next to this image ({sig}).\n"
@@ -67,60 +67,60 @@ msgstr ""
 "\n"
 "如果您要燒錄的是正式發行版本，請先將它的 '.sig' 檔案下載到與 '.bin' 相同的資料夾。"
 
-#: polyhost/device/hid_fw_up.py:62
+#: polyhost/device/hid_fw_up.py:65
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
 msgstr "無法讀取 {sig}：{error}"
 
-#: polyhost/device/hid_fw_up.py:64
+#: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
 msgstr "{sig} 的大小為 {size} 位元組，但簽署必須剛好是 {expected} 位元組。此檔案將被忽略，鍵盤會要求您實際按鍵確認映像檔。"
 
-#: polyhost/device/hid_fw_up.py:66
+#: polyhost/device/hid_fw_up.py:69
 msgid "Firmware file is empty."
 msgstr "韌體檔案是空的。"
 
-#: polyhost/device/hid_fw_up.py:67
+#: polyhost/device/hid_fw_up.py:70
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
 msgstr "韌體過大：{size} 位元組（上限 {max_kb} KB）。"
 
-#: polyhost/device/hid_fw_up.py:68
+#: polyhost/device/hid_fw_up.py:71
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
 msgstr "正在傳送 FW_UP_BEGIN — {kb} KB，CRC32 {crc}…"
 
-#: polyhost/device/hid_fw_up.py:69
+#: polyhost/device/hid_fw_up.py:72
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
 msgstr "{step} — 已經過 {elapsed}s（≈10–20 s）…"
 
-#: polyhost/device/hid_fw_up.py:70
+#: polyhost/device/hid_fw_up.py:73
 msgid "Erasing staging area — keyboard will reconnect when done"
 msgstr "正在清除暫存區 — 完成後鍵盤將重新連線"
 
-#: polyhost/device/hid_fw_up.py:71
+#: polyhost/device/hid_fw_up.py:74
 msgid "Erasing staging area (both halves)"
 msgstr "正在清除暫存區（兩個半邊）"
 
-#: polyhost/device/hid_fw_up.py:72
+#: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out"
 msgstr "FW_UP_BEGIN 逾時"
 
-#: polyhost/device/hid_fw_up.py:73
+#: polyhost/device/hid_fw_up.py:76
 msgid "staging area"
 msgstr "暫存區"
 
-#: polyhost/device/hid_fw_up.py:75
+#: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
 msgstr "FW_UP_BEGIN 逾時 — 鍵盤未在 90 s 內完成清除。請檢查 USB 傳輸線後再試一次。"
 
-#: polyhost/device/hid_fw_up.py:78
+#: polyhost/device/hid_fw_up.py:81
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
 msgstr "FW_UP_BEGIN 失敗 — 鍵盤未在 30 s 內重新連線。請檢查 USB 傳輸線後再試一次。"
 
-#: polyhost/device/hid_fw_up.py:81
+#: polyhost/device/hid_fw_up.py:84
 msgid ""
 "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
 "Ensure both keyboard halves are connected and powered on.\n"
@@ -132,34 +132,34 @@ msgstr ""
 "如果從屬半邊使用的是舊版韌體（不支援 HID 韌體更新），必須先\n"
 "透過 UF2 手動燒錄，HID 韌體更新才能運作。"
 
-#: polyhost/device/hid_fw_up.py:85
+#: polyhost/device/hid_fw_up.py:88
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
 msgstr "暫存區已清除。正在傳送 {chunks} 個區塊…"
 
-#: polyhost/device/hid_fw_up.py:86
+#: polyhost/device/hid_fw_up.py:89
 msgid "Update cancelled by user."
 msgstr "使用者已取消更新。"
 
-#: polyhost/device/hid_fw_up.py:87
+#: polyhost/device/hid_fw_up.py:90
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
 msgstr "區塊 {n}/{total}（已傳送 {kb} KB）…"
 
-#: polyhost/device/hid_fw_up.py:89
+#: polyhost/device/hid_fw_up.py:92
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
 msgstr "鍵盤兩個半邊已重新同步 — 正在倒回至區塊 {n}/{total}（位移 {offset}，重新同步 {resync}）…"
 
-#: polyhost/device/hid_fw_up.py:91
+#: polyhost/device/hid_fw_up.py:94
 msgid "keyboard rejected the chunk"
 msgstr "鍵盤拒絕了該區塊"
 
-#: polyhost/device/hid_fw_up.py:92
+#: polyhost/device/hid_fw_up.py:95
 msgid "no reply from the keyboard"
 msgstr "鍵盤沒有回應"
 
-#: polyhost/device/hid_fw_up.py:94
+#: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
@@ -168,34 +168,44 @@ msgstr ""
 "FW_UP_CHUNK 在位移 {offset} 處嘗試 {attempts} 次後失敗 — {reason}。\n"
 "請確認鍵盤的兩個半邊都已連接並執行相同的韌體，然後再試一次 — 更新會從頭開始，可以安全地重複進行。"
 
-#: polyhost/device/hid_fw_up.py:97
+#: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
 msgstr "區塊 {n}/{total} — 第 {attempt}/{max_attempts} 次重試（等待 {ms} ms）…"
 
-#: polyhost/device/hid_fw_up.py:98
+#: polyhost/device/hid_fw_up.py:101
+#, python-brace-format
+msgid "Sending over the fast link: {kb} KB of {total_kb} KB…"
+msgstr "正在透過高速連線傳送：{kb} KB / {total_kb} KB…"
+
+#: polyhost/device/hid_fw_up.py:102
+#, python-brace-format
+msgid "Fast link stopped ({reason}); continuing over HID from {kb} KB."
+msgstr "高速連線已停止（{reason}）；從 {kb} KB 起改用 HID 繼續。"
+
+#: polyhost/device/hid_fw_up.py:103
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
 msgstr "無法讀取 {sig}：{error} — 將以未簽署方式燒錄。"
 
-#: polyhost/device/hid_fw_up.py:99
+#: polyhost/device/hid_fw_up.py:104
 msgid "Sending image signature…"
 msgstr "正在傳送映像檔簽署…"
 
-#: polyhost/device/hid_fw_up.py:100
+#: polyhost/device/hid_fw_up.py:105
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
 msgstr "忽略 {sig} — 應為 {expected} 位元組，實際為 {size} 位元組。"
 
-#: polyhost/device/hid_fw_up.py:101
+#: polyhost/device/hid_fw_up.py:106
 msgid "Verifying the staged image (CRC32)…"
 msgstr "正在驗證已暫存的映像檔（CRC32）…"
 
-#: polyhost/device/hid_fw_up.py:103
+#: polyhost/device/hid_fw_up.py:108
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
 msgstr "此韌體未經簽署。請在鍵盤上確認：按下亮起的 A（接受）或 R（拒絕）鍵。"
 
-#: polyhost/device/hid_fw_up.py:106
+#: polyhost/device/hid_fw_up.py:111
 msgid ""
 "Timed out waiting for confirmation on the keyboard.\n"
 "\n"
@@ -205,7 +215,7 @@ msgstr ""
 "\n"
 "由於此映像檔沒有有效的簽章，鍵盤要求實體按鍵接受／拒絕。請重新開始燒錄，並在一分鐘內按下左半邊亮起的 A 鍵。"
 
-#: polyhost/device/hid_fw_up.py:111
+#: polyhost/device/hid_fw_up.py:116
 #, python-brace-format
 msgid ""
 "The keyboard refused this firmware: the signature does not match the image.\n"
@@ -220,7 +230,7 @@ msgstr ""
 "\n"
 "鍵盤上刻意不提供略過此檢查的確認方式：無法通過驗證的簽署代表該檔案並非它所聲稱的內容。"
 
-#: polyhost/device/hid_fw_up.py:120
+#: polyhost/device/hid_fw_up.py:125
 msgid ""
 "The keyboard refused this firmware: it is not signed.\n"
 "\n"
@@ -234,15 +244,15 @@ msgstr ""
 "\n"
 "若要燒錄您自行編譯的版本，請重新燒錄，並在鍵盤詢問時按下亮起的 A（接受）鍵。"
 
-#: polyhost/device/hid_fw_up.py:125
+#: polyhost/device/hid_fw_up.py:130
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 msgstr "FW_UP_COMMIT 失敗 — 鍵盤上的 CRC 不符。請再試一次。"
 
-#: polyhost/device/hid_fw_up.py:126
+#: polyhost/device/hid_fw_up.py:131
 msgid "Done. New firmware staged and verified on the keyboard."
 msgstr "完成。新韌體已暫存至鍵盤並通過驗證。"
 
-#: polyhost/device/hid_fw_up.py:128
+#: polyhost/device/hid_fw_up.py:133
 msgid ""
 "Firmware staged and verified successfully.\n"
 "\n"
@@ -252,11 +262,11 @@ msgstr ""
 "\n"
 "新的映像檔已儲存在鍵盤上並通過 CRC 檢查，但尚未生效 — 鍵盤仍在執行目前的韌體。啟用已暫存的映像檔將是另一個步驟。"
 
-#: polyhost/device/hid_fw_up.py:132
+#: polyhost/device/hid_fw_up.py:137
 msgid "Sending FW_UP_APPLY…"
 msgstr "正在傳送 FW_UP_APPLY…"
 
-#: polyhost/device/hid_fw_up.py:134
+#: polyhost/device/hid_fw_up.py:139
 msgid ""
 "Apply is not available.\n"
 "\n"
@@ -266,11 +276,11 @@ msgstr ""
 "\n"
 "鍵盤回報沒有有效的已暫存映像檔，或此韌體在建置時未啟用應用程式內套用（FW_UP_INAPP_APPLY=no）。已暫存的映像檔未變更。"
 
-#: polyhost/device/hid_fw_up.py:138
+#: polyhost/device/hid_fw_up.py:143
 msgid "Applying — keyboard is erasing its flash and rebooting…"
 msgstr "正在套用 — 鍵盤正在清除快閃記憶體並重新啟動…"
 
-#: polyhost/device/hid_fw_up.py:140
+#: polyhost/device/hid_fw_up.py:145
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
@@ -278,7 +288,7 @@ msgstr ""
 "套用後鍵盤未在 30 s 內重新連線。\n"
 "如果它沒有自行恢復，請在主控半邊上按住 BOOTSEL 並重新燒錄 .uf2。"
 
-#: polyhost/device/hid_fw_up.py:144
+#: polyhost/device/hid_fw_up.py:149
 msgid ""
 "The keyboard acknowledged APPLY but did not reboot within 10 s.\n"
 "The staged image was not applied; the keyboard still runs its current firmware. Try the apply again."
@@ -286,11 +296,11 @@ msgstr ""
 "鍵盤已確認 APPLY，但未在 10 s 內重新啟動。\n"
 "已暫存的映像檔未被套用；鍵盤仍在執行目前的韌體。請重新嘗試套用。"
 
-#: polyhost/device/hid_fw_up.py:147
+#: polyhost/device/hid_fw_up.py:152
 msgid "Done. Keyboard reconnected on the applied firmware."
 msgstr "完成。鍵盤已以套用的韌體重新連線。"
 
-#: polyhost/device/hid_fw_up.py:149
+#: polyhost/device/hid_fw_up.py:154
 msgid ""
 "Firmware applied — the keyboard rebooted and reconnected.\n"
 "\n"
@@ -482,7 +492,7 @@ msgstr "複製到剪貼簿"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:224
+#: polyhost/gui/hid_fw_up_dialog.py:473 polyhost/gui/log_viewer.py:224
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -775,12 +785,12 @@ msgstr "PolyKybd 指令（*.poly.cmd）"
 msgid "Open file"
 msgstr "開啟檔案"
 
-#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:630
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "未連線"
 
-#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:631
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd 未連線。請連接鍵盤後再試一次。"
 
@@ -851,19 +861,19 @@ msgstr "選取的檔案：<br>{path}"
 msgid "Continue?"
 msgstr "要繼續嗎？"
 
-#: polyhost/gui/cmd_menu.py:607
+#: polyhost/gui/cmd_menu.py:608
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>要套用已暫存的韌體嗎？</b><br><br>兩個鍵盤半邊都會安裝先前暫存的映像檔，並自動重新啟動執行新韌體（不需重新插拔）。<br><br>若此韌體建置時未啟用程式內套用，鍵盤會安全地回報無法套用，並保留暫存的映像檔不變。<br><br>要繼續嗎？"
 
-#: polyhost/gui/cmd_menu.py:616
+#: polyhost/gui/cmd_menu.py:617
 msgid "Apply Staged Firmware"
 msgstr "套用已暫存的韌體"
 
-#: polyhost/gui/cmd_menu.py:641
+#: polyhost/gui/cmd_menu.py:642
 msgid "Firmware Applied"
 msgstr "韌體已套用"
 
-#: polyhost/gui/cmd_menu.py:643
+#: polyhost/gui/cmd_menu.py:644
 msgid "Apply Failed"
 msgstr "套用失敗"
 
@@ -1175,7 +1185,7 @@ msgstr "保留建立的字符（已加入記憶體中的套件；請從檢視器
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:197
+#: polyhost/gui/hid_fw_up_dialog.py:200
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
 #: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
 msgid "Cancel"
@@ -1661,39 +1671,39 @@ msgstr "已開始燒錄 — 請留意系統匣／記錄檔。"
 msgid "Discard all pending edits to '{label}'?"
 msgstr "要捨棄「{label}」的所有待處理編輯嗎？"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2914
+#: polyhost/gui/hid_fw_up_dialog.py:159 polyhost/host.py:2914
 #: polyhost/host.py:2955 polyhost/host.py:2982
 msgid "Firmware Update"
 msgstr "韌體更新"
 
-#: polyhost/gui/hid_fw_up_dialog.py:165
+#: polyhost/gui/hid_fw_up_dialog.py:168
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>檔案：</b>{path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Applying staged firmware…"
 msgstr "正在套用已暫存的韌體…"
 
-#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Starting…"
 msgstr "正在開始…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:263
+#: polyhost/gui/hid_fw_up_dialog.py:266
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "剩餘約 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:268
+#: polyhost/gui/hid_fw_up_dialog.py:271
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "剩餘約 {minutes} 分 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:400
+#: polyhost/gui/hid_fw_up_dialog.py:403
 msgid "Applying — activating the staged firmware…"
 msgstr "正在套用 — 正在啟用已暫存的韌體…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:480
+#: polyhost/gui/hid_fw_up_dialog.py:483
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "正在取消 — 等待目前的區塊完成…"
 

@@ -24,10 +24,11 @@ class _HidFwUpWorker(QThread):
     progress = pyqtSignal(int, str)   # (percent, status_message)
     finished = pyqtSignal(bool, str)  # (success, message)
 
-    def __init__(self, hid, bin_path: str):
+    def __init__(self, hid, bin_path: str, pipe_port: str = None):
         super().__init__()
         self.hid      = hid
         self.bin_path = bin_path
+        self.pipe_port = pipe_port   # the bulk pipe's serial port, or None for HID only
         self._cancel  = [False]   # mutable flag checked between chunks
 
     def cancel(self):
@@ -38,6 +39,7 @@ class _HidFwUpWorker(QThread):
             self.hid, self.bin_path,
             progress_cb=lambda pct, m: self.progress.emit(pct, m),
             cancel_flag=self._cancel,
+            pipe_port=self.pipe_port,
         )
         self.finished.emit(ok, msg)
 
@@ -121,10 +123,11 @@ class HidFwUpDialog(QDialog):
     _SUCCESS_AUTOCLOSE_MS = 1500
 
     def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None,
-                 external=False, apply_only=False):
+                 external=False, apply_only=False, pipe_port=None):
         super().__init__(parent)
         self.log         = logging.getLogger('PolyHost')
         self._hid        = hid
+        self._pipe_port  = pipe_port   # bulk pipe port for the chunks (in-process flash only)
         self._apply_after = apply_after
         self._tray_icon  = tray_icon
         # external: the flash runs elsewhere (the daemon, over RPC) and progress
@@ -210,7 +213,7 @@ class HidFwUpDialog(QDialog):
                 # No staging phase — open straight into the apply spinner.
                 self._set_busy(True)
         else:
-            self._worker = _HidFwUpWorker(hid, bin_path)
+            self._worker = _HidFwUpWorker(hid, bin_path, pipe_port)
             self._worker.progress.connect(self._on_progress)
             self._worker.finished.connect(self._on_finished)
             self._worker.start()

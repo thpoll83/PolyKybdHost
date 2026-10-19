@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-19 05:34+0000\n"
+"POT-Creation-Date: 2026-10-19 06:17+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -33,26 +33,26 @@ msgstr "{minutes} 分"
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
 
-#: polyhost/device/hid_fw_up.py:40
+#: polyhost/device/hid_fw_up.py:43
 #, python-brace-format
 msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
 msgstr "ファイルが小さすぎるため ({size} バイト)、有効な RP2040 ファームウェアイメージではありません (boot2 + ARM ベクターテーブルに少なくとも 264 バイトが必要です)。"
 
-#: polyhost/device/hid_fw_up.py:43
+#: polyhost/device/hid_fw_up.py:46
 #, python-brace-format
 msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
 msgstr "RP2040 boot2 の CRC32 が無効です (ファイル内の値 {stored}、計算値 {computed})。有効な RP2040 QMK ファームウェアの .bin ではないようです。.uf2、.hex などの形式ではなく、'qmk compile' で生成された .bin を選択してください。"
 
-#: polyhost/device/hid_fw_up.py:48
+#: polyhost/device/hid_fw_up.py:51
 #, python-brace-format
 msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
 msgstr "ARM ベクターテーブルが無効です: 初期 SP {sp} が RP2040 の SRAM ({sram}) の範囲外です。有効な RP2040 ファームウェアバイナリではないようです。"
 
-#: polyhost/device/hid_fw_up.py:51
+#: polyhost/device/hid_fw_up.py:54
 msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
 msgstr "このファームウェアバイナリは PolyKybd 用にビルドされたものではないようです。バイナリ内に PolyKybd の識別文字列が見つかりませんでした。'qmk compile' で 'polykybd/split72' 向けにコンパイルしたファームウェアを選択してください。"
 
-#: polyhost/device/hid_fw_up.py:56
+#: polyhost/device/hid_fw_up.py:59
 #, python-brace-format
 msgid ""
 "No signature file was found next to this image ({sig}).\n"
@@ -67,60 +67,60 @@ msgstr ""
 "\n"
 "リリースを書き込むつもりだった場合は、先にその '.sig' ファイルを '.bin' と同じフォルダーにダウンロードしてください。"
 
-#: polyhost/device/hid_fw_up.py:62
+#: polyhost/device/hid_fw_up.py:65
 #, python-brace-format
 msgid "Cannot read {sig}: {error}"
 msgstr "{sig} を読み込めません: {error}"
 
-#: polyhost/device/hid_fw_up.py:64
+#: polyhost/device/hid_fw_up.py:67
 #, python-brace-format
 msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
 msgstr "{sig} は {size} バイトですが、署名はちょうど {expected} バイトである必要があります。このファイルは無視され、キーボード上でイメージの物理的な確認を求められます。"
 
-#: polyhost/device/hid_fw_up.py:66
+#: polyhost/device/hid_fw_up.py:69
 msgid "Firmware file is empty."
 msgstr "ファームウェアファイルが空です。"
 
-#: polyhost/device/hid_fw_up.py:67
+#: polyhost/device/hid_fw_up.py:70
 #, python-brace-format
 msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
 msgstr "ファームウェアが大きすぎます: {size} バイト (最大 {max_kb} KB)。"
 
-#: polyhost/device/hid_fw_up.py:68
+#: polyhost/device/hid_fw_up.py:71
 #, python-brace-format
 msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
 msgstr "FW_UP_BEGIN を送信中 — {kb} KB、CRC32 {crc}…"
 
-#: polyhost/device/hid_fw_up.py:69
+#: polyhost/device/hid_fw_up.py:72
 #, python-brace-format
 msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
 msgstr "{step} — {elapsed}s 経過 (≈10–20 s)…"
 
-#: polyhost/device/hid_fw_up.py:70
+#: polyhost/device/hid_fw_up.py:73
 msgid "Erasing staging area — keyboard will reconnect when done"
 msgstr "ステージング領域を消去中 — 完了するとキーボードが再接続します"
 
-#: polyhost/device/hid_fw_up.py:71
+#: polyhost/device/hid_fw_up.py:74
 msgid "Erasing staging area (both halves)"
 msgstr "ステージング領域を消去中 (両方の本体)"
 
-#: polyhost/device/hid_fw_up.py:72
+#: polyhost/device/hid_fw_up.py:75
 msgid "FW_UP_BEGIN timed out"
 msgstr "FW_UP_BEGIN がタイムアウトしました"
 
-#: polyhost/device/hid_fw_up.py:73
+#: polyhost/device/hid_fw_up.py:76
 msgid "staging area"
 msgstr "ステージング領域"
 
-#: polyhost/device/hid_fw_up.py:75
+#: polyhost/device/hid_fw_up.py:78
 msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
 msgstr "FW_UP_BEGIN がタイムアウトしました — キーボードが 90 s 以内に消去を完了しませんでした。  USB ケーブルを確認して、もう一度お試しください。"
 
-#: polyhost/device/hid_fw_up.py:78
+#: polyhost/device/hid_fw_up.py:81
 msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
 msgstr "FW_UP_BEGIN に失敗しました — キーボードが 30 s 以内に再接続しませんでした。  USB ケーブルを確認して、もう一度お試しください。"
 
-#: polyhost/device/hid_fw_up.py:81
+#: polyhost/device/hid_fw_up.py:84
 msgid ""
 "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
 "Ensure both keyboard halves are connected and powered on.\n"
@@ -132,34 +132,34 @@ msgstr ""
 "スレーブ側に古いファームウェア (HID ファームウェア更新に非対応) が入っている場合は、\n"
 "HID ファームウェア更新を使う前に UF2 で手動で書き込む必要があります。"
 
-#: polyhost/device/hid_fw_up.py:85
+#: polyhost/device/hid_fw_up.py:88
 #, python-brace-format
 msgid "Staging erased. Sending {chunks} chunks…"
 msgstr "ステージング領域を消去しました。{chunks} 個のチャンクを送信中…"
 
-#: polyhost/device/hid_fw_up.py:86
+#: polyhost/device/hid_fw_up.py:89
 msgid "Update cancelled by user."
 msgstr "ユーザーにより更新がキャンセルされました。"
 
-#: polyhost/device/hid_fw_up.py:87
+#: polyhost/device/hid_fw_up.py:90
 #, python-brace-format
 msgid "Chunk {n}/{total} ({kb} KB sent)…"
 msgstr "チャンク {n}/{total} ({kb} KB 送信済み)…"
 
-#: polyhost/device/hid_fw_up.py:89
+#: polyhost/device/hid_fw_up.py:92
 #, python-brace-format
 msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
 msgstr "キーボードの両本体を再同期しました — チャンク {n}/{total} まで巻き戻し中 (オフセット {offset}、再同期 {resync})…"
 
-#: polyhost/device/hid_fw_up.py:91
+#: polyhost/device/hid_fw_up.py:94
 msgid "keyboard rejected the chunk"
 msgstr "キーボードがチャンクを拒否しました"
 
-#: polyhost/device/hid_fw_up.py:92
+#: polyhost/device/hid_fw_up.py:95
 msgid "no reply from the keyboard"
 msgstr "キーボードから応答がありません"
 
-#: polyhost/device/hid_fw_up.py:94
+#: polyhost/device/hid_fw_up.py:97
 #, python-brace-format
 msgid ""
 "FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
@@ -168,34 +168,44 @@ msgstr ""
 "FW_UP_CHUNK がオフセット {offset} で {attempts} 回試行後に失敗しました — {reason}。\n"
 "キーボードの両方の本体が接続され、同じファームウェアで動作していることを確認してから、もう一度お試しください — 更新は最初からやり直され、何度繰り返しても安全です。"
 
-#: polyhost/device/hid_fw_up.py:97
+#: polyhost/device/hid_fw_up.py:100
 #, python-brace-format
 msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
 msgstr "チャンク {n}/{total} — 再試行 {attempt}/{max_attempts} ({ms} ms 待機中)…"
 
-#: polyhost/device/hid_fw_up.py:98
+#: polyhost/device/hid_fw_up.py:101
+#, python-brace-format
+msgid "Sending over the fast link: {kb} KB of {total_kb} KB…"
+msgstr "高速リンクで送信中: {kb} KB / {total_kb} KB…"
+
+#: polyhost/device/hid_fw_up.py:102
+#, python-brace-format
+msgid "Fast link stopped ({reason}); continuing over HID from {kb} KB."
+msgstr "高速リンクが停止しました ({reason})。{kb} KB から HID で続行します。"
+
+#: polyhost/device/hid_fw_up.py:103
 #, python-brace-format
 msgid "Could not read {sig}: {error} — flashing unsigned."
 msgstr "{sig} を読み込めませんでした: {error} — 署名なしで書き込みます。"
 
-#: polyhost/device/hid_fw_up.py:99
+#: polyhost/device/hid_fw_up.py:104
 msgid "Sending image signature…"
 msgstr "イメージの署名を送信中…"
 
-#: polyhost/device/hid_fw_up.py:100
+#: polyhost/device/hid_fw_up.py:105
 #, python-brace-format
 msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
 msgstr "{sig} を無視します — {expected} バイトのはずが {size} バイトでした。"
 
-#: polyhost/device/hid_fw_up.py:101
+#: polyhost/device/hid_fw_up.py:106
 msgid "Verifying the staged image (CRC32)…"
 msgstr "ステージング済みイメージを検証中 (CRC32)…"
 
-#: polyhost/device/hid_fw_up.py:103
+#: polyhost/device/hid_fw_up.py:108
 msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
 msgstr "このファームウェアは署名されていません。キーボード上で確認してください: 強調表示された A (承認) または R (拒否) キーを押します。"
 
-#: polyhost/device/hid_fw_up.py:106
+#: polyhost/device/hid_fw_up.py:111
 msgid ""
 "Timed out waiting for confirmation on the keyboard.\n"
 "\n"
@@ -205,7 +215,7 @@ msgstr ""
 "\n"
 "このイメージには有効な署名がないため、キーボードは物理的な承認 / 拒否を求めます。書き込みをもう一度開始し、1 分以内に左側の本体で強調表示された A キーを押してください。"
 
-#: polyhost/device/hid_fw_up.py:111
+#: polyhost/device/hid_fw_up.py:116
 #, python-brace-format
 msgid ""
 "The keyboard refused this firmware: the signature does not match the image.\n"
@@ -220,7 +230,7 @@ msgstr ""
 "\n"
 "キーボード上でこれを承認して先に進む方法は意図的に用意されていません: 検証に失敗する署名は、そのファイルが主張どおりのものではないことを意味します。"
 
-#: polyhost/device/hid_fw_up.py:120
+#: polyhost/device/hid_fw_up.py:125
 msgid ""
 "The keyboard refused this firmware: it is not signed.\n"
 "\n"
@@ -234,15 +244,15 @@ msgstr ""
 "\n"
 "自分でビルドしたファームウェアを書き込むには、もう一度書き込みを行い、キーボードに確認が表示されたら強調表示された A (承認) キーを押してください。"
 
-#: polyhost/device/hid_fw_up.py:125
+#: polyhost/device/hid_fw_up.py:130
 msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 msgstr "FW_UP_COMMIT に失敗しました — キーボード上で CRC が一致しません。もう一度お試しください。"
 
-#: polyhost/device/hid_fw_up.py:126
+#: polyhost/device/hid_fw_up.py:131
 msgid "Done. New firmware staged and verified on the keyboard."
 msgstr "完了しました。新しいファームウェアがキーボードにステージングされ、検証されました。"
 
-#: polyhost/device/hid_fw_up.py:128
+#: polyhost/device/hid_fw_up.py:133
 msgid ""
 "Firmware staged and verified successfully.\n"
 "\n"
@@ -252,11 +262,11 @@ msgstr ""
 "\n"
 "新しいイメージはキーボードに保存され CRC チェック済みですが、まだ有効ではありません — キーボードは現在のファームウェアで動作中です。ステージングされたイメージの有効化は別の手順で行います。"
 
-#: polyhost/device/hid_fw_up.py:132
+#: polyhost/device/hid_fw_up.py:137
 msgid "Sending FW_UP_APPLY…"
 msgstr "FW_UP_APPLY を送信中…"
 
-#: polyhost/device/hid_fw_up.py:134
+#: polyhost/device/hid_fw_up.py:139
 msgid ""
 "Apply is not available.\n"
 "\n"
@@ -266,11 +276,11 @@ msgstr ""
 "\n"
 "キーボードから有効なステージング済みイメージがないと報告されたか、このファームウェアがアプリ内適用なし (FW_UP_INAPP_APPLY=no) でビルドされています。ステージング済みイメージは変更されていません。"
 
-#: polyhost/device/hid_fw_up.py:138
+#: polyhost/device/hid_fw_up.py:143
 msgid "Applying — keyboard is erasing its flash and rebooting…"
 msgstr "適用中 — キーボードがフラッシュを消去して再起動しています…"
 
-#: polyhost/device/hid_fw_up.py:140
+#: polyhost/device/hid_fw_up.py:145
 msgid ""
 "Keyboard did not reconnect within 30 s after apply.\n"
 "If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
@@ -278,7 +288,7 @@ msgstr ""
 "適用後 30 s 以内にキーボードが再接続しませんでした。\n"
 "自動的に復帰しない場合は、マスター側の本体で BOOTSEL を押したまま .uf2 を書き込み直してください。"
 
-#: polyhost/device/hid_fw_up.py:144
+#: polyhost/device/hid_fw_up.py:149
 msgid ""
 "The keyboard acknowledged APPLY but did not reboot within 10 s.\n"
 "The staged image was not applied; the keyboard still runs its current firmware. Try the apply again."
@@ -286,11 +296,11 @@ msgstr ""
 "キーボードは APPLY を確認しましたが、10 s 以内に再起動しませんでした。\n"
 "ステージングされたイメージは適用されていません — キーボードは現在のファームウェアで動作中です。適用をやり直してください。"
 
-#: polyhost/device/hid_fw_up.py:147
+#: polyhost/device/hid_fw_up.py:152
 msgid "Done. Keyboard reconnected on the applied firmware."
 msgstr "完了しました。適用したファームウェアでキーボードが再接続しました。"
 
-#: polyhost/device/hid_fw_up.py:149
+#: polyhost/device/hid_fw_up.py:154
 msgid ""
 "Firmware applied — the keyboard rebooted and reconnected.\n"
 "\n"
@@ -482,7 +492,7 @@ msgstr "クリップボードにコピー"
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
 #: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:470 polyhost/gui/log_viewer.py:224
+#: polyhost/gui/hid_fw_up_dialog.py:473 polyhost/gui/log_viewer.py:224
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -775,12 +785,12 @@ msgstr "PolyKybd コマンド (*.poly.cmd)"
 msgid "Open file"
 msgstr "ファイルを開く"
 
-#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:629
+#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:630
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "未接続"
 
-#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:630
+#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:631
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd が接続されていません。キーボードを接続してからもう一度お試しください。"
 
@@ -851,19 +861,19 @@ msgstr "選択したファイル:<br>{path}"
 msgid "Continue?"
 msgstr "続行しますか?"
 
-#: polyhost/gui/cmd_menu.py:607
+#: polyhost/gui/cmd_menu.py:608
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>ステージング済みのファームウェアを適用しますか?</b><br><br>両方のキーボード本体が、以前ステージングしたイメージをインストールし、自動的に新しいファームウェアで再起動します (抜き差しは不要)。<br><br>このファームウェアがアプリ内適用を有効にしてビルドされていない場合、キーボードは適用不可を安全に報告し、ステージング済みイメージには手を加えません。<br><br>続行しますか?"
 
-#: polyhost/gui/cmd_menu.py:616
+#: polyhost/gui/cmd_menu.py:617
 msgid "Apply Staged Firmware"
 msgstr "ステージング済みファームウェアの適用"
 
-#: polyhost/gui/cmd_menu.py:641
+#: polyhost/gui/cmd_menu.py:642
 msgid "Firmware Applied"
 msgstr "ファームウェアを適用しました"
 
-#: polyhost/gui/cmd_menu.py:643
+#: polyhost/gui/cmd_menu.py:644
 msgid "Apply Failed"
 msgstr "適用に失敗しました"
 
@@ -1175,7 +1185,7 @@ msgstr "作成したグリフを保持します (メモリ上のバンドルに�
 
 #: polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:197
+#: polyhost/gui/hid_fw_up_dialog.py:200
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
 #: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
 msgid "Cancel"
@@ -1661,39 +1671,39 @@ msgstr "書き込みを開始しました — トレイ / ログで進行状況�
 msgid "Discard all pending edits to '{label}'?"
 msgstr "'{label}' の保留中の編集をすべて破棄しますか?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:156 polyhost/host.py:2914
+#: polyhost/gui/hid_fw_up_dialog.py:159 polyhost/host.py:2914
 #: polyhost/host.py:2955 polyhost/host.py:2982
 msgid "Firmware Update"
 msgstr "ファームウェアの更新"
 
-#: polyhost/gui/hid_fw_up_dialog.py:165
+#: polyhost/gui/hid_fw_up_dialog.py:168
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>ファイル:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Applying staged firmware…"
 msgstr "ステージング済みファームウェアを適用しています…"
 
-#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:170
+#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:173
 msgid "Starting…"
 msgstr "開始しています…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:263
+#: polyhost/gui/hid_fw_up_dialog.py:266
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "残り約 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:268
+#: polyhost/gui/hid_fw_up_dialog.py:271
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "残り約 {minutes} 分 {seconds} 秒"
 
-#: polyhost/gui/hid_fw_up_dialog.py:400
+#: polyhost/gui/hid_fw_up_dialog.py:403
 msgid "Applying — activating the staged firmware…"
 msgstr "適用中 — ステージング済みファームウェアを有効化しています…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:480
+#: polyhost/gui/hid_fw_up_dialog.py:483
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "キャンセル中 — 現在のチャンクの完了を待っています…"
 

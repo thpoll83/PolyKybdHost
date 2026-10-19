@@ -1,10 +1,13 @@
 import binascii
+import logging
 import os
 import struct
 import time
 
 from polyhost.device.split_link import split_link_timeout_message
 from polyhost.i18n import M_
+
+log = logging.getLogger("PolyHost")
 
 HID_POLYKYBD          = 0x50   # ord('P')
 CMD_FW_UP_GET_VERSION = 0x43
@@ -95,6 +98,8 @@ MSG_CHUNK_FAILED = M_(
     "Ensure both keyboard halves are connected and running the same firmware, "
     "then try again — the update resumes from scratch and is safe to repeat.")
 MSG_CHUNK_RETRY = M_("Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…")
+MSG_LINK_SENDING = M_("Sending over the fast link: {kb} KB of {total_kb} KB…")
+MSG_LINK_FALLBACK = M_("Fast link stopped ({reason}); continuing over HID from {kb} KB.")
 MSG_SIG_UNREADABLE_UNSIGNED = M_("Could not read {sig}: {error} — flashing unsigned.")
 MSG_SENDING_SIG = M_("Sending image signature…")
 MSG_SIG_IGNORED = M_("Ignoring {sig} — expected {expected} bytes, got {size}.")
@@ -321,7 +326,59 @@ def _abort_cleanup(hid) -> None:
         pass
 
 
-def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def _stream_over_pipe(pipe_port, fw_bytes, report, cancelled, serial_open=None):
+    """The CHUNK phase over the bulk pipe. Returns ``(ok, offset, reason)`` like
+    ``bulk_pipe.stream_firmware``; ``offset`` is where HID continues from when the
+    pipe could not finish. A port that cannot be opened, or whose firmware
+    predates FW_CHUNK (pipe protocol 2), hands the whole image to HID."""
+    from polyhost.device import bulk_pipe
+    fw_size = len(fw_bytes)
+    if serial_open is None:
+        serial_open = bulk_pipe.open_port
+    try:
+        ser = serial_open(pipe_port)
+    except Exception as exc:  # noqa: BLE001 — busy or gone: HID carries the image
+        log.info("Bulk pipe %s not openable for the firmware chunks (%s): using HID", pipe_port, exc)
+        return False, 0, "port not openable"
+    try:
+        reply = bulk_pipe.request(ser, bulk_pipe.CMD_PING)
+        proto = bulk_pipe.parse_ping(reply)["proto"] if reply is not None else 0
+        if proto < bulk_pipe.PIPE_PROTO_FW_CHUNK:
+            log.info("Bulk pipe %s reports protocol %d, firmware chunks need %d: using HID",
+                     pipe_port, proto, bulk_pipe.PIPE_PROTO_FW_CHUNK)
+            return False, 0, "pipe protocol too old"
+        report(2, MSG_LINK_SENDING.format(kb=0, total_kb=fw_size // 1024))
+        shown = [0]
+
+        def _progress(offset):
+            if offset - shown[0] >= 32 * 1024 or offset >= fw_size:
+                shown[0] = offset
+                report(2 + int(96 * offset / fw_size),
+                       MSG_LINK_SENDING.format(kb=offset // 1024, total_kb=fw_size // 1024))
+
+        t0 = time.monotonic()
+        ok, offset, reason = bulk_pipe.stream_firmware(ser, fw_bytes, progress=_progress,
+                                                       cancelled=cancelled)
+        dt = time.monotonic() - t0
+        if ok:
+            log.info("Firmware chunks over the bulk pipe: %d bytes in %.1f s (%.0f KB/s)",
+                     fw_size, dt, fw_size / 1024 / dt if dt > 0 else 0)
+        else:
+            log.warning("Bulk pipe stopped at %d of %d bytes after %.1f s: %s; HID continues",
+                        offset, fw_size, dt, reason)
+        return ok, offset, reason
+    except Exception as exc:  # noqa: BLE001 — a vanished port mid-stream is a fallback, not a crash
+        log.warning("Bulk pipe %s failed mid-stream (%s): HID continues", pipe_port, exc)
+        return False, 0, "port error"
+    finally:
+        try:
+            ser.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = None,
+                   pipe_port: str = None) -> tuple[bool, str]:
     """Full HID firmware update flow: BEGIN -> N*CHUNK -> COMMIT.
 
     Args:
@@ -329,6 +386,11 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         bin_path:     Path to the raw .bin firmware image.
         progress_cb:  Optional callable(percent: int, message: str).
         cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
+        pipe_port:    The keyboard's bulk-pipe serial port (``PolyKybd.get_pipe_info()
+                      ["port"]``) or None. With one, the chunks go over the pipe
+                      (236 bytes per frame, no per-report round trip) and fall back
+                      to HID from the keyboard's cursor if the pipe stops; BEGIN,
+                      SIGNATURE, COMMIT and APPLY always go over HID.
 
     Returns:
         (True, success_msg) or (False, error_msg).
@@ -431,7 +493,22 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 
     report(2, MSG_STAGING_ERASED.format(chunks=total_chunks))
 
-    # -- FW_UP_CHUNK x N --
+    def _pct(offset):
+        return 2 + int(96 * min(offset, fw_size) / fw_size)
+
+    # -- the chunks over the bulk pipe, when the keyboard has one --
+    offset = 0
+    if pipe_port:
+        ok, offset, reason = _stream_over_pipe(pipe_port, fw_bytes, report, cancelled)
+        if cancelled():
+            _abort_cleanup(hid)
+            hid.close_interface()
+            return False, MSG_CANCELLED
+        if not ok:
+            report(_pct(offset), MSG_LINK_FALLBACK.format(reason=reason, kb=offset // 1024))
+            hid.drain_replies()
+
+    # -- FW_UP_CHUNK x N over HID (all of them, or the rest after the pipe stopped) --
     # The firmware relays each chunk to the slave via the split bridge with an
     # identity-bound reply (the slave echoes its write cursor), so a delivered
     # chunk is delivered for sure.  Two recovery paths remain:
@@ -442,19 +519,21 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     #   * NACK without a usable resume offset (older firmware sends zeros) or
     #     a timeout: re-send the same chunk with a growing pause, which rides
     #     out slave flash-write blackouts; repeated failure aborts.
+    # The loop runs on offsets, not chunk indexes: a chunk may start anywhere
+    # (the firmware only requires the keyboard's cursor), which is what lets the
+    # HID path continue from where the pipe stopped.
     _CHUNK_TIMEOUT  = 8000
     _CHUNK_ATTEMPTS = 8
     _MAX_REWINDS    = 100
-    i        = 0
     attempts = 0
     rewinds  = 0
-    while i < total_chunks:
+    while offset < fw_size:
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
             return False, MSG_CANCELLED
 
-        offset    = i * FW_UP_CHUNK_SIZE
+        i         = offset // FW_UP_CHUNK_SIZE
         raw_chunk = fw_bytes[offset:offset + FW_UP_CHUNK_SIZE]
         padded    = raw_chunk + b'\xff' * (FW_UP_CHUNK_SIZE - len(raw_chunk))
         pkt       = bytearray([HID_POLYKYBD, CMD_FW_UP_CHUNK]) + struct.pack('<I', offset) + padded
@@ -462,23 +541,22 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
         if ok and len(reply) >= 3 and reply[2] == ord('.'):
             attempts = 0
-            if i % 100 == 0 or i == total_chunks - 1:
-                pct = 2 + int(96 * (i + 1) / total_chunks)
-                report(pct, MSG_CHUNK.format(n=i + 1, total=total_chunks,
-                                             kb=(offset + FW_UP_CHUNK_SIZE) // 1024))
-            i += 1
+            offset  += len(raw_chunk)
+            if i % 100 == 0 or offset >= fw_size:
+                report(_pct(offset), MSG_CHUNK.format(n=i + 1, total=total_chunks,
+                                                      kb=offset // 1024))
             continue
 
         # Failure.  A NACK reply carries the keyboard's resume offset (the
         # lower of the two halves' write cursors) in bytes 3..6.
         resume = struct.unpack_from('<I', reply, 3)[0] if ok and len(reply) >= 7 else 0
         if (ok and len(reply) >= 7 and reply[2] == ord('!')
-                and 0 < resume < offset and resume % FW_UP_CHUNK_SIZE == 0
-                and rewinds < _MAX_REWINDS):
+                and 0 < resume < offset and rewinds < _MAX_REWINDS):
             rewinds += 1
             attempts = 0
-            i = resume // FW_UP_CHUNK_SIZE
-            report(2 + int(96 * (i + 1) / total_chunks),
+            offset = resume
+            i = offset // FW_UP_CHUNK_SIZE
+            report(_pct(offset),
                    MSG_REWIND.format(n=i + 1, total=total_chunks, offset=resume,
                                      resync=rewinds))
             time.sleep(0.05)
@@ -492,10 +570,11 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             hid.close_interface()
             return False, MSG_CHUNK_FAILED.format(offset=offset, attempts=_CHUNK_ATTEMPTS,
                                                   reason=reason)
+
         # NACK without a usable resume offset, or timeout: back off so the slave
         # half can finish its flash write / split-link recovery, then re-send.
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
-        report(2 + int(96 * (i + 1) / total_chunks),
+        report(_pct(offset),
                MSG_CHUNK_RETRY.format(n=i + 1, total=total_chunks, attempt=attempts,
                                       max_attempts=_CHUNK_ATTEMPTS - 1,
                                       ms=int(pause * 1000)))

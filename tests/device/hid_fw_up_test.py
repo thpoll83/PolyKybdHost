@@ -1191,5 +1191,96 @@ class TestFlashFirmwareSignature(unittest.TestCase):
             os.remove(path)
 
 
+
+
+class TestFlashOverThePipe(unittest.TestCase):
+    """The CHUNK phase over the bulk pipe (pipe_port given): no HID chunk is
+    sent, and the HID path continues from the keyboard's cursor when the pipe
+    stops or predates FW_CHUNK."""
+
+    def setUp(self):
+        from tests.device.bulk_pipe_test import FakeSerial
+        from polyhost.device import bulk_pipe
+        self.bulk_pipe = bulk_pipe
+        self.FakeSerial = FakeSerial
+        # 236 * 2 + 100: three pipe frames, the last one partial.
+        self.fw = _make_polykybd_fw(b"\x5a" * (236 * 2 + 100 - len(_make_polykybd_fw())))
+        self.path = _write_bin(self.fw)
+
+    def tearDown(self):
+        os.unlink(self.path)
+
+    def _run(self, fake, hid):
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake):
+            return flash_firmware(hid, self.path, pipe_port="/dev/ttyACM9")
+
+    def test_chunks_go_over_the_pipe_and_not_over_hid(self):
+        fake = self.FakeSerial(image_size=len(self.fw))
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_BEGIN)), (True, _ack_reply(CMD_FW_UP_COMMIT))])
+        ok, msg = self._run(fake, hid)
+        self.assertTrue(ok, msg)
+        self.assertEqual(bytes(fake.staged), self.fw)
+        self.assertTrue(fake.closed)
+        cmds = [c.args[0][1] for c in hid.send_and_read.call_args_list]
+        self.assertNotIn(CMD_FW_UP_CHUNK, cmds)
+        self.assertEqual(cmds, [CMD_FW_UP_BEGIN, CMD_FW_UP_COMMIT])
+
+    def test_old_pipe_protocol_falls_back_to_hid_for_the_whole_image(self):
+        fake = self.FakeSerial(image_size=len(self.fw), proto=1)
+        hid = _flash_hid(self.fw)
+        ok, msg = self._run(fake, hid)
+        self.assertTrue(ok, msg)
+        self.assertEqual(fake.fw_frames, 0)
+        cmds = [c.args[0][1] for c in hid.send_and_read.call_args_list]
+        self.assertEqual(cmds.count(CMD_FW_UP_CHUNK), _chunks(self.fw))
+
+    def test_unopenable_port_falls_back_to_hid(self):
+        def boom(port):
+            raise OSError("busy")
+        hid = _flash_hid(self.fw)
+        with patch.object(self.bulk_pipe, "open_port", boom):
+            ok, msg = flash_firmware(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+
+    def test_pipe_that_stops_mid_stream_hands_the_rest_to_hid_from_the_cursor(self):
+        # The keyboard answers the first frame and then goes quiet on the pipe:
+        # HID continues from offset 236 and the chunk offsets are NOT multiples
+        # of 56 (the firmware only requires the cursor).
+        clock = [0.0]
+
+        def fake_clock():
+            clock[0] += 0.5
+            return clock[0]
+
+        fake = self.FakeSerial(image_size=len(self.fw), drop_fw_frames=set(range(2, 100)))
+        rest = len(self.fw) - 236
+        n_hid = (rest + FW_UP_CHUNK_SIZE - 1) // FW_UP_CHUNK_SIZE
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_BEGIN))]
+                        + [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n_hid
+                        + [(True, _ack_reply(CMD_FW_UP_COMMIT))])
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake), \
+             patch("polyhost.device.bulk_pipe.time.monotonic", fake_clock):
+            ok, msg = flash_firmware(hid, self.path, pipe_port="/dev/ttyACM9")
+        self.assertTrue(ok, msg)
+        chunk_calls = [c.args[0] for c in hid.send_and_read.call_args_list
+                       if c.args[0][1] == CMD_FW_UP_CHUNK]
+        self.assertEqual(len(chunk_calls), n_hid)
+        offsets = [struct.unpack_from("<I", bytes(p), 2)[0] for p in chunk_calls]
+        self.assertEqual(offsets[0], 236)
+        self.assertEqual(offsets, [236 + k * FW_UP_CHUNK_SIZE for k in range(n_hid)])
+        # The last HID chunk carries the image tail, padded to 56 bytes.
+        self.assertEqual(bytes(chunk_calls[-1][6:6 + rest - (n_hid - 1) * FW_UP_CHUNK_SIZE]),
+                         self.fw[236 + (n_hid - 1) * FW_UP_CHUNK_SIZE:])
+
+    def test_cancel_during_the_pipe_stream_cleans_up(self):
+        fake = self.FakeSerial(image_size=len(self.fw))
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_BEGIN)), (True, _ack_reply(CMD_FW_UP_BEGIN))])
+        cancel = [True]
+        with patch.object(self.bulk_pipe, "open_port", lambda port: fake):
+            ok, msg = flash_firmware(hid, self.path, pipe_port="/dev/ttyACM9", cancel_flag=cancel)
+        self.assertFalse(ok)
+        self.assertEqual(msg, "Update cancelled by user.")
+        self.assertTrue(fake.closed)
+
 if __name__ == '__main__':
     unittest.main()

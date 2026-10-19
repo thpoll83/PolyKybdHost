@@ -395,9 +395,20 @@ daemon-plus-client split, `RemoteCore` and `polyctl status` all see it. The tray
 colours its mark by it (`IconStateManager.set_transport`) and shows the measured
 rate in the resting tooltip and the About dialog ("0.6 MB/s link", or "HID
 link, up to 64 KB/s"). The words "bulk pipe" never reach the user
-(maintainer's rule, 2026-10-19): user-facing text states the rate. Nothing but
-the probe is sent over the pipe yet; firmware update, font packs and overlays
-still go over raw HID.
+(maintainer's rule, 2026-10-19): user-facing text states the rate.
+
+The firmware update's CHUNK phase runs on the pipe when the probe found one
+(`PolyCore.flash_firmware` passes `get_pipe_info()["port"]` to
+`hid_fw_up.flash_firmware(pipe_port=...)`; the in-process dialog gets it from
+`cmd_menu`). `bulk_pipe.stream_firmware` sends `FW_CHUNK` frames of 236 bytes,
+4 frames ahead of their replies (the firmware handles a frame inside its USB
+drain, so an unpaced stream would keep its main loop there; `poly_pipe.h`), and
+every reply carries the keyboard's cursor: an ACK advances, a NACK rewinds to
+the cursor, a quiet window is resolved with an empty-frame cursor probe. BEGIN,
+SIGNATURE, COMMIT and APPLY stay on HID. A port that is busy, a firmware whose
+PING reports pipe protocol 1, or a pipe that stops mid-image hand the rest to the
+HID chunk loop, which runs on offsets (not chunk indexes) and continues from the
+cursor. Font packs and overlays still go over raw HID.
 
 ## Architecture (the CLAUDE.md summary)
 
