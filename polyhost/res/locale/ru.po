@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-19 06:17+0000\n"
+"POT-Creation-Date: 2026-10-19 06:59+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -93,8 +93,8 @@ msgstr "Отправка FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
 
 #: polyhost/device/hid_fw_up.py:72
 #, python-brace-format
-msgid "{step} — {elapsed}s elapsed (≈10–20 s)…"
-msgstr "{step} — прошло {elapsed} s (≈10–20 s)…"
+msgid "{step} — {elapsed}s elapsed…"
+msgstr "{step} — прошло {elapsed} s…"
 
 #: polyhost/device/hid_fw_up.py:73
 msgid "Erasing staging area — keyboard will reconnect when done"

@@ -69,7 +69,7 @@ MSG_SIG_WRONG_SIZE = M_(
 MSG_EMPTY = M_("Firmware file is empty.")
 MSG_TOO_LARGE = M_("Firmware too large: {size} bytes (max {max_kb} KB).")
 MSG_BEGIN = M_("Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…")
-MSG_ERASING_ELAPSED = M_("{step} — {elapsed}s elapsed (≈10–20 s)…")
+MSG_ERASING_ELAPSED = M_("{step} — {elapsed}s elapsed…")
 MSG_ERASING_RECONNECT = M_("Erasing staging area — keyboard will reconnect when done")
 MSG_ERASING_BOTH = M_("Erasing staging area (both halves)")
 MSG_BEGIN_TIMED_OUT = M_("FW_UP_BEGIN timed out")
@@ -449,7 +449,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # never confirmed — see device/split_link.py.
     polling     = False
     erase_start = time.monotonic()
-    # The staging erase (2 MB region) takes ~10–20 s and the firmware reports no
+    # The staging erase (2 MB region) took 10–20 s before the block erase (about 2 s since) and the firmware reports no
     # fine-grained progress, so show elapsed seconds (mirrors the font-pack flash)
     # instead of sitting frozen on a single message.
     def _erasing(msg):
