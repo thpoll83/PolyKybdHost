@@ -1,5 +1,7 @@
+import os
 import shlex
 import subprocess
+import sys
 import tempfile
 import unittest
 import unittest.mock as mock
@@ -15,6 +17,21 @@ SHIPPED = (
     "# Bulk pipe\n"
     'SUBSYSTEM=="tty", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666", ENV{ID_MM_DEVICE_IGNORE}="1"\n'
 )
+
+
+class ImportsWithoutGetuidTest(unittest.TestCase):
+    def test_module_imports_where_os_has_no_getuid(self):
+        """host.py imports the module on every platform; Windows has no
+        os.getuid, and a default argument evaluated at import broke the
+        Windows tray (#411)."""
+        code = ("import os, sys; del os.getuid; "
+                "import polyhost.services.linux_udev as m; "
+                "print(m.is_linux.__name__)")
+        proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                              cwd=str(Path(__file__).resolve().parents[2]), timeout=60,
+                              env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[2])})
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "is_linux")
 
 
 class RuleLinesTest(unittest.TestCase):
