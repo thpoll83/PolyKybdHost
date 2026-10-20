@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 14:36+0000\n"
+"POT-Creation-Date: 2026-10-20 14:53+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -3942,7 +3942,7 @@ msgstr "立即下载并刷写吗？"
 msgid "Downloading firmware v{version}…"
 msgstr "正在下载固件 v{version}…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3303
+#: polyhost/host.py:3026 polyhost/host.py:3327
 msgid "Cancelling…"
 msgstr "正在取消…"
 
@@ -3961,11 +3961,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3162 polyhost/host.py:3187 polyhost/host.py:3196
+#: polyhost/host.py:3170 polyhost/host.py:3212 polyhost/host.py:3220
 msgid "Allow access to the keyboard"
 msgstr "允许访问键盘"
 
-#: polyhost/host.py:3163
+#: polyhost/host.py:3171
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -3975,7 +3975,7 @@ msgstr ""
 "\n"
 "系统会要求您输入密码（PolicyKit）。之后，请拔下键盘并重新插入。"
 
-#: polyhost/host.py:3188
+#: polyhost/host.py:3213
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -3985,11 +3985,11 @@ msgstr ""
 "\n"
 "请拔下键盘并重新插入，新的权限才会生效。"
 
-#: polyhost/host.py:3197
+#: polyhost/host.py:3221
 msgid "The udev rule was not installed."
 msgstr "udev 规则未能安装。"
 
-#: polyhost/host.py:3198
+#: polyhost/host.py:3222
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4002,12 +4002,12 @@ msgstr ""
 "您也可以在终端中运行以下命令：\n"
 "{commands}"
 
-#: polyhost/host.py:3267 polyhost/host.py:3281 polyhost/host.py:3327
-#: polyhost/host.py:3336 polyhost/host.py:3342
+#: polyhost/host.py:3291 polyhost/host.py:3305 polyhost/host.py:3351
+#: polyhost/host.py:3360 polyhost/host.py:3366
 msgid "Install WinCompose"
 msgstr "安装 WinCompose"
 
-#: polyhost/host.py:3268
+#: polyhost/host.py:3292
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4017,11 +4017,11 @@ msgstr ""
 "\n"
 "将从 GitHub 下载 PolyKybd 版本的 WinCompose 并启动其安装程序（Windows 会要求您确认）。"
 
-#: polyhost/host.py:3281
+#: polyhost/host.py:3305
 msgid "Looking for the latest WinCompose release…"
 msgstr "正在查找最新的 WinCompose 版本…"
 
-#: polyhost/host.py:3328
+#: polyhost/host.py:3352
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4031,7 +4031,7 @@ msgstr ""
 "\n"
 "将在浏览器中打开发布页面 — 请从那里下载并运行安装程序。"
 
-#: polyhost/host.py:3337
+#: polyhost/host.py:3361
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4042,7 +4042,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3343
+#: polyhost/host.py:3367
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4059,7 +4059,7 @@ msgstr ""
 "它已保存到：\n"
 "{path}"
 
-#: polyhost/host.py:3351
+#: polyhost/host.py:3375
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安装程序已启动。安装完成并运行 WinCompose 后，PolyKybd 会自动切换到它。"
 
@@ -4091,27 +4091,27 @@ msgstr "亚洲"
 msgid "Oceania"
 msgstr "大洋洲"
 
-#: polyhost/services/linux_udev.py:48
+#: polyhost/services/linux_udev.py:52
 msgid "The udev rule is only needed on Linux."
 msgstr "udev 规则仅在 Linux 上需要。"
 
-#: polyhost/services/linux_udev.py:49
+#: polyhost/services/linux_udev.py:53
 msgid "The 'pkexec' command (PolicyKit) is not installed, so the rule cannot be written from here."
 msgstr "未安装 'pkexec' 命令（PolicyKit），因此无法从这里写入规则。"
 
-#: polyhost/services/linux_udev.py:50
+#: polyhost/services/linux_udev.py:54
 msgid "The password prompt was closed."
 msgstr "密码提示已被关闭。"
 
-#: polyhost/services/linux_udev.py:51
+#: polyhost/services/linux_udev.py:55
 msgid "PolicyKit refused the authorisation."
 msgstr "PolicyKit 拒绝了授权。"
 
-#: polyhost/services/linux_udev.py:52
+#: polyhost/services/linux_udev.py:56
 msgid "The password prompt was not answered in time."
 msgstr "密码提示未在规定时间内得到回应。"
 
-#: polyhost/services/linux_udev.py:53
+#: polyhost/services/linux_udev.py:57
 #, python-brace-format
 msgid ""
 "The command failed (exit code {code}):\n"
@@ -4120,10 +4120,15 @@ msgstr ""
 "命令失败（退出代码 {code}）：\n"
 "{output}"
 
-#: polyhost/services/linux_udev.py:54
+#: polyhost/services/linux_udev.py:58
 #, python-brace-format
 msgid "The command could not be started: {error}"
 msgstr "命令无法启动：{error}"
+
+#: polyhost/services/linux_udev.py:59
+#, python-brace-format
+msgid "The rule file in this checkout was refused: {reason}"
+msgstr "此检出目录中的规则文件被拒绝：{reason}"
 
 #: polyhost/services/updater.py:39
 #, python-brace-format

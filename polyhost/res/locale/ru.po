@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 14:36+0000\n"
+"POT-Creation-Date: 2026-10-20 14:53+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -3984,7 +3984,7 @@ msgstr "Загрузить и прошить сейчас?"
 msgid "Downloading firmware v{version}…"
 msgstr "Загрузка микропрограммы v{version}…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3303
+#: polyhost/host.py:3026 polyhost/host.py:3327
 msgid "Cancelling…"
 msgstr "Отмена…"
 
@@ -4003,11 +4003,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3162 polyhost/host.py:3187 polyhost/host.py:3196
+#: polyhost/host.py:3170 polyhost/host.py:3212 polyhost/host.py:3220
 msgid "Allow access to the keyboard"
 msgstr "Разрешить доступ к клавиатуре"
 
-#: polyhost/host.py:3163
+#: polyhost/host.py:3171
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4017,7 +4017,7 @@ msgstr ""
 "\n"
 "Система запросит ваш пароль (PolicyKit). После этого отключите клавиатуру и подключите её снова."
 
-#: polyhost/host.py:3188
+#: polyhost/host.py:3213
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4027,11 +4027,11 @@ msgstr ""
 "\n"
 "Отключите клавиатуру и подключите её снова, чтобы новые разрешения вступили в силу."
 
-#: polyhost/host.py:3197
+#: polyhost/host.py:3221
 msgid "The udev rule was not installed."
 msgstr "Правило udev не было установлено."
 
-#: polyhost/host.py:3198
+#: polyhost/host.py:3222
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4044,12 +4044,12 @@ msgstr ""
 "Вы также можете выполнить эти команды в терминале:\n"
 "{commands}"
 
-#: polyhost/host.py:3267 polyhost/host.py:3281 polyhost/host.py:3327
-#: polyhost/host.py:3336 polyhost/host.py:3342
+#: polyhost/host.py:3291 polyhost/host.py:3305 polyhost/host.py:3351
+#: polyhost/host.py:3360 polyhost/host.py:3366
 msgid "Install WinCompose"
 msgstr "Установка WinCompose"
 
-#: polyhost/host.py:3268
+#: polyhost/host.py:3292
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4059,11 +4059,11 @@ msgstr ""
 "\n"
 "Сборка WinCompose для PolyKybd будет загружена с GitHub, после чего запустится её установщик (Windows попросит подтверждение)."
 
-#: polyhost/host.py:3281
+#: polyhost/host.py:3305
 msgid "Looking for the latest WinCompose release…"
 msgstr "Поиск последнего выпуска WinCompose…"
 
-#: polyhost/host.py:3328
+#: polyhost/host.py:3352
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4073,7 +4073,7 @@ msgstr ""
 "\n"
 "В браузере откроется страница выпусков — загрузите и запустите установщик оттуда."
 
-#: polyhost/host.py:3337
+#: polyhost/host.py:3361
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4084,7 +4084,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3343
+#: polyhost/host.py:3367
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4101,7 +4101,7 @@ msgstr ""
 "Он сохранён в:\n"
 "{path}"
 
-#: polyhost/host.py:3351
+#: polyhost/host.py:3375
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Установщик WinCompose запущен. Когда он завершит работу и WinCompose запустится, PolyKybd автоматически переключится на него."
 
@@ -4133,27 +4133,27 @@ msgstr "Азия"
 msgid "Oceania"
 msgstr "Океания"
 
-#: polyhost/services/linux_udev.py:48
+#: polyhost/services/linux_udev.py:52
 msgid "The udev rule is only needed on Linux."
 msgstr "Правило udev нужно только в Linux."
 
-#: polyhost/services/linux_udev.py:49
+#: polyhost/services/linux_udev.py:53
 msgid "The 'pkexec' command (PolicyKit) is not installed, so the rule cannot be written from here."
 msgstr "Команда 'pkexec' (PolicyKit) не установлена, поэтому записать правило отсюда нельзя."
 
-#: polyhost/services/linux_udev.py:50
+#: polyhost/services/linux_udev.py:54
 msgid "The password prompt was closed."
 msgstr "Запрос пароля был закрыт."
 
-#: polyhost/services/linux_udev.py:51
+#: polyhost/services/linux_udev.py:55
 msgid "PolicyKit refused the authorisation."
 msgstr "PolicyKit отклонил авторизацию."
 
-#: polyhost/services/linux_udev.py:52
+#: polyhost/services/linux_udev.py:56
 msgid "The password prompt was not answered in time."
 msgstr "На запрос пароля не ответили вовремя."
 
-#: polyhost/services/linux_udev.py:53
+#: polyhost/services/linux_udev.py:57
 #, python-brace-format
 msgid ""
 "The command failed (exit code {code}):\n"
@@ -4162,10 +4162,15 @@ msgstr ""
 "Команда завершилась с ошибкой (код выхода {code}):\n"
 "{output}"
 
-#: polyhost/services/linux_udev.py:54
+#: polyhost/services/linux_udev.py:58
 #, python-brace-format
 msgid "The command could not be started: {error}"
 msgstr "Не удалось запустить команду: {error}"
+
+#: polyhost/services/linux_udev.py:59
+#, python-brace-format
+msgid "The rule file in this checkout was refused: {reason}"
+msgstr "Файл правил в этой рабочей копии отклонён: {reason}"
 
 #: polyhost/services/updater.py:39
 #, python-brace-format

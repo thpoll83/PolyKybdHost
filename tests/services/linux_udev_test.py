@@ -65,6 +65,59 @@ class RuleStatusTest(unittest.TestCase):
         self.assertEqual(linux_udev.rule_status(self.src, self.dst), linux_udev.STATUS_STALE)
 
 
+class CheckRuleFileTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.src = Path(self.tmp.name, "src.rules")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _write(self, text, mode=0o644):
+        self.src.write_text(text, encoding="utf-8")
+        self.src.chmod(mode)
+
+    def test_shipped_file_passes(self):
+        self.assertEqual(linux_udev.check_rule_file(linux_udev.RULES_SRC), "")
+
+    def test_sample_passes(self):
+        self._write(SHIPPED)
+        self.assertEqual(linux_udev.check_rule_file(self.src), "")
+
+    def test_run_line_is_refused(self):
+        """A RUN entry would make root execute a program at every plug."""
+        self._write(SHIPPED + 'SUBSYSTEM=="usb", RUN+="/tmp/evil.sh"\n')
+        self.assertIn("unexpected rule entry", linux_udev.check_rule_file(self.src))
+
+    def test_owner_and_program_are_refused(self):
+        for entry in ('OWNER="root"', 'PROGRAM="/bin/sh"', 'IMPORT{program}="x"', 'GROUP="disk"'):
+            self._write('SUBSYSTEM=="hidraw", ' + entry + "\n")
+            self.assertIn("unexpected rule entry", linux_udev.check_rule_file(self.src), entry)
+
+    def test_malformed_line_is_refused(self):
+        self._write('SUBSYSTEM=="hidraw" MODE="0666"\n')
+        self.assertIn("unexpected rule entry", linux_udev.check_rule_file(self.src))
+
+    def test_world_writable_file_is_refused(self):
+        self._write(SHIPPED, mode=0o666)
+        self.assertIn("writable by everyone", linux_udev.check_rule_file(self.src))
+
+    def test_group_writable_file_passes(self):
+        """A checkout under a user-private group (umask 002) is 0664."""
+        self._write(SHIPPED, mode=0o664)
+        self.assertEqual(linux_udev.check_rule_file(self.src), "")
+
+    def test_file_owned_by_another_user_is_refused(self):
+        self._write(SHIPPED)
+        real = linux_udev.os.stat(self.src)
+        other = mock.Mock(st_mode=real.st_mode, st_uid=real.st_uid + 1)
+        self.assertIn("owned by another user",
+                      linux_udev.check_rule_file(self.src, _stat=lambda p: other))
+
+    def test_missing_file(self):
+        self.assertIn("cannot read", linux_udev.check_rule_file(self.src))
+
+
 class InstallCommandTest(unittest.TestCase):
     def test_paths_are_arguments_not_shell_text(self):
         argv = linux_udev.install_command("/a b/src.rules", "/etc/udev/rules.d/x.rules", "/usr/bin/pkexec")
@@ -95,9 +148,10 @@ def _proc(code, stderr="", stdout=""):
 
 class InstallRulesTest(unittest.TestCase):
     def setUp(self):
-        patcher = mock.patch.object(linux_udev, "is_linux", return_value=True)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        for name, value in (("is_linux", True), ("check_rule_file", "")):
+            patcher = mock.patch.object(linux_udev, name, return_value=value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def test_not_linux(self):
         with mock.patch.object(linux_udev, "is_linux", return_value=False):
@@ -110,6 +164,14 @@ class InstallRulesTest(unittest.TestCase):
         ok, err = linux_udev.install_rules(run=run, which=lambda name: None)
         self.assertFalse(ok)
         self.assertEqual(err, linux_udev.MSG_NO_PKEXEC)
+        run.assert_not_called()
+
+    def test_unsafe_file_is_refused_before_pkexec(self):
+        run = mock.Mock()
+        with mock.patch.object(linux_udev, "check_rule_file", return_value="unexpected rule entry: RUN+=\"x\""):
+            ok, err = linux_udev.install_rules("/s", "/d", run=run, which=lambda name: "/usr/bin/pkexec")
+        self.assertFalse(ok)
+        self.assertEqual(err, linux_udev.MSG_UNSAFE_FILE.format(reason='unexpected rule entry: RUN+="x"'))
         run.assert_not_called()
 
     def test_success(self):

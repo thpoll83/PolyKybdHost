@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 14:36+0000\n"
+"POT-Creation-Date: 2026-10-20 14:53+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -3942,7 +3942,7 @@ msgstr "지금 다운로드하여 플래시하시겠습니까?"
 msgid "Downloading firmware v{version}…"
 msgstr "펌웨어 v{version} 다운로드하는 중…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3303
+#: polyhost/host.py:3026 polyhost/host.py:3327
 msgid "Cancelling…"
 msgstr "취소하는 중…"
 
@@ -3961,11 +3961,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3162 polyhost/host.py:3187 polyhost/host.py:3196
+#: polyhost/host.py:3170 polyhost/host.py:3212 polyhost/host.py:3220
 msgid "Allow access to the keyboard"
 msgstr "키보드 접근 허용"
 
-#: polyhost/host.py:3163
+#: polyhost/host.py:3171
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -3975,7 +3975,7 @@ msgstr ""
 "\n"
 "시스템이 암호를 묻습니다(PolicyKit). 그런 다음 키보드를 뽑았다가 다시 꽂으십시오."
 
-#: polyhost/host.py:3188
+#: polyhost/host.py:3213
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -3985,11 +3985,11 @@ msgstr ""
 "\n"
 "새 권한이 적용되도록 키보드를 뽑았다가 다시 꽂으십시오."
 
-#: polyhost/host.py:3197
+#: polyhost/host.py:3221
 msgid "The udev rule was not installed."
 msgstr "udev 규칙을 설치하지 못했습니다."
 
-#: polyhost/host.py:3198
+#: polyhost/host.py:3222
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4002,12 +4002,12 @@ msgstr ""
 "대신 터미널에서 다음 명령을 실행할 수도 있습니다:\n"
 "{commands}"
 
-#: polyhost/host.py:3267 polyhost/host.py:3281 polyhost/host.py:3327
-#: polyhost/host.py:3336 polyhost/host.py:3342
+#: polyhost/host.py:3291 polyhost/host.py:3305 polyhost/host.py:3351
+#: polyhost/host.py:3360 polyhost/host.py:3366
 msgid "Install WinCompose"
 msgstr "WinCompose 설치"
 
-#: polyhost/host.py:3268
+#: polyhost/host.py:3292
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4017,11 +4017,11 @@ msgstr ""
 "\n"
 "PolyKybd용 WinCompose 빌드를 GitHub에서 다운로드하고 설치 프로그램을 시작합니다(Windows에서 확인을 요청합니다)."
 
-#: polyhost/host.py:3281
+#: polyhost/host.py:3305
 msgid "Looking for the latest WinCompose release…"
 msgstr "최신 WinCompose 릴리스를 찾는 중…"
 
-#: polyhost/host.py:3328
+#: polyhost/host.py:3352
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4031,7 +4031,7 @@ msgstr ""
 "\n"
 "브라우저에서 릴리스 페이지가 열립니다. 그곳에서 설치 프로그램을 다운로드하여 실행하십시오."
 
-#: polyhost/host.py:3337
+#: polyhost/host.py:3361
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4042,7 +4042,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3343
+#: polyhost/host.py:3367
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4059,7 +4059,7 @@ msgstr ""
 "저장된 위치:\n"
 "{path}"
 
-#: polyhost/host.py:3351
+#: polyhost/host.py:3375
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 설치 프로그램이 시작되었습니다. 설치가 끝나고 WinCompose가 실행되면 PolyKybd가 자동으로 WinCompose로 전환합니다."
 
@@ -4091,27 +4091,27 @@ msgstr "아시아"
 msgid "Oceania"
 msgstr "오세아니아"
 
-#: polyhost/services/linux_udev.py:48
+#: polyhost/services/linux_udev.py:52
 msgid "The udev rule is only needed on Linux."
 msgstr "udev 규칙은 Linux에서만 필요합니다."
 
-#: polyhost/services/linux_udev.py:49
+#: polyhost/services/linux_udev.py:53
 msgid "The 'pkexec' command (PolicyKit) is not installed, so the rule cannot be written from here."
 msgstr "'pkexec' 명령(PolicyKit)이 설치되어 있지 않아 여기에서 규칙을 쓸 수 없습니다."
 
-#: polyhost/services/linux_udev.py:50
+#: polyhost/services/linux_udev.py:54
 msgid "The password prompt was closed."
 msgstr "암호 입력 창이 닫혔습니다."
 
-#: polyhost/services/linux_udev.py:51
+#: polyhost/services/linux_udev.py:55
 msgid "PolicyKit refused the authorisation."
 msgstr "PolicyKit이 권한 부여를 거부했습니다."
 
-#: polyhost/services/linux_udev.py:52
+#: polyhost/services/linux_udev.py:56
 msgid "The password prompt was not answered in time."
 msgstr "암호 입력 창에 제시간에 응답하지 않았습니다."
 
-#: polyhost/services/linux_udev.py:53
+#: polyhost/services/linux_udev.py:57
 #, python-brace-format
 msgid ""
 "The command failed (exit code {code}):\n"
@@ -4120,10 +4120,15 @@ msgstr ""
 "명령이 실패했습니다(종료 코드 {code}):\n"
 "{output}"
 
-#: polyhost/services/linux_udev.py:54
+#: polyhost/services/linux_udev.py:58
 #, python-brace-format
 msgid "The command could not be started: {error}"
 msgstr "명령을 시작할 수 없습니다: {error}"
+
+#: polyhost/services/linux_udev.py:59
+#, python-brace-format
+msgid "The rule file in this checkout was refused: {reason}"
+msgstr "이 체크아웃의 규칙 파일이 거부되었습니다: {reason}"
 
 #: polyhost/services/updater.py:39
 #, python-brace-format

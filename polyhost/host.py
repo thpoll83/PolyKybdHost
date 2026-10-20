@@ -3146,7 +3146,15 @@ class PolyHost(QApplication):
         the file is removed. Logged once per change, not per menu open."""
         if self.udev_action is None:
             return
-        status = linux_udev.rule_status()
+        try:
+            status = linux_udev.rule_status()
+        except OSError as exc:
+            # The shipped file itself is unreadable: nothing to install, and
+            # an exception here would keep the menu from opening at all.
+            status = linux_udev.STATUS_OK
+            if self._udev_status != status:
+                self.log.warning("udev rule check skipped, %s unreadable: %s",
+                                 linux_udev.RULES_SRC, exc)
         self.udev_action.setVisible(status != linux_udev.STATUS_OK)
         if status != self._udev_status:
             if status != linux_udev.STATUS_OK:
