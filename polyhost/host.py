@@ -3191,11 +3191,14 @@ class PolyHost(QApplication):
             return
         if error == linux_udev.MSG_DISMISSED:
             return      # the user closed the prompt: nothing to report
-        _msgbox(QMessageBox.Warning, _("Allow access to the keyboard"),
-                _f("The udev rule was not installed:\n\n{error}\n\n"
-                   "You can also run these commands in a terminal:\n{commands}",
-                   error=translate_message(error),
-                   commands=linux_udev.manual_commands()))
+        # The same dialog as a failed update: the details can be copied, and
+        # "Copy Fix Commands" puts the terminal equivalent on the clipboard.
+        show_copyable_error(_("Allow access to the keyboard"),
+                            _("The udev rule was not installed."),
+                            _f("{error}\n\nYou can also run these commands in a terminal:\n{commands}",
+                               error=translate_message(error),
+                               commands=linux_udev.manual_commands()),
+                            commands=linux_udev.manual_commands())
 
     # WinCompose install (Windows)
     # ------------------------------------------------------------------

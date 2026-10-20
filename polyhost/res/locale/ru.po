@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 11:01+0000\n"
+"POT-Creation-Date: 2026-10-20 14:36+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -3984,7 +3984,7 @@ msgstr "Загрузить и прошить сейчас?"
 msgid "Downloading firmware v{version}…"
 msgstr "Загрузка микропрограммы v{version}…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3300
+#: polyhost/host.py:3026 polyhost/host.py:3303
 msgid "Cancelling…"
 msgstr "Отмена…"
 
@@ -4003,7 +4003,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3162 polyhost/host.py:3187 polyhost/host.py:3194
+#: polyhost/host.py:3162 polyhost/host.py:3187 polyhost/host.py:3196
 msgid "Allow access to the keyboard"
 msgstr "Разрешить доступ к клавиатуре"
 
@@ -4027,29 +4027,29 @@ msgstr ""
 "\n"
 "Отключите клавиатуру и подключите её снова, чтобы новые разрешения вступили в силу."
 
-#: polyhost/host.py:3195
+#: polyhost/host.py:3197
+msgid "The udev rule was not installed."
+msgstr "Правило udev не было установлено."
+
+#: polyhost/host.py:3198
 #, python-brace-format
 msgid ""
-"The udev rule was not installed:\n"
-"\n"
 "{error}\n"
 "\n"
 "You can also run these commands in a terminal:\n"
 "{commands}"
 msgstr ""
-"Правило udev не было установлено:\n"
-"\n"
 "{error}\n"
 "\n"
 "Вы также можете выполнить эти команды в терминале:\n"
 "{commands}"
 
-#: polyhost/host.py:3264 polyhost/host.py:3278 polyhost/host.py:3324
-#: polyhost/host.py:3333 polyhost/host.py:3339
+#: polyhost/host.py:3267 polyhost/host.py:3281 polyhost/host.py:3327
+#: polyhost/host.py:3336 polyhost/host.py:3342
 msgid "Install WinCompose"
 msgstr "Установка WinCompose"
 
-#: polyhost/host.py:3265
+#: polyhost/host.py:3268
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4059,11 +4059,11 @@ msgstr ""
 "\n"
 "Сборка WinCompose для PolyKybd будет загружена с GitHub, после чего запустится её установщик (Windows попросит подтверждение)."
 
-#: polyhost/host.py:3278
+#: polyhost/host.py:3281
 msgid "Looking for the latest WinCompose release…"
 msgstr "Поиск последнего выпуска WinCompose…"
 
-#: polyhost/host.py:3325
+#: polyhost/host.py:3328
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4073,7 +4073,7 @@ msgstr ""
 "\n"
 "В браузере откроется страница выпусков — загрузите и запустите установщик оттуда."
 
-#: polyhost/host.py:3334
+#: polyhost/host.py:3337
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4084,7 +4084,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3340
+#: polyhost/host.py:3343
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4101,7 +4101,7 @@ msgstr ""
 "Он сохранён в:\n"
 "{path}"
 
-#: polyhost/host.py:3348
+#: polyhost/host.py:3351
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Установщик WinCompose запущен. Когда он завершит работу и WinCompose запустится, PolyKybd автоматически переключится на него."
 
