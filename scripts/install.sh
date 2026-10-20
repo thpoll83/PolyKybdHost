@@ -178,14 +178,13 @@ case "$(uname -s)" in
         else
             echo "!! Could not detect a package manager - install hidapi (libhidapi-hidraw0) yourself."
         fi
-        echo ">> Installing udev rule for non-root HID access"
-        # Written inline so the installer is self-contained. Keep the PID lines
-        # in sync with polyhost/device/99-hid.rules and DeviceSettings.KNOWN_PIDS
-        # (0x2007 = Split72, 0x2008 = Split42) — one line per known variant.
-        sudo tee /etc/udev/rules.d/99-hid.rules >/dev/null <<'UDEV_RULE'
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666"
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2008", MODE="0666"
-UDEV_RULE
+        echo ">> Installing the udev rule (keyboard HID interface and serial port, non-root)"
+        # The checkout's file is the only copy: it grants hidraw AND the fast
+        # link's tty port, and an inline copy here drifted once (it lacked the
+        # tty lines, so the fast link fell back to HID on every fresh install).
+        # The tray app offers the same install through pkexec
+        # (polyhost/services/linux_udev.py).
+        sudo install -m 0644 polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
         sudo udevadm control --reload-rules && sudo udevadm trigger
         echo ">> Replug the keyboard so the new udev rule takes effect."
         ;;

@@ -79,14 +79,18 @@ crash with an `ImportError` if a dependency slipped through.
 - **Windows** — the native `hidapi.dll` ships in the repo
   (`polyhost/device/win-hidapi-0-15/`) and is loaded automatically. Nothing
   extra to install.
-- **Linux** — install the native hidapi library and the udev rule for non-root
-  HID access:
+- **Linux** — install the native hidapi library and the udev rule. The rule lets
+  the app open the keyboard without root: its HID interface and its serial port
+  (the fast link for firmware and font-pack updates).
   ```bash
   sudo apt install libhidapi-hidraw0          # or: dnf install hidapi / pacman -S hidapi
-  sudo cp polyhost/device/99-hid.rules /etc/udev/rules.d/
+  sudo install -m 0644 polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
   sudo udevadm control --reload-rules && sudo udevadm trigger
   ```
-  Replug the keyboard afterwards.
+  Replug the keyboard afterwards. The one-line installer does this, and the tray
+  shows **Updates → Allow access to the keyboard (udev rule)…** while the installed
+  rule is missing or older than the shipped file; it writes the file through a
+  PolicyKit password prompt.
 - **macOS** — `brew install hidapi`. Use a Homebrew/python.org Python 3.10+ for
   the venv (see the note above); the system `python3` is 3.9. Installing
   Homebrew's `python` also pulls binary wheels for the `pyobjc-*` frameworks

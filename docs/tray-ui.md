@@ -20,8 +20,9 @@ and relative links were adjusted to suit a standalone file.
   `managed_connection_status` still blanket-disables every top-level action first, so a
   **new group parent must be re-enabled explicitly there** or its whole submenu goes
   unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
-  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
-  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  Three rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`), Install WinCompose (only while it isn't running) and,
+  on Linux, the udev rule install (only while the installed rule is missing or stale).
   The language menu is built lazily and inserts itself at `self._lang_anchor`
   (Brightness), not at index 1.
 
@@ -186,6 +187,20 @@ and relative links were adjusted to suit a standalone file.
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+
+- **udev rule install from the tray (Linux)**: `polyhost/device/99-hid.rules` grants the
+  keyboard's raw HID interface and, since the fast link, its serial port (`tty`), and tells
+  ModemManager to leave that port alone. Without the tty lines the pipe probe reads "no
+  permission" as "no pipe" and every transfer goes over HID with no message. The tray shows
+  **"Allow access to the keyboard (udev rule)…"** under Updates while
+  `services/linux_udev.rule_status()` is not `ok` (the installed file is missing, or lacks a
+  rule line of the shipped one), re-checked on `menu.aboutToShow` (two file reads). The click
+  explains, then `install_rules()` runs `pkexec sh -c 'install … && udevadm control
+  --reload-rules && udevadm trigger'` on a thread, the paths as `$1`/`$2`, so the desktop's
+  PolicyKit prompt asks for the password. Exit 126 (prompt closed) is silent; any other
+  failure shows the `M_()` message plus the manual commands. Success asks for a replug: udev
+  applies the mode on the next add event. `scripts/install.sh` writes the same file with
+  `sudo`; its old inline copy lacked the tty lines (1.17.28 and 1.17.29).
 
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`

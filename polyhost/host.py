@@ -87,7 +87,7 @@ from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.input.unicode_input import wincompose_running
-from polyhost.services import wincompose_install
+from polyhost.services import linux_udev, wincompose_install
 from polyhost.services.lang_regions import LANG_REGION_ORDER, home_country, layout_note, region_of
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
@@ -827,6 +827,26 @@ class PolyHost(QApplication):
             # quit), without polling in the background.
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_wincompose_action)
+
+        # Linux: the udev rule that lets a non-root process open the keyboard's
+        # HID interface and its serial port (the fast link). Offered while the
+        # installed rule is missing or lacks a line of the shipped file, hidden
+        # once they match. Local files plus a PolicyKit prompt, no device, so it
+        # works in client mode too. Checked when the menu opens: two small file
+        # reads (services/linux_udev.py).
+        self.udev_action = None
+        self._udev_thread = None
+        self._udev_status = None
+        if linux_udev.is_linux():
+            self.udev_action = QAction(get_icon("usb.svg"),
+                                       _("Allow access to the keyboard (udev rule)\u2026"),
+                                       parent=self)
+            # noinspection PyUnresolvedReferences
+            self.udev_action.triggered.connect(self._on_install_udev_clicked)
+            self.udev_action.setVisible(False)   # until the first check
+            self.updates_menu.addAction(self.udev_action)
+            # noinspection PyUnresolvedReferences
+            self.menu.aboutToShow.connect(self._refresh_udev_action)
 
         # The OS theme can change while the tray sits there for weeks, so
         # re-follow it whenever the menu opens — that is when a mismatch is on
@@ -3116,6 +3136,67 @@ class PolyHost(QApplication):
         discard_fw_download(path)
 
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # udev rule install (Linux)
+    # ------------------------------------------------------------------
+    def _refresh_udev_action(self):
+        """Show the udev entry while the installed rule is missing or lacks a
+        line of the shipped file. Two file reads, every time the menu opens, so
+        the entry disappears right after a successful install and reappears if
+        the file is removed. Logged once per change, not per menu open."""
+        if self.udev_action is None:
+            return
+        status = linux_udev.rule_status()
+        self.udev_action.setVisible(status != linux_udev.STATUS_OK)
+        if status != self._udev_status:
+            if status != linux_udev.STATUS_OK:
+                self.log.info("udev rule %s: %s is %s, offering the install in the tray.",
+                              status, linux_udev.RULES_DST, status)
+            self._udev_status = status
+
+    def _on_install_udev_clicked(self):
+        """Explain the rule, then install it as root through pkexec on a thread
+        (the call blocks while the password prompt is open)."""
+        if self._udev_thread is not None and self._udev_thread.is_alive():
+            return
+        if _msgbox(QMessageBox.Question, _("Allow access to the keyboard"),
+                   _("On Linux a udev rule lets this app open the keyboard without "
+                     "root: its HID interface, and its serial port for faster "
+                     "firmware and font-pack updates. The rule file is "
+                     "/etc/udev/rules.d/99-hid.rules.\n\n"
+                     "The system will ask for your password (PolicyKit). Afterwards, "
+                     "unplug the keyboard and plug it in again."),
+                   buttons=QMessageBox.Yes | QMessageBox.Cancel,
+                   default=QMessageBox.Yes) != QMessageBox.Yes:
+            return
+        self.udev_action.setEnabled(False)
+        b = self.bridge
+
+        def work():
+            ok, err = linux_udev.install_rules()
+            b.job_done.emit("udev_install_done", (ok, err))
+
+        self._udev_thread = threading.Thread(target=work, name="udev-install", daemon=True)
+        self._udev_thread.start()
+
+    def _on_udev_install_done(self, ok: bool, error: str):
+        if self.udev_action is not None:
+            self.udev_action.setEnabled(True)
+        if ok:
+            self._udev_status = None    # re-log on the next menu open
+            _msgbox(QMessageBox.Information, _("Allow access to the keyboard"),
+                    _("The udev rule is installed.\n\n"
+                      "Unplug the keyboard and plug it in again so the new "
+                      "permissions apply."))
+            return
+        if error == linux_udev.MSG_DISMISSED:
+            return      # the user closed the prompt: nothing to report
+        _msgbox(QMessageBox.Warning, _("Allow access to the keyboard"),
+                _f("The udev rule was not installed:\n\n{error}\n\n"
+                   "You can also run these commands in a terminal:\n{commands}",
+                   error=translate_message(error),
+                   commands=linux_udev.manual_commands()))
+
     # WinCompose install (Windows)
     # ------------------------------------------------------------------
 
@@ -3357,6 +3438,8 @@ class PolyHost(QApplication):
             self._on_wincompose_download_progress(*result)
         elif name == "wincompose_download_done":
             self._on_wincompose_download_done(*result)
+        elif name == "udev_install_done":
+            self._on_udev_install_done(*result)
         elif name == "host_shutdown":
             # A control client (polyctl shutdown) asked the app to quit; the
             # request arrived on a server thread and was hopped here.
