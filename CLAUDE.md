@@ -318,7 +318,11 @@ Tests are unittest, not pytest; GUI tests need `xvfb-run -a`.
 - ⚠️ **A stale `.pyc` can survive a correct fix.** Clear `__pycache__` after restoring too.
 - ⚠️ **`polyhost/forwarder.py` is untestable here** (pywinctl at import). Put logic worth
   testing in a Qt-free module.
-- **Linux HID access needs the udev rule** `polyhost/device/99-hid.rules`.
+- **Linux HID access and the fast link need the udev rule** `polyhost/device/99-hid.rules`
+  (hidraw and tty lines). The tray offers the install through pkexec
+  (`services/linux_udev.py`); `scripts/install.sh` copies the same file. Never write a
+  second copy of its lines anywhere: the installer's inline copy drifted and lost the
+  fast link on every fresh Linux install (1.17.28, 1.17.29).
 
 ## Releases
 

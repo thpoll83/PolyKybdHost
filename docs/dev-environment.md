@@ -5,7 +5,7 @@ and relative links were adjusted to suit a standalone file.
 
 ## Environment
 
-- **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
+- **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access and for the fast link's serial port (the tray offers it: `services/linux_udev.py`).
 
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
@@ -55,7 +55,8 @@ _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer.
 
 
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev
-  rule for non-root HID access.
+  rule for non-root HID access and for the fast link's serial port. The tray offers the
+  install (Updates → Allow access to the keyboard), `scripts/install.sh` does it with sudo.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy,
   PyQt5 and other deps. Creating it in a fresh container, the apt packages the `hid`
   module needs, and the extra deps + `xvfb` the GUI half of the suite requires are in
