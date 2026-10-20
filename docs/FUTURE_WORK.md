@@ -116,6 +116,10 @@ set. The firmware spent about 3.4 ms per report, with 2 main-loop iterations of
 10 ms or more across the 208-report burst. With icon fills (cmd 42) and PRC (cmd 41)
 a large cold switch is 32 reports, so two pauses are 0.4 s of an 0.8 s switch.
 
+The pause's share of a real switch is in every `Overlay switch stats:` line of
+the host log (`wall … = N rate-limit pause(s) … ms + device … + host …`, since
+2026-10-20), so a log bundle answers how much there is to gain per switch.
+
 **Why it is deferred.** None of the numbers above measure what the pause is for.
 Report counts and main-loop iteration histograms say nothing about whether a key
 pressed mid-burst is seen promptly, and the perf replay fixtures were recorded
@@ -254,3 +258,18 @@ version in the PING reply, gated like `FW_CHUNK`), a decision on whether the
 per-switch rate limit still applies on the pipe, and a measurement of what an app
 switch costs today on HID before any of it is written: a switch sends at most 600
 images of 360 bytes, and the common case is far below that.
+
+**The measurement (2026-10-20).** Every `Overlay switch stats:` line in the host
+log ends with the split `wall = N rate-limit pause(s) + device (calls, median,
+max) + host (before the first report)`. "device" is the time inside the HID
+write and read calls, one call per report (`HidHelper.measure()`, `IoMeter`).
+A write returns when the keyboard has taken the report into its receive queue,
+and the keyboard takes the next one only after its main loop consumed the
+previous one, so the median per call is the firmware's pace per report once the
+queue is full, not the bus alone. Read it against the bus round trip (about 3 ms
+on the rig, `hid_latency` in the perf baseline): a median near 3 ms means the
+link paces the switch and the pipe would help; a median well above it means the
+firmware does, and the pipe would not. The whole "device" part is the ceiling of
+what a pipe can save on that switch; "pauses" is what shortening the rate limit
+can save; "host" is decode, claim pass and encoding on the PC. Collect the lines
+from a few days of real use (`polyctl logs`) before deciding.

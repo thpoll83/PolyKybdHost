@@ -152,6 +152,17 @@ These are the ones that have produced wrong diagnoses:
   current `main` rather than the last release (2026-09-23), which moved the search
   from "old code" to the pid path in one step.
 
+- **An app switch is slow** (the keycaps change seconds after the window):
+  read the `Overlay switch stats:` line for that switch. It ends with
+  `wall … ms = N rate-limit pause(s) … ms + device … ms (calls, median, max) +
+  host … ms (… ms before the first report)`. Pauses are the host's rate limit
+  (`docs/FUTURE_WORK.md` → *Shorten the overlay rate-limit pause*); "device" is
+  the time inside the HID calls, paced by the firmware once its receive queue is
+  full (a median far above 3 ms per call is the keyboard, not the link); "host"
+  is decoding, the MRU claim pass and encoding on the PC, and "before the first
+  report" is the part of it spent before any report went out. A warm switch is
+  one mapping report and a few ms; a cold one with hundreds of reports is where
+  the pauses show.
 - **Shortcut icons wrong, missing or slow** (keycaps keep one app's icons, the
   tray is slow to open): read the `Shortcut harvest for '<app>'` and `Generic
   overlays for '<app>'` lines against the table in `docs/generic-icons-plan.md`
