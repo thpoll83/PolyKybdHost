@@ -27,7 +27,13 @@ Babel needs `pip install -r tools/requirements.txt`. `update` runs with
 `--no-fuzzy-matching --ignore-obsolete`, so a REWORDED msgid arrives empty and its
 old translation is gone from the catalog. Save the old translations first (read
 them with `babel.messages.pofile.read_po`) when the change is a small edit: adapting
-the old text beats re-translating it.
+the old text beats re-translating it. When `update` already ran, the old msgstr is
+still in git: `read_po(io.StringIO(git show HEAD:polyhost/res/locale/<code>.po))`
+for each language, then derive the new strings from it in a script. On 2026-10-20
+one message was split into a headline and a details string this way for all 19
+catalogs with nothing retranslated; the one manual fix was French, whose " :"
+keeps a space before the colon, so the headline needed ":" stripped before "."
+was added.
 
 ## 2. Draft the translations
 

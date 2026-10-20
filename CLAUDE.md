@@ -322,7 +322,12 @@ Tests are unittest, not pytest; GUI tests need `xvfb-run -a`.
   (hidraw and tty lines). The tray offers the install through pkexec
   (`services/linux_udev.py`); `scripts/install.sh` copies the same file. Never write a
   second copy of its lines anywhere: the installer's inline copy drifted and lost the
-  fast link on every fresh Linux install (1.17.28, 1.17.29).
+  fast link on every fresh Linux install (1.17.28, 1.17.29). `check_rule_file()` runs
+  before pkexec: the file must be owned by the current user, not world-writable, and
+  every entry must use one of five allowed keys. That is what lets root install a file
+  from a user-owned checkout without taking a planted `RUN` line with it; keep it when
+  the rule file grows. ⚠️ A POSIX-only name as a default argument (`_uid=os.getuid`)
+  is evaluated at import and stopped the Windows tray (1.17.30, never published, #413).
 
 ## Releases
 
