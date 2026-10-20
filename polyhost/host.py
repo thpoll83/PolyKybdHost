@@ -3173,7 +3173,14 @@ class PolyHost(QApplication):
         b = self.bridge
 
         def work():
-            ok, err = linux_udev.install_rules()
+            # Always emit, or the entry stays disabled until the next start:
+            # install_rules() maps the expected failures itself, this covers
+            # anything it did not foresee.
+            try:
+                ok, err = linux_udev.install_rules()
+            except Exception as exc:  # noqa: BLE001
+                self.log.exception("udev rule install raised")
+                ok, err = False, linux_udev.MSG_NOT_STARTED.format(error=exc)
             b.job_done.emit("udev_install_done", (ok, err))
 
         self._udev_thread = threading.Thread(target=work, name="udev-install", daemon=True)
