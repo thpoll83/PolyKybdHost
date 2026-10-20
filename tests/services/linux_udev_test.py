@@ -24,7 +24,7 @@ class ImportsWithoutGetuidTest(unittest.TestCase):
         """host.py imports the module on every platform; Windows has no
         os.getuid, and a default argument evaluated at import broke the
         Windows tray (#411)."""
-        code = ("import os, sys; del os.getuid; "
+        code = ("import os, sys; os.__dict__.pop('getuid', None); "
                 "import polyhost.services.linux_udev as m; "
                 "print(m.is_linux.__name__)")
         proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
