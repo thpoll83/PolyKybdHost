@@ -97,12 +97,18 @@ def rule_status(src=RULES_SRC, dst=RULES_DST):
     return STATUS_OK if all(line in installed for line in wanted) else STATUS_STALE
 
 
-def check_rule_file(src=RULES_SRC, _stat=os.stat, _uid=os.getuid):
+def check_rule_file(src=RULES_SRC, _stat=os.stat, _uid=None):
     """Why ``src`` must not be installed as root, or "" when it may be: a
     file another user owns or that anyone can write, or a rule line with a
     key outside RULE_KEYS (udev's RUN, PROGRAM, IMPORT, OWNER and GROUP among
     them). Group-writable is accepted: a checkout made under a user-private
-    group (umask 002) is group-writable by the owner alone."""
+    group (umask 002) is group-writable by the owner alone.
+
+    ``os.getuid`` is looked up here, not in the signature: host.py imports
+    this module on every platform, and Windows has no getuid (a default
+    argument of ``os.getuid`` stopped the Windows tray at import, #411)."""
+    if _uid is None:
+        _uid = os.getuid
     try:
         st = _stat(src)
         text = Path(src).read_text(encoding="utf-8")
