@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -73,6 +74,19 @@ class InstallCommandTest(unittest.TestCase):
         self.assertIn('install -m 0644 -- "$1" "$2"', argv[3])
         self.assertIn("udevadm control --reload-rules", argv[3])
         self.assertIn("udevadm trigger", argv[3])
+
+
+class ManualCommandsTest(unittest.TestCase):
+    def test_paths_are_shell_quoted(self):
+        """An apostrophe or a space in the checkout path must not break the
+        command the failure dialog offers to copy."""
+        cmds = linux_udev.manual_commands("/home/o'brien/Poly Host/99-hid.rules",
+                                          "/etc/udev/rules.d/99-hid.rules")
+        first, second = cmds.split("\n")
+        self.assertEqual(shlex.split(first), [
+            "sudo", "install", "-m", "0644",
+            "/home/o'brien/Poly Host/99-hid.rules", "/etc/udev/rules.d/99-hid.rules"])
+        self.assertEqual(second, "sudo udevadm control --reload-rules && sudo udevadm trigger")
 
 
 def _proc(code, stderr="", stdout=""):

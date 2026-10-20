@@ -17,6 +17,7 @@ command are unit-tested with fakes, and ``host.py`` only wires the dialogs.
 """
 import logging
 import platform
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -86,7 +87,7 @@ def rule_status(src=RULES_SRC, dst=RULES_DST):
 
 def manual_commands(src=RULES_SRC, dst=RULES_DST):
     """The terminal equivalent, for the dialog that reports a failure."""
-    return (f"sudo install -m 0644 '{src}' '{dst}'\n"
+    return (f"sudo install -m 0644 {shlex.quote(str(src))} {shlex.quote(str(dst))}\n"
             "sudo udevadm control --reload-rules && sudo udevadm trigger")
 
 

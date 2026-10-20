@@ -3191,13 +3191,22 @@ class PolyHost(QApplication):
             self.udev_action.setEnabled(True)
         if ok:
             self._udev_status = None    # re-log on the next menu open
-            _msgbox(QMessageBox.Information, _("Allow access to the keyboard"),
-                    _("The udev rule is installed.\n\n"
-                      "Unplug the keyboard and plug it in again so the new "
-                      "permissions apply."))
+            self._fallback_prompt(self._udev_installed_dialog, None)
             return
         if error == linux_udev.MSG_DISMISSED:
             return      # the user closed the prompt: nothing to report
+        self._fallback_prompt(self._udev_failed_dialog, error)
+
+    # Both result dialogs open from a bridge event, so they go through the one
+    # serializer (_fallback_prompt): a modal opened directly here would
+    # dispatch the other queued bridge events (#257).
+    def _udev_installed_dialog(self, _release):
+        _msgbox(QMessageBox.Information, _("Allow access to the keyboard"),
+                _("The udev rule is installed.\n\n"
+                  "Unplug the keyboard and plug it in again so the new "
+                  "permissions apply."))
+
+    def _udev_failed_dialog(self, error):
         # The same dialog as a failed update: the details can be copied, and
         # "Copy Fix Commands" puts the terminal equivalent on the clipboard.
         show_copyable_error(_("Allow access to the keyboard"),

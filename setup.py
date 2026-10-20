@@ -43,7 +43,7 @@ setup(name='PolyHost',
       # of polyhost/res/ is not packaged either and is read from the checkout.
       # The UI translations are read from these .po files at startup; without
       # them every language falls back to English.
-      package_data={"polyhost": ["res/prc_table_v*.bin", "res/locale/*.po"]},
+      package_data={"polyhost": ["res/prc_table_v*.bin", "res/locale/*.po", "device/*.rules"]},
       install_requires=requirements(),
       # The font-pack *extend* path (build glyphs from TTF/OTF, fontconvert-parity)
       # needs freetype-py/uharfbuzz/fonttools — now core deps (requirements.txt) so
