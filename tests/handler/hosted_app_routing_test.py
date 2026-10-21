@@ -82,13 +82,18 @@ class HostedAppRoutingTest(unittest.TestCase):
             overlay, _ = self._match("applicationframehost", title)
             self.assertIsNone(overlay, f"{title!r} matched {overlay}")
 
-    def test_sticky_notes_matches_but_REAL_onenote_does_not(self):
-        """`ONENOTE.EXE` hosts Sticky Notes, so the entry is about Sticky Notes.
-        A real OneNote window must fall through rather than get note keycaps."""
+    def test_sticky_notes_and_REAL_onenote_get_their_OWN_sets(self):
+        """`ONENOTE.EXE` hosts Sticky Notes and OneNote. Each must get its own
+        keycaps: note keycaps on a notebook, or the reverse, is the failure."""
         sticky, _ = self._match("onenote", "Sticky Notes (new)")
         self.assertIn("stickynotes_template", sticky or "")
-        real, _ = self._match("onenote", "My Notebook - OneNote")
-        self.assertIsNone(real)
+        real, icon = self._match("onenote", "My Notebook - OneNote")
+        self.assertIn("onenote_template", real or "")
+        # The OneNote set bakes its own ESC mark; a named icon would not draw.
+        self.assertIsNone(icon)
+        # A notebook page merely NAMED "Sticky Notes" is still OneNote.
+        page, _ = self._match("onenote", "My Sticky Notes - OneNote")
+        self.assertIn("onenote_template", page or "")
 
     def test_every_HOSTED_entry_names_its_own_mark(self):
         """A hosted app without `icon:` resolves the mark from the HOST process
@@ -410,6 +415,17 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                           self._chrome(os_name, "https://claude.ai/chat/abc"))
             self.assertIn(f"chatgpt_template{sfx}.mods.png",
                           self._chrome(os_name, "https://chatgpt.com/c/abc"))
+
+    def test_copilot_app_and_page_reach_the_copilot_sets(self):
+        """The Copilot app is a web page in a Chromium window: UI Automation
+        finds no shortcut in it, so without these entries it draws nothing, not
+        even its mark. Its Alt chords are Option chords on macOS, so one set
+        serves every OS."""
+        for os_name in ("windows", "macos"):
+            self.assertIn("copilot_template.mods.png", self._overlay("mscopilot", os_name))
+            self.assertIn("copilot_template.mods.png", self._overlay("copilot", os_name))
+            self.assertIn("copilot_web_template.mods.png",
+                          self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
 
     def test_claude_code_on_the_web_does_NOT_get_the_chat_set(self):
         """claude.ai/code contains claude.ai, and the first hit wins."""

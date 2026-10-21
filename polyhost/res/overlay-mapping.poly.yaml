@@ -68,6 +68,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
     chatgpt.com:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+    # Copilot has no title fallback below: "Copilot" is also in Microsoft 365
+    # Copilot's and GitHub Copilot's page titles, and they have other keymaps.
+    copilot.microsoft.com:
+      overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -146,6 +150,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
         chatgpt.com:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+        copilot.microsoft.com:
+          overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -222,6 +228,15 @@ chatgpt:
   os:
     macos:
       overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+# Microsoft Copilot (sources: overlay_sources/aichat/copilot.yaml). The app is
+# copilot.microsoft.com in a Chromium window, so UI Automation finds no
+# shortcuts; its four Alt chords come from the page's script. `mscopilot` on
+# Windows, `copilot` on macOS (Option chords, same keys). No `os:` branch: one
+# set serves both. The ESC mark comes from the app's own executable.
+# Microsoft 365 Copilot (`m365copilot`) has no entry: Microsoft documents no
+# in-app shortcut for it.
+mscopilot,copilot:
+  overlay: [copilot_template.mods.png, copilot_template.combo.mods.png]
 codex,codex-desktop:
   overlay: [codex_template.mods.png, codex_template.combo.mods.png]
   os:
@@ -382,16 +397,21 @@ outlook,olk,microsoft outlook:
   os:
     macos:
       overlay: [outlook_template_mac.mods.png, outlook_template_mac.combo.mods.png, outlook_template_mac.extra.mods.png]
-# ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
-# Notes and NOT about OneNote -- hence the title constraint, which lets a real
-# OneNote window fall through unmatched rather than showing sticky-note keycaps.
-# `icon:` is required for the same reason: without it the mark would resolve from
-# the process name through `app_icons.yaml` (`onenote: mdi:microsoft-onenote`)
-# and draw a OneNote logo on a Sticky Notes window.
-onenote:
-  title: "^Sticky Notes"
-  icon: mdi:sticker-text
-  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+# OneNote (sources: overlay_sources/onenote/). ⚠️ `ONENOTE.EXE` ALSO HOSTS THE
+# NEW STICKY NOTES, so a window titled "Sticky Notes..." takes the branch below
+# and every other `onenote` window gets the OneNote set. The branch needs its
+# own `icon:`: without it the mark would resolve from the process name through
+# `app_icons.yaml` (`onenote: mdi:microsoft-onenote`) and draw a OneNote logo on
+# a Sticky Notes window. The OneNote set bakes its own ESC mark.
+onenote,microsoft onenote:
+  overlay: [onenote_template.mods.png, onenote_template.combo.mods.png, onenote_template.extra.mods.png]
+  titles-startswith:
+    Sticky Notes:
+      icon: mdi:sticker-text
+      overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [onenote_template_mac.mods.png, onenote_template_mac.combo.mods.png, onenote_template_mac.extra.mods.png, onenote_template_mac.gui.mods.png]
 powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
   os:
