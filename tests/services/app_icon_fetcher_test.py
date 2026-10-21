@@ -159,6 +159,18 @@ class FetcherTest(unittest.TestCase):
             "gimp", os_keys=("macos",))[0] == "MASK"))
         self.assertEqual(self.ready, ["si:gimp"])
 
+    def test_a_NEW_OS_forgets_the_old_OS_s_FORWARDED_identity(self):
+        """A forwarded Mac `gimp` leaves its identity behind. When a LOCAL
+        `gimp` on Windows follows, it must be resolved from its own pid, not
+        with the Mac's icon and names."""
+        self.gate.set()
+        mac = os_app_icon.AppIdentity(icon=b"MAC-ICON", icon_path="", names=("GIMP",))
+        self.fetcher.overlay_for("gimp", identity=mac, os_keys=("macos",))
+        self.assertTrue(_wait(lambda: len(self.os_keys_for) == 1))
+        self.fetcher.overlay_for("gimp", pid=7, os_keys=("windows",))
+        self.assertTrue(_wait(lambda: len(self.os_keys_for) == 2))
+        self.assertEqual(self.identities_for, [(7, "gimp")])
+
     def test_an_empty_app_name_is_not_queued_at_all(self):
         self.assertEqual(self.fetcher.overlay_for(""), (None, None))
         self.assertEqual(self.fetcher.overlay_for(None), (None, None))

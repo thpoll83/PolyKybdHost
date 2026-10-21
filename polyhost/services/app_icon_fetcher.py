@@ -168,10 +168,16 @@ class AppIconFetcher:
             return None, None
         os_keys = tuple(os_keys or ())
         with self._lock:
-            if self._os_keys.get(app_name, os_keys) != os_keys \
-                    and app_name in self._masks:
-                del self._masks[app_name]
+            if self._os_keys.get(app_name, os_keys) != os_keys:
+                # ANOTHER machine's app under the same name: everything known
+                # about the old one goes, the forwarded identity and the pid
+                # included, or a local `photos` resolves with a forwarded Mac's
+                # icon and names.
+                self._masks.pop(app_name, None)
                 self._why.pop(app_name, None)
+                self._given_identity.pop(app_name, None)
+                self._given_identity_sig.pop(app_name, None)
+                self._asked_for.pop(app_name, None)
             self._os_keys[app_name] = os_keys
             # ⚠️ A FORWARDED app is resolved on the other machine and the
             # answer travels with the report, because the pid, the .desktop
