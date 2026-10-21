@@ -1294,3 +1294,15 @@ audacity,org.audacityteam.audacity:
       overlay: [audacity_template.mods.png, audacity_template.combo.mods.png]
 audacity4:
   overlay: [audacity4_template.mods.png, audacity4_template.combo.mods.png, audacity4_template.extra.mods.png]
+# MuseScore Studio 4: MuseScore4.exe on Windows; on macOS the bundle is
+# "MuseScore Studio" (CFBundleName) in a folder named "MuseScore 4"; on Linux the
+# binary is `mscore` with a `musescore` link, the Wayland app id
+# org.musescore.MuseScore and the X11 class MuseScore4. Linux has its own set
+# because Redo is Ctrl+Shift+Z there and Ctrl+Y on Windows.
+musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore:
+  overlay: [musescore_template.mods.png, musescore_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [musescore_template_mac.mods.png, musescore_template_mac.combo.mods.png, musescore_template_mac.extra.mods.png]
+    linux:
+      overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]

@@ -1634,6 +1634,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             "ableton live 12 suite": "ableton_template",
             "ableton live 12 lite": "ableton_template",
             "reaper": "reaper_template",
+            "musescore4": "musescore_template",
+            "musescore studio": "musescore_template",
         }
         for app, stem in cases.items():
             for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
@@ -1651,7 +1653,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("audacity4", "WINDOWS", "audacity4_template"),
                 ("audacity", "MACOS", "audacity_template_mac"),
                 ("audacity", "LINUX", "audacity_template"),
-                ("org.audacityteam.audacity", "LINUX", "audacity_template")):
+                ("org.audacityteam.audacity", "LINUX", "audacity_template"),
+                ("mscore", "LINUX", "musescore_template_linux")):
             with self.subTest(app=app, os=os_name):
                 got = self._match(app, title="song", title_known=True,
                                   os_name=os_name)

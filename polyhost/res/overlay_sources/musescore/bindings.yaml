@@ -1,0 +1,226 @@
+# MuseScore Studio 4 shortcut overlays for PolyKybd (Windows, Linux and macOS).
+#
+# The defaults of MuseScore Studio 4.7.5, read from its shortcut files:
+# src/app/configs/data/shortcuts.xml (Windows and Linux) and shortcuts_mac.xml.
+# See SOURCES.md.
+#   CMDCTRL          Qt's "Ctrl": Ctrl on Windows/Linux, Cmd on macOS.
+#   CTRL             the Control key on every platform (Paste Half/Double
+#                    Duration are Control+Shift on the Mac too).
+#   ALT              Alt / Option.
+#   only: / except:  the six keys the Mac file defines differently, and Redo,
+#                    which Qt binds to Ctrl+Y on Windows and Ctrl+Shift+Z on
+#                    Linux and macOS (so Linux gets its own set).
+#
+# ⚠️ Many MuseScore keys change meaning by context (score, text editing, TAB
+# note input). The set draws the score-view meaning: letters A-G enter notes,
+# digits 1-9 pick a duration. SOURCES.md lists the keys left out.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/musescore/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/musescore/bindings.yaml --preview /tmp/musescore_preview
+app: musescore
+match: [musescore4, musescore studio, musescore 4, mscore, musescore]
+output: musescore_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+bindings:
+  # --- file and edit ---
+  - { key: N, mods: [CMDCTRL], label: "New" }
+  - { key: O, mods: [CMDCTRL], label: "Open" }
+  - { key: S, mods: [CMDCTRL], label: "Save" }
+  - { key: S, mods: [CMDCTRL, SHIFT], label: "Save as" }
+  - { key: W, mods: [CMDCTRL], icon: close.png, label: "Close score" }
+  - { key: P, mods: [CMDCTRL], label: "Print" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: Y, mods: [CTRL], label: "Redo", only: [windows] }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo", except: [windows] }
+  - { key: X, mods: [CMDCTRL], label: "Cut" }
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: DEL, mods: [], label: "Delete" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: F, mods: [CMDCTRL], label: "Find" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: swap.png, label: "Swap with clipboard" }
+  - { key: Q, mods: [CTRL, SHIFT], icon: pastehalf.png, label: "Paste half duration" }
+  - { key: W, mods: [CTRL, SHIFT], icon: pastedouble.png, label: "Paste double duration" }
+
+  # --- note input ---
+  - { key: N, mods: [], icon: inputname.png, label: "Note input" }
+  - { key: M, mods: [], icon: inputduration.png, label: "Input by duration" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: repitch.png, label: "Re-pitch notes" }
+  - { key: A, mods: [], icon: noteA.png, label: "Note A" }
+  - { key: A, mods: [SHIFT], icon: chordA.png, label: "Add A to chord" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: insertA.png, label: "Insert A" }
+  - { key: B, mods: [], icon: noteB.png, label: "Note B" }
+  - { key: B, mods: [SHIFT], icon: chordB.png, label: "Add B to chord" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: insertB.png, label: "Insert B" }
+  - { key: C, mods: [], icon: noteC.png, label: "Note C" }
+  - { key: C, mods: [SHIFT], icon: chordC.png, label: "Add C to chord" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: insertC.png, label: "Insert C" }
+  - { key: D, mods: [], icon: noteD.png, label: "Note D" }
+  - { key: D, mods: [SHIFT], icon: chordD.png, label: "Add D to chord" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: insertD.png, label: "Insert D" }
+  - { key: E, mods: [], icon: noteE.png, label: "Note E" }
+  - { key: E, mods: [SHIFT], icon: chordE.png, label: "Add E to chord" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: insertE.png, label: "Insert E" }
+  - { key: F, mods: [], icon: noteF.png, label: "Note F" }
+  - { key: F, mods: [SHIFT], icon: chordF.png, label: "Add F to chord" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: insertF.png, label: "Insert F" }
+  - { key: G, mods: [], icon: noteG.png, label: "Note G" }
+  - { key: G, mods: [SHIFT], icon: chordG.png, label: "Add G to chord" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: insertG.png, label: "Insert G" }
+  - { key: "1", mods: [], icon: dur1.png, label: "64th note" }
+  - { key: "2", mods: [], icon: dur2.png, label: "32nd note" }
+  - { key: "3", mods: [], icon: dur3.png, label: "16th note" }
+  - { key: "4", mods: [], icon: dur4.png, label: "Eighth note" }
+  - { key: "5", mods: [], icon: dur5.png, label: "Quarter note" }
+  - { key: "6", mods: [], icon: dur6.png, label: "Half note" }
+  - { key: "7", mods: [], icon: dur7.png, label: "Whole note" }
+  - { key: "8", mods: [], icon: dur8.png, label: "Double whole note" }
+  - { key: "9", mods: [], icon: dur9.png, label: "Longa note" }
+  - { key: "0", mods: [], icon: rest.png, label: "Rest" }
+  - { key: DOT, mods: [], icon: dot.png, label: "Augmentation dot" }
+  - { key: T, mods: [], icon: tie.png, label: "Tie" }
+  - { key: SLASH, mods: [], icon: grace.png, label: "Acciaccatura" }
+  - { key: EQUAL, mods: [SHIFT], icon: sharp.png, label: "Sharp" }
+  - { key: EQUAL, mods: [], icon: natural.png, label: "Natural" }
+  - { key: MINUS, mods: [], icon: flat.png, label: "Flat" }
+  - { key: "1", mods: [ALT], icon: up1.png, label: "Interval 1 above" }
+  - { key: "2", mods: [ALT], icon: up2.png, label: "Interval 2 above" }
+  - { key: "2", mods: [ALT, SHIFT], icon: down2.png, label: "Interval 2 below" }
+  - { key: "3", mods: [ALT], icon: up3.png, label: "Interval 3 above" }
+  - { key: "3", mods: [ALT, SHIFT], icon: down3.png, label: "Interval 3 below" }
+  - { key: "4", mods: [ALT], icon: up4.png, label: "Interval 4 above" }
+  - { key: "4", mods: [ALT, SHIFT], icon: down4.png, label: "Interval 4 below" }
+  - { key: "5", mods: [ALT], icon: up5.png, label: "Interval 5 above" }
+  - { key: "5", mods: [ALT, SHIFT], icon: down5.png, label: "Interval 5 below" }
+  - { key: "6", mods: [ALT], icon: up6.png, label: "Interval 6 above" }
+  - { key: "6", mods: [ALT, SHIFT], icon: down6.png, label: "Interval 6 below" }
+  - { key: "7", mods: [ALT], icon: up7.png, label: "Interval 7 above" }
+  - { key: "7", mods: [ALT, SHIFT], icon: down7.png, label: "Interval 7 below" }
+  - { key: "8", mods: [ALT], icon: up8.png, label: "Interval 8 above" }
+  - { key: "8", mods: [ALT, SHIFT], icon: down8.png, label: "Interval 8 below" }
+  - { key: "9", mods: [ALT], icon: up9.png, label: "Interval 9 above" }
+  - { key: "9", mods: [ALT, SHIFT], icon: down9.png, label: "Interval 9 below" }
+  - { key: "0", mods: [ALT], icon: up10.png, label: "Interval 10 above" }
+  - { key: "0", mods: [ALT, SHIFT], icon: down10.png, label: "Interval 10 below" }
+  - { key: "1", mods: [CMDCTRL, ALT], icon: voice1.png, label: "Voice 1" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: voice2.png, label: "Voice 2" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: voice3.png, label: "Voice 3" }
+  - { key: "4", mods: [CMDCTRL, ALT], icon: voice4.png, label: "Voice 4" }
+  - { key: "2", mods: [CMDCTRL], icon: tuplet2.png, label: "Tuplet 2" }
+  - { key: "3", mods: [CMDCTRL], icon: tuplet3.png, label: "Tuplet 3" }
+  - { key: "4", mods: [CMDCTRL], icon: tuplet4.png, label: "Tuplet 4" }
+  - { key: "5", mods: [CMDCTRL], icon: tuplet5.png, label: "Tuplet 5" }
+  - { key: "6", mods: [CMDCTRL], icon: tuplet6.png, label: "Tuplet 6" }
+  - { key: "7", mods: [CMDCTRL], icon: tuplet7.png, label: "Tuplet 7" }
+  - { key: "8", mods: [CMDCTRL], icon: tuplet8.png, label: "Tuplet 8" }
+  - { key: "9", mods: [CMDCTRL], icon: tuplet9.png, label: "Tuplet 9" }
+  - { key: Q, mods: [], icon: halve.png, label: "Halve duration" }
+  - { key: W, mods: [], icon: double.png, label: "Double duration" }
+  - { key: Q, mods: [SHIFT], icon: halvedot.png, label: "Halve duration (dotted)" }
+  - { key: W, mods: [SHIFT], icon: doubledot.png, label: "Double duration (dotted)" }
+  - { key: R, mods: [], icon: repeat.png, label: "Repeat selection" }
+  - { key: J, mods: [], icon: enharmonic.png, label: "Enharmonic spelling" }
+  - { key: J, mods: [CMDCTRL], icon: enharmonic1.png, label: "Enharmonic (current mode)" }
+  - { key: X, mods: [], icon: flip.png, label: "Flip direction" }
+  - { key: X, mods: [ALT], icon: fliph.png, label: "Flip horizontally" }
+  - { key: X, mods: [SHIFT], icon: mirror.png, label: "Mirror notehead" }
+  - { key: V, mods: [], icon: visible.png, label: "Toggle visibility" }
+  - { key: "9", mods: [SHIFT], icon: parens.png, label: "Add parentheses" }
+  - { key: W, mods: [ALT], icon: extend.png, label: "Extend to next note" }
+
+  # --- articulations and lines ---
+  - { key: S, mods: [], icon: slur.png, label: "Slur" }
+  - { key: D, mods: [CMDCTRL], icon: dynamic.png, label: "Dynamic" }
+  - { key: COMMA, mods: [SHIFT], icon: cresc.png, label: "Crescendo" }
+  - { key: DOT, mods: [SHIFT], icon: dim.png, label: "Diminuendo" }
+  - { key: S, mods: [SHIFT], icon: staccato.png, label: "Staccato" }
+  - { key: N, mods: [SHIFT], icon: tenuto.png, label: "Tenuto" }
+  - { key: O, mods: [SHIFT], icon: marcato.png, label: "Marcato" }
+  - { key: V, mods: [SHIFT], icon: accent.png, label: "Accent" }
+  - { key: H, mods: [ALT], icon: hammer.png, label: "Hammer-on/pull-off" }
+  - { key: B, mods: [ALT], icon: bend.png, label: "Standard bend" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: gracebend.png, label: "Grace note bend" }
+
+  # --- text ---
+  - { key: L, mods: [CMDCTRL], icon: lyrics.png, label: "Lyrics" }
+  - { key: T, mods: [ALT, SHIFT], icon: tempo.png, label: "Tempo marking" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: systemtext.png, label: "System text" }
+  - { key: T, mods: [CMDCTRL], icon: stafftext.png, label: "Staff text" }
+  - { key: E, mods: [CMDCTRL], icon: expression.png, label: "Expression text" }
+  - { key: K, mods: [CMDCTRL], icon: chordsym.png, label: "Chord symbol" }
+  - { key: M, mods: [CMDCTRL], icon: rehearsal.png, label: "Rehearsal mark" }
+  - { key: G, mods: [CMDCTRL], icon: figbass.png, label: "Figured bass" }
+
+  # --- measures and layout ---
+  - { key: B, mods: [CMDCTRL], icon: appendmeasure.png, label: "Add measure at end" }
+  - { key: B, mods: [ALT, SHIFT], icon: appendmeasures.png, label: "Add measures at end" }
+  - { key: INSERT, mods: [], icon: insertmeasure.png, label: "Insert measure", except: [macos] }
+  - { key: I, mods: [SHIFT], icon: insertmeasure.png, label: "Insert measure", only: [macos] }
+  - { key: INSERT, mods: [CMDCTRL], icon: insertmeasures.png, label: "Insert measures", except: [macos] }
+  - { key: I, mods: [ALT, SHIFT], icon: insertmeasures.png, label: "Insert measures", only: [macos] }
+  - { key: DEL, mods: [CMDCTRL], icon: timedelete.png, label: "Remove selected range" }
+  - { key: DEL, mods: [CMDCTRL, SHIFT], icon: measurerest.png, label: "Full measure rest" }
+  - { key: ENTER, mods: [], icon: systembreak.png, label: "System break" }
+  - { key: ENTER, mods: [CMDCTRL], icon: pagebreak.png, label: "Page break" }
+  - { key: ENTER, mods: [ALT], icon: systemlock.png, label: "System lock" }
+  - { key: L, mods: [ALT], icon: lockselected.png, label: "Lock selected systems" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: lockall.png, label: "Lock all systems" }
+  - { key: S, mods: [ALT], icon: makesystem.png, label: "Create system" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: mmrest.png, label: "Multimeasure rests" }
+  - { key: I, mods: [CMDCTRL], icon: insertmode.png, label: "Insert/overwrite" }
+  - { key: F2, mods: [], icon: editelement.png, label: "Edit element" }
+  - { key: R, mods: [CMDCTRL], icon: reset.png, label: "Reset positions" }
+
+  # --- panels ---
+  - { key: I, mods: [], icon: instruments.png, label: "Instruments" }
+  - { key: P, mods: [], icon: pianokbd.png, label: "Piano keyboard" }
+  - { key: O, mods: [], icon: percussion.png, label: "Percussion panel" }
+  - { key: F7, mods: [], icon: layout.png, label: "Layout panel" }
+  - { key: F8, mods: [], icon: properties.png, label: "Properties" }
+  - { key: F9, mods: [], icon: palettes.png, label: "Palettes" }
+  - { key: F9, mods: [SHIFT], icon: masterpalette.png, label: "Master palette" }
+  - { key: F9, mods: [CMDCTRL], icon: palettesearch.png, label: "Palette search" }
+  - { key: F10, mods: [], icon: mixer.png, label: "Mixer" }
+  - { key: F12, mods: [], icon: timeline.png, label: "Timeline" }
+  - { key: F11, mods: [ALT], icon: braille.png, label: "Braille panel" }
+  - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen" }
+  - { key: F, mods: [CTRL, GUI], icon: fullscreen.png, label: "Full screen", only: [macos] }
+  - { key: F1, mods: [], icon: help.png, label: "Help" }
+
+  # --- playback and view ---
+  - { key: SPACE, mods: [], icon: play.png, label: "Play/pause" }
+  - { key: SPACE, mods: [SHIFT], icon: playsel.png, label: "Play from selection" }
+  - { key: SPACE, mods: [CMDCTRL], icon: pausesel.png, label: "Pause and select", except: [macos] }
+  - { key: SPACE, mods: [ALT], icon: pausesel.png, label: "Pause and select", only: [macos] }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png, label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: zoom100.png, label: "Zoom 100%" }
+
+  # --- navigation ---
+  - { key: UP, mods: [], icon: pitchup.png, label: "Pitch up" }
+  - { key: DOWN, mods: [], icon: pitchdown.png, label: "Pitch down" }
+  - { key: UP, mods: [CMDCTRL], icon: octup.png, label: "Octave up" }
+  - { key: DOWN, mods: [CMDCTRL], icon: octdown.png, label: "Octave down" }
+  - { key: UP, mods: [ALT, SHIFT], icon: diaup.png, label: "Diatonic up" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: diadown.png, label: "Diatonic down" }
+  - { key: UP, mods: [CMDCTRL, SHIFT], icon: staffup.png, label: "Move to staff above" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: staffdown.png, label: "Move to staff below" }
+  - { key: UP, mods: [CMDCTRL, ALT], icon: topchord.png, label: "Top note in chord" }
+  - { key: DOWN, mods: [CMDCTRL, ALT], icon: bottomchord.png, label: "Bottom note in chord" }
+  - { key: HOME, mods: [CMDCTRL], icon: firstel.png, label: "First element" }
+  - { key: END, mods: [CMDCTRL], icon: lastel.png, label: "Last element" }
+  - { key: RIGHT, mods: [ALT], icon: nextel.png, label: "Next element" }
+  - { key: LEFT, mods: [ALT], icon: prevel.png, label: "Previous element" }
+  - { key: RIGHT, mods: [CMDCTRL], icon: nextmeasure.png, label: "Next measure" }
+  - { key: LEFT, mods: [CMDCTRL], icon: prevmeasure.png, label: "Previous measure" }
+  - { key: PGUP, mods: [CMDCTRL], icon: pageprev.png, label: "Previous page" }
+  - { key: PGDN, mods: [CMDCTRL], icon: pagenext.png, label: "Next page" }
