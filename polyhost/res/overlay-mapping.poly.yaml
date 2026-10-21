@@ -1257,3 +1257,20 @@ jan,jan-desktop:
   os:
     macos:
       overlay: [jan_template_mac.mods.png, jan_template_mac.combo.mods.png]
+
+# Music apps (sources: overlay_sources/<app>/). Each app's SOURCES.md says which
+# app names are confirmed.
+#
+# FL Studio: FL64.exe on Windows; on macOS the app is named after the year.
+# Its Playlist, Piano roll and Mixer share one OS window, so one set serves all.
+fl64,fl studio 2024,fl studio 2025,osxfl:
+  overlay: [flstudio_template.mods.png, flstudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
+# Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
+ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
+  overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]

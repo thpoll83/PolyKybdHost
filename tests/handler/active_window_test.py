@@ -1628,6 +1628,20 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
                         got.get("overlay"))
 
+    def test_MUSIC_apps_get_their_platform_set(self):
+        cases = {
+            "fl64": "flstudio_template", "fl studio 2025": "flstudio_template",
+            "ableton live 12 suite": "ableton_template",
+            "ableton live 12 lite": "ableton_template",
+        }
+        for app, stem in cases.items():
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="song", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+
     def test_KICAD_does_NOT_resolve_without_its_title(self):
         # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
         # a `title:` gate to tell the PCB editor from the schematic editor.
