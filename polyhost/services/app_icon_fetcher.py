@@ -292,15 +292,16 @@ class AppIconFetcher:
                 key = self._queue.pop(0) if self._queue else None
                 if key is not None:
                     self._inflight.add(key)
+                    # Read in the SAME hold that marks it in flight: from the
+                    # moment it is in flight, what it resolves for is fixed.
+                    pid = self._asked_for.get(key)
+                    given = self._given_identity.get(key)
+                    os_keys = self._os_keys.get(key, ())
             if key is None:
                 self._wake.clear()
                 if not self._wake.wait(IDLE_SECONDS):
                     return          # nothing left to do; restarted on demand
                 continue
-            with self._lock:
-                pid = self._asked_for.get(key)
-                given = self._given_identity.get(key)
-                os_keys = self._os_keys.get(key, ())
             mask, resolved, why = self._resolve(key, pid, given, os_keys)
             with self._lock:
                 self._inflight.discard(key)
