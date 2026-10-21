@@ -880,6 +880,13 @@ class OverlayHandler:
         # able to disagree about it.
         return self.app_name or self.windowless_app, None
 
+    def focused_os(self):
+        """OS of the machine running the focused app (see `_active_os`): the
+        forwarder's for a forwarded window, this machine's otherwise. The ESC
+        mark needs it as well as the mapping, because one app name can mean two
+        programs (`photos` on Windows and on macOS)."""
+        return self._active_os()
+
     def focused_pid(self):
         """The focused LOCAL window's process id, or None.
 

@@ -144,10 +144,13 @@ class AppIconFetcher:
         # mode). Absent for a local app, which this side resolves itself.
         self._given_identity: dict[str, object] = {}
         self._given_identity_sig: dict[str, object] = {}
+        # app name -> the OS keys of the machine running it, for an
+        # OS-qualified shipped mark (`app_icons.candidates`).
+        self._os_keys: dict[str, tuple] = {}
 
     # ------------------------------------------------------------------
 
-    def overlay_for(self, app_name: str, pid=None, identity=None):
+    def overlay_for(self, app_name: str, pid=None, identity=None, os_keys=()):
         """(mask, resolved name) for an app, without blocking. mask is None until known.
 
         A None mask with a name may mean "still resolving" or "nothing can draw
@@ -156,10 +159,20 @@ class AppIconFetcher:
 
         ⚠️ Does NO I/O, deliberately -- see the class docstring. It is a dict
         lookup and a queue append, because the window tick calls it continuously.
+
+        `os_keys` name the OS running the app. One app name can run on two
+        machines (a local `photos` and a forwarded Mac's), so an answer cached
+        for one OS is dropped when the same name arrives from another.
         """
         if not app_name:
             return None, None
+        os_keys = tuple(os_keys or ())
         with self._lock:
+            if self._os_keys.get(app_name, os_keys) != os_keys \
+                    and app_name in self._masks:
+                del self._masks[app_name]
+                self._why.pop(app_name, None)
+            self._os_keys[app_name] = os_keys
             # ⚠️ A FORWARDED app is resolved on the other machine and the
             # answer travels with the report, because the pid, the .desktop
             # entry and the PE resources all live there -- a keyboard
@@ -287,7 +300,8 @@ class AppIconFetcher:
             with self._lock:
                 pid = self._asked_for.get(key)
                 given = self._given_identity.get(key)
-            mask, resolved, why = self._resolve(key, pid, given)
+                os_keys = self._os_keys.get(key, ())
+            mask, resolved, why = self._resolve(key, pid, given, os_keys)
             with self._lock:
                 self._masks[key] = (mask, resolved)
                 if why is not None:
@@ -305,7 +319,7 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, app_name: str, pid=None, given=None):
+    def _resolve(self, app_name: str, pid=None, given=None, os_keys=()):
         """(mask, resolved_name, why_it_missed) -- `why` is None when one drew.
 
         Runs on the fetch thread, which is the only place allowed to do I/O.
@@ -335,7 +349,7 @@ class AppIconFetcher:
                 identity = os_app_icon.app_identity(None, "")
         try:
             mask, resolved = app_icons.program_overlay(
-                app_name, identity, self._cache_dir)
+                app_name, identity, self._cache_dir, os_keys=os_keys)
         except Exception:
             self.log.debug("program mark failed for '%s'", app_name, exc_info=True)
             return None, None, "resolving it raised"

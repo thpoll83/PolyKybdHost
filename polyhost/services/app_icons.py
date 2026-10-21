@@ -239,7 +239,7 @@ def kebab(app_name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name).strip("-")
 
 
-def candidates(app_name: str, names=()) -> list:
+def candidates(app_name: str, names=(), os_keys=()) -> list:
     """Qualified `source:name` icons to try, in order, for one application.
 
     `names` are the application's OS-reported DISPLAY names, best first (see
@@ -255,6 +255,15 @@ def candidates(app_name: str, names=()) -> list:
     entries bought 73% coverage over 151 probed names and made every unheard-of
     application a 71st entry; `docs/generic-icons-plan.md` has the measurement
     and the reversal.
+
+    `os_keys` are the OS of the machine RUNNING the app, most specific first
+    (`handler.common.os_match_keys`). A shipped mark may have an OS-qualified
+    file, `<slug>.<os>`, and when one exists for that OS it is offered INSTEAD
+    of the plain `<slug>`: one name can mean two programs. `photos` is Apple
+    Photos on macOS and Microsoft Photos on Windows, and the macOS rosette drawn
+    on Windows read as the Mac's app (field, 2026-10-21). The qualified file is
+    its own slug, so the keyboard's image cache never holds two pictures under
+    one name. Still no table: the filename is the slug.
     """
     out = []
 
@@ -294,12 +303,20 @@ def candidates(app_name: str, names=()) -> list:
     # The shipped marks go LAST. With `program_overlay` ranking by legibility
     # the order is only a tie-break, but the tie should go to a real brand mark
     # over a generic one of ours.
+    def offer_shipped(slug):
+        for key in os_keys or ():
+            qualified = f"{slug}.{key}"
+            if local_icon_path(qualified):
+                offer(f"{LOCAL_SOURCE}:{qualified}")
+                return
+        offer(f"{LOCAL_SOURCE}:{slug}")
+
     for display in names:
         slug = normalise(display)
         if slug:
-            offer(f"{LOCAL_SOURCE}:{slug}")
+            offer_shipped(slug)
     if guess:
-        offer(f"{LOCAL_SOURCE}:{guess}")
+        offer_shipped(guess)
     return out
 
 
@@ -890,7 +907,7 @@ def _svg_colour_candidate(data: bytes, box: int):
 
 
 def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
-                    allow_network: bool | None = None):
+                    allow_network: bool | None = None, os_keys=()):
     """(mask, source name) for the focused app, or (None, first candidate).
 
     TWO sources, and the ORDER REVERSED in E2 (see
@@ -920,6 +937,9 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     the executable name reaches the catalog.
 
     A name comes back either way so a caller can say which app it failed for.
+
+    `os_keys` name the OS running the app, for an OS-qualified shipped mark
+    (see `candidates`).
     """
     # ⚠️ A dict is a PROGRAMMING error here, not an input to tolerate. The
     # forwarded identity arrives as one over the RPC, and the getattr reads
@@ -1025,7 +1045,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
     # favourite mark. ⚠️ Do not "fix" this by reordering SOURCES: that is the
     # fixed preference this block replaced, and it would take GNOME Terminal
     # back with it.
-    tried = candidates(app_name, names)
+    tried = candidates(app_name, names, os_keys)
     reasons: dict = {}
     for name in tried:
         path = fetch_icon(name, cache_dir, allow_network, reasons=reasons)

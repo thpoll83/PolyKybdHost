@@ -40,7 +40,7 @@ from polyhost.device import hid_fw_up
 from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.handler.common import OverlayCommand, as_underlay_path
+from polyhost.handler.common import OverlayCommand, as_underlay_path, os_match_keys
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -811,8 +811,13 @@ class PolyCore(Observable):
         # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
         # `OverlayHandler.focused_pid`. It is None for a forwarded window,
         # where `identity` is the answer instead.
+        # The OS of the machine RUNNING the app, which for a forwarded window
+        # is the forwarder's: an OS-qualified shipped mark (`photos.windows`)
+        # depends on it, and one app name can mean two programs.
+        focused_os = getattr(handler, "focused_os", None)
+        os_keys = tuple(os_match_keys(focused_os())) if callable(focused_os) else ()
         mask, slug = self._app_icons.overlay_for(
-            name, pid=handler.focused_pid(), identity=identity)
+            name, pid=handler.focused_pid(), identity=identity, os_keys=os_keys)
         if mask is None or not slug:
             slug = None
         # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and

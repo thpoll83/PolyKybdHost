@@ -308,6 +308,19 @@ JETBRAINS_EXE_SLUGS = {"idea": "intellijidea"}
 CHROME_SRC = "si-googlechrome.svg"
 CHROME_SLUGS = ("chrome", "googlechrome")
 
+# mdi's `palette-outline`, shipped VERBATIM as Windows Paint's mark (see the
+# README). No catalog carries Paint, so the OS icon of `mspaint.exe` was the
+# only candidate and it does not survive 1 bit. The executable is `mspaint` on
+# every Windows version, so one slug reaches it.
+MSPAINT_SRC = "mdi-palette-outline.svg"
+
+# mdi's `image-outline`, shipped VERBATIM as WINDOWS Photos' mark. `photos` is
+# Apple Photos on macOS and Microsoft Photos on Windows, and the rosette in
+# `photos.png` read as the Mac's app on a Windows keycap (field, 2026-10-21).
+# The `.windows` qualifier makes `app_icons.candidates` offer this file instead
+# of `photos.png` when the app runs on Windows.
+PHOTOS_WINDOWS_SRC = "mdi-image-outline.svg"
+
 
 def plate_outline_mask(svg_path, frame=PLATE_FRAME):
     """A filled-plate mark with the plate hollowed out: its holes lit, plus a frame.
@@ -362,6 +375,10 @@ def main(argv=None) -> int:
         chrome = fh.read()
     for slug in CHROME_SLUGS:
         products["%s.svg" % slug] = chrome
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", MSPAINT_SRC), "rb") as fh:
+        products["mspaint.svg"] = fh.read()
+    with open(os.path.join(PROGRAM_ICON_DIR, "src", PHOTOS_WINDOWS_SRC), "rb") as fh:
+        products["photos.windows.svg"] = fh.read()
 
     drifted = []
     for name, payload in products.items():

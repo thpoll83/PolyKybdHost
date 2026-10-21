@@ -108,9 +108,9 @@ class HostedAppRoutingTest(unittest.TestCase):
                                   f"from the host process name {app!r}")
 
     def test_photos_is_NOT_hosted_and_needs_no_icon_of_its_own(self):
-        """It really is its own `Photos.exe`, so `app_icons.yaml`'s curated
-        generic resolves -- and a baked/named mark would WIN over it and stop the
-        generic ever uploading."""
+        """It really is its own `Photos.exe`, so the shipped
+        `poly:photos.windows` resolves from the process name -- and a
+        baked/named mark would WIN over it and stop the generic ever uploading."""
         overlay, icon = self._match("photos", "Photos")
         self.assertIn("photos_template", overlay or "")
         self.assertIsNone(icon)

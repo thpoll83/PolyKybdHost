@@ -28,15 +28,17 @@ class FetcherTest(unittest.TestCase):
     def setUp(self):
         self.ready = []
         self.resolved_on = []          # thread names `program_overlay` ran on
+        self.os_keys_for = []          # (app, os_keys) each resolution was given
         self.identities_for = []       # every app_identity() call
         self.gate = threading.Event()
         self.gate.set()
         self.marks = {"gimp": ("MASK", "si:gimp")}
 
         def fake_program_overlay(app_name, identity=None, cache_dir=None,
-                                 allow_network=None):
+                                 allow_network=None, os_keys=()):
             self.gate.wait(5)
             self.resolved_on.append(threading.current_thread().name)
+            self.os_keys_for.append((app_name, os_keys))
             return self.marks.get(app_name, (None, None))
 
         def fake_identity(pid, app_name=""):
@@ -123,6 +125,22 @@ class FetcherTest(unittest.TestCase):
         self.assertEqual(self.fetcher.overlay_for("gimp")[0], "MASK")   # still cached
         self.fetcher.overlay_for("nosuchapp")                           # re-queued
         self.assertTrue(_wait(lambda: len(self.resolved_on) == 3))
+
+    def test_the_OS_reaches_the_resolver_and_a_NEW_OS_re_resolves(self):
+        """One app name can run on two machines: `photos` is Microsoft Photos
+        here and Apple Photos on a forwarding Mac. The OS-qualified shipped mark
+        depends on the OS, so a cached answer for one OS must not be served
+        for the other."""
+        self.gate.set()
+        self.fetcher.overlay_for("gimp", os_keys=("windows",))
+        self.assertTrue(_wait(lambda: self.fetcher.overlay_for(
+            "gimp", os_keys=("windows",))[0] == "MASK"))
+        self.assertEqual(self.os_keys_for, [("gimp", ("windows",))])
+        self.fetcher.overlay_for("gimp", os_keys=("windows",))     # cached
+        self.assertEqual(len(self.os_keys_for), 1)
+        self.fetcher.overlay_for("gimp", os_keys=("macos",))       # re-resolved
+        self.assertTrue(_wait(lambda: len(self.os_keys_for) == 2))
+        self.assertEqual(self.os_keys_for[1], ("gimp", ("macos",)))
 
     def test_an_empty_app_name_is_not_queued_at_all(self):
         self.assertEqual(self.fetcher.overlay_for(""), (None, None))
@@ -297,7 +315,7 @@ class LateIdentityRetryTest(unittest.TestCase):
     def test_a_miss_without_an_identity_is_retried_WITH_one(self):
         seen = []
 
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             seen.append(given)
             if given is None:
                 return None, "si:missed", "no catalog carries it"
@@ -322,7 +340,7 @@ class LateIdentityRetryTest(unittest.TestCase):
         # away and re-run the whole resolution.
         calls = []
 
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             calls.append(given)
             return object(), "si:drew", None
 
@@ -344,7 +362,7 @@ class LateIdentityRetryTest(unittest.TestCase):
         # permanently-unresolvable app re-queues on every window tick.
         calls = []
 
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             calls.append(given)
             return None, "si:missed", "nope"
 
@@ -409,7 +427,7 @@ class IdentityArrivesInPiecesTest(unittest.TestCase):
         return f.overlay_for(name, identity=ident)
 
     def test_the_icon_gets_a_look_after_the_names_missed(self):
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             if given is not None and getattr(given, "icon", None):
                 return object(), "os:drew", None
             return None, "si:missed", "no catalog carries it"
@@ -435,7 +453,7 @@ class IdentityArrivesInPiecesTest(unittest.TestCase):
         # identity was then never a new one.
         seen = []
 
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             seen.append(getattr(given, "names", None))
             if given is not None and getattr(given, "names", ()):
                 return object(), "os:drew", None
@@ -480,7 +498,7 @@ class TwoForwardersInterleaveTest(unittest.TestCase):
         return f
 
     def test_an_identity_less_report_between_real_ones_is_harmless(self):
-        def resolve(app_name, pid=None, given=None):
+        def resolve(app_name, pid=None, given=None, os_keys=()):
             if given is not None and getattr(given, "names", ()):
                 return object(), "os:drew", None
             return None, "si:missed", "no catalog carries it"

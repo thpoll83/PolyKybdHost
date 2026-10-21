@@ -461,9 +461,9 @@ powerpnt,microsoft powerpoint:
 # Visio (sources: overlay_sources/visio/). Windows only.
 visio:
   overlay: [visio_template.mods.png, visio_template.combo.mods.png]
-# Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
-# curated generic (`photos: mdi:image-multiple`) resolves from the process name,
-# confirmed in the field log that prompted this batch.
+# Photos runs as its own `Photos.exe`, so no title branch. Its ESC mark is the
+# shipped `poly:photos.windows` (res/icons/program/README.md): `photos` is also
+# Apple Photos, whose mark is `photos.png`.
 photos:
   overlay: photos_template.mods.png
 # macOS reports Adobe apps with a release year (`Adobe Photoshop 2025`);
