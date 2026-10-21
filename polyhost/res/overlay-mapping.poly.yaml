@@ -1281,3 +1281,16 @@ reaper:
   os:
     macos:
       overlay: [reaper_template_mac.mods.png, reaper_template_mac.combo.mods.png, reaper_template_mac.extra.mods.png, reaper_template_mac.gui.mods.png]
+# Audacity: 3.7.9 and 4.0.1 have different keymaps. On Windows they are
+# Audacity.exe and Audacity4.exe; on macOS both are "Audacity", and on Linux the
+# 4.x binary name is unconfirmed, so macOS and Linux get only the keys that do the
+# same thing in both versions. `org.audacityteam.audacity` is the Flatpak app id.
+audacity,org.audacityteam.audacity:
+  overlay: [audacity3_template.mods.png, audacity3_template.combo.mods.png, audacity3_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [audacity_template_mac.mods.png, audacity_template_mac.combo.mods.png, audacity_template_mac.extra.mods.png]
+    linux:
+      overlay: [audacity_template.mods.png, audacity_template.combo.mods.png]
+audacity4:
+  overlay: [audacity4_template.mods.png, audacity4_template.combo.mods.png, audacity4_template.extra.mods.png]

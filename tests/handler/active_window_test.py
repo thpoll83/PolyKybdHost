@@ -1643,6 +1643,21 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
 
+    def test_AUDACITY_gets_the_set_of_its_version(self):
+        # Windows tells 3.x (Audacity.exe) from 4.x (Audacity4.exe); macOS and
+        # Linux cannot, so they get the keys both versions share.
+        for app, os_name, stem in (
+                ("audacity", "WINDOWS", "audacity3_template"),
+                ("audacity4", "WINDOWS", "audacity4_template"),
+                ("audacity", "MACOS", "audacity_template_mac"),
+                ("audacity", "LINUX", "audacity_template"),
+                ("org.audacityteam.audacity", "LINUX", "audacity_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="song", title_known=True,
+                                  os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_KICAD_does_NOT_resolve_without_its_title(self):
         # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
         # a `title:` gate to tell the PCB editor from the schematic editor.
