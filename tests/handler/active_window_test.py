@@ -1614,13 +1614,13 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
             cls.handler = OverlayHandler(yaml.safe_load(fh))
 
-    def _match(self, app, title=None, title_known=False):
+    def _match(self, app, title=None, title_known=False, os_name="MACOS"):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key
         key = mapping_key(app, self.handler.mapping)
         self.assertIsNotNone(key, f"{app} has no mapping key")
         return find_matching_entry(title, self.handler.mapping[key], None,
-                                   OsType.MACOS, title_known=title_known)
+                                   OsType[os_name], title_known=title_known)
 
     def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
         got = self._match("code")
@@ -1629,11 +1629,40 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         got.get("overlay"))
 
     def test_KICAD_does_NOT_resolve_without_its_title(self):
-        # ⚠️ The false positive the flag exists to prevent: `kicad:` declares
-        # `title: PCB Editor` to tell the PCB editor from the schematic editor.
+        # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
+        # a `title:` gate to tell the PCB editor from the schematic editor.
         self.assertIsNone(self._match("kicad"))
         self.assertIsNotNone(self._match("kicad", title="PCB Editor",
                                          title_known=True))
+
+    def test_KICAD_routes_each_window_by_its_title(self):
+        windows = (("*board — PCB Editor", "kicad_pcb_template"),
+                   ("board [Read Only] — Schematic Editor", "kicad_sch_template"),
+                   ("Lib:R_0402 — Footprint Editor", "kicad_fp_template"),
+                   ("Device:R — Symbol Editor", "kicad_sym_template"),
+                   ("3D Viewer", "kicad_3d_template"),
+                   ("3D Viewer — R_0402", "kicad_3d_template"),
+                   ("board-F_Cu.gbr — Gerber Viewer", "kicad_gerbview_template"),
+                   # KiCad translates the names (window_titles.yaml).
+                   ("board — Leiterplatteneditor", "kicad_pcb_template"),
+                   ("board — Éditeur de PCB KiCad", "kicad_pcb_template"),
+                   ("board — 回路図 エディター", "kicad_sch_template"),
+                   ("Device:R — Редактор символов", "kicad_sym_template"),
+                   ("3D-Betrachter", "kicad_3d_template"))
+        for os_name, suffix in (("MACOS", "_mac"), ("WINDOWS", ""), ("LINUX", "")):
+            for app in ("kicad", "pcbnew", "eeschema", "gerbview"):
+                for title, stem in windows:
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+                # No set for the project manager or the tools without one.
+                for title in ("KiCad 10.0 — board", "Calculator Tools",
+                              "R_0402 — Footprint Library Browser"):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        self.assertIsNone(self._match(
+                            app, title=title, title_known=True, os_name=os_name))
 
 
 if __name__ == "__main__":
