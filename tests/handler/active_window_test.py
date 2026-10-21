@@ -1633,6 +1633,7 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             "fl64": "flstudio_template", "fl studio 2025": "flstudio_template",
             "ableton live 12 suite": "ableton_template",
             "ableton live 12 lite": "ableton_template",
+            "reaper": "reaper_template",
         }
         for app, stem in cases.items():
             for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):

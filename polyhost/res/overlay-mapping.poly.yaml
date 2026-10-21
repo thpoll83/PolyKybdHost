@@ -1274,3 +1274,10 @@ ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton liv
   os:
     macos:
       overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
+# REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
+# same default keys.
+reaper:
+  overlay: [reaper_template.mods.png, reaper_template.combo.mods.png, reaper_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [reaper_template_mac.mods.png, reaper_template_mac.combo.mods.png, reaper_template_mac.extra.mods.png, reaper_template_mac.gui.mods.png]
