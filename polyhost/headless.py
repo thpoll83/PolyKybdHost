@@ -269,6 +269,10 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, c
     if developer is None:
         developer = log_level <= logging.DEBUG
     log.info("Developer mode: %s", developer)
+    # numpy and Pillow load on the first overlay decode; load them now instead,
+    # while the keyboard connects (util/preload.py).
+    from polyhost.util import preload
+    preload.start(log)
     # The endpoint must be claimed BEFORE the host is constructed:
     # PolyCore.__init__ opens the keyboard, and on macOS that open is exclusive
     # — a daemon that goes on to lose the bind race has by then already taken
