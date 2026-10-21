@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timezone, timedelta
 import math
 
@@ -9,6 +10,29 @@ import math
 # stack whose cold import cost seconds on Windows. Clouds only ever come from
 # the online open-meteo value anyway; pvlib's get_clearsky was a *clear-sky*
 # (cloudless) fallback, so a pure-math clear-sky estimate is equivalent there.
+
+
+# ⚠️ A `requests` exception carries the WHOLE request URL in its str(), and the
+# irradiance URL is built from the user's coordinates -- so logging the exception
+# writes "latitude=52.5219&longitude=13.4132" at WARNING, which is the default
+# level and lands in the log bundle a user attaches to an issue. That defeats the
+# DEBUG-only rule in `init_location` below, and the bundle's redaction masks
+# window titles, not coordinates. Measured against an unreachable host: full
+# 4-decimal precision, about 11 m. Every logged string that can hold a coordinate
+# goes through this first.
+# ⚠️ Two separators, because there are two shapes: ``latitude=52.52`` in a URL
+# and ``'lat': 52.52`` in a logged response dict. The first version of this
+# pattern matched only ``=``, and the dict form went through unscrubbed --
+# caught by `test_a_geolocation_body_carrying_a_fix_is_scrubbed`.
+_COORD_RE = re.compile(
+    r"\b(lat|lon|latitude|longitude)(['\"]?\s*[=:]\s*)(-?\d+(?:\.\d+)?)",
+    re.IGNORECASE)
+
+
+def scrub_coords(text) -> str:
+    """Replace any ``lat=``/``'lat':`` value in ``text`` with a placeholder."""
+    return _COORD_RE.sub(lambda m: f"{m.group(1)}{m.group(2)}<redacted>",
+                         str(text))
 
 
 class Sunlight:
@@ -41,11 +65,15 @@ class Sunlight:
                                    self.latitude, self.longitude)
                 else:
                     self.log.warning("IP geolocation returned no fix: %s",
-                                     data.get("message", data))
+                                     scrub_coords(data.get("message", data)))
             except Exception as e:
+                # No test pins this one, and a mutation sweep confirms none can:
+                # the URL above carries no coordinates, so this exception cannot
+                # either. Kept so both exception logs in this module read the
+                # same way, and so adding a query parameter here stays safe.
                 self.log.warning(
                     "Failed to query location (%s), maybe due to missing "
-                    "internet connection.", e)
+                    "internet connection.", scrub_coords(e))
 
     def get_irradiance_now(self):
         self.init_location()
@@ -110,7 +138,8 @@ class Sunlight:
             self.log.warning("Found no matching entry in time table from api.open-meteo.com: %s", times)
         except Exception as e:
             self.log.warning(
-                "Online irradiance lookup failed (%s: %s).", type(e).__name__, e)
+                "Online irradiance lookup failed (%s: %s).", type(e).__name__,
+                scrub_coords(e))
         return None
 
     def _clearsky_ghi(self, when_utc=None):
