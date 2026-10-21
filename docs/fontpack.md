@@ -48,9 +48,11 @@ and relative links were adjusted to suit a standalone file.
       (disabled) over a bundle that never took — no route back from the GUI at all.
     - **A failed COMMIT is VERIFIED before being believed** (`_verify_flashed_bundle`):
       re-read `GET_ID` and, if the slot now advertises the shipped version, treat it as
-      stored-with-a-caveat instead of re-sending tens of KB. ⚠️ The version block reflects
-      the **master's** slots only, so it can never prove the *slave* got the bundle — on a
-      `slave-unconfirmed` status say so in the note rather than claiming plain success.
+      stored-with-a-caveat instead of re-sending tens of KB. ⚠️ The version block is the
+      lower of the two halves only once the master has read the slave's versions
+      (protocol v20+), and the master's alone before that, so it cannot always prove the
+      *slave* got the bundle — on a `slave-unconfirmed` status say so in the note rather
+      than claiming plain success.
       A `rejected` status is deliberately **not** verified (the keyboard told us it refused
       the data).
   - **One bundle's failure must not abort the pass.** `_fontpack_flash_bundles_job` flashes
@@ -148,8 +150,12 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   regardless of version, and verifies a failed COMMIT before believing it.
 - **One bundle's failure must not abort the pass** — the old return-on-first-failure
   cost six good bundles a flash because slot 0 failed.
-- ⚠️ **The GET_ID version block reflects the MASTER's slots only**, so it can never
-  prove the slave got the bundle; say `slave-unconfirmed` rather than claiming success.
+- ⚠️ **The GET_ID version block is min(master, slave) per bundle since protocol v20**
+  (`fw_up_reported_bundle_version()` in the firmware), but only once the master has read
+  the slave's versions. Until then (after boot or a link drop, a slave too old to answer
+  the query, firmware before v20) it is the master's alone. So a current version does
+  not prove the slave got the bundle; say `slave-unconfirmed` rather than claiming
+  success, and keep such a bundle queued for a re-flash.
 - ⚠️ **Bundle 8 is the overlay ICON library (`icons.plyi`, magic `PlyI`, cmd 42,
   protocol v20), not a font.** It is built by `scripts/build_icon_library.py` from the
   templates (`--check` is a test), its ids are frozen in `res/fontpack/icon_ids.yaml`
