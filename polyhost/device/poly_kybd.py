@@ -2041,13 +2041,16 @@ class PolyKybd:
 
         The time split: wall = pauses + device + host. "pauses" is the
         rate-limit sleep (docs/FUTURE_WORK.md). "device" is the time inside
-        the HID write and read calls, one call per report; its median per
-        call is the keyboard's pace per report once its receive queue is
-        full (see IoMeter), so compare it with the bus round trip (about 3 ms)
-        to see whether the firmware or the link paces a switch. "host" is the
-        rest: decoding the images, the MRU claim pass, encoding and packing;
-        "before the first report" is the part of it spent before any report
-        went out."""
+        the HID write and read calls, one call per report, split by kind
+        (see IoMeter): "write-only" are the image reports and the mapping
+        reports, the part a faster link could speed up; "with reply" are the
+        reports that wait for the keyboard's answer (icon fills, cmd 42, and
+        prepare/enable), whose time is mostly the keyboard's own work. Only
+        the write-only median says something about the link, and only on a
+        switch long enough to fill the keyboard's receive queue. "host" is
+        the rest: decoding the images, the MRU claim pass, encoding and
+        packing; "before the first report" is the part of it spent before any
+        report went out."""
         plain0, comp0, roi0, croi0, best0, chosen0 = before
         chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
         mapping = self._last_mapping_msgs
@@ -2066,13 +2069,20 @@ class PolyKybd:
             "%d position(s) mapped | reports: image %d + mapping %d + control %d = %d "
             "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | "
             "wall %.0f ms = %d rate-limit pause(s) %.0f ms + device %.0f ms "
-            "(%d call(s), median %.1f ms, max %.1f ms) + host %.0f ms (%.0f ms before the first report)",
+            "(%d call(s), median %.1f ms, max %.1f ms; "
+            "write-only %d call(s) %.0f ms, median %.1f ms, max %.1f ms; "
+            "with reply %d call(s) %.0f ms, median %.1f ms, max %.1f ms) "
+            "+ host %.0f ms (%.0f ms before the first report)",
             uploaded, chosen["fill"], chosen["prc"], chosen["roi"], chosen["rle-roi"], chosen["rle"], chosen["plain"],
             positions, image_msgs, mapping, control, total,
             self.stat_plain - plain0, self.stat_comp - comp0,
             self.stat_roi - roi0, self.stat_croi - croi0,
             wall_s * 1000.0, pauses, pause_s * 1000.0, device_s * 1000.0,
             meter.count, meter.median_s * 1000.0, meter.max_s * 1000.0,
+            meter.write.count, meter.write.total_s * 1000.0,
+            meter.write.median_s * 1000.0, meter.write.max_s * 1000.0,
+            meter.reply.count, meter.reply.total_s * 1000.0,
+            meter.reply.median_s * 1000.0, meter.reply.max_s * 1000.0,
             host_s * 1000.0, prep_s * 1000.0)
         self.log.info(
             "Overlay stats since start: %d switch(es), %d report(s); image reports sent %d "

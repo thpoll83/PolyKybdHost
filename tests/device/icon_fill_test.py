@@ -81,6 +81,25 @@ class IconFillTest(unittest.TestCase):
         self.assertFalse(IMAGE_CMDS & set(cmds), cmds)
         self.assertEqual(keeb.stat_chosen["fill"], 3)
 
+    def test_a_fill_report_is_timed_as_a_call_WITH_REPLY(self):
+        """The switch summary splits device time into write-only calls and
+        calls that wait for an answer. A fill report waits for the keyboard's
+        verdict, so it belongs to the second kind, with prepare/enable; the
+        mapping reports are write-only."""
+        keeb, dev = _keeb(self.version)
+        meters = []
+        attach = keeb.hid.measure
+        keeb.hid.measure = lambda: meters.append(attach()) or meters[-1]
+        self.assertTrue(_send(keeb, self.masks))
+        meter = meters[0]
+        cmds = _cmds(dev)
+        waits = {Cmd.FILL_POOL_FROM_ICON.value, Cmd.OVERLAY_FLAGS_ON.value}
+        self.assertIn(Cmd.FILL_POOL_FROM_ICON.value, cmds)
+        self.assertEqual(meter.count, len(dev.writes))
+        self.assertEqual(meter.reply.count, sum(c in waits for c in cmds))
+        self.assertEqual(meter.write.count, sum(c not in waits for c in cmds))
+        self.assertIsNone(keeb.hid.meter, "detached after the switch")
+
     def test_the_stats_count_fill_reports_and_their_alternatives(self):
         """Field log, 2026-09-29: a cold Word switch of 24 fills + 5 PRC images
         logged `image reports sent 8` and `if plain: 0` -- only the older

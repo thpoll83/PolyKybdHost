@@ -19,8 +19,10 @@ from tests.device.pool_overflow_test import _image
 LINE = re.compile(
     r"reports: image (\d+) \+ mapping (\d+) \+ control (\d+) = (\d+) .*\| "
     r"wall (\d+) ms = (\d+) rate-limit pause\(s\) (\d+) ms \+ device (\d+) ms "
-    r"\((\d+) call\(s\), median ([\d.]+) ms, max ([\d.]+) ms\) \+ host (\d+) ms "
-    r"\((\d+) ms before the first report\)")
+    r"\((\d+) call\(s\), median ([\d.]+) ms, max ([\d.]+) ms; "
+    r"write-only (\d+) call\(s\) (\d+) ms, median ([\d.]+) ms, max ([\d.]+) ms; "
+    r"with reply (\d+) call\(s\) (\d+) ms, median ([\d.]+) ms, max ([\d.]+) ms\) "
+    r"\+ host (\d+) ms \((\d+) ms before the first report\)")
 
 
 class SwitchTimingTest(unittest.TestCase):
@@ -35,6 +37,7 @@ class SwitchTimingTest(unittest.TestCase):
         self.assertTrue(ok)
         lines = [l for l in cm.output if "Overlay switch stats:" in l]
         self.assertEqual(len(lines), 1, cm.output)
+        self.last_line = lines[0]
         m = LINE.search(lines[0])
         self.assertIsNotNone(m, lines[0])
         return [float(x) for x in m.groups()]
@@ -45,8 +48,17 @@ class SwitchTimingTest(unittest.TestCase):
         for name, n in (("@cold", 12), ("@warm", 12)):
             with self.subTest(name=name):
                 (image, mapping, control, total, wall, pauses, pause_ms, device_ms,
-                 calls, median, mx, host_ms, prep_ms) = self.switch(kb, cache, name, n)
+                 calls, median, mx, w_calls, w_ms, w_med, w_max, r_calls, r_ms, r_med, r_max,
+                 host_ms, prep_ms) = self.switch(kb, cache, name, n)
                 self.assertEqual(calls, total)
+                self.assertEqual(w_calls + r_calls, calls)
+                # Image and mapping reports are writes; prepare/enable wait for a
+                # reply. The mock keyboard has no icon library, so no cmd 42
+                # fills (the other kind that waits) appear here.
+                self.assertIn("[fill 0,", self.last_line)
+                self.assertEqual(w_calls, image + mapping)
+                self.assertEqual(r_calls, control)
+                self.assertAlmostEqual(w_ms + r_ms, device_ms, delta=2)
                 self.assertGreater(calls, 0)
                 self.assertLessEqual(mx, device_ms + 1)
                 self.assertLessEqual(median, mx)
@@ -78,6 +90,8 @@ class SwitchTimingTest(unittest.TestCase):
             kb._wire.hid = real
         self.assertEqual(parts[8], 0)       # calls
         self.assertEqual(parts[7], 0)       # device ms
+        self.assertEqual(parts[11], 0)      # write-only calls
+        self.assertEqual(parts[15], 0)      # calls with a reply
 
 
 if __name__ == "__main__":

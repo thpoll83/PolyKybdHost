@@ -259,17 +259,24 @@ per-switch rate limit still applies on the pipe, and a measurement of what an ap
 switch costs today on HID before any of it is written: a switch sends at most 600
 images of 360 bytes, and the common case is far below that.
 
-**The measurement (2026-10-20).** Every `Overlay switch stats:` line in the host
-log ends with the split `wall = N rate-limit pause(s) + device (calls, median,
-max) + host (before the first report)`. "device" is the time inside the HID
-write and read calls, one call per report (`HidHelper.measure()`, `IoMeter`).
-A write returns when the keyboard has taken the report into its receive queue,
-and the keyboard takes the next one only after its main loop consumed the
-previous one, so the median per call is the firmware's pace per report once the
-queue is full, not the bus alone. Read it against the bus round trip (about 3 ms
-on the rig, `hid_latency` in the perf baseline): a median near 3 ms means the
-link paces the switch and the pipe would help; a median well above it means the
-firmware does, and the pipe would not. The whole "device" part is the ceiling of
-what a pipe can save on that switch; "pauses" is what shortening the rate limit
-can save; "host" is decode, claim pass and encoding on the PC. Collect the lines
-from a few days of real use (`polyctl logs`) before deciding.
+**The measurement (2026-10-20, split by call kind 2026-10-21).** Every
+`Overlay switch stats:` line in the host log ends with the split `wall = N
+rate-limit pause(s) + device (calls, median, max; write-only …; with reply …) +
+host (before the first report)`. "device" is the time inside the HID write and
+read calls, one call per report (`HidHelper.measure()`, `IoMeter`).
+"write-only" are the image reports and the mapping reports: a write returns when
+the keyboard has taken the report into its receive queue, so their median is the
+bus until the queue is full and the firmware's pace per report after that.
+"with reply" are the icon fill reports (cmd 42) and prepare/enable, which wait
+for the keyboard's answer; their time is mostly the keyboard's own work, which
+the pipe would not shorten. So the write-only total is the ceiling of what the
+pipe can save on a switch. "pauses" is what shortening the rate limit can save;
+"host" is decode, claim pass and encoding on the PC.
+
+First field bundle (2026-10-21, 70 switches in 77 minutes, before the split by
+kind): device 590 ms in total, pauses 1031 ms, host 3453 ms. Calls that only
+write took a median of 0.9 ms; the slow ones (26 to 44 ms) appeared only in
+switches with icon fills or several mapping reports. The largest switch had 29
+reports, so it says nothing about the 200-report case. A host update restarts
+the MRU pool, and the first switch after it uploads every image: that line is
+the one to read.
