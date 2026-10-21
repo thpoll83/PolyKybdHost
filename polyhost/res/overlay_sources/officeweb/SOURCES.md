@@ -23,7 +23,8 @@ are matched, each gated to Microsoft's document hosts (`sharepoint.com`,
 
 - SharePoint and OneDrive for Business share links carry the app in the path:
   `/:w:/` Word, `/:x:/` Excel, `/:p:/` PowerPoint, `/:o:/` OneNote.
-- Document URLs carry the file type: `file=Report.docx` on SharePoint, and
+- Document URLs carry the file type: `file=Report.docx` on SharePoint,
+  `Shared%20Documents/Report.docx?web=1` for a direct file link, and
   `ithint=file,docx` (written `file%2cdocx`) on personal OneDrive. The needles
   are `docx`, `xlsx`, `pptx`, and `onenote` for notebooks. The file-type gates
   need `.docx` or `%2cdocx` at the end of a query value, so a SharePoint site

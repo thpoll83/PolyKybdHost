@@ -444,7 +444,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                 ("https://onedrive.live.com/edit?id=1&ithint=file%2Cdocx&wdOrigin=x", "word_web_template"),
                 # A site PATH naming another type does not decide the app;
                 # the file's own extension does.
-                (f"{sp}/sites/docx-guides/_layouts/15/Doc.aspx?file=Budget.xlsx", "excel_web_template")):
+                (f"{sp}/sites/docx-guides/_layouts/15/Doc.aspx?file=Budget.xlsx", "excel_web_template"),
+                # A direct file link: the extension ends at the query.
+                (f"{sp}/sites/x/Shared%20Documents/Budget.xlsx?web=1", "excel_web_template")):
             self.assertIn(f"{stem}.mods.png", self._chrome("windows", url), url)
 
     def test_office_needles_on_OTHER_sites_keep_the_browser_set(self):
