@@ -9,6 +9,10 @@ NumPy
 Pillow>=12.3.0
 PyWinCtl
 pywin32; sys_platform == "win32"
+# The Windows shortcut harvest reads menus through UI Automation with comtypes
+# (polyhost/services/shortcut_source/uia.py). Without it the harvest is off and
+# the log says "the uia backend needs comtypes, which is not installed".
+comtypes; sys_platform == "win32"
 pynput
 PyYAML
 platformdirs
