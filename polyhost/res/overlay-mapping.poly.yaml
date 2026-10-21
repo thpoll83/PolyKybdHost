@@ -78,28 +78,28 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     # hosts, so a .docx link on any other site does not match. No title
     # fallback: the tab title is only the file name.
     /:w:/:
-      url: '^https?://[^/]+\.sharepoint\.com/'
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
       overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
     /:x:/:
-      url: '^https?://[^/]+\.sharepoint\.com/'
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
       overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
     /:p:/:
-      url: '^https?://[^/]+\.sharepoint\.com/'
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
       overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
     /:o:/:
-      url: '^https?://[^/]+\.sharepoint\.com/'
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
       overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
     docx:
-      url: '^https?://([^/]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+      url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
       overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
     xlsx:
-      url: '^https?://([^/]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+      url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
       overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
     pptx:
-      url: '^https?://([^/]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+      url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
       overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
     onenote:
-      url: '^https?://([^/]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+      url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
       overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
@@ -184,10 +184,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         # Office on the web: only PowerPoint documents its Mac chords; Word, Excel
         # and OneNote on the web keep the browser's keycaps on macOS.
         /:p:/:
-          url: '^https?://[^/]+\.sharepoint\.com/'
+          url: '^https?://[^/?#@]+\.sharepoint\.com/'
           overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
         pptx:
-          url: '^https?://([^/]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+          url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
           overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
       titles-contains: &web_titles_mac
         Miro:

@@ -445,10 +445,18 @@ class AppNamesPerPlatformTest(unittest.TestCase):
         download link or a search for "onenote" pulling Office keycaps."""
         for url in ("https://example.com/files/Report.docx",
                     "https://www.google.com/search?q=onenote+shortcuts",
-                    "https://example.com/:w:/share"):
+                    "https://example.com/:w:/share",
+                    # The host part must stop at "?", "#" and "@": a Microsoft
+                    # name in a query string or as user info is not the host.
+                    "https://evil.example?x=.sharepoint.com/Report.docx",
+                    "https://evil.example?x=.sharepoint.com/:w:/r",
+                    "https://evil.example#.onedrive.live.com/x.xlsx",
+                    "https://a.sharepoint.com@evil.example/:w:/r"):
             overlay = self._chrome("windows", url)
             self.assertIn("chrome_template.mods.png", overlay, url)
-            self.assertNotIn("_web_template", overlay, url)
+            # Substring test over the FILE NAMES: `overlay` is a list, and
+            # `in` on a list only compares whole entries.
+            self.assertNotIn("_web_template", " ".join(overlay), url)
 
     def test_on_macOS_only_powerpoint_on_the_web_has_a_set(self):
         sp = "https://contoso.sharepoint.com"
@@ -456,7 +464,7 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                       self._chrome("macos", f"{sp}/:p:/g/personal/a/EaBc"))
         overlay = self._chrome("macos", f"{sp}/:w:/r/sites/x/Doc.aspx")
         self.assertIn("chrome_template_mac.mods.png", overlay)
-        self.assertNotIn("word_web_template", overlay)
+        self.assertNotIn("word_web_template", " ".join(overlay))
 
     def test_visio_reaches_its_set(self):
         self.assertIn("visio_template.mods.png", self._overlay("visio", "windows"))
