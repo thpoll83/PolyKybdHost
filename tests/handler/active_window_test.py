@@ -1642,7 +1642,13 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                    ("Device:R — Symbol Editor", "kicad_sym_template"),
                    ("3D Viewer", "kicad_3d_template"),
                    ("3D Viewer — R_0402", "kicad_3d_template"),
-                   ("board-F_Cu.gbr — Gerber Viewer", "kicad_gerbview_template"))
+                   ("board-F_Cu.gbr — Gerber Viewer", "kicad_gerbview_template"),
+                   # KiCad translates the names (window_titles.yaml).
+                   ("board — Leiterplatteneditor", "kicad_pcb_template"),
+                   ("board — Éditeur de PCB KiCad", "kicad_pcb_template"),
+                   ("board — 回路図 エディター", "kicad_sch_template"),
+                   ("Device:R — Редактор символов", "kicad_sym_template"),
+                   ("3D-Betrachter", "kicad_3d_template"))
         for os_name, suffix in (("MACOS", "_mac"), ("WINDOWS", ""), ("LINUX", "")):
             for app in ("kicad", "pcbnew", "eeschema", "gerbview"):
                 for title, stem in windows:
