@@ -164,7 +164,11 @@ N per-family bundles in `polyhost/res/fontpack/`, flashed per slot on connect.
 - ⚠️ **A bundle can report a failed flash and still read up to date** (FONTPACK writes in
   place). The core remembers failures and re-flashes regardless of version. One bundle's
   failure must not abort the pass.
-- ⚠️ **GET_ID's version block shows the master's slots only.** Say `slave-unconfirmed`.
+- ⚠️ **GET_ID's version block is the LOWER of the two halves since protocol v20**, but
+  only once the master has read the slave's versions; until then (after boot or a link
+  drop, a slave that cannot answer, older firmware) it is the master's alone. A current
+  version is therefore no proof the slave has the bundle: keep `slave-unconfirmed` and
+  the re-flash queue. [`docs/fontpack.md`](docs/fontpack.md).
 - ⚠️ **`install_doompack` sends executable code.** The `.plyx` is signed (FW-9, fixed);
   `.whx` and `.plyf` are not. The `.sig` handling in `hid_fw_up` covers the firmware
   image only.

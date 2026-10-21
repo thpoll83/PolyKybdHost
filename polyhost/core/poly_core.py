@@ -3370,7 +3370,9 @@ class PolyCore(Observable):
                         done.append(b["id"])
                         caveats.append(note)
                         if fstatus == hid_fontpack.COMMIT_NO_SLAVE:
-                            # Verified on the MASTER only — and the firmware cannot tell
+                            # Possibly verified on the MASTER only (the version block is
+                            # the lower of both halves only once the master has read the
+                            # slave's versions, protocol v20+) — and the firmware cannot tell
                             # us whether the slave lost its ACK or explicitly refused its
                             # own finalize (both surface as SYNC_CRC32_ERR over the
                             # bridge). So keep it queued: a re-flash on the next pass is
@@ -3419,9 +3421,11 @@ class PolyCore(Observable):
 
         * A ``rejected`` status is never verified. The keyboard told us it refused
           the data, so re-reading a version could only mislead.
-        * The version block reflects the MASTER's slots only, so it cannot prove the
-          slave got the bundle. On a ``slave-unconfirmed`` status the note says so
-          rather than claiming success outright.
+        * The version block is the lower of both halves only once the master has
+          read the slave's versions (protocol v20+), and the master's alone before
+          that, so it cannot always prove the slave got the bundle. On a
+          ``slave-unconfirmed`` status the note says so rather than claiming success
+          outright.
 
         Safe to run next to the reconnect probe: this is the worker thread (the flash
         job owns it), and ``query_id`` only ever *sets* the firmware's one-shot

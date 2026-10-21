@@ -4,6 +4,7 @@ import threading
 import platform
 import os
 import time
+from contextlib import contextmanager
 from typing import Any
 
 log = logging.getLogger('PolyHost')
@@ -145,7 +146,75 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 """
 
+class IoStats:
+    """Count, total, maximum and median of a set of call durations. The
+    sample list is capped (``MAX_SAMPLES``); the count, total and maximum keep
+    counting past it, the median is then of the first samples."""
+
+    MAX_SAMPLES = 4096
+
+    def __init__(self):
+        self.count = 0
+        self.total_s = 0.0
+        self.max_s = 0.0
+        self._samples = []
+
+    def add(self, dt: float) -> None:
+        self.count += 1
+        self.total_s += dt
+        if dt > self.max_s:
+            self.max_s = dt
+        if len(self._samples) < self.MAX_SAMPLES:
+            self._samples.append(dt)
+
+    @property
+    def median_s(self) -> float:
+        if not self._samples:
+            return 0.0
+        ordered = sorted(self._samples)
+        n = len(ordered)
+        mid = n // 2
+        return ordered[mid] if n % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+class IoMeter(IoStats):
+    """Timing of the device calls made while a HidHelper has it attached
+    (``HidHelper.measure()``): every call, and the same calls split by kind.
+
+    One sample per call to a write or read primitive, exceptions included.
+    ``write`` holds the write-only calls (in an overlay switch: the image
+    reports and the mapping reports): a write returns when the keyboard has
+    taken the report into its receive queue, so it is the bus until the queue
+    is full, and the firmware's pace per report after that. ``reply`` holds
+    the calls that wait for an answer (in an overlay switch: the icon fill
+    reports, cmd 42, and prepare/enable): their time includes the keyboard
+    doing the work the command asks for, which a faster link does not shorten.
+    A reply wait also contains every report queued before it, which the
+    keyboard processes first, so it is not the cost of that one command.
+    """
+
+    KINDS = ("write", "reply")
+
+    def __init__(self):
+        super().__init__()
+        self.first_at = None    # perf_counter() at the start of the first call
+        self.write = IoStats()
+        self.reply = IoStats()
+
+    def record(self, t0: float, t1: float, kind: str = "reply") -> None:
+        dt = t1 - t0
+        if self.first_at is None:
+            self.first_at = t0
+        self.add(dt)
+        getattr(self, kind if kind in self.KINDS else "reply").add(dt)
+
+
 class HidHelper:
+    # The meter the device calls below report into, or None. A class
+    # attribute, because tests build helpers with __new__ and never run
+    # __init__. Attach one with measure(); detach with stop_measuring().
+    meter: IoMeter | None = None
+
     def __del__(self):
         if hasattr(self, 'interface') and self.interface:
             self.interface.close()
@@ -237,6 +306,29 @@ class HidHelper:
     def interface_acquired(self):
         return self.interface is not None
 
+    def measure(self) -> IoMeter:
+        """Attach a fresh IoMeter; every device call until stop_measuring()
+        reports into it. Returns the meter."""
+        self.meter = IoMeter()
+        return self.meter
+
+    def stop_measuring(self) -> None:
+        self.meter = None
+
+    @contextmanager
+    def _timed(self, kind: str):
+        """Time one device call into the attached meter, if any, as ``kind``
+        ("write" for a write that reads nothing back, "reply" for a call that
+        waits for an answer). Entered after the lock is taken, so the time is
+        the call's, not a wait for the lock."""
+        t0 = time.perf_counter()
+        try:
+            yield
+        finally:
+            meter = self.meter
+            if meter is not None:
+                meter.record(t0, time.perf_counter(), kind)
+
     def __send(self, data: bytearray) -> tuple[bool, Any]:
         """ Write a data report without reading the response"""
 
@@ -248,7 +340,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -266,7 +358,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 result = self.interface.write(request_report)
                 self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
@@ -289,7 +381,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -301,7 +393,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, bytearray(f"Exception: {e}", 'utf-8')
@@ -318,7 +410,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
                 request_data[1:len(data) + 1] = data
                 request_report = bytes(request_data)
@@ -549,7 +641,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 self.interface.write(request_report)
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:

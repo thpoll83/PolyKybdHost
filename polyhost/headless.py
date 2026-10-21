@@ -286,6 +286,11 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, c
             log.info("Another PolyKybdHost already serves the control endpoint "
                      "(%s) — standing down.", e.outcome)
             return
+    # numpy and Pillow load on the first overlay decode; load them now instead,
+    # while the keyboard connects (util/preload.py). After the claim, so a
+    # daemon that stands down never pays for them.
+    from polyhost.util import preload
+    preload.start(log)
     # The daemon declares itself a macOS ACCESSORY app here, as `host.py` and
     # `forwarder.py` already do -- this was the one entry point without it, and
     # the only one with no window of its own to need the regular policy back.

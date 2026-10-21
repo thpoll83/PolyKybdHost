@@ -116,6 +116,12 @@ set. The firmware spent about 3.4 ms per report, with 2 main-loop iterations of
 10 ms or more across the 208-report burst. With icon fills (cmd 42) and PRC (cmd 41)
 a large cold switch is 32 reports, so two pauses are 0.4 s of an 0.8 s switch.
 
+The pause's share of a real switch is in every `Overlay switch stats:` line of
+the host log (`wall … = N rate-limit pause(s) … ms + device … + host …`, since
+2026-10-20), so a log bundle answers how much there is to gain per switch. In
+the second field bundle (2026-10-21, *Overlays over the fast link* below) 2 of
+62 switches crossed 15 reports and paused, 420 ms of 4826 ms of switch time.
+
 **Why it is deferred.** None of the numbers above measure what the pause is for.
 Report counts and main-loop iteration histograms say nothing about whether a key
 pressed mid-burst is seen promptly, and the perf replay fixtures were recorded
@@ -239,18 +245,65 @@ images per switch, enforced in the send path; see the comment at the top of
 
 ## Overlays over the fast link
 
-**Status:** follow-up, agreed 2026-10-19. The firmware image's CHUNK step
+**Status:** measured, not worth it (2026-10-21). The firmware image's CHUNK step
 (PolyKybdHost#407) and every resource that rides the font-pack transport (the
 font-pack bundles, the icon library, the `.whx` game data and the `.plyx` engine
 pack; the follow-up PR after #407) send their chunks over the bulk pipe when the
 probe found one, and over 56-byte HID reports otherwise or when the developer
-setting `dev_force_hid_link` is on. The overlays (cmd 16 to 19 and 41, per-switch
-images with the MRU claim pass) still go over HID only.
+setting `dev_force_hid_link` is on. The overlays (cmd 16 to 19, 41 and 42,
+per-switch images with the MRU claim pass) stay on HID: two field bundles show
+that the link is a small part of a switch.
 
-**What it needs.** Overlays are a different protocol: no BEGIN selects a target,
-each report names its own key and segment, and the send path rate-limits per
-switch. So they need their own pipe command on both ends (a new pipe protocol
-version in the PING reply, gated like `FW_CHUNK`), a decision on whether the
-per-switch rate limit still applies on the pipe, and a measurement of what an app
-switch costs today on HID before any of it is written: a switch sends at most 600
-images of 360 bytes, and the common case is far below that.
+**How a switch is measured.** Every `Overlay switch stats:` line in the host log
+ends with `wall = N rate-limit pause(s) + device (calls, median, max; write-only
+…; with reply …) + host (before the first report)`. "device" is the time inside
+the HID write and read calls, one call per report (`HidHelper.measure()`,
+`IoMeter`). "write-only" are the image reports (cmd 16 to 19, 41) and the mapping
+reports: a write returns when the keyboard has taken the report into its receive
+queue, so their median is the bus until the queue is full and the firmware's
+pace per report after that. "with reply" are the icon fill reports (cmd 42) and
+prepare/enable, which wait for the keyboard's answer. ⚠️ A reply wait also
+contains every report queued before it, which the keyboard processes first, so
+it is not the cost of that one command. The write-only total is the ceiling of
+what the pipe can save on a switch.
+
+**Second bundle (2026-10-21, host 0bf888d, firmware 1.9.6, pause every 15
+reports).** 62 switches in 19 minutes; the host had just been updated, so the
+MRU pool started empty.
+
+| part | 24 cold switches | 38 warm switches |
+|---|---|---|
+| wall | 3788 ms | 1038 ms |
+| host work on the PC | 2270 ms (2205 ms before the first report) | 931 ms |
+| calls with a reply | 587 ms, 40 calls | 37 ms, 12 calls |
+| write-only calls | 509 ms, 209 calls | 71 ms, 87 calls |
+| rate-limit pauses | 420 ms, 2 pauses | 0 |
+
+- The first switch after the update (VS Code) uploaded 49 images in 12 reports:
+  42 icon fills in 2 reports and 7 PRC images in 6. Its wall was 1232 ms, of
+  which 1166 ms was host work before the first report; the log shows 1.0 s
+  between the decode of the first template and the second. The largest switch
+  had 39 reports. With icon fills and PRC, the 208-report cold switch of perf
+  run 1156 no longer occurs.
+- Write-only calls take a median of 0.8 to 0.9 ms, one report per 1 ms USB
+  frame. One switch of 17 writes filled the queue and its median rose to 4.8 ms,
+  the firmware's pace per report. Each longer burst had a few writes of about
+  33 ms.
+- On the largest switch the write-only calls were 153 ms of 512 ms. That is the
+  most the pipe could save there, and the firmware's work per report would
+  remain. Over all 62 switches the ceiling is 580 ms in 19 minutes.
+- Calls with a reply took 9 to 70 ms when fills were present, and 2 to 3 ms for
+  prepare alone on most switches (41 ms once).
+
+**First bundle (2026-10-21, host 1c919ca, pause every 5 reports, before the
+split by kind).** 70 switches in 77 minutes: device 590 ms in total, pauses
+1031 ms, host 3453 ms. The largest switch had 29 reports.
+
+**What it would need, if the answer changes.** Overlays are a different protocol:
+no BEGIN selects a target, each report names its own key and segment, and the
+send path rate-limits per switch. So they need their own pipe command on both
+ends (a new pipe protocol version in the PING reply, gated like `FW_CHUNK`) and a
+decision on whether the per-switch rate limit still applies on the pipe.
+**What would change the answer:** cold switches of 100 or more reports in normal
+use (a firmware without the icon library, or apps whose images miss it), with a
+write-only total that is a large part of the wall time.

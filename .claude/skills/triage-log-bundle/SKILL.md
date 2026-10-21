@@ -152,6 +152,22 @@ These are the ones that have produced wrong diagnoses:
   current `main` rather than the last release (2026-09-23), which moved the search
   from "old code" to the pid path in one step.
 
+- **An app switch is slow** (the keycaps change seconds after the window):
+  read the `Overlay switch stats:` line for that switch. It ends with
+  `wall … ms = N rate-limit pause(s) … ms + device … ms (calls, median, max;
+  write-only …; with reply …) + host … ms (… ms before the first report)`.
+  Pauses are the host's rate limit (`docs/FUTURE_WORK.md` → *Shorten the
+  overlay rate-limit pause*). "write-only" are the image and mapping reports:
+  about 1 ms each until the keyboard's receive queue fills, the firmware's pace
+  per report after that, and the only part a faster link could shorten. "with
+  reply" are the icon fill reports (cmd 42) and prepare/enable, which wait for
+  the keyboard to do the work and to process every report queued before them.
+  "host" is decoding, the MRU claim pass and
+  encoding on the PC, and "before the first report" is the part of it spent
+  before any report went out. A warm switch is a few mapping reports; a cold
+  one (the first after a host start or update, or after a reconnect) is where
+  the pauses show. Check `max_hid_message_before_delay` in the bundle's
+  `settings.yaml` before comparing pause counts: the default is 15.
 - **Shortcut icons wrong, missing or slow** (keycaps keep one app's icons, the
   tray is slow to open): read the `Shortcut harvest for '<app>'` and `Generic
   overlays for '<app>'` lines against the table in `docs/generic-icons-plan.md`

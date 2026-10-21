@@ -465,6 +465,10 @@ class PolyHost(QApplication):
             # which is dead weight in --connect client mode and just delays the
             # tray. The client uses RemoteCore instead and never imports this.
             from polyhost.core.poly_core import PolyCore
+            # numpy and Pillow load on the first overlay decode; load them now
+            # instead, while the keyboard connects (util/preload.py).
+            from polyhost.util import preload
+            preload.start(self.log)
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False,
                                  allow_key_injection=developer)

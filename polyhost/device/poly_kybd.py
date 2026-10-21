@@ -14,7 +14,7 @@ from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
-from polyhost.device.hid_helper import DisconnectedHid, HidHelper
+from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
@@ -1596,9 +1596,25 @@ class PolyKybd:
         file behind it, used for the generic icon fall-back. It is resolved by
         the CALLER, on the caller's thread, because building one may fetch over
         the network and this method runs on the HID worker.
+
+        Every device call of the switch is timed (HidHelper.measure) and the
+        summary line splits the wall time into pauses, device calls and host
+        work; see _log_switch_stats.
         """
-        import os
         t_start = time.perf_counter()
+        measure = getattr(self.hid, "measure", None)
+        meter = measure() if measure is not None else IoMeter()
+        try:
+            return self._send_overlays_mru(filenames, cache, cancel, synthetic, meter, t_start)
+        finally:
+            stop = getattr(self.hid, "stop_measuring", None)
+            if stop is not None:
+                stop()
+
+    def _send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
+                           cancel: threading.Event | None, synthetic: dict | None,
+                           meter: IoMeter, t_start: float) -> bool:
+        import os
         stats_before = (self.stat_plain, self.stat_comp, self.stat_roi,
                         self.stat_croi, self.stat_best, dict(self.stat_chosen))
         pauses = 0
@@ -2007,34 +2023,67 @@ class PolyKybd:
         self.stat_best = stats_before[4] + hid_msg_counter
         self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
                                len(display_to_pool), pauses, pause_s,
-                               time.perf_counter() - t_start, control)
+                               time.perf_counter() - t_start, control,
+                               meter=meter, t_start=t_start)
         return True
 
     def _log_switch_stats(self, before: tuple, uploaded: int, image_msgs: int,
                           positions: int, pauses: int, pause_s: float,
-                          wall_s: float, control: int = 2) -> None:
-        """One INFO line per overlay send, with every report it cost.
+                          wall_s: float, control: int = 2,
+                          meter: IoMeter | None = None, t_start: float | None = None) -> None:
+        """One INFO line per overlay send, with every report it cost and
+        where the time went.
 
         control = the separate cmd 11 reports this send made: prepare
         (OVERLAY_FLAGS_ON mirror+reset) and enable, two before protocol v21 and
         none on a warm v21 switch, where both ride on the mapping. "if plain" is what the
-        same images would have cost as uncompressed cmd 10 overlays."""
+        same images would have cost as uncompressed cmd 10 overlays.
+
+        The time split: wall = pauses + device + host. "pauses" is the
+        rate-limit sleep (docs/FUTURE_WORK.md). "device" is the time inside
+        the HID write and read calls, one call per report, split by kind
+        (see IoMeter): "write-only" are the image reports and the mapping
+        reports, the part a faster link could speed up; "with reply" are the
+        reports that wait for the keyboard's answer (icon fills, cmd 42, and
+        prepare/enable), whose time is mostly the keyboard's own work. Only
+        the write-only median says something about the link, and only on a
+        switch long enough to fill the keyboard's receive queue. "host" is
+        the rest: decoding the images, the MRU claim pass, encoding and
+        packing; "before the first report" is the part of it spent before any
+        report went out."""
         plain0, comp0, roi0, croi0, best0, chosen0 = before
         chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
         mapping = self._last_mapping_msgs
         total = image_msgs + mapping + control
         self.stat_switches += 1
         self.stat_reports_total += total
+        meter = meter or IoMeter()
+        device_s = meter.total_s
+        host_s = max(0.0, wall_s - pause_s - device_s)
+        if meter.first_at is not None and t_start is not None:
+            prep_s = max(0.0, meter.first_at - t_start)
+        else:
+            prep_s = host_s
         self.log.info(
             "Overlay switch stats: %d image(s) uploaded [fill %d, prc %d, roi %d, rle-roi %d, rle %d, plain %d], "
             "%d position(s) mapped | reports: image %d + mapping %d + control %d = %d "
-            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | %d rate-limit pause(s) = %.1f s | "
-            "wall %.0f ms (%.0f ms without pauses)",
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | "
+            "wall %.0f ms = %d rate-limit pause(s) %.0f ms + device %.0f ms "
+            "(%d call(s), median %.1f ms, max %.1f ms; "
+            "write-only %d call(s) %.0f ms, median %.1f ms, max %.1f ms; "
+            "with reply %d call(s) %.0f ms, median %.1f ms, max %.1f ms) "
+            "+ host %.0f ms (%.0f ms before the first report)",
             uploaded, chosen["fill"], chosen["prc"], chosen["roi"], chosen["rle-roi"], chosen["rle"], chosen["plain"],
             positions, image_msgs, mapping, control, total,
             self.stat_plain - plain0, self.stat_comp - comp0,
             self.stat_roi - roi0, self.stat_croi - croi0,
-            pauses, pause_s, wall_s * 1000.0, (wall_s - pause_s) * 1000.0)
+            wall_s * 1000.0, pauses, pause_s * 1000.0, device_s * 1000.0,
+            meter.count, meter.median_s * 1000.0, meter.max_s * 1000.0,
+            meter.write.count, meter.write.total_s * 1000.0,
+            meter.write.median_s * 1000.0, meter.write.max_s * 1000.0,
+            meter.reply.count, meter.reply.total_s * 1000.0,
+            meter.reply.median_s * 1000.0, meter.reply.max_s * 1000.0,
+            host_s * 1000.0, prep_s * 1000.0)
         self.log.info(
             "Overlay stats since start: %d switch(es), %d report(s); image reports sent %d "
             "(if plain: %d, rle: %d, roi: %d, rle-roi: %d)",
