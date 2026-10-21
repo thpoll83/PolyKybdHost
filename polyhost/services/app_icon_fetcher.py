@@ -303,10 +303,21 @@ class AppIconFetcher:
                 os_keys = self._os_keys.get(key, ())
             mask, resolved, why = self._resolve(key, pid, given, os_keys)
             with self._lock:
-                self._masks[key] = (mask, resolved)
-                if why is not None:
-                    self._why[key] = why
                 self._inflight.discard(key)
+                # ⚠️ The app arrived from ANOTHER OS while this lookup ran (a
+                # local `photos` and a forwarded Mac's). `overlay_for` had no
+                # answer to drop then, so caching this one would serve the old
+                # OS's mark for the new OS for good: resolve it again instead.
+                stale = self._os_keys.get(key, ()) != os_keys
+                if stale:
+                    if key not in self._queue:
+                        self._queue.append(key)
+                else:
+                    self._masks[key] = (mask, resolved)
+                    if why is not None:
+                        self._why[key] = why
+            if stale:
+                continue
             if mask is not None and self._on_ready is not None:
                 try:
                     self._on_ready(resolved)

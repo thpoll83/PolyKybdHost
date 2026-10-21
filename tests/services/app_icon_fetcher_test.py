@@ -142,6 +142,23 @@ class FetcherTest(unittest.TestCase):
         self.assertTrue(_wait(lambda: len(self.os_keys_for) == 2))
         self.assertEqual(self.os_keys_for[1], ("gimp", ("macos",)))
 
+    def test_an_answer_for_a_STALE_OS_is_not_cached(self):
+        """The OS changes while the old OS's lookup is still in flight: that
+        lookup's answer must be dropped and the app resolved again, or the
+        old OS's mark is cached as the answer for the new one."""
+        self.gate.clear()
+        self.fetcher.overlay_for("gimp", os_keys=("windows",))
+        self.assertTrue(_wait(lambda: len(self.resolved_on) == 0
+                              and "gimp" in self.fetcher._inflight))
+        self.fetcher.overlay_for("gimp", os_keys=("macos",))
+        self.gate.set()
+        self.assertTrue(_wait(lambda: len(self.os_keys_for) == 2))
+        self.assertEqual([k for _, k in self.os_keys_for],
+                         [("windows",), ("macos",)])
+        self.assertTrue(_wait(lambda: self.fetcher.overlay_for(
+            "gimp", os_keys=("macos",))[0] == "MASK"))
+        self.assertEqual(self.ready, ["si:gimp"])
+
     def test_an_empty_app_name_is_not_queued_at_all(self):
         self.assertEqual(self.fetcher.overlay_for(""), (None, None))
         self.assertEqual(self.fetcher.overlay_for(None), (None, None))
