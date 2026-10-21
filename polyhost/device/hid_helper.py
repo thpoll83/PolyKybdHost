@@ -319,9 +319,8 @@ class HidHelper:
     def _timed(self, kind: str):
         """Time one device call into the attached meter, if any, as ``kind``
         ("write" for a write that reads nothing back, "reply" for a call that
-        waits for an answer). Wraps the call, not the lock wait: the worker
-        thread is the only caller, so the lock is never contended and the two
-        are the same."""
+        waits for an answer). Entered after the lock is taken, so the time is
+        the call's, not a wait for the lock."""
         t0 = time.perf_counter()
         try:
             yield
@@ -341,7 +340,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self._timed("write"), self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -359,7 +358,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self._timed("reply"), self.lock:
+            with self.lock, self._timed("reply"):
                 result = self.interface.write(request_report)
                 self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
@@ -382,7 +381,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self._timed("write"), self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -394,7 +393,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self._timed("reply"), self.lock:
+            with self.lock, self._timed("reply"):
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, bytearray(f"Exception: {e}", 'utf-8')
@@ -411,7 +410,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self._timed("reply"), self.lock:
+            with self.lock, self._timed("reply"):
                 request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
                 request_data[1:len(data) + 1] = data
                 request_report = bytes(request_data)
@@ -642,7 +641,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self._timed("reply"), self.lock:
+            with self.lock, self._timed("reply"):
                 self.interface.write(request_report)
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:

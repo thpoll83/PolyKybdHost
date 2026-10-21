@@ -94,5 +94,57 @@ class SwitchTimingTest(unittest.TestCase):
         self.assertEqual(parts[15], 0)      # calls with a reply
 
 
+class EachPartIsMeasuredTest(unittest.TestCase):
+    """Review, Greptile: host time is the remainder, so a test that only checks
+    the sum would pass with device time mis-scaled or a pause booked as host
+    work. Here every device call takes a known time and the switch pauses, and
+    each printed part is checked on its own."""
+
+    CALL_S = 0.004
+    PAUSE_S = 0.25
+
+    def test_pauses_device_calls_and_host_work_land_in_their_own_parts(self):
+        import time
+        from polyhost.device.poly_kybd import PolyKybd
+        from tests.device.fake_hid import FakeHidDevice, make_hid_helper
+        from tests.device.poly_kybd_cancel_test import StubPolySettings
+
+        call_s = self.CALL_S
+
+        class SlowDevice(FakeHidDevice):
+            def write(self, report):
+                time.sleep(call_s)
+                return super().write(report)
+
+        keeb = PolyKybd(DeviceSettings(), StubPolySettings(
+            max_hid_message_before_delay=2, delay_time_after_max_hid_messages=self.PAUSE_S))
+        keeb.hid = make_hid_helper(SlowDevice(auto_ack=True))
+        keeb.supports = lambda f: f != "overlay_icons"
+        ds = DeviceSettings()
+        keys = [k.value for k in KeyCode if 0x04 <= k.value <= 0x43][:12]
+        by_mod = {Modifier.NO_MOD: {k: OverlayData(ds, _image(i)) for i, k in enumerate(keys)}}
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            ok = keeb.send_overlays_mru(["@slow"], OverlayMRUCache(64), threading.Event(),
+                                        synthetic={"@slow": syn.SyntheticConverter(by_mod)})
+        self.assertTrue(ok)
+        line = [l for l in cm.output if "Overlay switch stats:" in l][0]
+        m = LINE.search(line)
+        self.assertIsNotNone(m, line)
+        (image, mapping, control, total, wall, pauses, pause_ms, device_ms,
+         calls, median, mx, w_calls, w_ms, w_med, w_max, r_calls, r_ms, r_med, r_max,
+         host_ms, prep_ms) = [float(x) for x in m.groups()]
+        self.assertGreaterEqual(pauses, 1, line)
+        # Each pause is one sleep of PAUSE_S: booked as pause, not as host work.
+        self.assertGreaterEqual(pause_ms, pauses * self.PAUSE_S * 1000 - 1, line)
+        self.assertLess(pause_ms, pauses * self.PAUSE_S * 1000 + 50 * pauses, line)
+        self.assertLess(host_ms, self.PAUSE_S * 1000, line)
+        # Each call takes CALL_S: device time is the calls' own time, in ms.
+        self.assertEqual(calls, total, line)
+        self.assertGreaterEqual(device_ms, calls * self.CALL_S * 1000 - 1, line)
+        self.assertLess(device_ms, calls * self.CALL_S * 1000 + 100, line)
+        self.assertGreaterEqual(w_med, self.CALL_S * 1000 - 0.1, line)
+        self.assertAlmostEqual(wall, pause_ms + device_ms + host_ms, delta=3)
+
+
 if __name__ == "__main__":
     unittest.main()
