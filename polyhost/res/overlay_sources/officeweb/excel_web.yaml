@@ -28,8 +28,6 @@ program_icon_margin: 0
 
 bindings:
   # --- Ctrl ---
-  - { key: O, mods: [CTRL], label: Open }
-  - { key: W, mods: [CTRL], icon: close.png, label: "Close workbook" }
   - { key: P, mods: [CTRL], label: Print }
   - { key: F, mods: [CTRL], label: Find }
   - { key: G, mods: [CTRL], icon: goto.png, label: "Go to" }

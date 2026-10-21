@@ -25,7 +25,9 @@ are matched, each gated to Microsoft's document hosts (`sharepoint.com`,
   `/:w:/` Word, `/:x:/` Excel, `/:p:/` PowerPoint, `/:o:/` OneNote.
 - Document URLs carry the file type: `file=Report.docx` on SharePoint, and
   `ithint=file,docx` (written `file%2cdocx`) on personal OneDrive. The needles
-  are `docx`, `xlsx`, `pptx`, and `onenote` for notebooks.
+  are `docx`, `xlsx`, `pptx`, and `onenote` for notebooks. The file-type gates
+  need `.docx` or `%2cdocx` at the end of a query value, so a SharePoint site
+  named "docx-guides" holding a workbook still gets the Excel set.
 
 There is no title fallback. Office web tab titles are the file name
 ("Report.docx"), and title matching works on whole words.
@@ -48,7 +50,10 @@ All fetched 2026-10-21, the "for the web" tab of each page:
 - Excel: Ctrl+PgUp/PgDn to switch sheets. The page notes it does not work in
   Chrome, which keeps it for its own tabs; Ctrl+Alt+PgUp/PgDn is drawn instead.
   Also the Copilot pane chords and the screen-reader "read row/column" chords.
-- OneNote: Ctrl+PgUp/PgDn (page through the notebook), for the same reason.
+- Excel: Ctrl+O (open) and Ctrl+W (close workbook). The page lists them, but by
+  default the browser handles both, and Chrome never lets a page take Ctrl+W.
+- OneNote: Ctrl+PgUp/PgDn (page through the notebook), for the same reason as
+  Excel's sheet keys.
 - PowerPoint: the Slide Show keys (N, P, G, J), which act only in the show.
 
 ## Icons

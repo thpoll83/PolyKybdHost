@@ -426,6 +426,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
             self.assertIn("copilot_template.mods.png", self._overlay("copilot", os_name))
             self.assertIn("copilot_web_template.mods.png",
                           self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
+            # The host gate: a Copilot URL inside another site's query is not Copilot.
+            other = self._chrome(os_name, "https://example.com/search?q=copilot.microsoft.com")
+            self.assertNotIn("copilot_web_template", " ".join(other))
 
     def test_office_on_the_web_routes_by_share_link_and_file_type(self):
         sp = "https://contoso.sharepoint.com"
@@ -437,7 +440,11 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                 (f"{sp}/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D&file=Report.docx", "word_web_template"),
                 ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cxlsx", "excel_web_template"),
                 ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cpptx", "powerpoint_web_template"),
-                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=onenote%2c", "onenote_web_template")):
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=onenote%2c", "onenote_web_template"),
+                ("https://onedrive.live.com/edit?id=1&ithint=file%2Cdocx&wdOrigin=x", "word_web_template"),
+                # A site PATH naming another type does not decide the app;
+                # the file's own extension does.
+                (f"{sp}/sites/docx-guides/_layouts/15/Doc.aspx?file=Budget.xlsx", "excel_web_template")):
             self.assertIn(f"{stem}.mods.png", self._chrome("windows", url), url)
 
     def test_office_needles_on_OTHER_sites_keep_the_browser_set(self):

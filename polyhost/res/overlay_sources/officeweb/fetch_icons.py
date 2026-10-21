@@ -43,7 +43,6 @@ BORROWED = {
     "calc.png": "excel",
     "edit.png": "excel",
     "saveas.png": "excel",
-    "close.png": "excel",
     # PowerPoint
     "newslide.png": "powerpoint",
     "duplicate.png": "powerpoint",
