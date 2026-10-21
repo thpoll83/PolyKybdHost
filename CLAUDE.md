@@ -63,8 +63,8 @@ control-socket method.
   differently.** `find_matching_entry` skips a declared `title:` regex when the title is
   falsy, on purpose (macOS and some Wayland setups report no titles at all). A caller
   with no window passes `title_known=False`, which makes that constraint FAIL instead:
-  without it, `kicad:`'s `title: PCB Editor` would draw the PCB overlay for the
-  schematic editor too. The windowless path evaluates templates on that flag, so an
+  without it, the `kicad` entry's `title: (PCB|Schematic) Editor$` gate would draw the
+  PCB overlay for the schematic editor too. The windowless path evaluates templates on that flag, so an
   app-name-only entry still gets its artwork -- VS Code's macOS branch has three
   templates and no `title:`, and was never evaluated before (2026-10-16 bundle).
 - ⚠️ **On macOS the window tick costs seconds, not milliseconds, and the accept timer

@@ -1614,13 +1614,13 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
             cls.handler = OverlayHandler(yaml.safe_load(fh))
 
-    def _match(self, app, title=None, title_known=False):
+    def _match(self, app, title=None, title_known=False, os_name="MACOS"):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key
         key = mapping_key(app, self.handler.mapping)
         self.assertIsNotNone(key, f"{app} has no mapping key")
         return find_matching_entry(title, self.handler.mapping[key], None,
-                                   OsType.MACOS, title_known=title_known)
+                                   OsType[os_name], title_known=title_known)
 
     def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
         got = self._match("code")
@@ -1629,11 +1629,30 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         got.get("overlay"))
 
     def test_KICAD_does_NOT_resolve_without_its_title(self):
-        # ⚠️ The false positive the flag exists to prevent: `kicad:` declares
-        # `title: PCB Editor` to tell the PCB editor from the schematic editor.
+        # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
+        # a `title:` gate to tell the PCB editor from the schematic editor.
         self.assertIsNone(self._match("kicad"))
         self.assertIsNotNone(self._match("kicad", title="PCB Editor",
                                          title_known=True))
+
+    def test_KICAD_routes_each_editor_by_its_title(self):
+        for os_name, suffix in (("MACOS", "_mac"), ("WINDOWS", ""), ("LINUX", "")):
+            for app in ("kicad", "pcbnew", "eeschema"):
+                for title, stem in (("*board — PCB Editor", "kicad_pcb_template"),
+                                    ("board — Schematic Editor", "kicad_sch_template")):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+                with self.subTest(os=os_name, app=app, title="Footprint Editor"):
+                    # No set for the library editors or the project manager.
+                    self.assertIsNone(self._match(
+                        app, title="lib:fp — Footprint Editor", title_known=True,
+                        os_name=os_name))
+                    self.assertIsNone(self._match(
+                        app, title="KiCad 10.0 — board", title_known=True,
+                        os_name=os_name))
 
 
 if __name__ == "__main__":

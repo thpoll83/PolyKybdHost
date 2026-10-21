@@ -280,10 +280,11 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     purpose: macOS without screen-recording permission and some Wayland setups
     report no titles at all, and gating on one would lose every entry on those
     machines (see `handler.win_shell`). But with NO WINDOW the same leniency is
-    a false positive: `kicad:` declares ``title: PCB Editor`` to tell the PCB
-    editor from the schematic editor, and skipping it would draw the PCB
-    overlay for either. So "the title is empty" keeps its leniency and "there
-    is no title" does not.
+    a false positive: the `kicad` entry declares
+    ``title: (PCB|Schematic) Editor$`` to tell its two editors from the rest of
+    KiCad, and skipping it would draw the PCB overlay for any KiCad window.
+    So "the title is empty" keeps its leniency and "there is no title" does
+    not.
 
     ⚠️ The word sub-maps (``titles-startswith`` and friends) need no such flag:
     they already match nothing without a title and fall through to the parent's
