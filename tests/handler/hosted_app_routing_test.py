@@ -441,6 +441,7 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                 ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cxlsx", "excel_web_template"),
                 ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cpptx", "powerpoint_web_template"),
                 ("https://onedrive.live.com/edit?id=1&resid=1&ithint=onenote%2c", "onenote_web_template"),
+                ("https://www.onenote.com/notebooks", "onenote_web_template"),
                 ("https://onedrive.live.com/edit?id=1&ithint=file%2Cdocx&wdOrigin=x", "word_web_template"),
                 # A site PATH naming another type does not decide the app;
                 # the file's own extension does.
@@ -460,7 +461,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
                     "https://evil.example?x=.sharepoint.com/Report.docx",
                     "https://evil.example?x=.sharepoint.com/:w:/r",
                     "https://evil.example#.onedrive.live.com/x.xlsx",
-                    "https://a.sharepoint.com@evil.example/:w:/r"):
+                    "https://a.sharepoint.com@evil.example/:w:/r",
+                    # "onenote" in a site path is not a notebook.
+                    "https://contoso.sharepoint.com/sites/onenote-team/Shared%20Documents/Plan.pdf"):
             overlay = self._chrome("windows", url)
             self.assertIn("chrome_template.mods.png", overlay, url)
             # Substring test over the FILE NAMES: `overlay` is a list, and

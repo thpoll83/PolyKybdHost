@@ -101,8 +101,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     pptx:
       url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
       overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
+    # A notebook: personal OneDrive marks it `ithint=onenote`; onenote.com is
+    # OneNote's own host. SharePoint notebooks take /:o:/ above. Not every page
+    # whose path merely contains "onenote" (a site named onenote-team).
     onenote:
-      url: '^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/'
+      url: '(?i)^https?://(([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft)/.*[?&]ithint=onenote|(www\.)?onenote\.com/)'
       overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the

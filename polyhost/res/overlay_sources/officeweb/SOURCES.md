@@ -28,7 +28,9 @@ are matched, each gated to Microsoft's document hosts (`sharepoint.com`,
   `ithint=file,docx` (written `file%2cdocx`) on personal OneDrive. The needles
   are `docx`, `xlsx`, `pptx`, and `onenote` for notebooks. The file-type gates
   need `.docx` or `%2cdocx` at the end of a query value, so a SharePoint site
-  named "docx-guides" holding a workbook still gets the Excel set.
+  named "docx-guides" holding a workbook still gets the Excel set. The
+  `onenote` gate needs `ithint=onenote` (personal OneDrive) or the onenote.com
+  host, so a SharePoint site named "onenote-team" keeps the browser's keycaps.
 
 There is no title fallback. Office web tab titles are the file name
 ("Report.docx"), and title matching works on whole words.
