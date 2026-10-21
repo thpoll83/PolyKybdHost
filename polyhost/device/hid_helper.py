@@ -189,6 +189,8 @@ class IoMeter(IoStats):
     the calls that wait for an answer (in an overlay switch: the icon fill
     reports, cmd 42, and prepare/enable): their time includes the keyboard
     doing the work the command asks for, which a faster link does not shorten.
+    A reply wait also contains every report queued before it, which the
+    keyboard processes first, so it is not the cost of that one command.
     """
 
     KINDS = ("write", "reply")

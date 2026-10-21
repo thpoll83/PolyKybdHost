@@ -161,7 +161,8 @@ These are the ones that have produced wrong diagnoses:
   about 1 ms each until the keyboard's receive queue fills, the firmware's pace
   per report after that, and the only part a faster link could shorten. "with
   reply" are the icon fill reports (cmd 42) and prepare/enable, which wait for
-  the keyboard to do the work. "host" is decoding, the MRU claim pass and
+  the keyboard to do the work and to process every report queued before them.
+  "host" is decoding, the MRU claim pass and
   encoding on the PC, and "before the first report" is the part of it spent
   before any report went out. A warm switch is a few mapping reports; a cold
   one (the first after a host start or update, or after a reconnect) is where
