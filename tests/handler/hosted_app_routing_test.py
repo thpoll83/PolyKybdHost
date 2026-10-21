@@ -427,6 +427,40 @@ class AppNamesPerPlatformTest(unittest.TestCase):
             self.assertIn("copilot_web_template.mods.png",
                           self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
 
+    def test_office_on_the_web_routes_by_share_link_and_file_type(self):
+        sp = "https://contoso.sharepoint.com"
+        for url, stem in (
+                (f"{sp}/:w:/r/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D&action=edit", "word_web_template"),
+                (f"{sp}/:x:/r/personal/a/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D", "excel_web_template"),
+                (f"{sp}/:p:/g/personal/a/EaBc", "powerpoint_web_template"),
+                (f"{sp}/:o:/r/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D", "onenote_web_template"),
+                (f"{sp}/sites/x/_layouts/15/Doc.aspx?sourcedoc=%7B1%7D&file=Report.docx", "word_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cxlsx", "excel_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=file%2cpptx", "powerpoint_web_template"),
+                ("https://onedrive.live.com/edit?id=1&resid=1&ithint=onenote%2c", "onenote_web_template")):
+            self.assertIn(f"{stem}.mods.png", self._chrome("windows", url), url)
+
+    def test_office_needles_on_OTHER_sites_keep_the_browser_set(self):
+        """`docx` and `onenote` are plain words: the host gate is what stops a
+        download link or a search for "onenote" pulling Office keycaps."""
+        for url in ("https://example.com/files/Report.docx",
+                    "https://www.google.com/search?q=onenote+shortcuts",
+                    "https://example.com/:w:/share"):
+            overlay = self._chrome("windows", url)
+            self.assertIn("chrome_template.mods.png", overlay, url)
+            self.assertNotIn("_web_template", overlay, url)
+
+    def test_on_macOS_only_powerpoint_on_the_web_has_a_set(self):
+        sp = "https://contoso.sharepoint.com"
+        self.assertIn("powerpoint_web_template_mac.mods.png",
+                      self._chrome("macos", f"{sp}/:p:/g/personal/a/EaBc"))
+        overlay = self._chrome("macos", f"{sp}/:w:/r/sites/x/Doc.aspx")
+        self.assertIn("chrome_template_mac.mods.png", overlay)
+        self.assertNotIn("word_web_template", overlay)
+
+    def test_visio_reaches_its_set(self):
+        self.assertIn("visio_template.mods.png", self._overlay("visio", "windows"))
+
     def test_claude_code_on_the_web_does_NOT_get_the_chat_set(self):
         """claude.ai/code contains claude.ai, and the first hit wins."""
         for os_name, sfx in (("windows", ""), ("macos", "_mac")):
