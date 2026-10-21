@@ -68,6 +68,45 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
     chatgpt.com:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+    # Copilot has no title fallback below: "Copilot" is also in Microsoft 365
+    # Copilot's and GitHub Copilot's page titles, and they have other keymaps.
+    copilot.microsoft.com:
+      url: '^https?://copilot\.microsoft\.com/'
+      overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
+    # Office on the web (sources: overlay_sources/officeweb/). A SharePoint share
+    # link names the app in its path (/:w:/ Word ...); a document URL names the
+    # file type (file=X.docx, ithint=file%2cdocx). Both are gated to Microsoft's
+    # hosts, so a .docx link on any other site does not match, and the file-type
+    # gates need the extension at the end of a query value, so a site path
+    # named "docx-guides" does not decide the app. No title fallback: the tab
+    # title is only the file name.
+    /:w:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
+    /:x:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
+    /:p:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
+    /:o:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
+    docx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)docx([?&#]|$)'
+      overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
+    xlsx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)xlsx([?&#]|$)'
+      overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
+    pptx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
+      overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
+    # A notebook: personal OneDrive marks it `ithint=onenote`; onenote.com is
+    # OneNote's own host. SharePoint notebooks take /:o:/ above. Not every page
+    # whose path merely contains "onenote" (a site named onenote-team).
+    onenote:
+      url: '(?i)^https?://(([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft)/.*[?&]ithint=onenote|(www\.)?onenote\.com/)'
+      overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -146,6 +185,17 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
         chatgpt.com:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+        copilot.microsoft.com:
+          url: '^https?://copilot\.microsoft\.com/'
+          overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
+        # Office on the web: only PowerPoint documents its Mac chords; Word, Excel
+        # and OneNote on the web keep the browser's keycaps on macOS.
+        /:p:/:
+          url: '^https?://[^/?#@]+\.sharepoint\.com/'
+          overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
+        pptx:
+          url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
+          overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -222,6 +272,15 @@ chatgpt:
   os:
     macos:
       overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+# Microsoft Copilot (sources: overlay_sources/aichat/copilot.yaml). The app is
+# copilot.microsoft.com in a Chromium window, so UI Automation finds no
+# shortcuts; its four Alt chords come from the page's script. `mscopilot` on
+# Windows, `copilot` on macOS (Option chords, same keys). No `os:` branch: one
+# set serves both. The ESC mark comes from the app's own executable.
+# Microsoft 365 Copilot (`m365copilot`) has no entry: Microsoft documents no
+# in-app shortcut for it.
+mscopilot,copilot:
+  overlay: [copilot_template.mods.png, copilot_template.combo.mods.png]
 codex,codex-desktop:
   overlay: [codex_template.mods.png, codex_template.combo.mods.png]
   os:
@@ -382,24 +441,32 @@ outlook,olk,microsoft outlook:
   os:
     macos:
       overlay: [outlook_template_mac.mods.png, outlook_template_mac.combo.mods.png, outlook_template_mac.extra.mods.png]
-# ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
-# Notes and NOT about OneNote -- hence the title constraint, which lets a real
-# OneNote window fall through unmatched rather than showing sticky-note keycaps.
-# `icon:` is required for the same reason: without it the mark would resolve from
-# the process name through `app_icons.yaml` (`onenote: mdi:microsoft-onenote`)
-# and draw a OneNote logo on a Sticky Notes window.
-onenote:
-  title: "^Sticky Notes"
-  icon: mdi:sticker-text
-  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+# OneNote (sources: overlay_sources/onenote/). ⚠️ `ONENOTE.EXE` ALSO HOSTS THE
+# NEW STICKY NOTES, so a window titled "Sticky Notes..." takes the branch below
+# and every other `onenote` window gets the OneNote set. The branch needs its
+# own `icon:`: without it the mark would resolve from the process name through
+# `app_icons.yaml` (`onenote: mdi:microsoft-onenote`) and draw a OneNote logo on
+# a Sticky Notes window. The OneNote set bakes its own ESC mark.
+onenote,microsoft onenote:
+  overlay: [onenote_template.mods.png, onenote_template.combo.mods.png, onenote_template.extra.mods.png]
+  titles-startswith:
+    Sticky Notes:
+      icon: mdi:sticker-text
+      overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [onenote_template_mac.mods.png, onenote_template_mac.combo.mods.png, onenote_template_mac.extra.mods.png, onenote_template_mac.gui.mods.png]
 powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
   os:
     macos:
       overlay: [powerpoint_template_mac.mods.png, powerpoint_template_mac.combo.mods.png, powerpoint_template_mac.extra.mods.png, powerpoint_template_mac.gui.mods.png]
-# Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
-# curated generic (`photos: mdi:image-multiple`) resolves from the process name,
-# confirmed in the field log that prompted this batch.
+# Visio (sources: overlay_sources/visio/). Windows only.
+visio:
+  overlay: [visio_template.mods.png, visio_template.combo.mods.png]
+# Photos runs as its own `Photos.exe`, so no title branch. Its ESC mark is the
+# shipped `poly:photos.windows` (res/icons/program/README.md): `photos` is also
+# Apple Photos, whose mark is `photos.png`.
 photos:
   overlay: photos_template.mods.png
 # macOS reports Adobe apps with a release year (`Adobe Photoshop 2025`);

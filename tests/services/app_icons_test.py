@@ -200,6 +200,31 @@ class CandidatesTest(unittest.TestCase):
         self.assertIn("mdi:microsoft-word",
                       ai.candidates("winword", ("Microsoft Word",)))
 
+    def test_an_OS_QUALIFIED_shipped_mark_REPLACES_the_plain_one_on_that_OS(self):
+        # `photos` is Apple Photos on macOS and Microsoft Photos on Windows. The
+        # rosette in `photos.png` drawn on Windows read as the Mac's app (field,
+        # 2026-10-21), so Windows gets `photos.windows.svg` and must not be
+        # offered the rosette beside it, where the score could pick either.
+        windows = ai.candidates("photos", ("Photos",), ("windows",))
+        self.assertIn("poly:photos.windows", windows)
+        self.assertNotIn("poly:photos", windows)
+        for keys in (("macos",), ("linux_gnome", "linux"), ()):
+            tried = ai.candidates("photos", ("Photos",), keys)
+            self.assertIn("poly:photos", tried, keys)
+            self.assertNotIn("poly:photos.windows", tried, keys)
+
+    def test_an_OS_with_no_qualified_file_keeps_the_plain_slug(self):
+        # Most shipped marks have no OS variant; the OS must change nothing.
+        self.assertEqual(ai.candidates("chrome", (), ("windows",)),
+                         ai.candidates("chrome"))
+
+    def test_paint_reaches_its_SHIPPED_mark(self):
+        # No catalog carries Windows Paint, and its own icon does not survive
+        # 1 bit, so the shipped `mspaint.svg` is what draws.
+        self.assertIn("poly:mspaint", ai.candidates("mspaint", ("Paint",),
+                                                    ("windows",)))
+        self.assertIsNotNone(ai.local_icon_path("mspaint"))
+
     def test_simple_icons_is_tried_FIRST(self):
         # It carries the real brand mark where it has one; mdi's is an
         # interpretation. Order is preference, not a set of equals.

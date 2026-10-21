@@ -124,7 +124,10 @@ print('ink %d  rank %s  payload %d B  reports %d' % (
 ## 5. Ship it
 
 1. Drop the asset at `polyhost/res/icons/program/<slug>.{svg,png}` — **the
-   filename is the slug**, no table anywhere.
+   filename is the slug**, no table anywhere. ⚠️ When one name means two
+   programs on two platforms (`photos`: Apple Photos and Microsoft Photos),
+   name the file `<slug>.<os>.{svg,png}` (`photos.windows.svg`). It replaces
+   `<slug>` on that OS only; check with `candidates(exe, names, os_keys)`.
 2. `python tools/gen_program_icons.py` then `--check`; the check must be clean.
 3. Record licence and provenance in that directory's `README.md`. ⚠️ A mark
    derived from a catalog (mdi is Apache-2.0) **needs attribution and the
