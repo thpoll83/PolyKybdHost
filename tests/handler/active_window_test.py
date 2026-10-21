@@ -1635,24 +1635,28 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         self.assertIsNotNone(self._match("kicad", title="PCB Editor",
                                          title_known=True))
 
-    def test_KICAD_routes_each_editor_by_its_title(self):
+    def test_KICAD_routes_each_window_by_its_title(self):
+        windows = (("*board — PCB Editor", "kicad_pcb_template"),
+                   ("board [Read Only] — Schematic Editor", "kicad_sch_template"),
+                   ("Lib:R_0402 — Footprint Editor", "kicad_fp_template"),
+                   ("Device:R — Symbol Editor", "kicad_sym_template"),
+                   ("3D Viewer", "kicad_3d_template"),
+                   ("3D Viewer — R_0402", "kicad_3d_template"),
+                   ("board-F_Cu.gbr — Gerber Viewer", "kicad_gerbview_template"))
         for os_name, suffix in (("MACOS", "_mac"), ("WINDOWS", ""), ("LINUX", "")):
-            for app in ("kicad", "pcbnew", "eeschema"):
-                for title, stem in (("*board — PCB Editor", "kicad_pcb_template"),
-                                    ("board — Schematic Editor", "kicad_sch_template")):
+            for app in ("kicad", "pcbnew", "eeschema", "gerbview"):
+                for title, stem in windows:
                     with self.subTest(os=os_name, app=app, title=title):
                         got = self._match(app, title=title, title_known=True,
                                           os_name=os_name)
                         self.assertIsNotNone(got)
                         self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
-                with self.subTest(os=os_name, app=app, title="Footprint Editor"):
-                    # No set for the library editors or the project manager.
-                    self.assertIsNone(self._match(
-                        app, title="lib:fp — Footprint Editor", title_known=True,
-                        os_name=os_name))
-                    self.assertIsNone(self._match(
-                        app, title="KiCad 10.0 — board", title_known=True,
-                        os_name=os_name))
+                # No set for the project manager or the tools without one.
+                for title in ("KiCad 10.0 — board", "Calculator Tools",
+                              "R_0402 — Footprint Library Browser"):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        self.assertIsNone(self._match(
+                            app, title=title, title_known=True, os_name=os_name))
 
 
 if __name__ == "__main__":

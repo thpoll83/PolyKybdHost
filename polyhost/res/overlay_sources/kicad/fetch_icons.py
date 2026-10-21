@@ -140,6 +140,32 @@ FLUENT = {
     "navforward": "Arrow Right",
     "hierarchy": "ms:account_tree",
     "selectnode": "ms:radio_button_checked",
+    # --- Footprint Editor and Symbol Editor ---
+    "anchor": "ms:anchor",
+    "pin": "ms:pin_end",
+    "savelibas": "Save Multiple",
+    "unselectall": "ms:deselect",
+    "copytext": "ms:text_snippet",
+    # --- 3D Viewer ---
+    "pivot": "ms:filter_center_focus",
+    "homeview": "Home",
+    "viewfront": "ms:flip_to_front",
+    "viewback": "ms:flip_to_back",
+    "viewleft": "ms:align_horizontal_left",
+    "viewright": "ms:align_horizontal_right",
+    "viewtop": "ms:vertical_align_top",
+    "viewbottom": "ms:vertical_align_bottom",
+    "showtht": "ms:settings_input_component",
+    "showsmd": "ms:developer_board",
+    "showvirtual": "ms:question_mark",
+    "shownotpos": "ms:location_off",
+    "showdnp": "ms:do_not_disturb_on",
+    # --- GerbView ---
+    "layerup": "ms:move_up",
+    "layerdown": "ms:move_down",
+    "sketchflashed": "ms:radio_button_unchecked",
+    "sketchpoly": "ms:shape_line",
+    "dcodes": "ms:numbers",
 }
 
 

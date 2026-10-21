@@ -44,6 +44,8 @@ bindings:
   - { key: V, mods: [CMDCTRL, SHIFT], icon: pastespecial.png, label: "Paste special" }
   - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate }
   - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: unselectall.png, label: "Unselect all" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copytext.png, label: "Copy as text" }
   - { key: DEL, mods: [], label: Delete, except: [macos] }
   - { key: BSPC, mods: [], label: Delete, only: [macos] }
   - { key: F, mods: [CMDCTRL], label: Find }
@@ -75,7 +77,6 @@ bindings:
   - { key: U, mods: [CMDCTRL], icon: units.png, label: "Switch units" }
   - { key: SPACE, mods: [], icon: localorigin.png, label: "Local origin" }
   - { key: SPACE, mods: [SHIFT], icon: linemode.png, label: "Line modes" }
-  - { key: M, mods: [CMDCTRL, SHIFT], icon: measure.png, label: Measure }
   - { key: F8, mods: [], icon: updatepcb.png, label: "Update PCB from schematic" }
   - { key: COMMA, mods: [CMDCTRL], icon: prefs.png, label: Preferences }
   - { key: F1, mods: [CMDCTRL], icon: hotkeys.png, label: "List hotkeys" }

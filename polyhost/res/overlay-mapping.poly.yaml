@@ -314,32 +314,51 @@ discord:
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 # KiCad 10 (sources: overlay_sources/kicad/). Started from the project manager,
-# every editor runs in the `kicad` process; started on its own, an editor is
-# `pcbnew` or `eeschema`. The editors are told apart by the window title, which
-# ends in the editor's name ("board — PCB Editor"). The `title` gate keeps the
-# project manager, the Symbol Editor and the Footprint Editor out, and fails
-# when there is no window at all, so the macOS windowless path does not draw
-# the PCB keys for the schematic. The entry's own overlay is reached only by a
-# window with an empty title (the gate is skipped then).
-kicad,pcbnew,eeschema:
+# every editor runs in the `kicad` process; started on its own, it is `pcbnew`,
+# `eeschema` or `gerbview`. The windows are told apart by the title: an editor's
+# title ends in its name ("board — PCB Editor"), the 3D Viewer's starts with
+# "3D Viewer". The `title` gate keeps the project manager and the other tools
+# out, and fails when there is no window at all, so the macOS windowless path
+# draws nothing rather than the PCB keys. The entry's own overlay is reached
+# only by a window with an empty title (the gate is skipped then). An English
+# KiCad UI is assumed: a translated title matches nothing.
+kicad,pcbnew,eeschema,gerbview:
   overlay: [kicad_pcb_template.mods.png, kicad_pcb_template.combo.mods.png]
-  title: (PCB|Schematic) Editor$
+  title: (PCB|Schematic|Footprint|Symbol) Editor$|Gerber Viewer$|^3D Viewer
+  titles-startswith:
+    3D Viewer:
+      overlay: [kicad_3d_template.mods.png]
   titles-endswith:
     PCB Editor:
       overlay: [kicad_pcb_template.mods.png, kicad_pcb_template.combo.mods.png]
     Schematic Editor:
       overlay: [kicad_sch_template.mods.png, kicad_sch_template.combo.mods.png]
+    Footprint Editor:
+      overlay: [kicad_fp_template.mods.png, kicad_fp_template.combo.mods.png]
+    Symbol Editor:
+      overlay: [kicad_sym_template.mods.png, kicad_sym_template.combo.mods.png]
+    Gerber Viewer:
+      overlay: [kicad_gerbview_template.mods.png, kicad_gerbview_template.combo.mods.png]
   # macOS: the Cmd sets. A matched `os:` branch replaces the entry, so the gate
-  # and the title sub-map are repeated inside it.
+  # and the title sub-maps are repeated inside it.
   os:
     macos:
       overlay: [kicad_pcb_template_mac.mods.png, kicad_pcb_template_mac.combo.mods.png, kicad_pcb_template_mac.extra.mods.png]
-      title: (PCB|Schematic) Editor$
+      title: (PCB|Schematic|Footprint|Symbol) Editor$|Gerber Viewer$|^3D Viewer
+      titles-startswith:
+        3D Viewer:
+          overlay: [kicad_3d_template_mac.mods.png, kicad_3d_template_mac.combo.mods.png]
       titles-endswith:
         PCB Editor:
           overlay: [kicad_pcb_template_mac.mods.png, kicad_pcb_template_mac.combo.mods.png, kicad_pcb_template_mac.extra.mods.png]
         Schematic Editor:
           overlay: [kicad_sch_template_mac.mods.png, kicad_sch_template_mac.combo.mods.png, kicad_sch_template_mac.extra.mods.png]
+        Footprint Editor:
+          overlay: [kicad_fp_template_mac.mods.png, kicad_fp_template_mac.combo.mods.png, kicad_fp_template_mac.extra.mods.png]
+        Symbol Editor:
+          overlay: [kicad_sym_template_mac.mods.png, kicad_sym_template_mac.combo.mods.png, kicad_sym_template_mac.extra.mods.png]
+        Gerber Viewer:
+          overlay: [kicad_gerbview_template_mac.mods.png, kicad_gerbview_template_mac.combo.mods.png, kicad_gerbview_template_mac.extra.mods.png]
 code:
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
   title: .* Visual Studio Code
