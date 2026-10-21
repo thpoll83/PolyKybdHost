@@ -280,9 +280,10 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     purpose: macOS without screen-recording permission and some Wayland setups
     report no titles at all, and gating on one would lose every entry on those
     machines (see `handler.win_shell`). But with NO WINDOW the same leniency is
-    a false positive: the `kicad` entry declares
-    ``title: (PCB|Schematic) Editor$`` to tell its two editors from the rest of
-    KiCad, and skipping it would draw the PCB overlay for any KiCad window.
+    a false positive: the `kicad` entry declares a ``title`` gate (six window
+    names in every KiCad language, written by
+    ``overlay_sources/kicad/gen_titles.py``) to tell those windows from the rest
+    of KiCad, and skipping it would draw the PCB overlay for any KiCad window.
     So "the title is empty" keeps its leniency and "there is no title" does
     not.
 

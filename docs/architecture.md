@@ -191,8 +191,9 @@ Per-platform implementations:
     falsy, on purpose: macOS without screen-recording permission and some
     Wayland setups report no titles at all, and gating on one would lose every
     entry there (`handler/win_shell.py`). With no WINDOW the same leniency is a
-    false positive — the `kicad` entry declares `title: (PCB|Schematic) Editor$`
-    to tell its two editors from the rest of KiCad — so the windowless path passes
+    false positive — the `kicad` entry declares a `title` gate (six window names
+    in every KiCad language, written by `overlay_sources/kicad/gen_titles.py`)
+    to tell those windows from the rest of KiCad — so the windowless path passes
     `title_known=False`, which makes a declared constraint FAIL rather than be
     skipped. The flag propagates through all five recursive calls, so an `os:`
     branch is judged by its own constraints. The word sub-maps
