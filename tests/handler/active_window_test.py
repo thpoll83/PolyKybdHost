@@ -1628,6 +1628,24 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
                         got.get("overlay"))
 
+    def test_MATHEMATICA_and_WOLFRAM_get_their_platform_set(self):
+        for os_name, stem in (("WINDOWS", "mathematica_template"),
+                              ("LINUX", "mathematica_template_linux"),
+                              ("MACOS", "mathematica_template_mac")):
+            for app in ("mathematica", "wolframnb", "wolfram"):
+                with self.subTest(os=os_name, app=app):
+                    got = self.handler_match(app, os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def handler_match(self, app, os_name):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(app, self.handler.mapping)
+        self.assertIsNotNone(key, f"{app} has no mapping key")
+        return find_matching_entry("Untitled-1", self.handler.mapping[key], None,
+                                   OsType[os_name], title_known=True)
+
     def test_KICAD_does_NOT_resolve_without_its_title(self):
         # ⚠️ The false positive the flag exists to prevent: `kicad:` declares
         # `title: PCB Editor` to tell the PCB editor from the schematic editor.

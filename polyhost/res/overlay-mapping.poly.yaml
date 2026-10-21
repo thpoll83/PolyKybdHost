@@ -313,6 +313,17 @@ discord:
       overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
+# Mathematica, renamed Wolfram in 14.1 (sources: overlay_sources/mathematica/).
+# The notebook front end is `Mathematica.exe` / Mathematica.app up to 14.0 and
+# `WolframNB.exe` / Wolfram.app / `WolframNB` on Linux since 14.1. Linux has its
+# own set because Close is Ctrl+W there and Ctrl+F4 on Windows.
+mathematica,wolframnb,wolfram:
+  overlay: [mathematica_template.mods.png, mathematica_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [mathematica_template_mac.mods.png, mathematica_template_mac.combo.mods.png, mathematica_template_mac.extra.mods.png]
+    linux:
+      overlay: [mathematica_template_linux.mods.png, mathematica_template_linux.combo.mods.png]
 kicad:
   overlay: kicad_pcb_template.png
   title: PCB Editor
