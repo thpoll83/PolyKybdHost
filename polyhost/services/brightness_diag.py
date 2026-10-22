@@ -112,18 +112,19 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
         irr = min(19 - 7, max(0, now.hour - 7)) / 12
         _report_value("hour-of-day fallback", irr, min_val, max_val, pre_scale, gamma)
         return
-    # ⚠️ WHOLE degrees, not the 4 decimals this used to print. This tool exists
-    # to have its output pasted into a bug report, which is the same destination
-    # HOST-5 was about, so 4 decimals (~11 m, names a home) was undoing at the
-    # end what the log scrub does at the start. Whole degrees is ~110 km -- a
-    # region -- and still answers the only question this line is asked: did a
-    # location resolve, and is it in the right latitude band for the clear-sky
-    # sun elevation printed below. 1 degree of latitude moves that elevation by
-    # 1 degree, about 2% of Haurwitz GHI at mid-latitude noon; 1 degree of
-    # longitude shifts solar noon by 4 minutes. Neither changes a diagnosis.
-    # round() rather than :.0f so a coordinate just below zero prints "0", not "-0".
-    print(f"   location: lat {round(s.latitude)}  lon {round(s.longitude)}  "
-          f"(whole degrees on purpose, ~110 km)")
+    # ⚠️ NO coordinates here, at any precision. This used to print 4 decimals
+    # (~11 m, names a home), and a diagnostic exists to have its output pasted
+    # into a bug report -- the same destination HOST-5 was about -- so it was
+    # undoing at the end what the log scrub does at the start.
+    # Nothing is lost: `_clearsky_probe` below already answers the location
+    # question in derived form. Solar peak time follows longitude (12:00 UTC
+    # minus lon/15) and peak GHI follows latitude and season, so a location
+    # resolved to the wrong hemisphere or continent shows up there. Coarsening
+    # the coordinates was tried first and rejected: rounding does not launder
+    # the value for CodeQL either, so it kept the alert while printing less.
+    print("   location: resolved (coordinates withheld -- the clear-sky probe")
+    print("             below shows solar peak time and peak GHI, which is")
+    print("             where a wrong location becomes visible)")
     print("   irradiance source: online open-meteo (cloud-aware) with a pure-math\n"
           "   clear-sky fallback (Haurwitz model) when offline / lookup disabled.\n")
 
