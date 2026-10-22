@@ -112,7 +112,10 @@ def check_requirements(install: bool) -> bool:
         print(f"Not installing ({why}). Install with:\n  {' '.join(command)}")
         return False
     print("Installing: " + " ".join(command), flush=True)
-    if subprocess.run(command, check=False).returncode != 0:
+    # Audit: list form, no shell. Every element is fixed: this interpreter,
+    # pip's own arguments, and TEST_REQUIREMENTS, a path built from __file__.
+    # No user, environment or network input reaches the argv.
+    if subprocess.run(command, check=False).returncode != 0:  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         return False
     still = missing_requirements()
     if still:
