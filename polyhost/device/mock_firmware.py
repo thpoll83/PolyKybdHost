@@ -562,7 +562,7 @@ class MockFirmware:
         if p[3] > 2:
             return _reply(p[1], ok=False)
         self.handedness_left = bool(p[2])
-        if p[3]:
+        if p[3] and self.protocol >= SPLIT_VBUS_FLAG_MIN:   # older firmware ignores the byte
             self.split_vbus = p[3] == 2
         return _reply(p[1])
 

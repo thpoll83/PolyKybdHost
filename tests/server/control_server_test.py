@@ -407,6 +407,12 @@ class ControlServerTest(unittest.TestCase):
         self.assertIn(("set_handedness", True), self.core.calls)
         self._call(conn, 440, p.M_SET_HANDEDNESS_BOARD, {"master_is_left": False, "split_vbus": True})
         self.assertIn(("set_handedness", False, True), self.core.calls)
+        bad = self._call(conn, 441, p.M_SET_HANDEDNESS_BOARD,
+                         {"master_is_left": False, "split_vbus": "false"})
+        self.assertEqual(bad["error"]["code"], p.ERR_INVALID_PARAMS)
+        self.assertNotIn(("set_handedness", False, "false"), self.core.calls)
+        self.assertEqual(self.core.calls.count(("set_handedness", False, True)), 1,
+                         "a non-boolean flag must not reach the core")
         self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 

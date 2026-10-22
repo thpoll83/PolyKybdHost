@@ -342,6 +342,16 @@ class TestSendOnlyCommands(unittest.TestCase, LockCheckMixin):
         self.assertIn("too old", msg)
         self.assertEqual(device.payloads(), [])
 
+    def test_mock_firmware_below_24_sets_the_side_but_not_the_flag(self):
+        """The emulator must behave like v23 firmware: it ignores data[3]."""
+        from polyhost.device.mock_firmware import MockFirmware
+        for protocol, expect in ((SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1, False),
+                                 (SPLIT_VBUS_FLAG_MIN_PROTOCOL, True)):
+            fw = MockFirmware(protocol)
+            fw.split_vbus = False
+            fw._dispatch(bytes([POLY, 25, 1, 2]) + bytes(60))
+            self.assertEqual(fw.split_vbus, expect, f"v{protocol}")
+
     def test_plain_handedness_still_works_below_protocol_24(self):
         keeb, device = make_keeb()
         keeb.protocol_version = SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1
