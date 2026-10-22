@@ -187,9 +187,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+    # (the browser may append its own name); the gate keeps a page that only
+    # mentions Jupyter, such as its documentation, off the set.
     JupyterLab:
+      title: ' - JupyterLab( [-—] [^-—]+)?$'
       overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
     Jupyter Notebook:
+      title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
       overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
     draw.io:
       overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
@@ -337,9 +342,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+        # (the browser may append its own name); the gate keeps a page that only
+        # mentions Jupyter, such as its documentation, off the set.
         JupyterLab:
+          title: ' - JupyterLab( [-—] [^-—]+)?$'
           overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
         Jupyter Notebook:
+          title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
           overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
         draw.io:
           overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
@@ -1843,8 +1853,9 @@ matlab,matlab_r2025a,matlab_r2025b,matlab_r2026a,matlab_r2026b:
     macos:
       overlay: [matlab_template_mac.mods.png, matlab_template_mac.combo.mods.png, matlab_template_mac.extra.mods.png]
 # draw.io desktop (sources: overlay_sources/webapps/drawio.yaml). Process `drawio`,
-# WM_CLASS `draw-io` on Linux (measured, 32.5.5).
-drawio,draw-io,draw.io:
+# WM_CLASS `draw-io` on Linux (measured, 32.5.5). On Windows the host keeps the
+# process name up to its first dot, so draw.io.exe arrives as `draw`.
+drawio,draw-io,draw.io,draw:
   overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
   os:
     macos:

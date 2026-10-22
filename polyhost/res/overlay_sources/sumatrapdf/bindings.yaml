@@ -68,8 +68,10 @@ bindings:
   - { key: F7, mods: [], icon: caret.png, label: "Keyboard text selection", except: [macos] }
   - { key: K, mods: [CTRL], icon: palette.png, label: "Command palette", except: [macos] }
   - { key: F1, mods: [], icon: help.png, label: "Manual", except: [macos] }
-  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab", except: [macos] }
-  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab", except: [macos] }
+  # Ctrl+Tab is Smart Tab Switch: with three or more tabs it goes in most-recently-used
+  # order, so it gets its own icon, apart from Ctrl+Page Down/Up (tab-strip order).
+  - { key: TAB, mods: [CTRL], icon: recenttab.png, label: "Recent tab (Smart Tab Switch)", except: [macos] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: recenttab.png, label: "Recent tab, backwards (Smart Tab Switch)", except: [macos] }
   - { key: PGDN, mods: [CTRL], icon: nexttab.png, label: "Next tab", except: [macos] }
   - { key: PGUP, mods: [CTRL], icon: prevtab.png, label: "Previous tab", except: [macos] }
   - { key: "1", mods: [ALT], icon: tab1.png, label: "Tab 1", except: [macos] }

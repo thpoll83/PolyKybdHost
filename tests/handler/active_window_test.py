@@ -1769,7 +1769,7 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key
         cases = (
-            ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab", "jupyter_template"),
+            ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab - Google Chrome", "jupyter_template"),
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
@@ -1788,6 +1788,11 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                             self.assertIn(f"{stem}{suffix}.mods.png",
                                           [str(f) for f in got["overlay"]])
                 # The gates keep a search page or a repository tree off these sets.
+                # A page that only mentions Jupyter in its title is not Jupyter.
+                with self.subTest(browser=browser, os=os_name, title="docs"):
+                    got = find_matching_entry("JupyterLab Documentation - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
                             "https://www.google.com/search?q=linear.app",
                             "https://github.com/o/r/tree/main"):
@@ -1811,6 +1816,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("matlab_r2026b", "MACOS", "matlab_template_mac"),
                 ("jupyterlab", "WINDOWS", "jupyter_template"),
                 ("drawio", "LINUX", "drawio_template"),
+                # draw.io.exe, cut at its first dot as the Windows path does.
+                ("draw.io.exe".split(".")[0], "WINDOWS", "drawio_template"),
                 ("draw.io", "MACOS", "drawio_template_mac"),
                 ("linear", "WINDOWS", "linear_template")):
             with self.subTest(app=app, os=os_name):

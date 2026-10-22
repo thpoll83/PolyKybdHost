@@ -65,7 +65,6 @@ bindings:
   - { key: SLASH, mods: [ALT], icon: exc_stats.png, label: "Stats" }
   - { key: F, mods: [CMDCTRL], icon: search.png, label: "Search canvas", shared: false }
   - { key: SLASH, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette" }
-  - { key: P, mods: [CMDCTRL, SHIFT], icon: commandpalette.png, label: "Command palette" }
   # --- edit ---
   - { key: K, mods: [CMDCTRL], icon: link.png, label: "Link" }
   - { key: DELETE, mods: [CMDCTRL], icon: exc_clear.png, label: "Clear canvas" }

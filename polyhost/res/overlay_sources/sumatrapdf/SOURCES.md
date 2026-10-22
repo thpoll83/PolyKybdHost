@@ -24,6 +24,9 @@ Ctrl+B), view and zoom (Ctrl+6/7/8, Ctrl+Shift+- / +, Ctrl+0/1/2/3, Ctrl+Y,
 Ctrl+L and F5 presentation, Ctrl+Shift+L and F11 full screen, F12, Shift+F12,
 F8, F9, F7), edit (Ctrl+A/C/Z, Ctrl+Shift+Z), Ctrl+K command palette, F1 manual
 and the tab keys (Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Page Down/Up, Alt+1..8, Alt+9).
+Ctrl+Tab and Ctrl+Shift+Tab are Smart Tab Switch: with three or more tabs they go
+in most-recently-used order, so they show a history icon, not the tab-strip arrows
+of Ctrl+Page Down/Up.
 Ctrl+Shift++ (rotate right) is drawn on the `=` key, where the `+` sits.
 
 ## Left out

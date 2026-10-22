@@ -44,6 +44,7 @@ FLUENT = {
     "findprev": "ms:search_off",
     "nexttab": "ms:tab",
     "prevtab": "ms:tab_move",
+    "recenttab": "ms:history",
     # --- view ---
     "singlepage": "Document",
     "facing": "ms:auto_stories",

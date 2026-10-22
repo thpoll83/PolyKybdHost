@@ -377,7 +377,9 @@ App names:
 - draw.io desktop 32.5.5, Linux package `drawio-amd64-32.5.5.deb`, run under
   Xvfb on 2026-10-22: process `drawio`, WM_CLASS `draw-io`, title "Untitled
   Diagram - draw.io". Windows `draw.io.exe` and macOS "draw.io" come from the
-  product name in its `package.json` and were not checked on an install.
+  product name in its `package.json` and were not checked on an install. The host
+  keeps a Windows process name up to its first dot, so `draw.io.exe` is looked up
+  as `draw`, which the mapping entry lists.
 - Linear desktop: Windows `Linear.exe` and macOS "Linear" were not checked. Linear
   has no Linux desktop app.
 - Excalidraw and Overleaf exist only in a browser.
@@ -402,9 +404,19 @@ Choices and keys left out:
   actions. Alt+Shift+Y (synchronize) is left out because it acts only in some
   storage back ends. Ctrl+0 is "Custom zoom" in the key bindings, though the
   action list names it "Fit page width"; the set follows the key bindings.
+  Ctrl+Shift+P (Format panel) is drawn although Firefox keeps it for a new
+  private window, so in Firefox it does not reach the page; it has no other key,
+  and it works in the Chromium browsers and the desktop app.
 - **Excalidraw:** Send to back and Bring to front are Cmd+Option+[ and ] on macOS
   and Ctrl+Shift+[ and ] elsewhere, so those two keys are written per platform.
-  PgUp/PgDn, Space and Enter are left out.
+  PgUp/PgDn, Space and Enter are left out. The command palette is drawn on
+  Ctrl+/ only: its other key, Ctrl+Shift+P, opens a private window in Firefox,
+  and Excalidraw's own help dialog hides it there.
+- **Browser keys.** A page cannot take the keys a browser reserves for windows
+  and tabs (Ctrl+N, Ctrl+T, Ctrl+W, Ctrl+Shift+N/T/W, Ctrl+Tab, and Firefox's
+  Ctrl+Shift+P). None of these sets draws one except the two Ctrl+Shift+P keys
+  above. Other browser keys, such as Ctrl+Shift+I and Ctrl+Shift+A, are not
+  reserved: a page that handles them first and cancels the event keeps them.
 - **Linear:** Cmd/Ctrl+B and Cmd/Ctrl+I also mean bold and italic in Linear's text
   editor; the set draws their view meaning (board or list layout, details
   sidebar). Cmd/Ctrl+Shift+S (unsubscribe, and strikethrough in the editor) is

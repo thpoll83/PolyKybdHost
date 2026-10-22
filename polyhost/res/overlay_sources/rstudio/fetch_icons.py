@@ -13,6 +13,7 @@ from Simple Icons (`rstudioide`, CC0 artwork; nominative use, see
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -22,7 +23,23 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from polyhost.res.overlay_sources import brand_marks, icon_fetch, number_badge  # noqa: E402
 
-MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+# A bold monospace font for the two operator icons. Set RSTUDIO_ICON_FONT to a
+# .ttf to use another one; otherwise the first of these that exists is used.
+MONO_CANDIDATES = (
+    os.environ.get("RSTUDIO_ICON_FONT", ""),
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",      # Debian, Ubuntu
+    "/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono-Bold.ttf",  # Fedora
+    "/Library/Fonts/DejaVuSansMono-Bold.ttf",                        # macOS, if installed
+    "C:/Windows/Fonts/consolab.ttf",                                 # Windows: Consolas Bold
+)
+
+
+def _mono_font() -> str:
+    for path in MONO_CANDIDATES:
+        if path and Path(path).is_file():
+            return path
+    raise SystemExit("No bold monospace font found for the <- and |> icons. "
+                     "Install DejaVu Sans Mono or set RSTUDIO_ICON_FONT to a .ttf file.")
 # The two operator keys show the operator they type.
 TEXT = {"assign": "<-", "pipe": "|>"}
 
@@ -31,7 +48,7 @@ def _text_icon(path: Path, text: str, px: int = 96) -> None:
     """`text` in black on white, centred, as wide as the cell allows."""
     img = Image.new("RGB", (px, px), "white")
     d = ImageDraw.Draw(img)
-    font = ImageFont.truetype(MONO, int(px * 0.62))
+    font = ImageFont.truetype(_mono_font(), int(px * 0.62))
     l, t, r, b = d.textbbox((0, 0), text, font=font)
     d.text(((px - (r - l)) / 2 - l, (px - (b - t)) / 2 - t), text, font=font, fill="black")
     img.save(path)
