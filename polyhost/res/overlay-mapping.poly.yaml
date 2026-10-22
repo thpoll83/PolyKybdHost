@@ -1322,3 +1322,32 @@ musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore
       overlay: [musescore_template_mac.mods.png, musescore_template_mac.combo.mods.png, musescore_template_mac.extra.mods.png]
     linux:
       overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]
+# CAD apps. Autodesk Fusion: `Fusion360.exe` on Windows (unchanged by the 2024
+# rename); "Autodesk Fusion", earlier "Autodesk Fusion 360", on macOS; no Linux
+# version. Every Fusion workspace is one window, so the set has the Design and
+# Sketch keys.
+fusion360,autodesk fusion,autodesk fusion 360:
+  overlay: [fusion_template.mods.png, fusion_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [fusion_template_mac.mods.png, fusion_template_mac.combo.mods.png, fusion_template_mac.extra.mods.png]
+# OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
+# AppImage, class OpenSCAD); the nightly's desktop file names the class
+# org.openscad.openscad.
+openscad,openscad-nightly,org.openscad.openscad:
+  overlay: [openscad_template.mods.png, openscad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [openscad_template_mac.mods.png, openscad_template_mac.combo.mods.png, openscad_template_mac.extra.mods.png]
+    linux:
+      overlay: [openscad_template_linux.mods.png, openscad_template_linux.combo.mods.png]
+# FreeCAD: `freecad` (measured, 1.1.4 AppImage, class FreeCAD); org.freecad.FreeCAD
+# is the Flatpak app id. Linux has its own set: Redo and Close differ from
+# Windows.
+freecad,org.freecad.freecad:
+  overlay: [freecad_template.mods.png, freecad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [freecad_template_mac.mods.png, freecad_template_mac.combo.mods.png, freecad_template_mac.extra.mods.png]
+    linux:
+      overlay: [freecad_template_linux.mods.png, freecad_template_linux.combo.mods.png]

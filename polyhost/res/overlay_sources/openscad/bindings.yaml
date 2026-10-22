@@ -1,0 +1,102 @@
+# OpenSCAD shortcut overlays for PolyKybd (Windows, Linux and macOS).
+#
+# Shortcuts: the QAction shortcuts in OpenSCAD's MainWindow.ui and the keys set
+# in code, read at tag openscad-2021.01 and at master 7bbf6038 (2026-10-18, the
+# 2026.10.18 nightly). Keys only master has do nothing on 2021.01; see SOURCES.md
+# for what each version has.
+#   CMDCTRL          Ctrl on Windows/Linux, Cmd on macOS (Qt's "Ctrl" in a .ui).
+#   CTRL             literal Control everywhere: the editor's autocomplete and
+#                    call tip keys are Control+Space on macOS too.
+#   only: / except:  Find and Replace is Ctrl+Shift+F on Windows and Ctrl+Alt+F
+#                    elsewhere; F3 (reload) does not exist on macOS; keys that
+#                    become a macOS system key (Cmd+Tab, Cmd+H) are left off it.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/openscad/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openscad/bindings.yaml --preview /tmp/openscad_preview
+app: openscad
+match: [openscad, openscad-nightly, org.openscad.openscad]
+output: openscad_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+bindings:
+  # --- file ---
+  - { key: N, mods: [CMDCTRL], label: New }
+  - { key: O, mods: [CMDCTRL], label: Open }
+  - { key: S, mods: [CMDCTRL], label: Save }
+  - { key: S, mods: [CMDCTRL, SHIFT], label: "Save as" }
+  - { key: W, mods: [CMDCTRL], label: Close }
+  - { key: R, mods: [CMDCTRL], icon: reload.png, label: Reload }
+  - { key: F3, mods: [], icon: reload.png, label: Reload, except: [macos] }
+
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: Redo }
+  - { key: Y, mods: [CMDCTRL], label: Redo }
+  - { key: X, mods: [CMDCTRL], label: Cut }
+  - { key: C, mods: [CMDCTRL], label: Copy }
+  - { key: V, mods: [CMDCTRL], label: Paste }
+  - { key: I, mods: [CMDCTRL], icon: indent.png, label: Indent }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: unindent.png, label: Unindent }
+  - { key: D, mods: [CMDCTRL], icon: comment.png, label: Comment, shared: false }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: uncomment.png, label: Uncomment }
+  - { key: UP, mods: [CMDCTRL, ALT], icon: lineup.png, label: "Move line up" }
+  - { key: DOWN, mods: [CMDCTRL, ALT], icon: linedown.png, label: "Move line down" }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab", except: [macos] }
+  - { key: TAB, mods: [CMDCTRL, SHIFT], icon: prevtab.png, label: "Previous tab" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copyimage.png, label: "Copy viewport image" }
+  - { key: T, mods: [CMDCTRL], icon: copytranslation.png, label: "Copy viewport translation" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: fontup.png, label: "Increase font size" }
+  - { key: MINUS, mods: [CMDCTRL], icon: fontdown.png, label: "Decrease font size" }
+  - { key: F, mods: [CMDCTRL], label: Find }
+  - { key: F, mods: [CMDCTRL, ALT], label: Replace, except: [windows] }
+  - { key: F, mods: [CTRL, SHIFT], label: Replace, only: [windows] }
+  - { key: G, mods: [CMDCTRL], label: "Find next" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: findprev.png, label: "Find previous" }
+  - { key: E, mods: [CMDCTRL], icon: selfind.png, label: "Use selection for find" }
+  - { key: E, mods: [CMDCTRL, ALT], icon: nexterror.png, label: "Next error" }
+  - { key: F2, mods: [CMDCTRL], icon: bookmark.png, label: "Toggle bookmark" }
+  - { key: F2, mods: [], icon: nextbookmark.png, label: "Next bookmark" }
+  - { key: F2, mods: [SHIFT], icon: prevbookmark.png, label: "Previous bookmark" }
+  - { key: INS, mods: [ALT], icon: template.png, label: "Insert template" }
+  - { key: SPACE, mods: [CTRL], icon: autocomplete.png, label: Autocomplete }
+  - { key: SPACE, mods: [CTRL, SHIFT], icon: calltip.png, label: "Call tip" }
+  - { key: UP, mods: [ALT], icon: numup.png, label: "Increase number", except: [macos] }
+  - { key: DOWN, mods: [ALT], icon: numdown.png, label: "Decrease number", except: [macos] }
+
+  # --- design ---
+  - { key: F4, mods: [], icon: reloadpreview.png, label: "Reload and preview" }
+  - { key: F5, mods: [], icon: preview.png, label: Preview }
+  - { key: F6, mods: [], icon: render.png, label: Render }
+  - { key: F7, mods: [], icon: export.png, label: "Export STL" }
+  - { key: F8, mods: [], icon: print3d.png, label: "3D print" }
+
+  # --- view ---
+  - { key: F9, mods: [], icon: previewmode.png, label: "Preview mode" }
+  - { key: F12, mods: [], icon: thrown.png, label: "Thrown together" }
+  - { key: "1", mods: [CMDCTRL], icon: edges.png, label: "Show edges" }
+  - { key: "2", mods: [CMDCTRL], icon: axes.png, label: "Show axes" }
+  - { key: "3", mods: [CMDCTRL], icon: crosshairs.png, label: "Show crosshairs" }
+  - { key: "4", mods: [CMDCTRL], icon: top.png, label: "View top" }
+  - { key: "5", mods: [CMDCTRL], icon: bottom.png, label: "View bottom" }
+  - { key: "6", mods: [CMDCTRL], icon: left.png, label: "View left" }
+  - { key: "7", mods: [CMDCTRL], icon: right.png, label: "View right" }
+  - { key: "8", mods: [CMDCTRL], icon: front.png, label: "View front" }
+  - { key: "9", mods: [CMDCTRL], icon: back.png, label: "View back" }
+  - { key: "0", mods: [CMDCTRL], icon: diagonal.png, label: "View diagonal" }
+  - { key: "0", mods: [CMDCTRL, SHIFT], icon: center.png, label: "Center view" }
+  - { key: RBRACKET, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: LBRACKET, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: viewall.png, label: "View all" }
+
+  # --- window (master) ---
+  - { key: J, mods: [CMDCTRL], icon: jumpto.png, label: "Jump to" }
+  - { key: K, mods: [CMDCTRL], icon: nextwin.png, label: "Next window" }
+  - { key: H, mods: [CTRL], icon: prevwin.png, label: "Previous window", except: [macos] }

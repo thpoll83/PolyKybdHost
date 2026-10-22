@@ -1655,6 +1655,25 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
 
+    def test_CAD_apps_get_their_platform_set(self):
+        for app, os_name, stem in (
+                ("fusion360", "WINDOWS", "fusion_template"),
+                ("autodesk fusion", "MACOS", "fusion_template_mac"),
+                ("autodesk fusion 360", "MACOS", "fusion_template_mac"),
+                ("openscad", "WINDOWS", "openscad_template"),
+                ("openscad", "LINUX", "openscad_template_linux"),
+                ("org.openscad.openscad", "LINUX", "openscad_template_linux"),
+                ("openscad", "MACOS", "openscad_template_mac"),
+                ("freecad", "WINDOWS", "freecad_template"),
+                ("freecad", "LINUX", "freecad_template_linux"),
+                ("org.freecad.freecad", "LINUX", "freecad_template_linux"),
+                ("freecad", "MACOS", "freecad_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="part", title_known=True,
+                                  os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_AUDACITY_gets_the_set_of_its_version(self):
         # Windows tells 3.x (Audacity.exe) from 4.x (Audacity4.exe), and Linux
         # by the names measured on the AppImages; macOS cannot, so it gets the
