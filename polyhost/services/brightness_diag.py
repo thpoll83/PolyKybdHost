@@ -112,14 +112,18 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
         irr = min(19 - 7, max(0, now.hour - 7)) / 12
         _report_value("hour-of-day fallback", irr, min_val, max_val, pre_scale, gamma)
         return
-    # ⚠️ ONE decimal, not four. This tool exists to have its output pasted into
-    # a bug report, which is the same destination HOST-5 was about: 4 decimals is
-    # ~11 m and names someone's home, while 1 is ~11 km and still answers the only
-    # question asked here -- did a location resolve, and is it roughly right for
-    # the clear-sky sun elevation below. 0.1 degrees of latitude moves that
-    # elevation by 0.1 degrees, which is nothing for irradiance.
-    print(f"   location: lat {s.latitude:.1f}  lon {s.longitude:.1f}  "
-          f"(1 decimal on purpose, ~11 km)")
+    # ⚠️ WHOLE degrees, not the 4 decimals this used to print. This tool exists
+    # to have its output pasted into a bug report, which is the same destination
+    # HOST-5 was about, so 4 decimals (~11 m, names a home) was undoing at the
+    # end what the log scrub does at the start. Whole degrees is ~110 km -- a
+    # region -- and still answers the only question this line is asked: did a
+    # location resolve, and is it in the right latitude band for the clear-sky
+    # sun elevation printed below. 1 degree of latitude moves that elevation by
+    # 1 degree, about 2% of Haurwitz GHI at mid-latitude noon; 1 degree of
+    # longitude shifts solar noon by 4 minutes. Neither changes a diagnosis.
+    # round() rather than :.0f so a coordinate just below zero prints "0", not "-0".
+    print(f"   location: lat {round(s.latitude)}  lon {round(s.longitude)}  "
+          f"(whole degrees on purpose, ~110 km)")
     print("   irradiance source: online open-meteo (cloud-aware) with a pure-math\n"
           "   clear-sky fallback (Haurwitz model) when offline / lookup disabled.\n")
 
