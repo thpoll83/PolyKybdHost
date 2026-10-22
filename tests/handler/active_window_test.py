@@ -1714,6 +1714,13 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 got = self._match(app, title=title, title_known=True, os_name=os_name)
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
+        # X11 reports DBeaver's bundled JVM as `java`, which the JetBrains entry
+        # also uses; the title routes it.
+        got = self._match("java", title="DBeaver 26.2.3 - <postgres> Script",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("dbeaver_template_linux.mods.png", got["overlay"])
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="LINUX")
+        self.assertIn("jetbrains_linux_template.mods.png", got["overlay"])
         # The cloud Lightroom app reports `lightroom` too; the title gate keeps
         # Classic's set off it.
         self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",

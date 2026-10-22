@@ -18,9 +18,10 @@ DBeaver CE 26.2.3 (`dbeaver-ce-latest-linux.gtk.x86_64.tar.gz`, run under Xvfb
 on 2026-10-22): the launcher process is `dbeaver`, but every window belongs to
 the bundled JVM, process `java`, with WM_CLASS `DBeaver` / `DBeaver` and the
 title "DBeaver <version> - <workspace or editor>". On X11 the host reads the
-process name (`ps -o comm=`), so it sees `java`, which the mapping sends to
-the JetBrains entry. On KDE (resourceClass) and GNOME (wm_class) the name is
-the WM_CLASS. The Windows and macOS names were not checked on an install.
+process name (`ps -o comm=`), so it sees `java`. The mapping's `java` entry
+sends a Linux window whose title starts with "DBeaver" to the DBeaver Linux set
+and every other `java` window to the JetBrains set, as before. On KDE
+(resourceClass) and GNOME (wm_class) the name is the WM_CLASS. The Windows and macOS names were not checked on an install.
 
 ## Shortcut references
 
