@@ -1655,6 +1655,22 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
 
+    def test_SAFARI_routes_web_apps_over_its_own_set(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        entry = self.handler.mapping[mapping_key("safari", self.handler.mapping)]
+        for title, url, site in (
+                ("Pull requests", "https://github.com/thpoll83/PolyKybdHost/pulls", "github_template_mac"),
+                ("Notion", None, "notion_template_mac"),
+                ("Apple", "https://www.apple.com/", None)):
+            with self.subTest(url=url, title=title):
+                got = find_matching_entry(title, entry, url, OsType.MACOS, title_known=True)
+                self.assertIsNotNone(got)
+                files = [str(f) for f in got["overlay"]]
+                self.assertTrue(any("safari_template_mac.mods.png" in f for f in files), files)
+                if site:
+                    self.assertTrue(any(f"{site}.mods.png" in f for f in files), files)
+
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
                 ("fusion360", "WINDOWS", "fusion_template"),

@@ -272,6 +272,17 @@ firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.fire
         chatgpt.com/codex:
           overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
       titles-contains: *web_titles
+# Safari (sources: overlay_sources/safari/), macOS only. The host reads the
+# active tab's URL over AppleScript (services/browser_url_macos.py), so the web
+# apps route as in the other browsers, through the shared macOS maps. The
+# Safari set is small: the menu-shortcut harvest fills every key it leaves free.
+safari,safari technology preview:
+  overlay: &safari_mac [safari_template_mac.mods.png, safari_template_mac.combo.mods.png, safari_template_mac.extra.mods.png]
+  urls-contains:
+    <<: *web_urls_mac
+    chatgpt.com/codex:
+      overlay: *safari_mac
+  titles-contains: *web_titles_mac
 # AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
 # forms are under the browser entry above (claude.ai, chatgpt.com). The Claude
 # desktop app shows its Chat and Code tabs in one window of one process, so one
