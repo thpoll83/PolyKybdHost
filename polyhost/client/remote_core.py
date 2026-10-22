@@ -502,10 +502,10 @@ class RemoteCore(Observable):
         return self._device(p.M_BOOT_LOOP_CANCEL)
 
     def set_handedness(self, master_is_left, split_vbus=None):
-        params = {"master_is_left": bool(master_is_left)}
-        if split_vbus is not None:
-            params["split_vbus"] = bool(split_vbus)
-        return self._device(p.M_SET_HANDEDNESS, params)
+        if split_vbus is None:
+            return self._device(p.M_SET_HANDEDNESS, {"master_is_left": bool(master_is_left)})
+        return self._device(p.M_SET_HANDEDNESS_BOARD, {"master_is_left": bool(master_is_left),
+                                                       "split_vbus": bool(split_vbus)})
 
     def apply_staged_firmware(self):
         return self._device(p.M_FW_APPLY_STAGED)

@@ -136,9 +136,12 @@ class PolyctlTest(unittest.TestCase):
         for flag, value in (("on", True), ("off", False)):
             rc, out, err, server = run_main(
                 ["handedness", "left", "--split-vbus", flag],
-                {protocol.M_SET_HANDEDNESS: {"queued": True}})
+                {protocol.M_SET_HANDEDNESS_BOARD: {"queued": True}})
             self.assertEqual(rc, 0)
-            self.assertEqual(dict(server.received)[protocol.M_SET_HANDEDNESS],
+            received = dict(server.received)
+            self.assertNotIn(protocol.M_SET_HANDEDNESS, received,
+                             "an older daemon would drop the flag from the plain method")
+            self.assertEqual(received[protocol.M_SET_HANDEDNESS_BOARD],
                              {"master_is_left": True, "split_vbus": value})
             self.assertIn(f"split-VBUS flag {flag}", out)
 

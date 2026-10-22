@@ -364,15 +364,16 @@ def _cmd_handedness(client, args):
     """
     master_is_left = args.side == "left"
     other = "RIGHT" if master_is_left else "LEFT"
-    params = {"master_is_left": master_is_left}
     if args.split_vbus is not None:
-        params["split_vbus"] = args.split_vbus == "on"
+        # Its own method, so an older daemon refuses it instead of dropping the flag.
         print(f"setting the connected half to {args.side.upper()} and its Rev.2 "
               f"split-VBUS flag {args.split_vbus}…")
+        client.call(protocol.M_SET_HANDEDNESS_BOARD,
+                    {"master_is_left": master_is_left, "split_vbus": args.split_vbus == "on"})
     else:
         print(f"setting the connected half to {args.side.upper()} "
               f"(the other half becomes {other})…")
-    client.call(protocol.M_SET_HANDEDNESS, params)
+        client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
     print("sent; both halves save the new side and reboot onto it (about 10 s, "
           "no replug needed)")
     return 0

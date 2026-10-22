@@ -405,7 +405,7 @@ class ControlServerTest(unittest.TestCase):
         self.assertEqual(self._call(conn, 43, p.M_FW_APPLY_STAGED)["result"], {"queued": True})
         self._call(conn, 44, p.M_SET_HANDEDNESS, {"master_is_left": True})
         self.assertIn(("set_handedness", True), self.core.calls)
-        self._call(conn, 440, p.M_SET_HANDEDNESS, {"master_is_left": False, "split_vbus": True})
+        self._call(conn, 440, p.M_SET_HANDEDNESS_BOARD, {"master_is_left": False, "split_vbus": True})
         self.assertIn(("set_handedness", False, True), self.core.calls)
         self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)

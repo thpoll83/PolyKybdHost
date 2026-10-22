@@ -247,8 +247,9 @@ class ControlServer(MpcListenerServer):
             p.M_OVERLAY_SET_ALL_USAGE: lambda conn, params: _unwrap(c.set_all_overlay_usage()),
             p.M_OVERLAY_MAPPING_SEND: lambda conn, params: _unwrap(c.send_overlay_mapping(params["mapping"])),
             p.M_ACTIVATE_BOOTLOADER: lambda conn, params: _unwrap(c.activate_bootloader()),
-            p.M_SET_HANDEDNESS: lambda conn, params: _unwrap(c.set_handedness(
-                params["master_is_left"], params.get("split_vbus"))),
+            p.M_SET_HANDEDNESS: lambda conn, params: _unwrap(c.set_handedness(params["master_is_left"])),
+            p.M_SET_HANDEDNESS_BOARD: lambda conn, params: _unwrap(c.set_handedness(
+                params["master_is_left"], bool(params["split_vbus"]))),
             p.M_FW_APPLY_STAGED: lambda conn, params: _unwrap(c.apply_staged_firmware()),
             p.M_FONTPACK_FLASH: lambda conn, params: _unwrap(
                 c.flash_fontpack_bundle(params["bundle"]) if "bundle" in params
