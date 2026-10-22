@@ -10,6 +10,7 @@ returns ``self.title`` when the PID isn't in its WMI list, and the callers
 normalise the result (``raw.split(".")[0].lower()``), so returning anything
 else here would quietly change which overlay mapping matches.
 """
+import os
 import unittest
 from unittest import mock
 
@@ -17,8 +18,10 @@ from polyhost.handler import win_process
 
 
 class FakeWindow:
-    def __init__(self, handle=1234, title="Doc - Notepad", app_name="notepad.exe"):
+    def __init__(self, handle=1234, title="Doc - Notepad", app_name="notepad.exe",
+                 pid=4321):
         self._handle = handle
+        self._pid = pid
         self.title = title
         self._app_name = app_name
         self.get_app_name_calls = 0
@@ -29,6 +32,9 @@ class FakeWindow:
     def getAppName(self):
         self.get_app_name_calls += 1
         return self._app_name
+
+    def getPID(self):
+        return self._pid
 
 
 class TestAppNameFor(unittest.TestCase):
@@ -74,6 +80,60 @@ class TestAppNameFor(unittest.TestCase):
              mock.patch.object(win_process, "win32_process_name",
                                side_effect=OSError("gone")):
             self.assertEqual(win_process.app_name_for(win), "Doc - Notepad")
+
+
+class TestRenamedMainThread(unittest.TestCase):
+    """MuseScore 4 and Audacity 4 rename their main thread to "main", so
+    ``ps -o comm=`` names both apps "main" on X11. The executable name is read
+    instead, and only for that name."""
+
+    def test_main_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/tmp/.mount_x/bin/mscore4portable") as rl:
+            self.assertEqual(win_process.app_name_for(win), "mscore4portable")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_a_replaced_executable_drops_the_deleted_suffix(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/mscore (deleted)"):
+            self.assertEqual(win_process.app_name_for(win), "mscore")
+
+    def test_an_unreadable_executable_keeps_main(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", side_effect=PermissionError):
+            self.assertEqual(win_process.app_name_for(win), "main")
+
+    def test_no_pid_keeps_main(self):
+        win = FakeWindow(app_name="main", pid=0)
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "main")
+        rl.assert_not_called()
+
+    def test_other_names_never_read_the_executable(self):
+        win = FakeWindow(app_name="audacity")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "audacity")
+        rl.assert_not_called()
+
+    def test_macos_keeps_main(self):
+        win = FakeWindow(app_name="main")
+        with mock.patch("sys.platform", "darwin"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "main")
+        rl.assert_not_called()
+
+    @unittest.skipUnless(os.path.exists("/proc/self/exe"), "needs /proc")
+    def test_reads_the_real_proc_entry(self):
+        win = FakeWindow(app_name="main", pid=os.getpid())
+        expected = os.path.basename(os.readlink("/proc/self/exe"))
+        with mock.patch("sys.platform", "linux"):
+            self.assertEqual(win_process.app_name_for(win), expected)
 
 
 class TestNativeBindings(unittest.TestCase):
