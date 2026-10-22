@@ -55,6 +55,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     docs.google.com/document:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
+    teams.microsoft.com:
+      overlay: &teams_web [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
+    teams.cloud.microsoft:
+      overlay: *teams_web
+    teams.live.com:
+      overlay: *teams_web
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     # Claude Code on the web. MUST stay above claude.ai, which it contains.
@@ -135,6 +141,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     Bitbucket:
       overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
+    Microsoft Teams:
+      overlay: *teams_web
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     Google Docs:
@@ -175,6 +183,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         docs.google.com/document:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        teams.microsoft.com:
+          overlay: &teams_web_mac [teams_web_template_mac.mods.png, teams_web_template_mac.combo.mods.png, teams_web_template_mac.extra.mods.png, teams_web_template_mac.gui.mods.png]
+        teams.cloud.microsoft:
+          overlay: *teams_web_mac
+        teams.live.com:
+          overlay: *teams_web_mac
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         claude.ai/code:
@@ -214,6 +228,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         Bitbucket:
           overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
+        Microsoft Teams:
+          overlay: *teams_web_mac
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         Google Docs:
@@ -298,14 +314,23 @@ gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
   os:
     macos:
       overlay: [gimp_mac_template.mods.png, gimp_mac_template.combo.mods.png, gimp_mac_template.extra.mods.png]
-# macOS reports Zoom's display name, `zoom.us`.
+# Zoom (sources: overlay_sources/zoom/). macOS reports Zoom's display name,
+# `zoom.us`; Linux reports `zoom` (measured, 7.2.1). The main window is titled
+# "Zoom Workplace" and gets the chat, phone and general keys; the meeting and
+# webinar windows ("Zoom Meeting", "Zoom Webinar") get the meeting keys. The
+# `title` gate keeps Zoom's other windows (settings, pop-out chat) out; a window
+# whose title is unknown skips the gate and gets the meeting set.
 zoom,zoom.us:
   overlay: [zoom_template.mods.png, zoom_template.combo.mods.png]
-  title: Zoom Meeting
+  title: '^Zoom (Meeting|Webinar|Workplace)'
+  titles-startswith:
+    Zoom Workplace: {overlay: [zoom_main_template.mods.png, zoom_main_template.combo.mods.png]}
   os:
     macos:
-      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png]
-      title: Zoom Meeting
+      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png, zoom_template_mac.gui.mods.png]
+      title: '^Zoom (Meeting|Webinar|Workplace)'
+      titles-startswith:
+        Zoom Workplace: {overlay: [zoom_main_template_mac.mods.png, zoom_main_template_mac.combo.mods.png, zoom_main_template_mac.extra.mods.png]}
 discord:
   overlay: [discord_template.mods.png, discord_template.combo.mods.png, discord_template.extra.mods.png]
   os:
@@ -1025,11 +1050,19 @@ blender,org.blender.blender:
         "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template_mac.mods.png, blender_paint_texture_template_mac.combo.mods.png, blender_paint_texture_template_mac.extra.mods.png] }
         "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
         "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
-ms-teams,teams,microsoft teams:
-  overlay: [teams_template.mods.png, teams_template.combo.mods.png]
+# Microsoft Teams (sources: overlay_sources/teams/). The desktop app is
+# `ms-teams.exe` (new Teams) or `Teams.exe` (classic) on Windows, and on macOS
+# "Microsoft Teams" (new), earlier "Microsoft Teams (work or school)" and
+# "Microsoft Teams classic". There is no Linux desktop app: Teams in a browser
+# is under the browser entries (teams.microsoft.com), and teams-for-linux, which
+# wraps the web app, gets the web set.
+ms-teams,teams,microsoft teams,msteams,microsoft teams (work or school),microsoft teams classic:
+  overlay: [teams_template.mods.png, teams_template.combo.mods.png, teams_template.extra.mods.png]
   os:
     macos:
-      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png]
+      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png, teams_template_mac.gui.mods.png]
+teams-for-linux:
+  overlay: [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
   os:
