@@ -1671,6 +1671,54 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 if site:
                     self.assertTrue(any(f"{site}.mods.png" in f for f in files), files)
 
+    def test_GOOGLE_web_apps_get_their_sets_by_url_and_title(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        entry = self.handler.mapping[mapping_key("chrome", self.handler.mapping)]
+        for url, title, stem in (
+                ("https://docs.google.com/spreadsheets/d/x/edit", "Budget - Google Sheets", "googlesheets_template"),
+                ("https://docs.google.com/presentation/d/x/edit", "Deck - Google Slides", "googleslides_template"),
+                ("https://mail.google.com/mail/u/0/#inbox", "Inbox (3) - me@example.org - Gmail", "gmail_template"),
+                ("https://calendar.google.com/calendar/r", "Google Calendar - Week of 19 October", "googlecalendar_template")):
+            for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+                for u in (url, None):
+                    with self.subTest(stem=stem, os=os_name, url=u):
+                        got = find_matching_entry(title, entry, u, OsType[os_name], title_known=True)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png",
+                                      [str(f) for f in got["overlay"]])
+
+    def test_MEDIA_CREATIVE_and_DEV_apps_get_their_platform_set(self):
+        for app, os_name, title, stem in (
+                ("vlc", "WINDOWS", "VLC media player", "vlc_template"),
+                ("vlc", "LINUX", "VLC media player", "vlc_template"),
+                ("vlc", "MACOS", "VLC media player", "vlc_template_mac"),
+                ("spotify", "WINDOWS", "Spotify", "spotify_template"),
+                ("spotify", "MACOS", "Spotify", "spotify_template_mac"),
+                ("lightroom", "WINDOWS", "Catalog - Adobe Photoshop Lightroom Classic - Library", "lightroom_template"),
+                ("adobe lightroom classic", "MACOS", "Lightroom Classic", "lightroom_template_mac"),
+                ("indesign", "WINDOWS", "Untitled-1 @ 50%", "indesign_template"),
+                ("adobe indesign 2026", "MACOS", "Untitled-1 @ 50%", "indesign_template_mac"),
+                ("designer", "WINDOWS", "Affinity Designer 2", "affinity_designer_template"),
+                ("affinity photo 2", "MACOS", "Affinity Photo 2", "affinity_photo_template_mac"),
+                ("publisher", "WINDOWS", "Affinity Publisher 2", "affinity_publisher_template"),
+                ("affinity", "WINDOWS", "Affinity", "affinity_template"),
+                ("postman", "LINUX", "Postman", "postman_template"),
+                ("postman", "MACOS", "Postman", "postman_template_mac"),
+                ("dbeaver", "WINDOWS", "DBeaver 26.2.3", "dbeaver_template"),
+                ("dbeaver", "LINUX", "DBeaver 26.2.3", "dbeaver_template_linux"),
+                ("dbeaver", "MACOS", "DBeaver 26.2.3", "dbeaver_template_mac"),
+                ("githubdesktop", "WINDOWS", "GitHub Desktop", "githubdesktop_template"),
+                ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title=title, title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+        # The cloud Lightroom app reports `lightroom` too; the title gate keeps
+        # Classic's set off it.
+        self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",
+                                      title_known=True, os_name="WINDOWS"))
+
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
                 ("fusion360", "WINDOWS", "fusion_template"),

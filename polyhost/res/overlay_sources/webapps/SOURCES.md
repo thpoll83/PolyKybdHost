@@ -305,3 +305,54 @@ Two deliberate choices, both of which have been queried:
   code is correct — this text was the thing that was wrong.
 - **Two adjacent edges only.** Drawing all four offset edges reads as a second
   box rather than as a shadow.
+
+## Google Sheets, Slides, Gmail and Calendar
+
+`gen_google_specs.py` writes `googlesheets.yaml`, `googleslides.yaml`,
+`gmail.yaml` and `googlecalendar.yaml` from one table per app. Each row has a
+Windows/Linux key and a macOS key. A row whose Mac key is the Windows key with
+Ctrl replaced by Cmd becomes one `CMDCTRL` binding; every other row is written
+twice, under `except: [macos]` and `only: [macos]`.
+
+| Set | Source (read 2026-10-22 with headless Chromium) | Bindings, Windows/Linux and macOS |
+|---|---|---|
+| Google Sheets | <https://support.google.com/docs/answer/181110>, PC and Mac tables | 80, 79 |
+| Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
+| Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 26, 26 |
+| Google Calendar | <https://support.google.com/calendar/answer/37034> | 3, 3 |
+
+Linux gets the PC keys. The ChromeOS tables are not used.
+
+### Left out
+
+- Bare letters, digits and Shift+letter keys: Gmail's and Calendar's single-key
+  shortcuts (`c` compose, `e` archive, `1`..`5` calendar views, ...), the
+  comment keys `j`, `k`, `r`, `e`, `u`, and the presenting and video keys of
+  Slides. A cell on such a key would replace the letter legend while the user
+  types. Calendar keeps only 3 keys for this reason.
+- Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`):
+  an overlay cell shows what one key press does.
+- The menu keys (Alt+F, Alt+E, ...): Chrome and other browsers use different
+  modifiers for them (Alt in Chrome, Alt+Shift elsewhere).
+- Keys with plain arrows, Home, End, Page Up/Down, Tab, Enter or Esc alone, and
+  the Mac rows that need Fn.
+- Input-tools keys (only in non-Latin documents) and the second key of a row
+  that lists two (Sheets Bold ⌘2, Strikethrough ⌘5, ...).
+- Slides: Ctrl+Up/Down move a slide in the filmstrip and move an object in the
+  canvas. The set shows the object meaning (Bring forward, Send backward, and
+  with Shift Bring to front, Send to back). Alt+Left/Right (rotate by 15°) is
+  left out because the browser uses it for Back and Forward. Ctrl+Shift+, and
+  Ctrl+Shift+. are drawn as font size; in the video player they change the
+  playback rate.
+- Gmail ⌘M (spelling suggestions) on macOS: ⌘M minimizes the window there.
+
+### Icons and program marks
+
+- Fluent UI System Icons (MIT) and Material Symbols (Apache-2.0), the `GOOGLE`
+  dict in `fetch_icons.py`. `narrower.png` is `shorter.png` (Fluent `Arrow
+  Minimize Vertical`) turned 90°, because Fluent has no horizontal one.
+- `gs.png` and `gsl.png` are labelled document frames from `../doc_mark.py`,
+  like Google Docs' `gd.png`, with the calc and impress motifs.
+- `gmail.png` and `gcal.png` are the Gmail and Google Calendar marks from
+  Simple Icons (CC0-1.0 artwork), used to name the application
+  (`../brand_marks.py`), as the Google Meet set does.
