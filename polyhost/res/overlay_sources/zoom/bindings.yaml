@@ -50,7 +50,7 @@ _mac: &mac { only: [macos] }
 bindings:
   # ============================ RECLAIMED from the previously shipped set =====
   # -- Windows / Linux (the old artwork, unchanged) --
-  - { key: A, mods: [ALT], <<: [*r, *wl], icon: mute.png,         label: "Mute / unmute" }
+  - { key: A, mods: [ALT], <<: *wl, icon: mute.png,                label: "Mute / unmute" }
   - { key: V, mods: [ALT], <<: [*r, *wl], icon: video.png,        label: "Start / stop video" }
   - { key: S, mods: [ALT], <<: [*r, *wl], icon: sharescreen.png,  label: "Share screen" }
   - { key: T, mods: [ALT], <<: [*r, *wl], icon: pauseshare.png,   label: "Pause / resume share" }
@@ -68,7 +68,7 @@ bindings:
   - { key: BACKSLASH, mods: [CTRL], <<: *r, icon: showcontrols.png, label: "Always show controls" }
 
   # -- macOS: the same drawings on Zoom's Mac chords --
-  - { key: A, mods: [GUI, SHIFT], <<: [*r, *mac], icon: mute.png,         label: "Mute / unmute" }
+  - { key: A, mods: [GUI, SHIFT], <<: *mac, icon: mute.png,        label: "Mute / unmute" }
   - { key: V, mods: [GUI, SHIFT], <<: [*r, *mac], icon: video.png,        label: "Start / stop video" }
   - { key: S, mods: [GUI, SHIFT], <<: [*r, *mac], icon: sharescreen.png,  label: "Share screen" }
   - { key: T, mods: [GUI, SHIFT], <<: [*r, *mac], icon: pauseshare.png,   label: "Pause / resume share" }

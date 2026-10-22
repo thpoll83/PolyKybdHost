@@ -12,9 +12,9 @@ Two kinds of icon live in `icons/`:
   shipped hand-drawn overlay, lifted pixel-for-pixel out of the old PNGs (72x40
   cells, white on transparent). They have no other source, so they are committed
   assets: never fetched, never clobbered, restore them from git if lost. The ESC
-  mark is `icons/zoom.png`; the 14 shortcut icons are in `reclaimed/`, and this
-  script writes them into `icons/` one pixel thinner (`_thin`), so their strokes
-  match the Fluent icons beside them. Re-running starts from `reclaimed/` again,
+  mark is `icons/zoom.png`; the 13 shortcut icons are in `reclaimed/`, and this
+  script writes them into `icons/` with their 3 px strokes thinned to 2 px
+  (`_thin`), so they match the Fluent icons beside them. Re-running starts from `reclaimed/` again,
   so it never thins twice.
 * Fetched -- Microsoft Fluent UI System Icons (MIT) by folder name, or Google
   Material Symbols (Apache-2.0) for an `ms:` name. Deterministic, so a re-run may
@@ -40,7 +40,7 @@ RECLAIMED = {"zoom.png"}
 
 # The hand-drawn shortcut icons, in `reclaimed/`, written thinned into `icons/`.
 THINNED = (
-    "closechat.png", "showcontrols.png", "mute.png", "cloudrecord.png",
+    "closechat.png", "showcontrols.png", "cloudrecord.png",
     "invite.png", "muteall.png", "switchcamera.png", "pauserecord.png",
     "localrecord.png", "sharescreen.png", "pauseshare.png", "participants.png",
     "video.png", "raisehand.png",
@@ -48,20 +48,17 @@ THINNED = (
 
 
 def _thin(lit: np.ndarray) -> np.ndarray:
-    """One Zhang-Suen sub-iteration: drop the contour pixels on the south-east
-    side of every stroke whose removal keeps the shape 8-connected and does not
-    shorten a line end. A 2 px stroke becomes 1 px, and a 1 px diagonal stays
-    whole, which a plain erosion breaks into dots."""
-    p = np.pad(lit.astype(np.uint8), 1)
+    """Take one pixel off the east or south edge of a stroke, but only where
+    the stroke is at least 3 px wide across that edge (its 2 inner neighbours
+    are lit). The 3 px frames become 2 px, like the Fluent icons; the 2 px
+    details keep their weight, and no stroke can break apart."""
+    p = np.pad(lit, 2)
     out = lit.copy()
     for y, x in zip(*np.nonzero(lit)):
-        Y, X = y + 1, x + 1
-        n = [p[Y-1, X], p[Y-1, X+1], p[Y, X+1], p[Y+1, X+1],
-             p[Y+1, X], p[Y+1, X-1], p[Y, X-1], p[Y-1, X-1]]
-        neighbours = sum(n)
-        transitions = sum(1 for i in range(8) if n[i] == 0 and n[(i + 1) % 8] == 1)
-        if (2 <= neighbours <= 6 and transitions == 1
-                and n[0] * n[2] * n[4] == 0 and n[2] * n[4] * n[6] == 0):
+        Y, X = y + 2, x + 2
+        east_edge = not p[Y, X + 1] and p[Y, X - 1] and p[Y, X - 2]
+        south_edge = not p[Y + 1, X] and p[Y - 1, X] and p[Y - 2, X]
+        if east_edge or south_edge:
             out[y, x] = False
     return out
 
@@ -80,6 +77,7 @@ FLUENT = {
     "endmeeting": "Call End",
     "screenshot": "Screenshot",
     "unmuteall": "Mic",
+    "mute": "Mic Off",
     # --- meeting, added 2026-10 ---
     "remotecontrol": "ms:settings_remote",
     "revokeremote": "ms:cancel_presentation",
