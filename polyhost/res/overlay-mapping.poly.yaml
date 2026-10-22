@@ -1268,3 +1268,57 @@ jan,jan-desktop:
   os:
     macos:
       overlay: [jan_template_mac.mods.png, jan_template_mac.combo.mods.png]
+
+# Music apps (sources: overlay_sources/<app>/). Each app's SOURCES.md says which
+# app names are confirmed.
+#
+# FL Studio: FL64.exe on Windows; on macOS the app is named after the year.
+# Its Playlist, Piano roll and Mixer share one OS window, so one set serves all.
+fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
+  overlay: [flstudio_template.mods.png, flstudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
+# Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
+ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
+  overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
+# REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
+# same default keys.
+reaper:
+  overlay: [reaper_template.mods.png, reaper_template.combo.mods.png, reaper_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [reaper_template_mac.mods.png, reaper_template_mac.combo.mods.png, reaper_template_mac.extra.mods.png, reaper_template_mac.gui.mods.png]
+# Audacity: 3.7.9 and 4.0.1 have different keymaps. On Windows they are
+# Audacity.exe and Audacity4.exe; on macOS both are "Audacity", so macOS gets only
+# the keys that do the same thing in both versions. On Linux (measured on the
+# AppImages under X11) 3.7 is `audacity` with class Audacity; 4.0 is
+# `audacity4portable` with class Audacity4 and Wayland app id
+# org.audacityteam.Audacity4portable. `org.audacityteam.audacity` is the Flatpak
+# app id, which may be either version, so it also gets the common keys.
+audacity,org.audacityteam.audacity:
+  overlay: [audacity3_template.mods.png, audacity3_template.combo.mods.png, audacity3_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [audacity_template_mac.mods.png, audacity_template_mac.combo.mods.png, audacity_template_mac.extra.mods.png]
+    linux:
+      overlay: [audacity_template.mods.png, audacity_template.combo.mods.png]
+audacity4,audacity4portable,org.audacityteam.audacity4portable:
+  overlay: [audacity4_template.mods.png, audacity4_template.combo.mods.png, audacity4_template.extra.mods.png]
+# MuseScore Studio 4: MuseScore4.exe on Windows; on macOS the bundle is
+# "MuseScore Studio" (CFBundleName) in a folder named "MuseScore 4"; on Linux the
+# binary is `mscore` with a `musescore` link, the Flatpak app id
+# org.musescore.MuseScore and the X11 class MuseScore4. The 4.7.5 AppImage
+# (measured under X11) is `mscore4portable`, Wayland app id
+# org.musescore.MuseScore4portable. Linux has its own set because Redo is
+# Ctrl+Shift+Z there and Ctrl+Y on Windows.
+musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore,mscore4portable,org.musescore.musescore4portable:
+  overlay: [musescore_template.mods.png, musescore_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [musescore_template_mac.mods.png, musescore_template_mac.combo.mods.png, musescore_template_mac.extra.mods.png]
+    linux:
+      overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]

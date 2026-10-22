@@ -104,16 +104,44 @@ def win32_process_name(hwnd):
         kernel32.CloseHandle(handle)
 
 
+#: What pywinctl's Linux ``getAppName()`` (``ps -o comm=``) reports for an app
+#: that names its main thread. MuseScore Studio 4 and Audacity 4 both call it
+#: "main" (measured on the 4.7.5 and 4.0.1 AppImages under X11, 2026-10-22), so
+#: the name says nothing about which app owns the window.
+_RENAMED_MAIN_THREAD = "main"
+
+
+def linux_exe_name(win):
+    """Basename of ``/proc/<pid>/exe`` for `win`, or ``""`` when unreadable.
+
+    The executable's file name, which a thread rename does not change:
+    ``mscore4portable`` where ``comm`` says ``main``.
+    """
+    try:
+        pid = win.getPID()
+        if not pid:
+            return ""
+        path = os.readlink(f"/proc/{pid}/exe")
+    except Exception:
+        return ""
+    # The kernel appends this when the file was replaced while running.
+    return os.path.basename(path.removesuffix(" (deleted)"))
+
+
 def app_name_for(win):
     """The owning app's name for `win`, the cheap way on Windows.
 
-    Off Windows this is ``win.getAppName()`` unchanged. On Windows a failed
+    Off Windows this is ``win.getAppName()``, except that a Linux ``main``
+    becomes the executable's name (see ``_RENAMED_MAIN_THREAD``). On Windows a failed
     lookup falls back to the window TITLE, which is what pywinctl's own
     implementation returns when the PID is missing from its process list — so
     the caller's normalisation sees exactly what it saw before.
     """
     if sys.platform != "win32":
-        return win.getAppName()
+        name = win.getAppName()
+        if name == _RENAMED_MAIN_THREAD and sys.platform.startswith("linux"):
+            return linux_exe_name(win) or name
+        return name
     try:
         name = win32_process_name(win.getHandle())
     except Exception:

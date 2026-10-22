@@ -1628,6 +1628,48 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
                         got.get("overlay"))
 
+    def test_MUSIC_apps_get_their_platform_set(self):
+        cases = {
+            "fl64": "flstudio_template", "fl studio 2025": "flstudio_template",
+            "ableton live 12 suite": "ableton_template",
+            "ableton live 12 lite": "ableton_template",
+            "reaper": "reaper_template",
+            "musescore4": "musescore_template",
+            "musescore studio": "musescore_template",
+        }
+        for app, stem in cases.items():
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="song", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+
+    def test_AUDACITY_gets_the_set_of_its_version(self):
+        # Windows tells 3.x (Audacity.exe) from 4.x (Audacity4.exe), and Linux
+        # by the names measured on the AppImages; macOS cannot, so it gets the
+        # keys both versions share, as does the Flatpak (either version).
+        for app, os_name, stem in (
+                ("audacity", "WINDOWS", "audacity3_template"),
+                ("audacity4", "WINDOWS", "audacity4_template"),
+                ("audacity", "MACOS", "audacity_template_mac"),
+                ("audacity", "LINUX", "audacity_template"),
+                ("org.audacityteam.audacity", "LINUX", "audacity_template"),
+                ("audacity4portable", "LINUX", "audacity4_template"),
+                ("audacity4", "LINUX", "audacity4_template"),
+                ("org.audacityteam.audacity4portable", "LINUX", "audacity4_template"),
+                ("mscore", "LINUX", "musescore_template_linux"),
+                ("mscore4portable", "LINUX", "musescore_template_linux"),
+                ("musescore4", "LINUX", "musescore_template_linux"),
+                ("org.musescore.musescore4portable", "LINUX",
+                 "musescore_template_linux"),
+                ("reaper", "LINUX", "reaper_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="song", title_known=True,
+                                  os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_MATHEMATICA_and_WOLFRAM_get_their_platform_set(self):
         for os_name, stem in (("WINDOWS", "mathematica_template"),
                               ("LINUX", "mathematica_template_linux"),
