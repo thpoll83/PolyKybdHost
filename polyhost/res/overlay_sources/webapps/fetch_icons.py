@@ -2,8 +2,9 @@
 """Fetch + render icons for the browser-hosted app overlays.
 
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
-`confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml` and
-`bitbucket.yaml`. They are grouped
+`confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
+`bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
+Gmail, Calendar). They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
 duplicating ~30 identical PNGs five times would be pure noise in the tree.
@@ -21,6 +22,8 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -197,13 +200,121 @@ FLUENT = {
     "calnext": "Arrow Next",
 }
 
+# Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
+# Material Symbols (Apache-2.0) where Fluent has no glyph.
+GOOGLE = {
+    # --- Google Sheets ---
+    "fillrange": "ms:format_color_fill",
+    "filldown": "ms:vertical_align_bottom",
+    "fillright": "ms:keyboard_tab",
+    "pastevalues": "ms:content_paste_go",
+    "compact": "ms:toolbar",
+    "toolfinder": "ms:manage_search",
+    "rename": "Rename",
+    "gotorange": "ms:jump_to_element",
+    "bordertop": "ms:border_top",
+    "borderright": "ms:border_right",
+    "borderbottom": "ms:border_bottom",
+    "borderleft": "ms:border_left",
+    "bordernone": "ms:border_clear",
+    "borderouter": "ms:border_outer",
+    "inserttime": "ms:more_time",
+    "insertdate": "Calendar Add",
+    "insertdatetime": "Calendar Clock",
+    "fmtdecimal": "ms:decimal_increase",
+    "fmttime": "ms:schedule",
+    "fmtdate": "ms:calendar_today",
+    "fmtcurrency": "ms:attach_money",
+    "fmtpercent": "ms:percent",
+    "fmtexponent": "ms:superscript",
+    "sheetstart": "ms:first_page",
+    "sheetend": "ms:last_page",
+    "activecell": "ms:center_focus_strong",
+    "nextsheet": "Arrow Next",
+    "prevsheet": "Arrow Previous",
+    "sheetlist": "ms:list",
+    "openlink": "Open",
+    "explore": "ms:explore",
+    "sidepanel": "Panel Right",
+    "quicksum": "ms:functions",
+    "history": "History",
+    "sheetmenu": "ms:tab",
+    "contextmenu": "ms:menu_open",
+    "columnmenu": "ms:arrow_drop_down_circle",
+    "insertmenu": "ms:add_box",
+    "deletemenu": "ms:indeterminate_check_box",
+    "showmenus": "ms:menu",
+    "hiderow": "ms:visibility_off",
+    "unhiderow": "ms:visibility",
+    "hidecol": "Eye Off",
+    "unhidecol": "Eye",
+    "group": "Group",
+    "ungroup": "Group Dismiss",
+    "expand": "ms:unfold_more",
+    "collapse": "ms:unfold_less_double",
+    "formulas": "ms:function",
+    "arrayformula": "ms:data_array",
+    "collapsearray": "ms:compress",
+    "screenreader": "ms:record_voice_over",
+    "braille": "ms:blind",
+    "readcolumn": "ms:view_column",
+    "readrow": "ms:table_rows",
+    # --- Google Slides ---
+    "newslide": "Slide Add",
+    "copyformat": "ms:format_paint",
+    "pasteformat": "ms:format_ink_highlighter",
+    "findnext": "ms:arrow_downward",
+    "findprev": "ms:arrow_upward",
+    "captions": "Closed Caption",
+    "alttext": "ms:image",
+    "filmstrip": "ms:view_carousel",
+    "canvas": "ms:crop_landscape",
+    "notes": "ms:speaker_notes",
+    "htmlview": "ms:html",
+    "animations": "ms:animation",
+    "dictionary": "Book",
+    "present": "Presenter",
+    "presentstart": "ms:slideshow",
+    "hidecomment": "Comment Off",
+    "paradown": "ms:move_down",
+    "paraup": "ms:move_up",
+    "nextspell": "Text Grammar Arrow Right",
+    "prevspell": "Text Grammar Arrow Left",
+    "sendbackward": "ms:keyboard_arrow_down",
+    "bringforward": "ms:keyboard_arrow_up",
+    "rotateccw": "Arrow Rotate Counterclockwise",
+    "rotatecw": "Arrow Rotate Clockwise",
+    "widen": "Arrow Autofit Width",
+    "taller": "Arrow Autofit Height",
+    "shrink": "ms:close_fullscreen",
+    "grow": "ms:open_in_full",
+    "shorter": "Arrow Minimize Vertical",
+    "speak": "ms:text_to_speech",
+    "speakcursor": "ms:voice_selection",
+    # --- Gmail ---
+    "nextchat": "ms:arrow_forward",
+    "prevchat": "ms:arrow_back",
+    "addcc": "ms:person_add",
+    "addbcc": "ms:visibility_off",
+    "fromaddr": "ms:alternate_email",
+    "spelling": "ms:spellcheck",
+    "prevfont": "ms:keyboard_double_arrow_left",
+    "nextfont": "ms:keyboard_double_arrow_right",
+}
+# narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
+# "Arrow Minimize" but no horizontal one.
+ROTATED = {"narrower.png": ("shorter.png", 90)}
+
+
 # GitHub and GitLab publish plain monochrome marks that read cleanly as a 1-bit
 # silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
 # REAL logo (nominative use; see brand_marks).
-BRAND = {"gh.png": "github", "gl.png": "gitlab"}
+BRAND = {"gh.png": "github", "gl.png": "gitlab",
+         "gmail.png": "gmail", "gcal.png": "googlecalendar"}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
-DOC = {"gd.png": ("googledocs", "DOCS")}
+DOC = {"gd.png": ("googledocs", "DOCS"),
+       "gs.png": ("calc", "SHEETS"), "gsl.png": ("impress", "SLIDES")}
 # Notion: a framed serif N with a 1-bit extruded shade — its brand letter IS a
 # serif, and the depth is what separates it from the other framed marks.
 SHADED = {"nt.png": "N"}
@@ -227,6 +338,11 @@ MATERIAL = {"numberlist": "format_list_numbered", "whitespace": "space_bar",
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
+    n += icon_fetch.fluent(GOOGLE, out)
+    for fname, (src, angle) in ROTATED.items():
+        Image.open(out / src).rotate(angle).save(out / fname)
+        print(f"  {fname}  <- {src} turned {angle} degrees")
+    n += len(ROTATED)
     for stem, name in MATERIAL.items():
         ms.render(name, out / f"{stem}.png", weight=300)
         print(f"  {stem}.png  <- material-symbols/{name}")
@@ -238,7 +354,8 @@ def main() -> int:
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
         else:
-            doc_mark.MOTIF[app] = doc_mark.MOTIF["writer"]   # a text document
+            if app not in doc_mark.MOTIF:
+                doc_mark.MOTIF[app] = doc_mark.MOTIF["writer"]   # a text document
             r = doc_mark.build(app, [label], page_h=39.6, stretch=1.0, save=dest)
             assert r and r[1] == 0 and r[2] == 0, f"{app}: touches the page outline: {r}"
             print(f"  {dest.name}  <- fluent Document + '{r[0]}'")
