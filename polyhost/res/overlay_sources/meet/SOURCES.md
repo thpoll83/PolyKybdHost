@@ -9,8 +9,9 @@
 
 Meet has no desktop app, so the set is under the browser entries (Chrome and the
 other Chromium browsers, and Firefox through the shared `&web_urls` map). The
-title fallback needs "Google Meet": the tab of a running meeting is titled
-"Meet - <code>", and the word "Meet" alone is too common to match on.
+title fallback matches "Google Meet", and "Meet - <code>" (the tab of a running
+meeting, code abc-defg-hij) through a `title` gate that requires the code, because
+the word "Meet" alone is too common to match on.
 
 ## Shortcut reference
 

@@ -125,6 +125,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: miro_template.mods.png
     Google Meet:
       overlay: [meet_template.mods.png, meet_template.combo.mods.png]
+    # A meeting tab is titled "Meet - <code>"; the gate requires the code
+    # (abc-defg-hij), so the plain word "Meet" in other titles does not match.
+    Meet:
+      title: '^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}\b'
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     Outlook:
       overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     Jira:
@@ -221,6 +226,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         Google Meet:
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
+        Meet:
+          title: '^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}\b'
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         Outlook:
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]

@@ -1682,12 +1682,18 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
                 for title, url in (
                         ("Meet - abc-defg-hij", "https://meet.google.com/abc-defg-hij"),
-                        ("Google Meet", None)):
+                        ("Google Meet", None),
+                        ("Meet - abc-defg-hij - Google Chrome", None)):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry(title, entry, url, OsType[os_name],
                                                   title_known=True)
                         self.assertIsNotNone(got)
                         self.assertIn(f"meet_template{suffix}.mods.png", got["overlay"])
+                with self.subTest(browser=browser, os=os_name, title="Meet up"):
+                    got = find_matching_entry("Meet up with Sam - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertNotIn(f"meet_template{suffix}.mods.png",
+                                     [str(f) for f in (got or {}).get("overlay", [])])
 
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
