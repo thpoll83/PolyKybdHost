@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 14:53+0000\n"
+"POT-Creation-Date: 2026-10-22 19:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -536,290 +536,325 @@ msgstr "Stoppen nicht möglich: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Fehlgeschlagen:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:50
 msgid "Brightness"
 msgstr "Helligkeit"
 
-#: polyhost/gui/cmd_menu.py:128
+#: polyhost/gui/cmd_menu.py:131
 msgid "Off"
 msgstr "Aus"
 
-#: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
+#: polyhost/gui/cmd_menu.py:141 polyhost/gui/cmd_menu.py:165
 msgid "Back to automatic"
 msgstr "Zurück zu automatisch"
 
-#: polyhost/gui/cmd_menu.py:159
+#: polyhost/gui/cmd_menu.py:162
 msgid "Re-apply the host's automatic brightness."
 msgstr "Die automatische Helligkeit des Hosts erneut anwenden."
 
-#: polyhost/gui/cmd_menu.py:163
+#: polyhost/gui/cmd_menu.py:166
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
 msgstr "Automatische (tageslichtabhängige) Helligkeit wieder aktivieren – die manuelle Voreinstellung oben wird verworfen."
 
-#: polyhost/gui/cmd_menu.py:166
+#: polyhost/gui/cmd_menu.py:169
 msgid "Clear manual override"
 msgstr "Manuelle Einstellung aufheben"
 
-#: polyhost/gui/cmd_menu.py:167
+#: polyhost/gui/cmd_menu.py:170
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
 msgstr "Die tageslichtabhängige Helligkeit ist in den Einstellungen ausgeschaltet; dies stellt daher nur die in der Tastatur gespeicherte Helligkeit wieder her."
 
-#: polyhost/gui/cmd_menu.py:182
+#: polyhost/gui/cmd_menu.py:185
 msgid "Maintenance"
 msgstr "Wartung"
 
-#: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
+#: polyhost/gui/cmd_menu.py:188 polyhost/gui/cmd_menu.py:322
+#: polyhost/gui/cmd_menu.py:354
 msgid "Fix Left/Right Side"
 msgstr "Linke/rechte Seite korrigieren"
 
-#: polyhost/gui/cmd_menu.py:187
+#: polyhost/gui/cmd_menu.py:190
 msgid "Connected half is LEFT (other is RIGHT)"
 msgstr "Verbundene Hälfte ist LINKS (andere ist RECHTS)"
 
-#: polyhost/gui/cmd_menu.py:190
+#: polyhost/gui/cmd_menu.py:193
 msgid "Connected half is RIGHT (other is LEFT)"
 msgstr "Verbundene Hälfte ist RECHTS (andere ist LINKS)"
 
-#: polyhost/gui/cmd_menu.py:194
+#: polyhost/gui/cmd_menu.py:197
+msgid "Mark connected half as a Rev.2 board (2023)…"
+msgstr "Verbundene Hälfte als Rev.2-Platine (2023) markieren…"
+
+#: polyhost/gui/cmd_menu.py:199
+msgid "Remove the Rev.2 mark from the connected half…"
+msgstr "Rev.2-Markierung von der verbundenen Hälfte entfernen…"
+
+#: polyhost/gui/cmd_menu.py:206
 msgid "Reset overlays"
 msgstr "Overlays zurücksetzen"
 
-#: polyhost/gui/cmd_menu.py:196
+#: polyhost/gui/cmd_menu.py:208
 msgid "Reset keymap to default…"
 msgstr "Tastenbelegung auf Standard zurücksetzen…"
 
-#: polyhost/gui/cmd_menu.py:202
+#: polyhost/gui/cmd_menu.py:214
 msgid "Flash firmware file (.bin)…"
 msgstr "Firmware-Datei flashen (.bin)…"
 
-#: polyhost/gui/cmd_menu.py:205
+#: polyhost/gui/cmd_menu.py:217
 msgid "Activate bootloader…"
 msgstr "Bootloader aktivieren…"
 
-#: polyhost/gui/cmd_menu.py:211
+#: polyhost/gui/cmd_menu.py:223
 msgid "Overlays"
 msgstr "Overlays"
 
-#: polyhost/gui/cmd_menu.py:212
+#: polyhost/gui/cmd_menu.py:224
 msgid "Enable shortcut overlays"
 msgstr "Tastenkürzel-Overlays aktivieren"
 
-#: polyhost/gui/cmd_menu.py:214
+#: polyhost/gui/cmd_menu.py:226
 msgid "Disable shortcut overlays"
 msgstr "Tastenkürzel-Overlays deaktivieren"
 
-#: polyhost/gui/cmd_menu.py:217
+#: polyhost/gui/cmd_menu.py:229
 msgid "Reset overlay buffers"
 msgstr "Overlay-Puffer zurücksetzen"
 
-#: polyhost/gui/cmd_menu.py:219
+#: polyhost/gui/cmd_menu.py:231
 msgid "Reset overlay mapping"
 msgstr "Overlay-Zuordnung zurücksetzen"
 
-#: polyhost/gui/cmd_menu.py:221
+#: polyhost/gui/cmd_menu.py:233
 msgid "Clear overlay usage"
 msgstr "Overlay-Nutzung löschen"
 
-#: polyhost/gui/cmd_menu.py:223
+#: polyhost/gui/cmd_menu.py:235
 msgid "Set all overlay mapping"
 msgstr "Gesamte Overlay-Zuordnung setzen"
 
-#: polyhost/gui/cmd_menu.py:227
+#: polyhost/gui/cmd_menu.py:239
 msgid "Idle"
 msgstr "Leerlauf"
 
-#: polyhost/gui/cmd_menu.py:228
+#: polyhost/gui/cmd_menu.py:240
 msgid "Start idle now"
 msgstr "Leerlauf jetzt starten"
 
-#: polyhost/gui/cmd_menu.py:230
+#: polyhost/gui/cmd_menu.py:242
 msgid "Stop idle"
 msgstr "Leerlauf beenden"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:428
-#: polyhost/gui/cmd_menu.py:433 polyhost/gui/cmd_menu.py:441
-#: polyhost/gui/cmd_menu.py:445
+#: polyhost/gui/cmd_menu.py:246 polyhost/gui/cmd_menu.py:476
+#: polyhost/gui/cmd_menu.py:481 polyhost/gui/cmd_menu.py:489
+#: polyhost/gui/cmd_menu.py:493
 msgid "Keymap"
 msgstr "Tastenbelegung"
 
-#: polyhost/gui/cmd_menu.py:235
+#: polyhost/gui/cmd_menu.py:247
 msgid "Layer count"
 msgstr "Anzahl der Ebenen"
 
-#: polyhost/gui/cmd_menu.py:237
+#: polyhost/gui/cmd_menu.py:249
 msgid "Default layer"
 msgstr "Standardebene"
 
-#: polyhost/gui/cmd_menu.py:239
+#: polyhost/gui/cmd_menu.py:251
 msgid "Dump keymap buffer to the log"
 msgstr "Tastenbelegungspuffer ins Protokoll schreiben"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:452
-#: polyhost/gui/cmd_menu.py:455 polyhost/gui/cmd_menu.py:466
+#: polyhost/gui/cmd_menu.py:255 polyhost/gui/cmd_menu.py:500
+#: polyhost/gui/cmd_menu.py:503 polyhost/gui/cmd_menu.py:514
 msgid "Font Pack"
 msgstr "Schriftpaket"
 
-#: polyhost/gui/cmd_menu.py:244
+#: polyhost/gui/cmd_menu.py:256
 msgid "Per-bundle status…"
 msgstr "Status je Bundle…"
 
-#: polyhost/gui/cmd_menu.py:246
+#: polyhost/gui/cmd_menu.py:258
 msgid "Sync (flash missing/updated bundles)"
 msgstr "Synchronisieren (fehlende/aktualisierte Bundles flashen)"
 
-#: polyhost/gui/cmd_menu.py:248
+#: polyhost/gui/cmd_menu.py:260
 msgid "Re-flash ALL bundles (force)…"
 msgstr "ALLE Bundles neu flashen (erzwingen)…"
 
-#: polyhost/gui/cmd_menu.py:250
+#: polyhost/gui/cmd_menu.py:262
 msgid "Wipe (empty all bundles)"
 msgstr "Löschen (alle Bundles leeren)"
 
-#: polyhost/gui/cmd_menu.py:256
+#: polyhost/gui/cmd_menu.py:268
 msgid "Firmware"
 msgstr "Firmware"
 
-#: polyhost/gui/cmd_menu.py:257
+#: polyhost/gui/cmd_menu.py:269
 msgid "Flash only (.bin, stage)…"
 msgstr "Nur flashen (.bin, bereitstellen)…"
 
-#: polyhost/gui/cmd_menu.py:260
+#: polyhost/gui/cmd_menu.py:272
 msgid "Apply staged firmware…"
 msgstr "Bereitgestellte Firmware anwenden…"
 
-#: polyhost/gui/cmd_menu.py:265
+#: polyhost/gui/cmd_menu.py:277
 msgid "Boot-loop test…"
 msgstr "Neustart-Schleifentest…"
 
-#: polyhost/gui/cmd_menu.py:271
+#: polyhost/gui/cmd_menu.py:283
 msgid "Run command file (.poly.cmd)…"
 msgstr "Befehlsdatei ausführen (.poly.cmd)…"
 
-#: polyhost/gui/cmd_menu.py:297
+#: polyhost/gui/cmd_menu.py:309
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>Die Hälfte, in der das USB-Kabel steckt, als LINKE Seite festlegen?</b><br><br>Die andere Hälfte wird zur RECHTEN Seite. Beide Hälften speichern die neue Seitenzuordnung und starten damit neu (ca. 10 s, kein erneutes Anstecken nötig).<br><br>Sicherstellen, dass das USB-Kabel in der Hälfte steckt, die die <b>LINKE</b> Seite werden soll, dann fortfahren."
 
-#: polyhost/gui/cmd_menu.py:304
+#: polyhost/gui/cmd_menu.py:316
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>Die Hälfte, in der das USB-Kabel steckt, als RECHTE Seite festlegen?</b><br><br>Die andere Hälfte wird zur LINKEN Seite. Beide Hälften speichern die neue Seitenzuordnung und starten damit neu (ca. 10 s, kein erneutes Anstecken nötig).<br><br>Sicherstellen, dass das USB-Kabel in der Hälfte steckt, die die <b>RECHTE</b> Seite werden soll, dann fortfahren."
 
-#: polyhost/gui/cmd_menu.py:334
+#: polyhost/gui/cmd_menu.py:341
+msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>Die Hälfte, in der das USB-Kabel steckt, als Rev.2-Platine markieren?</b><br><br>Rev.2-Platinen (links \"Rev 2 04/2023\", rechts \"Rev.2 03/2023\") leiten die USB-Stromversorgung über das Verbindungskabel weiter, daher starten beide Hälften als Haupthälfte und verbinden sich nicht. Mit der Markierung wird die Hälfte am Computer zur Haupthälfte.<br><br>Nur diese Hälfte anschließen, ohne Verbindungskabel, und jede Hälfte einzeln markieren. Die Hälfte speichert die Markierung und ihre Seite und startet dann neu.<br><br>Welche Seite ist diese Hälfte?"
+
+#: polyhost/gui/cmd_menu.py:351
+msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>Die Rev.2-Markierung von der Hälfte entfernen, in der das USB-Kabel steckt?</b><br><br>Die Hälfte speichert ihre Seite und startet dann neu.<br><br>Welche Seite ist diese Hälfte?"
+
+#: polyhost/gui/cmd_menu.py:355
+#: polyhost/gui/layout_dialog/keycode_composer.py:89
+msgid "Left"
+msgstr "Links"
+
+#: polyhost/gui/cmd_menu.py:356
+#: polyhost/gui/layout_dialog/keycode_composer.py:90
+msgid "Right"
+msgstr "Rechts"
+
+#: polyhost/gui/cmd_menu.py:357 polyhost/gui/fontpack_extend_dialog.py:241
+#: polyhost/gui/fontpack_extend_dialog.py:814
+#: polyhost/gui/hid_fw_up_dialog.py:207
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
+#: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: polyhost/gui/cmd_menu.py:382
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
 msgstr "<b>Tastenbelegung der Tastatur auf den Firmware-Standard zurücksetzen?</b><br><br>Jede neu belegte Taste erhält wieder die Belegung, mit der die Firmware ausgeliefert wird. Dies kann nicht rückgängig gemacht werden.<br><br><b>Auch alle Makros werden gelöscht.</b><br><br>Fortfahren?"
 
-#: polyhost/gui/cmd_menu.py:340
+#: polyhost/gui/cmd_menu.py:388
 msgid "Reset Keymap"
 msgstr "Tastenbelegung zurücksetzen"
 
-#: polyhost/gui/cmd_menu.py:394
+#: polyhost/gui/cmd_menu.py:442
 msgid "Re-flash Font Pack"
 msgstr "Schriftpaket neu flashen"
 
-#: polyhost/gui/cmd_menu.py:395
+#: polyhost/gui/cmd_menu.py:443
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>Alle Schriftpaket-Bundles neu flashen?</b><br><br>Jedes mitgelieferte Bundle wird erneut gesendet, auch wenn die Tastatur es bereits als aktuell meldet – nützlich, wenn eine Glyphe falsch dargestellt wird oder ein früheres Flashen als fehlgeschlagen gemeldet wurde. Dauert etwa eine Minute; Tippen funktioniert währenddessen weiter.<br><br>Fortfahren?"
 
-#: polyhost/gui/cmd_menu.py:411
+#: polyhost/gui/cmd_menu.py:459
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>Schriftpaket im externen Flash-Speicher löschen?</b><br><br>Alle Bundle-Plätze des Schriftpakets werden geleert – die Tastatur zeigt nur noch ihre eingebauten (residenten) Schriften an, bis das Paket erneut geflasht wird. Die mit diesem Host ausgelieferten Bundles werden bei der nächsten Verbindung automatisch neu geflasht (oder über Schriftpaket → Synchronisieren).<br><br>Fortfahren?"
 
-#: polyhost/gui/cmd_menu.py:418
+#: polyhost/gui/cmd_menu.py:466
 msgid "Wipe Font Pack"
 msgstr "Schriftpaket löschen"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:476
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "Ebenen: {count}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:477
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "Anzahl der Ebenen konnte nicht gelesen werden: {error}"
 
-#: polyhost/gui/cmd_menu.py:433
+#: polyhost/gui/cmd_menu.py:481
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "Standardebene: {layer}"
 
-#: polyhost/gui/cmd_menu.py:434
+#: polyhost/gui/cmd_menu.py:482
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "Standardebene konnte nicht gelesen werden: {error}"
 
-#: polyhost/gui/cmd_menu.py:441
+#: polyhost/gui/cmd_menu.py:489
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "Tastenbelegungspuffer konnte nicht gelesen werden: {error}"
 
-#: polyhost/gui/cmd_menu.py:445
+#: polyhost/gui/cmd_menu.py:493
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "Tastenbelegungspuffer ({size} Byte) ins Protokoll geschrieben."
 
-#: polyhost/gui/cmd_menu.py:452
+#: polyhost/gui/cmd_menu.py:500
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "Schriftpaket-Status konnte nicht gelesen werden: {error}"
 
-#: polyhost/gui/cmd_menu.py:455
+#: polyhost/gui/cmd_menu.py:503
 msgid "This host ships no font-pack bundles."
 msgstr "Dieser Host liefert keine Schriftpaket-Bundles mit."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:512
 msgid "stale"
 msgstr "veraltet"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:464 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:512 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "OK"
 
-#: polyhost/gui/cmd_menu.py:467
+#: polyhost/gui/cmd_menu.py:515
 msgid "bundle"
 msgstr "Bundle"
 
-#: polyhost/gui/cmd_menu.py:468
+#: polyhost/gui/cmd_menu.py:516
 msgid "device"
 msgstr "Gerät"
 
-#: polyhost/gui/cmd_menu.py:469
+#: polyhost/gui/cmd_menu.py:517
 msgid "shipped"
 msgstr "mitgeliefert"
 
-#: polyhost/gui/cmd_menu.py:475
+#: polyhost/gui/cmd_menu.py:523
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd-Befehle (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2343
+#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2350
 msgid "Open file"
 msgstr "Datei öffnen"
 
-#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:630
+#: polyhost/gui/cmd_menu.py:553 polyhost/gui/cmd_menu.py:678
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "Nicht verbunden"
 
-#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:631
+#: polyhost/gui/cmd_menu.py:554 polyhost/gui/cmd_menu.py:679
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd ist nicht verbunden. Tastatur anschließen und erneut versuchen."
 
-#: polyhost/gui/cmd_menu.py:509
+#: polyhost/gui/cmd_menu.py:557
 msgid "Select Firmware Binary"
 msgstr "Firmware-Binärdatei auswählen"
 
-#: polyhost/gui/cmd_menu.py:509
+#: polyhost/gui/cmd_menu.py:557
 msgid "Firmware binary (*.bin)"
 msgstr "Firmware-Binärdatei (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:520
+#: polyhost/gui/cmd_menu.py:568
 msgid "File Error"
 msgstr "Dateifehler"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:569
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -828,65 +863,65 @@ msgstr ""
 "Firmware-Datei konnte nicht gelesen werden:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:574
 msgid "Invalid Firmware File"
 msgstr "Ungültige Firmware-Datei"
 
-#: polyhost/gui/cmd_menu.py:531
+#: polyhost/gui/cmd_menu.py:579
 msgid "Wrong Keyboard"
 msgstr "Falsche Tastatur"
 
-#: polyhost/gui/cmd_menu.py:541
+#: polyhost/gui/cmd_menu.py:589
 msgid "Unsigned Firmware"
 msgstr "Nicht signierte Firmware"
 
-#: polyhost/gui/cmd_menu.py:547
+#: polyhost/gui/cmd_menu.py:595
 msgid "Flash + Apply Firmware"
 msgstr "Firmware flashen und anwenden"
 
-#: polyhost/gui/cmd_menu.py:549
+#: polyhost/gui/cmd_menu.py:597
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Die neue Firmware wird auf die Tastatur übertragen, geprüft (CRC32) und dann <b>aktiviert</b> – beide Hälften starten automatisch mit der neuen Firmware neu (kein erneutes Anstecken nötig)."
 
-#: polyhost/gui/cmd_menu.py:554
+#: polyhost/gui/cmd_menu.py:602
 msgid "Flash Firmware"
 msgstr "Firmware flashen"
 
-#: polyhost/gui/cmd_menu.py:556
+#: polyhost/gui/cmd_menu.py:604
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Die neue Firmware wird auf die Tastatur übertragen, dort bereitgestellt und geprüft (CRC32). Das Image wird gespeichert, aber <b>noch nicht aktiviert</b> – die Tastatur läuft mit ihrer aktuellen Firmware weiter, bis sie separat angewendet wird."
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:622
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Aktuelle Tastatur-Firmware: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:577
+#: polyhost/gui/cmd_menu.py:625
 msgid "Could not query current firmware version."
 msgstr "Aktuelle Firmware-Version konnte nicht abgefragt werden."
 
-#: polyhost/gui/cmd_menu.py:578
+#: polyhost/gui/cmd_menu.py:626
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Ausgewählte Datei:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:579
+#: polyhost/gui/cmd_menu.py:627
 msgid "Continue?"
 msgstr "Fortfahren?"
 
-#: polyhost/gui/cmd_menu.py:608
+#: polyhost/gui/cmd_menu.py:656
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Bereitgestellte Firmware anwenden?</b><br><br>Beide Tastaturhälften installieren das zuvor bereitgestellte Image und starten automatisch mit der neuen Firmware neu (kein erneutes Anstecken nötig).<br><br>Wurde diese Firmware ohne In-App-Anwenden erstellt, meldet die Tastatur sicher, dass das Anwenden nicht verfügbar ist, und lässt das bereitgestellte Image unverändert.<br><br>Fortfahren?"
 
-#: polyhost/gui/cmd_menu.py:617
+#: polyhost/gui/cmd_menu.py:665
 msgid "Apply Staged Firmware"
 msgstr "Bereitgestellte Firmware anwenden"
 
-#: polyhost/gui/cmd_menu.py:642
+#: polyhost/gui/cmd_menu.py:690
 msgid "Firmware Applied"
 msgstr "Firmware angewendet"
 
-#: polyhost/gui/cmd_menu.py:644
+#: polyhost/gui/cmd_menu.py:692
 msgid "Apply Failed"
 msgstr "Anwenden fehlgeschlagen"
 
@@ -1197,14 +1232,6 @@ msgstr "OK"
 #: polyhost/gui/fontpack_extend_dialog.py:237
 msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
 msgstr "Die erstellte Glyphe behalten (wird dem Bundle im Speicher hinzugefügt; Speichern über „Speichern unter…“ im Inspektor)"
-
-#: polyhost/gui/fontpack_extend_dialog.py:241
-#: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:207
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
-#: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
-msgid "Cancel"
-msgstr "Abbrechen"
 
 #: polyhost/gui/fontpack_extend_dialog.py:253
 msgid "Pick a font, set options, then Build / Preview."
@@ -1690,8 +1717,8 @@ msgstr "Flashen gestartet – Infobereich/Protokoll beobachten."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Alle ausstehenden Änderungen an „{label}“ verwerfen?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2937
-#: polyhost/host.py:2978 polyhost/host.py:3005
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2944
+#: polyhost/host.py:2985 polyhost/host.py:3012
 msgid "Firmware Update"
 msgstr "Firmware-Update"
 
@@ -1856,7 +1883,7 @@ msgstr "keine Vorschaudaten (mitgeliefert oder im Checkout)"
 msgid "the shipped language table is missing"
 msgstr "die mitgelieferte Sprachtabelle fehlt"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2953
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2960
 msgid "unknown"
 msgstr "unbekannt"
 
@@ -1962,14 +1989,6 @@ msgstr "Alt"
 #: polyhost/gui/layout_dialog/keycode_composer.py:86
 msgid "GUI"
 msgstr "GUI"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:89
-msgid "Left"
-msgstr "Links"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:90
-msgid "Right"
-msgstr "Rechts"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:105
 msgid "Inner key:"
@@ -2541,7 +2560,7 @@ msgstr "Keine Treffer"
 msgid "{index} of {total}"
 msgstr "{index} von {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1978
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1985
 msgid "Mock keyboard"
 msgstr "Mock-Tastatur"
 
@@ -2834,7 +2853,7 @@ msgstr "Verzögerung"
 msgid "Dev"
 msgstr "Entwicklung"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:862
+#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:866
 msgid "Developer"
 msgstr "Entwickler"
 
@@ -3255,7 +3274,7 @@ msgstr "{prefix} – Host v{host_version} verfügbar"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} – Firmware v{fw_version} verfügbar"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:736
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:740
 msgid "Updates"
 msgstr "Updates"
 
@@ -3276,63 +3295,63 @@ msgstr "Vollständige Versionshinweise auf GitHub ansehen"
 msgid "Restarting to complete update…"
 msgstr "Neustart zum Abschließen des Updates…"
 
-#: polyhost/host.py:57
+#: polyhost/host.py:58
 msgid "Standard (normal legends)"
 msgstr "Standard (normale Beschriftungen)"
 
-#: polyhost/host.py:58
+#: polyhost/host.py:59
 msgid "Tengwar (fantasy)"
 msgstr "Tengwar (Fantasy)"
 
-#: polyhost/host.py:59
+#: polyhost/host.py:60
 msgid "Elder Futhark runes"
 msgstr "Ältere Futhark-Runen"
 
-#: polyhost/host.py:60
+#: polyhost/host.py:61
 msgid "Aurebesh (sci-fi)"
 msgstr "Aurebesh (Science-Fiction)"
 
-#: polyhost/host.py:61
+#: polyhost/host.py:62
 msgid "Standard Galactic"
 msgstr "Standard Galactic"
 
-#: polyhost/host.py:62
+#: polyhost/host.py:63
 msgid "Cirth / Angerthas"
 msgstr "Cirth / Angerthas"
 
-#: polyhost/host.py:63
+#: polyhost/host.py:64
 msgid "IBM VGA / CP437"
 msgstr "IBM VGA / CP437"
 
-#: polyhost/host.py:64
+#: polyhost/host.py:65
 msgid "Commodore 64 (screen)"
 msgstr "Commodore 64 (Bildschirm)"
 
-#: polyhost/host.py:65
+#: polyhost/host.py:66
 msgid "Commodore 64 (keycap)"
 msgstr "Commodore 64 (Tastenkappe)"
 
-#: polyhost/host.py:66
+#: polyhost/host.py:67
 msgid "Amiga Topaz"
 msgstr "Amiga Topaz"
 
-#: polyhost/host.py:67
+#: polyhost/host.py:68
 msgid "APL"
 msgstr "APL"
 
-#: polyhost/host.py:68
+#: polyhost/host.py:69
 msgid "Braille"
 msgstr "Braille"
 
-#: polyhost/host.py:74
+#: polyhost/host.py:75
 msgid "Small (standard)"
 msgstr "Klein (Standard)"
 
-#: polyhost/host.py:75
+#: polyhost/host.py:76
 msgid "Medium"
 msgstr "Mittel"
 
-#: polyhost/host.py:76
+#: polyhost/host.py:77
 msgid "Large"
 msgstr "Groß"
 
@@ -3390,185 +3409,185 @@ msgstr "Das Engine-Paket der Tastatur ist aktuell."
 msgid "Engine pack update failed: {error}"
 msgstr "Engine-Paket-Update fehlgeschlagen: {error}"
 
-#: polyhost/host.py:496 polyhost/host.py:1544
+#: polyhost/host.py:500 polyhost/host.py:1551
 msgid "Waiting for PolyKybd..."
 msgstr "Warte auf PolyKybd..."
 
-#: polyhost/host.py:497 polyhost/host.py:1391
+#: polyhost/host.py:501 polyhost/host.py:1398
 msgid "Press to pause connection"
 msgstr "Klicken, um die Verbindung anzuhalten"
 
-#: polyhost/forwarder.py:311 polyhost/host.py:500
+#: polyhost/forwarder.py:311 polyhost/host.py:504
 msgid "Quit"
 msgstr "Beenden"
 
-#: polyhost/host.py:509
+#: polyhost/host.py:513
 msgid "Quit && stop background daemon"
 msgstr "Beenden && Hintergrund-Daemon stoppen"
 
-#: polyhost/forwarder.py:278 polyhost/host.py:514
+#: polyhost/forwarder.py:278 polyhost/host.py:518
 msgid "About"
 msgstr "Über"
 
-#: polyhost/forwarder.py:267 polyhost/host.py:518
+#: polyhost/forwarder.py:267 polyhost/host.py:522
 msgid "Settings..."
 msgstr "Einstellungen..."
 
-#: polyhost/forwarder.py:282 polyhost/host.py:522
+#: polyhost/forwarder.py:282 polyhost/host.py:526
 msgid "Log file..."
 msgstr "Protokolldatei..."
 
-#: polyhost/forwarder.py:288 polyhost/host.py:531
+#: polyhost/forwarder.py:288 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "Problem melden..."
 
-#: polyhost/forwarder.py:294 polyhost/host.py:550
+#: polyhost/forwarder.py:294 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "Protokolle sammeln..."
 
-#: polyhost/host.py:559
+#: polyhost/host.py:563
 msgid "Read keyboard crash record"
 msgstr "Absturzprotokoll der Tastatur lesen"
 
-#: polyhost/host.py:561
+#: polyhost/host.py:565
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "Das letzte Absturzprotokoll beider Tastaturhälften lesen und in die Zwischenablage kopieren."
 
-#: polyhost/host.py:566
+#: polyhost/host.py:570
 msgid "Inspect Font Packs..."
 msgstr "Schriftpakete untersuchen..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:580
-#: polyhost/host.py:1393
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:584
+#: polyhost/host.py:1400
 msgid "Pause"
 msgstr "Anhalten"
 
-#: polyhost/host.py:590
+#: polyhost/host.py:594
 msgid "Firmware newer than this app — safe mode…"
 msgstr "Firmware neuer als diese App – abgesicherter Modus…"
 
-#: polyhost/host.py:592
+#: polyhost/host.py:596
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "Festlegen, wie mit einer Tastatur umgegangen wird, deren Firmware neuer als diese Host-App ist."
 
-#: polyhost/host.py:628
+#: polyhost/host.py:632
 msgid "Idle Display"
 msgstr "Leerlaufanzeige"
 
-#: polyhost/host.py:631
+#: polyhost/host.py:635
 msgid "Pulse (legacy)"
 msgstr "Pulsieren (alt)"
 
-#: polyhost/host.py:633
+#: polyhost/host.py:637
 msgid "Jitter (move legend)"
 msgstr "Zittern (Beschriftung bewegen)"
 
-#: polyhost/host.py:637
+#: polyhost/host.py:641
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (Demo)"
 
-#: polyhost/host.py:641
+#: polyhost/host.py:645
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:661
+#: polyhost/host.py:665
 msgid "Idle After"
 msgstr "Leerlauf nach"
 
-#: polyhost/host.py:682
+#: polyhost/host.py:686
 msgid "Keycap Script"
 msgstr "Tastenkappen-Schrift"
 
-#: polyhost/host.py:710
+#: polyhost/host.py:714
 msgid "Keycap Size"
 msgstr "Tastenkappen-Schriftgröße"
 
-#: polyhost/host.py:728
+#: polyhost/host.py:732
 msgid "Configure Keymap"
 msgstr "Tastenbelegung konfigurieren"
 
-#: polyhost/host.py:738
+#: polyhost/host.py:742
 msgid "Check for host update..."
 msgstr "Nach Host-Update suchen..."
 
-#: polyhost/host.py:777
+#: polyhost/host.py:781
 msgid "Check for keyboard firmware update…"
 msgstr "Nach Tastatur-Firmware-Update suchen…"
 
-#: polyhost/host.py:786
+#: polyhost/host.py:790
 msgid "Keyboard fonts"
 msgstr "Tastaturschriften"
 
-#: polyhost/host.py:820
+#: polyhost/host.py:824
 msgid "Install WinCompose…"
 msgstr "WinCompose installieren…"
 
-#: polyhost/host.py:842
+#: polyhost/host.py:846
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Zugriff auf die Tastatur erlauben (udev-Regel)…"
 
-#: polyhost/host.py:864
+#: polyhost/host.py:868
 msgid "Change System Input Language"
 msgstr "Eingabesprache des Systems ändern"
 
-#: polyhost/host.py:870
+#: polyhost/host.py:874
 msgid "Inspect MRU Cache..."
 msgstr "MRU-Cache untersuchen..."
 
-#: polyhost/host.py:876
+#: polyhost/host.py:880
 msgid "Mock Keyboard..."
 msgstr "Mock-Tastatur..."
 
-#: polyhost/host.py:884
+#: polyhost/host.py:888
 msgid "Refresh unicode input mode"
 msgstr "Unicode-Eingabemodus aktualisieren"
 
-#: polyhost/host.py:888
+#: polyhost/host.py:892
 msgid "Save MRU cache now"
 msgstr "MRU-Cache jetzt speichern"
 
-#: polyhost/forwarder.py:304 polyhost/host.py:902
+#: polyhost/forwarder.py:304 polyhost/host.py:906
 msgid "Help && About"
 msgstr "Hilfe && Info"
 
-#: polyhost/forwarder.py:300 polyhost/host.py:911
+#: polyhost/forwarder.py:300 polyhost/host.py:915
 msgid "Open config folder"
 msgstr "Konfigurationsordner öffnen"
 
-#: polyhost/host.py:1024
+#: polyhost/host.py:1028
 msgid "System language query not supported for this platform."
 msgstr "Abfrage der Systemsprache wird auf dieser Plattform nicht unterstützt."
 
-#: polyhost/host.py:1223
+#: polyhost/host.py:1227
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "Tastaturschriften erneut versuchen ({n} fehlgeschlagen)…"
 msgstr[1] "Tastaturschriften erneut versuchen ({n} fehlgeschlagen)…"
 
-#: polyhost/host.py:1225
+#: polyhost/host.py:1229
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Die Schrift-Bundles neu flashen, deren letzter Versuch fehlgeschlagen ist: {bundles}"
 
-#: polyhost/host.py:1231
+#: polyhost/host.py:1235
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "Tastaturschriften aktualisieren ({n})…"
 msgstr[1] "Tastaturschriften aktualisieren ({n})…"
 
-#: polyhost/host.py:1233
+#: polyhost/host.py:1237
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Die Schrift-Bundles flashen, die auf der Tastatur fehlen, veraltet sind oder nicht übernommen wurden: {bundles}"
 
-#: polyhost/host.py:1238
+#: polyhost/host.py:1242
 msgid "Keyboard fonts: up to date"
 msgstr "Tastaturschriften: aktuell"
 
-#: polyhost/host.py:1239
+#: polyhost/host.py:1243
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3576,84 +3595,84 @@ msgstr ""
 "Alle mitgelieferten Schrift-Bundles sind bereits auf der Tastatur.\n"
 "Entwickler → Schriftpaket → ALLE Bundles neu flashen erzwingt ein erneutes Senden, falls die Tastenkappen weiterhin falsch dargestellt werden."
 
-#: polyhost/forwarder.py:714 polyhost/host.py:1269
+#: polyhost/forwarder.py:714 polyhost/host.py:1273
 msgid "Config folder"
 msgstr "Konfigurationsordner"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1364
+#: polyhost/host.py:1371
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate}-Verbindung"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1366
+#: polyhost/host.py:1373
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID-Verbindung, bis zu {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1373
+#: polyhost/host.py:1380
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Verbunden: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1385
+#: polyhost/host.py:1392
 msgid "Reconnect"
 msgstr "Erneut verbinden"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:369 polyhost/host.py:1388
+#: polyhost/forwarder.py:369 polyhost/host.py:1395
 msgid "Resume"
 msgstr "Fortsetzen"
 
-#: polyhost/host.py:1471 polyhost/host.py:1536
+#: polyhost/host.py:1478 polyhost/host.py:1543
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Betriebssystemsprache {language} konnte nicht geändert werden."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1560
+#: polyhost/host.py:1567
 msgid "Firmware image (*.bin)"
 msgstr "Firmware-Image (*.bin)"
 
-#: polyhost/host.py:1561
+#: polyhost/host.py:1568
 msgid "Select firmware .bin"
 msgstr "Firmware-.bin auswählen"
 
-#: polyhost/host.py:1612
+#: polyhost/host.py:1619
 msgid "Firmware apply failed"
 msgstr "Anwenden der Firmware fehlgeschlagen"
 
-#: polyhost/host.py:1613
+#: polyhost/host.py:1620
 msgid "Firmware flash failed"
 msgstr "Flashen der Firmware fehlgeschlagen"
 
-#: polyhost/host.py:1661 polyhost/host.py:1714
+#: polyhost/host.py:1668 polyhost/host.py:1721
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Ausgewählte Sprache: {language} {country}"
 
-#: polyhost/host.py:1765
+#: polyhost/host.py:1772
 msgid "PolyHost settings"
 msgstr "PolyHost-Einstellungen"
 
-#: polyhost/host.py:1766
+#: polyhost/host.py:1773
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Die Einstellungen wurden übernommen, konnten aber nicht in die Einstellungsdatei geschrieben werden. Möglicherweise hält ein anderes Programm die Datei geöffnet. Später erneut eine Einstellung ändern, um es noch einmal zu versuchen, oder das Protokoll prüfen."
 
-#: polyhost/host.py:1868
+#: polyhost/host.py:1875
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: unlesbares Protokoll {record}"
 
-#: polyhost/host.py:1871
+#: polyhost/host.py:1878
 msgid "Neither keyboard half holds a crash record."
 msgstr "Keine der beiden Tastaturhälften enthält ein Absturzprotokoll."
 
-#: polyhost/host.py:1873
+#: polyhost/host.py:1880
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3664,121 +3683,121 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1875
+#: polyhost/host.py:1882
 msgid "Keyboard crash record"
 msgstr "Absturzprotokoll der Tastatur"
 
-#: polyhost/host.py:1884
+#: polyhost/host.py:1891
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "In die Zwischenablage kopiert. Nicht gelesen: {errors}"
 
-#: polyhost/host.py:1969
+#: polyhost/host.py:1976
 msgid "MRU Cache"
 msgstr "MRU-Cache"
 
-#: polyhost/host.py:1969
+#: polyhost/host.py:1976
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU-Cache ist nicht aktiv (Gerät nicht verbunden oder MRU-Modus deaktiviert)."
 
-#: polyhost/host.py:2018
+#: polyhost/host.py:2025
 msgid "daemon client"
 msgstr "Daemon-Client"
 
-#: polyhost/host.py:2018
+#: polyhost/host.py:2025
 msgid "standalone"
 msgstr "eigenständig"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:775 polyhost/host.py:2076
+#: polyhost/forwarder.py:775 polyhost/host.py:2083
 msgid "paused"
 msgstr "angehalten"
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2085
 msgid "connected"
 msgstr "verbunden"
 
-#: polyhost/host.py:2079
+#: polyhost/host.py:2086
 msgid "present — not connected (protocol/version)"
 msgstr "vorhanden – nicht verbunden (Protokoll/Version)"
 
-#: polyhost/host.py:2086
+#: polyhost/host.py:2093
 msgid "Keyboard"
 msgstr "Tastatur"
 
-#: polyhost/host.py:2087
+#: polyhost/host.py:2094
 msgid "No keyboard connected."
 msgstr "Keine Tastatur verbunden."
 
-#: polyhost/host.py:2091
+#: polyhost/host.py:2098
 msgid "⚠ mismatch"
 msgstr "⚠ Abweichung"
 
-#: polyhost/host.py:2093
+#: polyhost/host.py:2100
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "{n} Sprache geladen"
 msgstr[1] "{n} Sprachen geladen"
 
-#: polyhost/host.py:2096
+#: polyhost/host.py:2103
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Verbundene Tastatur:</b> {name} {state}"
 
-#: polyhost/host.py:2098
+#: polyhost/host.py:2105
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; Protokoll {protocol}"
 
-#: polyhost/host.py:2100
+#: polyhost/host.py:2107
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Hardware:</b> {hardware}"
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2108
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Sprache:</b> {language}"
 
-#: polyhost/host.py:2104
+#: polyhost/host.py:2111
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Verbindung:</b> {link}"
 
-#: polyhost/host.py:2111
+#: polyhost/host.py:2118
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Laufzeit:</b> {uptime}"
 
-#: polyhost/host.py:2113
+#: polyhost/host.py:2120
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Overlay-Zuordnungen:</b> {n} App"
 msgstr[1] "<b>Overlay-Zuordnungen:</b> {n} Apps"
 
-#: polyhost/forwarder.py:792 polyhost/host.py:2115
+#: polyhost/forwarder.py:792 polyhost/host.py:2122
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Konfiguration:</b> {path}"
 
-#: polyhost/forwarder.py:793 polyhost/host.py:2116
+#: polyhost/forwarder.py:793 polyhost/host.py:2123
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Protokolle:</b> {path}"
 
-#: polyhost/forwarder.py:811 polyhost/host.py:2170
+#: polyhost/forwarder.py:811 polyhost/host.py:2177
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID-Protokoll P{protocol}"
 
-#: polyhost/host.py:2175
+#: polyhost/host.py:2182
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Host-Software für die geteilte PolyKybd-Tastatur mit OLED-Displays in jeder Tastenkappe – verfolgt das aktive Fenster und überträgt Overlays, Sprache und Tastenbelegung an die Tastatur."
 
-#: polyhost/host.py:2201
+#: polyhost/host.py:2208
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3787,61 +3806,61 @@ msgstr ""
 "Ändern der Eingabesprache zu „{language}“ fehlgeschlagen mit:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2221 polyhost/host.py:2236
+#: polyhost/host.py:2228 polyhost/host.py:2243
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "{language} konnte nicht eingestellt werden: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2342
+#: polyhost/host.py:2349
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd-Overlay-Zuordnung (*.poly.yaml)"
 
-#: polyhost/host.py:2430 polyhost/host.py:2909 polyhost/host.py:3052
+#: polyhost/host.py:2437 polyhost/host.py:2916 polyhost/host.py:3059
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Firmware auf v{version} aktualisieren…"
 
-#: polyhost/host.py:2432 polyhost/host.py:2950 polyhost/host.py:3123
+#: polyhost/host.py:2439 polyhost/host.py:2957 polyhost/host.py:3130
 msgid "Check for firmware update…"
 msgstr "Nach Firmware-Update suchen…"
 
 #: polyhost/forwarder.py:849 polyhost/forwarder.py:860
-#: polyhost/forwarder.py:866 polyhost/host.py:2450 polyhost/host.py:2571
-#: polyhost/host.py:2575
+#: polyhost/forwarder.py:866 polyhost/host.py:2457 polyhost/host.py:2578
+#: polyhost/host.py:2582
 msgid "Check for updates..."
 msgstr "Nach Updates suchen..."
 
-#: polyhost/host.py:2518
+#: polyhost/host.py:2525
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Update auf v{version} verfügbar"
 
 #: polyhost/forwarder.py:862 polyhost/forwarder.py:868
-#: polyhost/forwarder.py:879 polyhost/host.py:2529 polyhost/host.py:2569
-#: polyhost/host.py:2576 polyhost/host.py:2599
+#: polyhost/forwarder.py:879 polyhost/host.py:2536 polyhost/host.py:2576
+#: polyhost/host.py:2583 polyhost/host.py:2606
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost-Update"
 
-#: polyhost/host.py:2530
+#: polyhost/host.py:2537
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Version {version} ist verfügbar. Zum Aktualisieren auf das Symbol im Infobereich klicken."
 
-#: polyhost/forwarder.py:837 polyhost/host.py:2555
+#: polyhost/forwarder.py:837 polyhost/host.py:2562
 msgid "Checking for updates..."
 msgstr "Suche nach Updates..."
 
-#: polyhost/host.py:2568
+#: polyhost/host.py:2575
 msgid "No updates available"
 msgstr "Keine Updates verfügbar"
 
-#: polyhost/forwarder.py:863 polyhost/host.py:2570
+#: polyhost/forwarder.py:863 polyhost/host.py:2577
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Die neueste Version (v{version}) ist bereits installiert."
 
-#: polyhost/forwarder.py:869 polyhost/host.py:2577
+#: polyhost/forwarder.py:869 polyhost/host.py:2584
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3856,63 +3875,63 @@ msgstr ""
 "\n"
 "Für Details mit --dev 1 ausführen."
 
-#: polyhost/host.py:2582 polyhost/host.py:2982
+#: polyhost/host.py:2589 polyhost/host.py:2989
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Veröffentlicht: {date}"
 
-#: polyhost/forwarder.py:850 polyhost/host.py:2583
+#: polyhost/forwarder.py:850 polyhost/host.py:2590
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Version {version} ist verfügbar."
 
-#: polyhost/forwarder.py:851 polyhost/host.py:2584
+#: polyhost/forwarder.py:851 polyhost/host.py:2591
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost aktualisieren"
 
-#: polyhost/host.py:2588
+#: polyhost/host.py:2595
 msgid "Download, install, and restart now?"
 msgstr "Jetzt herunterladen, installieren und neu starten?"
 
-#: polyhost/forwarder.py:878 polyhost/host.py:2599
+#: polyhost/forwarder.py:878 polyhost/host.py:2606
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} wird heruntergeladen…"
 
-#: polyhost/forwarder.py:919 polyhost/host.py:2724
+#: polyhost/forwarder.py:919 polyhost/host.py:2731
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Das Update-Relay konnte nicht gestartet werden; das Update ist unvollständig. Details im Protokoll."
 
-#: polyhost/forwarder.py:931 polyhost/host.py:2739
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "Update failed"
 msgstr "Update fehlgeschlagen"
 
-#: polyhost/forwarder.py:931 polyhost/host.py:2739
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "The update did not finish."
 msgstr "Das Update wurde nicht abgeschlossen."
 
-#: polyhost/host.py:2920
+#: polyhost/host.py:2927
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd-Firmware-Update"
 
-#: polyhost/host.py:2921
+#: polyhost/host.py:2928
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Neue Firmware v{version} ist verfügbar. Zum Aktualisieren auf das Symbol im Infobereich klicken."
 
-#: polyhost/host.py:2938 polyhost/host.py:2979
+#: polyhost/host.py:2945 polyhost/host.py:2986
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Zum Aktualisieren der Firmware muss die Tastatur verbunden sein."
 
-#: polyhost/host.py:2944
+#: polyhost/host.py:2951
 msgid "Checking for firmware update…"
 msgstr "Suche nach Firmware-Update…"
 
-#: polyhost/host.py:2958 polyhost/host.py:2968 polyhost/host.py:2971
+#: polyhost/host.py:2965 polyhost/host.py:2975 polyhost/host.py:2978
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd-Firmware"
 
-#: polyhost/host.py:2959
+#: polyhost/host.py:2966
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3923,55 +3942,55 @@ msgstr ""
 "\n"
 "Die Tastatur hat v{current}. Meist bedeutet das, dass der Release-Build fehlgeschlagen ist – die Release-Seite erhält ihre Firmware, sobald das behoben ist."
 
-#: polyhost/host.py:2969
+#: polyhost/host.py:2976
 msgid "No firmware release could be found."
 msgstr "Es wurde kein Firmware-Release gefunden."
 
-#: polyhost/host.py:2972
+#: polyhost/host.py:2979
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Die neueste Firmware (v{version}) ist bereits installiert."
 
-#: polyhost/host.py:2984
+#: polyhost/host.py:2991
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Installiert: v{version}"
 
-#: polyhost/host.py:2985
+#: polyhost/host.py:2992
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Installiert: unbekannt (die Tastatur hat ihre Version nicht gemeldet)"
 
-#: polyhost/host.py:2986
+#: polyhost/host.py:2993
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Firmware {version} ist verfügbar."
 
-#: polyhost/host.py:2988
+#: polyhost/host.py:2995
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Beide Hälften werden über HID aktualisiert und automatisch neu gestartet."
 
-#: polyhost/host.py:2989
+#: polyhost/host.py:2996
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd-Firmware aktualisieren"
 
-#: polyhost/host.py:2993
+#: polyhost/host.py:3000
 msgid "Download and flash now?"
 msgstr "Jetzt herunterladen und flashen?"
 
-#: polyhost/host.py:3004
+#: polyhost/host.py:3011
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Firmware v{version} wird heruntergeladen…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3327
+#: polyhost/host.py:3033 polyhost/host.py:3334
 msgid "Cancelling…"
 msgstr "Wird abgebrochen…"
 
-#: polyhost/host.py:3063
+#: polyhost/host.py:3070
 msgid "Firmware Update Failed"
 msgstr "Firmware-Update fehlgeschlagen"
 
-#: polyhost/host.py:3064
+#: polyhost/host.py:3071
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3982,11 +4001,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3170 polyhost/host.py:3212 polyhost/host.py:3220
+#: polyhost/host.py:3177 polyhost/host.py:3219 polyhost/host.py:3227
 msgid "Allow access to the keyboard"
 msgstr "Zugriff auf die Tastatur erlauben"
 
-#: polyhost/host.py:3171
+#: polyhost/host.py:3178
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -3996,7 +4015,7 @@ msgstr ""
 "\n"
 "Das System fragt nach Ihrem Passwort (PolicyKit). Danach die Tastatur abziehen und wieder anstecken."
 
-#: polyhost/host.py:3213
+#: polyhost/host.py:3220
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4006,11 +4025,11 @@ msgstr ""
 "\n"
 "Die Tastatur abziehen und wieder anstecken, damit die neuen Berechtigungen gelten."
 
-#: polyhost/host.py:3221
+#: polyhost/host.py:3228
 msgid "The udev rule was not installed."
 msgstr "Die udev-Regel wurde nicht installiert."
 
-#: polyhost/host.py:3222
+#: polyhost/host.py:3229
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4023,12 +4042,12 @@ msgstr ""
 "Die folgenden Befehle können auch in einem Terminal ausgeführt werden:\n"
 "{commands}"
 
-#: polyhost/host.py:3291 polyhost/host.py:3305 polyhost/host.py:3351
-#: polyhost/host.py:3360 polyhost/host.py:3366
+#: polyhost/host.py:3298 polyhost/host.py:3312 polyhost/host.py:3358
+#: polyhost/host.py:3367 polyhost/host.py:3373
 msgid "Install WinCompose"
 msgstr "WinCompose installieren"
 
-#: polyhost/host.py:3292
+#: polyhost/host.py:3299
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4038,11 +4057,11 @@ msgstr ""
 "\n"
 "Der PolyKybd-Build von WinCompose wird von GitHub heruntergeladen und sein Installationsprogramm gestartet (Windows fragt nach einer Bestätigung)."
 
-#: polyhost/host.py:3305
+#: polyhost/host.py:3312
 msgid "Looking for the latest WinCompose release…"
 msgstr "Neueste WinCompose-Version wird gesucht…"
 
-#: polyhost/host.py:3352
+#: polyhost/host.py:3359
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4052,7 +4071,7 @@ msgstr ""
 "\n"
 "Die Release-Seite wird im Browser geöffnet – das Setup dort herunterladen und ausführen."
 
-#: polyhost/host.py:3361
+#: polyhost/host.py:3368
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4063,7 +4082,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3367
+#: polyhost/host.py:3374
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4080,7 +4099,7 @@ msgstr ""
 "Es wurde gespeichert unter:\n"
 "{path}"
 
-#: polyhost/host.py:3375
+#: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Das WinCompose-Installationsprogramm wurde gestartet. Sobald es abgeschlossen ist und WinCompose läuft, wechselt PolyKybd automatisch dazu."
 

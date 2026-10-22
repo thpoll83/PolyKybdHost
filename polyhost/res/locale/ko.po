@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-20 14:53+0000\n"
+"POT-Creation-Date: 2026-10-22 19:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -535,290 +535,325 @@ msgstr "중지할 수 없음: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>실패:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:50
 msgid "Brightness"
 msgstr "밝기"
 
-#: polyhost/gui/cmd_menu.py:128
+#: polyhost/gui/cmd_menu.py:131
 msgid "Off"
 msgstr "끄기"
 
-#: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
+#: polyhost/gui/cmd_menu.py:141 polyhost/gui/cmd_menu.py:165
 msgid "Back to automatic"
 msgstr "자동으로 되돌리기"
 
-#: polyhost/gui/cmd_menu.py:159
+#: polyhost/gui/cmd_menu.py:162
 msgid "Re-apply the host's automatic brightness."
 msgstr "호스트의 자동 밝기를 다시 적용합니다."
 
-#: polyhost/gui/cmd_menu.py:163
+#: polyhost/gui/cmd_menu.py:166
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
 msgstr "자동(일광) 밝기를 다시 사용합니다. 위에서 선택한 수동 프리셋은 해제됩니다."
 
-#: polyhost/gui/cmd_menu.py:166
+#: polyhost/gui/cmd_menu.py:169
 msgid "Clear manual override"
 msgstr "수동 설정 지우기"
 
-#: polyhost/gui/cmd_menu.py:167
+#: polyhost/gui/cmd_menu.py:170
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
 msgstr "설정에서 일광 연동 밝기가 꺼져 있으므로, 키보드를 키보드 자체에 저장된 밝기로 되돌리기만 합니다."
 
-#: polyhost/gui/cmd_menu.py:182
+#: polyhost/gui/cmd_menu.py:185
 msgid "Maintenance"
 msgstr "유지 관리"
 
-#: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
+#: polyhost/gui/cmd_menu.py:188 polyhost/gui/cmd_menu.py:322
+#: polyhost/gui/cmd_menu.py:354
 msgid "Fix Left/Right Side"
 msgstr "왼쪽/오른쪽 지정"
 
-#: polyhost/gui/cmd_menu.py:187
+#: polyhost/gui/cmd_menu.py:190
 msgid "Connected half is LEFT (other is RIGHT)"
 msgstr "연결된 반쪽은 왼쪽(다른 쪽은 오른쪽)"
 
-#: polyhost/gui/cmd_menu.py:190
+#: polyhost/gui/cmd_menu.py:193
 msgid "Connected half is RIGHT (other is LEFT)"
 msgstr "연결된 반쪽은 오른쪽(다른 쪽은 왼쪽)"
 
-#: polyhost/gui/cmd_menu.py:194
+#: polyhost/gui/cmd_menu.py:197
+msgid "Mark connected half as a Rev.2 board (2023)…"
+msgstr "연결된 반쪽을 Rev.2 보드(2023)로 표시…"
+
+#: polyhost/gui/cmd_menu.py:199
+msgid "Remove the Rev.2 mark from the connected half…"
+msgstr "연결된 반쪽에서 Rev.2 표시 제거…"
+
+#: polyhost/gui/cmd_menu.py:206
 msgid "Reset overlays"
 msgstr "오버레이 초기화"
 
-#: polyhost/gui/cmd_menu.py:196
+#: polyhost/gui/cmd_menu.py:208
 msgid "Reset keymap to default…"
 msgstr "키맵을 기본값으로 재설정…"
 
-#: polyhost/gui/cmd_menu.py:202
+#: polyhost/gui/cmd_menu.py:214
 msgid "Flash firmware file (.bin)…"
 msgstr "펌웨어 파일 플래시(.bin)…"
 
-#: polyhost/gui/cmd_menu.py:205
+#: polyhost/gui/cmd_menu.py:217
 msgid "Activate bootloader…"
 msgstr "부트로더 활성화…"
 
-#: polyhost/gui/cmd_menu.py:211
+#: polyhost/gui/cmd_menu.py:223
 msgid "Overlays"
 msgstr "오버레이"
 
-#: polyhost/gui/cmd_menu.py:212
+#: polyhost/gui/cmd_menu.py:224
 msgid "Enable shortcut overlays"
 msgstr "단축키 오버레이 사용"
 
-#: polyhost/gui/cmd_menu.py:214
+#: polyhost/gui/cmd_menu.py:226
 msgid "Disable shortcut overlays"
 msgstr "단축키 오버레이 사용 안 함"
 
-#: polyhost/gui/cmd_menu.py:217
+#: polyhost/gui/cmd_menu.py:229
 msgid "Reset overlay buffers"
 msgstr "오버레이 버퍼 초기화"
 
-#: polyhost/gui/cmd_menu.py:219
+#: polyhost/gui/cmd_menu.py:231
 msgid "Reset overlay mapping"
 msgstr "오버레이 매핑 초기화"
 
-#: polyhost/gui/cmd_menu.py:221
+#: polyhost/gui/cmd_menu.py:233
 msgid "Clear overlay usage"
 msgstr "오버레이 사용 기록 지우기"
 
-#: polyhost/gui/cmd_menu.py:223
+#: polyhost/gui/cmd_menu.py:235
 msgid "Set all overlay mapping"
 msgstr "모든 오버레이 매핑 설정"
 
-#: polyhost/gui/cmd_menu.py:227
+#: polyhost/gui/cmd_menu.py:239
 msgid "Idle"
 msgstr "유휴"
 
-#: polyhost/gui/cmd_menu.py:228
+#: polyhost/gui/cmd_menu.py:240
 msgid "Start idle now"
 msgstr "지금 유휴 시작"
 
-#: polyhost/gui/cmd_menu.py:230
+#: polyhost/gui/cmd_menu.py:242
 msgid "Stop idle"
 msgstr "유휴 중지"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:428
-#: polyhost/gui/cmd_menu.py:433 polyhost/gui/cmd_menu.py:441
-#: polyhost/gui/cmd_menu.py:445
+#: polyhost/gui/cmd_menu.py:246 polyhost/gui/cmd_menu.py:476
+#: polyhost/gui/cmd_menu.py:481 polyhost/gui/cmd_menu.py:489
+#: polyhost/gui/cmd_menu.py:493
 msgid "Keymap"
 msgstr "키맵"
 
-#: polyhost/gui/cmd_menu.py:235
+#: polyhost/gui/cmd_menu.py:247
 msgid "Layer count"
 msgstr "레이어 수"
 
-#: polyhost/gui/cmd_menu.py:237
+#: polyhost/gui/cmd_menu.py:249
 msgid "Default layer"
 msgstr "기본 레이어"
 
-#: polyhost/gui/cmd_menu.py:239
+#: polyhost/gui/cmd_menu.py:251
 msgid "Dump keymap buffer to the log"
 msgstr "키맵 버퍼를 로그에 덤프"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:452
-#: polyhost/gui/cmd_menu.py:455 polyhost/gui/cmd_menu.py:466
+#: polyhost/gui/cmd_menu.py:255 polyhost/gui/cmd_menu.py:500
+#: polyhost/gui/cmd_menu.py:503 polyhost/gui/cmd_menu.py:514
 msgid "Font Pack"
 msgstr "글꼴 팩"
 
-#: polyhost/gui/cmd_menu.py:244
+#: polyhost/gui/cmd_menu.py:256
 msgid "Per-bundle status…"
 msgstr "번들별 상태…"
 
-#: polyhost/gui/cmd_menu.py:246
+#: polyhost/gui/cmd_menu.py:258
 msgid "Sync (flash missing/updated bundles)"
 msgstr "동기화(누락/업데이트된 번들 플래시)"
 
-#: polyhost/gui/cmd_menu.py:248
+#: polyhost/gui/cmd_menu.py:260
 msgid "Re-flash ALL bundles (force)…"
 msgstr "모든 번들 다시 플래시(강제)…"
 
-#: polyhost/gui/cmd_menu.py:250
+#: polyhost/gui/cmd_menu.py:262
 msgid "Wipe (empty all bundles)"
 msgstr "지우기(모든 번들 비우기)"
 
-#: polyhost/gui/cmd_menu.py:256
+#: polyhost/gui/cmd_menu.py:268
 msgid "Firmware"
 msgstr "펌웨어"
 
-#: polyhost/gui/cmd_menu.py:257
+#: polyhost/gui/cmd_menu.py:269
 msgid "Flash only (.bin, stage)…"
 msgstr "플래시만(.bin, 스테이징)…"
 
-#: polyhost/gui/cmd_menu.py:260
+#: polyhost/gui/cmd_menu.py:272
 msgid "Apply staged firmware…"
 msgstr "스테이징된 펌웨어 적용…"
 
-#: polyhost/gui/cmd_menu.py:265
+#: polyhost/gui/cmd_menu.py:277
 msgid "Boot-loop test…"
 msgstr "부팅 루프 테스트…"
 
-#: polyhost/gui/cmd_menu.py:271
+#: polyhost/gui/cmd_menu.py:283
 msgid "Run command file (.poly.cmd)…"
 msgstr "명령 파일 실행(.poly.cmd)…"
 
-#: polyhost/gui/cmd_menu.py:297
+#: polyhost/gui/cmd_menu.py:309
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>USB 케이블이 연결된 반쪽을 왼쪽으로 설정하시겠습니까?</b><br><br>다른 반쪽은 오른쪽이 됩니다. 두 반쪽 모두 새 좌우 설정을 저장하고 재부팅합니다(약 10초, 다시 꽂을 필요 없음).<br><br>USB 케이블이 <b>왼쪽</b>으로 사용할 반쪽에 연결되어 있는지 확인한 후 계속하십시오."
 
-#: polyhost/gui/cmd_menu.py:304
+#: polyhost/gui/cmd_menu.py:316
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>USB 케이블이 연결된 반쪽을 오른쪽으로 설정하시겠습니까?</b><br><br>다른 반쪽은 왼쪽이 됩니다. 두 반쪽 모두 새 좌우 설정을 저장하고 재부팅합니다(약 10초, 다시 꽂을 필요 없음).<br><br>USB 케이블이 <b>오른쪽</b>으로 사용할 반쪽에 연결되어 있는지 확인한 후 계속하십시오."
 
-#: polyhost/gui/cmd_menu.py:334
+#: polyhost/gui/cmd_menu.py:341
+msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>USB 케이블이 연결된 반쪽을 Rev.2 보드로 표시하시겠습니까?</b><br><br>Rev.2 보드(왼쪽 \"Rev 2 04/2023\", 오른쪽 \"Rev.2 03/2023\")는 연결 케이블로 USB 전원을 전달하므로 두 반쪽 모두 메인으로 시작하여 연결되지 않습니다. 표시하면 컴퓨터에 연결된 반쪽이 메인이 됩니다.<br><br>연결 케이블 없이 이 반쪽만 연결하고 각 반쪽을 따로 표시하십시오. 반쪽은 표시와 좌우 설정을 저장한 후 재부팅합니다.<br><br>이 반쪽은 어느 쪽입니까?"
+
+#: polyhost/gui/cmd_menu.py:351
+msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>USB 케이블이 연결된 반쪽에서 Rev.2 표시를 제거하시겠습니까?</b><br><br>반쪽은 좌우 설정을 저장한 후 재부팅합니다.<br><br>이 반쪽은 어느 쪽입니까?"
+
+#: polyhost/gui/cmd_menu.py:355
+#: polyhost/gui/layout_dialog/keycode_composer.py:89
+msgid "Left"
+msgstr "왼쪽"
+
+#: polyhost/gui/cmd_menu.py:356
+#: polyhost/gui/layout_dialog/keycode_composer.py:90
+msgid "Right"
+msgstr "오른쪽"
+
+#: polyhost/gui/cmd_menu.py:357 polyhost/gui/fontpack_extend_dialog.py:241
+#: polyhost/gui/fontpack_extend_dialog.py:814
+#: polyhost/gui/hid_fw_up_dialog.py:207
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
+#: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
+msgid "Cancel"
+msgstr "취소"
+
+#: polyhost/gui/cmd_menu.py:382
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
 msgstr "<b>키보드의 키맵을 펌웨어 기본값으로 재설정하시겠습니까?</b><br><br>다시 매핑한 모든 키가 펌웨어 기본 레이아웃으로 돌아갑니다. 이 작업은 취소할 수 없습니다.<br><br><b>모든 매크로도 삭제됩니다.</b><br><br>계속하시겠습니까?"
 
-#: polyhost/gui/cmd_menu.py:340
+#: polyhost/gui/cmd_menu.py:388
 msgid "Reset Keymap"
 msgstr "키맵 재설정"
 
-#: polyhost/gui/cmd_menu.py:394
+#: polyhost/gui/cmd_menu.py:442
 msgid "Re-flash Font Pack"
 msgstr "글꼴 팩 다시 플래시"
 
-#: polyhost/gui/cmd_menu.py:395
+#: polyhost/gui/cmd_menu.py:443
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>모든 글꼴 팩 번들을 다시 플래시하시겠습니까?</b><br><br>키보드가 최신 상태라고 보고하더라도 제공되는 모든 번들을 다시 보냅니다. 글리프가 잘못 표시되거나 이전 플래시가 실패로 보고된 경우에 사용하십시오. 약 1분이 걸리며, 그동안에도 입력은 계속 가능합니다.<br><br>계속하시겠습니까?"
 
-#: polyhost/gui/cmd_menu.py:411
+#: polyhost/gui/cmd_menu.py:459
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>외부 플래시의 글꼴 팩을 지우시겠습니까?</b><br><br>모든 글꼴 팩 번들 슬롯이 비워지며, 글꼴 팩을 다시 플래시할 때까지 키보드는 내장(상주) 글꼴만 표시합니다. 이 호스트와 함께 제공되는 번들은 다음 연결 시(또는 글꼴 팩 → 동기화를 통해) 자동으로 다시 플래시됩니다.<br><br>계속하시겠습니까?"
 
-#: polyhost/gui/cmd_menu.py:418
+#: polyhost/gui/cmd_menu.py:466
 msgid "Wipe Font Pack"
 msgstr "글꼴 팩 지우기"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:476
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "레이어: {count}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:477
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "레이어 수를 읽을 수 없음: {error}"
 
-#: polyhost/gui/cmd_menu.py:433
+#: polyhost/gui/cmd_menu.py:481
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "기본 레이어: {layer}"
 
-#: polyhost/gui/cmd_menu.py:434
+#: polyhost/gui/cmd_menu.py:482
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "기본 레이어를 읽을 수 없음: {error}"
 
-#: polyhost/gui/cmd_menu.py:441
+#: polyhost/gui/cmd_menu.py:489
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "키맵 버퍼를 읽을 수 없음: {error}"
 
-#: polyhost/gui/cmd_menu.py:445
+#: polyhost/gui/cmd_menu.py:493
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "키맵 버퍼({size}바이트)를 로그에 기록했습니다."
 
-#: polyhost/gui/cmd_menu.py:452
+#: polyhost/gui/cmd_menu.py:500
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "글꼴 팩 상태를 읽을 수 없음: {error}"
 
-#: polyhost/gui/cmd_menu.py:455
+#: polyhost/gui/cmd_menu.py:503
 msgid "This host ships no font-pack bundles."
 msgstr "이 호스트에는 제공되는 글꼴 팩 번들이 없습니다."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:512
 msgid "stale"
 msgstr "오래됨"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:464 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:512 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "정상"
 
-#: polyhost/gui/cmd_menu.py:467
+#: polyhost/gui/cmd_menu.py:515
 msgid "bundle"
 msgstr "번들"
 
-#: polyhost/gui/cmd_menu.py:468
+#: polyhost/gui/cmd_menu.py:516
 msgid "device"
 msgstr "장치"
 
-#: polyhost/gui/cmd_menu.py:469
+#: polyhost/gui/cmd_menu.py:517
 msgid "shipped"
 msgstr "제공됨"
 
-#: polyhost/gui/cmd_menu.py:475
+#: polyhost/gui/cmd_menu.py:523
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd 명령(*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:475 polyhost/host.py:2343
+#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2350
 msgid "Open file"
 msgstr "파일 열기"
 
-#: polyhost/gui/cmd_menu.py:505 polyhost/gui/cmd_menu.py:630
+#: polyhost/gui/cmd_menu.py:553 polyhost/gui/cmd_menu.py:678
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "연결되지 않음"
 
-#: polyhost/gui/cmd_menu.py:506 polyhost/gui/cmd_menu.py:631
+#: polyhost/gui/cmd_menu.py:554 polyhost/gui/cmd_menu.py:679
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd가 연결되어 있지 않습니다. 키보드를 연결한 후 다시 시도하십시오."
 
-#: polyhost/gui/cmd_menu.py:509
+#: polyhost/gui/cmd_menu.py:557
 msgid "Select Firmware Binary"
 msgstr "펌웨어 바이너리 선택"
 
-#: polyhost/gui/cmd_menu.py:509
+#: polyhost/gui/cmd_menu.py:557
 msgid "Firmware binary (*.bin)"
 msgstr "펌웨어 바이너리(*.bin)"
 
-#: polyhost/gui/cmd_menu.py:520
+#: polyhost/gui/cmd_menu.py:568
 msgid "File Error"
 msgstr "파일 오류"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:569
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -827,65 +862,65 @@ msgstr ""
 "펌웨어 파일을 읽을 수 없습니다:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:574
 msgid "Invalid Firmware File"
 msgstr "잘못된 펌웨어 파일"
 
-#: polyhost/gui/cmd_menu.py:531
+#: polyhost/gui/cmd_menu.py:579
 msgid "Wrong Keyboard"
 msgstr "다른 키보드"
 
-#: polyhost/gui/cmd_menu.py:541
+#: polyhost/gui/cmd_menu.py:589
 msgid "Unsigned Firmware"
 msgstr "서명되지 않은 펌웨어"
 
-#: polyhost/gui/cmd_menu.py:547
+#: polyhost/gui/cmd_menu.py:595
 msgid "Flash + Apply Firmware"
 msgstr "펌웨어 플래시 + 적용"
 
-#: polyhost/gui/cmd_menu.py:549
+#: polyhost/gui/cmd_menu.py:597
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "새 펌웨어를 키보드로 전송하고 확인(CRC32)한 다음 <b>활성화</b>합니다. 두 반쪽 모두 자동으로 새 펌웨어로 재부팅됩니다(다시 꽂을 필요 없음)."
 
-#: polyhost/gui/cmd_menu.py:554
+#: polyhost/gui/cmd_menu.py:602
 msgid "Flash Firmware"
 msgstr "펌웨어 플래시"
 
-#: polyhost/gui/cmd_menu.py:556
+#: polyhost/gui/cmd_menu.py:604
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "새 펌웨어를 키보드로 전송하여 스테이징한 다음 확인(CRC32)합니다. 이미지는 저장되지만 <b>아직 활성화되지 않습니다</b>. 별도로 적용할 때까지 키보드는 현재 펌웨어로 계속 동작합니다."
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:622
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "현재 키보드 펌웨어: <b>{version}</b>({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:577
+#: polyhost/gui/cmd_menu.py:625
 msgid "Could not query current firmware version."
 msgstr "현재 펌웨어 버전을 조회할 수 없습니다."
 
-#: polyhost/gui/cmd_menu.py:578
+#: polyhost/gui/cmd_menu.py:626
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "선택한 파일:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:579
+#: polyhost/gui/cmd_menu.py:627
 msgid "Continue?"
 msgstr "계속하시겠습니까?"
 
-#: polyhost/gui/cmd_menu.py:608
+#: polyhost/gui/cmd_menu.py:656
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>스테이징된 펌웨어를 적용하시겠습니까?</b><br><br>두 키보드 반쪽 모두 이전에 스테이징된 이미지를 설치하고 자동으로 새 펌웨어로 재부팅합니다(다시 꽂을 필요 없음).<br><br>이 펌웨어가 앱 내 적용을 사용하도록 빌드되지 않았다면, 키보드는 적용할 수 없다고 안전하게 보고하고 스테이징된 이미지를 그대로 둡니다.<br><br>계속하시겠습니까?"
 
-#: polyhost/gui/cmd_menu.py:617
+#: polyhost/gui/cmd_menu.py:665
 msgid "Apply Staged Firmware"
 msgstr "스테이징된 펌웨어 적용"
 
-#: polyhost/gui/cmd_menu.py:642
+#: polyhost/gui/cmd_menu.py:690
 msgid "Firmware Applied"
 msgstr "펌웨어 적용됨"
 
-#: polyhost/gui/cmd_menu.py:644
+#: polyhost/gui/cmd_menu.py:692
 msgid "Apply Failed"
 msgstr "적용 실패"
 
@@ -1194,14 +1229,6 @@ msgstr "확인"
 #: polyhost/gui/fontpack_extend_dialog.py:237
 msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
 msgstr "빌드한 글리프를 유지합니다(메모리의 번들에 추가됨, 검사기의 “다른 이름으로 저장…”에서 저장)"
-
-#: polyhost/gui/fontpack_extend_dialog.py:241
-#: polyhost/gui/fontpack_extend_dialog.py:814
-#: polyhost/gui/hid_fw_up_dialog.py:207
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
-#: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
-msgid "Cancel"
-msgstr "취소"
 
 #: polyhost/gui/fontpack_extend_dialog.py:253
 msgid "Pick a font, set options, then Build / Preview."
@@ -1683,8 +1710,8 @@ msgstr "플래시를 시작했습니다 — 트레이/로그를 확인하십시�
 msgid "Discard all pending edits to '{label}'?"
 msgstr "'{label}'의 보류 중인 편집 내용을 모두 버리시겠습니까?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2937
-#: polyhost/host.py:2978 polyhost/host.py:3005
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2944
+#: polyhost/host.py:2985 polyhost/host.py:3012
 msgid "Firmware Update"
 msgstr "펌웨어 업데이트"
 
@@ -1849,7 +1876,7 @@ msgstr "미리 보기 데이터 없음(제공 또는 체크아웃)"
 msgid "the shipped language table is missing"
 msgstr "제공된 언어 표가 없습니다"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2953
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2960
 msgid "unknown"
 msgstr "알 수 없음"
 
@@ -1955,14 +1982,6 @@ msgstr "Alt"
 #: polyhost/gui/layout_dialog/keycode_composer.py:86
 msgid "GUI"
 msgstr "GUI"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:89
-msgid "Left"
-msgstr "왼쪽"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:90
-msgid "Right"
-msgstr "오른쪽"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:105
 msgid "Inner key:"
@@ -2526,7 +2545,7 @@ msgstr "일치 항목 없음"
 msgid "{index} of {total}"
 msgstr "{index}/{total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1978
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1985
 msgid "Mock keyboard"
 msgstr "모의 키보드"
 
@@ -2817,7 +2836,7 @@ msgstr "지연"
 msgid "Dev"
 msgstr "개발"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:862
+#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:866
 msgid "Developer"
 msgstr "개발자"
 
@@ -3238,7 +3257,7 @@ msgstr "{prefix} — 호스트 v{host_version} 사용 가능"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — 펌웨어 v{fw_version} 사용 가능"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:736
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:740
 msgid "Updates"
 msgstr "업데이트"
 
@@ -3259,63 +3278,63 @@ msgstr "GitHub에서 전체 릴리스 노트 보기"
 msgid "Restarting to complete update…"
 msgstr "업데이트를 완료하기 위해 다시 시작하는 중…"
 
-#: polyhost/host.py:57
+#: polyhost/host.py:58
 msgid "Standard (normal legends)"
 msgstr "표준(일반 범례)"
 
-#: polyhost/host.py:58
+#: polyhost/host.py:59
 msgid "Tengwar (fantasy)"
 msgstr "텡과르(판타지)"
 
-#: polyhost/host.py:59
+#: polyhost/host.py:60
 msgid "Elder Futhark runes"
 msgstr "엘더 푸사르크 룬 문자"
 
-#: polyhost/host.py:60
+#: polyhost/host.py:61
 msgid "Aurebesh (sci-fi)"
 msgstr "오레베시(SF)"
 
-#: polyhost/host.py:61
+#: polyhost/host.py:62
 msgid "Standard Galactic"
 msgstr "스탠다드 갤럭틱"
 
-#: polyhost/host.py:62
+#: polyhost/host.py:63
 msgid "Cirth / Angerthas"
 msgstr "키르스/앙게르타스"
 
-#: polyhost/host.py:63
+#: polyhost/host.py:64
 msgid "IBM VGA / CP437"
 msgstr "IBM VGA / CP437"
 
-#: polyhost/host.py:64
+#: polyhost/host.py:65
 msgid "Commodore 64 (screen)"
 msgstr "Commodore 64(화면)"
 
-#: polyhost/host.py:65
+#: polyhost/host.py:66
 msgid "Commodore 64 (keycap)"
 msgstr "Commodore 64(키캡)"
 
-#: polyhost/host.py:66
+#: polyhost/host.py:67
 msgid "Amiga Topaz"
 msgstr "Amiga Topaz"
 
-#: polyhost/host.py:67
+#: polyhost/host.py:68
 msgid "APL"
 msgstr "APL"
 
-#: polyhost/host.py:68
+#: polyhost/host.py:69
 msgid "Braille"
 msgstr "점자"
 
-#: polyhost/host.py:74
+#: polyhost/host.py:75
 msgid "Small (standard)"
 msgstr "작게(표준)"
 
-#: polyhost/host.py:75
+#: polyhost/host.py:76
 msgid "Medium"
 msgstr "보통"
 
-#: polyhost/host.py:76
+#: polyhost/host.py:77
 msgid "Large"
 msgstr "크게"
 
@@ -3373,183 +3392,183 @@ msgstr "키보드 엔진 팩이 최신 상태입니다."
 msgid "Engine pack update failed: {error}"
 msgstr "엔진 팩 업데이트 실패: {error}"
 
-#: polyhost/host.py:496 polyhost/host.py:1544
+#: polyhost/host.py:500 polyhost/host.py:1551
 msgid "Waiting for PolyKybd..."
 msgstr "PolyKybd를 기다리는 중..."
 
-#: polyhost/host.py:497 polyhost/host.py:1391
+#: polyhost/host.py:501 polyhost/host.py:1398
 msgid "Press to pause connection"
 msgstr "연결을 일시 중지하려면 누르십시오"
 
-#: polyhost/forwarder.py:311 polyhost/host.py:500
+#: polyhost/forwarder.py:311 polyhost/host.py:504
 msgid "Quit"
 msgstr "종료"
 
-#: polyhost/host.py:509
+#: polyhost/host.py:513
 msgid "Quit && stop background daemon"
 msgstr "종료 && 백그라운드 데몬 중지"
 
-#: polyhost/forwarder.py:278 polyhost/host.py:514
+#: polyhost/forwarder.py:278 polyhost/host.py:518
 msgid "About"
 msgstr "정보"
 
-#: polyhost/forwarder.py:267 polyhost/host.py:518
+#: polyhost/forwarder.py:267 polyhost/host.py:522
 msgid "Settings..."
 msgstr "설정..."
 
-#: polyhost/forwarder.py:282 polyhost/host.py:522
+#: polyhost/forwarder.py:282 polyhost/host.py:526
 msgid "Log file..."
 msgstr "로그 파일..."
 
-#: polyhost/forwarder.py:288 polyhost/host.py:531
+#: polyhost/forwarder.py:288 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "문제 보고..."
 
-#: polyhost/forwarder.py:294 polyhost/host.py:550
+#: polyhost/forwarder.py:294 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "로그 수집..."
 
-#: polyhost/host.py:559
+#: polyhost/host.py:563
 msgid "Read keyboard crash record"
 msgstr "키보드 충돌 기록 읽기"
 
-#: polyhost/host.py:561
+#: polyhost/host.py:565
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "두 반쪽에서 키보드의 마지막 충돌 기록을 읽어 클립보드에 복사합니다."
 
-#: polyhost/host.py:566
+#: polyhost/host.py:570
 msgid "Inspect Font Packs..."
 msgstr "글꼴 팩 검사..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:580
-#: polyhost/host.py:1393
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:584
+#: polyhost/host.py:1400
 msgid "Pause"
 msgstr "일시 중지"
 
-#: polyhost/host.py:590
+#: polyhost/host.py:594
 msgid "Firmware newer than this app — safe mode…"
 msgstr "펌웨어가 이 앱보다 최신 — 안전 모드…"
 
-#: polyhost/host.py:592
+#: polyhost/host.py:596
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "펌웨어가 이 호스트 앱보다 최신인 키보드를 처리할 방법을 선택합니다."
 
-#: polyhost/host.py:628
+#: polyhost/host.py:632
 msgid "Idle Display"
 msgstr "유휴 화면"
 
-#: polyhost/host.py:631
+#: polyhost/host.py:635
 msgid "Pulse (legacy)"
 msgstr "펄스(레거시)"
 
-#: polyhost/host.py:633
+#: polyhost/host.py:637
 msgid "Jitter (move legend)"
 msgstr "지터(범례 이동)"
 
-#: polyhost/host.py:637
+#: polyhost/host.py:641
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD(데모 화면)"
 
-#: polyhost/host.py:641
+#: polyhost/host.py:645
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:661
+#: polyhost/host.py:665
 msgid "Idle After"
 msgstr "유휴 전환 시간"
 
-#: polyhost/host.py:682
+#: polyhost/host.py:686
 msgid "Keycap Script"
 msgstr "키캡 문자 체계"
 
-#: polyhost/host.py:710
+#: polyhost/host.py:714
 msgid "Keycap Size"
 msgstr "키캡 크기"
 
-#: polyhost/host.py:728
+#: polyhost/host.py:732
 msgid "Configure Keymap"
 msgstr "키맵 구성"
 
-#: polyhost/host.py:738
+#: polyhost/host.py:742
 msgid "Check for host update..."
 msgstr "호스트 업데이트 확인..."
 
-#: polyhost/host.py:777
+#: polyhost/host.py:781
 msgid "Check for keyboard firmware update…"
 msgstr "키보드 펌웨어 업데이트 확인…"
 
-#: polyhost/host.py:786
+#: polyhost/host.py:790
 msgid "Keyboard fonts"
 msgstr "키보드 글꼴"
 
-#: polyhost/host.py:820
+#: polyhost/host.py:824
 msgid "Install WinCompose…"
 msgstr "WinCompose 설치…"
 
-#: polyhost/host.py:842
+#: polyhost/host.py:846
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "키보드 접근 허용(udev 규칙)…"
 
-#: polyhost/host.py:864
+#: polyhost/host.py:868
 msgid "Change System Input Language"
 msgstr "시스템 입력 언어 변경"
 
-#: polyhost/host.py:870
+#: polyhost/host.py:874
 msgid "Inspect MRU Cache..."
 msgstr "MRU 캐시 검사..."
 
-#: polyhost/host.py:876
+#: polyhost/host.py:880
 msgid "Mock Keyboard..."
 msgstr "모의 키보드..."
 
-#: polyhost/host.py:884
+#: polyhost/host.py:888
 msgid "Refresh unicode input mode"
 msgstr "유니코드 입력 모드 새로 고침"
 
-#: polyhost/host.py:888
+#: polyhost/host.py:892
 msgid "Save MRU cache now"
 msgstr "지금 MRU 캐시 저장"
 
-#: polyhost/forwarder.py:304 polyhost/host.py:902
+#: polyhost/forwarder.py:304 polyhost/host.py:906
 msgid "Help && About"
 msgstr "도움말 && 정보"
 
-#: polyhost/forwarder.py:300 polyhost/host.py:911
+#: polyhost/forwarder.py:300 polyhost/host.py:915
 msgid "Open config folder"
 msgstr "구성 폴더 열기"
 
-#: polyhost/host.py:1024
+#: polyhost/host.py:1028
 msgid "System language query not supported for this platform."
 msgstr "이 플랫폼에서는 시스템 언어 조회를 지원하지 않습니다."
 
-#: polyhost/host.py:1223
+#: polyhost/host.py:1227
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "키보드 글꼴 다시 시도({n}개 실패)…"
 
-#: polyhost/host.py:1225
+#: polyhost/host.py:1229
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "마지막 시도에 실패한 글꼴 번들을 다시 플래시합니다: {bundles}"
 
-#: polyhost/host.py:1231
+#: polyhost/host.py:1235
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "키보드 글꼴 업데이트({n})…"
 
-#: polyhost/host.py:1233
+#: polyhost/host.py:1237
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "키보드에 없거나, 오래되었거나, 적용에 실패한 글꼴 번들을 플래시합니다: {bundles}"
 
-#: polyhost/host.py:1238
+#: polyhost/host.py:1242
 msgid "Keyboard fonts: up to date"
 msgstr "키보드 글꼴: 최신 상태"
 
-#: polyhost/host.py:1239
+#: polyhost/host.py:1243
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3557,84 +3576,84 @@ msgstr ""
 "제공되는 모든 글꼴 번들이 이미 키보드에 있습니다.\n"
 "키캡이 여전히 잘못 표시되면 개발자 → 글꼴 팩 → 모든 번들 다시 플래시로 강제로 다시 보낼 수 있습니다."
 
-#: polyhost/forwarder.py:714 polyhost/host.py:1269
+#: polyhost/forwarder.py:714 polyhost/host.py:1273
 msgid "Config folder"
 msgstr "구성 폴더"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1364
+#: polyhost/host.py:1371
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate} 링크"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1366
+#: polyhost/host.py:1373
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID 링크, 최대 {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1373
+#: polyhost/host.py:1380
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "연결됨: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1385
+#: polyhost/host.py:1392
 msgid "Reconnect"
 msgstr "다시 연결"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:369 polyhost/host.py:1388
+#: polyhost/forwarder.py:369 polyhost/host.py:1395
 msgid "Resume"
 msgstr "재개"
 
-#: polyhost/host.py:1471 polyhost/host.py:1536
+#: polyhost/host.py:1478 polyhost/host.py:1543
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "OS 언어를 {language}(으)로 변경할 수 없습니다."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1560
+#: polyhost/host.py:1567
 msgid "Firmware image (*.bin)"
 msgstr "펌웨어 이미지(*.bin)"
 
-#: polyhost/host.py:1561
+#: polyhost/host.py:1568
 msgid "Select firmware .bin"
 msgstr "펌웨어 .bin 선택"
 
-#: polyhost/host.py:1612
+#: polyhost/host.py:1619
 msgid "Firmware apply failed"
 msgstr "펌웨어 적용 실패"
 
-#: polyhost/host.py:1613
+#: polyhost/host.py:1620
 msgid "Firmware flash failed"
 msgstr "펌웨어 플래시 실패"
 
-#: polyhost/host.py:1661 polyhost/host.py:1714
+#: polyhost/host.py:1668 polyhost/host.py:1721
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "선택한 언어: {language} {country}"
 
-#: polyhost/host.py:1765
+#: polyhost/host.py:1772
 msgid "PolyHost settings"
 msgstr "PolyHost 설정"
 
-#: polyhost/host.py:1766
+#: polyhost/host.py:1773
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "설정은 적용되었지만 설정 파일에 저장할 수 없습니다. 다른 프로그램이 파일을 열고 있을 수 있습니다. 나중에 설정을 다시 변경하여 재시도하거나 로그를 확인하십시오."
 
-#: polyhost/host.py:1868
+#: polyhost/host.py:1875
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: 읽을 수 없는 기록 {record}"
 
-#: polyhost/host.py:1871
+#: polyhost/host.py:1878
 msgid "Neither keyboard half holds a crash record."
 msgstr "어느 키보드 반쪽에도 충돌 기록이 없습니다."
 
-#: polyhost/host.py:1873
+#: polyhost/host.py:1880
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3645,119 +3664,119 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1875
+#: polyhost/host.py:1882
 msgid "Keyboard crash record"
 msgstr "키보드 충돌 기록"
 
-#: polyhost/host.py:1884
+#: polyhost/host.py:1891
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "클립보드에 복사했습니다. 읽지 못함: {errors}"
 
-#: polyhost/host.py:1969
+#: polyhost/host.py:1976
 msgid "MRU Cache"
 msgstr "MRU 캐시"
 
-#: polyhost/host.py:1969
+#: polyhost/host.py:1976
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU 캐시가 활성 상태가 아닙니다(장치가 연결되지 않았거나 MRU 모드가 꺼져 있음)."
 
-#: polyhost/host.py:2018
+#: polyhost/host.py:2025
 msgid "daemon client"
 msgstr "데몬 클라이언트"
 
-#: polyhost/host.py:2018
+#: polyhost/host.py:2025
 msgid "standalone"
 msgstr "독립 실행형"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:775 polyhost/host.py:2076
+#: polyhost/forwarder.py:775 polyhost/host.py:2083
 msgid "paused"
 msgstr "일시 중지됨"
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2085
 msgid "connected"
 msgstr "연결됨"
 
-#: polyhost/host.py:2079
+#: polyhost/host.py:2086
 msgid "present — not connected (protocol/version)"
 msgstr "있음 — 연결되지 않음(프로토콜/버전)"
 
-#: polyhost/host.py:2086
+#: polyhost/host.py:2093
 msgid "Keyboard"
 msgstr "키보드"
 
-#: polyhost/host.py:2087
+#: polyhost/host.py:2094
 msgid "No keyboard connected."
 msgstr "연결된 키보드가 없습니다."
 
-#: polyhost/host.py:2091
+#: polyhost/host.py:2098
 msgid "⚠ mismatch"
 msgstr "⚠ 불일치"
 
-#: polyhost/host.py:2093
+#: polyhost/host.py:2100
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "언어 {n}개 로드됨"
 
-#: polyhost/host.py:2096
+#: polyhost/host.py:2103
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>연결된 키보드:</b> {name} {state}"
 
-#: polyhost/host.py:2098
+#: polyhost/host.py:2105
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>펌웨어:</b> {firmware} &nbsp;·&nbsp; 프로토콜 {protocol}"
 
-#: polyhost/host.py:2100
+#: polyhost/host.py:2107
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>하드웨어:</b> {hardware}"
 
-#: polyhost/host.py:2101
+#: polyhost/host.py:2108
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>언어:</b> {language}"
 
-#: polyhost/host.py:2104
+#: polyhost/host.py:2111
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>링크:</b> {link}"
 
-#: polyhost/host.py:2111
+#: polyhost/host.py:2118
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>가동 시간:</b> {uptime}"
 
-#: polyhost/host.py:2113
+#: polyhost/host.py:2120
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>오버레이 매핑:</b> 앱 {n}개"
 
-#: polyhost/forwarder.py:792 polyhost/host.py:2115
+#: polyhost/forwarder.py:792 polyhost/host.py:2122
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>구성:</b> {path}"
 
-#: polyhost/forwarder.py:793 polyhost/host.py:2116
+#: polyhost/forwarder.py:793 polyhost/host.py:2123
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>로그:</b> {path}"
 
-#: polyhost/forwarder.py:811 polyhost/host.py:2170
+#: polyhost/forwarder.py:811 polyhost/host.py:2177
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 프로토콜 P{protocol}"
 
-#: polyhost/host.py:2175
+#: polyhost/host.py:2182
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "키캡마다 OLED 디스플레이가 있는 PolyKybd 분리형 키보드용 호스트 소프트웨어 — 활성 창을 추적하여 오버레이, 언어 및 키맵 업데이트를 키보드로 보냅니다."
 
-#: polyhost/host.py:2201
+#: polyhost/host.py:2208
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3766,61 +3785,61 @@ msgstr ""
 "입력 언어를 '{language}'(으)로 변경하지 못했습니다:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2221 polyhost/host.py:2236
+#: polyhost/host.py:2228 polyhost/host.py:2243
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "{language}을(를) 설정할 수 없음: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2342
+#: polyhost/host.py:2349
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd 오버레이 매핑(*.poly.yaml)"
 
-#: polyhost/host.py:2430 polyhost/host.py:2909 polyhost/host.py:3052
+#: polyhost/host.py:2437 polyhost/host.py:2916 polyhost/host.py:3059
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "펌웨어를 v{version}(으)로 업데이트…"
 
-#: polyhost/host.py:2432 polyhost/host.py:2950 polyhost/host.py:3123
+#: polyhost/host.py:2439 polyhost/host.py:2957 polyhost/host.py:3130
 msgid "Check for firmware update…"
 msgstr "펌웨어 업데이트 확인…"
 
 #: polyhost/forwarder.py:849 polyhost/forwarder.py:860
-#: polyhost/forwarder.py:866 polyhost/host.py:2450 polyhost/host.py:2571
-#: polyhost/host.py:2575
+#: polyhost/forwarder.py:866 polyhost/host.py:2457 polyhost/host.py:2578
+#: polyhost/host.py:2582
 msgid "Check for updates..."
 msgstr "업데이트 확인..."
 
-#: polyhost/host.py:2518
+#: polyhost/host.py:2525
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "v{version}(으)로 업데이트 가능"
 
 #: polyhost/forwarder.py:862 polyhost/forwarder.py:868
-#: polyhost/forwarder.py:879 polyhost/host.py:2529 polyhost/host.py:2569
-#: polyhost/host.py:2576 polyhost/host.py:2599
+#: polyhost/forwarder.py:879 polyhost/host.py:2536 polyhost/host.py:2576
+#: polyhost/host.py:2583 polyhost/host.py:2606
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 업데이트"
 
-#: polyhost/host.py:2530
+#: polyhost/host.py:2537
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "버전 {version}을(를) 사용할 수 있습니다. 업데이트하려면 트레이 아이콘을 클릭하십시오."
 
-#: polyhost/forwarder.py:837 polyhost/host.py:2555
+#: polyhost/forwarder.py:837 polyhost/host.py:2562
 msgid "Checking for updates..."
 msgstr "업데이트를 확인하는 중..."
 
-#: polyhost/host.py:2568
+#: polyhost/host.py:2575
 msgid "No updates available"
 msgstr "사용 가능한 업데이트 없음"
 
-#: polyhost/forwarder.py:863 polyhost/host.py:2570
+#: polyhost/forwarder.py:863 polyhost/host.py:2577
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "최신 버전(v{version})을 사용하고 있습니다."
 
-#: polyhost/forwarder.py:869 polyhost/host.py:2577
+#: polyhost/forwarder.py:869 polyhost/host.py:2584
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3835,63 +3854,63 @@ msgstr ""
 "\n"
 "자세한 내용은 --dev 1 옵션으로 실행하십시오."
 
-#: polyhost/host.py:2582 polyhost/host.py:2982
+#: polyhost/host.py:2589 polyhost/host.py:2989
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "릴리스 날짜: {date}"
 
-#: polyhost/forwarder.py:850 polyhost/host.py:2583
+#: polyhost/forwarder.py:850 polyhost/host.py:2590
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "버전 {version}을(를) 사용할 수 있습니다."
 
-#: polyhost/forwarder.py:851 polyhost/host.py:2584
+#: polyhost/forwarder.py:851 polyhost/host.py:2591
 msgid "Update PolyKybdHost"
 msgstr "PolyKybdHost 업데이트"
 
-#: polyhost/host.py:2588
+#: polyhost/host.py:2595
 msgid "Download, install, and restart now?"
 msgstr "지금 다운로드하여 설치하고 다시 시작하시겠습니까?"
 
-#: polyhost/forwarder.py:878 polyhost/host.py:2599
+#: polyhost/forwarder.py:878 polyhost/host.py:2606
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "v{version} 다운로드하는 중…"
 
-#: polyhost/forwarder.py:919 polyhost/host.py:2724
+#: polyhost/forwarder.py:919 polyhost/host.py:2731
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "업데이트 릴레이를 시작할 수 없어 업데이트가 완료되지 않았습니다. 자세한 내용은 로그를 참조하십시오."
 
-#: polyhost/forwarder.py:931 polyhost/host.py:2739
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "Update failed"
 msgstr "업데이트 실패"
 
-#: polyhost/forwarder.py:931 polyhost/host.py:2739
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "The update did not finish."
 msgstr "업데이트가 완료되지 않았습니다."
 
-#: polyhost/host.py:2920
+#: polyhost/host.py:2927
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd 펌웨어 업데이트"
 
-#: polyhost/host.py:2921
+#: polyhost/host.py:2928
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "새 펌웨어 v{version}을(를) 사용할 수 있습니다. 업데이트하려면 트레이 아이콘을 클릭하십시오."
 
-#: polyhost/host.py:2938 polyhost/host.py:2979
+#: polyhost/host.py:2945 polyhost/host.py:2986
 msgid "The keyboard must be connected to update the firmware."
 msgstr "펌웨어를 업데이트하려면 키보드가 연결되어 있어야 합니다."
 
-#: polyhost/host.py:2944
+#: polyhost/host.py:2951
 msgid "Checking for firmware update…"
 msgstr "펌웨어 업데이트를 확인하는 중…"
 
-#: polyhost/host.py:2958 polyhost/host.py:2968 polyhost/host.py:2971
+#: polyhost/host.py:2965 polyhost/host.py:2975 polyhost/host.py:2978
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd 펌웨어"
 
-#: polyhost/host.py:2959
+#: polyhost/host.py:2966
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3902,55 +3921,55 @@ msgstr ""
 "\n"
 "현재 키보드는 v{current}입니다. 보통 릴리스 빌드가 실패했다는 뜻이며, 문제가 해결되면 릴리스 페이지에 펌웨어가 추가됩니다."
 
-#: polyhost/host.py:2969
+#: polyhost/host.py:2976
 msgid "No firmware release could be found."
 msgstr "펌웨어 릴리스를 찾을 수 없습니다."
 
-#: polyhost/host.py:2972
+#: polyhost/host.py:2979
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "최신 펌웨어(v{version})를 사용하고 있습니다."
 
-#: polyhost/host.py:2984
+#: polyhost/host.py:2991
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "설치됨: v{version}"
 
-#: polyhost/host.py:2985
+#: polyhost/host.py:2992
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "설치됨: 알 수 없음 (키보드가 버전을 보고하지 않음)"
 
-#: polyhost/host.py:2986
+#: polyhost/host.py:2993
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "펌웨어 {version}을(를) 사용할 수 있습니다."
 
-#: polyhost/host.py:2988
+#: polyhost/host.py:2995
 msgid "Both halves update over HID and reboot automatically."
 msgstr "두 반쪽 모두 HID를 통해 업데이트되고 자동으로 재부팅됩니다."
 
-#: polyhost/host.py:2989
+#: polyhost/host.py:2996
 msgid "Update PolyKybd Firmware"
 msgstr "PolyKybd 펌웨어 업데이트"
 
-#: polyhost/host.py:2993
+#: polyhost/host.py:3000
 msgid "Download and flash now?"
 msgstr "지금 다운로드하여 플래시하시겠습니까?"
 
-#: polyhost/host.py:3004
+#: polyhost/host.py:3011
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "펌웨어 v{version} 다운로드하는 중…"
 
-#: polyhost/host.py:3026 polyhost/host.py:3327
+#: polyhost/host.py:3033 polyhost/host.py:3334
 msgid "Cancelling…"
 msgstr "취소하는 중…"
 
-#: polyhost/host.py:3063
+#: polyhost/host.py:3070
 msgid "Firmware Update Failed"
 msgstr "펌웨어 업데이트 실패"
 
-#: polyhost/host.py:3064
+#: polyhost/host.py:3071
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3961,11 +3980,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3170 polyhost/host.py:3212 polyhost/host.py:3220
+#: polyhost/host.py:3177 polyhost/host.py:3219 polyhost/host.py:3227
 msgid "Allow access to the keyboard"
 msgstr "키보드 접근 허용"
 
-#: polyhost/host.py:3171
+#: polyhost/host.py:3178
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -3975,7 +3994,7 @@ msgstr ""
 "\n"
 "시스템이 암호를 묻습니다(PolicyKit). 그런 다음 키보드를 뽑았다가 다시 꽂으십시오."
 
-#: polyhost/host.py:3213
+#: polyhost/host.py:3220
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -3985,11 +4004,11 @@ msgstr ""
 "\n"
 "새 권한이 적용되도록 키보드를 뽑았다가 다시 꽂으십시오."
 
-#: polyhost/host.py:3221
+#: polyhost/host.py:3228
 msgid "The udev rule was not installed."
 msgstr "udev 규칙을 설치하지 못했습니다."
 
-#: polyhost/host.py:3222
+#: polyhost/host.py:3229
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4002,12 +4021,12 @@ msgstr ""
 "대신 터미널에서 다음 명령을 실행할 수도 있습니다:\n"
 "{commands}"
 
-#: polyhost/host.py:3291 polyhost/host.py:3305 polyhost/host.py:3351
-#: polyhost/host.py:3360 polyhost/host.py:3366
+#: polyhost/host.py:3298 polyhost/host.py:3312 polyhost/host.py:3358
+#: polyhost/host.py:3367 polyhost/host.py:3373
 msgid "Install WinCompose"
 msgstr "WinCompose 설치"
 
-#: polyhost/host.py:3292
+#: polyhost/host.py:3299
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4017,11 +4036,11 @@ msgstr ""
 "\n"
 "PolyKybd용 WinCompose 빌드를 GitHub에서 다운로드하고 설치 프로그램을 시작합니다(Windows에서 확인을 요청합니다)."
 
-#: polyhost/host.py:3305
+#: polyhost/host.py:3312
 msgid "Looking for the latest WinCompose release…"
 msgstr "최신 WinCompose 릴리스를 찾는 중…"
 
-#: polyhost/host.py:3352
+#: polyhost/host.py:3359
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4031,7 +4050,7 @@ msgstr ""
 "\n"
 "브라우저에서 릴리스 페이지가 열립니다. 그곳에서 설치 프로그램을 다운로드하여 실행하십시오."
 
-#: polyhost/host.py:3361
+#: polyhost/host.py:3368
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4042,7 +4061,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3367
+#: polyhost/host.py:3374
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4059,7 +4078,7 @@ msgstr ""
 "저장된 위치:\n"
 "{path}"
 
-#: polyhost/host.py:3375
+#: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 설치 프로그램이 시작되었습니다. 설치가 끝나고 WinCompose가 실행되면 PolyKybd가 자동으로 WinCompose로 전환합니다."
 
