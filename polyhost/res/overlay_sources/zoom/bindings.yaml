@@ -5,8 +5,9 @@
 #                                          agree: Alt+letter)
 #   zoom_mac_template.*  macOS            (Zoom's macOS column)
 #
-# The mapping entry is title-gated to "Zoom Meeting" windows, so these are the
-# MEETING shortcuts only.
+# The mapping loads this set for the "Zoom Meeting" and "Zoom Webinar" windows
+# (and for a window whose title is unknown); the main window, "Zoom Workplace",
+# gets main.yaml.
 #
 # ⚠️ Zoom's macOS keymap is a REMAP, not a Ctrl->Cmd swap: Alt+A becomes
 # Cmd+Shift+A, Alt+M becomes Cmd+Ctrl+M, Alt+Q becomes Cmd+W, and so on. CMDCTRL
@@ -17,10 +18,8 @@
 # The RECLAIMED lines are the previously shipped hand-drawn set, cut
 # pixel-for-pixel out of the old PNGs and rendered 1:1.
 #
-# ⚠️ One deliberate change from the old PNG: Ctrl+\ ("Always show meeting
-# controls") is Zoom's MAC chord -- on Windows/Linux the same toggle is a bare
-# Alt press, which has no keycap cell. The old overlay drew it on Windows; it is
-# now scoped to macOS (Control+\, literal CTRL).
+# Ctrl+\ ("Always show meeting controls") is the same key on all three
+# platforms: Zoom's article lists it in every tab (2026-07 revision).
 #
 # Regenerate (from the repo root, with the project venv):
 #   .venv/bin/python scripts/generate_app_overlays.py \
@@ -51,7 +50,7 @@ _mac: &mac { only: [macos] }
 bindings:
   # ============================ RECLAIMED from the previously shipped set =====
   # -- Windows / Linux (the old artwork, unchanged) --
-  - { key: A, mods: [ALT], <<: [*r, *wl], icon: mute.png,         label: "Mute / unmute" }
+  - { key: A, mods: [ALT], <<: *wl, icon: mute.png,                label: "Mute / unmute" }
   - { key: V, mods: [ALT], <<: [*r, *wl], icon: video.png,        label: "Start / stop video" }
   - { key: S, mods: [ALT], <<: [*r, *wl], icon: sharescreen.png,  label: "Share screen" }
   - { key: T, mods: [ALT], <<: [*r, *wl], icon: pauseshare.png,   label: "Pause / resume share" }
@@ -65,11 +64,11 @@ bindings:
   - { key: W, mods: [CTRL], <<: [*r, *wl], icon: closechat.png,   label: "Close chat" }
   # Option+Y on the Mac: the one chord that is the same on all three.
   - { key: Y, mods: [ALT], <<: *r, icon: raisehand.png, label: "Raise / lower hand" }
-  # Mac-only; see the header.
-  - { key: BACKSLASH, mods: [CTRL], <<: [*r, *mac], icon: showcontrols.png, label: "Always show controls" }
+  # The same on all three; see the header.
+  - { key: BACKSLASH, mods: [CTRL], <<: *r, icon: showcontrols.png, label: "Always show controls" }
 
   # -- macOS: the same drawings on Zoom's Mac chords --
-  - { key: A, mods: [GUI, SHIFT], <<: [*r, *mac], icon: mute.png,         label: "Mute / unmute" }
+  - { key: A, mods: [GUI, SHIFT], <<: *mac, icon: mute.png,        label: "Mute / unmute" }
   - { key: V, mods: [GUI, SHIFT], <<: [*r, *mac], icon: video.png,        label: "Start / stop video" }
   - { key: S, mods: [GUI, SHIFT], <<: [*r, *mac], icon: sharescreen.png,  label: "Share screen" }
   - { key: T, mods: [GUI, SHIFT], <<: [*r, *mac], icon: pauseshare.png,   label: "Pause / resume share" }
@@ -102,3 +101,23 @@ bindings:
   # Ctrl+W (Windows/Linux) is already drawn above as "Close chat". Nothing else
   # from the standard set is a documented in-meeting chord. See SOURCES.md.
   - { key: W, mods: [GUI], only: [macos], label: "Close", source: "concept (shared Fluent)" }
+
+  # ============================ ADDED 2026-10 from Zoom's article (KB0067050) ==
+  - { key: R, mods: [ALT, SHIFT],  <<: *wl,  icon: remotecontrol.png, label: "Begin remote control" }
+  - { key: G, mods: [ALT, SHIFT],  <<: *wl,  icon: revokeremote.png,  label: "Revoke remote control" }
+  - { key: R, mods: [CTRL, SHIFT], <<: *mac, icon: remotecontrol.png, label: "Begin remote control" }
+  - { key: G, mods: [CTRL, SHIFT], <<: *mac, icon: revokeremote.png,  label: "Revoke remote control" }
+  - { key: P, mods: [CTRL],        <<: *mac, icon: prevpage.png,      label: "Previous gallery page" }
+  - { key: N, mods: [CTRL],        <<: *mac, icon: nextpage.png,      label: "Next gallery page" }
+  - { key: I, mods: [GUI, SHIFT],  <<: *mac, icon: copyinvite.png,    label: "Copy invite link" }
+  - { key: M, mods: [GUI, SHIFT],  <<: *mac, icon: minimal.png,       label: "Minimal window" }
+  - { key: D, mods: [GUI, SHIFT],  <<: *mac, icon: dualmonitor.png,   label: "Dual monitor mode" }
+  - { key: H, mods: [GUI, ALT, CTRL], <<: *mac, icon: floating.png,   label: "Floating meeting controls" }
+  - { key: Y, mods: [GUI, SHIFT],  <<: *mac, icon: reactions.png,     label: "Reactions panel" }
+  - { key: "4", mods: [GUI, ALT],  <<: *mac, icon: react_clap.png,    label: "React: clapping hands" }
+  - { key: "5", mods: [GUI, ALT],  <<: *mac, icon: react_thumb.png,   label: "React: thumbs up" }
+  - { key: "6", mods: [GUI, ALT],  <<: *mac, icon: react_heart.png,   label: "React: heart" }
+  - { key: "7", mods: [GUI, ALT],  <<: *mac, icon: react_joy.png,     label: "React: joy" }
+  - { key: "8", mods: [GUI, ALT],  <<: *mac, icon: react_wow.png,     label: "React: wow" }
+  - { key: "9", mods: [GUI, ALT],  <<: *mac, icon: react_tada.png,    label: "React: celebrate" }
+  - { key: O, mods: [GUI, SHIFT],  <<: *mac, icon: aichat.png,        label: "AI chat panel" }

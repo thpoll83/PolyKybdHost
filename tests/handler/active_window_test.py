@@ -1624,12 +1624,12 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
             cls.handler = OverlayHandler(yaml.safe_load(fh))
 
-    def _match(self, app, title=None, title_known=False, os_name="MACOS"):
+    def _match(self, app, title=None, title_known=False, os_name="MACOS", url=None):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key
         key = mapping_key(app, self.handler.mapping)
         self.assertIsNotNone(key, f"{app} has no mapping key")
-        return find_matching_entry(title, self.handler.mapping[key], None,
+        return find_matching_entry(title, self.handler.mapping[key], url,
                                    OsType[os_name], title_known=title_known)
 
     def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
@@ -1725,6 +1725,44 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     got = self._match(app, title=title, title_known=True, os_name=os_name)
                     self.assertIsNotNone(got)
                     self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+
+    def test_ZOOM_main_and_meeting_windows_get_their_sets(self):
+        for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+            for app in ("zoom", "zoom.us"):
+                for title, stem in (("Zoom Workplace", "zoom_main_template"),
+                                    ("Zoom Meeting", "zoom_template"),
+                                    ("Zoom Webinar", "zoom_template")):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+                with self.subTest(os=os_name, app=app, title="Settings"):
+                    # Zoom's other windows stay out, as before.
+                    self.assertIsNone(self._match(app, title="Settings",
+                                                  title_known=True, os_name=os_name))
+
+    def test_TEAMS_desktop_web_and_linux_get_their_sets(self):
+        for app in ("ms-teams", "teams", "microsoft teams (work or school)"):
+            with self.subTest(app=app):
+                got = self._match(app, title="Chat | Microsoft Teams",
+                                  title_known=True, os_name="WINDOWS")
+                self.assertIn("teams_template.mods.png", got["overlay"])
+        got = self._match("teams-for-linux", title="Chat | Microsoft Teams",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("teams_web_template.mods.png", got["overlay"])
+        for browser, os_name, suffix in (("chrome", "WINDOWS", ""),
+                                         ("firefox", "LINUX", ""),
+                                         ("msedge", "MACOS", "_mac")):
+            for url in ("https://teams.microsoft.com/v2/", "https://teams.cloud.microsoft/"):
+                with self.subTest(browser=browser, url=url):
+                    got = self._match(browser, title="Chat | Microsoft Teams",
+                                      title_known=True, os_name=os_name, url=url)
+                    self.assertIn(f"teams_web_template{suffix}.mods.png", got["overlay"])
+            with self.subTest(browser=browser, url=None):
+                got = self._match(browser, title="Chat | Microsoft Teams",
+                                  title_known=True, os_name=os_name)
+                self.assertIn(f"teams_web_template{suffix}.mods.png", got["overlay"])
 
     def test_AUDACITY_gets_the_set_of_its_version(self):
         # Windows tells 3.x (Audacity.exe) from 4.x (Audacity4.exe), and Linux
