@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import faulthandler
+import importlib
 import os
 import re
 import shutil
@@ -122,7 +123,9 @@ def check_requirements(install: bool) -> bool:
 def check_system() -> None:
     """Warn about the system pieces pip cannot install."""
     try:
-        import hid  # noqa: F401
+        # import_module, not `import hid`: the import loads the hidapi library,
+        # and an unused name is a CodeQL finding that noqa does not silence.
+        importlib.import_module("hid")
     except ImportError as exc:
         print(f"WARNING: the hid module does not load ({exc}). Install the hidapi "
               "system libraries: sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0")
