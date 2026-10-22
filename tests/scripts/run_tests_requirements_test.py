@@ -37,6 +37,20 @@ class RequirementCheckTest(unittest.TestCase):
         outer = self.write("outer.txt", "-r inner.txt\nunittest-not-a-dist\n")
         self.assertEqual(run_tests.requirement_lines(outer), ["pip", "unittest-not-a-dist"])
 
+    def test_pip_options_are_dropped_and_both_include_forms_followed(self):
+        self.write("a.txt", "pip\n")
+        self.write("b.txt", "setuptools\n")
+        outer = self.write("outer.txt", "--index-url https://example.invalid/simple\n-c c.txt\n"
+                                        "-e .\n-r a.txt\n--requirement=b.txt\n")
+        self.assertEqual(run_tests.requirement_lines(outer), ["pip", "setuptools"])
+
+    def test_a_line_that_is_no_plain_requirement_is_not_checked(self):
+        path = self.write("r.txt", "git+https://example.invalid/x.git\n./dist/x-1.0-py3-none-any.whl\n"
+                                   "no-such-package-polykybd\n")
+        self.assertEqual(run_tests.missing_requirements(path), ["no-such-package-polykybd"])
+        with mock.patch.dict(sys.modules, {"packaging.requirements": None}):
+            self.assertEqual(run_tests.missing_requirements(path), ["no-such-package-polykybd"])
+
     def test_a_missing_package_is_reported_once(self):
         path = self.write("r.txt", "pip\nno-such-package-polykybd\nno-such-package-polykybd\n")
         self.assertEqual(run_tests.missing_requirements(path), ["no-such-package-polykybd"])

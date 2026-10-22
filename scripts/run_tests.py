@@ -40,7 +40,7 @@ import subprocess
 import sys
 import time
 import unittest
-from importlib import metadata
+import importlib.metadata as metadata
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -48,7 +48,9 @@ TEST_REQUIREMENTS = REPO_ROOT / "requirements-test.txt"
 
 
 def requirement_lines(path: Path, _seen=None) -> list[str]:
-    """The requirement lines of ``path``, following ``-r`` includes."""
+    """The requirement lines of ``path``, following ``-r`` includes. Other
+    pip options (``--index-url``, ``-c``, ``-e``) name no package to check, so
+    they are dropped; pip still reads them during the install."""
     seen = set() if _seen is None else _seen
     path = path.resolve()
     if path in seen:
@@ -59,9 +61,10 @@ def requirement_lines(path: Path, _seen=None) -> list[str]:
         line = raw.split(" #", 1)[0].split("\t#", 1)[0].strip()
         if not line or line.startswith("#"):
             continue
-        if line.startswith("-r "):
-            lines += requirement_lines(path.parent / line[3:].strip(), seen)
-        else:
+        include = re.match(r"(?:-r|--requirement)(?:\s+|=)(.+)", line)
+        if include:
+            lines += requirement_lines(path.parent / include.group(1).strip(), seen)
+        elif not line.startswith("-"):
             lines.append(line)
     return lines
 
@@ -71,15 +74,19 @@ def missing_requirements(path: Path = TEST_REQUIREMENTS) -> list[str]:
 
     Uses ``packaging`` for markers and versions when it is installed. A venv
     without it (``packaging`` is itself on the list) gets a name-only check and
-    the one marker form the lists use, ``sys_platform == "…"``."""
+    the one marker form the lists use, ``sys_platform == "…"``. A line that is
+    not a plain requirement (a URL, a path to a wheel) is not checked."""
     try:
-        from packaging.requirements import Requirement
+        from packaging.requirements import InvalidRequirement, Requirement
     except ImportError:
         Requirement = None
     missing = []
     for line in requirement_lines(path):
         if Requirement is not None:
-            req = Requirement(line)
+            try:
+                req = Requirement(line)
+            except InvalidRequirement:
+                continue
             if req.marker is not None and not req.marker.evaluate():
                 continue
             name, spec = req.name, req.specifier
@@ -87,7 +94,10 @@ def missing_requirements(path: Path = TEST_REQUIREMENTS) -> list[str]:
             m = re.search(r';\s*sys_platform\s*==\s*["\']([^"\']+)["\']', line)
             if m and m.group(1) != sys.platform:
                 continue
-            name, spec = re.match(r"[A-Za-z0-9._-]+", line).group(0), None
+            n = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*(?=\s*(?:[\[<>=!~;]|$))", line)
+            if n is None:
+                continue
+            name, spec = n.group(0), None
         try:
             version = metadata.version(name)
         except metadata.PackageNotFoundError:
