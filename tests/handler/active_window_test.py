@@ -935,9 +935,10 @@ class NoMachineChooserIsNotASessionTest(unittest.TestCase):
 class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
     """⚠️ It used to add the NOMINAL cycle whatever the tick really cost.
 
-    Accepting a switch takes six ticks: the tick that notices the window moved
-    resets the timer to 0, then five 250 ms steps carry it past the 1000 ms
-    threshold. At the stated cycle that is 3 s. On macOS a tick measured
+    At the 1000 ms delay of that time, accepting a switch took six ticks: the
+    tick that notices the window moved resets the timer to 0, then five 250 ms
+    steps carried it past the threshold (the check was `>`; it is `>=` since
+    2026-10-22, so four steps reach it). At the stated cycle that is 3 s. On macOS a tick measured
     **2.30 s median** -- pywinctl spends two `osascript` processes per
     `getActiveWindow()` -- so the same six ticks were 15.3 s of uninterrupted
     focus, and every app the user left sooner never reached the keyboard at
@@ -956,7 +957,7 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
         win.getAppName.return_value = app
         return win
 
-    def _switches_after(self, clock):
+    def _switches_after(self, clock, accept_msec=1000):
         """Ticks spent before a switch to a second app is reported.
 
         ⚠️ Patches `active_window._monotonic`, the module's own alias, NOT
@@ -975,11 +976,11 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
              patch(mod + "._IS_MACOS", False):
             with patch(mod + ".pwc.getActiveWindow", return_value=first):
                 for _ in range(8):
-                    handler._decide_active_window(250, 1000)
+                    handler._decide_active_window(250, accept_msec)
             with patch(mod + ".pwc.getActiveWindow", return_value=second), \
                  self.assertLogs(handler.log, level="INFO") as captured:
                 for ticks in range(1, 9):
-                    handler._decide_active_window(250, 1000)
+                    handler._decide_active_window(250, accept_msec)
                     if any("Active App Changed: \"Maps\"" in line
                            for line in captured.output):
                         return ticks
@@ -1005,10 +1006,17 @@ class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
             self.assertIs(time.monotonic, real, "the process clock was replaced")
             self.assertNotEqual(time.monotonic(), 1.0)
 
+    def test_the_shipped_delay_accepts_after_500_ms_not_750(self):
+        # NEW_WINDOW_ACCEPT_TIME_MSEC is 500: the reset tick, then two 250 ms
+        # steps REACH it. With `>` (until 2026-10-22) it took a third step.
+        from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
+        self.assertEqual(self._switches_after(lambda: 100.0, NEW_WINDOW_ACCEPT_TIME_MSEC), 3)
+
     def test_the_NOMINAL_cycle_is_still_the_floor(self):
-        # A caller that ticks faster than it says it does keeps the old count,
-        # which is what every other test in this file relies on.
-        self.assertEqual(self._switches_after(lambda: 100.0), 6)
+        # A caller that ticks faster than it says it does keeps the nominal
+        # count, which is what every other test in this file relies on: the
+        # reset tick, then four 250 ms steps reach 1000 ms (`>=`).
+        self.assertEqual(self._switches_after(lambda: 100.0), 5)
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
@@ -1119,8 +1127,9 @@ class TheMacOSTickSkipsTheAppleScriptQueryTest(unittest.TestCase):
              patch(mod + ".pwc.getActiveWindow", return_value=win) as query:
             for _ in range(8):
                 handler._decide_active_window(250, 1000)
-        # Six ticks to accept the window, then the rest skip.
-        self.assertEqual(query.call_count, 6)
+        # Five ticks to accept the window (the reset, then four 250 ms steps to
+        # reach 1000 ms), then the rest skip.
+        self.assertEqual(query.call_count, 5)
 
     def test_a_skipped_tick_does_NOT_call_getActiveWindow(self):
         handler = self._settled()
@@ -1172,7 +1181,8 @@ class LoggingTheWindowCostsNoExtraAppleScriptTest(unittest.TestCase):
              patch(mod + ".own_front_app", return_value=None), \
              patch(mod + ".app_name_for", return_value="Notes"), \
              patch(mod + ".pwc.getActiveWindow", return_value=win):
-            for _ in range(6):
+            # Five ticks: the reset, then four 250 ms steps reach 1000 ms (`>=`).
+            for _ in range(5):
                 handler._decide_active_window(250, 1000)
         self.assertEqual(win.getHandle.call_count, 1, "handle read more than once")
         self.assertEqual(title.call_count, 1, "title read more than once")

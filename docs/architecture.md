@@ -234,7 +234,7 @@ Per-platform implementations:
     the window it was logging). Measured in the field bundle of 2026-10-16:
     **tick 2.30 s median, of which 1.60 s is the query**, against a 250 ms cycle.
     Accepting a switch takes six ticks (reset to 0, then five 250 ms steps past
-    `NEW_WINDOW_ACCEPT_TIME_MSEC` 1000), so the 1 s debounce became **15.3 s of
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`, 1000 then, 500 since 2026-10-22), so the 1 s debounce became **15.3 s of
     uninterrupted focus** — and every app the user left sooner never reached the
     keyboard, with nothing logged. That bundle has 132 slow-tick warnings across
     42 minutes with no app-identity line between them, and the board kept the

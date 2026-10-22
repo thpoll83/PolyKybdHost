@@ -48,6 +48,7 @@ from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashRecord, CrashScanner
 from polyhost.services import problem_scan
 from polyhost.util.observable import Observable
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -62,7 +63,6 @@ OVERLAY_PROBE_COOLDOWN_S = 1.0
 PIPE_PROBE_RETRIES = 5
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 # A window-tracking tick slower than this, or a pause this long between two
 # ticks, is logged as a warning. Nothing else in the log can tell "the tick
 # thread was stuck" from "no window change happened" (field, 2026-09-30: 87 s
