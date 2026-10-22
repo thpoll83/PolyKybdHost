@@ -58,7 +58,7 @@ FLUENT = {
     "staccato": "ms:fiber_manual_record",
     "tenuto": "ms:remove",
     "marcato": "ms:keyboard_arrow_up",
-    "accent": "ms:arrow_back_ios",
+    "accent": "ms:arrow_forward_ios",
     "hammer": "ms:construction",
     "bend": "ms:trending_up",
     "gracebend": "ms:call_made",

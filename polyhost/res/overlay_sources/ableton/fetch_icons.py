@@ -102,7 +102,6 @@ FLUENT = {
     "fitheight": "ms:height",
     "fitwidth": "ms:width",
     "bounce": "ms:output",
-    "insertmidi": "ms:music_note_add",
     "startmarker": "ms:first_page",
     "loopstart": "ms:keyboard_tab_rtl",
     "loopend": "ms:keyboard_tab",

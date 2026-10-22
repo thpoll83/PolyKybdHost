@@ -61,13 +61,14 @@ Redo: 3.7.9 binds Ctrl+Y on Windows and Ctrl+Shift+Z elsewhere
 
 ### Left out
 
-- 3.7.9 Full-set-only keys (no shortcut on a new install).
+- 3.7.9 Full-set-only keys (no shortcut on a new install): every key in
+  `CommandManager::ExcludedList()` (`libraries/lib-menus/CommandManager.cpp`),
+  among them the four Labeled Audio keys (Alt+Shift+X, K, C, J).
 - Keys that change meaning while playing: Left/Right and Shift+Left/Right also
   seek during playback in 3.7.9 (Shift+Left/Right are drawn with their selection
   meaning). Up/Down (focus track), Tab, Return in the track menu.
-- 3.7.9 on macOS: Cmd+. (label at playback), Cmd+, (preferences), Cmd+/ (full
-  screen) and the four Labeled Audio Alt+Shift keys exist only in the 3.x set,
-  which macOS does not load.
+- 3.7.9 on macOS: Cmd+. (label at playback), Cmd+, (preferences) and Cmd+/
+  (full screen) exist only in the 3.x set, which macOS does not load.
 - 4.0.1 keys whose action has no handler (Alt+F6, Alt+Shift+F6, Q, Ctrl+Shift+C)
   and the effects-panel keys (Alt+Up/Down move effect).
 - Ctrl+Q (Quit). Esc: the ESC key carries the program mark.

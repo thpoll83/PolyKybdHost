@@ -20,7 +20,7 @@
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/flstudio/bindings.yaml --preview /tmp/fl_preview
 app: flstudio
-match: [fl64, fl studio 2024, fl studio 2025, osxfl]
+match: [fl64, fl studio 2024, fl studio 2025, fl studio 2026, osxfl]
 output: flstudio_template
 icon_dir: icons
 fit: contain

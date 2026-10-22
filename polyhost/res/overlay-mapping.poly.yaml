@@ -1274,7 +1274,7 @@ jan,jan-desktop:
 #
 # FL Studio: FL64.exe on Windows; on macOS the app is named after the year.
 # Its Playlist, Piano roll and Mixer share one OS window, so one set serves all.
-fl64,fl studio 2024,fl studio 2025,osxfl:
+fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
   overlay: [flstudio_template.mods.png, flstudio_template.combo.mods.png]
   os:
     macos:
