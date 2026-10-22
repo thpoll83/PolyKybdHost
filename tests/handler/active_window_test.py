@@ -1661,6 +1661,17 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
 
+    def test_MATHEMATICA_and_WOLFRAM_get_their_platform_set(self):
+        for os_name, stem in (("WINDOWS", "mathematica_template"),
+                              ("LINUX", "mathematica_template_linux"),
+                              ("MACOS", "mathematica_template_mac")):
+            for app in ("mathematica", "wolframnb", "wolfram"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled-1", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_KICAD_does_NOT_resolve_without_its_title(self):
         # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
         # a `title:` gate to tell the PCB editor from the schematic editor.
