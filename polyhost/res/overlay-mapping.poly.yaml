@@ -57,6 +57,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
                 googledocs_template.extra.mods.png]
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # Google Meet (sources: overlay_sources/meet/) runs only in a browser.
+    meet.google.com:
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     # Claude Code on the web. MUST stay above claude.ai, which it contains.
     claude.ai/code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
@@ -114,6 +117,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   titles-contains: &web_titles
     Miro:
       overlay: miro_template.mods.png
+    Google Meet:
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     Outlook:
       overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     Jira:
@@ -177,6 +182,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        meet.google.com:
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         claude.ai/code:
           overlay: claude_code_web_template_mac.mods.png
         claude.ai:
@@ -199,6 +206,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        Google Meet:
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         Outlook:
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         Jira:
@@ -888,6 +897,21 @@ slack:
   os:
     macos:
       overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
+# Cisco Webex (sources: overlay_sources/webex/). The Webex App runs as
+# CiscoCollabHost on Windows and Linux (measured on Linux, 46.10, under Xvfb)
+# and is "Webex" on macOS. The older Webex Meetings desktop app has its own
+# keys; its names (atmgr.exe on Windows, "Cisco Webex Meetings" on macOS) were
+# not checked on an install.
+ciscocollabhost,webex:
+  overlay: [webex_template.mods.png, webex_template.combo.mods.png, webex_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [webex_template_mac.mods.png, webex_template_mac.combo.mods.png, webex_template_mac.extra.mods.png, webex_template_mac.gui.mods.png]
+atmgr,cisco webex meetings,webex meetings:
+  overlay: [webex_meetings_template.mods.png, webex_meetings_template.combo.mods.png, webex_meetings_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [webex_meetings_template_mac.mods.png, webex_meetings_template_mac.combo.mods.png, webex_meetings_template_mac.extra.mods.png, webex_meetings_template_mac.gui.mods.png]
 notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
