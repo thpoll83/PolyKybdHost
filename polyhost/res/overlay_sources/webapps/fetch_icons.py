@@ -4,7 +4,8 @@
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
 `confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
 `bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
-Gmail, Calendar). They are grouped
+Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `linear.yaml` and
+`overleaf.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
 duplicating ~30 identical PNGs five times would be pure noise in the tree.
@@ -301,6 +302,114 @@ GOOGLE = {
     "prevfont": "ms:keyboard_double_arrow_left",
     "nextfont": "ms:keyboard_double_arrow_right",
 }
+# draw.io, Excalidraw, Linear and Overleaf (diagram, whiteboard, project and
+# LaTeX web apps). Prefixed by app where the same action has another meaning
+# in an existing set.
+DIAGRAM_ETC = {
+    # --- draw.io ---
+    "dio_layers": "Layer",
+    "dio_outline": "ms:map",
+    "dio_format": "Panel Right",
+    "dio_shapes": "Shapes",
+    "dio_tags": "Tag",
+    "dio_geometry": "Ruler",
+    "dio_metadata": "ms:dataset",
+    "dio_grid": "Grid",
+    "dio_arrows": "ms:open_with",
+    "dio_points": "ms:add_circle",
+    "dio_entergroup": "ms:login",
+    "dio_exitgroup": "ms:logout",
+    "dio_fitwindow": "ms:fit_screen",
+    "dio_fittwo": "ms:auto_stories",
+    "dio_customzoom": "ms:zoom_in_map",
+    "dio_editstyle": "ms:style",
+    "dio_setstyle": "ms:verified",
+    "dio_tooltip": "ms:tooltip",
+    "dio_note": "Note",
+    "dio_editnote": "Note Edit",
+    "dio_saveas": "ms:save_as",
+    "dio_copysize": "ms:straighten",
+    "dio_pastesize": "ms:aspect_ratio",
+    "dio_copydata": "ms:data_object",
+    "dio_pastedata": "ms:content_paste_go",
+    "dio_waypoints": "ms:timeline",
+    "dio_autosize": "ms:fit_width",
+    "dio_prevpage": "ms:navigate_before",
+    "dio_nextpage": "ms:navigate_next",
+    "dio_selvertices": "ms:select_all",
+    "dio_seledges": "ms:polyline",
+    "dio_selnone": "ms:deselect",
+    "dio_rect": "ms:rectangle",
+    "dio_freehand": "ms:gesture",
+    "dio_copyimage": "Image Copy",
+    "dio_copystyle": "ms:format_paint",
+    "dio_pastestyle": "Clipboard Brush",
+    "dio_home": "Home",
+    "dio_resetview": "ms:recenter",
+    # --- Excalidraw ---
+    "exc_hand": "Hand Left",
+    "exc_diamond": "Diamond",
+    "exc_arrow": "Arrow Up Right",
+    "exc_pen": "Pen",
+    "exc_image": "Image",
+    "exc_eraser": "Eraser",
+    "exc_frame": "ms:frame_source",
+    "exc_laser": "ms:stylus_laser_pointer",
+    "exc_fill": "ms:format_color_fill",
+    "exc_eyedrop": "ms:colorize",
+    "exc_toollock": "ms:keep",
+    "exc_wrap": "ms:wrap_text",
+    "exc_flipx": "ms:flip",
+    "exc_flipy": "ms:swap_vert",
+    "exc_stroke": "ms:border_color",
+    "exc_background": "ms:imagesearch_roller",
+    "exc_fonts": "Text Font",
+    "exc_zen": "ms:self_improvement",
+    "exc_snap": "ms:grid_goldenratio",
+    "exc_viewmode": "Eye",
+    "exc_theme": "ms:contrast",
+    "exc_stats": "ms:analytics",
+    "exc_copypng": "Image Copy",
+    "exc_alignt": "ms:vertical_align_top",
+    "exc_alignb": "ms:vertical_align_bottom",
+    "exc_alignl": "ms:align_horizontal_left",
+    "exc_alignr": "ms:align_horizontal_right",
+    "exc_clear": "ms:delete_sweep",
+    "exc_textsize_dn": "ms:text_decrease",
+    "exc_textsize_up": "ms:text_increase",
+    # --- Linear ---
+    "lin_layout": "ms:view_kanban",
+    "lin_agent": "Sparkle",
+    "lin_insights": "ms:insights",
+    "lin_attach": "Attach",
+    "lin_branch": "Branch",
+    "lin_createmore": "ms:repeat",
+    "lin_template": "ms:note_stack",
+    "lin_inline": "Comment Add",
+    "lin_moveup": "Arrow Up",
+    "lin_movedown": "Arrow Down",
+    "lin_movetop": "ms:vertical_align_top",
+    "lin_movebottom": "ms:vertical_align_bottom",
+    "lin_copymd": "ms:markdown_copy",
+    "lin_upload": "ms:upload_file",
+    # --- Overleaf ---
+    "ol_compile": "ms:play_arrow",
+    "ol_gotoline": "ms:format_list_numbered_rtl",
+    "ol_comment": "ms:code_off",
+    "ol_deleteline": "ms:playlist_remove",
+    "ol_upper": "Text Case Uppercase",
+    "ol_lower": "Text Case Lowercase",
+    "ol_autocomplete": "ms:auto_fix_normal",
+    "ol_review": "ms:rate_review",
+    "ol_track": "ms:track_changes",
+    "ol_dupsel": "ms:content_copy",
+    "ol_first": "ms:vertical_align_top",
+    "ol_last": "ms:vertical_align_bottom",
+}
+# Their ESC marks: each app's own logo from Simple Icons (CC0 artwork).
+DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
+                     "linear.png": "linear", "overleaf.png": "overleaf"}
+
 # narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
 # "Arrow Minimize" but no horizontal one.
 ROTATED = {"narrower.png": ("shorter.png", 90)}
@@ -339,6 +448,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.fluent(GOOGLE, out)
+    n += icon_fetch.fluent(DIAGRAM_ETC, out)
     for fname, (src, angle) in ROTATED.items():
         Image.open(out / src).rotate(angle).save(out / fname)
         print(f"  {fname}  <- {src} turned {angle} degrees")
@@ -347,7 +457,7 @@ def main() -> int:
         ms.render(name, out / f"{stem}.png", weight=300)
         print(f"  {stem}.png  <- material-symbols/{name}")
     n += len(MATERIAL)
-    for fname, slug in BRAND.items():
+    for fname, slug in {**BRAND, **DIAGRAM_ETC_BRAND}.items():
         brand_marks.ensure(out / fname, slug)
     for fname, (app, label) in DOC.items():
         dest = out / fname
@@ -363,7 +473,7 @@ def main() -> int:
         rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
     for fname, draw in GEO.items():
         draw(out / fname)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
     return 0
 
 
