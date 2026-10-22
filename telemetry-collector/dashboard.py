@@ -17,6 +17,10 @@ Usage:
     python dashboard.py --days 90          # widen the time-series window (default 30)
     python dashboard.py --local            # query the local dev DB instead
     python dashboard.py --from-json rows.json   # no wrangler; feed saved --json output
+    python dashboard.py --from-json data/       # ... or a directory of them (*.json, recursive)
+    python dashboard.py --export-days data/     # append each finished UTC day as
+                                                # data/YYYY/YYYY-MM-DD.json, then render
+                                                # from the whole directory
     python dashboard.py --out /tmp/t.html
 
 Stdlib only, so it runs from a bare checkout on any OS.
@@ -34,7 +38,7 @@ import subprocess
 import sys
 import webbrowser
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 DB_NAME = "polyhost-telemetry"
@@ -120,7 +124,7 @@ def split_command(cmd: str) -> list[str]:
     return shlex.split(cmd)
 
 
-def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
+def fetch_rows(remote: bool, wrangler: str, sql: str = SELECT_ALL) -> list[dict]:
     # shell=False with an argv list: the string below is tokenised, never
     # interpreted by a shell, so there is no metacharacter to inject through.
     # It also comes from this process's own --wrangler argument, i.e. from
@@ -128,7 +132,7 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
     parts = split_command(wrangler) + [
         "d1", "execute", DB_NAME,
         "--remote" if remote else "--local",
-        "--json", "--command", SELECT_ALL,
+        "--json", "--command", sql,
     ]
     exe = shutil.which(parts[0])
     if exe is None:
@@ -164,6 +168,106 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
         sys.stderr.write(proc.stderr or "")
         raise SystemExit(f"error: wrangler exited {proc.returncode}")
     return parse_wrangler_json(proc.stdout)
+
+
+def load_rows(path: Path) -> list[dict]:
+    """Rows from one saved export, or from every *.json under a directory.
+
+    A directory is what `--export-days` writes: one file per UTC day. Files
+    are read in sorted path order, so the result does not depend on the
+    order the file system lists them in.
+    """
+    if not path.is_dir():
+        return parse_wrangler_json(path.read_text(encoding="utf-8"))
+    rows: list[dict] = []
+    for file in sorted(path.rglob("*.json")):
+        rows.extend(parse_wrangler_json(file.read_text(encoding="utf-8")))
+    return rows
+
+
+# --------------------------------------------------------------------------
+# Daily export — one file per finished UTC day, for an archive kept in git
+# --------------------------------------------------------------------------
+
+def newest_export_day(directory: Path) -> date | None:
+    """The newest day that already has a file under `directory`, or None.
+
+    Only names that parse as YYYY-MM-DD count, so a stray file cannot move
+    the start of the next export.
+    """
+    newest = None
+    for file in directory.rglob("*.json"):
+        try:
+            day = date.fromisoformat(file.stem)
+        except ValueError:
+            continue
+        if newest is None or day > newest:
+            newest = day
+    return newest
+
+
+def export_query(after: date | None, before: date) -> str:
+    """SELECT for the days strictly between `after` and `before`.
+
+    Both bounds are `date` objects, so their isoformat() is digits and
+    dashes only and is safe to put in the SQL text. Today (UTC) is the
+    upper bound and is excluded: the collector keeps one row per install
+    per day and overwrites it on a later ping the same day, so a day is
+    final only once it has ended.
+    """
+    where = f"day < '{before.isoformat()}'"
+    if after is not None:
+        where = f"day > '{after.isoformat()}' AND {where}"
+    return f"SELECT * FROM ping WHERE {where} ORDER BY day, received_at, id"
+
+
+def split_by_day(rows: list[dict], after: date | None, before: date) -> dict[str, list[dict]]:
+    """Group rows by their `day`, keeping only days in (after, before)."""
+    lo = after.isoformat() if after else ""
+    hi = before.isoformat()
+    out: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        day = str(r.get("day") or "")
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            continue
+        if lo < day < hi:
+            out[day].append(r)
+    for day_rows in out.values():
+        day_rows.sort(key=lambda r: (str(r.get("received_at") or ""), r.get("id") or 0))
+    return dict(out)
+
+
+def write_day_files(directory: Path, by_day: dict[str, list[dict]]) -> list[Path]:
+    """Write each day as `<directory>/YYYY/YYYY-MM-DD.json`.
+
+    One row per line with sorted keys, so a later change to a file (which
+    should never happen) shows as a readable diff.
+    """
+    written = []
+    for day in sorted(by_day):
+        file = directory / day[:4] / f"{day}.json"
+        file.parent.mkdir(parents=True, exist_ok=True)
+        lines = ",\n".join(
+            json.dumps(r, sort_keys=True, ensure_ascii=False) for r in by_day[day]
+        )
+        file.write_text(f"[\n{lines}\n]\n", encoding="utf-8")
+        written.append(file)
+    return written
+
+
+def export_days(directory: Path, remote: bool, wrangler: str, today: date) -> list[Path]:
+    """Fetch every finished day newer than the newest file, and write it."""
+    directory.mkdir(parents=True, exist_ok=True)
+    after = newest_export_day(directory)
+    if after is not None and after >= today - timedelta(days=1):
+        print(f"{directory}: up to date (newest day {after})")
+        return []
+    rows = fetch_rows(remote, wrangler, export_query(after, today))
+    written = write_day_files(directory, split_by_day(rows, after, today))
+    print(f"{directory}: wrote {len(written)} day file(s) from {len(rows)} reports")
+    return written
 
 
 # --------------------------------------------------------------------------
@@ -544,14 +648,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--days", type=_positive_days, default=30,
                     help="time-series window in days (default 30)")
     ap.add_argument("--local", action="store_true", help="query the local dev DB instead of the remote one")
-    ap.add_argument("--from-json", metavar="FILE",
-                    help="read saved `wrangler d1 execute --json` output instead of querying")
+    src = ap.add_mutually_exclusive_group()
+    src.add_argument("--from-json", metavar="PATH",
+                     help="read saved `wrangler d1 execute --json` output instead of querying; "
+                          "a directory reads every *.json under it")
+    src.add_argument("--export-days", metavar="DIR",
+                     help="write each finished UTC day newer than DIR's newest file to "
+                          "DIR/YYYY/YYYY-MM-DD.json, then render from all of DIR")
     ap.add_argument("--wrangler", default="npx wrangler", help="how to invoke wrangler")
     ap.add_argument("--open", action="store_true", help="open the result in a browser")
     args = ap.parse_args(argv)
 
-    if args.from_json:
-        rows = parse_wrangler_json(Path(args.from_json).read_text(encoding="utf-8"))
+    if args.export_days:
+        export_dir = Path(args.export_days)
+        today_utc = datetime.now(timezone.utc).date()
+        export_days(export_dir, remote=not args.local, wrangler=args.wrangler, today=today_utc)
+        rows = load_rows(export_dir)
+    elif args.from_json:
+        rows = load_rows(Path(args.from_json))
     else:
         rows = fetch_rows(remote=not args.local, wrangler=args.wrangler)
 
