@@ -314,9 +314,10 @@ python telemetry-collector/dashboard.py --export-days data --out dashboard.html
 
 `--export-days DIR` finds the newest `DIR/YYYY/YYYY-MM-DD.json`, queries every
 finished UTC day after it, writes one file per day that has reports, and then
-renders the dashboard from all of `DIR`. Today is never exported: the collector
-overwrites an install's row on a later ping the same day, so a day is final only
-once it has ended. A missed run is filled in by the next one. The workflow
+renders the dashboard from all of `DIR`. Today is never exported: installs that
+have not reported yet today still can, and the next run starts after the newest
+file, so a day is final only once it has ended. A missed run is filled in by the
+next one. The workflow
 commits only when a file changed.
 
 The repo is private, and the Worker stays write-only: the workflow reads D1 with

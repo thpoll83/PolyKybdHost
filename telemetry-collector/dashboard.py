@@ -211,9 +211,9 @@ def export_query(after: date | None, before: date) -> str:
 
     Both bounds are `date` objects, so their isoformat() is digits and
     dashes only and is safe to put in the SQL text. Today (UTC) is the
-    upper bound and is excluded: the collector keeps one row per install
-    per day and overwrites it on a later ping the same day, so a day is
-    final only once it has ended.
+    upper bound and is excluded: installs that have not reported yet today
+    still can, and the next run starts after the newest file, so a day
+    exported early would stay incomplete. A day is final once it has ended.
     """
     where = f"day < '{before.isoformat()}'"
     if after is not None:
@@ -252,7 +252,12 @@ def write_day_files(directory: Path, by_day: dict[str, list[dict]]) -> list[Path
         lines = ",\n".join(
             json.dumps(r, sort_keys=True, ensure_ascii=False) for r in by_day[day]
         )
-        file.write_text(f"[\n{lines}\n]\n", encoding="utf-8")
+        # Written beside the target and renamed, so an interrupted run never
+        # leaves a truncated YYYY-MM-DD.json that the next run would take as
+        # the newest finished day.
+        tmp = file.with_name(file.name + ".tmp")
+        tmp.write_text(f"[\n{lines}\n]\n", encoding="utf-8")
+        os.replace(tmp, file)
         written.append(file)
     return written
 
