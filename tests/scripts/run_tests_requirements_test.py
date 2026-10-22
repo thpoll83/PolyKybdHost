@@ -7,11 +7,12 @@ missing package and an unmet version, and never installs into a Python that is
 not a venv.
 """
 import importlib.util
+import shutil
 import sys
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location("run_tests", ROOT / "scripts" / "run_tests.py")
@@ -24,6 +25,7 @@ OTHER_PLATFORM = "win32" if sys.platform != "win32" else "linux"
 class RequirementCheckTest(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.dir, ignore_errors=True)
 
     def write(self, name, text):
         path = self.dir / name
