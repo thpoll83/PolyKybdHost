@@ -51,6 +51,9 @@ widening fail loudly. **Never add a field by spreading.**
     with `wrangler d1 execute` or **`python telemetry-collector/dashboard.py --open`**,
     which renders a self-contained HTML dashboard locally (per-install version splits from
     each install's *newest* report, so a long-running tester doesn't outvote a new one).
+    A scheduled workflow in the private repo `thpoll83/polykybd-telemetry-data` runs
+    `dashboard.py --export-days data` once a day: one JSON file per finished UTC day
+    plus the rendered `dashboard.html`, read with its own D1-only token.
     A hosted version is planned but unbuilt — design and its costs in
     `telemetry-collector/HOSTED_DASHBOARD.md`. Full setup/runbook: `telemetry-collector/SETUP.md`.
 

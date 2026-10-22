@@ -36,6 +36,36 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     gitlab.com:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # Jupyter (sources: overlay_sources/jupyter/): a local server or a
+    # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
+    # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
+    # github.com and gitlab.com are above anyway (first hit wins).
+    /lab:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    /notebooks/:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    /tree:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    # Web tools (sources: overlay_sources/webapps/). Each is gated to its own
+    # host, so a search URL that names the site does not match.
+    diagrams.net:
+      url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    draw.io:
+      url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    excalidraw.com:
+      url: '^https?://([^/?#]+\.)?excalidraw\.com/'
+      overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    linear.app:
+      url: '^https?://([^/?#]+\.)?linear\.app/'
+      overlay: [linear_template.mods.png, linear_template.combo.mods.png]
+    overleaf.com/project:
+      url: '^https?://([^/?#]+\.)?overleaf\.com/project'
+      overlay: [overleaf_template.mods.png, overleaf_template.combo.mods.png]
     # A Confluence whiteboard (<site>.atlassian.net/wiki/spaces/<KEY>/whiteboard/<id>)
     # has its own tool keys, so it MUST stay above atlassian.net/wiki. The url
     # gate keeps the bare "/whiteboard/" needle from catching other sites.
@@ -157,6 +187,21 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+    # (the browser may append its own name); the gate keeps a page that only
+    # mentions Jupyter, such as its documentation, off the set.
+    JupyterLab:
+      title: ' - JupyterLab( [-—] [^-—]+)?$'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    Jupyter Notebook:
+      title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    draw.io:
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    Excalidraw:
+      overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    Online LaTeX Editor:
+      overlay: [overleaf_template.mods.png, overleaf_template.combo.mods.png]
     Bitbucket:
       overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     Microsoft Teams:
@@ -198,6 +243,36 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        # Jupyter (sources: overlay_sources/jupyter/): a local server or a
+        # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
+        # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
+        # github.com and gitlab.com are above anyway (first hit wins).
+        /lab:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        /notebooks/:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        /tree:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        # Web tools (sources: overlay_sources/webapps/). Each is gated to its own
+        # host, so a search URL that names the site does not match.
+        diagrams.net:
+          url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        draw.io:
+          url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        excalidraw.com:
+          url: '^https?://([^/?#]+\.)?excalidraw\.com/'
+          overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        linear.app:
+          url: '^https?://([^/?#]+\.)?linear\.app/'
+          overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
+        overleaf.com/project:
+          url: '^https?://([^/?#]+\.)?overleaf\.com/project'
+          overlay: [overleaf_template_mac.mods.png, overleaf_template_mac.combo.mods.png, overleaf_template_mac.extra.mods.png]
         /whiteboard/:
           url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
           overlay: [confluence_whiteboard_template_mac.mods.png, confluence_whiteboard_template_mac.combo.mods.png, confluence_whiteboard_template_mac.extra.mods.png]
@@ -267,6 +342,21 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+        # (the browser may append its own name); the gate keeps a page that only
+        # mentions Jupyter, such as its documentation, off the set.
+        JupyterLab:
+          title: ' - JupyterLab( [-—] [^-—]+)?$'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        Jupyter Notebook:
+          title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        draw.io:
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        Excalidraw:
+          overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        Online LaTeX Editor:
+          overlay: [overleaf_template_mac.mods.png, overleaf_template_mac.combo.mods.png, overleaf_template_mac.extra.mods.png]
         Bitbucket:
           overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         Microsoft Teams:
@@ -1726,3 +1816,54 @@ githubdesktop,github desktop:
   os:
     macos:
       overlay: [githubdesktop_template_mac.mods.png, githubdesktop_template_mac.combo.mods.png, githubdesktop_template_mac.extra.mods.png, githubdesktop_template_mac.gui.mods.png]
+# PDF readers. Adobe Acrobat (sources: overlay_sources/acrobat/): Reader and Pro
+# share one keymap; Acrobat.exe for both today, AcroRd32.exe for the old
+# Reader. SumatraPDF (overlay_sources/sumatrapdf/), Windows only. Okular
+# (overlay_sources/okular/): process and WM_CLASS `okular` on Linux (measured,
+# 23.08.5), org.kde.okular for the Flatpak and on Wayland.
+acrobat,acrord32,adobe acrobat,adobe acrobat reader:
+  overlay: [acrobat_template.mods.png, acrobat_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [acrobat_template_mac.mods.png, acrobat_template_mac.combo.mods.png, acrobat_template_mac.extra.mods.png]
+sumatrapdf:
+  overlay: [sumatrapdf_template.mods.png, sumatrapdf_template.combo.mods.png]
+okular,org.kde.okular:
+  overlay: [okular_template.mods.png, okular_template.combo.mods.png]
+# JupyterLab Desktop (sources: overlay_sources/jupyter/); Jupyter in a browser
+# is under the browser entries. Names not checked on an install.
+jupyterlab,jupyterlab-desktop,jupyterlab desktop:
+  overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+# RStudio (sources: overlay_sources/rstudio/). Process and WM_CLASS `rstudio` on
+# Linux (measured, 2026.10.0).
+rstudio:
+  overlay: [rstudio_template.mods.png, rstudio_template.combo.mods.png, rstudio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [rstudio_template_mac.mods.png, rstudio_template_mac.combo.mods.png, rstudio_template_mac.extra.mods.png, rstudio_template_mac.gui.mods.png]
+# MATLAB (sources: overlay_sources/matlab/). The macOS bundle is named per release
+# (MATLAB_R2026b.app), and mapping_key() drops only a trailing year, so the
+# releases are listed. Names not checked on an install.
+matlab,matlab_r2025a,matlab_r2025b,matlab_r2026a,matlab_r2026b:
+  overlay: [matlab_template.mods.png, matlab_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [matlab_template_mac.mods.png, matlab_template_mac.combo.mods.png, matlab_template_mac.extra.mods.png]
+# draw.io desktop (sources: overlay_sources/webapps/drawio.yaml). Process `drawio`,
+# WM_CLASS `draw-io` on Linux (measured, 32.5.5). On Windows the host keeps the
+# process name up to its first dot, so draw.io.exe arrives as `draw`.
+drawio,draw-io,draw.io,draw:
+  overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+# Linear desktop (sources: overlay_sources/webapps/linear.yaml). No Linux app;
+# names not checked on an install.
+linear:
+  overlay: [linear_template.mods.png, linear_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
