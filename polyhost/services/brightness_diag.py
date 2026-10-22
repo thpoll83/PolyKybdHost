@@ -112,7 +112,14 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
         irr = min(19 - 7, max(0, now.hour - 7)) / 12
         _report_value("hour-of-day fallback", irr, min_val, max_val, pre_scale, gamma)
         return
-    print(f"   location: lat {s.latitude:.4f}  lon {s.longitude:.4f}")
+    # ⚠️ ONE decimal, not four. This tool exists to have its output pasted into
+    # a bug report, which is the same destination HOST-5 was about: 4 decimals is
+    # ~11 m and names someone's home, while 1 is ~11 km and still answers the only
+    # question asked here -- did a location resolve, and is it roughly right for
+    # the clear-sky sun elevation below. 0.1 degrees of latitude moves that
+    # elevation by 0.1 degrees, which is nothing for irradiance.
+    print(f"   location: lat {s.latitude:.1f}  lon {s.longitude:.1f}  "
+          f"(1 decimal on purpose, ~11 km)")
     print("   irradiance source: online open-meteo (cloud-aware) with a pure-math\n"
           "   clear-sky fallback (Haurwitz model) when offline / lookup disabled.\n")
 
