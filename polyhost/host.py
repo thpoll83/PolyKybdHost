@@ -31,6 +31,7 @@ from PyQt5.QtWidgets import (
 from polyhost import i18n
 from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 from polyhost.device import bulk_pipe
 from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
@@ -112,7 +113,6 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 UPDATE_CYCLE_MSEC = 250
 RECONNECT_CYCLE_MSEC = 1000
 PERIODIC_10MIN_CYCLE_MSEC = 1000*60*10
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 def sort_by_country_abc(item):
     return home_country(item)

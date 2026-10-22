@@ -57,7 +57,6 @@ else:
     import pywinctl as pwc
 
 UPDATE_CYCLE_MSEC = 250
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
 
@@ -72,6 +71,7 @@ FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 class _UpdateBridge(QObject):
     """Marshals the updater threads' callbacks (which fire off the Qt thread) back
