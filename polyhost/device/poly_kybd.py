@@ -120,6 +120,16 @@ REBOOT_MIN_PROTOCOL = 22
 MAPPING_DIM_MIN_PROTOCOL = 23
 MAPPING_FLAG_DIM = 0x80
 
+# Minimum firmware PROTOCOL_VERSION for cmd 25's board-flag byte (data[3]). It sets
+# or clears the SPLIT_VBUS flag in the connected half's handedness stamp, which marks
+# a Rev.2 board (2023): those pass VBUS over the split cable, so the firmware picks
+# the master by USB enumeration instead of GP24. v23 and older ignore the byte and
+# set only the side, so below the gate the host refuses to send the flag.
+SPLIT_VBUS_FLAG_MIN_PROTOCOL = 24
+BOARD_OP_KEEP = 0
+BOARD_OP_CLEAR_SPLIT_VBUS = 1
+BOARD_OP_SET_SPLIT_VBUS = 2
+
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
 # of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
@@ -146,6 +156,7 @@ FEATURE_MIN_PROTOCOL = {
     "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
     "reboot": REBOOT_MIN_PROTOCOL,
     "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
+    "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -1096,7 +1107,8 @@ class PolyKybd:
         self.log.debug("Requesting MRU save...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.SAVE_MRU))
 
-    def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
+    def set_handedness(self, master_is_left: bool,
+                       split_vbus: bool | None = None) -> tuple[bool, Any]:
         """Fix which half is the left side and which is the right side.
 
         Master/slave is decided by which half holds the USB cable (VBUS), and is
@@ -1112,10 +1124,24 @@ class PolyKybd:
         (about 10 s, no replug needed). The keyboard resets right after receiving
         this command and does not send a reliable reply, so we only send (like
         activate_bootloader) — there is no ACK to wait for.
+
+        ``split_vbus`` (protocol 24) also sets (True) or clears (False) the Rev.2
+        board flag in the CONNECTED half's stamp only; ``None`` keeps it and sends
+        the legacy one-byte payload. Mark each Rev.2 half on its own, plugged in
+        alone.
         """
-        self.log.info("Setting handedness: connected half = %s.",
-                      "LEFT" if master_is_left else "RIGHT")
-        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, 0 if master_is_left else 1))
+        side = 0 if master_is_left else 1
+        if split_vbus is None:
+            self.log.info("Setting handedness: connected half = %s.",
+                          "LEFT" if master_is_left else "RIGHT")
+            return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side))
+        if not self.supports("split_vbus_flag"):
+            return False, (f"Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        op = BOARD_OP_SET_SPLIT_VBUS if split_vbus else BOARD_OP_CLEAR_SPLIT_VBUS
+        self.log.info("Setting handedness: connected half = %s, Rev.2 split-VBUS flag %s.",
+                      "LEFT" if master_is_left else "RIGHT", "on" if split_vbus else "off")
+        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side, op))
 
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""

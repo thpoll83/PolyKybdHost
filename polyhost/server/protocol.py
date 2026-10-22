@@ -120,7 +120,8 @@ M_OVERLAY_RESET_USAGE = "overlay.reset_usage"       # {} -> (ok, payload)
 M_OVERLAY_SET_ALL_USAGE = "overlay.set_all_usage"   # {} -> (ok, payload)
 M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} -> (ok, payload)
 M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
-M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
+M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool, "split_vbus": bool=absent}
+                                                    #   -> {"queued": True}; split_vbus needs protocol 24
 M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_FONTPACK_FLASH = "fontpack.flash"    # {"path": str, "bundle_id": int=0} or {"bundle": id|index}
                                        #   -> {"queued": bool} (streams fontpack_flash_* events)

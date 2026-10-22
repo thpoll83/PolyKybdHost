@@ -156,8 +156,9 @@ class FakeCore:
     def activate_bootloader(self):
         return (True, {"queued": True})
 
-    def set_handedness(self, master_is_left):
-        self.calls.append(("set_handedness", master_is_left))
+    def set_handedness(self, master_is_left, split_vbus=None):
+        self.calls.append(("set_handedness", master_is_left) if split_vbus is None
+                          else ("set_handedness", master_is_left, split_vbus))
         return (True, {"queued": True})
 
     def apply_staged_firmware(self):
@@ -404,6 +405,8 @@ class ControlServerTest(unittest.TestCase):
         self.assertEqual(self._call(conn, 43, p.M_FW_APPLY_STAGED)["result"], {"queued": True})
         self._call(conn, 44, p.M_SET_HANDEDNESS, {"master_is_left": True})
         self.assertIn(("set_handedness", True), self.core.calls)
+        self._call(conn, 440, p.M_SET_HANDEDNESS, {"master_is_left": False, "split_vbus": True})
+        self.assertIn(("set_handedness", False, True), self.core.calls)
         self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 

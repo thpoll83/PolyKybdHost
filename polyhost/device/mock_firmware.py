@@ -145,6 +145,8 @@ MAPPING_FLAGS_MIN = 21
 # cmd 33's width byte bit 7 draws the report's pairs dimmed (v23). v21/v22 mask
 # the width with 0x1F, so they ignore it and draw those positions at full strength.
 MAPPING_DIM_MIN = 23
+# cmd 25's board-flag byte (v24). Older firmware ignores it and sets only the side.
+SPLIT_VBUS_FLAG_MIN = 24
 ICON_BUNDLE_MIN = 20
 
 _IMAGE_CMDS = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
@@ -555,7 +557,13 @@ class MockFirmware:
         return _reply(p[1], body=bytes([flags]) + (self.crash_record if present else bytes(48)))
 
     def _handedness(self, p):
+        if p[3] and self.protocol < SPLIT_VBUS_FLAG_MIN:
+            self._refuse(p[1], f"board flag op {p[3]} needs protocol {SPLIT_VBUS_FLAG_MIN}")
+        if p[3] > 2:
+            return _reply(p[1], ok=False)
         self.handedness_left = bool(p[2])
+        if p[3]:
+            self.split_vbus = p[3] == 2
         return _reply(p[1])
 
     def _layer_names(self, p):

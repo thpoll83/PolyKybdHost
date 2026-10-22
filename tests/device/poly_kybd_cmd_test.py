@@ -20,7 +20,8 @@ from polyhost.device.hid_helper import DisconnectedHid
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
-from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL
+from polyhost.device.poly_kybd import (PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL,
+                                     SPLIT_VBUS_FLAG_MIN_PROTOCOL)
 from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
@@ -318,6 +319,34 @@ class TestSendOnlyCommands(unittest.TestCase, LockCheckMixin):
         ok, _ = keeb.set_handedness(False)
         self.assertTrue(ok)
         self.assertEqual(device.payloads()[0][:3], bytes([POLY, 25, 1]))
+
+    def test_set_handedness_without_flag_sends_keep(self):
+        """No flag -> data[3] is the zero pad, which the firmware reads as KEEP."""
+        keeb, device = make_keeb()
+        keeb.set_handedness(True)
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 25, 0, 0]))
+
+    def test_set_handedness_split_vbus_on_and_off(self):
+        keeb, device = make_keeb()
+        self.assertTrue(keeb.set_handedness(True, split_vbus=True)[0])
+        self.assertTrue(keeb.set_handedness(False, split_vbus=False)[0])
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 25, 0, 2]))
+        self.assertEqual(device.payloads()[1][:4], bytes([POLY, 25, 1, 1]))
+
+    def test_split_vbus_flag_refused_below_protocol_24(self):
+        """v23 firmware ignores data[3]: it would set the side and NOT the flag."""
+        keeb, device = make_keeb()
+        keeb.protocol_version = SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1
+        ok, msg = keeb.set_handedness(True, split_vbus=True)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertEqual(device.payloads(), [])
+
+    def test_plain_handedness_still_works_below_protocol_24(self):
+        keeb, device = make_keeb()
+        keeb.protocol_version = SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1
+        self.assertTrue(keeb.set_handedness(True)[0])
+        self.assertEqual(device.payloads()[0][:3], bytes([POLY, 25, 0]))
 
 
 class TestKeypressCommands(unittest.TestCase, LockCheckMixin):

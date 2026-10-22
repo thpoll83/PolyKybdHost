@@ -132,6 +132,16 @@ class PolyctlTest(unittest.TestCase):
         self.assertIn("connected half to RIGHT", out)
         self.assertIn("other half becomes LEFT", out)
 
+    def test_handedness_split_vbus_flag(self):
+        for flag, value in (("on", True), ("off", False)):
+            rc, out, err, server = run_main(
+                ["handedness", "left", "--split-vbus", flag],
+                {protocol.M_SET_HANDEDNESS: {"queued": True}})
+            self.assertEqual(rc, 0)
+            self.assertEqual(dict(server.received)[protocol.M_SET_HANDEDNESS],
+                             {"master_is_left": True, "split_vbus": value})
+            self.assertIn(f"split-VBUS flag {flag}", out)
+
     def test_handedness_rejects_a_missing_or_bogus_side(self):
         """argparse must refuse rather than defaulting to a side.
 

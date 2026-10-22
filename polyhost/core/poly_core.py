@@ -33,7 +33,8 @@ import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device import bulk_pipe
-from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
+from polyhost.device.poly_kybd import (MIN_SUPPORTED_PROTOCOL, SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+                                     protocol_supports)
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
@@ -3569,12 +3570,21 @@ class PolyCore(Observable):
         self.worker.submit("activate_bootloader", lambda c: self.keeb.activate_bootloader())
         return True, {"queued": True}
 
-    def set_handedness(self, master_is_left):
-        """Send-only (both halves reboot onto the new handedness)."""
+    def set_handedness(self, master_is_left, split_vbus=None):
+        """Send-only (both halves reboot onto the new handedness).
+
+        ``split_vbus`` sets/clears the Rev.2 board flag of the connected half
+        (protocol 24); ``None`` keeps it. Refused here, not on the worker, so the
+        caller hears about an old firmware instead of a {"queued": True}."""
         if not self._fw_actions_allowed():
             return False, "No PolyKybd present (or paused)."
+        if split_vbus is not None and not protocol_supports(
+                self.keeb.protocol_version, "split_vbus_flag"):
+            return False, ("Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        sv = None if split_vbus is None else bool(split_vbus)
         self.worker.submit("set_handedness",
-                           lambda c, m=bool(master_is_left): self.keeb.set_handedness(m))
+                           lambda c, m=bool(master_is_left), s=sv: self.keeb.set_handedness(m, s))
         return True, {"queued": True}
 
     def apply_staged_firmware(self):
