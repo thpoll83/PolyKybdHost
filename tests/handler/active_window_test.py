@@ -1655,6 +1655,13 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
 
+    def test_M365_COPILOT_gets_its_own_set_not_the_consumer_one(self):
+        got = self._match("m365copilot", title="Microsoft 365 Copilot",
+                          title_known=True, os_name="WINDOWS")
+        self.assertIsNotNone(got)
+        self.assertIn("m365copilot_template.mods.png", got["overlay"])
+        self.assertNotIn("copilot_template.mods.png", got["overlay"])
+
     def test_WEBEX_app_and_meetings_get_their_sets(self):
         for app, os_name, stem in (
                 ("ciscocollabhost", "WINDOWS", "webex_template"),

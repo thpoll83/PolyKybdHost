@@ -286,10 +286,14 @@ chatgpt:
 # shortcuts; its four Alt chords come from the page's script. `mscopilot` on
 # Windows, `copilot` on macOS (Option chords, same keys). No `os:` branch: one
 # set serves both. The ESC mark comes from the app's own executable.
-# Microsoft 365 Copilot (`m365copilot`) has no entry: Microsoft documents no
-# in-app shortcut for it.
 mscopilot,copilot:
   overlay: [copilot_template.mods.png, copilot_template.combo.mods.png]
+# Microsoft 365 Copilot (sources: overlay_sources/aichat/m365copilot.yaml),
+# `M365Copilot.exe` on Windows. Microsoft documents no in-app shortcut; the set
+# has the keys tested by hand on 2026-10-22 (Ctrl+Shift+H/Q/Y/I, Copy, Paste,
+# Select all). No macOS set: its keys were not tested there.
+m365copilot:
+  overlay: [m365copilot_template.mods.png, m365copilot_template.combo.mods.png]
 codex,codex-desktop:
   overlay: [codex_template.mods.png, codex_template.combo.mods.png]
   os:

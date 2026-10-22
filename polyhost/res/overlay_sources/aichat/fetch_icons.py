@@ -45,6 +45,9 @@ FLUENT = {
     "prev": "Arrow Previous",
     "next": "Arrow Next",
     "back": "Arrow Left",
+    # --- Microsoft 365 Copilot ---
+    "debuginfo": "Bug",
+    "devtools": "Window Dev Tools",
     # --- Claude desktop, Code tab ---
     "diff": "ms:difference",
     "browser": "Globe",

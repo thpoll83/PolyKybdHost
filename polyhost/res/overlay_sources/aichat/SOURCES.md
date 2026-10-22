@@ -118,8 +118,15 @@ changes with every Copilot release; search a new bundle for `"aria-keyshortcuts"
 and `composer:` to re-check the list.
 
 Microsoft 365 Copilot (`M365Copilot.exe`, `m365.cloud.microsoft`) is a different
-app. Its page is behind a sign-in, and Microsoft documents only Tab navigation for
-it, so it has no set.
+app. Its page is behind a sign-in, Microsoft documents only Tab navigation for it,
+and UI Automation finds no shortcuts (0 of 403 elements). `m365copilot.yaml` has
+the keys the owner tested by hand in version 19.2610.35011.0 on Windows
+(2026-10-22): Ctrl+Shift+H shows or hides the left sidebar, Ctrl+Shift+Q opens the
+settings, Ctrl+Shift+Y copies debug information to the clipboard, Ctrl+Shift+I
+opens the Edge DevTools (the app is a WebView2 window), and Ctrl+C, Ctrl+V and
+Ctrl+A act. No other key tried did anything. There is no macOS set, because no
+key was tested there. Win+C and the Copilot key open the app from Windows, so they
+are not keys of the app.
 
 ## Icons
 
@@ -130,7 +137,7 @@ Dismiss Square, Chat Multiple, Eye, Shield, Brain Circuit, Gauge, Copy, Code
 Block, Person Edit, Delete, Folder Open, Document Search, Archive, Document
 Multiple, History, Attach, Mic, Chat Settings, Arrow Undo, Split Vertical,
 Split Horizontal, Arrow Circle Right, Arrow Circle Left, Dismiss Circle, Pin,
-Text Edit Style, Mail Unread, Link, Branch Request, Branch Fork, Text Bullet List Square,
+Text Edit Style, Mail Unread, Bug, Window Dev Tools, Link, Branch Request, Branch Fork, Text Bullet List Square,
 Pen, Arrow Clockwise, Text Quote, Full Screen Maximize, Flash, Send, Compose, Add
 Circle.
 
