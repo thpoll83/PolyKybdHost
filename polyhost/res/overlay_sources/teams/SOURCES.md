@@ -1,153 +1,69 @@
-# Microsoft Teams overlay — sources & provenance
+# Microsoft Teams overlays — sources
 
-Reproducible record. Re-run `fetch_icons.py` then `scripts/generate_app_overlays.py`
-on `bindings.yaml` to rebuild byte-identical overlays.
+`gen_specs.py` writes two specs from one table, and
+`scripts/generate_app_overlays.py` renders them; `fetch_icons.py` rebuilds
+`icons/`.
 
-## Shortcuts
+| Spec | Set | Loads for |
+|---|---|---|
+| `bindings.yaml` | `teams_template` (3 files), `_mac` (4 files) | the desktop app: `ms-teams.exe` / `Teams.exe` on Windows, "Microsoft Teams" (earlier "Microsoft Teams (work or school)", "Microsoft Teams classic") on macOS |
+| `web.yaml` | `teams_web_template` (3 files), `_mac` (4 files) | Teams in a browser (teams.microsoft.com, teams.cloud.microsoft, teams.live.com, or a title containing "Microsoft Teams"), and teams-for-linux |
 
-Target: the **new Microsoft Teams** desktop app on **Windows**. Official reference:
-- https://support.microsoft.com/en-us/office/keyboard-shortcuts-for-microsoft-teams-2e8e2a70-e8d8-4a19-949b-4c36dd5292d2
-  (the support page `WebFetch`-403s; verified against multiple shortcut aggregators
-  whose lists agree with it — UC Today, howtogeek, the per-shortcut MS Support help
-  articles surfaced via WebSearch, June 2026.)
+Teams has no Linux desktop app. teams-for-linux (an unofficial app that wraps
+the web app) gets the web set. None of the app names was checked on an install.
 
-27 shortcuts placed across the representable channels:
+## Shortcut reference
 
-- **Ctrl** (primary R): Ctrl+E Search/command bar, Ctrl+N New chat, Ctrl+, Settings,
-  Ctrl+/ Show commands, Ctrl+. Keyboard shortcuts, Ctrl+O Attach file,
-  Ctrl+= Zoom in, Ctrl+- Zoom out, Ctrl+0 Reset zoom,
-  Ctrl+1..6 app-bar nav (Activity / Chat / Teams / Calendar / Calls / Files).
-- **Ctrl+Shift** (combo R): Ctrl+Shift+M Mute toggle, Ctrl+Shift+O Camera toggle,
-  Ctrl+Shift+E Share screen, Ctrl+Shift+A Accept video call,
-  Ctrl+Shift+S Accept audio call, Ctrl+Shift+D Decline call,
-  Ctrl+Shift+C Start audio call, Ctrl+Shift+U Start video call,
-  Ctrl+Shift+K Raise hand, Ctrl+Shift+P Background blur,
-  Ctrl+Shift+X Expand compose box.
+Microsoft Support, "Keyboard shortcuts for Microsoft Teams",
+<https://support.microsoft.com/en-us/office/keyboard-shortcuts-for-microsoft-teams-2e8e2a70-e8d8-4a19-949b-4c36dd5292d2>,
+read 2026-10-22 with headless Chromium (plain HTTP gets a 403). Its Windows and
+macOS tabs each have a desktop-app column and a web-app column; the four columns
+are the four sets. The web keys differ because the browser keeps many Ctrl keys:
+Search is Ctrl+E on the desktop and Ctrl+Alt+E on the web, the app bar Ctrl+1..9
+and Ctrl+Shift+1..9.
 
-### Teams-specific quirks worth noting
+The earlier overlay (2026-06) was built from aggregator sites, and four of its
+keys disagree with this page: Ctrl+Shift+C (it drew Start audio call; the page
+gives Insert inline code, and Alt+Shift+A for the call), Ctrl+Shift+U (Start
+video call; the page gives Toggle speaker, and Alt+Shift+V for the call), Ctrl+O
+(Attach file; the page gives Open in new window, and Alt+Shift+O to attach) and
+Ctrl+Shift+P (Background blur; not on the page). They follow the page now.
 
-- **Ctrl+E = search / command bar** (the global search box; *not* "center" as in
-  Word). The command bar also runs slash-commands.
-- **Ctrl+. = keyboard-shortcuts panel** and **Ctrl+/ = show commands** (the two are
-  often swapped in third-party cheat-sheets; this follows the MS Support page).
-- **Ctrl+1..6 follow the app-bar order, not fixed apps.** As of the 2026 new Teams,
-  Ctrl+N opens the *Nth app in the side rail*; the icons here use the **default**
-  order (Activity / Chat / Teams / Calendar / Calls / Files). If a user re-orders
-  their app bar these meanings shift — documented limitation, not a bug.
-- Call controls are almost all **Ctrl+Shift** (the high-value mute/camera/share/
-  raise-hand/accept/decline set), which maps cleanly to the combo file's R channel.
+- **App bar 1..9.** Ctrl+N opens the Nth app of the user's own app bar, and the
+  page itself gives the calendar as both the 3rd and the 4th app, so the keys show
+  the number, not an app.
+- **Chat tabs 1..9.** Alt+1..9 (Control+1..9 on macOS) open the Nth tab of a chat
+  header; in the calendar the same keys show 1..7 days. The set shows the chat
+  meaning.
+- **macOS clash.** Option+Cmd+Left/Right pans shared content and also moves the
+  calendar to the previous/next period; the set shows the calendar meaning.
 
-### Dropped / not included (flagged)
+### Left out
 
-- **Reply (Alt+Shift+R) and Filter (Ctrl+Shift+F)** were originally omitted here as
-  unconfirmed — the **2026-06 coverage audit** corroborated both as stable Windows
-  defaults across multiple sources, so they are now **added** (see "Coverage audit
-  additions" below), along with Mark-important (Ctrl+Shift+I).
-- **mark-as-unread, find-in-chat** — still omitted: vary between classic and new
-  Teams or not confirmable as stable new-Teams defaults. **Not invented.**
-- No Ctrl+Alt+Shift or Win/GUI Teams shortcuts exist in the target set, so nothing
-  hit the un-representable channels (the generator reported 0 drops).
+- Keys the page itself gives two meanings in one column: web Alt+N (New chat and
+  Schedule meeting; drawn as New chat), web Alt+Shift+A (Accept video call and
+  Start audio call; drawn as Start audio call), macOS Cmd+Shift+A (Accept audio
+  call and Toggle live captions; drawn as Accept audio call), macOS Shift+Cmd+T
+  (Pin window and Focus toast; drawn as Pin window), and Accept/Decline screen
+  share (the call keys).
+- Keys on Esc (Close, Shift+Esc Mark all read): the ESC key carries the program
+  mark. Enter, Delete, Tab, Shift+Tab, Shift+Enter, `?` and the calendar
+  dialog's keys.
+- Win+Shift+Y (focus notification), the screen-reader announcement keys, the
+  debug log key (Ctrl+Alt+Shift+1), the calendar "Show N days" keys (the chat-tab
+  keys), and Alt+/ (the second Keyboard shortcuts key).
 
-## Icons — all MIT
+## Icons
 
-All 26 glyphs are **Microsoft Fluent UI System Icons (MIT)**
-(`microsoft/fluentui-system-icons`, `main`, `assets/<Name>/SVG/ic_fluent_*_24_regular.svg`)
-— the native style for a Microsoft app and license-compatible with the GPL-3.0-or-later host.
-Every Fluent asset name was **probed (raw fetch, 404 check)** before use on
-2026-06-15. Mapping lives in `fetch_icons.py`; each binding's `source:` notes the glyph.
-
-Note on a probe miss + substitution:
-- **Calendar** — the folder is `Calendar LTR` (uppercase), not `Calendar Ltr`; the
-  lowercase guess 404'd. Corrected to `Calendar LTR/ic_fluent_calendar_ltr_24_regular.svg`.
-
-Weaker / interpretive matches worth knowing:
-- **Accept video call** → "Video Person" (person-in-frame; distinct from the plain
-  "Video" used for the camera toggle).
-- **Accept audio call** → "Call" (same handset as the Calls nav item — acceptable,
-  different cells/contexts).
-- **Background blur** → "Blur" (gradient-dots glyph; reads as blur at keycap size).
-- **Reset zoom** → "Full Screen Maximize" (corner brackets = fit/reset view).
-
-## Program icon (ESC, all layers)
-
-`program_icon: teams_logo.png` is a **generic, license-clean mark drawn in code**
-(no Microsoft Teams logo): the same **'Office document'** style as the Word mark —
-a 90° rotated trapezoid page with a letter knocked out (negative space) + text
-lines on the right — but stamped with a **T** instead of a W, so Teams sits
-visually with the other Office apps. Drawn by `_draw_teams_logo()` in
-`fetch_icons.py` (white-on-transparent → `program_icon_mode: alpha`), fully
-reproducible and carrying no trademark/licence risk. Drop a real Teams logo as
-`icons/teams_logo.png` to override — the fetch script skips it if it already exists.
-
-## Transformations
-
-`bindings.yaml`: `mode: luma`, `threshold: 150`, `region: [36, 32]`,
-`anchor: bottom-right`, `margin: 0`; program icon bottom-right `[46, 40]`,
-`mode: alpha`. Ctrl+3 (`teams.png` = Fluent "People Team") and the program mark use
-`mode: alpha`. Fluent `.svg` → cairosvg 96 px in `fetch_icons.py`. Committed `icons/`
-freeze the render; pin the branch → a SHA for byte-exact reproducibility if needed.
-
-## Mapping stanza
-
-To add to `polyhost/res/overlay-mapping.poly.yaml` (NOT edited here):
-
-```yaml
-ms-teams,teams:
-  overlay: [teams_template.mods.png, teams_template.combo.mods.png]
-```
-
-## Coverage audit additions (2026-06)
-
-Added 3 high-confidence defaults that were missing (26 → 29): `Ctrl+Shift+F`
-filter (Filter), `Ctrl+Shift+I` mark important (Important), `Alt+Shift+R` reply to
-thread (Arrow Reply). All Fluent (MIT). (Lower-confidence call/compose variants —
-e.g. Ctrl+Shift+B, Alt+Shift+C — were left out pending in-app confirmation.)
-
-## macOS
-
-This spec also renders a macOS set (`teams_template_mac.*`, 2026-09-28). Most bindings
-are `CMDCTRL` (Ctrl on Windows/Linux, Cmd on macOS); the rest are listed below.
-
-**Sources.** The official page is "Keyboard shortcuts for Microsoft Teams" (macOS column, <https://support.microsoft.com/office/keyboard-shortcuts-for-microsoft-teams-2e8e2a70-e8d8-4a19-949b-4c36dd5292d2>). `support.microsoft.com` (and
-`support.office.com`, `web.archive.org`, every third-party mirror tried) is
-**blocked by this environment's egress proxy**, so both WebFetch and curl fail;
-WebSearch snippets were too thin to quote. The chords were therefore read from
-verbatim scrapes of the official Mac article kept on GitHub (raw.githubusercontent.com):
-- `solomkinmv/hotkys` `shortcuts-disco-site/shortcuts-data/microsoft-teams.json` (macOS keymap; cites the MS page above)
-- `michelvanheest/shortcuts-design-data` `data/Productivity/toolspage-microsoftteams-mac.html`
-- `from-wednesday/keyboard-warriors` `data/shortcuts_msTeams.json` (paired pc/mac columns, new Teams)
-Where two scrapes disagreed or neither listed a chord, the binding is dropped on
-macOS rather than guessed (marked *uncertain*). Re-check those against the live
-Microsoft page when it is reachable.
-
-⚠️ `match:` lists the Windows process name. Whether the macOS active-window
-name (`Microsoft Teams`) resolves to this stanza is decided by
-`overlay-mapping.poly.yaml`, which this change does not touch.
-
-| Action | Windows | macOS | Why |
-|---|---|---|---|
-| Expand compose box | Ctrl+Shift+X | — | dropped, *uncertain*: hotkys + michelvanheest say ⌥⇧X, keyboard-warriors says ⌘⇧X |
-| Reply to thread | Alt+Shift+R | — | dropped, *uncertain*: no source gives a Mac chord (keyboard-warriors: none) |
-
-Everything else is a straight `CMDCTRL` swap, confirmed by at least two of the
-three datasets (⌘E, ⌘N, ⌘,, ⌘/, ⌘., ⌘O, ⌘=, ⌘-, ⌘0, ⌘1–⌘6, and ⌘⇧ M/O/E/A/S/D/C/U/K/P/F/I).
-
-⚠️ *Suspected Windows drift (not changed):* keyboard-warriors' newer new-Teams
-list gives **Start audio call = Alt+Shift+A, Start video call = Alt+Shift+V**,
-with Ctrl+Shift+C = toggle recording / inline code and Ctrl+Shift+U = toggle
-speaker. hotkys still lists Ctrl+Shift+C/U. Re-verify on current new Teams.
-
-## Standard editing shortcuts (shared Fluent concepts, 2026-10-08)
-
-Label = lexicon concept, no icon. Added Cut / Copy / Paste / Undo / Select all
-(Ctrl+X/C/V/Z/A on Windows/Linux, ⌘X/C/V/Z/A on macOS): the compose box's
-standard text-editing chords, which Teams supports like any Chromium-based
-editor. None of these keys was bound before.
-
-Not added / why:
-- Save / Open / Print: Teams binds none (Ctrl/⌘O is "Attach file").
-- New: Ctrl/⌘N is already "New chat".
-- Find: Ctrl+F (search within chat) is still unconfirmed as a stable new-Teams
-  default (see "Dropped / not included" above).
-- Redo, Close, Reload: not documented as Teams defaults.
-- Zoom in/out: already bound above.
+- Microsoft Fluent UI System Icons, MIT,
+  <https://github.com/microsoft/fluentui-system-icons>: the `MS_ICONS` paths in
+  `fetch_icons.py`.
+- Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: every `ms:`
+  entry in `MORE`.
+- `app1..app9.png`: Fluent `Square` with a digit; `tab1..tab9.png`: Material
+  `chat_bubble` with a digit, both from `../number_badge.py`.
+- Bold, Italic, Underline, Cut, Copy, Paste, Undo, Select All, Zoom In and Zoom
+  Out are drawn by the shared concept renderer.
+- Program icon (ESC, desktop sets): `teams_logo.png`, a generic mark drawn by
+  `_draw_teams_logo()` (no Microsoft logo). The web set has none: in a browser
+  the host draws the browser's mark.
