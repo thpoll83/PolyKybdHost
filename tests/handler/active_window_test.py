@@ -1765,6 +1765,59 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertNotIn(f"meet_template{suffix}.mods.png",
                                      [str(f) for f in (got or {}).get("overlay", [])])
 
+    def test_JUPYTER_and_WEB_TOOLS_route_by_gated_url_and_title(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        cases = (
+            ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab", "jupyter_template"),
+            ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
+            ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
+            ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
+            ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
+            ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                for url, title, stem in cases:
+                    for u, t in ((url, title or "x"), (None, title)):
+                        if t is None:
+                            continue
+                        with self.subTest(browser=browser, os=os_name, url=u, title=t):
+                            got = find_matching_entry(t, entry, u, OsType[os_name], title_known=True)
+                            self.assertIn(f"{stem}{suffix}.mods.png",
+                                          [str(f) for f in got["overlay"]])
+                # The gates keep a search page or a repository tree off these sets.
+                for url in ("https://www.google.com/search?q=draw.io",
+                            "https://www.google.com/search?q=linear.app",
+                            "https://github.com/o/r/tree/main"):
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertFalse(any(s in f for f in files for s in
+                                             ("drawio_", "linear_", "jupyter_")), files)
+
+    def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
+        for app, os_name, stem in (
+                ("acrobat", "WINDOWS", "acrobat_template"),
+                ("acrord32", "WINDOWS", "acrobat_template"),
+                ("adobe acrobat reader", "MACOS", "acrobat_template_mac"),
+                ("sumatrapdf", "WINDOWS", "sumatrapdf_template"),
+                ("okular", "LINUX", "okular_template"),
+                ("org.kde.okular", "LINUX", "okular_template"),
+                ("rstudio", "LINUX", "rstudio_template"),
+                ("rstudio", "MACOS", "rstudio_template_mac"),
+                ("matlab", "WINDOWS", "matlab_template"),
+                ("matlab_r2026b", "MACOS", "matlab_template_mac"),
+                ("jupyterlab", "WINDOWS", "jupyter_template"),
+                ("drawio", "LINUX", "drawio_template"),
+                ("draw.io", "MACOS", "drawio_template_mac"),
+                ("linear", "WINDOWS", "linear_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="x", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
                 ("fusion360", "WINDOWS", "fusion_template"),

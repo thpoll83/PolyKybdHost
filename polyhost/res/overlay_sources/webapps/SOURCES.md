@@ -382,6 +382,13 @@ App names:
   has no Linux desktop app.
 - Excalidraw and Overleaf exist only in a browser.
 
+Routing: each site is a `urls-contains` entry with a `url` gate on its own host
+(`diagrams.net` / `draw.io`, `excalidraw.com`, `linear.app`,
+`overleaf.com/project`), so a search page whose URL names the site does not
+match. Title fallbacks: "draw.io", "Excalidraw" and "Online LaTeX Editor" (an
+Overleaf tab is "<project> - Overleaf, Online LaTeX Editor" or "<project> -
+Online LaTeX Editor Overleaf"). Linear has none: its tab titles are issue names.
+
 Choices and keys left out:
 
 - **Tool letters.** draw.io (A, S, D, F, C add text, note, rectangle, ellipse,
