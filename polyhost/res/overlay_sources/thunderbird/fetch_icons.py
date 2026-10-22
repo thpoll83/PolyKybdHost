@@ -77,7 +77,7 @@ FLUENT = {
     "ignoresub": "ms:notifications_off",
     "expand": "ms:unfold_more",
     "collapse": "ms:unfold_less",
-    "notags": "ms:label_off",
+    "notags": "Tag Off",
     # --- compose window ---
     "send": "ms:send",
     "sendlater": "ms:schedule_send",
@@ -108,7 +108,7 @@ FLUENT = {
     "zoomreset": "ms:fit_screen",
     # bases for the numbered glyphs
     "_tabbase": "Tab",
-    "_tagbase": "ms:label",
+    "_tagbase": "Tag",
 }
 
 
@@ -117,7 +117,9 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += number_badge.numbered(out / "_tabbase.png", "123456789", out, "tab")
-    n += number_badge.numbered(out / "_tagbase.png", "123456789", out, "tag")
+    # Smaller than the default, so the digit clears the outline and the hole.
+    n += number_badge.numbered(out / "_tagbase.png", "123456789", out, "tag",
+                               size=0.40, centre=(0.50, 0.53))
     print(f"Wrote {n} icons to {out}")
     return 0
 

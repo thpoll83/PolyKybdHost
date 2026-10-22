@@ -79,8 +79,8 @@ the message pane has focus; a text field takes the key first.
   `fetch_icons.py`.
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: every `ms:`
   entry in `fetch_icons.py`.
-- `tab1..tab9.png`: Fluent `Tab` with a digit, and `tag1..tag9.png`: Material
-  `label` with a digit, both from `../number_badge.py`.
+- `tab1..tab9.png`: Fluent `Tab` with a digit, and `tag1..tag9.png`: Fluent
+  `Tag` with a digit, both from `../number_badge.py`.
 - Undo, Redo, Cut, Copy, Paste, Select All, Print, Close, Delete, Find, Replace,
   Find Next, Bold, Italic, Underline, Zoom In and Zoom Out are drawn by the
   shared concept renderer.
