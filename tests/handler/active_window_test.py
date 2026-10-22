@@ -1718,6 +1718,45 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         # Classic's set off it.
         self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",
                                       title_known=True, os_name="WINDOWS"))
+    def test_M365_COPILOT_gets_its_own_set_not_the_consumer_one(self):
+        got = self._match("m365copilot", title="Microsoft 365 Copilot",
+                          title_known=True, os_name="WINDOWS")
+        self.assertIsNotNone(got)
+        self.assertIn("m365copilot_template.mods.png", got["overlay"])
+        self.assertNotIn("copilot_template.mods.png", got["overlay"])
+
+    def test_WEBEX_app_and_meetings_get_their_sets(self):
+        for app, os_name, stem in (
+                ("ciscocollabhost", "WINDOWS", "webex_template"),
+                ("ciscocollabhost", "LINUX", "webex_template"),
+                ("webex", "MACOS", "webex_template_mac"),
+                ("atmgr", "WINDOWS", "webex_meetings_template"),
+                ("cisco webex meetings", "MACOS", "webex_meetings_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Webex", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_GOOGLE_MEET_gets_its_set_in_a_browser(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+                for title, url in (
+                        ("Meet - abc-defg-hij", "https://meet.google.com/abc-defg-hij"),
+                        ("Google Meet", None),
+                        ("Meet - abc-defg-hij - Google Chrome", None)):
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry(title, entry, url, OsType[os_name],
+                                                  title_known=True)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"meet_template{suffix}.mods.png", got["overlay"])
+                with self.subTest(browser=browser, os=os_name, title="Meet up"):
+                    got = find_matching_entry("Meet up with Sam - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertNotIn(f"meet_template{suffix}.mods.png",
+                                     [str(f) for f in (got or {}).get("overlay", [])])
 
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
