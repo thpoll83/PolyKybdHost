@@ -29,7 +29,8 @@ xvfb-run -a .venv/bin/python scripts/run_tests.py              # whole suite: us
   `tests/` first on `sys.path`, `tests/tools/` shadows the repo's `tools/`, and you get
   ~26 failures and errors that do not exist.
 - ⚠️ **A missing dependency deletes tests silently.** A module that fails to import
-  adds one error and zero tests. Install the deps and read the `Ran N` line.
+  adds one error and zero tests. `scripts/run_tests.py` installs `requirements-test.txt`
+  into the venv before it runs; still read the `Ran N` line.
 - ⚠️ **Baseline in place, not in a `/tmp` worktree**, which skips every test gated on
   `../qmk_firmware`.
 
