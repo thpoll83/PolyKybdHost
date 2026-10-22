@@ -291,5 +291,80 @@ class LinuxBreakdown(unittest.TestCase):
         self.assertEqual(dash.linux_breakdown(rows, "desktop"), [])
 
 
+class DailyExport(unittest.TestCase):
+    """The archive in the private telemetry-data repo is built from these."""
+
+    def setUp(self):
+        import tempfile
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    @staticmethod
+    def _days_selected(sql):
+        """Run the export query on an in-memory table with one row per day."""
+        import sqlite3
+        db = sqlite3.connect(":memory:")
+        db.execute("CREATE TABLE ping (id INTEGER, day TEXT, received_at TEXT)")
+        days = [f"2026-10-{d:02d}" for d in range(18, 24)]
+        db.executemany("INSERT INTO ping VALUES (?, ?, ?)",
+                       [(i, d, d + "T10:00:00Z") for i, d in enumerate(days)])
+        return [r[1] for r in db.execute(sql)]
+
+    def test_query_excludes_today_and_starts_after_the_newest_file(self):
+        from datetime import date
+        sql = dash.export_query(date(2026, 10, 19), date(2026, 10, 22))
+        self.assertEqual(self._days_selected(sql), ["2026-10-20", "2026-10-21"])
+
+    def test_first_export_has_no_lower_bound(self):
+        from datetime import date
+        sql = dash.export_query(None, date(2026, 10, 22))
+        self.assertEqual(self._days_selected(sql),
+                         ["2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21"])
+
+    def test_split_drops_rows_outside_the_window_and_bad_days(self):
+        from datetime import date
+        rows = [row("a", "2026-10-20"), row("a", "2026-10-21"), row("b", "2026-10-21"),
+                row("a", "2026-10-22"), row("c", "junk")]
+        by_day = dash.split_by_day(rows, date(2026, 10, 20), date(2026, 10, 22))
+        self.assertEqual(list(by_day), ["2026-10-21"])
+        self.assertEqual(len(by_day["2026-10-21"]), 2)
+
+    def test_written_files_read_back_as_the_same_rows(self):
+        from datetime import date
+        rows = [row("a", "2026-10-20"), row("b", "2026-10-21", device_name="Pöly")]
+        dash.write_day_files(self.dir, dash.split_by_day(rows, None, date(2026, 10, 22)))
+        self.assertTrue((self.dir / "2026" / "2026-10-21.json").is_file())
+        self.assertEqual(list(self.dir.rglob("*.tmp")), [])
+        self.assertEqual(dash.load_rows(self.dir), rows)
+
+    def test_newest_day_ignores_files_that_are_not_dates(self):
+        from datetime import date
+        (self.dir / "2026").mkdir()
+        (self.dir / "2026" / "2026-10-19.json").write_text("[]", encoding="utf-8")
+        (self.dir / "2026" / "notes.json").write_text("[]", encoding="utf-8")
+        self.assertEqual(dash.newest_export_day(self.dir), date(2026, 10, 19))
+        self.assertIsNone(dash.newest_export_day(self.dir / "2026" / "missing"))
+
+    def test_up_to_date_archive_does_not_query(self):
+        from datetime import date
+        (self.dir / "2026").mkdir()
+        (self.dir / "2026" / "2026-10-21.json").write_text("[]", encoding="utf-8")
+        calls = []
+        original = dash.fetch_rows
+        dash.fetch_rows = lambda *a, **kw: calls.append(a) or []
+        try:
+            self.assertEqual(dash.export_days(self.dir, True, "wrangler", date(2026, 10, 22)), [])
+        finally:
+            dash.fetch_rows = original
+        self.assertEqual(calls, [])
+
+    def test_from_json_and_export_days_are_exclusive(self):
+        with self.assertRaises(SystemExit):
+            dash.main(["--from-json", "a.json", "--export-days", "data"])
+
+
 if __name__ == "__main__":
     unittest.main()
