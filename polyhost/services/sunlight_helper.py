@@ -20,19 +20,29 @@ import math
 # window titles, not coordinates. Measured against an unreachable host: full
 # 4-decimal precision, about 11 m. Every logged string that can hold a coordinate
 # goes through this first.
-# ⚠️ Two separators, because there are two shapes: ``latitude=52.52`` in a URL
-# and ``'lat': 52.52`` in a logged response dict. The first version of this
-# pattern matched only ``=``, and the dict form went through unscrubbed --
-# caught by `test_a_geolocation_body_carrying_a_fix_is_scrubbed`.
+# ⚠️ A scrubber that misses is worse than one that over-matches, so this is
+# deliberately loose about the shape around the number. Four shapes have each
+# been missed by an earlier version of it, and all four were measured, not
+# imagined:
+#   latitude=52.52      a URL query parameter
+#   'lat': 52.52        a logged response dict  (the `=`-only pattern missed it)
+#   'lat': '52.52'      the same dict with STRING values -- the quote sits
+#                       between the separator and the digits (Sourcery, #428)
+#   latitude=1.23e-05   `str(0.0000123)` is '1.23e-05', so any coordinate under
+#                       about 1e-4 formats this way, and matching the mantissa
+#                       alone left "<redacted>e-05" -- the magnitude (Sourcery)
 _COORD_RE = re.compile(
-    r"\b(lat|lon|latitude|longitude)(['\"]?\s*[=:]\s*)(-?\d+(?:\.\d+)?)",
+    r"\b(lat|lon|latitude|longitude)"      # the name
+    r"(['\"]?\s*[=:]\s*)"                   # separator, with ip-api's dict quote
+    r"(['\"]?)"                            # a quote around the VALUE, if any
+    r"(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)",  # the number, exponent included
     re.IGNORECASE)
 
 
-def scrub_coords(text) -> str:
+def scrub_coords(text: object) -> str:
     """Replace any ``lat=``/``'lat':`` value in ``text`` with a placeholder."""
-    return _COORD_RE.sub(lambda m: f"{m.group(1)}{m.group(2)}<redacted>",
-                         str(text))
+    return _COORD_RE.sub(
+        lambda m: f"{m.group(1)}{m.group(2)}{m.group(3)}<redacted>", str(text))
 
 
 class Sunlight:

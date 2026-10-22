@@ -206,6 +206,28 @@ class CoordinatesMustNotReachRoutineLogsTest(unittest.TestCase):
         self.assertNotIn(str(self.LAT), text)
         self.assertNotIn(str(self.LON), text)
 
+    def test_a_body_whose_values_are_STRINGS_is_scrubbed(self):
+        # The quote sits between the separator and the digits, which an earlier
+        # pattern did not consume, so the whole dict went through untouched.
+        body = {"status": "fail", "lat": str(self.LAT), "lon": str(self.LON)}
+        with mock.patch("requests.get",
+                        return_value=mock.Mock(json=lambda: body)):
+            text = self._warnings_from(lambda s: s.init_location())
+        self.assertNotIn(str(self.LAT), text)
+        self.assertNotIn(str(self.LON), text)
+
+    def test_a_coordinate_in_scientific_notation_is_fully_scrubbed(self):
+        # `str(0.0000123)` is '1.23e-05', so any coordinate under about 1e-4
+        # formats this way and an earlier pattern matched the mantissa only,
+        # leaving "<redacted>e-05" -- which still gives away the magnitude.
+        tiny_lat, tiny_lon = 0.0000123, -0.0000456
+        self.assertIn("e-05", f"{tiny_lat}")      # the premise, not an assumption
+        got = scrub_coords(f"url: /v1/forecast?latitude={tiny_lat}"
+                           f"&longitude={tiny_lon}&hourly=x")
+        self.assertEqual(
+            got, "url: /v1/forecast?latitude=<redacted>"
+                 "&longitude=<redacted>&hourly=x")
+
     def test_the_scrubber_keeps_everything_that_is_not_a_coordinate(self):
         got = scrub_coords("GET /v1/forecast?latitude=-1.5&longitude=65.4321"
                            "&hourly=shortwave_radiation failed")
