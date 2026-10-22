@@ -5,7 +5,8 @@
 # 19.2610.35011.0 on 2026-10-22: Ctrl+Shift+H shows or hides the left sidebar,
 # Ctrl+Shift+Q opens the settings, Ctrl+Shift+Y copies debug information to the
 # clipboard, and Ctrl+Shift+I opens the Edge DevTools (the app is a WebView2
-# window). Of the standard keys only Copy, Paste and Select all act. The ESC
+# window). Of the standard keys only Copy, Paste, Select all and the zoom keys
+# (Ctrl+=, Ctrl+-, Ctrl+0) act; F12, Ctrl+F, Ctrl+R and F5 do nothing. The ESC
 # mark comes from the app's executable.
 #
 # Regenerate:
@@ -31,3 +32,6 @@ bindings:
   - { key: C, mods: [CTRL], label: "Copy", except: [macos] }
   - { key: V, mods: [CTRL], label: "Paste", except: [macos] }
   - { key: A, mods: [CTRL], label: "Select all", except: [macos] }
+  - { key: EQUAL, mods: [CTRL], label: "Zoom in", except: [macos] }
+  - { key: MINUS, mods: [CTRL], label: "Zoom out", except: [macos] }
+  - { key: "0", mods: [CTRL], icon: resetzoom.png, label: "Reset zoom", except: [macos] }

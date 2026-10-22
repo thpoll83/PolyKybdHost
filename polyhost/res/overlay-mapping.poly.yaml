@@ -291,7 +291,7 @@ mscopilot,copilot:
 # Microsoft 365 Copilot (sources: overlay_sources/aichat/m365copilot.yaml),
 # `M365Copilot.exe` on Windows. Microsoft documents no in-app shortcut; the set
 # has the keys tested by hand on 2026-10-22 (Ctrl+Shift+H/Q/Y/I, Copy, Paste,
-# Select all). No macOS set: its keys were not tested there.
+# Select all, zoom). No macOS set: its keys were not tested there.
 m365copilot:
   overlay: [m365copilot_template.mods.png, m365copilot_template.combo.mods.png]
 codex,codex-desktop:

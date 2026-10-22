@@ -48,6 +48,7 @@ FLUENT = {
     # --- Microsoft 365 Copilot ---
     "debuginfo": "Bug",
     "devtools": "Window Dev Tools",
+    "resetzoom": "ms:restart_alt",
     # --- Claude desktop, Code tab ---
     "diff": "ms:difference",
     "browser": "Globe",

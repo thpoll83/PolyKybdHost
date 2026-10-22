@@ -123,8 +123,9 @@ and UI Automation finds no shortcuts (0 of 403 elements). `m365copilot.yaml` has
 the keys the owner tested by hand in version 19.2610.35011.0 on Windows
 (2026-10-22): Ctrl+Shift+H shows or hides the left sidebar, Ctrl+Shift+Q opens the
 settings, Ctrl+Shift+Y copies debug information to the clipboard, Ctrl+Shift+I
-opens the Edge DevTools (the app is a WebView2 window), and Ctrl+C, Ctrl+V and
-Ctrl+A act. No other key tried did anything. There is no macOS set, because no
+opens the Edge DevTools (the app is a WebView2 window), and Ctrl+C, Ctrl+V,
+Ctrl+A, Ctrl+=, Ctrl+- and Ctrl+0 (zoom) act. F12, Ctrl+F, Ctrl+R and F5 do
+nothing. There is no macOS set, because no
 key was tested there. Win+C and the Copilot key open the app from Windows, so they
 are not keys of the app.
 
@@ -141,7 +142,8 @@ Text Edit Style, Mail Unread, Bug, Window Dev Tools, Link, Branch Request, Branc
 Pen, Arrow Clockwise, Text Quote, Full Screen Maximize, Flash, Send, Compose, Add
 Circle.
 
-Google Material Symbols (Apache-2.0): `difference` (diff pane).
+Google Material Symbols (Apache-2.0): `difference` (diff pane), `restart_alt`
+(reset zoom).
 
 Borrowed: `tab1.png`..`tab9.png` from `../winscp/icons` (Fluent `Tab` + digit,
 MIT; Liberation Sans Bold digit, SIL OFL).
