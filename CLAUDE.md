@@ -71,10 +71,10 @@ control-socket method.
   templates and no `title:`, and was never evaluated before (2026-10-16 bundle).
 - ⚠️ **On macOS the window tick costs seconds, not milliseconds, and the accept timer
   must count REAL time.** pywinctl spends two `osascript` processes per
-  `getActiveWindow()`; a tick measured 2.30 s median against a 250 ms cycle. Accepting
-  a switch takes six ticks, so a timer that added the nominal cycle turned a 1 s
-  debounce into 15.3 s and the keyboard stopped following the active app
-  (2026-10-16 bundle). Never add an attribute read of a macOS window to that path, and
+  `getActiveWindow()`; a tick measured 2.30 s median against a 250 ms cycle. With the
+  1 s delay of that time, accepting a switch took six ticks, so a timer that added the
+  nominal cycle turned the delay into 15.3 s and the keyboard stopped following the
+  active app (2026-10-16 bundle). The delay is 500 ms since #429. Never add an attribute read of a macOS window to that path, and
   never count ticks where you mean time. `_macos_can_skip_tick()` skips the query while
   the same app is in front, from `focused_app_pid()` (`AXFocusedApplication`, in
   process). ⚠️ Not the Quartz window list, which answers about a WINDOW and would skip
