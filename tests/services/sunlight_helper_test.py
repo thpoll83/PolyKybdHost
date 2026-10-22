@@ -159,7 +159,9 @@ class CoordinatesMustNotReachRoutineLogsTest(unittest.TestCase):
     WARNING put them back -- and into every log bundle. Verified against a real
     unreachable host before the fix: full 4-decimal precision."""
 
-    LAT, LON = 52.5219, 13.4132
+    # Deliberately not a real place: an audit of a location leak should not
+    # itself carry coordinates anyone could read as someone's address.
+    LAT, LON = 12.3456, 65.4321
 
     def _warnings_from(self, fn):
         s = _sun(online=True, location=True)
@@ -205,7 +207,7 @@ class CoordinatesMustNotReachRoutineLogsTest(unittest.TestCase):
         self.assertNotIn(str(self.LON), text)
 
     def test_the_scrubber_keeps_everything_that_is_not_a_coordinate(self):
-        got = scrub_coords("GET /v1/forecast?latitude=-1.5&longitude=13.4132"
+        got = scrub_coords("GET /v1/forecast?latitude=-1.5&longitude=65.4321"
                            "&hourly=shortwave_radiation failed")
         self.assertEqual(
             got,

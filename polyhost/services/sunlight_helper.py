@@ -14,7 +14,7 @@ import math
 
 # ⚠️ A `requests` exception carries the WHOLE request URL in its str(), and the
 # irradiance URL is built from the user's coordinates -- so logging the exception
-# writes "latitude=52.5219&longitude=13.4132" at WARNING, which is the default
+# writes "latitude=12.3456&longitude=65.4321" at WARNING, which is the default
 # level and lands in the log bundle a user attaches to an issue. That defeats the
 # DEBUG-only rule in `init_location` below, and the bundle's redaction masks
 # window titles, not coordinates. Measured against an unreachable host: full
