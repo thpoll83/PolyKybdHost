@@ -104,18 +104,24 @@ def win32_process_name(hwnd):
         kernel32.CloseHandle(handle)
 
 
-#: What pywinctl's Linux ``getAppName()`` (``ps -o comm=``) reports for an app
-#: that names its main thread. MuseScore Studio 4 and Audacity 4 both call it
-#: "main" (measured on the 4.7.5 and 4.0.1 AppImages under X11, 2026-10-22), so
-#: the name says nothing about which app owns the window.
-_RENAMED_MAIN_THREAD = "main"
+#: What pywinctl's Linux ``getAppName()`` (``ps -o comm=``) reports when the
+#: name says nothing about which app owns the window (measured under X11,
+#: 2026-10-22):
+#:
+#: - ``main``: MuseScore Studio 4 and Audacity 4 rename their main thread to it
+#:   (the 4.7.5 and 4.0.1 AppImages).
+#: - ``AppRun``: an AppImage whose ``AppRun`` is a symlink to the binary runs
+#:   under that name (the OpenSCAD 2026.10.18 nightly). ``comm`` is the name of
+#:   the path that was executed, not of the file it points to.
+_UNINFORMATIVE_NAMES = frozenset({"main", "AppRun"})
 
 
-def linux_exe_name(win):
+def _linux_exe_name(win):
     """Basename of ``/proc/<pid>/exe`` for `win`, or ``""`` when unreadable.
 
     The executable's file name, which a thread rename does not change:
-    ``mscore4portable`` where ``comm`` says ``main``.
+    ``mscore4portable`` where ``comm`` says ``main``, ``openscad`` where it
+    says ``AppRun``.
     """
     try:
         pid = win.getPID()
@@ -131,16 +137,16 @@ def linux_exe_name(win):
 def app_name_for(win):
     """The owning app's name for `win`, the cheap way on Windows.
 
-    Off Windows this is ``win.getAppName()``, except that a Linux ``main``
-    becomes the executable's name (see ``_RENAMED_MAIN_THREAD``). On Windows a failed
+    Off Windows this is ``win.getAppName()``, except that on Linux a name in
+    ``_UNINFORMATIVE_NAMES`` becomes the executable's name. On Windows a failed
     lookup falls back to the window TITLE, which is what pywinctl's own
     implementation returns when the PID is missing from its process list — so
     the caller's normalisation sees exactly what it saw before.
     """
     if sys.platform != "win32":
         name = win.getAppName()
-        if name == _RENAMED_MAIN_THREAD and sys.platform.startswith("linux"):
-            return linux_exe_name(win) or name
+        if name in _UNINFORMATIVE_NAMES and sys.platform.startswith("linux"):
+            return _linux_exe_name(win) or name
         return name
     try:
         name = win32_process_name(win.getHandle())

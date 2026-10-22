@@ -82,10 +82,11 @@ class TestAppNameFor(unittest.TestCase):
             self.assertEqual(win_process.app_name_for(win), "Doc - Notepad")
 
 
-class TestRenamedMainThread(unittest.TestCase):
-    """MuseScore 4 and Audacity 4 rename their main thread to "main", so
-    ``ps -o comm=`` names both apps "main" on X11. The executable name is read
-    instead, and only for that name."""
+class TestUninformativeProcessNames(unittest.TestCase):
+    """MuseScore 4 and Audacity 4 rename their main thread to "main", and an
+    AppImage whose AppRun is a symlink runs as "AppRun", so ``ps -o comm=``
+    names the app by neither. The executable name is read instead, and only
+    for those names."""
 
     def test_main_becomes_the_executable_name_on_linux(self):
         win = FakeWindow(app_name="main")
@@ -100,6 +101,13 @@ class TestRenamedMainThread(unittest.TestCase):
         with mock.patch("sys.platform", "linux"), \
                 mock.patch("os.readlink", return_value="/usr/bin/mscore (deleted)"):
             self.assertEqual(win_process.app_name_for(win), "mscore")
+
+    def test_apprun_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="AppRun")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/tmp/.mount_x/usr/bin/openscad"):
+            self.assertEqual(win_process.app_name_for(win), "openscad")
 
     def test_an_unreadable_executable_keeps_main(self):
         win = FakeWindow(app_name="main")
