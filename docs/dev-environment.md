@@ -15,11 +15,12 @@ and relative links were adjusted to suit a standalone file.
     runs anything and installs what is missing into the venv (`--no-install` only reports; outside a
     venv it never installs and prints the command). Without that check every fresh container lost a
     run to dozens of tests that ERROR on a missing package (`openpyxl`, `cairosvg`, ...) and look like
-    regressions. Two system pieces pip cannot install, and the runner only warns about them: the
+    regressions. The system pieces pip cannot install, which the runner only warns about: the
     hidapi libraries (`sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0`; the `hid` module
     raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them) and
-    an X server for the GUI tests (`xvfb x11-xserver-utils`, run under `xvfb-run -a`; without a
-    display those tests skip).
+    `x11-xserver-utils` (`xrandr` and `xset`: without them `pywinctl` does not import and every
+    test that imports `handler/active_window` ERRORs, 74 on 2026-10-22), and an X server for the
+    GUI tests (`xvfb`, run under `xvfb-run -a`; without a display those tests skip).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
   - ⚠️ **A missing dependency DELETES tests, and the `Ran N` line is the only thing
     that says so — the run still looks substantial.** A module that fails to import

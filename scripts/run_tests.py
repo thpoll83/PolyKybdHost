@@ -34,6 +34,7 @@ import argparse
 import faulthandler
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -119,12 +120,18 @@ def check_requirements(install: bool) -> bool:
 
 
 def check_system() -> None:
-    """Warn about the two system pieces pip cannot install."""
+    """Warn about the system pieces pip cannot install."""
     try:
         import hid  # noqa: F401
     except ImportError as exc:
         print(f"WARNING: the hid module does not load ({exc}). Install the hidapi "
               "system libraries: sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0")
+    # pywinctl imports pymonctl, which on Linux needs xrandr and xset: without
+    # them every test that imports handler/active_window ERRORs (74 of them on
+    # 2026-10-22, the same on main).
+    if sys.platform.startswith("linux") and not (shutil.which("xrandr") and shutil.which("xset")):
+        print("WARNING: xrandr or xset is missing, so pywinctl does not import and the "
+              "window tests ERROR: sudo apt-get install -y x11-xserver-utils")
     if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
         print("NOTE: no DISPLAY, so the GUI tests skip. Run under `xvfb-run -a` for them.")
 

@@ -981,7 +981,7 @@ class PolyForwarder(QApplication):
                 if self.prev_win != win:
                     self.prev_win = win
                     self.last_update_msec = 0
-                if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
+                if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
                     # PolyHost's own windows travel as `polyhost`, not as

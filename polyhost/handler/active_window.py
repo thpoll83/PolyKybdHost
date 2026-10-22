@@ -659,7 +659,7 @@ class OverlayHandler:
             if self.prev_win != win:
                 self.prev_win = win
                 self.last_update_msec = 0
-            if self.last_update_msec > accept_time_msec:
+            if self.last_update_msec >= accept_time_msec:
                 self.last_update_msec = accept_time_msec  * 2 #just to limit that
                 # The handler commits to a focused window here, so the macOS
                 # early-out may trust its identity from the next tick on. Set
