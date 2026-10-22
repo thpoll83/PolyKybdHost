@@ -21,10 +21,11 @@ import math
 # 4-decimal precision, about 11 m. Every logged string that can hold a coordinate
 # goes through this first.
 # ⚠️ A scrubber that misses is worse than one that over-matches, so this is
-# deliberately loose about the shape around the number. Four shapes have each
-# been missed by an earlier version of it, and all four were measured, not
+# deliberately loose about the shape around the number. Of the four shapes
+# below, the first is what it was written for and each of the other three was
+# MISSED by a version of it that looked finished -- all three measured, not
 # imagined:
-#   latitude=52.52      a URL query parameter
+#   latitude=52.52      a URL query parameter: the original case
 #   'lat': 52.52        a logged response dict  (the `=`-only pattern missed it)
 #   'lat': '52.52'      the same dict with STRING values -- the quote sits
 #                       between the separator and the digits (Sourcery, #428)
