@@ -1,0 +1,96 @@
+# Excalidraw (excalidraw.com) shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Keys: Excalidraw's own help dialog (packages/excalidraw/components/
+# HelpDialog.tsx and actions/shortcuts.ts). `CtrlOrCmd` is `CMDCTRL`; Alt is
+# Option on macOS. The tool keys are bare letters, drawn as in the Miro set: on a
+# whiteboard the canvas has the focus, not a text field. The digit alternatives
+# of the tool letters (1 to 0) are left out.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/webapps/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/webapps/excalidraw.yaml --preview /tmp/excalidraw_preview
+app: excalidraw
+match: [excalidraw]
+output: excalidraw_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: excalidraw.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- tools ---
+  - { key: H, mods: [], icon: exc_hand.png, label: "Hand" }
+  - { key: V, mods: [], icon: select.png, label: "Selection" }
+  - { key: R, mods: [], icon: dio_rect.png, label: "Rectangle" }
+  - { key: D, mods: [], icon: exc_diamond.png, label: "Diamond" }
+  - { key: O, mods: [], icon: ellipse.png, label: "Ellipse" }
+  - { key: A, mods: [], icon: exc_arrow.png, label: "Arrow" }
+  - { key: L, mods: [], icon: line.png, label: "Line" }
+  - { key: P, mods: [], icon: exc_pen.png, label: "Draw" }
+  - { key: T, mods: [], icon: textbox.png, label: "Text" }
+  - { key: N, mods: [], icon: sticky.png, label: "Sticky note" }
+  - { key: E, mods: [], icon: exc_eraser.png, label: "Eraser" }
+  - { key: F, mods: [], icon: exc_frame.png, label: "Frame" }
+  - { key: K, mods: [], icon: exc_laser.png, label: "Laser pointer" }
+  - { key: B, mods: [], icon: exc_fill.png, label: "Fill" }
+  - { key: I, mods: [], icon: exc_eyedrop.png, label: "Eyedropper" }
+  - { key: Q, mods: [], icon: exc_toollock.png, label: "Keep tool active" }
+  - { key: W, mods: [], icon: exc_wrap.png, label: "Wrap text" }
+  - { key: S, mods: [], icon: exc_stroke.png, label: "Stroke color" }
+  - { key: G, mods: [], icon: exc_background.png, label: "Background color" }
+  - { key: H, mods: [SHIFT], icon: exc_flipx.png, label: "Flip horizontal" }
+  - { key: V, mods: [SHIFT], icon: exc_flipy.png, label: "Flip vertical" }
+  - { key: F, mods: [SHIFT], icon: exc_fonts.png, label: "Fonts" }
+  # --- view ---
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: zoomreset.png, label: "Reset zoom" }
+  - { key: "1", mods: [SHIFT], icon: zoomfit.png, label: "Zoom to fit" }
+  - { key: "2", mods: [SHIFT], icon: zoomselection.png, label: "Zoom to selection" }
+  - { key: Z, mods: [ALT], icon: exc_zen.png, label: "Zen mode" }
+  - { key: S, mods: [ALT], icon: exc_snap.png, label: "Snap to objects" }
+  - { key: QUOTE, mods: [CMDCTRL], icon: dio_grid.png, label: "Grid" }
+  - { key: R, mods: [ALT], icon: exc_viewmode.png, label: "View mode" }
+  - { key: D, mods: [ALT, SHIFT], icon: exc_theme.png, label: "Dark mode" }
+  - { key: SLASH, mods: [ALT], icon: exc_stats.png, label: "Stats" }
+  - { key: F, mods: [CMDCTRL], icon: search.png, label: "Search canvas", shared: false }
+  - { key: SLASH, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette" }
+  # --- edit ---
+  - { key: K, mods: [CMDCTRL], icon: link.png, label: "Link" }
+  - { key: DELETE, mods: [CMDCTRL], icon: exc_clear.png, label: "Clear canvas" }
+  - { key: X, mods: [CMDCTRL], label: "Cut" }
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png, label: "Paste as plain text" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: C, mods: [ALT, SHIFT], icon: exc_copypng.png, label: "Copy as PNG" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: dio_copystyle.png, label: "Copy styles" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: dio_pastestyle.png, label: "Paste styles" }
+  - { key: LBRACKET, mods: [CMDCTRL, SHIFT], icon: sendback.png, label: "Send to back", except: [macos] }
+  - { key: RBRACKET, mods: [CMDCTRL, SHIFT], icon: bringfront.png, label: "Bring to front", except: [macos] }
+  - { key: LBRACKET, mods: [CMDCTRL, ALT], icon: sendback.png, label: "Send to back", only: [macos] }
+  - { key: RBRACKET, mods: [CMDCTRL, ALT], icon: bringfront.png, label: "Bring to front", only: [macos] }
+  - { key: LBRACKET, mods: [CMDCTRL], icon: sendbackward.png, label: "Send backward" }
+  - { key: RBRACKET, mods: [CMDCTRL], icon: bringforward.png, label: "Bring forward" }
+  - { key: UP, mods: [CMDCTRL, SHIFT], icon: exc_alignt.png, label: "Align top" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: exc_alignb.png, label: "Align bottom" }
+  - { key: LEFT, mods: [CMDCTRL, SHIFT], icon: exc_alignl.png, label: "Align left" }
+  - { key: RIGHT, mods: [CMDCTRL, SHIFT], icon: exc_alignr.png, label: "Align right" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: "Duplicate" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: lock.png, label: "Lock or unlock" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: "Ungroup" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: exc_textsize_dn.png, label: "Smaller font" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: exc_textsize_up.png, label: "Larger font" }
