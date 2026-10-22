@@ -37,8 +37,9 @@ Note GNOME binds Alt+F1/Alt+F2 itself, which may shadow Zoom's view keys there.
 
 The originals are in `reclaimed/` (the ESC mark stays `icons/zoom.png`).
 `fetch_icons.py` writes them into `icons/` with every stroke of 3 px or more
-thinned to 2 px on its east or south edge (`_thin`), so the frames match the
-Fluent icons beside them; 2 px details are unchanged (owner's choice,
+thinned by one pixel on its east or south edge (`_thin`), so the frames match
+the Fluent icons beside them; 2 px details are unchanged, and so is the camera
+triangle of the three recording icons (`KEEP_FROM_X`) (owner's choice,
 2026-10-22, from a comparison with thinning every stroke by 1 px). Mute was
 replaced by Fluent `Mic Off` at the same time.
 

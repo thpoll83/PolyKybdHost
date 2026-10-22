@@ -47,11 +47,18 @@ THINNED = (
 )
 
 
+# The camera triangle on the right of the recording icons is a filled shape
+# whose sloped edges look like 3 px strokes to `_thin`; columns from here on
+# are kept as drawn (the frame ends at column 64 in all three).
+KEEP_FROM_X = {"localrecord.png": 65, "cloudrecord.png": 65, "pauserecord.png": 65}
+
+
 def _thin(lit: np.ndarray) -> np.ndarray:
     """Take one pixel off the east or south edge of a stroke, but only where
     the stroke is at least 3 px wide across that edge (its 2 inner neighbours
-    are lit). The 3 px frames become 2 px, like the Fluent icons; the 2 px
-    details keep their weight, and no stroke can break apart."""
+    are lit). The wide frames lose a pixel, like the Fluent icons beside them;
+    the 2 px details keep their weight, and no stroke can break apart. See
+    KEEP_FROM_X for the camera triangle."""
     p = np.pad(lit, 2)
     out = lit.copy()
     for y, x in zip(*np.nonzero(lit)):
@@ -65,8 +72,12 @@ def _thin(lit: np.ndarray) -> np.ndarray:
 
 def _write_thinned(src: Path, dst: Path) -> None:
     lit = np.array(Image.open(src).convert("RGBA"))[:, :, 3] >= 128
+    thin = _thin(lit)
+    keep = KEEP_FROM_X.get(src.name)
+    if keep is not None:
+        thin[:, keep:] = lit[:, keep:]
     rgba = np.zeros(lit.shape + (4,), np.uint8)
-    rgba[_thin(lit)] = (255, 255, 255, 255)
+    rgba[thin] = (255, 255, 255, 255)
     Image.fromarray(rgba, "RGBA").save(dst)
 
 FLUENT = {
