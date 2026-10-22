@@ -3,7 +3,8 @@
 
 Glyphs are Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0) where Fluent has none (`ms:` entries). The pane-zoom keys are
-numbered glyphs from `../number_badge.py`. The ESC mark is the RStudio logo
+numbered glyphs from `../number_badge.py`, and the two operator keys show the
+operator they type (`TEXT`). The ESC mark is the RStudio logo
 from Simple Icons (`rstudioide`, CC0 artwork; nominative use, see
 `../brand_marks.py`).
 
@@ -17,13 +18,29 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from PIL import Image, ImageDraw, ImageFont  # noqa: E402
+
 from polyhost.res.overlay_sources import brand_marks, icon_fetch, number_badge  # noqa: E402
+
+MONO = "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf"
+# The two operator keys show the operator they type.
+TEXT = {"assign": "<-", "pipe": "|>"}
+
+
+def _text_icon(path: Path, text: str, px: int = 96) -> None:
+    """`text` in black on white, centred, as wide as the cell allows."""
+    img = Image.new("RGB", (px, px), "white")
+    d = ImageDraw.Draw(img)
+    font = ImageFont.truetype(MONO, int(px * 0.62))
+    l, t, r, b = d.textbbox((0, 0), text, font=font)
+    d.text(((px - (r - l)) / 2 - l, (px - (b - t)) / 2 - t), text, font=font, fill="black")
+    img.save(path)
 
 FLUENT = {
     # general
     "palette": "Apps List Detail",
     "shortcuts": "Keyboard",
-    "gotofile": "Document Search",
+    "gotofile": "ms:manage_search",
     "setwd": "Folder Arrow Right",
     "clearconsole": "ms:clear_all",
     "terminal": "Window Console",
@@ -83,12 +100,10 @@ FLUENT = {
     "reflow": "ms:wrap_text",
     "reindent": "ms:format_indent_increase",
     "reformat": "ms:format_align_left",
-    "extractfn": "ms:function",
-    "extractvar": "ms:variables",
+    "extractfn": "ms:call_split",
+    "extractvar": "Braces Variable",
     "rename": "Rename",
     "roxygen": "ms:description",
-    "assign": "ms:arrow_back",
-    "pipe": "ms:conversion_path",
     "pasteindent": "ms:content_paste_go",
     # find
     "findnext": "Chevron Down",
@@ -137,6 +152,9 @@ def main() -> int:
     icon_fetch.fluent(FLUENT, out)
     number_badge.numbered(out / "_zoombase.png", "123456789", out, "zoom",
                           size=0.42, centre=(0.50, 0.50))
+    for name, text in TEXT.items():
+        _text_icon(out / f"{name}.png", text)
+        print(f"  {name}.png  <- text {text!r} (DejaVu Sans Mono Bold)")
     brand_marks.ensure(out / "rstudio.png", "rstudioide")
     print(f"Wrote icons to {out}")
     return 0

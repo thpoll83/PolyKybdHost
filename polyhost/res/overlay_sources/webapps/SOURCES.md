@@ -356,3 +356,55 @@ Linux gets the PC keys. The ChromeOS tables are not used.
 - `gmail.png` and `gcal.png` are the Gmail and Google Calendar marks from
   Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
+
+## draw.io, Excalidraw, Linear and Overleaf
+
+Four specs, written by hand: `drawio.yaml`, `excalidraw.yaml`, `linear.yaml` and
+`overleaf.yaml`. Each uses `CMDCTRL`, so one spec gives a Windows/Linux set and a
+macOS set. Their icons are in `fetch_icons.py` → `DIAGRAM_ETC`, and the ESC marks
+are the apps' own logos from Simple Icons (`diagramsdotnet`, `excalidraw`,
+`linear`, `overleaf`; artwork CC0-1.0, nominative use, see `../brand_marks.py`).
+
+| Set | Keys (Windows/Linux, macOS) | Source |
+|---|---|---|
+| `drawio_template` | 76, 76 | draw.io's `Actions.js` (shortcut of each action), the key bindings in `EditorUi.js`, and the shortcut sheet `app.diagrams.net/shortcuts.svg` (jgraph/drawio, branch `dev`, read 2026-10-22) |
+| `excalidraw_template` | 62, 62 | Excalidraw's help dialog, `packages/excalidraw/components/HelpDialog.tsx` and `actions/shortcuts.ts` (branch `master`, read 2026-10-22) |
+| `linear_template` | 26, 28 | the modifier shortcuts named in Linear's docs (`linear.app/docs/*.md`, all pages listed in `linear.app/llms.txt`, read 2026-10-22); Linear has no shortcut page of its own |
+| `overleaf_template` | 21, 21 | Overleaf's page `docs.overleaf.com/navigating-in-the-editor/keyboard-shortcuts` and the editor key map `services/web/frontend/js/features/source-editor/extensions/shortcuts.ts` (overleaf/overleaf, branch `main`) |
+
+App names:
+
+- draw.io desktop 32.5.5, Linux package `drawio-amd64-32.5.5.deb`, run under
+  Xvfb on 2026-10-22: process `drawio`, WM_CLASS `draw-io`, title "Untitled
+  Diagram - draw.io". Windows `draw.io.exe` and macOS "draw.io" come from the
+  product name in its `package.json` and were not checked on an install.
+- Linear desktop: Windows `Linear.exe` and macOS "Linear" were not checked. Linear
+  has no Linux desktop app.
+- Excalidraw and Overleaf exist only in a browser.
+
+Choices and keys left out:
+
+- **Tool letters.** draw.io (A, S, D, F, C add text, note, rectangle, ellipse,
+  line; X freehand) and Excalidraw (H, V, R, D, O, A, L, P, T, N, E, F, K, B, I, Q,
+  W, S, G, and Shift+H/V/F) draw their bare tool keys, as the Miro set does: on a
+  drawing canvas the canvas has the focus, not a text field. Excalidraw's digit
+  alternatives (1 to 0) are left out. Linear's bare letters (C, A, L ...) and its
+  two-key sequences (G then I) are left out, as in the Gmail set.
+- **draw.io:** Ctrl+Shift+Numpad +/- (font size; Ctrl+Shift+[ and ] are drawn
+  instead), plain Delete, Backspace, Home, Enter, F2, Tab, arrows and the mouse
+  actions. Alt+Shift+Y (synchronize) is left out because it acts only in some
+  storage back ends. Ctrl+0 is "Custom zoom" in the key bindings, though the
+  action list names it "Fit page width"; the set follows the key bindings.
+- **Excalidraw:** Send to back and Bring to front are Cmd+Option+[ and ] on macOS
+  and Ctrl+Shift+[ and ] elsewhere, so those two keys are written per platform.
+  PgUp/PgDn, Space and Enter are left out.
+- **Linear:** Cmd/Ctrl+B and Cmd/Ctrl+I also mean bold and italic in Linear's text
+  editor; the set draws their view meaning (board or list layout, details
+  sidebar). Cmd/Ctrl+Shift+S (unsubscribe, and strikethrough in the editor) is
+  left out because the docs give it both meanings. Cmd+Option+C (copy as
+  Markdown) and Cmd+Shift+U (upload files) are documented for macOS only.
+  Cmd/Ctrl+Delete (delete issue) is left out because the docs do not say whether
+  it means Delete or Backspace on Windows.
+- **Overleaf:** Tab and Shift+Tab (indent), the multi-cursor keys
+  (Ctrl+Alt+arrows) and the cursor movement keys are left out. Ctrl+U,
+  Ctrl+Shift+U and Ctrl+Space use Ctrl on macOS as well, as the source binds them.
