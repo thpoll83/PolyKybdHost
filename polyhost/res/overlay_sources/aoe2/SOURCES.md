@@ -5,9 +5,11 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine |
+| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine; the Definitive Edition on Linux for now |
 
-The app names were not checked on an install.
+The Definitive Edition under Proton on KDE Plasma reports `steam_app_813780`
+(Steam app 813780, measured 2026-10-23), and uses this set until it has its
+own. The other app names were not checked on an install.
 
 ## Shortcut reference
 
@@ -69,7 +71,7 @@ scales it to the keycap.
 | `allycolours.png` | [palette](https://game-icons.net/1x1/delapouite/palette.html) | Delapouite |
 | `mapcombat.png` | [sword-clash](https://game-icons.net/1x1/lorc/sword-clash.html) | Lorc |
 | `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
-| `mapnormal.png` | [radar-sweep](https://game-icons.net/1x1/lorc/radar-sweep.html) | Lorc |
+| `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
 

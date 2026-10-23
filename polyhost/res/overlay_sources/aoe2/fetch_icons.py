@@ -52,7 +52,7 @@ ICONS = {
     "allycolours": "delapouite/palette",
     "mapcombat": "lorc/sword-clash",
     "mapeco": "lorc/wheat",
-    "mapnormal": "lorc/radar-sweep",
+    "mapnormal": "lorc/mountains",
     # parts for the chat review keys, composed in main()
     "_conversation": "lorc/conversation",
     "_arrow": "delapouite/plain-arrow",
