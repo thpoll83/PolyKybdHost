@@ -55,7 +55,7 @@ bindings:
   - { key: F4, icon: statistics.png, label: "Statistics", region: [30, 40] }
   - { key: F9, icon: savechapter.png, label: "Save chapter" }
   - { key: F11, icon: gametime.png, label: "Game time", region: [21, 40] }
-  - { key: F12, icon: savegame.png, label: "Save game" }
+  - { key: F12, icon: savegame.png, label: "Save game", margin: 5 }
   - { key: ENTER, icon: sendchat.png, label: "Send chat message" }
   - { key: PGUP, icon: chatback.png, label: "Review chat backward" }
   - { key: PGDN, icon: chatfwd.png, label: "Review chat forward" }

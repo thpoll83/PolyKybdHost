@@ -40,7 +40,7 @@ key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
-| F12 | 51 | 40×40; the icon erases most of the `2` |
+| F12 | 51 | 40×40, 5 px from the right edge (`margin: 5`); the icon erases the `12` |
 | Backspace | 44 | 40×40; the icon erases the right end of the ⌫ |
 
 On `,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48),
