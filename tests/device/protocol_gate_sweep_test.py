@@ -100,7 +100,7 @@ CALLS = {
     "replay_startup_anim": [()],
     "set_os": [(list(OsType)[0],)], "get_os": [()],
     "save_mru": [()],
-    "set_handedness": [(True,)],
+    "set_handedness": [(True,), (True, True), (False, False)],
     "query_current_lang": [()],
     "enumerate_lang": [()],
     "get_lang_list": [()], "get_current_lang": [()],
