@@ -23,7 +23,7 @@ KEYS = {",": "COMMA", ".": "DOT", "=": "EQUAL", "-": "MINUS", "/": "SLASH",
         "[": "LBRACKET", "]": "RBRACKET", "\\": "BACKSLASH", ";": "SEMICOLON",
         "'": "QUOTE", "`": "GRAVE", "Enter": "ENTER", "Bksp": "BSPC",
         "Up": "UP", "Down": "DOWN", "Left": "LEFT", "Right": "RIGHT",
-        "Home": "HOME", "End": "END"}
+        "Home": "HOME", "End": "END", "Del": "DELETE"}
 
 SHEETS = [
     # --- common actions ---
@@ -242,11 +242,48 @@ GMAIL = [
     ("sidepanel", "Side panel", "CA+,", "AM+,"),
 ]
 
+# Calendar's single keys are on by default and act only outside a text field, so
+# this table has them (LETTERS_IN). "+" (add a calendar) is left out: which key
+# types it depends on the layout. Esc (back to the grid) is the program mark's key.
 CALENDAR = [
+    # --- move around the calendar ---
+    ("calnext", "Next date range", "J", "J"),
+    ("calnext", "Next date range", "N", "N"),
+    ("calprev", "Previous date range", "K", "K"),
+    ("calprev", "Previous date range", "P", "P"),
+    ("calrefresh", "Refresh", "R", "R"),
+    ("caltoday", "Today", "T", "T"),
+    ("search", "Search", "/", "/"),
+    ("settings", "Settings", "S", "S"),
+    ("calgoto", "Go to date", "G", "G"),
+    # --- change the view ---
+    ("calday", "Day view", "1", "1"),
+    ("calday", "Day view", "D", "D"),
+    ("calweek", "Week view", "2", "2"),
+    ("calweek", "Week view", "W", "W"),
+    ("calmonth", "Month view", "3", "3"),
+    ("calmonth", "Month view", "M", "M"),
+    ("calcustom", "Custom view", "4", "4"),
+    ("calcustom", "Custom view", "X", "X"),
+    ("calagenda", "Agenda view", "5", "5"),
+    ("calagenda", "Agenda view", "A", "A"),
+    # --- events ---
+    ("calnew", "Create event", "C", "C"),
+    ("calinfo", "Event details", "E", "E"),
+    ("delete", "Delete event", "Bksp", "Bksp"),
+    ("delete", "Delete event", "Del", "Del"),
+    (None, "Undo", "Z", "Z"),
     ("save", "Save event", "C+S", "M+S"),
     ("sidepanel", "Side panel", "CA+.", "AM+."),
     ("sidepanel", "Side panel", "CA+,", "AM+,"),
 ]
+
+# Gmail's single keys work only after the user turns shortcuts on; Calendar's are
+# on by default.
+LETTERS_OUT = ("Bare letters, digits and Shift+letter keys are left out: they would replace\n"
+               "# the letter legends while the user types.")
+LETTERS_IN = ("Calendar's single keys are included: they are on by default and act only\n"
+              "# when no text field has focus.")
 
 # Labels that would fold onto a shared concept but mean something else here.
 NOT_SHARED = {"Send", "Save event", "Find next", "Find previous"}
@@ -257,8 +294,7 @@ HEADER = """\
 #
 # Shortcuts: the PC and Mac tables of Google's help page
 # {page}
-# Bare letters, digits and Shift+letter keys are left out: they would replace
-# the letter legends while the user types.
+# {keys_note}
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -290,7 +326,7 @@ BRAND_GEOMETRY = ("program_icon_anchor: right\nprogram_icon_region: [37, 32]\n"
 
 
 def parse(chord: str) -> tuple[str, list[str]]:
-    mods, key = chord.split("+", 1)
+    mods, key = chord.split("+", 1) if "+" in chord else ("", chord)
     key = KEYS.get(key, key)
     if key.isdigit():
         key = f'"{key}"'
@@ -301,7 +337,7 @@ def line(icon, label, chord, scope: str, cmdctrl: bool = False) -> str:
     key, mods = parse(chord)
     if cmdctrl:
         mods = ["CMDCTRL" if m == "CTRL" else m for m in mods]
-    parts = [f"key: {key}", f"mods: [{', '.join(mods)}]"]
+    parts = [f"key: {key}"] + ([f"mods: [{', '.join(mods)}]"] if mods else [])
     if icon:
         parts.append(f"icon: {icon}.png")
     parts.append(f'label: "{label}"')
@@ -320,6 +356,9 @@ def ctrl_to_cmd(chord: str) -> str:
 def render(rows, **fmt) -> str:
     out = [HEADER.format(**fmt)]
     for icon, label, win, mac in rows:
+        if win and win == mac and "+" not in win:   # a single key, the same everywhere
+            out.append(line(icon, label, win, ""))
+            continue
         if win and mac and "C" in win.split("+", 1)[0] and ctrl_to_cmd(win) == mac:
             out.append(line(icon, label, win, "", cmdctrl=True))
             continue
@@ -332,14 +371,17 @@ def render(rows, **fmt) -> str:
 
 SPECS = {
     "googlesheets.yaml": (SHEETS, dict(name="Google Sheets", app="googlesheets", mark="gs.png",
-                                       page="https://support.google.com/docs/answer/181110", mark_geometry=DOC_GEOMETRY)),
+                                       page="https://support.google.com/docs/answer/181110", mark_geometry=DOC_GEOMETRY,
+                                       keys_note=LETTERS_OUT)),
     "googleslides.yaml": (SLIDES, dict(name="Google Slides", app="googleslides", mark="gsl.png",
-                                       page="https://support.google.com/docs/answer/1696717", mark_geometry=DOC_GEOMETRY)),
+                                       page="https://support.google.com/docs/answer/1696717", mark_geometry=DOC_GEOMETRY,
+                                       keys_note=LETTERS_OUT)),
     "gmail.yaml": (GMAIL, dict(name="Gmail", app="gmail", mark="gmail.png",
-                               page="https://support.google.com/mail/answer/6594", mark_geometry=BRAND_GEOMETRY)),
+                               page="https://support.google.com/mail/answer/6594", mark_geometry=BRAND_GEOMETRY,
+                               keys_note=LETTERS_OUT)),
     "googlecalendar.yaml": (CALENDAR, dict(name="Google Calendar", app="googlecalendar",
                                            mark="gcal.png", page="https://support.google.com/calendar/answer/37034",
-                                           mark_geometry=BRAND_GEOMETRY)),
+                                           mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_IN)),
 }
 
 

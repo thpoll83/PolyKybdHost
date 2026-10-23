@@ -204,6 +204,13 @@ FLUENT = {
 # Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
+    # --- Google Calendar ---
+    "calrefresh": "Arrow Clockwise",
+    "calgoto": "Calendar Arrow Right",
+    "calcustom": "ms:date_range",
+    "calagenda": "ms:view_agenda",
+    "calnew": "Calendar Add",
+    "calinfo": "Info",
     # --- Google Sheets ---
     "fillrange": "ms:format_color_fill",
     "filldown": "ms:vertical_align_bottom",

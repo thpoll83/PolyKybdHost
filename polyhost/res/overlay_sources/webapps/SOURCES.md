@@ -319,17 +319,22 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Google Sheets | <https://support.google.com/docs/answer/181110>, PC and Mac tables | 80, 79 |
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 26, 26 |
-| Google Calendar | <https://support.google.com/calendar/answer/37034> | 3, 3 |
+| Google Calendar | <https://support.google.com/calendar/answer/37034> | 28, 28 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 
 ### Left out
 
-- Bare letters, digits and Shift+letter keys: Gmail's and Calendar's single-key
-  shortcuts (`c` compose, `e` archive, `1`..`5` calendar views, ...), the
-  comment keys `j`, `k`, `r`, `e`, `u`, and the presenting and video keys of
-  Slides. A cell on such a key would replace the letter legend while the user
-  types. Calendar keeps only 3 keys for this reason.
+- Bare letters, digits and Shift+letter keys in Sheets, Slides and Gmail:
+  Gmail's single-key shortcuts (`c` compose, `e` archive, ...) work only after
+  the user turns them on in Gmail's settings, and the comment keys `j`, `k`,
+  `r`, `e`, `u` and the presenting and video keys of Slides act only in one
+  mode. Google Calendar's single keys are on by default and act whenever no
+  text field has focus, so its set has them: `j`/`n` and `k`/`p` (next and
+  previous range), `r`, `t`, `/`, `s`, `g`, the views `1`..`5` and `d`, `w`,
+  `m`, `x`, `a`, and `c`, `e`, Backspace, Delete and `z`. Calendar's `+` (add a
+  calendar) is left out, because the key that types `+` depends on the layout,
+  and Esc (back to the grid) shows the program mark.
 - Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`):
   an overlay cell shows what one key press does.
 - The menu keys (Alt+F, Alt+E, ...): Chrome and other browsers use different
@@ -351,6 +356,8 @@ Linux gets the PC keys. The ChromeOS tables are not used.
 - Fluent UI System Icons (MIT) and Material Symbols (Apache-2.0), the `GOOGLE`
   dict in `fetch_icons.py`. `narrower.png` is `shorter.png` (Fluent `Arrow
   Minimize Vertical`) turned 90°, because Fluent has no horizontal one.
+- Google Calendar's day, week and month views reuse the Outlook web set's
+  `calday.png`, `calweek.png` and `calmonth.png`.
 - `gs.png` and `gsl.png` are labelled document frames from `../doc_mark.py`,
   like Google Docs' `gd.png`, with the calc and impress motifs.
 - `gmail.png` and `gcal.png` are the Gmail and Google Calendar marks from
