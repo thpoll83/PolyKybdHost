@@ -168,9 +168,11 @@ example). Three differences from an app set:
 - Label only keys that do the same thing whatever is selected (go-to keys, idle
   units, function keys, chat). A game's bare letters change with the selection,
   so they stay blank.
-- On a letter key the icon may use the full height (`anchor: right`,
-  `region: [40, 40]`, `margin: 0`): the legend ends at x 22. Keys with a wider
-  legend (`,` `.` F-keys, Home, Backspace, Enter) keep `[36, 32]`.
+- An icon may use the full height (`anchor: right`, `region: [40, 40]`,
+  `margin: 0`). The firmware draws the overlay AFTER the legend and clears 3 px
+  around the icon's ink, so the icon takes priority: a letter legend (x 2–22)
+  stays whole, and the shifted symbol on `,` `.` and the digits is erased.
+  ⚠️ A preview that draws the legend on top models the wrong order.
 - Many game-icons.net drawings are too detailed for 1 bit. Render candidates on
   the 72×40 cell and pick by eye before committing.
 

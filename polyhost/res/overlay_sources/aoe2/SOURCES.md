@@ -25,15 +25,16 @@ maintainer on 2026-10-22. It lists the same defaults as the CD version.
 
 ## Placement
 
-Keys with a one-letter legend use a 40×40 icon on the right of the keycap. The
-legend ends at x 22 and the icon starts at x 32. The function keys, Home,
-Backspace, Enter and `,` keep the app sets' 36×32 size, because their legends
-are wider.
+The firmware draws the legend first, clears 3 px around the overlay's ink, and
+then draws the overlay, so the icon takes priority over the legend
+(`copy_overlay_to_buffer()` in the firmware's `poly_keymap.c`).
 
-`.` shows the villager at 36 px tall. `fetch_icons.py` trims the drawing to its
-drawn area, and the key uses a 26×40 area at the right edge (x 46–71). The `>`
-legend reaches x 48, so the firmware's 3 px clearance around it removes 11 of
-the villager's 346 pixels at the arm.
+Letter keys, `,` and `.` use a 40×40 icon on the right of the keycap. A letter
+legend ends at x 22 and the icon starts at x 32, so the letter stays whole. On
+`,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48), which a
+game does not use. `fetch_icons.py` trims the villager to its drawn area so it
+fills the height. The function keys, Home, Backspace and Enter keep the app
+sets' 36×32 size in the bottom right.
 
 ## Icons
 

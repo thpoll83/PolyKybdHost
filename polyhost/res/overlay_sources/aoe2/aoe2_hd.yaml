@@ -17,8 +17,9 @@ icon_dir: icons
 fit: contain
 mode: alpha
 threshold: 150
-# Letter keys have a narrow legend in the top left, so the icon uses the full
-# height on the right. Keys with a wider legend use the app sets' size.
+# The firmware draws the icon over the legend and clears 3 px around it, so the
+# icon uses the full height on the right. On `,` and `.` it erases the shifted
+# `<` and `>`. Function keys, Home, Backspace and Enter keep the app sets' size.
 anchor: right
 region: [40, 40]
 margin: 0
@@ -26,8 +27,8 @@ margin: 0
 bindings:
 
   # Selection and view (no modifier)
-  - { key: DOT, icon: idlevillager.png, label: "Next idle villager", region: [26, 40] }
-  - { key: COMMA, icon: idlemilitary.png, label: "Next idle military", anchor: bottom-right, region: [36, 32] }
+  - { key: DOT, icon: idlevillager.png, label: "Next idle villager" }
+  - { key: COMMA, icon: idlemilitary.png, label: "Next idle military" }
   - { key: H, icon: towncenter.png, label: "Go to Town Center" }
   - { key: HOME, icon: notification.png, label: "Last notification", anchor: bottom-right, region: [36, 32] }
   - { key: BSPC, icon: previousview.png, label: "Return to previous view", anchor: bottom-right, region: [36, 32] }
