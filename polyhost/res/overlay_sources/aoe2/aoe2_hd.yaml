@@ -1,0 +1,71 @@
+# Age of Empires II (HD Edition and the original CD version) overlays for PolyKybd.
+#
+# Keys: the HD Edition default hotkeys. See SOURCES.md.
+#
+# Only keys that do the same thing whatever is selected are labelled. The
+# letter keys alone build, train and command, and their meaning changes with
+# the selection, so they stay blank (except H, Go to Town Center).
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/aoe2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
+app: aoe2_hd
+match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe, steam_app_813780]
+output: aoe2_hd_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# The firmware draws the icon over the legend and clears 3 px around it, so the
+# icon uses the full height on the right. On `,` and `.` it erases the shifted
+# `<` and `>`. F2, F4 and F11 get a narrower area that keeps their legend whole;
+# F12 and Backspace keep 40x40 and the icon cuts into the legend (SOURCES.md).
+anchor: right
+region: [40, 40]
+margin: 0
+
+bindings:
+
+  # Selection and view (no modifier)
+  - { key: DOT, icon: idlevillager.png, label: "Next idle villager", margin: 5 }
+  - { key: COMMA, icon: idlemilitary.png, label: "Next idle military" }
+  - { key: H, icon: towncenter.png, label: "Go to Town Center" }
+  - { key: HOME, icon: notification.png, label: "Last notification" }
+  - { key: BSPC, icon: previousview.png, label: "Return to previous view" }
+
+  # Go to building (Ctrl)
+  - { key: I, mods: [CTRL], icon: mill.png, label: "Go to Mill" }
+  - { key: B, mods: [CTRL], icon: barracks.png, label: "Go to Barracks" }
+  - { key: A, mods: [CTRL], icon: archeryrange.png, label: "Go to Archery Range" }
+  - { key: L, mods: [CTRL], icon: stable.png, label: "Go to Stable" }
+  - { key: S, mods: [CTRL], icon: blacksmith.png, label: "Go to Blacksmith" }
+  - { key: M, mods: [CTRL], icon: market.png, label: "Go to Market" }
+  - { key: Y, mods: [CTRL], icon: monastery.png, label: "Go to Monastery" }
+  - { key: V, mods: [CTRL], icon: castle.png, label: "Go to Castle" }
+  - { key: K, mods: [CTRL], icon: siegeworkshop.png, label: "Go to Siege Workshop" }
+  - { key: D, mods: [CTRL], icon: dock.png, label: "Go to Dock" }
+  - { key: Z, mods: [CTRL], icon: lumbercamp.png, label: "Go to Lumber Camp" }
+  - { key: G, mods: [CTRL], icon: miningcamp.png, label: "Go to Mining Camp" }
+  - { key: U, mods: [CTRL], icon: university.png, label: "Go to University" }
+
+  # Game (function keys and chat)
+  - { key: F2, icon: techtree.png, label: "Technology tree", region: [34, 40] }
+  - { key: F3, icon: pause.png, label: "Pause" }
+  - { key: F4, icon: statistics.png, label: "Statistics", region: [30, 40] }
+  - { key: F9, icon: savechapter.png, label: "Save chapter" }
+  - { key: F11, icon: gametime.png, label: "Game time", region: [21, 40] }
+  - { key: F12, icon: savegame.png, label: "Save game", margin: 5 }
+  - { key: ENTER, icon: sendchat.png, label: "Send chat message" }
+  - { key: PGUP, icon: chatback.png, label: "Review chat backward" }
+  - { key: PGDN, icon: chatfwd.png, label: "Review chat forward" }
+
+  # Alt
+  - { key: D, mods: [ALT], icon: diplomacy.png, label: "Diplomacy" }
+  - { key: F, mods: [ALT], icon: flare.png, label: "Flare" }
+  - { key: O, mods: [ALT], icon: objectives.png, label: "Objectives" }
+  - { key: T, mods: [ALT], icon: chat.png, label: "Open chat" }
+  - { key: G, mods: [ALT], icon: allycolours.png, label: "Toggle ally / enemy colours" }
+  - { key: C, mods: [ALT], icon: mapcombat.png, label: "Minimap: combat mode" }
+  - { key: R, mods: [ALT], icon: mapeco.png, label: "Minimap: economic mode" }
+  - { key: N, mods: [ALT], icon: mapnormal.png, label: "Minimap: normal mode" }

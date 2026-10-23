@@ -160,6 +160,22 @@ are the icons the user actually sees. Order of preference:
      1-bit/40 px downscale, and the bare default (~400) is a touch heavy.
 3. **Draw it** with `scripts/make_sample_icons.py` primitives as a last resort.
 
+**Games** use game-icons.net (CC BY 3.0) through
+`polyhost/res/overlay_sources/game_icons.py`, because Fluent and Material have no
+game shapes (catapult, anvil, barracks). CC BY requires credit per AUTHOR, so the
+set's `SOURCES.md` has a file / icon / author table (`overlay_sources/aoe2/` is the
+example). Three differences from an app set:
+- Label only keys that do the same thing whatever is selected (go-to keys, idle
+  units, function keys, chat). A game's bare letters change with the selection,
+  so they stay blank.
+- An icon may use the full height (`anchor: right`, `region: [40, 40]`,
+  `margin: 0`). The firmware draws the overlay AFTER the legend and clears 3 px
+  around the icon's ink, so the icon takes priority: a letter legend (x 2–22)
+  stays whole, and the shifted symbol on `,` `.` and the digits is erased.
+  ⚠️ A preview that draws the legend on top models the wrong order.
+- Many game-icons.net drawings are too detailed for 1 bit. Render candidates on
+  the 72×40 cell and pick by eye before committing.
+
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in
   `SOURCES.md`**. If a license is unclear, don't commit it — draw a substitute.
