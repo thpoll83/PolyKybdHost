@@ -66,3 +66,12 @@ scales it to the keycap.
 | `objectives.png` | [checklist](https://game-icons.net/1x1/delapouite/checklist.html) | Delapouite |
 | `chat.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `sendchat.png` | [chat-bubble](https://game-icons.net/1x1/delapouite/chat-bubble.html) | Delapouite |
+| `allycolours.png` | [palette](https://game-icons.net/1x1/delapouite/palette.html) | Delapouite |
+| `mapcombat.png` | [sword-clash](https://game-icons.net/1x1/lorc/sword-clash.html) | Lorc |
+| `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
+| `mapnormal.png` | [radar-sweep](https://game-icons.net/1x1/lorc/radar-sweep.html) | Lorc |
+| `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
+| `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
+
+`chatback.png` and `chatfwd.png` are composed by `fetch_icons.py` from
+`_conversation.png` and `_arrow.png` (the arrow turned up for back).

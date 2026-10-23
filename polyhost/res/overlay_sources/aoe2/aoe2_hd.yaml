@@ -55,15 +55,15 @@ bindings:
   - { key: F11, icon: gametime.png, label: "Game time", anchor: bottom-right, region: [36, 32] }
   - { key: F12, icon: savegame.png, label: "Save game", anchor: bottom-right, region: [36, 32] }
   - { key: ENTER, icon: sendchat.png, label: "Send chat message", anchor: bottom-right, region: [36, 32] }
-  - { key: PGUP, label: "Chat back" }
-  - { key: PGDN, label: "Chat fwd" }
+  - { key: PGUP, icon: chatback.png, label: "Review chat backward", anchor: bottom-right, region: [36, 32] }
+  - { key: PGDN, icon: chatfwd.png, label: "Review chat forward", anchor: bottom-right, region: [36, 32] }
 
   # Alt
   - { key: D, mods: [ALT], icon: diplomacy.png, label: "Diplomacy" }
   - { key: F, mods: [ALT], icon: flare.png, label: "Flare" }
   - { key: O, mods: [ALT], icon: objectives.png, label: "Objectives" }
   - { key: T, mods: [ALT], icon: chat.png, label: "Open chat" }
-  - { key: G, mods: [ALT], label: "Ally colours" }
-  - { key: C, mods: [ALT], label: "Map combat" }
-  - { key: R, mods: [ALT], label: "Map eco" }
-  - { key: N, mods: [ALT], label: "Map normal" }
+  - { key: G, mods: [ALT], icon: allycolours.png, label: "Toggle ally / enemy colours" }
+  - { key: C, mods: [ALT], icon: mapcombat.png, label: "Minimap: combat mode" }
+  - { key: R, mods: [ALT], icon: mapeco.png, label: "Minimap: economic mode" }
+  - { key: N, mods: [ALT], icon: mapnormal.png, label: "Minimap: normal mode" }

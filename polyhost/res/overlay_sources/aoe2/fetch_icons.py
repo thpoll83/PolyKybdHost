@@ -49,12 +49,33 @@ ICONS = {
     "objectives": "delapouite/checklist",
     "chat": "lorc/conversation",
     "sendchat": "delapouite/chat-bubble",
+    "allycolours": "delapouite/palette",
+    "mapcombat": "lorc/sword-clash",
+    "mapeco": "lorc/wheat",
+    "mapnormal": "lorc/radar-sweep",
+    # parts for the chat review keys, composed in main()
+    "_conversation": "lorc/conversation",
+    "_arrow": "delapouite/plain-arrow",
 }
+
+
+def chat_review(out: Path) -> None:
+    """Chat back / forward: the conversation icon with an up or down arrow."""
+    from PIL import Image
+    bubble = Image.open(out / "_conversation.png").convert("RGBA").resize((112, 112))
+    arrow = Image.open(out / "_arrow.png").convert("RGBA").resize((64, 64))
+    for name, rotate in (("chatback", 180), ("chatfwd", 0)):
+        canvas = Image.new("RGBA", (160, 128), (0, 0, 0, 0))
+        canvas.alpha_composite(bubble, (0, 8))
+        canvas.alpha_composite(arrow.rotate(rotate), (100, 32))
+        canvas.save(out / f"{name}.png")
+        print(f"  {name}.png  <- _conversation.png + _arrow.png")
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     game_icons.render(ICONS, out)
+    chat_review(out)
     print(f"Wrote icons to {out}")
     return 0
 
