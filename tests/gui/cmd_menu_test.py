@@ -14,7 +14,7 @@ import unittest
 from unittest import mock
 
 from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QApplication, QMenu
+from PyQt5.QtWidgets import QApplication, QMenu, QMessageBox
 
 from polyhost.gui.cmd_menu import CommandsSubMenu
 
@@ -96,6 +96,65 @@ class TestUpdateEnabled(unittest.TestCase):
         _cm, menu = _build(developer=False)
         texts = [a.text() for a in menu.actions() if not a.isSeparator()]
         self.assertEqual(texts, ["Brightness", "Maintenance"])
+
+
+class TestSplitVbusMark(unittest.TestCase):
+    """Maintenance > Fix Left/Right Side > the Rev.2 board mark (protocol 24)."""
+
+    def _hand_menu(self, cm):
+        maintenance = cm._maintenance_action.menu()
+        return next(a.menu() for a in maintenance.actions() if a.text() == "Fix Left/Right Side")
+
+    def test_both_entries_sit_under_fix_side_and_are_gated_by_the_host(self):
+        cm, _menu = _build(developer=False)
+        texts = [a.text() for a in self._hand_menu(cm).actions() if not a.isSeparator()]
+        self.assertEqual(texts[2:], [a.text() for a in cm.split_vbus_actions])
+        self.assertEqual(len(cm.split_vbus_actions), 2)
+        # In neither list: update_enabled must not switch them on below v24.
+        for action in cm.split_vbus_actions:
+            self.assertNotIn(action, cm._device_actions)
+            self.assertNotIn(action, cm._fw_actions)
+
+    def _click(self, mark, button):
+        """Run set_split_vbus with the dialog answered by `button` (0 L, 1 R, 2 cancel)."""
+        cm, _menu = _build(developer=False)
+        cm.parent.core = mock.Mock(**{"set_handedness.return_value": (True, {"queued": True})})
+        cm.parent.sender = lambda: cm.split_vbus_actions[0 if mark else 1]
+
+        class _Box:
+            Question, AcceptRole, RejectRole = QMessageBox.Question, QMessageBox.AcceptRole, \
+                QMessageBox.RejectRole
+
+            def __init__(self, *args):
+                self.buttons = []
+
+            def addButton(self, *args):
+                self.buttons.append(object())
+                return self.buttons[-1]
+
+            def exec_(self):
+                return 0
+
+            def clickedButton(self):
+                return self.buttons[button]
+
+        with mock.patch("polyhost.gui.cmd_menu.QMessageBox", _Box), \
+                mock.patch.object(CommandsSubMenu, "_report") as report:
+            cm.set_split_vbus()
+        return cm.parent.core.set_handedness, report
+
+    def test_mark_on_the_left_half(self):
+        call, _ = self._click(mark=True, button=0)
+        call.assert_called_once_with(True, True)
+
+    def test_clear_on_the_right_half(self):
+        call, _ = self._click(mark=False, button=1)
+        call.assert_called_once_with(False, False)
+
+    def test_cancel_sends_nothing(self):
+        call, report = self._click(mark=True, button=2)
+        call.assert_not_called()
+        report.assert_not_called()
 
 
 class TestFontpackStatusTable(unittest.TestCase):

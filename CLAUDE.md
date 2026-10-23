@@ -124,7 +124,7 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 
 The host connects to any firmware with protocol ≥ `MIN_SUPPORTED_PROTOCOL` (2), then
 gates each feature with `FEATURE_MIN_PROTOCOL` (`device/poly_kybd.py`). `__protocol__`
-(`polyhost/_version.py`) is the newest protocol the host knows, 23 today, changed
+(`polyhost/_version.py`) is the newest protocol the host knows, 24 today, changed
 together with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.md).
 
 - ⚠️ **Every new device command must be version-gated**: the `FEATURE_MIN_PROTOCOL`

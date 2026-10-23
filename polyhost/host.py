@@ -1328,6 +1328,9 @@ class PolyHost(QApplication):
         # submenu, so the blanket loop above never reaches it.
         if self.cmdMenu.boot_loop_action is not None:
             self.cmdMenu.boot_loop_action.setEnabled(enabled and self.supports("reboot"))
+        # Maintenance > Fix Left/Right Side > Rev.2 mark: cmd 25's board byte (v24+).
+        for action in self.cmdMenu.split_vbus_actions:
+            action.setEnabled(enabled and self.supports("split_vbus_flag"))
         self.pause_action.setEnabled(True)
         # Only meaningful while the core is actually holding the keyboard at
         # arm's length; it disappears again once the situation is resolved.

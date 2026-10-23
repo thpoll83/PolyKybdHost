@@ -121,6 +121,11 @@ M_OVERLAY_SET_ALL_USAGE = "overlay.set_all_usage"   # {} -> (ok, payload)
 M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} -> (ok, payload)
 M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
 M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
+# Same, plus the Rev.2 board flag of the connected half (firmware protocol 24). A
+# method of its own, not a param of the one above: a daemon that predates it then
+# answers "unknown method" instead of setting the side and dropping the flag.
+M_SET_HANDEDNESS_BOARD = "fw.set_handedness_board"  # {"master_is_left": bool, "split_vbus": bool}
+                                                    #   -> {"queued": True}
 M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_FONTPACK_FLASH = "fontpack.flash"    # {"path": str, "bundle_id": int=0} or {"bundle": id|index}
                                        #   -> {"queued": bool} (streams fontpack_flash_* events)

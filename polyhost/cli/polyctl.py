@@ -355,12 +355,25 @@ def _cmd_handedness(client, args):
     only queues — a returned {"queued": True} means sent, never applied. Confirm
     from the firmware's own boot banner (`hand: LEFT (flash stamp)`) rather than
     from this command's exit code.
+
+    `--split-vbus on|off` (protocol 24) also marks the CONNECTED half as a Rev.2
+    board, or clears the mark. Rev.2 boards pass VBUS over the split cable, so both
+    halves would become master; with the mark the master is the half that
+    enumerates. It is stored per half, so plug in each half on its own and run this
+    once per half. The banner's `board:` line shows it.
     """
     master_is_left = args.side == "left"
     other = "RIGHT" if master_is_left else "LEFT"
-    print(f"setting the connected half to {args.side.upper()} "
-          f"(the other half becomes {other})…")
-    client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
+    if args.split_vbus is not None:
+        # Its own method, so an older daemon refuses it instead of dropping the flag.
+        print(f"setting the connected half to {args.side.upper()} and its Rev.2 "
+              f"split-VBUS flag {args.split_vbus}…")
+        client.call(protocol.M_SET_HANDEDNESS_BOARD,
+                    {"master_is_left": master_is_left, "split_vbus": args.split_vbus == "on"})
+    else:
+        print(f"setting the connected half to {args.side.upper()} "
+              f"(the other half becomes {other})…")
+        client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
     print("sent; both halves save the new side and reboot onto it (about 10 s, "
           "no replug needed)")
     return 0
@@ -1077,6 +1090,10 @@ def build_parser():
              "the other becomes the opposite (both reboot onto it, ~10 s)")
     p_hand.add_argument("side", choices=["left", "right"],
                         help="the side of the half the USB cable is plugged into")
+    p_hand.add_argument("--split-vbus", choices=["on", "off"], default=None,
+                        help="also mark (on) or unmark (off) the CONNECTED half as a "
+                             "Rev.2 board, which passes VBUS over the split cable; "
+                             "run once per half, plugged in alone (protocol 24)")
     p_hand.set_defaults(func=_cmd_handedness)
 
     p_newer = sub.add_parser(

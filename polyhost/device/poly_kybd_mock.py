@@ -636,9 +636,10 @@ class PolyKybdMock:
         self._log_call("activate_bootloader")
         return self._wire.activate_bootloader()
 
-    def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
-        self._log_call("set_handedness", master_is_left)
-        return self._wire.set_handedness(master_is_left)
+    def set_handedness(self, master_is_left: bool,
+                       split_vbus: bool | None = None) -> tuple[bool, Any]:
+        self._log_call("set_handedness", master_is_left, split_vbus)
+        return self._wire.set_handedness(master_is_left, split_vbus)
 
     def save_mru(self) -> tuple[bool, Any]:
         self._log_call("save_mru")
