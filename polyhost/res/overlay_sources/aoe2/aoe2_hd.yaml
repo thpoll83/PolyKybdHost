@@ -19,8 +19,8 @@ mode: alpha
 threshold: 150
 # The firmware draws the icon over the legend and clears 3 px around it, so the
 # icon uses the full height on the right. On `,` and `.` it erases the shifted
-# `<` and `>`. Keys with a wider legend (F2, F4, F11, F12, Backspace) get a
-# narrower area, measured to keep their legend whole (SOURCES.md).
+# `<` and `>`. F2, F4 and F11 get a narrower area that keeps their legend whole;
+# F12 and Backspace keep 40x40 and the icon cuts into the legend (SOURCES.md).
 anchor: right
 region: [40, 40]
 margin: 0
@@ -32,7 +32,7 @@ bindings:
   - { key: COMMA, icon: idlemilitary.png, label: "Next idle military" }
   - { key: H, icon: towncenter.png, label: "Go to Town Center" }
   - { key: HOME, icon: notification.png, label: "Last notification" }
-  - { key: BSPC, icon: previousview.png, label: "Return to previous view", region: [24, 40] }
+  - { key: BSPC, icon: previousview.png, label: "Return to previous view" }
 
   # Go to building (Ctrl)
   - { key: I, mods: [CTRL], icon: mill.png, label: "Go to Mill" }
@@ -55,7 +55,7 @@ bindings:
   - { key: F4, icon: statistics.png, label: "Statistics", region: [30, 40] }
   - { key: F9, icon: savechapter.png, label: "Save chapter" }
   - { key: F11, icon: gametime.png, label: "Game time", region: [21, 40] }
-  - { key: F12, icon: savegame.png, label: "Save game", region: [17, 40] }
+  - { key: F12, icon: savegame.png, label: "Save game" }
   - { key: ENTER, icon: sendchat.png, label: "Send chat message" }
   - { key: PGUP, icon: chatback.png, label: "Review chat backward" }
   - { key: PGDN, icon: chatfwd.png, label: "Review chat forward" }

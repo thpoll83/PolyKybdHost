@@ -29,9 +29,10 @@ The firmware draws the legend first, clears 3 px around the overlay's ink, and
 then draws the overlay, so the icon takes priority over the legend
 (`copy_overlay_to_buffer()` in the firmware's `poly_keymap.c`).
 
-Every icon sits at the right edge and uses the full height. Its width keeps
-the key's own legend whole, measured with the firmware fonts
-(`tools/oled_preview.py`) and the 3 px clearance:
+Every icon sits at the right edge and uses the full height. Where a narrower
+area keeps the key's own legend whole without making the icon too small, the
+key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
+3 px clearance:
 
 | Keys | Legend ends at x | Area |
 |---|---|---|
@@ -39,13 +40,13 @@ the key's own legend whole, measured with the firmware fonts
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
-| F12 | 51 | 17×40 |
-| Backspace | 44 | 24×40 |
+| F12 | 51 | 40×40; the icon erases most of the `2` |
+| Backspace | 44 | 40×40; the icon erases the right end of the ⌫ |
 
 On `,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48),
 which a game does not use. The villager on `.` sits 5 px further left
 (`margin: 5`, x 32–60), so it erases all of the `>`. `fetch_icons.py` trims six icons to their drawn area
-(the villager and the five narrow ones) so they fill their area.
+(the villager, F2, F4, F11, F12 and Backspace) so they fill their area.
 
 ## Icons
 
