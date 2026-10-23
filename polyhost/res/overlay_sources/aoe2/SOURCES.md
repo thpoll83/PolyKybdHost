@@ -43,9 +43,9 @@ scales it to the keycap.
 | `idlemilitary.png` | [crossed-swords](https://game-icons.net/1x1/lorc/crossed-swords.html) | Lorc |
 | `towncenter.png` | [village](https://game-icons.net/1x1/delapouite/village.html) | Delapouite |
 | `notification.png` | [ringing-bell](https://game-icons.net/1x1/lorc/ringing-bell.html) | Lorc |
-| `previousview.png` | [anticlockwise-rotation](https://game-icons.net/1x1/delapouite/anticlockwise-rotation.html) | Delapouite |
+| `previousview.png` | [back-forth](https://game-icons.net/1x1/lorc/back-forth.html) | Lorc |
 | `mill.png` | [windmill](https://game-icons.net/1x1/delapouite/windmill.html) | Delapouite |
-| `barracks.png` | [barracks](https://game-icons.net/1x1/delapouite/barracks.html) | Delapouite |
+| `barracks.png` | [medieval-barracks](https://game-icons.net/1x1/delapouite/medieval-barracks.html) | Delapouite |
 | `archeryrange.png` | [bow-arrow](https://game-icons.net/1x1/delapouite/bow-arrow.html) | Delapouite |
 | `stable.png` | [stable](https://game-icons.net/1x1/delapouite/stable.html) | Delapouite |
 | `blacksmith.png` | [anvil](https://game-icons.net/1x1/lorc/anvil.html) | Lorc |
@@ -55,12 +55,11 @@ scales it to the keycap.
 | `siegeworkshop.png` | [catapult](https://game-icons.net/1x1/heavenly-dog/catapult.html) | HeavenlyDog |
 | `dock.png` | [anchor](https://game-icons.net/1x1/lorc/anchor.html) | Lorc |
 | `lumbercamp.png` | [axe-in-log](https://game-icons.net/1x1/delapouite/axe-in-log.html) | Delapouite |
-| `miningcamp.png` | [mine-wagon](https://game-icons.net/1x1/delapouite/mine-wagon.html) | Delapouite |
+| `miningcamp.png` | [mining](https://game-icons.net/1x1/lorc/mining.html) | Lorc |
 | `university.png` | [graduate-cap](https://game-icons.net/1x1/delapouite/graduate-cap.html) | Delapouite |
 | `techtree.png` | [family-tree](https://game-icons.net/1x1/delapouite/family-tree.html) | Delapouite |
 | `pause.png` | [pause-button](https://game-icons.net/1x1/guard13007/pause-button.html) | Guard13007 |
 | `statistics.png` | [histogram](https://game-icons.net/1x1/delapouite/histogram.html) | Delapouite |
-| `savechapter.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |
 | `gametime.png` | [sands-of-time](https://game-icons.net/1x1/lorc/sands-of-time.html) | Lorc |
 | `savegame.png` | [save](https://game-icons.net/1x1/delapouite/save.html) | Delapouite |
 | `diplomacy.png` | [shaking-hands](https://game-icons.net/1x1/delapouite/shaking-hands.html) | Delapouite |
@@ -74,6 +73,9 @@ scales it to the keycap.
 | `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
+| `_quill.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |
 
-`chatback.png` and `chatfwd.png` are composed by `fetch_icons.py` from
-`_conversation.png` and `_arrow.png` (the arrow turned up for back).
+`fetch_icons.py` composes three files from these parts: `chatback.png` and
+`chatfwd.png` from `_conversation.png` and `_arrow.png` (the arrow turned up
+for back), and `savechapter.png` from `_quill.png` and the up arrow, as on the
+save icon.

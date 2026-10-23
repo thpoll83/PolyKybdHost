@@ -22,10 +22,10 @@ ICONS = {
     "idlemilitary": "lorc/crossed-swords",
     "towncenter": "delapouite/village",
     "notification": "lorc/ringing-bell",
-    "previousview": "delapouite/anticlockwise-rotation",
+    "previousview": "lorc/back-forth",
     # go to building
     "mill": "delapouite/windmill",
-    "barracks": "delapouite/barracks",
+    "barracks": "delapouite/medieval-barracks",
     "archeryrange": "delapouite/bow-arrow",
     "stable": "delapouite/stable",
     "blacksmith": "lorc/anvil",
@@ -35,13 +35,12 @@ ICONS = {
     "siegeworkshop": "heavenly-dog/catapult",
     "dock": "lorc/anchor",
     "lumbercamp": "delapouite/axe-in-log",
-    "miningcamp": "delapouite/mine-wagon",
+    "miningcamp": "lorc/mining",
     "university": "delapouite/graduate-cap",
     # game
     "techtree": "delapouite/family-tree",
     "pause": "guard13007/pause-button",
     "statistics": "delapouite/histogram",
-    "savechapter": "lorc/quill-ink",
     "gametime": "lorc/sands-of-time",
     "savegame": "delapouite/save",
     "diplomacy": "delapouite/shaking-hands",
@@ -53,9 +52,10 @@ ICONS = {
     "mapcombat": "lorc/sword-clash",
     "mapeco": "lorc/wheat",
     "mapnormal": "lorc/mountains",
-    # parts for the chat review keys, composed in main()
+    # parts composed in main(): chat review and save chapter
     "_conversation": "lorc/conversation",
     "_arrow": "delapouite/plain-arrow",
+    "_quill": "lorc/quill-ink",
 }
 
 
@@ -72,10 +72,23 @@ def chat_review(out: Path) -> None:
         print(f"  {name}.png  <- _conversation.png + _arrow.png")
 
 
+def save_chapter(out: Path) -> None:
+    """Save chapter: the quill with the up arrow of the save icon (F12)."""
+    from PIL import Image
+    quill = Image.open(out / "_quill.png").convert("RGBA").resize((112, 112))
+    arrow = Image.open(out / "_arrow.png").convert("RGBA").resize((56, 56))
+    canvas = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    canvas.alpha_composite(quill, (0, 0))
+    canvas.alpha_composite(arrow.rotate(180), (72, 72))
+    canvas.save(out / "savechapter.png")
+    print("  savechapter.png  <- _quill.png + _arrow.png")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     game_icons.render(ICONS, out)
     chat_review(out)
+    save_chapter(out)
     print(f"Wrote icons to {out}")
     return 0
 
