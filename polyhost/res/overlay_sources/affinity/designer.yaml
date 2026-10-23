@@ -181,7 +181,7 @@ bindings:
   - { key: P, icon: pen.png, mode: alpha, label: "Pen Tool" }
   - { key: N, icon: pencil.png, mode: alpha, label: "Pencil Tool" }
   - { key: W, icon: width.png, mode: alpha, label: "Stroke Width Tool" }
-  - { key: K, icon: scissors.png, mode: alpha, label: "Knife Tool" }
+  - { key: K, icon: knife.png, mode: alpha, label: "Knife Tool" }
   - { key: B, icon: paintbrush.png, mode: alpha, label: "Vector Brush Tool" }
   - { key: G, icon: gradient.png, mode: alpha, label: "Gradient Tool" }
   - { key: Y, icon: transparency.png, mode: alpha, label: "Transparency Tool" }

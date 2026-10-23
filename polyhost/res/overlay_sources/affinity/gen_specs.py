@@ -158,7 +158,7 @@ TOOLS = [
     ("pen", "Pen Tool", "P", "dpu"),
     ("pencil", "Pencil Tool", "N", "d"),
     ("width", "Stroke Width Tool", "W", "d"),
-    ("scissors", "Knife Tool", "K", "d"),
+    ("knife", "Knife Tool", "K", "d"),
     ("paintbrush", "Vector Brush Tool", "B", "d"),
     ("gradient", "Gradient Tool", "G", "du"),
     ("transparency", "Transparency Tool", "Y", "du"),

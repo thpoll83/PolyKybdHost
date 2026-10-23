@@ -117,7 +117,9 @@ label is the group.
   Krita and InDesign sets, so each image is stored once in the overlay icon
   library. `TOOL_FETCH` fetches the ones no sibling set has (contour, corner,
   transparency, shape builder, selection brush, colour replacement, smudge,
-  snapping), all from Material Symbols. The tool bindings render in `alpha`
+  snapping), all from Material Symbols. `knife.png` (Designer's Knife Tool) is
+  drawn in `fetch_icons.py` (`KNIFE_SVG`): Fluent and Material have no knife,
+  and their cut icon is scissors. The tool bindings render in `alpha`
   mode, as the Photoshop and Illustrator sets render these icons.
 - Close, Save, Print, Undo, Redo, Cut, Copy, Paste, Select all, Bold, Italic,
   Underline, Zoom in and Zoom out are drawn by the shared concept renderer.
