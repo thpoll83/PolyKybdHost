@@ -67,7 +67,7 @@ scales it to the keycap.
 | `archeryrange.png` | [bow-arrow](https://game-icons.net/1x1/delapouite/bow-arrow.html) | Delapouite |
 | `stable.png` | [stable](https://game-icons.net/1x1/delapouite/stable.html) | Delapouite |
 | `blacksmith.png` | [anvil](https://game-icons.net/1x1/lorc/anvil.html) | Lorc |
-| `market.png` | [shop](https://game-icons.net/1x1/delapouite/shop.html) | Delapouite |
+| `market.png` | [two-coins](https://game-icons.net/1x1/delapouite/two-coins.html) | Delapouite |
 | `monastery.png` | [church](https://game-icons.net/1x1/delapouite/church.html) | Delapouite |
 | `castle.png` | [castle](https://game-icons.net/1x1/delapouite/castle.html) | Delapouite |
 | `siegeworkshop.png` | [catapult](https://game-icons.net/1x1/heavenly-dog/catapult.html) | HeavenlyDog |

@@ -29,7 +29,7 @@ ICONS = {
     "archeryrange": "delapouite/bow-arrow",
     "stable": "delapouite/stable",
     "blacksmith": "lorc/anvil",
-    "market": "delapouite/shop",
+    "market": "delapouite/two-coins",
     "monastery": "delapouite/church",
     "castle": "delapouite/castle",
     "siegeworkshop": "heavenly-dog/catapult",
