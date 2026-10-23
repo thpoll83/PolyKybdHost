@@ -27,8 +27,13 @@ maintainer on 2026-10-22. It lists the same defaults as the CD version.
 
 Keys with a one-letter legend use a 40×40 icon on the right of the keycap. The
 legend ends at x 22 and the icon starts at x 32. The function keys, Home,
-Backspace, Enter, `,` and `.` keep the app sets' 36×32 size, because their
-legends are wider.
+Backspace, Enter and `,` keep the app sets' 36×32 size, because their legends
+are wider.
+
+`.` shows the villager at 36 px tall. `fetch_icons.py` trims the drawing to its
+drawn area, and the key uses a 26×40 area at the right edge (x 46–71). The `>`
+legend reaches x 48, so the firmware's 3 px clearance around it removes 11 of
+the villager's 346 pixels at the arm.
 
 ## Icons
 

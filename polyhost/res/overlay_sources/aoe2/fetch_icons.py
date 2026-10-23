@@ -84,11 +84,20 @@ def save_chapter(out: Path) -> None:
     print("  savechapter.png  <- _quill.png + _arrow.png")
 
 
+def trim(out: Path, stem: str) -> None:
+    """Crop an icon to its drawn area, so a narrow figure can use the full height."""
+    from PIL import Image
+    im = Image.open(out / f"{stem}.png").convert("RGBA")
+    im.crop(im.getchannel("A").getbbox()).save(out / f"{stem}.png")
+    print(f"  {stem}.png  trimmed to its drawn area")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     game_icons.render(ICONS, out)
     chat_review(out)
     save_chapter(out)
+    trim(out, "idlevillager")
     print(f"Wrote icons to {out}")
     return 0
 

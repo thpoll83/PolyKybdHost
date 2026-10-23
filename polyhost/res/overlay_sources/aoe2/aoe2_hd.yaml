@@ -26,7 +26,7 @@ margin: 0
 bindings:
 
   # Selection and view (no modifier)
-  - { key: DOT, icon: idlevillager.png, label: "Next idle villager", anchor: bottom-right, region: [36, 32] }
+  - { key: DOT, icon: idlevillager.png, label: "Next idle villager", region: [26, 40] }
   - { key: COMMA, icon: idlemilitary.png, label: "Next idle military", anchor: bottom-right, region: [36, 32] }
   - { key: H, icon: towncenter.png, label: "Go to Town Center" }
   - { key: HOME, icon: notification.png, label: "Last notification", anchor: bottom-right, region: [36, 32] }
