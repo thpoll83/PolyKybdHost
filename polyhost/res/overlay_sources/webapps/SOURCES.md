@@ -318,18 +318,21 @@ twice, under `except: [macos]` and `only: [macos]`.
 |---|---|---|
 | Google Sheets | <https://support.google.com/docs/answer/181110>, PC and Mac tables | 80, 79 |
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
-| Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 26, 26 |
+| Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
 | Google Calendar | <https://support.google.com/calendar/answer/37034> | 28, 28 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 
 ### Left out
 
-- Bare letters, digits and Shift+letter keys in Sheets, Slides and Gmail:
-  Gmail's single-key shortcuts (`c` compose, `e` archive, ...) work only after
-  the user turns them on in Gmail's settings, and the comment keys `j`, `k`,
-  `r`, `e`, `u` and the presenting and video keys of Slides act only in one
-  mode. Google Calendar's single keys are on by default and act whenever no
+- Bare letters, digits and Shift+letter keys in Sheets and Slides: the
+  comment keys `j`, `k`, `r`, `e`, `u` and the presenting and video keys of
+  Slides act only in one mode. Gmail's 34 single keys are drawn (`c` compose,
+  `e` archive, `r` reply, `j`/`k` older and newer, `/` search, ...). They work
+  only after the user turns "Keyboard shortcuts on" in Gmail's settings; with
+  shortcuts off the keys type nothing outside a text field, so a cell that does
+  nothing is the cost. Gmail's keys that need Shift on a US layout (`!` spam,
+  `#` delete, `_`, `:`, `~`, `*`, `+`, `?`) are left out. Google Calendar's single keys are on by default and act whenever no
   text field has focus, so its set has them: `j`/`n` and `k`/`p` (next and
   previous range), `r`, `t`, `/`, `s`, `g`, the views `1`..`5` and `d`, `w`,
   `m`, `x`, `a`, and `c`, `e`, Backspace, Delete and `z`. Calendar's `+` (add a
@@ -376,7 +379,7 @@ are the apps' own logos from Simple Icons (`diagramsdotnet`, `excalidraw`,
 |---|---|---|
 | `drawio_template` | 76, 76 | draw.io's `Actions.js` (shortcut of each action), the key bindings in `EditorUi.js`, and the shortcut sheet `app.diagrams.net/shortcuts.svg` (jgraph/drawio, branch `dev`, read 2026-10-22) |
 | `excalidraw_template` | 62, 62 | Excalidraw's help dialog, `packages/excalidraw/components/HelpDialog.tsx` and `actions/shortcuts.ts` (branch `master`, read 2026-10-22) |
-| `linear_template` | 26, 28 | the modifier shortcuts named in Linear's docs (`linear.app/docs/*.md`, all pages listed in `linear.app/llms.txt`, read 2026-10-22); Linear has no shortcut page of its own |
+| `linear_template` | 41, 43 | the modifier shortcuts and single keys named in Linear's docs (`linear.app/docs/*.md`, all pages listed in `linear.app/llms.txt`, read 2026-10-22); Linear has no shortcut page of its own |
 | `overleaf_template` | 21, 21 | Overleaf's page `docs.overleaf.com/navigating-in-the-editor/keyboard-shortcuts` and the editor key map `services/web/frontend/js/features/source-editor/extensions/shortcuts.ts` (overleaf/overleaf, branch `main`) |
 
 App names:
@@ -404,8 +407,13 @@ Choices and keys left out:
   line; X freehand) and Excalidraw (H, V, R, D, O, A, L, P, T, N, E, F, K, B, I, Q,
   W, S, G, and Shift+H/V/F) draw their bare tool keys, as the Miro set does: on a
   drawing canvas the canvas has the focus, not a text field. Excalidraw's digit
-  alternatives (1 to 0) are left out. Linear's bare letters (C, A, L ...) and its
-  two-key sequences (G then I) are left out, as in the Gmail set.
+  alternatives (1 to 0) are left out.
+- **Linear:** the single keys named in its docs are drawn (C create issue, A assign,
+  I assign to me, X and Shift+X select, S status, Shift+S subscribe, F filter, /
+  search, J/K next and previous, H snooze, T collapse, Shift+M milestone,
+  Shift+P project): they act when no text field has focus. Its two-key
+  sequences (G then I, O then I) and the triage digits 1, 2, 3 (triage view
+  only) are left out.
 - **draw.io:** Ctrl+Shift+Numpad +/- (font size; Ctrl+Shift+[ and ] are drawn
   instead), plain Delete, Backspace, Home, Enter, F2, Tab, arrows and the mouse
   actions. Alt+Shift+Y (synchronize) is left out because it acts only in some

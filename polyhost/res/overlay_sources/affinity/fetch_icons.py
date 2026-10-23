@@ -103,6 +103,32 @@ FLUENT = {
     "wireframe": "ms:deployed_code",
 }
 
+# Tool icons with no sibling copy (gen_specs.py TOOLS).
+TOOL_FETCH = {
+    "contour": "ms:trip_origin",
+    "corner": "ms:rounded_corner",
+    "transparency": "ms:opacity",
+    "shapebuilder": "ms:join_full",
+    "selbrush": "ms:ink_selection",
+    "colorreplace": "ms:colorize",
+    "snapping": "ms:grid_goldenratio",
+    "smudgetool": "ms:gesture",
+}
+
+# Tool icons copied byte-identical from the sibling sets (icon_fetch.borrow).
+TOOL_BORROW = {
+    "move.png": "photoshop", "freetransform.png": "photoshop", "crop.png": "photoshop",
+    "marquee.png": "photoshop", "lasso.png": "photoshop", "brush.png": "photoshop",
+    "eraser.png": "photoshop", "dodgeburn.png": "photoshop", "clonestamp.png": "photoshop",
+    "healing.png": "photoshop", "quickmask.png": "photoshop", "defaultcolors.png": "photoshop",
+    "directselect.png": "illustrator", "pen.png": "illustrator", "pencil.png": "illustrator",
+    "width.png": "illustrator", "scissors.png": "illustrator", "paintbrush.png": "illustrator",
+    "gradient.png": "illustrator", "rectangle.png": "illustrator", "type.png": "illustrator",
+    "eyedropper.png": "illustrator", "hand.png": "illustrator", "zoom.png": "illustrator",
+    "swap.png": "illustrator",
+    "filltool.png": "krita", "rectframe.png": "indesign",
+}
+
 MARKS = {"designer.png": "Ds", "photo.png": "Ph", "publisher.png": "Pb", "affinity.png": "Af"}
 
 
@@ -110,6 +136,8 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
+    icon_fetch.fluent(TOOL_FETCH, out)
+    icon_fetch.borrow(TOOL_BORROW, out)
     size = rect_mark.shared_size(list(MARKS.values()))
     for fname, letters in MARKS.items():
         rect_mark.ensure(out / fname, letters, size=size)

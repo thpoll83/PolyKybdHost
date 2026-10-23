@@ -210,6 +210,41 @@ SLIDES = [
 ]
 
 GMAIL = [
+    # --- single keys (on only after "Keyboard shortcuts on" in Gmail's settings) ---
+    ("gm_select", "Select conversation", "X", "X"),
+    ("gm_star", "Star", "S", "S"),
+    ("gm_archive", "Archive", "E", "E"),
+    ("gm_mute", "Mute conversation", "M", "M"),
+    ("gm_reply", "Reply", "R", "R"),
+    ("gm_newwindow", "Reply in new window", "S+R", "S+R"),
+    ("gm_replyall", "Reply all", "A", "A"),
+    ("gm_newwindow", "Reply all in new window", "S+A", "S+A"),
+    ("gm_forward", "Forward", "F", "F"),
+    ("gm_newwindow", "Forward in new window", "S+F", "S+F"),
+    ("gm_update", "Update conversation", "S+N", "S+N"),
+    ("gm_archprev", "Archive, previous", "[", "["),
+    ("gm_archnext", "Archive, next", "]", "]"),
+    (None, "Undo", "Z", "Z"),
+    ("gm_read", "Mark as read", "S+I", "S+I"),
+    ("gm_unread", "Mark as unread", "S+U", "S+U"),
+    ("gm_important", "Mark as important", "=", "="),
+    ("gm_notimportant", "Mark as not important", "-", "-"),
+    ("gm_snooze", "Snooze", "B", "B"),
+    ("gm_expand", "Expand conversation", ";", ";"),
+    ("gm_addtask", "Add to Tasks", "S+T", "S+T"),
+    ("gm_list", "Back to list", "U", "U"),
+    ("gm_newer", "Newer conversation", "K", "K"),
+    ("gm_older", "Older conversation", "J", "J"),
+    ("openlink", "Open conversation", "O", "O"),
+    ("gm_prevmsg", "Previous message", "P", "P"),
+    ("gm_nextmsg", "Next message", "N", "N"),
+    ("mailnew", "Compose", "C", "C"),
+    ("newtab", "Compose in new tab", "D", "D"),
+    ("search", "Search mail", "/", "/"),
+    ("gm_more", "More actions", ".", "."),
+    ("gm_move", "Move to", "V", "V"),
+    ("gm_label", "Label as", "L", "L"),
+    ("compact", "Focus toolbar", ",", ","),
     # --- compose ---
     ("nextchat", "Next chat or compose", "C+.", "C+."),
     ("prevchat", "Previous chat or compose", "C+,", "C+,"),
@@ -278,10 +313,14 @@ CALENDAR = [
     ("sidepanel", "Side panel", "CA+,", "AM+,"),
 ]
 
-# Gmail's single keys work only after the user turns shortcuts on; Calendar's are
-# on by default.
+# Gmail's single keys work only after the user turns "Keyboard shortcuts on" in
+# Gmail's settings; Calendar's are on by default.
 LETTERS_OUT = ("Bare letters, digits and Shift+letter keys are left out: they would replace\n"
                "# the letter legends while the user types.")
+LETTERS_GMAIL = ("Gmail's single keys are included. They work only after the user turns\n"
+                 "# \"Keyboard shortcuts on\" in Gmail's settings, and only when no text field has\n"
+                 "# focus. Keys that need Shift on a US layout (! # _ : ~ * + ?) and the two-key\n"
+                 "# sequences (g then i, * then a) are left out.")
 LETTERS_IN = ("Calendar's single keys are included: they are on by default and act only\n"
               "# when no text field has focus.")
 
@@ -356,7 +395,8 @@ def ctrl_to_cmd(chord: str) -> str:
 def render(rows, **fmt) -> str:
     out = [HEADER.format(**fmt)]
     for icon, label, win, mac in rows:
-        if win and win == mac and "+" not in win:   # a single key, the same everywhere
+        if win and win == mac and set(parse(win)[1]) <= {"SHIFT"}:
+            # a single key or Shift+key, the same on every platform
             out.append(line(icon, label, win, ""))
             continue
         if win and mac and "C" in win.split("+", 1)[0] and ctrl_to_cmd(win) == mac:
@@ -378,7 +418,7 @@ SPECS = {
                                        keys_note=LETTERS_OUT)),
     "gmail.yaml": (GMAIL, dict(name="Gmail", app="gmail", mark="gmail.png",
                                page="https://support.google.com/mail/answer/6594", mark_geometry=BRAND_GEOMETRY,
-                               keys_note=LETTERS_OUT)),
+                               keys_note=LETTERS_GMAIL)),
     "googlecalendar.yaml": (CALENDAR, dict(name="Google Calendar", app="googlecalendar",
                                            mark="gcal.png", page="https://support.google.com/calendar/answer/37034",
                                            mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_IN)),

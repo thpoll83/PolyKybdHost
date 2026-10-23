@@ -167,3 +167,19 @@ bindings:
   - { key: T, mods: [ALT, GUI], icon: toolbar.png, label: "Show / hide toolbar", only: [macos] }
   - { key: R, mods: [CTRL, ALT, SHIFT], icon: resetrotation.png, label: "Reset view rotation", except: [macos] }
   - { key: R, mods: [CTRL, SHIFT, GUI], icon: resetrotation.png, label: "Reset view rotation", only: [macos] }
+
+  # --- single keys (tools), the same on every OS ---
+  - { key: V, icon: move.png, mode: alpha, label: "Move Tool" }
+  - { key: A, icon: directselect.png, mode: alpha, label: "Node Tool" }
+  - { key: P, icon: pen.png, mode: alpha, label: "Pen Tool" }
+  - { key: G, icon: gradient.png, mode: alpha, label: "Gradient Tool" }
+  - { key: Y, icon: transparency.png, mode: alpha, label: "Transparency Tool" }
+  - { key: M, icon: rectangle.png, mode: alpha, label: "Rectangle Tool" }
+  - { key: T, icon: type.png, mode: alpha, label: "Artistic Text Tool" }
+  - { key: I, icon: eyedropper.png, mode: alpha, label: "Color Picker Tool" }
+  - { key: H, icon: hand.png, mode: alpha, label: "View Tool" }
+  - { key: Z, icon: zoom.png, mode: alpha, label: "Zoom Tool" }
+  - { key: F, icon: rectframe.png, mode: alpha, label: "Picture Frame Rectangle Tool" }
+  - { key: X, icon: swap.png, mode: alpha, label: "Swap stroke and fill colours" }
+  - { key: D, icon: defaultcolors.png, mode: alpha, label: "Black and white colours" }
+  - { key: SEMICOLON, icon: snapping.png, mode: alpha, label: "Toggle snapping" }

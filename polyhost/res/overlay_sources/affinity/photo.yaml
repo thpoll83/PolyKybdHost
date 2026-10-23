@@ -171,3 +171,29 @@ bindings:
   - { key: T, mods: [ALT, GUI], icon: toolbar.png, label: "Show / hide toolbar", only: [macos] }
   - { key: R, mods: [CTRL, ALT, SHIFT], icon: resetrotation.png, label: "Reset view rotation", except: [macos] }
   - { key: R, mods: [CTRL, SHIFT, GUI], icon: resetrotation.png, label: "Reset view rotation", only: [macos] }
+
+  # --- single keys (tools), the same on every OS ---
+  - { key: V, icon: move.png, mode: alpha, label: "Move Tool" }
+  - { key: P, icon: pen.png, mode: alpha, label: "Pen Tool" }
+  - { key: I, icon: eyedropper.png, mode: alpha, label: "Color Picker Tool" }
+  - { key: H, icon: hand.png, mode: alpha, label: "View Tool" }
+  - { key: Z, icon: zoom.png, mode: alpha, label: "Zoom Tool" }
+  - { key: C, icon: crop.png, mode: alpha, label: "Crop Tool" }
+  - { key: W, icon: selbrush.png, mode: alpha, label: "Selection Brush Tool" }
+  - { key: M, icon: marquee.png, mode: alpha, label: "Marquee tools" }
+  - { key: L, icon: lasso.png, mode: alpha, label: "Freehand Selection Tool" }
+  - { key: G, icon: filltool.png, mode: alpha, label: "Flood Fill Tool" }
+  - { key: B, icon: brush.png, mode: alpha, label: "Paint Brush Tool" }
+  - { key: R, icon: colorreplace.png, mode: alpha, label: "Color Replacement Brush Tool" }
+  - { key: Y, icon: pencil.png, mode: alpha, label: "Pixel Tool" }
+  - { key: E, icon: eraser.png, mode: alpha, label: "Erase tools" }
+  - { key: O, icon: dodgeburn.png, mode: alpha, label: "Dodge Brush Tool" }
+  - { key: K, icon: clonestamp.png, mode: alpha, label: "Clone Brush Tool" }
+  - { key: S, icon: smudgetool.png, mode: alpha, label: "Smudge Brush Tool" }
+  - { key: J, icon: healing.png, mode: alpha, label: "Retouch tools" }
+  - { key: U, icon: rectangle.png, mode: alpha, label: "Rectangle Tool" }
+  - { key: T, icon: type.png, mode: alpha, label: "Text tools" }
+  - { key: Q, icon: quickmask.png, mode: alpha, label: "Quick Mask" }
+  - { key: X, icon: swap.png, mode: alpha, label: "Swap stroke and fill colours" }
+  - { key: D, icon: defaultcolors.png, mode: alpha, label: "Black and white colours" }
+  - { key: SEMICOLON, icon: snapping.png, mode: alpha, label: "Toggle snapping" }

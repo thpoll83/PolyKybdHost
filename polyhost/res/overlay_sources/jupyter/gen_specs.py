@@ -88,7 +88,30 @@ ROWS = [
     ("terminate", "Terminate", *both("S+F9")),
     ("stepover", "Next line", *both("+F10")),
     ("stepout", "Step out", *both("S+F11")),
+    # --- notebook command mode (no cell being edited; Esc enters it) ---
+    ("insertabove", "Insert cell above", *both("+A")),
+    ("insertbelow", "Insert cell below", *both("+B")),
+    ("headingabove", "Insert heading above", *both("S+A")),
+    ("headingbelow", "Insert heading below", *both("S+B")),
+    ("cutcell", "Cut cells", *both("+X")),
+    ("copycell", "Copy cells", *both("+C")),
+    ("pastecell", "Paste cells below", *both("+V")),
+    ("undocell", "Undo cell action", *both("+Z")),
+    ("redocell", "Redo cell action", *both("S+Z")),
+    ("tocode", "Change to code", *both("+Y")),
+    ("tomarkdown", "Change to Markdown", *both("+M")),
+    ("toraw", "Change to raw", *both("+R")),
+    ("mergecells", "Merge selected cells", *both("S+M")),
+    ("cellbelow", "Select cell below", *both("+J")),
+    ("cellabove", "Select cell above", *both("+K")),
+    ("extendbelow", "Extend selection below", *both("S+J")),
+    ("extendabove", "Extend selection above", *both("S+K")),
+    ("linenumbers", "Toggle line numbers", *both("S+L")),
+    ("sidebyside", "Render side by side", *both("S+R")),
 ]
+# 1..6 turn the active cell into a Markdown heading of that level.
+for n in range(1, 7):
+    ROWS.append((f"heading{n}", f"Heading {n}", *both(f"+{n}")))
 # Alt+1..9 open the left sidebar's panels by rank, Alt+Shift+1..9 the right's.
 for n in range(1, 10):
     ROWS.append((f"left{n}", f"Left panel {n}", *both(f"A+{n}")))

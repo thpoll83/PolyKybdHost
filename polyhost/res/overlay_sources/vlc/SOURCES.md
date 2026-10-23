@@ -31,13 +31,27 @@ read 2026-10-22:
 Windows and Linux share one key table, except that Linux also binds the media
 keys, which have no overlay cell.
 
+## Single keys
+
+The single-key hotkeys of `src/libvlc-module.c` act in the main window and the
+video window, so the set draws them (the `ROWS +=` block in `gen_specs.py`).
+The icon is drawn beside the key's own letter, which stays readable.
+
+| Platform | Keys |
+|---|---|
+| Windows, Linux | F, `-`, `=`, `]`, `[`, N, P, S, T, E, R, L, M, B, K, J, V, H, G, A, C, O, D, I, Z, W, X; Shift+R, M, O, B, P, N, A, V, H, J, K, S, D, Z, X |
+| macOS | T, E, L, G, F, S, J, H, A, C, O, D, I, Z, X; Shift+L, A, S, H, J, K, D, Z, X |
+
+The macOS table moves some keys: L is the audio track, S the subtitle track,
+G and F the audio delay, J and H the subtitle delay, and Shift+L the loop.
+
 ## Left out
 
-- Single letters and Shift+letter (play, next, full screen, subtitle and audio
-  track, aspect ratio, chapters and titles on Windows and Linux): they would
-  replace the letter legends. Space, Esc, Enter, the arrows alone, Page Up and
-  Page Down, and `+`, `-`, `=`, `[`, `]` alone (playback speed) for the same
-  reason.
+- Space (play / pause), Esc, Enter, the arrows alone, Page Up and Page Down
+  (360° field of view), and the media keys: they have no overlay cell, or they
+  only navigate.
+- `+` (faster) on Windows and Linux: which key types `+` depends on the
+  layout. `-` (slower) and `=` (normal speed) are drawn.
 - F1..F10 alone (play bookmark): on Windows and Linux F1 is also Help in the
   menu, so the plain F keys are not drawn on any platform. Ctrl+F1..F10
   (Cmd+F1..F8 on macOS), set bookmark, are drawn; bookmark 10 shows "0".
@@ -58,6 +72,9 @@ keys, which have no overlay cell.
   <https://github.com/microsoft/fluentui-system-icons>.
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: the `ms:`
   entries in `fetch_icons.py`.
+- `subdelayup`, `subdelaydown`, `audiodelayup`, `audiodelaydown`: Material
+  `subtitles` or `music_note` with `arrow_upward` or `arrow_downward`, composed
+  by `delay_icons()` in `fetch_icons.py`.
 - `setbm0..setbm9.png`: Fluent `Bookmark` with a digit, from
   `../number_badge.py`.
 - Quit, Settings, Bookmarks, Find and Help are drawn by the shared concept

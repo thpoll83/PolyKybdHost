@@ -6,9 +6,9 @@
 
 | Spec | Set | Keys (each OS) | Loads for |
 |---|---|---|---|
-| `designer.yaml` | `affinity_designer_template` | 72 | Affinity Designer 1 and 2 |
-| `photo.yaml` | `affinity_photo_template` | 72 | Affinity Photo 1 and 2 |
-| `publisher.yaml` | `affinity_publisher_template` | 70 | Affinity Publisher 1 and 2 |
+| `designer.yaml` | `affinity_designer_template` | 94 | Affinity Designer 1 and 2 |
+| `photo.yaml` | `affinity_photo_template` | 96 | Affinity Photo 1 and 2 |
+| `publisher.yaml` | `affinity_publisher_template` | 84 | Affinity Publisher 1 and 2 |
 | `common.yaml` | `affinity_template` | 51 | the unified Affinity app (Canva, 2025) |
 
 Each set has 3 Windows files and 4 macOS files.
@@ -49,10 +49,58 @@ macOS differs from a plain Ctrl→Cmd swap in several rows (Paste FX is ⌃⌘V,
 Show all ⌃⌘H, Unlock all ⌃⌘L, Superscript ⌃⌘=, Subscript ⌃⌘-, Reset view
 rotation ⌃⇧⌘R, Publisher's Preview mode ⌃W), so every row carries both columns.
 
+### Single keys (tools)
+
+The `TOOLS` table of `gen_specs.py` has the single keys with no modifier, the
+same on Windows and macOS. They come from the "Tools" tables of the same help
+pages: "General and Designer Persona" in Designer and Publisher, and the first
+table (the Photo persona) in Photo. The other personas (Pixel, Export,
+Liquify, Develop) reuse letters for other tools, so each set shows the default
+persona only. The unified app's `common.yaml` gets no single keys, because the
+three apps give several letters different tools.
+
+| Key | Designer | Photo | Publisher |
+|---|---|---|---|
+| V | Move | Move | Move |
+| A | Node | | Node |
+| F | Point Transform | | Picture Frame Rectangle (cycle) |
+| O | Contour | Dodge Brush (cycle) | |
+| C | Corner | Crop | |
+| P | Pen | Pen (cycle with Node) | Pen |
+| N | Pencil | | |
+| W | Stroke Width | Selection Brush (cycle with Flood Select) | |
+| K | Knife | Clone Brush | |
+| B | Vector Brush | Paint Brush | |
+| G | Gradient | Flood Fill (cycle with Gradient) | Gradient |
+| Y | Transparency | Pixel | Transparency |
+| R | Vector Flood Fill | Color Replacement Brush | |
+| M | Rectangle (cycle) | Marquee tools (cycle) | Rectangle (cycle) |
+| S | Shape Builder | Smudge Brush | |
+| T | Artistic Text (cycle) | Text tools (cycle) | Artistic Text (cycle) |
+| I | Color Picker | Color Picker | Color Picker |
+| H | View | View | View |
+| Z | Zoom | Zoom | Zoom |
+| L | | Freehand Selection | |
+| E | | Erase tools (cycle) | |
+| J | | Retouch tools (cycle) | |
+| U | | Rectangle (cycle) | |
+| Q | | Quick Mask | |
+| X | Swap stroke and fill | Swap stroke and fill | Swap stroke and fill |
+| D | Black and white | Black and white | Black and white |
+| ; | Toggle snapping | Toggle snapping | Toggle snapping |
+
+A letter that cycles through a tool group shows the tool the help page names
+first. Where the page names only the group ("Erase Tools cycle", "Retouch
+Tools cycle", "Marquee Selection Tools cycle", Photo's "Text Tools cycle"), the
+label is the group.
+
 ### Left out
 
-- Tool letters: they differ per app and per persona (M is the shape tools in
-  Designer and the marquee in Photo).
+- The tool letters of the Pixel, Export, Liquify and Develop personas, and
+  Designer's "Last used wireframe mode toggle", which the View table lists on Y,
+  the Transparency Tool's letter in the default persona.
+- `.` (cycle selection box), `[` and `]` (select previous and next node or
+  layer, which are also the brush width keys while a brush tool is active).
 - Text cursor keys, special characters (dashes, spaces, hyphens), kerning,
   leading and baseline keys, brush keys (`[`, `]`, digits for opacity), mouse
   actions, Tab, the zoom levels 400% and 800%, and Designer's mesh warp
@@ -64,6 +112,13 @@ rotation ⌃⇧⌘R, Publisher's Preview mode ⌃W), so every row carries both c
   <https://github.com/microsoft/fluentui-system-icons>.
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: the `ms:`
   entries in `fetch_icons.py`.
+- Tool icons: `TOOL_BORROW` in `fetch_icons.py` copies the move, pen, brush,
+  marquee and other tool icons byte-identical from the Photoshop, Illustrator,
+  Krita and InDesign sets, so each image is stored once in the overlay icon
+  library. `TOOL_FETCH` fetches the ones no sibling set has (contour, corner,
+  transparency, shape builder, selection brush, colour replacement, smudge,
+  snapping), all from Material Symbols. The tool bindings render in `alpha`
+  mode, as the Photoshop and Illustrator sets render these icons.
 - Close, Save, Print, Undo, Redo, Cut, Copy, Paste, Select all, Bold, Italic,
   Underline, Zoom in and Zoom out are drawn by the shared concept renderer.
 - ESC: generic letter rectangles from `../rect_mark.py` ("Ds", "Ph", "Pb",
