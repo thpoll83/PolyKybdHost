@@ -29,12 +29,22 @@ The firmware draws the legend first, clears 3 px around the overlay's ink, and
 then draws the overlay, so the icon takes priority over the legend
 (`copy_overlay_to_buffer()` in the firmware's `poly_keymap.c`).
 
-Letter keys, `,` and `.` use a 40×40 icon on the right of the keycap. A letter
-legend ends at x 22 and the icon starts at x 32, so the letter stays whole. On
-`,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48), which a
-game does not use. `fetch_icons.py` trims the villager to its drawn area so it
-fills the height. The function keys, Home, Backspace and Enter keep the app
-sets' 36×32 size in the bottom right.
+Every icon sits at the right edge and uses the full height. Its width keeps
+the key's own legend whole, measured with the firmware fonts
+(`tools/oled_preview.py`) and the 3 px clearance:
+
+| Keys | Legend ends at x | Area |
+|---|---|---|
+| Letters, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 | 40×40 |
+| F2 | 35 | 34×40 |
+| F4 | 37 | 30×40 |
+| F11 | 47 | 21×40 |
+| F12 | 51 | 17×40 |
+| Backspace | 44 | 24×40 |
+
+On `,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48),
+which a game does not use. `fetch_icons.py` trims six icons to their drawn area
+(the villager and the five narrow ones) so they fill their area.
 
 ## Icons
 

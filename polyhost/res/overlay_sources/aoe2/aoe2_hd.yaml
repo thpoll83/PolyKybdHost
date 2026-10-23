@@ -19,7 +19,8 @@ mode: alpha
 threshold: 150
 # The firmware draws the icon over the legend and clears 3 px around it, so the
 # icon uses the full height on the right. On `,` and `.` it erases the shifted
-# `<` and `>`. Function keys, Home, Backspace and Enter keep the app sets' size.
+# `<` and `>`. Keys with a wider legend (F2, F4, F11, F12, Backspace) get a
+# narrower area, measured to keep their legend whole (SOURCES.md).
 anchor: right
 region: [40, 40]
 margin: 0
@@ -30,8 +31,8 @@ bindings:
   - { key: DOT, icon: idlevillager.png, label: "Next idle villager" }
   - { key: COMMA, icon: idlemilitary.png, label: "Next idle military" }
   - { key: H, icon: towncenter.png, label: "Go to Town Center" }
-  - { key: HOME, icon: notification.png, label: "Last notification", anchor: bottom-right, region: [36, 32] }
-  - { key: BSPC, icon: previousview.png, label: "Return to previous view", anchor: bottom-right, region: [36, 32] }
+  - { key: HOME, icon: notification.png, label: "Last notification" }
+  - { key: BSPC, icon: previousview.png, label: "Return to previous view", region: [24, 40] }
 
   # Go to building (Ctrl)
   - { key: I, mods: [CTRL], icon: mill.png, label: "Go to Mill" }
@@ -49,15 +50,15 @@ bindings:
   - { key: U, mods: [CTRL], icon: university.png, label: "Go to University" }
 
   # Game (function keys and chat)
-  - { key: F2, icon: techtree.png, label: "Technology tree", anchor: bottom-right, region: [36, 32] }
-  - { key: F3, icon: pause.png, label: "Pause", anchor: bottom-right, region: [36, 32] }
-  - { key: F4, icon: statistics.png, label: "Statistics", anchor: bottom-right, region: [36, 32] }
-  - { key: F9, icon: savechapter.png, label: "Save chapter", anchor: bottom-right, region: [36, 32] }
-  - { key: F11, icon: gametime.png, label: "Game time", anchor: bottom-right, region: [36, 32] }
-  - { key: F12, icon: savegame.png, label: "Save game", anchor: bottom-right, region: [36, 32] }
-  - { key: ENTER, icon: sendchat.png, label: "Send chat message", anchor: bottom-right, region: [36, 32] }
-  - { key: PGUP, icon: chatback.png, label: "Review chat backward", anchor: bottom-right, region: [36, 32] }
-  - { key: PGDN, icon: chatfwd.png, label: "Review chat forward", anchor: bottom-right, region: [36, 32] }
+  - { key: F2, icon: techtree.png, label: "Technology tree", region: [34, 40] }
+  - { key: F3, icon: pause.png, label: "Pause" }
+  - { key: F4, icon: statistics.png, label: "Statistics", region: [30, 40] }
+  - { key: F9, icon: savechapter.png, label: "Save chapter" }
+  - { key: F11, icon: gametime.png, label: "Game time", region: [21, 40] }
+  - { key: F12, icon: savegame.png, label: "Save game", region: [17, 40] }
+  - { key: ENTER, icon: sendchat.png, label: "Send chat message" }
+  - { key: PGUP, icon: chatback.png, label: "Review chat backward" }
+  - { key: PGDN, icon: chatfwd.png, label: "Review chat forward" }
 
   # Alt
   - { key: D, mods: [ALT], icon: diplomacy.png, label: "Diplomacy" }
