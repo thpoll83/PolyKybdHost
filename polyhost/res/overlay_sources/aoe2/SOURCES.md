@@ -13,8 +13,10 @@ own. The other app names were not checked on an install.
 
 ## Shortcut reference
 
-The HD Edition default hotkey sheet from aoe2hdozclan.com, sent by the
-maintainer on 2026-10-22. It lists the same defaults as the CD version.
+The HD Edition default hotkey sheet printed by <https://www.aoe2hdozclan.com>,
+sent as an image by the maintainer on 2026-10-22. The sheet has no URL of its
+own; the site is the one it names. The CD version is assumed to use the same
+defaults; that was not checked.
 
 ## Left out
 

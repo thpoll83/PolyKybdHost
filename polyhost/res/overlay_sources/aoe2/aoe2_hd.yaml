@@ -11,7 +11,7 @@
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
 app: aoe2_hd
-match: [age2_x1, empires2, aok hd]
+match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe, steam_app_813780]
 output: aoe2_hd_template
 icon_dir: icons
 fit: contain
