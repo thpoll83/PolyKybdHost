@@ -43,7 +43,8 @@ the key's own legend whole, measured with the firmware fonts
 | Backspace | 44 | 24×40 |
 
 On `,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48),
-which a game does not use. `fetch_icons.py` trims six icons to their drawn area
+which a game does not use. The villager on `.` sits 5 px further left
+(`margin: 5`, x 32–60), so it erases all of the `>`. `fetch_icons.py` trims six icons to their drawn area
 (the villager and the five narrow ones) so they fill their area.
 
 ## Icons
