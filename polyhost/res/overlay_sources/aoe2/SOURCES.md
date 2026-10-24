@@ -1,16 +1,19 @@
 # Age of Empires II overlays: sources
 
-`scripts/generate_app_overlays.py` renders `aoe2_hd.yaml`; `fetch_icons.py`
+`scripts/generate_app_overlays.py` renders `aoe2_hd.yaml` and `aoe2_de.yaml`; `fetch_icons.py`
 rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine; the Definitive Edition for now |
+| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine |
+| `aoe2_de_template` (1 file) | The Definitive Edition: `aoe2de_s` on Windows, `steam_app_813780` under Proton |
 
 The Definitive Edition reports `AoE2DE_s.exe` (`aoe2de_s`) on Windows and
 `steam_app_813780` under Proton on KDE Plasma (Steam app 813780), both measured
-2026-10-23. It uses this set until it has its own. The other app names were not
-checked on an install.
+2026-10-23. Until it has its own key list it uses the HD keys: `gen_de.py`
+writes `aoe2_de.yaml` from `aoe2_hd.yaml` and changes only the name, the app
+names, the output file and the ESC mark. The other app names were not checked
+on an install.
 
 ## Shortcut reference
 
@@ -54,12 +57,18 @@ which a game does not use. The villager on `.` sits 5 px further left
 (`margin: 5`, x 32–60), so it erases all of the `>`. `fetch_icons.py` trims six icons to their drawn area
 (the villager, F2, F4, F11, F12 and Backspace) so they fill their area.
 
-ESC shows `program.png`, a shield with crossed swords, at 37×32 on the right,
-the size the app sets use for their program marks. The game has no free logo.
+ESC shows a mark drawn pixel by pixel at 72×40 by `program_mark.py`: a large
+serif "II" in the light pattern of a dimmed browser mark (every second pixel in
+x and y), with "Age", a smaller "— of —" and "Empires" in italic serif over it.
+The dashes and the f's crossbar are drawn as single pixels, because the font's
+strokes are thinner than a pixel at 10 px. `program_de.png` adds a small "D"
+and "E" for the Definitive Edition. The font is Liberation Serif (SIL OFL 1.1);
+without it, `program_mark.py` keeps the committed PNGs. The game's own logo is
+not free to use.
 
 ## Icons
 
-All icons are from [game-icons.net](https://game-icons.net), licensed
+All shortcut icons are from [game-icons.net](https://game-icons.net), licensed
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Each one is credited
 to its author below. `fetch_icons.py` renders the SVG at 128 px; the generator
 scales it to the keycap.
@@ -99,7 +108,6 @@ scales it to the keycap.
 | `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
 | `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
 | `groupselect.png` | [backup](https://game-icons.net/1x1/lorc/backup.html) | Lorc |
-| `program.png` | [swords-emblem](https://game-icons.net/1x1/lorc/swords-emblem.html) | Lorc |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
 | `_quill.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |

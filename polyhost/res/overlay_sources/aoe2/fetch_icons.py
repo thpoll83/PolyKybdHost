@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fetch + render the Age of Empires II shortcut icons (reproducible).
 
-All icons are from game-icons.net (CC BY 3.0); each author is credited in
-SOURCES.md.
+The shortcut icons are from game-icons.net (CC BY 3.0); each author is
+credited in SOURCES.md. The ESC marks are drawn by program_mark.py.
 
     pip install cairosvg
     python polyhost/res/overlay_sources/aoe2/fetch_icons.py
@@ -15,6 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources import game_icons  # noqa: E402
+from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 
 ICONS = {
     # selection and view
@@ -52,9 +53,8 @@ ICONS = {
     "mapcombat": "lorc/sword-clash",
     "mapeco": "lorc/wheat",
     "mapnormal": "lorc/mountains",
-    # control groups and the ESC mark
+    # control groups
     "groupselect": "lorc/backup",
-    "program": "lorc/swords-emblem",
     # parts composed in main(): chat review and save chapter
     "_conversation": "lorc/conversation",
     "_arrow": "delapouite/plain-arrow",
@@ -118,6 +118,7 @@ def main() -> int:
                  "previousview", "groupselect"):
         trim(out, stem)
     group_create(out)
+    program_mark.ensure(out)
     print(f"Wrote icons to {out}")
     return 0
 

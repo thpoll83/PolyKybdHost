@@ -8,10 +8,11 @@
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/aoe2/fetch_icons.py
+#   python polyhost/res/overlay_sources/aoe2/gen_de.py     # writes aoe2_de.yaml
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
 app: aoe2_hd
-match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe, aoe2de_s, steam_app_813780]
+match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe]
 output: aoe2_hd_template
 icon_dir: icons
 fit: contain
@@ -25,10 +26,10 @@ anchor: right
 region: [40, 40]
 margin: 0
 
+# The ESC mark is drawn at 72x40 by program_mark.py.
 program_icon: program.png
 program_icon_mode: alpha
-program_icon_anchor: right
-program_icon_region: [37, 32]
+program_icon_region: [72, 40]
 program_icon_margin: 0
 
 bindings:
