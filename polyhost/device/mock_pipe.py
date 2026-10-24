@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import struct
 import threading
+import time
 import zlib
 
 from polyhost.device import bulk_pipe as bp
@@ -201,11 +202,15 @@ class MockPipe:
 
 
 class MockSerial:
-    """What pyserial's ``Serial`` is to the host: one open handle on the pipe."""
+    """What pyserial's ``Serial`` is to the host: one open handle on the pipe.
+    ``timeout`` is ``bulk_pipe.open_port``'s read timeout: a read with nothing
+    waiting blocks that long, so a host loop waiting for a reply that will not
+    come (a dropped frame) does not spin a CPU core."""
 
-    def __init__(self, pipe: MockPipe):
+    def __init__(self, pipe: MockPipe, timeout: float = 0.05):
         self.pipe = pipe
         self.port = pipe.port_name
+        self.timeout = timeout
         self.is_open = True
         self._out = bytearray()
 
@@ -224,6 +229,9 @@ class MockSerial:
     def read(self, size: int = 1) -> bytes:
         if not self.is_open:
             raise OSError("port closed")
+        if not self._out and self.timeout:
+            time.sleep(self.timeout)    # the replies are written synchronously: none will arrive
+            return b""
         chunk = bytes(self._out[:size])
         del self._out[:size]
         return chunk

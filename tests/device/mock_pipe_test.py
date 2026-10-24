@@ -159,8 +159,11 @@ class FirmwareUpdateOverThePipeTest(unittest.TestCase):
         self.assertEqual(fw.running_image, self.image)
 
     def test_a_frame_lost_on_the_wire_is_resent_from_the_cursor(self):
+        # The lost frame's reply never comes, so the host waits out the drain
+        # after the NACK of the frame behind it; shortened here.
         fw, hid = _keyboard(pipe_drop_chunks={236 * 3: 1})
-        ok, msg = self._flash(fw, hid)
+        with mock.patch.object(bp, "FW_CHUNK_DRAIN_S", 0.1):
+            ok, msg = self._flash(fw, hid)
         self.assertTrue(ok, msg)
         self.assertEqual(fw.pipe.stats["frames_bad"], 1)
         self.assertEqual(bytes(fw._fw_staging.data), self.image)
