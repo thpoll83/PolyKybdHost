@@ -92,6 +92,9 @@ class Cmd(Enum):
     # Reboot both halves, nothing persisted (protocol v22+). ACKed before the
     # reset; used by the boot-loop diagnostic (PolyCore.start_boot_loop).
     REBOOT = 43
+    # Cmd 33 plus a second flag byte (protocol v25+): bit 0 draws every pair of the
+    # report without the key legend. Silent, like cmd 33.
+    SEND_OVERLAY_MAPPING_W2 = 44
 
 
 

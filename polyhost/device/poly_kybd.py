@@ -120,6 +120,15 @@ REBOOT_MIN_PROTOCOL = 22
 MAPPING_DIM_MIN_PROTOCOL = 23
 MAPPING_FLAG_DIM = 0x80
 
+# Minimum firmware PROTOCOL_VERSION for cmd 44, cmd 33 with a second flag byte.
+# Its bit 0 draws every pair of the report WITHOUT the key legend: the keyboard
+# clears the whole cell before it draws the icon. The host sets it for keys an
+# overlay file lists in its "polykybd-no-legend" PNG text chunk (a game's ESC
+# mark). v24 and older NACK cmd 44, so below the gate those pairs go out over
+# cmd 33 and the legend shows around the icon.
+MAPPING_NO_LEGEND_MIN_PROTOCOL = 25
+MAPPING_W2_FLAG_NO_LEGEND = 0x01
+
 # Minimum firmware PROTOCOL_VERSION for cmd 25's board-flag byte (data[3]). It sets
 # or clears the SPLIT_VBUS flag in the connected half's handedness stamp, which marks
 # a Rev.2 board (2023): those pass VBUS over the split cable, so the firmware picks
@@ -156,6 +165,7 @@ FEATURE_MIN_PROTOCOL = {
     "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
     "reboot": REBOOT_MIN_PROTOCOL,
     "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
+    "mapping_no_legend": MAPPING_NO_LEGEND_MIN_PROTOCOL,
     "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
 }
 
@@ -1259,7 +1269,8 @@ class PolyKybd:
         return True, lang
 
     def send_overlay_mapping(self, from_to: dict, reset: bool = False,
-                             show: bool = False, dim=frozenset()) -> tuple[bool, str]:
+                             show: bool = False, dim=frozenset(),
+                             no_legend=frozenset()) -> tuple[bool, str]:
         """Program the display-position -> pool-slot table on the keyboard.
 
         Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
@@ -1281,35 +1292,54 @@ class PolyKybd:
         positions whose icon the keyboard draws dimmed. The flag covers a whole
         report, so dimmed and plain pairs travel in separate reports. Below v23
         the set is ignored and every pair goes out plain.
+
+        ``no_legend`` (protocol v25+, the "mapping_no_legend" gate) is the set of
+        display positions the keyboard draws without the key legend. Those pairs
+        travel over SEND_OVERLAY_MAPPING_W2 (cmd 44), one data byte shorter per
+        report. Below v25 the set is ignored and they go out over cmd 33.
         """
         if (reset or show) and not (self.supports("mapping_flags") and from_to):
             return False, "mapping flags need protocol v21 and at least one pair"
         if self.supports("gui_combo_modifiers"):
             if dim and not self.supports("mapping_dim"):
                 dim = frozenset()
-            return self._send_overlay_mapping_sized(from_to, reset, show, dim)
+            if no_legend and not self.supports("mapping_no_legend"):
+                no_legend = frozenset()
+            return self._send_overlay_mapping_sized(from_to, reset, show, dim, no_legend)
         return self._send_overlay_mapping_legacy(from_to)
 
     def _send_overlay_mapping_sized(self, from_to: dict, reset: bool = False,
-                                    show: bool = False, dim=frozenset()) -> tuple[bool, str]:
+                                    show: bool = False, dim=frozenset(),
+                                    no_legend=frozenset()) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        plain = {f: t for f, t in from_to.items() if f not in dim}
-        dimmed = {f: t for f, t in from_to.items() if f in dim}
-        reports = ([(w, p, 0) for w, p in plan_mapping_reports(plain, data_bytes)]
-                   + [(w, p, MAPPING_FLAG_DIM) for w, p in plan_mapping_reports(dimmed, data_bytes)])
+        # One report per combination of the two per-report flags. A no-legend
+        # report is cmd 44, whose second flag byte costs one data byte.
+        reports = []
+        for dim_flag in (0, MAPPING_FLAG_DIM):
+            for w2_flags in (0, MAPPING_W2_FLAG_NO_LEGEND):
+                group = {f: t for f, t in from_to.items()
+                         if (f in dim) == bool(dim_flag) and (f in no_legend) == bool(w2_flags)}
+                group_bytes = data_bytes - 1 if w2_flags else data_bytes
+                reports += [(w, p, dim_flag, w2_flags)
+                            for w, p in plan_mapping_reports(group, group_bytes)]
         num_msgs = 0
-        for r, (width, pairs, dim_flag) in enumerate(reports):
+        for r, (width, pairs, dim_flag, w2_flags) in enumerate(reports):
             flags = (dim_flag
                      | (MAPPING_FLAG_RESET if reset and r == 0 else 0)
                      | (MAPPING_FLAG_SHOW if show and r == len(reports) - 1 else 0))
-            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
-            msg = cmd + pack_report(pairs, data_bytes, width)
+            if w2_flags:
+                cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W2, width | flags, w2_flags)
+                msg = cmd + pack_report(pairs, data_bytes - 1, width)
+            else:
+                cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
+                msg = cmd + pack_report(pairs, data_bytes, width)
             result, err = self.hid.send_multiple(msg)
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {err}"
-            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s",
-                           len(pairs), width, " (dimmed)" if dim_flag else "")
+            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s%s",
+                           len(pairs), width, " (dimmed)" if dim_flag else "",
+                           " (no legend)" if w2_flags else "")
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
                       num_msgs, len(from_to))
@@ -1662,6 +1692,9 @@ class PolyKybd:
         # dimmed: it carries the program mark, which names the app the board is
         # showing and must stay readable whichever source drew it.
         dim_positions: set[int] = set()
+        # Positions whose LAST source lists the key in its "polykybd-no-legend" PNG
+        # chunk (ImageConverter.no_legend): drawn without the key legend (cmd 44).
+        no_legend_positions: set[int] = set()
 
         # Decode EVERY file before touching the device. prepare_for_mru_send()
         # resets the firmware's mapping + usage bits, so issuing it first meant an
@@ -1907,6 +1940,7 @@ class PolyKybd:
                             refused_idx = cache.display_flat_idx(keycode, modifier)
                             display_to_pool.pop(refused_idx, None)
                             dim_positions.discard(refused_idx)
+                            no_legend_positions.discard(refused_idx)
                             covered.discard((modifier.value, keycode))
                             pool_full.append((filename, keycode, modifier))
                             continue
@@ -1953,6 +1987,10 @@ class PolyKybd:
                             dim_positions.add(display_idx)
                         else:
                             dim_positions.discard(display_idx)
+                        if (modifier.value, keycode) in getattr(converter, "no_legend", ()):
+                            no_legend_positions.add(display_idx)
+                        else:
+                            no_legend_positions.discard(display_idx)
                         per_source.setdefault(filename, []).append((keycode, modifier))
                         if not is_hit:
                             uploaded += 1
@@ -2030,9 +2068,10 @@ class PolyKybd:
         flagged = mapping_flags and bool(display_to_pool)
         if flagged:
             ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True,
-                                                dim=dim_positions)
+                                                dim=dim_positions, no_legend=no_legend_positions)
         elif ensure_prepared():
-            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions)
+            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions,
+                                                no_legend=no_legend_positions)
         else:
             return False
         if not ok:
