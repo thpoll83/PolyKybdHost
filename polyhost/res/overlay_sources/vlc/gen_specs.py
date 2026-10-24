@@ -22,6 +22,7 @@ HERE = Path(__file__).resolve().parent
 
 MODS = {"C": "CTRL", "A": "ALT", "S": "SHIFT", "M": "GUI"}
 KEYS = {",": "COMMA", ".": "DOT", "=": "EQUAL", "-": "MINUS", "/": "SLASH",
+        "[": "LBRACKET", "]": "RBRACKET",
         "Up": "UP", "Down": "DOWN", "Left": "LEFT", "Right": "RIGHT"}
 
 ROWS = [
@@ -107,6 +108,57 @@ ROWS = [
     (None, "Find", None, "SM+F"),
     (None, "Help", None, "SM+/"),
 ]
+# The single-key hotkeys of libvlc-module.c. They act in the main window and the
+# video window. A key written "+x" has no modifier.
+ROWS += [
+    # --- playback ---
+    ("fullscreen", "Full screen", "+F", None),
+    ("slower", "Slower", "+-", None),
+    ("ratenormal", "Normal speed", "+=", None),
+    ("faster", "Faster (fine)", "+]", None),
+    ("slower", "Slower (fine)", "+[", None),
+    ("next", "Next", "+N", None),
+    ("previous", "Previous", "+P", None),
+    ("stop", "Stop", "+S", None),
+    ("position", "Show position", "+T", "+T"),
+    ("framenext", "Next frame", "+E", "+E"),
+    ("shuffle", "Random", "+R", None),
+    ("repeatall", "Loop / repeat", "+L", "S+L"),
+    ("record", "Record", "S+R", None),
+    ("discmenu", "Disc menu", "S+M", None),
+    ("titleprev", "Previous title", "S+O", None),
+    ("titlenext", "Next title", "S+B", None),
+    ("chapterprev", "Previous chapter", "S+P", None),
+    ("chapternext", "Next chapter", "S+N", None),
+    # --- audio ---
+    ("mute", "Mute", "+M", None),
+    ("audiotrack", "Audio track", "+B", "+L"),
+    ("audiodelayup", "Audio delay +", "+K", "+G"),
+    ("audiodelaydown", "Audio delay -", "+J", "+F"),
+    ("audiodevice", "Audio device", "S+A", "S+A"),
+    # --- subtitles ---
+    ("subtrack", "Subtitle track", "+V", "+S"),
+    ("subtoggle", "Subtitles on / off", "S+V", "S+S"),
+    ("subdelayup", "Subtitle delay +", "+H", "+J"),
+    ("subdelaydown", "Subtitle delay -", "+G", "+H"),
+    ("syncaudio", "Sync: mark audio", "S+H", "S+H"),
+    ("syncsub", "Sync: mark subtitle", "S+J", "S+J"),
+    ("syncapply", "Sync: apply", "S+K", "S+K"),
+    # --- video ---
+    ("snapshot", "Snapshot", "S+S", None),
+    ("aspect", "Aspect ratio", "+A", "+A"),
+    ("crop", "Crop", "+C", "+C"),
+    ("fitscreen", "Autoscale", "+O", "+O"),
+    ("deinterlace", "Deinterlace", "+D", "+D"),
+    ("deinterlacemode", "Deinterlace mode", "S+D", "S+D"),
+    ("fsinterface", "Full screen controls", "+I", "+I"),
+    ("zoom", "Zoom", "+Z", "+Z"),
+    ("unzoom", "Unzoom", "S+Z", "S+Z"),
+    ("wallpaper", "Wallpaper mode", "+W", None),
+    ("programnext", "Next program", "+X", "+X"),
+    ("programprev", "Previous program", "S+X", "S+X"),
+]
+
 # Ctrl+F1..F10 (Cmd+F1..F8 on macOS) set bookmarks 1..10; the 10th draws "0".
 for n in range(1, 11):
     ROWS.append((f"setbm{n % 10}", f"Set bookmark {n}", f"C+F{n}",

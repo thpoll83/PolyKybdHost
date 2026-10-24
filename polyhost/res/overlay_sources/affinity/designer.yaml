@@ -171,3 +171,27 @@ bindings:
   - { key: Y, mods: [ALT, GUI], icon: pixelview.png, label: "Pixel view mode", only: [macos] }
   - { key: Y, mods: [CTRL], icon: wireframe.png, label: "Wireframe mode", except: [macos] }
   - { key: Y, mods: [GUI], icon: wireframe.png, label: "Wireframe mode", only: [macos] }
+
+  # --- single keys (tools), the same on every OS ---
+  - { key: V, icon: move.png, mode: alpha, label: "Move Tool" }
+  - { key: A, icon: directselect.png, mode: alpha, label: "Node Tool" }
+  - { key: F, icon: freetransform.png, mode: alpha, label: "Point Transform Tool" }
+  - { key: O, icon: contour.png, mode: alpha, label: "Contour Tool" }
+  - { key: C, icon: corner.png, mode: alpha, label: "Corner Tool" }
+  - { key: P, icon: pen.png, mode: alpha, label: "Pen Tool" }
+  - { key: N, icon: pencil.png, mode: alpha, label: "Pencil Tool" }
+  - { key: W, icon: width.png, mode: alpha, label: "Stroke Width Tool" }
+  - { key: K, icon: knife.png, mode: alpha, label: "Knife Tool" }
+  - { key: B, icon: paintbrush.png, mode: alpha, label: "Vector Brush Tool" }
+  - { key: G, icon: gradient.png, mode: alpha, label: "Gradient Tool" }
+  - { key: Y, icon: transparency.png, mode: alpha, label: "Transparency Tool" }
+  - { key: R, icon: filltool.png, mode: alpha, label: "Vector Flood Fill Tool" }
+  - { key: M, icon: rectangle.png, mode: alpha, label: "Rectangle Tool" }
+  - { key: S, icon: shapebuilder.png, mode: alpha, label: "Shape Builder Tool" }
+  - { key: T, icon: type.png, mode: alpha, label: "Artistic Text Tool" }
+  - { key: I, icon: eyedropper.png, mode: alpha, label: "Color Picker Tool" }
+  - { key: H, icon: hand.png, mode: alpha, label: "View Tool" }
+  - { key: Z, icon: zoom.png, mode: alpha, label: "Zoom Tool" }
+  - { key: X, icon: swap.png, mode: alpha, label: "Switch stroke and fill selector" }
+  - { key: D, icon: defaultcolors.png, mode: alpha, label: "Black and white colours" }
+  - { key: SEMICOLON, icon: snapping.png, mode: alpha, label: "Toggle snapping" }

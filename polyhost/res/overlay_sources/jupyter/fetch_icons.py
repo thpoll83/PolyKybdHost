@@ -63,6 +63,27 @@ FLUENT = {
     "terminate": "ms:stop_circle",
     "stepover": "ms:step_over",
     "stepout": "ms:step_out",
+    # notebook command mode
+    "insertabove": "ms:add_row_above",
+    "insertbelow": "ms:add_row_below",
+    "headingabove": "ms:vertical_align_top",
+    "headingbelow": "ms:vertical_align_bottom",
+    "cutcell": "Cut",
+    "copycell": "Copy",
+    "pastecell": "Clipboard Paste",
+    "undocell": "Arrow Undo",
+    "redocell": "Arrow Redo",
+    "tocode": "Code",
+    "tomarkdown": "ms:markdown",
+    "toraw": "ms:raw_on",
+    "mergecells": "ms:call_merge",
+    "cellbelow": "Arrow Down",
+    "cellabove": "Arrow Up",
+    "extendbelow": "ms:keyboard_double_arrow_down",
+    "extendabove": "ms:keyboard_double_arrow_up",
+    "linenumbers": "ms:format_list_numbered",
+    "sidebyside": "Split Vertical",
+    "_heading": "ms:title",
     "_lbase": "Panel Left",
     "_rbase": "Panel Right",
 }
@@ -76,6 +97,8 @@ def main() -> int:
                           size=0.40, centre=(0.62, 0.50))
     number_badge.numbered(out / "_rbase.png", "123456789", out, "right",
                           size=0.40, centre=(0.38, 0.50))
+    number_badge.numbered(out / "_heading.png", "123456", out, "heading",
+                          size=0.40, centre=(0.78, 0.72))
     brand_marks.ensure(out / "jupyter.png", "jupyter")
     print(f"Wrote icons to {out}")
     return 0
