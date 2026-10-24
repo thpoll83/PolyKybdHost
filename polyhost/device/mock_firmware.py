@@ -31,8 +31,12 @@ quirks too, on purpose: a ROI upload writes only its rectangle and a plain
 upload skips all-zero segments, so a REUSED pool slot keeps whatever the
 previous image left outside them -- exactly what the keyboard does.
 
+The bulk pipe is ``self.pipe``, a `MockPipe` (mock_pipe.py): the firmware's
+second USB interface, present from protocol 23 like on the keyboard. Its
+FW_CHUNK frames go through `stage_block`, the writer the HID chunks use.
+
 What it does not model: the split link (one half, no bridge), timing beyond
-the deaf window, EEPROM, and the console.
+the deaf window and the pipe's modelled rate, EEPROM, and the console.
 """
 from __future__ import annotations
 
@@ -48,6 +52,7 @@ from polyhost.device import hid_fw_up as fw
 from polyhost.device.command_ids import Cmd, HidId
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.hid_helper import HidHelper
+from polyhost.device.mock_pipe import PIPE_MIN_PROTOCOL, MockPipe
 from polyhost.device.overlay_sim import OVERLAY_BYTES, OverlayFirmwareSim
 
 POLY = HidId.ID_POLYKYBD.value
@@ -252,6 +257,13 @@ class FaultPlan:
       boot_hang_on_reboot   the Nth cmd 43 reboot never comes back: every write
                      afterwards raises, as a board wedged outside the guard does
 
+    Bulk pipe (MockPipe, mock_pipe.py):
+      pipe_busy      the serial port cannot be opened (another program holds it)
+      pipe_drop_chunks   {offset: n}  the FW_CHUNK frame at that offset arrives
+                     with a bad CRC: counted, never answered
+      pipe_reject_chunks {offset: n}  it is NACKed with the cursor (a failed
+                     relay to the slave half)
+
     API level (PolyKybdMock, by method name):
       fail           {method: n}  return a failure without doing anything
       raises         {method: n}  raise OSError
@@ -268,6 +280,9 @@ class FaultPlan:
     disconnected: bool = False
     boot_crash_on_reboot: int | None = None
     boot_hang_on_reboot: int | None = None
+    pipe_busy: bool = False
+    pipe_drop_chunks: dict = field(default_factory=dict)
+    pipe_reject_chunks: dict = field(default_factory=dict)
     fail: dict = field(default_factory=dict)
     raises: dict = field(default_factory=dict)
 
@@ -302,6 +317,7 @@ class MockFirmware:
                  bundle_versions: dict[int, int] | None = None,
                  letter_map: dict[int, int] | None = None,
                  mru_letter_translate: bool = False,
+                 pipe: bool | None = None,
                  clock=time.monotonic):
         self.protocol = protocol
         self.settings = settings or DeviceSettings()
@@ -337,6 +353,7 @@ class MockFirmware:
         self.bundle_data: dict[int, bytes] = {}
         self._staging: _Staging | None = None
         self._fw_staging: _Staging | None = None
+        self._active: _Staging | None = None    # the target the last BEGIN selected
         self._fw_signature: dict[int, bytes] = {}
         self._fw_prompt_polls = 0
         self.fw_staged_valid = False
@@ -363,6 +380,12 @@ class MockFirmware:
         self.control_reports = 0
         self._burst_images = 0
         self._deaf_until = 0.0
+
+        # The bulk pipe (poly_pipe.c), a second USB interface. None = present from
+        # the protocol it shipped with (v23); True/False force it.
+        if pipe is None:
+            pipe = protocol >= PIPE_MIN_PROTOCOL
+        self.pipe: MockPipe | None = MockPipe(self) if pipe else None
 
     # -- hid.Device interface ----------------------------------------------
 
@@ -405,6 +428,7 @@ class MockFirmware:
         self.no_legend_positions.clear()
         self._ctx = {}
         self._staging = None
+        self._active = None
         if self._apply_pending:
             self.running_image = bytes(self._fw_staging.data[:self._fw_staging.size])
             self.fw_staged_valid = False
@@ -842,26 +866,45 @@ class MockFirmware:
                 self._fw_staging = st
                 self._fw_signature = {}
                 self.fw_staged_valid = False
+        # The keyboard has one staging writer (fw_staging.c); BEGIN selects its
+        # target, and every later chunk, HID or pipe, goes there.
+        self._active = st
         if st.erase_polls > 0:
             st.erase_polls -= 1
             return _pad(bytes([ord("P"), p[1], ord("~")]))     # still erasing
         return _reply(p[1])
 
-    def _chunk(self, p, st: _Staging | None, chunk_size: int):
+    def stage_block(self, offset: int, data: bytes) -> tuple[bool, int]:
+        """Write one chunk into the transfer the last BEGIN selected, by the rules
+        of ``fw_staging_write_chunk()``: a chunk at the cursor is written, one that
+        ends at or before it is a duplicate (ACKed, not rewritten), one that starts
+        behind the cursor and reaches past it has the part past the cursor written,
+        and anything ahead of the cursor or past the end is refused. Returns
+        ``(ok, cursor)``. HID chunks (56 bytes) and pipe FW_CHUNK frames (up to
+        236) both come here, so a transfer can start on one and finish on the
+        other, as on the keyboard."""
+        st = self._active
         if st is None:
-            return _reply(p[1], False, struct.pack("<I", 0))
-        offset = struct.unpack_from("<I", p, 2)[0]
+            return False, 0
         if offset in self.faults.chunk_resync:
-            resume = self.faults.chunk_resync.pop(offset)
-            st.cursor = resume
-            return _reply(p[1], False, struct.pack("<I", resume))
-        if offset != st.cursor:
-            return _reply(p[1], False, struct.pack("<I", st.cursor))
-        data = p[6:6 + chunk_size]
-        end = min(offset + chunk_size, st.size)
+            st.cursor = self.faults.chunk_resync.pop(offset)
+            return False, st.cursor
+        if offset < st.cursor:
+            skip = st.cursor - offset
+            if skip >= len(data):
+                return True, st.cursor
+            offset, data = st.cursor, data[skip:]
+        if offset != st.cursor or offset >= st.size:
+            return False, st.cursor
+        end = min(offset + len(data), st.size)
         st.data[offset:end] = data[:end - offset]
-        st.cursor = offset + chunk_size
-        return _reply(p[1])
+        st.cursor = end
+        return True, st.cursor
+
+    def _chunk(self, p, chunk_size: int):
+        offset = struct.unpack_from("<I", p, 2)[0]
+        ok, cursor = self.stage_block(offset, bytes(p[6:6 + chunk_size]))
+        return _reply(p[1]) if ok else _reply(p[1], False, struct.pack("<I", cursor))
 
     def _fontpack_begin(self, p):
         size, crc, bundle = struct.unpack_from("<IIB", p, 2)
@@ -874,7 +917,7 @@ class MockFirmware:
         return self._begin(p, bundle, size, crc, slots.get(bundle))
 
     def _fontpack_chunk(self, p):
-        return self._chunk(p, self._staging, fp.FONTPACK_CHUNK_SIZE)
+        return self._chunk(p, fp.FONTPACK_CHUNK_SIZE)
 
     def _fontpack_commit(self, p):
         # Re-running COMMIT is free on the firmware: finalize leaves the staged
@@ -924,7 +967,7 @@ class MockFirmware:
         return self._begin(p, -1, size, crc, fw.FW_UP_MAX_SIZE)
 
     def _fw_chunk(self, p):
-        return self._chunk(p, self._fw_staging, fw.FW_UP_CHUNK_SIZE)
+        return self._chunk(p, fw.FW_UP_CHUNK_SIZE)
 
     def _fw_signature_part(self, p):
         self._fw_signature[p[2]] = bytes(p[3:3 + fw.FW_SIG_LEN // 2])

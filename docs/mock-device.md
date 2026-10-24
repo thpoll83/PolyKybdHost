@@ -41,7 +41,8 @@ exercises the flash path.
 With `dev_mock_protocol` set to an older generation, the gated menus grey out,
 gated accessors refuse with the real messages, and the wire carries that
 protocol's encodings (no PRC below v19, no icon fills below v20, separate
-prepare and enable reports below v21, the pre-v11 plain header).
+prepare and enable reports below v21, the pre-v11 plain header). Below v23 the mock has no bulk pipe, so it
+connects HID only, as that firmware does.
 
 ## The board view (Developer → Mock Keyboard…)
 
@@ -101,9 +102,25 @@ Sources are paths in `qmk_firmware/keyboards/polykybd/`.
   checks, the resume-offset NACK, COMMIT staying re-runnable), and firmware
   update GET_VERSION/BEGIN/CHUNK/SIGNATURE/COMMIT/APPLY (the unsigned-image
   prompt, `S`, the reboot onto the staged image at the next reconnect).
+  Every chunk goes through `MockFirmware.stage_block`, which follows
+  `fw_staging_write_chunk()` (`base/fw_staging.c`): a duplicate is ACKed, a
+  chunk that starts behind the cursor has only the part past it written, and
+  a chunk ahead of the cursor or past the end is NACKed with the cursor. BEGIN
+  selects the one target every later chunk is written to, HID or pipe.
+- **The bulk pipe** (`poly_pipe.c`, `device/mock_pipe.py`): the frame parser
+  (resync bytes, a bad CRC counted and never answered, the 512-byte cap on
+  buffered frames), PING, SINK, STAT, RESET, ECHO and FW_CHUNK. It is present
+  from protocol 23, the version it shipped with (firmware 1.9.3);
+  `MockFirmware(pipe=...)` or `PolyKybdMock.pipe_available` adds or removes
+  it. The pipe registers its port name with `bulk_pipe.register_emulated_port`,
+  so `bulk_pipe.open_port` opens it like a serial port. The mock's
+  `probe_bulk_pipe` therefore runs the real `bulk_pipe.probe`, and the
+  firmware update and every resource flash stream their chunks over it. The
+  STAT clock advances with the bytes received at 0.6 MB/s (the rig's measured
+  rate), so the tray shows "0.6 MB/s link".
 
-It deliberately does NOT model the split link, timing beyond the deaf window,
-EEPROM, or the console.
+It deliberately does NOT model the split link, timing beyond the deaf window
+and the pipe's modelled rate, EEPROM, or the console.
 
 ⚠️ **It copies the firmware's quirks on purpose**, because a keycap the
 emulator draws is only evidence if the keyboard would draw the same.
@@ -136,10 +153,18 @@ device recovers afterwards.
 | `fw_confirm_polls`, `fw_confirm` | The unsigned-image prompt answers `?` that often, then the "user" accepts or rejects. |
 | `fw_signature_valid` | A signature that was sent verifies or not. |
 | `deaf_after_images (n, s)` | A burst of n or more image reports leaves the keyboard unanswering for s seconds. |
-| `disconnected` | Every write raises. |
+| `disconnected` | Every write raises, on HID and on the pipe. |
+| `pipe_busy` | The pipe's port cannot be opened: the probe reads HID only and a flash sends every chunk over HID. |
+| `pipe_drop_chunks {offset: n}` | The FW_CHUNK frame at that offset arrives with a bad CRC: counted, no reply. |
+| `pipe_reject_chunks {offset: n}` | That FW_CHUNK frame is NACKed with the cursor (a failed relay to the slave half). |
 | `fail`, `raises {method: n}` | A `PolyKybdMock` method returns its failure value, or raises `OSError`. |
 
-`tests/device/mock_fault_test.py` drives the recovery paths with these: a split
+`tests/device/mock_pipe_test.py` drives the pipe with these: the probe, a
+lost and a rejected frame, a busy port, and a pipe that stops partway with HID
+continuing from the cursor. `tests/core/core_mock_link_test.py` runs a real
+`PolyCore` with the mock as its keyboard through the fresh-connect probe and a
+firmware update and a font-pack flash, on the pipe and with
+`dev_force_hid_link`. `tests/device/mock_fault_test.py` drives the recovery paths with these: a split
 link `L` retried without a re-stream, a lost COMMIT ack verified as landed, the
 core's retry memory, a chunk resync, the erase wait, the unsigned-firmware
 prompt, apply-and-reboot, and the probe's 3-strike debounce riding out the deaf

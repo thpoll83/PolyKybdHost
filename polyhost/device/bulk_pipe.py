@@ -21,6 +21,7 @@ so this probe is the only way the host learns about it.
 import logging
 import struct
 import time
+import weakref
 import zlib
 
 TRANSPORT_PIPE = "pipe"
@@ -163,10 +164,25 @@ def request(ser, cmd: int, payload: bytes = b"", timeout: float = PROBE_TIMEOUT_
     return None
 
 
+# Ports served by an emulator instead of pyserial: name -> an object whose
+# ``open_port()`` returns a pyserial-like port. The mock keyboard
+# (device/mock_pipe.py) registers its pipe here, so the probe and every
+# streaming path open it through the same ``open_port`` as a real port. Weak, so
+# a dropped mock does not stay registered.
+_EMULATED_PORTS = weakref.WeakValueDictionary()
+
+
+def register_emulated_port(name: str, device) -> None:
+    _EMULATED_PORTS[name] = device
+
+
 def open_port(port: str):
     """The pyserial port for the pipe, raw. Opening sets DTR, which the firmware
     ignores; ``dsrdtr``/``rtscts`` are off because no flow-control lines exist on
     the device side. The baud rate is nominal: a CDC-ACM device ignores it."""
+    emulated = _EMULATED_PORTS.get(port)
+    if emulated is not None:
+        return emulated.open_port()
     import serial
     return serial.Serial(port, baudrate=115200, timeout=0.05, write_timeout=1.0,
                          dsrdtr=False, rtscts=False)
