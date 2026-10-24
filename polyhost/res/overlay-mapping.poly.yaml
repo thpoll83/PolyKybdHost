@@ -1871,7 +1871,10 @@ linear:
 # overlay_sources/aoe2/aoe2_hd.yaml). The Conquerors runs as age2_x1.exe, The
 # Age of Kings as empires2.exe, the HD Edition as "AoK HD.exe". Under Wine the
 # WM_CLASS keeps the `.exe`. Names not checked on an install.
-# The Definitive Edition under Proton on KDE Plasma reports `steam_app_813780`
-# (measured 2026-10-23). It uses this set until it has its own.
-age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe,steam_app_813780:
+age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
   overlay: aoe2_hd_template.mods.png
+# Age of Empires II: Definitive Edition (overlay_sources/aoe2/aoe2_de.yaml, the
+# HD keys with a "DE" ESC mark). AoE2DE_s.exe on Windows and steam_app_813780
+# under Proton on KDE Plasma (both measured 2026-10-23).
+aoe2de_s,steam_app_813780:
+  overlay: aoe2_de_template.mods.png

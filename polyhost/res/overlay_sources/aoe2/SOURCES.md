@@ -1,15 +1,19 @@
 # Age of Empires II overlays: sources
 
-`scripts/generate_app_overlays.py` renders `aoe2_hd.yaml`; `fetch_icons.py`
+`scripts/generate_app_overlays.py` renders `aoe2_hd.yaml` and `aoe2_de.yaml`; `fetch_icons.py`
 rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine; the Definitive Edition on Linux for now |
+| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine |
+| `aoe2_de_template` (1 file) | The Definitive Edition: `aoe2de_s` on Windows, `steam_app_813780` under Proton |
 
-The Definitive Edition under Proton on KDE Plasma reports `steam_app_813780`
-(Steam app 813780, measured 2026-10-23), and uses this set until it has its
-own. The other app names were not checked on an install.
+The Definitive Edition reports `AoE2DE_s.exe` (`aoe2de_s`) on Windows and
+`steam_app_813780` under Proton on KDE Plasma (Steam app 813780), both measured
+2026-10-23. Until it has its own key list it uses the HD keys: `gen_de.py`
+writes `aoe2_de.yaml` from `aoe2_hd.yaml` and changes only the name, the app
+names, the output file and the ESC mark. The other app names were not checked
+on an install.
 
 ## Shortcut reference
 
@@ -18,12 +22,18 @@ sent as an image by the maintainer on 2026-10-22. The sheet has no URL of its
 own; the site is the one it names. The CD version is assumed to use the same
 defaults; that was not checked.
 
+Control groups (1 to 0 select a group, Ctrl+1 to Ctrl+0 create one) are not
+on the sheet. They are AoE2's standard keys, added at the maintainer's request.
+Each digit has its own unit, drawn twice as a group, so the groups are easy to
+tell apart: 1 spearmen, 2 archers, 3 cavalry, 4 vikings, 5 knights, 6 catapults,
+7 siege towers, 8 elephants, 9 longships, 0 villagers. The game does not tie a
+group number to a unit type; the icons only suggest a habit.
+
 ## Left out
 
 - The letter keys alone, except H (Go to Town Center). They build, train and
   give unit commands, and what each does depends on the selection.
 - Numpad `-` and `+` (game speed): the keyboard has no numpad.
-- Ctrl+1 to Ctrl+0 and 1 to 0 (control groups): not on the sheet.
 
 ## Placement
 
@@ -39,6 +49,7 @@ key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
 | Keys | Legend ends at x | Area |
 |---|---|---|
 | Letters, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 | 40×40 |
+| Digits (control groups) | 22 to 36 (the shifted symbol, which the group erases) | 48×40 drawn 1:1, 5 px from the right edge (`margin: 5`) |
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
@@ -50,9 +61,24 @@ which a game does not use. The villager on `.` sits 5 px further left
 (`margin: 5`, x 32–60), so it erases all of the `>`. `fetch_icons.py` trims six icons to their drawn area
 (the villager, F2, F4, F11, F12 and Backspace) so they fill their area.
 
+ESC shows a mark drawn pixel by pixel at 72×40 by `program_mark.py`: a large
+serif "II" in the light pattern of a dimmed browser mark (every second pixel in
+x and y), with "Age", a smaller "— of —" and "Empires" in italic serif over it.
+The dashes and the f's crossbar are drawn as single pixels, because the font's
+strokes are thinner than a pixel at 10 px. `program_de.png` adds a small "D"
+and "E" for the Definitive Edition. The font is Liberation Serif (SIL OFL 1.1);
+without it, `program_mark.py` keeps the committed PNGs. The game's own logo is
+not free to use.
+
+The mark fills the whole keycap, so ESC is drawn without its legend
+(`program_icon_legend: false`): the keyboard clears the cell before it draws the
+mark. That needs firmware with protocol v25 (cmd 44). Older firmware draws the
+mark over the legend with the 3 px clearance, and parts of the ⎋ legend stay
+visible around it.
+
 ## Icons
 
-All icons are from [game-icons.net](https://game-icons.net), licensed
+All shortcut icons are from [game-icons.net](https://game-icons.net), licensed
 [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Each one is credited
 to its author below. `fetch_icons.py` renders the SVG at 128 px; the generator
 scales it to the keycap.
@@ -91,11 +117,28 @@ scales it to the keycap.
 | `mapcombat.png` | [sword-clash](https://game-icons.net/1x1/lorc/sword-clash.html) | Lorc |
 | `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
 | `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
+| `_unit1.png` | [spartan](https://game-icons.net/1x1/lorc/spartan.html) | Lorc |
+| `_unit2.png` | [bowman](https://game-icons.net/1x1/lorc/bowman.html) | Lorc |
+| `_unit3.png` | [cavalry](https://game-icons.net/1x1/delapouite/cavalry.html) | Delapouite |
+| `_unit4.png` | [viking-head](https://game-icons.net/1x1/delapouite/viking-head.html) | Delapouite |
+| `_unit5.png` | [visored-helm](https://game-icons.net/1x1/lorc/visored-helm.html) | Lorc |
+| `_unit6.png` | [catapult](https://game-icons.net/1x1/heavenly-dog/catapult.html) | HeavenlyDog |
+| `_unit7.png` | [siege-tower](https://game-icons.net/1x1/delapouite/siege-tower.html) | Delapouite |
+| `_unit8.png` | [elephant](https://game-icons.net/1x1/delapouite/elephant.html) | Delapouite |
+| `_unit9.png` | [drakkar](https://game-icons.net/1x1/delapouite/drakkar.html) | Delapouite |
+| `_unit0.png` | [farmer](https://game-icons.net/1x1/delapouite/farmer.html) | Delapouite |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
 | `_quill.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |
 
-`fetch_icons.py` composes three files from these parts: `chatback.png` and
+`fetch_icons.py` composes files from these parts: `chatback.png` and
 `chatfwd.png` from `_conversation.png` and `_arrow.png` (the arrow turned up
 for back), and `savechapter.png` from `_quill.png` and the up arrow, as on the
 save icon.
+
+`group<N>.png` draws `_unit<N>.png` twice at keycap scale: a back copy, and a
+front copy 40 % of its width to the right and 6 px lower, with 3 px of black
+cleared around the front copy so the two stay apart. `groupnew<N>.png` adds a
+13 px plus in the lower-right corner with the same 3 px clearance. Both are
+48×40 1-bit images, so the generator places them without scaling and the 3 px
+seam survives.
