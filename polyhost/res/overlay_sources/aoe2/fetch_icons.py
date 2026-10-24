@@ -53,13 +53,30 @@ ICONS = {
     "mapcombat": "lorc/sword-clash",
     "mapeco": "lorc/wheat",
     "mapnormal": "lorc/mountains",
-    # control groups
-    "groupselect": "lorc/backup",
     # parts composed in main(): chat review and save chapter
     "_conversation": "lorc/conversation",
     "_arrow": "delapouite/plain-arrow",
     "_quill": "lorc/quill-ink",
 }
+
+# Control groups: one unit per digit, drawn twice as a group (`groups()`).
+GROUP_UNITS = {
+    "1": "lorc/spartan",
+    "2": "lorc/bowman",
+    "3": "delapouite/cavalry",
+    "4": "delapouite/viking-head",
+    "5": "lorc/visored-helm",
+    "6": "heavenly-dog/catapult",
+    "7": "delapouite/siege-tower",
+    "8": "delapouite/elephant",
+    "9": "delapouite/drakkar",
+    "0": "delapouite/farmer",
+}
+# The group icon is drawn at keycap scale, so the generator places it 1:1
+# (aoe2_hd.yaml gives these bindings `region: [48, 40]`).
+GROUP_W, GROUP_H = 48, 40
+GROUP_DY = 6        # the front copy sits this much lower than the back one
+GROUP_SEAM = 2      # black pixels between the two copies, and around the plus
 
 
 def chat_review(out: Path) -> None:
@@ -87,18 +104,65 @@ def save_chapter(out: Path) -> None:
     print("  savechapter.png  <- _quill.png + _arrow.png")
 
 
-def group_create(out: Path) -> None:
-    """Create group (Ctrl+digit): the squad of "Select group" with a plus sign."""
-    from PIL import Image, ImageDraw
-    squad = Image.open(out / "groupselect.png").convert("RGBA")
-    canvas = Image.new("RGBA", (squad.width + 56, squad.height), (0, 0, 0, 0))
-    canvas.alpha_composite(squad, (0, 0))
-    d = ImageDraw.Draw(canvas)
-    cx, cy = squad.width + 30, squad.height // 2
-    d.rectangle((cx - 22, cy - 7, cx + 22, cy + 7), fill=(0, 0, 0, 255))
-    d.rectangle((cx - 7, cy - 22, cx + 7, cy + 22), fill=(0, 0, 0, 255))
-    canvas.save(out / "groupcreate.png")
-    print("  groupcreate.png  <- groupselect.png + a plus sign")
+def _unit_mask(src: Path, h: int):
+    """A unit's ink at `h` px high, 1-bit."""
+    import numpy as np
+    from PIL import Image
+    alpha = Image.open(src).convert("RGBA").getchannel("A")
+    alpha = alpha.crop(alpha.getbbox())
+    w = max(1, round(alpha.width * h / alpha.height))
+    return np.array(alpha.resize((w, h), Image.LANCZOS)) > 150
+
+
+def _group_mask(src: Path):
+    """The unit twice: a back copy, and a front copy shifted right by 40 % of its
+    width and down GROUP_DY. The front copy's ink grown by GROUP_SEAM is cleared
+    from the back copy. The largest height whose group fits GROUP_W x GROUP_H
+    without rescaling, so the seam stays exactly GROUP_SEAM px."""
+    import numpy as np
+    from scipy.ndimage import binary_dilation
+    for h in range(GROUP_H - GROUP_DY, 10, -1):
+        m = _unit_mask(src, h)
+        dx = max(8, m.shape[1] * 2 // 5)
+        if m.shape[1] + dx <= GROUP_W:
+            break
+    H, W = h + GROUP_DY, m.shape[1] + dx
+    back = np.zeros((H, W), bool)
+    front = np.zeros((H, W), bool)
+    back[:h, :m.shape[1]] = m
+    front[GROUP_DY:, dx:] = m
+    return (back & ~binary_dilation(front, iterations=GROUP_SEAM)) | front
+
+
+def _with_plus(mask, size=13, bar=3):
+    """A plus sign in the lower-right corner, GROUP_SEAM px clear around it."""
+    import numpy as np
+    from scipy.ndimage import binary_dilation
+    H, W = mask.shape
+    p = np.zeros((H, W), bool)
+    cy, cx = H - size // 2 - 1, W - size // 2 - 1
+    p[cy - bar // 2:cy + bar // 2 + 1, cx - size // 2:cx + size // 2 + 1] = True
+    p[cy - size // 2:cy + size // 2 + 1, cx - bar // 2:cx + bar // 2 + 1] = True
+    return (mask & ~binary_dilation(p, iterations=GROUP_SEAM)) | p
+
+
+def _save_cell(mask, path: Path) -> None:
+    """Black ink on transparent, bottom-right in a GROUP_W x GROUP_H canvas."""
+    import numpy as np
+    from PIL import Image
+    canvas = np.zeros((GROUP_H, GROUP_W, 4), np.uint8)
+    h, w = mask.shape
+    canvas[GROUP_H - h:, GROUP_W - w:, 3] = np.where(mask, 255, 0)
+    Image.fromarray(canvas, "RGBA").save(path)
+
+
+def groups(out: Path) -> None:
+    """group<N>.png (select) and groupnew<N>.png (create, with a plus)."""
+    for digit in GROUP_UNITS:
+        g = _group_mask(out / f"_unit{digit}.png")
+        _save_cell(g, out / f"group{digit}.png")
+        _save_cell(_with_plus(g), out / f"groupnew{digit}.png")
+        print(f"  group{digit}.png, groupnew{digit}.png  <- _unit{digit}.png twice")
 
 
 def trim(out: Path, stem: str) -> None:
@@ -112,12 +176,13 @@ def trim(out: Path, stem: str) -> None:
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     game_icons.render(ICONS, out)
+    game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
     chat_review(out)
     save_chapter(out)
     for stem in ("idlevillager", "techtree", "statistics", "gametime", "savegame",
-                 "previousview", "groupselect"):
+                 "previousview"):
         trim(out, stem)
-    group_create(out)
+    groups(out)
     program_mark.ensure(out)
     print(f"Wrote icons to {out}")
     return 0

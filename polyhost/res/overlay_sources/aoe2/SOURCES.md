@@ -24,7 +24,10 @@ defaults; that was not checked.
 
 Control groups (1 to 0 select a group, Ctrl+1 to Ctrl+0 create one) are not
 on the sheet. They are AoE2's standard keys, added at the maintainer's request.
-The key's own digit names the group.
+Each digit has its own unit, drawn twice as a group, so the groups are easy to
+tell apart: 1 spearmen, 2 archers, 3 cavalry, 4 vikings, 5 knights, 6 catapults,
+7 siege towers, 8 elephants, 9 longships, 0 villagers. The game does not tie a
+group number to a unit type; the icons only suggest a habit.
 
 ## Left out
 
@@ -45,7 +48,8 @@ key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
 
 | Keys | Legend ends at x | Area |
 |---|---|---|
-| Letters, digits, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 (digits: the shifted symbol, which the icon erases) | 40×40 |
+| Letters, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 | 40×40 |
+| Digits (control groups) | 22 to 36 (the shifted symbol, which the group erases) | 48×40, drawn 1:1 |
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
@@ -113,12 +117,28 @@ scales it to the keycap.
 | `mapcombat.png` | [sword-clash](https://game-icons.net/1x1/lorc/sword-clash.html) | Lorc |
 | `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
 | `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
-| `groupselect.png` | [backup](https://game-icons.net/1x1/lorc/backup.html) | Lorc |
+| `_unit1.png` | [spartan](https://game-icons.net/1x1/lorc/spartan.html) | Lorc |
+| `_unit2.png` | [bowman](https://game-icons.net/1x1/lorc/bowman.html) | Lorc |
+| `_unit3.png` | [cavalry](https://game-icons.net/1x1/delapouite/cavalry.html) | Delapouite |
+| `_unit4.png` | [viking-head](https://game-icons.net/1x1/delapouite/viking-head.html) | Delapouite |
+| `_unit5.png` | [visored-helm](https://game-icons.net/1x1/lorc/visored-helm.html) | Lorc |
+| `_unit6.png` | [catapult](https://game-icons.net/1x1/heavenly-dog/catapult.html) | HeavenlyDog |
+| `_unit7.png` | [siege-tower](https://game-icons.net/1x1/delapouite/siege-tower.html) | Delapouite |
+| `_unit8.png` | [elephant](https://game-icons.net/1x1/delapouite/elephant.html) | Delapouite |
+| `_unit9.png` | [drakkar](https://game-icons.net/1x1/delapouite/drakkar.html) | Delapouite |
+| `_unit0.png` | [farmer](https://game-icons.net/1x1/delapouite/farmer.html) | Delapouite |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
 | `_quill.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |
 
-`fetch_icons.py` composes four files from these parts: `chatback.png` and
+`fetch_icons.py` composes files from these parts: `chatback.png` and
 `chatfwd.png` from `_conversation.png` and `_arrow.png` (the arrow turned up
 for back), and `savechapter.png` from `_quill.png` and the up arrow, as on the
-save icon, and `groupcreate.png` from `groupselect.png` and a drawn plus sign.
+save icon.
+
+`group<N>.png` draws `_unit<N>.png` twice at keycap scale: a back copy, and a
+front copy 40 % of its width to the right and 6 px lower, with 2 px of black
+cleared around the front copy so the two stay apart. `groupnew<N>.png` adds a
+13 px plus in the lower-right corner with the same 2 px clearance. Both are
+48×40 1-bit images, so the generator places them without scaling and the 2 px
+seam survives.
