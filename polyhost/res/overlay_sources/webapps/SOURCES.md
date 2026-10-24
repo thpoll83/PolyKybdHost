@@ -319,7 +319,7 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Google Sheets | <https://support.google.com/docs/answer/181110>, PC and Mac tables | 80, 79 |
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
-| Google Calendar | <https://support.google.com/calendar/answer/37034> | 28, 28 |
+| Google Calendar | <https://support.google.com/calendar/answer/37034> | 27, 27 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 

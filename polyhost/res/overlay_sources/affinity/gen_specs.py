@@ -188,7 +188,7 @@ TOOLS = [
     ("type", "Text tools", "T", "p"),
     ("quickmask", "Quick Mask", "Q", "p"),
     # all three
-    ("swap", "Swap stroke and fill colours", "X", "dpu"),
+    ("swap", "Switch stroke and fill selector", "X", "dpu"),
     ("defaultcolors", "Black and white colours", "D", "dpu"),
     ("snapping", "Toggle snapping", ";", "dpu"),
 ]

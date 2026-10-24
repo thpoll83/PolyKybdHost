@@ -180,6 +180,6 @@ bindings:
   - { key: H, icon: hand.png, mode: alpha, label: "View Tool" }
   - { key: Z, icon: zoom.png, mode: alpha, label: "Zoom Tool" }
   - { key: F, icon: rectframe.png, mode: alpha, label: "Picture Frame Rectangle Tool" }
-  - { key: X, icon: swap.png, mode: alpha, label: "Swap stroke and fill colours" }
+  - { key: X, icon: swap.png, mode: alpha, label: "Switch stroke and fill selector" }
   - { key: D, icon: defaultcolors.png, mode: alpha, label: "Black and white colours" }
   - { key: SEMICOLON, icon: snapping.png, mode: alpha, label: "Toggle snapping" }

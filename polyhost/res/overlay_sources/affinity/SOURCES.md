@@ -85,7 +85,7 @@ three apps give several letters different tools.
 | J | | Retouch tools (cycle) | |
 | U | | Rectangle (cycle) | |
 | Q | | Quick Mask | |
-| X | Swap stroke and fill | Swap stroke and fill | Swap stroke and fill |
+| X | Switch stroke / fill selector | Switch stroke / fill selector | Switch stroke / fill selector |
 | D | Black and white | Black and white | Black and white |
 | ; | Toggle snapping | Toggle snapping | Toggle snapping |
 
