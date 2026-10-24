@@ -66,6 +66,12 @@ and "E" for the Definitive Edition. The font is Liberation Serif (SIL OFL 1.1);
 without it, `program_mark.py` keeps the committed PNGs. The game's own logo is
 not free to use.
 
+The mark fills the whole keycap, so ESC is drawn without its legend
+(`program_icon_legend: false`): the keyboard clears the cell before it draws the
+mark. That needs firmware with protocol v25 (cmd 44). Older firmware draws the
+mark over the legend with the 3 px clearance, and parts of the ⎋ legend stay
+visible around it.
+
 ## Icons
 
 All shortcut icons are from [game-icons.net](https://game-icons.net), licensed

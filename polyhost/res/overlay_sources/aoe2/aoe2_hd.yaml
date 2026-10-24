@@ -26,11 +26,13 @@ anchor: right
 region: [40, 40]
 margin: 0
 
-# The ESC mark is drawn at 72x40 by program_mark.py.
+# The ESC mark is drawn at 72x40 by program_mark.py. It replaces the keycap, so
+# the keyboard draws it without the ESC legend (protocol v25, cmd 44).
 program_icon: program.png
 program_icon_mode: alpha
 program_icon_region: [72, 40]
 program_icon_margin: 0
+program_icon_legend: false
 
 bindings:
 
