@@ -3,8 +3,10 @@
 #
 # Shortcuts: the PC and Mac tables of Google's help page
 # https://support.google.com/mail/answer/6594
-# Bare letters, digits and Shift+letter keys are left out: they would replace
-# the letter legends while the user types.
+# Gmail's single keys are included. They work only after the user turns
+# "Keyboard shortcuts on" in Gmail's settings, and only when no text field has
+# focus. Keys that need Shift on a US layout (! # _ : ~ * + ?) and the two-key
+# sequences (g then i, * then a) are left out.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -30,6 +32,40 @@ program_icon_margin: 0
 
 bindings:
 
+  - { key: X, icon: gm_select.png, label: "Select conversation" }
+  - { key: S, icon: gm_star.png, label: "Star" }
+  - { key: E, icon: gm_archive.png, label: "Archive" }
+  - { key: M, icon: gm_mute.png, label: "Mute conversation" }
+  - { key: R, icon: gm_reply.png, label: "Reply" }
+  - { key: R, mods: [SHIFT], icon: gm_newwindow.png, label: "Reply in new window" }
+  - { key: A, icon: gm_replyall.png, label: "Reply all" }
+  - { key: A, mods: [SHIFT], icon: gm_newwindow.png, label: "Reply all in new window" }
+  - { key: F, icon: gm_forward.png, label: "Forward" }
+  - { key: F, mods: [SHIFT], icon: gm_newwindow.png, label: "Forward in new window" }
+  - { key: N, mods: [SHIFT], icon: gm_update.png, label: "Update conversation" }
+  - { key: LBRACKET, icon: gm_archprev.png, label: "Archive, previous" }
+  - { key: RBRACKET, icon: gm_archnext.png, label: "Archive, next" }
+  - { key: Z, label: "Undo" }
+  - { key: I, mods: [SHIFT], icon: gm_read.png, label: "Mark as read" }
+  - { key: U, mods: [SHIFT], icon: gm_unread.png, label: "Mark as unread" }
+  - { key: EQUAL, icon: gm_important.png, label: "Mark as important" }
+  - { key: MINUS, icon: gm_notimportant.png, label: "Mark as not important" }
+  - { key: B, icon: gm_snooze.png, label: "Snooze" }
+  - { key: SEMICOLON, icon: gm_expand.png, label: "Expand conversation" }
+  - { key: T, mods: [SHIFT], icon: gm_addtask.png, label: "Add to Tasks" }
+  - { key: U, icon: gm_list.png, label: "Back to list" }
+  - { key: K, icon: gm_newer.png, label: "Newer conversation" }
+  - { key: J, icon: gm_older.png, label: "Older conversation" }
+  - { key: O, icon: openlink.png, label: "Open conversation" }
+  - { key: P, icon: gm_prevmsg.png, label: "Previous message" }
+  - { key: N, icon: gm_nextmsg.png, label: "Next message" }
+  - { key: C, icon: mailnew.png, label: "Compose" }
+  - { key: D, icon: newtab.png, label: "Compose in new tab" }
+  - { key: SLASH, icon: search.png, label: "Search mail" }
+  - { key: DOT, icon: gm_more.png, label: "More actions" }
+  - { key: V, icon: gm_move.png, label: "Move to" }
+  - { key: L, icon: gm_label.png, label: "Label as" }
+  - { key: COMMA, icon: compact.png, label: "Focus toolbar" }
   - { key: DOT, mods: [CTRL], icon: nextchat.png, label: "Next chat or compose", except: [macos] }
   - { key: DOT, mods: [CTRL], icon: nextchat.png, label: "Next chat or compose", only: [macos] }
   - { key: COMMA, mods: [CTRL], icon: prevchat.png, label: "Previous chat or compose", except: [macos] }

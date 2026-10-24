@@ -130,6 +130,56 @@ bindings:
   - { key: "F10", mods: [], icon: stepover.png, label: "Next line", only: [macos] }
   - { key: "F11", mods: [SHIFT], icon: stepout.png, label: "Step out", except: [macos] }
   - { key: "F11", mods: [SHIFT], icon: stepout.png, label: "Step out", only: [macos] }
+  - { key: "A", mods: [], icon: insertabove.png, label: "Insert cell above", except: [macos] }
+  - { key: "A", mods: [], icon: insertabove.png, label: "Insert cell above", only: [macos] }
+  - { key: "B", mods: [], icon: insertbelow.png, label: "Insert cell below", except: [macos] }
+  - { key: "B", mods: [], icon: insertbelow.png, label: "Insert cell below", only: [macos] }
+  - { key: "A", mods: [SHIFT], icon: headingabove.png, label: "Insert heading above", except: [macos] }
+  - { key: "A", mods: [SHIFT], icon: headingabove.png, label: "Insert heading above", only: [macos] }
+  - { key: "B", mods: [SHIFT], icon: headingbelow.png, label: "Insert heading below", except: [macos] }
+  - { key: "B", mods: [SHIFT], icon: headingbelow.png, label: "Insert heading below", only: [macos] }
+  - { key: "X", mods: [], icon: cutcell.png, label: "Cut cells", except: [macos] }
+  - { key: "X", mods: [], icon: cutcell.png, label: "Cut cells", only: [macos] }
+  - { key: "C", mods: [], icon: copycell.png, label: "Copy cells", except: [macos] }
+  - { key: "C", mods: [], icon: copycell.png, label: "Copy cells", only: [macos] }
+  - { key: "V", mods: [], icon: pastecell.png, label: "Paste cells below", except: [macos] }
+  - { key: "V", mods: [], icon: pastecell.png, label: "Paste cells below", only: [macos] }
+  - { key: "Z", mods: [], icon: undocell.png, label: "Undo cell action", except: [macos] }
+  - { key: "Z", mods: [], icon: undocell.png, label: "Undo cell action", only: [macos] }
+  - { key: "Z", mods: [SHIFT], icon: redocell.png, label: "Redo cell action", except: [macos] }
+  - { key: "Z", mods: [SHIFT], icon: redocell.png, label: "Redo cell action", only: [macos] }
+  - { key: "Y", mods: [], icon: tocode.png, label: "Change to code", except: [macos] }
+  - { key: "Y", mods: [], icon: tocode.png, label: "Change to code", only: [macos] }
+  - { key: "M", mods: [], icon: tomarkdown.png, label: "Change to Markdown", except: [macos] }
+  - { key: "M", mods: [], icon: tomarkdown.png, label: "Change to Markdown", only: [macos] }
+  - { key: "R", mods: [], icon: toraw.png, label: "Change to raw", except: [macos] }
+  - { key: "R", mods: [], icon: toraw.png, label: "Change to raw", only: [macos] }
+  - { key: "M", mods: [SHIFT], icon: mergecells.png, label: "Merge selected cells", except: [macos] }
+  - { key: "M", mods: [SHIFT], icon: mergecells.png, label: "Merge selected cells", only: [macos] }
+  - { key: "J", mods: [], icon: cellbelow.png, label: "Select cell below", except: [macos] }
+  - { key: "J", mods: [], icon: cellbelow.png, label: "Select cell below", only: [macos] }
+  - { key: "K", mods: [], icon: cellabove.png, label: "Select cell above", except: [macos] }
+  - { key: "K", mods: [], icon: cellabove.png, label: "Select cell above", only: [macos] }
+  - { key: "J", mods: [SHIFT], icon: extendbelow.png, label: "Extend selection below", except: [macos] }
+  - { key: "J", mods: [SHIFT], icon: extendbelow.png, label: "Extend selection below", only: [macos] }
+  - { key: "K", mods: [SHIFT], icon: extendabove.png, label: "Extend selection above", except: [macos] }
+  - { key: "K", mods: [SHIFT], icon: extendabove.png, label: "Extend selection above", only: [macos] }
+  - { key: "L", mods: [SHIFT], icon: linenumbers.png, label: "Toggle line numbers", except: [macos] }
+  - { key: "L", mods: [SHIFT], icon: linenumbers.png, label: "Toggle line numbers", only: [macos] }
+  - { key: "R", mods: [SHIFT], icon: sidebyside.png, label: "Render side by side", except: [macos] }
+  - { key: "R", mods: [SHIFT], icon: sidebyside.png, label: "Render side by side", only: [macos] }
+  - { key: "1", mods: [], icon: heading1.png, label: "Heading 1", except: [macos] }
+  - { key: "1", mods: [], icon: heading1.png, label: "Heading 1", only: [macos] }
+  - { key: "2", mods: [], icon: heading2.png, label: "Heading 2", except: [macos] }
+  - { key: "2", mods: [], icon: heading2.png, label: "Heading 2", only: [macos] }
+  - { key: "3", mods: [], icon: heading3.png, label: "Heading 3", except: [macos] }
+  - { key: "3", mods: [], icon: heading3.png, label: "Heading 3", only: [macos] }
+  - { key: "4", mods: [], icon: heading4.png, label: "Heading 4", except: [macos] }
+  - { key: "4", mods: [], icon: heading4.png, label: "Heading 4", only: [macos] }
+  - { key: "5", mods: [], icon: heading5.png, label: "Heading 5", except: [macos] }
+  - { key: "5", mods: [], icon: heading5.png, label: "Heading 5", only: [macos] }
+  - { key: "6", mods: [], icon: heading6.png, label: "Heading 6", except: [macos] }
+  - { key: "6", mods: [], icon: heading6.png, label: "Heading 6", only: [macos] }
   - { key: "1", mods: [ALT], icon: left1.png, label: "Left panel 1", except: [macos] }
   - { key: "1", mods: [ALT], icon: left1.png, label: "Left panel 1", only: [macos] }
   - { key: "2", mods: [ALT], icon: left2.png, label: "Left panel 2", except: [macos] }

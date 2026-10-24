@@ -3,9 +3,10 @@
 #
 # Keys: the modifier shortcuts named in Linear's docs (linear.app/docs/*.md, read
 # 2026-10-22). Linear writes Cmd/Ctrl, so `CMDCTRL` serves every OS; Option/Alt
-# is `ALT`. Bare letters (C new issue, A assign ...) and two-key sequences
-# (G then I) are left out, as in the Gmail set: they would replace the letter
-# legends while the user types. Cmd/Ctrl+B and Cmd/Ctrl+I also mean bold and
+# is `ALT`. The single keys the docs name (C create issue, A assign, X select,
+# S status, J/K next and previous ...) act when no text field has focus and are
+# drawn. Two-key sequences (G then I, O then I) are left out: a cell shows what
+# one key press does. Cmd/Ctrl+B and Cmd/Ctrl+I also mean bold and
 # italic in the text editor; the set draws their view meaning (layout, details
 # sidebar).
 #
@@ -54,6 +55,22 @@ bindings:
   - { key: M, mods: [CMDCTRL, ALT], icon: lin_inline.png, label: "Inline comment" }
   - { key: C, mods: [CMDCTRL, ALT], icon: lin_copymd.png, label: "Copy as Markdown", only: [macos] }
   - { key: U, mods: [CMDCTRL, SHIFT], icon: lin_upload.png, label: "Upload files", only: [macos] }
+  # --- single keys (Linear's docs; they act when no text field has focus) ---
+  - { key: C, icon: lin_new.png, label: "Create issue" }
+  - { key: A, icon: lin_assign.png, label: "Assign" }
+  - { key: I, icon: lin_assignme.png, label: "Assign to me" }
+  - { key: X, icon: lin_select.png, label: "Select issue" }
+  - { key: X, mods: [SHIFT], icon: lin_selectmore.png, label: "Select range" }
+  - { key: S, icon: lin_status.png, label: "Status" }
+  - { key: S, mods: [SHIFT], icon: lin_subscribe.png, label: "Subscribe" }
+  - { key: F, icon: lin_filter.png, label: "Filter" }
+  - { key: SLASH, icon: search.png, label: "Search", shared: false }
+  - { key: J, icon: lin_next.png, label: "Next item" }
+  - { key: K, icon: lin_prev.png, label: "Previous item" }
+  - { key: H, icon: lin_snooze.png, label: "Snooze or remind" }
+  - { key: T, icon: lin_collapse.png, label: "Collapse or expand" }
+  - { key: M, mods: [SHIFT], icon: lin_milestone.png, label: "Milestone" }
+  - { key: P, mods: [SHIFT], icon: lin_project.png, label: "Move to project" }
   # --- text editor ---
   - { key: U, mods: [CMDCTRL], label: "Underline" }
   - { key: E, mods: [CMDCTRL], icon: code.png, label: "Inline code" }

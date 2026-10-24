@@ -68,6 +68,31 @@ bindings:
   - { key: F7, mods: [], icon: caret.png, label: "Keyboard text selection", except: [macos] }
   - { key: K, mods: [CTRL], icon: palette.png, label: "Command palette", except: [macos] }
   - { key: F1, mods: [], icon: help.png, label: "Manual", except: [macos] }
+  # Single keys and Shift+letter: they act while the document has focus (the
+  # normal state). Labels for 3.6+ (i = page info, Shift+I = invert colors).
+  - { key: J, mods: [], icon: scrolldown.png, label: "Scroll down", except: [macos] }
+  - { key: K, mods: [], icon: scrollup.png, label: "Scroll up", except: [macos] }
+  - { key: H, mods: [], icon: scrollleft.png, label: "Scroll left", except: [macos] }
+  - { key: L, mods: [], icon: scrollright.png, label: "Scroll right", except: [macos] }
+  - { key: N, mods: [], icon: nextpage.png, label: "Next page", except: [macos] }
+  - { key: P, mods: [], icon: prevpage.png, label: "Previous page", except: [macos] }
+  - { key: G, mods: [], icon: gotopage.png, label: "Go to page", except: [macos] }
+  - { key: B, mods: [], icon: flippage.png, label: "Flip page (book mode)", except: [macos] }
+  - { key: Z, mods: [], icon: cyclezoom.png, label: "Cycle zoom", except: [macos] }
+  - { key: C, mods: [], icon: continuous.png, label: "Continuous / single page", except: [macos] }
+  - { key: F, mods: [], icon: fullscreen.png, label: "Full screen", except: [macos] }
+  - { key: I, mods: [], icon: pageinfo.png, label: "Page info", except: [macos] }
+  - { key: I, mods: [SHIFT], icon: invert.png, label: "Invert colors", except: [macos] }
+  - { key: M, mods: [], icon: cursorpos.png, label: "Cursor position", except: [macos] }
+  - { key: R, mods: [], icon: reload.png, label: "Reload", except: [macos] }
+  - { key: Q, mods: [], icon: close.png, label: "Close tab", except: [macos] }
+  - { key: SLASH, mods: [], label: "Find", except: [macos] }
+  - { key: LBRACKET, mods: [], icon: rotateleft.png, label: "Rotate left", except: [macos] }
+  - { key: RBRACKET, mods: [], icon: rotateright.png, label: "Rotate right", except: [macos] }
+  - { key: A, mods: [], icon: highlight.png, label: "Highlight selection", except: [macos] }
+  - { key: A, mods: [SHIFT], icon: highlight.png, label: "Highlight selection, edit PDF", except: [macos] }
+  - { key: U, mods: [], icon: underline.png, label: "Underline selection", except: [macos] }
+  - { key: U, mods: [SHIFT], icon: underline.png, label: "Underline selection, edit PDF", except: [macos] }
   # Ctrl+Tab is Smart Tab Switch: with three or more tabs it goes in most-recently-used
   # order, so it gets its own icon, apart from Ctrl+Page Down/Up (tab-strip order).
   - { key: TAB, mods: [CTRL], icon: recenttab.png, label: "Recent tab (Smart Tab Switch)", except: [macos] }
