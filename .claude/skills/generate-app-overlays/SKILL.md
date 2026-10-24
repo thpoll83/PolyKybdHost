@@ -188,8 +188,9 @@ example). Three differences from an app set:
   (`region: [48, 40]` for a 48×40 PNG). `fit: contain` is then the identity and
   the generator places it 1:1; any rescale blurs a 2–3 px seam away. AoE2's
   control groups (`fetch_icons.groups()`: each unit twice with a 3 px black seam,
-  and a plus for Ctrl) are the example. Verify by comparing the generated cell
-  with the drawn PNG pixel for pixel.
+  and a plus for Ctrl) are the example. Verify by cropping the 72×40 generated
+  cell to the box `region_box(anchor, region, margin)` returns and comparing that
+  crop with the drawn PNG pixel for pixel.
 
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in
