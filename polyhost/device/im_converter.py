@@ -27,7 +27,8 @@ def parse_no_legend(text) -> frozenset:
     pairs = set()
     for entry in str(text or "").split():
         mod, sep, kc = entry.partition(":")
-        if sep and mod.isdigit() and kc.isdigit():
+        # isascii(): "²".isdigit() is true and int("²") raises.
+        if sep and mod.isascii() and kc.isascii() and mod.isdigit() and kc.isdigit():
             pairs.add((int(mod), int(kc)))
     return frozenset(pairs)
 

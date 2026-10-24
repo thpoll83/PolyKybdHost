@@ -401,6 +401,8 @@ class MockFirmware:
         self.fresh_boot = True
         self.overlay_flags = 0
         self.sim.reset_all()
+        # The no-legend bits are stored in the mapping table, which reset_all clears.
+        self.no_legend_positions.clear()
         self._ctx = {}
         self._staging = None
         if self._apply_pending:

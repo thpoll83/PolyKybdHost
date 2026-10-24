@@ -84,6 +84,8 @@ class ParseTest(unittest.TestCase):
 
     def test_a_malformed_entry_is_skipped(self):
         self.assertEqual(parse_no_legend("0:41 x:1 2: :3 41"), {(0, 41)})
+        # Non-ASCII digits pass isdigit() and fail int(); one must not stop the file.
+        self.assertEqual(parse_no_legend("0:\u00b2 \u0663:4 1:41"), {(1, 41)})
         self.assertEqual(parse_no_legend(None), frozenset())
 
     def test_the_converter_reads_the_chunk(self):
@@ -156,15 +158,33 @@ class EmulatedFirmwareTest(unittest.TestCase):
         self.assertTrue(_send(keeb, cache, site_no_legend=()))
         return fw, cache
 
+    def _assert_mapped(self, fw, cache):
+        """The keyboard holds exactly the slots the host meant, with any offset
+        taken off: a send that maps nothing must not pass as legend-free."""
+        sent = cache._transferred_mapping
+        for kc in (A, B, C):
+            idx = _idx(cache, kc)
+            self.assertTrue(fw.sim.is_mapped(idx), kc)
+            self.assertEqual(fw.sim.get_pool_slot_for(idx), sent[idx])
+            self.assertLess(sent[idx], CAPACITY)
+
     def test_v25_marks_only_the_listed_key(self):
         fw, cache = self._run(25)
         self.assertEqual(fw.no_legend_positions, {_idx(cache, A)})
         self.assertEqual(fw.refused, [])
+        self._assert_mapped(fw, cache)
+
+    def test_a_reboot_clears_the_bits_with_the_mapping(self):
+        fw, _ = self._run(25)
+        self.assertTrue(fw.no_legend_positions)
+        fw.reboot()
+        self.assertEqual(fw.no_legend_positions, set())
 
     def test_v24_keeps_every_legend_and_refuses_nothing(self):
-        fw, _ = self._run(24)
+        fw, cache = self._run(24)
         self.assertEqual(fw.no_legend_positions, set())
         self.assertEqual(fw.refused, [])
+        self._assert_mapped(fw, cache)
 
 
 class GeneratorTest(unittest.TestCase):
