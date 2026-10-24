@@ -183,6 +183,13 @@ example). Three differences from an app set:
   ⚠️ A preview that draws the legend on top models the wrong order.
 - Many game-icons.net drawings are too detailed for 1 bit. Render candidates on
   the 72×40 cell and pick by eye before committing.
+- ⚠️ **A composed icon that needs exact pixels (a seam, a gap, a 1 px line) is
+  drawn 1-bit at keycap size, and its binding's `region` equals the image size**
+  (`region: [48, 40]` for a 48×40 PNG). `fit: contain` is then the identity and
+  the generator places it 1:1; any rescale blurs a 2–3 px seam away. AoE2's
+  control groups (`fetch_icons.groups()`: each unit twice with a 3 px black seam,
+  and a plus for Ctrl) are the example. Verify by comparing the generated cell
+  with the drawn PNG pixel for pixel.
 
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in

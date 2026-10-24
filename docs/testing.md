@@ -157,6 +157,11 @@ and relative links were adjusted to suit a standalone file.
       (`HidHelper._enumerate()` / `_open()`, overridden by `MockHidHelper`).
 
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
+  - ⚠️ **`tests/handler/active_window_test.py` needs a display too.** Without one
+    every test in it SKIPS ("active_window needs a display: Bad display name") and
+    the run still prints `OK`: 129 skips on 2026-10-24, including the app-name
+    matching tests for a new overlay set. Run it under `xvfb-run -a` and check
+    the skip count.
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
     that had run green in 27 s moments earlier; both were auto-picking a display).

@@ -9,6 +9,12 @@ Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_versi
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 
+- ⚠️ **A version bump that lands while your PR is open makes `polyhost/_version.py`
+  conflict** (each merge's auto-bump PR changes `__patch__`). Resolve it by taking
+  `main`'s `__patch__` and keeping your branch's `__protocol__` when the PR raises
+  it, then run the full suite before pushing. On 2026-10-24 thpoll83/PolyKybdHost#454 and #455
+  both conflicted this way (patch 50 against 51, protocol 25 against 24) after #452
+  merged first.
 - ⚠️ **`release.yml`'s first step asserts that `__version__` in the TAG's tree equals
   the tag's version, because the updater compares exactly those two numbers.** The host
   ships no built asset: `polyhost/services/updater.py` downloads
