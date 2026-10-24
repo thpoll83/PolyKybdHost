@@ -137,8 +137,8 @@ for back), and `savechapter.png` from `_quill.png` and the up arrow, as on the
 save icon.
 
 `group<N>.png` draws `_unit<N>.png` twice at keycap scale: a back copy, and a
-front copy 40 % of its width to the right and 6 px lower, with 2 px of black
+front copy 40 % of its width to the right and 6 px lower, with 3 px of black
 cleared around the front copy so the two stay apart. `groupnew<N>.png` adds a
-13 px plus in the lower-right corner with the same 2 px clearance. Both are
-48×40 1-bit images, so the generator places them without scaling and the 2 px
+13 px plus in the lower-right corner with the same 3 px clearance. Both are
+48×40 1-bit images, so the generator places them without scaling and the 3 px
 seam survives.

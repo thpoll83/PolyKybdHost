@@ -76,7 +76,7 @@ GROUP_UNITS = {
 # (aoe2_hd.yaml gives these bindings `region: [48, 40]`).
 GROUP_W, GROUP_H = 48, 40
 GROUP_DY = 6        # the front copy sits this much lower than the back one
-GROUP_SEAM = 2      # black pixels between the two copies, and around the plus
+GROUP_SEAM = 3      # black pixels between the two copies, and around the plus
 
 
 def chat_review(out: Path) -> None:
