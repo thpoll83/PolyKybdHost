@@ -5,11 +5,12 @@ rebuilds `icons/`.
 
 | Set | Loads for |
 |---|---|
-| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine; the Definitive Edition on Linux for now |
+| `aoe2_hd_template` (1 file) | The Conquerors (`age2_x1.exe`), The Age of Kings (`empires2.exe`), HD Edition (`AoK HD.exe`), on Windows and under Wine; the Definitive Edition for now |
 
-The Definitive Edition under Proton on KDE Plasma reports `steam_app_813780`
-(Steam app 813780, measured 2026-10-23), and uses this set until it has its
-own. The other app names were not checked on an install.
+The Definitive Edition reports `AoE2DE_s.exe` (`aoe2de_s`) on Windows and
+`steam_app_813780` under Proton on KDE Plasma (Steam app 813780), both measured
+2026-10-23. It uses this set until it has its own. The other app names were not
+checked on an install.
 
 ## Shortcut reference
 
@@ -18,12 +19,15 @@ sent as an image by the maintainer on 2026-10-22. The sheet has no URL of its
 own; the site is the one it names. The CD version is assumed to use the same
 defaults; that was not checked.
 
+Control groups (1 to 0 select a group, Ctrl+1 to Ctrl+0 create one) are not
+on the sheet. They are AoE2's standard keys, added at the maintainer's request.
+The key's own digit names the group.
+
 ## Left out
 
 - The letter keys alone, except H (Go to Town Center). They build, train and
   give unit commands, and what each does depends on the selection.
 - Numpad `-` and `+` (game speed): the keyboard has no numpad.
-- Ctrl+1 to Ctrl+0 and 1 to 0 (control groups): not on the sheet.
 
 ## Placement
 
@@ -38,7 +42,7 @@ key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
 
 | Keys | Legend ends at x | Area |
 |---|---|---|
-| Letters, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 | 40×40 |
+| Letters, digits, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 (digits: the shifted symbol, which the icon erases) | 40×40 |
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
@@ -49,6 +53,9 @@ On `,` and `.` the icon erases most of the shifted `<` and `>` (x 36–48),
 which a game does not use. The villager on `.` sits 5 px further left
 (`margin: 5`, x 32–60), so it erases all of the `>`. `fetch_icons.py` trims six icons to their drawn area
 (the villager, F2, F4, F11, F12 and Backspace) so they fill their area.
+
+ESC shows `program.png`, a shield with crossed swords, at 37×32 on the right,
+the size the app sets use for their program marks. The game has no free logo.
 
 ## Icons
 
@@ -91,11 +98,13 @@ scales it to the keycap.
 | `mapcombat.png` | [sword-clash](https://game-icons.net/1x1/lorc/sword-clash.html) | Lorc |
 | `mapeco.png` | [wheat](https://game-icons.net/1x1/lorc/wheat.html) | Lorc |
 | `mapnormal.png` | [mountains](https://game-icons.net/1x1/lorc/mountains.html) | Lorc |
+| `groupselect.png` | [backup](https://game-icons.net/1x1/lorc/backup.html) | Lorc |
+| `program.png` | [swords-emblem](https://game-icons.net/1x1/lorc/swords-emblem.html) | Lorc |
 | `_conversation.png` | [conversation](https://game-icons.net/1x1/lorc/conversation.html) | Lorc |
 | `_arrow.png` | [plain-arrow](https://game-icons.net/1x1/delapouite/plain-arrow.html) | Delapouite |
 | `_quill.png` | [quill-ink](https://game-icons.net/1x1/lorc/quill-ink.html) | Lorc |
 
-`fetch_icons.py` composes three files from these parts: `chatback.png` and
+`fetch_icons.py` composes four files from these parts: `chatback.png` and
 `chatfwd.png` from `_conversation.png` and `_arrow.png` (the arrow turned up
 for back), and `savechapter.png` from `_quill.png` and the up arrow, as on the
-save icon.
+save icon, and `groupcreate.png` from `groupselect.png` and a drawn plus sign.

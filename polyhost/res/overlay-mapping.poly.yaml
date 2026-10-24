@@ -1872,6 +1872,7 @@ linear:
 # Age of Kings as empires2.exe, the HD Edition as "AoK HD.exe". Under Wine the
 # WM_CLASS keeps the `.exe`. Names not checked on an install.
 # The Definitive Edition under Proton on KDE Plasma reports `steam_app_813780`
-# (measured 2026-10-23). It uses this set until it has its own.
-age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe,steam_app_813780:
+# (measured 2026-10-23); on Windows it is AoE2DE_s.exe, `aoe2de_s` (measured
+# 2026-10-23). It uses this set until it has its own.
+age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe,aoe2de_s,steam_app_813780:
   overlay: aoe2_hd_template.mods.png

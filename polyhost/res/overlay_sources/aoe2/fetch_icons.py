@@ -52,6 +52,9 @@ ICONS = {
     "mapcombat": "lorc/sword-clash",
     "mapeco": "lorc/wheat",
     "mapnormal": "lorc/mountains",
+    # control groups and the ESC mark
+    "groupselect": "lorc/backup",
+    "program": "lorc/swords-emblem",
     # parts composed in main(): chat review and save chapter
     "_conversation": "lorc/conversation",
     "_arrow": "delapouite/plain-arrow",
@@ -84,6 +87,20 @@ def save_chapter(out: Path) -> None:
     print("  savechapter.png  <- _quill.png + _arrow.png")
 
 
+def group_create(out: Path) -> None:
+    """Create group (Ctrl+digit): the squad of "Select group" with a plus sign."""
+    from PIL import Image, ImageDraw
+    squad = Image.open(out / "groupselect.png").convert("RGBA")
+    canvas = Image.new("RGBA", (squad.width + 56, squad.height), (0, 0, 0, 0))
+    canvas.alpha_composite(squad, (0, 0))
+    d = ImageDraw.Draw(canvas)
+    cx, cy = squad.width + 30, squad.height // 2
+    d.rectangle((cx - 22, cy - 7, cx + 22, cy + 7), fill=(0, 0, 0, 255))
+    d.rectangle((cx - 7, cy - 22, cx + 7, cy + 22), fill=(0, 0, 0, 255))
+    canvas.save(out / "groupcreate.png")
+    print("  groupcreate.png  <- groupselect.png + a plus sign")
+
+
 def trim(out: Path, stem: str) -> None:
     """Crop an icon to its drawn area, so it fills a narrow area beside a wide legend."""
     from PIL import Image
@@ -98,8 +115,9 @@ def main() -> int:
     chat_review(out)
     save_chapter(out)
     for stem in ("idlevillager", "techtree", "statistics", "gametime", "savegame",
-                 "previousview"):
+                 "previousview", "groupselect"):
         trim(out, stem)
+    group_create(out)
     print(f"Wrote icons to {out}")
     return 0
 

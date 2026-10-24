@@ -1975,7 +1975,7 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
 
     def test_AOE2_HD_and_CD_versions_get_the_hd_set(self):
         for app in ("age2_x1", "empires2", "aok hd", "age2_x1.exe", "aok hd.exe",
-                    "steam_app_813780"):
+                    "aoe2de_s", "steam_app_813780"):
             for os_name in ("WINDOWS", "LINUX"):
                 with self.subTest(app=app, os=os_name):
                     got = self._match(app, title="Age of Empires II", title_known=True,
