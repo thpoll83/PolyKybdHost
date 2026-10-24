@@ -3,8 +3,8 @@
 #
 # Shortcuts: the PC and Mac tables of Google's help page
 # https://support.google.com/calendar/answer/37034
-# Bare letters, digits and Shift+letter keys are left out: they would replace
-# the letter legends while the user types.
+# Calendar's single keys are included: they are on by default and act only
+# when no text field has focus.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -30,6 +30,30 @@ program_icon_margin: 0
 
 bindings:
 
+  - { key: J, icon: calnext.png, label: "Next date range" }
+  - { key: N, icon: calnext.png, label: "Next date range" }
+  - { key: K, icon: calprev.png, label: "Previous date range" }
+  - { key: P, icon: calprev.png, label: "Previous date range" }
+  - { key: R, icon: calrefresh.png, label: "Refresh" }
+  - { key: T, icon: caltoday.png, label: "Today" }
+  - { key: SLASH, icon: search.png, label: "Search" }
+  - { key: S, icon: settings.png, label: "Settings" }
+  - { key: G, icon: calgoto.png, label: "Go to date" }
+  - { key: "1", icon: calday.png, label: "Day view" }
+  - { key: D, icon: calday.png, label: "Day view" }
+  - { key: "2", icon: calweek.png, label: "Week view" }
+  - { key: W, icon: calweek.png, label: "Week view" }
+  - { key: "3", icon: calmonth.png, label: "Month view" }
+  - { key: M, icon: calmonth.png, label: "Month view" }
+  - { key: "4", icon: calcustom.png, label: "Custom view" }
+  - { key: X, icon: calcustom.png, label: "Custom view" }
+  - { key: "5", icon: calagenda.png, label: "Agenda view" }
+  - { key: A, icon: calagenda.png, label: "Agenda view" }
+  - { key: C, icon: calnew.png, label: "Create event" }
+  - { key: E, icon: calinfo.png, label: "Event details" }
+  - { key: BSPC, icon: delete.png, label: "Delete event" }
+  - { key: DELETE, icon: delete.png, label: "Delete event" }
+  - { key: Z, label: "Undo" }
   - { key: S, mods: [CMDCTRL], icon: save.png, label: "Save event", shared: false }
   - { key: DOT, mods: [CTRL, ALT], icon: sidepanel.png, label: "Side panel", except: [macos] }
   - { key: DOT, mods: [ALT, GUI], icon: sidepanel.png, label: "Side panel", only: [macos] }

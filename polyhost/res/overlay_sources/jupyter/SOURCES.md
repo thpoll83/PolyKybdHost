@@ -43,13 +43,39 @@ entries of `packages/*/schema/*.json`, read 2026-10-22. `Accel` is Ctrl on
 Windows/Linux and Cmd on macOS; `Ctrl` stays Control on macOS. 4.4.10 has the
 same keys except that Accel+I is now one toggle instead of open and close.
 
+### Notebook command mode
+
+The single keys of command mode are drawn. Command mode is active whenever no
+cell is being edited (Esc enters it, Enter leaves it), and in edit mode the
+same keys type text. The firmware draws an icon beside the key's letter, so the
+letter stays readable while the user types. From
+`packages/notebook-extension/schema/tracker.json` (selector
+`.jp-Notebook.jp-mod-commandMode:not(.jp-mod-readWrite) :focus`):
+
+| Key | Action |
+|---|---|
+| A / B | Insert cell above / below |
+| Shift+A / Shift+B | Insert heading above / below |
+| X / C / V | Cut cells / copy cells / paste cells below |
+| Z / Shift+Z | Undo / redo cell action |
+| Y / M / R | Change to code / Markdown / raw |
+| 1 to 6 | Heading 1 to 6 |
+| Shift+M | Merge selected cells |
+| J / K | Select cell below / above |
+| Shift+J / Shift+K | Extend selection below / above |
+| Shift+L | Toggle line numbers |
+| Shift+R | Render side by side |
+
+`heading1.png` to `heading6.png` are Material `title` with the level digit
+from `../number_badge.py`.
+
 ### Left out
 
-- The command-mode single-letter keys (A, B, C, D D, M, R, V, X, Y, Z, J, K,
-  Shift+letter, digits, I I, 0 0). They act only while no cell is being edited,
-  and drawn on the base and Shift layers they would replace the letter legends
-  while the user types code and text in the same tab. The Gmail and Calendar
-  sets leave out their bare-letter keys for the same reason.
+- Two-key sequences: D D (delete cells), and I I (interrupt kernel) and 0 0
+  (restart kernel) from `packages/mainmenu-extension/schema/plugin.json`. An
+  overlay cell shows what one key press does.
+- Command-mode keys with no overlay cell or that move the cursor: Enter (edit
+  mode), the arrows alone, Shift+Up/Down, Shift+Home/End.
 - Keys the browser keeps: Accel+Shift+T (reopen tab) and Ctrl+Shift+Q (close
   and shut down); F11 (full screen in the browser, and step in while the
   debugger is stopped).

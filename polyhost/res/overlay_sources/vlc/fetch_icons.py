@@ -93,11 +93,55 @@ FLUENT = {
     "_bookmark": "Bookmark",
 }
 
+# The single-key hotkeys (libvlc-module.c). The four delay keys are composed in
+# delay_icons() from a subtitle or note glyph and an up or down arrow.
+HOTKEYS = {
+    "position": "ms:timer",
+    "framenext": "ms:resume",
+    "ratenormal": "ms:1x_mobiledata",
+    "syncaudio": "ms:graphic_eq",
+    "syncsub": "ms:closed_caption",
+    "syncapply": "ms:sync",
+    "audiotrack": "ms:library_music",
+    "subtrack": "ms:subtitles",
+    "subtoggle": "ms:subtitles_off",
+    "programnext": "ms:live_tv",
+    "programprev": "ms:tv",
+    "aspect": "ms:aspect_ratio",
+    "crop": "ms:crop",
+    "deinterlace": "ms:blur_linear",
+    "deinterlacemode": "ms:blur_on",
+    "zoom": "ms:zoom_in",
+    "unzoom": "ms:zoom_out",
+    "audiodevice": "ms:speaker_group",
+    "wallpaper": "ms:wallpaper",
+    "_subtitles": "ms:subtitles",
+    "_note": "ms:music_note",
+    "_up": "ms:arrow_upward",
+    "_down": "ms:arrow_downward",
+}
+
+
+def delay_icons(out: Path) -> None:
+    """Subtitle and audio delay up / down: the glyph with an arrow on its right."""
+    from PIL import Image
+    for base, kind in (("_subtitles", "sub"), ("_note", "audio")):
+        glyph = Image.open(out / f"{base}.png").convert("RGBA").resize((96, 96))
+        for arrow, way in (("_up", "up"), ("_down", "down")):
+            canvas = Image.new("RGBA", (152, 96), (0, 0, 0, 0))
+            canvas.alpha_composite(glyph, (0, 0))
+            canvas.alpha_composite(
+                Image.open(out / f"{arrow}.png").convert("RGBA").resize((64, 64)), (88, 16))
+            canvas.save(out / f"{kind}delay{way}.png")
+            print(f"  {kind}delay{way}.png  <- {base}.png + {arrow}.png")
+
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
+    icon_fetch.fluent(HOTKEYS, out)
+    delay_icons(out)
     number_badge.numbered(out / "_bookmark.png", "1234567890", out, "setbm",
                           size=0.40, centre=(0.50, 0.42))
     brand_marks.ensure(out / "vlc.png", "vlcmediaplayer")

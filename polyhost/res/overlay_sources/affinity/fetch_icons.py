@@ -103,13 +103,64 @@ FLUENT = {
     "wireframe": "ms:deployed_code",
 }
 
+# Tool icons with no sibling copy (gen_specs.py TOOLS).
+TOOL_FETCH = {
+    "contour": "ms:trip_origin",
+    "corner": "ms:rounded_corner",
+    "transparency": "ms:opacity",
+    "shapebuilder": "ms:join_full",
+    "selbrush": "ms:ink_selection",
+    "colorreplace": "ms:colorize",
+    "snapping": "ms:grid_goldenratio",
+    "smudgetool": "ms:gesture",
+}
+
+# Tool icons copied byte-identical from the sibling sets (icon_fetch.borrow).
+TOOL_BORROW = {
+    "move.png": "photoshop", "freetransform.png": "photoshop", "crop.png": "photoshop",
+    "marquee.png": "photoshop", "lasso.png": "photoshop", "brush.png": "photoshop",
+    "eraser.png": "photoshop", "dodgeburn.png": "photoshop", "clonestamp.png": "photoshop",
+    "healing.png": "photoshop", "quickmask.png": "photoshop", "defaultcolors.png": "photoshop",
+    "directselect.png": "illustrator", "pen.png": "illustrator", "pencil.png": "illustrator",
+    "width.png": "illustrator", "paintbrush.png": "illustrator",
+    "gradient.png": "illustrator", "rectangle.png": "illustrator", "type.png": "illustrator",
+    "eyedropper.png": "illustrator", "hand.png": "illustrator", "zoom.png": "illustrator",
+    "swap.png": "illustrator",
+    "filltool.png": "krita", "rectframe.png": "indesign",
+}
+
 MARKS = {"designer.png": "Ds", "photo.png": "Ph", "publisher.png": "Pb", "affinity.png": "Af"}
+
+
+# Knife Tool: Fluent and Material have no knife (their "cut" is scissors), so it
+# is drawn here: a handle outline, a bolster and a filled blade, turned 40°.
+KNIFE_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <g transform="rotate(-40 48 48)">
+    <rect x="6" y="42" width="32" height="14" rx="5" fill="none" stroke="#000" stroke-width="5"/>
+    <rect x="38" y="38" width="6" height="22" rx="1" fill="#000"/>
+    <path d="M44 40 L90 40 Q93 40 90 45 Q72 60 44 60 Z" fill="#000"/>
+  </g>
+</svg>"""
+
+
+def draw_knife(dest: Path) -> None:
+    import io
+
+    import cairosvg
+    from PIL import Image
+    png = cairosvg.svg2png(bytestring=KNIFE_SVG.encode(), output_width=128, output_height=128)
+    im = Image.open(io.BytesIO(png)).convert("RGBA")
+    im.crop(im.getchannel("A").getbbox()).save(dest)
+    print(f"  {dest.name}  <- drawn (KNIFE_SVG)")
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
+    icon_fetch.fluent(TOOL_FETCH, out)
+    icon_fetch.borrow(TOOL_BORROW, out)
+    draw_knife(out / "knife.png")
     size = rect_mark.shared_size(list(MARKS.values()))
     for fname, letters in MARKS.items():
         rect_mark.ensure(out / fname, letters, size=size)

@@ -127,6 +127,72 @@ bindings:
   - { key: W, mods: [CTRL], icon: clearplaylist.png, label: "Clear playlist", except: [macos] }
   - { key: F, mods: [SHIFT, GUI], label: "Find", only: [macos] }
   - { key: SLASH, mods: [SHIFT, GUI], label: "Help", only: [macos] }
+  - { key: F, mods: [], icon: fullscreen.png, label: "Full screen", except: [macos] }
+  - { key: MINUS, mods: [], icon: slower.png, label: "Slower", except: [macos] }
+  - { key: EQUAL, mods: [], icon: ratenormal.png, label: "Normal speed", except: [macos] }
+  - { key: RBRACKET, mods: [], icon: faster.png, label: "Faster (fine)", except: [macos] }
+  - { key: LBRACKET, mods: [], icon: slower.png, label: "Slower (fine)", except: [macos] }
+  - { key: N, mods: [], icon: next.png, label: "Next", except: [macos] }
+  - { key: P, mods: [], icon: previous.png, label: "Previous", except: [macos] }
+  - { key: S, mods: [], icon: stop.png, label: "Stop", except: [macos] }
+  - { key: T, mods: [], icon: position.png, label: "Show position", except: [macos] }
+  - { key: T, mods: [], icon: position.png, label: "Show position", only: [macos] }
+  - { key: E, mods: [], icon: framenext.png, label: "Next frame", except: [macos] }
+  - { key: E, mods: [], icon: framenext.png, label: "Next frame", only: [macos] }
+  - { key: R, mods: [], icon: shuffle.png, label: "Random", except: [macos] }
+  - { key: L, mods: [], icon: repeatall.png, label: "Loop / repeat", except: [macos] }
+  - { key: L, mods: [SHIFT], icon: repeatall.png, label: "Loop / repeat", only: [macos] }
+  - { key: R, mods: [SHIFT], icon: record.png, label: "Record", except: [macos] }
+  - { key: M, mods: [SHIFT], icon: discmenu.png, label: "Disc menu", except: [macos] }
+  - { key: O, mods: [SHIFT], icon: titleprev.png, label: "Previous title", except: [macos] }
+  - { key: B, mods: [SHIFT], icon: titlenext.png, label: "Next title", except: [macos] }
+  - { key: P, mods: [SHIFT], icon: chapterprev.png, label: "Previous chapter", except: [macos] }
+  - { key: N, mods: [SHIFT], icon: chapternext.png, label: "Next chapter", except: [macos] }
+  - { key: M, mods: [], icon: mute.png, label: "Mute", except: [macos] }
+  - { key: B, mods: [], icon: audiotrack.png, label: "Audio track", except: [macos] }
+  - { key: L, mods: [], icon: audiotrack.png, label: "Audio track", only: [macos] }
+  - { key: K, mods: [], icon: audiodelayup.png, label: "Audio delay +", except: [macos] }
+  - { key: G, mods: [], icon: audiodelayup.png, label: "Audio delay +", only: [macos] }
+  - { key: J, mods: [], icon: audiodelaydown.png, label: "Audio delay -", except: [macos] }
+  - { key: F, mods: [], icon: audiodelaydown.png, label: "Audio delay -", only: [macos] }
+  - { key: A, mods: [SHIFT], icon: audiodevice.png, label: "Audio device", except: [macos] }
+  - { key: A, mods: [SHIFT], icon: audiodevice.png, label: "Audio device", only: [macos] }
+  - { key: V, mods: [], icon: subtrack.png, label: "Subtitle track", except: [macos] }
+  - { key: S, mods: [], icon: subtrack.png, label: "Subtitle track", only: [macos] }
+  - { key: V, mods: [SHIFT], icon: subtoggle.png, label: "Subtitles on / off", except: [macos] }
+  - { key: S, mods: [SHIFT], icon: subtoggle.png, label: "Subtitles on / off", only: [macos] }
+  - { key: H, mods: [], icon: subdelayup.png, label: "Subtitle delay +", except: [macos] }
+  - { key: J, mods: [], icon: subdelayup.png, label: "Subtitle delay +", only: [macos] }
+  - { key: G, mods: [], icon: subdelaydown.png, label: "Subtitle delay -", except: [macos] }
+  - { key: H, mods: [], icon: subdelaydown.png, label: "Subtitle delay -", only: [macos] }
+  - { key: H, mods: [SHIFT], icon: syncaudio.png, label: "Sync: mark audio", except: [macos] }
+  - { key: H, mods: [SHIFT], icon: syncaudio.png, label: "Sync: mark audio", only: [macos] }
+  - { key: J, mods: [SHIFT], icon: syncsub.png, label: "Sync: mark subtitle", except: [macos] }
+  - { key: J, mods: [SHIFT], icon: syncsub.png, label: "Sync: mark subtitle", only: [macos] }
+  - { key: K, mods: [SHIFT], icon: syncapply.png, label: "Sync: apply", except: [macos] }
+  - { key: K, mods: [SHIFT], icon: syncapply.png, label: "Sync: apply", only: [macos] }
+  - { key: S, mods: [SHIFT], icon: snapshot.png, label: "Snapshot", except: [macos] }
+  - { key: A, mods: [], icon: aspect.png, label: "Aspect ratio", except: [macos] }
+  - { key: A, mods: [], icon: aspect.png, label: "Aspect ratio", only: [macos] }
+  - { key: C, mods: [], icon: crop.png, label: "Crop", except: [macos] }
+  - { key: C, mods: [], icon: crop.png, label: "Crop", only: [macos] }
+  - { key: O, mods: [], icon: fitscreen.png, label: "Autoscale", except: [macos] }
+  - { key: O, mods: [], icon: fitscreen.png, label: "Autoscale", only: [macos] }
+  - { key: D, mods: [], icon: deinterlace.png, label: "Deinterlace", except: [macos] }
+  - { key: D, mods: [], icon: deinterlace.png, label: "Deinterlace", only: [macos] }
+  - { key: D, mods: [SHIFT], icon: deinterlacemode.png, label: "Deinterlace mode", except: [macos] }
+  - { key: D, mods: [SHIFT], icon: deinterlacemode.png, label: "Deinterlace mode", only: [macos] }
+  - { key: I, mods: [], icon: fsinterface.png, label: "Full screen controls", except: [macos] }
+  - { key: I, mods: [], icon: fsinterface.png, label: "Full screen controls", only: [macos] }
+  - { key: Z, mods: [], icon: zoom.png, label: "Zoom", except: [macos] }
+  - { key: Z, mods: [], icon: zoom.png, label: "Zoom", only: [macos] }
+  - { key: Z, mods: [SHIFT], icon: unzoom.png, label: "Unzoom", except: [macos] }
+  - { key: Z, mods: [SHIFT], icon: unzoom.png, label: "Unzoom", only: [macos] }
+  - { key: W, mods: [], icon: wallpaper.png, label: "Wallpaper mode", except: [macos] }
+  - { key: X, mods: [], icon: programnext.png, label: "Next program", except: [macos] }
+  - { key: X, mods: [], icon: programnext.png, label: "Next program", only: [macos] }
+  - { key: X, mods: [SHIFT], icon: programprev.png, label: "Previous program", except: [macos] }
+  - { key: X, mods: [SHIFT], icon: programprev.png, label: "Previous program", only: [macos] }
   - { key: F1, mods: [CTRL], icon: setbm1.png, label: "Set bookmark 1", except: [macos] }
   - { key: F1, mods: [GUI], icon: setbm1.png, label: "Set bookmark 1", only: [macos] }
   - { key: F2, mods: [CTRL], icon: setbm2.png, label: "Set bookmark 2", except: [macos] }
