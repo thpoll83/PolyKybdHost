@@ -17,6 +17,7 @@ from polyhost.core import events, poly_core
 from polyhost.core.poly_core import PolyCore
 from polyhost.device.hid_fontpack import COMMIT_OK, COMMIT_REJECTED
 from polyhost.util.observable import Observable
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def make_core(*, connected=True, device_present=True, paused=False):
@@ -28,7 +29,7 @@ def make_core(*, connected=True, device_present=True, paused=False):
     core.device_present = device_present
     core.paused = paused
     core.worker = mock.MagicMock()
-    core.keeb = mock.MagicMock()
+    core.keeb = spec_keyboard()
     core.telemetry = mock.MagicMock()
     # Every resource flash asks pipe_port_for_update(), which reads the
     # dev_force_hid_link setting before the cached pipe port.

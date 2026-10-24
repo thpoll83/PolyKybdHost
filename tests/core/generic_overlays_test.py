@@ -17,6 +17,7 @@ import numpy as np
 from polyhost.core.poly_core import PolyCore
 from polyhost.settings import DEFAULT_SETTINGS
 from polyhost.handler.common import OverlayCommand
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def _mask():
@@ -45,7 +46,7 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
     core._observers_lock = threading.Lock()
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
-    core.keeb = MagicMock()
+    core.keeb = spec_keyboard()
     core.overlay_handler = MagicMock()
     core.overlay_handler.is_remote_mapping_entry.return_value = False
     core.overlay_handler.focused_app.return_value = app

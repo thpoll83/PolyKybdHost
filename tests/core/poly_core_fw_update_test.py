@@ -12,6 +12,7 @@ from unittest import mock
 
 from polyhost.core import poly_core
 from polyhost.core.poly_core import PolyCore
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def make_core(*, connected=True, device_present=True, paused=False):
@@ -26,7 +27,7 @@ def make_core(*, connected=True, device_present=True, paused=False):
     core._observers = []
     core._observers_lock = threading.Lock()
     core.worker = mock.MagicMock()
-    core.keeb = mock.MagicMock()
+    core.keeb = spec_keyboard()
     # flash_firmware / flash_fontpack / install_update bump census counters.
     core.telemetry = mock.MagicMock()
     return core

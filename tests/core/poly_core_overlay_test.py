@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 from polyhost.core.poly_core import PolyCore
 from polyhost.handler.common import OverlayCommand
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def make_core(*, connected=True, handler=True, run_when_disconnected=False):
@@ -24,7 +25,7 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock() if handler else None
-    core.keeb = MagicMock()
+    core.keeb = spec_keyboard()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
         "dev_run_window_detection_if_not_connected_to_poly_kybd": run_when_disconnected,
