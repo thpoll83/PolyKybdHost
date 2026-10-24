@@ -706,6 +706,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
     used_primary = used_combo = used_extra = used_gui = False
     warnings: list[str] = []
     placed: list[dict] = []
+    # tier -> {(modifier value, keycode)} drawn without the key legend (v25):
+    # `legend: false` on a binding, `program_icon_legend: false` for the mark.
+    no_legend: dict[str, set[tuple[int, int]]] = {t: set() for t in TIER_CHANNELS}
 
     for b in spec.get("bindings", []):
         try:
@@ -718,17 +721,17 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             continue
 
         if mod in PRIMARY_CH:
-            arr, ch_name = primary, PRIMARY_CH[mod]
+            arr, ch_name, tier = primary, PRIMARY_CH[mod], "primary"
             used_primary = True
         elif mod in COMBO_CH:
             # GUI is no longer skipped: the host stopped discarding variant 8.
-            arr, ch_name = combo, COMBO_CH[mod]
+            arr, ch_name, tier = combo, COMBO_CH[mod], "combo"
             used_combo = True
         elif mod in EXTRA_CH:
-            arr, ch_name = extra, EXTRA_CH[mod]
+            arr, ch_name, tier = extra, EXTRA_CH[mod], "extra"
             used_extra = True
         elif mod in GUI_CH:
-            arr, ch_name = gui, GUI_CH[mod]
+            arr, ch_name, tier = gui, GUI_CH[mod], "gui"
             used_gui = True
         else:
             warnings.append(f"skipped {b}: modifier {mod.name} has no channel")
@@ -771,6 +774,8 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         y0, x0 = row * SLOT_H, col * SLOT_W
         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, CH[ch_name]]
         block[mask] = 255
+        if b.get("legend", True) is False:
+            no_legend[tier].add((mod.value, kc.value))
         placed.append({"key": kc.name, "mod": mod.name, "ch": ch_name,
                        "cell": (row, col), "src": source, "label": label})
 
@@ -798,6 +803,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
                     for ax in range(4):              # all channels = all layers
                         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, ax]
                         block[pmask] = 255
+                if spec.get("program_icon_legend", True) is False:
+                    for tier, channels in TIER_CHANNELS.items():
+                        no_legend[tier].update((m.value, pkc.value) for m in channels)
                 # The program mark alone must NOT bring a layer into existence:
                 # `extra` is the Ctrl+Alt+Shift tier and most apps have no binding
                 # there, so marking it used shipped a third PNG whose only content
@@ -814,13 +822,26 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             "combo": combo if used_combo else None,
             "extra": extra if used_extra else None,
             "gui": gui if used_gui else None,
+            "no_legend": no_legend,
             "placed": placed, "warnings": warnings}
 
 
-def save_png(rgba: np.ndarray, path: Path) -> None:
+# The PNG text chunk the host reads (polyhost/device/im_converter.NO_LEGEND_CHUNK).
+NO_LEGEND_CHUNK = "polykybd-no-legend"
+
+
+def save_png(rgba: np.ndarray, path: Path, no_legend=()) -> None:
     """Save straight (non-premultiplied) RGBA. PNG keeps RGB bytes where A=0,
-    which the loader relies on (the channels carry data independent of alpha)."""
-    Image.fromarray(rgba, mode="RGBA").save(path)
+    which the loader relies on (the channels carry data independent of alpha).
+
+    `no_legend` is {(modifier value, keycode)}: the keys this file draws without
+    the key legend, written as "<mod>:<keycode>" pairs into NO_LEGEND_CHUNK."""
+    info = None
+    if no_legend:
+        from PIL.PngImagePlugin import PngInfo
+        info = PngInfo()
+        info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(no_legend)))
+    Image.fromarray(rgba, mode="RGBA").save(path, pnginfo=info)
 
 
 # --------------------------------------------------------------------------- #
@@ -904,6 +925,7 @@ def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6,
     return [p]
 
 
+TIER_CHANNELS = {"primary": PRIMARY_CH, "combo": COMBO_CH, "extra": EXTRA_CH, "gui": GUI_CH}
 TIER_SUFFIX = {"primary": ".mods.png", "combo": ".combo.mods.png",
                "extra": ".extra.mods.png", "gui": ".gui.mods.png"}
 
@@ -1038,7 +1060,7 @@ def main() -> int:
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"
-                    save_png(res[tier], path)
+                    save_png(res[tier], path, res.get("no_legend", {}).get(tier, ()))
                     print(f"Wrote {path}")
 
     if args.preview:

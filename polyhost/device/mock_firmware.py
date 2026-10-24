@@ -145,6 +145,9 @@ MAPPING_FLAGS_MIN = 21
 # cmd 33's width byte bit 7 draws the report's pairs dimmed (v23). v21/v22 mask
 # the width with 0x1F, so they ignore it and draw those positions at full strength.
 MAPPING_DIM_MIN = 23
+# A mapping `to` offset by the pool capacity is drawn without the legend (v25).
+# Older firmware rejects it as out of pool, and the key stays blank.
+MAPPING_NO_LEGEND_MIN = 25
 # cmd 25's board-flag byte (v24). Older firmware ignores it and sets only the side.
 SPLIT_VBUS_FLAG_MIN = 24
 ICON_BUNDLE_MIN = 20
@@ -353,6 +356,9 @@ class MockFirmware:
         self.mapping_reports = 0
         # Display positions drawn dimmed (display_dim_bits); cleared with the usage bits.
         self.dim_positions: set[int] = set()
+        # Display positions drawn without the legend (display_to_pool bit 15);
+        # cleared by a mapping reset, like the table they are stored in.
+        self.no_legend_positions: set[int] = set()
         self.fill_reports = 0
         self.control_reports = 0
         self._burst_images = 0
@@ -395,6 +401,8 @@ class MockFirmware:
         self.fresh_boot = True
         self.overlay_flags = 0
         self.sim.reset_all()
+        # The no-legend bits are stored in the mapping table, which reset_all clears.
+        self.no_legend_positions.clear()
         self._ctx = {}
         self._staging = None
         if self._apply_pending:
@@ -582,6 +590,7 @@ class MockFirmware:
             self.dim_positions.clear()
         if flags & MAPPING_RESET:
             self.sim.reset_mapping()
+            self.no_legend_positions.clear()
         if flags & MAPPING_ALLSET:
             self.sim.set_all_usage()
             self.dim_positions.clear()
@@ -616,7 +625,18 @@ class MockFirmware:
         capacity = self.settings.OVERLAY_MAPPING_CAPACITY
         for i in range(0, len(values) - 1, 2):
             frm, to = values[i], values[i + 1]
+            no_legend = (self.protocol >= MAPPING_NO_LEGEND_MIN
+                         and capacity <= to < 2 * capacity)
+            if no_legend:
+                to -= capacity
+            if frm < self._map_index_count() and to >= capacity:
+                self._refuse(Cmd.SEND_OVERLAY_MAPPING_W.value,
+                             f"mapping {frm} -> {to}: to out of pool")
             if frm < self._map_index_count() and to < capacity:
+                if no_legend:
+                    self.no_legend_positions.add(frm)
+                else:
+                    self.no_legend_positions.discard(frm)
                 self.sim.set_mapping(frm, to)
                 # Every pair sets the bit either way (set_display_dim).
                 if dim:

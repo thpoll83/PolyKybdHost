@@ -13,6 +13,26 @@ import polyhost.util.log_util  # noqa: F401
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
 
+# PNG text chunk listing the keys an overlay file draws WITHOUT the key legend
+# (protocol v25), written by scripts/generate_app_overlays.py. Its value is
+# whitespace-separated "<modifier>:<keycode>" pairs in decimal, e.g. "0:41 1:41".
+NO_LEGEND_CHUNK = "polykybd-no-legend"
+
+
+def parse_no_legend(text) -> frozenset:
+    """``{(modifier value, keycode), ...}`` from a NO_LEGEND_CHUNK value.
+
+    A malformed entry is skipped: the key then keeps its legend, which is what
+    an older keyboard shows anyway."""
+    pairs = set()
+    for entry in str(text or "").split():
+        mod, sep, kc = entry.partition(":")
+        # isascii(): "²".isdigit() is true and int("²") raises.
+        if sep and mod.isascii() and kc.isascii() and mod.isdigit() and kc.isdigit():
+            pairs.add((int(mod), int(kc)))
+    return frozenset(pairs)
+
+
 # numpy and PIL are imported lazily inside open() (the only place they're used).
 # Both are heavy cold imports and im_converter sits on the daemon's startup
 # import chain (poly_kybd), but conversion only runs on the HID worker thread
@@ -27,6 +47,8 @@ class ImageConverter:
         self.image = {}
         self._num_x = 10
         self._num_y = 9
+        # (modifier value, keycode) of the keys this file draws without the legend.
+        self.no_legend = frozenset()
 
     def open(self, filename):
         # Pillow decode (Qt-free: this runs on the non-Qt HID worker thread).
@@ -45,6 +67,7 @@ class ImageConverter:
         try:
             with Image.open(filename) as pil_image:
                 pil_image.load()
+                self.no_legend = parse_no_legend(pil_image.info.get(NO_LEGEND_CHUNK))
                 src_mode = pil_image.mode
                 has_alpha = (
                     "A" in src_mode
