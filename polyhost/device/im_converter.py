@@ -14,7 +14,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
 
 # PNG text chunk listing the keys an overlay file draws WITHOUT the key legend
-# (protocol v25, cmd 44), written by scripts/generate_app_overlays.py. Its value is
+# (protocol v25), written by scripts/generate_app_overlays.py. Its value is
 # whitespace-separated "<modifier>:<keycode>" pairs in decimal, e.g. "0:41 1:41".
 NO_LEGEND_CHUNK = "polykybd-no-legend"
 
