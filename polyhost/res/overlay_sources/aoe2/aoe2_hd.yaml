@@ -43,26 +43,26 @@ bindings:
   - { key: HOME, icon: notification.png, label: "Last notification" }
   - { key: BSPC, icon: previousview.png, label: "Return to previous view" }
 
-  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40] }
-  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40] }
-  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40] }
-  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40] }
-  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40] }
-  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40] }
-  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40] }
-  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40] }
-  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40] }
-  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40] }
-  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40] }
-  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40] }
-  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40] }
-  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40] }
-  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40] }
-  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40] }
-  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40] }
-  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40] }
-  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40] }
-  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40] }
+  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
 
   # Go to building (Ctrl)
   - { key: I, mods: [CTRL], icon: mill.png, label: "Go to Mill" }

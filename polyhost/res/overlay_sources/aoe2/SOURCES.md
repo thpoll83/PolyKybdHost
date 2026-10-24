@@ -49,7 +49,7 @@ key uses it, measured with the firmware fonts (`tools/oled_preview.py`) and the
 | Keys | Legend ends at x | Area |
 |---|---|---|
 | Letters, `,` `.`, F3, F9, Home, Enter, Page Up, Page Down | 22 to 36 | 40×40 |
-| Digits (control groups) | 22 to 36 (the shifted symbol, which the group erases) | 48×40, drawn 1:1 |
+| Digits (control groups) | 22 to 36 (the shifted symbol, which the group erases) | 48×40 drawn 1:1, 5 px from the right edge (`margin: 5`) |
 | F2 | 35 | 34×40 |
 | F4 | 37 | 30×40 |
 | F11 | 47 | 21×40 |
