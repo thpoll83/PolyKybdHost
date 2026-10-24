@@ -119,7 +119,6 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.SEND_PRC_OVERLAY.value: 19,
     Cmd.FILL_POOL_FROM_ICON.value: 20,
     Cmd.REBOOT.value: 22,
-    Cmd.SEND_OVERLAY_MAPPING_W2.value: 25,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -146,6 +145,9 @@ MAPPING_FLAGS_MIN = 21
 # cmd 33's width byte bit 7 draws the report's pairs dimmed (v23). v21/v22 mask
 # the width with 0x1F, so they ignore it and draw those positions at full strength.
 MAPPING_DIM_MIN = 23
+# A mapping `to` offset by the pool capacity is drawn without the legend (v25).
+# Older firmware rejects it as out of pool, and the key stays blank.
+MAPPING_NO_LEGEND_MIN = 25
 # cmd 25's board-flag byte (v24). Older firmware ignores it and sets only the side.
 SPLIT_VBUS_FLAG_MIN = 24
 ICON_BUNDLE_MIN = 20
@@ -153,12 +155,7 @@ ICON_BUNDLE_MIN = 20
 _IMAGE_CMDS = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
                Cmd.SEND_COMPRESSED_OVERLAY.value, Cmd.START_ROI_OVERLAY.value,
                Cmd.SEND_ROI_OVERLAY.value, Cmd.SEND_PRC_OVERLAY.value}
-_MAPPING_CMDS = {Cmd.SEND_OVERLAY_MAPPING.value, Cmd.SEND_OVERLAY_MAPPING_W.value,
-                 Cmd.SEND_OVERLAY_MAPPING_W2.value}
-# cmd 44's second flag byte (v25): bit 0 draws the pairs without the legend; any
-# other bit is refused before a flag runs.
-MAPPING_W2_NO_LEGEND = 0x01
-MAPPING_W2_KNOWN = MAPPING_W2_NO_LEGEND
+_MAPPING_CMDS = {Cmd.SEND_OVERLAY_MAPPING.value, Cmd.SEND_OVERLAY_MAPPING_W.value}
 
 
 def command_known(cmd: int, protocol: int) -> bool:
@@ -619,32 +616,38 @@ class MockFirmware:
     def _map_index_count(self) -> int:
         return NUM_OVERLAYS * (16 if self.protocol >= GUI_COMBO_MIN else 9)
 
-    def _apply_pairs(self, data: bytes, width: int, dim: bool = False,
-                     no_legend: bool = False) -> None:
+    def _apply_pairs(self, data: bytes, width: int, dim: bool = False) -> None:
         """set_packed_overlay_mapping: values pair up in order; a pair with an
         out-of-range `from` is padding (silent), an out-of-pool `to` is refused."""
         values = _read_values(data, width)
         capacity = self.settings.OVERLAY_MAPPING_CAPACITY
         for i in range(0, len(values) - 1, 2):
             frm, to = values[i], values[i + 1]
+            no_legend = (self.protocol >= MAPPING_NO_LEGEND_MIN
+                         and capacity <= to < 2 * capacity)
+            if no_legend:
+                to -= capacity
+            if frm < self._map_index_count() and to >= capacity:
+                self._refuse(Cmd.SEND_OVERLAY_MAPPING_W.value,
+                             f"mapping {frm} -> {to}: to out of pool")
             if frm < self._map_index_count() and to < capacity:
+                if no_legend:
+                    self.no_legend_positions.add(frm)
+                else:
+                    self.no_legend_positions.discard(frm)
                 self.sim.set_mapping(frm, to)
                 # Every pair sets the bit either way (set_display_dim).
                 if dim:
                     self.dim_positions.add(frm)
                 else:
                     self.dim_positions.discard(frm)
-                if no_legend:
-                    self.no_legend_positions.add(frm)
-                else:
-                    self.no_legend_positions.discard(frm)
 
     def _mapping_fixed(self, p):
         self.mapping_reports += 1
         self._apply_pairs(p[2:REPORT_SIZE], 10)
         return None
 
-    def _mapping_sized(self, p, hdr: int = 3, no_legend: bool = False):
+    def _mapping_sized(self, p):
         self.mapping_reports += 1
         flags = p[2]
         if self.protocol >= MAPPING_FLAGS_MIN:
@@ -659,19 +662,11 @@ class MockFirmware:
             self._flags_apply(MIRROR_OVERLAYS | USAGE_RESET | MAPPING_RESET)
             self.control_reports -= 1          # rode on the mapping report
         dim = self.protocol >= MAPPING_DIM_MIN and bool(flags & 0x80)
-        self._apply_pairs(p[hdr:REPORT_SIZE], width, dim, no_legend)
+        self._apply_pairs(p[3:REPORT_SIZE], width, dim)
         if self.protocol >= MAPPING_FLAGS_MIN and flags & 0x20:
             self.overlay_flags |= DISPLAY_OVERLAYS
             self._end_burst()
         return None
-
-    def _mapping_sized_w2(self, p):
-        """cmd 44 (v25): cmd 33 with a second flag byte; the pairs start at byte 4."""
-        if p[3] & ~MAPPING_W2_KNOWN & 0xFF:
-            self.mapping_reports += 1
-            self._refuse(p[1], f"mapping flag byte 0x{p[3]:02x} has unknown bits")
-            return None
-        return self._mapping_sized(p, hdr=4, no_legend=bool(p[3] & MAPPING_W2_NO_LEGEND))
 
     # -- overlays: images -----------------------------------------------
 
@@ -984,7 +979,6 @@ class MockFirmware:
         Cmd.OVERLAY_FLAGS_OFF.value: _flags_off,
         Cmd.SEND_OVERLAY_MAPPING.value: _mapping_fixed,
         Cmd.SEND_OVERLAY_MAPPING_W.value: _mapping_sized,
-        Cmd.SEND_OVERLAY_MAPPING_W2.value: _mapping_sized_w2,
         Cmd.SEND_OVERLAY.value: _plain,
         Cmd.START_COMPRESSED_OVERLAY.value: _rle,
         Cmd.SEND_COMPRESSED_OVERLAY.value: _rle,

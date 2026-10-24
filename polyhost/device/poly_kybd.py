@@ -120,14 +120,13 @@ REBOOT_MIN_PROTOCOL = 22
 MAPPING_DIM_MIN_PROTOCOL = 23
 MAPPING_FLAG_DIM = 0x80
 
-# Minimum firmware PROTOCOL_VERSION for cmd 44, cmd 33 with a second flag byte.
-# Its bit 0 draws every pair of the report WITHOUT the key legend: the keyboard
-# clears the whole cell before it draws the icon. The host sets it for keys an
-# overlay file lists in its "polykybd-no-legend" PNG text chunk (a game's ESC
-# mark). v24 and older NACK cmd 44, so below the gate those pairs go out over
-# cmd 33 and the legend shows around the icon.
+# Minimum firmware PROTOCOL_VERSION for no-legend mapping pairs: a pair's `to`
+# offset by the pool capacity (600..1199) is drawn WITHOUT the key legend, so the
+# keyboard clears the whole cell before it draws the icon. The host sets it for
+# keys an overlay file lists in its "polykybd-no-legend" PNG text chunk (a game's
+# ESC mark). v24 and older reject such a pair as out of pool and leave the key
+# blank, so below the gate the host sends the plain slot and the legend stays.
 MAPPING_NO_LEGEND_MIN_PROTOCOL = 25
-MAPPING_W2_FLAG_NO_LEGEND = 0x01
 
 # Minimum firmware PROTOCOL_VERSION for cmd 25's board-flag byte (data[3]). It sets
 # or clears the SPLIT_VBUS flag in the connected half's handedness stamp, which marks
@@ -1294,9 +1293,9 @@ class PolyKybd:
         the set is ignored and every pair goes out plain.
 
         ``no_legend`` (protocol v25+, the "mapping_no_legend" gate) is the set of
-        display positions the keyboard draws without the key legend. Those pairs
-        travel over SEND_OVERLAY_MAPPING_W2 (cmd 44), one data byte shorter per
-        report. Below v25 the set is ignored and they go out over cmd 33.
+        display positions the keyboard draws without the key legend. Their `to`
+        goes out offset by the pool capacity, in the same reports as the plain
+        pairs. Below v25 the set is ignored and they go out plain.
         """
         if (reset or show) and not (self.supports("mapping_flags") and from_to):
             return False, "mapping flags need protocol v21 and at least one pair"
@@ -1312,34 +1311,28 @@ class PolyKybd:
                                     show: bool = False, dim=frozenset(),
                                     no_legend=frozenset()) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        # One report per combination of the two per-report flags. A no-legend
-        # report is cmd 44, whose second flag byte costs one data byte.
-        reports = []
-        for dim_flag in (0, MAPPING_FLAG_DIM):
-            for w2_flags in (0, MAPPING_W2_FLAG_NO_LEGEND):
-                group = {f: t for f, t in from_to.items()
-                         if (f in dim) == bool(dim_flag) and (f in no_legend) == bool(w2_flags)}
-                group_bytes = data_bytes - 1 if w2_flags else data_bytes
-                reports += [(w, p, dim_flag, w2_flags)
-                            for w, p in plan_mapping_reports(group, group_bytes)]
+        # A no-legend pair rides in the plain reports: its `to` is offset by the
+        # pool capacity (MAPPING_NO_LEGEND_MIN_PROTOCOL), and the width planner
+        # gives it 11 bits only when the offset value needs them.
+        offset = self.device_settings.OVERLAY_MAPPING_CAPACITY
+        wire = {f: t + offset if f in no_legend else t for f, t in from_to.items()}
+        plain = {f: t for f, t in wire.items() if f not in dim}
+        dimmed = {f: t for f, t in wire.items() if f in dim}
+        reports = ([(w, p, 0) for w, p in plan_mapping_reports(plain, data_bytes)]
+                   + [(w, p, MAPPING_FLAG_DIM) for w, p in plan_mapping_reports(dimmed, data_bytes)])
         num_msgs = 0
-        for r, (width, pairs, dim_flag, w2_flags) in enumerate(reports):
+        for r, (width, pairs, dim_flag) in enumerate(reports):
             flags = (dim_flag
                      | (MAPPING_FLAG_RESET if reset and r == 0 else 0)
                      | (MAPPING_FLAG_SHOW if show and r == len(reports) - 1 else 0))
-            if w2_flags:
-                cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W2, width | flags, w2_flags)
-                msg = cmd + pack_report(pairs, data_bytes - 1, width)
-            else:
-                cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
-                msg = cmd + pack_report(pairs, data_bytes, width)
+            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width | flags)
+            msg = cmd + pack_report(pairs, data_bytes, width)
             result, err = self.hid.send_multiple(msg)
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {err}"
-            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s%s",
-                           len(pairs), width, " (dimmed)" if dim_flag else "",
-                           " (no legend)" if w2_flags else "")
+            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits%s",
+                           len(pairs), width, " (dimmed)" if dim_flag else "")
 
         self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
                       num_msgs, len(from_to))
@@ -1693,7 +1686,7 @@ class PolyKybd:
         # showing and must stay readable whichever source drew it.
         dim_positions: set[int] = set()
         # Positions whose LAST source lists the key in its "polykybd-no-legend" PNG
-        # chunk (ImageConverter.no_legend): drawn without the key legend (cmd 44).
+        # chunk (ImageConverter.no_legend): drawn without the key legend (v25).
         no_legend_positions: set[int] = set()
 
         # Decode EVERY file before touching the device. prepare_for_mru_send()

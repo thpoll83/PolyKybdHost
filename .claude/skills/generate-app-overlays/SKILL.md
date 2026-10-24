@@ -44,7 +44,8 @@ Hard limits baked into the firmware/loader (do not fight them):
   art exists to take; commit whichever it is as `icons/<name>.png`.
 - **`legend: false`** on a binding, or **`program_icon_legend: false`** for the
   program mark, draws that key WITHOUT the firmware's legend: the keyboard clears
-  the whole cell before it draws the icon (cmd 44, protocol v25). Use it only
+  the whole cell before it draws the icon (protocol v25: the mapping's slot is
+  sent offset by 600). Use it only
   where the icon replaces the keycap, as AoE2's full-cell ESC mark does. The
   generator lists those keys in the PNG's `polykybd-no-legend` text chunk as
   `<modifier>:<keycode>` pairs. Firmware before v25 keeps the legend and draws
