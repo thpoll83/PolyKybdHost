@@ -11,6 +11,8 @@
 #   python polyhost/res/overlay_sources/aoe2/gen_de.py     # writes aoe2_de.yaml
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/aoe2/aoe2_de.yaml --preview /tmp/aoe2_de_preview
 app: aoe2_hd
 match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe]
 output: aoe2_hd_template

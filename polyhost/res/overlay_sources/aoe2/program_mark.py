@@ -9,15 +9,15 @@ letters. `program_de.png` adds a small "D" and "E" for the Definitive Edition.
 The font is Liberation Serif (SIL OFL 1.1). Without it the committed PNGs are
 kept as they are.
 
+    pip install numpy pillow
     python polyhost/res/overlay_sources/aoe2/program_mark.py
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
-from scipy.ndimage import binary_dilation
+# numpy and Pillow are imported inside the functions, so fetch_icons.py can
+# import this module without them (ensure() keeps the committed PNGs).
 
 W, H = 72, 40
 FONT_DIR = Path("/usr/share/fonts/truetype/liberation")
@@ -29,6 +29,8 @@ LETTER_FONT = "LiberationSerif-Bold.ttf"
 
 def text(s: str, font: str, px: int) -> np.ndarray:
     """`s` as a 1-bit mask cropped to its ink."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
     f = ImageFont.truetype(str(FONT_DIR / font), px)
     left, top, right, bottom = f.getbbox(s)
     im = Image.new("L", (right - left + 4, bottom - top + 4), 0)
@@ -41,6 +43,7 @@ def text(s: str, font: str, px: int) -> np.ndarray:
 def of_line() -> np.ndarray:
     """"— of —". The font's dashes are thinner than a pixel at 10 px, so they
     are drawn as 1 px lines; the f gets its crossbar and a closed stem."""
+    import numpy as np
     of = text("of", OF_FONT, 10)
     of[2, 5] = of[2, 7] = True
     of[6, 6] = True
@@ -60,7 +63,23 @@ def place(canvas: np.ndarray, m: np.ndarray, cx: int, top: int) -> None:
     canvas[top:top + h, x0:x0 + w] |= m
 
 
+def dilate(m: np.ndarray, n: int) -> np.ndarray:
+    """`m` grown by `n` px in the four axis directions per step, as
+    scipy.ndimage.binary_dilation does with its default cross."""
+    import numpy as np
+    out = m.copy()
+    for _ in range(n):
+        grown = out.copy()
+        grown[1:, :] |= out[:-1, :]
+        grown[:-1, :] |= out[1:, :]
+        grown[:, 1:] |= out[:, :-1]
+        grown[:, :-1] |= out[:, 1:]
+        out = grown
+    return out
+
+
 def mark(de: bool) -> np.ndarray:
+    import numpy as np
     ii = np.zeros((H, W), bool)
     g = text("II", II_FONT, 56)[:H, :W]
     place(ii, g, W // 2, (H - g.shape[0]) // 2)
@@ -76,10 +95,12 @@ def mark(de: bool) -> np.ndarray:
         d, e = text("D", LETTER_FONT, 9), text("E", LETTER_FONT, 9)
         words[37 - d.shape[0]:37, 4:4 + d.shape[1]] |= d
         words[37 - e.shape[0]:37, 68 - e.shape[1]:68] |= e
-    return (ii & light & ~binary_dilation(words, iterations=1)) | words
+    return (ii & light & ~dilate(words, 1)) | words
 
 
 def save(m: np.ndarray, dest: Path) -> None:
+    import numpy as np
+    from PIL import Image
     a = np.zeros((H, W, 4), np.uint8)
     a[m] = (0, 0, 0, 255)
     Image.fromarray(a, "RGBA").save(dest)

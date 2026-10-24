@@ -14,6 +14,8 @@
 #   python polyhost/res/overlay_sources/aoe2/gen_de.py     # writes aoe2_de.yaml
 #   python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/aoe2/aoe2_de.yaml --preview /tmp/aoe2_de_preview
 app: aoe2_de
 match: [aoe2de_s, steam_app_813780]
 output: aoe2_de_template

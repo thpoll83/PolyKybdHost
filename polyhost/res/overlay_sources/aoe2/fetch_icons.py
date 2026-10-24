@@ -4,7 +4,7 @@
 The shortcut icons are from game-icons.net (CC BY 3.0); each author is
 credited in SOURCES.md. The ESC marks are drawn by program_mark.py.
 
-    pip install cairosvg
+    pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/aoe2/fetch_icons.py
 """
 from __future__ import annotations
@@ -120,7 +120,6 @@ def _group_mask(src: Path):
     from the back copy. The largest height whose group fits GROUP_W x GROUP_H
     without rescaling, so the seam stays exactly GROUP_SEAM px."""
     import numpy as np
-    from scipy.ndimage import binary_dilation
     for h in range(GROUP_H - GROUP_DY, 10, -1):
         m = _unit_mask(src, h)
         dx = max(8, m.shape[1] * 2 // 5)
@@ -131,19 +130,18 @@ def _group_mask(src: Path):
     front = np.zeros((H, W), bool)
     back[:h, :m.shape[1]] = m
     front[GROUP_DY:, dx:] = m
-    return (back & ~binary_dilation(front, iterations=GROUP_SEAM)) | front
+    return (back & ~program_mark.dilate(front, GROUP_SEAM)) | front
 
 
 def _with_plus(mask, size=13, bar=3):
     """A plus sign in the lower-right corner, GROUP_SEAM px clear around it."""
     import numpy as np
-    from scipy.ndimage import binary_dilation
     H, W = mask.shape
     p = np.zeros((H, W), bool)
     cy, cx = H - size // 2 - 1, W - size // 2 - 1
     p[cy - bar // 2:cy + bar // 2 + 1, cx - size // 2:cx + size // 2 + 1] = True
     p[cy - size // 2:cy + size // 2 + 1, cx - bar // 2:cx + bar // 2 + 1] = True
-    return (mask & ~binary_dilation(p, iterations=GROUP_SEAM)) | p
+    return (mask & ~program_mark.dilate(p, GROUP_SEAM)) | p
 
 
 def _save_cell(mask, path: Path) -> None:
