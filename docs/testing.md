@@ -415,6 +415,17 @@ headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem —
 - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already BOUND that
   method**, which this repo's fixture idiom does constantly. Drive the real input, or
   override the attribute on the instance.
+- ⚠️ **A `worker.run_sync()` barrier runs BEFORE a job the core already queued.**
+  `run_sync` submits with `front=True` (`hid_worker.py`), so a test that calls
+  `core.flash_firmware(...)` and then `run_sync("barrier", ...)` checks the result
+  before the flash has run. Wait at the back of the queue instead:
+  `core.worker.submit("barrier", lambda cancel: None).done.wait(60)`
+  (`tests/core/core_mock_link_test.py`, #462).
+- **A core test's keyboard is `spec_keyboard()` (`tests/core/spec_keyboard.py`), not
+  a bare `MagicMock()`.** A bare MagicMock accepts any method name and any arguments,
+  so a renamed `PolyKybd` method leaves the test green. The spec'd one is
+  `create_autospec(PolyKybd, instance=True)` with `hid` set. Measured on #462:
+  renaming `reset_overlays_and_usage` failed 4 tests with it and none with MagicMock.
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix** — invalidation is (mtime, size), so a
   length-neutral edit in the same mtime second is invisible. The tell is a traceback
   quoting source that no longer exists. Clear `__pycache__` after **restoring** too, not
