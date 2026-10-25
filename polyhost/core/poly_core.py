@@ -2269,7 +2269,14 @@ class PolyCore(Observable):
             return False, "Sending the unicode composition mode is disabled in the settings."
         from polyhost.input.unicode_input import get_input_method
         mode = get_input_method()
-        self.log.info("Re-applying unicode mode %s", mode)
+        if mode == self._last_pushed_unicode_mode and not self._last_push_was_volatile:
+            # The tray re-sends on its first menu open (see host.py
+            # _refresh_wincompose_action); say so, since "persist" reads as a
+            # flash write and eeprom_update_byte skips an unchanged byte.
+            self.log.info("Re-applying unicode mode %s (unchanged; the keyboard "
+                          "writes EEPROM only when the mode differs)", mode)
+        else:
+            self.log.info("Re-applying unicode mode %s", mode)
         ok, payload = self._device_call(
             "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
         if not ok:

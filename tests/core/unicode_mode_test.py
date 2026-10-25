@@ -28,6 +28,7 @@ def _fake_core(send_mode=True, device_result=(True, "ok")):
     """Minimal stand-in exposing exactly what refresh_unicode_mode touches."""
     settings = {"unicode_send_composition_mode": send_mode}
     calls = []
+    infos = []
 
     def _device_call(name, fn):
         calls.append(name)
@@ -36,10 +37,14 @@ def _fake_core(send_mode=True, device_result=(True, "ok")):
     core = types.SimpleNamespace(
         poly_settings=types.SimpleNamespace(get=lambda k: settings[k]),
         keeb=types.SimpleNamespace(set_unicode_mode=lambda m: (True, "ok")),
-        log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
+        log=types.SimpleNamespace(info=lambda msg, *a, **k: infos.append(msg % a),
+                                  warning=lambda *a, **k: None),
         _device_call=_device_call,
+        _last_pushed_unicode_mode=None,
+        _last_push_was_volatile=False,
     )
     core._calls = calls
+    core._infos = infos
     return core
 
 
@@ -79,6 +84,31 @@ class RefreshUnicodeModeTest(unittest.TestCase):
                    return_value=InputMethod.WinCompose):
             PolyCore.refresh_unicode_mode(core)
         self.assertEqual(core._last_pushed_unicode_mode, InputMethod.WinCompose)
+
+    def test_the_log_says_when_the_mode_is_unchanged(self):
+        """The tray re-sends the same mode on its first menu open. The log must
+        not read as a flash write: the firmware skips an unchanged byte."""
+        core = _fake_core()
+        core._last_pushed_unicode_mode = InputMethod.WinCompose
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   return_value=InputMethod.WinCompose):
+            PolyCore.refresh_unicode_mode(core)
+        self.assertEqual(core._calls, ["set_unicode_mode"])
+        self.assertIn("unchanged", core._infos[0])
+        core = _fake_core()
+        core._last_pushed_unicode_mode = InputMethod.Windows
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   return_value=InputMethod.WinCompose):
+            PolyCore.refresh_unicode_mode(core)
+        self.assertNotIn("unchanged", core._infos[0])
+        # A volatile push of the same mode is not stored yet, so it is not unchanged.
+        core = _fake_core()
+        core._last_pushed_unicode_mode = InputMethod.WinCompose
+        core._last_push_was_volatile = True
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   return_value=InputMethod.WinCompose):
+            PolyCore.refresh_unicode_mode(core)
+        self.assertNotIn("unchanged", core._infos[0])
 
     def test_a_failed_push_is_NOT_recorded(self):
         """Recording a mode the keyboard never took would make the watcher dedupe
