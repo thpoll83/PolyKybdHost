@@ -124,6 +124,14 @@ class DayRange(unittest.TestCase):
         self.assertEqual(dash.day_range(rows, 0), ["2026-08-04"])
         self.assertEqual(dash.day_range(rows, -5), ["2026-08-04"])
 
+    def test_all_days_starts_at_the_first_valid_day(self):
+        rows = [row("a", "2026-08-03"), row("b", "2026-08-01"), row("c", ""),
+                row("d", "2026-08-04")]
+        self.assertEqual(
+            dash.day_range(rows, None),
+            ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04"],
+        )
+
 
 class DaysArgument(unittest.TestCase):
     def test_rejects_zero_and_negative(self):
@@ -135,6 +143,15 @@ class DaysArgument(unittest.TestCase):
 
     def test_accepts_a_positive_window(self):
         self.assertEqual(dash._positive_days("90"), 90)
+
+    def test_all_means_no_limit(self):
+        self.assertIsNone(dash._positive_days("all"))
+
+    def test_subtitle_names_the_whole_range(self):
+        rows = [row("a", "2026-08-01"), row("b", "2026-08-04")]
+        page = dash.render(rows, None, "now")
+        self.assertIn("window: all 4 days", page)
+        self.assertIn("window: last 30 days", dash.render(rows, 30, "now"))
 
 
 class Aggregations(unittest.TestCase):
@@ -253,6 +270,13 @@ class Render(unittest.TestCase):
         out = dash.svg_bars([("2026-08-01", 3), ("2026-08-02", 0)])
         self.assertIn("<svg", out)
         self.assertIn("2026-08-01: 3", out)
+
+    def test_axis_labels_carry_the_year_only_across_years(self):
+        one = dash.svg_bars([("2026-08-01", 1), ("2026-08-02", 2)])
+        self.assertIn(">08-01<", one)
+        two = dash.svg_bars([("2026-12-31", 1), ("2027-01-01", 2)])
+        self.assertIn(">2026-12-31<", two)
+        self.assertIn(">2027-01-01<", two)
 
     def test_bars_on_an_empty_window_say_so(self):
         self.assertIn("No data", dash.svg_bars([]))
