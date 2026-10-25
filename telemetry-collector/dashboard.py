@@ -303,21 +303,17 @@ def day_range(rows: list[dict], days: int | None) -> list[str]:
     outage into a straight line. `days=None` starts the window at the first
     valid day in the data.
     """
-    if not rows:
+    valid = []
+    for r in rows:
+        try:
+            valid.append(date.fromisoformat(str(r.get("day") or "")))
+        except ValueError:
+            continue
+    if not valid:
         return []
-    last = max(str(r.get("day") or "") for r in rows)
-    try:
-        end = date.fromisoformat(last)
-    except ValueError:
-        return []
+    end = max(valid)
     if days is None:
-        valid = []
-        for r in rows:
-            try:
-                valid.append(date.fromisoformat(str(r.get("day") or "")))
-            except ValueError:
-                continue
-        start = min(valid, default=end)
+        start = min(valid)
     else:
         start = end - timedelta(days=max(days, 1) - 1)
     return [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]

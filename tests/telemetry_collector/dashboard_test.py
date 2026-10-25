@@ -119,6 +119,11 @@ class DayRange(unittest.TestCase):
         self.assertEqual(dash.day_range([], 30), [])
         self.assertEqual(dash.day_range([row("a", "not-a-date")], 30), [])
 
+    def test_a_malformed_day_does_not_hide_the_window(self):
+        rows = [row("a", "2026-08-01"), row("b", "not-a-date"), row("c", "2026-08-02")]
+        self.assertEqual(dash.day_range(rows, None), ["2026-08-01", "2026-08-02"])
+        self.assertEqual(dash.day_range(rows, 30)[-1], "2026-08-02")
+
     def test_non_positive_days_is_a_single_day(self):
         rows = [row("a", "2026-08-01"), row("b", "2026-08-04")]
         self.assertEqual(dash.day_range(rows, 0), ["2026-08-04"])
