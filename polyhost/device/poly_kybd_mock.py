@@ -7,12 +7,14 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np  # for the get_display_image return annotation only
 
+from polyhost.device import bulk_pipe
 from polyhost.device.command_ids import IdleTimeout
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import Modifier
 from polyhost.device.mock_firmware import FaultPlan, MockFirmware, MockHidHelper
+from polyhost.device.mock_pipe import MockPipe
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_sim import OverlayFirmwareSim
 from polyhost.input.unicode_input import InputMethod
@@ -673,22 +675,32 @@ class PolyKybdMock:
         self._log_call("read_serial")
         return None
 
-    # Bulk pipe parity with PolyKybd. The mock has no serial port; a test that
-    # wants the "pipe" transport sets `pipe_available = True` first.
-    pipe_available = False
+    # Bulk pipe: the real probe (bulk_pipe.probe: PING, then the SINK/STAT rate
+    # measurement) against the emulated keyboard's pipe (mock_pipe.py). The port
+    # it reports opens through bulk_pipe.open_port, so the firmware update and
+    # every resource flash stream their chunks over it, as with a keyboard.
+    # The pipe is present from protocol 23, as on the firmware; setting
+    # `pipe_available` adds or removes it.
     pipe_info = None
     transport = None
 
+    @property
+    def pipe_available(self) -> bool:
+        return self.firmware.pipe is not None
+
+    @pipe_available.setter
+    def pipe_available(self, on: bool) -> None:
+        if on and self.firmware.pipe is None:
+            self.firmware.pipe = MockPipe(self.firmware)
+        elif not on:
+            self.firmware.pipe = None
+
     def probe_bulk_pipe(self) -> str:
         self._log_call("probe_bulk_pipe")
-        if self.pipe_available:
-            self.pipe_info = {"port": "mock", "proto": 1, "max_payload": 512,
-                              "epsize": 64, "out_capacity": 8, "fw": "mock",
-                              "rate_mbps": 1.0}
-            self.transport = "pipe"
-        else:
-            self.pipe_info = None
-            self.transport = "hid"
+        pipe = self.firmware.pipe
+        info = bulk_pipe.probe(pipe.port_name) if pipe is not None else None
+        self.pipe_info = info
+        self.transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
         return self.transport
 
     def use_hid_only(self) -> str:
