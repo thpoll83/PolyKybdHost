@@ -38,16 +38,21 @@ keep its settings away from your own and start it from a scratch directory: the
 logs and `crash_log.txt` are written to the current directory.
 
 ```bash
-export PYTHONPATH=$REPO HOME=$SCRATCH/home XDG_CONFIG_HOME=$SCRATCH/home/.config \
-       XDG_RUNTIME_DIR=$SCRATCH/run
-mkdir -p $XDG_CONFIG_HOME/PolyHost $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
-printf 'settings_format: 2\ndev_mock_primary: true\n' > $XDG_CONFIG_HOME/PolyHost/settings.yaml
-cd $SCRATCH && timeout 60 xvfb-run -a $REPO/.venv/bin/python -m polyhost --headless \
-    --portable --no-autostart --dev 1 &
-sleep 12 && $REPO/.venv/bin/python -m polyhost.cli.polyctl status
+REPO=$HOME/PolyKybdHost        # the checkout, absolute path
+SCRATCH=$(mktemp -d)
+(
+  export PYTHONPATH=$REPO HOME=$SCRATCH/home XDG_CONFIG_HOME=$SCRATCH/home/.config \
+         XDG_RUNTIME_DIR=$SCRATCH/run
+  mkdir -p $XDG_CONFIG_HOME/PolyHost $XDG_RUNTIME_DIR && chmod 700 $XDG_RUNTIME_DIR
+  printf 'settings_format: 2\ndev_mock_primary: true\n' > $XDG_CONFIG_HOME/PolyHost/settings.yaml
+  cd $SCRATCH && timeout 60 xvfb-run -a $REPO/.venv/bin/python -m polyhost --headless \
+      --portable --no-autostart --dev 1 &
+  sleep 12 && $REPO/.venv/bin/python -m polyhost.cli.polyctl status
+)
 ```
 
-`PYTHONPATH` is needed because a venv made from `requirements.txt` does not
+The subshell keeps the scratch `HOME` out of your own shell. `PYTHONPATH` is
+needed because a venv made from `requirements.txt` does not
 install `polyhost` itself. `polyctl` needs the same `HOME`/`XDG_*` variables to
 find the daemon's socket. Its `status` shows `transport: pipe` and `link_rate_mbps`
 about 0.6.
