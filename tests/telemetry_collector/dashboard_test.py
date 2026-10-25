@@ -278,6 +278,18 @@ class Render(unittest.TestCase):
         self.assertIn(">2026-12-31<", two)
         self.assertIn(">2027-01-01<", two)
 
+    def test_no_tick_next_to_the_last_label(self):
+        import re
+        from datetime import date, timedelta
+        start = date(2026, 12, 15)
+        series = [((start + timedelta(days=i)).isoformat(), 1) for i in range(30)]
+        labels = re.findall(r'class="tick" x="([0-9.]+)" y="[0-9.]+" text-anchor="(?:middle|end)">([0-9-]+)<',
+                            dash.svg_bars(series))
+        days = [d for _, d in labels]
+        self.assertEqual(days[-1], "2027-01-13")
+        self.assertNotIn("2027-01-12", days)  # day 28, one bar before the last
+        self.assertIn("2027-01-08", days)     # day 24, the previous regular tick
+
     def test_bars_on_an_empty_window_say_so(self):
         self.assertIn("No data", dash.svg_bars([]))
 

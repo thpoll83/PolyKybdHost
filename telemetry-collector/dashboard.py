@@ -463,7 +463,10 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
             f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" rx="1">'
             f"<title>{esc(day)}: {value}</title></rect>"
         )
-        if i % every == 0 or i == len(series) - 1:
+        # A regular tick closer than half an interval to the last label would
+        # run into it (30 days: ticks at 28 and 29), so it is left out.
+        regular = i % every == 0 and (len(series) - 1 - i) * 2 >= every
+        if regular or i == len(series) - 1:
             # The last label ends at its bar instead of centring on it, so a
             # full YYYY-MM-DD is not cut off at the right edge of the chart.
             last = i == len(series) - 1 and len(series) > 1
