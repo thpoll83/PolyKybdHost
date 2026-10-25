@@ -282,6 +282,7 @@ Add `--json` for machine-readable output.
 ```bash
 python telemetry-collector/dashboard.py --open      # queries --remote, writes dashboard.html
 python telemetry-collector/dashboard.py --days 90   # widen the time-series window
+python telemetry-collector/dashboard.py --days all  # every day in the data
 ```
 
 It shows installs reporting per day, host/firmware/OS/country/mode splits **per

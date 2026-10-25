@@ -15,6 +15,7 @@ Usage:
     python dashboard.py                    # query the remote DB, write dashboard.html
     python dashboard.py --open             # ... and open it in a browser
     python dashboard.py --days 90          # widen the time-series window (default 30)
+    python dashboard.py --days all         # ... or cover every day in the data
     python dashboard.py --local            # query the local dev DB instead
     python dashboard.py --from-json rows.json   # no wrangler; feed saved --json output
     python dashboard.py --from-json data/       # ... or a directory of them (*.json, recursive)
@@ -294,21 +295,27 @@ def _jsonmap(value) -> dict:
     return out if isinstance(out, dict) else {}
 
 
-def day_range(rows: list[dict], days: int) -> list[str]:
+def day_range(rows: list[dict], days: int | None) -> list[str]:
     """Every day in the window, including ones with no pings.
 
     Gaps matter here — a day where nobody reported is a real observation, and
     plotting only the days that have rows silently closes the gap and turns an
-    outage into a straight line.
+    outage into a straight line. `days=None` starts the window at the first
+    valid day in the data.
     """
-    if not rows:
+    valid = []
+    for r in rows:
+        try:
+            valid.append(date.fromisoformat(str(r.get("day") or "")))
+        except ValueError:
+            continue
+    if not valid:
         return []
-    last = max(str(r.get("day") or "") for r in rows)
-    try:
-        end = date.fromisoformat(last)
-    except ValueError:
-        return []
-    start = end - timedelta(days=max(days, 1) - 1)
+    end = max(valid)
+    if days is None:
+        start = min(valid)
+    else:
+        start = end - timedelta(days=max(days, 1) - 1)
     return [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
 
 
@@ -441,6 +448,9 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
         parts.append(f'<text class="tick" x="{pad_l - 6}" y="{y + 4:.1f}" text-anchor="end">{label}</text>')
 
     every = max(1, -(-len(series) // max(1, max_labels - 1)))
+    # MM-DD is enough inside one year. A window across years (--days all)
+    # needs the year, or 08-07 at both ends reads as the same day.
+    one_year = series[0][0][:4] == series[-1][0][:4]
     for i, (day, value) in enumerate(series):
         h = plot_h * (value / top)
         x = pad_l + i * step + (step - bar_w) / 2
@@ -449,10 +459,17 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
             f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" rx="1">'
             f"<title>{esc(day)}: {value}</title></rect>"
         )
-        if i % every == 0 or i == len(series) - 1:
+        # A regular tick closer than half an interval to the last label would
+        # run into it (30 days: ticks at 28 and 29), so it is left out.
+        regular = i % every == 0 and (len(series) - 1 - i) * 2 >= every
+        if regular or i == len(series) - 1:
+            # The last label ends at its bar instead of centring on it, so a
+            # full YYYY-MM-DD is not cut off at the right edge of the chart.
+            last = i == len(series) - 1 and len(series) > 1
+            lx, anchor = (x + bar_w, "end") if last else (x + bar_w / 2, "middle")
             parts.append(
-                f'<text class="tick" x="{x + bar_w / 2:.1f}" y="{height - 6}" '
-                f'text-anchor="middle">{esc(day[5:])}</text>'
+                f'<text class="tick" x="{lx:.1f}" y="{height - 6}" '
+                f'text-anchor="{anchor}">{esc(day[5:] if one_year else day)}</text>'
             )
     parts.append("</svg>")
     return "".join(parts)
@@ -549,10 +566,13 @@ footer{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.7}
 """
 
 
-def render(rows: list[dict], days: int, generated: str) -> str:
+def render(rows: list[dict], days: int | None, generated: str) -> str:
     window = day_range(rows, days)
     latest = latest_per_install(rows)
-    in_window = [r for r in rows if str(r.get("day") or "") in set(window)]
+    # One set for the whole pass: with --days all the window is every day in
+    # the archive, and rebuilding it per row is O(rows x days).
+    window_days = set(window)
+    in_window = [r for r in rows if str(r.get("day") or "") in window_days]
     installs_today = daily_installs(rows, window)[-1][1] if window else 0
 
     kpis = [
@@ -592,7 +612,7 @@ def render(rows: list[dict], days: int, generated: str) -> str:
 <title>PolyHost telemetry</title><style>{CSS}</style></head>
 <body><div class="wrap">
 <h1>PolyHost telemetry</h1>
-<p class="sub">Generated {esc(generated)} · window: last {days} days · {len(rows)} reports
+<p class="sub">Generated {esc(generated)} · window: {esc(_window_label(days, len(window)))} · {len(rows)} reports
 from {len(latest)} installs</p>
 
 <div class="kpis" style="margin-bottom:16px">{kpi_html}</div>
@@ -630,17 +650,25 @@ not lost in a crowd either. Nothing on this page left your machine to produce it
 
 # --------------------------------------------------------------------------
 
-def _positive_days(value: str) -> int:
-    """Reject --days 0 / negatives at parse time.
+def _window_label(days: int | None, shown: int) -> str:
+    if days is None:
+        return f"all {shown} days"
+    return f"last {days} days"
+
+
+def _positive_days(value: str) -> int | None:
+    """Reject --days 0 / negatives at parse time; "all" means no limit (None).
 
     `day_range` clamps to 1 defensively, but the page subtitle prints whatever
     was passed — so without this the header cheerfully reads "window: last 0
     days" over a chart showing one.
     """
+    if value == "all":
+        return None
     try:
         days = int(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer or 'all'") from None
     if days < 1:
         raise argparse.ArgumentTypeError("must be 1 or more")
     return days
@@ -651,7 +679,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=str(Path(__file__).with_name("dashboard.html")),
                     help="output file (default: dashboard.html beside this script)")
     ap.add_argument("--days", type=_positive_days, default=30,
-                    help="time-series window in days (default 30)")
+                    help="time-series window in days, or 'all' for every day (default 30)")
     ap.add_argument("--local", action="store_true", help="query the local dev DB instead of the remote one")
     src = ap.add_mutually_exclusive_group()
     src.add_argument("--from-json", metavar="PATH",
