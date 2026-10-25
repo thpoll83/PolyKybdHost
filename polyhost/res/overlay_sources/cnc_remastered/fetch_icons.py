@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Fetch + render the Command & Conquer Remastered Collection icons (reproducible).
 
-The shortcut icons are from game-icons.net (CC BY 3.0); each author is
-credited in SOURCES.md. The control-group icons reuse the Age of Empires II
-builder (each unit twice with a 3 px seam, a plus for Ctrl). The ESC mark is a
-drawn "C&C" word in Liberation Sans (SIL OFL 1.1), not the game's logo.
+The icons are Material Design Icons (Pictogrammers, Apache-2.0): flat filled
+silhouettes, which read better on the 1-bit keycap than the detailed drawings
+of game-icons.net. The control-group icons reuse the Age of Empires II builder
+(each unit twice with a 3 px seam, a plus for Ctrl). The ESC mark is a drawn
+"C&C" word in Liberation Sans (SIL OFL 1.1), not the game's logo.
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/cnc_remastered/fetch_icons.py
@@ -14,60 +15,62 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import cairosvg
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import game_icons  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
+from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
+
+MDI = "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/svg/{}.svg"
 
 ICONS = {
     # Sidebar tabs
-    "tabstructures": "delapouite/factory",
-    "tabinfantry": "skoll/brodie-helmet",
-    "tabvehicles": "lorc/tank",
-    "tabsuper": "lorc/mushroom-cloud",
+    "tabstructures": "factory",
+    "tabinfantry": "walk",
+    "tabvehicles": "tank",
+    "tabsuper": "nuke",
     # Orders and selection
-    "stop": "delapouite/stop-sign",
-    "scatter": "delapouite/expand",
-    "guard": "lorc/static-guard",
-    "selectscreen": "sbed/select",
-    "selectall": "lorc/globe",
-    "queuedmove": "delapouite/path-distance",
+    "stop": "hand-back-left",
+    "scatter": "arrow-expand-all",
+    "guard": "shield",
+    "selectscreen": "select-group",
+    "selectall": "earth",
+    "queuedmove": "map-marker-path",
     # Camera
-    "conyard": "delapouite/crane",
-    "lastevent": "lorc/radar-sweep",
-    "bookmark": "lorc/bookmark",
+    "conyard": "crane",
+    "lastevent": "radar",
+    "bookmark": "bookmark",
+    "bookmarkset": "bookmark-plus",
     # Display
-    "graphics": "lorc/crystal-growth",
-    "fullscreen": "delapouite/resize",
+    "graphics": "diamond-stone",
+    "fullscreen": "fullscreen",
 }
 
 # Control groups 1..0: one unit each, drawn twice (aoe2.groups()).
 GROUP_UNITS = {
-    "1": "skoll/brodie-helmet",
-    "2": "lorc/gas-mask",
-    "3": "skoll/jeep",
-    "4": "skoll/apc",
-    "5": "lorc/tank",
-    "6": "delapouite/missile-launcher",
-    "7": "delapouite/helicopter",
-    "8": "delapouite/stealth-bomber",
-    "9": "delapouite/submarine",
-    "0": "delapouite/mine-truck",
+    "1": "walk",                # infantry
+    "2": "account-hard-hat",    # engineer
+    "3": "car-estate",          # buggy, Humvee, jeep
+    "4": "truck",               # APC, supply truck
+    "5": "tank",
+    "6": "rocket",              # rocket launcher, V2
+    "7": "helicopter",          # Orca, Apache, Chinook
+    "8": "airplane",            # A-10, MiG, Yak
+    "9": "ferry",               # gunboat, destroyer
+    "0": "tractor",             # harvester
 }
 
 
-def bookmark_set(out: Path) -> None:
-    """bookmarkset.png: the bookmark with the control groups' plus (Ctrl+F1..F4)."""
-    import numpy as np
-    from PIL import Image
-    src = Image.open(out / "bookmark.png").convert("RGBA").getchannel("A")
-    src = src.crop(src.getbbox()).resize((30, 40), Image.LANCZOS)
-    m = aoe2._with_plus(np.array(src) > 150)
-    canvas = np.zeros((40, 30, 4), np.uint8)
-    canvas[..., 3] = np.where(m, 255, 0)
-    Image.fromarray(canvas, "RGBA").save(out / "bookmarkset.png")
-    print("  bookmarkset.png  <- bookmark.png + plus")
+def mdi(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None:
+    """Render `{filename_stem: mdi_name}` into `out_dir` as black-on-transparent PNGs."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for stem, name in mapping.items():
+        png = cairosvg.svg2png(bytestring=_get(MDI.format(name)),
+                               output_width=render_px, output_height=render_px)
+        (out_dir / f"{stem}.png").write_bytes(png)
+        print(f"  {stem}.png  <- mdi:{name} (Apache-2.0)")
 
 
 def program(out: Path) -> None:
@@ -93,12 +96,11 @@ def program(out: Path) -> None:
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    game_icons.render(ICONS, out)
-    game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
-    for stem in ("selectscreen", "queuedmove"):
+    mdi(ICONS, out)
+    mdi({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out)
+    for stem in ICONS:
         aoe2.trim(out, stem)
     aoe2.groups(out, GROUP_UNITS)
-    bookmark_set(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0
