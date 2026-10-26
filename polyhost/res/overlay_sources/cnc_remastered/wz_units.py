@@ -29,6 +29,7 @@ from PIL import Image, ImageFilter
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
+from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
 
 WZ_SHA = "e115b6379c1b831d12980f00f877c1e72e599c68"       # Warzone2100/warzone2100
@@ -223,6 +224,17 @@ def keycap(img, cover, blur=0.4, floor=0.15):
     return out | (fill & inside)
 
 
+def _with_plus(mask, size=13, bar=3):
+    """The plus for Ctrl (create group) in the top-right corner, with the AoE2
+    groups' GROUP_SEAM px of clear space around it."""
+    h, w = mask.shape
+    p = np.zeros((h, w), bool)
+    cy, cx = size // 2, w - size // 2 - 1
+    p[cy - bar // 2:cy + bar // 2 + 1, cx - size // 2:cx + size // 2 + 1] = True
+    p[cy - size // 2:cy + size // 2 + 1, cx - bar // 2:cx + bar // 2 + 1] = True
+    return (mask & ~program_mark.dilate(p, aoe2.GROUP_SEAM)) | p
+
+
 def _save(mask, path: Path) -> None:
     """White on transparent, right-aligned and bottom-aligned in W x H."""
     canvas = np.zeros((H, W, 4), np.uint8)
@@ -240,7 +252,7 @@ def main(out: Path | None = None) -> int:
         _save(m, out / f"group{digit}.png")
         full = np.zeros((H, W), bool)
         full[H - m.shape[0]:, W - m.shape[1]:] = m
-        _save(aoe2._with_plus(full), out / f"groupnew{digit}.png")
+        _save(_with_plus(full), out / f"groupnew{digit}.png")
         print(f"  group{digit}.png, groupnew{digit}.png  <- Warzone 2100: {label}")
     return 0
 
