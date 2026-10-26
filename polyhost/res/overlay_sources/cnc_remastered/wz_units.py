@@ -90,8 +90,8 @@ UNITS = {
 # Sidebar tab keys drawn as Warzone buildings, seen from the side: stem of the
 # icon the bindings use, model, camera.
 BUILDINGS = {
-    "tabstructures": ("Factory", "base/structs/blfact0.pie", dict(yaw=90, pitch=8)),
-    "tabinfantry": ("Cyborg factory", "base/structs/blcfact1.pie", dict(yaw=90, pitch=8)),
+    "tabstructures": ("Cyborg factory", "base/structs/blcfact1.pie", dict(yaw=90, pitch=8)),
+    "tabinfantry": ("Factory", "base/structs/blfact0.pie", dict(yaw=90, pitch=8)),
 }
 
 
