@@ -142,12 +142,12 @@ def dither_icons(out: Path) -> None:
     print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
 
 
-DIGIT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"   # Bitstream Vera licence
+DIGIT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"   # Bitstream Vera licence
 
 
 def _stamp(mask, text, height=11, top=16):
-    """`text` cut out of `mask` (unlit) in a regular-weight face, centred, its top
-    at `top`, with a lit 1 px rim so the thin strokes read against the dither."""
+    """`text` cut out of `mask` (unlit) in DejaVu Sans Bold, centred, its top
+    at `top`, with a lit 1 px rim so the strokes read against the dither."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
     for px in range(40, 6, -1):
