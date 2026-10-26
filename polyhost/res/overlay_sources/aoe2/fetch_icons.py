@@ -154,10 +154,9 @@ def _save_cell(mask, path: Path) -> None:
     Image.fromarray(canvas, "RGBA").save(path)
 
 
-def groups(out: Path, units=GROUP_UNITS) -> None:
-    """group<N>.png (select) and groupnew<N>.png (create, with a plus), from
-    _unit<N>.png for each digit in `units`. The C&C Remastered set calls this too."""
-    for digit in units:
+def groups(out: Path) -> None:
+    """group<N>.png (select) and groupnew<N>.png (create, with a plus)."""
+    for digit in GROUP_UNITS:
         g = _group_mask(out / f"_unit{digit}.png")
         _save_cell(g, out / f"group{digit}.png")
         _save_cell(_with_plus(g), out / f"groupnew{digit}.png")

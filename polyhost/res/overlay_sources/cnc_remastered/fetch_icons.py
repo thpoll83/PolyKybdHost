@@ -55,7 +55,7 @@ ICONS = {
     "fullscreen": "fa:expand",
 }
 
-# Control groups 1..0: one unit each, drawn twice (aoe2.groups()).
+# Control groups 1..0: one unit each, drawn twice (groups()).
 GROUP_UNITS = {
     "1": "fa:person-rifle",         # infantry
     "2": "fa:person-digging",       # engineer
@@ -83,6 +83,54 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
                                output_width=render_px, output_height=render_px)
         (out_dir / f"{stem}.png").write_bytes(png)
         print(f"  {stem}.png  <- {spec}")
+
+
+def _solid(m):
+    """`m` with its enclosed holes filled (a flood fill from the border)."""
+    import numpy as np
+    H, W = m.shape
+    outside = np.zeros_like(m)
+    stack = [(y, x) for y in range(H) for x in (0, W - 1) if not m[y, x]]
+    stack += [(y, x) for x in range(W) for y in (0, H - 1) if not m[y, x]]
+    while stack:
+        y, x = stack.pop()
+        if outside[y, x] or m[y, x]:
+            continue
+        outside[y, x] = True
+        stack += [(a, b) for a, b in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1))
+                  if 0 <= a < H and 0 <= b < W]
+    return ~outside
+
+
+def _outline(m):
+    """The 1 px edge of `m`'s solid shape: a traced, wireframe copy."""
+    s = _solid(m)
+    return s & program_mark.dilate(~s, 1)
+
+
+def groups(out: Path) -> None:
+    """group<N>.png and groupnew<N>.png: the unit twice, the back copy as a 1 px
+    outline and the front copy as drawn, with GROUP_SEAM px clear between them. Same
+    size and placement rule as aoe2.groups(), so the bindings are the same."""
+    import numpy as np
+    for digit in GROUP_UNITS:
+        src = out / f"_unit{digit}.png"
+        for h in range(aoe2.GROUP_H - aoe2.GROUP_DY, 10, -1):
+            m = aoe2._unit_mask(src, h)
+            dx = max(8, m.shape[1] * 2 // 5)
+            if m.shape[1] + dx <= aoe2.GROUP_W:
+                break
+        H, W = h + aoe2.GROUP_DY, m.shape[1] + dx
+        back = np.zeros((H, W), bool)
+        front = np.zeros((H, W), bool)
+        back[:h, :m.shape[1]] = _outline(m)
+        front[aoe2.GROUP_DY:, dx:] = m
+        cover = np.zeros((H, W), bool)          # the front unit hides what is behind it
+        cover[aoe2.GROUP_DY:, dx:] = _solid(m)
+        g = (back & ~program_mark.dilate(cover, aoe2.GROUP_SEAM)) | front
+        aoe2._save_cell(g, out / f"group{digit}.png")
+        aoe2._save_cell(aoe2._with_plus(g), out / f"groupnew{digit}.png")
+        print(f"  group{digit}.png, groupnew{digit}.png  <- _unit{digit}.png, outline + front")
 
 
 def bookmark_set(out: Path) -> None:
@@ -131,7 +179,7 @@ def main() -> int:
     render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out)
     for stem in ICONS:
         aoe2.trim(out, stem)
-    aoe2.groups(out, GROUP_UNITS)
+    groups(out)
     bookmark_set(out)
     program(out)
     print(f"Wrote icons to {out}")
