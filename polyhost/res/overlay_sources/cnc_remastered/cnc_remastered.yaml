@@ -72,14 +72,14 @@ bindings:
   # Camera
   - { key: H, icon: conyard.png, label: "Go to Construction Yard" }
   - { key: TAB, icon: lastevent.png, label: "Go to last event", region: [30, 40] }
-  - { key: F1, icon: bookmark.png, label: "Go to bookmark 1", region: [30, 40] }
-  - { key: F2, icon: bookmark.png, label: "Go to bookmark 2", region: [30, 40] }
-  - { key: F3, icon: bookmark.png, label: "Go to bookmark 3", region: [30, 40] }
-  - { key: F4, icon: bookmark.png, label: "Go to bookmark 4", region: [30, 40] }
-  - { key: F1, mods: [CTRL], icon: bookmarkset.png, label: "Set bookmark 1", region: [30, 40] }
-  - { key: F2, mods: [CTRL], icon: bookmarkset.png, label: "Set bookmark 2", region: [30, 40] }
-  - { key: F3, mods: [CTRL], icon: bookmarkset.png, label: "Set bookmark 3", region: [30, 40] }
-  - { key: F4, mods: [CTRL], icon: bookmarkset.png, label: "Set bookmark 4", region: [30, 40] }
+  - { key: F1, icon: bookmark1.png, label: "Go to bookmark 1", region: [30, 40] }
+  - { key: F2, icon: bookmark2.png, label: "Go to bookmark 2", region: [30, 40] }
+  - { key: F3, icon: bookmark3.png, label: "Go to bookmark 3", region: [30, 40] }
+  - { key: F4, icon: bookmark4.png, label: "Go to bookmark 4", region: [30, 40] }
+  - { key: F1, mods: [CTRL], icon: bookmarkset1.png, label: "Set bookmark 1", region: [30, 40] }
+  - { key: F2, mods: [CTRL], icon: bookmarkset2.png, label: "Set bookmark 2", region: [30, 40] }
+  - { key: F3, mods: [CTRL], icon: bookmarkset3.png, label: "Set bookmark 3", region: [30, 40] }
+  - { key: F4, mods: [CTRL], icon: bookmarkset4.png, label: "Set bookmark 4", region: [30, 40] }
 
   # Display
   - { key: SPACE, icon: graphics.png, label: "Classic / remastered graphics" }

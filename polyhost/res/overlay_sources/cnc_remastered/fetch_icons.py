@@ -40,7 +40,7 @@ ICONS = {
     "tabsuper": "fa:radiation",
     # Orders and selection
     "stop": "fa:hand",
-    "scatter": "fa:burst",
+    "scatter": "fa:arrows-up-down-left-right",
     "guard": "fa:shield-halved",
     "selectscreen": "fa:crosshairs",
     "selectall": "fa:earth-americas",
@@ -135,8 +135,34 @@ def dither_icons(out: Path) -> None:
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
         _save_mask(canvas, out / f"{stem}.png")
         if stem == "bookmark":
-            _save_mask(wz_units._with_plus(canvas), out / "bookmarkset.png")
-    print(f"  {len(ICONS)} key icons dithered (+ bookmarkset.png)")
+            for n in "1234":
+                numbered = _stamp(canvas, n)
+                _save_mask(numbered, out / f"bookmark{n}.png")
+                _save_mask(wz_units._with_plus(numbered), out / f"bookmarkset{n}.png")
+    print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
+
+
+def _stamp(mask, text, height=15, top=15):
+    """`text` cut out of `mask` (unlit), centred, its top at `top`: 1 px of unlit
+    space around the strokes and a lit 1 px rim, so the digit reads against the
+    dither."""
+    import numpy as np
+    import tempfile
+    font = Path(tempfile.gettempdir()) / "BlackOpsOne-Regular.ttf"
+    if not font.exists():
+        font.write_bytes(_get(STENCIL_URL))
+    program_mark.FONT_DIR = font.parent
+    for px in range(40, 6, -1):
+        glyph = program_mark.text(text, font.name, px)
+        if glyph.shape[0] <= height:
+            break
+    h, w = mask.shape
+    g = np.zeros((h, w), bool)
+    x0 = (w - glyph.shape[1]) // 2 + 1
+    g[top:top + glyph.shape[0], x0:x0 + glyph.shape[1]] = glyph
+    cut = program_mark.dilate(g, 1)
+    rim = program_mark.dilate(g, 2) & ~cut          # a lit edge, as if stamped into metal
+    return (mask & ~cut) | (rim & program_mark.dilate(mask, 1))
 
 
 def program(out: Path) -> None:
