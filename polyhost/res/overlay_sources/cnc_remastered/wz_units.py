@@ -42,11 +42,16 @@ CACHE = Path(tempfile.gettempdir()) / f"polykybd-wz-{WZ_SHA[:8]}"
 B, M = "base/components", "mp/components"
 
 
+# Key 1: three loose rows of four scavenger soldiers, Warzone's one human model.
+# (x, z) in model units; a single figure is drawn too thin to read on a keycap.
+CROWD = [(-22.9, -2.1), (-8.4, -1.6), (7.4, -2.4), (26.8, -1.7),
+         (-15.0, 20.8), (2.2, 23.0), (13.8, 24.1), (34.7, 24.4),
+         (-23.6, 41.9), (-9.8, 46.6), (8.3, 42.1), (26.3, 44.8)]
+
 # digit: (label, [(model path under data/, offset or "body-connector")], camera)
 UNITS = {
-    "1": ("Cyborg, rail gun",
-          [(f"{B}/bodies/cybd_std.pie", (0, 0, 0)), (f"{B}/weapons/cybody.pie", (0, 0, 0)),
-           (f"{B}/weapons/cy_rail.pie", (0, 0, 0))], dict(yaw=90, pitch=5)),
+    "1": ("Infantry crowd (12 scavenger soldiers)",
+          [(f"{B}/bodies/exbloke.pie", (x, 0, z)) for x, z in CROWD], dict(yaw=60, pitch=20)),
     "2": ("Scavenger trike", [(f"{B}/bodies/extrike.pie", (0, 0, 0))], dict(yaw=120, pitch=25)),
     "3": ("Sensor", [(f"{B}/bodies/drmbod05.pie", (0, 0, 0)), (f"{B}/prop/prmwhl1.pie", (0, 0, 0)),
                      (f"{B}/weapons/trmsnsr2.pie", "body-connector"),
