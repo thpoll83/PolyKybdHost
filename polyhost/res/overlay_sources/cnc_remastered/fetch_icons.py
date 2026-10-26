@@ -142,27 +142,30 @@ def dither_icons(out: Path) -> None:
     print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
 
 
-def _stamp(mask, text, height=10, top=17):
-    """`text` cut out of `mask` (unlit), centred, its top at `top`: 1 px of unlit
-    space around the strokes and a lit 1 px rim, so the digit reads against the
-    dither."""
+DIGIT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"   # Bitstream Vera licence
+
+
+def _stamp(mask, text, height=11, top=16):
+    """`text` cut out of `mask` (unlit) in a regular-weight face, centred, its top
+    at `top`, with a lit 1 px rim so the thin strokes read against the dither."""
     import numpy as np
-    import tempfile
-    font = Path(tempfile.gettempdir()) / "BlackOpsOne-Regular.ttf"
-    if not font.exists():
-        font.write_bytes(_get(STENCIL_URL))
-    program_mark.FONT_DIR = font.parent
+    from PIL import Image, ImageDraw, ImageFont
     for px in range(40, 6, -1):
-        glyph = program_mark.text(text, font.name, px)
+        f = ImageFont.truetype(DIGIT_FONT, px)
+        left, t, right, bottom = f.getbbox(text)
+        im = Image.new("L", (right - left + 4, bottom - t + 4), 0)
+        ImageDraw.Draw(im).text((2 - left, 2 - t), text, font=f, fill=255)
+        glyph = np.array(im) > 110
+        ys, xs = np.nonzero(glyph)
+        glyph = glyph[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
         if glyph.shape[0] <= height:
             break
     h, w = mask.shape
     g = np.zeros((h, w), bool)
     x0 = (w - glyph.shape[1]) // 2 + 1
     g[top:top + glyph.shape[0], x0:x0 + glyph.shape[1]] = glyph
-    cut = program_mark.dilate(g, 1)
-    rim = program_mark.dilate(g, 2) & ~cut          # a lit edge, as if stamped into metal
-    return (mask & ~cut) | (rim & program_mark.dilate(mask, 1))
+    rim = program_mark.dilate(g, 1) & ~g
+    return (mask & ~g) | (rim & program_mark.dilate(mask, 1))
 
 
 def program(out: Path) -> None:
