@@ -205,12 +205,15 @@ def _edge(a):
     return a & ~(p[2:, 1:-1] & p[:-2, 1:-1] & p[1:-1, 2:] & p[1:-1, :-2])
 
 
-def keycap(img, cover, blur=0.4, floor=0.15):
-    """Fit into W x H facing right, dither the inside, light the outline."""
+def keycap(img, cover, blur=0.4, floor=0.15, size=(W, H), mirror=True):
+    """Fit into `size`, dither the inside, light the outline. The renders face
+    left, so `mirror` turns them to face right."""
     ys, xs = np.nonzero(cover)
-    img = img[ys.min():ys.max() + 1, xs.min():xs.max() + 1][:, ::-1]
-    cover = cover[ys.min():ys.max() + 1, xs.min():xs.max() + 1][:, ::-1]
-    s = min(W / img.shape[1], H / img.shape[0])
+    img = img[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    cover = cover[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    if mirror:
+        img, cover = img[:, ::-1], cover[:, ::-1]
+    s = min(size[0] / img.shape[1], size[1] / img.shape[0])
     size = (max(1, round(img.shape[1] * s)), max(1, round(img.shape[0] * s)))
     gi = Image.fromarray((img * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(blur / s))
     g = np.asarray(gi.resize(size, Image.LANCZOS), float) / 255

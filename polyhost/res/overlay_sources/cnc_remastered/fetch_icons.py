@@ -72,44 +72,93 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
         print(f"  {stem}.png  <- {spec}")
 
 
-def bookmark_set(out: Path) -> None:
-    """bookmarkset.png: the bookmark with the control groups' plus (Ctrl+F1..F4)."""
+# Key area of each icon, from cnc_remastered.yaml; the default is 40 x 40.
+NARROW = {"lastevent", "bookmark", "fullscreen"}          # region [30, 40]
+
+
+def relief(mask, seed=0):
+    """A grey image of `mask` as a raised plate: the edges slope down over ~8 %
+    of the size, lit from the top left and darker towards the bottom right, with a
+    brushed-metal texture. It
+    gives a flat icon the shading the rendered units have, so the same dither
+    and outline (wz_units.keycap) make it match them."""
+    import numpy as np
+    h, w = mask.shape
+    r = max(2, round(0.08 * min(h, w)))
+    dist = np.zeros((h, w))
+    m = mask.copy()
+    for _ in range(r):                     # distance to the edge, capped at r
+        dist += m
+        m = m & ~program_mark.dilate(~m, 1)
+    height = dist / r
+    gy, gx = np.gradient(height)
+    n = np.dstack([-gx * r, -gy * r, np.ones_like(height)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    light = np.array([-0.55, -0.55, 0.63])
+    shade = 0.35 + 0.65 * np.clip(n @ light / np.linalg.norm(light), 0, 1)
+    yy, xx = np.mgrid[0:h, 0:w]
+    falloff = 0.45 * (xx / w + yy / h) / 2       # top left bright, bottom right darker
+    rng = np.random.default_rng(seed)
+    grain = rng.normal(0, 1, (h, 1)) * 0.08 + rng.normal(0, 1, (h, w)) * 0.05
+    return np.where(mask, np.clip(shade - falloff + grain, 0, 1), 0.0)
+
+
+def _alpha(path: Path):
     import numpy as np
     from PIL import Image
-    src = Image.open(out / "bookmark.png").convert("RGBA").getchannel("A")
-    src = src.crop(src.getbbox())
-    src = src.resize((round(src.width * 40 / src.height), 40), Image.LANCZOS)
-    m = aoe2._with_plus(np.array(src) > 150)
-    canvas = np.zeros((*m.shape, 4), np.uint8)
-    canvas[..., 3] = np.where(m, 255, 0)
-    Image.fromarray(canvas, "RGBA").save(out / "bookmarkset.png")
-    print("  bookmarkset.png  <- bookmark.png + plus")
+    return np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 127
+
+
+def _save_mask(mask, path: Path) -> None:
+    import numpy as np
+    from PIL import Image
+    rgba = np.zeros((*mask.shape, 4), np.uint8)
+    rgba[..., :3] = 255
+    rgba[..., 3] = np.where(mask, 255, 0)
+    Image.fromarray(rgba, "RGBA").save(path)
+
+
+def dither_icons(out: Path) -> None:
+    """Every key icon in the style of the units: relief, dither, lit outline,
+    drawn at exactly its key area so the generator places it 1:1."""
+    import numpy as np
+    from PIL import Image
+    for stem in ICONS:
+        size = (30, 40) if stem in NARROW else (40, 40)
+        # Re-render the glyph large so the relief has room for its slope.
+        big = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
+        scale = 320 / max(big.size)
+        big = big.resize((round(big.width * scale), round(big.height * scale)), Image.LANCZOS)
+        mask = np.asarray(big) > 127
+        m = wz_units.keycap(relief(mask, seed=len(stem)), mask, size=size, mirror=False)
+        canvas = np.zeros((size[1], size[0]), bool)
+        canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
+        _save_mask(canvas, out / f"{stem}.png")
+        if stem == "bookmark":
+            _save_mask(wz_units._with_plus(canvas), out / "bookmarkset.png")
+    print(f"  {len(ICONS)} key icons dithered (+ bookmarkset.png)")
 
 
 def program(out: Path) -> None:
-    """program.png: "C&C" in the stencil face over the whole 72x40 cell. Kept when committed."""
-    dest = out / "program.png"
-    if dest.exists():
-        print("  program.png  <- committed asset (left as-is)")
-        return
+    """program.png: "C&C" in the stencil face over the whole 72x40 cell, with the
+    same relief, dither and outline as the other keys."""
     import tempfile
     import numpy as np
-    from PIL import Image
     font = Path(tempfile.gettempdir()) / "BlackOpsOne-Regular.ttf"
     if not font.exists():
         font.write_bytes(_get(STENCIL_URL))
     program_mark.FONT_DIR = font.parent
-    for px in range(60, 10, -1):     # the largest size that leaves 1 px all round
+    for px in range(240, 40, -4):          # 4x the cell, leaving 1 px all round
         word = program_mark.text("C&C", font.name, px)
-        if word.shape[1] <= program_mark.W - 2 and word.shape[0] <= program_mark.H - 2:
+        if word.shape[1] <= 4 * (program_mark.W - 2) and word.shape[0] <= 4 * (program_mark.H - 2):
             break
+    m = wz_units.keycap(relief(word, seed=1), word,
+                        size=(program_mark.W - 2, program_mark.H - 2), mirror=False)
     canvas = np.zeros((program_mark.H, program_mark.W), bool)
-    program_mark.place(canvas, word, program_mark.W // 2,
-                       (program_mark.H - word.shape[0]) // 2)
-    rgba = np.zeros((program_mark.H, program_mark.W, 4), np.uint8)
-    rgba[..., 3] = np.where(canvas, 255, 0)
-    Image.fromarray(rgba, "RGBA").save(dest)
-    print("  program.png  <- drawn \"C&C\" (Black Ops One)")
+    y0, x0 = (program_mark.H - m.shape[0]) // 2, (program_mark.W - m.shape[1]) // 2
+    canvas[y0:y0 + m.shape[0], x0:x0 + m.shape[1]] = m
+    _save_mask(canvas, out / "program.png")
+    print("  program.png  <- \"C&C\" (Black Ops One), relief + dither")
 
 
 def main() -> int:
@@ -117,8 +166,8 @@ def main() -> int:
     render(ICONS, out)
     for stem in ICONS:
         aoe2.trim(out, stem)
+    dither_icons(out)
     wz_units.main(out)
-    bookmark_set(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0
