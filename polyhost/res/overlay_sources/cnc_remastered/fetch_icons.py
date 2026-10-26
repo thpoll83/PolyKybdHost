@@ -142,7 +142,7 @@ def dither_icons(out: Path) -> None:
     print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
 
 
-def _stamp(mask, text, height=15, top=15):
+def _stamp(mask, text, height=10, top=17):
     """`text` cut out of `mask` (unlit), centred, its top at `top`: 1 px of unlit
     space around the strokes and a lit 1 px rim, so the digit reads against the
     dither."""
