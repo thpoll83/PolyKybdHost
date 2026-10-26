@@ -20,6 +20,7 @@ import cairosvg
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from polyhost.res.overlay_sources import game_icons  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import wz_units  # noqa: E402
@@ -30,10 +31,13 @@ SOURCES = {
     "fa": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/{}.svg",
     # Material Design Icons, Pictogrammers (Apache-2.0)
     "mdi": "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/svg/{}.svg",
+    # game-icons.net (CC BY 3.0, credit per author)
+    "gi": game_icons.URL,
 }
 
 ICONS = {
     # Sidebar tabs
+    "tabinfantry": "gi:delapouite/barracks",
     "tabvehicles": "mdi:tank",
     "tabsuper": "fa:radiation",
     # Orders and selection
@@ -72,6 +76,7 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
 
 # Key area of each icon, from cnc_remastered.yaml; the default is 40 x 40.
 NARROW = {"lastevent", "bookmark", "fullscreen"}          # region [30, 40]
+MIRROR = {"tabinfantry"}           # the barracks' flag pole on the right, facing like the units
 
 
 def relief(mask, seed=0):
@@ -128,6 +133,8 @@ def dither_icons(out: Path) -> None:
         scale = 320 / max(big.size)
         big = big.resize((round(big.width * scale), round(big.height * scale)), Image.LANCZOS)
         mask = np.asarray(big) > 127
+        if stem in MIRROR:
+            mask = mask[:, ::-1]
         m = wz_units.keycap(relief(mask, seed=len(stem)), mask, size=size, mirror=False)
         canvas = np.zeros((size[1], size[0]), bool)
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m

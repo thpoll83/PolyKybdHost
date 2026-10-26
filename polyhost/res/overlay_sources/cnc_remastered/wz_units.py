@@ -91,7 +91,6 @@ UNITS = {
 # icon the bindings use, model, camera.
 BUILDINGS = {
     "tabstructures": ("Cyborg factory", "base/structs/blcfact1.pie", dict(yaw=90, pitch=8)),
-    "tabinfantry": ("Factory", "base/structs/blfact0.pie", dict(yaw=90, pitch=8)),
 }
 
 
