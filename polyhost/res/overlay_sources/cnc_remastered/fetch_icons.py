@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Fetch + render the Command & Conquer Remastered Collection icons (reproducible).
 
-The icons are flat silhouettes from Font Awesome Free (CC BY 4.0), Material
-Design Icons (Apache-2.0) and game-icons.net (CC BY 3.0); SOURCES.md credits
-each one. The control-group icons reuse the Age of Empires II builder (each
-unit twice with a 3 px seam, a plus for Ctrl). The ESC mark is "C&C" drawn in
-the stencil face Black Ops One (SIL OFL 1.1), not the game's logo.
+The key icons are flat silhouettes from Font Awesome Free (CC BY 4.0) and
+Material Design Icons (Apache-2.0); SOURCES.md credits each one. The ten
+control-group units are drawn in units.py: each unit twice, the back copy as a
+1 px outline and the front copy as drawn, a plus for Ctrl. The ESC mark is
+"C&C" in the stencil face Black Ops One (SIL OFL 1.1), not the game's logo.
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/cnc_remastered/fetch_icons.py
@@ -19,9 +19,9 @@ import cairosvg
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import game_icons  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
+from polyhost.res.overlay_sources.cnc_remastered import units  # noqa: E402
 from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
 
 SOURCES = {
@@ -29,8 +29,6 @@ SOURCES = {
     "fa": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/{}.svg",
     # Material Design Icons, Pictogrammers (Apache-2.0)
     "mdi": "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/svg/{}.svg",
-    # game-icons.net (CC BY 3.0, credit per author)
-    "gi": game_icons.URL,
 }
 
 ICONS = {
@@ -55,19 +53,8 @@ ICONS = {
     "fullscreen": "fa:expand",
 }
 
-# Control groups 1..0: one unit each, drawn twice (groups()).
-GROUP_UNITS = {
-    "1": "fa:person-rifle",         # infantry
-    "2": "fa:person-digging",       # engineer
-    "3": "fa:truck-monster",        # buggy, Humvee
-    "4": "gi:skoll/apc",            # APC
-    "5": "mdi:tank",
-    "6": "fa:truck-field",          # rocket launcher, artillery
-    "7": "fa:helicopter",           # Orca, Apache, Chinook
-    "8": "fa:jet-fighter-up",       # A-10, MiG, Yak
-    "9": "gi:delapouite/submarine",  # Red Alert submarine
-    "0": "fa:truck-moving",         # harvester
-}
+# Control groups 1..0 are drawn in units.py: 1 rifleman, 2 engineer, 3 buggy,
+# 4 APC, 5 Mammoth tank, 6 rocket launcher, 7 Orca, 8 jet, 9 gunboat, 0 harvester.
 
 # "C&C" in Black Ops One (SIL OFL 1.1), a stencil face.
 STENCIL_URL = ("https://raw.githubusercontent.com/google/fonts/main/ofl/blackopsone/"
@@ -108,25 +95,39 @@ def _outline(m):
     return s & program_mark.dilate(~s, 1)
 
 
+def _layout(src: Path):
+    """The unit's mask at the largest height whose two copies fit GROUP_W x GROUP_H,
+    and the front copy's offset. A standing figure puts the second copy beside the
+    first (as in AoE2); a vehicle is wide, so its second copy sits above and behind,
+    or the pair would be only ~14 px high."""
+    for h in range(aoe2.GROUP_H - 6, 8, -1):
+        m = aoe2._unit_mask(src, h)
+        w = m.shape[1]
+        if w < h * 1.2:
+            dx, dy = max(8, w * 2 // 5), aoe2.GROUP_DY
+        else:
+            dx, dy = max(6, w // 5), max(6, h * 9 // 20)
+        if w + dx <= aoe2.GROUP_W and h + dy <= aoe2.GROUP_H:
+            return m, dx, dy
+    raise ValueError(f"{src.name} does not fit a group cell")
+
+
 def groups(out: Path) -> None:
     """group<N>.png and groupnew<N>.png: the unit twice, the back copy as a 1 px
     outline and the front copy as drawn, with GROUP_SEAM px clear between them. Same
     size and placement rule as aoe2.groups(), so the bindings are the same."""
     import numpy as np
-    for digit in GROUP_UNITS:
+    for digit in units.UNITS:
         src = out / f"_unit{digit}.png"
-        for h in range(aoe2.GROUP_H - aoe2.GROUP_DY, 10, -1):
-            m = aoe2._unit_mask(src, h)
-            dx = max(8, m.shape[1] * 2 // 5)
-            if m.shape[1] + dx <= aoe2.GROUP_W:
-                break
-        H, W = h + aoe2.GROUP_DY, m.shape[1] + dx
+        m, dx, dy = _layout(src)
+        h, w = m.shape
+        H, W = h + dy, w + dx
         back = np.zeros((H, W), bool)
         front = np.zeros((H, W), bool)
-        back[:h, :m.shape[1]] = _outline(m)
-        front[aoe2.GROUP_DY:, dx:] = m
+        back[:h, :w] = _outline(m)
+        front[dy:, dx:] = m
         cover = np.zeros((H, W), bool)          # the front unit hides what is behind it
-        cover[aoe2.GROUP_DY:, dx:] = _solid(m)
+        cover[dy:, dx:] = _solid(m)
         g = (back & ~program_mark.dilate(cover, aoe2.GROUP_SEAM)) | front
         aoe2._save_cell(g, out / f"group{digit}.png")
         aoe2._save_cell(aoe2._with_plus(g), out / f"groupnew{digit}.png")
@@ -176,7 +177,9 @@ def program(out: Path) -> None:
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     render(ICONS, out)
-    render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out)
+    for digit, draw in units.UNITS.items():
+        draw().resize((units.GW * 2, units.GH * 2)).save(out / f"_unit{digit}.png")
+        print(f"  _unit{digit}.png  <- units.{draw.__name__}()")
     for stem in ICONS:
         aoe2.trim(out, stem)
     groups(out)
