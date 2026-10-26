@@ -5,6 +5,8 @@ y down), rendered 4x supersampled. Each has the features that make the C&C
 unit recognisable: the Mammoth's twin barrels, the Orca's engine pod, the
 harvester's ore hopper. fetch_icons.py writes them as icons/_unit<N>.png.
 """
+import math
+
 from PIL import Image, ImageDraw
 
 K = 4                      # supersampling factor
@@ -54,47 +56,91 @@ def tracks(d, x0, x1, y0, y1, n):
         circ(d, x0 + r + i * step, (y0 + y1) / 2, r * 0.22)
 
 
+def treaded_wheel(d, cx, cy, r):
+    """A tyre with tread notches, a rim and a hub."""
+    circ(d, cx, cy, r)
+    for i in range(10):
+        a = i * math.pi / 5
+        x, y = cx + math.cos(a) * r, cy + math.sin(a) * r
+        circ(d, x, y, r * 0.16, CUT)
+    circ(d, cx, cy, r * 0.55, CUT)
+    circ(d, cx, cy, r * 0.32)
+
+
 def rifleman():
+    """Kneeling to aim: helmet with goggles, webbing vest, rifle with scope."""
     im, d = canvas()
-    circ(d, 62, 14, 7)                                   # head
-    d.pieslice([53 * K, 3 * K, 72 * K, 21 * K], 180, 360, fill=INK)   # round helmet
-    rect(d, 52, 11, 74, 13)                              # helmet rim
-    poly(d, [(53, 22), (70, 22), (73, 48), (51, 48)])    # torso
-    rect(d, 45, 25, 53, 34)                              # backpack
-    poly(d, [(52, 48), (61, 48), (58, 78), (50, 78)])    # back leg
-    poly(d, [(61, 48), (72, 48), (76, 78), (67, 78)])    # front leg
-    line(d, [(60, 34), (100, 26)], 4.5)                  # rifle
-    rect(d, 74, 29, 80, 38)                              # magazine
-    line(d, [(64, 28), (78, 30)], 5)                     # arm to the rifle
+    d.pieslice([46 * K, 2 * K, 70 * K, 26 * K], 180, 360, fill=INK)  # helmet dome
+    rect(d, 44, 13, 72, 16)                              # helmet rim
+    rect(d, 52, 6, 64, 10, CUT)                          # goggles strap gap
+    rect(d, 54, 6, 62, 10)                               # goggles
+    poly(d, [(50, 16), (66, 16), (66, 26), (50, 26)])    # face / neck
+    rect(d, 58, 18, 63, 21, CUT)                         # eye shade
+    poly(d, [(44, 26), (70, 26), (74, 52), (42, 52)])    # torso
+    for x in (46, 55, 64):                               # vest pouches
+        rect(d, x, 40, x + 6, 47, CUT)
+    rect(d, 42, 34, 74, 36, CUT)                         # webbing strap
+    rect(d, 34, 28, 44, 48)                              # pack
+    rect(d, 34, 36, 44, 38, CUT)
+    poly(d, [(42, 52), (60, 52), (56, 66), (40, 66)])    # thigh (kneeling)
+    poly(d, [(40, 62), (50, 62), (50, 78), (36, 78)])    # shin, foot back
+    poly(d, [(58, 52), (74, 52), (86, 66), (74, 68)])    # front thigh
+    poly(d, [(74, 62), (86, 64), (88, 78), (76, 78)])    # front shin
+    rect(d, 74, 75, 94, 78)                              # boot
+    line(d, [(56, 32), (78, 30)], 6)                     # arms to the rifle
+    poly(d, [(64, 24), (118, 20), (118, 24), (66, 30)])  # rifle barrel + body
+    poly(d, [(58, 26), (68, 24), (70, 36), (60, 38)])    # stock at the shoulder
+    rect(d, 80, 15, 96, 19)                              # scope
+    rect(d, 84, 24, 90, 34)                              # magazine
     return im
 
 
 def engineer():
+    """Bulky suit, visor helmet, radio pack with antenna, toolbox in hand."""
     im, d = canvas()
-    circ(d, 62, 15, 7)
-    poly(d, [(52, 12), (72, 12), (70, 5), (62, 2), (54, 5)])     # hard hat
-    rect(d, 50, 10, 76, 13)                              # brim
-    poly(d, [(53, 23), (70, 23), (72, 50), (51, 50)])
-    poly(d, [(36, 22), (52, 22), (52, 52), (36, 52)])    # big tool pack
-    rect(d, 39, 15, 43, 22)                              # antenna stub
-    poly(d, [(52, 50), (61, 50), (58, 78), (50, 78)])
-    poly(d, [(61, 50), (72, 50), (75, 78), (66, 78)])
-    line(d, [(66, 30), (88, 44)], 5)                     # arm
-    line(d, [(86, 42), (98, 58)], 4)                     # wrench handle
-    circ(d, 99, 60, 5)
-    circ(d, 101, 62, 2.4, CUT)                           # wrench jaw
+    circ(d, 62, 14, 11)                                  # helmet
+    poly(d, [(60, 10), (74, 10), (74, 18), (62, 20)], CUT)  # visor
+    poly(d, [(64, 12), (72, 12), (72, 16), (64, 17)])    # visor glint frame
+    poly(d, [(46, 25), (76, 25), (80, 54), (44, 54)])    # bulky suit
+    rect(d, 44, 46, 80, 49, CUT)                         # belt
+    rect(d, 58, 46, 64, 49)                              # buckle
+    for y in (30, 37):                                   # chest panel lines
+        rect(d, 52, y, 70, y + 2, CUT)
+    rect(d, 30, 24, 46, 52)                              # radio pack
+    rect(d, 33, 30, 43, 33, CUT)
+    rect(d, 33, 38, 43, 41, CUT)
+    line(d, [(34, 24), (28, 2)], 2.5)                    # antenna
+    circ(d, 28, 3, 2.5)
+    poly(d, [(46, 54), (60, 54), (58, 76), (46, 76)])    # legs
+    poly(d, [(62, 54), (78, 54), (80, 76), (66, 76)])
+    rect(d, 42, 74, 60, 79)                              # boots
+    rect(d, 64, 74, 84, 79)
+    line(d, [(74, 30), (90, 48)], 7)                     # arm
+    rect(d, 82, 52, 112, 70)                             # toolbox
+    rect(d, 92, 46, 102, 52)                             # handle
+    rect(d, 94, 48, 100, 52, CUT)
+    rect(d, 82, 58, 112, 60, CUT)                        # lid line
     return im
 
 
 def buggy():
+    """Low armoured buggy: wedge nose, roll cage, shielded machine gun, big tyres."""
     im, d = canvas()
-    poly(d, [(8, 52), (18, 42), (70, 40), (100, 46), (112, 52), (108, 60), (12, 60)])  # body
-    line(d, [(36, 41), (46, 18), (72, 18), (80, 41)], 4)    # roll cage
-    line(d, [(46, 18), (56, 41)], 3)
-    rect(d, 60, 10, 66, 18)                              # gun mount
-    line(d, [(63, 13), (94, 11)], 3.5)                   # machine gun
-    wheel(d, 26, 62, 14)
-    wheel(d, 94, 64, 12)
+    poly(d, [(4, 50), (12, 40), (40, 36), (78, 36), (104, 42), (118, 48), (114, 56), (6, 58)])
+    rect(d, 20, 44, 34, 47, CUT)                          # side panel lines
+    rect(d, 44, 44, 70, 47, CUT)
+    poly(d, [(84, 42), (100, 44), (100, 47), (84, 46)], CUT)   # headlight slot
+    rect(d, 2, 40, 10, 46)                                # exhaust
+    rect(d, 0, 36, 6, 40)
+    line(d, [(30, 37), (40, 14), (70, 14), (82, 37)], 4)  # roll cage
+    line(d, [(40, 14), (50, 37)], 3)
+    circ(d, 58, 28, 5)                                    # driver's helmet
+    rect(d, 60, 4, 72, 14)                                # gun shield
+    rect(d, 64, 14, 68, 18)                               # gun post
+    line(d, [(68, 8), (100, 6)], 3.5)                     # machine gun
+    rect(d, 94, 3, 98, 9)                                 # muzzle brake
+    treaded_wheel(d, 26, 62, 15)
+    treaded_wheel(d, 96, 63, 14)
     return im
 
 
@@ -123,65 +169,105 @@ def mammoth():
 
 
 def mlrs():
+    """Rocket launcher: a 3x2 box of tubes raised on a six-wheel truck, cab."""
     im, d = canvas()
-    poly(d, [(84, 34), (100, 34), (112, 46), (112, 60), (84, 60)])   # cab
-    rect(d, 92, 38, 102, 46, CUT)                        # window
-    rect(d, 8, 50, 86, 60)                               # flatbed
-    poly(d, [(14, 48), (22, 20), (66, 8), (70, 18), (30, 48)])       # raised rocket pod
-    for t in (0.25, 0.5, 0.75):                          # tubes
-        x, y = 22 + 44 * t, 20 - 12 * t
-        circ(d, x + 2, y + 6, 3.2, CUT)
-    rect(d, 28, 40, 34, 50)                              # pod mount
-    for cx in (24, 46, 98):
-        wheel(d, cx, 64, 10)
+    poly(d, [(86, 30), (102, 30), (114, 42), (114, 60), (86, 60)])   # cab
+    poly(d, [(92, 34), (101, 34), (108, 42), (92, 42)], CUT)         # windscreen
+    rect(d, 86, 48, 114, 50, CUT)                         # bumper line
+    rect(d, 4, 50, 88, 60)                                # chassis
+    rect(d, 8, 52, 80, 54, CUT)
+    rect(d, 26, 36, 40, 50)                               # elevation mount
+    # The pod is drawn flat on its own layer, then tilted 25 degrees.
+    pod = Image.new("RGBA", (64 * K, 30 * K), (0, 0, 0, 0))
+    pd = ImageDraw.Draw(pod)
+    pd.rectangle([0, 0, 64 * K - 1, 30 * K - 1], fill=INK)
+    for row in range(2):
+        for col in range(3):
+            cx, cy = (50 - col * 14) * K, (8 + row * 14) * K
+            r = 5 * K
+            pd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CUT)
+            r = 2 * K
+            pd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=INK)
+    pod = pod.rotate(25, expand=True, resample=Image.BICUBIC)
+    im.alpha_composite(pod, (8 * K, 2 * K))
+    for cx in (20, 44, 100):
+        treaded_wheel(d, cx, 64, 11)
     return im
 
 
 def orca():
+    """Orca seen from above: pointed nose, side nacelles on stub wings, twin tail."""
     im, d = canvas()
-    poly(d, [(8, 34), (40, 26), (96, 28), (116, 36), (96, 44), (30, 44)])  # fuselage
-    poly(d, [(84, 30), (100, 30), (110, 35), (96, 36)], CUT)     # canopy
-    poly(d, [(8, 34), (2, 16), (12, 16), (22, 30)])      # tail fin
-    d.rounded_rectangle([34 * K, 46 * K, 70 * K, 62 * K], radius=6 * K, fill=INK)  # engine pod
-    rect(d, 46, 42, 56, 47)                              # pylon
-    rect(d, 70, 51, 74, 57)
-    line(d, [(36, 64), (44, 74), (60, 74), (68, 64)], 2.5, fill=INK)  # jet wash marks
-    rect(d, 74, 50, 92, 54)                              # missile
+    poly(d, [(10, 34), (30, 30), (84, 30), (118, 40), (84, 50), (30, 50)])  # fuselage
+    poly(d, [(88, 36), (104, 39), (104, 41), (88, 44)], CUT)        # canopy
+    rect(d, 40, 39, 74, 41, CUT)                          # spine line
+    rect(d, 44, 14, 66, 66)                               # stub wing
+    for y0 in (2, 60):                                    # engine nacelles
+        d.rounded_rectangle([34 * K, y0 * K, 76 * K, (y0 + 18) * K], radius=7 * K, fill=INK)
+        rect(d, 64, y0 + 4, 74, y0 + 14, CUT)             # intake
+        rect(d, 66, y0 + 6, 72, y0 + 12)
+    for y0 in (22, 54):                                   # missile pods under the wing
+        rect(d, 70, y0, 88, y0 + 4)
+    poly(d, [(10, 34), (2, 22), (12, 22), (24, 32)])      # twin tail
+    poly(d, [(10, 46), (2, 58), (12, 58), (24, 48)])
     return im
 
 
 def jet():
+    """A-10 seen from above: straight wing, two engines on the back, twin tails."""
     im, d = canvas()
-    poly(d, [(2, 40), (24, 34), (96, 32), (118, 38), (96, 44), (24, 46)])   # fuselage
-    poly(d, [(86, 34), (104, 35), (96, 38), (84, 38)], CUT)     # canopy
-    poly(d, [(40, 40), (70, 40), (46, 70), (34, 70)])    # wing (swept back, below)
-    poly(d, [(6, 38), (2, 14), (14, 14), (26, 34)])      # tail fin
-    poly(d, [(6, 44), (22, 44), (8, 54), (2, 54)])       # tailplane
-    rect(d, 48, 52, 62, 56)                              # missile under the wing
+    poly(d, [(4, 37), (20, 34), (102, 34), (118, 40), (102, 46), (20, 46), (4, 43)])  # fuselage
+    poly(d, [(92, 37), (104, 39), (104, 41), (92, 43)], CUT)        # canopy
+    poly(d, [(54, 2), (70, 2), (74, 78), (50, 78)])       # straight wing
+    for y in (10, 22, 58, 70):                            # bombs under the wing
+        rect(d, 74, y - 2, 86, y + 2)
+    for y0 in (22, 46):                                   # engines beside the tail
+        d.rounded_rectangle([20 * K, y0 * K, 44 * K, (y0 + 12) * K], radius=5 * K, fill=INK)
+        rect(d, 38, y0 + 3, 44, y0 + 9, CUT)
+    rect(d, 2, 18, 20, 62)                                # tailplane
+    for y0 in (14, 58):                                   # twin fins
+        rect(d, 0, y0, 14, y0 + 8)
     return im
 
 
 def gunboat():
+    """Gunboat: portholes, stepped bridge, radar array, deck gun, missile box, wave."""
     im, d = canvas()
-    poly(d, [(4, 44), (116, 44), (104, 62), (14, 62)])    # hull
-    rect(d, 34, 30, 70, 44)                              # bridge
-    rect(d, 40, 33, 64, 37, CUT)                         # bridge windows
-    rect(d, 50, 16, 54, 30)                              # mast
-    circ(d, 52, 13, 5)                                   # radar dome
-    rect(d, 80, 34, 92, 44)                              # gun turret
-    line(d, [(90, 37), (112, 30)], 3.5)                  # gun
+    poly(d, [(2, 42), (118, 38), (108, 60), (12, 60)])    # hull
+    for x in (22, 36, 50, 64, 78):
+        circ(d, x, 50, 3, CUT)                            # portholes
+    rect(d, 10, 44, 104, 46, CUT)                         # deck line
+    rect(d, 30, 26, 70, 42)                               # superstructure
+    rect(d, 38, 18, 62, 26)                               # bridge
+    rect(d, 42, 20, 58, 23, CUT)                          # bridge windows
+    rect(d, 48, 6, 52, 18)                                # mast
+    rect(d, 40, 6, 60, 9)                                 # radar array
+    poly(d, [(50, 0), (54, 0), (52, 6)])
+    rect(d, 12, 32, 26, 42)                               # missile box
+    rect(d, 14, 34, 24, 36, CUT)
+    rect(d, 80, 30, 94, 40)                               # gun turret
+    line(d, [(92, 33), (116, 26)], 3.5)                   # gun
+    line(d, [(0, 66), (20, 62), (40, 66), (60, 62), (80, 66), (100, 62), (120, 66)], 3)
     return im
 
 
 def harvester():
+    """Harvester: ribbed ore hopper on tracks, cab, exhaust stacks, front scoop."""
     im, d = canvas()
-    poly(d, [(6, 26), (68, 22), (82, 30), (82, 56), (6, 56)])   # ore hopper
-    for x in (18, 34, 50):
-        rect(d, x, 30, x + 8, 48, CUT)                   # hopper ribs
-    poly(d, [(84, 30), (104, 30), (112, 42), (112, 56), (84, 56)])  # cab
-    rect(d, 92, 34, 104, 42, CUT)
-    poly(d, [(110, 50), (120, 58), (120, 68), (106, 66)])  # front scoop
-    tracks(d, 4, 104, 56, 76, 5)
+    poly(d, [(6, 24), (70, 18), (82, 26), (82, 56), (6, 56)])   # hopper
+    for x in (14, 28, 42, 56):
+        rect(d, x, 28, x + 8, 50, CUT)                    # hopper ribs
+        rect(d, x + 3, 28, x + 5, 50)
+    rect(d, 6, 22, 70, 25, CUT)                           # hopper rim line
+    rect(d, 10, 8, 16, 22)                                # exhaust stacks
+    rect(d, 20, 12, 26, 22)
+    poly(d, [(84, 28), (102, 28), (112, 40), (112, 56), (84, 56)])  # cab
+    poly(d, [(90, 32), (100, 32), (106, 40), (90, 40)], CUT)
+    rect(d, 84, 46, 112, 48, CUT)
+    poly(d, [(108, 48), (118, 50), (120, 66), (110, 72), (106, 60)])  # front scoop
+    for y in (54, 60, 66):
+        rect(d, 114, y, 120, y + 2, CUT)                  # scoop teeth gaps
+    tracks(d, 4, 106, 56, 78, 6)
     return im
 
 
