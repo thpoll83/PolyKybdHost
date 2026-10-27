@@ -256,6 +256,20 @@ DEFAULT_SETTINGS = {
         # never downgrades, so it's self-terminating — see PolyCore). Set
         # False to manage the pack only manually (polyctl fontpack flash).
         "fontpack_auto_flash": True,
+        # Game art from installed games (polyhost/services/game_assets): when a
+        # game's own files are on this machine, overlays for it are redrawn
+        # from them into the cache directory, in place of the shipped
+        # open-licence art. The files are only read; nothing leaves the
+        # machine except the overlay sent to the keyboard. Off = always the
+        # shipped overlays.
+        "game_assets_enabled": True,
+        # Folder holding the classic C&C (Tiberian Dawn) files CONQUER.MIX and
+        # TEMPERAT.MIX (CCLOCAL.MIX adds the cursors). Empty = look in a C&C
+        # Remastered install (Steam or EA app). The 1995 freeware release works
+        # too, from wherever it was unpacked.
+        "game_cnc_data_dir": "",
+        # Which side's units the C&C control-group keys show: "gdi" or "nod".
+        "game_cnc_faction": "gdi",
         # Optional explicit path to the font pack .plyf to flash. Empty =
         # use the pack shipped in polyhost/res/fontpack/ (if any).
         "fontpack_path": "",

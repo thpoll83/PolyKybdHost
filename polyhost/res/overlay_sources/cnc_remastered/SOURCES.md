@@ -120,3 +120,34 @@ adds the plus.
 |---|---|---|
 | [Black Ops One](https://github.com/google/fonts/tree/main/ofl/blackopsone) | the ESC mark | SIL OFL 1.1 |
 | DejaVu Sans Bold, the copy bundled with matplotlib v3.9.2 (pinned commit) | the bookmark digits | Bitstream Vera |
+
+## Art from the user's game files
+
+When the classic Tiberian Dawn files are on the machine, the host draws 31 keys
+of this overlay from the game's own sprites instead
+(`polyhost/services/game_assets/cnc_classic.py`). The shipped file above stays
+the fallback and is the only C&C art in the repository. EA's sprites are never
+shipped: the host reads them from the user's install, writes the patched copy
+to the user's cache directory, and sends it only to the keyboard.
+
+| Keys | From the game |
+|---|---|
+| 1 to 0, Ctrl+1 to Ctrl+0 | map sprites of the chosen faction, with the same plus |
+| W, E, R, H, Tab | building sprites |
+| S, X, G, A, Q, T | mouse cursors (only when `CCLOCAL.MIX` is present) |
+
+The host looks for `CONQUER.MIX` and `TEMPERAT.MIX` (any case) under
+`Data/CNCDATA/TIBERIAN_DAWN/` of a Steam or EA app install of the Remastered
+Collection. That path was not checked on an install. The 1995 freeware
+release has the same files; point the host at its folder with the setting
+below.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `game_assets_enabled` | `true` | `false` always sends the shipped file |
+| `game_cnc_data_dir` | empty | a folder with the MIX files; empty searches the installs |
+| `game_cnc_faction` | `gdi` | `gdi` or `nod` |
+
+`polyctl settings set game_cnc_faction nod` switches the faction; the copy is
+rebuilt on a background thread and cached by game file size and time, faction
+and `RENDER_VERSION`.

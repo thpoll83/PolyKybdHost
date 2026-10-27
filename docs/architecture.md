@@ -377,6 +377,15 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `unicode_cache.py` — pre-computed unicode character mappings
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
+- `game_assets/` — overlay art read from games installed on this machine. `start()`
+  builds patched copies of shipped templates on a background thread into
+  `user_cache_dir/game_overlays`; `PolyCore.get_overlay_path()` asks
+  `override_for()` first and falls back to the shipped file. A change to a key in
+  `SETTING_KEYS` restarts the build through `note_settings_changed()`.
+  `westwood.py` reads the 1995 Westwood formats, `dither.py` is the keycap dither
+  the shipped C&C units use too, and `cnc_classic.py` draws the C&C Remastered
+  overlay from the Tiberian Dawn files (`overlay_sources/cnc_remastered/SOURCES.md`).
+  Game art is never committed; it stays in the user's cache.
 
 ### Transport probe (bulk pipe vs HID only)
 

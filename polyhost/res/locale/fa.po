@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-22 19:05+0000\n"
+"POT-Creation-Date: 2026-10-27 21:55+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -535,7 +535,7 @@ msgstr "توقف ممکن نشد: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>ناموفق:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:51
 msgid "Brightness"
 msgstr "روشنایی"
 
@@ -1061,7 +1061,7 @@ msgid "HarfBuzz sequence"
 msgstr "دنبالهٔ HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:78 polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:79 polyhost/gui/settings_dialog.py:88
 msgid "Mode"
 msgstr "حالت"
 
@@ -1746,7 +1746,7 @@ msgstr "در حال اعمال — فعال‌سازی میان‌افزار آ�
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "در حال لغو — منتظر پایان قطعهٔ کنونی…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:78
 msgid "Language"
 msgstr "زبان"
 
@@ -2816,391 +2816,427 @@ msgstr "خطاها"
 msgid "Errors and warnings"
 msgstr "خطاها و هشدارها"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:42
+msgid "GDI"
+msgstr "GDI"
+
+#: polyhost/gui/settings_dialog.py:42
+msgid "Nod"
+msgstr "Nod"
+
+#: polyhost/gui/settings_dialog.py:50
 msgid "General"
 msgstr "عمومی"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:51
 msgid "Browser"
 msgstr "مرورگر"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:51
 msgid "Daemon"
 msgstr "سرویس پس‌زمینه"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:52
 msgid "Delay"
 msgstr "تأخیر"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:52
 msgid "Dev"
 msgstr "توسعه"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/host.py:866
+#: polyhost/gui/settings_dialog.py:52 polyhost/host.py:866
 msgid "Developer"
 msgstr "توسعه‌دهنده"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:53
 msgid "Fontpack"
 msgstr "بستهٔ فونت"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:53
+msgid "Game"
+msgstr "بازی"
+
+#: polyhost/gui/settings_dialog.py:53
 msgid "Generic"
 msgstr "عمومی"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:53
 msgid "Hid"
 msgstr "HID"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Irradiance"
 msgstr "تابش"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Problem"
 msgstr "مشکل"
 
-#: polyhost/gui/settings_dialog.py:53 polyhost/gui/settings_dialog.py:64
+#: polyhost/gui/settings_dialog.py:54 polyhost/gui/settings_dialog.py:65
 msgid "Max"
 msgstr "حداکثر"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:55
 msgid "Shortcut"
 msgstr "میان‌بر"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:55
 msgid "Telemetry"
 msgstr "تله‌متری"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:55
 msgid "Ui"
 msgstr "رابط کاربری"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:56
 msgid "Unicode"
 msgstr "یونیکد"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:56
 msgid "Window"
 msgstr "پنجره"
 
-#: polyhost/gui/settings_dialog.py:59
+#: polyhost/gui/settings_dialog.py:60
 msgid "Send Composition Mode"
 msgstr "ارسال حالت ترکیب"
 
-#: polyhost/gui/settings_dialog.py:60
+#: polyhost/gui/settings_dialog.py:61
 msgid "Set Daylight Dependent"
 msgstr "وابسته به نور روز"
 
-#: polyhost/gui/settings_dialog.py:61
+#: polyhost/gui/settings_dialog.py:62
 msgid "Allow Online Irradiance Request"
 msgstr "اجازهٔ درخواست آنلاین تابش"
 
-#: polyhost/gui/settings_dialog.py:62
+#: polyhost/gui/settings_dialog.py:63
 msgid "Allow Online Location Lookup"
 msgstr "اجازهٔ جست‌وجوی آنلاین موقعیت"
 
-#: polyhost/gui/settings_dialog.py:63
+#: polyhost/gui/settings_dialog.py:64
 msgid "Min"
 msgstr "حداقل"
 
-#: polyhost/gui/settings_dialog.py:65
+#: polyhost/gui/settings_dialog.py:66
 msgid "Prescaler"
 msgstr "پیش‌مقیاس‌گر"
 
-#: polyhost/gui/settings_dialog.py:66
+#: polyhost/gui/settings_dialog.py:67
 msgid "Gamma"
 msgstr "گاما"
 
-#: polyhost/gui/settings_dialog.py:67
+#: polyhost/gui/settings_dialog.py:68
 msgid "Overlays Enabled"
 msgstr "هم‌پوشانی‌ها فعال"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Overlays Add Escape Mark"
 msgstr "افزودن نشان Escape به هم‌پوشانی‌ها"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Overlays Add Shortcut Icons"
 msgstr "افزودن نمادهای میان‌بر به هم‌پوشانی‌ها"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Icons Enabled"
 msgstr "نمادها فعال"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Icon Auto Fetch"
 msgstr "دریافت خودکار نماد"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Enable Accessibility"
 msgstr "فعال‌سازی دسترس‌پذیری"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Hid Message Before Delay"
 msgstr "پیام‌های HID پیش از تأخیر"
 
-#: polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/settings_dialog.py:75
 msgid "Time After Max Hid Messages"
 msgstr "زمان پس از حداکثر پیام‌های HID"
 
-#: polyhost/gui/settings_dialog.py:75
+#: polyhost/gui/settings_dialog.py:76
 msgid "Reconnect Retries"
 msgstr "تلاش‌های اتصال مجدد"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Theme"
 msgstr "پوسته"
 
-#: polyhost/gui/settings_dialog.py:79
+#: polyhost/gui/settings_dialog.py:80
 msgid "Mock Enabled"
 msgstr "شبیه‌ساز فعال"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Mock Primary"
 msgstr "شبیه‌ساز اصلی"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Mock Protocol"
 msgstr "پروتکل شبیه‌ساز"
 
-#: polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:84
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "تشخیص پنجره حتی وقتی به PolyKybd وصل نیست"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Win Native Set Language"
 msgstr "تنظیم زبان با روش بومی Windows"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Legacy Plaintext Relay"
 msgstr "رلهٔ قدیمی متن ساده"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Force HID Link"
 msgstr "اجبار پیوند HID"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Network Enabled"
 msgstr "گزارش شبکه فعال"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Auto Flash"
 msgstr "فلش خودکار"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Path"
 msgstr "مسیر"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Url Detection"
 msgstr "تشخیص URL"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Report Local Enabled"
 msgstr "گزارش محلی فعال"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Report Port"
 msgstr "درگاه گزارش"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Report Token"
 msgstr "توکن گزارش"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Enabled"
 msgstr "فعال"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Endpoint"
 msgstr "نقطهٔ پایانی"
 
-#: polyhost/gui/settings_dialog.py:97
+#: polyhost/gui/settings_dialog.py:98
 msgid "Install Id"
 msgstr "شناسهٔ نصب"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:99
 msgid "Scan Keyboard Console"
 msgstr "بررسی کنسول صفحه‌کلید"
 
-#: polyhost/gui/settings_dialog.py:99
+#: polyhost/gui/settings_dialog.py:100
 msgid "Scan Host Logs"
 msgstr "بررسی لاگ‌های میزبان"
 
-#: polyhost/gui/settings_dialog.py:100
+#: polyhost/gui/settings_dialog.py:101
 msgid "Scan Level"
 msgstr "سطح بررسی"
 
-#: polyhost/gui/settings_dialog.py:109
+#: polyhost/gui/settings_dialog.py:102
+msgid "Art From Installed Games"
+msgstr "تصاویر از بازی‌های نصب‌شده"
+
+#: polyhost/gui/settings_dialog.py:103
+msgid "Command and Conquer Folder"
+msgstr "پوشهٔ Command and Conquer"
+
+#: polyhost/gui/settings_dialog.py:104
+msgid "Command and Conquer Faction"
+msgstr "جناح Command and Conquer"
+
+#: polyhost/gui/settings_dialog.py:113
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "به صفحه‌کلید می‌گوید این رایانه ورودی یونیکد را چگونه می‌گیرد (برای نمونه WinCompose)، هنگام اتصال و هر بار که تغییر کند. در حالت خاموش: صفحه‌کلید حالتی را که ذخیره کرده نگه می‌دارد."
 
-#: polyhost/gui/settings_dialog.py:113
+#: polyhost/gui/settings_dialog.py:117
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "روشنایی کلاهک‌های کلید را هر ده دقیقه بر اساس نور روز در موقعیت شما تنظیم می‌کند."
 
-#: polyhost/gui/settings_dialog.py:116
+#: polyhost/gui/settings_dialog.py:120
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "نور خورشید این ساعت را در موقعیت شما، با در نظر گرفتن ابرها، از open-meteo.com می‌پرسد. در حالت خاموش: میزبان از روی موقعیت و زمان، مقداری برای آسمان بی‌ابر محاسبه می‌کند."
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:124
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "موقعیت تقریبی شما را از نشانی IP شما (ip-api.com) پیدا می‌کند، یک بار در هر اجرا. در حالت خاموش: روشنایی از ساعت روز پیروی می‌کند."
 
-#: polyhost/gui/settings_dialog.py:122
+#: polyhost/gui/settings_dialog.py:126
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "مقدار نور خورشید که کم‌نورترین سطح روشنایی را می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:128
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "مقدار نور خورشید که روشن‌ترین سطح را می‌دهد. آن را کم کنید تا در روز ابری به روشنایی کامل برسید."
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:130
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr "مقدار نور خورشید را پیش از اعمال «حداقل» و «حداکثر» ضرب می‌کند."
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:132
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "شکل منحنی نور روز را تعیین می‌کند. بالاتر از 1 میانهٔ روز کم‌نورتر می‌شود و پایین‌تر از 1 روشن‌تر. کم‌نورترین و روشن‌ترین سطح تغییر نمی‌کنند."
 
-#: polyhost/gui/settings_dialog.py:131
+#: polyhost/gui/settings_dialog.py:135
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "نماد برای برنامه‌هایی که هم‌پوشانی خودشان را ندارند: نشان برنامه روی Escape و یک نماد برای هر میان‌بر آن. در حالت خاموش: برای هیچ برنامه‌ای چیز عمومی‌ای کشیده نمی‌شود."
 
-#: polyhost/gui/settings_dialog.py:134
+#: polyhost/gui/settings_dialog.py:138
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "برنامه‌ای که هم‌پوشانی خودش را دارد نیز نشانش را روی Escape می‌گیرد، وقتی هم‌پوشانی Escape را خالی بگذارد."
 
-#: polyhost/gui/settings_dialog.py:137
+#: polyhost/gui/settings_dialog.py:141
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "میان‌برهای برنامه‌ای که هم‌پوشانی خودش را دارد نیز خوانده می‌شوند، با نماد روی کلیدهایی که هم‌پوشانی خالی می‌گذارد. خواندن یک برنامهٔ بزرگ، مانند مرورگری با یک صفحهٔ طولانی، ممکن است چند دقیقه طول بکشد."
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:145
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr "میان‌برهای برنامهٔ فعال را می‌خواند تا برای هر کدام یک نماد بکشد. در حالت خاموش: هیچ برنامه‌ای خوانده نمی‌شود و هیچ نماد میان‌بری کشیده نمی‌شود. برای حذف همهٔ نمادهای عمومی، از جمله نشان روی Escape، «هم‌پوشانی‌ها فعال» را خاموش کنید."
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:149
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "نمادهای ناموجود را بارگیری می‌کند. در حالت خاموش: نمادهایی که قبلاً بارگیری شده‌اند کار می‌کنند و نمادهای جدید رد می‌شوند."
 
-#: polyhost/gui/settings_dialog.py:148
+#: polyhost/gui/settings_dialog.py:152
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "فقط Linux. کلید دسترس‌پذیری میز کار را روشن می‌کند تا برنامه‌های Qt و KDE میان‌برهایشان را منتشر کنند. در حالت خاموش: فقط برنامه‌هایی خوانده می‌شوند که در هر حال آن‌ها را منتشر می‌کنند (GTK)."
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:156
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "انتقال USB: چند پیام تصویر پیش از یک مکث کوتاه فرستاده می‌شود، تا صفحه‌کلید همچنان به تایپ واکنش نشان دهد. فقط وقتی تغییرش دهید که هنگام گزارش یک مشکل از شما خواسته شود."
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:160
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "انتقال USB: طول این مکث، به ثانیه. فقط وقتی تغییرش دهید که هنگام گزارش یک مشکل از شما خواسته شود."
 
-#: polyhost/gui/settings_dialog.py:159
+#: polyhost/gui/settings_dialog.py:163
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "چند بار میزبان شناسهٔ (ID) صفحه‌کلید را از آن می‌پرسد پیش از آنکه اتصال USB را دوباره باز کند."
 
-#: polyhost/gui/settings_dialog.py:162
+#: polyhost/gui/settings_dialog.py:166
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "ظاهر منوی سینی سیستم و پنجره‌های گفت‌وگو. «خودکار» از تنظیم روشن یا تیرهٔ میز کار پیروی می‌کند."
 
-#: polyhost/gui/settings_dialog.py:165
+#: polyhost/gui/settings_dialog.py:169
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "زبان منوها و پنجره‌های گفت‌وگو. هنگام راه‌اندازی دوبارهٔ برنامهٔ سینی سیستم اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:171
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "زیرمنوی «توسعه‌دهنده» را در منوی سینی سیستم و تنظیمات توسعه‌دهنده را در این پنجره نشان می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:173
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "یک صفحه‌کلید شبیه‌سازی‌شده کنار صفحه‌کلید واقعی اضافه می‌کند."
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:175
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "به جای صفحه‌کلید واقعی از یک صفحه‌کلید شبیه‌سازی‌شده استفاده می‌کند، تا برنامه بدون سخت‌افزار اجرا شود."
 
-#: polyhost/gui/settings_dialog.py:174
+#: polyhost/gui/settings_dialog.py:178
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "نسخهٔ پروتکلی که صفحه‌کلید شبیه‌سازی‌شده گزارش می‌کند. 0 جدیدترین نسخه‌ای را که این میزبان می‌شناسد به کار می‌برد."
 
-#: polyhost/gui/settings_dialog.py:177
+#: polyhost/gui/settings_dialog.py:181
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "پنجرهٔ فعال را حتی وقتی هیچ صفحه‌کلیدی وصل نیست دنبال می‌کند."
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:183
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "فقط Windows، آزمایشی. زبان ورودی را به جای روش استاندارد با فراخوانی‌های Win32 تغییر می‌دهد و در صورت شکست به همان روش برمی‌گردد."
 
-#: polyhost/gui/settings_dialog.py:182
+#: polyhost/gui/settings_dialog.py:186
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "فقط از کانال USB HID استفاده می‌کند، انگار صفحه‌کلید پیوند سریع ندارد: به‌روزرسانی‌های میان‌افزار از طریق HID انجام می‌شود. برای آزمایش دستی مسیر HID."
 
-#: polyhost/gui/settings_dialog.py:185
+#: polyhost/gui/settings_dialog.py:189
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "گزارش‌های پنجره را از ارسال‌کننده‌های قدیمی از راه TCP رمزنگاری‌نشده و بدون احراز هویت (درگاه 50162) روی همهٔ رابط‌های شبکه می‌پذیرد. فقط برای یک ارسال‌کنندهٔ قدیمی روشنش کنید."
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:193
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "اتصال صفحه‌کلید را در یک فرایند پس‌زمینه اجرا می‌کند که برنامهٔ سینی سیستم به آن وصل می‌شود، تا اتصال هنگام راه‌اندازی دوبارهٔ برنامهٔ سینی سیستم برقرار بماند."
 
-#: polyhost/gui/settings_dialog.py:192
+#: polyhost/gui/settings_dialog.py:196
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "گزارش‌های پنجره را از یک ارسال‌کننده روی رایانهٔ دیگر می‌پذیرد. یک درگاه شبکه باز می‌کند. پس از راه‌اندازی مجدد اعمال می‌شود."
 
-#: polyhost/gui/settings_dialog.py:195
+#: polyhost/gui/settings_dialog.py:199
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "مجموعه‌های ناموجود یا قدیمی بستهٔ فونت را هنگام اتصال صفحه‌کلید فلش می‌کند."
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:201
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "یک فایل .plyf برای فلش به جای بستهٔ فونتی که همراه برنامه ارائه می‌شود. خالی یعنی بستهٔ همراه برنامه به کار می‌رود."
 
-#: polyhost/gui/settings_dialog.py:200
+#: polyhost/gui/settings_dialog.py:204
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "هم‌پوشانی‌ها را با وب‌سایت زبانهٔ فعال مرورگر تطبیق می‌دهد. در حالت خاموش: هم‌پوشانی‌های مرورگر فقط با عنوان پنجره تطبیق داده می‌شوند."
 
-#: polyhost/gui/settings_dialog.py:203
+#: polyhost/gui/settings_dialog.py:207
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "گیرنده‌ای را اجرا می‌کند که افزونهٔ مرورگر به آن گزارش می‌دهد. فقط روی 127.0.0.1 گوش می‌دهد."
 
-#: polyhost/gui/settings_dialog.py:206
+#: polyhost/gui/settings_dialog.py:210
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "درگاه گیرنده. باید با Host port در افزونهٔ مرورگر یکی باشد."
 
-#: polyhost/gui/settings_dialog.py:208
+#: polyhost/gui/settings_dialog.py:212
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "یک رمز مشترک. اگر تنظیم شود، افزونهٔ مرورگر باید همان توکن را بفرستد."
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:214
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "روزی یک گزارش استفادهٔ ناشناس می‌فرستد: نسخه‌ها، سیستم‌عامل و چند شمارنده. هرگز عنوان پنجره‌ها یا نام برنامه‌ها را نمی‌فرستد."
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:216
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "مقصد گزارش استفاده. خالی یعنی چیزی فرستاده نمی‌شود."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:218
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "شناسهٔ (ID) تصادفی این نصب که با نخستین گزارش ساخته می‌شود. آن را پاک کنید تا به عنوان یک نصب جدید شمرده شوید."
 
-#: polyhost/gui/settings_dialog.py:217
+#: polyhost/gui/settings_dialog.py:221
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "کنسول صفحه‌کلید را برای پیام‌های خطای شناخته‌شده بررسی می‌کند و پیشنهاد می‌دهد مشکل را گزارش کنید."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:223
 msgid "Watches this app's own log for known failure messages."
 msgstr "لاگ خود این برنامه را برای پیام‌های خطای شناخته‌شده بررسی می‌کند."
 
-#: polyhost/gui/settings_dialog.py:220
+#: polyhost/gui/settings_dialog.py:224
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "چه چیزی مشکل به شمار می‌آید: فقط خطاها، یا خطاها و هشدارها."
 
-#: polyhost/gui/settings_dialog.py:308
+#: polyhost/gui/settings_dialog.py:226
+msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
+msgstr "وقتی بازی روی این رایانه نصب باشد، برخی از پوشش‌های بازی را از پرونده‌های خود بازی می‌کشد. تصاویر روی این رایانه می‌مانند. خاموش: پوشش‌های همراه برنامه استفاده می‌شوند."
+
+#: polyhost/gui/settings_dialog.py:230
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgstr "پوشه‌ای با پرونده‌های کلاسیک Command & Conquer یعنی CONQUER.MIX و TEMPERAT.MIX. خالی: نصب‌های Steam و EA app مجموعهٔ Remastered Collection جست‌وجو می‌شوند."
+
+#: polyhost/gui/settings_dialog.py:233
+msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgstr "جناحی که پوشش C&C Remastered واحدها و ساختمان‌هایش را نشان می‌دهد."
+
+#: polyhost/gui/settings_dialog.py:321
 msgid "PolyKybd Settings"
 msgstr "تنظیمات PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:333
+#: polyhost/gui/settings_dialog.py:346
 msgid "Some settings might need a restart to take effect."
 msgstr "برخی تنظیمات ممکن است برای اعمال به راه‌اندازی مجدد نیاز داشته باشند."
 

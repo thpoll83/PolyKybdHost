@@ -84,10 +84,16 @@ GENERIC_STATE_UNKNOWN = object()
 
 
 def get_overlay_path(filepath):
-    """Absolute path of a shipped overlay template (polyhost/res/overlays).
+    """Absolute path of a shipped overlay template (polyhost/res/overlays), or of
+    the copy redrawn from a game installed here when there is one
+    (`services/game_assets`).
 
     An Underlay name (a browser's file under a website's) stays an Underlay, so the
     send path can still ask the keyboard to draw it dimmed."""
+    from polyhost.services import game_assets
+    local = game_assets.override_for(filepath)
+    if local:
+        return local
     return as_underlay_path(filepath, os.path.join(_RES_DIR, "overlays", filepath))
 
 
@@ -298,6 +304,10 @@ class PolyCore(Observable):
             self.log, settings_get=self.poly_settings.get,
             on_change=self._on_browser_url_changed)
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
+        # Templates redrawn from game files installed on this machine, built on
+        # a background thread; the shipped file is sent until a copy is ready.
+        from polyhost.services import game_assets
+        game_assets.start(self.poly_settings.get)
         self._create_overlay_handler()
         self.browser_url_source.start()
 
@@ -2815,6 +2825,10 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        from polyhost.services import game_assets
+        if keys is None or game_assets.SETTING_KEYS.intersection(keys):
+            # The rebuilt copy is sent on the next switch to the game.
+            game_assets.start(self.poly_settings.get)
 
     def _hid_link_forced(self) -> bool:
         """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""

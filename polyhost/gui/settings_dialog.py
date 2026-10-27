@@ -39,6 +39,7 @@ CHOICES = {
     "ui_language": language_choices,
     "problem_scan_level": ((LEVEL_ERRORS, N_("Errors")),
                            (LEVEL_ERRORS_AND_WARNINGS, N_("Errors and warnings"))),
+    "game_cnc_faction": (("gdi", N_("GDI")), ("nod", N_("Nod"))),
 }
 
 # The shown name of each settings GROUP (the key's first word) and of each
@@ -49,7 +50,7 @@ GROUP_LABELS = {
     "General": N_("General"),
     "brightness": N_("Brightness"), "browser": N_("Browser"), "daemon": N_("Daemon"),
     "delay": N_("Delay"), "dev": N_("Dev"), "developer": N_("Developer"),
-    "fontpack": N_("Fontpack"), "generic": N_("Generic"), "hid": N_("Hid"),
+    "fontpack": N_("Fontpack"), "game": N_("Game"), "generic": N_("Generic"), "hid": N_("Hid"),
     "irradiance": N_("Irradiance"), "max": N_("Max"), "problem": N_("Problem"),
     "shortcut": N_("Shortcut"), "telemetry": N_("Telemetry"), "ui": N_("Ui"),
     "unicode": N_("Unicode"), "window": N_("Window"),
@@ -98,6 +99,9 @@ SETTING_LABELS = {
     "problem_scan_keyboard_console": N_("Scan Keyboard Console"),
     "problem_scan_host_logs": N_("Scan Host Logs"),
     "problem_scan_level": N_("Scan Level"),
+    "game_assets_enabled": N_("Art From Installed Games"),
+    "game_cnc_data_dir": N_("Command and Conquer Folder"),
+    "game_cnc_faction": N_("Command and Conquer Faction"),
 }
 
 
@@ -218,6 +222,15 @@ SETTING_DESCRIPTIONS = {
         "report a problem."),
     "problem_scan_host_logs": N_("Watches this app's own log for known failure messages."),
     "problem_scan_level": N_("What counts as a problem: errors only, or errors and warnings."),
+    "game_assets_enabled": N_(
+        "Draws some game overlays from the game's own files when the game is "
+        "installed on this computer. The images stay on this computer. Off: the "
+        "shipped overlays are used."),
+    "game_cnc_data_dir": N_(
+        "A folder with the classic Command & Conquer files CONQUER.MIX and "
+        "TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered "
+        "Collection are searched."),
+    "game_cnc_faction": N_("Whose units and buildings the C&C Remastered overlay shows."),
 }
 
 # The size the dialog had before it followed the screen. It stays the minimum.
