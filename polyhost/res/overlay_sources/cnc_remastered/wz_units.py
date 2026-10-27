@@ -72,7 +72,7 @@ UNITS = {
     "7": ("Rail gun tank",
           [(f"{B}/bodies/drhbod11.pie", (0, 0, 0)), (f"{B}/prop/prhtrk3.pie", (0, 0, 0)),
            (f"{B}/weapons/trhgss.pie", "body-connector"),
-           (f"{B}/weapons/gnhgss.pie", "body-connector")], dict(yaw=60, pitch=25)),
+           (f"{B}/weapons/gnhgss.pie", "body-connector")], dict(yaw=20, pitch=20)),
     "8": ("Howitzer",
           [(f"{B}/bodies/drhbod09.pie", (0, 0, 0)), (f"{B}/prop/prhtrk3.pie", (0, 0, 0)),
            (f"{B}/weapons/trhhowt.pie", "body-connector"),
