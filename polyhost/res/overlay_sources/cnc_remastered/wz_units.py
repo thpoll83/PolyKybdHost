@@ -87,12 +87,6 @@ UNITS = {
 }
 
 
-# Sidebar tab keys drawn as Warzone buildings, seen from the side: stem of the
-# icon the bindings use, model, camera.
-BUILDINGS = {
-    "tabstructures": ("Cyborg factory", "base/structs/blcfact1.pie", dict(yaw=90, pitch=8)),
-}
-
 
 def _fetch(url: str, dest: Path) -> Path:
     if not dest.exists():
@@ -252,19 +246,6 @@ def _save(mask, path: Path) -> None:
     canvas[H - h:, W - w:, :3] = 255
     canvas[H - h:, W - w:, 3] = np.where(mask, 255, 0)
     Image.fromarray(canvas, "RGBA").save(path)
-
-
-def buildings(out: Path) -> None:
-    """The sidebar tab icons, 40 x 40 like the other key icons."""
-    for stem, (label, path, cam) in BUILDINGS.items():
-        m = keycap(*render([(path, (0, 0, 0))], **cam), size=(40, 40))
-        full = np.zeros((40, 40), bool)
-        full[40 - m.shape[0]:, 40 - m.shape[1]:] = m
-        canvas = np.zeros((40, 40, 4), np.uint8)
-        canvas[..., :3] = 255
-        canvas[..., 3] = np.where(full, 255, 0)
-        Image.fromarray(canvas, "RGBA").save(out / f"{stem}.png")
-        print(f"  {stem}.png  <- Warzone 2100: {label}")
 
 
 def main(out: Path | None = None) -> int:

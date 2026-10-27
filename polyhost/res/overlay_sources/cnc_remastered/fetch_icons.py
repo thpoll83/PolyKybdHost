@@ -37,9 +37,10 @@ SOURCES = {
 
 ICONS = {
     # Sidebar tabs
+    "tabstructures": "mdi:factory",
     "tabinfantry": "gi:delapouite/barracks",
-    "tabvehicles": "mdi:tank",
-    "tabsuper": "fa:radiation",
+    "tabvehicles": "gi:lorc/battle-tank",
+    "tabsuper": "gi:lorc/mushroom-cloud",
     # Orders and selection
     "stop": "fa:hand",
     "scatter": "fa:arrows-up-down-left-right",
@@ -202,7 +203,6 @@ def main() -> int:
         aoe2.trim(out, stem)
     dither_icons(out)
     wz_units.main(out)
-    wz_units.buildings(out)
     program(out)
     print(f"Wrote icons to {out}")
     return 0
