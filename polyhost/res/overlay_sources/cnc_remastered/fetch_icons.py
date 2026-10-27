@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fetch + render the Command & Conquer Remastered Collection icons (reproducible).
 
-The key icons are flat silhouettes from Font Awesome Free (CC BY 4.0) and
-Material Design Icons (Apache-2.0). The ten control-group units are Warzone
+The key icons are silhouettes from Font Awesome Free (CC BY 4.0), Material
+Design Icons (Apache-2.0) and game-icons.net (CC BY 3.0), shaded and dithered
+like the units. The ten control-group units are Warzone
 2100 models (GPL-2.0-or-later) rendered by wz_units.py: textured, lit,
 dithered, with a lit outline; a plus for Ctrl. SOURCES.md credits each. The ESC
 mark is COMMAND & CONQUER set in the stencil face Black Ops One (SIL OFL 1.1),

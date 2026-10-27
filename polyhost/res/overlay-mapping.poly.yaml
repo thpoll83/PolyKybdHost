@@ -1878,3 +1878,8 @@ age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
 # under Proton on KDE Plasma (both measured 2026-10-23).
 aoe2de_s,steam_app_813780:
   overlay: aoe2_de_template.mods.png
+# Command & Conquer Remastered Collection, Steam app 1213210
+# (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
+# steam_app_1213210 under Proton. Names not checked on an install.
+clientg,clientg.exe,steam_app_1213210:
+  overlay: cnc_remastered_template.mods.png
