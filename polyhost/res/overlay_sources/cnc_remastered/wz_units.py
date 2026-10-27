@@ -97,7 +97,7 @@ def _fetch(url: str, dest: Path) -> Path:
 
 def load(path: str):
     """Level 1 of a .pie: points, [(indices, uvs)], connectors, texture file."""
-    lines = _fetch(WZ_URL.format(path), CACHE / path).read_text(errors="replace").splitlines()
+    lines = _fetch(WZ_URL.format(path), CACHE / path).read_text(encoding="utf-8", errors="replace").splitlines()
     ver, tex, scale = 2, None, (256.0, 256.0)
     pts, polys, conns, lvl, i = [], [], [], 0, 0
     while i < len(lines):

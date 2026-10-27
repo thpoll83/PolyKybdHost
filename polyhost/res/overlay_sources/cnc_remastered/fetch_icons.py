@@ -30,8 +30,9 @@ from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
 SOURCES = {
     # Font Awesome Free 6.5.2, solid (CC BY 4.0)
     "fa": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/svgs/solid/{}.svg",
-    # Material Design Icons, Pictogrammers (Apache-2.0)
-    "mdi": "https://raw.githubusercontent.com/Templarian/MaterialDesign/master/svg/{}.svg",
+    # Material Design Icons, Pictogrammers (Apache-2.0), pinned commit
+    "mdi": "https://raw.githubusercontent.com/Templarian/MaterialDesign/"
+           "2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/{}.svg",
     # game-icons.net (CC BY 3.0, credit per author)
     "gi": game_icons.URL,
 }
@@ -61,8 +62,8 @@ ICONS = {
 # Control groups 1..0 are Warzone 2100 units rendered by wz_units.py.
 
 # The ESC mark is set in Black Ops One (SIL OFL 1.1), a stencil face.
-STENCIL_URL = ("https://raw.githubusercontent.com/google/fonts/main/ofl/blackopsone/"
-               "BlackOpsOne-Regular.ttf")
+STENCIL_URL = ("https://raw.githubusercontent.com/google/fonts/"
+               "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/blackopsone/BlackOpsOne-Regular.ttf")
 
 
 def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None:
