@@ -7,9 +7,10 @@ rebuilds `icons/` (it calls `wz_units.py` for the control groups).
 |---|---|
 | `cnc_remastered_template` (1 file) | The Steam release (app 1213210): `ClientG.exe` on Windows, `steam_app_1213210` under Proton |
 
-The app names were not checked on an install. `ClientG.exe` is the launcher
-Steam starts; `steam_app_1213210` is the window class Proton gives every Steam
-game, as for Age of Empires II (`steam_app_813780`).
+The app names were not checked on an install. Steam starts the launcher,
+`ClientLauncherG.exe`; it starts `ClientG.exe`, the game window the overlay
+matches. `steam_app_1213210` is the window class Proton gives every Steam game,
+as for Age of Empires II (`steam_app_813780`).
 
 ## Shortcut reference
 
