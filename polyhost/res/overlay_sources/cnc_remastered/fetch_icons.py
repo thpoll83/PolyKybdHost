@@ -109,12 +109,6 @@ def relief(mask, seed=0):
     return np.where(mask, np.clip(shade - falloff + grain, 0, 1), 0.0)
 
 
-def _alpha(path: Path):
-    import numpy as np
-    from PIL import Image
-    return np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 127
-
-
 def _save_mask(mask, path: Path) -> None:
     import numpy as np
     from PIL import Image
@@ -150,7 +144,19 @@ def dither_icons(out: Path) -> None:
     print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
 
 
-DIGIT_FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"   # Bitstream Vera licence
+# DejaVu Sans Bold (Bitstream Vera licence), from matplotlib v3.9.2's bundled copy.
+DIGIT_FONT_URL = ("https://raw.githubusercontent.com/matplotlib/matplotlib/"
+                  "a254b687df97cda8c6affa37a1dfcf213f8e6c3a/lib/matplotlib/mpl-data/fonts/ttf/"
+                  "DejaVuSans-Bold.ttf")
+
+
+def _font(url: str) -> Path:
+    """`url` downloaded once into the temp dir."""
+    import tempfile
+    path = Path(tempfile.gettempdir()) / url.rsplit("/", 1)[1]
+    if not path.exists():
+        path.write_bytes(_get(url))
+    return path
 
 
 def _stamp(mask, text, height=11, top=16):
@@ -159,7 +165,7 @@ def _stamp(mask, text, height=11, top=16):
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
     for px in range(40, 6, -1):
-        f = ImageFont.truetype(DIGIT_FONT, px)
+        f = ImageFont.truetype(str(_font(DIGIT_FONT_URL)), px)
         left, t, right, bottom = f.getbbox(text)
         im = Image.new("L", (right - left + 4, bottom - t + 4), 0)
         ImageDraw.Draw(im).text((2 - left, 2 - t), text, font=f, fill=255)
@@ -217,11 +223,8 @@ def _word(word, font, big):
 def program(out: Path) -> None:
     """program.png: COMMAND / -- & -- / CONQUER in the stencil face, the second
     M and the Q larger, over the whole 72x40 cell."""
-    import tempfile
     import numpy as np
-    font = Path(tempfile.gettempdir()) / "BlackOpsOne-Regular.ttf"
-    if not font.exists():
-        font.write_bytes(_get(STENCIL_URL))
+    font = _font(STENCIL_URL)
     top, amp, bottom = _word("COMMAND", font, {3}), _glyph("&", font, LOGO_AMP)[0], _word("CONQUER", font, {3})
     w, h = program_mark.W, program_mark.H
     gap = 1

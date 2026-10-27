@@ -118,4 +118,4 @@ adds the plus.
 | Font | Used for | Licence |
 |---|---|---|
 | [Black Ops One](https://github.com/google/fonts/tree/main/ofl/blackopsone) | the ESC mark | SIL OFL 1.1 |
-| DejaVu Sans Bold | the bookmark digits | Bitstream Vera |
+| DejaVu Sans Bold, the copy bundled with matplotlib v3.9.2 (pinned commit) | the bookmark digits | Bitstream Vera |

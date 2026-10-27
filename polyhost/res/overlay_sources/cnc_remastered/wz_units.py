@@ -38,7 +38,7 @@ WZ_URL = f"https://raw.githubusercontent.com/Warzone2100/warzone2100/{WZ_SHA}/da
 TEX_URL = f"https://raw.githubusercontent.com/Warzone2100/data-texpages/{TEX_SHA}/{{}}"
 
 W, H = aoe2.GROUP_W, aoe2.GROUP_H          # 48 x 40, the group binding's region
-CACHE = Path(tempfile.gettempdir()) / f"polykybd-wz-{WZ_SHA[:8]}"
+CACHE = Path(tempfile.gettempdir()) / f"polykybd-wz-{WZ_SHA[:8]}-{TEX_SHA[:8]}"
 
 B, M = "base/components", "mp/components"
 
