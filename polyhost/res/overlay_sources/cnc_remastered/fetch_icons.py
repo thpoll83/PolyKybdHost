@@ -144,7 +144,7 @@ def dither_icons(out: Path) -> None:
             for n in "1234":
                 numbered = _stamp(canvas, n)
                 _save_mask(numbered, out / f"bookmark{n}.png")
-                _save_mask(wz_units._with_plus(numbered), out / f"bookmarkset{n}.png")
+                _save_mask(wz_units._with_plus(numbered, top=True), out / f"bookmarkset{n}.png")
     print(f"  {len(ICONS)} key icons dithered (+ bookmark1..4, bookmarkset1..4)")
 
 

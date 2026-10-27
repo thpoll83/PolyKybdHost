@@ -228,23 +228,25 @@ def keycap(img, cover, blur=0.4, floor=0.15, size=(W, H), mirror=True):
     return out | (fill & inside)
 
 
-def _with_plus(mask, size=13, bar=3):
-    """The plus for Ctrl (create group) in the top-right corner, with the AoE2
-    groups' GROUP_SEAM px of clear space around it."""
+def _with_plus(mask, size=13, bar=3, top=False):
+    """The plus for Ctrl (create group, set bookmark) in the bottom-right corner,
+    or the top-right with `top`, with the AoE2 groups' GROUP_SEAM px of clear
+    space around it."""
     h, w = mask.shape
     p = np.zeros((h, w), bool)
-    cy, cx = size // 2, w - size // 2 - 1
+    cy, cx = (size // 2 if top else h - size // 2 - 1), w - size // 2 - 1
     p[cy - bar // 2:cy + bar // 2 + 1, cx - size // 2:cx + size // 2 + 1] = True
     p[cy - size // 2:cy + size // 2 + 1, cx - bar // 2:cx + bar // 2 + 1] = True
     return (mask & ~program_mark.dilate(p, aoe2.GROUP_SEAM)) | p
 
 
 def _save(mask, path: Path) -> None:
-    """White on transparent, right-aligned and bottom-aligned in W x H."""
+    """White on transparent, right-aligned and top-aligned in W x H: the unit
+    covers the Shift preview the firmware draws in the top middle of a digit key."""
     canvas = np.zeros((H, W, 4), np.uint8)
     h, w = mask.shape
-    canvas[H - h:, W - w:, :3] = 255
-    canvas[H - h:, W - w:, 3] = np.where(mask, 255, 0)
+    canvas[:h, W - w:, :3] = 255
+    canvas[:h, W - w:, 3] = np.where(mask, 255, 0)
     Image.fromarray(canvas, "RGBA").save(path)
 
 
@@ -255,7 +257,7 @@ def main(out: Path | None = None) -> int:
         m = keycap(*render(parts, **cam))
         _save(m, out / f"group{digit}.png")
         full = np.zeros((H, W), bool)
-        full[H - m.shape[0]:, W - m.shape[1]:] = m
+        full[:m.shape[0], W - m.shape[1]:] = m
         _save(_with_plus(full), out / f"groupnew{digit}.png")
         print(f"  group{digit}.png, groupnew{digit}.png  <- Warzone 2100: {label}")
     return 0
