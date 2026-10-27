@@ -24,7 +24,7 @@ anchor: right
 region: [40, 40]
 margin: 0
 
-# "C&C" drawn over the whole cell, without the ESC legend (protocol v25).
+# COMMAND & CONQUER drawn over the whole cell, without the ESC legend (protocol v25).
 program_icon: program.png
 program_icon_mode: alpha
 program_icon_region: [72, 40]

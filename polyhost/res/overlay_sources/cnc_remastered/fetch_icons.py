@@ -5,8 +5,8 @@ The key icons are flat silhouettes from Font Awesome Free (CC BY 4.0) and
 Material Design Icons (Apache-2.0). The ten control-group units are Warzone
 2100 models (GPL-2.0-or-later) rendered by wz_units.py: textured, lit,
 dithered, with a lit outline; a plus for Ctrl. SOURCES.md credits each. The ESC
-mark is "C&C" in the stencil face Black Ops One (SIL OFL 1.1), not the game's
-logo.
+mark is COMMAND & CONQUER set in the stencil face Black Ops One (SIL OFL 1.1),
+laid out like the game's title; the game's logo art is not used.
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/cnc_remastered/fetch_icons.py
@@ -59,7 +59,7 @@ ICONS = {
 
 # Control groups 1..0 are Warzone 2100 units rendered by wz_units.py.
 
-# "C&C" in Black Ops One (SIL OFL 1.1), a stencil face.
+# The ESC mark is set in Black Ops One (SIL OFL 1.1), a stencil face.
 STENCIL_URL = ("https://raw.githubusercontent.com/google/fonts/main/ofl/blackopsone/"
                "BlackOpsOne-Regular.ttf")
 
@@ -174,26 +174,69 @@ def _stamp(mask, text, height=11, top=16):
     return (mask & ~g) | (rim & program_mark.dilate(mask, 1))
 
 
+LOGO_CAP, LOGO_BIG, LOGO_AMP = 8, 10, 6     # cap heights in px: words, big M and Q, "&"
+LOGO_SS = 8                                 # supersampling factor
+
+
+def _glyph(ch, font, cap):
+    """`ch` with a cap height of `cap` px: (mask cropped to ink, rows below the baseline)."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    ref = ImageFont.truetype(str(font), 200).getbbox("H")
+    f = ImageFont.truetype(str(font), round(200 * cap * LOGO_SS / (ref[3] - ref[1])))
+    left, top, right, bottom = f.getbbox(ch)
+    pad = 2 * LOGO_SS
+    im = Image.new("L", (right - left + 2 * pad, bottom - top + 2 * pad), 0)
+    ImageDraw.Draw(im).text((pad - left, pad - top), ch, font=f, fill=255)
+    baseline = pad - top + f.getbbox("H")[3]
+    ys, xs = np.nonzero(np.asarray(im))
+    im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    size = (max(1, round(im.width / LOGO_SS)), max(1, round(im.height / LOGO_SS)))
+    below = max(0, round((ys.max() + 1 - baseline) / LOGO_SS))
+    return np.asarray(im.resize(size, Image.BOX)) > 110, below
+
+
+def _word(word, font, big):
+    """`word` at LOGO_CAP with the letters at indices `big` at LOGO_BIG, each
+    letter's cap height centred on the others' (a Q's tail hangs below)."""
+    import numpy as np
+    gs = [_glyph(c, font, LOGO_BIG if i in big else LOGO_CAP) for i, c in enumerate(word)]
+    tops = [(LOGO_CAP - (m.shape[0] - below)) // 2 for m, below in gs]
+    y0 = min(tops)
+    height = max(t - y0 + m.shape[0] for t, (m, _) in zip(tops, gs))
+    out = np.zeros((height, sum(m.shape[1] for m, _ in gs) + len(gs) - 1), bool)
+    x = 0
+    for t, (m, _) in zip(tops, gs):
+        out[t - y0:t - y0 + m.shape[0], x:x + m.shape[1]] = m
+        x += m.shape[1] + 1
+    return out
+
+
 def program(out: Path) -> None:
-    """program.png: "C&C" in the stencil face over the whole 72x40 cell, with the
-    same relief, dither and outline as the other keys."""
+    """program.png: COMMAND / -- & -- / CONQUER in the stencil face, the second
+    M and the Q larger, over the whole 72x40 cell."""
     import tempfile
     import numpy as np
     font = Path(tempfile.gettempdir()) / "BlackOpsOne-Regular.ttf"
     if not font.exists():
         font.write_bytes(_get(STENCIL_URL))
-    program_mark.FONT_DIR = font.parent
-    for px in range(240, 40, -4):          # 4x the cell, leaving 1 px all round
-        word = program_mark.text("C&C", font.name, px)
-        if word.shape[1] <= 4 * (program_mark.W - 2) and word.shape[0] <= 4 * (program_mark.H - 2):
-            break
-    m = wz_units.keycap(relief(word, seed=1), word,
-                        size=(program_mark.W - 2, program_mark.H - 2), mirror=False)
-    canvas = np.zeros((program_mark.H, program_mark.W), bool)
-    y0, x0 = (program_mark.H - m.shape[0]) // 2, (program_mark.W - m.shape[1]) // 2
-    canvas[y0:y0 + m.shape[0], x0:x0 + m.shape[1]] = m
+    top, amp, bottom = _word("COMMAND", font, {3}), _glyph("&", font, LOGO_AMP)[0], _word("CONQUER", font, {3})
+    w, h = program_mark.W, program_mark.H
+    gap = 1
+    assert max(top.shape[1], bottom.shape[1]) <= w
+    canvas = np.zeros((h, w), bool)
+    y = (h - top.shape[0] - amp.shape[0] - bottom.shape[0] - 2 * gap) // 2
+    for m in (top, amp, bottom):
+        x = (w - m.shape[1]) // 2
+        canvas[y:y + m.shape[0], x:x + m.shape[1]] = m
+        if m is amp:                      # a 1 px rule either side of the "&"
+            width = max(top.shape[1], bottom.shape[1])
+            rule_y, left = y + amp.shape[0] // 2, (w - width) // 2
+            canvas[rule_y, left:x - 3] = True
+            canvas[rule_y, x + amp.shape[1] + 3:left + width] = True
+        y += m.shape[0] + gap
     _save_mask(canvas, out / "program.png")
-    print("  program.png  <- \"C&C\" (Black Ops One), relief + dither")
+    print("  program.png  <- COMMAND & CONQUER (Black Ops One)")
 
 
 def main() -> int:
