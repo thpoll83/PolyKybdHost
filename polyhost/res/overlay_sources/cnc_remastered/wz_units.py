@@ -76,7 +76,7 @@ UNITS = {
     "8": ("Howitzer",
           [(f"{B}/bodies/drhbod09.pie", (0, 0, 0)), (f"{B}/prop/prhtrk3.pie", (0, 0, 0)),
            (f"{B}/weapons/trhhowt.pie", "body-connector"),
-           (f"{B}/weapons/gnhhowt.pie", "body-connector")], dict(yaw=60, pitch=25)),
+           (f"{B}/weapons/gnhhowt.pie", "body-connector")], dict(yaw=240, pitch=20)),
     "9": ("Rocket array",
           [(f"{B}/bodies/drmbod07.pie", (0, 0, 0)), (f"{B}/prop/prmtrk2.pie", (0, 0, 0)),
            (f"{B}/weapons/trmrckt.pie", "body-connector"),
