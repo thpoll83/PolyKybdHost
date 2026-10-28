@@ -107,10 +107,13 @@ def lcw(src: bytes, out_size: int) -> bytes:
 
 
 def xor_delta(src: bytes, size: int) -> bytes:
-    """Format 40 delta, applied to zeros; the caller XORs it onto the base frame."""
+    """Format 40 delta, applied to zeros; the caller XORs it onto the base frame.
+    A run past the end of the frame is a damaged file and raises ValueError."""
     dst = bytearray(size)
     i = p = 0
     while i < len(src):
+        if len(dst) != size:                    # a run wrote past the frame end
+            raise ValueError(f"XOR delta runs past the {size}-byte frame")
         b = src[i]
         i += 1
         if b == 0:                              # fill: count, value
@@ -140,6 +143,8 @@ def xor_delta(src: bytes, size: int) -> bytes:
                 dst[p:p + cnt] = bytes([src[i]]) * cnt
                 i += 1
                 p += cnt
+    if len(dst) != size:
+        raise ValueError(f"XOR delta runs past the {size}-byte frame")
     return bytes(dst)
 
 

@@ -243,6 +243,25 @@ class WestwoodDecoderTest(unittest.TestCase):
         frame = blob_frame(h, w, 0)
         self.assertEqual(westwood.shp_frames(write_shp([frame]))[0].shape, (h, w))
 
+    def test_a_delta_run_past_the_frame_is_refused(self):
+        """A long fill of 0x3FFF bytes per 4 input bytes must not grow the frame."""
+        fill = bytes([0x80]) + struct.pack("<H", 0xC000 | 0x3FFF) + bytes([7])
+        with self.assertRaisesRegex(ValueError, "past the"):
+            westwood.xor_delta(fill * 1000, 64)
+        with self.assertRaisesRegex(ValueError, "past the"):
+            westwood.xor_delta(bytes([5, 1, 2]), 64)      # literal cut short
+        self.assertEqual(westwood.xor_delta(bytes([0x80 | 70]), 64), bytes(64))  # skip off the end
+
+    def test_a_truncated_sprite_costs_only_its_key(self):
+        class Reader:
+            @staticmethod
+            def draw(source, recipe, size):
+                if recipe.get("bad"):
+                    raise struct.error("unpack_from requires a buffer of at least 2 bytes")
+                return np.ones((4, 4), bool)
+        spec = {"game_assets": {"reader": "westwood_td", "icons": {"a": {"bad": 1}, "b": {"ok": 1}}}}
+        self.assertEqual(set(build.render(Reader, None, spec, "")), {"b"})
+
     def test_only_the_frames_asked_for_are_decoded(self):
         """A header may claim 65535 frames; decoding stops at `count`, so the
         memory used follows the highest frame a recipe asks for."""
@@ -424,7 +443,15 @@ class BuildTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             with self.assertLogs("PolyHost", "INFO") as logs:
                 build_copy(d, self.data, "nod")
-        self.assertTrue(any(f"from {self.data}." in line for line in logs.output), logs.output)
+        shown = build.shown_folder(Path(self.data))
+        self.assertTrue(any(f"from {shown}." in line for line in logs.output), logs.output)
+
+    def test_the_log_writes_the_home_folder_as_a_tilde(self):
+        with mock.patch.object(Path, "home", return_value=Path("/home/al")):
+            self.assertEqual(build.shown_folder(Path("/home/al/games/cnc")),
+                             str(Path("~/games/cnc")))
+            self.assertEqual(build.shown_folder(Path("/home/alice/cnc")), str(Path("/home/alice/cnc")))
+            self.assertEqual(build.shown_folder(Path("/opt/cnc")), str(Path("/opt/cnc")))
 
     def test_unknown_faction_falls_back_to_the_first_choice(self):
         self.assertEqual(build_copy(self.cache, self.data, "orcs").name, self.built["gdi"].name)

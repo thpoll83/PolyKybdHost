@@ -22,6 +22,7 @@ import hashlib
 import importlib
 import logging
 import os
+import struct
 import threading
 from pathlib import Path
 
@@ -88,7 +89,7 @@ def render(reader, source, spec: dict, variant: str) -> dict:
         size = region or regions.get(stem, (40, 40))
         try:
             mask = reader.draw(source, recipe, tuple(recipe.get("fit", size)))
-        except (KeyError, IndexError, ValueError) as e:
+        except (KeyError, IndexError, ValueError, struct.error) as e:
             # A sprite or frame this install lacks costs its own key, not the rest.
             log.warning("Game art: skipped %s (%s: %s).", stem, type(e).__name__, e)
             continue
@@ -177,6 +178,15 @@ def remove_stale_temp(cache_dir: Path) -> None:
             p.unlink(missing_ok=True)
 
 
+def shown_folder(folder: Path) -> str:
+    """`folder` for a log line, with the home folder written as ~ so a shared log
+    carries no user name."""
+    try:
+        return str(Path("~") / Path(folder).relative_to(Path.home()))
+    except ValueError:
+        return str(folder)
+
+
 def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=None) -> Path | None:
     """The copy of `template` drawn from the game files, built if not cached;
     None when the reader finds no game files."""
@@ -200,10 +210,6 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
     n = patch(shipped, spec, icons, out)
-    folder = str(Path(reader.fingerprint(files)[0]).parent)
-    home = str(Path.home())
-    if folder.startswith(home):
-        folder = "~" + folder[len(home):]       # no user name in a shared log
     log.info("Game art: %d keys of %s drawn by %s (%s) from %s.", n, template, name,
-             variant or "-", folder)
+             variant or "-", shown_folder(Path(reader.fingerprint(files)[0]).parent))
     return out
