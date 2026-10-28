@@ -30,6 +30,9 @@ _SOURCES = Path(__file__).resolve().parents[2] / "res" / "overlay_sources"
 _specs: dict[str, Path] = {}         # template -> spec, from the overlay mapping
 _overrides: dict[str, str] = {}      # template -> built copy
 _started: dict[str, int] = {}        # template -> generation of its newest build
+# Opted-in templates sent this session, built or not: a settings change re-sends
+# only when one of them may be on the keyboard.
+_seen: set[str] = set()
 _lock = threading.Lock()
 _generation = 0
 # Set when the copies changed, so the window owner re-sends what is on the keyboard.
@@ -57,7 +60,10 @@ def wants(template: str, settings_get) -> bool:
     """Whether request() would start a build for `template` now. The caller
     checks this before it reads anything from the window system for the hint."""
     with _lock:
-        if str(template) not in _specs or str(template) in _started:
+        if str(template) not in _specs:
+            return False
+        _seen.add(str(template))
+        if str(template) in _started:
             return False
     return bool(settings_get("game_assets_enabled"))
 
@@ -77,11 +83,16 @@ def cache_dir() -> Path:
 
 def request(template: str, settings_get, hint=None) -> threading.Thread | None:
     """Build the copy of `template` on a background thread unless it is built
-    or building. An attempt that found no game files is retried on the next send. `hint` is the folder of the game's executable, or a callable
+    or building. An attempt that found no game files is retried on the next
+    send. `hint` is the folder of the game's executable, or a callable
     returning it, read on the build thread. Returns the thread, or None."""
     global _generation
     spec = _specs.get(str(template))
-    if spec is None or not settings_get("game_assets_enabled"):
+    if spec is None:
+        return None
+    with _lock:
+        _seen.add(str(template))
+    if not settings_get("game_assets_enabled"):
         return None
     with _lock:
         if template in _started:
@@ -122,7 +133,7 @@ def request(template: str, settings_get, hint=None) -> threading.Thread | None:
 def reset(settings_get) -> None:
     """A setting changed: the next send of each overlay builds again. With the
     feature off, the copies are dropped at once."""
-    if not (_started or _overrides):
+    if not _seen:
         return                               # no opted-in overlay was sent yet
     enabled = settings_get("game_assets_enabled")
     with _lock:

@@ -498,6 +498,9 @@ class RequestTest(unittest.TestCase):
             p = mock.patch.dict(d, clear=True)
             p.start()
             self.addCleanup(p.stop)
+        seen = mock.patch.object(game_assets, "_seen", set())
+        seen.start()
+        self.addCleanup(seen.stop)
         c = mock.patch.object(game_assets, "cache_dir", return_value=self.cache)
         c.start()
         self.addCleanup(c.stop)
@@ -573,6 +576,25 @@ class RequestTest(unittest.TestCase):
         self.settings["game_assets_enabled"] = False
         game_assets.reset(self.settings.get)
         self.assertIsNone(game_assets.override_for(TEMPLATE))
+        self.assertTrue(game_assets.take_changed())
+
+    def test_a_setting_change_after_a_failed_attempt_resends(self):
+        """No files found yet: setting the folder while the game is in front
+        must re-send, so that send builds with the new folder."""
+        self.settings["game_cnc_data_dir"] = ""
+        with mock.patch.object(westwood_td, "install_candidates", return_value=[]):
+            self._request()
+        self.assertIsNone(game_assets.override_for(TEMPLATE))
+        game_assets.take_changed()
+        self.settings["game_cnc_data_dir"] = str(self.data)
+        game_assets.reset(self.settings.get)
+        self.assertTrue(game_assets.take_changed())
+
+    def test_enabling_the_feature_while_the_game_is_in_front_resends(self):
+        self.settings["game_assets_enabled"] = False
+        self.assertFalse(game_assets.wants(TEMPLATE, self.settings.get))
+        self.settings["game_assets_enabled"] = True
+        game_assets.reset(self.settings.get)
         self.assertTrue(game_assets.take_changed())
 
     def test_a_reset_before_any_game_overlay_resends_nothing(self):
