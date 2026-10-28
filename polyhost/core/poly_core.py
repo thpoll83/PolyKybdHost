@@ -84,11 +84,15 @@ GENERIC_STATE_UNKNOWN = object()
 
 
 def get_overlay_path(filepath):
-    """Absolute path of a shipped overlay template (polyhost/res/overlays).
+    """Absolute path of a shipped overlay template (polyhost/res/overlays), or of
+    the copy redrawn from a game installed here when there is one
+    (`services/game_assets`).
 
     An Underlay name (a browser's file under a website's) stays an Underlay, so the
     send path can still ask the keyboard to draw it dimmed."""
-    return as_underlay_path(filepath, os.path.join(_RES_DIR, "overlays", filepath))
+    from polyhost.services import game_assets
+    local = game_assets.override_for(filepath)
+    return as_underlay_path(filepath, local or os.path.join(_RES_DIR, "overlays", filepath))
 
 
 def strip_key_injection(lines):
@@ -525,6 +529,9 @@ class PolyCore(Observable):
         except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
             self.mapping = {}
+        # Entries with `game_assets:` are redrawn from installed games on first send.
+        from polyhost.services import game_assets
+        game_assets.register_mapping(self.mapping)
 
     def save_overlay_mapping(self, path):
         import yaml
@@ -638,6 +645,20 @@ class PolyCore(Observable):
                     "match %.1f s, overlay decision %.1f s).",
                     took, query, took - query)
 
+    def _request_game_assets(self, data, handler):
+        """Start drawing any of these templates from an installed game. The
+        folder of the focused window's executable is the first place to look;
+        it is read on the build thread, and only when a build starts."""
+        from polyhost.handler.win_process import process_dir
+        from polyhost.services import game_assets
+        names = [str(n) for n in (data if isinstance(data, (list, tuple)) else [data])]
+        names = [n for n in names if game_assets.wants(n, self.poly_settings.get)]
+        if not names:
+            return          # no window-system query on a switch to any other app
+        pid = handler.focused_pid()
+        for name in names:
+            game_assets.request(name, self.poly_settings.get, hint=lambda: process_dir(pid))
+
     def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
         """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
@@ -646,6 +667,11 @@ class PolyCore(Observable):
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            from polyhost.services import game_assets
+            if game_assets.take_changed():
+                # A copy redrawn from game files is ready, or gone: the window
+                # in front did not change, so nothing else would re-send it.
+                handler.force_resend()
             query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             self._tick_query_s = time.monotonic() - query_started
@@ -693,6 +719,7 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
+                self._request_game_assets(data, handler)
                 # A template send re-programs the whole pool, so whatever
                 # generic overlays were on the device are gone with it. Cleared
                 # BEFORE the send so the gap fill below cannot dedupe against
@@ -2815,6 +2842,11 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        from polyhost.services import game_assets
+        if keys is None or game_assets.SETTING_KEYS.intersection(keys):
+            # The next send of an opted-in overlay builds again; reset() makes
+            # the window tick re-send, so that happens now if the game is in front.
+            game_assets.reset(self.poly_settings.get)
 
     def _hid_link_forced(self) -> bool:
         """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""

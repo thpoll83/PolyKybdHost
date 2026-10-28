@@ -377,6 +377,36 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `unicode_cache.py` — pre-computed unicode character mappings
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
+- `game_assets/` — overlay art read from games installed on this machine.
+  An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
+  `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
+  recipe for each icon, keyed by variant (the C&C faction) where they differ.
+  - Shared, at the top of the package: `__init__.py` (below), `build.py` and
+    `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
+    `Setting` declarations and the registry of readers.
+  - One subfolder per game reader (`westwood_td/` for Command & Conquer). Its
+    `__init__.py` declares `READER` (module, settings, folder and variant
+    settings) and stays light; `reader.py` has `find(folder, hint)`,
+    `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
+    the game's file formats sit beside it (`westwood.py`, which refuses a frame
+    larger than 640x400 px before decoding and decodes a shape file only up to
+    the highest frame a recipe asks for). A new reader is a new
+    subfolder plus one line in `readers._registry()`.
+  - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
+    settings dialog adds their labels, descriptions and dropdowns, so a reader
+    brings its own settings.
+  - `__init__.py`: `register_mapping()` at mapping load; `wants()` gates the
+    window-system query for the hint; `request()` on the
+    first OFF_ON send of an opted-in template builds the copy on a thread, with
+    the focused window's executable folder (`win_process.process_dir()`) as the
+    first place to look, and retries on the next send when it found nothing;
+    `override_for()` serves the copy to `get_overlay_path()`; `take_changed()`
+    makes the window tick `force_resend()`; `reset()` from
+    `note_settings_changed()` rebuilds on the next send.
+  - `build.py` (numpy, PIL): recipes per variant, fitting, the Ctrl plus,
+    patching the shipped PNG's primary tier, cache name, temp files. A recipe
+    that fails skips only its own key.
+  Game art is never committed; it stays in the user's cache.
 
 ### Transport probe (bulk pipe vs HID only)
 

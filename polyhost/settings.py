@@ -7,6 +7,7 @@ import time
 import yaml
 from platformdirs import user_config_dir
 
+from polyhost.services.game_assets.readers import reader_defaults
 from polyhost.util import filelock
 
 APP_NAME = "PolyHost"
@@ -256,6 +257,14 @@ DEFAULT_SETTINGS = {
         # never downgrades, so it's self-terminating — see PolyCore). Set
         # False to manage the pack only manually (polyctl fontpack flash).
         "fontpack_auto_flash": True,
+        # Game art from installed games (polyhost/services/game_assets): when a
+        # game's own files are on this machine, overlays for it are redrawn
+        # from them into the cache directory, in place of the shipped
+        # open-licence art. The files are only read; nothing leaves the
+        # machine except the overlay sent to the keyboard. Off = always the
+        # shipped overlays.
+        "game_assets_enabled": True,
+        # Each reader adds its own settings after this dict (game_assets/<reader>/__init__.py).
         # Optional explicit path to the font pack .plyf to flash. Empty =
         # use the pack shipped in polyhost/res/fontpack/ (if any).
         "fontpack_path": "",
@@ -303,6 +312,9 @@ DEFAULT_SETTINGS = {
         "problem_scan_host_logs": True,
         "problem_scan_level": "errors",
 }
+# The settings of each game-asset reader this host has: its folder and its
+# options (the C&C faction). Adding a reader adds its settings.
+DEFAULT_SETTINGS.update(reader_defaults())
 
 
 #: Marks a settings file that holds only CHOSEN values (format 2). A file

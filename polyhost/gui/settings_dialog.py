@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost import i18n
 from polyhost.i18n import _, _f, N_
+from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
 from polyhost.services.problem_scan import LEVEL_ERRORS, LEVEL_ERRORS_AND_WARNINGS
 
@@ -49,7 +50,7 @@ GROUP_LABELS = {
     "General": N_("General"),
     "brightness": N_("Brightness"), "browser": N_("Browser"), "daemon": N_("Daemon"),
     "delay": N_("Delay"), "dev": N_("Dev"), "developer": N_("Developer"),
-    "fontpack": N_("Fontpack"), "generic": N_("Generic"), "hid": N_("Hid"),
+    "fontpack": N_("Fontpack"), "game": N_("Game"), "generic": N_("Generic"), "hid": N_("Hid"),
     "irradiance": N_("Irradiance"), "max": N_("Max"), "problem": N_("Problem"),
     "shortcut": N_("Shortcut"), "telemetry": N_("Telemetry"), "ui": N_("Ui"),
     "unicode": N_("Unicode"), "window": N_("Window"),
@@ -98,6 +99,7 @@ SETTING_LABELS = {
     "problem_scan_keyboard_console": N_("Scan Keyboard Console"),
     "problem_scan_host_logs": N_("Scan Host Logs"),
     "problem_scan_level": N_("Scan Level"),
+    "game_assets_enabled": N_("Art From Installed Games"),
 }
 
 
@@ -218,7 +220,18 @@ SETTING_DESCRIPTIONS = {
         "report a problem."),
     "problem_scan_host_logs": N_("Watches this app's own log for known failure messages."),
     "problem_scan_level": N_("What counts as a problem: errors only, or errors and warnings."),
+    "game_assets_enabled": N_(
+        "Draws some game overlays from the game's own files when the game is "
+        "installed on this computer. The images stay on this computer. Off: the "
+        "shipped overlays are used."),
 }
+
+# Each game-asset reader brings its settings' labels, descriptions and choices.
+for _s in game_asset_readers.all_settings():
+    SETTING_LABELS[_s.key] = _s.label
+    SETTING_DESCRIPTIONS[_s.key] = _s.description
+    if _s.choices:
+        CHOICES[_s.key] = _s.choices
 
 # The size the dialog had before it followed the screen. It stays the minimum.
 MIN_DIALOG_SIZE = QSize(640, 480)

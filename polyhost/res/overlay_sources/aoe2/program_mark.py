@@ -64,18 +64,10 @@ def place(canvas: np.ndarray, m: np.ndarray, cx: int, top: int) -> None:
 
 
 def dilate(m: np.ndarray, n: int) -> np.ndarray:
-    """`m` grown by `n` px in the four axis directions per step, as
-    scipy.ndimage.binary_dilation does with its default cross."""
-    import numpy as np
-    out = m.copy()
-    for _ in range(n):
-        grown = out.copy()
-        grown[1:, :] |= out[:-1, :]
-        grown[:-1, :] |= out[1:, :]
-        grown[:, 1:] |= out[:, :-1]
-        grown[:, :-1] |= out[:, 1:]
-        out = grown
-    return out
+    """`m` grown by `n` px in the four axis directions per step (shared with the
+    runtime reader in polyhost/services/game_assets/dither.py)."""
+    from polyhost.services.game_assets.dither import dilate as _dilate
+    return _dilate(m, n)
 
 
 def mark(de: bool) -> np.ndarray:

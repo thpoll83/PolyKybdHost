@@ -1883,3 +1883,5 @@ aoe2de_s,steam_app_813780:
 # steam_app_1213210 under Proton. Names not checked on an install.
 clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
+  # Keys redrawn from the user's own game files when they are installed.
+  game_assets: cnc_remastered/cnc_remastered.yaml

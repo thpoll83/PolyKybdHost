@@ -120,3 +120,43 @@ adds the plus.
 |---|---|---|
 | [Black Ops One](https://github.com/google/fonts/tree/main/ofl/blackopsone) | the ESC mark | SIL OFL 1.1 |
 | DejaVu Sans Bold, the copy bundled with matplotlib v3.9.2 (pinned commit) | the bookmark digits | Bitstream Vera |
+
+## Art from the user's game files
+
+When the classic Tiberian Dawn files are on the machine, the host draws 31 keys
+of this overlay from the game's own sprites instead. The shipped file above
+stays the fallback and is the only C&C art in the repository. EA's sprites are
+never shipped: the host reads them from the user's install, writes the patched
+copy to the user's cache directory, and sends it only to the keyboard.
+
+The mapping entry opts in with `game_assets: cnc_remastered/cnc_remastered.yaml`.
+The `game_assets:` block at the end of `cnc_remastered.yaml` names the reader
+(`westwood_td`) and says what each key shows, per faction where they differ.
+Nothing is read until the overlay is first sent.
+
+| Keys | From the game |
+|---|---|
+| 1 to 0, Ctrl+1 to Ctrl+0 | map sprites of the chosen faction, with the same plus |
+| W, E, R, H, Tab | building sprites |
+| S, X, G, A, Q, T | mouse cursors (only when `CCLOCAL.MIX` is present) |
+
+The reader looks for `CONQUER.MIX` and `TEMPERAT.MIX` (any case) in this order:
+
+1. the folder in the `game_cnc_data_dir` setting, when set;
+2. `Data/CNCDATA/TIBERIAN_DAWN/` under the folder of the running game's
+   executable (under Proton: the game's working folder);
+3. the same path under each Steam library and the EA app folder.
+
+The Remastered path was not checked on an install. The 1995 freeware release
+has the same files; point the setting at its folder.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `game_assets_enabled` | `true` | `false` always sends the shipped file |
+| `game_cnc_data_dir` | empty | a folder with the MIX files; empty searches as above |
+| `game_cnc_faction` | `gdi` | `gdi` or `nod` |
+
+The last two are the reader's own settings (`polyhost/services/game_assets/westwood_td/__init__.py`).
+`polyctl settings set game_cnc_faction nod` switches the faction; the copy is
+rebuilt on a background thread and the overlay is sent again. Copies are cached
+by game file size and time, faction, shipped overlay, spec and `RENDER_VERSION`.

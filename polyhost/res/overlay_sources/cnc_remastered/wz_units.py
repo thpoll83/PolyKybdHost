@@ -24,13 +24,13 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
-from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
+from polyhost.services.game_assets import dither  # noqa: E402
 
 WZ_SHA = "e115b6379c1b831d12980f00f877c1e72e599c68"       # Warzone2100/warzone2100
 TEX_SHA = "009ec2f652a6230d8315cc3db4eadb5690f18fbd"      # Warzone2100/data-texpages
@@ -201,43 +201,17 @@ def render(parts, yaw, pitch, px=320, light=(-0.4, 0.8, 0.45), ambient=0.35):
     return img, cover
 
 
-def _edge(a):
-    p = np.pad(a, 1)
-    return a & ~(p[2:, 1:-1] & p[:-2, 1:-1] & p[1:-1, 2:] & p[1:-1, :-2])
-
-
 def keycap(img, cover, blur=0.4, floor=0.15, size=(W, H), mirror=True):
     """Fit into `size`, dither the inside, light the outline. The renders face
     left, so `mirror` turns them to face right."""
-    ys, xs = np.nonzero(cover)
-    img = img[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-    cover = cover[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-    if mirror:
-        img, cover = img[:, ::-1], cover[:, ::-1]
-    s = min(size[0] / img.shape[1], size[1] / img.shape[0])
-    size = (max(1, round(img.shape[1] * s)), max(1, round(img.shape[0] * s)))
-    gi = Image.fromarray((img * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(blur / s))
-    g = np.asarray(gi.resize(size, Image.LANCZOS), float) / 255
-    a = np.asarray(Image.fromarray((cover * 255).astype(np.uint8)).resize(size, Image.LANCZOS)) > 127
-    lo, hi = np.percentile(g[a], 3), np.percentile(g[a], 97)
-    g = np.clip((g - lo) / max(hi - lo, 1e-6), 0, 1)
-    out = _edge(a)
-    inside = a & ~out
-    v = np.where(inside, floor + (1 - floor) * g, 0)
-    fill = np.asarray(Image.fromarray((v * 255).astype(np.uint8)).convert("1")) > 0
-    return out | (fill & inside)
+    return dither.keycap(img, cover, size, blur=blur, floor=floor, mirror=mirror)
 
 
 def _with_plus(mask, size=13, bar=3, top=False):
     """The plus for Ctrl (create group, set bookmark) in the bottom-right corner,
     or the top-right with `top`, with the AoE2 groups' GROUP_SEAM px of clear
     space around it."""
-    h, w = mask.shape
-    p = np.zeros((h, w), bool)
-    cy, cx = (size // 2 if top else h - size // 2 - 1), w - size // 2 - 1
-    p[cy - bar // 2:cy + bar // 2 + 1, cx - size // 2:cx + size // 2 + 1] = True
-    p[cy - size // 2:cy + size // 2 + 1, cx - bar // 2:cx + bar // 2 + 1] = True
-    return (mask & ~program_mark.dilate(p, aoe2.GROUP_SEAM)) | p
+    return dither.with_plus(mask, size=size, bar=bar, top=top, seam=aoe2.GROUP_SEAM)
 
 
 def _save(mask, path: Path) -> None:
