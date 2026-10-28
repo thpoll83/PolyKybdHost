@@ -84,7 +84,8 @@ def _mark(mask, kind):
     selection), "sight" a ring with four ticks (Alt: jump to the group)."""
     import numpy as np
     H, W = mask.shape
-    cy, cx, h = H - MARK // 2 - 1, W - MARK // 2 - 1, MARK // 2
+    h = MARK // 2
+    cy, cx = H - h - 3, W - h - 3                  # the ring (radius h + 1) inside the cell
     m = np.zeros((H, W), bool)
     plus = np.zeros((H, W), bool)
     plus[cy - 1:cy + 2, cx - h + 2:cx + h - 1] = True
