@@ -207,6 +207,18 @@ class WestwoodDecoderTest(unittest.TestCase):
         for a, b in zip(frames, out):
             np.testing.assert_array_equal(a, b)
 
+    def test_a_damaged_size_is_refused_not_padded(self):
+        """A header claiming 65535 x 65535 with one byte of data must raise at
+        once, not allocate the 4 GiB it claims."""
+        start = 14 + 8 * 3
+        head = struct.pack("<HHHHHHH", 1, 0, 0, 0xFFFF, 0xFFFF, 0, 0)
+        head += struct.pack("<II", start | (0x80 << 24), 0)
+        head += struct.pack("<II", start + 2, 0) + struct.pack("<II", 0, 0)
+        with self.assertRaises(ValueError):
+            westwood.shp_frames(head + bytes([0x81, 7]))
+        with self.assertRaises(ValueError):
+            westwood._rle_zeros(bytes([5, 0, 3]), 0xFFFF * 0xFFFF)
+
     def test_d2_lcw_frames_with_a_colour_table_and_two_byte_offsets(self):
         """The layout of TD's MOUSE.SHP: 2-byte offsets, LCW, a colour table."""
         table = [0, 15, 120, 121, 179, 200, 201, 202]

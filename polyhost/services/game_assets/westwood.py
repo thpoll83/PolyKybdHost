@@ -88,7 +88,11 @@ def lcw(src: bytes, out_size: int) -> bytes:
             i += 2
             for k in range(cnt):
                 dst.append(dst[pos + k])
-    return bytes(dst[:out_size]).ljust(out_size, b"\0")
+    if len(dst) < out_size:
+        # A frame decodes to exactly its declared size. A short one is a damaged
+        # file; padding it would allocate whatever size the header claims.
+        raise ValueError(f"LCW data ends after {len(dst)} of {out_size} bytes")
+    return bytes(dst[:out_size])
 
 
 def xor_delta(src: bytes, size: int) -> bytes:
@@ -161,7 +165,9 @@ def _rle_zeros(src: bytes, size: int) -> bytes:
             i += 1
         else:
             out.append(b)
-    return bytes(out[:size]).ljust(size, b"\0")
+    if len(out) < size:
+        raise ValueError(f"zero-run data ends after {len(out)} of {size} bytes")
+    return bytes(out[:size])
 
 
 def shp_d2_frames(data: bytes) -> list[np.ndarray]:
