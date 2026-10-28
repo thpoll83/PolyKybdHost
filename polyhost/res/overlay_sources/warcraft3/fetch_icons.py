@@ -48,6 +48,7 @@ ICONS = {
     "quit": "fa:door-open",
     "music": "fa:music",
     "sound": "fa:volume-high",
+    "screenshot": "fa:camera",
     # Chat
     "chat": "gi:delapouite/chat-bubble",
     "chatall": "gi:delapouite/megaphone",
@@ -85,8 +86,8 @@ def _with_ring_plus(mask, size=13, bar=3):
     import numpy as np
     H, W = mask.shape
     yy, xx = np.mgrid[0:H, 0:W]
-    cy, cx = H - size // 2 - 1, W - size // 2 - 1
     r = size // 2 + 2
+    cy, cx = H - r - 1, W - r - 1                  # the whole ring inside the cell
     disc = (yy - cy) ** 2 + (xx - cx) ** 2 <= r * r
     ring = disc & program_mark.dilate(~disc, 1)
     p = np.zeros((H, W), bool)

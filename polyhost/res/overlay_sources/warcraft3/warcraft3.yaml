@@ -94,6 +94,7 @@ bindings:
   - { key: Q, mods: [ALT], icon: quit.png, label: "Quit", shared: false }
   - { key: M, mods: [CTRL], icon: music.png, label: "Music on / off" }
   - { key: S, mods: [CTRL], icon: sound.png, label: "Sound effects on / off" }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
 
   # Chat
   - { key: ENTER, icon: chat.png, label: "Chat" }

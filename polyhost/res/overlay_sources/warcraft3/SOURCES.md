@@ -28,7 +28,6 @@ group number to a unit type; the icons only suggest a habit.
   depends on the selection.
 - F4 to F7. The page lists F1 to F7 as hero keys, but a melee game allows three
   heroes; only campaigns and custom maps reach a fourth.
-- Print Screen (screenshot): the key has no overlay cell.
 - Arrow keys (scroll the view): the arrows keep their own legends.
 
 ## Placement
@@ -78,6 +77,7 @@ e7db6ca), drawn over the whole cell without the ESC legend
 | `quit.png` | Font Awesome Free 6.5.2 `door-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `music.png` | Font Awesome Free 6.5.2 `music` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `sound.png` | Font Awesome Free 6.5.2 `volume-high` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `screenshot.png` | Font Awesome Free 6.5.2 `camera` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `chat.png` | game-icons.net `delapouite/chat-bubble` | delapouite | CC BY 3.0 |
 | `chatall.png` | game-icons.net `delapouite/megaphone` | delapouite | CC BY 3.0 |
 | `chatallies.png` | game-icons.net `lorc/conversation` | lorc | CC BY 3.0 |
