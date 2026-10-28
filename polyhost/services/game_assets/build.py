@@ -86,7 +86,12 @@ def render(reader, source, spec: dict, variant: str) -> dict:
             continue
         region = tuple(recipe["region"]) if "region" in recipe else None
         size = region or regions.get(stem, (40, 40))
-        mask = reader.draw(source, recipe, tuple(recipe.get("fit", size)))
+        try:
+            mask = reader.draw(source, recipe, tuple(recipe.get("fit", size)))
+        except (KeyError, IndexError, ValueError) as e:
+            # A sprite or frame this install lacks costs its own key, not the rest.
+            log.warning("Game art: skipped %s (%s: %s).", stem, type(e).__name__, e)
+            continue
         if mask is not None:
             icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region)
     for stem, base in plus.items():

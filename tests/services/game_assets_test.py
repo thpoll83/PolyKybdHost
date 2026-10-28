@@ -421,6 +421,24 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["copy.mods.png"])
 
 
+class BadRecipeTest(unittest.TestCase):
+
+    def test_one_bad_recipe_costs_only_its_own_key(self):
+        """A sprite this install lacks skips that icon and keeps the others."""
+        with tempfile.TemporaryDirectory() as d:
+            make_game_files(Path(d))
+            source = westwood_td.open_source(westwood_td.find(d))
+            spec = {"game_assets": {"reader": "westwood_td", "icons": {
+                        "group2": {"unit": "nosuchunit"}, "group3": {"unit": "apc", "face": 999},
+                        "group4": {"unit": "mtnk", "face": 28}}},
+                    "bindings": [{"key": k, "icon": f"group{k}.png", "region": [48, 40]}
+                                 for k in "234"]}
+            with self.assertLogs("PolyHost", "WARNING") as logs:
+                icons = build.render(westwood_td, source, spec, "gdi")
+        self.assertEqual(set(icons), {"group4"})
+        self.assertEqual(len(logs.output), 2)
+
+
 class SpecTest(unittest.TestCase):
     """The C&C spec's game_assets block against its own bindings."""
 
@@ -455,7 +473,7 @@ class ReaderSettingsTest(unittest.TestCase):
             self.assertIn(s.key, game_assets.SETTING_KEYS)
         for r in readers.READERS.values():
             keys = {s.key for s in r.settings}
-            self.assertTrue({r.folder, r.variant} - {None} <= keys)
+            self.assertLessEqual({r.folder, r.variant} - {None}, keys)
 
 
 class RequestTest(unittest.TestCase):
@@ -518,6 +536,20 @@ class RequestTest(unittest.TestCase):
             self._request(hint=lambda: seen.append(1) or None)
         self.assertEqual(seen, [1])
         self.assertIsNone(game_assets.override_for(TEMPLATE))
+
+    def test_an_attempt_without_game_files_is_retried_with_the_next_hint(self):
+        """A forwarded window brings no folder; the next local send does."""
+        self.settings["game_cnc_data_dir"] = ""
+        with tempfile.TemporaryDirectory() as d:
+            inst = Path(d)
+            td = inst / "Data" / "CNCDATA" / "TIBERIAN_DAWN"
+            td.mkdir(parents=True)
+            make_game_files(td)
+            with mock.patch.object(westwood_td, "install_candidates", return_value=[]):
+                self.assertIsNotNone(self._request(hint=None))
+                self.assertIsNone(game_assets.override_for(TEMPLATE))
+                self.assertIsNotNone(self._request(hint=inst), "a failed attempt must be retried")
+            self.assertIsNotNone(game_assets.override_for(TEMPLATE))
 
     def test_a_switch_rebuilds_and_turning_it_off_drops_the_copy(self):
         self._request()

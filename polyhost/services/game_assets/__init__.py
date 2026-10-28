@@ -68,7 +68,7 @@ def cache_dir() -> Path:
 
 def request(template: str, settings_get, hint=None) -> threading.Thread | None:
     """Build the copy of `template` on a background thread unless it is built
-    or building. `hint` is the folder of the game's executable, or a callable
+    or building. An attempt that found no game files is retried on the next send. `hint` is the folder of the game's executable, or a callable
     returning it, read on the build thread. Returns the thread, or None."""
     global _generation
     spec = _specs.get(str(template))
@@ -99,6 +99,9 @@ def request(template: str, settings_get, hint=None) -> threading.Thread | None:
                 _overrides[template] = str(path)
             else:
                 _overrides.pop(template, None)
+                # Try again on the next send: it may bring the game's folder
+                # (a forwarded window has none), or the game was installed since.
+                del _started[template]
             if _overrides.get(template) != old:
                 _changed.set()
 
