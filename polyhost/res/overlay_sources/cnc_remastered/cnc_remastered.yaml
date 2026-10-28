@@ -84,3 +84,51 @@ bindings:
   # Display
   - { key: SPACE, icon: graphics.png, label: "Classic / remastered graphics" }
   - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window", region: [30, 40] }
+
+# Art read at runtime from the user's own classic Tiberian Dawn files, when they
+# are on the machine (polyhost/services/game_assets, reader westwood_td). It
+# replaces the shipped icon of the same name; nothing read from the game is
+# committed. An entry keyed gdi/nod follows the "Command and Conquer Faction"
+# setting. Chosen by the maintainer on 2026-10-27 from contact sheets of every
+# facing.
+game_assets:
+  reader: westwood_td
+  icons:
+    group1: {crowd: e1, frame: 5}
+    group2: {gdi: {unit: jeep, face: 12, turret: 44}, nod: {unit: bggy, face: 28, turret: 60}}
+    group3: {gdi: {unit: apc, face: 28}, nod: {unit: bike, face: 20}}
+    group4: {gdi: {unit: mtnk, face: 28, turret: 60}, nod: {unit: ltnk, face: 28, turret: 60}}
+    group5: {gdi: {unit: htnk, face: 28, turret: 60}, nod: {unit: ftnk, face: 12}}
+    group6: {gdi: {unit: msam, face: 4, turret: 68}, nod: {unit: stnk, face: 4}}
+    group7: {gdi: {unit: orca, face: 28}, nod: {unit: arty, face: 28}}
+    group8: {gdi: {unit: a10, face: 28}, nod: {unit: mlrs, face: 4, turret: 36}}
+    # Chinook: both rotors spinning (frames 1 and 3) at 80 %, pulled to 85 % of
+    # the game's distance (OpenRA's TRAN offsets), 52 px wide with 1 px free all
+    # round. Apache: its single rotor at frame 4 above the sprite centre.
+    group9:
+      gdi: {helicopter: tran, face: 28, rotors: [[597, 85, lrotor, 1], [-597, 171, rrotor, 3]],
+            rotor_scale: 0.8, rotor_pull: 0.85, fit: [50, 38], inset: 1, region: [52, 40]}
+      nod: {helicopter: heli, face: 12, rotors: [[0, 85, lrotor, 4]], along_hull: false}
+    group0: {unit: harv, face: 12}
+    groupnew1: {plus: group1}
+    groupnew2: {plus: group2}
+    groupnew3: {plus: group3}
+    groupnew4: {plus: group4}
+    groupnew5: {plus: group5}
+    groupnew6: {plus: group6}
+    groupnew7: {plus: group7}
+    groupnew8: {plus: group8}
+    groupnew9: {plus: group9}
+    groupnew0: {plus: group0}
+    tabstructures: {unit: fact}
+    tabinfantry: {gdi: {unit: pyle}, nod: {unit: hand}}
+    tabvehicles: {gdi: {unit: weap+weap2}, nod: {unit: afld}}
+    tabsuper: {gdi: {cursor: 110}, nod: {cursor: 102}}     # ion cannon, nuke
+    conyard: {unit: fact}
+    lastevent: {unit: hq}
+    stop: {cursor: 9}
+    scatter: {cursor: 10}
+    selectscreen: {cursor: 12}
+    # The guard cursor's dark ring pixels make it a solid disc at this size.
+    guard: {cursor: 88, threshold: 0.3}
+    queuedmove: {cursor: 119}

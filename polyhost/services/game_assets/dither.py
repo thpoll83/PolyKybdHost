@@ -1,7 +1,7 @@
 """Turn a grey image into a 1-bit keycap icon: fit, dither the inside, light the outline.
 
 Used by the shipped C&C unit renders (`res/overlay_sources/cnc_remastered/wz_units.py`)
-and by the runtime reader of the game's own sprites (`cnc_classic.py`), so both
+and by the runtime reader of the game's own sprites (`westwood_td.py`), so both
 look alike.
 """
 from __future__ import annotations

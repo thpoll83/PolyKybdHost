@@ -302,10 +302,6 @@ class PolyCore(Observable):
             self.log, settings_get=self.poly_settings.get,
             on_change=self._on_browser_url_changed)
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
-        # Templates redrawn from game files installed on this machine, built on
-        # a background thread; the shipped file is sent until a copy is ready.
-        from polyhost.services import game_assets
-        game_assets.start(self.poly_settings.get)
         self._create_overlay_handler()
         self.browser_url_source.start()
 
@@ -533,6 +529,9 @@ class PolyCore(Observable):
         except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
             self.mapping = {}
+        # Entries with `game_assets:` are redrawn from installed games on first send.
+        from polyhost.services import game_assets
+        game_assets.register_mapping(self.mapping)
 
     def save_overlay_mapping(self, path):
         import yaml
@@ -646,6 +645,16 @@ class PolyCore(Observable):
                     "match %.1f s, overlay decision %.1f s).",
                     took, query, took - query)
 
+    def _request_game_assets(self, data, handler):
+        """Start drawing any of these templates from an installed game. The
+        folder of the focused window's executable is the first place to look;
+        it is read on the build thread, and only when a build starts."""
+        from polyhost.handler.win_process import process_dir
+        from polyhost.services import game_assets
+        pid = handler.focused_pid()
+        for name in data if isinstance(data, (list, tuple)) else [data]:
+            game_assets.request(str(name), self.poly_settings.get, hint=lambda: process_dir(pid))
+
     def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
         """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
@@ -706,6 +715,7 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
+                self._request_game_assets(data, handler)
                 # A template send re-programs the whole pool, so whatever
                 # generic overlays were on the device are gone with it. Cleared
                 # BEFORE the send so the gap fill below cannot dedupe against
@@ -2830,8 +2840,9 @@ class PolyCore(Observable):
             self._refresh_link_choice()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
-            # The rebuilt copy is sent on the next switch to the game.
-            game_assets.start(self.poly_settings.get)
+            # The next send of an opted-in overlay builds again; reset() makes
+            # the window tick re-send, so that happens now if the game is in front.
+            game_assets.reset(self.poly_settings.get)
 
     def _hid_link_forced(self) -> bool:
         """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""

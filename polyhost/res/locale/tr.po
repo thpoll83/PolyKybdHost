@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-27 21:55+0000\n"
+"POT-Creation-Date: 2026-10-28 11:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -2791,38 +2791,30 @@ msgstr "<b>Günlük dosyasını ekleyin</b> (soldaki düğme onu gösterir) ve G
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "Gönder'e basın. (Günlük dosyası oluşturulmadı — yukarıya bakın.)"
 
-#: polyhost/gui/settings_dialog.py:28
+#: polyhost/gui/settings_dialog.py:29
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "Otomatik ({language})"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Automatic"
 msgstr "Otomatik"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Light"
 msgstr "Açık"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Dark"
 msgstr "Koyu"
 
-#: polyhost/gui/settings_dialog.py:40
+#: polyhost/gui/settings_dialog.py:41
 msgid "Errors"
 msgstr "Hatalar"
 
-#: polyhost/gui/settings_dialog.py:41
+#: polyhost/gui/settings_dialog.py:42
 msgid "Errors and warnings"
 msgstr "Hatalar ve uyarılar"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "GDI"
-msgstr "GDI"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "Nod"
-msgstr "Nod"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "General"
@@ -3048,189 +3040,173 @@ msgstr "Tarama düzeyi"
 msgid "Art From Installed Games"
 msgstr "Yüklü oyunlardan görseller"
 
-#: polyhost/gui/settings_dialog.py:103
-msgid "Command and Conquer Folder"
-msgstr "Command and Conquer klasörü"
-
-#: polyhost/gui/settings_dialog.py:104
-msgid "Command and Conquer Faction"
-msgstr "Command and Conquer tarafı"
-
-#: polyhost/gui/settings_dialog.py:113
+#: polyhost/gui/settings_dialog.py:111
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "Klavyeye bu bilgisayarın Unicode girişini nasıl aldığını (örneğin WinCompose) bağlantıda ve her değiştiğinde bildirir. Kapalıyken: klavye kayıtlı modunu korur."
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:115
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Tuş kapağı parlaklığını her on dakikada bir konumunuzdaki gün ışığına göre ayarlar."
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:118
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Konumunuzdaki bu saatin güneş ışığını, bulutlar dahil, open-meteo.com'dan ister. Kapalıyken: ana uygulama konum ve saatten bulutsuz gökyüzü değerini hesaplar."
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:122
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Yaklaşık konumunuzu IP adresinizden (ip-api.com) her çalıştırmada bir kez bulur. Kapalıyken: parlaklık günün saatini izler."
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:124
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "En düşük parlaklık düzeyini veren güneş ışığı değeri."
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:126
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "En yüksek düzeyi veren güneş ışığı değeri. Bulutlu bir günde tam parlaklığa ulaşmak için düşürün."
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:128
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr "Min. ve Maks. uygulanmadan önce güneş ışığı değerini çarpar."
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:130
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Gün ışığı eğrisini biçimlendirir. 1'in üzerinde günün ortası daha loş, 1'in altında daha parlak olur. En düşük ve en yüksek düzeyler değişmez."
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:133
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "Kendi kaplaması olmayan uygulamalar için simgeler: Escape üzerinde uygulamanın işareti ve kısayollarının her biri için bir simge. Kapalıyken: hiçbir uygulama için genel bir şey çizilmez."
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:136
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "Kendi kaplaması olan bir uygulama da, kaplama Escape'i boş bıraktığında, Escape üzerinde işaretini alır."
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:139
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "Kendi kaplaması olan bir uygulamanın kısayolları da okunur ve kaplamanın boş bıraktığı tuşlara simgeler konur. Büyük bir uygulamayı, örneğin uzun bir sayfa açık bir tarayıcıyı okumak dakikalar sürebilir."
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:143
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr "Odaktaki uygulamanın kısayollarını okuyarak her biri için bir simge çizer. Kapalıyken: hiçbir uygulama okunmaz ve kısayol simgesi çizilmez. Escape üzerindeki işaret dahil tüm genel simgeleri kaldırmak için \"Kaplamalar etkin\" ayarını kapatın."
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:147
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "Eksik simgeleri indirir. Kapalıyken: önceden indirilmiş simgeler çalışmaya devam eder, yenileri atlanır."
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:150
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Yalnızca Linux. Qt ve KDE uygulamalarının kısayollarını yayınlaması için masaüstünün erişilebilirlik anahtarını açar. Kapalıyken: yalnızca bunları zaten yayınlayan uygulamalar (GTK) okunur."
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:154
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB aktarımı: klavyenin yazmaya tepki vermeye devam etmesi için kısa bir duraklamadan önce kaç görüntü mesajı gönderildiği. Yalnızca bir sorun bildirirken sizden istenirse değiştirin."
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:158
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB aktarımı: bu duraklamanın saniye cinsinden uzunluğu. Yalnızca bir sorun bildirirken sizden istenirse değiştirin."
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:161
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "Ana uygulamanın USB bağlantısını yeniden açmadan önce klavyeden kaç kez ID istediği."
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:164
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Sistem tepsisi menüsünün ve iletişim kutularının görünümü. Otomatik, masaüstünün açık veya koyu ayarını izler."
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:167
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Menülerin ve iletişim kutularının dili. Sistem tepsisi uygulaması yeniden başladığında uygulanır."
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:169
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "Sistem tepsisi menüsünde Geliştirici alt menüsünü ve bu iletişim kutusunda geliştirici ayarlarını gösterir."
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:171
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Gerçek klavyenin yanına bir sanal klavye ekler."
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:173
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Gerçek klavye yerine sanal bir klavye kullanır, böylece uygulama donanım olmadan çalışır."
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:176
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Sanal klavyenin bildirdiği protokol sürümü. 0, bu ana uygulamanın bildiği en yeni sürümü kullanır."
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:179
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Hiçbir klavye bağlı değilken bile etkin pencereyi izler."
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:181
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Yalnızca Windows, deneysel. Giriş dilini standart yöntem yerine Win32 çağrılarıyla değiştirir ve başarısız olursa standart yönteme geri döner."
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:184
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Klavyede hızlı bağlantı yokmuş gibi yalnızca USB HID kanalını kullanır: bellenim güncellemeleri HID üzerinden gider. HID yolunu elle test etmek için."
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:187
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Eski yönlendiricilerden gelen pencere bildirimlerini tüm ağ arayüzlerinde şifrelenmemiş, kimlik doğrulamasız TCP (bağlantı noktası 50162) üzerinden kabul eder. Yalnızca eski bir yönlendirici için açın."
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:191
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Klavye bağlantısını, sistem tepsisi uygulamasının bağlandığı bir arka plan işleminde çalıştırır; böylece sistem tepsisi uygulaması yeniden başladığında bağlantı açık kalır."
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:194
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "Başka bir bilgisayardaki yönlendiriciden gelen pencere bildirimlerini kabul eder. Bir ağ bağlantı noktası açar. Yeniden başlatmadan sonra uygulanır."
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:197
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "Klavye bağlandığında eksik veya eski yazı tipi paketi demetlerini yazar."
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:199
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "Uygulamayla gelen yazı tipi paketi yerine yazılacak bir .plyf dosyası. Boş bırakılırsa uygulamayla gelen paket kullanılır."
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:202
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "Kaplamaları odaktaki tarayıcı sekmesindeki web sitesiyle eşleştirir. Kapalıyken: tarayıcı kaplamaları yalnızca pencere başlığıyla eşleşir."
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:205
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "Tarayıcı uzantısının bildirim gönderdiği alıcıyı çalıştırır. Yalnızca 127.0.0.1 üzerinde dinler."
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:208
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Alıcının bağlantı noktası. Tarayıcı uzantısındaki Host port ile aynı olmalıdır."
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:210
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Paylaşılan bir gizli anahtar. Ayarlandığında tarayıcı uzantısı aynı belirteci göndermelidir."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:212
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Günde bir anonim kullanım raporu gönderir: sürümler, işletim sistemi ve birkaç sayaç. Asla pencere başlıkları veya uygulama adları göndermez."
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:214
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "Kullanım raporunun gönderildiği yer. Boş bırakılırsa hiçbir şey gönderilmez."
 
-#: polyhost/gui/settings_dialog.py:218
+#: polyhost/gui/settings_dialog.py:216
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "Bu kurulumun ilk raporla oluşturulan rastgele ID'si. Yeni bir kurulum olarak sayılmak için silin."
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:219
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "Klavyenin konsolunu bilinen hata mesajları için izler ve bir sorun bildirmeyi önerir."
 
-#: polyhost/gui/settings_dialog.py:223
+#: polyhost/gui/settings_dialog.py:221
 msgid "Watches this app's own log for known failure messages."
 msgstr "Bu uygulamanın kendi günlüğünü bilinen hata mesajları için izler."
 
-#: polyhost/gui/settings_dialog.py:224
+#: polyhost/gui/settings_dialog.py:222
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Neyin sorun sayılacağı: yalnızca hatalar veya hatalar ve uyarılar."
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:224
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Oyun bu bilgisayarda yüklüyse bazı oyun katmanlarını oyunun kendi dosyalarından çizer. Görüntüler bu bilgisayarda kalır. Kapalı: birlikte gelen katmanlar kullanılır."
-
-#: polyhost/gui/settings_dialog.py:230
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
-msgstr "Klasik Command & Conquer dosyaları CONQUER.MIX ve TEMPERAT.MIX bulunan klasör. Boş: Remastered Collection'ın Steam ve EA app kurulumları aranır."
-
-#: polyhost/gui/settings_dialog.py:233
-msgid "Whose units and buildings the C&C Remastered overlay shows."
-msgstr "C&C Remastered katmanının hangi tarafın birimlerini ve binalarını gösterdiği."
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "PolyKybd Settings"
@@ -4117,6 +4093,30 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose yükleyicisi başladı. Yükleme bittiğinde ve WinCompose çalıştığında PolyKybd otomatik olarak ona geçecek."
+
+#: polyhost/services/game_assets/readers.py:33
+msgid "Command and Conquer Folder"
+msgstr "Command and Conquer klasörü"
+
+#: polyhost/services/game_assets/readers.py:34
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgstr "Klasik Command & Conquer dosyaları CONQUER.MIX ve TEMPERAT.MIX bulunan klasör. Boş: Remastered Collection'ın Steam ve EA app kurulumları aranır."
+
+#: polyhost/services/game_assets/readers.py:37
+msgid "Command and Conquer Faction"
+msgstr "Command and Conquer tarafı"
+
+#: polyhost/services/game_assets/readers.py:38
+msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgstr "C&C Remastered katmanının hangi tarafın birimlerini ve binalarını gösterdiği."
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "GDI"
+msgstr "GDI"
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "Nod"
+msgstr "Nod"
 
 #: polyhost/services/lang_regions.py:148
 msgid "Other"

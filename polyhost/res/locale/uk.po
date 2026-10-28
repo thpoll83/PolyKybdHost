@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-27 21:55+0000\n"
+"POT-Creation-Date: 2026-10-28 11:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -2825,38 +2825,30 @@ msgstr "<b>Долучіть файл журналу</b> (кнопка лівор
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "Натисніть Submit. (Файл журналу не створено — див. вище.)"
 
-#: polyhost/gui/settings_dialog.py:28
+#: polyhost/gui/settings_dialog.py:29
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "Автоматично ({language})"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Automatic"
 msgstr "Автоматично"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Light"
 msgstr "Світла"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Dark"
 msgstr "Темна"
 
-#: polyhost/gui/settings_dialog.py:40
+#: polyhost/gui/settings_dialog.py:41
 msgid "Errors"
 msgstr "Помилки"
 
-#: polyhost/gui/settings_dialog.py:41
+#: polyhost/gui/settings_dialog.py:42
 msgid "Errors and warnings"
 msgstr "Помилки та попередження"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "GDI"
-msgstr "GDI"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "Nod"
-msgstr "Nod"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "General"
@@ -3082,189 +3074,173 @@ msgstr "Рівень сканування"
 msgid "Art From Installed Games"
 msgstr "Графіка зі встановлених ігор"
 
-#: polyhost/gui/settings_dialog.py:103
-msgid "Command and Conquer Folder"
-msgstr "Тека Command and Conquer"
-
-#: polyhost/gui/settings_dialog.py:104
-msgid "Command and Conquer Faction"
-msgstr "Фракція Command and Conquer"
-
-#: polyhost/gui/settings_dialog.py:113
+#: polyhost/gui/settings_dialog.py:111
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "Повідомляє клавіатурі, як цей комп’ютер приймає введення Юнікоду (наприклад, через WinCompose), під час під’єднання та щоразу, коли це змінюється. Вимкнено: клавіатура зберігає режим, записаний у ній."
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:115
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Встановлює яскравість ковпачків за денним світлом у вашому розташуванні, кожні десять хвилин."
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:118
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Запитує в open-meteo.com сонячне світло у вашому розташуванні на поточну годину з урахуванням хмарності. Вимкнено: хост обчислює значення для безхмарного неба за розташуванням і часом."
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:122
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Визначає ваше приблизне розташування за IP-адресою (ip-api.com), один раз за запуск. Вимкнено: яскравість залежить від години доби."
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:124
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "Значення сонячного світла, за якого яскравість найнижча."
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:126
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "Значення сонячного світла, за якого яскравість найвища. Зменште його, щоб досягати повної яскравості в похмурий день."
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:128
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr "Множить значення сонячного світла перед застосуванням «Мін.» і «Макс.»."
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:130
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Задає форму кривої денного світла. Більше 1 — середина дня темніша, менше 1 — яскравіша. Найнижчий і найвищий рівні не змінюються."
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:133
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "Значки для програм без власної накладки: логотип програми на Escape і значок для кожного її скорочення. Вимкнено: універсальні значки не малюються для жодної програми."
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:136
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "Програма з власною накладкою теж отримує свій логотип на Escape, якщо накладка залишає Escape порожньою."
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:139
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "У програми з власною накладкою теж зчитуються скорочення, і значки з’являються на клавішах, які накладка залишає порожніми. Зчитування великої програми, наприклад браузера з довгою сторінкою, може тривати кілька хвилин."
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:143
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr "Зчитує скорочення активної програми, щоб намалювати значок для кожного. Вимкнено: програми не зчитуються, значки скорочень не малюються. Щоб прибрати всі універсальні значки, разом із логотипом на Escape, вимкніть «Накладки ввімкнено»."
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:147
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "Завантажує відсутні значки. Вимкнено: уже завантажені значки працюють і далі, нові пропускаються."
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:150
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Лише Linux. Вмикає перемикач спеціальних можливостей робочого столу, щоб програми Qt і KDE публікували свої скорочення. Вимкнено: зчитуються лише програми, які публікують їх і так (GTK)."
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:154
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Передавання через USB: скільки повідомлень із зображеннями надсилається перед короткою паузою, щоб клавіатура й далі реагувала на введення. Змінюйте це значення, лише якщо вас про це попросять під час повідомлення про проблему."
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:158
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Передавання через USB: тривалість цієї паузи в секундах. Змінюйте це значення, лише якщо вас про це попросять під час повідомлення про проблему."
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:161
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "Скільки разів хост запитує в клавіатури її ID, перш ніж знову відкрити USB-з’єднання."
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:164
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Вигляд меню в області сповіщень і діалогових вікон. «Автоматично» відповідає світлому або темному налаштуванню робочого столу."
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:167
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Мова меню та діалогових вікон. Застосовується після перезапуску програми в області сповіщень."
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:169
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "Показує підменю «Розробник» у меню області сповіщень і параметри розробника в цьому вікні."
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:171
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Додає імітовану клавіатуру поруч зі справжньою."
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:173
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Використовує імітовану клавіатуру замість справжньої, щоб програма працювала без обладнання."
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:176
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Версія протоколу, яку повідомляє імітована клавіатура. 0 — найновіша версія, відома цьому хосту."
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:179
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Відстежує активне вікно, навіть коли клавіатуру не під’єднано."
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:181
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Лише Windows, експериментально. Перемикає мову введення викликами Win32 замість стандартного способу, а в разі помилки повертається до нього."
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:184
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Використовує лише канал USB HID, ніби клавіатура не має швидкого каналу: оновлення прошивки йдуть через HID. Для ручної перевірки шляху HID."
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:187
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Приймає відомості про вікна від старих ретрансляторів через незашифрований TCP без автентифікації (порт 50162) на всіх мережевих інтерфейсах. Вмикайте лише для старого ретранслятора."
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:191
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Виконує з’єднання з клавіатурою у фоновому процесі, до якого під’єднується програма в області сповіщень, щоб з’єднання зберігалося під час перезапуску цієї програми."
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:194
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "Приймає відомості про вікна від ретранслятора на іншому комп’ютері. Відкриває мережевий порт. Застосовується після перезапуску."
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:197
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "Прошиває відсутні або застарілі набори пакета шрифтів під час під’єднання клавіатури."
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:199
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "Файл .plyf для прошивання замість пакета шрифтів, що постачається з програмою. Порожнє значення — використовується пакет, що постачається."
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:202
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "Зіставляє накладки з вебсайтом в активній вкладці браузера. Вимкнено: накладки браузера зіставляються лише за заголовком вікна."
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:205
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "Запускає приймач, якому надсилає відомості розширення браузера. Він слухає лише 127.0.0.1."
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:208
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Порт приймача. Він має збігатися з полем «Host port» у розширенні браузера."
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:210
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Спільний секрет. Якщо його задано, розширення браузера має надсилати той самий токен."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:212
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Надсилає один анонімний звіт про використання на день: версії, операційна система та кілька лічильників. Ніколи — заголовки вікон чи назви програм."
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:214
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "Куди надсилається звіт про використання. Порожнє значення — нічого не надсилається."
 
-#: polyhost/gui/settings_dialog.py:218
+#: polyhost/gui/settings_dialog.py:216
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "Випадковий ID цієї інсталяції, створений разом із першим звітом. Видаліть його, щоб вважатися новою інсталяцією."
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:219
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "Стежить за консоллю клавіатури щодо відомих повідомлень про збої та пропонує повідомити про проблему."
 
-#: polyhost/gui/settings_dialog.py:223
+#: polyhost/gui/settings_dialog.py:221
 msgid "Watches this app's own log for known failure messages."
 msgstr "Стежить за власним журналом цієї програми щодо відомих повідомлень про збої."
 
-#: polyhost/gui/settings_dialog.py:224
+#: polyhost/gui/settings_dialog.py:222
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Що вважається проблемою: лише помилки чи помилки та попередження."
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:224
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Малює деякі ігрові оверлеї з файлів самої гри, якщо гру встановлено на цьому комп'ютері. Зображення залишаються на цьому комп'ютері. Вимк.: використовуються оверлеї з комплекту."
-
-#: polyhost/gui/settings_dialog.py:230
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
-msgstr "Тека з класичними файлами Command & Conquer CONQUER.MIX і TEMPERAT.MIX. Порожньо: пошук у встановленнях Remastered Collection зі Steam і EA app."
-
-#: polyhost/gui/settings_dialog.py:233
-msgid "Whose units and buildings the C&C Remastered overlay shows."
-msgstr "Чиї юніти й будівлі показує оверлей C&C Remastered."
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "PolyKybd Settings"
@@ -4159,6 +4135,30 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
+
+#: polyhost/services/game_assets/readers.py:33
+msgid "Command and Conquer Folder"
+msgstr "Тека Command and Conquer"
+
+#: polyhost/services/game_assets/readers.py:34
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgstr "Тека з класичними файлами Command & Conquer CONQUER.MIX і TEMPERAT.MIX. Порожньо: пошук у встановленнях Remastered Collection зі Steam і EA app."
+
+#: polyhost/services/game_assets/readers.py:37
+msgid "Command and Conquer Faction"
+msgstr "Фракція Command and Conquer"
+
+#: polyhost/services/game_assets/readers.py:38
+msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgstr "Чиї юніти й будівлі показує оверлей C&C Remastered."
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "GDI"
+msgstr "GDI"
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "Nod"
+msgstr "Nod"
 
 #: polyhost/services/lang_regions.py:148
 msgid "Other"

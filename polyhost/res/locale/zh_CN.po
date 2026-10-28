@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-27 21:55+0000\n"
+"POT-Creation-Date: 2026-10-28 11:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -2791,38 +2791,30 @@ msgstr "<b>附加日志文件</b>（左侧按钮可显示该文件），然后�
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "点击“Submit”。（未生成日志文件 — 见上文。）"
 
-#: polyhost/gui/settings_dialog.py:28
+#: polyhost/gui/settings_dialog.py:29
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "自动（{language}）"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Automatic"
 msgstr "自动"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Light"
 msgstr "浅色"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:39
 msgid "Dark"
 msgstr "深色"
 
-#: polyhost/gui/settings_dialog.py:40
+#: polyhost/gui/settings_dialog.py:41
 msgid "Errors"
 msgstr "错误"
 
-#: polyhost/gui/settings_dialog.py:41
+#: polyhost/gui/settings_dialog.py:42
 msgid "Errors and warnings"
 msgstr "错误和警告"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "GDI"
-msgstr "GDI"
-
-#: polyhost/gui/settings_dialog.py:42
-msgid "Nod"
-msgstr "Nod"
 
 #: polyhost/gui/settings_dialog.py:50
 msgid "General"
@@ -3048,189 +3040,173 @@ msgstr "扫描级别"
 msgid "Art From Installed Games"
 msgstr "来自已安装游戏的图像"
 
-#: polyhost/gui/settings_dialog.py:103
-msgid "Command and Conquer Folder"
-msgstr "Command and Conquer 文件夹"
-
-#: polyhost/gui/settings_dialog.py:104
-msgid "Command and Conquer Faction"
-msgstr "Command and Conquer 阵营"
-
-#: polyhost/gui/settings_dialog.py:113
+#: polyhost/gui/settings_dialog.py:111
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "在连接时以及每次变化时，告诉键盘这台计算机如何接收 Unicode 输入（例如 WinCompose）。关闭时：键盘保持其已存储的模式。"
 
-#: polyhost/gui/settings_dialog.py:117
+#: polyhost/gui/settings_dialog.py:115
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "根据你所在位置的日光，每十分钟设置一次键帽亮度。"
 
-#: polyhost/gui/settings_dialog.py:120
+#: polyhost/gui/settings_dialog.py:118
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "向 open-meteo.com 查询你所在位置当前小时的辐照度（包括云量）。关闭时：主机根据位置和时间计算晴空下的值。"
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:122
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "根据你的 IP 地址查询大致位置（ip-api.com），每次运行查询一次。关闭时：亮度随一天中的时间变化。"
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:124
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "对应最暗亮度级别的辐照度值。"
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:126
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "对应最亮级别的辐照度值。调低此值可在阴天达到最高亮度。"
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:128
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr "在应用“最小值”和“最大值”之前，与辐照度值相乘的系数。"
 
-#: polyhost/gui/settings_dialog.py:132
+#: polyhost/gui/settings_dialog.py:130
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "调整日光曲线的形状。大于 1 时一天中间时段变暗，小于 1 时变亮。最暗和最亮级别不变。"
 
-#: polyhost/gui/settings_dialog.py:135
+#: polyhost/gui/settings_dialog.py:133
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "为没有专属叠加图标的应用提供图标：在 Esc 键上显示应用标志，并为它的每个快捷键显示一个图标。关闭时：不会为任何应用绘制通用图标。"
 
-#: polyhost/gui/settings_dialog.py:138
+#: polyhost/gui/settings_dialog.py:136
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "有专属叠加图标的应用，如果叠加图标未占用 Esc 键，也会在 Esc 键上显示其应用标志。"
 
-#: polyhost/gui/settings_dialog.py:141
+#: polyhost/gui/settings_dialog.py:139
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "有专属叠加图标的应用也会被读取快捷键，并在叠加图标未占用的键上显示图标。读取大型应用（例如打开了长页面的浏览器）可能需要几分钟。"
 
-#: polyhost/gui/settings_dialog.py:145
+#: polyhost/gui/settings_dialog.py:143
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr "读取当前焦点应用的快捷键，为每个快捷键绘制图标。关闭时：不读取任何应用，也不绘制快捷键图标。要移除所有通用图标（包括 Esc 键上的应用标志），请关闭“启用叠加图标”。"
 
-#: polyhost/gui/settings_dialog.py:149
+#: polyhost/gui/settings_dialog.py:147
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "下载缺少的图标。关闭时：已下载的图标继续可用，新图标将被跳过。"
 
-#: polyhost/gui/settings_dialog.py:152
+#: polyhost/gui/settings_dialog.py:150
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "仅限 Linux。打开桌面的辅助功能开关，使 Qt 和 KDE 应用公开它们的快捷键。关闭时：只读取本来就会公开快捷键的应用（GTK）。"
 
-#: polyhost/gui/settings_dialog.py:156
+#: polyhost/gui/settings_dialog.py:154
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "USB 传输：在短暂暂停之前发送的图像消息数量，使键盘能持续响应输入。仅在报告问题时被要求修改的情况下才更改。"
 
-#: polyhost/gui/settings_dialog.py:160
+#: polyhost/gui/settings_dialog.py:158
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "USB 传输：该暂停的时长，以秒为单位。仅在报告问题时被要求修改的情况下才更改。"
 
-#: polyhost/gui/settings_dialog.py:163
+#: polyhost/gui/settings_dialog.py:161
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "主机在重新打开 USB 连接之前向键盘查询其 ID 的次数。"
 
-#: polyhost/gui/settings_dialog.py:166
+#: polyhost/gui/settings_dialog.py:164
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "托盘菜单和对话框的外观。“自动”跟随桌面的浅色或深色设置。"
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:167
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "菜单和对话框的语言。在托盘应用重新启动后生效。"
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:169
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "在托盘菜单中显示“开发者”子菜单，并在此对话框中显示开发者设置。"
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:171
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "在真实键盘之外添加一个模拟键盘。"
 
-#: polyhost/gui/settings_dialog.py:175
+#: polyhost/gui/settings_dialog.py:173
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "使用模拟键盘代替真实键盘，使应用无需硬件即可运行。"
 
-#: polyhost/gui/settings_dialog.py:178
+#: polyhost/gui/settings_dialog.py:176
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "模拟键盘报告的协议版本。0 表示使用此主机所知的最新版本。"
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:179
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "即使没有连接键盘，也跟踪活动窗口。"
 
-#: polyhost/gui/settings_dialog.py:183
+#: polyhost/gui/settings_dialog.py:181
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "仅限 Windows，实验性功能。使用 Win32 调用而不是标准方法切换输入语言，失败时回退到标准方法。"
 
-#: polyhost/gui/settings_dialog.py:186
+#: polyhost/gui/settings_dialog.py:184
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "仅使用 USB HID 通道，如同键盘没有高速链路：固件更新通过 HID 传输。用于手动测试 HID 路径。"
 
-#: polyhost/gui/settings_dialog.py:189
+#: polyhost/gui/settings_dialog.py:187
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "通过未加密、未经身份验证的 TCP（端口 50162）在所有网络接口上接收来自旧版转发器的窗口报告。仅在使用旧版转发器时才打开。"
 
-#: polyhost/gui/settings_dialog.py:193
+#: polyhost/gui/settings_dialog.py:191
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "在后台进程中运行键盘连接，托盘应用连接到该进程，这样托盘应用重新启动时连接也会保持。"
 
-#: polyhost/gui/settings_dialog.py:196
+#: polyhost/gui/settings_dialog.py:194
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "接收来自另一台计算机上转发器的窗口报告。会打开一个网络端口。重新启动后生效。"
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:197
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "键盘连接时刷写缺少或过时的字体包分包。"
 
-#: polyhost/gui/settings_dialog.py:201
+#: polyhost/gui/settings_dialog.py:199
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "用于代替应用自带字体包进行刷写的 .plyf 文件。留空则使用自带的字体包。"
 
-#: polyhost/gui/settings_dialog.py:204
+#: polyhost/gui/settings_dialog.py:202
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "根据当前焦点浏览器标签页中的网站匹配叠加图标。关闭时：浏览器叠加图标仅按窗口标题匹配。"
 
-#: polyhost/gui/settings_dialog.py:207
+#: polyhost/gui/settings_dialog.py:205
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "运行浏览器扩展向其报告的接收器。它只在 127.0.0.1 上监听。"
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:208
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "接收器的端口。必须与浏览器扩展中的 Host port 一致。"
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:210
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "共享密钥。设置后，浏览器扩展必须发送相同的令牌。"
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:212
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "每天发送一份匿名使用情况报告：版本、操作系统和少量计数器。绝不包含窗口标题或应用名称。"
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:214
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "使用情况报告的发送地址。留空则不发送任何内容。"
 
-#: polyhost/gui/settings_dialog.py:218
+#: polyhost/gui/settings_dialog.py:216
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "此安装的随机 ID，在发送第一份报告时创建。删除后将被计为新的安装。"
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:219
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "监视键盘控制台中的已知故障消息，并提供报告问题的选项。"
 
-#: polyhost/gui/settings_dialog.py:223
+#: polyhost/gui/settings_dialog.py:221
 msgid "Watches this app's own log for known failure messages."
 msgstr "监视此应用自身日志中的已知故障消息。"
 
-#: polyhost/gui/settings_dialog.py:224
+#: polyhost/gui/settings_dialog.py:222
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "哪些情况算作问题：仅错误，或错误和警告。"
 
-#: polyhost/gui/settings_dialog.py:226
+#: polyhost/gui/settings_dialog.py:224
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "当游戏安装在这台电脑上时，从游戏自身的文件绘制部分游戏叠加层。图像留在这台电脑上。关闭：使用自带的叠加层。"
-
-#: polyhost/gui/settings_dialog.py:230
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
-msgstr "包含经典 Command & Conquer 文件 CONQUER.MIX 和 TEMPERAT.MIX 的文件夹。留空：搜索 Remastered Collection 的 Steam 和 EA app 安装。"
-
-#: polyhost/gui/settings_dialog.py:233
-msgid "Whose units and buildings the C&C Remastered overlay shows."
-msgstr "C&C Remastered 叠加层显示哪一方的单位和建筑。"
 
 #: polyhost/gui/settings_dialog.py:321
 msgid "PolyKybd Settings"
@@ -4117,6 +4093,30 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安装程序已启动。安装完成并运行 WinCompose 后，PolyKybd 会自动切换到它。"
+
+#: polyhost/services/game_assets/readers.py:33
+msgid "Command and Conquer Folder"
+msgstr "Command and Conquer 文件夹"
+
+#: polyhost/services/game_assets/readers.py:34
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgstr "包含经典 Command & Conquer 文件 CONQUER.MIX 和 TEMPERAT.MIX 的文件夹。留空：搜索 Remastered Collection 的 Steam 和 EA app 安装。"
+
+#: polyhost/services/game_assets/readers.py:37
+msgid "Command and Conquer Faction"
+msgstr "Command and Conquer 阵营"
+
+#: polyhost/services/game_assets/readers.py:38
+msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgstr "C&C Remastered 叠加层显示哪一方的单位和建筑。"
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "GDI"
+msgstr "GDI"
+
+#: polyhost/services/game_assets/readers.py:39
+msgid "Nod"
+msgstr "Nod"
 
 #: polyhost/services/lang_regions.py:148
 msgid "Other"

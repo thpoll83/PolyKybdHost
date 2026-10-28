@@ -910,6 +910,15 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     lines = [f"{','.join(names)}:", f"  overlay: {_overlay_value(files)}"]
     if title:
         lines.append(f"  title: {title}")
+    if spec.get("game_assets") and spec.get("_spec_path"):
+        # The entry point that lets the host redraw keys from the installed game
+        # (polyhost/services/game_assets): the spec, relative to overlay_sources.
+        sources = REPO_ROOT / "polyhost" / "res" / "overlay_sources"
+        try:
+            rel = Path(spec["_spec_path"]).resolve().relative_to(sources).as_posix()
+            lines.append(f"  game_assets: {rel}")
+        except ValueError:
+            pass
     mac = spec.get("_result_macos")
     lnx = spec.get("_result_linux")
     mac_files = overlay_files(macos_output(spec), mac) if mac else []
@@ -952,6 +961,7 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = yaml.safe_load(args.bindings.read_text())
+    spec["_spec_path"] = str(args.bindings)
     base_dir = args.bindings.resolve().parent
     result = generate(spec, base_dir)
     spec["_result"] = result

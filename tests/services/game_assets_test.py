@@ -19,7 +19,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.services import game_assets
-from polyhost.services.game_assets import cnc_classic, westwood
+from polyhost.services.game_assets import build, westwood, westwood_td
 
 # --------------------------------------------------------------------------- #
 # encoders (test-only)
@@ -264,19 +264,38 @@ class WestwoodDecoderTest(unittest.TestCase):
             np.testing.assert_array_equal(want, got)
 
 
+TEMPLATE = "cnc_remastered_template.mods.png"
+SPEC = build.RES / "overlay_sources" / "cnc_remastered" / "cnc_remastered.yaml"
+SHIPPED = build.RES / "overlays" / TEMPLATE
+
+
+def build_copy(cache, folder, faction, hint=None):
+    settings = {"game_cnc_data_dir": str(folder), "game_cnc_faction": faction}
+    return build.build(TEMPLATE, SPEC, settings.get, Path(cache), hint)
+
+
 class FindDataTest(unittest.TestCase):
+
+    def setUp(self):
+        # No real Steam or EA install may answer for these tests.
+        p = mock.patch.object(westwood_td, "_steam_libraries", return_value=[])
+        p.start()
+        self.addCleanup(p.stop)
+        e = mock.patch.dict(os.environ, {"PROGRAMFILES": "", "PROGRAMFILES(X86)": ""})
+        e.start()
+        self.addCleanup(e.stop)
 
     def test_configured_folder_in_either_case(self):
         for upper in (True, False):
             with tempfile.TemporaryDirectory() as d:
                 make_game_files(Path(d), upper=upper)
-                files = cnc_classic.find_data(d)
+                files = westwood_td.find(d)
                 self.assertEqual(sorted(files), ["cclocal.mix", "conquer.mix", "temperat.mix"])
 
     def test_a_folder_without_the_required_files_is_not_used(self):
         with tempfile.TemporaryDirectory() as d:
             Path(d, "CONQUER.MIX").write_bytes(b"")
-            self.assertIsNone(cnc_classic.find_data(d))
+            self.assertIsNone(westwood_td.find(d))
 
     def test_remastered_layout_is_found_under_any_cd_folder(self):
         with tempfile.TemporaryDirectory() as d:
@@ -284,13 +303,20 @@ class FindDataTest(unittest.TestCase):
             cd = lib / "steamapps" / "common" / "CnCRemastered" / "Data" / "CNCDATA" / "TIBERIAN_DAWN" / "CD1"
             cd.mkdir(parents=True)
             make_game_files(cd)
-            orig = cnc_classic._steam_libraries
-            cnc_classic._steam_libraries = lambda: [lib]
-            try:
-                files = cnc_classic.find_data("")
-            finally:
-                cnc_classic._steam_libraries = orig
+            with mock.patch.object(westwood_td, "_steam_libraries", return_value=[lib]):
+                files = westwood_td.find("")
             self.assertEqual(files["conquer.mix"].parent, cd)
+
+    def test_the_running_game_folder_is_searched_first(self):
+        """An install in no library the host knows is found from the folder of
+        the game's executable, in any case."""
+        with tempfile.TemporaryDirectory() as d:
+            inst = Path(d) / "Games" / "C&C"
+            td = inst / "data" / "CNCDATA" / "Tiberian_Dawn"
+            td.mkdir(parents=True)
+            make_game_files(td)
+            self.assertIsNone(westwood_td.find(""))
+            self.assertEqual(westwood_td.find("", hint=inst)["conquer.mix"].parent, td)
 
 
 class BuildTest(unittest.TestCase):
@@ -302,7 +328,7 @@ class BuildTest(unittest.TestCase):
         cls.data.mkdir()
         make_game_files(cls.data)
         cls.cache = Path(cls.tmp.name) / "cache"
-        cls.built = {f: cnc_classic.build(cls.cache, str(cls.data), f) for f in cnc_classic.FACTION_NAMES}
+        cls.built = {f: build_copy(cls.cache, cls.data, f) for f in ("gdi", "nod")}
 
     @classmethod
     def tearDownClass(cls):
@@ -318,7 +344,7 @@ class BuildTest(unittest.TestCase):
 
     def test_without_game_files_there_is_no_copy(self):
         with tempfile.TemporaryDirectory() as d:
-            self.assertIsNone(cnc_classic.build(Path(d), d, "gdi"))
+            self.assertIsNone(build_copy(d, d, "gdi"))
 
     def test_exactly_the_drawn_keys_change(self):
         """Every key the reader has art for differs from the shipped cell, and
@@ -329,7 +355,7 @@ class BuildTest(unittest.TestCase):
         for faction, path in self.built.items():
             self.assertIsNotNone(path)
             for mod, keys in drawn.items():
-                shipped, shipped_nl = self._cells(cnc_classic.SHIPPED, mod)
+                shipped, shipped_nl = self._cells(SHIPPED, mod)
                 patched, patched_nl = self._cells(path, mod)
                 self.assertEqual(shipped_nl, patched_nl, "the no-legend list must carry over")
                 want = {KeyCode[f"KC_{k}"].value for k in keys}
@@ -346,31 +372,11 @@ class BuildTest(unittest.TestCase):
         self.assertNotEqual(gdi.name, nod.name)
         self.assertIn(".mods.", gdi.name, "the loader picks the channel layout by '.mods.'")
         stamp = os.stat(gdi).st_mtime_ns
-        self.assertEqual(cnc_classic.build(self.cache, str(self.data), "gdi"), gdi)
+        self.assertEqual(build_copy(self.cache, self.data, "gdi"), gdi)
         self.assertEqual(os.stat(gdi).st_mtime_ns, stamp, "a cached copy must not be rebuilt")
 
-    def test_unknown_faction_falls_back_to_gdi(self):
-        self.assertEqual(cnc_classic.build(self.cache, str(self.data), "orcs").name, self.built["gdi"].name)
-
-    def test_registry_serves_the_copy_and_respects_the_switch(self):
-        settings = {"game_assets_enabled": True, "game_cnc_data_dir": str(self.data),
-                    "game_cnc_faction": "nod"}
-        orig = game_assets.cache_dir
-        game_assets.cache_dir = lambda: self.cache
-        try:
-            game_assets.start(settings.get).join(60)
-            self.assertEqual(game_assets.override_for(cnc_classic.TEMPLATE), str(self.built["nod"]))
-            self.assertTrue(game_assets.take_changed(), "a new copy must ask for a re-send")
-            self.assertFalse(game_assets.take_changed(), "the flag is taken once")
-            game_assets.start(settings.get).join(60)
-            self.assertFalse(game_assets.take_changed(), "the same result needs no re-send")
-            settings["game_assets_enabled"] = False
-            game_assets.start(settings.get).join(60)
-            self.assertIsNone(game_assets.override_for(cnc_classic.TEMPLATE))
-            self.assertTrue(game_assets.take_changed(), "dropping the copy needs a re-send too")
-        finally:
-            game_assets.cache_dir = orig
-            game_assets.take_changed()
+    def test_unknown_faction_falls_back_to_the_first_choice(self):
+        self.assertEqual(build_copy(self.cache, self.data, "orcs").name, self.built["gdi"].name)
 
     def test_a_build_removes_temp_files_left_by_another_process(self):
         """A host that exits mid-build leaves its temp file; the next process
@@ -381,24 +387,26 @@ class BuildTest(unittest.TestCase):
             mine = cache / f"x.mods.png.{os.getpid()}.456.tmp"
             stale.write_bytes(b"x")
             mine.write_bytes(b"x")
-            self.assertIsNotNone(cnc_classic.build(cache, str(self.data), "gdi"))
+            self.assertIsNotNone(build_copy(cache, self.data, "gdi"))
             self.assertFalse(stale.exists())
             self.assertTrue(mine.exists())
 
     def test_builds_of_the_same_copy_can_overlap(self):
-        """A settings change during the startup build starts a second build of
-        the same file; neither may move the other's temp file away."""
+        """A settings change during a build starts a second build of the same
+        file; neither may move the other's temp file away."""
         import threading
-        icons = cnc_classic.render(cnc_classic.Sprites(cnc_classic.find_data(str(self.data))), "gdi")
+        spec = build.load_spec(SPEC)
+        icons = build.render(westwood_td, westwood_td.open_source(westwood_td.find(str(self.data))),
+                             spec, "gdi")
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "copy.mods.png"
             errors = []
-            gate = threading.Barrier(4)
+            gate = threading.Barrier(4, timeout=60)
 
             def one():
                 try:
                     gate.wait()
-                    cnc_classic.patch(cnc_classic.SHIPPED, cnc_classic.SPEC, icons, out)
+                    build.patch(SHIPPED, spec, icons, out)
                 except Exception as e:  # noqa: BLE001 — collected and asserted below
                     errors.append(e)
 
@@ -407,17 +415,136 @@ class BuildTest(unittest.TestCase):
                 t.start()
             for t in threads:
                 t.join(60)
+                self.assertFalse(t.is_alive(), "a patch thread did not finish in 60 s")
             self.assertEqual(errors, [])
             self.assertTrue(out.exists())
             self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["copy.mods.png"])
+
+
+class SpecTest(unittest.TestCase):
+    """The C&C spec's game_assets block against its own bindings."""
+
+    def test_every_recipe_replaces_a_bound_icon(self):
+        spec = build.load_spec(SPEC)
+        stems = {Path(b["icon"]).stem for b in build.bindings(spec)}
+        for variant in ("gdi", "nod"):
+            got = build.recipes(spec, variant)
+            self.assertEqual(set(got) - stems, set(), f"{variant}: a recipe for no key")
+            for stem, recipe in got.items():
+                if "plus" in recipe:
+                    self.assertIn(recipe["plus"], got, f"{stem} adds a plus to nothing")
+
+    def test_the_mapping_entry_point_registers_the_template(self):
+        import yaml
+        with open(build.RES / "overlay-mapping.poly.yaml", encoding="utf-8") as f:
+            mapping = yaml.safe_load(f)
+        with mock.patch.dict(game_assets._specs, clear=True):
+            game_assets.register_mapping(mapping)
+            self.assertEqual(game_assets._specs.get(TEMPLATE), SPEC)
+            self.assertTrue(all(p.exists() for p in game_assets._specs.values()))
+
+
+class ReaderSettingsTest(unittest.TestCase):
+
+    def test_reader_settings_extend_the_defaults(self):
+        from polyhost.services.game_assets import readers
+        from polyhost.settings import DEFAULT_SETTINGS
+        for s in readers.all_settings():
+            self.assertIn(s.key, DEFAULT_SETTINGS)
+            self.assertEqual(DEFAULT_SETTINGS[s.key], s.default)
+            self.assertIn(s.key, game_assets.SETTING_KEYS)
+        for r in readers.READERS.values():
+            keys = {s.key for s in r.settings}
+            self.assertTrue({r.folder, r.variant} - {None} <= keys)
+
+
+class RequestTest(unittest.TestCase):
+    """The on-demand registry: request(), override_for(), take_changed(), reset()."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.data = Path(cls.tmp.name) / "td"
+        cls.data.mkdir()
+        make_game_files(cls.data)
+        cls.cache = Path(cls.tmp.name) / "cache"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def setUp(self):
+        for d in (game_assets._specs, game_assets._overrides, game_assets._started):
+            p = mock.patch.dict(d, clear=True)
+            p.start()
+            self.addCleanup(p.stop)
+        c = mock.patch.object(game_assets, "cache_dir", return_value=self.cache)
+        c.start()
+        self.addCleanup(c.stop)
+        game_assets.take_changed()
+        self.addCleanup(game_assets.take_changed)
+        game_assets.register_mapping({"clientg": {"overlay": TEMPLATE,
+                                                  "game_assets": "cnc_remastered/cnc_remastered.yaml"}})
+        self.settings = {"game_assets_enabled": True, "game_cnc_data_dir": str(self.data),
+                         "game_cnc_faction": "nod"}
+
+    def _request(self, hint=None):
+        t = game_assets.request(TEMPLATE, self.settings.get, hint)
+        if t is not None:
+            t.join(60)
+            self.assertFalse(t.is_alive(), "the build did not finish in 60 s")
+        return t
+
+    def test_nothing_is_built_before_the_overlay_is_sent(self):
+        self.assertIsNone(game_assets.override_for(TEMPLATE))
+        self.assertFalse(game_assets.take_changed())
+
+    def test_the_first_send_builds_once_and_asks_for_a_resend(self):
+        self.assertIsNotNone(self._request())
+        self.assertTrue(game_assets.override_for(TEMPLATE).endswith(".mods.png"))
+        self.assertTrue(game_assets.take_changed(), "a new copy must ask for a re-send")
+        self.assertFalse(game_assets.take_changed(), "the flag is taken once")
+        self.assertIsNone(self._request(), "a built copy is not built again")
+
+    def test_templates_without_an_entry_point_and_a_disabled_feature_build_nothing(self):
+        self.assertIsNone(game_assets.request("vscode_template.mods.png", self.settings.get))
+        self.settings["game_assets_enabled"] = False
+        self.assertIsNone(game_assets.request(TEMPLATE, self.settings.get))
+
+    def test_the_hint_is_read_on_the_build_thread(self):
+        seen = []
+        self.settings["game_cnc_data_dir"] = ""
+        with mock.patch.object(westwood_td, "install_candidates", return_value=[]):
+            self._request(hint=lambda: seen.append(1) or None)
+        self.assertEqual(seen, [1])
+        self.assertIsNone(game_assets.override_for(TEMPLATE))
+
+    def test_a_switch_rebuilds_and_turning_it_off_drops_the_copy(self):
+        self._request()
+        nod = game_assets.override_for(TEMPLATE)
+        game_assets.take_changed()
+        self.settings["game_cnc_faction"] = "gdi"
+        game_assets.reset(self.settings.get)
+        self.assertTrue(game_assets.take_changed(), "a reset re-sends what is on the keyboard")
+        self._request()
+        self.assertNotEqual(game_assets.override_for(TEMPLATE), nod)
+        self.assertTrue(game_assets.take_changed())
+        self.settings["game_assets_enabled"] = False
+        game_assets.reset(self.settings.get)
+        self.assertIsNone(game_assets.override_for(TEMPLATE))
+        self.assertTrue(game_assets.take_changed())
+
+    def test_a_reset_before_any_game_overlay_resends_nothing(self):
+        game_assets.reset(self.settings.get)
+        self.assertFalse(game_assets.take_changed())
 
     def test_an_overridden_underlay_stays_an_underlay(self):
         """The send path dims an Underlay; the copy must keep that mark."""
         from polyhost.core.poly_core import get_overlay_path
         from polyhost.handler.common import Underlay
-        with mock.patch.dict(game_assets._overrides, {cnc_classic.TEMPLATE: "/cache/copy.png"}):
-            plain = get_overlay_path(cnc_classic.TEMPLATE)
-            under = get_overlay_path(Underlay(cnc_classic.TEMPLATE))
+        game_assets._overrides[TEMPLATE] = "/cache/copy.png"
+        plain = get_overlay_path(TEMPLATE)
+        under = get_overlay_path(Underlay(TEMPLATE))
         self.assertEqual(plain, "/cache/copy.png")
         self.assertFalse(getattr(plain, "underlay", False))
         self.assertEqual(under, "/cache/copy.png")

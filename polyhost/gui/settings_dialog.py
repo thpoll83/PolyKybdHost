@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost import i18n
 from polyhost.i18n import _, _f, N_
+from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
 from polyhost.services.problem_scan import LEVEL_ERRORS, LEVEL_ERRORS_AND_WARNINGS
 
@@ -39,7 +40,6 @@ CHOICES = {
     "ui_language": language_choices,
     "problem_scan_level": ((LEVEL_ERRORS, N_("Errors")),
                            (LEVEL_ERRORS_AND_WARNINGS, N_("Errors and warnings"))),
-    "game_cnc_faction": (("gdi", N_("GDI")), ("nod", N_("Nod"))),
 }
 
 # The shown name of each settings GROUP (the key's first word) and of each
@@ -100,8 +100,6 @@ SETTING_LABELS = {
     "problem_scan_host_logs": N_("Scan Host Logs"),
     "problem_scan_level": N_("Scan Level"),
     "game_assets_enabled": N_("Art From Installed Games"),
-    "game_cnc_data_dir": N_("Command and Conquer Folder"),
-    "game_cnc_faction": N_("Command and Conquer Faction"),
 }
 
 
@@ -226,12 +224,14 @@ SETTING_DESCRIPTIONS = {
         "Draws some game overlays from the game's own files when the game is "
         "installed on this computer. The images stay on this computer. Off: the "
         "shipped overlays are used."),
-    "game_cnc_data_dir": N_(
-        "A folder with the classic Command & Conquer files CONQUER.MIX and "
-        "TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered "
-        "Collection are searched."),
-    "game_cnc_faction": N_("Whose units and buildings the C&C Remastered overlay shows."),
 }
+
+# Each game-asset reader brings its settings' labels, descriptions and choices.
+for _s in game_asset_readers.all_settings():
+    SETTING_LABELS[_s.key] = _s.label
+    SETTING_DESCRIPTIONS[_s.key] = _s.description
+    if _s.choices:
+        CHOICES[_s.key] = _s.choices
 
 # The size the dialog had before it followed the screen. It stays the minimum.
 MIN_DIALOG_SIZE = QSize(640, 480)

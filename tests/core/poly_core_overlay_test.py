@@ -121,6 +121,26 @@ class TestTickWindowTracking(unittest.TestCase):
         finally:
             game_assets._changed.clear()
 
+    def test_a_template_send_requests_its_game_art_with_the_game_folder(self):
+        """The reader starts when its overlay is sent, and looks first in the
+        folder of the focused window's executable."""
+        from unittest import mock
+
+        from polyhost.services import game_assets
+        core = make_core()
+        core.overlay_handler.handle_active_window.return_value = (
+            ["cnc_remastered_template.mods.png"], OverlayCommand.OFF_ON)
+        core.overlay_handler.focused_pid.return_value = 4242
+        with mock.patch.object(game_assets, "request") as request, \
+                mock.patch("polyhost.handler.win_process.process_dir",
+                           return_value="/games/cnc") as process_dir:
+            core.tick_window_tracking()
+        request.assert_called_once()
+        self.assertEqual(request.call_args.args[0], "cnc_remastered_template.mods.png")
+        process_dir.assert_not_called()          # read on the build thread, not here
+        self.assertEqual(request.call_args.kwargs["hint"](), "/games/cnc")
+        process_dir.assert_called_once_with(4242)
+
     def test_disconnected_dev_flag_polls_without_device(self):
         core = make_core(connected=False, run_when_disconnected=True)
         core.tick_window_tracking()

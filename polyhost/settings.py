@@ -7,6 +7,7 @@ import time
 import yaml
 from platformdirs import user_config_dir
 
+from polyhost.services.game_assets.readers import reader_defaults
 from polyhost.util import filelock
 
 APP_NAME = "PolyHost"
@@ -263,13 +264,7 @@ DEFAULT_SETTINGS = {
         # machine except the overlay sent to the keyboard. Off = always the
         # shipped overlays.
         "game_assets_enabled": True,
-        # Folder holding the classic C&C (Tiberian Dawn) files CONQUER.MIX and
-        # TEMPERAT.MIX (CCLOCAL.MIX adds the cursors). Empty = look in a C&C
-        # Remastered install (Steam or EA app). The 1995 freeware release works
-        # too, from wherever it was unpacked.
-        "game_cnc_data_dir": "",
-        # Which side's units the C&C control-group keys show: "gdi" or "nod".
-        "game_cnc_faction": "gdi",
+        # Each reader adds its own settings after this dict (game_assets/readers.py).
         # Optional explicit path to the font pack .plyf to flash. Empty =
         # use the pack shipped in polyhost/res/fontpack/ (if any).
         "fontpack_path": "",
@@ -317,6 +312,9 @@ DEFAULT_SETTINGS = {
         "problem_scan_host_logs": True,
         "problem_scan_level": "errors",
 }
+# The settings of each game-asset reader this host has: its folder and its
+# options (the C&C faction). Adding a reader adds its settings.
+DEFAULT_SETTINGS.update(reader_defaults())
 
 
 #: Marks a settings file that holds only CHOSEN values (format 2). A file

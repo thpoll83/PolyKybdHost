@@ -83,15 +83,10 @@ def _load_win32():
     return _win32
 
 
-def win32_process_name(hwnd):
-    """``"chrome.exe"`` for a window handle, or ``""`` when it can't be read."""
-    user32, kernel32, wintypes = _load_win32()
-
-    pid = wintypes.DWORD(0)
-    user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
-    if not pid.value:
-        return ""
-    handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+def _win32_image_path(pid):
+    """The full path of process `pid`'s executable, or ``""``."""
+    _user32, kernel32, wintypes = _load_win32()
+    handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     if not handle:
         return ""
     try:
@@ -99,9 +94,49 @@ def win32_process_name(hwnd):
         buf = ctypes.create_unicode_buffer(size.value)
         if not kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size)):
             return ""
-        return os.path.basename(buf.value)
+        return buf.value
     finally:
         kernel32.CloseHandle(handle)
+
+
+def win32_process_name(hwnd):
+    """``"chrome.exe"`` for a window handle, or ``""`` when it can't be read."""
+    user32, _kernel32, wintypes = _load_win32()
+
+    pid = wintypes.DWORD(0)
+    user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
+    if not pid.value:
+        return ""
+    return os.path.basename(_win32_image_path(pid.value))
+
+
+#: The Wine and Proton loaders. A Windows game under Proton runs as one of
+#: these, so /proc/<pid>/exe names the loader and not the game.
+_WINE_LOADERS = frozenset({"wine", "wine64", "wine-preloader", "wine64-preloader"})
+
+
+def process_dir(pid):
+    """The folder of process `pid`'s executable, or None when it can't be read.
+
+    Under Wine or Proton the executable is the loader, so this returns the
+    process's working folder instead: Proton starts a game in its install
+    folder (not checked for every game). macOS answers None.
+    """
+    if not pid:
+        return None
+    try:
+        if sys.platform == "win32":
+            path = _win32_image_path(int(pid))
+            return os.path.dirname(path) or None
+        if sys.platform.startswith("linux"):
+            exe = os.readlink(f"/proc/{pid}/exe").removesuffix(" (deleted)")
+            if os.path.basename(exe) in _WINE_LOADERS:
+                return os.readlink(f"/proc/{pid}/cwd")
+            return os.path.dirname(exe) or None
+    except (OSError, ValueError, AttributeError):
+        # The process may have exited; a missing hint only costs the search.
+        _log.debug("No folder for process %s", pid, exc_info=True)
+    return None
 
 
 #: What pywinctl's Linux ``getAppName()`` (``ps -o comm=``) reports when the

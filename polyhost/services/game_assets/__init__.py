@@ -1,10 +1,16 @@
 """Overlay art read from games installed on this machine.
 
-Some shipped templates can be redrawn from the game's own files, which may not
-be shipped (see `cnc_classic.py`). `start()` builds those copies on a background
-thread into the user's cache directory; `override_for()` then tells the overlay
-send which file to use in place of a shipped template. Until a copy is ready, or
-when the game is not found, the shipped template is used.
+An overlay-mapping entry opts in with ``game_assets: <spec>``, a path under
+``res/overlay_sources``; the spec's ``game_assets:`` block names the reader and
+what it draws on each key (``build.py``). Game files may not be shipped, so the
+reader draws from the user's own install, the copy is written to the user's
+cache directory, and it is only ever sent to the keyboard.
+
+Nothing is read at start. The first time an opted-in overlay is sent,
+``request()`` builds the copy on a background thread, with the folder of the
+game's executable as the first place to look; the shipped template goes out
+meanwhile. When the copy is ready, ``take_changed()`` tells the window tick to
+send the overlay again. ``override_for()`` gives the send path the copy.
 """
 from __future__ import annotations
 
@@ -12,17 +18,34 @@ import logging
 import threading
 from pathlib import Path
 
+from polyhost.services.game_assets.readers import all_settings
+
 log = logging.getLogger("PolyHost")
 
-# Settings this module reads; a change to any of them rebuilds the copies.
-SETTING_KEYS = frozenset({"game_assets_enabled", "game_cnc_data_dir", "game_cnc_faction"})
+# Settings this package reads; a change to any of them rebuilds the copies.
+SETTING_KEYS = frozenset({"game_assets_enabled"} | {s.key for s in all_settings()})
 
-_overrides: dict[str, str] = {}
+_SOURCES = Path(__file__).resolve().parents[2] / "res" / "overlay_sources"
+
+_specs: dict[str, Path] = {}         # template -> spec, from the overlay mapping
+_overrides: dict[str, str] = {}      # template -> built copy
+_started: dict[str, int] = {}        # template -> generation of its newest build
 _lock = threading.Lock()
 _generation = 0
-# Set when a build installed a result different from the one before, so the
-# window owner can re-send the overlay that is on the keyboard now.
+# Set when the copies changed, so the window owner re-sends what is on the keyboard.
 _changed = threading.Event()
+
+
+def register_mapping(mapping: dict) -> None:
+    """Remember which templates the overlay mapping opts in, and their specs."""
+    specs = {}
+    for entry in (mapping or {}).values():
+        if isinstance(entry, dict) and entry.get("game_assets") and entry.get("overlay"):
+            for template in entry["overlay"] if isinstance(entry["overlay"], list) else [entry["overlay"]]:
+                specs[str(template)] = _SOURCES / str(entry["game_assets"])
+    with _lock:
+        _specs.clear()
+        _specs.update(specs)
 
 
 def override_for(template: str) -> str | None:
@@ -31,7 +54,7 @@ def override_for(template: str) -> str | None:
 
 
 def take_changed() -> bool:
-    """Whether the overrides changed since the last call; clears the flag."""
+    """Whether the copies changed since the last call; clears the flag."""
     if _changed.is_set():
         _changed.clear()
         return True
@@ -43,42 +66,56 @@ def cache_dir() -> Path:
     return Path(platformdirs.user_cache_dir("PolyKybdHost")) / "game_overlays"
 
 
-def build_all(settings_get) -> dict[str, str]:
-    """Build every copy this machine supports and return {template: path}.
-    Runs on the caller's thread; a failure leaves the shipped template in use."""
-    found = {}
-    if not settings_get("game_assets_enabled"):
-        return found
-    try:
-        from polyhost.services.game_assets import cnc_classic
-        path = cnc_classic.build(cache_dir(), str(settings_get("game_cnc_data_dir") or ""),
-                                 str(settings_get("game_cnc_faction") or "gdi").lower())
-        if path:
-            found[cnc_classic.TEMPLATE] = str(path)
-        else:
-            log.info("C&C game art: classic game files not found, using the shipped overlay.")
-    except Exception as e:  # noqa: BLE001 — unreadable or unexpected game files
-        log.warning("C&C game art: could not read the game files (%s: %s); "
-                    "using the shipped overlay.", type(e).__name__, e)
-    return found
-
-
-def start(settings_get) -> threading.Thread:
-    """Rebuild the copies on a background thread. A later call supersedes an
-    earlier one: only the newest build's result is installed."""
+def request(template: str, settings_get, hint=None) -> threading.Thread | None:
+    """Build the copy of `template` on a background thread unless it is built
+    or building. `hint` is the folder of the game's executable, or a callable
+    returning it, read on the build thread. Returns the thread, or None."""
     global _generation
+    spec = _specs.get(str(template))
+    if spec is None or not settings_get("game_assets_enabled"):
+        return None
     with _lock:
+        if template in _started:
+            return None
         _generation += 1
-        mine = _generation
+        mine = _started[template] = _generation
 
     def run():
-        found = build_all(settings_get)
+        path = None
+        try:
+            from polyhost.services.game_assets import build
+            path = build.build(template, spec, settings_get, cache_dir(),
+                               hint() if callable(hint) else hint)
+            if path is None:
+                log.info("Game art: no game files for %s; using the shipped overlay.", template)
+        except Exception as e:  # noqa: BLE001 — unreadable or unexpected game files
+            log.warning("Game art: could not read the game files for %s (%s: %s); "
+                        "using the shipped overlay.", template, type(e).__name__, e)
         with _lock:
-            if mine == _generation and found != _overrides:
-                _overrides.clear()
-                _overrides.update(found)
+            if _started.get(template) != mine:
+                return                       # a newer request superseded this one
+            old = _overrides.get(template)
+            if path:
+                _overrides[template] = str(path)
+            else:
+                _overrides.pop(template, None)
+            if _overrides.get(template) != old:
                 _changed.set()
 
     t = threading.Thread(target=run, name="game-assets", daemon=True)
     t.start()
     return t
+
+
+def reset(settings_get) -> None:
+    """A setting changed: the next send of each overlay builds again. With the
+    feature off, the copies are dropped at once."""
+    if not (_started or _overrides):
+        return                               # no opted-in overlay was sent yet
+    enabled = settings_get("game_assets_enabled")
+    with _lock:
+        _started.clear()
+        if not enabled:
+            _overrides.clear()
+    # Re-send what is on the keyboard; that send requests the rebuild.
+    _changed.set()
