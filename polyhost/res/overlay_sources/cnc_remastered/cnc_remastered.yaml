@@ -57,8 +57,8 @@ bindings:
 
   # Sidebar tabs
   - { key: W, icon: tabstructures.png, label: "Structures tab" }
-  - { key: E, icon: tabinfantry.png, label: "Infantry tab" }
-  - { key: R, icon: tabvehicles.png, label: "Vehicles tab" }
+  - { key: E, icon: tabinfantry.png, label: "Infantry tab", region: [48, 40] }
+  - { key: R, icon: tabvehicles.png, label: "Vehicles tab", region: [48, 40] }
   - { key: T, icon: tabsuper.png, label: "Superweapons tab" }
 
   # Orders and selection

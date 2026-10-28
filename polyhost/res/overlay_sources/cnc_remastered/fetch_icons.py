@@ -78,7 +78,8 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
 
 
 # Key area of each icon, from cnc_remastered.yaml; the default is 40 x 40.
-SIZES = {"lastevent": (36, 40), "bookmark": (30, 40), "fullscreen": (30, 40)}
+SIZES = {"lastevent": (36, 40), "bookmark": (30, 40), "fullscreen": (30, 40),
+         "tabinfantry": (48, 40), "tabvehicles": (48, 40)}
 MIRROR = {"tabinfantry"}           # the barracks' flag pole on the right, facing like the units
 
 
