@@ -78,7 +78,7 @@ def render(mapping: dict[str, str], out_dir: Path, render_px: int = 256) -> None
 
 
 # Key area of each icon, from cnc_remastered.yaml; the default is 40 x 40.
-NARROW = {"lastevent", "bookmark", "fullscreen"}          # region [30, 40]
+SIZES = {"lastevent": (36, 40), "bookmark": (30, 40), "fullscreen": (30, 40)}
 MIRROR = {"tabinfantry"}           # the barracks' flag pole on the right, facing like the units
 
 
@@ -124,7 +124,7 @@ def dither_icons(out: Path) -> None:
     import numpy as np
     from PIL import Image
     for stem in ICONS:
-        size = (30, 40) if stem in NARROW else (40, 40)
+        size = SIZES.get(stem, (40, 40))
         # Re-render the glyph large so the relief has room for its slope.
         big = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
         scale = 320 / max(big.size)
