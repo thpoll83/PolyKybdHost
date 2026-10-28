@@ -52,8 +52,8 @@ from polyhost.device.keys import KeyCode, Modifier  # noqa: E402
 
 # The grid, the channel of each modifier variant and the placement box are in
 # the package, because polyhost/services/game_assets patches cells at runtime too.
-from polyhost.res.overlay_layout import (  # noqa: E402,F401
-    CH, COMBO_CH, EXTRA_CH, GRID_X, GRID_Y, GUI_CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W,
+from polyhost.res.overlay_layout import (  # noqa: E402
+    CH, COMBO_CH, EXTRA_CH, GUI_CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W,
     cell_for, region_box)
 
 MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,

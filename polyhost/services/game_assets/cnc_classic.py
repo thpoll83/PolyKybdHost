@@ -425,6 +425,15 @@ def cache_name(files: dict, faction: str) -> str:
     return f"cnc_remastered_template.{faction}.{h.hexdigest()[:12]}.mods.png"
 
 
+def remove_stale_temp(cache_dir: Path) -> None:
+    """Remove temp files `patch()` left behind in a process that exited
+    mid-build. A temp file of this process belongs to a build still running."""
+    for p in Path(cache_dir).glob("*.tmp"):
+        parts = p.name.split(".")
+        if len(parts) >= 4 and parts[-3] != str(os.getpid()):
+            p.unlink(missing_ok=True)
+
+
 def build(cache_dir: Path, configured_dir: str = "", faction: str = "gdi") -> Path | None:
     """The patched overlay for this machine, built if not cached; None when the
     game files are not found."""
@@ -434,6 +443,7 @@ def build(cache_dir: Path, configured_dir: str = "", faction: str = "gdi") -> Pa
     files = find_data(configured_dir)
     if not files:
         return None
+    remove_stale_temp(cache_dir)
     out = Path(cache_dir) / cache_name(files, faction)
     if out.exists():
         return out

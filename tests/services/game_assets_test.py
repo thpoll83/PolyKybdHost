@@ -299,7 +299,8 @@ class BuildTest(unittest.TestCase):
     @staticmethod
     def _cells(path, mod):
         conv = ImageConverter(DeviceSettings())
-        assert conv.open(str(path))
+        if not conv.open(str(path)):
+            raise AssertionError(f"cannot open {path}")
         cells = conv.extract_overlays(mod) or {}
         return {kc: od.all_bytes for kc, od in cells.items()}, conv.no_legend
 
@@ -358,6 +359,19 @@ class BuildTest(unittest.TestCase):
         finally:
             game_assets.cache_dir = orig
             game_assets.take_changed()
+
+    def test_a_build_removes_temp_files_left_by_another_process(self):
+        """A host that exits mid-build leaves its temp file; the next process
+        removes it, but never a temp file of a build running in this one."""
+        with tempfile.TemporaryDirectory() as d:
+            cache = Path(d)
+            stale = cache / f"x.mods.png.{os.getpid() + 1}.123.tmp"
+            mine = cache / f"x.mods.png.{os.getpid()}.456.tmp"
+            stale.write_bytes(b"x")
+            mine.write_bytes(b"x")
+            self.assertIsNotNone(cnc_classic.build(cache, str(self.data), "gdi"))
+            self.assertFalse(stale.exists())
+            self.assertTrue(mine.exists())
 
     def test_builds_of_the_same_copy_can_overlap(self):
         """A settings change during the startup build starts a second build of
