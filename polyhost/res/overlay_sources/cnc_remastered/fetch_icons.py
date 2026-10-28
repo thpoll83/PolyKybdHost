@@ -157,11 +157,17 @@ def _font(url: str) -> Path:
     import tempfile
     path = Path(tempfile.gettempdir()) / url.rsplit("/", 1)[1]
     if not path.exists():
-        # Written whole and then renamed, so an interrupted run never leaves a
-        # truncated font that the next run would take as cached.
-        tmp = path.with_name(f"{path.name}.{os.getpid()}.part")
-        tmp.write_bytes(_get(url))
-        os.replace(tmp, path)
+        # Written whole to a file created for this run only, then renamed, so an
+        # interrupted run never leaves a truncated font that the next run would
+        # take as cached, and a name planted in the shared temp dir is never
+        # written through.
+        fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".part")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(_get(url))
+            os.replace(tmp, path)
+        finally:
+            Path(tmp).unlink(missing_ok=True)
     return path
 
 
