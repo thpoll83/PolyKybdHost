@@ -1878,6 +1878,11 @@ age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
 # under Proton on KDE Plasma (both measured 2026-10-23).
 aoe2de_s,steam_app_813780:
   overlay: aoe2_de_template.mods.png
+# Warcraft III classic, 1.26 to 1.31 (overlay_sources/warcraft3/warcraft3.yaml).
+# war3.exe, "Warcraft III.exe" and "Frozen Throne.exe"; under Wine the WM_CLASS
+# keeps the `.exe`. Names not checked on an install.
+war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
+  overlay: warcraft3_template.mods.png
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
