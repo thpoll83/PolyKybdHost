@@ -381,22 +381,28 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
   recipe for each icon, keyed by variant (the C&C faction) where they differ.
-  - `readers.py` (light, imported at start): each reader's module and the
-    settings it adds. `settings.py` merges their defaults into
-    `DEFAULT_SETTINGS`, and the settings dialog adds their labels, descriptions
-    and dropdowns, so a new reader brings its own settings.
+  - Shared, at the top of the package: `__init__.py` (below), `build.py` and
+    `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
+    `Setting` declarations and the registry of readers.
+  - One subfolder per game reader (`westwood_td/` for Command & Conquer). Its
+    `__init__.py` declares `READER` (module, settings, folder and variant
+    settings) and stays light; `reader.py` has `find(folder, hint)`,
+    `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
+    the game's file formats sit beside it (`westwood.py`). A new reader is a new
+    subfolder plus one line in `readers._registry()`.
+  - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
+    settings dialog adds their labels, descriptions and dropdowns, so a reader
+    brings its own settings.
   - `__init__.py`: `register_mapping()` at mapping load; `request()` on the
     first OFF_ON send of an opted-in template builds the copy on a thread, with
     the focused window's executable folder (`win_process.process_dir()`) as the
-    first place to look; `override_for()` serves it to `get_overlay_path()`;
-    `take_changed()` makes the window tick `force_resend()`; `reset()` from
+    first place to look, and retries on the next send when it found nothing;
+    `override_for()` serves the copy to `get_overlay_path()`; `take_changed()`
+    makes the window tick `force_resend()`; `reset()` from
     `note_settings_changed()` rebuilds on the next send.
   - `build.py` (numpy, PIL): recipes per variant, fitting, the Ctrl plus,
-    patching the shipped PNG's primary tier, cache name, temp files.
-  - A reader module has `find(folder, hint)`, `fingerprint(files)`,
-    `open_source(files)` and `draw(source, recipe, size)`. `westwood_td.py`
-    reads Tiberian Dawn (`westwood.py` decodes the formats); `dither.py` is the
-    keycap dither the shipped C&C units use too.
+    patching the shipped PNG's primary tier, cache name, temp files. A recipe
+    that fails skips only its own key.
   Game art is never committed; it stays in the user's cache.
 
 ### Transport probe (bulk pipe vs HID only)

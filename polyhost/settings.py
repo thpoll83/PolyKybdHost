@@ -264,7 +264,7 @@ DEFAULT_SETTINGS = {
         # machine except the overlay sent to the keyboard. Off = always the
         # shipped overlays.
         "game_assets_enabled": True,
-        # Each reader adds its own settings after this dict (game_assets/readers.py).
+        # Each reader adds its own settings after this dict (game_assets/<reader>/__init__.py).
         # Optional explicit path to the font pack .plyf to flash. Empty =
         # use the pack shipped in polyhost/res/fontpack/ (if any).
         "fontpack_path": "",

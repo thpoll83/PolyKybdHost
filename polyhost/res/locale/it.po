@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-28 11:35+0000\n"
+"POT-Creation-Date: 2026-10-28 12:19+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -4115,27 +4115,27 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Il programma di installazione di WinCompose è stato avviato. Al termine, quando WinCompose sarà in esecuzione, PolyKybd passerà automaticamente a usarlo."
 
-#: polyhost/services/game_assets/readers.py:33
+#: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer Folder"
 msgstr "Cartella di Command and Conquer"
 
-#: polyhost/services/game_assets/readers.py:34
+#: polyhost/services/game_assets/westwood_td/__init__.py:14
 msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
 msgstr "Una cartella con i file classici di Command & Conquer CONQUER.MIX e TEMPERAT.MIX. Vuoto: vengono cercate le installazioni Steam ed EA app della Remastered Collection."
 
-#: polyhost/services/game_assets/readers.py:37
+#: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer Faction"
 msgstr "Fazione di Command and Conquer"
 
-#: polyhost/services/game_assets/readers.py:38
+#: polyhost/services/game_assets/westwood_td/__init__.py:18
 msgid "Whose units and buildings the C&C Remastered overlay shows."
 msgstr "La fazione di cui l'overlay di C&C Remastered mostra unità ed edifici."
 
-#: polyhost/services/game_assets/readers.py:39
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "GDI"
 msgstr "GDI"
 
-#: polyhost/services/game_assets/readers.py:39
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "Nod"
 msgstr "Nod"
 

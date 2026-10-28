@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-28 11:35+0000\n"
+"POT-Creation-Date: 2026-10-28 12:19+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -4115,27 +4115,27 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "El instalador de WinCompose se ha iniciado. Cuando termine y WinCompose esté en ejecución, PolyKybd cambiará a él automáticamente."
 
-#: polyhost/services/game_assets/readers.py:33
+#: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer Folder"
 msgstr "Carpeta de Command and Conquer"
 
-#: polyhost/services/game_assets/readers.py:34
+#: polyhost/services/game_assets/westwood_td/__init__.py:14
 msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
 msgstr "Una carpeta con los archivos clásicos de Command & Conquer CONQUER.MIX y TEMPERAT.MIX. Vacío: se buscan las instalaciones de Steam y de la EA app de la Remastered Collection."
 
-#: polyhost/services/game_assets/readers.py:37
+#: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer Faction"
 msgstr "Facción de Command and Conquer"
 
-#: polyhost/services/game_assets/readers.py:38
+#: polyhost/services/game_assets/westwood_td/__init__.py:18
 msgid "Whose units and buildings the C&C Remastered overlay shows."
 msgstr "La facción cuyas unidades y edificios muestra la superposición de C&C Remastered."
 
-#: polyhost/services/game_assets/readers.py:39
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "GDI"
 msgstr "GDI"
 
-#: polyhost/services/game_assets/readers.py:39
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "Nod"
 msgstr "Nod"
 

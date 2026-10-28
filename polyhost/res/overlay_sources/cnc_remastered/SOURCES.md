@@ -156,7 +156,7 @@ has the same files; point the setting at its folder.
 | `game_cnc_data_dir` | empty | a folder with the MIX files; empty searches as above |
 | `game_cnc_faction` | `gdi` | `gdi` or `nod` |
 
-The last two are the reader's own settings (`polyhost/services/game_assets/readers.py`).
+The last two are the reader's own settings (`polyhost/services/game_assets/westwood_td/__init__.py`).
 `polyctl settings set game_cnc_faction nod` switches the faction; the copy is
 rebuilt on a background thread and the overlay is sent again. Copies are cached
 by game file size and time, faction, shipped overlay, spec and `RENDER_VERSION`.

@@ -30,7 +30,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from polyhost.services.game_assets import dither, westwood
+from polyhost.services.game_assets import dither
+from polyhost.services.game_assets.westwood_td import westwood
 
 REQUIRED = ("conquer.mix", "temperat.mix")
 OPTIONAL = ("cclocal.mix",)                    # the mouse cursors

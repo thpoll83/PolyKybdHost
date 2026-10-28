@@ -19,7 +19,9 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.services import game_assets
-from polyhost.services.game_assets import build, westwood, westwood_td
+from polyhost.services.game_assets import build
+from polyhost.services.game_assets.westwood_td import reader as westwood_td
+from polyhost.services.game_assets.westwood_td import westwood
 
 # --------------------------------------------------------------------------- #
 # encoders (test-only)
