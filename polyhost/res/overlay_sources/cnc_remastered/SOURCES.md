@@ -150,4 +150,6 @@ below.
 
 `polyctl settings set game_cnc_faction nod` switches the faction; the copy is
 rebuilt on a background thread and cached by game file size and time, faction
-and `RENDER_VERSION`.
+and `RENDER_VERSION`. When a build changes the copy, the host sends the
+overlay of the window in front again, so the new art appears without a
+window switch.

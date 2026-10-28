@@ -106,6 +106,21 @@ class TestTickWindowTracking(unittest.TestCase):
         core.tick_window_tracking()
         core.overlay_handler.handle_active_window.assert_not_called()
 
+    def test_a_new_game_art_copy_resends_the_overlay_once(self):
+        """The copy redrawn from game files is built in the background; the
+        window in front does not change, so the tick must re-send it."""
+        from polyhost.services import game_assets
+        core = make_core()
+        core.overlay_handler.handle_active_window.return_value = (None, None)
+        game_assets._changed.set()
+        try:
+            core.tick_window_tracking()
+            core.overlay_handler.force_resend.assert_called_once()
+            core.tick_window_tracking()
+            core.overlay_handler.force_resend.assert_called_once()
+        finally:
+            game_assets._changed.clear()
+
     def test_disconnected_dev_flag_polls_without_device(self):
         core = make_core(connected=False, run_when_disconnected=True)
         core.tick_window_tracking()

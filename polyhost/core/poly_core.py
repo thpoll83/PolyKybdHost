@@ -654,6 +654,11 @@ class PolyCore(Observable):
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            from polyhost.services import game_assets
+            if game_assets.take_changed():
+                # A copy redrawn from game files is ready, or gone: the window
+                # in front did not change, so nothing else would re-send it.
+                handler.force_resend()
             query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             self._tick_query_s = time.monotonic() - query_started

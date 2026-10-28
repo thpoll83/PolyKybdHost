@@ -381,7 +381,9 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   builds patched copies of shipped templates on a background thread into
   `user_cache_dir/game_overlays`; `PolyCore.get_overlay_path()` asks
   `override_for()` first and falls back to the shipped file. A change to a key in
-  `SETTING_KEYS` restarts the build through `note_settings_changed()`.
+  `SETTING_KEYS` restarts the build through `note_settings_changed()`. A build
+  that changes the result sets a flag; the window tick takes it with
+  `take_changed()` and calls `force_resend()`.
   `westwood.py` reads the 1995 Westwood formats, `dither.py` is the keycap dither
   the shipped C&C units use too, and `cnc_classic.py` draws the C&C Remastered
   overlay from the Tiberian Dawn files (`overlay_sources/cnc_remastered/SOURCES.md`).

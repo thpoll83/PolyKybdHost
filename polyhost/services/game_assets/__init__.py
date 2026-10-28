@@ -20,11 +20,22 @@ SETTING_KEYS = frozenset({"game_assets_enabled", "game_cnc_data_dir", "game_cnc_
 _overrides: dict[str, str] = {}
 _lock = threading.Lock()
 _generation = 0
+# Set when a build installed a result different from the one before, so the
+# window owner can re-send the overlay that is on the keyboard now.
+_changed = threading.Event()
 
 
 def override_for(template: str) -> str | None:
     """The path to send instead of the shipped `template`, or None."""
     return _overrides.get(template)
+
+
+def take_changed() -> bool:
+    """Whether the overrides changed since the last call; clears the flag."""
+    if _changed.is_set():
+        _changed.clear()
+        return True
+    return False
 
 
 def cache_dir() -> Path:
@@ -63,9 +74,10 @@ def start(settings_get) -> threading.Thread:
     def run():
         found = build_all(settings_get)
         with _lock:
-            if mine == _generation:
+            if mine == _generation and found != _overrides:
                 _overrides.clear()
                 _overrides.update(found)
+                _changed.set()
 
     t = threading.Thread(target=run, name="game-assets", daemon=True)
     t.start()

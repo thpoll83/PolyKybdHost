@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -403,9 +404,14 @@ def patch(shipped: Path, spec_path: Path, icons: dict, out: Path) -> int:
     if no_legend:
         info.add_text(NO_LEGEND_CHUNK, no_legend)
     out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = out.with_suffix(".tmp")
-    Image.fromarray(arr, "RGBA").save(tmp, format="PNG", pnginfo=info)
-    os.replace(tmp, out)
+    # One temp file per build: two builds of the same entry (a settings change
+    # during the startup build) must not move each other's file away.
+    tmp = out.with_name(f"{out.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        Image.fromarray(arr, "RGBA").save(tmp, format="PNG", pnginfo=info)
+        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
     return count
 
 

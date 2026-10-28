@@ -65,34 +65,46 @@ def write_shp(frames: list) -> bytes:
     return out + b"".join(blobs)
 
 
-def write_d2(frames: list) -> bytes:
-    """A Dune-2-style shape file, every frame uncompressed (flag 2) with the
-    zero-run encoding."""
+def _rle_zeros(flat: bytes) -> bytes:
+    enc = bytearray()
+    i = 0
+    while i < len(flat):
+        if flat[i] == 0:
+            run = 1
+            while i + run < len(flat) and flat[i + run] == 0 and run < 255:
+                run += 1
+            enc += bytes([0, run])
+            i += run
+        else:
+            enc.append(flat[i])
+            i += 1
+    return bytes(enc)
+
+
+def write_d2(frames: list, compressed=False, table=None, two_byte=False) -> bytes:
+    """A Dune-2-style shape file with the zero-run encoding: uncompressed
+    (flag 2) or LCW, with or without a colour table (flags 1|4, `frames` then
+    hold table indices), with 4- or 2-byte offsets."""
     blobs = []
     for f in frames:
         h, w = f.shape
-        enc = bytearray()
-        flat = f.astype(np.uint8).tobytes()
-        i = 0
-        while i < len(flat):
-            if flat[i] == 0:
-                run = 1
-                while i + run < len(flat) and flat[i + run] == 0 and run < 255:
-                    run += 1
-                enc += bytes([0, run])
-                i += run
-            else:
-                enc.append(flat[i])
-                i += 1
-        blobs.append(struct.pack("<HBHBHH", 2, h, w, h, 10 + len(enc), w * h) + bytes(enc))
+        enc = _rle_zeros(f.astype(np.uint8).tobytes())
+        flags, extra = (0 if compressed else 2), b""
+        if table is not None:
+            flags |= 1 | 4
+            extra = bytes([len(table)]) + bytes(table)
+        body = lcw_literal(enc) if compressed else enc
+        size = 10 + len(extra) + len(body)
+        blobs.append(struct.pack("<HBHBHH", flags, h, w, h, size, len(enc)) + extra + body)
     n = len(frames)
-    pos = 2 + 4 * (n + 1)
+    step, fmt = (2, "<H") if two_byte else (4, "<I")
+    pos = 2 + step * (n + 1)
     offs = []
     for b in blobs:
         offs.append(pos - 2)
         pos += len(b)
     offs.append(pos - 2)
-    return struct.pack("<H", n) + b"".join(struct.pack("<I", o) for o in offs) + b"".join(blobs)
+    return struct.pack("<H", n) + b"".join(struct.pack(fmt, o) for o in offs) + b"".join(blobs)
 
 
 def blob_frame(h, w, seed, colour=40):
@@ -195,6 +207,50 @@ class WestwoodDecoderTest(unittest.TestCase):
         for a, b in zip(frames, out):
             np.testing.assert_array_equal(a, b)
 
+    def test_d2_lcw_frames_with_a_colour_table_and_two_byte_offsets(self):
+        """The layout of TD's MOUSE.SHP: 2-byte offsets, LCW, a colour table."""
+        table = [0, 15, 120, 121, 179, 200, 201, 202]
+        idx = [np.where(blob_frame(9, 11, i) > 0, 1 + i, 0).astype(np.uint8) for i in range(3)]
+        idx[1][4, 2:6] = 6
+        data = write_d2(idx, compressed=True, table=table, two_byte=True)
+        # The reader tells the offset width from the low byte of the 2nd offset.
+        self.assertTrue(struct.unpack_from("<I", data, 2)[0] & 0xFF0000)
+        out = westwood.shp_d2_frames(data)
+        self.assertEqual(len(out), 3)
+        for a, b in zip(idx, out):
+            np.testing.assert_array_equal(np.asarray(table, np.uint8)[a], b)
+
+    def test_td_shape_delta_chain_against_a_keyframe(self):
+        """0x80 keyframe, 0x20 against the previous frame, 0x40 against the
+        keyframe by its offset, then 0x20 against that 0x40 frame."""
+        h, w = 6, 8
+        key = blob_frame(h, w, 0)
+        d1 = bytes([0x02, 9, 9, 0x80, 0x00, 0x00])           # row 0: ^ 9 9
+        d2 = bytes([0x88, 0x01, 5, 0x80, 0x00, 0x00])        # skip 8, row 1: ^ 5
+        d3 = bytes([0x00, 2, 4, 0x80, 0x00, 0x00])           # fill 2 x 4: ^ 4 4
+        key_blob = lcw_literal(key.tobytes())
+        n = 4
+        start = 14 + 8 * (n + 2)
+        offs = [start]
+        for b in (key_blob, d1, d2):
+            offs.append(offs[-1] + len(b))
+        end = offs[-1] + len(d3)
+        head = struct.pack("<HHHHHHH", n, 0, 0, w, h, 0, 0)
+        head += struct.pack("<II", offs[0] | (0x80 << 24), 0)
+        head += struct.pack("<II", offs[1] | (0x20 << 24), 0)
+        head += struct.pack("<II", offs[2] | (0x40 << 24), offs[0])
+        head += struct.pack("<II", offs[3] | (0x20 << 24), 0)
+        head += struct.pack("<II", end, 0) + struct.pack("<II", 0, 0)
+        out = westwood.shp_frames(head + key_blob + d1 + d2 + d3)
+        f1 = key.copy()
+        f1[0, :2] ^= 9
+        f2 = key.copy()                                      # from the KEYFRAME, not f1
+        f2[1, 0] ^= 5
+        f3 = f2.copy()
+        f3[0, :2] ^= 4
+        for want, got in zip((key, f1, f2, f3), out):
+            np.testing.assert_array_equal(want, got)
+
 
 class FindDataTest(unittest.TestCase):
 
@@ -291,11 +347,43 @@ class BuildTest(unittest.TestCase):
         try:
             game_assets.start(settings.get).join(60)
             self.assertEqual(game_assets.override_for(cnc_classic.TEMPLATE), str(self.built["nod"]))
+            self.assertTrue(game_assets.take_changed(), "a new copy must ask for a re-send")
+            self.assertFalse(game_assets.take_changed(), "the flag is taken once")
+            game_assets.start(settings.get).join(60)
+            self.assertFalse(game_assets.take_changed(), "the same result needs no re-send")
             settings["game_assets_enabled"] = False
             game_assets.start(settings.get).join(60)
             self.assertIsNone(game_assets.override_for(cnc_classic.TEMPLATE))
+            self.assertTrue(game_assets.take_changed(), "dropping the copy needs a re-send too")
         finally:
             game_assets.cache_dir = orig
+            game_assets.take_changed()
+
+    def test_builds_of_the_same_copy_can_overlap(self):
+        """A settings change during the startup build starts a second build of
+        the same file; neither may move the other's temp file away."""
+        import threading
+        icons = cnc_classic.render(cnc_classic.Sprites(cnc_classic.find_data(str(self.data))), "gdi")
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "copy.mods.png"
+            errors = []
+            gate = threading.Barrier(4)
+
+            def one():
+                try:
+                    gate.wait()
+                    cnc_classic.patch(cnc_classic.SHIPPED, cnc_classic.SPEC, icons, out)
+                except Exception as e:  # noqa: BLE001 — collected and asserted below
+                    errors.append(e)
+
+            threads = [threading.Thread(target=one) for _ in range(4)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(60)
+            self.assertEqual(errors, [])
+            self.assertTrue(out.exists())
+            self.assertEqual(sorted(p.name for p in Path(d).iterdir()), ["copy.mods.png"])
 
     def test_an_overridden_underlay_stays_an_underlay(self):
         """The send path dims an Underlay; the copy must keep that mark."""
