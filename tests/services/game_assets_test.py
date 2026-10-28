@@ -399,6 +399,12 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(build_copy(self.cache, self.data, "gdi"), gdi)
         self.assertEqual(os.stat(gdi).st_mtime_ns, stamp, "a cached copy must not be rebuilt")
 
+    def test_the_log_names_the_folder_the_art_came_from(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertLogs("PolyHost", "INFO") as logs:
+                build_copy(d, self.data, "nod")
+        self.assertTrue(any(f"from {self.data}." in line for line in logs.output), logs.output)
+
     def test_unknown_faction_falls_back_to_the_first_choice(self):
         self.assertEqual(build_copy(self.cache, self.data, "orcs").name, self.built["gdi"].name)
 

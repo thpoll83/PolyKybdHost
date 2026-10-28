@@ -200,5 +200,6 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
     n = patch(shipped, spec, icons, out)
-    log.info("Game art: %d keys of %s drawn by %s (%s).", n, template, name, variant or "-")
+    log.info("Game art: %d keys of %s drawn by %s (%s) from %s.", n, template, name,
+             variant or "-", Path(reader.fingerprint(files)[0]).parent)
     return out
