@@ -36,8 +36,11 @@ group number to a unit type; the icons only suggest a habit.
 As for Age of Empires II (`../aoe2/SOURCES.md`): every icon sits at the right
 edge and uses the full height, and the firmware clears 3 px around it, so a
 letter legend stays whole. The F-key areas use AoE2's measured legend widths:
-F1 to F3 and F8 34×40, F9 40×40, F10 to F12 21×40. The control groups are
-48×40, drawn 1:1, 5 px from the right edge.
+F1 to F3 and F8 34×40, F9 40×40. F10 to F12 are 40×40 as well, although their
+legends end at x 47 to 51 (AoE2 measured 21×40 to keep them whole): at 21 px the
+icons could not be read, so they cover the right part of the legend (maintainer's
+choice, 2026-10-28). The control groups are 48×40, drawn 1:1, 5 px from the
+right edge.
 
 All icons are flat 1-bit silhouettes, as in the AoE2 set. Save, Load, Help and
 Chat are solid shapes and fill a 34×34 box instead of 40×40, so they do not

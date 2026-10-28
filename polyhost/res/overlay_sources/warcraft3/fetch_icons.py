@@ -69,8 +69,7 @@ GROUP_UNITS = {
 }
 
 # Key area of each icon, from warcraft3.yaml; the default is 40 x 40.
-SIZES = {"hero": (34, 40), "idleworker": (34, 40), "gamemenu": (21, 40),
-         "allies": (21, 40), "chatlog": (21, 40)}
+SIZES = {"hero": (34, 40), "idleworker": (34, 40)}
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"save": (34, 34), "load": (34, 34), "help": (34, 34), "chat": (34, 34)}
 HEROES = "123"                                  # F1..F3: the helmet with the hero's number

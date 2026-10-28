@@ -84,9 +84,9 @@ bindings:
 
   # Menus
   - { key: F9, icon: questlog.png, label: "Quest log" }
-  - { key: F10, icon: gamemenu.png, label: "Game menu", region: [21, 40] }
-  - { key: F11, icon: allies.png, label: "Allies menu", region: [21, 40] }
-  - { key: F12, icon: chatlog.png, label: "Message log", region: [21, 40] }
+  - { key: F10, icon: gamemenu.png, label: "Game menu" }
+  - { key: F11, icon: allies.png, label: "Allies menu" }
+  - { key: F12, icon: chatlog.png, label: "Message log" }
   - { key: O, mods: [ALT], icon: options.png, label: "Options" }
   - { key: S, mods: [ALT], icon: save.png, label: "Save game" }
   - { key: L, mods: [ALT], icon: load.png, label: "Load game" }
