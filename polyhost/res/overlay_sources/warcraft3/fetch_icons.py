@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fetch + render the Warcraft III icons (reproducible).
 
-The key icons are silhouettes from game-icons.net (CC BY 3.0) and Font Awesome
-Free (CC BY 4.0), shaded and dithered like the C&C Remastered set. The control
+The key icons are flat silhouettes from game-icons.net (CC BY 3.0) and Font
+Awesome Free (CC BY 4.0), as in the Age of Empires II set. The control
 groups are game-icons.net units drawn twice, as for Age of Empires II, with a
 plus for Ctrl (create) and a ringed plus for Shift (add). SOURCES.md credits
 each. The ESC mark is WARCRAFT III set in Cinzel Black (SIL OFL 1.1); the
@@ -22,7 +22,6 @@ from polyhost.res.overlay_sources import game_icons  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
-from polyhost.res.overlay_sources.cnc_remastered import wz_units  # noqa: E402
 
 ICONS = {
     # Selection and view
@@ -72,6 +71,8 @@ GROUP_UNITS = {
 # Key area of each icon, from warcraft3.yaml; the default is 40 x 40.
 SIZES = {"hero": (34, 40), "idleworker": (34, 40), "gamemenu": (21, 40),
          "allies": (21, 40), "chatlog": (21, 40)}
+# Solid icons that read heavier than the rest: drawn in a smaller box.
+INK = {"save": (34, 34), "load": (34, 34), "help": (34, 34), "chat": (34, 34)}
 HEROES = "123"                                  # F1..F3: the helmet with the hero's number
 
 # The ESC mark is set in Cinzel (SIL OFL 1.1), its Black instance.
@@ -107,26 +108,28 @@ def groups(out: Path) -> None:
         print(f"  group{digit}.png, groupnew{digit}.png, groupadd{digit}.png  <- _unit{digit}.png twice")
 
 
-def dither_icons(out: Path) -> None:
-    """Every key icon in the style of the C&C set: relief, dither, lit outline,
-    drawn at exactly its key area so the generator places it 1:1."""
+def flat_icons(out: Path) -> None:
+    """Every key icon as a flat 1-bit silhouette, as in the AoE2 set, drawn at
+    exactly its key area so the generator places it 1:1. The icons in INK fill
+    a smaller box in the bottom-right corner of that area."""
     import numpy as np
     from PIL import Image
     for stem in ICONS:
         size = SIZES.get(stem, (40, 40))
-        big = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
-        big = big.crop(big.getbbox())
-        scale = 320 / max(big.size)
-        big = big.resize((round(big.width * scale), round(big.height * scale)), Image.LANCZOS)
-        mask = np.asarray(big) > 127
-        m = wz_units.keycap(cnc.relief(mask, seed=len(stem)), mask, size=size, mirror=False)
+        box = INK.get(stem, size)
+        alpha = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
+        alpha = alpha.crop(alpha.getbbox())
+        scale = min(box[0] / alpha.width, box[1] / alpha.height)
+        alpha = alpha.resize((max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale))),
+                             Image.LANCZOS)
+        m = np.asarray(alpha) > 150
         canvas = np.zeros((size[1], size[0]), bool)
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
         cnc._save_mask(canvas, out / f"{stem}.png")
         if stem == "hero":
             for n in HEROES:
                 cnc._save_mask(cnc._stamp(canvas, n, height=12, top=17), out / f"hero{n}.png")
-    print(f"  {len(ICONS)} key icons dithered (+ hero1..{HEROES[-1]})")
+    print(f"  {len(ICONS)} key icons drawn flat (+ hero1..{HEROES[-1]})")
 
 
 def _mark_font(px: int):
@@ -167,7 +170,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render(ICONS, out)
     game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
-    dither_icons(out)
+    flat_icons(out)
     groups(out)
     program(out)
     print(f"Wrote icons to {out}")

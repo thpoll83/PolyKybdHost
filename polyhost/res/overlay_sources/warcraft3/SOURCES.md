@@ -39,10 +39,11 @@ letter legend stays whole. The F-key areas use AoE2's measured legend widths:
 F1 to F3 and F8 34×40, F9 40×40, F10 to F12 21×40. The control groups are
 48×40, drawn 1:1, 5 px from the right edge.
 
-Single icons are shaded and dithered like the C&C Remastered set
-(`../cnc_remastered/fetch_icons.py`: `relief()` and `wz_units.keycap()`). F1 to
-F3 stamp the hero number into the helmet. The control groups are flat
-silhouettes like AoE2's; Ctrl adds a plus, Shift a plus in a ring.
+All icons are flat 1-bit silhouettes, as in the AoE2 set. Save, Load, Help and
+Chat are solid shapes and fill a 34×34 box instead of 40×40, so they do not
+outweigh the outline icons. F1 to F3 stamp the hero number into the helmet. The
+control groups are drawn twice, like AoE2's; Ctrl adds a plus, Shift a plus in
+a ring.
 
 ESC shows WARCRAFT over a large III in Cinzel Black (SIL OFL 1.1, the `wght`
 900 instance of `ofl/cinzel/Cinzel[wght].ttf` from google/fonts at commit
