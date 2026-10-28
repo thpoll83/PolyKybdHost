@@ -243,6 +243,27 @@ class WestwoodDecoderTest(unittest.TestCase):
         frame = blob_frame(h, w, 0)
         self.assertEqual(westwood.shp_frames(write_shp([frame]))[0].shape, (h, w))
 
+    def test_only_the_frames_asked_for_are_decoded(self):
+        """A header may claim 65535 frames; decoding stops at `count`, so the
+        memory used follows the highest frame a recipe asks for."""
+        frames = [blob_frame(9, 11, i) for i in range(5)]
+        out = westwood.shp_frames(write_shp(frames), count=2)
+        self.assertEqual(len(out), 2)
+        np.testing.assert_array_equal(out[1], frames[1])
+        self.assertEqual(len(westwood.shp_frames(write_shp(frames), count=99)), 5)
+        idx = [np.where(blob_frame(9, 11, i) > 0, 1, 0).astype(np.uint8) for i in range(4)]
+        self.assertEqual(len(westwood.shp_d2_frames(write_d2(idx), count=1)), 1)
+        # The reader decodes up to the frame it needs and extends on demand.
+        sp = westwood_td.Sprites.__new__(westwood_td.Sprites)
+        sp._shp, sp.mouse = {}, write_d2(idx)
+        with mock.patch.object(westwood, "shp_d2_frames", wraps=westwood.shp_d2_frames) as dec:
+            sp.cursor(1)
+            sp.cursor(0)
+            sp.cursor(2)
+        self.assertEqual([c.args[1] for c in dec.call_args_list], [2, 3])
+        with self.assertRaises(IndexError):
+            sp.cursor(4)
+
     def test_d2_lcw_frames_with_a_colour_table_and_two_byte_offsets(self):
         """The layout of TD's MOUSE.SHP: 2-byte offsets, LCW, a colour table."""
         table = [0, 15, 120, 121, 179, 200, 201, 202]

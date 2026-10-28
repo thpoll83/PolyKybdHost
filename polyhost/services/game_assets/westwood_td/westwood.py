@@ -143,16 +143,17 @@ def xor_delta(src: bytes, size: int) -> bytes:
     return bytes(dst)
 
 
-def shp_frames(data: bytes) -> list[np.ndarray]:
-    """All frames of a TD shape file as (h, w) palette-index arrays. A frame is
-    LCW-compressed (0x80), an XOR delta against an earlier keyframe (0x40) or
-    against the previous frame (0x20)."""
+def shp_frames(data: bytes, count: int | None = None) -> list[np.ndarray]:
+    """The first `count` frames (all when None) of a TD shape file as (h, w)
+    palette-index arrays. A frame is LCW-compressed (0x80), an XOR delta against
+    an earlier keyframe (0x40) or against the previous frame (0x20). Decoding
+    stops at `count`, so a header claiming 65535 frames costs only what is used."""
     n, _x, _y, w, h = struct.unpack_from("<HHHHH", data, 0)
     _check_size(w, h)
     hdr = [struct.unpack_from("<II", data, 14 + 8 * i) for i in range(n + 1)]
     offs = [a & 0xFFFFFF for a, _ in hdr]
     frames, by_offset = [], {}
-    for i in range(n):
+    for i in range(n if count is None else min(n, count)):
         a, b = hdr[i]
         off, fmt, ref = a & 0xFFFFFF, a >> 24, b & 0xFFFFFF
         raw = data[off:offs[i + 1]]
@@ -182,16 +183,16 @@ def _rle_zeros(src: bytes, size: int) -> bytes:
     return bytes(out[:size])
 
 
-def shp_d2_frames(data: bytes) -> list[np.ndarray]:
-    """Frames of a Dune-2-style shape file, the format of TD's MOUSE.SHP: a frame
-    count, 2- or 4-byte offsets, then per frame a small header, an optional
-    colour table, LCW and a zero-run encoding."""
+def shp_d2_frames(data: bytes, count: int | None = None) -> list[np.ndarray]:
+    """The first `count` frames (all when None) of a Dune-2-style shape file, the
+    format of TD's MOUSE.SHP: a frame count, 2- or 4-byte offsets, then per frame
+    a small header, an optional colour table, LCW and a zero-run encoding."""
     n, = struct.unpack_from("<H", data, 0)
     two_byte = (struct.unpack_from("<I", data, 2)[0] & 0xFF0000) > 0
     fmt, step = ("<H", 2) if two_byte else ("<I", 4)
     offs = [struct.unpack_from(fmt, data, 2 + step * i)[0] + 2 for i in range(n + 1)]
     frames = []
-    for i in range(n):
+    for i in range(n if count is None else min(n, count)):
         p = offs[i]
         flags, = struct.unpack_from("<H", data, p)
         p += 3

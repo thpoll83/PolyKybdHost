@@ -200,6 +200,10 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
     n = patch(shipped, spec, icons, out)
+    folder = str(Path(reader.fingerprint(files)[0]).parent)
+    home = str(Path.home())
+    if folder.startswith(home):
+        folder = "~" + folder[len(home):]       # no user name in a shared log
     log.info("Game art: %d keys of %s drawn by %s (%s) from %s.", n, template, name,
-             variant or "-", Path(reader.fingerprint(files)[0]).parent)
+             variant or "-", folder)
     return out

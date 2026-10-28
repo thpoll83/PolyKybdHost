@@ -389,7 +389,8 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
     the game's file formats sit beside it (`westwood.py`, which refuses a frame
-    larger than 640x400 px before decoding). A new reader is a new
+    larger than 640x400 px before decoding and decodes a shape file only up to
+    the highest frame a recipe asks for). A new reader is a new
     subfolder plus one line in `readers._registry()`.
   - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
     settings dialog adds their labels, descriptions and dropdowns, so a reader

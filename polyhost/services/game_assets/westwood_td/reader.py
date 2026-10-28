@@ -119,25 +119,32 @@ def _td_folders(inst: Path) -> list[Path]:
 # --------------------------------------------------------------------------- #
 
 class Sprites:
-    """The archives and palette, with every decoded shape file cached."""
+    """The archives and palette. A shape file is decoded only up to the highest
+    frame a recipe asked for, and cached."""
 
     def __init__(self, files: dict):
         self.conquer = westwood.Mix.open(files["conquer.mix"])
         temperat = westwood.Mix.open(files["temperat.mix"])
         self.pal = westwood.palette(temperat.get("temperat.pal"))
-        self.mouse = None
+        self.mouse = None                       # MOUSE.SHP bytes, when present
         if "cclocal.mix" in files:
-            data = westwood.Mix.open(files["cclocal.mix"]).get("mouse.shp")
-            self.mouse = westwood.shp_d2_frames(data) if data else None
+            self.mouse = westwood.Mix.open(files["cclocal.mix"]).get("mouse.shp")
         self._shp = {}
 
-    def frames(self, name: str) -> list:
-        if name not in self._shp:
-            data = self.conquer.get(f"{name}.shp")
-            if data is None:
-                raise KeyError(f"{name}.shp is not in CONQUER.MIX")
-            self._shp[name] = westwood.shp_frames(data)
-        return self._shp[name]
+    def _frame(self, key: str, data: bytes, decode, i: int) -> np.ndarray:
+        have = self._shp.get(key, [])
+        if i >= len(have):
+            have = self._shp[key] = decode(data, i + 1)
+        return have[i]                          # IndexError past the last frame
+
+    def frame(self, name: str, i: int) -> np.ndarray:
+        data = self.conquer.get(f"{name}.shp")
+        if data is None:
+            raise KeyError(f"{name}.shp is not in CONQUER.MIX")
+        return self._frame(name, data, westwood.shp_frames, i)
+
+    def cursor(self, i: int) -> np.ndarray:
+        return self._frame(":mouse", self.mouse, westwood.shp_d2_frames, i)
 
     def grey(self, idx: np.ndarray):
         """(grey 0..1, cover) of a palette-index image; index 0 is empty and the
@@ -172,17 +179,17 @@ def _unit(sp: Sprites, name: str, face: int, turret) -> np.ndarray:
     on top; the weapons factory is WEAP.SHP below and WEAP2.SHP above)."""
     idx = None
     for part in name.split("+"):
-        f = sp.frames(part)[face]
+        f = sp.frame(part, face)
         idx = f.copy() if idx is None else np.where(f != 0, f, idx)
     if turret is not None:
-        t = sp.frames(name)[turret]
+        t = sp.frame(name, turret)
         idx = np.where(t != 0, t, idx)
     return idx
 
 
 def _crowd(sp: Sprites, name: str, frame: int):
     """Twelve of one infantry sprite (E1 standing is frame 5) in three staggered rows."""
-    g, c = _crop(*sp.grey(sp.frames(name)[frame]))
+    g, c = _crop(*sp.grey(sp.frame(name, frame)))
     h, w = c.shape[0] + 14, c.shape[1] + 31
     G, C = np.zeros((h, w)), np.zeros((h, w), bool)
     for r in range(3):
@@ -194,7 +201,7 @@ def _crowd(sp: Sprites, name: str, frame: int):
 
 
 def _rotor_mask(sp, name, frame, scale):
-    r = sp.frames(name)[frame] != 0
+    r = sp.frame(name, frame) != 0
     if scale == 1.0:
         return r
     big = Image.fromarray((np.kron(r, np.ones((8, 8))) * 255).astype(np.uint8))
@@ -208,7 +215,7 @@ def _with_rotors(sp: Sprites, body: str, face: int, rotors, size, gap, along_hul
     `along_hull` the forward offset runs along the hull's long axis, measured
     from the body sprite, from the hull's centre; without it the rotor is placed
     from the sprite's frame centre (the Apache's single rotor)."""
-    b = sp.frames(body)[face]
+    b = sp.frame(body, face)
     cv = np.zeros((b.shape[0] + 60, b.shape[1] + 60), np.uint8)
     rot = np.zeros(cv.shape, np.uint8)
     _paste(cv, b, cv.shape[1] / 2, cv.shape[0] / 2)
@@ -238,7 +245,7 @@ def _px(world: float) -> float:
 
 
 def _cursor(sp: Sprites, frame: int, size, bright=-1.0):
-    f = sp.mouse[frame]
+    f = sp.cursor(frame)
     c = (f != 0) & (sp.pal[f].astype(float) @ [0.299, 0.587, 0.114] / 255 > bright)
     (c,) = _crop(c)
     k = min(CURSOR_SCALE, (size[0] - 2) / c.shape[1], (size[1] - 2) / c.shape[0])
