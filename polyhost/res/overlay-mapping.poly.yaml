@@ -1878,6 +1878,17 @@ age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
 # under Proton on KDE Plasma (both measured 2026-10-23).
 aoe2de_s,steam_app_813780:
   overlay: aoe2_de_template.mods.png
+# OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
+# and tells them apart by the window title ("OpenRA - Red Alert", measured
+# 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
+# dropped by the matcher) and plays like Red Alert. All mods share the keys.
+openra:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
+  titles-contains:
+    Tiberian Dawn:
+      overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
+openra-ca:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
