@@ -92,9 +92,7 @@ def get_overlay_path(filepath):
     send path can still ask the keyboard to draw it dimmed."""
     from polyhost.services import game_assets
     local = game_assets.override_for(filepath)
-    if local:
-        return local
-    return as_underlay_path(filepath, os.path.join(_RES_DIR, "overlays", filepath))
+    return as_underlay_path(filepath, local or os.path.join(_RES_DIR, "overlays", filepath))
 
 
 def strip_key_injection(lines):

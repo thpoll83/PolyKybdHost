@@ -10,6 +10,7 @@ import os
 import struct
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 import numpy as np
@@ -295,6 +296,18 @@ class BuildTest(unittest.TestCase):
             self.assertIsNone(game_assets.override_for(cnc_classic.TEMPLATE))
         finally:
             game_assets.cache_dir = orig
+
+    def test_an_overridden_underlay_stays_an_underlay(self):
+        """The send path dims an Underlay; the copy must keep that mark."""
+        from polyhost.core.poly_core import get_overlay_path
+        from polyhost.handler.common import Underlay
+        with mock.patch.dict(game_assets._overrides, {cnc_classic.TEMPLATE: "/cache/copy.png"}):
+            plain = get_overlay_path(cnc_classic.TEMPLATE)
+            under = get_overlay_path(Underlay(cnc_classic.TEMPLATE))
+        self.assertEqual(plain, "/cache/copy.png")
+        self.assertFalse(getattr(plain, "underlay", False))
+        self.assertEqual(under, "/cache/copy.png")
+        self.assertTrue(getattr(under, "underlay", False))
 
 
 if __name__ == "__main__":
