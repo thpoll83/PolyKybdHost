@@ -393,7 +393,8 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
     settings dialog adds their labels, descriptions and dropdowns, so a reader
     brings its own settings.
-  - `__init__.py`: `register_mapping()` at mapping load; `request()` on the
+  - `__init__.py`: `register_mapping()` at mapping load; `wants()` gates the
+    window-system query for the hint; `request()` on the
     first OFF_ON send of an opted-in template builds the copy on a thread, with
     the focused window's executable folder (`win_process.process_dir()`) as the
     first place to look, and retries on the next send when it found nothing;

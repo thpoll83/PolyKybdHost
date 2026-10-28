@@ -651,9 +651,13 @@ class PolyCore(Observable):
         it is read on the build thread, and only when a build starts."""
         from polyhost.handler.win_process import process_dir
         from polyhost.services import game_assets
+        names = [str(n) for n in (data if isinstance(data, (list, tuple)) else [data])]
+        names = [n for n in names if game_assets.wants(n, self.poly_settings.get)]
+        if not names:
+            return          # no window-system query on a switch to any other app
         pid = handler.focused_pid()
-        for name in data if isinstance(data, (list, tuple)) else [data]:
-            game_assets.request(str(name), self.poly_settings.get, hint=lambda: process_dir(pid))
+        for name in names:
+            game_assets.request(name, self.poly_settings.get, hint=lambda: process_dir(pid))
 
     def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
         """The body of `tick_window_tracking`, which adds the timing warnings."""

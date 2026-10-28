@@ -527,9 +527,16 @@ class RequestTest(unittest.TestCase):
         self.assertIsNone(self._request(), "a built copy is not built again")
 
     def test_templates_without_an_entry_point_and_a_disabled_feature_build_nothing(self):
+        self.assertFalse(game_assets.wants("vscode_template.mods.png", self.settings.get))
         self.assertIsNone(game_assets.request("vscode_template.mods.png", self.settings.get))
+        self.assertTrue(game_assets.wants(TEMPLATE, self.settings.get))
         self.settings["game_assets_enabled"] = False
+        self.assertFalse(game_assets.wants(TEMPLATE, self.settings.get))
         self.assertIsNone(game_assets.request(TEMPLATE, self.settings.get))
+
+    def test_a_built_copy_is_not_wanted_again(self):
+        self._request()
+        self.assertFalse(game_assets.wants(TEMPLATE, self.settings.get))
 
     def test_the_hint_is_read_on_the_build_thread(self):
         seen = []

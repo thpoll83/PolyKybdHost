@@ -53,6 +53,15 @@ def override_for(template: str) -> str | None:
     return _overrides.get(template)
 
 
+def wants(template: str, settings_get) -> bool:
+    """Whether request() would start a build for `template` now. The caller
+    checks this before it reads anything from the window system for the hint."""
+    with _lock:
+        if str(template) not in _specs or str(template) in _started:
+            return False
+    return bool(settings_get("game_assets_enabled"))
+
+
 def take_changed() -> bool:
     """Whether the copies changed since the last call; clears the flag."""
     if _changed.is_set():
