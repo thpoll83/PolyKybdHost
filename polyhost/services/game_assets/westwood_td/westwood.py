@@ -15,6 +15,17 @@ import struct
 
 import numpy as np
 
+# The largest frame decoded: the game's own 640x400 screen (agreed with the
+# maintainer, 2026-10-28). The largest frame in the freeware CONQUER.MIX is
+# 13,752 px (72x191). The 16-bit header fields allow 65535x65535, which LCW fill
+# commands can expand to about 4 GiB from a 256 KiB file.
+MAX_FRAME_PIXELS = 640 * 400
+
+
+def _check_size(w: int, h: int) -> None:
+    if w * h > MAX_FRAME_PIXELS:
+        raise ValueError(f"frame of {w}x{h} px is larger than {MAX_FRAME_PIXELS} px")
+
 
 def td_hash(name: str) -> int:
     """The Tiberian Dawn MIX file-name hash: upper-case ASCII, zero-padded to a
@@ -137,6 +148,7 @@ def shp_frames(data: bytes) -> list[np.ndarray]:
     LCW-compressed (0x80), an XOR delta against an earlier keyframe (0x40) or
     against the previous frame (0x20)."""
     n, _x, _y, w, h = struct.unpack_from("<HHHHH", data, 0)
+    _check_size(w, h)
     hdr = [struct.unpack_from("<II", data, 14 + 8 * i) for i in range(n + 1)]
     offs = [a & 0xFFFFFF for a, _ in hdr]
     frames, by_offset = [], {}
@@ -187,6 +199,7 @@ def shp_d2_frames(data: bytes) -> list[np.ndarray]:
         p += 2
         h = data[p]
         p += 1
+        _check_size(w, h)
         left, dsize = struct.unpack_from("<HH", data, p)
         p += 4
         left -= 10

@@ -221,6 +221,28 @@ class WestwoodDecoderTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             westwood._rle_zeros(bytes([5, 0, 3]), 0xFFFF * 0xFFFF)
 
+    def test_a_frame_larger_than_the_screen_is_refused_before_decoding(self):
+        """65535 x 65535 with fill commands that would expand to about 4 GiB:
+        refused from the header, before lcw() allocates anything."""
+        fills = bytes([0xFE, 0xFF, 0xFF, 7]) * 65536 + bytes([0x80])
+        start = 14 + 8 * 3
+        head = struct.pack("<HHHHHHH", 1, 0, 0, 0xFFFF, 0xFFFF, 0, 0)
+        head += struct.pack("<II", start | (0x80 << 24), 0)
+        head += struct.pack("<II", start + len(fills), 0) + struct.pack("<II", 0, 0)
+        with mock.patch.object(westwood, "lcw", side_effect=AssertionError("decoded")):
+            with self.assertRaisesRegex(ValueError, "larger than"):
+                westwood.shp_frames(head + fills)
+        # A D2 frame header can claim 65535 x 255.
+        d2 = struct.pack("<H", 1) + struct.pack("<II", 8, 20)
+        d2 += struct.pack("<HBHBHH", 2, 255, 0xFFFF, 255, 10, 0)
+        with self.assertRaisesRegex(ValueError, "larger than"):
+            westwood.shp_d2_frames(d2)
+
+    def test_the_largest_frame_allowed_still_decodes(self):
+        w, h = 640, 400
+        frame = blob_frame(h, w, 0)
+        self.assertEqual(westwood.shp_frames(write_shp([frame]))[0].shape, (h, w))
+
     def test_d2_lcw_frames_with_a_colour_table_and_two_byte_offsets(self):
         """The layout of TD's MOUSE.SHP: 2-byte offsets, LCW, a colour table."""
         table = [0, 15, 120, 121, 179, 200, 201, 202]
