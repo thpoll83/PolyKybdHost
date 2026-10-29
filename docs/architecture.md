@@ -394,7 +394,7 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
     the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
-    PAK archives and Dune II shape files and refuses the 1.0 release;
+    PAK archives and the build portraits and sprites of Dune II 1.0 and 1.07;
     `westwood_d2k/` for Dune 2000, which reads the R16 sprite file). `openra.py` lists the folders where
     OpenRA installs the original game files; the Red Alert, Tiberian Dawn and
     Dune 2000 readers search them. Its

@@ -1,27 +1,26 @@
 """Game-asset reader for Dune II (1992).
 
-Reads the user's own DUNE.PAK: the unit sprites UNITS.SHP, UNITS1.SHP and
-UNITS2.SHP, the mouse cursors MOUSE.SHP and the palette IBM.PAL. Dune Legacy
-and OpenDUNE both play from these files (see ``find``). Nothing read here
-leaves the machine.
+Reads the user's own DUNE.PAK: the build portraits SHAPES.SHP, the unit
+sprites UNITS.SHP, UNITS1.SHP and UNITS2.SHP, the mouse cursors MOUSE.SHP and
+the palette IBM.PAL. Dune Legacy and OpenDUNE both play from these files (see
+``find``). Nothing read here leaves the machine. Recipes:
 
-The sprites are 16 to 24 px, too small to dither like the C&C ones. A unit is
-drawn pixel for pixel at a whole-number scale: its outline lit and the inside
-lit where it is brighter than the sprite's median. Recipes:
-
-- ``{unit: units2, face: 3, turret: 8}``: a frame of a shape file, with an
-  optional second frame (a turret) drawn over it, the two centred on each
-  other;
+- ``{portrait: 78}``: a 32x24 build portrait of SHAPES.SHP. Its one-colour
+  background is cut away and the unit dithered like the C&C sprites;
+- ``{unit: units2, face: 3, turret: 8}``: a map sprite, with an optional
+  second frame (a turret) drawn over it, the two centred on each other. The
+  sprites are 16 to 24 px, too small to dither: a unit is drawn pixel for
+  pixel at a whole-number scale, its outline lit and the inside lit where it
+  is brighter than the sprite's median;
 - ``{cursor: 5}``: a mouse cursor, as in the C&C reader.
 
-Frame numbers are those of the 1.07 files (Dune Legacy's GFXManager.cpp):
-each ground unit has five facings from north to south, so base + 3 faces
-south-east.
+Frame numbers are those of Dune Legacy's GFXManager.cpp. The 1.0 demo's
+SHAPES.SHP, UNITS.SHP and UNITS2.SHP have the same pictures at the same
+numbers, so 1.0 and 1.07 files are both read.
 """
 from __future__ import annotations
 
 import os
-import struct
 from pathlib import Path
 
 import numpy as np
@@ -75,21 +74,11 @@ def fingerprint(files: dict) -> list:
     return sorted(files.values())
 
 
-def is_v1_0(shp: bytes) -> bool:
-    """Whether a shape file is from Dune II 1.0 (the 1992 demo and first
-    release): its frame offsets are 2 bytes, those of 1.07 are 4."""
-    return len(shp) >= 6 and (struct.unpack_from("<I", shp, 2)[0] & 0xFF0000) > 0
-
-
 def open_source(files: dict) -> td.Sprites:
     pak = Pak.open(files["dune.pak"])
     pal = pak.get("ibm.pal")
     if pal is None:
         raise KeyError("IBM.PAL is not in DUNE.PAK")
-    units = pak.get("units.shp")
-    if units is not None and is_v1_0(units):
-        # 1.0 numbers its frames differently: the recipes would draw the wrong units.
-        raise ValueError("DUNE.PAK is from Dune II 1.0; the recipes number the frames of 1.07")
     return td.Sprites([pak], pal, pak.get("mouse.shp"), "DUNE.PAK", decode=westwood.shp_d2_frames)
 
 
@@ -122,7 +111,23 @@ def pixel_icon(sp: td.Sprites, idx: np.ndarray, size) -> np.ndarray:
     return np.kron(m, np.ones((k, k), bool))
 
 
+def portrait(sp: td.Sprites, k: int, size) -> np.ndarray:
+    """Build portrait `k` without its 1 px frame and its background (the
+    colour most common along the edge), dithered to fit `size` (w, h)."""
+    f = sp.frame("shapes", k)[1:-1, 1:-1]
+    cover = f != np.bincount(np.concatenate([f[0], f[-1], f[:, 0], f[:, -1]])).argmax()
+    p = np.pad(cover, 1)
+    cover &= p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]   # drop single stray pixels
+    if not cover.any():
+        raise ValueError(f"portrait {k} is all background")
+    g = sp.pal[f].astype(float) @ [0.299, 0.587, 0.114] / 255
+    up = np.ones((10, 10))
+    return dither.keycap(np.kron(g, up), np.kron(cover, up).astype(bool), size, **td.SHARP)
+
+
 def draw(sp: td.Sprites, recipe: dict, size):
+    if "portrait" in recipe:
+        return portrait(sp, recipe["portrait"], size)
     if "unit" in recipe:
         return pixel_icon(sp, _pixels(sp, recipe), size)
     if "cursor" in recipe:

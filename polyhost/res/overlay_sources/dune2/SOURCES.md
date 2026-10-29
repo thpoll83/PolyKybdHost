@@ -82,9 +82,9 @@ All flat icons are silhouettes, shaded and dithered like the OpenRA set.
 ## Keys drawn from the game files
 
 When the original DUNE.PAK is on the machine, the host draws these keys from
-the game's own unit sprites (the `westwood_d2` reader in
+the game's own build portraits (the `westwood_d2` reader in
 `polyhost/services/game_assets`). The shipped files above stay the fallback
-and are the only art in the repository; the game's sprites are never shipped.
+and are the only art in the repository; the game's pictures are never shipped.
 
 | Set | Keys |
 |---|---|
@@ -100,17 +100,17 @@ and are the only art in the repository; the game's sprites are never shipped.
 | 5 | combat tank | combat tank | combat tank |
 | 6 | siege tank | siege tank | siege tank |
 | 7 | rocket launcher | rocket launcher | rocket launcher |
-| 8 | sonic tank | devastator | saboteur |
+| 8 | sonic tank | devastator | deviator |
 | 9 | ornithopter | ornithopter | ornithopter |
 
-Dune II's sprites are 16 to 24 px, too small to dither like the C&C ones: a
-unit is drawn pixel for pixel at a whole-number scale, its outline lit and
-the inside lit where it is brighter than the sprite's median. The frame
-numbers are those of the 1.07 files, from Dune Legacy's
-`src/FileClasses/GFXManager.cpp`; Dune II 1.0 (the 1992 demo and the first
-release) numbers them differently, so the reader refuses its files and the
-shipped icons stay. The 1.07 frame numbers were not checked against 1.07
-files.
+The pictures are the 32x24 build portraits in SHAPES.SHP, the ones the game
+shows in its sidebar. The reader cuts away each portrait's 1 px frame and its
+one-colour background and dithers the unit. The portrait numbers are those
+of Dune Legacy's `src/FileClasses/GFXManager.cpp` (72 siege tank to 91
+troopers). The Dune II 1.0 demo has the same portraits and unit sprites at
+the same numbers, so the reader reads 1.0 and 1.07 files alike; the numbers
+were checked against the demo, not against 1.07 files. The reader can also
+draw the smaller map sprites (`{unit: ..., face: ...}`), pixel for pixel.
 
 The reader looks for DUNE.PAK (any case) in this order:
 

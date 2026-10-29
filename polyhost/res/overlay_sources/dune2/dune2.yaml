@@ -56,5 +56,5 @@ bindings:
 game_assets:
   reader: westwood_d2
   icons:
-    harvesters: {unit: units, face: 13}
-    deploy: {unit: units, face: 18}
+    harvesters: {portrait: 88, region: [48, 40]}
+    deploy: {portrait: 89, region: [48, 40]}

@@ -100,22 +100,22 @@ bindings:
 
 # Keys redrawn from the user's own Dune II files (DUNE.PAK), by the westwood_d2
 # reader in polyhost/services/game_assets. House: the game_dune2_house setting.
-# Frame numbers are those of the 1.07 files (Dune Legacy's GFXManager.cpp).
+# Portrait numbers are those of SHAPES.SHP (Dune Legacy's GFXManager.cpp).
 game_assets:
   reader: westwood_d2
   icons:
-    group1: {unit: units, face: 99}
-    group2: {unit: units, face: 111}
-    group3: {unit: units, face: 8}
-    group4: {unit: units, face: 3}
-    group5: {unit: units2, face: 3, turret: 8}
-    group6: {unit: units2, face: 13, turret: 18}
-    group7: {unit: units2, face: 3, turret: 38}
-    group8: 
-      atreides: {unit: units2, face: 3, turret: 33}
-      harkonnen: {unit: units2, face: 23, turret: 28}
-      ordos: {unit: units, face: 69}
-    group9: {unit: units, face: 54}
+    group1: {portrait: 81}
+    group2: {portrait: 91}
+    group3: {portrait: 80}
+    group4: {portrait: 74}
+    group5: {portrait: 78}
+    group6: {portrait: 72}
+    group7: {portrait: 73}
+    group8:
+      atreides: {portrait: 79}
+      harkonnen: {portrait: 75}
+      ordos: {portrait: 86}
+    group9: {portrait: 85}
     groupnew1: {plus: group1}
     groupnew2: {plus: group2}
     groupnew3: {plus: group3}
@@ -134,6 +134,6 @@ game_assets:
     groupcombine7: {mark: box, of: group7}
     groupcombine8: {mark: box, of: group8}
     groupcombine9: {mark: box, of: group9}
-    harvesters: {unit: units, face: 13}
-    ornithopters: {unit: units, face: 54}
-    drop: {unit: units, face: 46}
+    harvesters: {portrait: 88, region: [48, 40]}
+    ornithopters: {portrait: 85, region: [48, 40]}
+    drop: {portrait: 77, region: [48, 40]}

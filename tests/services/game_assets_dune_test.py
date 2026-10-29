@@ -35,14 +35,39 @@ def write_pak(files: dict) -> bytes:
     return head + struct.pack("<I", 0) + body
 
 
-def make_dune_pak(folder: Path) -> None:
-    """DUNE.PAK with every shape file the Dune II specs draw, in the 1.07 layout."""
+def portrait_frame(seed, background=100):
+    """A 32x24 build portrait: a 1 px frame (colour 15), a flat background
+    and a unit in the middle."""
+    f = np.full((24, 32), background, np.uint8)
+    f[0], f[-1], f[:, 0], f[:, -1] = 15, 15, 15, 15
+    unit = blob_frame(14, 20, seed, colour=60)
+    f[5:19, 6:26] = np.where(unit != 0, unit, f[5:19, 6:26])
+    return f
+
+
+def to_v1_0(shp: bytes) -> bytes:
+    """A 1.07 shape file rewritten as 1.0 writes it: 2-byte offsets counted
+    from the start of the file."""
+    n, = struct.unpack_from("<H", shp, 0)
+    offs = struct.unpack_from(f"<{n + 1}I", shp, 2)
+    start = 2 + 2 * (n + 1)
+    return struct.pack("<H", n) + b"".join(struct.pack("<H", o - offs[0] + start) for o in offs) + shp[2 + 4 * (n + 1):]
+
+
+def make_dune_pak(folder: Path, v1_0=False) -> None:
+    """DUNE.PAK with every shape file the Dune II specs draw, in the 1.07 layout
+    or, with `v1_0`, in the 1.0 one."""
     pal = bytes(min(63, i // 2) for i in range(256) for _ in range(3))
     files = {"IBM.PAL": pal,
+             # 1.0's 2-byte offsets address 64 KB: a colour-0 background keeps
+             # the zero-run encoded file below that.
+             "SHAPES.SHP": write_d2([portrait_frame(i, 0 if v1_0 else 100) for i in range(103)]),
              "UNITS.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(120)]),
              "UNITS1.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(90)]),
              "UNITS2.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(40)]),
              "MOUSE.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(7)])}
+    if v1_0:
+        files = {n: to_v1_0(d) if n.endswith(".SHP") else d for n, d in files.items()}
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "DUNE.PAK").write_bytes(write_pak(files))
 
@@ -94,18 +119,10 @@ class FormatTest(unittest.TestCase):
     def test_shape_files_of_both_versions_decode(self):
         frames = [blob_frame(10, 12, i, colour=60) for i in range(3)]
         v107 = write_d2(frames)
-        # 1.0: 2-byte offsets counted from the start of the file.
-        n = len(frames)
-        body = v107[2 + 4 * (n + 1):]
-        offs = struct.unpack_from(f"<{n + 1}I", v107, 2)
-        start = 2 + 2 * (n + 1)
-        v10 = struct.pack("<H", n) + b"".join(struct.pack("<H", o - offs[0] + start) for o in offs) + body
-        for data in (v107, v10):
+        for data in (v107, to_v1_0(v107)):
             got = westwood.shp_d2_frames(data)
-            self.assertEqual(len(got), n)
+            self.assertEqual(len(got), len(frames))
             self.assertTrue((got[1] == frames[1]).all())
-        self.assertTrue(d2.is_v1_0(v10))
-        self.assertFalse(d2.is_v1_0(v107))
 
     def test_r16_frames_and_their_palette(self):
         with tempfile.TemporaryDirectory() as d:
@@ -198,19 +215,26 @@ class BuildTest(unittest.TestCase):
                             ["openra_d2k_template.mods.png", "openra_d2k_template.combo.mods.png"],
                             {"game_d2k_data_dir": str(self.d2k), "game_d2k_house": house})
 
-    def test_dune_ii_1_0_files_are_refused(self):
+    def test_dune_ii_1_0_files_are_read(self):
+        """The 1.0 demo has the same pictures at the same frame numbers as
+        1.07; only the offset table differs."""
         with tempfile.TemporaryDirectory() as d:
-            make_dune_pak(Path(d))
-            data = Path(d, "DUNE.PAK").read_bytes()
-            p = Pak(data)
-            units = p.get("units.shp")
-            n, = struct.unpack_from("<H", units, 0)
-            offs = struct.unpack_from(f"<{n + 1}I", units, 2)
-            start = 2 + 2 * (n + 1)
-            v10 = struct.pack("<H", n) + b"".join(struct.pack("<H", o - offs[0] + start) for o in offs) + units[2 + 4 * (n + 1):]
-            Path(d, "DUNE.PAK").write_bytes(write_pak({"IBM.PAL": p.get("ibm.pal"), "UNITS.SHP": v10}))
-            with self.assertRaises(ValueError):
-                d2.open_source(d2.find(d))
+            make_dune_pak(Path(d), v1_0=True)
+            self._check(SOURCES / "dune2" / "dune2.yaml", ["dune2_template.mods.png"],
+                        {"game_dune2_data_dir": d, "game_dune2_house": "atreides"})
+
+    def test_a_portrait_loses_its_frame_and_background(self):
+        sp = d2.open_source(d2.find(str(self.d2)))
+        m = d2.draw(sp, {"portrait": 78}, (48, 40))
+        self.assertTrue(m.any())
+        # The unit is 20 of the 30 inner columns: fitted to 48 px wide it is
+        # about 40 px tall, so the background around it is not drawn.
+        self.assertFalse(m[0].all() or m[:, 0].all())
+        self.assertLess(m.mean(), 0.6)
+        with self.assertRaises(ValueError):
+            sp2 = d2.open_source(d2.find(str(self.d2)))
+            sp2.frame = lambda name, k: np.full((24, 32), 100, np.uint8)
+            d2.draw(sp2, {"portrait": 1}, (48, 40))
 
 
 class MappingTest(unittest.TestCase):
