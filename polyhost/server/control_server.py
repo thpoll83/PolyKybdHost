@@ -44,6 +44,14 @@ def _unwrap(result):
     return payload
 
 
+def _bool_param(params, key):
+    """A required JSON boolean. ``bool()`` would read the string "false" as True."""
+    value = params[key]
+    if not isinstance(value, bool):
+        raise RpcError(p.ERR_INVALID_PARAMS, f"'{key}' must be a boolean")
+    return value
+
+
 class ControlServer(MpcListenerServer):
     """Serve a :class:`PolyCore` over the local control socket."""
 
@@ -248,6 +256,8 @@ class ControlServer(MpcListenerServer):
             p.M_OVERLAY_MAPPING_SEND: lambda conn, params: _unwrap(c.send_overlay_mapping(params["mapping"])),
             p.M_ACTIVATE_BOOTLOADER: lambda conn, params: _unwrap(c.activate_bootloader()),
             p.M_SET_HANDEDNESS: lambda conn, params: _unwrap(c.set_handedness(params["master_is_left"])),
+            p.M_SET_HANDEDNESS_BOARD: lambda conn, params: _unwrap(c.set_handedness(
+                params["master_is_left"], _bool_param(params, "split_vbus"))),
             p.M_FW_APPLY_STAGED: lambda conn, params: _unwrap(c.apply_staged_firmware()),
             p.M_FONTPACK_FLASH: lambda conn, params: _unwrap(
                 c.flash_fontpack_bundle(params["bundle"]) if "bundle" in params

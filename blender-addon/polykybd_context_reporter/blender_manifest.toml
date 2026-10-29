@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "polykybd_context_reporter"
+version = "1.0.0"
+name = "PolyKybd Context Reporter"
+tagline = "Tells the local PolyKybdHost which mode and editor you are in"
+maintainer = "PolyKybd <https://www.polykybd.org>"
+type = "add-on"
+website = "https://github.com/thpoll83/PolyKybdHost/tree/main/blender-addon"
+tags = ["System", "User Interface"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+network = "Sends the current interaction mode and editor type to PolyKybdHost on 127.0.0.1 (this computer only)"

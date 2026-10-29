@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the AI assistant overlays.
 
-One icon folder serves five sets: `claude_desktop.yaml` (the Claude desktop
+One icon folder serves seven sets: `claude_desktop.yaml` (the Claude desktop
 app, Code tab), `claude_web.yaml` (claude.ai in a browser),
 `claude_code_web.yaml` (Claude Code on the web, claude.ai/code), `chatgpt.yaml`
-(ChatGPT desktop app and chatgpt.com) and `codex.yaml` (the Codex desktop
-app). They share most of their vocabulary (new chat, search, sidebar,
+(ChatGPT desktop app and chatgpt.com), `codex.yaml` (the Codex desktop
+app), `copilot.yaml` (the Microsoft Copilot app) and `copilot_web.yaml`
+(copilot.microsoft.com). They share most of their vocabulary (new chat, search, sidebar,
 terminal, settings), so the icons live in one place.
 
 Style route: Microsoft Fluent UI System Icons (MIT), with Material Symbols
@@ -15,6 +16,9 @@ Style route: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 * ChatGPT, Codex -- OpenAI's mark is not in Simple Icons or MDI and its
   licence does not allow redistribution, so both get a drawn letter frame
   (`../rect_mark.py`).
+* Copilot on the web -- Microsoft's mark is not in Simple Icons or MDI either,
+  so it gets the same letter frame. The desktop app needs none: the host draws
+  the mark from the app's own executable.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/aichat/fetch_icons.py
@@ -41,6 +45,10 @@ FLUENT = {
     "prev": "Arrow Previous",
     "next": "Arrow Next",
     "back": "Arrow Left",
+    # --- Microsoft 365 Copilot ---
+    "debuginfo": "Bug",
+    "devtools": "Window Dev Tools",
+    "resetzoom": "ms:restart_alt",
     # --- Claude desktop, Code tab ---
     "diff": "ms:difference",
     "browser": "Globe",
@@ -89,10 +97,13 @@ FLUENT = {
     "expand": "Full Screen Maximize",
     "fastmode": "Flash",
     "send": "Send",
+    # --- Microsoft Copilot ---
+    "composer": "Compose",
+    "createmenu": "Add Circle",
 }
 
 BRAND = {"claude.png": "claude"}
-LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx"}
+LETTERS = {"chatgpt.png": "GPT", "codex.png": "Cx", "copilot.png": "Co"}
 
 # Ctrl+1..9 (jump to chat N) uses the numbered tab glyphs of Windows Terminal
 # and WinSCP, copied byte for byte so all three apps share one icon per digit.

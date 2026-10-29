@@ -7,6 +7,7 @@ import time
 import yaml
 from platformdirs import user_config_dir
 
+from polyhost.services.game_assets.readers import reader_defaults
 from polyhost.util import filelock
 
 APP_NAME = "PolyHost"
@@ -77,16 +78,22 @@ def read_setting(name, default=None):
     config dir, merges + re-saves the defaults and logs the whole settings dump,
     which is far too much for a single early-startup lookup (main_app needs
     ``developer_mode`` before it knows which launch path it is even taking).
-    Returns ``default`` for a missing file / key or an unreadable file.
+
+    ⚠️ A key the file does not hold answers the SHIPPED default
+    (`DEFAULT_SETTINGS`), and the caller's ``default`` only for a key that table
+    does not know. The file holds only what someone chose (see PolySettings),
+    so an absent key is the normal case, and a caller's own fallback that
+    disagreed with the table would silently override a changed default.
     """
+    fallback = DEFAULT_SETTINGS.get(name, default)
     try:
         with open(settings_path(), encoding='utf-8') as f:
             data = yaml.safe_load(f) or {}
     except (OSError, yaml.YAMLError):
-        return default
+        return fallback
     if not isinstance(data, dict):
-        return default
-    return data.get(name, default)
+        return fallback
+    return data.get(name, fallback)
 
 
 
@@ -138,14 +145,16 @@ DEFAULT_SETTINGS = {
         # draw its own icon on ESC and an icon per keyboard shortcut read
         # from its accessibility tree.
         #
-        # ⚠️ FOUR switches, and they are a ladder rather than a set -- each
+        # ⚠️ FIVE switches, and they are a ladder rather than a set -- each
         # answers a narrower question than the one above it, so turning an
         # outer one off makes the inner ones moot rather than wrong:
         #
-        #   generic_overlays_enabled     draw anything generic at all
-        #   generic_overlays_fill_gaps   ...also on an app a template covers
-        #   shortcut_icons_enabled       read another process at all
-        #   shortcut_icon_auto_fetch     fetch the icon catalog over the net
+        #   generic_overlays_enabled          draw anything generic at all
+        #   generic_overlays_fill_gaps        ...also the ESC mark on an app a
+        #                                     template covers
+        #   generic_overlays_fill_shortcuts   ...and its shortcut icons too
+        #   shortcut_icons_enabled            read another process at all
+        #   shortcut_icon_auto_fetch          fetch the icon catalog over the net
         #
         # The middle two are the ones with a real trade behind them.
         # `generic_overlays_fill_gaps` decides what happens on an app that
@@ -161,6 +170,13 @@ DEFAULT_SETTINGS = {
         # whatever is already cached.
         "generic_overlays_enabled": True,
         "generic_overlays_fill_gaps": True,
+        # ON again since 2026-10-16 (maintainer's call, after a hardware
+        # trial). It was off for a day because a read of one long Chrome tab
+        # froze the host for over two minutes. With the read in the helper
+        # process, 1 h of field logs showed every read at 0.03-0.44 s and no
+        # stalled tick, and the reads added 7 icons on VS Code and 4 on the
+        # Claude Code tab over their templates (docs/generic-icons-plan.md).
+        "generic_overlays_fill_shortcuts": True,
         "shortcut_icons_enabled": True,
         "shortcut_icon_auto_fetch": True,
         # Linux only: before the first harvest, switch the session's
@@ -211,6 +227,11 @@ DEFAULT_SETTINGS = {
         # forwarder and understand the exposure. `dev_`-prefixed, so it is hidden
         # in the settings dialog unless developer mode is on.
         "dev_legacy_plaintext_relay": False,
+        # Use raw HID only, as if the keyboard had no fast link: the bulk pipe
+        # is not probed and the firmware update's chunks go over HID. For
+        # testing the HID path and the fallback by hand. Takes effect on the
+        # next probe (about a second), no reconnect needed.
+        "dev_force_hid_link": False,
         # Daemon-by-default (headless-core H4b): when True, a plain GUI
         # launch runs the operational core in a separate headless daemon and
         # attaches this GUI to it as a client (spawning the daemon if none is
@@ -236,6 +257,14 @@ DEFAULT_SETTINGS = {
         # never downgrades, so it's self-terminating — see PolyCore). Set
         # False to manage the pack only manually (polyctl fontpack flash).
         "fontpack_auto_flash": True,
+        # Game art from installed games (polyhost/services/game_assets): when a
+        # game's own files are on this machine, overlays for it are redrawn
+        # from them into the cache directory, in place of the shipped
+        # open-licence art. The files are only read; nothing leaves the
+        # machine except the overlay sent to the keyboard. Off = always the
+        # shipped overlays.
+        "game_assets_enabled": True,
+        # Each reader adds its own settings after this dict (game_assets/<reader>/__init__.py).
         # Optional explicit path to the font pack .plyf to flash. Empty =
         # use the pack shipped in polyhost/res/fontpack/ (if any).
         "fontpack_path": "",
@@ -283,10 +312,38 @@ DEFAULT_SETTINGS = {
         "problem_scan_host_logs": True,
         "problem_scan_level": "errors",
 }
+# The settings of each game-asset reader this host has: its folder and its
+# options (the C&C faction). Adding a reader adds its settings.
+DEFAULT_SETTINGS.update(reader_defaults())
+
+
+#: Marks a settings file that holds only CHOSEN values (format 2). A file
+#: without it is the old format, which wrote every default out on every save.
+SETTINGS_FORMAT_KEY = "settings_format"
+SETTINGS_FORMAT = 2
 
 
 class PolySettings:
-    """ Stores program specific settings """
+    """Stores program specific settings.
+
+    ⚠️ **The file holds only the values someone CHOSE; everything else is the
+    shipped default, read from `DEFAULT_SETTINGS` at every start.** So changing
+    a default reaches every user who never set that key, on their next start.
+    The old format wrote every default into the file on every save, which
+    pinned it there: a default changed in code reached fresh installs only
+    (2026-10-15, `generic_overlays_fill_gaps`).
+
+    "Chosen" means changed by this process (`save()`'s per-key diff against
+    what it loaded) or already in the file. Choosing the value that is the
+    default today still counts: it stays pinned if the default moves.
+
+    An old-format file is migrated once, on the first load or save that sees
+    it: a stored value EQUAL to today's default is dropped, so it follows the
+    default from then on; a value that differs is kept as a choice. Nothing
+    reads as changed for that start, since every dropped value was the default
+    anyway. A host that predates this still reads the new file: its own
+    `_normalize` fills in the defaults.
+    """
     def __init__(self):
         self.collection = None
         self.log = logging.getLogger('PolyHost')
@@ -310,6 +367,10 @@ class PolySettings:
         # keys THIS process actually changed, so a concurrent writer's keys are
         # merged rather than overwritten — see save().
         self._baseline = {}
+        # The keys the file holds: the CHOSEN ones (class docstring).
+        self._chosen = set()
+        # Set by restore_defaults(): the next save drops every chosen key.
+        self._reset_pending = False
 
         # Set by load() when the file is there but cannot be parsed. The
         # constructor saves immediately afterwards, so without this the very
@@ -327,6 +388,9 @@ class PolySettings:
             # `collection` mutate the defaults table this process compares
             # against, including save()'s merge.
             self.collection = dict(self.defaults)
+            # Nothing here is a choice yet: with an empty baseline the save
+            # below would count every default as changed and pin them all.
+            self._baseline = dict(self.collection)
         self.save()
 
         self.log.info("\nCurrent settings:\n====================================\n%s", yaml.dump(
@@ -351,7 +415,9 @@ class PolySettings:
         # whatever could not be read.
         raw = self._read_file()
         self._load_failed = raw is None
-        self.collection = self._normalize(raw or {})
+        chosen = self._chosen_values(raw or {})
+        self._chosen = set(chosen)
+        self.collection = self._normalize(chosen)
         self._baseline = dict(self.collection)
 
     def _preserve_unreadable(self):
@@ -467,6 +533,30 @@ class PolySettings:
             return None, self.READ_UNREADABLE
         return data, self.READ_OK
 
+    def _chosen_values(self, raw):
+        """The chosen {key: value} a raw file dict holds, in either format.
+
+        Format 2 holds only chosen values. An old file holds every key, so
+        the ones equal to today's default are not counted as chosen (the
+        one-time migration, class docstring). Legacy renames are applied and
+        unknown keys dropped either way.
+        """
+        raw = dict(raw)
+        fmt = raw.pop(SETTINGS_FORMAT_KEY, None)
+        for old_key, new_key in self._legacy_key_renames.items():
+            if old_key in raw and new_key not in raw:
+                raw[new_key] = raw.pop(old_key)
+        known = {k: v for k, v in raw.items() if k in self.defaults}
+        if fmt == SETTINGS_FORMAT:
+            return known
+        chosen = {k: v for k, v in known.items() if v != self.defaults[k]}
+        if len(chosen) != len(known):
+            self.log.info("Settings: %d stored value(s) equal to the shipped "
+                          "default now follow it; %d chosen value(s) kept "
+                          "(one-time migration of %s).",
+                          len(known) - len(chosen), len(chosen), self.path)
+        return chosen
+
     def _normalize(self, data):
         """Apply the legacy key renames, fill in defaults, drop unknown keys."""
         data = dict(data)
@@ -482,6 +572,12 @@ class PolySettings:
         # aliasing it here would let the next ordinary settings write mutate the
         # shipped defaults for the life of the process.
         self.collection = dict(self.defaults)
+        # The baseline moves to the defaults too, so `mine` in `_save_merged`
+        # is what changed SINCE the reset. A reset whose save fails stays
+        # pending, and a setting changed before the retry must ride along
+        # with it rather than be wiped (CodeRabbit, #393).
+        self._baseline = dict(self.defaults)
+        self._reset_pending = True
         self.save()
 
     def save(self):
@@ -541,6 +637,19 @@ class PolySettings:
         mine = {k: v for k, v in self.collection.items()
                 if k not in self._baseline or self._baseline[k] != v}
         on_disk, state = self._read_file_ex()
+        if self._reset_pending:
+            # restore_defaults(): nothing stays chosen, in any process's file,
+            # except what this process changed after the reset. Other
+            # processes' choices go too; that is what a reset means.
+            # ⚠️ An UNREADABLE file is still moved aside first, as on every
+            # other save: the reset discards choices, not the only copy of a
+            # file nobody could read (Revix, #393).
+            if state == self.READ_UNREADABLE and not self._preserve_unreadable():
+                self.log.error(
+                    "Not resetting settings: %s could not be read and could "
+                    "not be moved aside, so writing would destroy it.", self.path)
+                return False
+            on_disk, state = {SETTINGS_FORMAT_KEY: SETTINGS_FORMAT}, self.READ_OK
         if on_disk is None:
             # We cannot see the current file. Merging against defaults would
             # reset every key we did not ourselves change, so write what we
@@ -569,14 +678,16 @@ class PolySettings:
                     "kept in memory and will be saved once that is resolved.",
                     self.path)
                 return False
-            merged = self._normalize(self.collection)
+            chosen = {k: self.collection[k] for k in self._chosen | set(mine)
+                      if k in self.defaults and k in self.collection}
         else:
-            merged = self._normalize(on_disk)
-            merged.update(mine)
-            # `mine` is applied AFTER the normalize above, so re-filter: a key
-            # that is not in `defaults` would otherwise ride into the file on
-            # the back of the delta and never be dropped again.
-            merged = self._normalize(merged)
+            chosen = self._chosen_values(on_disk)
+            # Only known keys: one that is not in `defaults` would otherwise
+            # ride into the file on the back of the delta and never be dropped
+            # again (Greptile, #246).
+            chosen.update({k: v for k, v in mine.items() if k in self.defaults})
+        merged = self._normalize(chosen)
+        to_write = {SETTINGS_FORMAT_KEY: SETTINGS_FORMAT, **chosen}
 
         # Unique per SAVE, not per process. The lock is best effort, so two
         # threads in one process can both be here — a shared pid-based name
@@ -586,7 +697,7 @@ class PolySettings:
             prefix=f"{self.CONFIG_FILENAME}.", suffix=".tmp")
         try:
             with os.fdopen(fd, "w", encoding='utf-8') as f:
-                yaml.safe_dump(merged, f)
+                yaml.safe_dump(to_write, f)
                 f.flush()
                 os.fsync(f.fileno())
             _replace(tmp, self.path)
@@ -602,6 +713,9 @@ class PolySettings:
             raise
         self.collection = merged
         self._baseline = dict(merged)
-        self.log.info("Saved settings to %s", self.path)
+        self._chosen = set(chosen)
+        self._reset_pending = False
+        self.log.info("Saved settings to %s (%d chosen value(s), the rest "
+                      "follow the shipped defaults)", self.path, len(chosen))
         return True
 

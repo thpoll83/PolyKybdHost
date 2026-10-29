@@ -947,9 +947,38 @@
   "32674": "KC_GLYPH_SCRIPT",
   "32675": "KC_SETTINGS_MORE",
   "32676": "KC_MACRO_REC",
-  "32677": "KC_IDLE_TIMEOUT"
+  "32677": "KC_IDLE_TIMEOUT",
+  "32678": "KC_DEMO",
+  "32679": "KC_DEMO_KEYS",
+  "32680": "KC_IME",
+  "32681": "KCL_JAUS"
  },
- "fw_version": "1.0.0",
+ "fw_version": "1.9.3",
+ "ime": {
+  "families": {
+   "en-AU": "RALT",
+   "en-CA": "RALT",
+   "en-IN": "RALT",
+   "en-NZ": "RALT",
+   "en-PH": "RALT",
+   "en-SG": "RALT",
+   "en-US": "RALT",
+   "ja-JP": "JAPANESE_JIS",
+   "ja-US": "JAPANESE",
+   "ko-KR": "KOREAN"
+  },
+  "legends": {
+   "JAPANESE": [
+    1048615
+   ],
+   "JAPANESE_SHIFT": [
+    1048616
+   ],
+   "KOREAN": [
+    1048614
+   ]
+  }
+ },
  "legends": {
   "DE_GRV": [
    96
@@ -1070,6 +1099,49 @@
   ],
   "KC_DELETE": [
    8998
+  ],
+  "KC_DEMO": [
+   22,
+   12,
+   12,
+   12,
+   12,
+   12,
+   68,
+   101,
+   109,
+   111,
+   13,
+   11,
+   5,
+   5,
+   5,
+   6,
+   77,
+   111,
+   100,
+   101
+  ],
+  "KC_DEMO_KEYS": [
+   22,
+   12,
+   12,
+   12,
+   12,
+   12,
+   75,
+   101,
+   121,
+   13,
+   11,
+   5,
+   5,
+   5,
+   6,
+   68,
+   101,
+   109,
+   111
   ],
   "KC_DHLF": [
    1048592

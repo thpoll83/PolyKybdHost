@@ -16,6 +16,22 @@ Two sources feed it, in preference order:
    fallback for the scriptable macOS browsers, consulted by :meth:`current_url`
    when there's no fresh extension report.
 
+A third, non-browser source shares the same channel: **context reporters**.
+An application on the small allow-list below (Blender) runs an add-on that
+POSTs ``{app, url, focused}`` to the same receiver, where ``url`` is a
+pseudo-URL naming its current context (``blender://EDIT_MESH/VIEW_3D``). The
+mapping then routes on it with ``urls-contains`` exactly as for a website, and
+the same freshness and focus gates apply: the report counts only while that
+app is the focused one, so a Blender in the background can never override the
+foreground app's overlay.
+
+Reports are kept PER SOURCE (one per browser brand, one per reporter app).
+A context reporter cannot see OS focus, so it never sends the browser's
+``focused: false`` on blur; it keeps re-sending its context. With a single
+slot those keep-alives would overwrite the browser's report every few seconds
+and drop website overlays at random -- per-source storage makes the two
+independent.
+
 :meth:`current_url` is the single lookup `OverlayHandler` calls each time it
 matches a focused window. It is deliberately conservative: it returns a URL
 *only* when the focused app is actually a browser and the signal is fresh, so a
@@ -23,6 +39,7 @@ background browser's tab can never override the overlay for the foreground app,
 and a stale report can never linger — worst case it returns ``None`` and
 matching degrades to app-name + title exactly as before this feature existed.
 """
+import threading
 import time
 
 from polyhost.services import browser_url_macos
@@ -74,6 +91,24 @@ def _canonical_browser(name):
 # None) takes over — a browser that closed or crashed can't pin an old URL.
 DEFAULT_MAX_AGE_S = 8.0
 
+# Context reporters: normalised app name -> the `app` token its add-on sends.
+# An allow-list on purpose: the receiver stores one report per source, and an
+# unlisted `app` value is dropped rather than given a slot. The names are the
+# ones the mapping's `blender` entry is keyed on (Windows strips `.exe`; the
+# Flatpak id is reported lowercased).
+CONTEXT_REPORTERS = {
+    "blender": "blender",
+    "org.blender.blender": "blender",
+}
+_REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values())
+
+
+def context_reporter_for(app_name):
+    """The reporter token for a focused app with a context add-on, or None."""
+    if not isinstance(app_name, str):
+        return None
+    return CONTEXT_REPORTERS.get(app_name.strip().lower())
+
 
 def is_browser_app(app_name) -> bool:
     """Whether ``app_name`` (a normalised getAppName()) is a known browser."""
@@ -88,7 +123,8 @@ def is_browser_app(app_name) -> bool:
 
 
 class BrowserUrlProvider:
-    """Latest focused-browser URL, with freshness + focus gating.
+    """Latest focused-browser URL (and context-reporter pseudo-URL), with
+    freshness + focus gating.
 
     ``clock`` and ``macos_lookup`` are injectable for tests. ``clock`` is a
     monotonic seconds source; ``macos_lookup(app_name) -> Optional[str]`` is the
@@ -100,33 +136,94 @@ class BrowserUrlProvider:
         self._max_age_s = max_age_s
         self._clock = clock
         self._macos_lookup = macos_lookup
-        self._report = None  # dict: browser, url, title, focused, ts
+        # source key -> dict(url, title, focused, ts, input_ts). Keys:
+        # ("browser", brand) with brand None for a report naming no
+        # recognisable browser, and ("app", token, pid) for one running
+        # instance of a context reporter (pid None from an add-on that does not
+        # send one). Bounded: the browser keys are a closed set, and stale app
+        # instances are pruned on every app report.
+        self._reports = {}
+        # update() runs on the report server's request threads and
+        # current_url() on window tracking's: both walk _reports.
+        self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
-    # Ingest (from the extension via browser_report_server)
+    # Ingest (from the extension / add-on via browser_report_server)
     # ------------------------------------------------------------------
 
-    def update(self, browser=None, url=None, title=None, focused=True) -> bool:
-        """Store one report from the extension. Returns True when the effective
-        URL changed (a real navigation / tab switch / (de)focus), so the caller
-        can nudge window tracking to re-match — this is what lets an SPA route
-        change with no window-title change still swap overlays.
+    def update(self, browser=None, url=None, title=None, focused=True, app=None,
+               pid=None, input_age=None) -> bool:
+        """Store one report. Returns True when that source's effective URL
+        changed (a real navigation / tab switch / mode change / (de)focus), so
+        the caller can nudge window tracking to re-match -- this is what lets an
+        SPA route change, or a Blender mode switch, with no window-title change
+        still swap overlays.
 
         A report with ``focused`` false / no URL clears the effective URL (the
-        browser lost focus or the tab has no address, e.g. a new-tab page)."""
-        prev = self._effective_url()
-        self._report = {
-            "browser": browser,
+        browser lost focus or the tab has no address, e.g. a new-tab page).
+        A report naming an ``app`` that is not a known context reporter is
+        ignored (returns False)."""
+        with self._lock:
+            return self._update(browser, url, title, focused, app, pid, input_age)
+
+    def _update(self, browser, url, title, focused, app, pid, input_age):
+        now = self._clock()
+        if app is not None:
+            token = str(app).strip().lower()
+            if token not in _REPORTER_TOKENS:
+                return False
+            prev = self._app_url(token)
+            # Drop instances that stopped reporting (Blender closed), so the
+            # per-pid key space cannot grow without bound.
+            for k in [k for k, r in self._reports.items()
+                      if k[0] == "app" and now - r["ts"] > self._max_age_s]:
+                del self._reports[k]
+            self._reports[("app", token, pid)] = {
+                "url": url or None,
+                "title": title,
+                "focused": bool(focused),
+                "ts": now,
+                # When this instance last saw user input; without input_age
+                # (older add-on) the report itself counts as the input.
+                "input_ts": now - (input_age or 0.0),
+            }
+            return self._app_url(token) != prev
+        key = ("browser", _canonical_browser(browser))
+        prev = self._effective_url(key)
+        self._reports[key] = {
             "url": url or None,
             "title": title,
             "focused": bool(focused),
-            "ts": self._clock(),
+            "ts": now,
         }
-        return self._effective_url() != prev
+        return self._effective_url(key) != prev
 
-    def _effective_url(self):
-        """The stored report's URL if it is fresh AND focused, else None."""
-        r = self._report
+    def _fresh(self, key):
+        """Whether that source has a report inside the freshness window,
+        whatever it says (a cleared tab is still a fresh report)."""
+        r = self._reports.get(key)
+        return bool(r) and self._clock() - r["ts"] <= self._max_age_s
+
+    def _app_url(self, token):
+        """The context reporter's URL from the running instance with the most
+        recent user input. Several Blenders can be open; each re-sends on a
+        keep-alive, so "the newest report" would let a background instance
+        overwrite the one being worked in. The newest INPUT cannot.
+
+        The winner is picked BEFORE looking at its URL: an instance that
+        withdrew its context (reporting turned off) stays the newest and
+        answers None, instead of handing the keyboard to a background one."""
+        best = None
+        for k, r in self._reports.items():
+            if k[0] != "app" or k[1] != token or not self._fresh(k):
+                continue
+            if best is None or r["input_ts"] > best[0]:
+                best = (r["input_ts"], k)
+        return self._effective_url(best[1]) if best else None
+
+    def _effective_url(self, key):
+        """That source's URL if its report is fresh AND focused, else None."""
+        r = self._reports.get(key)
         if not r or not r["focused"] or not r["url"]:
             return None
         if self._clock() - r["ts"] > self._max_age_s:
@@ -137,37 +234,43 @@ class BrowserUrlProvider:
     # Lookup (from OverlayHandler)
     # ------------------------------------------------------------------
 
-    def _report_matches_app(self, app_name):
-        """Whether the stored report came from the same browser as ``app_name``.
-
-        Guards against cross-browser leakage: a fresh Chrome report must not be
-        returned while Firefox/Brave is the focused app (the extension reports
-        each browser separately). If the report has no recognisable ``browser``
-        (an older extension), stay permissive so behaviour is unchanged."""
-        r = self._report
-        if not r:
-            return False
-        rep = _canonical_browser(r.get("browser"))
-        if rep is None:
-            return True  # unknown/absent brand — don't gate
-        return rep == _canonical_browser(app_name)
-
     def current_url(self, app_name):
-        """URL of the focused window's active tab, or ``None``.
+        """URL for the focused window, or ``None``.
 
-        Returns a URL only when ``app_name`` is a browser AND a fresh, focused
-        extension report from *that same browser* is available; otherwise the
-        macOS AppleScript fallback is tried (a no-op off macOS / for Firefox).
-        ``None`` for any non-browser app, so a browser URL can never leak onto a
-        native app's overlay, and a report from a *different* browser can never
-        pin the wrong URL onto the focused one."""
-        if not is_browser_app(app_name):
+        * A **context reporter** (Blender) gets its own add-on's fresh, focused
+          pseudo-URL, and nothing else -- never a browser's URL, and no macOS
+          fallback.
+        * A **browser** gets a fresh, focused report from *that same browser*
+          (cross-browser leakage guarded: a Chrome report never answers for
+          Firefox). A report naming no recognisable browser (an older
+          extension) stays permissive. Otherwise the macOS AppleScript fallback
+          is tried (a no-op off macOS / for Firefox).
+        * Any other app gets ``None``, so neither a website nor a background
+          Blender's context can ever leak onto a native app's overlay."""
+        token = context_reporter_for(app_name)
+        if token is None and not is_browser_app(app_name):
             return None
-        url = self._effective_url()
-        if url and self._report_matches_app(app_name):
+        with self._lock:
+            url = self._report_url(token, app_name)
+        if url or token is not None:
             return url
         # No fresh matching extension report — try the zero-install macOS path.
         try:
             return self._macos_lookup(app_name)
         except Exception:
             return None
+
+    def _report_url(self, token, app_name):
+        """The answer current_url() takes from stored reports (lock held)."""
+        if token is not None:
+            return self._app_url(token)
+        brand = _canonical_browser(app_name)
+        # The anonymous slot (an older extension naming no browser) answers
+        # only when this browser has no fresh report of its own. A fresh one
+        # with no URL is a cleared tab (new-tab page, lost focus) and must
+        # stay cleared, not revive another report's website.
+        if brand is not None and self._fresh(("browser", brand)):
+            url = self._effective_url(("browser", brand))
+        else:
+            url = self._effective_url(("browser", None))
+        return url

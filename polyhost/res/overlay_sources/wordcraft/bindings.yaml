@@ -1,0 +1,242 @@
+# WordCraft shortcut overlays for PolyKybd (Windows/Linux and macOS).
+#
+# WordCraft (ArtCraft "Crafting Apps", github.com/storytold/wordcraft,
+# MIT OR Apache-2.0) is a Word-like word processor written in Rust/egui.
+# AUTHORITY = ITS OWN KEYMAP, not Microsoft Word's: every chord below is a
+# `.key("…")` on a CommandSpec in crates/engine/src/cmd/*.rs (or one of the few
+# UI keys in crates/ui-egui/src/keys.rs / keytips.rs) at commit 159b84f.
+# File:line per group in SOURCES.md.
+#
+#   CMDCTRL          the registry's `Mod+` (egui `command`): Ctrl on Windows/Linux,
+#                    Cmd on macOS.
+#   CTRL (literal)   the registry's `Ctrl+`, which the app reaches only on macOS
+#                    (its `mac_or("Ctrl+…", …)` branches) -> `only: [macos]`.
+#   ALT              Alt / Option. `non_mac(…)` chords carry `except: [macos]`.
+#   Windows and Linux share one keymap (the source only ever branches on macOS),
+#   so no Linux set is emitted.
+#
+# Icons: Microsoft Fluent UI System Icons (MIT) + Material Symbols (Apache-2.0)
+# for gaps; Word's drawn composites copied byte-for-byte. Program icon (ESC):
+# WordCraft's own app icon (MIT OR Apache-2.0), background tile dropped.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/wordcraft/fetch_icons.py
+#   PYTHONPATH=. .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/wordcraft/bindings.yaml --preview /tmp/wordcraft_preview
+app: wordcraft
+match: [wordcraft, ai.storyteller.wordcraft]
+output: wordcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: wordcraft.png      # own app icon, page + lines + pencil (see SOURCES.md)
+program_icon_mode: luma
+program_icon_threshold: 150
+program_icon_anchor: bottom-right
+program_icon_region: [46, 40]
+program_icon_margin: 0
+
+bindings:
+  # ======================= Mod (Ctrl / Cmd) =======================
+  # --- file (file.rs) ---
+  - { key: N,   mods: [CMDCTRL], icon: new.png,   label: New }
+  - { key: O,   mods: [CMDCTRL], icon: open.png,  label: Open }
+  - { key: F12, mods: [CMDCTRL], icon: open.png,  label: Open }
+  - { key: S,   mods: [CMDCTRL], icon: save.png,  label: Save }
+  - { key: P,   mods: [CMDCTRL], icon: print.png, label: Print }
+  - { key: F2,  mods: [CMDCTRL], icon: print.png, label: Print }
+  - { key: W,   mods: [CMDCTRL], icon: close.png, label: Close }
+  - { key: F4,  mods: [CMDCTRL], icon: close.png, label: Close }
+  # --- edit (edit.rs, caret.rs) ---
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find }
+  - { key: G, mods: [CMDCTRL], icon: findnext.png,  label: "Find next" }
+  - { key: PGDN, mods: [CMDCTRL], icon: findnext.png, label: "Find next" }
+  - { key: PGUP, mods: [CMDCTRL], icon: findprev.png, label: "Find previous" }
+  - { key: H, mods: [CMDCTRL], icon: replace.png,   label: Replace }
+  # --- character format (format.rs, insert.rs) ---
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline }
+  - { key: D, mods: [CMDCTRL], icon: font.png,      label: "Font dialog" }
+  - { key: K, mods: [CMDCTRL], icon: hyperlink.png, label: Link }
+  - { key: EQUAL, mods: [CMDCTRL], icon: subscript.png, label: Subscript }
+  - { key: "]", mods: [CMDCTRL], icon: font1inc.png, label: "Grow font 1pt" }
+  - { key: "[", mods: [CMDCTRL], icon: font1dec.png, label: "Shrink font 1pt" }
+  - { key: MINUS, mods: [CMDCTRL], icon: hyphen.png, label: "Opt hyphen" }
+  # --- paragraph (para.rs, view.rs) ---
+  - { key: L, mods: [CMDCTRL], icon: left.png,    label: "Align left" }
+  - { key: E, mods: [CMDCTRL], icon: center.png,  label: "Align center" }
+  - { key: R, mods: [CMDCTRL], icon: right.png,   label: "Align right" }
+  - { key: J, mods: [CMDCTRL], icon: justify.png, label: Justify }
+  - { key: M, mods: [CMDCTRL], icon: indent.png,  label: Indent }
+  - { key: T, mods: [CMDCTRL], icon: hangindent.png, mode: alpha, label: "Hang indent" }
+  - { key: "1", mods: [CMDCTRL], icon: linespacing1.png,  mode: alpha, region: [38, 34], label: "Line 1.0" }
+  - { key: "2", mods: [CMDCTRL], icon: linespacing2.png,  mode: alpha, region: [38, 34], label: "Line 2.0" }
+  - { key: "5", mods: [CMDCTRL], icon: linespacing15.png, mode: alpha, region: [38, 34], label: "Line 1.5" }
+  - { key: "0", mods: [CMDCTRL], icon: spacebefore.png, label: "Space before" }
+  - { key: "8", mods: [CMDCTRL], icon: pilcrow.png, mode: alpha, label: "Show/hide marks" }
+  # Reset paragraph: Mod+Q on Windows/Linux, literal Ctrl+Q on macOS (Cmd+Q quits).
+  - { key: Q, mods: [CMDCTRL], icon: clearfmt.png, label: "Reset paragraph", except: [macos] }
+  - { key: Q, mods: [CTRL],    icon: clearfmt.png, label: "Reset paragraph", only: [macos] }
+  # --- fields (insert.rs, fields.rs) ---
+  - { key: F9,  mods: [CMDCTRL], icon: field.png,      label: "Insert field" }
+  - { key: F11, mods: [CMDCTRL], icon: lockfields.png, label: "Lock fields" }
+  # --- navigation (caret.rs, text.rs) ---
+  - { key: LEFT,  mods: [CMDCTRL], icon: wordleft.png,  label: "Word left" }
+  - { key: RIGHT, mods: [CMDCTRL], icon: wordright.png, label: "Word right" }
+  - { key: UP,    mods: [CMDCTRL], icon: paraup.png,    label: "Paragraph up" }
+  - { key: DOWN,  mods: [CMDCTRL], icon: paradown.png,  label: "Paragraph down" }
+  - { key: HOME,  mods: [CMDCTRL], icon: docstart.png,  label: "Document start" }
+  - { key: END,   mods: [CMDCTRL], icon: docend.png,    label: "Document end" }
+  - { key: DELETE, mods: [CMDCTRL], icon: delwordfwd.png, label: "Delete next word" }
+
+  # ======================= Mod+Shift =======================
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,           label: Redo }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copyformat.png,     label: "Copy format" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteformat.png,    label: "Paste format" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: doubleunderline.png, label: "Double underline" }
+  - { key: W, mods: [CMDCTRL, SHIFT], icon: wordunderline.png, mode: alpha, label: "Underline words" }
+  - { key: EQUAL, mods: [CMDCTRL, SHIFT], icon: superscript.png, label: Superscript }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: allcaps.png,   label: "All caps" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: smallcaps.png, label: "Small caps" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: hidden.png,    label: Hidden }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: fontname.png,  label: "Font name" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: fontsize.png,  label: "Font size" }
+  - { key: DOT,   mods: [CMDCTRL, SHIFT], icon: fontinc.png, label: "Font +" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: fontdec.png, label: "Font -" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: distribute.png, label: Distributed }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: outdent.png,    label: Outdent }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: reducehang.png, mode: alpha, label: "Reduce hang" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: normalstyle.png, label: "Normal style" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: bullets.png,     label: "Bullet list" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: applystyles.png, label: "Apply styles" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: trackchanges.png, label: "Track changes" }
+  # Mod+Shift+G: Word Count off macOS (non_mac); Find Previous on macOS (mac_or).
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: wordcount.png, label: "Word count",    except: [macos] }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: findprev.png,  label: "Find previous", only: [macos] }
+  - { key: "8", mods: [CMDCTRL, SHIFT], icon: pilcrow.png, mode: alpha, label: "Show/hide marks" }
+  - { key: MINUS, mods: [CMDCTRL, SHIFT], icon: nbhyphen.png, mode: alpha, label: "NB hyphen" }
+  - { key: F5,  mods: [CMDCTRL, SHIFT], icon: bookmark.png,     label: Bookmark }
+  - { key: F8,  mods: [CMDCTRL, SHIFT], icon: columnsel.png,    label: "Column select" }
+  - { key: F9,  mods: [CMDCTRL, SHIFT], icon: unlinkfields.png, label: "Unlink fields" }
+  - { key: F11, mods: [CMDCTRL, SHIFT], icon: unlockfields.png, label: "Unlock fields" }
+  - { key: F12, mods: [CMDCTRL, SHIFT], icon: print.png,        label: Print }
+
+  # ======================= Mod+Alt =======================
+  - { key: "1", mods: [CMDCTRL, ALT], icon: heading1.png, label: "Heading 1" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: heading2.png, label: "Heading 2" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: heading3.png, label: "Heading 3" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: printlayout.png, label: "Print layout" }
+  - { key: N, mods: [CMDCTRL, ALT], icon: draft.png,       label: Draft }
+  - { key: O, mods: [CMDCTRL, ALT], icon: outlineview.png, label: "Outline view" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: split.png,       label: Split }
+  - { key: G, mods: [CMDCTRL, ALT], icon: goto.png,        label: "Go to" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: pastespecial.png, label: "Paste special" }
+  - { key: F, mods: [CMDCTRL, ALT], icon: footnote.png,    label: Footnote }
+  - { key: D, mods: [CMDCTRL, ALT], icon: endnote.png,     label: Endnote }
+  - { key: M, mods: [CMDCTRL, ALT], icon: comment.png,     label: "New comment" }
+  - { key: MINUS, mods: [CMDCTRL, ALT], icon: emdash.png, mode: alpha, label: "Em dash" }
+  # non_mac: Option+letter types the character on macOS
+  - { key: C,   mods: [CMDCTRL, ALT], icon: copyright.png,  mode: alpha, label: Copyright,  except: [macos] }
+  - { key: R,   mods: [CMDCTRL, ALT], icon: registered.png, mode: alpha, label: Registered, except: [macos] }
+  - { key: T,   mods: [CMDCTRL, ALT], icon: trademark.png,  mode: alpha, label: Trademark,  except: [macos] }
+  - { key: DOT, mods: [CMDCTRL, ALT], icon: ellipsis.png,   mode: alpha, label: Ellipsis,   except: [macos] }
+  - { key: H,   mods: [CMDCTRL, ALT], icon: highlight.png,  label: Highlight, except: [macos] }
+
+  # ======================= Mod+Alt+Shift =======================
+  - { key: S, mods: [CMDCTRL, ALT, SHIFT], icon: stylespane.png, label: "Styles pane" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: pastetext.png,  label: "Paste text only" }
+
+  # ======================= Alt / Option =======================
+  - { key: EQUAL, mods: [ALT], icon: equation.png,   label: Equation }
+  - { key: F7,    mods: [ALT], icon: spelling.png,   label: Spelling }
+  - { key: F9,    mods: [ALT], icon: fieldcodes.png, label: "Field codes" }
+  - { key: LEFT,  mods: [ALT], icon: wordleft.png,   label: "Word left" }
+  - { key: RIGHT, mods: [ALT], icon: wordright.png,  label: "Word right" }
+  - { key: UP,    mods: [ALT], icon: paraup.png,     label: "Paragraph up" }
+  - { key: DOWN,  mods: [ALT], icon: paradown.png,   label: "Paragraph down" }
+  - { key: DELETE, mods: [ALT], icon: delwordfwd.png, label: "Delete next word" }
+  - { key: X, mods: [ALT], icon: unicode.png, mode: alpha, label: "Toggle Unicode", except: [macos] }
+  - { key: Q, mods: [ALT], icon: tellme.png, label: "Tell me", except: [macos] }
+
+  # ======================= Alt+Shift =======================
+  # outline.rs (all platforms)
+  - { key: EQUAL, mods: [ALT, SHIFT], icon: expand.png,   label: Expand }
+  - { key: MINUS, mods: [ALT, SHIFT], icon: collapse.png, label: Collapse }
+  - { key: A,     mods: [ALT, SHIFT], icon: showall.png,  label: "Show all levels" }
+  - { key: "1", mods: [ALT, SHIFT], icon: level1.png, label: "Show level 1" }
+  - { key: "2", mods: [ALT, SHIFT], icon: level2.png, label: "Show level 2" }
+  - { key: "3", mods: [ALT, SHIFT], icon: level3.png, label: "Show level 3" }
+  - { key: "4", mods: [ALT, SHIFT], icon: level4.png, label: "Show level 4" }
+  - { key: "5", mods: [ALT, SHIFT], icon: level5.png, label: "Show level 5" }
+  - { key: "6", mods: [ALT, SHIFT], icon: level6.png, label: "Show level 6" }
+  - { key: "7", mods: [ALT, SHIFT], icon: level7.png, label: "Show level 7" }
+  - { key: "8", mods: [ALT, SHIFT], icon: level8.png, label: "Show level 8" }
+  - { key: "9", mods: [ALT, SHIFT], icon: level9.png, label: "Show level 9" }
+  # non_mac (citations.rs, index.rs, mailings.rs)
+  - { key: I, mods: [ALT, SHIFT], icon: markcitation.png, label: "Mark citation", except: [macos] }
+  - { key: X, mods: [ALT, SHIFT], icon: markentry.png,    label: "Mark entry",    except: [macos] }
+  - { key: E, mods: [ALT, SHIFT], icon: recipients.png,   label: "Edit recipients", except: [macos] }
+  - { key: F, mods: [ALT, SHIFT], icon: mergefield.png,   label: "Merge field",   except: [macos] }
+  - { key: K, mods: [ALT, SHIFT], icon: previewmerge.png, label: "Preview results", except: [macos] }
+  - { key: N, mods: [ALT, SHIFT], icon: finishmerge.png,  label: "Finish merge",  except: [macos] }
+  # mac_or: Alt+Shift off macOS, literal Ctrl+Shift on macOS (insert.rs, para.rs)
+  - { key: D, mods: [ALT, SHIFT],  icon: datefield.png, label: "Date field", except: [macos] }
+  - { key: D, mods: [CTRL, SHIFT], icon: datefield.png, label: "Date field", only: [macos] }
+  - { key: T, mods: [ALT, SHIFT],  icon: timefield.png, label: "Time field", except: [macos] }
+  - { key: T, mods: [CTRL, SHIFT], icon: timefield.png, label: "Time field", only: [macos] }
+  - { key: P, mods: [ALT, SHIFT],  icon: pagefield.png, label: "Page field", except: [macos] }
+  - { key: P, mods: [CTRL, SHIFT], icon: pagefield.png, label: "Page field", only: [macos] }
+  - { key: UP,    mods: [ALT, SHIFT],  icon: moveup.png,   label: "Move paragraph up",   except: [macos] }
+  - { key: UP,    mods: [CTRL, SHIFT], icon: moveup.png,   label: "Move paragraph up",   only: [macos] }
+  - { key: DOWN,  mods: [ALT, SHIFT],  icon: movedown.png, label: "Move paragraph down", except: [macos] }
+  - { key: DOWN,  mods: [CTRL, SHIFT], icon: movedown.png, label: "Move paragraph down", only: [macos] }
+  - { key: LEFT,  mods: [ALT, SHIFT],  icon: promote.png,  label: Promote, except: [macos] }
+  - { key: LEFT,  mods: [CTRL, SHIFT], icon: promote.png,  label: Promote, only: [macos] }
+  - { key: RIGHT, mods: [ALT, SHIFT],  icon: demote.png,   label: Demote,  except: [macos] }
+  - { key: RIGHT, mods: [CTRL, SHIFT], icon: demote.png,   label: Demote,  only: [macos] }
+
+  # ======================= Enter / Backspace / Tab / Space =======================
+  # Bare Enter, Backspace, Tab and Space are text entry and stay unbound.
+  - { key: ENTER, mods: [CMDCTRL],        icon: pagebreak.png,   label: "Page break" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: columnbreak.png, label: "Column break" }
+  - { key: ENTER, mods: [SHIFT],          icon: linebreak.png,   label: "Line break" }
+  - { key: BACKSPACE, mods: [CMDCTRL], icon: delwordback.png, label: "Delete previous word" }
+  - { key: BACKSPACE, mods: [ALT],     icon: delwordback.png, label: "Delete previous word" }
+  - { key: TAB, mods: [SHIFT], icon: outdent.png, label: "Back tab" }
+  # Reset character formatting: mac_or("Ctrl+Space", "Mod+Space")
+  - { key: SPACE, mods: [CMDCTRL], icon: resetchar.png, label: "Reset character", except: [macos] }
+  - { key: SPACE, mods: [CTRL],    icon: resetchar.png, label: "Reset character", only: [macos] }
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: nbsp.png, mode: alpha, label: "NB space" }
+  - { key: SPACE, mods: [CMDCTRL, ALT],   icon: readaloud.png, label: "Read aloud" }
+
+  # ======================= Shift =======================
+  - { key: F3,  mods: [SHIFT], icon: changecase.png, label: "Change case" }
+  - { key: F5,  mods: [SHIFT], icon: goback.png,     label: "Go back" }
+  - { key: F7,  mods: [SHIFT], icon: thesaurus.png,  label: Thesaurus }
+  - { key: F9,  mods: [SHIFT], icon: togglefield.png, label: "Toggle field code" }
+  - { key: F10, mods: [SHIFT], icon: contextmenu.png, label: "Context menu" }
+  - { key: F11, mods: [SHIFT], icon: prevfield.png,  label: "Previous field" }
+  - { key: F12, mods: [SHIFT], icon: save.png,       label: Save }
+
+  # ======================= plain function keys =======================
+  - { key: F3,  mods: [], icon: findnext.png,    label: "Find next" }
+  - { key: F4,  mods: [], icon: repeat.png,      label: Repeat }
+  - { key: F5,  mods: [], icon: goto.png,        label: "Go to" }
+  - { key: F7,  mods: [], icon: spelling.png,    label: Spelling }
+  - { key: F8,  mods: [], icon: extendsel.png,   label: "Extend selection" }
+  - { key: F9,  mods: [], icon: updatefield.png, label: "Update field" }
+  - { key: F10, mods: [], icon: keytips.png,     label: "Key tips" }
+  - { key: F11, mods: [], icon: nextfield.png,   label: "Next field" }
+  - { key: F12, mods: [], icon: saveas.png,      label: "Save as" }

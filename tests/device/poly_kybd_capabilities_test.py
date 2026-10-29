@@ -297,8 +297,6 @@ class TestPrcOverlayGate(unittest.TestCase):
         self.assertGreaterEqual(__protocol__, PRC_OVERLAY_MIN_PROTOCOL)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestGuiComboModifierGate(unittest.TestCase):
@@ -640,3 +638,7 @@ class MacroCapabilityTest(unittest.TestCase):
         self.assertEqual(Cmd.MACRO_INFO.value, 36)
         self.assertEqual(Cmd.MACRO_BODY.value, 37)
         self.assertEqual(Cmd.MACRO_LABEL.value, 38)
+
+
+if __name__ == "__main__":
+    unittest.main()

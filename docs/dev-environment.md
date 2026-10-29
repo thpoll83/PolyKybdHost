@@ -5,23 +5,22 @@ and relative links were adjusted to suit a standalone file.
 
 ## Environment
 
-- **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
+- **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access and for the fast link's serial port (the tray offers it: `services/linux_udev.py`).
 
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
-  - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
-  - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl cairosvg`
-    (pip) **and** `xvfb x11-xserver-utils` (apt), plus `pip install -r tools/requirements.txt` for
-    `scripts/export_preview_data.py` and the preview tools (it needs `openpyxl`, which is a dev
-    dependency and not in `requirements.txt` — the export dies with `ModuleNotFoundError:
-    openpyxl` without it; measured 2026-09-27 on a freshly reset container), run under `xvfb-run -a .venv/bin/python -m
-    unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
-    `sunlight_helper`, `langcode_flag`, `win_helper_parse`, `res/icon_fetch` (cairosvg,
-    added to the list 2026-09-23 after it cost a full run 8 tests; `openpyxl` from `tools/requirements.txt`, 2026-09-27: without it the keycap
-    previews lose their letter legends and 10 preview/editor tests fail) and the `host_client`
-    GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
-    env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
+  - **In a fresh remote/web container the `.venv` does not exist yet**: `python3 -m venv .venv`,
+    then run the suite with `xvfb-run -a .venv/bin/python scripts/run_tests.py`. The runner checks
+    `requirements-test.txt` (the runtime `requirements.txt` plus `tools/requirements.txt`) before it
+    runs anything and installs what is missing into the venv (`--no-install` only reports; outside a
+    venv it never installs and prints the command). Without that check every fresh container lost a
+    run to dozens of tests that ERROR on a missing package (`openpyxl`, `cairosvg`, ...) and look like
+    regressions. The system pieces pip cannot install, which the runner only warns about: the
+    hidapi libraries (`sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0`; the `hid` module
+    raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them) and
+    `x11-xserver-utils` (`xrandr` and `xset`: without them `pywinctl` does not import and every
+    test that imports `handler/active_window` ERRORs, 74 on 2026-10-22), and an X server for the
+    GUI tests (`xvfb`, run under `xvfb-run -a`; without a display those tests skip).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
   - ⚠️ **A missing dependency DELETES tests, and the `Ran N` line is the only thing
     that says so — the run still looks substantial.** A module that fails to import
@@ -48,4 +47,54 @@ and relative links were adjusted to suit a standalone file.
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+
+## Environment (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+- **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev
+  rule for non-root HID access and for the fast link's serial port. The tray offers the
+  install (Updates → Allow access to the keyboard), `scripts/install.sh` does it with sudo.
+- **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy,
+  PyQt5 and other deps. Creating it in a fresh container, the apt packages the `hid`
+  module needs, and the extra deps + `xvfb` the GUI half of the suite requires are in
+  [`docs/dev-environment.md`](dev-environment.md).
+- ⚠️ **A missing dependency DELETES tests, and the `Ran N` line is the only thing that
+  says so.** A module that fails to import contributes one error and **zero tests**: the
+  same tree ran **1982** tests with `hid`/`requests`/`pynput` absent and **2447** with
+  them installed. Comparing a failure set against a baseline then comes back clean for a
+  reason that has nothing to do with coverage. **Install the deps and read the count.**
+- ⚠️ **A text-mode `open()` without `encoding=` on a NON-ASCII file of ours is a
+  Windows crash, and this repo has now paid for it TWICE.** Python decodes with
+  the platform default — the ANSI code page on Windows (cp1252), never UTF-8 —
+  so any file of ours carrying an em dash, a box-drawing rule or a ⚠️ is a
+  grenade there. (Pure ASCII is safe under every codec, and `PYTHONUTF8=1` opts
+  a whole process out — neither is something we can assume about a user's
+  machine.)
+  `lang_compat.py` took `PolyHost.__init__`, the tray and the daemon down with
+  `UnicodeDecodeError: byte 0x8f` (field, Windows 11 / Python 3.13, 2026-09-22),
+  three months after `publish_release.py` hit the identical codec on the
+  identical trigger — and **that note went into `docs/releases.md`, scoped to
+  releases, where nobody reading an input helper would ever find it.**
+  ⚠️ **The crash is the LUCKY outcome.** Only five byte values are undefined in
+  cp1252, so most of our files decode to MOJIBAKE and parse on:
+  `forced_country_match_{linux,macos}.txt` do exactly that, harmless only
+  because their non-ASCII sits in comments. A non-ASCII character in a VALUE
+  would resolve to the wrong layout in silence, on every Windows machine.
+  **The rule is by FILE OWNERSHIP.** A file we ship and author (`res/` data,
+  `requirements.txt`, `bundles.json`) gets `encoding="utf-8"`. A file the USER
+  owns (`--host-file`, a chosen `.poly.cmd`, KDE's `kxkbrc`) keeps the platform
+  default until we define a fallback policy, because forcing UTF-8 there newly
+  REJECTS a legacy cp1252 file that reads fine today. Find every candidate by
+  **re-running** the AST sweep — every tracked `.py`, calls to the BUILTIN `open`
+  only, no `encoding` keyword, no `b` in the mode — and classify each hit by
+  ownership. ⚠️ **Scope the sweep to the whole tree, not `polyhost/`**: the
+  2026-09 pass stopped there, reported 5, and missed four more of ours in
+  `setup.py`, `tools/` and `tests/` that a reviewer then found (2026-09-22).
+  Three hits remain today and all three are user-owned.
+- **Chromium is available headless — use it to LOOK at generated HTML/SVG** rather than
+  reading the markup (`--headless --screenshot`, then Read the PNG; add
+  `--blink-settings=preferredColorScheme=0` for dark). This caught a dashboard defect
+  that existed only in the render while the HTML and the tests were both correct.
 

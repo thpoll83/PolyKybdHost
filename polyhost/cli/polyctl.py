@@ -213,6 +213,22 @@ def _cmd_logs(client, args):
                 print(f"  {path}  ({size})")
         return 0
 
+    if args.logs_action == "clear":
+        if not args.yes:
+            try:
+                reply = input("Empty every log file, including the crash log? "
+                              "[y/N] ")
+            except EOFError:      # piped/non-interactive: never destroy by default
+                reply = ""
+            if reply.strip().lower() not in ("y", "yes"):
+                print("cancelled")
+                return 1
+        result = log_bundle.clear_logs(log_dir)
+        print(result.summary())
+        for err in result.errors:
+            print(f"warning: could not clear {err}", file=sys.stderr)
+        return 1 if result.errors else 0
+
     if args.logs_action == "show":
         print(log_bundle.recent_text(log_dir, since=since, max_lines=args.lines,
                                      redact=args.redact))
@@ -339,12 +355,25 @@ def _cmd_handedness(client, args):
     only queues — a returned {"queued": True} means sent, never applied. Confirm
     from the firmware's own boot banner (`hand: LEFT (flash stamp)`) rather than
     from this command's exit code.
+
+    `--split-vbus on|off` (protocol 24) also marks the CONNECTED half as a Rev.2
+    board, or clears the mark. Rev.2 boards pass VBUS over the split cable, so both
+    halves would become master; with the mark the master is the half that
+    enumerates. It is stored per half, so plug in each half on its own and run this
+    once per half. The banner's `board:` line shows it.
     """
     master_is_left = args.side == "left"
     other = "RIGHT" if master_is_left else "LEFT"
-    print(f"setting the connected half to {args.side.upper()} "
-          f"(the other half becomes {other})…")
-    client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
+    if args.split_vbus is not None:
+        # Its own method, so an older daemon refuses it instead of dropping the flag.
+        print(f"setting the connected half to {args.side.upper()} and its Rev.2 "
+              f"split-VBUS flag {args.split_vbus}…")
+        client.call(protocol.M_SET_HANDEDNESS_BOARD,
+                    {"master_is_left": master_is_left, "split_vbus": args.split_vbus == "on"})
+    else:
+        print(f"setting the connected half to {args.side.upper()} "
+              f"(the other half becomes {other})…")
+        client.call(protocol.M_SET_HANDEDNESS, {"master_is_left": master_is_left})
     print("sent; both halves save the new side and reboot onto it (about 10 s, "
           "no replug needed)")
     return 0
@@ -1061,6 +1090,10 @@ def build_parser():
              "the other becomes the opposite (both reboot onto it, ~10 s)")
     p_hand.add_argument("side", choices=["left", "right"],
                         help="the side of the half the USB cable is plugged into")
+    p_hand.add_argument("--split-vbus", choices=["on", "off"], default=None,
+                        help="also mark (on) or unmark (off) the CONNECTED half as a "
+                             "Rev.2 board, which passes VBUS over the split cable; "
+                             "run once per half, plugged in alone (protocol 24)")
     p_hand.set_defaults(func=_cmd_handedness)
 
     p_newer = sub.add_parser(
@@ -1225,6 +1258,11 @@ def build_parser():
         "bundle", help="write a support .zip (logs + diagnostics + settings)")
     p_logs_bundle.add_argument(
         "-o", "--output", help="destination .zip (default: ./polyhost-logs-<stamp>.zip)")
+    p_logs_clear = logs_sub.add_parser(
+        "clear", help="empty every log file, including the crash log")
+    p_logs_clear.add_argument(
+        "-y", "--yes", action="store_true", help="skip the confirmation prompt")
+    p_logs_clear.set_defaults(since=None, redact=False, lines=500, output=None)
     p_logs_show = logs_sub.add_parser(
         "show", help="print recent log lines to stdout (pipe it anywhere)")
     p_logs_show.add_argument("--lines", type=_positive_int, default=500,
@@ -1238,7 +1276,7 @@ def build_parser():
                             f"(default {LOGS_DEFAULT_SINCE})")
         p.add_argument("--redact", action="store_true",
                        help="mask window titles (they can name open documents)")
-    for p in (p_logs_bundle, p_logs_show, p_logs_paths):
+    for p in (p_logs_bundle, p_logs_show, p_logs_paths, p_logs_clear):
         p.add_argument("--log-dir", help="where the logs are (default: auto-detect)")
     p_logs.set_defaults(func=_cmd_logs)
 

@@ -1,0 +1,266 @@
+# VectorCraft shortcut overlays for PolyKybd.
+#
+# VectorCraft (storytold/vectorcraft, MIT OR Apache-2.0) is the ArtCraft suite's
+# Illustrator-like vector editor (Rust/egui). Its keymap imitates Illustrator's but
+# is its OWN: every chord here comes from the app's source at the commit pinned in
+# SOURCES.md (engine `cmd!` specs, `menus::UI_COMMANDS`, `PANEL_SHORTCUTS`, the
+# tool catalogue, and the hard-wired keys in `shortcuts::handle`). Both shipped
+# presets ("VectorCraft Defaults", "Classic Defaults") are the empty override map,
+# so there is one default keymap.
+#
+# Icons: the Illustrator overlay's glyphs where the action is the same (borrowed,
+# so both overlays draw the same cell), VectorCraft's own toolbar/panel icons for
+# its tools and panels, Fluent (MIT) / Material Symbols (Apache-2.0) for the rest,
+# and a few badge composites (fetch_icons.py). Program mark (ESC): the app's own
+# dragon icon reduced to its silhouette.
+#
+# ONE spec, TWO artwork sets. VectorCraft writes every command chord as `Cmd+…`,
+# parsed to egui `Modifiers::COMMAND` (Ctrl on Windows/Linux, Cmd on macOS), so
+# each is CMDCTRL here and the generator also emits vectorcraft_template_mac.*.
+# No chord is literal Ctrl. The one macOS-only chord (Cmd+, Settings) is scoped
+# with `only: [macos]`. macOS notes are in SOURCES.md.
+#
+# A key's no-mod TOOL letter and its Cmd MENU meaning coexist on the same cell in
+# different channels - correct and intended.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/vectorcraft/fetch_icons.py
+#   PYTHONPATH=. .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/vectorcraft/bindings.yaml --preview /tmp/vectorcraft_preview
+app: vectorcraft
+match: [vectorcraft, ai.storyteller.vectorcraft]   # Windows vectorcraft.exe, macOS "VectorCraft", Linux app id / WM_CLASS ai.storyteller.vectorcraft
+output: vectorcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: vectorcraft.png
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # ===== Tools: single key, no modifier (crates/tools/src/catalog.rs) =====
+  - { key: V, mods: [], icon: select.png,        label: Selection,          source: "illustrator/select.png (ms-fluent Cursor, MIT)" }
+  - { key: A, mods: [], icon: directselect.png,  label: "Direct select",    source: "illustrator/directselect.png (ms-fluent, MIT)" }
+  - { key: Y, mods: [], icon: magicwand.png,     label: "Magic wand",       source: "illustrator/magicwand.png (ms-fluent, MIT)" }
+  - { key: Q, mods: [], icon: lasso.png,         label: Lasso,              source: "illustrator/lasso.png (ms-fluent, MIT)" }
+  - { key: P, mods: [], icon: pen.png, mode: alpha, label: Pen,             source: "illustrator/pen.png (drawn)" }
+  - { key: MINUS, mods: [], icon: deleteanchor.png, label: "Delete anchor point", source: "vectorcraft pen-tool-delete.svg (Lucide ISC + VectorCraft)" }
+  - { key: T, mods: [], icon: type.png,          label: Type,               source: "illustrator/type.png (ms-fluent, MIT)" }
+  - { key: BACKSLASH, mods: [], icon: line.png, mode: alpha, label: "Line segment", source: "illustrator/line.png (drawn)" }
+  - { key: M, mods: [], icon: rectangle.png,     label: Rectangle,          source: "illustrator/rectangle.png (ms-fluent, MIT)" }
+  - { key: L, mods: [], icon: ellipse.png,       label: Ellipse,            source: "illustrator/ellipse.png (ms-fluent, MIT)" }
+  - { key: B, mods: [], icon: paintbrush.png,    label: Paintbrush,         source: "illustrator/paintbrush.png (ms-fluent, MIT)" }
+  - { key: N, mods: [], icon: pencil.png,        label: Pencil,             source: "illustrator/pencil.png (ms-fluent, MIT)" }
+  - { key: C, mods: [], icon: scissors.png, mode: alpha, label: Scissors,   source: "illustrator/scissors.png (drawn)" }
+  - { key: R, mods: [], icon: rotate.png,        label: Rotate,             source: "illustrator/rotate.png (ms-fluent, MIT)" }
+  - { key: O, mods: [], icon: reflect.png,       label: Reflect,            source: "illustrator/reflect.png (ms-fluent, MIT)" }
+  - { key: S, mods: [], icon: scale.png,         label: Scale,              source: "illustrator/scale.png (ms-fluent, MIT)" }
+  - { key: E, mods: [], icon: freetransform.png, label: "Free transform",   source: "vectorcraft dc-free-transform.svg (MIT OR Apache-2.0)" }
+  - { key: U, mods: [], icon: mesh.png,          label: Mesh,               source: "illustrator/mesh.png (ms-fluent, MIT)" }
+  - { key: G, mods: [], icon: gradient.png,      label: Gradient,           source: "illustrator/gradient.png (ms-fluent, MIT)" }
+  - { key: I, mods: [], icon: eyedropper.png,    label: Eyedropper,         source: "illustrator/eyedropper.png (ms-fluent, MIT)" }
+  - { key: W, mods: [], icon: blendtool.png,     label: "Blend tool",       source: "vectorcraft dc-blend.svg (MIT OR Apache-2.0)" }
+  - { key: J, mods: [], icon: graph.png,         label: "Column graph",     source: "vectorcraft chart-column.svg (Lucide, ISC)" }
+  - { key: K, mods: [], icon: livepaint.png,     label: "Live paint bucket", source: "illustrator/livepaint.png (ms-fluent, MIT)" }
+  - { key: H, mods: [], icon: hand.png,          label: Hand,               source: "illustrator/hand.png (ms-fluent, MIT)" }
+  - { key: Z, mods: [], icon: zoom.png,          label: Zoom,               source: "illustrator/zoom.png (ms-fluent, MIT)" }
+
+  # ===== Single-key commands, no modifier (paint.rs, menus.rs) =====
+  - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "illustrator/default.png (drawn)" }
+  - { key: X, mods: [], icon: fillstrokefocus.png, label: "Fill/stroke focus", source: "ms:flip_to_front (Apache-2.0)" }
+  - { key: F, mods: [], icon: screenmode.png,    label: "Screen mode",      source: "vectorcraft dc-screen-mode.svg (MIT OR Apache-2.0)" }
+  - { key: SLASH, mods: [], icon: paintnone.png, label: "None",             source: "vectorcraft dc-fill-none.svg (MIT OR Apache-2.0)" }
+  - { key: COMMA, mods: [], icon: lastcolor.png, label: "Last color",       source: "ms:format_color_fill (Apache-2.0)" }
+  - { key: DOT, mods: [], icon: lastgradient.png, label: "Last gradient",   source: "vectorcraft dc-grad-linear.svg (MIT OR Apache-2.0)" }
+  - { key: DELETE, mods: [], icon: clear.png,    label: Clear,              source: "ms-fluent/Delete (MIT)" }
+  - { key: F5, mods: [], icon: brushes.png,      label: Brushes,            source: "ms:brush (Apache-2.0)" }
+  - { key: F6, mods: [], icon: color.png,        label: Color,              source: "vectorcraft palette.svg (Lucide, ISC)" }
+  - { key: F7, mods: [], icon: layers.png,       label: Layers,             source: "vectorcraft layers.svg (Lucide, ISC)" }
+  - { key: F12, mods: [], icon: revert.png,      label: Revert,             source: "ms:restore_page (Apache-2.0)" }
+  # Enter / Backspace / Tab / Space (shortcuts.rs handle(); canvas.rs Space pan/zoom)
+  - { key: ENTER, mods: [], icon: move.png,      label: "Move / tool dialog", source: "ms-fluent/Arrow Move (MIT); Enter with a selection tool opens Move…" }
+  - { key: BACKSPACE, mods: [], icon: clear.png, label: Clear,              source: "ms-fluent/Delete (MIT)" }
+  - { key: TAB, mods: [], icon: panels.png,      label: "Show/hide panels", source: "ms:right_panel_close (Apache-2.0)" }
+  - { key: SPACE, mods: [], icon: hand.png,      label: "Hand (hold)",      source: "illustrator/hand.png (ms-fluent, MIT)" }
+  - { key: SPACE, mods: [CMDCTRL], icon: zoom.png, label: "Zoom (hold)",    source: "illustrator/zoom.png (ms-fluent, MIT)" }
+  - { key: SPACE, mods: [CMDCTRL, ALT], icon: zoomout.png, label: "Zoom out (hold)", source: "illustrator/zoomout.png (ms-fluent, MIT)" }
+  # arrows nudge the selection (shortcuts.rs: Shift = x10, Alt = copy)
+  - { key: LEFT,  mods: [], icon: nudgeleft.png,  label: "Nudge left",  source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: RIGHT, mods: [], icon: nudgeright.png, label: "Nudge right", source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: UP,    mods: [], icon: nudgeup.png,    label: "Nudge up",    source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: DOWN,  mods: [], icon: nudgedown.png,  label: "Nudge down",  source: "ms-fluent/Arrow Down (MIT)" }
+
+  # ===== Shift: tools + commands -> B channel of primary =====
+  - { key: C, mods: [SHIFT], icon: anchorpoint.png,   label: "Anchor point",     source: "vectorcraft dc-anchor.svg (MIT OR Apache-2.0)" }
+  - { key: GRAVE, mods: [SHIFT], icon: curvature.png, label: Curvature,          source: "vectorcraft spline.svg (Lucide, ISC)" }
+  - { key: EQUAL, mods: [SHIFT], icon: addanchor.png, label: "Add anchor point", source: "vectorcraft pen-tool-add.svg (Lucide ISC + VectorCraft)" }
+  - { key: T, mods: [SHIFT], icon: touchtype.png,     label: "Touch type",       source: "vectorcraft dc-touch-type.svg (MIT OR Apache-2.0)" }
+  - { key: B, mods: [SHIFT], icon: blobbrush.png,     label: "Blob brush",       source: "vectorcraft brush.svg (Lucide, ISC)" }
+  - { key: N, mods: [SHIFT], icon: shaper.png,        label: Shaper,             source: "vectorcraft shapes.svg (Lucide, ISC)" }
+  - { key: E, mods: [SHIFT], icon: eraser.png,        label: Eraser,             source: "illustrator/eraser.png (ms-fluent, MIT)" }
+  - { key: W, mods: [SHIFT], icon: width.png, mode: alpha, label: "Width tool",  source: "illustrator/width.png (drawn)" }
+  - { key: R, mods: [SHIFT], icon: warp.png,          label: Warp,               source: "vectorcraft waves.svg (Lucide, ISC)" }
+  - { key: M, mods: [SHIFT], icon: shapebuilder.png,  label: "Shape builder",    source: "vectorcraft dc-shape-builder.svg (MIT OR Apache-2.0)" }
+  - { key: L, mods: [SHIFT], icon: liveselect.png,    label: "Live paint select", source: "vectorcraft dc-live-select.svg (MIT OR Apache-2.0)" }
+  - { key: P, mods: [SHIFT], icon: perspective.png,   label: "Perspective grid", source: "vectorcraft dc-perspective.svg (MIT OR Apache-2.0)" }
+  - { key: V, mods: [SHIFT], icon: perspselect.png, mode: alpha, label: "Perspective select", source: "composite: dc-perspective + dc-selection" }
+  - { key: S, mods: [SHIFT], icon: symbolsprayer.png, label: "Symbol sprayer",   source: "vectorcraft dc-symbol-sprayer.svg (MIT OR Apache-2.0)" }
+  - { key: O, mods: [SHIFT], icon: artboard.png,      label: Artboard,           source: "vectorcraft frame.svg (Lucide, ISC)" }
+  - { key: K, mods: [SHIFT], icon: slice.png,         label: Slice,              source: "vectorcraft slice.svg (Lucide, ISC)" }
+  - { key: H, mods: [SHIFT], icon: rotateview.png,    label: "Rotate view",      source: "vectorcraft dc-rotate-view.svg (MIT OR Apache-2.0)" }
+  - { key: X, mods: [SHIFT], icon: swap.png, mode: alpha, label: "Swap fill/stroke", source: "illustrator/swap.png (drawn)" }
+  - { key: D, mods: [SHIFT], icon: drawmode.png,      label: "Drawing mode",     source: "vectorcraft dc-draw-inside.svg (MIT OR Apache-2.0)" }
+  - { key: F, mods: [SHIFT], icon: presentation.png,  label: "Presentation mode", source: "ms:slideshow (Apache-2.0)" }
+  - { key: F3, mods: [SHIFT], icon: colorguide.png,   label: "Color guide",      source: "vectorcraft dc-color-guide.svg (MIT OR Apache-2.0)" }
+  - { key: F5, mods: [SHIFT], icon: graphicstyles.png, label: "Graphic styles",  source: "vectorcraft dc-graphic-styles.svg (MIT OR Apache-2.0)" }
+  - { key: F6, mods: [SHIFT], icon: appearance.png,   label: Appearance,         source: "vectorcraft dc-appearance.svg (MIT OR Apache-2.0)" }
+  - { key: F7, mods: [SHIFT], icon: align.png,        label: "Align panel",      source: "vectorcraft dc-align.svg (MIT OR Apache-2.0)" }
+  - { key: F8, mods: [SHIFT], icon: transformpanel.png, label: "Transform panel", source: "vectorcraft dc-transform-panel.svg (MIT OR Apache-2.0)" }
+  - { key: LEFT,  mods: [SHIFT], icon: nudge10left.png,  label: "Nudge left x10",  source: "ms:keyboard_double_arrow_left (Apache-2.0)" }
+  - { key: RIGHT, mods: [SHIFT], icon: nudge10right.png, label: "Nudge right x10", source: "ms:keyboard_double_arrow_right (Apache-2.0)" }
+  - { key: UP,    mods: [SHIFT], icon: nudge10up.png,    label: "Nudge up x10",    source: "ms:keyboard_double_arrow_up (Apache-2.0)" }
+  - { key: DOWN,  mods: [SHIFT], icon: nudge10down.png,  label: "Nudge down x10",  source: "ms:keyboard_double_arrow_down (Apache-2.0)" }
+
+  # ===== Alt / Alt+Shift: nudge a copy =====
+  - { key: LEFT,  mods: [ALT], icon: nudgecopyleft.png,  mode: alpha, label: "Nudge copy left",  source: "composite: Copy + Arrow Left" }
+  - { key: RIGHT, mods: [ALT], icon: nudgecopyright.png, mode: alpha, label: "Nudge copy right", source: "composite: Copy + Arrow Right" }
+  - { key: UP,    mods: [ALT], icon: nudgecopyup.png,    mode: alpha, label: "Nudge copy up",    source: "composite: Copy + Arrow Up" }
+  - { key: DOWN,  mods: [ALT], icon: nudgecopydown.png,  mode: alpha, label: "Nudge copy down",  source: "composite: Copy + Arrow Down" }
+  - { key: LEFT,  mods: [ALT, SHIFT], icon: nudgecopy10left.png,  mode: alpha, label: "Nudge copy left x10",  source: "composite: Copy + double arrow" }
+  - { key: RIGHT, mods: [ALT, SHIFT], icon: nudgecopy10right.png, mode: alpha, label: "Nudge copy right x10", source: "composite: Copy + double arrow" }
+  - { key: UP,    mods: [ALT, SHIFT], icon: nudgecopy10up.png,    mode: alpha, label: "Nudge copy up x10",    source: "composite: Copy + double arrow" }
+  - { key: DOWN,  mods: [ALT, SHIFT], icon: nudgecopy10down.png,  mode: alpha, label: "Nudge copy down x10",  source: "composite: Copy + double arrow" }
+
+  # ===== Cmd/Ctrl -> R channel of primary (mac: GUI, combo A) =====
+  # file
+  - { key: N, mods: [CMDCTRL], icon: new.png,     label: New,         source: "illustrator/new.png (ms-fluent, MIT)" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,    label: Open,        source: "illustrator/open.png (ms-fluent, MIT)" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,    label: Save,        source: "illustrator/save.png (ms-fluent, MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,   label: Print,       source: "illustrator/print.png (ms-fluent, MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: close.png,   label: Close,       source: "ms-fluent/Dismiss (MIT)" }
+  - { key: Q, mods: [CMDCTRL], icon: quit.png,    label: Quit,        source: "ms-fluent/Power (MIT)" }
+  # edit
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,            source: "illustrator/undo.png (ms-fluent, MIT)" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,             source: "illustrator/cut.png (ms-fluent, MIT)" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,            source: "illustrator/copy.png (ms-fluent, MIT)" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,           source: "illustrator/paste.png (ms-fluent, MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: forward.png,   label: "Paste in front", source: "illustrator/forward.png (ms-fluent, MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: backward.png,  label: "Paste in back",  source: "illustrator/backward.png (ms-fluent, MIT)" }
+  - { key: K, mods: [CMDCTRL], icon: prefs.png,     label: Preferences,     source: "illustrator/prefs.png (ms-fluent, MIT)" }
+  - { key: COMMA, mods: [CMDCTRL], icon: prefs.png, label: Settings, only: [macos], source: "illustrator/prefs.png (ms-fluent, MIT); macOS-only Cmd+, (shortcuts.rs settings_chord)" }
+  # object
+  - { key: D, mods: [CMDCTRL], icon: transformagain.png, label: "Transform again", source: "illustrator/transformagain.png (ms-fluent, MIT)" }
+  - { key: G, mods: [CMDCTRL], icon: group.png,     label: Group,           source: "illustrator/group.png (ms-fluent, MIT)" }
+  - { key: "2", mods: [CMDCTRL], icon: lock.png,    label: Lock,            source: "illustrator/lock.png (ms-fluent, MIT)" }
+  - { key: "3", mods: [CMDCTRL], icon: hide.png, shared: false, label: Hide,          source: "ms:hide_source (Apache-2.0)" }
+  - { key: "7", mods: [CMDCTRL], icon: clipmask.png, label: "Clip mask",    source: "illustrator/clipmask.png (ms-fluent, MIT)" }
+  - { key: "8", mods: [CMDCTRL], icon: compound.png, label: "Compound path", source: "illustrator/compound.png (ms-fluent, MIT)" }
+  - { key: "]", mods: [CMDCTRL], icon: bringforward.png, label: "Bring forward", source: "ms-fluent/Position Forward (MIT)" }
+  - { key: "[", mods: [CMDCTRL], icon: sendbackward.png, label: "Send backward", source: "ms-fluent/Position Backward (MIT)" }
+  - { key: J, mods: [CMDCTRL], icon: join.png,      label: "Join paths",    source: "illustrator/join.png (ms-fluent, MIT)" }
+  - { key: L, mods: [CMDCTRL], icon: newlayer.png,  label: "New layer",     source: "illustrator/newlayer.png (ms-fluent, MIT)" }
+  # select
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all",    source: "illustrator/selectall.png (ms-fluent, MIT)" }
+  - { key: "6", mods: [CMDCTRL], icon: reselect.png, mode: alpha, label: Reselect, source: "composite: Select All On + Arrow Counterclockwise" }
+  # view
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",   source: "illustrator/zoomin.png (ms-fluent, MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out",  source: "illustrator/zoomout.png (ms-fluent, MIT)" }
+  - { key: "0", mods: [CMDCTRL], icon: fitartboard.png, label: "Fit artboard", source: "ms:fit_screen (Apache-2.0)" }
+  - { key: "1", mods: [CMDCTRL], icon: actualsize.png,  label: "Actual size",  source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: Y, mods: [CMDCTRL], icon: outline.png, mode: alpha, label: "Outline mode", source: "illustrator/outline.png (drawn)" }
+  - { key: H, mods: [CMDCTRL], icon: hideedges.png, label: "Hide edges",    source: "illustrator/hideedges.png (ms-fluent, MIT)" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png,    label: Rulers,          source: "illustrator/rulers.png (ms-fluent, MIT)" }
+  - { key: ";", mods: [CMDCTRL], icon: guides.png, mode: alpha, label: Guides, source: "illustrator/guides.png (drawn)" }
+  - { key: "5", mods: [CMDCTRL], icon: makeguides.png, mode: alpha, label: "Make guides", source: "composite: guides + plus" }
+  - { key: U, mods: [CMDCTRL], icon: smartguides.png, mode: alpha, label: "Smart guides", source: "illustrator/smartguides.png (drawn)" }
+  - { key: "'", mods: [CMDCTRL], icon: showgrid.png, label: "Show grid",    source: "ms-fluent/Grid Dots (MIT)" }
+  # panels (shortcut_editor.rs PANEL_SHORTCUTS)
+  - { key: T, mods: [CMDCTRL], icon: character.png,   label: Character,     source: "ms-fluent/Text Font (MIT)" }
+  - { key: F8, mods: [CMDCTRL], icon: info.png,       label: Info,          source: "vectorcraft info.svg (Lucide, ISC)" }
+  - { key: F9, mods: [CMDCTRL], icon: gradientpanel.png, label: "Gradient panel", source: "vectorcraft dc-gradient.svg (MIT OR Apache-2.0)" }
+  - { key: F10, mods: [CMDCTRL], icon: stroke.png,    label: Stroke,        source: "vectorcraft dc-stroke.svg (MIT OR Apache-2.0)" }
+  - { key: F11, mods: [CMDCTRL], icon: attributes.png, label: Attributes,   source: "ms:list_alt (Apache-2.0)" }
+
+  # ===== Cmd/Ctrl+Shift -> R channel of combo (mac: GUI+Shift, extra G) =====
+  - { key: Z, mods: [CMDCTRL, SHIFT], icon: redo.png,     label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,   label: "Save as",        source: "illustrator/saveas.png (ms-fluent, MIT)" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: newtemplate.png, label: "New from template", source: "ms-fluent/Document Copy (MIT)" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: place.png,    label: Place,            source: "illustrator/place.png (ms-fluent, MIT)" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteinplace.png, label: "Paste in place", source: "ms:content_paste_go (Apache-2.0)" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png, label: Deselect,         source: "ms-fluent/Select All Off (MIT)" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png,  label: Ungroup,          source: "illustrator/ungroup.png (ms-fluent, MIT)" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png, label: "Create outlines", source: "illustrator/outlines.png (ms-fluent, MIT)" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "illustrator/tofront.png (ms-fluent, MIT)" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "illustrator/toback.png (ms-fluent, MIT)" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: move.png,     label: "Move…",          source: "ms-fluent/Arrow Move (MIT)" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: applyeffect.png, label: "Apply last effect", source: "illustrator/applyeffect.png (ms-fluent, MIT)" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: colorsettings.png, mode: alpha, label: "Color settings", source: "composite: palette + Settings" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: boundingbox.png, label: "Bounding box", source: "ms:crop_free (Apache-2.0)" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: hideartboards.png, mode: alpha, label: "Hide artboards", source: "composite: dc-artboards + Eye Off" }
+  - { key: Y, mods: [CMDCTRL, SHIFT], icon: textthreads.png, label: "Text threads", source: "ms-fluent/Link Dismiss (MIT)" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: transparencygrid.png, mode: alpha, label: "Transparency grid", source: "drawn: checkerboard" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: showpersp.png, mode: alpha, label: "Show perspective grid", source: "composite: dc-perspective + Eye" }
+  - { key: "'", mods: [CMDCTRL, SHIFT], icon: snaptogrid.png, label: "Snap to grid", source: "ms:background_grid_small (Apache-2.0)" }
+  - { key: "1", mods: [CMDCTRL, SHIFT], icon: resetrotate.png, label: "Reset rotate view", source: "ms-fluent/Arrow Reset (MIT)" }
+  - { key: SLASH, mods: [CMDCTRL, SHIFT], icon: search.png, label: "Search commands", source: "ms-fluent/Search (MIT)" }
+  # type
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: fontdown.png, label: "Font size down", source: "ms-fluent/Font Decrease (MIT)" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: fontup.png,     label: "Font size up",   source: "ms-fluent/Font Increase (MIT)" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: alignleft.png,    label: "Align left",     source: "ms-fluent/Text Align Left (MIT)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: aligncenter.png,  label: "Align center",   source: "ms-fluent/Text Align Center (MIT)" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: alignright.png,   label: "Align right",    source: "ms-fluent/Text Align Right (MIT)" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: justifyleft.png,  label: "Justify",        source: "ms-fluent/Text Align Justify (MIT)" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: justifyall.png,   label: "Justify all",    source: "ms-fluent/Text Align Distributed (MIT)" }
+  # panels
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: tabs.png,         label: Tabs,             source: "ms:keyboard_tab (Apache-2.0)" }
+  - { key: F8, mods: [CMDCTRL, SHIFT], icon: editpattern.png, label: "Edit pattern",   source: "ms:pattern (Apache-2.0)" }
+  - { key: F9, mods: [CMDCTRL, SHIFT], icon: pathfinder.png,  label: Pathfinder,       source: "vectorcraft dc-pathfinder.svg (MIT OR Apache-2.0)" }
+  - { key: F10, mods: [CMDCTRL, SHIFT], icon: transparency.png, label: Transparency,   source: "vectorcraft dc-transparency.svg (MIT OR Apache-2.0)" }
+  - { key: F11, mods: [CMDCTRL, SHIFT], icon: symbols.png,    label: Symbols,          source: "ms:emoji_symbols (Apache-2.0)" }
+
+  # ===== Cmd/Ctrl+Alt -> G channel of combo (mac: GUI+Alt, extra B) =====
+  - { key: S, mods: [CMDCTRL, ALT], icon: savecopy.png,   label: "Save a copy",     source: "ms-fluent/Save Multiple (MIT)" }
+  - { key: W, mods: [CMDCTRL, ALT], icon: closeall.png,   label: "Close all",       source: "ms-fluent/Dismiss Square Multiple (MIT)" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: docsetup.png,   label: "Document setup",  source: "ms-fluent/Document Settings (MIT)" }
+  - { key: E, mods: [CMDCTRL, ALT], icon: exportscreens.png, label: "Export for screens", source: "ms:devices (Apache-2.0)" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: pasteplain.png, label: "Paste unformatted", source: "ms:format_clear (Apache-2.0)" }
+  - { key: A, mods: [CMDCTRL, ALT], icon: selectartboard.png, mode: alpha, label: "Select on artboard", source: "composite: Select All On + frame" }
+  - { key: "]", mods: [CMDCTRL, ALT], icon: nextabove.png, mode: alpha, label: "Next object above", source: "composite: dc-selection + Arrow Up" }
+  - { key: "[", mods: [CMDCTRL, ALT], icon: nextbelow.png, mode: alpha, label: "Next object below", source: "composite: dc-selection + Arrow Down" }
+  - { key: "2", mods: [CMDCTRL, ALT], icon: unlockall.png, label: "Unlock all",     source: "ms-fluent/Lock Open (MIT)" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: showall.png,   label: "Show all",       source: "illustrator/showall.png (ms-fluent, MIT)" }
+  - { key: "7", mods: [CMDCTRL, ALT], icon: releaseclip.png, mode: alpha, label: "Release clip mask", source: "composite: clipmask + minus" }
+  - { key: B, mods: [CMDCTRL, ALT], icon: blend.png, mode: alpha, label: "Make blend",  source: "illustrator/blend.png (drawn)" }
+  - { key: X, mods: [CMDCTRL, ALT], icon: livepaintmake.png, mode: alpha, label: "Make live paint", source: "composite: livepaint + plus" }
+  - { key: J, mods: [CMDCTRL, ALT], icon: average.png, mode: alpha, label: "Average points", source: "illustrator/average.png (drawn)" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: envtop.png,     label: "Envelope: top object", source: "ms:stack (Apache-2.0)" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: envmesh.png,    label: "Envelope: mesh",  source: "ms:grid_4x4 (Apache-2.0)" }
+  - { key: "0", mods: [CMDCTRL, ALT], icon: fitall.png,   label: "Fit all",         source: "ms:zoom_out_map (Apache-2.0)" }
+  - { key: Y, mods: [CMDCTRL, ALT], icon: pixelpreview.png, mode: alpha, label: "Pixel preview", source: "drawn: pixel staircase" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: gradannotator.png, mode: alpha, label: "Gradient annotator", source: "composite: gradient + Eye Off" }
+  - { key: I, mods: [CMDCTRL, ALT], icon: hiddenchars.png, mode: alpha, label: "Hidden characters", source: "composite: pilcrow + Eye" }
+  - { key: "5", mods: [CMDCTRL, ALT], icon: releaseguides.png, mode: alpha, label: "Release guides", source: "composite: guides + minus" }
+  - { key: ";", mods: [CMDCTRL, ALT], icon: lockguides.png, mode: alpha, label: "Lock guides", source: "composite: guides + lock" }
+  - { key: "'", mods: [CMDCTRL, ALT], icon: snaptopoint.png, label: "Snap to point", source: "ms:point_scan (Apache-2.0)" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: pilcrow.png,    label: Paragraph,         source: "vectorcraft pilcrow.svg (Lucide, ISC)" }
+
+  # ===== Cmd/Ctrl+Alt+Shift -> R channel of extra (mac: GUI+Alt+Shift, gui G) =====
+  - { key: S, mods: [CMDCTRL, ALT, SHIFT], icon: saveforweb.png, label: "Save for web",  source: "ms-fluent/Globe (MIT)" }
+  - { key: P, mods: [CMDCTRL, ALT, SHIFT], icon: package.png,    label: Package,         source: "ms:package_2 (Apache-2.0)" }
+  - { key: I, mods: [CMDCTRL, ALT, SHIFT], icon: fileinfo.png,   label: "File info",     source: "ms:description (Apache-2.0)" }
+  - { key: K, mods: [CMDCTRL, ALT, SHIFT], icon: shortcuts.png,  label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: pasteartboards.png, mode: alpha, label: "Paste on all artboards", source: "composite: paste + dc-artboards" }
+  - { key: D, mods: [CMDCTRL, ALT, SHIFT], icon: transformeach.png, label: "Transform each", source: "ms:transform (Apache-2.0)" }
+  - { key: E, mods: [CMDCTRL, ALT, SHIFT], icon: lasteffect.png, label: "Last effect dialog", source: "vectorcraft dc-fx.svg (MIT OR Apache-2.0)" }
+  - { key: "8", mods: [CMDCTRL, ALT, SHIFT], icon: releasecompound.png, mode: alpha, label: "Release compound", source: "composite: compound + minus" }
+  - { key: B, mods: [CMDCTRL, ALT, SHIFT], icon: releaseblend.png, mode: alpha, label: "Release blend", source: "composite: blend + minus" }
+  - { key: W, mods: [CMDCTRL, ALT, SHIFT], icon: envwarp.png,    label: "Envelope: warp", source: "ms:airwave (Apache-2.0)" }
+  - { key: Y, mods: [CMDCTRL, ALT, SHIFT], icon: overprint.png, mode: alpha, label: "Overprint preview", source: "composite: Print + Eye" }
+  - { key: T, mods: [CMDCTRL, ALT, SHIFT], icon: opentype.png,   label: OpenType,        source: "ms:font_download (Apache-2.0)" }

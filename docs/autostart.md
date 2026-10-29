@@ -179,3 +179,56 @@ brand-new console window it then dies with. Use
     copy *and* the relaunch, because an update that copies perfectly and then cannot
     relaunch is indistinguishable from "the app never came back".
 
+## Updates, autostart and daemon mode (the CLAUDE.md summary)
+
+_Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
+
+
+Autostart registration and the post-update relaunch chain are
+[`docs/autostart.md`](autostart.md). Six rules bind code outside it:
+
+- ⚠️ **There are TWO locks, and they are deliberately different files.**
+  `claim_instance()` guards the control endpoint (the core daemon holds it);
+  `claim_gui()` guards the tray icon (the GUI holds it). Under daemon-by-default the
+  GUI is a *client* and never owns the endpoint, so only the GUI lock can stop a second
+  tray — and one shared file would have the tray block the very daemon it just spawned.
+  ⚠️ **`claim_gui()` waits ~3 s rather than refusing at once**, because the post-update
+  relaunch spawns the replacement before this process exits; `main_app` also releases
+  the claim explicitly before `restart_app()`. Refusing immediately there is *"it
+  doesn't start up again after the update"*.
+  The forwarder takes a third lock, `claim_forwarder()` (`polykybd.forwarder.lock`),
+  with the same wait. A file of its own, because forwarding to your own keyboard
+  machine runs a forwarder beside the tray app. Before it, a second forwarder ran
+  beside the first and sent every window report twice (2026-10-13).
+- ⚠️ **A tray process relaunches with a NEW pid, not `os.execv`.** Qt's D-Bus tray
+  icon registers `org.kde.StatusNotifierItem-<pid>-<n>`, so an in-place exec
+  re-registers the name the old image just dropped. On Ubuntu 24.04 GNOME (X11) the
+  forwarder came back from an update forwarding windows with no tray icon at all; the
+  user launched a second copy, which got an icon because its pid was new
+  (2026-10-13). `main_app` calls `restart_app(new_process=True)` after releasing both its
+  claims; only a failed spawn (`OSError`) falls back to execv and keeps the pid.
+  The headless daemon has no tray and keeps execv.
+- ⚠️ **Registering autostart must never START the app** — it always runs from an
+  app that is already running. macOS made this concrete: the plist carries
+  `RunAtLoad`, so the `launchctl load` in `add_to_startup()` launched a SECOND copy,
+  and a first-time install came up with two tray icons, two core daemons and an
+  `EADDRINUSE` crash from the loser — which had already opened the keyboard
+  exclusively, locking the winner out of the device for 50 minutes. The tell is that
+  the second process starts a few ms **before** the first logs "Autostart
+  registration: …", since that line lands after `subprocess.run` returns.
+- **GUI self-update must be applied by the DAEMON, not the client.** In daemon mode the
+  tray is a `--connect` client and the daemon owns `PolyCore` — and therefore the
+  protocol gate. Running `UpdateInstaller` in the GUI process refreshed only the client
+  while the daemon kept running pre-update code, stuck on the old `__protocol__` until
+  manually restarted. After the daemon re-execs, the GUI waits for the endpoint to go
+  **down → back LIVE** before relaunching, or it re-attaches to the old daemon.
+- ⚠️ **Every relaunch must be spawned DETACHED** (`spawn_detached()`), and
+  `sys.executable` normalised to `pythonw.exe`. A plain `Popen` on Windows is how *"it
+  doesn't start up again after the update"* happens.
+- ⚠️ **The generated launchers live in the platformdirs config dir, NOT the checkout** —
+  in-tree they were deleted by `git clean -xdf` while the task still read `State: Ready`.
+  ⚠️ The Windows task is named **`PolyHost`**, not `PolyKybdHost`.
+- **`updater.preflight()` runs before the download**, at the one choke point the tray,
+  the daemon and `polyctl update install` all pass through — an update that copies
+  perfectly and then cannot relaunch is indistinguishable from "the app never came back".
+

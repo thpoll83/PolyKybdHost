@@ -51,6 +51,9 @@ widening fail loudly. **Never add a field by spreading.**
     with `wrangler d1 execute` or **`python telemetry-collector/dashboard.py --open`**,
     which renders a self-contained HTML dashboard locally (per-install version splits from
     each install's *newest* report, so a long-running tester doesn't outvote a new one).
+    A scheduled workflow in the private repo `thpoll83/polykybd-telemetry-data` runs
+    `dashboard.py --export-days data` once a day: one JSON file per finished UTC day
+    plus the rendered `dashboard.html`, read with its own D1-only token.
     A hosted version is planned but unbuilt — design and its costs in
     `telemetry-collector/HOSTED_DASHBOARD.md`. Full setup/runbook: `telemetry-collector/SETUP.md`.
 
@@ -97,8 +100,8 @@ widening fail loudly. **Never add a field by spreading.**
   Cloudflare Worker that already exists. It doesn't fit, and each obstacle would
   have to be removed separately: the Worker caps a request body at **8 KB** (a
   description plus diagnostics blows past it, let alone logs); the D1 schema is
-  `UNIQUE(install_id, day)` and upserts, so a **second report the same day
-  overwrites the first** — exactly when a user is retrying because it broke
+  `UNIQUE(install_id, day)` with `INSERT OR IGNORE`, so a **second report the
+  same day is dropped** — exactly when a user is retrying because it broke
   again; the payload is an **allow-list rebuilt server-side** (`PAYLOAD_KEYS`,
   frozen by a test *designed* to make widening fail loudly), so free text can only
   arrive by deliberately undoing that guarantee; and the Worker is **write-only by

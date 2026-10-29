@@ -121,6 +121,32 @@ LANG_REGION_OVERRIDE = {
     "hwUS": "Oceania",   # Hawaiian: US country code, but Polynesian
 }
 
+# Languages whose "YY" names the OS KEYBOARD LAYOUT rather than a place. Their
+# home country decides where they sort, which region they are listed under and
+# which flag they show, so ja-US sits beside ja-JP under Asia with Japan's flag.
+# Mirrored by FLAG_ALIAS in qmk_firmware .../polykybd/fonts/gen-lang-fonts.sh;
+# lang/_gen_region_tables.py imports this map directly.
+LANG_HOME_COUNTRY = {
+    "jaUS": "JP",        # Japanese on a US (101-key) layout
+}
+
+
+def home_country(lang: str) -> str:
+    """The country a 4-char language code ("jaJP") belongs to, upper case."""
+    return LANG_HOME_COUNTRY.get(lang, lang[2:].upper())
+
+
+def layout_note(lang: str) -> str:
+    """The layout code a label shows after the flag, so ja-US and ja-JP stay
+    tellable apart while both show Japan's flag. Empty for an ordinary language."""
+    country = lang[2:].upper()
+    return country if home_country(lang) != country else ""
+
+
+def region_of(lang: str) -> str:
+    """The tray submenu a 4-char language code is listed under."""
+    return LANG_REGION_OVERRIDE.get(lang, LANG_REGION.get(home_country(lang), N_("Other")))
+
 # The region names are submenu titles in the tray, translated where shown
 # (`_(region)`); N_ only marks them for extraction, the values stay English
 # because LANG_REGION maps to them.

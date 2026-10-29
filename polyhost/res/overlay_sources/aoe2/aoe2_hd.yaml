@@ -1,0 +1,103 @@
+# Age of Empires II (HD Edition and the original CD version) overlays for PolyKybd.
+#
+# Keys: the HD Edition default hotkeys. See SOURCES.md.
+#
+# Only keys that do the same thing whatever is selected are labelled. The
+# letter keys alone build, train and command, and their meaning changes with
+# the selection, so they stay blank (except H, Go to Town Center).
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/aoe2/fetch_icons.py
+#   python polyhost/res/overlay_sources/aoe2/gen_de.py     # writes aoe2_de.yaml
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/aoe2/aoe2_hd.yaml --preview /tmp/aoe2_preview
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/aoe2/aoe2_de.yaml --preview /tmp/aoe2_de_preview
+app: aoe2_hd
+match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe]
+output: aoe2_hd_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# The firmware draws the icon over the legend and clears 3 px around it, so the
+# icon uses the full height on the right. On `,` and `.` it erases the shifted
+# `<` and `>`. F2, F4 and F11 get a narrower area that keeps their legend whole;
+# F12 and Backspace keep 40x40 and the icon cuts into the legend (SOURCES.md).
+anchor: right
+region: [40, 40]
+margin: 0
+
+# The ESC mark is drawn at 72x40 by program_mark.py. It replaces the keycap, so
+# the keyboard draws it without the ESC legend (protocol v25, cmd 44).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Selection and view (no modifier); control groups: digit selects, Ctrl+digit creates
+  - { key: DOT, icon: idlevillager.png, label: "Next idle villager", margin: 5 }
+  - { key: COMMA, icon: idlemilitary.png, label: "Next idle military" }
+  - { key: H, icon: towncenter.png, label: "Go to Town Center" }
+  - { key: HOME, icon: notification.png, label: "Last notification" }
+  - { key: BSPC, icon: previousview.png, label: "Return to previous view" }
+
+  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+
+  # Go to building (Ctrl)
+  - { key: I, mods: [CTRL], icon: mill.png, label: "Go to Mill" }
+  - { key: B, mods: [CTRL], icon: barracks.png, label: "Go to Barracks" }
+  - { key: A, mods: [CTRL], icon: archeryrange.png, label: "Go to Archery Range" }
+  - { key: L, mods: [CTRL], icon: stable.png, label: "Go to Stable" }
+  - { key: S, mods: [CTRL], icon: blacksmith.png, label: "Go to Blacksmith" }
+  - { key: M, mods: [CTRL], icon: market.png, label: "Go to Market" }
+  - { key: Y, mods: [CTRL], icon: monastery.png, label: "Go to Monastery" }
+  - { key: V, mods: [CTRL], icon: castle.png, label: "Go to Castle" }
+  - { key: K, mods: [CTRL], icon: siegeworkshop.png, label: "Go to Siege Workshop" }
+  - { key: D, mods: [CTRL], icon: dock.png, label: "Go to Dock" }
+  - { key: Z, mods: [CTRL], icon: lumbercamp.png, label: "Go to Lumber Camp" }
+  - { key: G, mods: [CTRL], icon: miningcamp.png, label: "Go to Mining Camp" }
+  - { key: U, mods: [CTRL], icon: university.png, label: "Go to University" }
+
+  # Game (function keys and chat)
+  - { key: F2, icon: techtree.png, label: "Technology tree", region: [34, 40] }
+  - { key: F3, icon: pause.png, label: "Pause" }
+  - { key: F4, icon: statistics.png, label: "Statistics", region: [30, 40] }
+  - { key: F9, icon: savechapter.png, label: "Save chapter" }
+  - { key: F11, icon: gametime.png, label: "Game time", region: [21, 40] }
+  - { key: F12, icon: savegame.png, label: "Save game", margin: 5 }
+  - { key: ENTER, icon: sendchat.png, label: "Send chat message" }
+  - { key: PGUP, icon: chatback.png, label: "Review chat backward" }
+  - { key: PGDN, icon: chatfwd.png, label: "Review chat forward" }
+
+  # Alt
+  - { key: D, mods: [ALT], icon: diplomacy.png, label: "Diplomacy" }
+  - { key: F, mods: [ALT], icon: flare.png, label: "Flare" }
+  - { key: O, mods: [ALT], icon: objectives.png, label: "Objectives" }
+  - { key: T, mods: [ALT], icon: chat.png, label: "Open chat" }
+  - { key: G, mods: [ALT], icon: allycolours.png, label: "Toggle ally / enemy colours" }
+  - { key: C, mods: [ALT], icon: mapcombat.png, label: "Minimap: combat mode" }
+  - { key: R, mods: [ALT], icon: mapeco.png, label: "Minimap: economic mode" }
+  - { key: N, mods: [ALT], icon: mapnormal.png, label: "Minimap: normal mode" }

@@ -3,6 +3,8 @@ import os
 import platform
 import re
 import subprocess
+import time
+import unicodedata
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
@@ -18,6 +20,27 @@ from polyhost.handler.win_shell import shell_app_name
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
+#: Read once: `platform.system()` is the hot path's own cost otherwise, and the
+#: tests patch this name to exercise the macOS early-out off a Mac.
+_IS_MACOS = platform.system() == "Darwin"
+
+#: Aliased so a test can replace THIS module's clock. Patching
+#: `time.monotonic` through the module object replaces it process-wide, and
+#: this suite runs threads -- anything else calling it during a faked tick
+#: would get the fake value (Revix, #397).
+_monotonic = time.monotonic
+
+#: The title/URL flags. An entry carrying any of them needs the window title on
+#: every tick, so the macOS early-out below never skips one.
+_TITLE_FLAGS = (
+    Flags.HAS_TITLE, Flags.HAS_TITLES_STARTS_W, Flags.HAS_TITLES_ENDS_W,
+    Flags.HAS_TITLES_CONTAINS, Flags.HAS_URL, Flags.HAS_URLS_CONTAINS,
+    # ⚠️ `HAS_OS` too, conservatively: an `os:` branch holds its own entries
+    # with their own flags (3 in the shipped mapping, all of them carrying
+    # `urls-contains`), and reading the parent's flags would answer for a level
+    # that never matches anything itself.
+    Flags.HAS_OS,
+)
 
 if IS_PLASMA:
     _BACKEND_NAME = "kde_win_reporter"
@@ -113,6 +136,122 @@ def frontmost_app():
         return None, None
 
 
+#: The system-wide Accessibility attribute naming the application that holds
+#: keyboard focus. Spelled out rather than imported, as in
+#: `services/shortcut_source/macos.py`, so a typo fails a unit test here
+#: instead of quietly reading nothing on a Mac.
+_AX_FOCUSED_APPLICATION = "AXFocusedApplication"
+_AX_ERROR_SUCCESS = 0
+
+
+def _ax_system_wide_api():
+    """The three pyobjc symbols the focus detector needs, imported late.
+
+    Late for the reason `services.shortcut_source.macos` imports late: this
+    module loads on every OS and pyobjc must not land on a Linux or Windows
+    host that will never call it.
+    """
+    from ApplicationServices import (
+        AXUIElementCopyAttributeValue, AXUIElementCreateSystemWide,
+        AXUIElementGetPid)
+    return (AXUIElementCreateSystemWide, AXUIElementCopyAttributeValue,
+            AXUIElementGetPid)
+
+
+def focused_app_pid():
+    """The pid of the application holding keyboard focus on macOS, or None.
+
+    The change detector the tick asks before spending anything: one IN-PROCESS
+    Accessibility read, no subprocess. pywinctl's `getActiveWindow()` costs two
+    `osascript` processes (its own script, then `MacOSWindow.__init__` ->
+    `getProcName`) and was measured at 1.6 s median against a 250 ms cycle, on
+    every tick for ever (field bundle 2026-10-16).
+
+    ⚠️ **NOT the Quartz window list, which was tried first and rejected.**
+    `CGWindowListCopyWindowInfo`'s topmost layer-0 window is cheaper still, but
+    it answers about a WINDOW: activating an app whose windows are all
+    minimized leaves another app's window on top, so the identity would never
+    move and the switch would be skipped **indefinitely** -- the exact symptom
+    this work fixes. `AXFocusedApplication` tracks the APPLICATION, so a
+    windowless activation moves it.
+
+    ⚠️ **NOT `NSWorkspace.frontmostApplication` either.** That is a KVO
+    property published through the main run loop, it reads STALE on a worker
+    thread, and the headless daemon has no NSApplication run loop to publish it
+    at all -- measured wrong twice in this project (see `frontmost_app`). This
+    is a live AX query, not a published property.
+
+    ⚠️ It needs the same Accessibility grant the shortcut harvest needs, and
+    answers None without it -- which costs only the saving, because the caller
+    then behaves exactly as it did before this detector existed.
+    Deliberately no `AXIsProcessTrusted` probe and no `WithOptions` prompt: see
+    `services.shortcut_source.macos._trusted`.
+
+    ⚠️ It never raises. A detector that can raise is worse than none: the Qt
+    slot driving window tracking aborts the process on an escaping exception.
+    """
+    try:
+        if not _IS_MACOS:
+            return None
+        create_system_wide, copy_attr, get_pid = _ax_system_wide_api()
+        err, app = copy_attr(create_system_wide(),
+                             _AX_FOCUSED_APPLICATION, None)
+        if err != _AX_ERROR_SUCCESS or app is None:
+            return None
+        err, pid = get_pid(app, None)
+        return pid if err == _AX_ERROR_SUCCESS and pid else None
+    except Exception:  # noqa: BLE001 - a detector must never raise
+        # ⚠️ Said ONCE, and the reason it is said at all: without it a pyobjc
+        # upgrade or an AX rename would silently revert the tick to the slow
+        # path, and the only symptom would be the multi-second switch lag
+        # coming back with nothing in the log to explain it (Revix, #397). A
+        # missing Accessibility grant is NOT this: that returns None from the
+        # error check above, which is a normal state and stays quiet.
+        # ⚠️ The once-flag lives on the FUNCTION, not in a module global. A
+        # global here needed a `global` statement whose only reader was this
+        # block, which CodeQL reads as an unused global
+        # (py/unused-global-variable, #397); the state belongs to the one
+        # function that owns it either way. One warning per process: a
+        # per-tick line would be ~150 an hour.
+        if not getattr(focused_app_pid, "warned_broken", False):
+            focused_app_pid.warned_broken = True
+            logging.getLogger("PolyHost").warning(
+                "The macOS focus detector raised, so the window tick falls "
+                "back to querying pywinctl every time (slower switches). This "
+                "is a broken detector, not a missing Accessibility grant.",
+                exc_info=True)
+        return None
+
+
+def _log_safe(text):
+    r"""`text` with its CONTROL characters escaped, everything else intact.
+
+    ⚠️ A window title is attacker-influenceable -- a web page chooses its own
+    -- and it is logged verbatim into a support bundle. A newline in one would
+    forge an extra log line and split the app-change record (Greptile, #397).
+
+    ⚠️ NOT `text.encode("utf-8")`, which escaped newlines only as a side
+    effect of being a bytes repr and mangled every non-ASCII title into
+    `\xNN` along the way: a German or Japanese title became unreadable, and a
+    bundle reader could not tell the quoting from the window's own.
+
+    ⚠️ NOT `str.isprintable()` either, which is the first thing this reached
+    for and is wrong in a way that matters: it is False for every Unicode
+    SPACE SEPARATOR except ASCII space, so NBSP, en-space and the ideographic
+    space U+3000 were escaped too (Revix, #397). Those cannot split a log
+    record and they appear in ordinary French and Japanese titles.
+
+    So the test is the Unicode category: `C*` is escaped -- Cc control, Cf
+    format (which usefully covers the bidi overrides, the other way to make a
+    log line read as something it is not), Cs/Co/Cn -- and everything else,
+    `Zs` separators included, is left alone.
+    """
+    if text is None:
+        return None
+    return "".join(c if unicodedata.category(c)[0] != "C" else repr(c)[1:-1]
+                   for c in str(text))
+
+
 def _handle_identifies(handle):
     """True when ``handle`` names a particular window.
 
@@ -195,6 +334,14 @@ class OverlayHandler:
         # same-app title change doesn't re-issue an ENABLE that's already in
         # effect (see handle_active_window).
         self.overlays_enabled = False
+        # When the previous tick ran, so the accept timer can count REAL time
+        # rather than the nominal cycle (see `_tick_elapsed_msec`).
+        self._last_tick_at = None
+        # The focused application's pid as the last non-skipped tick read it,
+        # and whether the full path has RESOLVED focus for it. Both only matter
+        # on macOS; see `_macos_can_skip_tick`.
+        self._macos_front = None
+        self._macos_resolved = False
         self.mapping = self.annotate(mapping.items())
         self.remote_handler = RemoteHandler(
             self.mapping, enable_legacy_relay=enable_legacy_relay,
@@ -271,6 +418,14 @@ class OverlayHandler:
         self.title = title
         self.handle = handle
         self.app_name = None
+        # ⚠️ The URL belongs to the WINDOW, so it goes with it. The windowless
+        # match reads `self.current_url` from state rather than an argument, and
+        # leaving it set meant matching against whatever tab the PREVIOUS
+        # window reported -- a `urls-contains` branch is still live with no
+        # title, so a web-app's overlay could be drawn for an unrelated
+        # windowless app (Revix, #397). The window branch re-reads it from
+        # `url_provider` a few lines below, so nothing is lost there.
+        self.current_url = None
         # The window path and the windowless one are alternatives, never both:
         # whichever ran last is the answer, so entering one clears the other.
         self.windowless_app = None
@@ -295,14 +450,19 @@ class OverlayHandler:
         except Exception:            # never let OS detection break window matching
             return None
 
-    def try_to_match_window(self, name, entry):
+    def try_to_match_window(self, name, entry, title_known=True):
         # The recursion lives in common.find_matching_entry (shared with the
         # remote path); here we add the ENABLE-vs-OFF_ON decision and the
         # current/last-entry bookkeeping. A re-enter of the same matched entry
         # is ENABLE (overlays already mapped); a different one is a full OFF_ON.
+        #
+        # `title_known=False` is the windowless path: an entry declaring a
+        # `title` regex then fails rather than having it skipped. See
+        # `common.find_matching_entry`.
         try:
             matched = find_matching_entry(self.title, entry, self.current_url,
-                                          self._active_os())
+                                          self._active_os(),
+                                          title_known=title_known)
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
@@ -319,8 +479,21 @@ class OverlayHandler:
         self.last_entry = matched
         return True, OverlayCommand.OFF_ON
 
-    def log_win(self, raw_app_name):
+    def log_win(self, raw_app_name, title=None, handle=None):
         """Log active window.
+
+        ⚠️ **`title` and `handle` are PASSED IN, never re-read here.** They were
+        read from `self.win` on macOS, where every attribute access is an
+        `osascript` subprocess: `title` is one, and `getHandle()` is another
+        that reads `title` again inside itself, so this one log line cost three
+        AppleScript round trips of the seven a changed tick spent (field bundle
+        2026-10-16, where a changed tick took 2.0-2.8 s). They default to None
+        so a caller with nothing in hand still gets a line.
+
+        ⚠️ The title is logged as TEXT. It used to be `title.encode('utf-8')`,
+        which rendered an empty title as `b''` and a real one as
+        `b'NoMachine Software Update'` -- so a reader of the bundle had to work
+        out that the quoting was the log's own and not the window's.
 
         ⚠️ The handle is formatted with **%s, never %d**. It is an opaque token
         whose type is the platform's: an int HWND on Windows, an int id on the
@@ -340,8 +513,7 @@ class OverlayHandler:
         there is no reason to demand a number of it.
         """
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %s",
-                      raw_app_name, self.win.title.encode('utf-8'),
-                      self.win.getHandle())
+                      raw_app_name, _log_safe(title), handle)
 
     def _is_redundant_overlay_cmd(self, cmd):
         """True when ``cmd`` asks for the overlay state the device is already in
@@ -378,8 +550,100 @@ class OverlayHandler:
             self.overlays_enabled = False
         return data, cmd
 
+    def _tick_elapsed_msec(self, update_cycle_time_msec):
+        """How long the accept timer should count for this tick, in ms.
+
+        ⚠️ **The timer used to add the NOMINAL cycle, whatever the tick really
+        cost, and on macOS that inflated a 1 s debounce into 15 s.** It takes
+        six ticks to accept a switch (reset to 0, then five 250 ms steps past
+        the 1000 ms threshold), which is 3 s at the stated cycle -- but a macOS
+        tick measured 2.30 s median, because pywinctl spends two `osascript`
+        processes per `getActiveWindow()`. Six of those is 15.3 s of
+        uninterrupted focus before a switch reaches the keyboard, so every app
+        the user left sooner never reached it at all, and nothing was logged
+        (field bundle 2026-10-16, 132 slow-tick warnings in 42 minutes with no
+        app-identity line between them).
+
+        ⚠️ The nominal cycle is the FLOOR, not the alternative. A caller that
+        ticks faster than it says it does -- which is every test in
+        `tests/handler/active_window_test.py`, driving the loop with no delay
+        at all -- would otherwise accumulate ~0 and never accept anything.
+        """
+        now = _monotonic()
+        previous, self._last_tick_at = self._last_tick_at, now
+        if previous is None:
+            return update_cycle_time_msec
+        return max(update_cycle_time_msec, int((now - previous) * 1000))
+
+    def _focused_entry_needs_title(self):
+        """Does the focused app's mapping entry match on a title or a URL?
+
+        Asked of the MAPPING rather than of `current_entry`, because an entry
+        keyed on titles that has not matched yet leaves `current_entry` None --
+        and that is exactly the case that must keep reading the title, or the
+        match could never happen.
+        """
+        if self.is_remote_mapping_entry():
+            # A forwarder reports the other machine's window; its changes do
+            # not move this machine's topmost window at all.
+            return True
+        key = mapping_key(self.app_name, self.mapping) if self.app_name else None
+        if key is None:
+            return False
+        flags = self.mapping[key].get(FLAGS) or ()
+        return any(flags[f.value] for f in _TITLE_FLAGS if f.value < len(flags))
+
+    def _macos_can_skip_tick(self):
+        """True when this macOS tick can skip the pywinctl query entirely.
+
+        pywinctl's macOS `getActiveWindow()` costs two `osascript` processes
+        and was measured at 1.6 s median against a 250 ms cycle, on every tick
+        for ever. `focused_app_pid()` answers "is the same application still in
+        front?" with one in-process Accessibility read, so the common case --
+        nothing changed -- costs nothing.
+
+        Three conditions, and all three are needed:
+
+        - the focused pid must be UNCHANGED since the tick that last read one.
+          None (no Accessibility grant, or a failed read) is never unchanged,
+          so an ungranted machine behaves as it did before this existed;
+        - the full path must have RESOLVED that pid. A changed pid clears the
+          marker, and the window branch sets it only once its accept timer
+          matures, so the debounce ticks keep querying and a switch waiting to
+          be accepted can never be skipped into limbo. The first tick of a
+          session has no marker either;
+        - the focused app's entry must not match on a title or a URL. A pid
+          does not change when a window retitles, and a browser switching tabs
+          is exactly that -- those entries (14 of the 69 shipped) keep paying
+          the full query on every tick.
+
+        ⚠️ **It does NOT cross-check against `focused_pid()`**, however much
+        the pid in hand invites it: `window_pid` is `MacOSWindow.getPID()`,
+        which is one more `osascript` -- through a shell, at that -- so a
+        sanity check there would have spent most of what this saves. The
+        marker above is what replaces it.
+
+        ⚠️ What it gives up: a retitle on a title-INDEPENDENT app is seen only
+        on the next tick that is not skipped, which can delay the shortcut
+        harvest's re-harvest-on-retitle (Kate's menus gain Save/Undo once a
+        document opens). Nothing about the overlay match depends on it, by the
+        title condition above. A change of APPLICATION is never delayed: that
+        is what the detector reads.
+        """
+        front = focused_app_pid()
+        if front is None or front != self._macos_front:
+            self._macos_front = front
+            self._macos_resolved = False
+            return False
+        if not self._macos_resolved:
+            return False
+        return not self._focused_entry_needs_title()
+
     def _decide_active_window(self, update_cycle_time_msec, accept_time_msec):
-        self.last_update_msec = self.last_update_msec + update_cycle_time_msec
+        self.last_update_msec = (self.last_update_msec
+                                 + self._tick_elapsed_msec(update_cycle_time_msec))
+        if _IS_MACOS and self._macos_can_skip_tick():
+            return None, OverlayCommand.NONE
         win = None
         # macOS only, None elsewhere: our own window, which pywinctl cannot
         # see there (see `own_process.own_front_app`). It takes the
@@ -395,13 +659,21 @@ class OverlayHandler:
             if self.prev_win != win:
                 self.prev_win = win
                 self.last_update_msec = 0
-            if self.last_update_msec > accept_time_msec:
+            if self.last_update_msec >= accept_time_msec:
                 self.last_update_msec = accept_time_msec  * 2 #just to limit that
+                # The handler commits to a focused window here, so the macOS
+                # early-out may trust its identity from the next tick on. Set
+                # BEFORE the early returns below, which are decisions too.
+                self._macos_resolved = True
                 # ⚠️ Read each of these ONCE. On macOS every access is an
                 # `osascript` subprocess -- `MacOSWindow.title` re-runs
                 # `_getAppWindowsTitles` and `getHandle()` calls `title` again --
                 # so the old four accesses per changed tick cost four AppleScript
-                # round trips where two do.
+                # round trips where two do. ⚠️ Deriving the macOS handle from the
+                # title instead (pywinctl returns `("", "")` when it is empty)
+                # would save one more and was deliberately NOT done: it pins this
+                # file to pywinctl's internals, and the only thing that would say
+                # the two had diverged is a switch going unnoticed again.
                 handle = win.getHandle()
                 title = win.title
                 if not title and not _handle_identifies(handle):
@@ -423,7 +695,7 @@ class OverlayHandler:
                         return None, OverlayCommand.NONE
                     try:
                         raw_app_name = app_name_for(self.win)
-                        self.log_win(raw_app_name)
+                        self.log_win(raw_app_name, title, handle)
                         if self.mapping:
                             found = False
                             if platform.system() == 'Windows':
@@ -507,13 +779,27 @@ class OverlayHandler:
             # -- and the overlay path never needed the window itself: it needs
             # the app's name and pid, which `frontmost_app()` knows.
             #
-            # What is lost without a window is the TITLE, so a template entry
-            # that matches on one cannot be evaluated. That is why this still
-            # returns DISABLE and leaves `current_entry` cleared: the generic
-            # path draws (`focused_app`/`focused_pid` answer from here), the
-            # template path correctly does not.
+            # ⚠️ What is lost without a window is the TITLE -- and that rules
+            # out only the entries that MATCH on one. This branch used to skip
+            # the template path wholesale, which cost every app pywinctl cannot
+            # see its hand-made artwork: VS Code's own `os: macos:` branch
+            # carries three templates and deliberately NO `title:`, because a
+            # macOS window title does not name the app, and it was never once
+            # evaluated (field, 2026-10-16 -- the keycaps stayed blank while the
+            # log said "no template covers it"). The match below runs with
+            # `title_known=False`, so a title-constrained entry fails and an
+            # app-name-only entry fires.
             name, pid = own if own is not None else frontmost_app()
             app = own_app_name(name.lower(), pid) if name else None
+            # ⚠️ This branch deliberately does NOT arm the macOS skip, and it
+            # is the one place that must not. A pid does not change when an app
+            # GAINS a window, so arming it here made the state permanent: the
+            # user opens or restores a window in the same app and every later
+            # tick returned before the query, so the window -- and with it the
+            # title, the template and the harvest -- was never seen again
+            # (Greptile P1, #397). Reaching here means there is still something
+            # to find, so the query keeps being paid.
+            self._macos_resolved = False
             if self.win is not None or app != self.windowless_app:
                 self.set_win()
                 self.windowless_app, self.windowless_pid = app, pid
@@ -541,6 +827,29 @@ class OverlayHandler:
                 # drops a DISABLE while the device already has overlays off, so
                 # this costs a bridge-sync only when something really is drawn.
                 self.current_entry = None
+                # The app name is all this path has, and for an entry that
+                # declares no title it is all the matcher needs. `self.app_name`
+                # is set so the generic path asks about the same application the
+                # mapping was tested against -- the reason that field exists.
+                self.app_name = app
+                key = mapping_key(app, self.mapping) if app else None
+                if key is not None:
+                    found, cmd = self.try_to_match_window(
+                        app, self.mapping[key], title_known=False)
+                    if found:
+                        data = self.get_overlay_data()
+                        if data is not None:
+                            self.log.info(
+                                "Changing to %s (no window, matched on the app "
+                                "name alone)", app)
+                            return data, cmd
+                        # ⚠️ A match with nothing to draw must not leave the
+                        # last app's keycaps up -- the same rule as the window
+                        # branch, and `last_entry` is dropped for the same
+                        # reason: returning here must be a full OFF_ON, never an
+                        # ENABLE of a mapping another app left behind.
+                        self.last_entry = None
+                        self.current_entry = None
                 return None, OverlayCommand.DISABLE
 
         # self.log.info("Nothing at all")
@@ -570,6 +879,13 @@ class OverlayHandler:
         # has one answer -- the mark and the shortcut harvest would otherwise be
         # able to disagree about it.
         return self.app_name or self.windowless_app, None
+
+    def focused_os(self):
+        """OS of the machine running the focused app (see `_active_os`): the
+        forwarder's for a forwarded window, this machine's otherwise. The ESC
+        mark needs it as well as the mapping, because one app name can mean two
+        programs (`photos` on Windows and on macOS)."""
+        return self._active_os()
 
     def focused_pid(self):
         """The focused LOCAL window's process id, or None.
@@ -622,6 +938,30 @@ class OverlayHandler:
         if isinstance(title, bytes):
             title = title.decode("utf-8", "replace")
         return title or None
+
+    def focused_handle(self):
+        """The focused LOCAL window's handle on Windows, or None.
+
+        What the UIA shortcut harvest reads instead of "whatever has focus when
+        the read runs": a read queued for Zoom ran minutes later on Chrome and
+        filed Chrome's shortcuts under Zoom (2026-10-15). None elsewhere --
+        on macOS pywinctl derives the handle from the title
+        (`_handle_identifies`), and the other backends harvest by pid or
+        name -- and None for a forwarded window, which runs on the other
+        machine.
+        """
+        if platform.system() != "Windows":
+            return None
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            return None
+        if not self.win:
+            return None
+        try:
+            handle = self.win.getHandle()
+            return int(handle) if handle else None
+        except Exception:
+            return None
 
     def _win_pid(self):
         """The focused local window's pid, or None if it cannot be read."""
@@ -681,6 +1021,9 @@ class OverlayHandler:
         already been focused, so the re-match fires promptly)."""
         self.title = None
         self.handle = None
+        # ⚠️ And disarm the macOS skip, or it answers "same app, nothing
+        # changed" and returns before the re-match this exists to force.
+        self._macos_resolved = False
 
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""
@@ -692,6 +1035,18 @@ class OverlayHandler:
         # The device's overlays were reset/cleared on (re)connect, so the next
         # match must be allowed to enable them again (don't suppress).
         self.overlays_enabled = False
+        # ⚠️ Same reason as `invalidate_window_cache`, and worse here: the
+        # keyboard has just been CLEARED. The macOS skip would have returned
+        # before the window query on every tick while the same title-independent
+        # app stayed in front, so the board stayed blank until the user switched
+        # apps (Greptile P1 and CodeRabbit, independently, #397).
+        self._macos_resolved = False
+        # ⚠️ And the WINDOWLESS app, for the same reason one level up: that
+        # branch only runs when `win` exists or the app differs from
+        # `windowless_app`, so leaving this set skipped the branch entirely and
+        # the template it had matched was never resent (Greptile P1, #397).
+        self.windowless_app = None
+        self.windowless_pid = None
         self.remote_handler.reset_for_resend()
 
     def close(self):

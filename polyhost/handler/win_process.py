@@ -83,15 +83,10 @@ def _load_win32():
     return _win32
 
 
-def win32_process_name(hwnd):
-    """``"chrome.exe"`` for a window handle, or ``""`` when it can't be read."""
-    user32, kernel32, wintypes = _load_win32()
-
-    pid = wintypes.DWORD(0)
-    user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
-    if not pid.value:
-        return ""
-    handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+def _win32_image_path(pid):
+    """The full path of process `pid`'s executable, or ``""``."""
+    _user32, kernel32, wintypes = _load_win32()
+    handle = kernel32.OpenProcess(_PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     if not handle:
         return ""
     try:
@@ -99,21 +94,95 @@ def win32_process_name(hwnd):
         buf = ctypes.create_unicode_buffer(size.value)
         if not kernel32.QueryFullProcessImageNameW(handle, 0, buf, ctypes.byref(size)):
             return ""
-        return os.path.basename(buf.value)
+        return buf.value
     finally:
         kernel32.CloseHandle(handle)
+
+
+def win32_process_name(hwnd):
+    """``"chrome.exe"`` for a window handle, or ``""`` when it can't be read."""
+    user32, _kernel32, wintypes = _load_win32()
+
+    pid = wintypes.DWORD(0)
+    user32.GetWindowThreadProcessId(wintypes.HWND(hwnd), ctypes.byref(pid))
+    if not pid.value:
+        return ""
+    return os.path.basename(_win32_image_path(pid.value))
+
+
+#: The Wine and Proton loaders. A Windows game under Proton runs as one of
+#: these, so /proc/<pid>/exe names the loader and not the game.
+_WINE_LOADERS = frozenset({"wine", "wine64", "wine-preloader", "wine64-preloader"})
+
+
+def process_dir(pid):
+    """The folder of process `pid`'s executable, or None when it can't be read.
+
+    Under Wine or Proton the executable is the loader, so this returns the
+    process's working folder instead: Proton starts a game in its install
+    folder (not checked for every game). macOS answers None.
+    """
+    if not pid:
+        return None
+    try:
+        if sys.platform == "win32":
+            path = _win32_image_path(int(pid))
+            return os.path.dirname(path) or None
+        if sys.platform.startswith("linux"):
+            exe = os.readlink(f"/proc/{pid}/exe").removesuffix(" (deleted)")
+            if os.path.basename(exe) in _WINE_LOADERS:
+                return os.readlink(f"/proc/{pid}/cwd")
+            return os.path.dirname(exe) or None
+    except (OSError, ValueError, AttributeError):
+        # The process may have exited; a missing hint only costs the search.
+        _log.debug("No folder for process %s", pid, exc_info=True)
+    return None
+
+
+#: What pywinctl's Linux ``getAppName()`` (``ps -o comm=``) reports when the
+#: name says nothing about which app owns the window (measured under X11,
+#: 2026-10-22):
+#:
+#: - ``main``: MuseScore Studio 4 and Audacity 4 rename their main thread to it
+#:   (the 4.7.5 and 4.0.1 AppImages).
+#: - ``AppRun``: an AppImage whose ``AppRun`` is a symlink to the binary runs
+#:   under that name (the OpenSCAD 2026.10.18 nightly). ``comm`` is the name of
+#:   the path that was executed, not of the file it points to.
+_UNINFORMATIVE_NAMES = frozenset({"main", "AppRun"})
+
+
+def _linux_exe_name(win):
+    """Basename of ``/proc/<pid>/exe`` for `win`, or ``""`` when unreadable.
+
+    The executable's file name, which a thread rename does not change:
+    ``mscore4portable`` where ``comm`` says ``main``, ``openscad`` where it
+    says ``AppRun``.
+    """
+    try:
+        pid = win.getPID()
+        if not pid:
+            return ""
+        path = os.readlink(f"/proc/{pid}/exe")
+    except Exception:
+        return ""
+    # The kernel appends this when the file was replaced while running.
+    return os.path.basename(path.removesuffix(" (deleted)"))
 
 
 def app_name_for(win):
     """The owning app's name for `win`, the cheap way on Windows.
 
-    Off Windows this is ``win.getAppName()`` unchanged. On Windows a failed
+    Off Windows this is ``win.getAppName()``, except that on Linux a name in
+    ``_UNINFORMATIVE_NAMES`` becomes the executable's name. On Windows a failed
     lookup falls back to the window TITLE, which is what pywinctl's own
     implementation returns when the PID is missing from its process list — so
     the caller's normalisation sees exactly what it saw before.
     """
     if sys.platform != "win32":
-        return win.getAppName()
+        name = win.getAppName()
+        if name in _UNINFORMATIVE_NAMES and sys.platform.startswith("linux"):
+            return _linux_exe_name(win) or name
+        return name
     try:
         name = win32_process_name(win.getHandle())
     except Exception:

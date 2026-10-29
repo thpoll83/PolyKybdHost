@@ -12,12 +12,26 @@ application reporting that name gets it, including one nobody here has heard of.
 Regenerate with `python tools/gen_program_icons.py`; preview on a real keycap
 with `python tools/esc_mark_preview.py`.
 
+## OS-qualified marks: `<slug>.<os>`
+
+One name can mean two programs. `photos` is Apple Photos on macOS and Microsoft
+Photos on Windows, and the rosette in `photos.png` read as the Mac's app on a
+Windows keycap (field, 2026-10-21). A file named `<slug>.<os>.{svg,png}` is
+offered **instead of** `<slug>` when the app runs on that OS; `<os>` is one of
+the mapping's OS keys (`windows`, `macos`, `linux`, `linux_gnome`, `linux_kde`).
+The OS is the one running the app, so a Mac forwarding to a Windows keyboard
+host still gets the Mac file. The qualified file is its own slug
+(`poly:photos.windows`), so the keyboard's image cache never holds two pictures
+under one name.
+
 ## Why these are PNG and not SVG
 
 | file | form | why |
 |---|---|---|
 | `terminal.svg` | vector | plain line work, nothing stops it being an SVG |
 | `chrome.svg`, `googlechrome.svg` | vector | Simple Icons' `googlechrome`, unchanged, under both slugs (see below) |
+| `mspaint.svg` | vector | mdi's `palette-outline`, unchanged (see below) |
+| `photos.windows.svg` | vector | mdi's `image-outline`, unchanged (see below) |
 | `notes.png` | mask | rendered at box **34** so it is smaller than 38 in *both* axes |
 | `photos.png` | mask | carries a per-petal **dither** |
 | `finder.png` | mask | a thinned raster of mdi's art |
@@ -72,6 +86,23 @@ brand marks applies.
 
 None of these reproduce Apple's own artwork. `photos.png` is a generic eight-petal
 rosette, not Apple's asset.
+
+`mspaint.svg` and `photos.windows.svg` are mdi's `palette-outline` and
+`image-outline` from [Material Design Icons](https://pictogrammers.com/library/mdi/),
+Apache-2.0, byte for byte. The sources are vendored as
+`src/mdi-palette-outline.svg` and `src/mdi-image-outline.svg`, and
+`tools/gen_program_icons.py` copies them, so `--check` catches drift. Neither is
+Microsoft's artwork.
+
+## `mspaint.svg` and `photos.windows.svg`
+
+No catalog carries Windows Paint or Microsoft Photos under any name
+`candidates()` derives (`si:paint`, `si:mspaint`, `mdi:microsoft-mspaint`,
+`mdi:microsoft-photos` are all 404). Paint therefore drew `mspaint.exe`'s own
+icon, which does not survive 1 bit, and Photos drew `photos.png`. On the keycap
+(2026-10-21): `mspaint.svg` 503 px of ink, rank 0.649; `photos.windows.svg`
+633 px, rank 0.638; both lose 0 px of the ESC legend. A palette is what Paint's
+own logo shows, and a framed landscape is what the Photos logo shows.
 
 ## `chrome.svg`: a shipped copy of a catalog mark
 

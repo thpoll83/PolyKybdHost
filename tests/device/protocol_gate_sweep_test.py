@@ -100,12 +100,13 @@ CALLS = {
     "replay_startup_anim": [()],
     "set_os": [(list(OsType)[0],)], "get_os": [()],
     "save_mru": [()],
-    "set_handedness": [(True,)],
+    "set_handedness": [(True,), (True, True), (False, False)],
     "query_current_lang": [()],
     "enumerate_lang": [()],
     "get_lang_list": [()], "get_current_lang": [()],
     "change_language": [("enUS",)],
-    "send_overlay_mapping": [({0: 1},), ({0: 1, 1000: 2},), ({0: 1}, True, True)],
+    "send_overlay_mapping": [({0: 1},), ({0: 1, 1000: 2},), ({0: 1}, True, True),
+                             ({0: 1, 1: 2}, False, False, {0}, {1})],
     "send_overlays": [(["/nonexistent/overlay.png"],)],
     "send_overlays_mru": _send_mru,
     "send_smallest_overlay": _each_encoding,
@@ -127,7 +128,11 @@ CALLER_GATED = {
 }
 
 # No device I/O at all: nothing to sweep.
-NO_DEVICE_IO = {"supports", "capabilities"}
+# The bulk-pipe accessors talk to a serial port, not to the HID mock: the probe
+# is covered by tests/device/bulk_pipe_test.py with a fake port.
+NO_DEVICE_IO = {"supports", "capabilities",
+                "probe_bulk_pipe", "get_transport", "get_pipe_info", "get_link_rate_mbps",
+                "forget_bulk_pipe", "use_hid_only"}
 
 
 def _keyboard(protocol):

@@ -1,0 +1,133 @@
+# DeckCraft (storytold/deckcraft, the ArtCraft presentation app) shortcut overlays.
+#
+# Authority is DeckCraft's OWN keymap, not PowerPoint's (see SOURCES.md for
+# file:line per group, at commit 457406a7):
+#   * engine command registry  crates/engine/src/cmd/*.rs  (`shortcut: Some("Cmd+…")`)
+#   * UI-level shortcuts       crates/ui-egui/src/menus.rs::ui_shortcut  (run FIRST,
+#                              so they win a collision with the registry)
+#   * plain keys               crates/engine/src/keys.rs::Session::key
+# The app treats Cmd and Ctrl as one modifier (`cmd: modifiers.command ||
+# modifiers.ctrl`, ui-egui/src/lib.rs:912), and its "Cmd+X" strings mean
+# Ctrl on Windows/Linux -> every such chord is CMDCTRL here. There is no
+# separate macOS keymap, so one spec renders both sets.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/deckcraft/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/deckcraft/bindings.yaml --preview /tmp/deckcraft_preview
+app: deckcraft
+match: [deckcraft, ai.storyteller.deckcraft]   # deckcraft.exe / DeckCraft.app / Linux binary; app id
+output: deckcraft_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+# DeckCraft's own app icon (MIT OR Apache-2.0), board only -- see fetch_icons.py.
+program_icon: deckcraft.png
+program_icon_mode: luma
+program_icon_threshold: 150
+program_icon_anchor: bottom-right
+program_icon_region: [46, 40]
+program_icon_margin: 0
+
+bindings:
+  # --- file (Cmd/Ctrl) ---
+  - { key: N, mods: [CMDCTRL], icon: new.png,     label: New,     source: "ms-fluent/Document Add (MIT), via powerpoint" }
+  - { key: O, mods: [CMDCTRL], icon: open.png,    label: Open,    source: "ms-fluent/Folder Open (MIT), via powerpoint" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,    label: Save,    source: "ms-fluent/Save (MIT), via powerpoint" }
+  - { key: P, mods: [CMDCTRL], icon: print.png,   label: Print,   source: "ms-fluent/Print (MIT), via powerpoint" }
+  - { key: W, mods: [CMDCTRL], icon: close.png,   label: Close,   source: "ms-fluent/Document Dismiss (MIT), via powerpoint" }
+  - { key: COMMA, mods: [CMDCTRL], icon: prefs.png, label: Preferences, source: "ms-fluent/Settings (MIT)" }
+  - { key: GRAVE, mods: [CMDCTRL], icon: nextwindow.png, label: "Next window", source: "ms-fluent/Window Multiple (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: palette.png, label: "Command palette", source: "material-symbols/manage_search (Apache-2.0)" }
+
+  # --- edit (Cmd/Ctrl) ---
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,         source: "ms-fluent/Arrow Undo (MIT), via powerpoint" }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,      label: Redo,         source: "ms-fluent/Arrow Redo (MIT), via powerpoint" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,       label: Cut,          source: "ms-fluent/Cut (MIT), via powerpoint" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,      label: Copy,         source: "ms-fluent/Copy (MIT), via powerpoint" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,        source: "ms-fluent/Clipboard Paste (MIT), via powerpoint" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT), via powerpoint" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate,    source: "ms-fluent/Square Multiple (MIT), via powerpoint" }
+
+  # --- format (Cmd/Ctrl) ---
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,         source: "ms-fluent/Text Bold (MIT), via powerpoint" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,       source: "ms-fluent/Text Italic (MIT), via powerpoint" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline,    source: "ms-fluent/Text Underline (MIT), via powerpoint" }
+  - { key: K, mods: [CMDCTRL], icon: hyperlink.png, label: Hyperlink,    source: "ms-fluent/Link (MIT), via powerpoint" }
+  - { key: L, mods: [CMDCTRL], icon: left.png,      label: "Align left",   source: "ms-fluent/Text Align Left (MIT), via powerpoint" }
+  - { key: E, mods: [CMDCTRL], icon: center.png,    label: "Align center", source: "ms-fluent/Text Align Center (MIT), via powerpoint" }
+  - { key: R, mods: [CMDCTRL], icon: right.png,     label: "Align right",  source: "ms-fluent/Text Align Right (MIT), via powerpoint" }
+  - { key: J, mods: [CMDCTRL], icon: justify.png,   label: Justify,        source: "ms-fluent/Text Align Justify (MIT), via powerpoint" }
+
+  # --- arrange + view (Cmd/Ctrl) ---
+  # Cmd+]/[ is Bring forward / Send backward on the canvas; while editing text the
+  # same chord grows/shrinks the font (keys.rs:162) -- the canvas action is drawn.
+  - { key: "]", mods: [CMDCTRL], icon: forward.png,  label: "Bring forward", source: "ms-fluent/Arrow Up (MIT), via illustrator" }
+  - { key: "[", mods: [CMDCTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Arrow Down (MIT), via illustrator" }
+  # Cmd+= is Zoom in: ui_shortcut runs before the registry's Cmd+= Subscript, which never fires.
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: "0",   mods: [CMDCTRL], icon: zoomfit.png, label: "Fit to window", source: "ms-fluent/Zoom Fit (MIT)" }
+  - { key: ENTER, mods: [CMDCTRL], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT), via powerpoint" }
+  # Cmd+Space is Spotlight / input-source switching on macOS, so it never reaches the app there.
+  - { key: SPACE, mods: [CMDCTRL], icon: clearformat.png, label: "Clear formatting", source: "ms-fluent/Text Clear Formatting (MIT)", except: [macos] }
+  - { key: F1,    mods: [CMDCTRL], icon: ribbon.png,  label: "Collapse ribbon", source: "ms-fluent/Panel Top Contract (MIT)" }
+
+  # --- Alt (G channel) ---
+  - { key: F,  mods: [ALT], icon: filetab.png,   label: "File tab",   source: "ms-fluent/Document Briefcase (MIT)" }
+  - { key: P,  mods: [ALT], icon: mediaplay.png, label: "Play media", source: "ms-fluent/Video Play Pause (MIT)" }
+  - { key: F9, mods: [ALT], icon: guides.png, mode: alpha, label: Guides, source: "custom drawn dashed cross, via illustrator" }
+
+  # --- Shift (B channel) ---
+  - { key: F5, mods: [SHIFT], icon: fromcurrent.png, label: "From current", source: "ms-fluent/Play Circle (MIT), via powerpoint" }
+  - { key: F3, mods: [SHIFT], icon: changecase.png,  label: "Change case",  source: "ms-fluent/Text Change Case (MIT)" }
+  - { key: F9, mods: [SHIFT], icon: gridlines.png,   label: Gridlines,      source: "ms-fluent/Grid (MIT)" }
+
+  # --- plain keys (A channel) ---
+  - { key: F5,     mods: [], icon: slideshow.png,  label: Slideshow,        source: "ms-fluent/Play (MIT), via powerpoint" }
+  - { key: F7,     mods: [], icon: spelling.png,   label: Spelling,         source: "ms-fluent/Text Grammar Checkmark (MIT), via powerpoint" }
+  - { key: F2,     mods: [], icon: edittext.png,   label: "Edit text",      source: "ms-fluent/Rename (MIT)" }
+  - { key: DELETE, mods: [], icon: delete.png,     label: Delete,           source: "ms-fluent/Delete (MIT)" }
+  # Enter/Backspace/Tab act on a SELECTED SHAPE (keys.rs:66-82); with nothing selected
+  # Enter is New slide and Tab selects the first shape (keys.rs:107-117). Shape context drawn.
+  - { key: ENTER,     mods: [], icon: edittext.png,  label: "Edit text",      source: "ms-fluent/Rename (MIT)" }
+  - { key: BACKSPACE, mods: [], icon: delete.png,    label: Delete,           source: "ms-fluent/Delete (MIT)" }
+  - { key: TAB,       mods: [], icon: nextshape.png, label: "Next shape",     source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: TAB, mods: [SHIFT],  icon: prevshape.png, label: "Previous shape", source: "ms-fluent/Arrow Left (MIT)" }
+  # Slide navigation when no shape is selected (keys.rs:107-112).
+  - { key: HOME,   mods: [], icon: firstslide.png, label: "First slide",    source: "ms-fluent/Arrow Previous (MIT)" }
+  - { key: END,    mods: [], icon: lastslide.png,  label: "Last slide",     source: "ms-fluent/Arrow Next (MIT)" }
+  - { key: PGUP,   mods: [], icon: prevslide.png,  label: "Previous slide", source: "ms-fluent/Chevron Up (MIT)" }
+  - { key: PGDN,   mods: [], icon: nextslide.png,  label: "Next slide",     source: "ms-fluent/Chevron Down (MIT)" }
+
+  # --- Cmd/Ctrl+Shift (combo R) ---
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png,        label: "Save as",       source: "ms-fluent/Save Edit (MIT), via powerpoint" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: newslide.png,      label: "New slide",     source: "ms-fluent/Slide Add (MIT), via powerpoint" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: slideshow.png, label: "Slideshow", source: "ms-fluent/Play (MIT), via powerpoint" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png,       label: "Command palette", source: "material-symbols/manage_search (Apache-2.0)" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: copyformat.png,    label: "Format painter", source: "ms-fluent/Paint Brush (MIT), via powerpoint" }
+  # Cmd+Shift+V: registry order puts edit.pasteText before format.painterApply (same chord).
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pastetext.png,     label: "Paste text",    source: "ms-fluent/Clipboard Text Edit (MIT)" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: strikethrough.png, label: Strikethrough,   source: "ms-fluent/Text Strikethrough (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL, SHIFT], icon: superscript.png, label: Superscript,  source: "ms-fluent/Text Superscript (MIT)" }
+  - { key: DOT,   mods: [CMDCTRL, SHIFT], icon: fontinc.png,   label: "Font +",        source: "ms-fluent/Font Increase (MIT), via powerpoint" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: fontdec.png,   label: "Font -",        source: "ms-fluent/Font Decrease (MIT), via powerpoint" }
+  - { key: "]", mods: [CMDCTRL, SHIFT], icon: tofront.png,     label: "Bring to front", source: "ms-fluent/Position To Front (MIT), via illustrator" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: toback.png,      label: "Send to back",   source: "ms-fluent/Position To Back (MIT), via illustrator" }
+
+  # --- Cmd/Ctrl+Alt (combo G) ---
+  - { key: G, mods: [CMDCTRL, ALT], icon: group.png,   label: Group,         source: "ms-fluent/Group (MIT), via powerpoint" }
+  - { key: J, mods: [CMDCTRL, ALT], icon: regroup.png, label: Regroup,       source: "ms-fluent/Group Return (MIT)" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: comment.png, label: "New comment", source: "ms-fluent/Comment Add (MIT)" }
+
+  # --- Alt+Shift (combo B) ---
+  - { key: C, mods: [ALT, SHIFT], icon: animpainter.png, label: "Animation painter", source: "ms-fluent/Paint Brush Sparkle (MIT)" }
+  - { key: V, mods: [ALT, SHIFT], icon: animapply.png,   label: "Apply animation",   source: "ms-fluent/Sparkle (MIT)" }
+
+  # --- Cmd/Ctrl+Alt+Shift (extra R) ---
+  - { key: G, mods: [CMDCTRL, ALT, SHIFT], icon: ungroup.png, label: Ungroup, source: "ms-fluent/Group Dismiss (MIT), via powerpoint" }

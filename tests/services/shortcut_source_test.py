@@ -125,12 +125,14 @@ class UnavailableReasonTest(unittest.TestCase):
             self.assertIsNone(ss.unavailable_reason())
 
     def test_a_backend_WITHOUT_the_reason_api_still_answers(self):
-        # The uia backend predates it; reporting it as working would be worse
-        # than a vague sentence.
+        # Reporting such a backend as working would be worse than a vague
+        # sentence. (The uia backend was the example until it moved into the
+        # helper process, whose gate is RoutingTest's, in
+        # shortcut_source_out_of_process_test.)
         backend = Mock(spec=["available"])
         backend.available.return_value = False
-        with patch.object(ss, "backend_name", return_value="uia"), \
-             patch.object(ss, "uia", backend, create=True):
+        with patch.object(ss, "backend_name", return_value="atspi"), \
+             patch.object(ss, "atspi", backend, create=True):
             self.assertIn("unusable", ss.unavailable_reason())
 
 

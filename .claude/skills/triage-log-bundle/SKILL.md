@@ -117,7 +117,7 @@ These are the ones that have produced wrong diagnoses:
   faulting thread is a native one with no Python state. The fatal one is a dump
   that reads `access violation` and **breaks off mid-line**, followed by no
   `clean exit` for that pid. A long run of `0x80010108` before it is the signature
-  of a COM object used across threads (see `CLAUDE.md` → *Threading model*):
+  of a COM object used across threads (see `CLAUDE.md` → *Threading* and `docs/hid-worker-refactor.md`):
   35 of them in 92 minutes preceded the 2026-09-23 daemon death.
   ⚠️ **Check WHERE the `access violation` sits.** When it appears INSIDE a
   first-chance dump, cutting off a thread's `File "…"` line, the dump itself
@@ -132,6 +132,22 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
+  crash record does not make it harmless.** The host logs that line when GET_ID
+  carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
+  firmware re-raises it so the host re-pushes its overlays), so first check the
+  console for a DOOM exit just before. Then ask for `polyctl crash show` on the master: an
+  empty record rules out a HardFault and a firmware watchdog timeout, which leaves
+  power loss, the RUN pin or a deliberate `mcu_reset()`, unless someone cleared the
+  record since (`polyctl crash clear`, the crash dialog's Clear). The banner's
+  `record=` field below survives a clear, so prefer it when there is a console. From fw 1.9.11 the
+  console's boot banner names the cause in one line,
+  `reset: cause=… reason=0x… ram=… record=…` (qmk `CRASH_DIAGNOSTICS.md` → *A reset
+  with no record*), so look for that line just after the restart before asking for
+  anything. ⚠️ `polyctl crash show --slave` can print an OLD record: check its
+  `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master
+  reset on 1.9.9). The `boot: spans … 2=65535` on firmware built before 2026-10-22
+  is a timing bug, not a slow boot.
 - **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
   process appends `=== fault dump(s) above were written before this time | … ===`
   after a dump once the file has been steady for ~60 s, so a dump is dated to
@@ -151,6 +167,32 @@ These are the ones that have produced wrong diagnoses:
   Two or three lines from different files settle it. This proved a forwarder ran
   current `main` rather than the last release (2026-09-23), which moved the search
   from "old code" to the pid path in one step.
+
+- **An app switch is slow** (the keycaps change seconds after the window):
+  read the `Overlay switch stats:` line for that switch. It ends with
+  `wall … ms = N rate-limit pause(s) … ms + device … ms (calls, median, max;
+  write-only …; with reply …) + host … ms (… ms before the first report)`.
+  Pauses are the host's rate limit (`docs/FUTURE_WORK.md` → *Shorten the
+  overlay rate-limit pause*). "write-only" are the image and mapping reports:
+  about 1 ms each until the keyboard's receive queue fills, the firmware's pace
+  per report after that, and the only part a faster link could shorten. "with
+  reply" are the icon fill reports (cmd 42) and prepare/enable, which wait for
+  the keyboard to do the work and to process every report queued before them.
+  "host" is decoding, the MRU claim pass and
+  encoding on the PC, and "before the first report" is the part of it spent
+  before any report went out. A warm switch is a few mapping reports; a cold
+  one (the first after a host start or update, or after a reconnect) is where
+  the pauses show. Check `max_hid_message_before_delay` in the bundle's
+  `settings.yaml` before comparing pause counts: the default is 15.
+- **Shortcut icons wrong, missing or slow** (keycaps keep one app's icons, the
+  tray is slow to open): read the `Shortcut harvest for '<app>'` and `Generic
+  overlays for '<app>'` lines against the table in `docs/generic-icons-plan.md`
+  → *What the log shows* (under *A browser walked again on every tab switch*).
+  Only the Windows helper writes `Shortcut harvest for` lines, so their absence
+  on Linux or macOS is not a failure. Each read logs its window, element count and
+  seconds; a refused read names both process ids. On every platform, check the
+  daemon's `Window-tracking tick took` warnings in the same minutes. Two bundles on 2026-10-16 were judged this way:
+  reads of 0.001–0.44 s and no tick stall meant the helper process was working.
 
 ## 4. Check the settings for drift between runs
 

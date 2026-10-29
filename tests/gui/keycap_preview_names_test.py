@@ -23,6 +23,16 @@ class _Lang:
     def __init__(self, aliases=None):
         self._aliases = aliases or {}
 
+    @staticmethod
+    def ime_pick(families, lang, shift=False):
+        # The REAL rule, not a copy: the editor and the board render share it.
+        import sys
+        tools = str(pathlib.Path(__file__).resolve().parents[2] / "tools")
+        if tools not in sys.path:
+            sys.path.insert(0, tools)
+        import lang_demo
+        return lang_demo.ime_pick(families, lang, shift)
+
     def normalize_kc(self, tok, known=None):
         if known is not None and tok not in known:
             alt = self._aliases.get(tok)
@@ -40,6 +50,72 @@ def _preview(known, custom=None, alt_names=None, layer_tags=None, aliases=None):
     p._ranges = None           # the layer ranges resolve lazily from the header
     p._ld = _Lang(aliases)
     return p
+
+
+class ImeStandInTest(unittest.TestCase):
+    """KC_IME draws per language, the firmware's `ime_key_stand_in()` rule."""
+
+    IME = {"families": {"ko-KR": "KOREAN", "ja-JP": "JAPANESE", "en-US": "RALT"},
+           "legends": {"KOREAN": [0x100026], "JAPANESE": [0x100027],
+                       "JAPANESE_SHIFT": [0x100028]}}
+
+    def _p(self, lang, ime=None):
+        p = _preview({"KC_RIGHT_ALT"}, custom={0x7FA8: "KC_IME"})
+        p._ime = self.IME if ime is None else ime
+        p._lang = lang
+        return p
+
+    def test_korean_and_japanese_draw_their_own_icon(self):
+        self.assertEqual(self._p("ko-KR")._ime_stand_in(), [0x100026])
+        # at rest, so the unshifted 英数/かな, never カナ
+        self.assertEqual(self._p("ja-JP")._ime_stand_in(), [0x100027])
+
+    def test_the_ralt_family_draws_as_right_alt(self):
+        self.assertEqual(self._p("en-US")._ime_stand_in(), "KC_RIGHT_ALT")
+
+    def test_ja_jp_on_a_jis_layout_draws_as_caps_lock(self):
+        ime = {"families": {"ja-JP": "JAPANESE_JIS"}, "legends": dict(self.IME["legends"])}
+        self.assertEqual(self._p("ja-JP", ime)._ime_stand_in(), "KC_CAPS_LOCK")
+
+    def test_every_other_language_draws_as_nubs(self):
+        self.assertEqual(self._p("de-DE")._ime_stand_in(), "KC_NONUS_BACKSLASH")
+
+    def test_the_key_is_recognised_by_either_name(self):
+        p = self._p("en-US")
+        self.assertTrue(p._is_ime(0x7FA8, "QK_USER_0"))   # the firmware's name
+        self.assertTrue(p._is_ime(0x1234, "KC_IME"))      # the tile's own pick
+        self.assertFalse(p._is_ime(0x04, "KC_A"))
+
+    def test_a_refused_icon_draws_keycode_text_not_another_legend(self):
+        """A Korean/Japanese icon that was refused (a name with no glyphs, an op the
+        renderer cannot follow) leaves the key to its keycode text: None, never the
+        NUBS or Right Alt legend of another family."""
+        ime = {"families": dict(self.IME["families"]), "legends": {"JAPANESE": [0x100027]}}
+        self.assertIsNone(self._p("ko-KR", ime=ime)._ime_stand_in())
+
+    def test_icons_go_through_the_drawable_gate(self):
+        class _R:
+            @staticmethod
+            def unsupported_ops(cps):
+                return {0x99} if 0x99 in cps else set()
+        p = self._p("ko-KR", ime={})
+        p._R = _R()
+        p.log = logging.getLogger("test")
+        p._set_ime({"ko-KR": "KOREAN", "ja-JP": "JAPANESE"},
+                   {"KOREAN": [0x99, 0x100026], "JAPANESE": [0x100027]})
+        self.assertEqual(p._ime["legends"], {"JAPANESE": [0x100027]})
+        self.assertIsNone(p._ime_stand_in())          # ko-KR: refused -> keycode text
+
+    def test_no_families_means_no_ime_data(self):
+        p = self._p("en-US", ime={})
+        p._R = None
+        p.log = logging.getLogger("test")
+        p._set_ime({}, {})
+        self.assertEqual(p._ime, {})
+
+    def test_without_ime_data_the_key_is_not_special(self):
+        """An export from before the key: it resolves like any other name."""
+        self.assertFalse(self._p("en-US", ime={})._is_ime(0x7FA8, "KC_IME"))
 
 
 class ResolveNameTest(unittest.TestCase):
@@ -97,8 +173,6 @@ class ResolveNameTest(unittest.TestCase):
         self.assertEqual(p._resolve_name(0x47, "KC_SCRL_BRMD"), "KC_SCROLL_LOCK")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class SourceInfoTest(unittest.TestCase):
@@ -446,3 +520,7 @@ class ReportedKeycapsRenderTest(unittest.TestCase):
         right = sum(1 for y in range(img.height()) for x in range(40, img.width())
                     if img.pixel(x, y) & 0xFFFFFF != 0x080A0E)
         self.assertGreater(right, 40, f"no badge beside the text ({right} px)")
+
+
+if __name__ == "__main__":
+    unittest.main()

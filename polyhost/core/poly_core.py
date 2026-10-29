@@ -32,14 +32,16 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
-from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
+from polyhost.device import bulk_pipe
+from polyhost.device.poly_kybd import (MIN_SUPPORTED_PROTOCOL, SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+                                     protocol_supports)
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
 from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.handler.common import OverlayCommand, as_underlay_path
+from polyhost.handler.common import OverlayCommand, as_underlay_path, os_match_keys
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -47,6 +49,7 @@ from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashRecord, CrashScanner
 from polyhost.services import problem_scan
 from polyhost.util.observable import Observable
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -56,9 +59,11 @@ RECONNECT_CYCLE_MSEC = 1000
 # after the last overlay activity; a genuine disconnect is still caught once the
 # window lapses (sends stop, so the timestamp goes stale within this window).
 OVERLAY_PROBE_COOLDOWN_S = 1.0
+# Steady-state reconnect probes (1 s apart) that re-look for the bulk pipe
+# after a connect that found none, for the tty node arriving late.
+PIPE_PROBE_RETRIES = 5
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 # A window-tracking tick slower than this, or a pause this long between two
 # ticks, is logged as a warning. Nothing else in the log can tell "the tick
 # thread was stuck" from "no window change happened" (field, 2026-09-30: 87 s
@@ -79,11 +84,15 @@ GENERIC_STATE_UNKNOWN = object()
 
 
 def get_overlay_path(filepath):
-    """Absolute path of a shipped overlay template (polyhost/res/overlays).
+    """Absolute path of a shipped overlay template (polyhost/res/overlays), or of
+    the copy redrawn from a game installed here when there is one
+    (`services/game_assets`).
 
     An Underlay name (a browser's file under a website's) stays an Underlay, so the
     send path can still ask the keyboard to draw it dimmed."""
-    return as_underlay_path(filepath, os.path.join(_RES_DIR, "overlays", filepath))
+    from polyhost.services import game_assets
+    local = game_assets.override_for(filepath)
+    return as_underlay_path(filepath, local or os.path.join(_RES_DIR, "overlays", filepath))
 
 
 def strip_key_injection(lines):
@@ -161,6 +170,7 @@ class PolyCore(Observable):
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        self._pipe_probes_left = 0
         # monotonic timestamp of the last overlay/MRU send or enable/disable, so
         # the reconnect probe can skip the keyboard's post-send deaf window.
         self._last_overlay_activity = 0.0
@@ -519,6 +529,9 @@ class PolyCore(Observable):
         except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
             self.mapping = {}
+        # Entries with `game_assets:` are redrawn from installed games on first send.
+        from polyhost.services import game_assets
+        game_assets.register_mapping(self.mapping)
 
     def save_overlay_mapping(self, path):
         import yaml
@@ -632,6 +645,20 @@ class PolyCore(Observable):
                     "match %.1f s, overlay decision %.1f s).",
                     took, query, took - query)
 
+    def _request_game_assets(self, data, handler):
+        """Start drawing any of these templates from an installed game. The
+        folder of the focused window's executable is the first place to look;
+        it is read on the build thread, and only when a build starts."""
+        from polyhost.handler.win_process import process_dir
+        from polyhost.services import game_assets
+        names = [str(n) for n in (data if isinstance(data, (list, tuple)) else [data])]
+        names = [n for n in names if game_assets.wants(n, self.poly_settings.get)]
+        if not names:
+            return          # no window-system query on a switch to any other app
+        pid = handler.focused_pid()
+        for name in names:
+            game_assets.request(name, self.poly_settings.get, hint=lambda: process_dir(pid))
+
     def _tick_window_tracking(self, update_cycle_msec, new_window_accept_msec):
         """The body of `tick_window_tracking`, which adds the timing warnings."""
         handler = self.overlay_handler
@@ -640,9 +667,19 @@ class PolyCore(Observable):
         # safe_mode (newer firmware, user chose restricted): connected but no
         # operational overlay/OS traffic — only firmware-update + debugging.
         if self.connected and not self.safe_mode:
+            from polyhost.services import game_assets
+            if game_assets.take_changed():
+                # A copy redrawn from game files is ready, or gone: the window
+                # in front did not change, so nothing else would re-send it.
+                handler.force_resend()
             query_started = time.monotonic()
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             self._tick_query_s = time.monotonic() - query_started
+            shortcut_icons = getattr(self, "_shortcut_icons", None)
+            if shortcut_icons is not None:
+                # Every tick, not only on the generic path: a shortcut read of
+                # an app focus has left is cancelled by it (shortcut_fetcher).
+                shortcut_icons.note_focus(handler.focused_app()[0])
             if (cmd == OverlayCommand.DISABLE
                     and self._generic_on_device is not None
                     and self.poly_settings.get("generic_overlays_enabled")
@@ -682,6 +719,7 @@ class PolyCore(Observable):
                     self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
+                self._request_game_assets(data, handler)
                 # A template send re-programs the whole pool, so whatever
                 # generic overlays were on the device are gone with it. Cleared
                 # BEFORE the send so the gap fill below cannot dedupe against
@@ -801,8 +839,13 @@ class PolyCore(Observable):
         # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
         # `OverlayHandler.focused_pid`. It is None for a forwarded window,
         # where `identity` is the answer instead.
+        # The OS of the machine RUNNING the app, which for a forwarded window
+        # is the forwarder's: an OS-qualified shipped mark (`photos.windows`)
+        # depends on it, and one app name can mean two programs.
+        focused_os = getattr(handler, "focused_os", None)
+        os_keys = tuple(os_match_keys(focused_os())) if callable(focused_os) else ()
         mask, slug = self._app_icons.overlay_for(
-            name, pid=handler.focused_pid(), identity=identity)
+            name, pid=handler.focused_pid(), identity=identity, os_keys=os_keys)
         if mask is None or not slug:
             slug = None
         # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and
@@ -827,7 +870,16 @@ class PolyCore(Observable):
         # {source_name: {(modifier_value, keycode): mask}} -- one entry per
         # CONCEPT, shared across every key that concept lands on and across
         # applications, which is what makes Save cost one pool slot board-wide.
-        if handler.is_remote_mapping_entry():
+        if template_files and not self.poly_settings.get(
+                "generic_overlays_fill_shortcuts"):
+            # ⚠️ A TEMPLATE covers this app: fill the ESC mark only, and read
+            # no shortcuts (`generic_overlays_fill_shortcuts` off; on by default).
+            # The rule in `_generic_signature` lets a mark ride with a template
+            # and no shortcuts, so ESC keeps the app's logo; what is skipped is
+            # the read, which on Chrome took minutes for a handful of page
+            # shortcuts (field, 2026-10-15).
+            shortcuts = {}
+        elif handler.is_remote_mapping_entry():
             remote = getattr(handler, "remote_handler", None)
             relayed = (remote.forwarded_shortcuts(name)
                        if remote is not None else None)
@@ -851,9 +903,13 @@ class PolyCore(Observable):
             # Save/Undo/Copy only once a document opens (shortcut_fetcher).
             # getattr: test doubles and older handlers have no focused_title.
             title_of = getattr(handler, "focused_title", None)
+            # `hwnd` makes the Windows harvest read THIS window rather than
+            # whatever has focus when the read runs (shortcut_fetcher).
+            handle_of = getattr(handler, "focused_handle", None)
             shortcuts = self._shortcut_icons.overlays_for(
                 name, pid=handler.focused_pid(),
-                title=title_of() if callable(title_of) else None)
+                title=title_of() if callable(title_of) else None,
+                hwnd=handle_of() if callable(handle_of) else None)
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             if mask is not None and not shortcuts:
@@ -1122,7 +1178,10 @@ class PolyCore(Observable):
             "(%s).",
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
-            f"filling the gaps in {len(template_files)} template file(s)"
+            f"filling the gaps in {len(template_files)} template file(s), "
+            + ("shortcut filling on" if self.poly_settings.get(
+                "generic_overlays_fill_shortcuts") else
+               "shortcuts not read: generic_overlays_fill_shortcuts is off")
             if template_files else "no template overlay")
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
@@ -1602,6 +1661,27 @@ class PolyCore(Observable):
         # the firmware that had just been replaced, until the app was restarted.
         # The marker is popped once per keyboard boot, so this costs one extra
         # version+lang query per reboot and nothing in steady state.
+        # Bulk pipe (optional second channel): probed on a fresh connect (below,
+        # after the version block), and re-probed on the next few steady-state
+        # probes while HID only, because on Linux the tty node can appear after
+        # the hidraw node. A port that is absent, busy or mute is "hid"; see
+        # device/bulk_pipe.py. This runs BEFORE the steady-state return so the
+        # retries happen and every published snapshot names the transport: the
+        # tray reads it from each one, and a snapshot without the key would
+        # clear the mark one second after connect.
+        if not connected_now:
+            self.keeb.forget_bulk_pipe()
+        elif self._hid_link_forced():
+            self.keeb.use_hid_only()
+        elif snapshot["state_changed"] or snapshot["fresh_boot"]:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
+        elif (self.keeb.get_transport() != bulk_pipe.TRANSPORT_PIPE
+              and self._pipe_probes_left > 0):
+            self._pipe_probes_left -= 1
+            self.keeb.probe_bulk_pipe()
+        snapshot["transport"] = self.keeb.get_transport()
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -1620,6 +1700,9 @@ class PolyCore(Observable):
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()
+        snapshot["transport"] = (self.keeb.use_hid_only() if self._hid_link_forced()
+                                 else self.keeb.probe_bulk_pipe())
+        snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
         snapshot.update({
             "version_ok": version_ok,
             "version_msg": version_msg,
@@ -1845,6 +1928,11 @@ class PolyCore(Observable):
             "safe_mode": self.safe_mode,
             "newer_fw_pending": bool(
                 (applied["decision"] or {}).get("newer_fw_pending")),
+            # Which channel the host has to the keyboard: "pipe" (bulk pipe
+            # found and answering), "hid" (raw HID only), None while
+            # disconnected. The tray colours its mark by it.
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
         })
         return applied
 
@@ -2133,6 +2221,9 @@ class PolyCore(Observable):
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,
             "window_backend": self.window_backend,
+            "transport": self.keeb.get_transport(),
+            "link_rate_mbps": self.keeb.get_link_rate_mbps(),
+            "pipe": self.keeb.get_pipe_info(),
         }
 
     def list_languages(self):
@@ -2205,7 +2296,14 @@ class PolyCore(Observable):
             return False, "Sending the unicode composition mode is disabled in the settings."
         from polyhost.input.unicode_input import get_input_method
         mode = get_input_method()
-        self.log.info("Re-applying unicode mode %s", mode)
+        if mode == self._last_pushed_unicode_mode and not self._last_push_was_volatile:
+            # The tray re-sends on its first menu open (see host.py
+            # _refresh_wincompose_action); say so, since "persist" reads as a
+            # flash write and eeprom_update_byte skips an unchanged byte.
+            self.log.info("Re-applying unicode mode %s (unchanged; the keyboard "
+                          "writes EEPROM only when the mode differs)", mode)
+        else:
+            self.log.info("Re-applying unicode mode %s", mode)
         ok, payload = self._device_call(
             "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
         if not ok:
@@ -2742,6 +2840,41 @@ class PolyCore(Observable):
             self._refresh_unicode_watch()
         if keys is None or self._GENERIC_ICON_SETTING_KEYS.intersection(keys):
             self._forget_generic_overlays()
+        if keys is None or "dev_force_hid_link" in keys:
+            self._refresh_link_choice()
+        from polyhost.services import game_assets
+        if keys is None or game_assets.SETTING_KEYS.intersection(keys):
+            # The next send of an opted-in overlay builds again; reset() makes
+            # the window tick re-send, so that happens now if the game is in front.
+            game_assets.reset(self.poly_settings.get)
+
+    def _hid_link_forced(self) -> bool:
+        """The ``dev_force_hid_link`` setting: raw HID only, no pipe probe."""
+        return bool(self.poly_settings.get("dev_force_hid_link"))
+
+    def pipe_port_for_update(self):
+        """The serial port a firmware update sends its chunks on, or None for
+        HID. The one place every flash path asks, and it reads the setting
+        itself: a probe already running on the worker when the setting was
+        turned on can still write the port into the cache after
+        _refresh_link_choice() cleared it, so the cache alone is not the
+        answer while the setting is on."""
+        if self._hid_link_forced():
+            return None
+        return (self.keeb.get_pipe_info() or {}).get("port")
+
+    def _refresh_link_choice(self):
+        """Apply ``dev_force_hid_link`` to the live connection: forced on, the
+        keyboard reads as HID only at once; forced off, the cached transport is
+        dropped and the next steady-state probes look for the pipe again, so
+        neither direction needs a reconnect. Runs on whichever thread the
+        settings writer is on; the keyboard layer's two setters touch no
+        device, and the probe itself happens on the worker's next cycle."""
+        if self._hid_link_forced():
+            self.keeb.use_hid_only()
+        else:
+            self.keeb.forget_bulk_pipe()
+            self._pipe_probes_left = PIPE_PROBE_RETRIES
 
     _GENERIC_ICON_SETTING_KEYS = frozenset({
         # ⚠️ The two outer switches belong here as much as the inner ones, and
@@ -2750,6 +2883,10 @@ class PolyCore(Observable):
         # tick would otherwise read the cached signature and report it as
         # already on the device. `_forget_generic_overlays` clears exactly that.
         "generic_overlays_enabled", "generic_overlays_fill_gaps",
+        # And `fill_shortcuts`, for the same reason: the client-mode dialog
+        # sends one key at a time (`settings_set`), so a switch missing here
+        # took effect only at the next app switch.
+        "generic_overlays_fill_shortcuts",
         "shortcut_icons_enabled", "shortcut_icon_auto_fetch",
         "shortcut_icon_height", "shortcut_icon_placement",
     })
@@ -2931,8 +3068,14 @@ class PolyCore(Observable):
                     cancel_flag[0] = True      # relay supersede/suspend to hid_fw_up
                 self.emit("fw_flash_progress", {"pct": pct, "msg": m})
 
+            # The chunks go over the bulk pipe when the probe found one (the port
+            # is a plain string, so the job needs no device object for it); BEGIN,
+            # SIGNATURE, COMMIT and APPLY stay on HID. hid_fw_up falls back to HID
+            # from the keyboard's cursor if the pipe stops mid-stream.
+            pipe_port = self.pipe_port_for_update()
             fok, fmsg = hid_fw_up.flash_firmware(
-                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag,
+                pipe_port=pipe_port)
             self.emit("fw_flash_done", {"ok": bool(fok), "msg": fmsg})
             if fok and apply:
                 aok, amsg = hid_fw_up.apply_staged_firmware(
@@ -2950,7 +3093,9 @@ class PolyCore(Observable):
         """Shared body of every resource flash that rides the font-pack transport.
 
         The font-pack bundle, the doom game data (``.whx``) and the doom engine
-        pack (``.plyx``) all take the same route to the keyboard and differ in
+        pack (``.plyx``) all take the same route to the keyboard (BEGIN and COMMIT
+        over HID, the chunks over the bulk pipe when :meth:`pipe_port_for_update`
+        names one, else over HID) and differ in
         only four things — the "cannot read" noun, the validator, how the flash
         engine is invoked, and the ``kind`` tag on the events. Everything else is
         identical and lives here: the firmware-action gate, fail-fast reading +
@@ -3008,7 +3153,7 @@ class PolyCore(Observable):
             # The bundle flasher re-opens the path itself (it streams the file).
             run=lambda data, progress, flag: hid_fontpack.flash_fontpack(
                 self.keeb.hid, path, progress_cb=progress, cancel_flag=flag,
-                bundle_id=bundle_id),
+                bundle_id=bundle_id, pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_FONTPACK,
             # Counts the ATTEMPT, not the outcome — see flash_firmware.
             telemetry_counter="fontpack_flashes")
@@ -3028,7 +3173,8 @@ class PolyCore(Observable):
             noun="game-data file",
             validate=hid_fontpack.validate_doomwad,
             run=lambda data, progress, flag: hid_fontpack.flash_doomwad(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMWAD)
 
     def install_doompack(self, path):
@@ -3045,7 +3191,8 @@ class PolyCore(Observable):
             noun="engine-pack file",
             validate=hid_fontpack.validate_doompack,
             run=lambda data, progress, flag: hid_fontpack.flash_doompack(
-                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag,
+                pipe_port=self.pipe_port_for_update()),
             kind=events.FLASH_KIND_DOOMPACK)
 
     def flash_fontpack_bundle(self, bundle):
@@ -3123,7 +3270,8 @@ class PolyCore(Observable):
                               b["id"], b["index"], i + 1, n)
                 fok, fmsg, _status = hid_fontpack.flash_fontpack(
                     self.keeb.hid, path, progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 # Carry on through a failure, like the flash pass: one slot refusing
                 # says nothing about the rest, and stopping leaves a half-wiped pack
                 # with no report of which slots were reached.
@@ -3256,7 +3404,8 @@ class PolyCore(Observable):
                               i + 1, n)
                 fok, fmsg, fstatus = hid_fontpack.flash_fontpack(
                     self.keeb.hid, b["path"], progress_cb=_progress,
-                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                    cancel_flag=cancel_flag, bundle_id=b["index"],
+                    pipe_port=self.pipe_port_for_update())
                 if fok:
                     done.append(b["id"])
                     self._fontpack_failed.pop(b["index"], None)
@@ -3266,7 +3415,9 @@ class PolyCore(Observable):
                         done.append(b["id"])
                         caveats.append(note)
                         if fstatus == hid_fontpack.COMMIT_NO_SLAVE:
-                            # Verified on the MASTER only — and the firmware cannot tell
+                            # Possibly verified on the MASTER only (the version block is
+                            # the lower of both halves only once the master has read the
+                            # slave's versions, protocol v20+) — and the firmware cannot tell
                             # us whether the slave lost its ACK or explicitly refused its
                             # own finalize (both surface as SYNC_CRC32_ERR over the
                             # bridge). So keep it queued: a re-flash on the next pass is
@@ -3315,9 +3466,11 @@ class PolyCore(Observable):
 
         * A ``rejected`` status is never verified. The keyboard told us it refused
           the data, so re-reading a version could only mislead.
-        * The version block reflects the MASTER's slots only, so it cannot prove the
-          slave got the bundle. On a ``slave-unconfirmed`` status the note says so
-          rather than claiming success outright.
+        * The version block is the lower of both halves only once the master has
+          read the slave's versions (protocol v20+), and the master's alone before
+          that, so it cannot always prove the slave got the bundle. On a
+          ``slave-unconfirmed`` status the note says so rather than claiming success
+          outright.
 
         Safe to run next to the reconnect probe: this is the worker thread (the flash
         job owns it), and ``query_id`` only ever *sets* the firmware's one-shot
@@ -3456,12 +3609,21 @@ class PolyCore(Observable):
         self.worker.submit("activate_bootloader", lambda c: self.keeb.activate_bootloader())
         return True, {"queued": True}
 
-    def set_handedness(self, master_is_left):
-        """Send-only (both halves reboot onto the new handedness)."""
+    def set_handedness(self, master_is_left, split_vbus=None):
+        """Send-only (both halves reboot onto the new handedness).
+
+        ``split_vbus`` sets/clears the Rev.2 board flag of the connected half
+        (protocol 24); ``None`` keeps it. Refused here, not on the worker, so the
+        caller hears about an old firmware instead of a {"queued": True}."""
         if not self._fw_actions_allowed():
             return False, "No PolyKybd present (or paused)."
+        if split_vbus is not None and not protocol_supports(
+                self.keeb.protocol_version, "split_vbus_flag"):
+            return False, ("Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        sv = None if split_vbus is None else bool(split_vbus)
         self.worker.submit("set_handedness",
-                           lambda c, m=bool(master_is_left): self.keeb.set_handedness(m))
+                           lambda c, m=bool(master_is_left), s=sv: self.keeb.set_handedness(m, s))
         return True, {"queued": True}
 
     def apply_staged_firmware(self):

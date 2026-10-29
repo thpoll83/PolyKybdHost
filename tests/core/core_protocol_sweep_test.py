@@ -26,7 +26,7 @@ from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL
 from polyhost.settings import PolySettings
 
 CORE_CALLS = {
-    "activate_bootloader": (), "set_handedness": (True,),
+    "activate_bootloader": (), "set_handedness": (True, True),
     "clear_crash_record": (), "get_crash_record": (0,),
     "fontpack_bundle_status": (),
     "get_fw_version": (),
@@ -66,6 +66,7 @@ EXEMPT = {
     "install_doomwad": _TRANSPORT,
     "apply_reconnect": "driven by every scenario below",
     "get_status": "reads cached state only",
+    "pipe_port_for_update": "reads the cached pipe info and a setting only",
     "macro_set": "whole-buffer read-modify-write over the macro accessors, which are swept",
     "set_newer_firmware_policy": "reads the cached protocol only",
     "shutdown": "tears the core down",
@@ -141,6 +142,16 @@ class CoreProtocolSweepTest(unittest.TestCase):
                 for r in core.keeb.firmware.refused:
                     refused.setdefault(f"v{protocol}", []).append(r.reason)
         self.assertEqual(refused, {})
+
+    def test_the_rev2_flag_is_refused_to_the_caller_below_protocol_24(self):
+        """The worker would refuse it too, but then the caller sees {"queued": True}."""
+        core, _ = self._core(23)
+        core.apply_reconnect(core._reconnect_probe(threading.Event()))
+        self._settle(core)
+        ok, msg = core.set_handedness(True, True)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertTrue(core.set_handedness(True)[0], "the plain form must still work on v23")
 
 
 if __name__ == "__main__":

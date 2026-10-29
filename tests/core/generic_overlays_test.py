@@ -17,6 +17,7 @@ import numpy as np
 from polyhost.core.poly_core import PolyCore
 from polyhost.settings import DEFAULT_SETTINGS
 from polyhost.handler.common import OverlayCommand
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def _mask():
@@ -45,7 +46,7 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
     core._observers_lock = threading.Lock()
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
-    core.keeb = MagicMock()
+    core.keeb = spec_keyboard()
     core.overlay_handler = MagicMock()
     core.overlay_handler.is_remote_mapping_entry.return_value = False
     core.overlay_handler.focused_app.return_value = app
@@ -408,6 +409,12 @@ class SettingsChangeTest(unittest.TestCase):
         core.note_settings_changed({"shortcut_icon_height"})
         self.assertIsNone(core._generic_on_device)
 
+    def test_the_FILL_SHORTCUTS_switch_takes_effect_at_once(self):
+        # The client-mode dialog sends one key at a time (`settings_set`).
+        core = self._core()
+        core.note_settings_changed({"generic_overlays_fill_shortcuts"})
+        self.assertIsNone(core._generic_on_device)
+
     def test_an_UNRELATED_setting_costs_no_re_harvest(self):
         core = self._core()
         core.note_settings_changed({"ui_theme"})
@@ -507,6 +514,23 @@ class ForwardedShortcutsTest(unittest.TestCase):
         call = core._shortcut_icons.overlays_for.call_args
         self.assertEqual(call.args, ("gimp",))
         self.assertNotIn("harvested", call.kwargs)
+
+    def test_a_LOCAL_window_passes_its_HANDLE_to_the_HARVEST(self):
+        """The Windows harvest reads this window, not whatever has focus when
+        the read runs (2026-10-15: Chrome's shortcuts filed under Zoom)."""
+        core = make_core(mask=_mask())
+        core.overlay_handler.focused_handle.return_value = 198342
+        _tick(core)
+        self.assertEqual(
+            core._shortcut_icons.overlays_for.call_args.kwargs["hwnd"], 198342)
+
+    def test_EVERY_tick_reports_focus_even_with_generic_overlays_OFF(self):
+        """A shortcut read of an app focus left is cancelled by this, so it
+        must not depend on the generic path running (#393)."""
+        core = make_core(mask=_mask(), settings={"generic_overlays_enabled": False})
+        _tick(core)
+        core._shortcut_icons.note_focus.assert_called_once_with("gimp")
+        core._shortcut_icons.overlays_for.assert_not_called()
 
     def test_a_LOCAL_window_passes_its_PID_to_the_HARVEST_too(self):
         """⚠️ The same pid the OS-icon route takes. Without it the macOS
@@ -705,6 +729,65 @@ class TemplateGapFillTest(unittest.TestCase):
         self.assertTrue(filenames[0].endswith("jetbrains_template.mods.png"))
         self.assertEqual(len(synthetic), 1, "the mark, and nothing else")
 
+    def _sent(self, core):
+        entry = core.device_mgr.all_entries[0]
+        core.worker.submit.call_args.args[1](threading.Event())
+        call = entry.device.send_overlays_mru.call_args
+        return call.args[0], call.kwargs["synthetic"]
+
+    def test_with_fill_shortcuts_OFF_a_covered_app_gets_the_MARK_and_NO_read(self):
+        """`generic_overlays_fill_shortcuts` off: the template draws the app's
+        shortcuts, ESC still gets the app's logo, and nothing is read."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_shortcuts": False})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_not_called()
+        filenames, synthetic = self._sent(core)
+        self.assertTrue(filenames[0].endswith("chrome_template.mods.png"))
+        self.assertEqual(list(synthetic), ["@prog:si:gimp"], "the mark only")
+
+    def test_by_DEFAULT_a_covered_app_is_read_and_drawn(self):
+        """On by default again since 2026-10-16, after the hardware trial."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once()
+        _, synthetic = self._sent(core)
+        self.assertGreater(len(synthetic), 1, "mark and shortcut icons")
+
+    def _summary(self, core):
+        with self.assertLogs(core.log, level="INFO") as caught:
+            _tick(core)
+        return [m for m in caught.output if "Generic overlays for" in m]
+
+    def test_the_summary_SAYS_the_read_was_skipped(self):
+        """The line must tell "not read" from "read and found nothing"."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_shortcuts": False})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        said = self._summary(core)
+        self.assertEqual(len(said), 1, said)
+        self.assertIn("shortcuts not read: generic_overlays_fill_shortcuts is off",
+                      said[0])
+
+    def test_the_summary_SAYS_filling_is_on(self):
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "chrome_template.mods.png"
+        said = self._summary(core)
+        self.assertEqual(len(said), 1, said)
+        self.assertIn("template file(s), shortcut filling on)", said[0])
+
+    def test_an_app_with_NO_template_is_still_read(self):
+        """The switch is about template-covered apps only."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once()
+
     def test_NO_template_a_mark_and_no_shortcuts_is_still_dropped(self):
         """The rule itself stands where no template covers the app."""
         self.assertIsNone(PolyCore._generic_signature("si:gimp", {}, ()))
@@ -751,6 +834,7 @@ class GenericOverlayMasterSwitchTest(unittest.TestCase):
         if either default flips."""
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_enabled"], True)
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_gaps"], True)
+        self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_shortcuts"], True)
 
     def test_it_drops_the_NEGATIVE_cache_of_the_mark_fetcher(self):
         """⚠️ `forget_misses`, and the name matters. `forget` does not exist on

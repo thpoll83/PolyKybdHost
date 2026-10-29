@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""Write the JupyterLab overlay spec from one table.
+
+The keys are JupyterLab 4.5.11's defaults, read from the `jupyter.lab.shortcuts`
+entries of `packages/*/schema/*.json` (tag v4.5.11). In those files `Accel` is
+Ctrl on Windows/Linux and Cmd on macOS; `Ctrl` stays Control on macOS. Jupyter
+Notebook 7 is built from the same packages and has the same keys.
+
+Each row: (icon, label, Windows/Linux key, macOS key). A key is written as
+modifier letters and a key name joined by "+": C Ctrl, A Alt (Option on a
+Mac), S Shift, M Cmd. None means no key on that platform. See SOURCES.md for
+the keys left out.
+
+    python polyhost/res/overlay_sources/jupyter/gen_specs.py
+    python scripts/generate_app_overlays.py polyhost/res/overlay_sources/jupyter/bindings.yaml
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+MODS = {"C": "CTRL", "A": "ALT", "S": "SHIFT", "M": "GUI"}
+KEYS = {"Enter": "ENTER", "Bksp": "BACKSPACE", "Up": "UP", "Down": "DOWN",
+        "Left": "LEFT", "Right": "RIGHT", ",": "COMMA", ".": "DOT", "/": "SLASH",
+        "-": "MINUS", "[": "LBRACKET", "]": "RBRACKET", "'": "QUOTE"}
+
+
+def both(win, mac=None):
+    """A row's Windows/Linux and macOS keys; `Accel` rows pass C+ and M+."""
+    return win, (win if mac is None else mac)
+
+
+ROWS = [
+    # --- notebook: run and edit cells ---
+    ("run", "Run cell", *both("C+Enter", "M+Enter")),
+    ("runnext", "Run, select next", *both("S+Enter")),
+    ("runinsert", "Run, insert below", *both("A+Enter")),
+    ("cmdmode", "Command mode", *both("C+M")),
+    ("splitcell", "Split cell", *both("CS+-")),
+    ("mergebelow", "Merge with cell below", *both("CS+M")),
+    ("mergeabove", "Merge with cell above", *both("C+Bksp")),
+    ("moveup", "Move cell up", *both("CS+Up")),
+    ("movedown", "Move cell down", *both("CS+Down")),
+    ("collapseall", "Collapse all headings", *both("CS+Left")),
+    ("expandall", "Expand all headings", *both("CS+Right")),
+    ("histprev", "Previous history entry", *both("A+Up")),
+    ("histnext", "Next history entry", *both("A+Down")),
+    # --- code editor ---
+    ("comment", "Toggle comment", *both("C+/", "M+/")),
+    ("blockcomment", "Block comment", *both("A+A")),
+    ("deleteline", "Delete line", *both("C+D", "M+D")),
+    ("selectnext", "Select next occurrence", *both("CS+D", "MS+D")),
+    # --- files, search ---
+    (None, "Save", *both("C+S", "M+S")),
+    ("saveas", "Save as", *both("CS+S", "MS+S")),
+    (None, "Print", *both("C+P", "M+P")),
+    (None, "Find", *both("C+F", "M+F")),
+    ("findnext", "Find next", *both("C+G", "M+G")),
+    ("findprev", "Find previous", *both("CS+G", "MS+G")),
+    ("findsel", "Search in selection", *both("A+L")),
+    (None, "Undo", *both("C+Z", "M+Z")),
+    (None, "Redo", *both("CS+Z", "MS+Z")),
+    (None, "Select all", *both("C+A", "M+A")),
+    # --- panels and tools ---
+    ("palette", "Command palette", *both("CS+C", "MS+C")),
+    ("shortcuts", "Keyboard shortcuts", *both("CS+H", "MS+H")),
+    ("leftarea", "Left sidebar", *both("C+B", "M+B")),
+    ("rightarea", "Right sidebar", *both("C+J", "M+J")),
+    ("filebrowser", "File browser", *both("CS+F", "MS+F")),
+    ("toc", "Table of contents", *both("CS+K", "MS+K")),
+    ("running", "Running sessions", *both("CS+B", "MS+B")),
+    ("launcher", "Launcher", *both("CS+L", "MS+L")),
+    ("extensions", "Extension manager", *both("CS+X", "MS+X")),
+    ("debugger", "Debugger panel", *both("CS+E", "MS+E")),
+    ("propinsp", "Property inspector", *both("CS+U", "MS+U")),
+    ("inspector", "Contextual help", *both("C+I", "M+I")),
+    ("settings", "Settings", *both("C+,", "M+,")),
+    # --- tabs ---
+    ("nexttab", "Next tab", *both("CS+]")),
+    ("prevtab", "Previous tab", *both("CS+[")),
+    ("nexttabbar", "Next tab bar", *both("CS+.")),
+    ("prevtabbar", "Previous tab bar", *both("CS+,")),
+    ("lasttab", "Previously used tab", *both("CS+'", "MS+'")),
+    ("closetab", "Close tab", *both("A+W")),
+    # --- debugger (while stopped) ---
+    ("continue", "Continue", *both("+F9")),
+    ("terminate", "Terminate", *both("S+F9")),
+    ("stepover", "Next line", *both("+F10")),
+    ("stepout", "Step out", *both("S+F11")),
+    # --- notebook command mode (no cell being edited; Esc enters it) ---
+    ("insertabove", "Insert cell above", *both("+A")),
+    ("insertbelow", "Insert cell below", *both("+B")),
+    ("headingabove", "Insert heading above", *both("S+A")),
+    ("headingbelow", "Insert heading below", *both("S+B")),
+    ("cutcell", "Cut cells", *both("+X")),
+    ("copycell", "Copy cells", *both("+C")),
+    ("pastecell", "Paste cells below", *both("+V")),
+    ("undocell", "Undo cell action", *both("+Z")),
+    ("redocell", "Redo cell action", *both("S+Z")),
+    ("tocode", "Change to code", *both("+Y")),
+    ("tomarkdown", "Change to Markdown", *both("+M")),
+    ("toraw", "Change to raw", *both("+R")),
+    ("mergecells", "Merge selected cells", *both("S+M")),
+    ("cellbelow", "Select cell below", *both("+J")),
+    ("cellabove", "Select cell above", *both("+K")),
+    ("extendbelow", "Extend selection below", *both("S+J")),
+    ("extendabove", "Extend selection above", *both("S+K")),
+    ("linenumbers", "Toggle line numbers", *both("S+L")),
+    ("sidebyside", "Render side by side", *both("S+R")),
+]
+# 1..6 turn the active cell into a Markdown heading of that level.
+for n in range(1, 7):
+    ROWS.append((f"heading{n}", f"Heading {n}", *both(f"+{n}")))
+# Alt+1..9 open the left sidebar's panels by rank, Alt+Shift+1..9 the right's.
+for n in range(1, 10):
+    ROWS.append((f"left{n}", f"Left panel {n}", *both(f"A+{n}")))
+for n in range(1, 10):
+    ROWS.append((f"right{n}", f"Right panel {n}", *both(f"AS+{n}")))
+
+HEADER = """\
+# JupyterLab (and Jupyter Notebook 7) shortcut overlays for PolyKybd.
+# GENERATED by gen_specs.py from its table -- edit the table, not this file.
+#
+# Shortcuts: JupyterLab 4.5.11 default key bindings (schema files). Jupyter
+# runs in a browser, so the set loads through the browser entries' URL and
+# title maps; the JupyterLab Desktop app loads it by its own name. See
+# SOURCES.md.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/jupyter/fetch_icons.py
+#   python polyhost/res/overlay_sources/jupyter/gen_specs.py
+#   python scripts/generate_app_overlays.py \\
+#       polyhost/res/overlay_sources/jupyter/bindings.yaml --preview /tmp/jupyter_preview
+app: jupyter
+match: [jupyterlab]
+output: jupyter_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: jupyter.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+"""
+
+# Labels that would fold onto a shared concept but mean something else here.
+NOT_SHARED = {"Find next", "Find previous"}
+
+
+def parse(chord: str) -> tuple[str, list[str]]:
+    mods, key = chord.split("+", 1)
+    key = KEYS.get(key, key)
+    return f'"{key}"', [MODS[m] for m in mods]
+
+
+def line(icon, label, chord, mac: bool) -> str:
+    key, mods = parse(chord)
+    parts = [f"key: {key}", f"mods: [{', '.join(mods)}]"]
+    if icon:
+        parts.append(f"icon: {icon}.png")
+    parts.append(f'label: "{label}"')
+    if label in NOT_SHARED:
+        parts.append("shared: false")
+    parts.append("only: [macos]" if mac else "except: [macos]")
+    return "  - { " + ", ".join(parts) + " }"
+
+
+def main() -> int:
+    out = [HEADER]
+    for icon, label, win, mac in ROWS:
+        if win:
+            out.append(line(icon, label, win, mac=False))
+        if mac:
+            out.append(line(icon, label, mac, mac=True))
+    text = "\n".join(out) + "\n"
+    (HERE / "bindings.yaml").write_text(text, encoding="utf-8")
+    print(f"bindings.yaml: {text.count(chr(10) + '  - {')} bindings")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

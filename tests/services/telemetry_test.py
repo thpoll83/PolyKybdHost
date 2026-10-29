@@ -267,8 +267,6 @@ class PostTest(unittest.TestCase):
         self.assertEqual(msg, "HTTP 503")
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class LinuxWindowStackFieldsTest(unittest.TestCase):
@@ -348,3 +346,7 @@ class LinuxWindowStackFieldsTest(unittest.TestCase):
     def test_schema_was_bumped_for_them(self):
         # The collector keys its column handling off this.
         self.assertGreaterEqual(telemetry.PAYLOAD_SCHEMA, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

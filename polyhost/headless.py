@@ -286,6 +286,40 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, c
             log.info("Another PolyKybdHost already serves the control endpoint "
                      "(%s) — standing down.", e.outcome)
             return
+    # numpy and Pillow load on the first overlay decode; load them now instead,
+    # while the keyboard connects (util/preload.py). After the claim, so a
+    # daemon that stands down never pays for them.
+    from polyhost.util import preload
+    preload.start(log)
+    # The daemon declares itself a macOS ACCESSORY app here, as `host.py` and
+    # `forwarder.py` already do -- this was the one entry point without it, and
+    # the only one with no window of its own to need the regular policy back.
+    #
+    # ⚠️ **A non-bundled Python process that calls the window-server APIs gets a
+    # Dock tile**, and the daemon calls plenty of them: pywinctl's AppKit reads,
+    # the Quartz window list in `own_process`, and the Accessibility reads in
+    # `handler.active_window` and the shortcut harvest. The tile shows the
+    # interpreter's generic rocket icon, because a `python -m polyhost` daemon
+    # has no bundle and no icon of its own (same root cause as the tray balloons
+    # that reach nobody). Reported from the field on 2026-10-16, right after the
+    # real-time accept timer made app switches reach the keyboard again: the
+    # switches had barely been accepted before, so the code paths that register
+    # the process had barely run.
+    #
+    # ⚠️ Which call registers it is NOT established, and this does not depend on
+    # knowing: the activation policy suppresses the tile whichever one does, and
+    # it is set BEFORE the host is built, so it is in place before any worker
+    # thread reaches AppKit. It is set after the endpoint claim for the opposite
+    # reason -- a daemon that loses the race must exit having created no
+    # NSApplication at all.
+    if _platform.system() == "Darwin":
+        from polyhost.util.macos_ui import hide_dock_icon
+        if not hide_dock_icon():
+            # Cosmetic, so it never stops the daemon: a visible tile is better
+            # than no keyboard. DEBUG because the commonest cause is a machine
+            # without pyobjc, where there is no tile to hide either.
+            log.debug("Could not make the daemon a macOS accessory app; a Dock "
+                      "tile may appear.")
     try:
         host = HeadlessHost(log, ignore_version=ignore_version,
                             allow_key_injection=developer, claim=claim)

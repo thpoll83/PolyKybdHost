@@ -48,30 +48,13 @@ from PIL import Image, ImageDraw, ImageFont
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from polyhost.device.keys import KeyCode, Modifier, keycode_to_mapping_idx  # noqa: E402
+from polyhost.device.keys import KeyCode, Modifier  # noqa: E402
 
-GRID_X, GRID_Y = 10, 9
-SLOT_W, SLOT_H = 72, 40
-IMG_W, IMG_H = GRID_X * SLOT_W, GRID_Y * SLOT_H
-
-# RGBA channel index in the numpy array we build / save.
-CH = {"R": 0, "G": 1, "B": 2, "A": 3}
-
-# modifier -> (file kind, channel).  Mirrors polyhost/device/im_converter.py.
-PRIMARY_CH = {Modifier.NO_MOD: "A", Modifier.CTRL: "R", Modifier.ALT: "G", Modifier.SHIFT: "B"}
-COMBO_CH = {Modifier.CTRL_SHIFT: "R", Modifier.CTRL_ALT: "G", Modifier.ALT_SHIFT: "B",
-            Modifier.GUI_KEY: "A"}
-# Third and fourth tiers (protocol v12+). Before v12 the firmware folded every
-# GUI+x chord onto the bare-GUI variant, so extra's G/B/A sat reserved and empty;
-# the variant is now just the L/R-folded modifier bitmask, giving all 16.
-# ⚠️ Channel assignment MUST mirror polyhost/device/im_converter.py exactly -- the
-# loader reads these positions by name, so a mismatch here silently addresses the
-# wrong variant rather than failing. In particular the least-important variant of
-# each tier goes in A, because a 3-channel PNG drops alpha entirely.
-EXTRA_CH = {Modifier.CTRL_ALT_SHIFT: "R", Modifier.GUI_SHIFT: "G",
-            Modifier.GUI_ALT: "B", Modifier.GUI_CTRL: "A"}
-GUI_CH = {Modifier.GUI_CTRL_SHIFT: "R", Modifier.GUI_ALT_SHIFT: "G",
-          Modifier.GUI_CTRL_ALT: "B", Modifier.GUI_CTRL_ALT_SHIFT: "A"}
+# The grid, the channel of each modifier variant and the placement box are in
+# the package, because polyhost/services/game_assets patches cells at runtime too.
+from polyhost.res.overlay_layout import (  # noqa: E402
+    CH, COMBO_CH, EXTRA_CH, GUI_CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W,
+    cell_for, region_box)
 
 MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
            "SHIFT": 2, "SFT": 2,
@@ -341,12 +324,6 @@ def resolve_modifier(mods: list[str], macos: bool | None = None,
             f"modifier combination {mods} (bits={bits}) is not representable") from e
 
 
-def cell_for(kc: KeyCode) -> tuple[int, int]:
-    slot = keycode_to_mapping_idx(kc)
-    row, col = divmod(slot, GRID_X)
-    return row, col
-
-
 # --------------------------------------------------------------------------- #
 # rendering a single 72x40 mask
 # --------------------------------------------------------------------------- #
@@ -461,25 +438,6 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
         height=icon_catalog.DEFAULT_ICON_HEIGHT,
         placement=icon_catalog.DEFAULT_PLACEMENT)
     return mask, qualified
-
-
-def region_box(anchor: str, size: tuple[int, int], margin: int) -> tuple[int, int, int, int]:
-    """Return (x0, y0, w, h): the sub-rectangle of the 72x40 cell to draw into."""
-    bw, bh = min(size[0], SLOT_W), min(size[1], SLOT_H)
-    a = anchor.lower()
-    if "right" in a:
-        x0 = SLOT_W - bw - margin
-    elif "left" in a:
-        x0 = margin
-    else:
-        x0 = (SLOT_W - bw) // 2
-    if "bottom" in a:
-        y0 = SLOT_H - bh - margin
-    elif "top" in a:
-        y0 = margin
-    else:
-        y0 = (SLOT_H - bh) // 2
-    return max(0, x0), max(0, y0), bw, bh
 
 
 def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) -> Image.Image:
@@ -706,6 +664,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
     used_primary = used_combo = used_extra = used_gui = False
     warnings: list[str] = []
     placed: list[dict] = []
+    # tier -> {(modifier value, keycode)} drawn without the key legend (v25):
+    # `legend: false` on a binding, `program_icon_legend: false` for the mark.
+    no_legend: dict[str, set[tuple[int, int]]] = {t: set() for t in TIER_CHANNELS}
 
     for b in spec.get("bindings", []):
         try:
@@ -718,17 +679,17 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             continue
 
         if mod in PRIMARY_CH:
-            arr, ch_name = primary, PRIMARY_CH[mod]
+            arr, ch_name, tier = primary, PRIMARY_CH[mod], "primary"
             used_primary = True
         elif mod in COMBO_CH:
             # GUI is no longer skipped: the host stopped discarding variant 8.
-            arr, ch_name = combo, COMBO_CH[mod]
+            arr, ch_name, tier = combo, COMBO_CH[mod], "combo"
             used_combo = True
         elif mod in EXTRA_CH:
-            arr, ch_name = extra, EXTRA_CH[mod]
+            arr, ch_name, tier = extra, EXTRA_CH[mod], "extra"
             used_extra = True
         elif mod in GUI_CH:
-            arr, ch_name = gui, GUI_CH[mod]
+            arr, ch_name, tier = gui, GUI_CH[mod], "gui"
             used_gui = True
         else:
             warnings.append(f"skipped {b}: modifier {mod.name} has no channel")
@@ -771,6 +732,8 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         y0, x0 = row * SLOT_H, col * SLOT_W
         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, CH[ch_name]]
         block[mask] = 255
+        if b.get("legend", True) is False:
+            no_legend[tier].add((mod.value, kc.value))
         placed.append({"key": kc.name, "mod": mod.name, "ch": ch_name,
                        "cell": (row, col), "src": source, "label": label})
 
@@ -798,6 +761,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
                     for ax in range(4):              # all channels = all layers
                         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, ax]
                         block[pmask] = 255
+                if spec.get("program_icon_legend", True) is False:
+                    for tier, channels in TIER_CHANNELS.items():
+                        no_legend[tier].update((m.value, pkc.value) for m in channels)
                 # The program mark alone must NOT bring a layer into existence:
                 # `extra` is the Ctrl+Alt+Shift tier and most apps have no binding
                 # there, so marking it used shipped a third PNG whose only content
@@ -814,13 +780,26 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
             "combo": combo if used_combo else None,
             "extra": extra if used_extra else None,
             "gui": gui if used_gui else None,
+            "no_legend": no_legend,
             "placed": placed, "warnings": warnings}
 
 
-def save_png(rgba: np.ndarray, path: Path) -> None:
+# The PNG text chunk the host reads (polyhost/device/im_converter.NO_LEGEND_CHUNK).
+NO_LEGEND_CHUNK = "polykybd-no-legend"
+
+
+def save_png(rgba: np.ndarray, path: Path, no_legend=()) -> None:
     """Save straight (non-premultiplied) RGBA. PNG keeps RGB bytes where A=0,
-    which the loader relies on (the channels carry data independent of alpha)."""
-    Image.fromarray(rgba, mode="RGBA").save(path)
+    which the loader relies on (the channels carry data independent of alpha).
+
+    `no_legend` is {(modifier value, keycode)}: the keys this file draws without
+    the key legend, written as "<mod>:<keycode>" pairs into NO_LEGEND_CHUNK."""
+    info = None
+    if no_legend:
+        from PIL.PngImagePlugin import PngInfo
+        info = PngInfo()
+        info.add_text(NO_LEGEND_CHUNK, " ".join(f"{m}:{k}" for m, k in sorted(no_legend)))
+    Image.fromarray(rgba, mode="RGBA").save(path, pnginfo=info)
 
 
 # --------------------------------------------------------------------------- #
@@ -904,6 +883,7 @@ def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6,
     return [p]
 
 
+TIER_CHANNELS = {"primary": PRIMARY_CH, "combo": COMBO_CH, "extra": EXTRA_CH, "gui": GUI_CH}
 TIER_SUFFIX = {"primary": ".mods.png", "combo": ".combo.mods.png",
                "extra": ".extra.mods.png", "gui": ".gui.mods.png"}
 
@@ -930,6 +910,13 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     lines = [f"{','.join(names)}:", f"  overlay: {_overlay_value(files)}"]
     if title:
         lines.append(f"  title: {title}")
+    if spec.get("game_assets") and spec.get("_spec_path"):
+        # The entry point that lets the host redraw keys from the installed game
+        # (polyhost/services/game_assets): the spec, relative to overlay_sources.
+        sources = REPO_ROOT / "polyhost" / "res" / "overlay_sources"
+        spec_path = Path(spec["_spec_path"]).resolve()
+        if spec_path.is_relative_to(sources):
+            lines.append(f"  game_assets: {spec_path.relative_to(sources).as_posix()}")
     mac = spec.get("_result_macos")
     lnx = spec.get("_result_linux")
     mac_files = overlay_files(macos_output(spec), mac) if mac else []
@@ -972,6 +959,7 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = yaml.safe_load(args.bindings.read_text())
+    spec["_spec_path"] = str(args.bindings)
     base_dir = args.bindings.resolve().parent
     result = generate(spec, base_dir)
     spec["_result"] = result
@@ -1038,7 +1026,7 @@ def main() -> int:
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"
-                    save_png(res[tier], path)
+                    save_png(res[tier], path, res.get("no_legend", {}).get(tier, ()))
                     print(f"Wrote {path}")
 
     if args.preview:

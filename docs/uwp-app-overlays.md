@@ -55,7 +55,7 @@ executable name is therefore not the app:
 |---|---|---|
 | Calculator | `ApplicationFrameHost.exe` | `titles-startswith` / `title:` branch |
 | Sound Recorder | `ApplicationFrameHost.exe` | `titles-startswith: Sound` branch |
-| **Sticky Notes** | **`ONENOTE.EXE`** | `title: "^Sticky Notes"` |
+| **Sticky Notes** | **`ONENOTE.EXE`** | `titles-startswith: Sticky Notes` branch; every other `onenote` window gets the OneNote set |
 | Photos | `Photos.exe` | ordinary entry — it really is its own process |
 
 Every hosted entry also carries **`icon:`** (`ICON_APP`, `handler/common.py`),

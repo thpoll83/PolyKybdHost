@@ -42,6 +42,14 @@ Hard limits baked into the firmware/loader (do not fight them):
   source, **ALWAYS TRY THE APP'S OWN LOGO FIRST and check its licence** — see
   "Program marks" below. Reach for a generic drawn mark only when no published
   art exists to take; commit whichever it is as `icons/<name>.png`.
+- **`legend: false`** on a binding, or **`program_icon_legend: false`** for the
+  program mark, draws that key WITHOUT the firmware's legend: the keyboard clears
+  the whole cell before it draws the icon (protocol v25: the mapping's slot is
+  sent offset by 600). Use it only
+  where the icon replaces the keycap, as AoE2's full-cell ESC mark does. The
+  generator lists those keys in the PNG's `polykybd-no-legend` text chunk as
+  `<modifier>:<keycode>` pairs. Firmware before v25 keeps the legend and draws
+  the icon over it with the 3 px clearance.
 - Icons sit in the **bottom-right** of the cell by default so they never cover
   the firmware-drawn key letter (top-left). Keep that.
 - ⚠️ **A HOSTED app usually wants `icon:` in the mapping instead of a baked
@@ -159,6 +167,30 @@ are the icons the user actually sees. Order of preference:
      **`weight` 250–300, not the default**: `wght200` is too thin to survive the
      1-bit/40 px downscale, and the bare default (~400) is a touch heavy.
 3. **Draw it** with `scripts/make_sample_icons.py` primitives as a last resort.
+
+**Games** use game-icons.net (CC BY 3.0) through
+`polyhost/res/overlay_sources/game_icons.py`, because Fluent and Material have no
+game shapes (catapult, anvil, barracks). CC BY requires credit per AUTHOR, so the
+set's `SOURCES.md` has a file / icon / author table (`overlay_sources/aoe2/` is the
+example). Three differences from an app set:
+- Label only keys that do the same thing whatever is selected (go-to keys, idle
+  units, function keys, chat). A game's bare letters change with the selection,
+  so they stay blank.
+- An icon may use the full height (`anchor: right`, `region: [40, 40]`,
+  `margin: 0`). The firmware draws the overlay AFTER the legend and clears 3 px
+  around the icon's ink, so the icon takes priority: a letter legend (x 2–22)
+  stays whole, and the shifted symbol on `,` `.` and the digits is erased.
+  ⚠️ A preview that draws the legend on top models the wrong order.
+- Many game-icons.net drawings are too detailed for 1 bit. Render candidates on
+  the 72×40 cell and pick by eye before committing.
+- ⚠️ **A composed icon that needs exact pixels (a seam, a gap, a 1 px line) is
+  drawn 1-bit at keycap size, and its binding's `region` equals the image size**
+  (`region: [48, 40]` for a 48×40 PNG). `fit: contain` is then the identity and
+  the generator places it 1:1; any rescale blurs a 2–3 px seam away. AoE2's
+  control groups (`fetch_icons.groups()`: each unit twice with a 3 px black seam,
+  and a plus for Ctrl) are the example. Verify by cropping the 72×40 generated
+  cell to the box `region_box(anchor, region, margin)` returns and comparing that
+  crop with the drawn PNG pixel for pixel.
 
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in

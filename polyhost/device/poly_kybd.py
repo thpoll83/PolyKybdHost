@@ -7,14 +7,14 @@ import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.serial_helper import SerialHelper
+from polyhost.device import bulk_pipe
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
-from polyhost.device.hid_helper import DisconnectedHid, HidHelper
+from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
@@ -120,6 +120,24 @@ REBOOT_MIN_PROTOCOL = 22
 MAPPING_DIM_MIN_PROTOCOL = 23
 MAPPING_FLAG_DIM = 0x80
 
+# Minimum firmware PROTOCOL_VERSION for no-legend mapping pairs: a pair's `to`
+# offset by the pool capacity (600..1199) is drawn WITHOUT the key legend, so the
+# keyboard clears the whole cell before it draws the icon. The host sets it for
+# keys an overlay file lists in its "polykybd-no-legend" PNG text chunk (a game's
+# ESC mark). v24 and older reject such a pair as out of pool and leave the key
+# blank, so below the gate the host sends the plain slot and the legend stays.
+MAPPING_NO_LEGEND_MIN_PROTOCOL = 25
+
+# Minimum firmware PROTOCOL_VERSION for cmd 25's board-flag byte (data[3]). It sets
+# or clears the SPLIT_VBUS flag in the connected half's handedness stamp, which marks
+# a Rev.2 board (2023): those pass VBUS over the split cable, so the firmware picks
+# the master by USB enumeration instead of GP24. v23 and older ignore the byte and
+# set only the side, so below the gate the host refuses to send the flag.
+SPLIT_VBUS_FLAG_MIN_PROTOCOL = 24
+BOARD_OP_KEEP = 0
+BOARD_OP_CLEAR_SPLIT_VBUS = 1
+BOARD_OP_SET_SPLIT_VBUS = 2
+
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
 # of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
@@ -146,6 +164,8 @@ FEATURE_MIN_PROTOCOL = {
     "mapping_flags": MAPPING_FLAGS_MIN_PROTOCOL,
     "reboot": REBOOT_MIN_PROTOCOL,
     "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
+    "mapping_no_legend": MAPPING_NO_LEGEND_MIN_PROTOCOL,
+    "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -227,6 +247,12 @@ class PolyKybd:
         self.current_lang = None
         self.hid = None
         self.serial = None
+        # The bulk pipe (device/bulk_pipe.py): None until probed, then the
+        # PING reply dict when the firmware offers the pipe and the host could
+        # open it. `transport` is what the tray shows: "pipe", "hid", or None
+        # while disconnected / not yet probed.
+        self.pipe_info = None
+        self.transport = None
         self.name = None
         self.sw_version = None
         self.sw_version_num = None
@@ -272,12 +298,11 @@ class PolyKybd:
         a flash — so this must never propagate out of connect()."""
         try:
             self.hid = HidHelper(self.device_settings)
-            self.serial = SerialHelper(self.device_settings)
             return True
         except Exception as e:
             self.log.warning("Failed to open HID device: %s", e)
             self.hid = DisconnectedHid(self.device_settings)
-            self.serial = None
+            self.forget_bulk_pipe()
             return False
 
     def connect(self):
@@ -309,9 +334,55 @@ class PolyKybd:
             return self.hid.interface_acquired()
 
     def read_serial(self):
-        if self.serial:
-            return self.serial.read_all()
+        # Kept for the console periodic's call shape; the serial side of the
+        # keyboard is the bulk pipe now (probe_bulk_pipe), which carries framed
+        # data and never free text.
         return None
+
+    def probe_bulk_pipe(self) -> str:
+        """Look for the firmware's bulk pipe and PING it (serial I/O, worker
+        thread). Returns the transport in use, ``bulk_pipe.TRANSPORT_PIPE`` or
+        ``bulk_pipe.TRANSPORT_HID``, and caches it with the PING reply. Absent,
+        busy and mute ports all read as HID only; the pipe is optional."""
+        info = bulk_pipe.detect(self.device_settings.VID, self.device_settings.KNOWN_PIDS)
+        transport = bulk_pipe.TRANSPORT_PIPE if info else bulk_pipe.TRANSPORT_HID
+        if transport != self.transport:
+            if info:
+                self.log.info("Bulk pipe on %s: %.2f MB/s measured, firmware %s, %d-byte packets, queue %d",
+                              info.get("port"), info.get("rate_mbps", 0.0), info.get("fw"),
+                              info.get("epsize", 0), info.get("out_capacity", 0))
+            else:
+                self.log.info("No bulk pipe: raw HID only")
+        self.pipe_info = info
+        self.transport = transport
+        return transport
+
+    def use_hid_only(self) -> str:
+        """Record the transport as HID only without probing (the
+        ``dev_force_hid_link`` setting): the pipe is left alone and the
+        firmware update takes the HID path. Returns the transport."""
+        if self.transport != bulk_pipe.TRANSPORT_HID or self.pipe_info is not None:
+            self.log.info("Fast link disabled by the dev_force_hid_link setting: raw HID only")
+        self.pipe_info = None
+        self.transport = bulk_pipe.TRANSPORT_HID
+        return self.transport
+
+    def get_transport(self):
+        """Cached transport from the last probe: "pipe", "hid", or None."""
+        return self.transport
+
+    def get_pipe_info(self):
+        """Cached PING reply of the bulk pipe (with the measured rate), or None."""
+        return self.pipe_info
+
+    def get_link_rate_mbps(self):
+        """Measured rate of the bulk pipe in MB/s, or None without one."""
+        return (self.pipe_info or {}).get("rate_mbps")
+
+    def forget_bulk_pipe(self):
+        """Drop the cached transport (disconnect / re-enumeration)."""
+        self.pipe_info = None
+        self.transport = None
 
     def get_console_output(self, flush_and_return=True) -> str | None:
         try:
@@ -1045,7 +1116,8 @@ class PolyKybd:
         self.log.debug("Requesting MRU save...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.SAVE_MRU))
 
-    def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
+    def set_handedness(self, master_is_left: bool,
+                       split_vbus: bool | None = None) -> tuple[bool, Any]:
         """Fix which half is the left side and which is the right side.
 
         Master/slave is decided by which half holds the USB cable (VBUS), and is
@@ -1061,10 +1133,24 @@ class PolyKybd:
         (about 10 s, no replug needed). The keyboard resets right after receiving
         this command and does not send a reliable reply, so we only send (like
         activate_bootloader) — there is no ACK to wait for.
+
+        ``split_vbus`` (protocol 24) also sets (True) or clears (False) the Rev.2
+        board flag in the CONNECTED half's stamp only; ``None`` keeps it and sends
+        the legacy one-byte payload. Mark each Rev.2 half on its own, plugged in
+        alone.
         """
-        self.log.info("Setting handedness: connected half = %s.",
-                      "LEFT" if master_is_left else "RIGHT")
-        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, 0 if master_is_left else 1))
+        side = 0 if master_is_left else 1
+        if split_vbus is None:
+            self.log.info("Setting handedness: connected half = %s.",
+                          "LEFT" if master_is_left else "RIGHT")
+            return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side))
+        if not self.supports("split_vbus_flag"):
+            return False, (f"Firmware too old for the Rev.2 board flag "
+                           f"(needs protocol {SPLIT_VBUS_FLAG_MIN_PROTOCOL}).")
+        op = BOARD_OP_SET_SPLIT_VBUS if split_vbus else BOARD_OP_CLEAR_SPLIT_VBUS
+        self.log.info("Setting handedness: connected half = %s, Rev.2 split-VBUS flag %s.",
+                      "LEFT" if master_is_left else "RIGHT", "on" if split_vbus else "off")
+        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, side, op))
 
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""
@@ -1182,7 +1268,8 @@ class PolyKybd:
         return True, lang
 
     def send_overlay_mapping(self, from_to: dict, reset: bool = False,
-                             show: bool = False, dim=frozenset()) -> tuple[bool, str]:
+                             show: bool = False, dim=frozenset(),
+                             no_legend=frozenset()) -> tuple[bool, str]:
         """Program the display-position -> pool-slot table on the keyboard.
 
         Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
@@ -1204,20 +1291,33 @@ class PolyKybd:
         positions whose icon the keyboard draws dimmed. The flag covers a whole
         report, so dimmed and plain pairs travel in separate reports. Below v23
         the set is ignored and every pair goes out plain.
+
+        ``no_legend`` (protocol v25+, the "mapping_no_legend" gate) is the set of
+        display positions the keyboard draws without the key legend. Their `to`
+        goes out offset by the pool capacity, in the same reports as the plain
+        pairs. Below v25 the set is ignored and they go out plain.
         """
         if (reset or show) and not (self.supports("mapping_flags") and from_to):
             return False, "mapping flags need protocol v21 and at least one pair"
         if self.supports("gui_combo_modifiers"):
             if dim and not self.supports("mapping_dim"):
                 dim = frozenset()
-            return self._send_overlay_mapping_sized(from_to, reset, show, dim)
+            if no_legend and not self.supports("mapping_no_legend"):
+                no_legend = frozenset()
+            return self._send_overlay_mapping_sized(from_to, reset, show, dim, no_legend)
         return self._send_overlay_mapping_legacy(from_to)
 
     def _send_overlay_mapping_sized(self, from_to: dict, reset: bool = False,
-                                    show: bool = False, dim=frozenset()) -> tuple[bool, str]:
+                                    show: bool = False, dim=frozenset(),
+                                    no_legend=frozenset()) -> tuple[bool, str]:
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        plain = {f: t for f, t in from_to.items() if f not in dim}
-        dimmed = {f: t for f, t in from_to.items() if f in dim}
+        # A no-legend pair rides in the plain reports: its `to` is offset by the
+        # pool capacity (MAPPING_NO_LEGEND_MIN_PROTOCOL), and the width planner
+        # gives it 11 bits only when the offset value needs them.
+        offset = self.device_settings.OVERLAY_MAPPING_CAPACITY
+        wire = {f: t + offset if f in no_legend else t for f, t in from_to.items()}
+        plain = {f: t for f, t in wire.items() if f not in dim}
+        dimmed = {f: t for f, t in wire.items() if f in dim}
         reports = ([(w, p, 0) for w, p in plan_mapping_reports(plain, data_bytes)]
                    + [(w, p, MAPPING_FLAG_DIM) for w, p in plan_mapping_reports(dimmed, data_bytes)])
         num_msgs = 0
@@ -1545,9 +1645,25 @@ class PolyKybd:
         file behind it, used for the generic icon fall-back. It is resolved by
         the CALLER, on the caller's thread, because building one may fetch over
         the network and this method runs on the HID worker.
+
+        Every device call of the switch is timed (HidHelper.measure) and the
+        summary line splits the wall time into pauses, device calls and host
+        work; see _log_switch_stats.
         """
-        import os
         t_start = time.perf_counter()
+        measure = getattr(self.hid, "measure", None)
+        meter = measure() if measure is not None else IoMeter()
+        try:
+            return self._send_overlays_mru(filenames, cache, cancel, synthetic, meter, t_start)
+        finally:
+            stop = getattr(self.hid, "stop_measuring", None)
+            if stop is not None:
+                stop()
+
+    def _send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
+                           cancel: threading.Event | None, synthetic: dict | None,
+                           meter: IoMeter, t_start: float) -> bool:
+        import os
         stats_before = (self.stat_plain, self.stat_comp, self.stat_roi,
                         self.stat_croi, self.stat_best, dict(self.stat_chosen))
         pauses = 0
@@ -1569,6 +1685,9 @@ class PolyKybd:
         # dimmed: it carries the program mark, which names the app the board is
         # showing and must stay readable whichever source drew it.
         dim_positions: set[int] = set()
+        # Positions whose LAST source lists the key in its "polykybd-no-legend" PNG
+        # chunk (ImageConverter.no_legend): drawn without the key legend (v25).
+        no_legend_positions: set[int] = set()
 
         # Decode EVERY file before touching the device. prepare_for_mru_send()
         # resets the firmware's mapping + usage bits, so issuing it first meant an
@@ -1814,6 +1933,7 @@ class PolyKybd:
                             refused_idx = cache.display_flat_idx(keycode, modifier)
                             display_to_pool.pop(refused_idx, None)
                             dim_positions.discard(refused_idx)
+                            no_legend_positions.discard(refused_idx)
                             covered.discard((modifier.value, keycode))
                             pool_full.append((filename, keycode, modifier))
                             continue
@@ -1860,6 +1980,10 @@ class PolyKybd:
                             dim_positions.add(display_idx)
                         else:
                             dim_positions.discard(display_idx)
+                        if (modifier.value, keycode) in getattr(converter, "no_legend", ()):
+                            no_legend_positions.add(display_idx)
+                        else:
+                            no_legend_positions.discard(display_idx)
                         per_source.setdefault(filename, []).append((keycode, modifier))
                         if not is_hit:
                             uploaded += 1
@@ -1937,9 +2061,10 @@ class PolyKybd:
         flagged = mapping_flags and bool(display_to_pool)
         if flagged:
             ok, msg = self.send_overlay_mapping(display_to_pool, reset=not prepared, show=True,
-                                                dim=dim_positions)
+                                                dim=dim_positions, no_legend=no_legend_positions)
         elif ensure_prepared():
-            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions)
+            ok, msg = self.send_overlay_mapping(display_to_pool, dim=dim_positions,
+                                                no_legend=no_legend_positions)
         else:
             return False
         if not ok:
@@ -1956,34 +2081,67 @@ class PolyKybd:
         self.stat_best = stats_before[4] + hid_msg_counter
         self._log_switch_stats(stats_before, uploaded, hid_msg_counter,
                                len(display_to_pool), pauses, pause_s,
-                               time.perf_counter() - t_start, control)
+                               time.perf_counter() - t_start, control,
+                               meter=meter, t_start=t_start)
         return True
 
     def _log_switch_stats(self, before: tuple, uploaded: int, image_msgs: int,
                           positions: int, pauses: int, pause_s: float,
-                          wall_s: float, control: int = 2) -> None:
-        """One INFO line per overlay send, with every report it cost.
+                          wall_s: float, control: int = 2,
+                          meter: IoMeter | None = None, t_start: float | None = None) -> None:
+        """One INFO line per overlay send, with every report it cost and
+        where the time went.
 
         control = the separate cmd 11 reports this send made: prepare
         (OVERLAY_FLAGS_ON mirror+reset) and enable, two before protocol v21 and
         none on a warm v21 switch, where both ride on the mapping. "if plain" is what the
-        same images would have cost as uncompressed cmd 10 overlays."""
+        same images would have cost as uncompressed cmd 10 overlays.
+
+        The time split: wall = pauses + device + host. "pauses" is the
+        rate-limit sleep (docs/FUTURE_WORK.md). "device" is the time inside
+        the HID write and read calls, one call per report, split by kind
+        (see IoMeter): "write-only" are the image reports and the mapping
+        reports, the part a faster link could speed up; "with reply" are the
+        reports that wait for the keyboard's answer (icon fills, cmd 42, and
+        prepare/enable), whose time is mostly the keyboard's own work. Only
+        the write-only median says something about the link, and only on a
+        switch long enough to fill the keyboard's receive queue. "host" is
+        the rest: decoding the images, the MRU claim pass, encoding and
+        packing; "before the first report" is the part of it spent before any
+        report went out."""
         plain0, comp0, roi0, croi0, best0, chosen0 = before
         chosen = {k: self.stat_chosen[k] - chosen0.get(k, 0) for k in self.stat_chosen}
         mapping = self._last_mapping_msgs
         total = image_msgs + mapping + control
         self.stat_switches += 1
         self.stat_reports_total += total
+        meter = meter or IoMeter()
+        device_s = meter.total_s
+        host_s = max(0.0, wall_s - pause_s - device_s)
+        if meter.first_at is not None and t_start is not None:
+            prep_s = max(0.0, meter.first_at - t_start)
+        else:
+            prep_s = host_s
         self.log.info(
             "Overlay switch stats: %d image(s) uploaded [fill %d, prc %d, roi %d, rle-roi %d, rle %d, plain %d], "
             "%d position(s) mapped | reports: image %d + mapping %d + control %d = %d "
-            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | %d rate-limit pause(s) = %.1f s | "
-            "wall %.0f ms (%.0f ms without pauses)",
+            "(if plain: %d, rle: %d, roi: %d, rle-roi: %d) | "
+            "wall %.0f ms = %d rate-limit pause(s) %.0f ms + device %.0f ms "
+            "(%d call(s), median %.1f ms, max %.1f ms; "
+            "write-only %d call(s) %.0f ms, median %.1f ms, max %.1f ms; "
+            "with reply %d call(s) %.0f ms, median %.1f ms, max %.1f ms) "
+            "+ host %.0f ms (%.0f ms before the first report)",
             uploaded, chosen["fill"], chosen["prc"], chosen["roi"], chosen["rle-roi"], chosen["rle"], chosen["plain"],
             positions, image_msgs, mapping, control, total,
             self.stat_plain - plain0, self.stat_comp - comp0,
             self.stat_roi - roi0, self.stat_croi - croi0,
-            pauses, pause_s, wall_s * 1000.0, (wall_s - pause_s) * 1000.0)
+            wall_s * 1000.0, pauses, pause_s * 1000.0, device_s * 1000.0,
+            meter.count, meter.median_s * 1000.0, meter.max_s * 1000.0,
+            meter.write.count, meter.write.total_s * 1000.0,
+            meter.write.median_s * 1000.0, meter.write.max_s * 1000.0,
+            meter.reply.count, meter.reply.total_s * 1000.0,
+            meter.reply.median_s * 1000.0, meter.reply.max_s * 1000.0,
+            host_s * 1000.0, prep_s * 1000.0)
         self.log.info(
             "Overlay stats since start: %d switch(es), %d report(s); image reports sent %d "
             "(if plain: %d, rle: %d, roi: %d, rle-roi: %d)",

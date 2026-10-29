@@ -13,6 +13,7 @@ import numpy as np
 
 from polyhost.device.bit_packing import pairs_per_report
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.mock_firmware import _read_values
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.poly_kybd import (MAPPING_DIM_MIN_PROTOCOL, MAPPING_FLAG_DIM,
                                        MAPPING_FLAG_RESET, MAPPING_FLAG_SHOW,
@@ -57,13 +58,12 @@ def _mapping_reports(dev):
 
 
 def _froms(report):
-    """The `from` values of a cmd 33 report (padding repeats the last pair)."""
+    """The `from` values of a cmd 33 report (padding repeats the last pair),
+    read with the firmware's LSB-first decoder. An MSB-first reading agrees
+    only at width 8, where every value is one whole byte."""
     width = report[2] & 0x1F
     data = report[3:]
-    bits = int.from_bytes(data, "big")
-    total = len(data) * 8
-    values = [(bits >> (total - (i + 1) * width)) & ((1 << width) - 1)
-              for i in range(total // width)]
+    values = _read_values(data, width)
     return values[0::2][:pairs_per_report(len(data), width)]
 
 

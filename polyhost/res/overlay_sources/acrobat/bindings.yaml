@@ -1,0 +1,82 @@
+# Adobe Acrobat shortcut overlays for PolyKybd (Acrobat Pro and Acrobat Reader,
+# Windows and macOS). See SOURCES.md.
+#
+# Reader and Pro share one keymap; a key whose tool only Pro has does nothing in
+# Reader. `CMDCTRL` is Ctrl on Windows and Cmd on macOS; a key macOS moves to
+# another chord is written twice under `except: [macos]` / `only: [macos]`.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/acrobat/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/acrobat/bindings.yaml --preview /tmp/acrobat_preview
+app: acrobat
+match: [acrobat, acrord32, adobe acrobat, adobe acrobat reader]
+output: acrobat_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: acrobat.png
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- file and standard keys ---
+  - { key: O, mods: [CMDCTRL], label: "Open" }
+  - { key: S, mods: [CMDCTRL], label: "Save" }
+  - { key: P, mods: [CMDCTRL], label: "Print" }
+  - { key: F, mods: [CMDCTRL], label: "Find" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  # --- zoom and view ---
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: fitpage.png, label: "Zoom to page level" }
+  - { key: "1", mods: [CMDCTRL], icon: actualsize.png, label: "Actual size" }
+  - { key: "4", mods: [CMDCTRL], icon: reflow.png, label: "Reflow" }
+  - { key: L, mods: [CMDCTRL], icon: fullscreen.png, label: "Full screen" }
+  - { key: M, mods: [GUI, SHIFT], icon: menubar.png, label: "Menu bar", only: [macos] }
+  - { key: F5, mods: [CMDCTRL, SHIFT], icon: navpane.png, label: "Navigation pane" }
+  - { key: F4, mods: [SHIFT], icon: taskpane.png, label: "Task pane" }
+  # --- pages ---
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: gotopage.png, label: "Go to page" }
+  - { key: PGUP, mods: [CMDCTRL], icon: prevpage.png, label: "Previous page" }
+  - { key: PGDN, mods: [CMDCTRL], icon: nextpage.png, label: "Next page" }
+  - { key: PGUP, mods: [CTRL, SHIFT], icon: firstpage.png, label: "First page", except: [macos] }
+  - { key: PGDN, mods: [CTRL, SHIFT], icon: lastpage.png, label: "Last page", except: [macos] }
+  - { key: UP, mods: [CMDCTRL, SHIFT], icon: firstpage.png, label: "First page" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: lastpage.png, label: "Last page" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: insertblank.png, label: "Insert blank page" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: insertfiles.png, label: "Insert files" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: deletepages.png, label: "Delete pages" }
+  # --- documents and search ---
+  - { key: TAB, mods: [CTRL], icon: nextdoc.png, label: "Next document tab" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevdoc.png, label: "Previous document tab" }
+  - { key: F6, mods: [CMDCTRL], icon: nextwindow.png, label: "Next document window" }
+  - { key: F4, mods: [CMDCTRL], icon: closedoc.png, label: "Close document" }
+  - { key: W, mods: [GUI, ALT], icon: closeall.png, label: "Close all documents", only: [macos] }
+  - { key: F3, mods: [], icon: findnext.png, label: "Next search result", except: [macos] }
+  - { key: G, mods: [CMDCTRL], icon: findnext.png, label: "Next search result" }
+  - { key: LEFT, mods: [ALT, SHIFT], icon: prevresultdoc.png, label: "Previous result document", except: [macos] }
+  - { key: RIGHT, mods: [ALT, SHIFT], icon: nextresultdoc.png, label: "Next result document", except: [macos] }
+  - { key: LEFT, mods: [GUI, SHIFT], icon: prevresultdoc.png, label: "Previous result document", only: [macos] }
+  - { key: RIGHT, mods: [GUI, SHIFT], icon: nextresultdoc.png, label: "Next result document", only: [macos] }
+  # --- tools ---
+  - { key: J, mods: [CMDCTRL], icon: jsdebugger.png, label: "JavaScript debugger" }
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: readingorder.png, label: "Reading order" }
+  - { key: F2, mods: [], icon: edittag.png, label: "Edit tag" }
+  - { key: "5", mods: [CMDCTRL, SHIFT], icon: readingsettings.png, label: "Reading settings" }
+  # --- read out loud ---
+  - { key: Y, mods: [CMDCTRL, SHIFT], icon: readaloud.png, label: "Read out loud on/off" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: readpage.png, label: "Read this page" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: readdoc.png, label: "Read whole document" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: readpause.png, label: "Pause reading" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: readstop.png, label: "Stop reading" }

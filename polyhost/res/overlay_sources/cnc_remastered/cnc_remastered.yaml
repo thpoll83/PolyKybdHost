@@ -1,0 +1,134 @@
+# Command & Conquer Remastered Collection (Steam) overlay for PolyKybd.
+#
+# Keys: the Remastered Collection default hotkeys. Tiberian Dawn and Red Alert
+# share them; Q (queued move) works in Red Alert only. See SOURCES.md.
+#
+# Only keys that do the same thing whatever is selected are labelled. Mouse
+# shortcuts (Ctrl+click force attack, Alt+click force move) have no key cell.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/cnc_remastered/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cnc_remastered/cnc_remastered.yaml \
+#       --preview /tmp/cnc_preview
+app: cnc_remastered
+match: [clientg, clientg.exe, steam_app_1213210]
+output: cnc_remastered_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for AoE2: the icon uses the full height on the right; the firmware clears
+# 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# COMMAND & CONQUER drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Control groups: digit selects, Ctrl+digit creates
+  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+
+  # Sidebar tabs
+  - { key: W, icon: tabstructures.png, label: "Structures tab" }
+  - { key: E, icon: tabinfantry.png, label: "Infantry tab", region: [48, 40] }
+  - { key: R, icon: tabvehicles.png, label: "Vehicles tab", region: [48, 40] }
+  - { key: T, icon: tabsuper.png, label: "Superweapons tab" }
+
+  # Orders and selection
+  - { key: S, icon: stop.png, label: "Stop" }
+  - { key: X, icon: scatter.png, label: "Scatter" }
+  - { key: G, icon: guard.png, label: "Guard area" }
+  - { key: Q, icon: queuedmove.png, label: "Queued move (Red Alert)" }
+  - { key: A, icon: selectscreen.png, label: "Select all units on screen" }
+  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all units on map" }
+
+  # Camera
+  - { key: H, icon: conyard.png, label: "Go to Construction Yard" }
+  - { key: TAB, icon: lastevent.png, label: "Go to last event", region: [36, 40] }
+  - { key: F1, icon: bookmark1.png, label: "Go to bookmark 1", region: [30, 40] }
+  - { key: F2, icon: bookmark2.png, label: "Go to bookmark 2", region: [30, 40] }
+  - { key: F3, icon: bookmark3.png, label: "Go to bookmark 3", region: [30, 40] }
+  - { key: F4, icon: bookmark4.png, label: "Go to bookmark 4", region: [30, 40] }
+  - { key: F1, mods: [CTRL], icon: bookmarkset1.png, label: "Set bookmark 1", region: [30, 40] }
+  - { key: F2, mods: [CTRL], icon: bookmarkset2.png, label: "Set bookmark 2", region: [30, 40] }
+  - { key: F3, mods: [CTRL], icon: bookmarkset3.png, label: "Set bookmark 3", region: [30, 40] }
+  - { key: F4, mods: [CTRL], icon: bookmarkset4.png, label: "Set bookmark 4", region: [30, 40] }
+
+  # Display
+  - { key: SPACE, icon: graphics.png, label: "Classic / remastered graphics" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window", region: [30, 40] }
+
+# Art read at runtime from the user's own classic Tiberian Dawn files, when they
+# are on the machine (polyhost/services/game_assets, reader westwood_td). It
+# replaces the shipped icon of the same name; nothing read from the game is
+# committed. An entry keyed gdi/nod follows the "Command and Conquer Faction"
+# setting. Chosen by the maintainer on 2026-10-27 from contact sheets of every
+# facing.
+game_assets:
+  reader: westwood_td
+  icons:
+    group1: {crowd: e1, frame: 5}
+    group2: {gdi: {unit: jeep, face: 12, turret: 44}, nod: {unit: bggy, face: 28, turret: 60}}
+    group3: {gdi: {unit: apc, face: 28}, nod: {unit: bike, face: 20}}
+    group4: {gdi: {unit: mtnk, face: 28, turret: 60}, nod: {unit: ltnk, face: 28, turret: 60}}
+    group5: {gdi: {unit: htnk, face: 28, turret: 60}, nod: {unit: ftnk, face: 12}}
+    group6: {gdi: {unit: msam, face: 4, turret: 68}, nod: {unit: stnk, face: 4}}
+    group7: {gdi: {unit: orca, face: 28}, nod: {unit: arty, face: 28}}
+    group8: {gdi: {unit: a10, face: 28}, nod: {unit: mlrs, face: 4, turret: 36}}
+    # Chinook: both rotors spinning (frames 1 and 3) at 80 %, pulled to 85 % of
+    # the game's distance (OpenRA's TRAN offsets), 52 px wide with 1 px free all
+    # round. Apache: its single rotor at frame 4 above the sprite centre.
+    group9:
+      gdi: {helicopter: tran, face: 28, rotors: [[597, 85, lrotor, 1], [-597, 171, rrotor, 3]],
+            rotor_scale: 0.8, rotor_pull: 0.85, fit: [50, 38], inset: 1, region: [52, 40]}
+      nod: {helicopter: heli, face: 12, rotors: [[0, 85, lrotor, 4]], along_hull: false}
+    group0: {unit: harv, face: 12}
+    groupnew1: {plus: group1}
+    groupnew2: {plus: group2}
+    groupnew3: {plus: group3}
+    groupnew4: {plus: group4}
+    groupnew5: {plus: group5}
+    groupnew6: {plus: group6}
+    groupnew7: {plus: group7}
+    groupnew8: {plus: group8}
+    groupnew9: {plus: group9}
+    groupnew0: {plus: group0}
+    tabstructures: {unit: fact}
+    tabinfantry: {gdi: {unit: pyle}, nod: {unit: hand}}
+    tabvehicles: {gdi: {unit: weap+weap2}, nod: {unit: afld}}
+    tabsuper: {gdi: {cursor: 110}, nod: {cursor: 102}}     # ion cannon, nuke
+    conyard: {unit: fact}
+    lastevent: {unit: hq}
+    stop: {cursor: 9}
+    scatter: {cursor: 10}
+    selectscreen: {cursor: 12}
+    # The guard cursor's dark ring pixels make it a solid disc at this size.
+    guard: {cursor: 88, threshold: 0.3}
+    queuedmove: {cursor: 119}

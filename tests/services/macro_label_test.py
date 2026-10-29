@@ -89,8 +89,6 @@ class FitTest(unittest.TestCase):
         self.assertEqual(ml.fit(once, self.font).text, once)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 @unittest.skipUnless(HAVE_FONT, f"firmware fonts not found at {FONT_DIR}")
@@ -140,3 +138,7 @@ class CaptionFaceLadderTest(unittest.TestCase):
         r = ml.fit(text, ml.pick_face(text, self.faces))
         self.assertNotEqual(r.dropped, "")
         self.assertLessEqual(r.width, ml.PANEL_W)
+
+
+if __name__ == "__main__":
+    unittest.main()

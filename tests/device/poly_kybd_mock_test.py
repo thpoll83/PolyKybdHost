@@ -174,7 +174,7 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
-# The full 160-language firmware list (the cog-generated `languages` table that
+# The full 161-language firmware list (the cog-generated `languages` table that
 # hid_com.c now emits via the packed GET_LANG_LIST_PACKED, cmd 27). Grouped below
 # in the original 15-per-row layout purely for readability.
 _ALL_FIRMWARE_LANGS = (
@@ -188,7 +188,7 @@ _ALL_FIRMWARE_LANGS = (
     "arSYarJOarLBarYEarKWarOMarPSarQAarBHarDZarSDarTNarLYfrCDfrCI"  # packet 8
     "frCMfrSNfrMGenGHenUGenZMswTZptAOptMZbnBDenINenPKenPHenSGenLK"  # packet 9
     "kyKGtgTJenGUenSBenVUenFMfrNCtoTOeuESglESrmCHcyGBgaIEmtMTlbLU"  # packet 10
-    "seNOgnPYquPEayBOnvUSnhMXpsAFiuCAcrCAckUS"                      # packet 11
+    "seNOgnPYquPEayBOnvUSnhMXpsAFiuCAcrCAckUSjaUS"                  # packet 11
 )
 
 _ALL_FIRMWARE_LANG_CODES = [
@@ -224,11 +224,12 @@ _ALL_FIRMWARE_LANG_CODES = [
     "euES", "glES", "rmCH", "cyGB", "gaIE", "mtMT", "lbLU",
     # packet 11
     "seNO", "gnPY", "quPE", "ayBO", "nvUS", "nhMX", "psAF", "iuCA", "crCA", "ckUS",
+    "jaUS",
 ]
 
 
 class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
-    """Mock initialised with the full 160-language set from the firmware."""
+    """Mock initialised with the full 161-language set from the firmware."""
 
     def setUp(self):
         self.mock = make_mock(lang="enUS", langs=_ALL_FIRMWARE_LANGS)
@@ -238,8 +239,8 @@ class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(langs, _ALL_FIRMWARE_LANGS)
 
-    def test_lang_list_has_160_entries(self):
-        self.assertEqual(len(self.mock.get_lang_list()), 160)
+    def test_lang_list_has_161_entries(self):
+        self.assertEqual(len(self.mock.get_lang_list()), 161)
 
     def test_all_language_codes_present(self):
         langs = self.mock.get_lang_list()

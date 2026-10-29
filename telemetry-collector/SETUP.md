@@ -282,6 +282,7 @@ Add `--json` for machine-readable output.
 ```bash
 python telemetry-collector/dashboard.py --open      # queries --remote, writes dashboard.html
 python telemetry-collector/dashboard.py --days 90   # widen the time-series window
+python telemetry-collector/dashboard.py --days all  # every day in the data
 ```
 
 It shows installs reporting per day, host/firmware/OS/country/mode splits **per
@@ -300,8 +301,31 @@ zone-scoping trap as the WAF rate limit in §5). The design, the options and the
 things that must change with it are in
 [`HOSTED_DASHBOARD.md`](./HOSTED_DASHBOARD.md); read that before starting it.
 
-`--from-json FILE` renders saved `--json` output without touching the network,
-which is also how the tests cover it.
+`--from-json PATH` renders saved `--json` output without touching the network,
+which is also how the tests cover it. PATH can be one file or a directory; a
+directory reads every `*.json` under it.
+
+### The daily archive (private repo `thpoll83/polykybd-telemetry-data`)
+
+A scheduled workflow in that private repo runs once a day:
+
+```bash
+python telemetry-collector/dashboard.py --export-days data --out dashboard.html
+```
+
+`--export-days DIR` finds the newest `DIR/YYYY/YYYY-MM-DD.json`, queries every
+finished UTC day after it, writes one file per day that has reports, and then
+renders the dashboard from all of `DIR`. Today is never exported: installs that
+have not reported yet today still can, and the next run starts after the newest
+file, so a day is final only once it has ended. A missed run is filled in by the
+next one. The workflow
+commits only when a file changed.
+
+The repo is private, and the Worker stays write-only: the workflow reads D1 with
+its own Cloudflare token (D1 only, not the deploy token), stored as that repo's
+`CLOUDFLARE_API_TOKEN` secret. To look at the dashboard, pull the repo and open
+`dashboard.html`. GitHub shows HTML files as source, so the web view does not
+render it.
 
 > ⚠️ In **bash**, escape the `$` in a `json_extract` path (`'\$.fw_flashes'`) or the
 > shell expands it to nothing and the query silently returns NULLs rather than
@@ -331,7 +355,10 @@ whole database as SQL, small enough to keep with the project:
 npx wrangler d1 export polyhost-telemetry --remote --output=telemetry-$(date +%F).sql
 ```
 
-Worth doing quarterly. The point of owning the data was to escape someone else's
+The daily archive in the private repo (§7) holds every `ping` row of every
+finished day, as JSON outside this account. It does not hold the schema or the
+views; `schema.sql` in this repo has those. A full export is still worth doing
+quarterly. The point of owning the data was to escape someone else's
 retention clock — an un-backed-up database in one account is only half of that.
 
 ---

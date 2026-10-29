@@ -19,6 +19,14 @@ URL_HAS = "urls-contains"
 # app name needs different overlay artwork per OS. Keys are canonical OS names
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
+# `layer: false` on an entry that declares `urls-contains` turns OFF the
+# browser layering (`_layered`): a matched sub-entry then REPLACES the entry's
+# overlay, as a title sub-map does. For an app whose `urls-contains` routes on a
+# context pseudo-URL rather than a website (Blender's `blender://<mode>/<editor>`)
+# the parent overlay is not "the browser underneath" -- it is the fallback for
+# when no context is known, and drawing it dimmed under the Node Editor would
+# put 3D View keys on a board showing the Node Editor's.
+LAYER = "layer"
 FLAGS = "flags"
 OVERLAY = "overlay"
 # Key of a layered view (see `_layered`) holding the names drawn as Underlays.
@@ -230,7 +238,7 @@ def _layered(base, sub):
     return view
 
 
-def find_matching_entry(title, entry, url=None, os_name=None):
+def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     """Return the deepest mapping entry that matches ``title`` (and ``url``), or
     ``None``.
 
@@ -262,6 +270,28 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     a name); ``None``/unknown skips the ``os`` sub-map entirely, so an entry
     always degrades to its own default artwork rather than guessing.
 
+    ``title_known`` is False when the caller has NO WINDOW and therefore no
+    title to offer -- the macOS windowless path, where `getActiveWindow()`
+    answers None but the OS still names the app. An entry that DECLARES a
+    ``title`` regex then fails outright instead of having the regex skipped.
+
+    ⚠️ **The two are opposite, and the difference is the point.** With a window
+    whose title is merely EMPTY, a declared ``title`` regex is skipped on
+    purpose: macOS without screen-recording permission and some Wayland setups
+    report no titles at all, and gating on one would lose every entry on those
+    machines (see `handler.win_shell`). But with NO WINDOW the same leniency is
+    a false positive: the `kicad` entry declares a ``title`` gate (six window
+    names in every KiCad language, written by
+    ``overlay_sources/kicad/gen_titles.py``) to tell those windows from the rest
+    of KiCad, and skipping it would draw the PCB overlay for any KiCad window.
+    So "the title is empty" keeps its leniency and "there is no title" does
+    not.
+
+    ⚠️ The word sub-maps (``titles-startswith`` and friends) need no such flag:
+    they already match nothing without a title and fall through to the parent's
+    own overlay, which is the documented behaviour for a refinement rather than
+    a constraint.
+
     Raises ``re.error`` if an entry's ``title``/``url`` regex is invalid;
     callers log it and treat it as no match (mirrors the previous behaviour)."""
     flags = entry[FLAGS]
@@ -290,7 +320,7 @@ def find_matching_entry(title, entry, url=None, os_name=None):
         for want in os_match_keys(os_name):
             for needle, sub in entry[OS].items():
                 if normalize_os(needle) == want:
-                    m = find_matching_entry(title, sub, url, os_name)
+                    m = find_matching_entry(title, sub, url, os_name, title_known)
                     if m is not None:
                         return m
 
@@ -300,9 +330,9 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     if has_urls_contains and url:
         for needle, sub in entry[URL_HAS].items():
             if needle in url:
-                m = find_matching_entry(title, sub, url, os_name)
+                m = find_matching_entry(title, sub, url, os_name, title_known)
                 if m is not None:
-                    return _layered(entry, m) if has_overlay else m
+                    return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
@@ -315,13 +345,13 @@ def find_matching_entry(title, entry, url=None, os_name=None):
         if has_starts_with:
             for kw, key in _phrase_keys(entry[TITLE_SW]):
                 if words[:len(kw)] == kw:
-                    m = find_matching_entry(title, entry[TITLE_SW][key], url, os_name)
+                    m = find_matching_entry(title, entry[TITLE_SW][key], url, os_name, title_known)
                     if m is not None:
                         return m
         if has_ends_with:
             for kw, key in _phrase_keys(entry[TITLE_EW]):
                 if words[-len(kw):] == kw:
-                    m = find_matching_entry(title, entry[TITLE_EW][key], url, os_name)
+                    m = find_matching_entry(title, entry[TITLE_EW][key], url, os_name, title_known)
                     if m is not None:
                         return m
         # `titles-contains` is the weakest signal here — any single word anywhere
@@ -341,14 +371,14 @@ def find_matching_entry(title, entry, url=None, os_name=None):
             for i in range(len(words)):
                 for kw, key in keys:
                     if words[i:i + len(kw)] == kw:
-                        m = find_matching_entry(title, entry[TITLE_HAS][key], url, os_name)
+                        m = find_matching_entry(title, entry[TITLE_HAS][key], url, os_name, title_known)
                         if m is not None:
                             # On a BROWSER entry (it declares urls-contains) this
                             # is the same web-app routing with no URL known, so
                             # the site layers over the browser here too. Other
                             # apps' title sub-maps keep replacing: a dialog or a
                             # mode of one app is not running inside another.
-                            if has_urls_contains and has_overlay:
+                            if has_urls_contains and has_overlay and entry.get(LAYER, True):
                                 return _layered(entry, m)
                             return m
 
@@ -359,6 +389,10 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     # browser entry with a default overlay + urls-contains still matches (default)
     # when the URL is unknown or hits no sub-key.
     if has_url and (not url or not re.search(entry[URL], url)):
+        return None
+    if has_title and not title_known:
+        # Declared a title constraint, and the caller has no title to test it
+        # with: that is a failed constraint, not an absent one.
         return None
     if title and has_title and not re.search(entry[TITLE], title):
         return None

@@ -977,8 +977,9 @@ until the new one lands. Four guards bound the cost (`shortcut_fetcher.py`):
 2. a 3 s floor between re-harvests of one app, whatever they returned, for a
    title that cycles in seconds (a clock, a progress counter);
 3. a backoff when a re-harvest finds the same shortcuts, 5 s doubling to
-   2 min, reset by a changed answer. A terminal or browser settles at one walk
-   every 2 min;
+   2 min, reset by a changed answer. A terminal settles at one walk every
+   2 min. ⚠️ A browser does NOT: each tab answers differently, so the reset
+   fires on every tab switch (see the per-title cache below);
 4. a **new pid** re-harvests once, past the title test and the floor (not the
    backoff): a second Kate inherited the first one's 20 s backoff and showed
    the first one's 97-shortcut answer on its own welcome page for 12 s.
@@ -998,6 +999,85 @@ windows pass no title and never re-harvest; their answer is relayed.
 
 ⚠️ GTK may behave differently; re-run the event probe before building on
 events for another toolkit.
+
+**A browser walked again on every tab switch, and the walk froze the host**
+(Windows, Chrome, 2026-10-15 log bundle). The backoff above never engaged,
+because each tab's shortcuts differ: 31 full UIA walks of Chrome in 38 minutes.
+One walk of a long Claude Code tab took about 2 min 17 s, and during it the
+daemon's window-tracking tick took 63.9 s, 38.4 s and 89.1 s, the brightness
+request 12 s instead of 0.3 s, and the tray menu (an RPC into the daemon) was as
+slow to open. No tab switch reached the keyboard in that time. The walk already
+ran on its own thread; three unrelated threads stalling together is the Python
+interpreter lock, which all threads of one process share. Two changes:
+
+* **The UIA walk runs in a helper process**
+  (`shortcut_source/out_of_process.py`, `worker.py`): JSON lines over its
+  stdin/stdout, started once and kept. Focus leaving the app kills it
+  mid-walk, and the next harvest starts a fresh one. COM leaves the daemon with
+  it. Each walk logs `Shortcut harvest for '<app>': N UI element(s) read in
+  T s`, so a slow one is explained by the next bundle.
+* **Every answer is kept per window title for 30 minutes** (the maintainer's
+  number, `TITLE_CACHE_SECONDS`). Returning to a tab seen in that time costs no
+  walk. An older entry is dropped and its title is read again, so a page that
+  gained a shortcut without retitling is at most 30 minutes stale.
+
+**A read could land on the wrong application.** The same bundle filed
+Chrome's "Address and search bar" under Zoom: the read was queued for Zoom at
+15:43 and ran at 15:50, and UIA's `GetFocusedElement()` answers whatever has
+focus when the read RUNS. Three layers now:
+
+1. the host passes the focused window's handle (`OverlayHandler.focused_handle()`,
+   Windows only) and the helper starts from `ElementFromHandle(hwnd)`;
+2. the helper compares the read window's process with the pid it was asked
+   about; a mismatch, or a closed window, is "did not look" (retried, never
+   cached);
+3. a read whose app lost focus while it waited in the queue is dropped before
+   it reaches the helper.
+
+**What the log shows** (all at INFO or above, so a log bundle carries it):
+
+| line | meaning |
+|---|---|
+| `Shortcut harvest helper started (pid N, <python>)` | the helper process started |
+| `Shortcut harvest for 'chrome': window 0x306C6 (pid 4242, class Chrome_WidgetWin_1) -> N UI element(s) read in T s, K shortcut(s)` | one read: which window, how big, how long |
+| `… (the window read belongs to pid X, not to pid Y …)` | layer 2 refused the read |
+| `Shortcut harvest for 'zoom' skipped: focus moved on before it started` | layer 3 |
+| `Shortcut harvest for 'chrome' abandoned: focus moved on (helper stopped)` | killed mid-read |
+| `Shortcut harvest helper exited (code N) while reading 'app'` | the helper died |
+| `Shortcut harvest for 'app' abandoned: no answer in 180 s (helper stopped)` (WARNING) | the read hit `HARVEST_TIMEOUT_SECONDS` (3 min, the maintainer's number); retried under the backoff |
+| `Shortcut harvest helper (pid N): <text>` (WARNING) | anything the helper wrote to stderr: a traceback, a `faulthandler` dump |
+| `Shortcut icons for 'chrome': reading it again (new title #a1b2c3 (30 chars), not cached)` | why a read was queued |
+| `… title #a1b2c3 (30 chars) served from the cache (read N s ago, …), no read` | the per-title cache answered |
+| `… the cached answer for title #… is N min old, dropped` | an entry expired |
+| `… the window changed during the read (title #…), answer not cached` | the title or process changed mid-read; the answer is used but kept out of the 30-minute cache (Chrome's tabs share one window handle) |
+| `Generic overlays for 'chrome': mark … on ESC, N shortcut icon(s) on K key(s) (filling the gaps in 4 template file(s), shortcuts not read: generic_overlays_fill_shortcuts is off)` | a templated app: whether its shortcuts were read. With the switch on it ends `shortcut filling on`: reads are allowed, and the `Shortcut harvest for` lines show whether one ran. N is what the reads added on top of the template |
+
+⚠️ A title is logged as a keyed hash and its length, never as text. Titles
+name documents, and the bundle redacts only the line formats it knows. The key
+is random per process, so the hash links lines within one run and a bundle
+reader cannot confirm a guessed title against it. The length matches the
+`<redacted:N chars>` of the `Active App Changed` lines.
+
+The core reports the focused app to the fetcher on every tick
+(`ShortcutIconFetcher.note_focus`), not only when it asks for shortcuts, so a
+read of an app focus has left is cancelled even when the new window is
+template-covered or unnamed.
+
+**An app a template covers: the switch** (maintainer's call). `generic_overlays_fill_gaps`
+fills the template's blank ESC with the program mark, and the new
+`generic_overlays_fill_shortcuts` decides whether the shortcuts are read and
+drawn too. It shipped OFF on 2026-10-15: Chrome is template-covered, its 31 reads
+in the first log added at most four icons, and one read took over two minutes.
+It is ON again since 2026-10-16. Two field logs on c660c70e (1 h 6 min) showed
+every read at 0.03-0.44 s in the helper, the largest 1,122 elements (VS Code),
+no stalled tick, and the reads adding 7 icons on VS Code and 4 on the Claude
+Code tab over their templates. Either default reaches existing installs because
+`settings.yaml` holds only chosen values (`CLAUDE.md` → Tray, settings and the
+forwarder).
+
+⚠️ The helper's UIA calls (`ElementFromHandle`, the process check, the walk)
+have not run on Windows yet. The pipe protocol, cancel, stop, the per-title
+cache and the root selection are tested with stand-ins.
 
 ## Part F — what could still fail
 

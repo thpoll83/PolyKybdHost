@@ -303,7 +303,8 @@ class SummaryLogTest(unittest.TestCase):
         # contradiction at a glance (measured on a real send: 4 against 2). This
         # regressed once by porting the second line next to the older first one.
         import inspect
-        source = inspect.getsource(type(self.keeb).send_overlays_mru)
+        # The body is in _send_overlays_mru; send_overlays_mru only times it.
+        source = inspect.getsource(type(self.keeb)._send_overlays_mru)
         self.assertIn("HID message(s) of image data", source)
         self.assertNotIn("image upload(s)", source)
 

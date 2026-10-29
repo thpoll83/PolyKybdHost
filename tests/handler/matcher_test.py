@@ -235,6 +235,42 @@ class TestUrlMatching(unittest.TestCase):
             find_matching_entry("PolyKybd - Jira", e, url="https://example.com"), leaf)
 
 
+class TestLayerOptOut(unittest.TestCase):
+    """`layer: false`: a context-routed app's sub-entry REPLACES its parent.
+
+    Blender routes on `blender://<mode>/<editor>`. Its parent overlay is the 3D
+    View fallback for when no context is known, not a browser running underneath,
+    so layering it would draw 3D View keys, dimmed, under the Node Editor's.
+    """
+
+    def _app(self, layer):
+        self.ctx = named(entry(), ["node.mods.png"])
+        e = named(entry(urls_contains={"/NODE_EDITOR": self.ctx}), ["common.mods.png"])
+        if layer is not None:
+            e["layer"] = layer
+        return e
+
+    def test_layer_false_returns_the_sub_entry_alone(self):
+        got = find_matching_entry("x", self._app(False), url="blender://OBJECT/NODE_EDITOR")
+        self.assertIs(got, self.ctx)
+        self.assertEqual(got["overlay"], ["node.mods.png"])
+
+    def test_layer_false_still_falls_back_to_the_parent(self):
+        e = self._app(False)
+        self.assertIs(find_matching_entry("x", e, url=None), e)
+
+    def test_default_still_layers(self):
+        got = find_matching_entry("x", self._app(None), url="blender://OBJECT/NODE_EDITOR")
+        self.assertEqual(got["overlay"], ["common.mods.png", "node.mods.png"])
+
+    def test_layer_false_also_stops_title_fallback_layering(self):
+        ctx = named(entry(), "titled.mods.png")
+        e = named(entry(urls_contains={"x://": named(entry(), "u")},
+                        contains={"Titled": ctx}), "base")
+        e["layer"] = False
+        self.assertIs(find_matching_entry("A Titled page", e, url=None), ctx)
+
+
 class TestBrowserLayering(unittest.TestCase):
     """A web app runs inside the browser, so the browser's shortcuts stay.
 
@@ -465,6 +501,59 @@ class TestMappingKey(unittest.TestCase):
         self.assertIsNone(mapping_key("notepad", self.M))
         self.assertIsNone(mapping_key("", self.M))
         self.assertIsNone(mapping_key(None, self.M))
+
+
+class NoTitleAtAllIsNotAnEmptyTitleTest(unittest.TestCase):
+    """`title_known=False` -- the macOS windowless path.
+
+    ⚠️ **"The title is empty" and "there is no title" need OPPOSITE answers,
+    and the matcher used to give both the lenient one.**
+
+    An empty title keeps its leniency on purpose: macOS without
+    screen-recording permission and some Wayland setups report no titles at
+    all, and gating on one would lose every entry there (`handler.win_shell`).
+    But with NO WINDOW the same leniency is a false positive, and skipping the
+    template path altogether -- which is what the handler did instead -- cost
+    every app pywinctl cannot see its artwork (VS Code, field 2026-10-16).
+    """
+
+    def test_a_title_CONSTRAINED_entry_fails_when_there_is_no_title(self):
+        e = entry(title="PCB Editor")
+        self.assertIsNone(find_matching_entry(None, e, title_known=False))
+
+    def test_an_EMPTY_title_still_skips_the_regex(self):
+        # The win_shell leniency, unchanged: this is the macOS/Wayland case.
+        e = entry(title="PCB Editor")
+        self.assertIs(find_matching_entry("", e), e)
+        self.assertIs(find_matching_entry(None, e), e)
+
+    def test_an_entry_with_NO_title_constraint_matches_without_one(self):
+        # VS Code's `os: macos:` branch is this shape: artwork, no title.
+        e = entry()
+        self.assertIs(find_matching_entry(None, e, title_known=False), e)
+
+    def test_the_flag_reaches_an_OS_branch(self):
+        # The branch that matters: `code:` declares a title at the top level
+        # and its macOS branch deliberately does not.
+        mac = entry(title=None)
+        mac["overlay"] = "mac"
+        e = entry(title=".* Visual Studio Code", os_map={"macos": mac})
+        got = find_matching_entry(None, e, None, OsType.MACOS, title_known=False)
+        self.assertIs(got, mac)
+
+    def test_a_title_CONSTRAINED_os_branch_still_fails(self):
+        mac = entry(title="only this")
+        mac["overlay"] = "mac"
+        e = entry(title=".* Visual Studio Code", os_map={"macos": mac})
+        self.assertIsNone(
+            find_matching_entry(None, e, None, OsType.MACOS, title_known=False))
+
+    def test_a_word_SUB_MAP_falls_through_to_the_parent(self):
+        # A refinement, not a constraint: the parent's own artwork is right.
+        leaf = entry()
+        leaf["overlay"] = "leaf"
+        e = entry(contains={"NEEDLE": leaf})
+        self.assertIs(find_matching_entry(None, e, title_known=False), e)
 
 
 if __name__ == "__main__":

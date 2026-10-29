@@ -187,7 +187,7 @@ class MacroTab(QWidget):
         # keyboard away from this field. See macro_steps_dialog.
         self.steps_btn = QPushButton(_("Steps…"))
         self.steps_btn.setToolTip(
-            _("Build the macro out of key presses, chords and pauses — or record them"))
+            _("Build the macro out of key presses, key combinations and pauses — or record them"))
         self.steps_btn.clicked.connect(self._on_edit_steps)
         types_row.addWidget(self.steps_btn)
         left_col.addLayout(types_row)

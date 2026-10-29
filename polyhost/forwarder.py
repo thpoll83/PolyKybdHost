@@ -21,7 +21,7 @@ from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
 from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
-from polyhost.i18n import _, _f, N_
+from polyhost.i18n import _, _f, N_, translate_message
 from polyhost.gui.progress_dialog import StableProgressDialog
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -57,7 +57,6 @@ else:
     import pywinctl as pwc
 
 UPDATE_CYCLE_MSEC = 250
-NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
 
@@ -72,6 +71,7 @@ FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
+from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 
 class _UpdateBridge(QObject):
     """Marshals the updater threads' callbacks (which fire off the Qt thread) back
@@ -189,6 +189,9 @@ class PolyForwarder(QApplication):
         self.wants_restart = False
         self.title = None
         self.last_update_msec = 0
+        # When the previous tick ran, so the accept timer and the heartbeat
+        # count real time (see `active_window_reporter`).
+        self._last_tick_at = None
         # Whether the last report reached the keyboard machine. None = nothing
         # sent yet. The tray icon and the status row both read it, so a relay
         # that is quietly failing is visible without opening the log — the
@@ -926,7 +929,7 @@ class PolyForwarder(QApplication):
         self.log.error("Update failed: %s", message)
         from polyhost.services.updater import fix_commands_from_message
         show_copyable_error(_("Update failed"), _("The update did not finish."),
-                            message if shown is None else shown,
+                            translate_message(message) if shown is None else shown,
                             commands=fix_commands_from_message(message))
 
     def quit_app(self):
@@ -953,15 +956,32 @@ class PolyForwarder(QApplication):
             if not self.is_closing:
                 QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
             return
-        self.last_update_msec += UPDATE_CYCLE_MSEC
-        self.heartbeat_msec += UPDATE_CYCLE_MSEC
+        # ⚠️ The accept timer counts REAL time, floored at the nominal cycle.
+        # Adding the nominal alone assumed the tick cost nothing: it takes six
+        # ticks to accept a switch, so on macOS, where pywinctl spends two
+        # `osascript` processes per `getActiveWindow()` and a tick measured
+        # 2.30 s median, a 1 s debounce became 15 s and any app the user left
+        # sooner never reached the keyboard at all (field bundle 2026-10-16).
+        # The same fix and the same reasoning as
+        # `handler.active_window.OverlayHandler._tick_elapsed_msec` -- this is
+        # the second copy of that timer, on the other machine.
+        #
+        # `heartbeat_msec` counts the same way, and had the same inflation:
+        # HEARTBEAT_MSEC is 15 s, and 60 ticks of 2.5 s made the resend that
+        # lets the keyboard machine catch up fire every 150 s instead.
+        now = time.monotonic()
+        previous, self._last_tick_at = self._last_tick_at, now
+        elapsed = (UPDATE_CYCLE_MSEC if previous is None
+                   else max(UPDATE_CYCLE_MSEC, int((now - previous) * 1000)))
+        self.last_update_msec += elapsed
+        self.heartbeat_msec += elapsed
         win = pwc.getActiveWindow()
         if win:
             try:
                 if self.prev_win != win:
                     self.prev_win = win
                     self.last_update_msec = 0
-                if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
+                if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
                     # PolyHost's own windows travel as `polyhost`, not as

@@ -42,6 +42,24 @@ def _size_to_screen(dlg) -> None:
     dlg.resize(w, h)
 
 
+class _WrapLabel(QLabel):
+    """A word-wrapped label that is always tall enough for its text. A
+    top-level QLayout does not ask for height-for-width (see
+    split_link_dialog._fit), so a plain one lost the message's last line
+    whenever a line wrapped. The dialog is resizable, so the minimum height
+    follows the width instead of being fixed once."""
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # heightForWidth() never answers below minimumHeight(), so clear it to
+        # read the text's own height; otherwise a widened dialog could only
+        # ever keep the height its narrowest width needed.
+        old = self.minimumHeight()
+        self.setMinimumHeight(0)
+        h = self.heightForWidth(self.width())
+        self.setMinimumHeight(h if h > 0 else old)
+
+
 def confirm_update(title: str, message: str, notes: str = "", html_url: str = "",
                    release_name: str = "", question: str = "") -> bool:
     """Ask the user to confirm an update, showing release notes when available.
@@ -88,7 +106,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         icon_lbl.setPixmap(px)
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
-    msg_lbl = QLabel(message)
+    msg_lbl = _WrapLabel(message)
     msg_lbl.setWordWrap(True)
     msg_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
     row.addWidget(msg_lbl, 1)

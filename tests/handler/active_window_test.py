@@ -12,16 +12,20 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import itertools
+import logging
 import os
 import subprocess
+import time
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 try:
     from polyhost.handler.active_window import (
         OverlayHandler, _handle_identifies,
+        focused_app_pid as aw_focused_app_pid,
         frontmost_app as aw_frontmost_app,
-        _FRONTMOST_SCRIPT,
+        _AX_FOCUSED_APPLICATION, _FRONTMOST_SCRIPT,
     )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
@@ -369,6 +373,48 @@ class FocusedTitleTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedHandleTest(unittest.TestCase):
+    """The window the Windows shortcut harvest reads (2026-10-15: a read
+    queued for Zoom ran on Chrome)."""
+
+    def _handler(self, handle=198342, remote=False, raises=False):
+        h = OverlayHandler({})
+        h.win = MagicMock()
+        if raises:
+            h.win.getHandle.side_effect = RuntimeError("gone")
+        else:
+            h.win.getHandle.return_value = handle
+        h.is_remote_mapping_entry = lambda: remote
+        h.remote_handler = MagicMock() if remote else None
+        return h
+
+    def on(self, system):
+        return patch("polyhost.handler.active_window.platform.system",
+                     return_value=system)
+
+    def test_a_LOCAL_window_on_Windows_answers_its_handle(self):
+        with self.on("Windows"):
+            self.assertEqual(self._handler().focused_handle(), 198342)
+
+    def test_OTHER_platforms_answer_nothing(self):
+        """macOS derives the handle from the title; it names no window."""
+        for system in ("Darwin", "Linux"):
+            with self.on(system):
+                self.assertIsNone(self._handler().focused_handle(), system)
+
+    def test_a_FORWARDED_window_answers_nothing(self):
+        with self.on("Windows"):
+            self.assertIsNone(self._handler(remote=True).focused_handle())
+
+    def test_NO_window_and_a_RAISING_backend_answer_nothing(self):
+        with self.on("Windows"):
+            h = self._handler()
+            h.win = None
+            self.assertIsNone(h.focused_handle())
+            self.assertIsNone(self._handler(raises=True).focused_handle())
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class LosingTheWindowTest(unittest.TestCase):
     """What happens when the backend stops reporting a window at all.
 
@@ -542,9 +588,12 @@ class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
     never needed the window: it needs the app's NAME and PID, which
     `NSWorkspace` knows without one.
 
-    What is genuinely lost is the TITLE, so a template entry that matches on one
-    cannot be evaluated -- hence the DISABLE these tests also pin. The generic
-    path draws; the template path correctly stands down.
+    What is genuinely lost is the TITLE, so an entry that MATCHES on one cannot
+    be evaluated and must fail -- but an entry that declares none is fine, and
+    those are evaluated here (`title_known=False`; see
+    `TheWindowlessBranchStillMatchesATemplateTest`). The DISABLE these tests
+    pin is the empty-mapping case: nothing matched, so the generic path draws
+    and the template path stands down.
     """
 
     MOD = "polyhost.handler.active_window"
@@ -795,10 +844,6 @@ class PolyHostsOwnWindowTest(unittest.TestCase):
         self.assertEqual(handler.focused_app(), ("polyhost", None))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class AMatchWithNothingToDrawDisablesTest(unittest.TestCase):
     """⚠️ A mapped window with no overlay must not leave the last app's keycaps up.
@@ -884,3 +929,1067 @@ class NoMachineChooserIsNotASessionTest(unittest.TestCase):
         self.assertFalse(handler.is_remote_mapping_entry())
         self.assertEqual(cmd, OverlayCommand.DISABLE)
 
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheAcceptTimerCountsREALTimeTest(unittest.TestCase):
+    """⚠️ It used to add the NOMINAL cycle whatever the tick really cost.
+
+    At the 1000 ms delay of that time, accepting a switch took six ticks: the
+    tick that notices the window moved resets the timer to 0, then five 250 ms
+    steps carried it past the threshold (the check was `>`; it is `>=` since
+    2026-10-22, so four steps reach it). At the stated cycle that is 3 s. On macOS a tick measured
+    **2.30 s median** -- pywinctl spends two `osascript` processes per
+    `getActiveWindow()` -- so the same six ticks were 15.3 s of uninterrupted
+    focus, and every app the user left sooner never reached the keyboard at
+    all. The field bundle of 2026-10-16 has 132 slow-tick warnings across 42
+    minutes with not one app-identity line between them.
+
+    The nominal cycle stays the FLOOR, because the tests here drive the loop
+    with no delay at all and would otherwise accumulate nothing.
+    """
+
+    @staticmethod
+    def _win(app):
+        win = MagicMock()
+        win.title = ""
+        win.getHandle.return_value = ("", "")
+        win.getAppName.return_value = app
+        return win
+
+    def _switches_after(self, clock, accept_msec=1000):
+        """Ticks spent before a switch to a second app is reported.
+
+        ⚠️ Patches `active_window._monotonic`, the module's own alias, NOT
+        `time.monotonic` through the module object -- that is the same
+        function object the whole process uses, and this suite runs threads,
+        so anything else calling it during a faked tick would get the fake
+        value (Revix, #397). The clock is also unbounded: a finite generator
+        raised StopIteration once the ticks outnumbered it.
+        """
+        handler = OverlayHandler({})
+        mod = "polyhost.handler.active_window"
+        first, second = self._win("Chess"), self._win("Maps")
+        with patch(mod + "._monotonic", side_effect=clock), \
+             patch(mod + ".app_name_for", side_effect=lambda w: w.getAppName()), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + "._IS_MACOS", False):
+            with patch(mod + ".pwc.getActiveWindow", return_value=first):
+                for _ in range(8):
+                    handler._decide_active_window(250, accept_msec)
+            with patch(mod + ".pwc.getActiveWindow", return_value=second), \
+                 self.assertLogs(handler.log, level="INFO") as captured:
+                for ticks in range(1, 9):
+                    handler._decide_active_window(250, accept_msec)
+                    if any("Active App Changed: \"Maps\"" in line
+                           for line in captured.output):
+                        return ticks
+        return None
+
+    def test_a_SLOW_tick_accepts_the_switch_in_two_ticks(self):
+        # 2.5 s per tick, the measured macOS cost: one tick is already past the
+        # 1000 ms threshold, so the switch lands on the tick after the reset.
+        clock = itertools.count(0.0, 2.5)          # unbounded
+        self.assertEqual(self._switches_after(lambda: next(clock)), 2)
+
+    def test_the_faked_clock_does_NOT_leak_into_the_process(self):
+        """⚠️ The reason the module aliases `time.monotonic`.
+
+        `patch("...active_window.time.monotonic")` reaches the same function
+        object the whole process uses, and this suite runs threads, so a faked
+        tick would hand the fake value to anything else asking the time
+        (Revix, #397). Patching the module's own alias cannot.
+        """
+        mod = "polyhost.handler.active_window"
+        real = time.monotonic
+        with patch(mod + "._monotonic", return_value=1.0):
+            self.assertIs(time.monotonic, real, "the process clock was replaced")
+            self.assertNotEqual(time.monotonic(), 1.0)
+
+    def test_the_shipped_delay_accepts_after_500_ms_not_750(self):
+        # NEW_WINDOW_ACCEPT_TIME_MSEC is 500: the reset tick, then two 250 ms
+        # steps REACH it. With `>` (until 2026-10-22) it took a third step.
+        from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
+        self.assertEqual(self._switches_after(lambda: 100.0, NEW_WINDOW_ACCEPT_TIME_MSEC), 3)
+
+    def test_the_NOMINAL_cycle_is_still_the_floor(self):
+        # A caller that ticks faster than it says it does keeps the nominal
+        # count, which is what every other test in this file relies on: the
+        # reset tick, then four 250 ms steps reach 1000 ms (`>=`).
+        self.assertEqual(self._switches_after(lambda: 100.0), 5)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheMacOSTickSkipsTheAppleScriptQueryTest(unittest.TestCase):
+    """The Accessibility early-out: is the same application still in front?
+
+    `pywinctl.getActiveWindow()` costs two `osascript` processes on macOS and
+    ran on every tick for ever. `active_window.focused_app_pid()` answers the
+    same question with one in-process `AXFocusedApplication` read, so a
+    settled board costs nothing.
+
+    ⚠️ A pid does not change when a window RETITLES, so each condition below
+    is load-bearing: the skip must not survive a retitle the overlay match
+    depends on.
+    """
+
+    MAPPING = {
+        "finder": {"overlay": "finder.png"},
+        "google chrome": {"titles-contains": {"github": {"overlay": "gh.png"}}},
+    }
+
+    def _settled(self, app="finder", pid=4321):
+        """A handler that already resolved `app`, as a settled board has."""
+        handler = OverlayHandler(dict(self.MAPPING))
+        win = MagicMock()
+        win.getPID.return_value = pid
+        handler.set_win(win, "", app.title())
+        handler.app_name = app
+        handler._macos_front = pid
+        handler._macos_resolved = True
+        return handler
+
+    @staticmethod
+    def _gate(handler, identity):
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".focused_app_pid", return_value=identity):
+            return handler._macos_can_skip_tick()
+
+    def test_an_UNCHANGED_front_app_skips_the_query(self):
+        handler = self._settled()
+        self.assertTrue(self._gate(handler, 4321))
+
+    def test_a_CHANGED_front_app_spends_the_query(self):
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, 9999))
+
+    def test_an_entry_matching_on_TITLES_never_skips(self):
+        # Chrome's overlay is keyed on `titles-contains`, and a tab switch
+        # retitles the window without moving the topmost window at all. 14 of
+        # the 69 shipped entries are like this.
+        handler = self._settled(app="google chrome")
+        self.assertFalse(self._gate(handler, 4321))
+
+    def test_an_UNRESOLVED_identity_spends_the_query(self):
+        # ⚠️ The starvation case. A changed identity clears the marker, and the
+        # window branch sets it only once its accept timer matures -- so the
+        # debounce ticks must keep querying. Without the marker a switch could
+        # be skipped into limbo: the identity is already the new app's while
+        # the handler still believes the old one is focused.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, 9999))   # clears it
+        self.assertFalse(self._gate(handler, 9999))   # still owed
+
+    def test_it_never_asks_pywinctl_for_the_PID(self):
+        # `window_pid` is `MacOSWindow.getPID()`, one more `osascript` through a
+        # shell. A cross-check there would have cost most of the saving.
+        handler = self._settled()
+        handler.win.getPID.reset_mock()
+        self.assertTrue(self._gate(handler, 4321))
+        handler.win.getPID.assert_not_called()
+
+    def test_an_UNGRANTED_accessibility_read_spends_the_query(self):
+        # None is never "unchanged", so a machine with no grant behaves
+        # exactly as it did before the detector existed.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, None))
+        self.assertFalse(self._gate(handler, None))
+
+    def test_NONE_stays_unskippable_even_after_a_resolve(self):
+        # ⚠️ The `front is None` guard, and the one mutation that survived
+        # without this test. Comparing None to a stored None reads "unchanged",
+        # so once the full path had marked anything resolved, a machine with no
+        # Accessibility grant would skip EVERY tick from then on and the
+        # keyboard would never follow the active app again.
+        handler = self._settled()
+        self.assertFalse(self._gate(handler, None))   # stores None
+        handler._macos_resolved = True                # the full path resolved
+        self.assertFalse(self._gate(handler, None))
+
+    def test_the_FIRST_tick_of_a_session_spends_the_query(self):
+        # No identity and no marker yet, so there is no belief to confirm.
+        handler = OverlayHandler(dict(self.MAPPING))
+        self.assertFalse(self._gate(handler, 4321))
+
+    def test_a_resolved_tick_ARMS_the_skip_for_the_next_one(self):
+        # The window branch sets the marker where it commits to a window, so a
+        # real tick followed by an unchanged identity costs nothing.
+        handler = OverlayHandler(dict(self.MAPPING))
+        win = MagicMock()
+        win.title = ""
+        win.getHandle.return_value = ("", "")
+        win.getAppName.return_value = "Finder"
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".app_name_for", return_value="Finder"), \
+             patch(mod + ".focused_app_pid", return_value=4321), \
+             patch(mod + ".pwc.getActiveWindow", return_value=win) as query:
+            for _ in range(8):
+                handler._decide_active_window(250, 1000)
+        # Five ticks to accept the window (the reset, then four 250 ms steps to
+        # reach 1000 ms), then the rest skip.
+        self.assertEqual(query.call_count, 5)
+
+    def test_a_skipped_tick_does_NOT_call_getActiveWindow(self):
+        handler = self._settled()
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + ".focused_app_pid", return_value=4321), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".pwc.getActiveWindow") as query:
+            data, cmd = handler._decide_active_window(250, 1000)
+        query.assert_not_called()
+        self.assertIsNone(data)
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_OTHER_platforms_never_consult_it(self):
+        handler = self._settled()
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", False), \
+             patch(mod + ".focused_app_pid") as quartz, \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".pwc.getActiveWindow", return_value=None):
+            handler._decide_active_window(250, 1000)
+        quartz.assert_not_called()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class LoggingTheWindowCostsNoExtraAppleScriptTest(unittest.TestCase):
+    """⚠️ `log_win` used to RE-READ the window it was logging.
+
+    It called `self.win.title` and `self.win.getHandle()` again, and on macOS
+    each is an `osascript` subprocess -- `getHandle()` reads `title` inside
+    itself, so the log line alone was three AppleScript round trips of the
+    seven a changed tick spent. The caller already holds both values.
+    """
+
+    def test_the_tick_reads_title_and_handle_ONCE_each(self):
+        # ⚠️ `title` is a PropertyMock, not an attribute. Assigning
+        # `win.title = "Notes"` counts no reads, so the handle count was the
+        # only thing asserted and a regression that re-read `win.title` --
+        # which is what this test exists to catch, since each read is an
+        # `osascript` on macOS -- passed (Revix, #397).
+        win = MagicMock()
+        title = PropertyMock(return_value="Notes")
+        type(win).title = title
+        win.getHandle.return_value = ("Notes", "Notes")
+        win.getAppName.return_value = "Notes"
+        handler = OverlayHandler({})
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", False), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".app_name_for", return_value="Notes"), \
+             patch(mod + ".pwc.getActiveWindow", return_value=win):
+            # Five ticks: the reset, then four 250 ms steps reach 1000 ms (`>=`).
+            for _ in range(5):
+                handler._decide_active_window(250, 1000)
+        self.assertEqual(win.getHandle.call_count, 1, "handle read more than once")
+        self.assertEqual(title.call_count, 1, "title read more than once")
+
+    def test_the_title_is_logged_as_TEXT_not_as_a_bytes_repr(self):
+        # `title.encode('utf-8')` rendered an empty title as `b''` and a real
+        # one as `b'NoMachine Software Update'`, so a bundle reader had to work
+        # out that the quoting was the log's own.
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("nxrunner", "NoMachine Software Update", ("", ""))
+        self.assertIn('Title: "NoMachine Software Update"', captured.output[0])
+        self.assertNotIn("b'", captured.output[0])
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheFocusDetectorTest(unittest.TestCase):
+    """`focused_app_pid()` — the one call a skipped macOS tick makes.
+
+    ⚠️ Two cheaper or more obvious sources were rejected, and the reasons are
+    the point of this class: the Quartz window list answers about a WINDOW, so
+    activating an app whose windows are all minimized would never move it and
+    the switch would be skipped indefinitely; and
+    `NSWorkspace.frontmostApplication` reads stale off the main thread, which
+    this project has measured wrong twice.
+    """
+
+    def _read(self, err=0, app=object(), pid_err=0, pid=4321, macos=True):
+        mod = "polyhost.handler.active_window"
+        api = (MagicMock(return_value="systemwide"),
+               MagicMock(return_value=(err, app)),
+               MagicMock(return_value=(pid_err, pid)))
+        with patch(mod + "._IS_MACOS", macos), \
+             patch(mod + "._ax_system_wide_api", return_value=api) as factory:
+            return aw_focused_app_pid(), api, factory
+
+    def test_it_answers_the_focused_application_pid(self):
+        found, api, _ = self._read()
+        self.assertEqual(found, 4321)
+        api[1].assert_called_once_with("systemwide", _AX_FOCUSED_APPLICATION, None)
+
+    def test_it_asks_for_the_FOCUSED_APPLICATION_not_a_window(self):
+        # A window attribute would miss an app activated with every window
+        # minimized, and the skip would then never end.
+        self.assertEqual(_AX_FOCUSED_APPLICATION, "AXFocusedApplication")
+
+    def test_an_AX_ERROR_answers_NOTHING(self):
+        # -25211 is kAXErrorAPIDisabled: no Accessibility grant.
+        self.assertIsNone(self._read(err=-25211, app=None)[0])
+
+    def test_a_FAILED_pid_read_answers_NOTHING(self):
+        self.assertIsNone(self._read(pid_err=-25200)[0])
+
+    def test_pid_ZERO_answers_NOTHING(self):
+        # 0 is never a real application pid, and reads as falsy downstream.
+        self.assertIsNone(self._read(pid=0)[0])
+
+    def test_OTHER_platforms_never_import_pyobjc(self):
+        found, _, factory = self._read(macos=False)
+        self.assertIsNone(found)
+        factory.assert_not_called()
+
+    def test_a_RAISING_read_answers_NOTHING(self):
+        mod = "polyhost.handler.active_window"
+        with patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api",
+                   side_effect=ImportError("no pyobjc")):
+            self.assertIsNone(aw_focused_app_pid())
+
+    def test_a_BROKEN_detector_says_so_ONCE(self):
+        """⚠️ Silence here would hide the fix reverting itself.
+
+        A pyobjc upgrade or an AX rename returns the tick to querying pywinctl
+        every time, and the only symptom would be the multi-second switch lag
+        coming back with nothing in the log (Revix, #397). Once per process,
+        not per tick: a tick logs ~150 times an hour.
+        """
+        mod = "polyhost.handler.active_window"
+        with patch.object(aw_focused_app_pid, "warned_broken", False,
+                          create=True), \
+             patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api",
+                   side_effect=RuntimeError("AX gone")):
+            with self.assertLogs("PolyHost", level="WARNING") as captured:
+                for _ in range(3):
+                    self.assertIsNone(aw_focused_app_pid())
+        self.assertEqual(len(captured.output), 1, captured.output)
+        self.assertIn("not a missing Accessibility grant", captured.output[0])
+
+    def test_a_MISSING_grant_stays_quiet(self):
+        # -25211 is kAXErrorAPIDisabled: a normal state on an ungranted
+        # machine, and not something to warn about every start.
+        mod = "polyhost.handler.active_window"
+        api = (MagicMock(return_value="sw"),
+               MagicMock(return_value=(-25211, None)),
+               MagicMock())
+        with patch.object(aw_focused_app_pid, "warned_broken", False,
+                          create=True), \
+             patch(mod + "._IS_MACOS", True), \
+             patch(mod + "._ax_system_wide_api", return_value=api):
+            logger = logging.getLogger("PolyHost")
+            with patch.object(logger, "warning") as warn:
+                self.assertIsNone(aw_focused_app_pid())
+        warn.assert_not_called()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheWindowlessBranchStillMatchesATemplateTest(unittest.TestCase):
+    """An app pywinctl cannot see still gets its hand-made artwork.
+
+    ⚠️ **The branch used to skip the template path wholesale**, on the premise
+    that no window means no title means no match. True only of the entries that
+    MATCH on a title. VS Code's own `os: macos:` branch carries three templates
+    and deliberately no `title:` -- a macOS window title does not name the app
+    -- and it was never once evaluated: the keycaps stayed blank while the log
+    said "no template covers it" (field, 2026-10-16).
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _tick(self, mapping, app=("Code", 909), times=1):
+        # ⚠️ ONE tick by default. This branch has no debounce of its own -- it
+        # acts on the first tick that reaches it -- so a second tick finds
+        # nothing changed and answers NONE, which would mask the decision.
+        handler = OverlayHandler(mapping)
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=app):
+            for _ in range(times):
+                out = handler._decide_active_window(10, 5)
+        return handler, out
+
+    def test_an_APP_NAME_only_entry_is_drawn(self):
+        handler, (data, cmd) = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        self.assertIsNotNone(data)
+        self.assertEqual(handler.current_entry["overlay"], "vscode.png")
+
+    def test_a_TITLE_constrained_entry_is_NOT_drawn(self):
+        # The false positive the flag exists to prevent: with no title there is
+        # nothing to test the constraint against, so it fails.
+        handler, (data, cmd) = self._tick(
+            {"code": {"overlay": "vscode.png", "title": ".* Visual Studio Code"}})
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(data)
+        self.assertIsNone(handler.current_entry)
+
+    def test_an_app_with_NO_entry_still_disables_for_the_generic_path(self):
+        handler, (data, cmd) = self._tick({"other": {"overlay": "x.png"}})
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertEqual(handler.focused_app()[0], "code")
+
+    def test_the_matched_app_name_is_the_one_the_generic_path_asks_about(self):
+        # `app_name` is why that field exists: "no template covers this app"
+        # and "draw a generic mark for it" must mean the same application.
+        handler, _ = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(handler.app_name, "code")
+
+    def test_force_resend_RESENDS_a_windowless_app_template(self):
+        """⚠️ `force_resend()` must forget the windowless app too.
+
+        This branch only runs when `self.win` exists or the app differs from
+        `self.windowless_app`. `force_resend()` cleared `win` and `last_entry`
+        but left `windowless_app`, so after a reconnect -- with the same
+        windowless app still focused -- both halves were false, the branch was
+        skipped, and the template it had matched was never resent. The board
+        had just been cleared, so it stayed blank until focus changed
+        (Greptile P1, #397). Newly reachable because this branch can match a
+        template at all now.
+        """
+        handler, (data, cmd) = self._tick({"code": {"overlay": "vscode.png"}})
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        handler.force_resend()
+        mod = self.MOD
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=("Code", 909)):
+            again, cmd_again = handler._decide_active_window(250, 1000)
+        self.assertEqual(cmd_again, OverlayCommand.OFF_ON,
+                         "the resend never reached the windowless app")
+        self.assertIsNotNone(again)
+
+    def test_a_match_with_NOTHING_to_draw_does_not_keep_the_last_app_up(self):
+        # Same rule as the window branch: `last_entry` is dropped so returning
+        # is a full OFF_ON, never an ENABLE of another app's mapping.
+        handler, (data, cmd) = self._tick({"code": {"remote": "1.2.3.4"}})
+        self.assertIsNone(data)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(handler.last_entry)
+
+    def _real_mapping_tick(self, os_type):
+        """The reported case, end to end, on the SHIPPED mapping.
+
+        ⚠️ A matcher-level probe is not enough here: the handler supplies the
+        OS itself (`_active_os`), and that is what decides which branch of
+        `code:` is judged. The first version of this fix looked correct at the
+        matcher and still answered DISABLE through the handler, because the
+        test machine resolved to Linux.
+        """
+        import yaml
+        # ⚠️ Patched by STRING target, not via a second `import ... as module`:
+        # CodeQL flags a module imported with both `import` and `import from`
+        # (py/import-and-import-from), and this file already uses the
+        # `from ... import` form at the top.
+        mod = "polyhost.handler.active_window"
+        with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
+            handler = OverlayHandler(yaml.safe_load(fh))
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".own_front_app", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=("Code", 909)), \
+             patch(mod + ".OverlayHandler._active_os", lambda s: os_type):
+            data, cmd = handler._decide_active_window(250, 1000)
+        return handler, data, cmd
+
+    def test_VS_CODE_gets_its_mac_templates_with_no_window(self):
+        from polyhost.device.command_ids import OsType
+        handler, data, cmd = self._real_mapping_tick(OsType.MACOS)
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        self.assertIsNotNone(data, "the reported failure: nothing drawn for 'code'")
+        self.assertTrue(
+            any("vscode_mac_template" in f for f in handler.current_entry["overlay"]),
+            handler.current_entry.get("overlay"))
+
+    def test_VS_CODE_on_LINUX_still_needs_its_title(self):
+        # The same entry's `linux:` branch DOES declare
+        # `title: .* Visual Studio Code`, so with no window it must not fire --
+        # the per-OS half of the same rule.
+        from polyhost.device.command_ids import OsType
+        handler, data, cmd = self._real_mapping_tick(OsType.LINUX)
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(data)
+        self.assertIsNone(handler.current_entry)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheSkipMustNotSWALLOWAForcedRefreshTest(unittest.TestCase):
+    """⚠️ Every reset that exists to force a re-match must disarm the skip.
+
+    The skip answers "the same app is in front, so nothing changed" -- true of
+    the OS, and irrelevant to a caller that has just thrown away what the
+    handler knew. `force_resend()` runs after a device reconnect, when the
+    keyboard's overlays have been cleared; `invalidate_window_cache()` runs
+    when a browser SPA navigates without retitling. Both ask for a re-match on
+    the next tick, and the skip would have returned before either reached the
+    window query -- leaving a cleared keyboard blank until the user switched
+    apps (Greptile P1 and CodeRabbit, independently, #397).
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _settled_on_finder(self):
+        handler = OverlayHandler({})
+        win = MagicMock()
+        handler.set_win(win, "", "Finder")
+        handler.app_name = "finder"
+        handler._macos_front = 4321
+        handler._macos_resolved = True
+        return handler
+
+    def _ticks_the_query(self, handler):
+        """Did the next tick reach `pwc.getActiveWindow()`?"""
+        with patch(self.MOD + "._IS_MACOS", True), \
+             patch(self.MOD + ".focused_app_pid", return_value=4321), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".pwc.getActiveWindow", return_value=None) as query:
+            handler._decide_active_window(250, 1000)
+        return query.called
+
+    def test_the_skip_is_armed_to_begin_with(self):
+        # Guards the premise of the two tests below.
+        self.assertFalse(self._ticks_the_query(self._settled_on_finder()))
+
+    def test_force_resend_disarms_it(self):
+        handler = self._settled_on_finder()
+        handler.force_resend()
+        self.assertTrue(self._ticks_the_query(handler),
+                        "the OFF_ON force_resend asked for never ran")
+
+    def test_invalidate_window_cache_disarms_it(self):
+        handler = self._settled_on_finder()
+        handler.invalidate_window_cache()
+        self.assertTrue(self._ticks_the_query(handler),
+                        "the new URL was never re-matched")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppNeverArmsTheSkipTest(unittest.TestCase):
+    """⚠️ A pid does not change when an app GAINS a window.
+
+    The windowless branch used to arm the skip, which made the state
+    permanent: the user opens or restores a window in the same app, the pid is
+    unchanged, so every later tick returned before the query and the window was
+    never seen -- and with it the app's title, its template and its harvest
+    (Greptile P1, #397). The branch is reached precisely when there is
+    something still to find, so it is the one place the skip must not arm.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def test_a_window_APPEARING_is_noticed(self):
+        handler = OverlayHandler({})
+        win = MagicMock()
+        win.title = "main.py"
+        win.getHandle.return_value = ("Code", "main.py")
+        win.getAppName.return_value = "Code"
+        with patch(self.MOD + "._IS_MACOS", True), \
+             patch(self.MOD + ".focused_app_pid", return_value=909), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=("Code", 909)), \
+             patch(self.MOD + ".app_name_for", return_value="Code"):
+            # No window: the app is named from the OS.
+            with patch(self.MOD + ".pwc.getActiveWindow", return_value=None):
+                handler._decide_active_window(250, 1000)
+            self.assertEqual(handler.focused_app()[0], "code")
+            # Same app, same pid -- and now it has a window.
+            with patch(self.MOD + ".pwc.getActiveWindow", return_value=win) as query:
+                for _ in range(8):
+                    handler._decide_active_window(250, 1000)
+        self.assertTrue(query.called, "the window was never looked for again")
+        self.assertEqual(handler.title, "main.py")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowTitleCannotSPLITALogRecordTest(unittest.TestCase):
+    """⚠️ A window title is attacker-influenceable: a web page picks it.
+
+    Logging it as text rather than as a bytes repr -- which is the readability
+    fix this PR made -- also stopped escaping control characters, so a title
+    carrying a newline could forge an extra log line and split one app-change
+    record in a support bundle (Greptile P2, #397). Ordinary Unicode must stay
+    readable; only the control characters are escaped.
+    """
+
+    def test_a_NEWLINE_in_a_title_does_not_start_a_new_line(self):
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("evil", "real title\nINFO    forged line", ("", ""))
+        self.assertEqual(len(captured.output), 1)
+        self.assertNotIn("\n", captured.output[0])
+        self.assertIn("\\n", captured.output[0])
+
+    def test_a_CARRIAGE_RETURN_and_a_TAB_are_escaped_too(self):
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "a\rb\tc", 1)
+        self.assertIn("a\\rb\\tc", captured.output[0])
+
+    def test_UNICODE_SPACES_survive(self):
+        """⚠️ `str.isprintable()` is False for every space separator but the
+        ASCII one, so the first version escaped NBSP, en-space and the
+        ideographic space U+3000 (Revix, #397). None of them can split a
+        record, and all three appear in ordinary French and Japanese titles."""
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "Fichier\u00a0: a\u3000b c\u2002d", 1)
+        self.assertIn("Fichier\u00a0: a\u3000b c\u2002d", captured.output[0])
+
+    def test_a_BIDI_OVERRIDE_is_escaped(self):
+        # Category Cf. The other way to make a log line read as something it
+        # is not, and the reason the test is the category rather than "is it a
+        # control character".
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "safe\u202egnp.exe", 1)
+        self.assertNotIn("\u202e", captured.output[0])
+        self.assertIn("\\u202e", captured.output[0])
+
+    def test_ORDINARY_unicode_stays_readable(self):
+        # The reason this is not `.encode('utf-8')`: that mangled every
+        # non-ASCII title into \xNN escapes.
+        handler = OverlayHandler({})
+        handler.win = MagicMock()
+        with self.assertLogs(handler.log, level="INFO") as captured:
+            handler.log_win("app", "Dokument – Übersicht 日本語", 1)
+        self.assertIn("Dokument – Übersicht 日本語", captured.output[0])
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppMustNotInheritTheLastURLTest(unittest.TestCase):
+    """⚠️ `try_to_match_window` reads `self.current_url`, not an argument.
+
+    `set_win()` cleared `win`, `title`, `handle` and `app_name` but not
+    `current_url`, so the windowless match ran against whatever tab the
+    PREVIOUS window had reported. With `title_known=False` a `urls-contains`
+    branch is still live, so a browser web-app's overlay could be drawn for a
+    completely different, windowless application (Revix, #397).
+
+    ⚠️ Revix also named why the other tests miss it: they all start from a
+    clean handler, where `current_url` is already None. This one does not.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    MAPPING = {
+        # Shaped like the shipped browser entries: a default overlay plus a
+        # per-site branch keyed on the URL.
+        "photos": {"overlay": "photos.png",
+                   "urls-contains": {"mail.google.com": {"overlay": "gmail.png"}}},
+    }
+
+    def test_a_STALE_url_does_not_pick_a_web_app_overlay(self):
+        handler = OverlayHandler(dict(self.MAPPING))
+        # The previous window was a browser on Gmail.
+        handler.current_url = "https://mail.google.com/u/0"
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".own_front_app", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=("Photos", 11)):
+            handler._decide_active_window(250, 1000)
+        self.assertIsNone(handler.current_url,
+                          "the last window's tab outlived its window")
+        self.assertEqual(handler.current_entry["overlay"], "photos.png",
+                         "Gmail's overlay was drawn for Photos")
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
+    """The regression guard, against the REAL mapping rather than a fixture.
+
+    A fixture cannot catch the thing that actually broke: the shipped `code:`
+    entry's shape. Its macOS branch carries three templates and no `title:`,
+    and nothing evaluated it.
+
+    ⚠️ It lives HERE, not in `matcher_test.py`, and that is the point of the
+    move. That file is display-free by design -- its docstring says so -- and
+    building an annotated mapping needs `OverlayHandler`, which imports
+    pywinctl at module load. An unguarded import there made two previously
+    display-free tests raise in `setUpClass` on a headless machine instead of
+    skipping (Greptile P1, #397). This file already carries the guard.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+        with open("polyhost/res/overlay-mapping.poly.yaml", encoding="utf-8") as fh:
+            cls.handler = OverlayHandler(yaml.safe_load(fh))
+
+    def _match(self, app, title=None, title_known=False, os_name="MACOS", url=None):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        key = mapping_key(app, self.handler.mapping)
+        self.assertIsNotNone(key, f"{app} has no mapping key")
+        return find_matching_entry(title, self.handler.mapping[key], url,
+                                   OsType[os_name], title_known=title_known)
+
+    def test_VS_CODE_resolves_its_mac_templates_with_no_window(self):
+        got = self._match("code")
+        self.assertIsNotNone(got, "the reported failure: no template for 'code'")
+        self.assertTrue(any("vscode_mac_template" in f for f in got["overlay"]),
+                        got.get("overlay"))
+
+    def test_MUSIC_apps_get_their_platform_set(self):
+        cases = {
+            "fl64": "flstudio_template", "fl studio 2025": "flstudio_template",
+            "ableton live 12 suite": "ableton_template",
+            "ableton live 12 lite": "ableton_template",
+            "reaper": "reaper_template",
+            "musescore4": "musescore_template",
+            "musescore studio": "musescore_template",
+        }
+        for app, stem in cases.items():
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="song", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+
+    def test_SAFARI_routes_web_apps_over_its_own_set(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        entry = self.handler.mapping[mapping_key("safari", self.handler.mapping)]
+        for title, url, site in (
+                ("Pull requests", "https://github.com/thpoll83/PolyKybdHost/pulls", "github_template_mac"),
+                ("Notion", None, "notion_template_mac"),
+                ("Apple", "https://www.apple.com/", None)):
+            with self.subTest(url=url, title=title):
+                got = find_matching_entry(title, entry, url, OsType.MACOS, title_known=True)
+                self.assertIsNotNone(got)
+                files = [str(f) for f in got["overlay"]]
+                self.assertTrue(any("safari_template_mac.mods.png" in f for f in files), files)
+                if site:
+                    self.assertTrue(any(f"{site}.mods.png" in f for f in files), files)
+
+    def test_GOOGLE_web_apps_get_their_sets_by_url_and_title(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        entry = self.handler.mapping[mapping_key("chrome", self.handler.mapping)]
+        for url, title, stem in (
+                ("https://docs.google.com/spreadsheets/d/x/edit", "Budget - Google Sheets", "googlesheets_template"),
+                ("https://docs.google.com/presentation/d/x/edit", "Deck - Google Slides", "googleslides_template"),
+                ("https://mail.google.com/mail/u/0/#inbox", "Inbox (3) - me@example.org - Gmail", "gmail_template"),
+                ("https://calendar.google.com/calendar/r", "Google Calendar - Week of 19 October", "googlecalendar_template")):
+            for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+                for u in (url, None):
+                    with self.subTest(stem=stem, os=os_name, url=u):
+                        got = find_matching_entry(title, entry, u, OsType[os_name], title_known=True)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png",
+                                      [str(f) for f in got["overlay"]])
+
+    def test_MEDIA_CREATIVE_and_DEV_apps_get_their_platform_set(self):
+        for app, os_name, title, stem in (
+                ("vlc", "WINDOWS", "VLC media player", "vlc_template"),
+                ("vlc", "LINUX", "VLC media player", "vlc_template"),
+                ("vlc", "MACOS", "VLC media player", "vlc_template_mac"),
+                ("spotify", "WINDOWS", "Spotify", "spotify_template"),
+                ("spotify", "MACOS", "Spotify", "spotify_template_mac"),
+                ("lightroom", "WINDOWS", "Catalog - Adobe Photoshop Lightroom Classic - Library", "lightroom_template"),
+                ("adobe lightroom classic", "MACOS", "Lightroom Classic", "lightroom_template_mac"),
+                ("indesign", "WINDOWS", "Untitled-1 @ 50%", "indesign_template"),
+                ("adobe indesign 2026", "MACOS", "Untitled-1 @ 50%", "indesign_template_mac"),
+                ("designer", "WINDOWS", "Affinity Designer 2", "affinity_designer_template"),
+                ("affinity photo 2", "MACOS", "Affinity Photo 2", "affinity_photo_template_mac"),
+                ("publisher", "WINDOWS", "Affinity Publisher 2", "affinity_publisher_template"),
+                ("affinity", "WINDOWS", "Affinity", "affinity_template"),
+                ("postman", "LINUX", "Postman", "postman_template"),
+                ("postman", "MACOS", "Postman", "postman_template_mac"),
+                ("dbeaver", "WINDOWS", "DBeaver 26.2.3", "dbeaver_template"),
+                ("dbeaver", "LINUX", "DBeaver 26.2.3", "dbeaver_template_linux"),
+                ("dbeaver", "MACOS", "DBeaver 26.2.3", "dbeaver_template_mac"),
+                ("githubdesktop", "WINDOWS", "GitHub Desktop", "githubdesktop_template"),
+                ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title=title, title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+        # X11 reports DBeaver's bundled JVM as `java`, which the JetBrains entry
+        # also uses; the title routes it.
+        got = self._match("java", title="DBeaver 26.2.3 - <postgres> Script",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("dbeaver_template_linux.mods.png", got["overlay"])
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="LINUX")
+        self.assertIn("jetbrains_linux_template.mods.png", got["overlay"])
+        # The cloud Lightroom app reports `lightroom` too; the title gate keeps
+        # Classic's set off it.
+        self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",
+                                      title_known=True, os_name="WINDOWS"))
+    def test_M365_COPILOT_gets_its_own_set_not_the_consumer_one(self):
+        got = self._match("m365copilot", title="Microsoft 365 Copilot",
+                          title_known=True, os_name="WINDOWS")
+        self.assertIsNotNone(got)
+        self.assertIn("m365copilot_template.mods.png", got["overlay"])
+        self.assertNotIn("copilot_template.mods.png", got["overlay"])
+
+    def test_WEBEX_app_and_meetings_get_their_sets(self):
+        for app, os_name, stem in (
+                ("ciscocollabhost", "WINDOWS", "webex_template"),
+                ("ciscocollabhost", "LINUX", "webex_template"),
+                ("webex", "MACOS", "webex_template_mac"),
+                ("atmgr", "WINDOWS", "webex_meetings_template"),
+                ("cisco webex meetings", "MACOS", "webex_meetings_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Webex", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_GOOGLE_MEET_gets_its_set_in_a_browser(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+                for title, url in (
+                        ("Meet - abc-defg-hij", "https://meet.google.com/abc-defg-hij"),
+                        ("Google Meet", None),
+                        ("Meet - abc-defg-hij - Google Chrome", None)):
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry(title, entry, url, OsType[os_name],
+                                                  title_known=True)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"meet_template{suffix}.mods.png", got["overlay"])
+                with self.subTest(browser=browser, os=os_name, title="Meet up"):
+                    got = find_matching_entry("Meet up with Sam - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertNotIn(f"meet_template{suffix}.mods.png",
+                                     [str(f) for f in (got or {}).get("overlay", [])])
+
+    def test_JUPYTER_and_WEB_TOOLS_route_by_gated_url_and_title(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        cases = (
+            ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab - Google Chrome", "jupyter_template"),
+            ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
+            ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
+            ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
+            ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
+            ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                for url, title, stem in cases:
+                    for u, t in ((url, title or "x"), (None, title)):
+                        if t is None:
+                            continue
+                        with self.subTest(browser=browser, os=os_name, url=u, title=t):
+                            got = find_matching_entry(t, entry, u, OsType[os_name], title_known=True)
+                            self.assertIn(f"{stem}{suffix}.mods.png",
+                                          [str(f) for f in got["overlay"]])
+                # The gates keep a search page or a repository tree off these sets.
+                # A page that only mentions Jupyter in its title is not Jupyter.
+                with self.subTest(browser=browser, os=os_name, title="docs"):
+                    got = find_matching_entry("JupyterLab Documentation - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
+                for url in ("https://www.google.com/search?q=draw.io",
+                            "https://www.google.com/search?q=linear.app",
+                            "https://github.com/o/r/tree/main"):
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertFalse(any(s in f for f in files for s in
+                                             ("drawio_", "linear_", "jupyter_")), files)
+
+    def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
+        for app, os_name, stem in (
+                ("acrobat", "WINDOWS", "acrobat_template"),
+                ("acrord32", "WINDOWS", "acrobat_template"),
+                ("adobe acrobat reader", "MACOS", "acrobat_template_mac"),
+                ("sumatrapdf", "WINDOWS", "sumatrapdf_template"),
+                ("okular", "LINUX", "okular_template"),
+                ("org.kde.okular", "LINUX", "okular_template"),
+                ("rstudio", "LINUX", "rstudio_template"),
+                ("rstudio", "MACOS", "rstudio_template_mac"),
+                ("matlab", "WINDOWS", "matlab_template"),
+                ("matlab_r2026b", "MACOS", "matlab_template_mac"),
+                ("jupyterlab", "WINDOWS", "jupyter_template"),
+                ("drawio", "LINUX", "drawio_template"),
+                # draw.io.exe, cut at its first dot as the Windows path does.
+                ("draw.io.exe".split(".")[0], "WINDOWS", "drawio_template"),
+                ("draw.io", "MACOS", "drawio_template_mac"),
+                ("linear", "WINDOWS", "linear_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="x", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_CAD_apps_get_their_platform_set(self):
+        for app, os_name, stem in (
+                ("fusion360", "WINDOWS", "fusion_template"),
+                ("autodesk fusion", "MACOS", "fusion_template_mac"),
+                ("autodesk fusion 360", "MACOS", "fusion_template_mac"),
+                ("openscad", "WINDOWS", "openscad_template"),
+                ("openscad", "LINUX", "openscad_template_linux"),
+                ("org.openscad.openscad", "LINUX", "openscad_template_linux"),
+                ("openscad", "MACOS", "openscad_template_mac"),
+                ("freecad", "WINDOWS", "freecad_template"),
+                ("freecad", "LINUX", "freecad_template_linux"),
+                ("org.freecad.freecad", "LINUX", "freecad_template_linux"),
+                ("freecad", "MACOS", "freecad_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="part", title_known=True,
+                                  os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_THUNDERBIRD_compose_window_gets_its_set_by_title(self):
+        # One process for both windows: the compose title ("Write: <subject> -
+        # Thunderbird", translated) selects the compose set.
+        for app, os_name, suffix in (
+                ("thunderbird", "WINDOWS", ""),
+                ("thunderbird-bin", "LINUX", "_linux"),
+                ("thunderbird-esr", "LINUX", "_linux"),
+                ("org.mozilla.thunderbird", "LINUX", "_linux"),
+                ("thunderbird", "MACOS", "_mac")):
+            for title, stem in (
+                    ("Inbox - me@example.org - Mozilla Thunderbird", "thunderbird_template"),
+                    ("Write: Hello - Thunderbird", "thunderbird_compose_template"),
+                    ("Verfassen: Hallo - Thunderbird", "thunderbird_compose_template")):
+                with self.subTest(app=app, os=os_name, title=title):
+                    got = self._match(app, title=title, title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+
+    def test_ZOOM_main_and_meeting_windows_get_their_sets(self):
+        for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+            for app in ("zoom", "zoom.us"):
+                for title, stem in (("Zoom Workplace", "zoom_main_template"),
+                                    ("Zoom Meeting", "zoom_template"),
+                                    ("Zoom Webinar", "zoom_template")):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+                with self.subTest(os=os_name, app=app, title="Settings"):
+                    # Zoom's other windows stay out, as before.
+                    self.assertIsNone(self._match(app, title="Settings",
+                                                  title_known=True, os_name=os_name))
+
+    def test_TEAMS_desktop_web_and_linux_get_their_sets(self):
+        for app in ("ms-teams", "teams", "microsoft teams (work or school)"):
+            with self.subTest(app=app):
+                got = self._match(app, title="Chat | Microsoft Teams",
+                                  title_known=True, os_name="WINDOWS")
+                self.assertIn("teams_template.mods.png", got["overlay"])
+        got = self._match("teams-for-linux", title="Chat | Microsoft Teams",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("teams_web_template.mods.png", got["overlay"])
+        for browser, os_name, suffix in (("chrome", "WINDOWS", ""),
+                                         ("firefox", "LINUX", ""),
+                                         ("msedge", "MACOS", "_mac")):
+            for url in ("https://teams.microsoft.com/v2/", "https://teams.cloud.microsoft/"):
+                with self.subTest(browser=browser, url=url):
+                    got = self._match(browser, title="Chat | Microsoft Teams",
+                                      title_known=True, os_name=os_name, url=url)
+                    self.assertIn(f"teams_web_template{suffix}.mods.png", got["overlay"])
+            with self.subTest(browser=browser, url=None):
+                got = self._match(browser, title="Chat | Microsoft Teams",
+                                  title_known=True, os_name=os_name)
+                self.assertIn(f"teams_web_template{suffix}.mods.png", got["overlay"])
+
+    def test_AUDACITY_gets_the_set_of_its_version(self):
+        # Windows tells 3.x (Audacity.exe) from 4.x (Audacity4.exe), and Linux
+        # by the names measured on the AppImages; macOS cannot, so it gets the
+        # keys both versions share, as does the Flatpak (either version).
+        for app, os_name, stem in (
+                ("audacity", "WINDOWS", "audacity3_template"),
+                ("audacity4", "WINDOWS", "audacity4_template"),
+                ("audacity", "MACOS", "audacity_template_mac"),
+                ("audacity", "LINUX", "audacity_template"),
+                ("org.audacityteam.audacity", "LINUX", "audacity_template"),
+                ("audacity4portable", "LINUX", "audacity4_template"),
+                ("audacity4", "LINUX", "audacity4_template"),
+                ("org.audacityteam.audacity4portable", "LINUX", "audacity4_template"),
+                ("mscore", "LINUX", "musescore_template_linux"),
+                ("mscore4portable", "LINUX", "musescore_template_linux"),
+                ("musescore4", "LINUX", "musescore_template_linux"),
+                ("org.musescore.musescore4portable", "LINUX",
+                 "musescore_template_linux"),
+                ("reaper", "LINUX", "reaper_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="song", title_known=True,
+                                  os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_MATHEMATICA_and_WOLFRAM_get_their_platform_set(self):
+        for os_name, stem in (("WINDOWS", "mathematica_template"),
+                              ("LINUX", "mathematica_template_linux"),
+                              ("MACOS", "mathematica_template_mac")):
+            for app in ("mathematica", "wolframnb", "wolfram"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled-1", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_KICAD_does_NOT_resolve_without_its_title(self):
+        # ⚠️ The false positive the flag exists to prevent: the `kicad` entry declares
+        # a `title:` gate to tell the PCB editor from the schematic editor.
+        self.assertIsNone(self._match("kicad"))
+        self.assertIsNotNone(self._match("kicad", title="PCB Editor",
+                                         title_known=True))
+
+    def test_KICAD_routes_each_window_by_its_title(self):
+        windows = (("*board — PCB Editor", "kicad_pcb_template"),
+                   ("board [Read Only] — Schematic Editor", "kicad_sch_template"),
+                   ("Lib:R_0402 — Footprint Editor", "kicad_fp_template"),
+                   ("Device:R — Symbol Editor", "kicad_sym_template"),
+                   ("3D Viewer", "kicad_3d_template"),
+                   ("3D Viewer — R_0402", "kicad_3d_template"),
+                   ("board-F_Cu.gbr — Gerber Viewer", "kicad_gerbview_template"),
+                   # KiCad translates the names (window_titles.yaml).
+                   ("board — Leiterplatteneditor", "kicad_pcb_template"),
+                   ("board — Éditeur de PCB KiCad", "kicad_pcb_template"),
+                   ("board — 回路図 エディター", "kicad_sch_template"),
+                   ("Device:R — Редактор символов", "kicad_sym_template"),
+                   ("3D-Betrachter", "kicad_3d_template"))
+        for os_name, suffix in (("MACOS", "_mac"), ("WINDOWS", ""), ("LINUX", "")):
+            for app in ("kicad", "pcbnew", "eeschema", "gerbview"):
+                for title, stem in windows:
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+                # No set for the project manager or the tools without one.
+                for title in ("KiCad 10.0 — board", "Calculator Tools",
+                              "R_0402 — Footprint Library Browser"):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        self.assertIsNone(self._match(
+                            app, title=title, title_known=True, os_name=os_name))
+
+
+    def test_AOE2_HD_and_CD_versions_get_the_hd_set(self):
+        for app in ("age2_x1", "empires2", "aok hd", "age2_x1.exe", "aok hd.exe"):
+            for os_name in ("WINDOWS", "LINUX"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Age of Empires II", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn("aoe2_hd_template.mods.png", got["overlay"])
+
+    def test_AOE2_DEFINITIVE_EDITION_gets_the_de_set(self):
+        for app in ("aoe2de_s", "steam_app_813780"):
+            for os_name in ("WINDOWS", "LINUX"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Age of Empires II: Definitive Edition",
+                                      title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn("aoe2_de_template.mods.png", got["overlay"])
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,8 @@
+# Everything the unit suite needs: the app's runtime dependencies plus the dev
+# tools' (openpyxl for the keycap previews, cairosvg for the icon fetchers,
+# Babel for the catalogs). scripts/run_tests.py checks this list before it runs
+# anything and installs what is missing into the venv: a fresh container
+# without them made dozens of tests ERROR as if they were regressions
+# (2026-09-23, 2026-09-27, 2026-10-22).
+-r requirements.txt
+-r tools/requirements.txt

@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 from polyhost._version import __protocol__
 from polyhost.core.poly_core import PolyCore
 from polyhost.device.poly_kybd import UNICODE_MODE_VOLATILE_MIN_PROTOCOL
+from tests.core.spec_keyboard import spec_keyboard
 
 
 def make_core(*, paused=False, connected=False, unicode_mode=False):
@@ -50,7 +51,7 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock()
-    core.keeb = MagicMock()
+    core.keeb = spec_keyboard()
     # A real protocol number: _apply_unicode_mode reads the CACHED one to decide
     # whether the firmware can apply a mode without storing it.
     core.keeb.protocol_version = __protocol__

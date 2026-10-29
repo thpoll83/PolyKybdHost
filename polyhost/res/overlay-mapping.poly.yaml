@@ -25,31 +25,85 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # overrule it (searching google.com for "jira" would otherwise load the Jira
   # overlay). Keys match whole title words; a key of several words (Claude
   # Code) matches them adjacent, and is tried before a shorter key (Claude).
-  urls-contains:
+  urls-contains: &web_urls
     miro.com:
       overlay: miro_template.mods.png
     outlook.office.com:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     outlook.live.com:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     github.com:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     gitlab.com:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # Jupyter (sources: overlay_sources/jupyter/): a local server or a
+    # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
+    # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
+    # github.com and gitlab.com are above anyway (first hit wins).
+    /lab:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    /notebooks/:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    /tree:
+      url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    # Web tools (sources: overlay_sources/webapps/). Each is gated to its own
+    # host, so a search URL that names the site does not match.
+    diagrams.net:
+      url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    draw.io:
+      url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    excalidraw.com:
+      url: '^https?://([^/?#]+\.)?excalidraw\.com/'
+      overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    linear.app:
+      url: '^https?://([^/?#]+\.)?linear\.app/'
+      overlay: [linear_template.mods.png, linear_template.combo.mods.png]
+    overleaf.com/project:
+      url: '^https?://([^/?#]+\.)?overleaf\.com/project'
+      overlay: [overleaf_template.mods.png, overleaf_template.combo.mods.png]
+    # A Confluence whiteboard (<site>.atlassian.net/wiki/spaces/<KEY>/whiteboard/<id>)
+    # has its own tool keys, so it MUST stay above atlassian.net/wiki. The url
+    # gate keeps the bare "/whiteboard/" needle from catching other sites.
+    /whiteboard/:
+      url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
+      overlay: [confluence_whiteboard_template.mods.png, confluence_whiteboard_template.combo.mods.png]
     # MUST stay above the bare atlassian.net (Jira) entry: matching is
     # first-hit over this map in order, and a Confluence URL
     # (<site>.atlassian.net/wiki/...) also contains "atlassian.net".
     atlassian.net/wiki:
-      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png,
+                confluence_template.extra.mods.png]
     atlassian.net:
       overlay: jira_template.mods.png
     bitbucket.org:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
     docs.google.com/document:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
+    docs.google.com/spreadsheets:
+      overlay: [googlesheets_template.mods.png, googlesheets_template.combo.mods.png, googlesheets_template.extra.mods.png]
+    docs.google.com/presentation:
+      overlay: [googleslides_template.mods.png, googleslides_template.combo.mods.png, googleslides_template.extra.mods.png]
+    mail.google.com:
+      overlay: [gmail_template.mods.png, gmail_template.combo.mods.png]
+    calendar.google.com:
+      overlay: [googlecalendar_template.mods.png, googlecalendar_template.combo.mods.png]
+    teams.microsoft.com:
+      overlay: &teams_web [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
+    teams.cloud.microsoft:
+      overlay: *teams_web
+    teams.live.com:
+      overlay: *teams_web
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # Google Meet (sources: overlay_sources/meet/) runs only in a browser.
+    meet.google.com:
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     # Claude Code on the web. MUST stay above claude.ai, which it contains.
     claude.ai/code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
@@ -61,30 +115,110 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
     chatgpt.com:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+    # Copilot has no title fallback below: "Copilot" is also in Microsoft 365
+    # Copilot's and GitHub Copilot's page titles, and they have other keymaps.
+    copilot.microsoft.com:
+      url: '^https?://copilot\.microsoft\.com/'
+      overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
+    # Office on the web (sources: overlay_sources/officeweb/). A SharePoint share
+    # link names the app in its path (/:w:/ Word ...); a document URL names the
+    # file type (file=X.docx, ithint=file%2cdocx). Both are gated to Microsoft's
+    # hosts, so a .docx link on any other site does not match, and the file-type
+    # gates need the extension at the end of a query value, so a site path
+    # named "docx-guides" does not decide the app. No title fallback: the tab
+    # title is only the file name.
+    /:w:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
+    /:x:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
+    /:p:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
+    /:o:/:
+      url: '^https?://[^/?#@]+\.sharepoint\.com/'
+      overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
+    docx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)docx([?&#]|$)'
+      overlay: [word_web_template.mods.png, word_web_template.combo.mods.png]
+    xlsx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)xlsx([?&#]|$)'
+      overlay: [excel_web_template.mods.png, excel_web_template.combo.mods.png, excel_web_template.extra.mods.png]
+    pptx:
+      url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
+      overlay: [powerpoint_web_template.mods.png, powerpoint_web_template.combo.mods.png]
+    # A notebook: personal OneDrive marks it `ithint=onenote`; onenote.com is
+    # OneNote's own host. SharePoint notebooks take /:o:/ above. Not every page
+    # whose path merely contains "onenote" (a site named onenote-team).
+    onenote:
+      url: '(?i)^https?://(([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft)/.*[?&]ithint=onenote|(www\.)?onenote\.com/)'
+      overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
   # Windows and Linux ends in "Google Chrome".
-  titles-contains:
+  titles-contains: &web_titles
     Miro:
       overlay: miro_template.mods.png
+    Google Meet:
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
+    # A meeting tab is titled "Meet - <code>"; the gate requires the code
+    # (abc-defg-hij), so the plain word "Meet" in other titles does not match.
+    Meet:
+      title: '^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}\b'
+      overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     Outlook:
-      overlay: web_outlook_template.mods.png
+      overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     Jira:
       overlay: jira_template.mods.png
     Confluence:
-      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png,
+                confluence_template.extra.mods.png]
     GitHub:
+      overlay: [github_template.mods.png, github_template.combo.mods.png]
+    # Logged in, GitHub drops "· GitHub" from its titles ("Workflow runs ·
+    # owner/repo"), so the brand word above misses most pages. Every one ends in
+    # "· owner/repo" (or "@sha"), which the gate requires. GitLab spaces its
+    # path ("group / project") and ends in "· GitLab", so it fails the gate and
+    # the scan moves on to its own key.
+    "·":
+      title: '· [\w.-]+/[\w.-]+(@[0-9a-f]{7,40})?( · GitHub)?( [-—] [^·]+)?$'
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+    # (the browser may append its own name); the gate keeps a page that only
+    # mentions Jupyter, such as its documentation, off the set.
+    JupyterLab:
+      title: ' - JupyterLab( [-—] [^-—]+)?$'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    Jupyter Notebook:
+      title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
+      overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+    draw.io:
+      overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    Excalidraw:
+      overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    Online LaTeX Editor:
+      overlay: [overleaf_template.mods.png, overleaf_template.combo.mods.png]
     Bitbucket:
-      overlay: bitbucket_pr_template.mods.png
+      overlay: [bitbucket_pr_template.mods.png, bitbucket_pr_template.combo.mods.png]
+    Microsoft Teams:
+      overlay: *teams_web
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
     Google Docs:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
+    Google Sheets:
+      overlay: [googlesheets_template.mods.png, googlesheets_template.combo.mods.png, googlesheets_template.extra.mods.png]
+    Google Slides:
+      overlay: [googleslides_template.mods.png, googleslides_template.combo.mods.png, googleslides_template.extra.mods.png]
+    Gmail:
+      overlay: [gmail_template.mods.png, gmail_template.combo.mods.png]
+    Google Calendar:
+      overlay: [googlecalendar_template.mods.png, googlecalendar_template.combo.mods.png]
     Claude Code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
     Claude:
@@ -94,12 +228,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
-  # in the same order (first hit wins). Jira draws bare keys only, so it has no
-  # separate Mac set.
+  # in the same order (first hit wins).
   os:
     macos:
       overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
-      urls-contains:
+      urls-contains: &web_urls_mac
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
         outlook.office.com:
@@ -110,16 +243,65 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        # Jupyter (sources: overlay_sources/jupyter/): a local server or a
+        # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
+        # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
+        # github.com and gitlab.com are above anyway (first hit wins).
+        /lab:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        /notebooks/:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        /tree:
+          url: '^https?://[^/]+(/user/[^/]+)?/(lab|notebooks|tree)(/|\?|#|$)'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        # Web tools (sources: overlay_sources/webapps/). Each is gated to its own
+        # host, so a search URL that names the site does not match.
+        diagrams.net:
+          url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        draw.io:
+          url: '^https?://([^/?#]+\.)?(diagrams\.net|draw\.io)/'
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        excalidraw.com:
+          url: '^https?://([^/?#]+\.)?excalidraw\.com/'
+          overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        linear.app:
+          url: '^https?://([^/?#]+\.)?linear\.app/'
+          overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
+        overleaf.com/project:
+          url: '^https?://([^/?#]+\.)?overleaf\.com/project'
+          overlay: [overleaf_template_mac.mods.png, overleaf_template_mac.combo.mods.png, overleaf_template_mac.extra.mods.png]
+        /whiteboard/:
+          url: '^https?://[^/]+\.atlassian\.net/wiki/.*/whiteboard/'
+          overlay: [confluence_whiteboard_template_mac.mods.png, confluence_whiteboard_template_mac.combo.mods.png, confluence_whiteboard_template_mac.extra.mods.png]
         atlassian.net/wiki:
-          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]
         atlassian.net:
-          overlay: jira_template.mods.png
+          overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         bitbucket.org:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
         docs.google.com/document:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        docs.google.com/spreadsheets:
+          overlay: [googlesheets_template_mac.mods.png, googlesheets_template_mac.combo.mods.png, googlesheets_template_mac.extra.mods.png, googlesheets_template_mac.gui.mods.png]
+        docs.google.com/presentation:
+          overlay: [googleslides_template_mac.mods.png, googleslides_template_mac.combo.mods.png, googleslides_template_mac.extra.mods.png, googleslides_template_mac.gui.mods.png]
+        mail.google.com:
+          overlay: [gmail_template_mac.mods.png, gmail_template_mac.combo.mods.png, gmail_template_mac.extra.mods.png]
+        calendar.google.com:
+          overlay: [googlecalendar_template_mac.mods.png, googlecalendar_template_mac.combo.mods.png, googlecalendar_template_mac.extra.mods.png]
+        teams.microsoft.com:
+          overlay: &teams_web_mac [teams_web_template_mac.mods.png, teams_web_template_mac.combo.mods.png, teams_web_template_mac.extra.mods.png, teams_web_template_mac.gui.mods.png]
+        teams.cloud.microsoft:
+          overlay: *teams_web_mac
+        teams.live.com:
+          overlay: *teams_web_mac
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        meet.google.com:
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         claude.ai/code:
           overlay: claude_code_web_template_mac.mods.png
         claude.ai:
@@ -128,31 +310,118 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [chrome_template_mac.mods.png, chrome_template_mac.combo.mods.png, chrome_template_mac.extra.mods.png]
         chatgpt.com:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
-      titles-contains:
+        copilot.microsoft.com:
+          url: '^https?://copilot\.microsoft\.com/'
+          overlay: [copilot_web_template.mods.png, copilot_web_template.combo.mods.png]
+        # Office on the web: only PowerPoint documents its Mac chords; Word, Excel
+        # and OneNote on the web keep the browser's keycaps on macOS.
+        /:p:/:
+          url: '^https?://[^/?#@]+\.sharepoint\.com/'
+          overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
+        pptx:
+          url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
+          overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
+      titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        Google Meet:
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
+        Meet:
+          title: '^Meet - [a-z]{3}-[a-z]{4}-[a-z]{3}\b'
+          overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         Outlook:
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         Jira:
-          overlay: jira_template.mods.png
+          overlay: [jira_template_mac.mods.png, jira_template_mac.combo.mods.png]
         Confluence:
-          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png]
+          overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]
         GitHub:
+          overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        "·":
+          title: '· [\w.-]+/[\w.-]+(@[0-9a-f]{7,40})?( · GitHub)?( [-—] [^·]+)?$'
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
+        # (the browser may append its own name); the gate keeps a page that only
+        # mentions Jupyter, such as its documentation, off the set.
+        JupyterLab:
+          title: ' - JupyterLab( [-—] [^-—]+)?$'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        Jupyter Notebook:
+          title: ' - Jupyter Notebook( [-—] [^-—]+)?$'
+          overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+        draw.io:
+          overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        Excalidraw:
+          overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        Online LaTeX Editor:
+          overlay: [overleaf_template_mac.mods.png, overleaf_template_mac.combo.mods.png, overleaf_template_mac.extra.mods.png]
         Bitbucket:
-          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png]
+          overlay: [bitbucket_pr_template_mac.mods.png, bitbucket_pr_template_mac.combo.mods.png, bitbucket_pr_template_mac.extra.mods.png]
+        Microsoft Teams:
+          overlay: *teams_web_mac
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         Google Docs:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
+        Google Sheets:
+          overlay: [googlesheets_template_mac.mods.png, googlesheets_template_mac.combo.mods.png, googlesheets_template_mac.extra.mods.png, googlesheets_template_mac.gui.mods.png]
+        Google Slides:
+          overlay: [googleslides_template_mac.mods.png, googleslides_template_mac.combo.mods.png, googleslides_template_mac.extra.mods.png, googleslides_template_mac.gui.mods.png]
+        Gmail:
+          overlay: [gmail_template_mac.mods.png, gmail_template_mac.combo.mods.png, gmail_template_mac.extra.mods.png]
+        Google Calendar:
+          overlay: [googlecalendar_template_mac.mods.png, googlecalendar_template_mac.combo.mods.png, googlecalendar_template_mac.extra.mods.png]
         Claude Code:
           overlay: claude_code_web_template_mac.mods.png
         Claude:
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
         ChatGPT:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+# Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
+# keymap, so it has its own entry, but the web-app routing is the browser
+# entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
+# A `<<:` merge keeps that map's ORDER (first hit wins) and replaces only
+# chatgpt.com/codex, whose value names the browser's own set. The `os:` branches
+# REPLACE the entry, so each repeats the routing, as the browser entry does.
+# Names: firefox(.exe) on Windows (Developer Edition and Nightly too); WM_CLASS
+# firefox / firefox-esr (Debian) / firefox-dev (Developer Edition remoting name)
+# / firefox-nightly / firefox_firefox (Ubuntu snap) and the Flatpak app id
+# org.mozilla.firefox on Linux; the display names on macOS.
+firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.firefox,firefox developer edition,firefox nightly:
+  overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
+  urls-contains:
+    <<: *web_urls
+    chatgpt.com/codex:
+      overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
+  titles-contains: *web_titles
+  os:
+    macos:
+      overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
+      urls-contains:
+        <<: *web_urls_mac
+        chatgpt.com/codex:
+          overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
+      titles-contains: *web_titles_mac
+    linux:
+      overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
+      urls-contains:
+        <<: *web_urls
+        chatgpt.com/codex:
+          overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
+      titles-contains: *web_titles
+# Safari (sources: overlay_sources/safari/), macOS only. The host reads the
+# active tab's URL over AppleScript (services/browser_url_macos.py), so the web
+# apps route as in the other browsers, through the shared macOS maps. The
+# Safari set is small: the menu-shortcut harvest fills every key it leaves free.
+safari,safari technology preview:
+  overlay: &safari_mac [safari_template_mac.mods.png, safari_template_mac.combo.mods.png, safari_template_mac.extra.mods.png]
+  urls-contains:
+    <<: *web_urls_mac
+    chatgpt.com/codex:
+      overlay: *safari_mac
+  titles-contains: *web_titles_mac
 # AI assistant desktop apps (sources: overlay_sources/aichat/). The browser
 # forms are under the browser entry above (claude.ai, chatgpt.com). The Claude
 # desktop app shows its Chat and Code tabs in one window of one process, so one
@@ -169,7 +438,20 @@ chatgpt:
   os:
     macos:
       overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
-codex:
+# Microsoft Copilot (sources: overlay_sources/aichat/copilot.yaml). The app is
+# copilot.microsoft.com in a Chromium window, so UI Automation finds no
+# shortcuts; its four Alt chords come from the page's script. `mscopilot` on
+# Windows, `copilot` on macOS (Option chords, same keys). No `os:` branch: one
+# set serves both. The ESC mark comes from the app's own executable.
+mscopilot,copilot:
+  overlay: [copilot_template.mods.png, copilot_template.combo.mods.png]
+# Microsoft 365 Copilot (sources: overlay_sources/aichat/m365copilot.yaml),
+# `M365Copilot.exe` on Windows. Microsoft documents no in-app shortcut; the set
+# has the keys tested by hand on 2026-10-22 (Ctrl+Shift+H/Q/Y/I, Copy, Paste,
+# Select all, zoom). No macOS set: its keys were not tested there.
+m365copilot:
+  overlay: [m365copilot_template.mods.png, m365copilot_template.combo.mods.png]
+codex,codex-desktop:
   overlay: [codex_template.mods.png, codex_template.combo.mods.png]
   os:
     macos:
@@ -186,14 +468,23 @@ gimp-2.0,gimp-2.8,gimp-2,gimp-2.10,gimp-3.0,gimp,gimp-3,org.gimp.GIMP:
   os:
     macos:
       overlay: [gimp_mac_template.mods.png, gimp_mac_template.combo.mods.png, gimp_mac_template.extra.mods.png]
-# macOS reports Zoom's display name, `zoom.us`.
+# Zoom (sources: overlay_sources/zoom/). macOS reports Zoom's display name,
+# `zoom.us`; Linux reports `zoom` (measured, 7.2.1). The main window is titled
+# "Zoom Workplace" and gets the chat, phone and general keys; the meeting and
+# webinar windows ("Zoom Meeting", "Zoom Webinar") get the meeting keys. The
+# `title` gate keeps Zoom's other windows (settings, pop-out chat) out; a window
+# whose title is unknown skips the gate and gets the meeting set.
 zoom,zoom.us:
   overlay: [zoom_template.mods.png, zoom_template.combo.mods.png]
-  title: Zoom Meeting
+  title: '^Zoom (Meeting|Webinar|Workplace)'
+  titles-startswith:
+    Zoom Workplace: {overlay: [zoom_main_template.mods.png, zoom_main_template.combo.mods.png]}
   os:
     macos:
-      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png]
-      title: Zoom Meeting
+      overlay: [zoom_template_mac.mods.png, zoom_template_mac.combo.mods.png, zoom_template_mac.extra.mods.png, zoom_template_mac.gui.mods.png]
+      title: '^Zoom (Meeting|Webinar|Workplace)'
+      titles-startswith:
+        Zoom Workplace: {overlay: [zoom_main_template_mac.mods.png, zoom_main_template_mac.combo.mods.png, zoom_main_template_mac.extra.mods.png]}
 discord:
   overlay: [discord_template.mods.png, discord_template.combo.mods.png, discord_template.extra.mods.png]
   os:
@@ -201,9 +492,501 @@ discord:
       overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
-kicad:
-  overlay: kicad_pcb_template.png
-  title: PCB Editor
+# Mathematica, renamed Wolfram in 14.1 (sources: overlay_sources/mathematica/).
+# The notebook front end is `Mathematica.exe` / Mathematica.app up to 14.0 and
+# `WolframNB.exe` / Wolfram.app / `WolframNB` on Linux since 14.1. Linux has its
+# own set because Close is Ctrl+W there and Ctrl+F4 on Windows.
+mathematica,wolframnb,wolfram:
+  overlay: [mathematica_template.mods.png, mathematica_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [mathematica_template_mac.mods.png, mathematica_template_mac.combo.mods.png, mathematica_template_mac.extra.mods.png]
+    linux:
+      overlay: [mathematica_template_linux.mods.png, mathematica_template_linux.combo.mods.png]
+# BEGIN generated by overlay_sources/kicad/gen_titles.py -- do not edit by hand
+# KiCad (sources: overlay_sources/kicad/). Started from the project manager,
+# every editor runs in the `kicad` process; started on its own, it is `pcbnew`,
+# `eeschema` or `gerbview`, and `pcbnew` and `eeschema` each host several
+# windows. So the windows are told apart by the title only: an editor's title
+# ends in its name ("board — PCB Editor"), the 3D Viewer's starts with it. KiCad
+# translates these names, so each one is listed in every language KiCad ships
+# (window_titles.yaml). The `title` gate keeps the project manager and the other
+# tools out, and fails when there is no window at all, so the macOS windowless
+# path draws nothing rather than the PCB keys. The entry's own overlay is
+# reached only by a window with an empty title (the gate is skipped then).
+# Window names from KiCad 10.0.7, 44 languages.
+kicad,pcbnew,eeschema,gerbview:
+  overlay: [kicad_pcb_template.mods.png, kicad_pcb_template.combo.mods.png]
+  title: "(?:PCB Editor|Baskı Devre Düzenleyici|Editor C\\.S\\.|Editor DPS|Editor PCB|Editor da PCI|Editor de PCB's|Editor de placas|Edytor obwodów drukowanych|Kretskorteditor|Leiterplatteneditor|Mönsterkortsredigerare|NYÁK Tervező|PCB redaktors|PCB संपादक|PCB సవరణ సాధనం|PCB რედაქტორი|PCB エディター|PCB 編輯器|PCB 编辑器|PCB 편집기|PCB\\-editor|Penyunting PCB|Piirilevyeditori|Spausdintinės plokštės redaktorius|Trình chỉnh sửa PCB|Trükkplaadi redaktor|Éditeur de PCB KiCad|Επεξεργαστής Σχεδίασης PCB|Редактор на печатни платки|Редактор печатных плат|Редактор плат|Уређивач PCB|עורך מעגל מודפס|محرر PCB|பிசிபி எடிட்டர்|เครื่องมือแก้ไข PCB|Schematic Editor|Ahelaskeemi redaktor|Editeur de Schématique|Editor d'esquemes|Editor de esquemas|Editor de schemă|Editor do esquemático|Editor esquemático|Editor schemi|Editor schém|Editor schémat|Edytor Schematów|Kapcsolási rajz szerkesztő|Kretsschemaredigerare|Kytkentäkaavioeditori|Penyunting Skematik|Schaltplaneditor|Schema\\-editor|Schemų redaktorius|Shēmas redaktors|Skemaeditor|Skjemaredigering|Trình chỉnh sửa sơ đồ nguyên lý|Şematik Düzenleyici|Επεξεργαστής Σχηματικού|Редактор на схеми|Редактор схем|Уређивач шеме|עורך סכימה|محرر المخطط|स्कीमैटिक संपादक|திட்ட ஆசிரியர்|స్కీమాటిక్ సవరణ సాధనం|เครื่องมือแก้ไขวงจร|სქემის რედაქტორი|原理图编辑器|原理圖編輯器|回路図 エディター|회로도 편집기|Footprint Editor|Ayak İzi Düzenleyici|Editor d'empremtes|Editor de Footprints|Editor de amprente|Editor de footprints|Editor de huellas|Editor impronte|Editor pouzder|Editor puzdier|Edytor Footprintów|Fodaftrykkeditor|Footprinteditor|Fotavtrycksredigerare|Jalanjälkieditori|Komponendi trükkplaadijälje redaktor|Korpusu redaktors|Korpusų redaktorius|Lábkiosztás Szerkesztő|Penyunting Footprint|Trình chỉnh sửa Dấu chân|Éditeur d'Empreintes|Επεξεργαστής Αποτυπώματος|Редактор на отпечатъци|Редактор посад\\. мест|Редактор посадкових місць|Уређивач подножја|עורך תצורת רכיב|محرر بصمات|फ़ुटप्रिंट संपादक|தடம் ஆசிரியர்|ఫుట్‌ప్రింట్ సవరణ సాధనం|เครื่องมือแก้ไขฟุ้ทพรินท์|ნაკვალევის რედაქტორი|フットプリント エディター|封装编辑器|封裝編輯器|풋프린트 편집기|Symbol Editor|Editor de Símbolos|Editor de simboluri|Editor de símbolos|Editor de símbols|Editor simboli|Editor symbolov|Editor symbolů|Edytor bibliotek symboli|Penyunting Simbol|Rajzjel Szerkesztő|Sembol Düzenleyici|Simbolių redaktorius|Simbolu redaktors|Symboleditor|Symbolieditori|Symbolredaktør|Symbolredigerare|Symbooleditor|Sümboli redaktor|Trình chỉnh sửa ký hiệu|Éditeur de Symbole|Επεξεργαστής Συμβόλων|Редактор на символи|Редактор символов|Редактор символів|Уређивач симбола|עורך סמלים|محرر الرموز|प्रतीक संपादक|அடையாளம் ஆசிரியர்|చిహ్న సవరణ సాధనం|เครื่องมือแก้ไขสัญลักษณ์|სიმბოლოების რედაქტორი|シンボル エディター|符号编辑器|符號編輯器|심볼 편집기|Gerber Viewer|Gerber Görüntüleyici|Gerber megjelenítő|Gerber skatītājs|Gerber žiūryklė|Gerber визуализатор|Gerber прегледач|Gerber მნახველი|Gerber 查看器|Gerber\\-Betrachter|Gerber\\-fremviser|Gerber\\-katseluohjelma|Gerber\\-vaatur|Gerber\\-viewer|Gerber\\-visare|Gerber\\-visning|Penampil Gerber|Prehliadač Gerber|Prohlížeč gerber|Przeglądarka plików Gerber|Trình xem Gerber|Visionneuse de fichiers Gerber|Visor Gerber|Visualizador Gerber|Visualizzatore Gerber|Vizualizator Gerber|Πρόγραμμα Προβολής Αρχείων Gerber|Переглядач Gerber|Просмотр Gerber\\-файлов|כלי צפייה בגרבר|عارض Gerber|गर्बर दर्शक|கெர்பர் பார்வையாளர்|గెర్బర్ వ్యూయర్|โปรแกรมดูเกอร์เบอร์|ガーバー ビューアー|거버 뷰어)$|^(?:3D Viewer|3 டி பார்வையாளர்|3B Görüntüleyici|3D megjelenítő|3D pogled|3D prohlížeč|3D skatītājs|3D žiūryklė|3D προβολή|3D визуализатор|3D दर्शक|3D వ్యూయర్|3D ხედი|3D ビューアー|3D 查看器|3D 뷰어|3D\\-Betrachter|3D\\-fremviser|3D\\-katselin|3D\\-vaatur|3D\\-viewer|3D\\-visare|3D\\-visning|3D\\-переглядач|Penampil 3D|Przeglądarka 3D|Trình xem 3D|Visor 3D|Visualisateur 3D|Visualitzador 3D|Visualizador 3D|Visualizzatore 3D|Vizualizator 3D|Zobrazovač 3D|Приказ 3D|Просмотрщик 3D|תצוגת תלת\\-ממד|عارض ثلاثي الأبعاد|نمای 3 بعدی|โปรแกรมดู3มิติ)"
+  titles-startswith:
+    "3D Viewer": {overlay: &kicad_3d [kicad_3d_template.mods.png]}
+    "3 டி பார்வையாளர்": {overlay: *kicad_3d}
+    "3B Görüntüleyici": {overlay: *kicad_3d}
+    "3D megjelenítő": {overlay: *kicad_3d}
+    "3D pogled": {overlay: *kicad_3d}
+    "3D prohlížeč": {overlay: *kicad_3d}
+    "3D skatītājs": {overlay: *kicad_3d}
+    "3D žiūryklė": {overlay: *kicad_3d}
+    "3D προβολή": {overlay: *kicad_3d}
+    "3D визуализатор": {overlay: *kicad_3d}
+    "3D दर्शक": {overlay: *kicad_3d}
+    "3D వ్యూయర్": {overlay: *kicad_3d}
+    "3D ხედი": {overlay: *kicad_3d}
+    "3D ビューアー": {overlay: *kicad_3d}
+    "3D 查看器": {overlay: *kicad_3d}
+    "3D 뷰어": {overlay: *kicad_3d}
+    "3D-Betrachter": {overlay: *kicad_3d}
+    "3D-fremviser": {overlay: *kicad_3d}
+    "3D-katselin": {overlay: *kicad_3d}
+    "3D-vaatur": {overlay: *kicad_3d}
+    "3D-viewer": {overlay: *kicad_3d}
+    "3D-visare": {overlay: *kicad_3d}
+    "3D-visning": {overlay: *kicad_3d}
+    "3D-переглядач": {overlay: *kicad_3d}
+    "Penampil 3D": {overlay: *kicad_3d}
+    "Przeglądarka 3D": {overlay: *kicad_3d}
+    "Trình xem 3D": {overlay: *kicad_3d}
+    "Visor 3D": {overlay: *kicad_3d}
+    "Visualisateur 3D": {overlay: *kicad_3d}
+    "Visualitzador 3D": {overlay: *kicad_3d}
+    "Visualizador 3D": {overlay: *kicad_3d}
+    "Visualizzatore 3D": {overlay: *kicad_3d}
+    "Vizualizator 3D": {overlay: *kicad_3d}
+    "Zobrazovač 3D": {overlay: *kicad_3d}
+    "Приказ 3D": {overlay: *kicad_3d}
+    "Просмотрщик 3D": {overlay: *kicad_3d}
+    "תצוגת תלת-ממד": {overlay: *kicad_3d}
+    "عارض ثلاثي الأبعاد": {overlay: *kicad_3d}
+    "نمای 3 بعدی": {overlay: *kicad_3d}
+    "โปรแกรมดู3มิติ": {overlay: *kicad_3d}
+  titles-endswith:
+    "PCB Editor": {overlay: &kicad_pcb [kicad_pcb_template.mods.png, kicad_pcb_template.combo.mods.png]}
+    "Baskı Devre Düzenleyici": {overlay: *kicad_pcb}
+    "Editor C.S.": {overlay: *kicad_pcb}
+    "Editor DPS": {overlay: *kicad_pcb}
+    "Editor PCB": {overlay: *kicad_pcb}
+    "Editor da PCI": {overlay: *kicad_pcb}
+    "Editor de PCB's": {overlay: *kicad_pcb}
+    "Editor de placas": {overlay: *kicad_pcb}
+    "Edytor obwodów drukowanych": {overlay: *kicad_pcb}
+    "Kretskorteditor": {overlay: *kicad_pcb}
+    "Leiterplatteneditor": {overlay: *kicad_pcb}
+    "Mönsterkortsredigerare": {overlay: *kicad_pcb}
+    "NYÁK Tervező": {overlay: *kicad_pcb}
+    "PCB redaktors": {overlay: *kicad_pcb}
+    "PCB संपादक": {overlay: *kicad_pcb}
+    "PCB సవరణ సాధనం": {overlay: *kicad_pcb}
+    "PCB რედაქტორი": {overlay: *kicad_pcb}
+    "PCB エディター": {overlay: *kicad_pcb}
+    "PCB 編輯器": {overlay: *kicad_pcb}
+    "PCB 编辑器": {overlay: *kicad_pcb}
+    "PCB 편집기": {overlay: *kicad_pcb}
+    "PCB-editor": {overlay: *kicad_pcb}
+    "Penyunting PCB": {overlay: *kicad_pcb}
+    "Piirilevyeditori": {overlay: *kicad_pcb}
+    "Spausdintinės plokštės redaktorius": {overlay: *kicad_pcb}
+    "Trình chỉnh sửa PCB": {overlay: *kicad_pcb}
+    "Trükkplaadi redaktor": {overlay: *kicad_pcb}
+    "Éditeur de PCB KiCad": {overlay: *kicad_pcb}
+    "Επεξεργαστής Σχεδίασης PCB": {overlay: *kicad_pcb}
+    "Редактор на печатни платки": {overlay: *kicad_pcb}
+    "Редактор печатных плат": {overlay: *kicad_pcb}
+    "Редактор плат": {overlay: *kicad_pcb}
+    "Уређивач PCB": {overlay: *kicad_pcb}
+    "עורך מעגל מודפס": {overlay: *kicad_pcb}
+    "محرر PCB": {overlay: *kicad_pcb}
+    "பிசிபி எடிட்டர்": {overlay: *kicad_pcb}
+    "เครื่องมือแก้ไข PCB": {overlay: *kicad_pcb}
+    "Schematic Editor": {overlay: &kicad_sch [kicad_sch_template.mods.png, kicad_sch_template.combo.mods.png]}
+    "Ahelaskeemi redaktor": {overlay: *kicad_sch}
+    "Editeur de Schématique": {overlay: *kicad_sch}
+    "Editor d'esquemes": {overlay: *kicad_sch}
+    "Editor de esquemas": {overlay: *kicad_sch}
+    "Editor de schemă": {overlay: *kicad_sch}
+    "Editor do esquemático": {overlay: *kicad_sch}
+    "Editor esquemático": {overlay: *kicad_sch}
+    "Editor schemi": {overlay: *kicad_sch}
+    "Editor schém": {overlay: *kicad_sch}
+    "Editor schémat": {overlay: *kicad_sch}
+    "Edytor Schematów": {overlay: *kicad_sch}
+    "Kapcsolási rajz szerkesztő": {overlay: *kicad_sch}
+    "Kretsschemaredigerare": {overlay: *kicad_sch}
+    "Kytkentäkaavioeditori": {overlay: *kicad_sch}
+    "Penyunting Skematik": {overlay: *kicad_sch}
+    "Schaltplaneditor": {overlay: *kicad_sch}
+    "Schema-editor": {overlay: *kicad_sch}
+    "Schemų redaktorius": {overlay: *kicad_sch}
+    "Shēmas redaktors": {overlay: *kicad_sch}
+    "Skemaeditor": {overlay: *kicad_sch}
+    "Skjemaredigering": {overlay: *kicad_sch}
+    "Trình chỉnh sửa sơ đồ nguyên lý": {overlay: *kicad_sch}
+    "Şematik Düzenleyici": {overlay: *kicad_sch}
+    "Επεξεργαστής Σχηματικού": {overlay: *kicad_sch}
+    "Редактор на схеми": {overlay: *kicad_sch}
+    "Редактор схем": {overlay: *kicad_sch}
+    "Уређивач шеме": {overlay: *kicad_sch}
+    "עורך סכימה": {overlay: *kicad_sch}
+    "محرر المخطط": {overlay: *kicad_sch}
+    "स्कीमैटिक संपादक": {overlay: *kicad_sch}
+    "திட்ட ஆசிரியர்": {overlay: *kicad_sch}
+    "స్కీమాటిక్ సవరణ సాధనం": {overlay: *kicad_sch}
+    "เครื่องมือแก้ไขวงจร": {overlay: *kicad_sch}
+    "სქემის რედაქტორი": {overlay: *kicad_sch}
+    "原理图编辑器": {overlay: *kicad_sch}
+    "原理圖編輯器": {overlay: *kicad_sch}
+    "回路図 エディター": {overlay: *kicad_sch}
+    "회로도 편집기": {overlay: *kicad_sch}
+    "Footprint Editor": {overlay: &kicad_fp [kicad_fp_template.mods.png, kicad_fp_template.combo.mods.png]}
+    "Ayak İzi Düzenleyici": {overlay: *kicad_fp}
+    "Editor d'empremtes": {overlay: *kicad_fp}
+    "Editor de Footprints": {overlay: *kicad_fp}
+    "Editor de amprente": {overlay: *kicad_fp}
+    "Editor de footprints": {overlay: *kicad_fp}
+    "Editor de huellas": {overlay: *kicad_fp}
+    "Editor impronte": {overlay: *kicad_fp}
+    "Editor pouzder": {overlay: *kicad_fp}
+    "Editor puzdier": {overlay: *kicad_fp}
+    "Edytor Footprintów": {overlay: *kicad_fp}
+    "Fodaftrykkeditor": {overlay: *kicad_fp}
+    "Footprinteditor": {overlay: *kicad_fp}
+    "Fotavtrycksredigerare": {overlay: *kicad_fp}
+    "Jalanjälkieditori": {overlay: *kicad_fp}
+    "Komponendi trükkplaadijälje redaktor": {overlay: *kicad_fp}
+    "Korpusu redaktors": {overlay: *kicad_fp}
+    "Korpusų redaktorius": {overlay: *kicad_fp}
+    "Lábkiosztás Szerkesztő": {overlay: *kicad_fp}
+    "Penyunting Footprint": {overlay: *kicad_fp}
+    "Trình chỉnh sửa Dấu chân": {overlay: *kicad_fp}
+    "Éditeur d'Empreintes": {overlay: *kicad_fp}
+    "Επεξεργαστής Αποτυπώματος": {overlay: *kicad_fp}
+    "Редактор на отпечатъци": {overlay: *kicad_fp}
+    "Редактор посад. мест": {overlay: *kicad_fp}
+    "Редактор посадкових місць": {overlay: *kicad_fp}
+    "Уређивач подножја": {overlay: *kicad_fp}
+    "עורך תצורת רכיב": {overlay: *kicad_fp}
+    "محرر بصمات": {overlay: *kicad_fp}
+    "फ़ुटप्रिंट संपादक": {overlay: *kicad_fp}
+    "தடம் ஆசிரியர்": {overlay: *kicad_fp}
+    "ఫుట్‌ప్రింట్ సవరణ సాధనం": {overlay: *kicad_fp}
+    "เครื่องมือแก้ไขฟุ้ทพรินท์": {overlay: *kicad_fp}
+    "ნაკვალევის რედაქტორი": {overlay: *kicad_fp}
+    "フットプリント エディター": {overlay: *kicad_fp}
+    "封装编辑器": {overlay: *kicad_fp}
+    "封裝編輯器": {overlay: *kicad_fp}
+    "풋프린트 편집기": {overlay: *kicad_fp}
+    "Symbol Editor": {overlay: &kicad_sym [kicad_sym_template.mods.png, kicad_sym_template.combo.mods.png]}
+    "Editor de Símbolos": {overlay: *kicad_sym}
+    "Editor de simboluri": {overlay: *kicad_sym}
+    "Editor de símbolos": {overlay: *kicad_sym}
+    "Editor de símbols": {overlay: *kicad_sym}
+    "Editor simboli": {overlay: *kicad_sym}
+    "Editor symbolov": {overlay: *kicad_sym}
+    "Editor symbolů": {overlay: *kicad_sym}
+    "Edytor bibliotek symboli": {overlay: *kicad_sym}
+    "Penyunting Simbol": {overlay: *kicad_sym}
+    "Rajzjel Szerkesztő": {overlay: *kicad_sym}
+    "Sembol Düzenleyici": {overlay: *kicad_sym}
+    "Simbolių redaktorius": {overlay: *kicad_sym}
+    "Simbolu redaktors": {overlay: *kicad_sym}
+    "Symboleditor": {overlay: *kicad_sym}
+    "Symbolieditori": {overlay: *kicad_sym}
+    "Symbolredaktør": {overlay: *kicad_sym}
+    "Symbolredigerare": {overlay: *kicad_sym}
+    "Symbooleditor": {overlay: *kicad_sym}
+    "Sümboli redaktor": {overlay: *kicad_sym}
+    "Trình chỉnh sửa ký hiệu": {overlay: *kicad_sym}
+    "Éditeur de Symbole": {overlay: *kicad_sym}
+    "Επεξεργαστής Συμβόλων": {overlay: *kicad_sym}
+    "Редактор на символи": {overlay: *kicad_sym}
+    "Редактор символов": {overlay: *kicad_sym}
+    "Редактор символів": {overlay: *kicad_sym}
+    "Уређивач симбола": {overlay: *kicad_sym}
+    "עורך סמלים": {overlay: *kicad_sym}
+    "محرر الرموز": {overlay: *kicad_sym}
+    "प्रतीक संपादक": {overlay: *kicad_sym}
+    "அடையாளம் ஆசிரியர்": {overlay: *kicad_sym}
+    "చిహ్న సవరణ సాధనం": {overlay: *kicad_sym}
+    "เครื่องมือแก้ไขสัญลักษณ์": {overlay: *kicad_sym}
+    "სიმბოლოების რედაქტორი": {overlay: *kicad_sym}
+    "シンボル エディター": {overlay: *kicad_sym}
+    "符号编辑器": {overlay: *kicad_sym}
+    "符號編輯器": {overlay: *kicad_sym}
+    "심볼 편집기": {overlay: *kicad_sym}
+    "Gerber Viewer": {overlay: &kicad_gerbview [kicad_gerbview_template.mods.png, kicad_gerbview_template.combo.mods.png]}
+    "Gerber Görüntüleyici": {overlay: *kicad_gerbview}
+    "Gerber megjelenítő": {overlay: *kicad_gerbview}
+    "Gerber skatītājs": {overlay: *kicad_gerbview}
+    "Gerber žiūryklė": {overlay: *kicad_gerbview}
+    "Gerber визуализатор": {overlay: *kicad_gerbview}
+    "Gerber прегледач": {overlay: *kicad_gerbview}
+    "Gerber მნახველი": {overlay: *kicad_gerbview}
+    "Gerber 查看器": {overlay: *kicad_gerbview}
+    "Gerber-Betrachter": {overlay: *kicad_gerbview}
+    "Gerber-fremviser": {overlay: *kicad_gerbview}
+    "Gerber-katseluohjelma": {overlay: *kicad_gerbview}
+    "Gerber-vaatur": {overlay: *kicad_gerbview}
+    "Gerber-viewer": {overlay: *kicad_gerbview}
+    "Gerber-visare": {overlay: *kicad_gerbview}
+    "Gerber-visning": {overlay: *kicad_gerbview}
+    "Penampil Gerber": {overlay: *kicad_gerbview}
+    "Prehliadač Gerber": {overlay: *kicad_gerbview}
+    "Prohlížeč gerber": {overlay: *kicad_gerbview}
+    "Przeglądarka plików Gerber": {overlay: *kicad_gerbview}
+    "Trình xem Gerber": {overlay: *kicad_gerbview}
+    "Visionneuse de fichiers Gerber": {overlay: *kicad_gerbview}
+    "Visor Gerber": {overlay: *kicad_gerbview}
+    "Visualizador Gerber": {overlay: *kicad_gerbview}
+    "Visualizzatore Gerber": {overlay: *kicad_gerbview}
+    "Vizualizator Gerber": {overlay: *kicad_gerbview}
+    "Πρόγραμμα Προβολής Αρχείων Gerber": {overlay: *kicad_gerbview}
+    "Переглядач Gerber": {overlay: *kicad_gerbview}
+    "Просмотр Gerber-файлов": {overlay: *kicad_gerbview}
+    "כלי צפייה בגרבר": {overlay: *kicad_gerbview}
+    "عارض Gerber": {overlay: *kicad_gerbview}
+    "गर्बर दर्शक": {overlay: *kicad_gerbview}
+    "கெர்பர் பார்வையாளர்": {overlay: *kicad_gerbview}
+    "గెర్బర్ వ్యూయర్": {overlay: *kicad_gerbview}
+    "โปรแกรมดูเกอร์เบอร์": {overlay: *kicad_gerbview}
+    "ガーバー ビューアー": {overlay: *kicad_gerbview}
+    "거버 뷰어": {overlay: *kicad_gerbview}
+  # macOS: the Cmd sets. A matched `os:` branch replaces the entry, so the gate
+  # and the title sub-maps are repeated inside it.
+  os:
+    macos:
+      overlay: [kicad_pcb_template_mac.mods.png, kicad_pcb_template_mac.combo.mods.png, kicad_pcb_template_mac.extra.mods.png]
+      title: "(?:PCB Editor|Baskı Devre Düzenleyici|Editor C\\.S\\.|Editor DPS|Editor PCB|Editor da PCI|Editor de PCB's|Editor de placas|Edytor obwodów drukowanych|Kretskorteditor|Leiterplatteneditor|Mönsterkortsredigerare|NYÁK Tervező|PCB redaktors|PCB संपादक|PCB సవరణ సాధనం|PCB რედაქტორი|PCB エディター|PCB 編輯器|PCB 编辑器|PCB 편집기|PCB\\-editor|Penyunting PCB|Piirilevyeditori|Spausdintinės plokštės redaktorius|Trình chỉnh sửa PCB|Trükkplaadi redaktor|Éditeur de PCB KiCad|Επεξεργαστής Σχεδίασης PCB|Редактор на печатни платки|Редактор печатных плат|Редактор плат|Уређивач PCB|עורך מעגל מודפס|محرر PCB|பிசிபி எடிட்டர்|เครื่องมือแก้ไข PCB|Schematic Editor|Ahelaskeemi redaktor|Editeur de Schématique|Editor d'esquemes|Editor de esquemas|Editor de schemă|Editor do esquemático|Editor esquemático|Editor schemi|Editor schém|Editor schémat|Edytor Schematów|Kapcsolási rajz szerkesztő|Kretsschemaredigerare|Kytkentäkaavioeditori|Penyunting Skematik|Schaltplaneditor|Schema\\-editor|Schemų redaktorius|Shēmas redaktors|Skemaeditor|Skjemaredigering|Trình chỉnh sửa sơ đồ nguyên lý|Şematik Düzenleyici|Επεξεργαστής Σχηματικού|Редактор на схеми|Редактор схем|Уређивач шеме|עורך סכימה|محرر المخطط|स्कीमैटिक संपादक|திட்ட ஆசிரியர்|స్కీమాటిక్ సవరణ సాధనం|เครื่องมือแก้ไขวงจร|სქემის რედაქტორი|原理图编辑器|原理圖編輯器|回路図 エディター|회로도 편집기|Footprint Editor|Ayak İzi Düzenleyici|Editor d'empremtes|Editor de Footprints|Editor de amprente|Editor de footprints|Editor de huellas|Editor impronte|Editor pouzder|Editor puzdier|Edytor Footprintów|Fodaftrykkeditor|Footprinteditor|Fotavtrycksredigerare|Jalanjälkieditori|Komponendi trükkplaadijälje redaktor|Korpusu redaktors|Korpusų redaktorius|Lábkiosztás Szerkesztő|Penyunting Footprint|Trình chỉnh sửa Dấu chân|Éditeur d'Empreintes|Επεξεργαστής Αποτυπώματος|Редактор на отпечатъци|Редактор посад\\. мест|Редактор посадкових місць|Уређивач подножја|עורך תצורת רכיב|محرر بصمات|फ़ुटप्रिंट संपादक|தடம் ஆசிரியர்|ఫుట్‌ప్రింట్ సవరణ సాధనం|เครื่องมือแก้ไขฟุ้ทพรินท์|ნაკვალევის რედაქტორი|フットプリント エディター|封装编辑器|封裝編輯器|풋프린트 편집기|Symbol Editor|Editor de Símbolos|Editor de simboluri|Editor de símbolos|Editor de símbols|Editor simboli|Editor symbolov|Editor symbolů|Edytor bibliotek symboli|Penyunting Simbol|Rajzjel Szerkesztő|Sembol Düzenleyici|Simbolių redaktorius|Simbolu redaktors|Symboleditor|Symbolieditori|Symbolredaktør|Symbolredigerare|Symbooleditor|Sümboli redaktor|Trình chỉnh sửa ký hiệu|Éditeur de Symbole|Επεξεργαστής Συμβόλων|Редактор на символи|Редактор символов|Редактор символів|Уређивач симбола|עורך סמלים|محرر الرموز|प्रतीक संपादक|அடையாளம் ஆசிரியர்|చిహ్న సవరణ సాధనం|เครื่องมือแก้ไขสัญลักษณ์|სიმბოლოების რედაქტორი|シンボル エディター|符号编辑器|符號編輯器|심볼 편집기|Gerber Viewer|Gerber Görüntüleyici|Gerber megjelenítő|Gerber skatītājs|Gerber žiūryklė|Gerber визуализатор|Gerber прегледач|Gerber მნახველი|Gerber 查看器|Gerber\\-Betrachter|Gerber\\-fremviser|Gerber\\-katseluohjelma|Gerber\\-vaatur|Gerber\\-viewer|Gerber\\-visare|Gerber\\-visning|Penampil Gerber|Prehliadač Gerber|Prohlížeč gerber|Przeglądarka plików Gerber|Trình xem Gerber|Visionneuse de fichiers Gerber|Visor Gerber|Visualizador Gerber|Visualizzatore Gerber|Vizualizator Gerber|Πρόγραμμα Προβολής Αρχείων Gerber|Переглядач Gerber|Просмотр Gerber\\-файлов|כלי צפייה בגרבר|عارض Gerber|गर्बर दर्शक|கெர்பர் பார்வையாளர்|గెర్బర్ వ్యూయర్|โปรแกรมดูเกอร์เบอร์|ガーバー ビューアー|거버 뷰어)$|^(?:3D Viewer|3 டி பார்வையாளர்|3B Görüntüleyici|3D megjelenítő|3D pogled|3D prohlížeč|3D skatītājs|3D žiūryklė|3D προβολή|3D визуализатор|3D दर्शक|3D వ్యూయర్|3D ხედი|3D ビューアー|3D 查看器|3D 뷰어|3D\\-Betrachter|3D\\-fremviser|3D\\-katselin|3D\\-vaatur|3D\\-viewer|3D\\-visare|3D\\-visning|3D\\-переглядач|Penampil 3D|Przeglądarka 3D|Trình xem 3D|Visor 3D|Visualisateur 3D|Visualitzador 3D|Visualizador 3D|Visualizzatore 3D|Vizualizator 3D|Zobrazovač 3D|Приказ 3D|Просмотрщик 3D|תצוגת תלת\\-ממד|عارض ثلاثي الأبعاد|نمای 3 بعدی|โปรแกรมดู3มิติ)"
+      titles-startswith:
+        "3D Viewer": {overlay: &kicad_3d_mac [kicad_3d_template_mac.mods.png, kicad_3d_template_mac.combo.mods.png]}
+        "3 டி பார்வையாளர்": {overlay: *kicad_3d_mac}
+        "3B Görüntüleyici": {overlay: *kicad_3d_mac}
+        "3D megjelenítő": {overlay: *kicad_3d_mac}
+        "3D pogled": {overlay: *kicad_3d_mac}
+        "3D prohlížeč": {overlay: *kicad_3d_mac}
+        "3D skatītājs": {overlay: *kicad_3d_mac}
+        "3D žiūryklė": {overlay: *kicad_3d_mac}
+        "3D προβολή": {overlay: *kicad_3d_mac}
+        "3D визуализатор": {overlay: *kicad_3d_mac}
+        "3D दर्शक": {overlay: *kicad_3d_mac}
+        "3D వ్యూయర్": {overlay: *kicad_3d_mac}
+        "3D ხედი": {overlay: *kicad_3d_mac}
+        "3D ビューアー": {overlay: *kicad_3d_mac}
+        "3D 查看器": {overlay: *kicad_3d_mac}
+        "3D 뷰어": {overlay: *kicad_3d_mac}
+        "3D-Betrachter": {overlay: *kicad_3d_mac}
+        "3D-fremviser": {overlay: *kicad_3d_mac}
+        "3D-katselin": {overlay: *kicad_3d_mac}
+        "3D-vaatur": {overlay: *kicad_3d_mac}
+        "3D-viewer": {overlay: *kicad_3d_mac}
+        "3D-visare": {overlay: *kicad_3d_mac}
+        "3D-visning": {overlay: *kicad_3d_mac}
+        "3D-переглядач": {overlay: *kicad_3d_mac}
+        "Penampil 3D": {overlay: *kicad_3d_mac}
+        "Przeglądarka 3D": {overlay: *kicad_3d_mac}
+        "Trình xem 3D": {overlay: *kicad_3d_mac}
+        "Visor 3D": {overlay: *kicad_3d_mac}
+        "Visualisateur 3D": {overlay: *kicad_3d_mac}
+        "Visualitzador 3D": {overlay: *kicad_3d_mac}
+        "Visualizador 3D": {overlay: *kicad_3d_mac}
+        "Visualizzatore 3D": {overlay: *kicad_3d_mac}
+        "Vizualizator 3D": {overlay: *kicad_3d_mac}
+        "Zobrazovač 3D": {overlay: *kicad_3d_mac}
+        "Приказ 3D": {overlay: *kicad_3d_mac}
+        "Просмотрщик 3D": {overlay: *kicad_3d_mac}
+        "תצוגת תלת-ממד": {overlay: *kicad_3d_mac}
+        "عارض ثلاثي الأبعاد": {overlay: *kicad_3d_mac}
+        "نمای 3 بعدی": {overlay: *kicad_3d_mac}
+        "โปรแกรมดู3มิติ": {overlay: *kicad_3d_mac}
+      titles-endswith:
+        "PCB Editor": {overlay: &kicad_pcb_mac [kicad_pcb_template_mac.mods.png, kicad_pcb_template_mac.combo.mods.png, kicad_pcb_template_mac.extra.mods.png]}
+        "Baskı Devre Düzenleyici": {overlay: *kicad_pcb_mac}
+        "Editor C.S.": {overlay: *kicad_pcb_mac}
+        "Editor DPS": {overlay: *kicad_pcb_mac}
+        "Editor PCB": {overlay: *kicad_pcb_mac}
+        "Editor da PCI": {overlay: *kicad_pcb_mac}
+        "Editor de PCB's": {overlay: *kicad_pcb_mac}
+        "Editor de placas": {overlay: *kicad_pcb_mac}
+        "Edytor obwodów drukowanych": {overlay: *kicad_pcb_mac}
+        "Kretskorteditor": {overlay: *kicad_pcb_mac}
+        "Leiterplatteneditor": {overlay: *kicad_pcb_mac}
+        "Mönsterkortsredigerare": {overlay: *kicad_pcb_mac}
+        "NYÁK Tervező": {overlay: *kicad_pcb_mac}
+        "PCB redaktors": {overlay: *kicad_pcb_mac}
+        "PCB संपादक": {overlay: *kicad_pcb_mac}
+        "PCB సవరణ సాధనం": {overlay: *kicad_pcb_mac}
+        "PCB რედაქტორი": {overlay: *kicad_pcb_mac}
+        "PCB エディター": {overlay: *kicad_pcb_mac}
+        "PCB 編輯器": {overlay: *kicad_pcb_mac}
+        "PCB 编辑器": {overlay: *kicad_pcb_mac}
+        "PCB 편집기": {overlay: *kicad_pcb_mac}
+        "PCB-editor": {overlay: *kicad_pcb_mac}
+        "Penyunting PCB": {overlay: *kicad_pcb_mac}
+        "Piirilevyeditori": {overlay: *kicad_pcb_mac}
+        "Spausdintinės plokštės redaktorius": {overlay: *kicad_pcb_mac}
+        "Trình chỉnh sửa PCB": {overlay: *kicad_pcb_mac}
+        "Trükkplaadi redaktor": {overlay: *kicad_pcb_mac}
+        "Éditeur de PCB KiCad": {overlay: *kicad_pcb_mac}
+        "Επεξεργαστής Σχεδίασης PCB": {overlay: *kicad_pcb_mac}
+        "Редактор на печатни платки": {overlay: *kicad_pcb_mac}
+        "Редактор печатных плат": {overlay: *kicad_pcb_mac}
+        "Редактор плат": {overlay: *kicad_pcb_mac}
+        "Уређивач PCB": {overlay: *kicad_pcb_mac}
+        "עורך מעגל מודפס": {overlay: *kicad_pcb_mac}
+        "محرر PCB": {overlay: *kicad_pcb_mac}
+        "பிசிபி எடிட்டர்": {overlay: *kicad_pcb_mac}
+        "เครื่องมือแก้ไข PCB": {overlay: *kicad_pcb_mac}
+        "Schematic Editor": {overlay: &kicad_sch_mac [kicad_sch_template_mac.mods.png, kicad_sch_template_mac.combo.mods.png, kicad_sch_template_mac.extra.mods.png]}
+        "Ahelaskeemi redaktor": {overlay: *kicad_sch_mac}
+        "Editeur de Schématique": {overlay: *kicad_sch_mac}
+        "Editor d'esquemes": {overlay: *kicad_sch_mac}
+        "Editor de esquemas": {overlay: *kicad_sch_mac}
+        "Editor de schemă": {overlay: *kicad_sch_mac}
+        "Editor do esquemático": {overlay: *kicad_sch_mac}
+        "Editor esquemático": {overlay: *kicad_sch_mac}
+        "Editor schemi": {overlay: *kicad_sch_mac}
+        "Editor schém": {overlay: *kicad_sch_mac}
+        "Editor schémat": {overlay: *kicad_sch_mac}
+        "Edytor Schematów": {overlay: *kicad_sch_mac}
+        "Kapcsolási rajz szerkesztő": {overlay: *kicad_sch_mac}
+        "Kretsschemaredigerare": {overlay: *kicad_sch_mac}
+        "Kytkentäkaavioeditori": {overlay: *kicad_sch_mac}
+        "Penyunting Skematik": {overlay: *kicad_sch_mac}
+        "Schaltplaneditor": {overlay: *kicad_sch_mac}
+        "Schema-editor": {overlay: *kicad_sch_mac}
+        "Schemų redaktorius": {overlay: *kicad_sch_mac}
+        "Shēmas redaktors": {overlay: *kicad_sch_mac}
+        "Skemaeditor": {overlay: *kicad_sch_mac}
+        "Skjemaredigering": {overlay: *kicad_sch_mac}
+        "Trình chỉnh sửa sơ đồ nguyên lý": {overlay: *kicad_sch_mac}
+        "Şematik Düzenleyici": {overlay: *kicad_sch_mac}
+        "Επεξεργαστής Σχηματικού": {overlay: *kicad_sch_mac}
+        "Редактор на схеми": {overlay: *kicad_sch_mac}
+        "Редактор схем": {overlay: *kicad_sch_mac}
+        "Уређивач шеме": {overlay: *kicad_sch_mac}
+        "עורך סכימה": {overlay: *kicad_sch_mac}
+        "محرر المخطط": {overlay: *kicad_sch_mac}
+        "स्कीमैटिक संपादक": {overlay: *kicad_sch_mac}
+        "திட்ட ஆசிரியர்": {overlay: *kicad_sch_mac}
+        "స్కీమాటిక్ సవరణ సాధనం": {overlay: *kicad_sch_mac}
+        "เครื่องมือแก้ไขวงจร": {overlay: *kicad_sch_mac}
+        "სქემის რედაქტორი": {overlay: *kicad_sch_mac}
+        "原理图编辑器": {overlay: *kicad_sch_mac}
+        "原理圖編輯器": {overlay: *kicad_sch_mac}
+        "回路図 エディター": {overlay: *kicad_sch_mac}
+        "회로도 편집기": {overlay: *kicad_sch_mac}
+        "Footprint Editor": {overlay: &kicad_fp_mac [kicad_fp_template_mac.mods.png, kicad_fp_template_mac.combo.mods.png, kicad_fp_template_mac.extra.mods.png]}
+        "Ayak İzi Düzenleyici": {overlay: *kicad_fp_mac}
+        "Editor d'empremtes": {overlay: *kicad_fp_mac}
+        "Editor de Footprints": {overlay: *kicad_fp_mac}
+        "Editor de amprente": {overlay: *kicad_fp_mac}
+        "Editor de footprints": {overlay: *kicad_fp_mac}
+        "Editor de huellas": {overlay: *kicad_fp_mac}
+        "Editor impronte": {overlay: *kicad_fp_mac}
+        "Editor pouzder": {overlay: *kicad_fp_mac}
+        "Editor puzdier": {overlay: *kicad_fp_mac}
+        "Edytor Footprintów": {overlay: *kicad_fp_mac}
+        "Fodaftrykkeditor": {overlay: *kicad_fp_mac}
+        "Footprinteditor": {overlay: *kicad_fp_mac}
+        "Fotavtrycksredigerare": {overlay: *kicad_fp_mac}
+        "Jalanjälkieditori": {overlay: *kicad_fp_mac}
+        "Komponendi trükkplaadijälje redaktor": {overlay: *kicad_fp_mac}
+        "Korpusu redaktors": {overlay: *kicad_fp_mac}
+        "Korpusų redaktorius": {overlay: *kicad_fp_mac}
+        "Lábkiosztás Szerkesztő": {overlay: *kicad_fp_mac}
+        "Penyunting Footprint": {overlay: *kicad_fp_mac}
+        "Trình chỉnh sửa Dấu chân": {overlay: *kicad_fp_mac}
+        "Éditeur d'Empreintes": {overlay: *kicad_fp_mac}
+        "Επεξεργαστής Αποτυπώματος": {overlay: *kicad_fp_mac}
+        "Редактор на отпечатъци": {overlay: *kicad_fp_mac}
+        "Редактор посад. мест": {overlay: *kicad_fp_mac}
+        "Редактор посадкових місць": {overlay: *kicad_fp_mac}
+        "Уређивач подножја": {overlay: *kicad_fp_mac}
+        "עורך תצורת רכיב": {overlay: *kicad_fp_mac}
+        "محرر بصمات": {overlay: *kicad_fp_mac}
+        "फ़ुटप्रिंट संपादक": {overlay: *kicad_fp_mac}
+        "தடம் ஆசிரியர்": {overlay: *kicad_fp_mac}
+        "ఫుట్‌ప్రింట్ సవరణ సాధనం": {overlay: *kicad_fp_mac}
+        "เครื่องมือแก้ไขฟุ้ทพรินท์": {overlay: *kicad_fp_mac}
+        "ნაკვალევის რედაქტორი": {overlay: *kicad_fp_mac}
+        "フットプリント エディター": {overlay: *kicad_fp_mac}
+        "封装编辑器": {overlay: *kicad_fp_mac}
+        "封裝編輯器": {overlay: *kicad_fp_mac}
+        "풋프린트 편집기": {overlay: *kicad_fp_mac}
+        "Symbol Editor": {overlay: &kicad_sym_mac [kicad_sym_template_mac.mods.png, kicad_sym_template_mac.combo.mods.png, kicad_sym_template_mac.extra.mods.png]}
+        "Editor de Símbolos": {overlay: *kicad_sym_mac}
+        "Editor de simboluri": {overlay: *kicad_sym_mac}
+        "Editor de símbolos": {overlay: *kicad_sym_mac}
+        "Editor de símbols": {overlay: *kicad_sym_mac}
+        "Editor simboli": {overlay: *kicad_sym_mac}
+        "Editor symbolov": {overlay: *kicad_sym_mac}
+        "Editor symbolů": {overlay: *kicad_sym_mac}
+        "Edytor bibliotek symboli": {overlay: *kicad_sym_mac}
+        "Penyunting Simbol": {overlay: *kicad_sym_mac}
+        "Rajzjel Szerkesztő": {overlay: *kicad_sym_mac}
+        "Sembol Düzenleyici": {overlay: *kicad_sym_mac}
+        "Simbolių redaktorius": {overlay: *kicad_sym_mac}
+        "Simbolu redaktors": {overlay: *kicad_sym_mac}
+        "Symboleditor": {overlay: *kicad_sym_mac}
+        "Symbolieditori": {overlay: *kicad_sym_mac}
+        "Symbolredaktør": {overlay: *kicad_sym_mac}
+        "Symbolredigerare": {overlay: *kicad_sym_mac}
+        "Symbooleditor": {overlay: *kicad_sym_mac}
+        "Sümboli redaktor": {overlay: *kicad_sym_mac}
+        "Trình chỉnh sửa ký hiệu": {overlay: *kicad_sym_mac}
+        "Éditeur de Symbole": {overlay: *kicad_sym_mac}
+        "Επεξεργαστής Συμβόλων": {overlay: *kicad_sym_mac}
+        "Редактор на символи": {overlay: *kicad_sym_mac}
+        "Редактор символов": {overlay: *kicad_sym_mac}
+        "Редактор символів": {overlay: *kicad_sym_mac}
+        "Уређивач симбола": {overlay: *kicad_sym_mac}
+        "עורך סמלים": {overlay: *kicad_sym_mac}
+        "محرر الرموز": {overlay: *kicad_sym_mac}
+        "प्रतीक संपादक": {overlay: *kicad_sym_mac}
+        "அடையாளம் ஆசிரியர்": {overlay: *kicad_sym_mac}
+        "చిహ్న సవరణ సాధనం": {overlay: *kicad_sym_mac}
+        "เครื่องมือแก้ไขสัญลักษณ์": {overlay: *kicad_sym_mac}
+        "სიმბოლოების რედაქტორი": {overlay: *kicad_sym_mac}
+        "シンボル エディター": {overlay: *kicad_sym_mac}
+        "符号编辑器": {overlay: *kicad_sym_mac}
+        "符號編輯器": {overlay: *kicad_sym_mac}
+        "심볼 편집기": {overlay: *kicad_sym_mac}
+        "Gerber Viewer": {overlay: &kicad_gerbview_mac [kicad_gerbview_template_mac.mods.png, kicad_gerbview_template_mac.combo.mods.png, kicad_gerbview_template_mac.extra.mods.png]}
+        "Gerber Görüntüleyici": {overlay: *kicad_gerbview_mac}
+        "Gerber megjelenítő": {overlay: *kicad_gerbview_mac}
+        "Gerber skatītājs": {overlay: *kicad_gerbview_mac}
+        "Gerber žiūryklė": {overlay: *kicad_gerbview_mac}
+        "Gerber визуализатор": {overlay: *kicad_gerbview_mac}
+        "Gerber прегледач": {overlay: *kicad_gerbview_mac}
+        "Gerber მნახველი": {overlay: *kicad_gerbview_mac}
+        "Gerber 查看器": {overlay: *kicad_gerbview_mac}
+        "Gerber-Betrachter": {overlay: *kicad_gerbview_mac}
+        "Gerber-fremviser": {overlay: *kicad_gerbview_mac}
+        "Gerber-katseluohjelma": {overlay: *kicad_gerbview_mac}
+        "Gerber-vaatur": {overlay: *kicad_gerbview_mac}
+        "Gerber-viewer": {overlay: *kicad_gerbview_mac}
+        "Gerber-visare": {overlay: *kicad_gerbview_mac}
+        "Gerber-visning": {overlay: *kicad_gerbview_mac}
+        "Penampil Gerber": {overlay: *kicad_gerbview_mac}
+        "Prehliadač Gerber": {overlay: *kicad_gerbview_mac}
+        "Prohlížeč gerber": {overlay: *kicad_gerbview_mac}
+        "Przeglądarka plików Gerber": {overlay: *kicad_gerbview_mac}
+        "Trình xem Gerber": {overlay: *kicad_gerbview_mac}
+        "Visionneuse de fichiers Gerber": {overlay: *kicad_gerbview_mac}
+        "Visor Gerber": {overlay: *kicad_gerbview_mac}
+        "Visualizador Gerber": {overlay: *kicad_gerbview_mac}
+        "Visualizzatore Gerber": {overlay: *kicad_gerbview_mac}
+        "Vizualizator Gerber": {overlay: *kicad_gerbview_mac}
+        "Πρόγραμμα Προβολής Αρχείων Gerber": {overlay: *kicad_gerbview_mac}
+        "Переглядач Gerber": {overlay: *kicad_gerbview_mac}
+        "Просмотр Gerber-файлов": {overlay: *kicad_gerbview_mac}
+        "כלי צפייה בגרבר": {overlay: *kicad_gerbview_mac}
+        "عارض Gerber": {overlay: *kicad_gerbview_mac}
+        "गर्बर दर्शक": {overlay: *kicad_gerbview_mac}
+        "கெர்பர் பார்வையாளர்": {overlay: *kicad_gerbview_mac}
+        "గెర్బర్ వ్యూయర్": {overlay: *kicad_gerbview_mac}
+        "โปรแกรมดูเกอร์เบอร์": {overlay: *kicad_gerbview_mac}
+        "ガーバー ビューアー": {overlay: *kicad_gerbview_mac}
+        "거버 뷰어": {overlay: *kicad_gerbview_mac}
+# END generated by overlay_sources/kicad/gen_titles.py
 code:
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
   title: .* Visual Studio Code
@@ -250,6 +1033,12 @@ java:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      # DBeaver runs in its bundled JVM, so X11 reports `java` for it too. Its
+      # titles start with "DBeaver <version>"; the sub-map is tried before the
+      # JetBrains title gate above.
+      titles-startswith:
+        DBeaver:
+          overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
@@ -284,10 +1073,29 @@ slack:
   os:
     macos:
       overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
+# Cisco Webex (sources: overlay_sources/webex/). The Webex App runs as
+# CiscoCollabHost on Windows and Linux (measured on Linux, 46.10, under Xvfb)
+# and is "Webex" on macOS. The older Webex Meetings desktop app has its own
+# keys; its names (atmgr.exe on Windows, "Cisco Webex Meetings" on macOS) were
+# not checked on an install.
+ciscocollabhost,webex:
+  overlay: [webex_template.mods.png, webex_template.combo.mods.png, webex_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [webex_template_mac.mods.png, webex_template_mac.combo.mods.png, webex_template_mac.extra.mods.png, webex_template_mac.gui.mods.png]
+atmgr,cisco webex meetings,webex meetings:
+  overlay: [webex_meetings_template.mods.png, webex_meetings_template.combo.mods.png, webex_meetings_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [webex_meetings_template_mac.mods.png, webex_meetings_template_mac.combo.mods.png, webex_meetings_template_mac.extra.mods.png, webex_meetings_template_mac.gui.mods.png]
 notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
   overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+# GNOME Files reports its WM_CLASS `nautilus` on X11; Wayland readers can report
+# the app id `org.gnome.Nautilus`.
+nautilus,org.gnome.Nautilus:
+  overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
 notepad:
@@ -325,24 +1133,32 @@ outlook,olk,microsoft outlook:
   os:
     macos:
       overlay: [outlook_template_mac.mods.png, outlook_template_mac.combo.mods.png, outlook_template_mac.extra.mods.png]
-# ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
-# Notes and NOT about OneNote -- hence the title constraint, which lets a real
-# OneNote window fall through unmatched rather than showing sticky-note keycaps.
-# `icon:` is required for the same reason: without it the mark would resolve from
-# the process name through `app_icons.yaml` (`onenote: mdi:microsoft-onenote`)
-# and draw a OneNote logo on a Sticky Notes window.
-onenote:
-  title: "^Sticky Notes"
-  icon: mdi:sticker-text
-  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+# OneNote (sources: overlay_sources/onenote/). ⚠️ `ONENOTE.EXE` ALSO HOSTS THE
+# NEW STICKY NOTES, so a window titled "Sticky Notes..." takes the branch below
+# and every other `onenote` window gets the OneNote set. The branch needs its
+# own `icon:`: without it the mark would resolve from the process name through
+# `app_icons.yaml` (`onenote: mdi:microsoft-onenote`) and draw a OneNote logo on
+# a Sticky Notes window. The OneNote set bakes its own ESC mark.
+onenote,microsoft onenote:
+  overlay: [onenote_template.mods.png, onenote_template.combo.mods.png, onenote_template.extra.mods.png]
+  titles-startswith:
+    Sticky Notes:
+      icon: mdi:sticker-text
+      overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [onenote_template_mac.mods.png, onenote_template_mac.combo.mods.png, onenote_template_mac.extra.mods.png, onenote_template_mac.gui.mods.png]
 powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
   os:
     macos:
       overlay: [powerpoint_template_mac.mods.png, powerpoint_template_mac.combo.mods.png, powerpoint_template_mac.extra.mods.png, powerpoint_template_mac.gui.mods.png]
-# Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
-# curated generic (`photos: mdi:image-multiple`) resolves from the process name,
-# confirmed in the field log that prompted this batch.
+# Visio (sources: overlay_sources/visio/). Windows only.
+visio:
+  overlay: [visio_template.mods.png, visio_template.combo.mods.png]
+# Photos runs as its own `Photos.exe`, so no title branch. Its ESC mark is the
+# shipped `poly:photos.windows` (res/icons/program/README.md): `photos` is also
+# Apple Photos, whose mark is `photos.png`.
 photos:
   overlay: photos_template.mods.png
 # macOS reports Adobe apps with a release year (`Adobe Photoshop 2025`);
@@ -367,11 +1183,61 @@ krita:
   os:
     macos:
       overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
-ms-teams,teams,microsoft teams:
-  overlay: [teams_template.mods.png, teams_template.combo.mods.png]
+# Blender: one overlay per mode / editor, routed on the `blender://<mode>/<editor>`
+# pseudo-URL the Blender add-on (blender-addon/) reports. GENERATED: copy of
+# overlay_sources/blender/mapping_stanza.yaml (gen_blender_bindings.py). `layer: false`
+# makes a context replace the fallback instead of drawing it dimmed underneath.
+# Without the add-on (or with a stale report) the 3D View `common` set applies.
+blender,org.blender.blender:
+  overlay: [blender_common_template.mods.png, blender_common_template.combo.mods.png]
+  layer: false
+  urls-contains:
+    "/NODE_EDITOR": { overlay: [blender_node_template.mods.png, blender_node_template.combo.mods.png] }
+    "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template.mods.png, blender_uv_template.combo.mods.png, blender_uv_template.extra.mods.png] }
+    "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template.mods.png, blender_dopesheet_template.combo.mods.png] }
+    "/GRAPH_EDITOR": { overlay: [blender_graph_template.mods.png, blender_graph_template.combo.mods.png] }
+    "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template.mods.png, blender_object_template.combo.mods.png, blender_object_template.extra.mods.png] }
+    "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template.mods.png, blender_edit_mesh_template.combo.mods.png, blender_edit_mesh_template.extra.mods.png] }
+    "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template.mods.png, blender_sculpt_template.combo.mods.png] }
+    "blender://POSE/VIEW_3D": { overlay: [blender_pose_template.mods.png, blender_pose_template.combo.mods.png, blender_pose_template.extra.mods.png] }
+    "blender://EDIT_ARMATURE/VIEW_3D": { overlay: [blender_edit_armature_template.mods.png, blender_edit_armature_template.combo.mods.png, blender_edit_armature_template.extra.mods.png] }
+    "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template.mods.png, blender_paint_weight_template.combo.mods.png] }
+    "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template.mods.png, blender_paint_vertex_template.combo.mods.png] }
+    "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template.mods.png, blender_paint_texture_template.combo.mods.png] }
+    "/VIEW_3D": { overlay: [blender_common_template.mods.png, blender_common_template.combo.mods.png] }
+    "blender://": { overlay: [blender_global_template.mods.png, blender_global_template.combo.mods.png] }
   os:
     macos:
-      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png]
+      overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png]
+      layer: false
+      urls-contains:
+        "/NODE_EDITOR": { overlay: [blender_node_template_mac.mods.png, blender_node_template_mac.combo.mods.png, blender_node_template_mac.extra.mods.png] }
+        "EDIT_MESH/IMAGE_EDITOR/UV": { overlay: [blender_uv_template_mac.mods.png, blender_uv_template_mac.combo.mods.png, blender_uv_template_mac.extra.mods.png, blender_uv_template_mac.gui.mods.png] }
+        "/DOPESHEET_EDITOR": { overlay: [blender_dopesheet_template_mac.mods.png, blender_dopesheet_template_mac.combo.mods.png, blender_dopesheet_template_mac.extra.mods.png] }
+        "/GRAPH_EDITOR": { overlay: [blender_graph_template_mac.mods.png, blender_graph_template_mac.combo.mods.png, blender_graph_template_mac.extra.mods.png] }
+        "blender://OBJECT/VIEW_3D": { overlay: [blender_object_template_mac.mods.png, blender_object_template_mac.combo.mods.png, blender_object_template_mac.extra.mods.png, blender_object_template_mac.gui.mods.png] }
+        "blender://EDIT_MESH/VIEW_3D": { overlay: [blender_edit_mesh_template_mac.mods.png, blender_edit_mesh_template_mac.combo.mods.png, blender_edit_mesh_template_mac.extra.mods.png, blender_edit_mesh_template_mac.gui.mods.png] }
+        "blender://SCULPT/VIEW_3D": { overlay: [blender_sculpt_template_mac.mods.png, blender_sculpt_template_mac.combo.mods.png, blender_sculpt_template_mac.extra.mods.png] }
+        "blender://POSE/VIEW_3D": { overlay: [blender_pose_template_mac.mods.png, blender_pose_template_mac.combo.mods.png, blender_pose_template_mac.extra.mods.png, blender_pose_template_mac.gui.mods.png] }
+        "blender://EDIT_ARMATURE/VIEW_3D": { overlay: [blender_edit_armature_template_mac.mods.png, blender_edit_armature_template_mac.combo.mods.png, blender_edit_armature_template_mac.extra.mods.png, blender_edit_armature_template_mac.gui.mods.png] }
+        "blender://PAINT_WEIGHT/VIEW_3D": { overlay: [blender_paint_weight_template_mac.mods.png, blender_paint_weight_template_mac.combo.mods.png, blender_paint_weight_template_mac.extra.mods.png] }
+        "blender://PAINT_VERTEX/VIEW_3D": { overlay: [blender_paint_vertex_template_mac.mods.png, blender_paint_vertex_template_mac.combo.mods.png, blender_paint_vertex_template_mac.extra.mods.png] }
+        "blender://PAINT_TEXTURE/VIEW_3D": { overlay: [blender_paint_texture_template_mac.mods.png, blender_paint_texture_template_mac.combo.mods.png, blender_paint_texture_template_mac.extra.mods.png] }
+        "/VIEW_3D": { overlay: [blender_common_template_mac.mods.png, blender_common_template_mac.combo.mods.png, blender_common_template_mac.extra.mods.png] }
+        "blender://": { overlay: [blender_global_template_mac.mods.png, blender_global_template_mac.combo.mods.png, blender_global_template_mac.extra.mods.png] }
+# Microsoft Teams (sources: overlay_sources/teams/). The desktop app is
+# `ms-teams.exe` (new Teams) or `Teams.exe` (classic) on Windows, and on macOS
+# "Microsoft Teams" (new), earlier "Microsoft Teams (work or school)" and
+# "Microsoft Teams classic". There is no Linux desktop app: Teams in a browser
+# is under the browser entries (teams.microsoft.com), and teams-for-linux, which
+# wraps the web app, gets the web set.
+ms-teams,teams,microsoft teams,msteams,microsoft teams (work or school),microsoft teams classic:
+  overlay: [teams_template.mods.png, teams_template.combo.mods.png, teams_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [teams_template_mac.mods.png, teams_template_mac.combo.mods.png, teams_template_mac.extra.mods.png, teams_template_mac.gui.mods.png]
+teams-for-linux:
+  overlay: [teams_web_template.mods.png, teams_web_template.combo.mods.png, teams_web_template.extra.mods.png]
 resolve,davinci resolve:
   overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
   os:
@@ -500,3 +1366,522 @@ soffice,soffice.bin,libreoffice,startcenter:
           overlay: [libreoffice_calc_template_mac.mods.png, libreoffice_calc_template_mac.combo.mods.png, libreoffice_calc_template_mac.extra.mods.png]
         Impress:
           overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]
+
+# ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
+# app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
+# and on its Linux app id, which is also its X11 WM_CLASS and Wayland app id.
+cadcraft,ai.storyteller.cadcraft:
+  overlay: [cadcraft_template.mods.png, cadcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [cadcraft_template_mac.mods.png, cadcraft_template_mac.combo.mods.png, cadcraft_template_mac.extra.mods.png]
+pdfcraft,ai.storyteller.pdfcraft:
+  overlay: [pdfcraft_template.mods.png, pdfcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [pdfcraft_template_mac.mods.png, pdfcraft_template_mac.combo.mods.png, pdfcraft_template_mac.extra.mods.png]
+deckcraft,ai.storyteller.deckcraft:
+  overlay: [deckcraft_template.mods.png, deckcraft_template.combo.mods.png, deckcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [deckcraft_template_mac.mods.png, deckcraft_template_mac.combo.mods.png, deckcraft_template_mac.extra.mods.png, deckcraft_template_mac.gui.mods.png]
+lightcraft,ai.storyteller.lightcraft:
+  overlay: [lightcraft_template.mods.png, lightcraft_template.combo.mods.png, lightcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [lightcraft_template_mac.mods.png, lightcraft_template_mac.combo.mods.png, lightcraft_template_mac.extra.mods.png, lightcraft_template_mac.gui.mods.png]
+gridcraft,ai.storyteller.gridcraft:
+  overlay: [gridcraft_template.mods.png, gridcraft_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gridcraft_template_mac.mods.png, gridcraft_template_mac.combo.mods.png, gridcraft_template_mac.extra.mods.png]
+wordcraft,ai.storyteller.wordcraft:
+  overlay: [wordcraft_template.mods.png, wordcraft_template.combo.mods.png, wordcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [wordcraft_template_mac.mods.png, wordcraft_template_mac.combo.mods.png, wordcraft_template_mac.extra.mods.png, wordcraft_template_mac.gui.mods.png]
+designcraft,ai.storyteller.designcraft:
+  overlay: [designcraft_template.mods.png, designcraft_template.combo.mods.png, designcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [designcraft_template_mac.mods.png, designcraft_template_mac.combo.mods.png, designcraft_template_mac.extra.mods.png, designcraft_template_mac.gui.mods.png]
+figcraft,ai.storyteller.figcraft:
+  overlay: [figcraft_template.mods.png, figcraft_template.combo.mods.png, figcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [figcraft_template_mac.mods.png, figcraft_template_mac.combo.mods.png, figcraft_template_mac.extra.mods.png, figcraft_template_mac.gui.mods.png]
+soundcraft,ai.storyteller.soundcraft:
+  overlay: [soundcraft_template.mods.png, soundcraft_template.combo.mods.png, soundcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [soundcraft_template_mac.mods.png, soundcraft_template_mac.combo.mods.png, soundcraft_template_mac.extra.mods.png, soundcraft_template_mac.gui.mods.png]
+photocraft,ai.storyteller.photocraft:
+  overlay: [photocraft_template.mods.png, photocraft_template.combo.mods.png, photocraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [photocraft_template_mac.mods.png, photocraft_template_mac.combo.mods.png, photocraft_template_mac.extra.mods.png, photocraft_template_mac.gui.mods.png]
+vectorcraft,ai.storyteller.vectorcraft:
+  overlay: [vectorcraft_template.mods.png, vectorcraft_template.combo.mods.png, vectorcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [vectorcraft_template_mac.mods.png, vectorcraft_template_mac.combo.mods.png, vectorcraft_template_mac.extra.mods.png, vectorcraft_template_mac.gui.mods.png]
+effectcraft,ai.storyteller.effectcraft:
+  overlay: [effectcraft_template.mods.png, effectcraft_template.combo.mods.png, effectcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [effectcraft_template_mac.mods.png, effectcraft_template_mac.combo.mods.png, effectcraft_template_mac.extra.mods.png, effectcraft_template_mac.gui.mods.png]
+filmcraft,ai.storyteller.filmcraft:
+  overlay: [filmcraft_template.mods.png, filmcraft_template.combo.mods.png, filmcraft_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [filmcraft_template_mac.mods.png, filmcraft_template_mac.combo.mods.png, filmcraft_template_mac.extra.mods.png, filmcraft_template_mac.gui.mods.png]
+
+# VS Code forks and Zed (sources: overlay_sources/cursor|windsurf|zed/). The
+# `code` entry's title gate never sees these: the lookup is an exact match on
+# the app name. Windsurf was renamed Devin Desktop on 2026-06-02 (Devin.exe,
+# Devin.app, devin-desktop on Linux); `windsurf` covers installs from before.
+# Zed's GUI binary on Linux is zed-editor; its app id is dev.zed.Zed per channel.
+cursor:
+  overlay: [cursor_template.mods.png, cursor_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [cursor_mac_template.mods.png, cursor_mac_template.combo.mods.png, cursor_mac_template.extra.mods.png]
+    linux:
+      overlay: [cursor_linux_template.mods.png, cursor_linux_template.combo.mods.png]
+windsurf,devin,devin-desktop:
+  overlay: [windsurf_template.mods.png, windsurf_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [windsurf_mac_template.mods.png, windsurf_mac_template.combo.mods.png, windsurf_mac_template.extra.mods.png]
+    linux:
+      overlay: [windsurf_linux_template.mods.png, windsurf_linux_template.combo.mods.png]
+zed,zed preview,zed nightly,zed dev,zed-editor,dev.zed.zed,dev.zed.zed-preview,dev.zed.zed-nightly,dev.zed.zed-dev:
+  overlay: [zed_template.mods.png, zed_template.combo.mods.png, zed_template.extra.mods.png, zed_template.gui.mods.png]
+  os:
+    macos:
+      overlay: [zed_mac_template.mods.png, zed_mac_template.combo.mods.png, zed_mac_template.extra.mods.png, zed_mac_template.gui.mods.png]
+    linux:
+      overlay: [zed_linux_template.mods.png, zed_linux_template.combo.mods.png, zed_linux_template.extra.mods.png, zed_linux_template.gui.mods.png]
+
+# Local-model AI desktop apps (sources: overlay_sources/aichat/lmstudio.yaml,
+# jan.yaml). LM Studio's Linux AppImage name `lm-studio` is unconfirmed. Jan's
+# binary is Jan-Desktop (tauri mainBinaryName); its Flatpak WM class is Jan.
+lm studio,lm-studio:
+  overlay: [lmstudio_template.mods.png, lmstudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [lmstudio_template_mac.mods.png, lmstudio_template_mac.combo.mods.png, lmstudio_template_mac.extra.mods.png]
+jan,jan-desktop:
+  overlay: jan_template.mods.png
+  os:
+    macos:
+      overlay: [jan_template_mac.mods.png, jan_template_mac.combo.mods.png]
+
+# Music apps (sources: overlay_sources/<app>/). Each app's SOURCES.md says which
+# app names are confirmed.
+#
+# FL Studio: FL64.exe on Windows; on macOS the app is named after the year.
+# Its Playlist, Piano roll and Mixer share one OS window, so one set serves all.
+fl64,fl studio 2024,fl studio 2025,fl studio 2026,osxfl:
+  overlay: [flstudio_template.mods.png, flstudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [flstudio_template_mac.mods.png, flstudio_template_mac.combo.mods.png, flstudio_template_mac.extra.mods.png]
+# Ableton Live 12: the Windows exe and the macOS app both carry the edition name.
+ableton live 12 suite,ableton live 12 standard,ableton live 12 intro,ableton live 12 lite,ableton live 12 trial:
+  overlay: [ableton_template.mods.png, ableton_template.combo.mods.png, ableton_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [ableton_template_mac.mods.png, ableton_template_mac.combo.mods.png, ableton_template_mac.extra.mods.png, ableton_template_mac.gui.mods.png]
+# REAPER: reaper.exe, REAPER.app and `reaper` on Linux. Windows and Linux use the
+# same default keys.
+reaper:
+  overlay: [reaper_template.mods.png, reaper_template.combo.mods.png, reaper_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [reaper_template_mac.mods.png, reaper_template_mac.combo.mods.png, reaper_template_mac.extra.mods.png, reaper_template_mac.gui.mods.png]
+# Audacity: 3.7.9 and 4.0.1 have different keymaps. On Windows they are
+# Audacity.exe and Audacity4.exe; on macOS both are "Audacity", so macOS gets only
+# the keys that do the same thing in both versions. On Linux (measured on the
+# AppImages under X11) 3.7 is `audacity` with class Audacity; 4.0 is
+# `audacity4portable` with class Audacity4 and Wayland app id
+# org.audacityteam.Audacity4portable. `org.audacityteam.audacity` is the Flatpak
+# app id, which may be either version, so it also gets the common keys.
+audacity,org.audacityteam.audacity:
+  overlay: [audacity3_template.mods.png, audacity3_template.combo.mods.png, audacity3_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [audacity_template_mac.mods.png, audacity_template_mac.combo.mods.png, audacity_template_mac.extra.mods.png]
+    linux:
+      overlay: [audacity_template.mods.png, audacity_template.combo.mods.png]
+audacity4,audacity4portable,org.audacityteam.audacity4portable:
+  overlay: [audacity4_template.mods.png, audacity4_template.combo.mods.png, audacity4_template.extra.mods.png]
+# MuseScore Studio 4: MuseScore4.exe on Windows; on macOS the bundle is
+# "MuseScore Studio" (CFBundleName) in a folder named "MuseScore 4"; on Linux the
+# binary is `mscore` with a `musescore` link, the Flatpak app id
+# org.musescore.MuseScore and the X11 class MuseScore4. The 4.7.5 AppImage
+# (measured under X11) is `mscore4portable`, Wayland app id
+# org.musescore.MuseScore4portable. Linux has its own set because Redo is
+# Ctrl+Shift+Z there and Ctrl+Y on Windows.
+musescore4,musescore studio,musescore 4,mscore,musescore,org.musescore.musescore,mscore4portable,org.musescore.musescore4portable:
+  overlay: [musescore_template.mods.png, musescore_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [musescore_template_mac.mods.png, musescore_template_mac.combo.mods.png, musescore_template_mac.extra.mods.png]
+    linux:
+      overlay: [musescore_template_linux.mods.png, musescore_template_linux.combo.mods.png]
+# CAD apps. Autodesk Fusion: `Fusion360.exe` on Windows (unchanged by the 2024
+# rename); "Autodesk Fusion", earlier "Autodesk Fusion 360", on macOS; no Linux
+# version. Every Fusion workspace is one window, so the set has the Design and
+# Sketch keys.
+fusion360,autodesk fusion,autodesk fusion 360:
+  overlay: [fusion_template.mods.png, fusion_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [fusion_template_mac.mods.png, fusion_template_mac.combo.mods.png, fusion_template_mac.extra.mods.png]
+# OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
+# AppImage, class OpenSCAD); the nightly's desktop file names the class
+# org.openscad.openscad.
+openscad,openscad-nightly,org.openscad.openscad:
+  overlay: [openscad_template.mods.png, openscad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [openscad_template_mac.mods.png, openscad_template_mac.combo.mods.png, openscad_template_mac.extra.mods.png]
+    linux:
+      overlay: [openscad_template_linux.mods.png, openscad_template_linux.combo.mods.png]
+# FreeCAD: `freecad` (measured, 1.1.4 AppImage, class FreeCAD); org.freecad.FreeCAD
+# is the Flatpak app id. Linux has its own set: Redo and Close differ from
+# Windows.
+freecad,org.freecad.freecad:
+  overlay: [freecad_template.mods.png, freecad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [freecad_template_mac.mods.png, freecad_template_mac.combo.mods.png, freecad_template_mac.extra.mods.png]
+    linux:
+      overlay: [freecad_template_linux.mods.png, freecad_template_linux.combo.mods.png]
+# BEGIN generated by overlay_sources/thunderbird/gen_titles.py -- do not edit by hand
+# Thunderbird (sources: overlay_sources/thunderbird/). The main window and the
+# compose window are one process, so the compose window is told apart by its
+# title, which starts "Write:" in English; the prefix is listed in every
+# language Thunderbird ships (compose_titles.yaml). Any other title, and a
+# window with no title, gets the main window's set.
+# Compose title prefixes from Thunderbird esr153, 67 languages.
+# Not translated, so they show the English prefix: af, ast, ga-IE, mk, pa-IN, uz.
+thunderbird,thunderbird-esr,thunderbird-beta,thunderbird-nightly,thunderbird-bin,org.mozilla.thunderbird,org.mozilla.thunderbird_esr,thunderbird beta,thunderbird daily,thunderbird_thunderbird:
+  overlay: [thunderbird_template.mods.png, thunderbird_template.combo.mods.png]
+  titles-startswith:
+    "Write:": {overlay: &tb_compose [thunderbird_compose_template.mods.png, thunderbird_compose_template.combo.mods.png]}
+    "Aru:": {overlay: *tb_compose}
+    "Escrever:": {overlay: *tb_compose}
+    "Escribir:": {overlay: *tb_compose}
+    "Escritura:": {overlay: *tb_compose}
+    "Idatzi:": {overlay: *tb_compose}
+    "Kirjoita:": {overlay: *tb_compose}
+    "Koostamine:": {overlay: *tb_compose}
+    "Nieuw bericht:": {overlay: *tb_compose}
+    "Nová správa:": {overlay: *tb_compose}
+    "Pisać:": {overlay: *tb_compose}
+    "Pisaś:": {overlay: *tb_compose}
+    "Piši:": {overlay: *tb_compose}
+    "Psaní:": {overlay: *tb_compose}
+    "Rakstīt:": {overlay: *tb_compose}
+    "Redacta:": {overlay: *tb_compose}
+    "Rediger:": {overlay: *tb_compose}
+    "Rédaction :": {overlay: *tb_compose}
+    "Scrie mesajul:": {overlay: *tb_compose}
+    "Scrivi:": {overlay: *tb_compose}
+    "Sestavi:": {overlay: *tb_compose}
+    "Sgrìobh:": {overlay: *tb_compose}
+    "Shkruani:": {overlay: *tb_compose}
+    "Skrifa:": {overlay: *tb_compose}
+    "Skriuw:": {overlay: *tb_compose}
+    "Skriv:": {overlay: *tb_compose}
+    "Skrivañ:": {overlay: *tb_compose}
+    "Skrive:": {overlay: *tb_compose}
+    "Tulis:": {overlay: *tb_compose}
+    "Tworzenie:": {overlay: *tb_compose}
+    "Tz'ib'anïk:": {overlay: *tb_compose}
+    "Verfassen:": {overlay: *tb_compose}
+    "Viết thư:": {overlay: *tb_compose}
+    "Yaz:": {overlay: *tb_compose}
+    "Ysgrifennu:": {overlay: *tb_compose}
+    "Írás:": {overlay: *tb_compose}
+    "Įrašyti:": {overlay: *tb_compose}
+    "Σύνταξη:": {overlay: *tb_compose}
+    "Жазу:": {overlay: *tb_compose}
+    "Писане на писмо:": {overlay: *tb_compose}
+    "Писање:": {overlay: *tb_compose}
+    "Создание сообщения:": {overlay: *tb_compose}
+    "Стварэнне паведамлення:": {overlay: *tb_compose}
+    "Створення повідомлення:": {overlay: *tb_compose}
+    "Գրել՝": {overlay: *tb_compose}
+    "כתיבה:": {overlay: *tb_compose}
+    "اكتب:": {overlay: *tb_compose}
+    "เขียน:": {overlay: *tb_compose}
+    "მიწერა:": {overlay: *tb_compose}
+    "作成:": {overlay: *tb_compose}
+    "寫信：": {overlay: *tb_compose}
+    "撰写：": {overlay: *tb_compose}
+    "쓰기:": {overlay: *tb_compose}
+  # A matched `os:` branch replaces the entry, so the title sub-map is
+  # repeated inside it.
+  os:
+    macos:
+      overlay: [thunderbird_template_mac.mods.png, thunderbird_template_mac.combo.mods.png, thunderbird_template_mac.extra.mods.png]
+      titles-startswith:
+        "Write:": {overlay: &tb_compose_mac [thunderbird_compose_template_mac.mods.png, thunderbird_compose_template_mac.combo.mods.png, thunderbird_compose_template_mac.extra.mods.png]}
+        "Aru:": {overlay: *tb_compose_mac}
+        "Escrever:": {overlay: *tb_compose_mac}
+        "Escribir:": {overlay: *tb_compose_mac}
+        "Escritura:": {overlay: *tb_compose_mac}
+        "Idatzi:": {overlay: *tb_compose_mac}
+        "Kirjoita:": {overlay: *tb_compose_mac}
+        "Koostamine:": {overlay: *tb_compose_mac}
+        "Nieuw bericht:": {overlay: *tb_compose_mac}
+        "Nová správa:": {overlay: *tb_compose_mac}
+        "Pisać:": {overlay: *tb_compose_mac}
+        "Pisaś:": {overlay: *tb_compose_mac}
+        "Piši:": {overlay: *tb_compose_mac}
+        "Psaní:": {overlay: *tb_compose_mac}
+        "Rakstīt:": {overlay: *tb_compose_mac}
+        "Redacta:": {overlay: *tb_compose_mac}
+        "Rediger:": {overlay: *tb_compose_mac}
+        "Rédaction :": {overlay: *tb_compose_mac}
+        "Scrie mesajul:": {overlay: *tb_compose_mac}
+        "Scrivi:": {overlay: *tb_compose_mac}
+        "Sestavi:": {overlay: *tb_compose_mac}
+        "Sgrìobh:": {overlay: *tb_compose_mac}
+        "Shkruani:": {overlay: *tb_compose_mac}
+        "Skrifa:": {overlay: *tb_compose_mac}
+        "Skriuw:": {overlay: *tb_compose_mac}
+        "Skriv:": {overlay: *tb_compose_mac}
+        "Skrivañ:": {overlay: *tb_compose_mac}
+        "Skrive:": {overlay: *tb_compose_mac}
+        "Tulis:": {overlay: *tb_compose_mac}
+        "Tworzenie:": {overlay: *tb_compose_mac}
+        "Tz'ib'anïk:": {overlay: *tb_compose_mac}
+        "Verfassen:": {overlay: *tb_compose_mac}
+        "Viết thư:": {overlay: *tb_compose_mac}
+        "Yaz:": {overlay: *tb_compose_mac}
+        "Ysgrifennu:": {overlay: *tb_compose_mac}
+        "Írás:": {overlay: *tb_compose_mac}
+        "Įrašyti:": {overlay: *tb_compose_mac}
+        "Σύνταξη:": {overlay: *tb_compose_mac}
+        "Жазу:": {overlay: *tb_compose_mac}
+        "Писане на писмо:": {overlay: *tb_compose_mac}
+        "Писање:": {overlay: *tb_compose_mac}
+        "Создание сообщения:": {overlay: *tb_compose_mac}
+        "Стварэнне паведамлення:": {overlay: *tb_compose_mac}
+        "Створення повідомлення:": {overlay: *tb_compose_mac}
+        "Գրել՝": {overlay: *tb_compose_mac}
+        "כתיבה:": {overlay: *tb_compose_mac}
+        "اكتب:": {overlay: *tb_compose_mac}
+        "เขียน:": {overlay: *tb_compose_mac}
+        "მიწერა:": {overlay: *tb_compose_mac}
+        "作成:": {overlay: *tb_compose_mac}
+        "寫信：": {overlay: *tb_compose_mac}
+        "撰写：": {overlay: *tb_compose_mac}
+        "쓰기:": {overlay: *tb_compose_mac}
+    linux:
+      overlay: [thunderbird_template_linux.mods.png, thunderbird_template_linux.combo.mods.png]
+      titles-startswith:
+        "Write:": {overlay: &tb_compose_linux [thunderbird_compose_template_linux.mods.png, thunderbird_compose_template_linux.combo.mods.png]}
+        "Aru:": {overlay: *tb_compose_linux}
+        "Escrever:": {overlay: *tb_compose_linux}
+        "Escribir:": {overlay: *tb_compose_linux}
+        "Escritura:": {overlay: *tb_compose_linux}
+        "Idatzi:": {overlay: *tb_compose_linux}
+        "Kirjoita:": {overlay: *tb_compose_linux}
+        "Koostamine:": {overlay: *tb_compose_linux}
+        "Nieuw bericht:": {overlay: *tb_compose_linux}
+        "Nová správa:": {overlay: *tb_compose_linux}
+        "Pisać:": {overlay: *tb_compose_linux}
+        "Pisaś:": {overlay: *tb_compose_linux}
+        "Piši:": {overlay: *tb_compose_linux}
+        "Psaní:": {overlay: *tb_compose_linux}
+        "Rakstīt:": {overlay: *tb_compose_linux}
+        "Redacta:": {overlay: *tb_compose_linux}
+        "Rediger:": {overlay: *tb_compose_linux}
+        "Rédaction :": {overlay: *tb_compose_linux}
+        "Scrie mesajul:": {overlay: *tb_compose_linux}
+        "Scrivi:": {overlay: *tb_compose_linux}
+        "Sestavi:": {overlay: *tb_compose_linux}
+        "Sgrìobh:": {overlay: *tb_compose_linux}
+        "Shkruani:": {overlay: *tb_compose_linux}
+        "Skrifa:": {overlay: *tb_compose_linux}
+        "Skriuw:": {overlay: *tb_compose_linux}
+        "Skriv:": {overlay: *tb_compose_linux}
+        "Skrivañ:": {overlay: *tb_compose_linux}
+        "Skrive:": {overlay: *tb_compose_linux}
+        "Tulis:": {overlay: *tb_compose_linux}
+        "Tworzenie:": {overlay: *tb_compose_linux}
+        "Tz'ib'anïk:": {overlay: *tb_compose_linux}
+        "Verfassen:": {overlay: *tb_compose_linux}
+        "Viết thư:": {overlay: *tb_compose_linux}
+        "Yaz:": {overlay: *tb_compose_linux}
+        "Ysgrifennu:": {overlay: *tb_compose_linux}
+        "Írás:": {overlay: *tb_compose_linux}
+        "Įrašyti:": {overlay: *tb_compose_linux}
+        "Σύνταξη:": {overlay: *tb_compose_linux}
+        "Жазу:": {overlay: *tb_compose_linux}
+        "Писане на писмо:": {overlay: *tb_compose_linux}
+        "Писање:": {overlay: *tb_compose_linux}
+        "Создание сообщения:": {overlay: *tb_compose_linux}
+        "Стварэнне паведамлення:": {overlay: *tb_compose_linux}
+        "Створення повідомлення:": {overlay: *tb_compose_linux}
+        "Գրել՝": {overlay: *tb_compose_linux}
+        "כתיבה:": {overlay: *tb_compose_linux}
+        "اكتب:": {overlay: *tb_compose_linux}
+        "เขียน:": {overlay: *tb_compose_linux}
+        "მიწერა:": {overlay: *tb_compose_linux}
+        "作成:": {overlay: *tb_compose_linux}
+        "寫信：": {overlay: *tb_compose_linux}
+        "撰写：": {overlay: *tb_compose_linux}
+        "쓰기:": {overlay: *tb_compose_linux}
+# END generated by overlay_sources/thunderbird/gen_titles.py
+# VLC media player (sources: overlay_sources/vlc/). Process and WM_CLASS `vlc`
+# on Linux (measured, 3.0.20); vlc.exe on Windows, "VLC" on macOS.
+vlc:
+  overlay: [vlc_template.mods.png, vlc_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [vlc_template_mac.mods.png, vlc_template_mac.combo.mods.png, vlc_template_mac.extra.mods.png, vlc_template_mac.gui.mods.png]
+# Spotify (sources: overlay_sources/spotify/). Process and WM_CLASS `spotify` on
+# Linux (measured, 1.2.95); Spotify.exe on Windows, "Spotify" on macOS.
+spotify:
+  overlay: [spotify_template.mods.png, spotify_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [spotify_template_mac.mods.png, spotify_template_mac.combo.mods.png, spotify_template_mac.extra.mods.png]
+# Adobe Lightroom Classic (sources: overlay_sources/lightroom/). On Windows the
+# cloud Lightroom app also reports `lightroom`, so the title gate keeps the set
+# to Classic's windows.
+lightroom,adobe lightroom classic:
+  overlay: [lightroom_template.mods.png, lightroom_template.combo.mods.png, lightroom_template.extra.mods.png]
+  title: 'Lightroom Classic'
+  os:
+    macos:
+      overlay: [lightroom_template_mac.mods.png, lightroom_template_mac.combo.mods.png, lightroom_template_mac.extra.mods.png, lightroom_template_mac.gui.mods.png]
+# Adobe InDesign (sources: overlay_sources/indesign/). The macOS name carries a
+# year ("Adobe InDesign 2026"), which mapping_key() drops.
+indesign,adobe indesign:
+  overlay: [indesign_template.mods.png, indesign_template.combo.mods.png, indesign_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [indesign_template_mac.mods.png, indesign_template_mac.combo.mods.png, indesign_template_mac.extra.mods.png, indesign_template_mac.gui.mods.png]
+# Affinity (sources: overlay_sources/affinity/). The version 2 apps run as
+# Designer.exe, Photo.exe and Publisher.exe on Windows; the unified Affinity app
+# gets the keys the three share.
+designer,affinity designer,affinity designer 2:
+  overlay: [affinity_designer_template.mods.png, affinity_designer_template.combo.mods.png, affinity_designer_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [affinity_designer_template_mac.mods.png, affinity_designer_template_mac.combo.mods.png, affinity_designer_template_mac.extra.mods.png, affinity_designer_template_mac.gui.mods.png]
+photo,affinity photo,affinity photo 2:
+  overlay: [affinity_photo_template.mods.png, affinity_photo_template.combo.mods.png, affinity_photo_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [affinity_photo_template_mac.mods.png, affinity_photo_template_mac.combo.mods.png, affinity_photo_template_mac.extra.mods.png, affinity_photo_template_mac.gui.mods.png]
+publisher,affinity publisher,affinity publisher 2:
+  overlay: [affinity_publisher_template.mods.png, affinity_publisher_template.combo.mods.png, affinity_publisher_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [affinity_publisher_template_mac.mods.png, affinity_publisher_template_mac.combo.mods.png, affinity_publisher_template_mac.extra.mods.png, affinity_publisher_template_mac.gui.mods.png]
+affinity:
+  overlay: [affinity_template.mods.png, affinity_template.combo.mods.png, affinity_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [affinity_template_mac.mods.png, affinity_template_mac.combo.mods.png, affinity_template_mac.extra.mods.png, affinity_template_mac.gui.mods.png]
+# Postman (sources: overlay_sources/postman/). Process and WM_CLASS `postman` on
+# Linux (measured, 12.33.3).
+postman:
+  overlay: [postman_template.mods.png, postman_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [postman_template_mac.mods.png, postman_template_mac.combo.mods.png, postman_template_mac.extra.mods.png]
+# DBeaver (sources: overlay_sources/dbeaver/). Commit and Rollback differ on
+# Linux, so it has its own set. On Linux under X11 the process is the bundled
+# JVM (`java`); the `java` entry routes titles starting "DBeaver" to this set.
+# KDE and GNOME report WM_CLASS `DBeaver`, which matches here.
+dbeaver:
+  overlay: [dbeaver_template.mods.png, dbeaver_template.combo.mods.png, dbeaver_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [dbeaver_template_mac.mods.png, dbeaver_template_mac.combo.mods.png, dbeaver_template_mac.extra.mods.png]
+    linux:
+      overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
+# GitHub Desktop (sources: overlay_sources/githubdesktop/). No Linux build.
+githubdesktop,github desktop:
+  overlay: [githubdesktop_template.mods.png, githubdesktop_template.combo.mods.png, githubdesktop_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [githubdesktop_template_mac.mods.png, githubdesktop_template_mac.combo.mods.png, githubdesktop_template_mac.extra.mods.png, githubdesktop_template_mac.gui.mods.png]
+# PDF readers. Adobe Acrobat (sources: overlay_sources/acrobat/): Reader and Pro
+# share one keymap; Acrobat.exe for both today, AcroRd32.exe for the old
+# Reader. SumatraPDF (overlay_sources/sumatrapdf/), Windows only. Okular
+# (overlay_sources/okular/): process and WM_CLASS `okular` on Linux (measured,
+# 23.08.5), org.kde.okular for the Flatpak and on Wayland.
+acrobat,acrord32,adobe acrobat,adobe acrobat reader:
+  overlay: [acrobat_template.mods.png, acrobat_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [acrobat_template_mac.mods.png, acrobat_template_mac.combo.mods.png, acrobat_template_mac.extra.mods.png]
+sumatrapdf:
+  overlay: [sumatrapdf_template.mods.png, sumatrapdf_template.combo.mods.png]
+okular,org.kde.okular:
+  overlay: [okular_template.mods.png, okular_template.combo.mods.png]
+# JupyterLab Desktop (sources: overlay_sources/jupyter/); Jupyter in a browser
+# is under the browser entries. Names not checked on an install.
+jupyterlab,jupyterlab-desktop,jupyterlab desktop:
+  overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
+# RStudio (sources: overlay_sources/rstudio/). Process and WM_CLASS `rstudio` on
+# Linux (measured, 2026.10.0).
+rstudio:
+  overlay: [rstudio_template.mods.png, rstudio_template.combo.mods.png, rstudio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [rstudio_template_mac.mods.png, rstudio_template_mac.combo.mods.png, rstudio_template_mac.extra.mods.png, rstudio_template_mac.gui.mods.png]
+# MATLAB (sources: overlay_sources/matlab/). The macOS bundle is named per release
+# (MATLAB_R2026b.app), and mapping_key() drops only a trailing year, so the
+# releases are listed. Names not checked on an install.
+matlab,matlab_r2025a,matlab_r2025b,matlab_r2026a,matlab_r2026b:
+  overlay: [matlab_template.mods.png, matlab_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [matlab_template_mac.mods.png, matlab_template_mac.combo.mods.png, matlab_template_mac.extra.mods.png]
+# draw.io desktop (sources: overlay_sources/webapps/drawio.yaml). Process `drawio`,
+# WM_CLASS `draw-io` on Linux (measured, 32.5.5). On Windows the host keeps the
+# process name up to its first dot, so draw.io.exe arrives as `draw`.
+drawio,draw-io,draw.io,draw:
+  overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+# Linear desktop (sources: overlay_sources/webapps/linear.yaml). No Linux app;
+# names not checked on an install.
+linear:
+  overlay: [linear_template.mods.png, linear_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
+# Age of Empires II, HD Edition and the original CD version (sources:
+# overlay_sources/aoe2/aoe2_hd.yaml). The Conquerors runs as age2_x1.exe, The
+# Age of Kings as empires2.exe, the HD Edition as "AoK HD.exe". Under Wine the
+# WM_CLASS keeps the `.exe`. Names not checked on an install.
+age2_x1,empires2,aok hd,age2_x1.exe,empires2.exe,aok hd.exe:
+  overlay: aoe2_hd_template.mods.png
+# Age of Empires II: Definitive Edition (overlay_sources/aoe2/aoe2_de.yaml, the
+# HD keys with a "DE" ESC mark). AoE2DE_s.exe on Windows and steam_app_813780
+# under Proton on KDE Plasma (both measured 2026-10-23).
+aoe2de_s,steam_app_813780:
+  overlay: aoe2_de_template.mods.png
+# Command & Conquer Remastered Collection, Steam app 1213210
+# (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
+# steam_app_1213210 under Proton. Names not checked on an install.
+clientg,clientg.exe,steam_app_1213210:
+  overlay: cnc_remastered_template.mods.png
+  # Keys redrawn from the user's own game files when they are installed.
+  game_assets: cnc_remastered/cnc_remastered.yaml

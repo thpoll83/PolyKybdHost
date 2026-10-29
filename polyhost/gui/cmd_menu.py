@@ -10,7 +10,7 @@ from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        check_signature_file)
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
-from polyhost.i18n import _, _f
+from polyhost.i18n import _, _f, translate_message
 
 
 class _RequireExplicitOpen(QProxyStyle):
@@ -90,6 +90,9 @@ class CommandsSubMenu:
         self._maintenance_action = None
         self._auto_brightness_action = None
         self.boot_loop_action = None   # built only in developer mode
+        # Rev.2 board mark (cmd 25's board byte, protocol 24). Gated per feature in
+        # PolyHost.managed_connection_status, so they are in neither list above.
+        self.split_vbus_actions = []
 
     @property
     def _core(self):
@@ -189,6 +192,15 @@ class CommandsSubMenu:
         hand_menu.addAction(self._act("splitscreen_right.svg",
                                       _("Connected half is RIGHT (other is LEFT)"),
                                       self.set_handedness, data=False, device=True))
+        hand_menu.addSeparator()
+        self.split_vbus_actions = [
+            self._act("usb.svg", _("Mark connected half as a Rev.2 board (2023)\u2026"),
+                      self.set_split_vbus, data=True),
+            self._act("usb.svg", _("Remove the Rev.2 mark from the connected half\u2026"),
+                      self.set_split_vbus, data=False),
+        ]
+        for action in self.split_vbus_actions:
+            hand_menu.addAction(action)
         self._device_actions.append(hand_menu.menuAction())
 
         menu.addAction(self._act("layers_clear.svg", _("Reset overlays"),
@@ -315,6 +327,42 @@ class CommandsSubMenu:
         self._report(self._core.set_handedness(master_is_left),
                      lambda m: f"Failed to set handedness: '{m}'")
 
+    def set_split_vbus(self):
+        """Set or clear the Rev.2 mark in the connected half's handedness stamp.
+
+        Rev.2 boards pass VBUS over the split cable, so both halves read 5 V and
+        both start as master; the mark makes the half that enumerates the master.
+        Cmd 25 always writes the side as well, so the user names it here. The
+        mark goes to the connected half only, so each half is done on its own.
+        """
+        split_vbus = bool(self.parent.sender().data())
+        if split_vbus:
+            text = _(
+                "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b>"
+                "<br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") "
+                "pass USB power over the split cable, so both halves start as the main "
+                "half and do not connect. With the mark, the half connected to the "
+                "computer becomes the main half.<br><br>"
+                "Plug in only this half, without the split cable, and mark each half "
+                "on its own. The half saves the mark and its side, then restarts."
+                "<br><br>Which side is this half?")
+        else:
+            text = _(
+                "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b>"
+                "<br><br>The half saves its side, then restarts.<br><br>"
+                "Which side is this half?")
+        box = QMessageBox(QMessageBox.Question, _("Fix Left/Right Side"), text)
+        left = box.addButton(_("Left"), QMessageBox.AcceptRole)
+        right = box.addButton(_("Right"), QMessageBox.AcceptRole)
+        box.addButton(_("Cancel"), QMessageBox.RejectRole)
+        box.exec_()
+        clicked = box.clickedButton()
+        if clicked not in (left, right):
+            self.log.info("Rev.2 mark: user cancelled at confirmation.")
+            return
+        self._report(self._core.set_handedness(clicked is left, split_vbus),
+                     lambda m: f"Failed to set the Rev.2 mark: '{m}'")
+
     def reset_dynamic_keymap(self):
         self._report(self._core.reset_dynamic_keymap(),
                      lambda m: f"Failed resetting dynamic keymap: {m}")
@@ -325,11 +373,16 @@ class CommandsSubMenu:
         In the old flat command list this sat among a dozen sibling resets and
         fired straight away; on the top-level Maintenance menu it is one slip
         away from every user's remapped keymap, so it confirms.
+
+        ⚠️ The firmware answers the reset with dynamic_keymap_reset_poly(),
+        which also zeroes the macro buffer (qmk split_sync.c), so the dialog
+        says so.
         """
         confirm_msg = _(
             "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>"
             "Every key you remapped goes back to the layout the "
-            "firmware ships with. This cannot be undone.<br><br>Continue?"
+            "firmware ships with. This cannot be undone.<br><br>"
+            "<b>All your macros are deleted too.</b><br><br>Continue?"
         )
         reply = QMessageBox.question(
             None, _("Reset Keymap"), confirm_msg,
@@ -518,12 +571,12 @@ class CommandsSubMenu:
 
         valid, reason = validate_rp2040_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Invalid Firmware File"), reason)
+            QMessageBox.critical(None, _("Invalid Firmware File"), translate_message(reason))
             return
 
         valid, reason = validate_polykybd_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Wrong Keyboard"), reason)
+            QMessageBox.critical(None, _("Wrong Keyboard"), translate_message(reason))
             return
 
         # FW-2 advisory, at SELECTION time — before a 446 KB transfer and before
@@ -533,7 +586,8 @@ class CommandsSubMenu:
         # this never blocks the flash.
         signed, advisory = check_signature_file(bin_path)
         if not signed:
-            QMessageBox.information(None, _("Unsigned Firmware"), advisory)
+            QMessageBox.information(None, _("Unsigned Firmware"),
+                                    translate_message(advisory))
 
         # The confirmation text + title depend on whether we also activate the
         # image right after staging (single-step "flash + apply").
@@ -585,7 +639,8 @@ class CommandsSubMenu:
         # staging progress and the apply outcome both surface in the same window.
         with self._paused_polling():
             dlg = HidFwUpDialog(self.parent.keeb.hid, bin_path, apply_after=apply_after,
-                                tray_icon=getattr(self.parent, 'tray', None))
+                                tray_icon=getattr(self.parent, 'tray', None),
+                                pipe_port=self._core.pipe_port_for_update())
             dlg.exec_()
 
     def apply_staged_firmware_action(self):
@@ -632,6 +687,6 @@ class CommandsSubMenu:
                 progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
 
         if ok:
-            QMessageBox.information(None, _("Firmware Applied"), msg)
+            QMessageBox.information(None, _("Firmware Applied"), translate_message(msg))
         else:
-            QMessageBox.warning(None, _("Apply Failed"), msg)
+            QMessageBox.warning(None, _("Apply Failed"), translate_message(msg))

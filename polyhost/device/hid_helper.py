@@ -4,6 +4,7 @@ import threading
 import platform
 import os
 import time
+from contextlib import contextmanager
 from typing import Any
 
 log = logging.getLogger('PolyHost')
@@ -145,7 +146,75 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 """
 
+class IoStats:
+    """Count, total, maximum and median of a set of call durations. The
+    sample list is capped (``MAX_SAMPLES``); the count, total and maximum keep
+    counting past it, the median is then of the first samples."""
+
+    MAX_SAMPLES = 4096
+
+    def __init__(self):
+        self.count = 0
+        self.total_s = 0.0
+        self.max_s = 0.0
+        self._samples = []
+
+    def add(self, dt: float) -> None:
+        self.count += 1
+        self.total_s += dt
+        if dt > self.max_s:
+            self.max_s = dt
+        if len(self._samples) < self.MAX_SAMPLES:
+            self._samples.append(dt)
+
+    @property
+    def median_s(self) -> float:
+        if not self._samples:
+            return 0.0
+        ordered = sorted(self._samples)
+        n = len(ordered)
+        mid = n // 2
+        return ordered[mid] if n % 2 else (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+class IoMeter(IoStats):
+    """Timing of the device calls made while a HidHelper has it attached
+    (``HidHelper.measure()``): every call, and the same calls split by kind.
+
+    One sample per call to a write or read primitive, exceptions included.
+    ``write`` holds the write-only calls (in an overlay switch: the image
+    reports and the mapping reports): a write returns when the keyboard has
+    taken the report into its receive queue, so it is the bus until the queue
+    is full, and the firmware's pace per report after that. ``reply`` holds
+    the calls that wait for an answer (in an overlay switch: the icon fill
+    reports, cmd 42, and prepare/enable): their time includes the keyboard
+    doing the work the command asks for, which a faster link does not shorten.
+    A reply wait also contains every report queued before it, which the
+    keyboard processes first, so it is not the cost of that one command.
+    """
+
+    KINDS = ("write", "reply")
+
+    def __init__(self):
+        super().__init__()
+        self.first_at = None    # perf_counter() at the start of the first call
+        self.write = IoStats()
+        self.reply = IoStats()
+
+    def record(self, t0: float, t1: float, kind: str = "reply") -> None:
+        dt = t1 - t0
+        if self.first_at is None:
+            self.first_at = t0
+        self.add(dt)
+        getattr(self, kind if kind in self.KINDS else "reply").add(dt)
+
+
 class HidHelper:
+    # The meter the device calls below report into, or None. A class
+    # attribute, because tests build helpers with __new__ and never run
+    # __init__. Attach one with measure(); detach with stop_measuring().
+    meter: IoMeter | None = None
+
     def __del__(self):
         if hasattr(self, 'interface') and self.interface:
             self.interface.close()
@@ -158,6 +227,13 @@ class HidHelper:
     def _open(self, info):
         return hid.Device(path=info['path'])
 
+    def _open_raw(self, info):
+        """Open the raw interface and remember its path: wait_for_reboot waits
+        for THIS device to leave the bus, not for every PolyKybd on it."""
+        dev = self._open(info)
+        self.interface_path = info.get('path')
+        return dev
+
     def __init__(self, settings):
         self.settings = settings
         self.lock = threading.Lock()
@@ -168,7 +244,7 @@ class HidHelper:
 
         if len(raw_hid_interfaces) != 0:
             try:
-                self.interface = self._open(raw_hid_interfaces[0])
+                self.interface = self._open_raw(raw_hid_interfaces[0])
             except hid.HIDException as e:
                 print(PERMISSION_MSG)
                 raise e
@@ -230,6 +306,29 @@ class HidHelper:
     def interface_acquired(self):
         return self.interface is not None
 
+    def measure(self) -> IoMeter:
+        """Attach a fresh IoMeter; every device call until stop_measuring()
+        reports into it. Returns the meter."""
+        self.meter = IoMeter()
+        return self.meter
+
+    def stop_measuring(self) -> None:
+        self.meter = None
+
+    @contextmanager
+    def _timed(self, kind: str):
+        """Time one device call into the attached meter, if any, as ``kind``
+        ("write" for a write that reads nothing back, "reply" for a call that
+        waits for an answer). Entered after the lock is taken, so the time is
+        the call's, not a wait for the lock."""
+        t0 = time.perf_counter()
+        try:
+            yield
+        finally:
+            meter = self.meter
+            if meter is not None:
+                meter.record(t0, time.perf_counter(), kind)
+
     def __send(self, data: bytearray) -> tuple[bool, Any]:
         """ Write a data report without reading the response"""
 
@@ -241,7 +340,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -259,7 +358,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 result = self.interface.write(request_report)
                 self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
@@ -282,7 +381,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("write"):
                 result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
@@ -294,7 +393,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, bytearray(f"Exception: {e}", 'utf-8')
@@ -311,7 +410,7 @@ class HidHelper:
             return False, bytearray("No Interface", 'utf-8')
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
                 request_data[1:len(data) + 1] = data
                 request_report = bytes(request_data)
@@ -416,12 +515,122 @@ class HidHelper:
             if raw:
                 try:
                     with self.lock:
-                        self.interface = self._open(raw[0])
+                        self.interface = self._open_raw(raw[0])
                     return True
                 except Exception:
                     pass
             time.sleep(0.5)
         return False
+
+    REBOOT_RECONNECTED = "reconnected"
+    REBOOT_NEVER_LEFT = "never-left"
+    REBOOT_NO_RETURN = "no-return"
+
+    def _raw_interfaces(self):
+        """The raw PolyKybd interfaces on the bus now. Raises: hid.enumerate
+        fails on USB churn, which a reboot is."""
+        return [i for i in self._enumerate(self.settings.VID)
+                if i['product_id'] in self.settings.KNOWN_PIDS
+                and i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
+                and i['usage'] == self.settings.HID_RAW_USAGE]
+
+    def other_raw_paths(self) -> set:
+        """The paths of the raw PolyKybd interfaces on the bus that are not the
+        open one. ``wait_for_reboot`` skips them in its return phase; take the
+        snapshot BEFORE the command that reboots the keyboard, or a keyboard
+        that rebooted and came back under a new path while that command's
+        reply was awaited counts as a bystander and is never reopened. Empty
+        when nothing is open or the enumeration fails (no exclusion then)."""
+        if not self.interface:
+            return set()
+        try:
+            return {i.get('path') for i in self._raw_interfaces()} - {getattr(self, "interface_path", None)}
+        except Exception as e:  # noqa: BLE001 — see _raw_interfaces; no snapshot means no exclusion
+            log.debug("Enumeration failed before the reboot wait: %s", e)
+            return set()
+
+    def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10,
+                        poll_s: float = 0.1, clock=time.monotonic, sleep=time.sleep,
+                        others=None) -> str:
+        """Wait for the device to LEAVE the bus and come back, then re-open it.
+
+        ``wait_for_reconnect`` re-opens the first raw interface it finds, and
+        right after FW_UP_APPLY that is still the OLD device: the keyboard
+        acknowledges, then takes hundreds of milliseconds to tear USB down. On
+        2026-10-19 the apply dialog reported "reconnected" 80 ms after sending
+        APPLY, 3.5 minutes before the keyboard actually came back, and an
+        overlay send then ran into the dying handle. So this waits in two
+        phases: gone (no raw interface enumerated, up to ``gone_timeout_s``),
+        then back (``timeout_s``).
+
+        Returns REBOOT_RECONNECTED with the interface open, REBOOT_NEVER_LEFT
+        when the device stayed enumerated for ``gone_timeout_s`` (the apply did
+        not reboot it), or REBOOT_NO_RETURN when it left and did not come back.
+        A device already absent at the first look counts as gone.
+
+        ``others`` is the :meth:`other_raw_paths` snapshot the caller took before
+        sending the command that reboots the keyboard; None takes it now, which
+        is right only when the keyboard cannot have come back yet.
+        """
+        # The device that was open, by path: the gone phase waits for THAT one.
+        # A second PolyKybd on the bus (not a supported setup, but possible) would
+        # otherwise keep the list non-empty while the flashed one reboots.
+        gone_path = getattr(self, "interface_path", None) if self.interface else None
+
+        def raw_interfaces():
+            # An enumeration error is "unknown", not "absent": the gone phase
+            # keeps waiting and the return phase retries, so a churn error before
+            # the old device left cannot end the wait and let the old device be
+            # reopened.
+            return self._raw_interfaces()
+
+        # The other raw interfaces on the bus are not the flashed keyboard, so
+        # the return phase must not open one of them: once the flashed one has
+        # left, they are all the enumeration lists. The returning device may
+        # come back under another path, so it is matched by exclusion, not by
+        # gone_path.
+        bystanders = set(others) if others is not None else self.other_raw_paths()
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:  # noqa: BLE001 — a handle to a device that is rebooting; nothing to do with the error
+                    pass
+                self.interface = None
+
+        def still_there():
+            try:
+                raw = raw_interfaces()
+            except Exception as e:  # noqa: BLE001 — see raw_interfaces
+                log.debug("Enumeration failed during the reboot wait: %s", e)
+                return True
+            if gone_path is None:
+                return bool(raw)
+            return any(i.get('path') == gone_path for i in raw)
+
+        deadline = clock() + gone_timeout_s
+        while still_there():
+            if clock() >= deadline:
+                return self.REBOOT_NEVER_LEFT
+            sleep(poll_s)
+
+        deadline = clock() + timeout_s
+        while clock() < deadline:
+            try:
+                raw = raw_interfaces()
+            except Exception as e:  # noqa: BLE001 — see raw_interfaces
+                log.debug("Enumeration failed during the reboot wait: %s", e)
+                raw = []
+            raw = [i for i in raw if i.get('path') not in bystanders]
+            if raw:
+                try:
+                    with self.lock:
+                        self.interface = self._open_raw(raw[0])
+                    return self.REBOOT_RECONNECTED
+                except Exception:
+                    pass
+            sleep(0.5)
+        return self.REBOOT_NO_RETURN
 
     def send_and_read(self, data: bytearray, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
@@ -432,7 +641,7 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            with self.lock:
+            with self.lock, self._timed("reply"):
                 self.interface.write(request_report)
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
@@ -461,4 +670,10 @@ class DisconnectedHid(HidHelper):
 
     def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
         return False
+
+    def wait_for_reboot(self, timeout_s: int = 30, gone_timeout_s: int = 10, **_kw) -> str:
+        return HidHelper.REBOOT_NO_RETURN
+
+    def other_raw_paths(self) -> set:
+        return set()
 

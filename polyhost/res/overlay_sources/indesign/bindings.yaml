@@ -1,0 +1,146 @@
+# Adobe InDesign shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Shortcuts: Adobe Help, "Default keyboard shortcuts" (tools, type, panels; the
+# page lists only keys that menus and tooltips do not show), and Redokun's list
+# of the default set's menu commands. InDesign maps Ctrl to Cmd and Alt to
+# Option on macOS, so every Ctrl chord is written CMDCTRL and one spec gives both
+# sets (indesign_template.* and indesign_template_mac.*). The panel F-keys that
+# need Cmd on macOS are written twice under `except: [macos]` / `only: [macos]`.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/indesign/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/indesign/bindings.yaml --preview /tmp/indesign_preview
+app: indesign
+match: [indesign, adobe indesign]
+output: indesign_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: indesign.png
+program_icon_mode: alpha
+program_icon_anchor: bottom-right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  - { key: V, mods: [], icon: selection.png, label: "Selection" }
+  - { key: A, mods: [], icon: directsel.png, label: "Direct selection" }
+  - { key: P, mods: [], icon: pen.png, label: "Pen" }
+  - { key: T, mods: [], icon: type.png, label: "Type" }
+  - { key: N, mods: [], icon: pencil.png, label: "Pencil" }
+  - { key: BACKSLASH, mods: [], icon: line.png, label: "Line" }
+  - { key: F, mods: [], icon: rectframe.png, label: "Rectangle frame" }
+  - { key: M, mods: [], icon: rectangle.png, label: "Rectangle" }
+  - { key: L, mods: [], icon: ellipse.png, label: "Ellipse" }
+  - { key: R, mods: [], icon: rotate.png, label: "Rotate" }
+  - { key: S, mods: [], icon: scale.png, label: "Scale" }
+  - { key: E, mods: [], icon: freetransform.png, label: "Free transform" }
+  - { key: I, mods: [], icon: eyedropper.png, label: "Eyedropper" }
+  - { key: G, mods: [], icon: gradient.png, label: "Gradient swatch" }
+  - { key: C, mods: [], icon: scissors.png, label: "Scissors" }
+  - { key: H, mods: [], icon: hand.png, label: "Hand" }
+  - { key: Z, mods: [], icon: zoom.png, label: "Zoom" }
+  - { key: W, mods: [], icon: preview.png, label: "Normal / preview" }
+  - { key: X, mods: [], icon: fillstroke.png, label: "Fill / stroke" }
+  - { key: U, mods: [], icon: gap.png, label: "Gap" }
+  - { key: P, mods: [SHIFT], icon: page.png, label: "Page tool" }
+  - { key: T, mods: [SHIFT], icon: typepath.png, label: "Type on a path" }
+  - { key: X, mods: [SHIFT], icon: swapfill.png, label: "Swap fill and stroke" }
+  - { key: C, mods: [SHIFT], icon: convertpoint.png, label: "Convert direction point" }
+  - { key: W, mods: [SHIFT], icon: presentation.png, label: "Presentation mode" }
+  - { key: N, mods: [CMDCTRL], icon: new.png, label: "New document" }
+  - { key: O, mods: [CMDCTRL], icon: open.png, label: "Open" }
+  - { key: S, mods: [CMDCTRL], icon: save.png, label: "Save" }
+  - { key: W, mods: [CMDCTRL], icon: close.png, label: "Close" }
+  - { key: P, mods: [CMDCTRL], icon: print.png, label: "Print" }
+  - { key: D, mods: [CMDCTRL], icon: place.png, label: "Place" }
+  - { key: E, mods: [CMDCTRL], icon: export.png, label: "Export" }
+  - { key: K, mods: [CMDCTRL], icon: settings.png, label: "Preferences" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: F, mods: [CMDCTRL], icon: findchange.png, label: "Find / change" }
+  - { key: Y, mods: [CMDCTRL], icon: storyeditor.png, label: "Story editor" }
+  - { key: I, mods: [CMDCTRL], icon: spelling.png, label: "Check spelling" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group" }
+  - { key: L, mods: [CMDCTRL], icon: lock.png, label: "Lock" }
+  - { key: J, mods: [CMDCTRL], icon: gotopage.png, label: "Go to page" }
+  - { key: B, mods: [CMDCTRL], icon: textframe.png, label: "Text frame options" }
+  - { key: T, mods: [CMDCTRL], icon: character.png, label: "Character panel" }
+  - { key: R, mods: [CMDCTRL], icon: rulers.png, label: "Rulers" }
+  - { key: SEMICOLON, mods: [CMDCTRL], icon: guides.png, label: "Show / hide guides" }
+  - { key: QUOTE, mods: [CMDCTRL], icon: docgrid.png, label: "Document grid" }
+  - { key: U, mods: [CMDCTRL], icon: smartguides.png, label: "Smart guides" }
+  - { key: "0", mods: [CMDCTRL], icon: fitpage.png, label: "Fit page" }
+  - { key: "1", mods: [CMDCTRL], icon: actualsize.png, label: "Actual size" }
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: RBRACKET, mods: [CMDCTRL], icon: forward.png, label: "Bring forward" }
+  - { key: LBRACKET, mods: [CMDCTRL], icon: backward.png, label: "Send backward" }
+  - { key: "3", mods: [CMDCTRL], icon: hide.png, label: "Hide" }
+  - { key: "8", mods: [CMDCTRL], icon: compound.png, label: "Make compound path" }
+  - { key: ENTER, mods: [CMDCTRL], icon: quickapply.png, label: "Quick apply" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png, label: "Save as" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo" }
+  - { key: A, mods: [CMDCTRL, SHIFT], icon: deselect.png, label: "Deselect all" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png, label: "Paste without formatting" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: "Ungroup" }
+  - { key: RBRACKET, mods: [CMDCTRL, SHIFT], icon: front.png, label: "Bring to front" }
+  - { key: LBRACKET, mods: [CMDCTRL, SHIFT], icon: back.png, label: "Send to back" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: outlines.png, label: "Create outlines" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: addpage.png, label: "Add page" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: links.png, label: "Links panel" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: tabs.png, label: "Tabs" }
+  - { key: B, mods: [CMDCTRL, SHIFT], label: "Bold" }
+  - { key: I, mods: [CMDCTRL, SHIFT], label: "Italic" }
+  - { key: U, mods: [CMDCTRL, SHIFT], label: "Underline" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: allcaps.png, label: "All caps" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: alignleft.png, label: "Align left" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: aligncenter.png, label: "Align center" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: alignright.png, label: "Align right" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: justify.png, label: "Justify" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: centercontent.png, label: "Center content" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: move.png, label: "Move" }
+  - { key: EQUAL, mods: [CMDCTRL, SHIFT], icon: superscript.png, label: "Superscript" }
+  - { key: SEMICOLON, mods: [CMDCTRL, SHIFT], icon: snapguides.png, label: "Snap to guides" }
+  - { key: P, mods: [CMDCTRL, ALT], icon: docsetup.png, label: "Document setup" }
+  - { key: S, mods: [CMDCTRL, ALT], icon: savecopy.png, label: "Save a copy" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: pasteinto.png, label: "Paste into" }
+  - { key: W, mods: [CMDCTRL, ALT], icon: textwrap.png, label: "Text wrap" }
+  - { key: T, mods: [CMDCTRL, ALT], icon: paragraph.png, label: "Paragraph panel" }
+  - { key: L, mods: [CMDCTRL, ALT], icon: unlockall.png, label: "Unlock all on spread" }
+  - { key: E, mods: [CMDCTRL, ALT], icon: fitcontent.png, label: "Fit content to frame" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: fitframe.png, label: "Fit frame to content" }
+  - { key: U, mods: [CMDCTRL, ALT], icon: steprepeat.png, label: "Step and repeat" }
+  - { key: I, mods: [CMDCTRL, ALT], icon: hiddenchars.png, label: "Hidden characters" }
+  - { key: Y, mods: [CMDCTRL, ALT], icon: threads.png, label: "Text threads" }
+  - { key: M, mods: [CMDCTRL, ALT], icon: dropshadow.png, label: "Drop shadow" }
+  - { key: "0", mods: [CMDCTRL, ALT], icon: fitspread.png, label: "Fit spread" }
+  - { key: N, mods: [CMDCTRL, ALT], icon: newdefault.png, label: "New default document" }
+  - { key: F, mods: [CMDCTRL, ALT], icon: findnext.png, label: "Find next" }
+  - { key: SEMICOLON, mods: [CMDCTRL, ALT], icon: lockguides.png, label: "Lock guides" }
+  - { key: P, mods: [CMDCTRL, ALT, SHIFT], icon: package.png, label: "Package" }
+  - { key: D, mods: [CMDCTRL, ALT, SHIFT], icon: duplicate.png, label: "Duplicate" }
+  - { key: V, mods: [CMDCTRL, ALT, SHIFT], icon: pasteinplace.png, label: "Paste in place" }
+  - { key: F, mods: [CMDCTRL, ALT, SHIFT], icon: preflight.png, label: "Preflight" }
+  - { key: E, mods: [CMDCTRL, ALT, SHIFT], icon: fitprop.png, label: "Fit content proportionally" }
+  - { key: C, mods: [CMDCTRL, ALT, SHIFT], icon: fillprop.png, label: "Fill frame proportionally" }
+  - { key: Y, mods: [CMDCTRL, ALT, SHIFT], icon: overprint.png, label: "Overprint preview" }
+  - { key: F5, mods: [], icon: swatches.png, label: "Swatches" }
+  - { key: F6, mods: [], icon: color.png, label: "Color" }
+  - { key: F7, mods: [], icon: layers.png, label: "Layers" }
+  - { key: F8, mods: [], icon: info.png, label: "Info" }
+  - { key: F7, mods: [SHIFT], icon: align.png, label: "Align" }
+  - { key: F10, mods: [], icon: stroke.png, label: "Stroke", except: [macos] }
+  - { key: F10, mods: [GUI], icon: stroke.png, label: "Stroke", only: [macos] }
+  - { key: F11, mods: [], icon: parastyles.png, label: "Paragraph styles", except: [macos] }
+  - { key: F11, mods: [GUI], icon: parastyles.png, label: "Paragraph styles", only: [macos] }
+  - { key: F12, mods: [], icon: pages.png, label: "Pages", except: [macos] }
+  - { key: F12, mods: [GUI], icon: pages.png, label: "Pages", only: [macos] }
+  - { key: F11, mods: [SHIFT], icon: charstyles.png, label: "Character styles", except: [macos] }
+  - { key: F11, mods: [GUI, SHIFT], icon: charstyles.png, label: "Character styles", only: [macos] }

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-10 07:48+0000\n"
+"POT-Creation-Date: 2026-10-28 12:19+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -33,114 +33,418 @@ msgstr "{minutes} دقيقة"
 msgid "{seconds} sec"
 msgstr "{seconds} ثانية"
 
-#: polyhost/forwarder.py:240
+#: polyhost/device/hid_fw_up.py:43
+#, python-brace-format
+msgid "File is too small ({size} bytes) to be a valid RP2040 firmware image (expected at least 264 bytes for boot2 + ARM vector table)."
+msgstr "الملف صغير جدًا ({size} بايت) ليكون صورة برنامج ثابت صالحة لـ RP2040 (المتوقع 264 بايت على الأقل لـ boot2 + جدول متجهات ARM)."
+
+#: polyhost/device/hid_fw_up.py:46
+#, python-brace-format
+msgid "Invalid RP2040 boot2 CRC32 (file has {stored}, computed {computed}). This does not appear to be a valid RP2040 QMK firmware .bin. Make sure you select the .bin produced by 'qmk compile', not a .uf2, .hex, or other format."
+msgstr "قيمة CRC32 لـ boot2 الخاص بـ RP2040 غير صالحة (في الملف {stored}، والمحسوبة {computed}). لا يبدو أن هذا ملف .bin صالح لبرنامج ثابت QMK لـ RP2040. تأكد من اختيار ملف .bin الناتج عن 'qmk compile'، وليس ملف .uf2 أو .hex أو أي تنسيق آخر."
+
+#: polyhost/device/hid_fw_up.py:51
+#, python-brace-format
+msgid "Invalid ARM vector table: initial SP {sp} is outside RP2040 SRAM ({sram}). This does not appear to be a valid RP2040 firmware binary."
+msgstr "جدول متجهات ARM غير صالح: قيمة SP الأولية {sp} تقع خارج ذاكرة SRAM لـ RP2040 ({sram}). لا يبدو أن هذا ملف ثنائي صالح لبرنامج ثابت RP2040."
+
+#: polyhost/device/hid_fw_up.py:54
+msgid "This firmware binary does not appear to be built for PolyKybd. No PolyKybd identifier string was found in the binary. Make sure you selected a firmware compiled for 'polykybd/split72' using 'qmk compile'."
+msgstr "لا يبدو أن ملف البرنامج الثابت الثنائي هذا مبني لـ PolyKybd. لم يُعثر على سلسلة تعريف PolyKybd في الملف الثنائي. تأكد من اختيار برنامج ثابت مُترجَم لـ 'polykybd/split72' باستخدام 'qmk compile'."
+
+#: polyhost/device/hid_fw_up.py:59
+#, python-brace-format
+msgid ""
+"No signature file was found next to this image ({sig}).\n"
+"\n"
+"The keyboard will ask you to confirm it physically: every keycap goes dark except a big A (accept) on the left half and R (reject) on the right. That is expected for a firmware you built yourself.\n"
+"\n"
+"If you meant to flash a release, download its '.sig' file into the same folder as the '.bin' first."
+msgstr ""
+"لم يُعثر على ملف توقيع بجوار هذه الصورة ({sig}).\n"
+"\n"
+"ستطلب منك لوحة المفاتيح التأكيد فعليًا: تنطفئ كل أغطية المفاتيح باستثناء حرف A (قبول) كبير على النصف الأيسر وR (رفض) على الأيمن. هذا متوقع لبرنامج ثابت بنيته بنفسك.\n"
+"\n"
+"إذا كنت تقصد كتابة إصدار رسمي، فنزّل ملف '.sig' الخاص به أولًا إلى المجلد نفسه الذي يحتوي ملف '.bin'."
+
+#: polyhost/device/hid_fw_up.py:65
+#, python-brace-format
+msgid "Cannot read {sig}: {error}"
+msgstr "تعذّرت قراءة {sig}: {error}"
+
+#: polyhost/device/hid_fw_up.py:67
+#, python-brace-format
+msgid "{sig} is {size} bytes, but a signature is exactly {expected}. It will be ignored and the keyboard will ask you to confirm the image physically."
+msgstr "حجم {sig} هو {size} بايت، لكن التوقيع يبلغ {expected} بالضبط. سيتم تجاهله وستطلب منك لوحة المفاتيح تأكيد الصورة فعليًا."
+
+#: polyhost/device/hid_fw_up.py:69
+msgid "Firmware file is empty."
+msgstr "ملف البرنامج الثابت فارغ."
+
+#: polyhost/device/hid_fw_up.py:70
+#, python-brace-format
+msgid "Firmware too large: {size} bytes (max {max_kb} KB)."
+msgstr "البرنامج الثابت كبير جدًا: {size} بايت (الحد الأقصى {max_kb} KB)."
+
+#: polyhost/device/hid_fw_up.py:71
+#, python-brace-format
+msgid "Sending FW_UP_BEGIN — {kb} KB, CRC32 {crc}…"
+msgstr "جارٍ إرسال FW_UP_BEGIN — {kb} KB، CRC32 {crc}…"
+
+#: polyhost/device/hid_fw_up.py:72
+#, python-brace-format
+msgid "{step} — {elapsed}s elapsed…"
+msgstr "{step} — مضى {elapsed}s…"
+
+#: polyhost/device/hid_fw_up.py:73
+msgid "Erasing staging area — keyboard will reconnect when done"
+msgstr "جارٍ مسح منطقة التجهيز — ستُعيد لوحة المفاتيح الاتصال عند الانتهاء"
+
+#: polyhost/device/hid_fw_up.py:74
+msgid "Erasing staging area (both halves)"
+msgstr "جارٍ مسح منطقة التجهيز (كلا النصفين)"
+
+#: polyhost/device/hid_fw_up.py:75
+msgid "FW_UP_BEGIN timed out"
+msgstr "انتهت مهلة FW_UP_BEGIN"
+
+#: polyhost/device/hid_fw_up.py:76
+msgid "staging area"
+msgstr "منطقة التجهيز"
+
+#: polyhost/device/hid_fw_up.py:78
+msgid "FW_UP_BEGIN timed out — keyboard did not finish erasing within 90 s.  Check the USB cable and try again."
+msgstr "انتهت مهلة FW_UP_BEGIN — لم تُنهِ لوحة المفاتيح المسح خلال 90 s. افحص كابل USB وحاول مرة أخرى."
+
+#: polyhost/device/hid_fw_up.py:81
+msgid "FW_UP_BEGIN failed — keyboard did not reconnect within 30 s.  Check the USB cable and try again."
+msgstr "فشل FW_UP_BEGIN — لم تُعِد لوحة المفاتيح الاتصال خلال 30 s. افحص كابل USB وحاول مرة أخرى."
+
+#: polyhost/device/hid_fw_up.py:84
+msgid ""
+"FW_UP_BEGIN failed — the slave half could not be prepared.\n"
+"Ensure both keyboard halves are connected and powered on.\n"
+"If the slave half has old firmware (without HID firmware update support), it must be\n"
+"flashed manually via UF2 before HID firmware update will work."
+msgstr ""
+"فشل FW_UP_BEGIN — تعذّر تجهيز النصف التابع.\n"
+"تأكد من توصيل كلا نصفي لوحة المفاتيح وتشغيلهما.\n"
+"إذا كان النصف التابع يحمل برنامجًا ثابتًا قديمًا (دون دعم تحديث البرنامج الثابت عبر HID)، فيجب\n"
+"كتابته يدويًا عبر UF2 قبل أن يعمل تحديث البرنامج الثابت عبر HID."
+
+#: polyhost/device/hid_fw_up.py:88
+#, python-brace-format
+msgid "Staging erased. Sending {chunks} chunks…"
+msgstr "تم مسح منطقة التجهيز. جارٍ إرسال {chunks} جزءًا…"
+
+#: polyhost/device/hid_fw_up.py:89
+msgid "Update cancelled by user."
+msgstr "ألغى المستخدم التحديث."
+
+#: polyhost/device/hid_fw_up.py:90
+#, python-brace-format
+msgid "Chunk {n}/{total} ({kb} KB sent)…"
+msgstr "الجزء {n}/{total} (أُرسل {kb} KB)…"
+
+#: polyhost/device/hid_fw_up.py:92
+#, python-brace-format
+msgid "Keyboard halves resynced — rewinding to chunk {n}/{total} (offset {offset}, resync {resync})…"
+msgstr "أُعيدت مزامنة نصفي لوحة المفاتيح — الرجوع إلى الجزء {n}/{total} (الإزاحة {offset}، إعادة المزامنة {resync})…"
+
+#: polyhost/device/hid_fw_up.py:94
+msgid "keyboard rejected the chunk"
+msgstr "رفضت لوحة المفاتيح الجزء"
+
+#: polyhost/device/hid_fw_up.py:95
+msgid "no reply from the keyboard"
+msgstr "لا يوجد رد من لوحة المفاتيح"
+
+#: polyhost/device/hid_fw_up.py:97
+#, python-brace-format
+msgid ""
+"FW_UP_CHUNK failed at offset {offset} after {attempts} attempts — {reason}.\n"
+"Ensure both keyboard halves are connected and running the same firmware, then try again — the update resumes from scratch and is safe to repeat."
+msgstr ""
+"فشل FW_UP_CHUNK عند الإزاحة {offset} بعد {attempts} محاولات — {reason}.\n"
+"تأكد من توصيل كلا نصفي لوحة المفاتيح وأنهما يشغّلان البرنامج الثابت نفسه، ثم حاول مرة أخرى — يبدأ التحديث من البداية ويمكن تكراره بأمان."
+
+#: polyhost/device/hid_fw_up.py:100
+#, python-brace-format
+msgid "Chunk {n}/{total} — retry {attempt}/{max_attempts} (waiting {ms} ms)…"
+msgstr "الجزء {n}/{total} — إعادة المحاولة {attempt}/{max_attempts} (انتظار {ms} ms)…"
+
+#: polyhost/device/hid_fw_up.py:101
+#, python-brace-format
+msgid "Sending over the fast link: {kb} KB of {total_kb} KB…"
+msgstr "الإرسال عبر الوصلة السريعة: {kb} KB من {total_kb} KB…"
+
+#: polyhost/device/hid_fw_up.py:102
+#, python-brace-format
+msgid "Fast link stopped ({reason}); continuing over HID from {kb} KB."
+msgstr "توقفت الوصلة السريعة ({reason})؛ المتابعة عبر HID من {kb} KB."
+
+#: polyhost/device/hid_fw_up.py:106
+msgid "port not openable"
+msgstr "تعذر فتح المنفذ"
+
+#: polyhost/device/hid_fw_up.py:107
+msgid "pipe protocol too old"
+msgstr "بروتوكول القناة قديم جدًا"
+
+#: polyhost/device/hid_fw_up.py:108
+msgid "port error"
+msgstr "خطأ في المنفذ"
+
+#: polyhost/device/hid_fw_up.py:109
+#, python-brace-format
+msgid "Could not read {sig}: {error} — flashing unsigned."
+msgstr "تعذّرت قراءة {sig}: {error} — ستتم الكتابة دون توقيع."
+
+#: polyhost/device/hid_fw_up.py:110
+msgid "Sending image signature…"
+msgstr "جارٍ إرسال توقيع الصورة…"
+
+#: polyhost/device/hid_fw_up.py:111
+#, python-brace-format
+msgid "Ignoring {sig} — expected {expected} bytes, got {size}."
+msgstr "تجاهل {sig} — المتوقع {expected} بايت، والفعلي {size}."
+
+#: polyhost/device/hid_fw_up.py:112
+msgid "Verifying the staged image (CRC32)…"
+msgstr "جارٍ التحقق من الصورة المُجهَّزة (CRC32)…"
+
+#: polyhost/device/hid_fw_up.py:114
+msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
+msgstr "هذا البرنامج الثابت غير موقَّع. أكّد على لوحة المفاتيح: اضغط المفتاح المميَّز A (قبول) أو R (رفض)."
+
+#: polyhost/device/hid_fw_up.py:117
+msgid ""
+"Timed out waiting for confirmation on the keyboard.\n"
+"\n"
+"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
+msgstr ""
+"انتهت مهلة انتظار التأكيد على لوحة المفاتيح.\n"
+"\n"
+"تطلب لوحة المفاتيح قبولًا أو رفضًا فعليًا (ACCEPT/REJECT) لأن هذه الصورة غير موقَّعة توقيعًا صالحًا. ابدأ الكتابة مرة أخرى واضغط المفتاح المميَّز A على النصف الأيسر خلال دقيقة."
+
+#: polyhost/device/hid_fw_up.py:122
+#, python-brace-format
+msgid ""
+"The keyboard refused this firmware: the signature does not match the image.\n"
+"\n"
+"{sig} is not a valid signature for this .bin. Either the two files come from different builds, or one of them is damaged — re-download both from the same release.\n"
+"\n"
+"There is deliberately no way to confirm past this on the keyboard: a signature that fails to verify means the file is not what it claims to be."
+msgstr ""
+"رفضت لوحة المفاتيح هذا البرنامج الثابت: التوقيع لا يطابق الصورة.\n"
+"\n"
+"{sig} ليس توقيعًا صالحًا لملف .bin هذا. إما أن الملفين من بنيتين مختلفتين، أو أن أحدهما تالف — نزّل الملفين مجددًا من الإصدار نفسه.\n"
+"\n"
+"لا توجد عمدًا أي طريقة لتجاوز ذلك بالتأكيد على لوحة المفاتيح: التوقيع الذي يفشل التحقق منه يعني أن الملف ليس ما يدّعيه."
+
+#: polyhost/device/hid_fw_up.py:131
+msgid ""
+"The keyboard refused this firmware: it is not signed.\n"
+"\n"
+"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
+"\n"
+"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
+msgstr ""
+"رفضت لوحة المفاتيح هذا البرنامج الثابت: إنه غير موقَّع.\n"
+"\n"
+"يأتي البرنامج الثابت المنشور مع ملف '.sig' مطابق — نزّله بجانب ملف .bin وأعد الكتابة.\n"
+"\n"
+"لكتابة إصدار بنيته بنفسك، أعد الكتابة واضغط المفتاح المميَّز A (قبول) على لوحة المفاتيح عندما تطلب ذلك."
+
+#: polyhost/device/hid_fw_up.py:136
+msgid "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
+msgstr "فشل FW_UP_COMMIT — عدم تطابق CRC على لوحة المفاتيح. حاول مرة أخرى."
+
+#: polyhost/device/hid_fw_up.py:137
+msgid "Done. New firmware staged and verified on the keyboard."
+msgstr "تم. جُهِّز البرنامج الثابت الجديد وتم التحقق منه على لوحة المفاتيح."
+
+#: polyhost/device/hid_fw_up.py:139
+msgid ""
+"Firmware staged and verified successfully.\n"
+"\n"
+"The new image is stored and CRC-checked on the keyboard, but it is not active yet — the keyboard is still running its current firmware. Activating the staged image will be a separate step."
+msgstr ""
+"تم تجهيز البرنامج الثابت والتحقق منه بنجاح.\n"
+"\n"
+"الصورة الجديدة مخزّنة على لوحة المفاتيح وتم فحص CRC لها، لكنها ليست نشطة بعد — لا تزال لوحة المفاتيح تشغّل برنامجها الثابت الحالي. سيكون تنشيط الصورة المُجهَّزة خطوة منفصلة."
+
+#: polyhost/device/hid_fw_up.py:143
+msgid "Sending FW_UP_APPLY…"
+msgstr "جارٍ إرسال FW_UP_APPLY…"
+
+#: polyhost/device/hid_fw_up.py:145
+msgid ""
+"Apply is not available.\n"
+"\n"
+"The keyboard reported no valid staged image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no). The staged image is unchanged."
+msgstr ""
+"التطبيق غير متاح.\n"
+"\n"
+"أفادت لوحة المفاتيح بعدم وجود صورة مُجهَّزة صالحة، أو أن هذا البرنامج الثابت بُني دون التطبيق من داخل التطبيق (FW_UP_INAPP_APPLY=no). لم تتغير الصورة المُجهَّزة."
+
+#: polyhost/device/hid_fw_up.py:149
+msgid "Applying — keyboard is erasing its flash and rebooting…"
+msgstr "جارٍ التطبيق — تمسح لوحة المفاتيح ذاكرة الفلاش الخاصة بها وتعيد التشغيل…"
+
+#: polyhost/device/hid_fw_up.py:151
+msgid ""
+"Keyboard did not reconnect within 30 s after apply.\n"
+"If it does not come back on its own, hold BOOTSEL on the master half and re-flash the .uf2."
+msgstr ""
+"لم تُعِد لوحة المفاتيح الاتصال خلال 30 s بعد التطبيق.\n"
+"إذا لم تعد من تلقاء نفسها، فاضغط مطولًا على BOOTSEL في النصف الرئيسي وأعد كتابة ملف .uf2."
+
+#: polyhost/device/hid_fw_up.py:155
+msgid ""
+"The keyboard acknowledged APPLY but did not reboot within 10 s.\n"
+"The staged image was not applied; the keyboard still runs its current firmware. Try the apply again."
+msgstr ""
+"أكدت لوحة المفاتيح APPLY لكنها لم تُعِد التشغيل خلال 10 s.\n"
+"لم تُطبَّق الصورة المُجهَّزة؛ لا تزال لوحة المفاتيح تشغّل برنامجها الثابت الحالي. أعد محاولة التطبيق."
+
+#: polyhost/device/hid_fw_up.py:158
+msgid "Done. Keyboard reconnected on the applied firmware."
+msgstr "تم. أعادت لوحة المفاتيح الاتصال بالبرنامج الثابت المُطبَّق."
+
+#: polyhost/device/hid_fw_up.py:160
+msgid ""
+"Firmware applied — the keyboard rebooted and reconnected.\n"
+"\n"
+"Both halves now run the new firmware."
+msgstr ""
+"تم تطبيق البرنامج الثابت — أُعيد تشغيل لوحة المفاتيح وأعادت الاتصال.\n"
+"\n"
+"يعمل كلا النصفين الآن بالبرنامج الثابت الجديد."
+
+#: polyhost/device/split_link.py:30
+#, python-brace-format
+msgid "{prefix} — the USB half answered, but the other keyboard half did not confirm that it had erased the {what} within 90 s. Check the cable between the two halves. If the other half stays dark, it is not running firmware and needs the firmware .uf2 copied onto it by hand."
+msgstr "{prefix} — استجاب النصف الموصول عبر USB، لكن نصف لوحة المفاتيح الآخر لم يؤكد أنه مسح {what} خلال 90 s. افحص الكابل بين النصفين. إذا ظل النصف الآخر مطفأً، فهو لا يشغّل أي برنامج ثابت ويحتاج إلى نسخ ملف .uf2 للبرنامج الثابت إليه يدويًا."
+
+#: polyhost/forwarder.py:243
 msgid "Press to pause forwarding"
 msgstr "اضغط لإيقاف إعادة التوجيه مؤقتًا"
 
-#: polyhost/forwarder.py:247
+#: polyhost/forwarder.py:250
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "إيقاف إرسال النافذة النشطة على هذا الجهاز إلى جهاز لوحة المفاتيح."
 
-#: polyhost/forwarder.py:259
+#: polyhost/forwarder.py:262
 msgid "Check for host update…"
 msgstr "التحقق من وجود تحديث للمضيف…"
 
-#: polyhost/forwarder.py:340
+#: polyhost/forwarder.py:343
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "لا يوجد مضيف (بانتظار {path})"
 
-#: polyhost/forwarder.py:341
+#: polyhost/forwarder.py:344
 msgid "no host configured"
 msgstr "لم يتم تكوين مضيف"
 
-#: polyhost/forwarder.py:344
+#: polyhost/forwarder.py:347
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (مُعيد التوجيه) ← {target}"
 
-#: polyhost/forwarder.py:349
+#: polyhost/forwarder.py:352
 msgid "Forwarding paused"
 msgstr "إعادة التوجيه متوقفة مؤقتًا"
 
-#: polyhost/forwarder.py:352
+#: polyhost/forwarder.py:355
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "جارٍ إعادة التوجيه إلى {target}…"
 
-#: polyhost/forwarder.py:354
+#: polyhost/forwarder.py:357
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "إعادة التوجيه إلى {target}"
 
-#: polyhost/forwarder.py:355
+#: polyhost/forwarder.py:358
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "تعذّر الوصول إلى {target}"
 
-#: polyhost/forwarder.py:748
+#: polyhost/forwarder.py:751
 msgid "PolyForwarder settings"
 msgstr "إعدادات PolyForwarder"
 
-#: polyhost/forwarder.py:749
+#: polyhost/forwarder.py:752
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "تعذّر حفظ الإعدادات في ملف الإعدادات، لذا لن تسري. قد يكون برنامج آخر يُبقي الملف مفتوحًا. حاول مرة أخرى، أو راجع السجل."
 
-#: polyhost/forwarder.py:768
+#: polyhost/forwarder.py:771
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC موثّق (المنفذ {port})"
 
-#: polyhost/forwarder.py:770
+#: polyhost/forwarder.py:773
 msgid "legacy plaintext TCP relay"
 msgstr "مُرحِّل TCP قديم بنص غير مشفّر"
 
-#: polyhost/forwarder.py:773
+#: polyhost/forwarder.py:776
 msgid "reaching the keyboard machine"
 msgstr "يصل إلى جهاز لوحة المفاتيح"
 
-#: polyhost/forwarder.py:774
+#: polyhost/forwarder.py:777
 msgid "not reaching the keyboard machine"
 msgstr "لا يصل إلى جهاز لوحة المفاتيح"
 
-#: polyhost/forwarder.py:775
+#: polyhost/forwarder.py:778
 msgid "starting up"
 msgstr "جارٍ البدء"
 
-#: polyhost/forwarder.py:777
+#: polyhost/forwarder.py:780
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>الوضع:</b> مُعيد التوجيه — لا توجد لوحة مفاتيح متصلة بهذا الجهاز"
 
-#: polyhost/forwarder.py:778
+#: polyhost/forwarder.py:781
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>الهدف:</b> {target}"
 
-#: polyhost/forwarder.py:780
+#: polyhost/forwarder.py:783
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>تقارير النوافذ:</b> {transport}"
 
-#: polyhost/forwarder.py:783
+#: polyhost/forwarder.py:786
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>ملف المضيف:</b> {path}"
 
-#: polyhost/forwarder.py:804
+#: polyhost/forwarder.py:807
 msgid "About PolyKybdHost (forwarder)"
 msgstr "حول PolyKybdHost (مُعيد التوجيه)"
 
-#: polyhost/forwarder.py:813
+#. TRANSLATORS: the run mode in the About dialog's environment line
+#: polyhost/forwarder.py:814
+msgid "forwarder"
+msgstr "إعادة التوجيه"
+
+#: polyhost/forwarder.py:816
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "وضع إعادة التوجيه: لا توجد لوحة مفاتيح على هذا الجهاز. يراقب النافذة النشطة هنا ويرسلها إلى PolyKybdHost الذي يعمل على الجهاز الموصولة به لوحة المفاتيح."
 
-#: polyhost/forwarder.py:852
+#: polyhost/forwarder.py:855
 msgid "Download, install, and restart the forwarder now?"
 msgstr "هل تريد تنزيل مُعيد التوجيه وتثبيته وإعادة تشغيله الآن؟"
 
 #: polyhost/gui/about_dialog.py:40
 msgid "Blog"
 msgstr "المدوّنة"
+
+#: polyhost/gui/about_dialog.py:66
+#, python-brace-format
+msgid "Version {version}"
+msgstr "الإصدار {version}"
 
 #: polyhost/gui/about_dialog.py:97
 msgid "About PolyKybdHost"
@@ -192,15 +496,15 @@ msgid "Stop"
 msgstr "إيقاف"
 
 #: polyhost/gui/boot_loop_dialog.py:86 polyhost/gui/crash_alert_dialog.py:74
-#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:151
+#: polyhost/gui/error_dialog.py:51 polyhost/gui/log_bundle_dialog.py:164
 #: polyhost/gui/problem_alert_dialog.py:70
 msgid "Copy to Clipboard"
 msgstr "نسخ إلى الحافظة"
 
 #: polyhost/gui/boot_loop_dialog.py:90 polyhost/gui/error_dialog.py:62
-#: polyhost/gui/fontpack_extend_dialog.py:856
+#: polyhost/gui/fontpack_extend_dialog.py:863
 #: polyhost/gui/fontpack_inspector_dialog.py:1000
-#: polyhost/gui/hid_fw_up_dialog.py:458 polyhost/gui/log_viewer.py:219
+#: polyhost/gui/hid_fw_up_dialog.py:485 polyhost/gui/log_viewer.py:224
 #: polyhost/gui/mru_inspector_dialog.py:101
 #: polyhost/gui/split_link_dialog.py:95
 msgid "Close"
@@ -236,290 +540,325 @@ msgstr "تعذّر الإيقاف: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>فشل:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:127 polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:51
 msgid "Brightness"
 msgstr "السطوع"
 
-#: polyhost/gui/cmd_menu.py:128
+#: polyhost/gui/cmd_menu.py:131
 msgid "Off"
 msgstr "إيقاف"
 
-#: polyhost/gui/cmd_menu.py:138 polyhost/gui/cmd_menu.py:162
+#: polyhost/gui/cmd_menu.py:141 polyhost/gui/cmd_menu.py:165
 msgid "Back to automatic"
 msgstr "العودة إلى الوضع التلقائي"
 
-#: polyhost/gui/cmd_menu.py:159
+#: polyhost/gui/cmd_menu.py:162
 msgid "Re-apply the host's automatic brightness."
 msgstr "إعادة تطبيق السطوع التلقائي الخاص بالمضيف."
 
-#: polyhost/gui/cmd_menu.py:163
+#: polyhost/gui/cmd_menu.py:166
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
 msgstr "إعادة تفعيل السطوع التلقائي (حسب ضوء النهار) — يتم تجاهل الإعداد المسبق اليدوي أعلاه."
 
-#: polyhost/gui/cmd_menu.py:166
+#: polyhost/gui/cmd_menu.py:169
 msgid "Clear manual override"
 msgstr "مسح التجاوز اليدوي"
 
-#: polyhost/gui/cmd_menu.py:167
+#: polyhost/gui/cmd_menu.py:170
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
 msgstr "السطوع المعتمد على ضوء النهار معطّل في الإعدادات، لذا لا يؤدي هذا إلا إلى إعادة لوحة المفاتيح إلى السطوع المخزّن فيها."
 
-#: polyhost/gui/cmd_menu.py:182
+#: polyhost/gui/cmd_menu.py:185
 msgid "Maintenance"
 msgstr "الصيانة"
 
-#: polyhost/gui/cmd_menu.py:185 polyhost/gui/cmd_menu.py:310
+#: polyhost/gui/cmd_menu.py:188 polyhost/gui/cmd_menu.py:322
+#: polyhost/gui/cmd_menu.py:354
 msgid "Fix Left/Right Side"
 msgstr "تصحيح الجانب الأيسر/الأيمن"
 
-#: polyhost/gui/cmd_menu.py:187
+#: polyhost/gui/cmd_menu.py:190
 msgid "Connected half is LEFT (other is RIGHT)"
 msgstr "النصف الموصول هو الأيسر (والآخر هو الأيمن)"
 
-#: polyhost/gui/cmd_menu.py:190
+#: polyhost/gui/cmd_menu.py:193
 msgid "Connected half is RIGHT (other is LEFT)"
 msgstr "النصف الموصول هو الأيمن (والآخر هو الأيسر)"
 
-#: polyhost/gui/cmd_menu.py:194
+#: polyhost/gui/cmd_menu.py:197
+msgid "Mark connected half as a Rev.2 board (2023)…"
+msgstr "تمييز النصف الموصول على أنه لوحة Rev.2 (2023)…"
+
+#: polyhost/gui/cmd_menu.py:199
+msgid "Remove the Rev.2 mark from the connected half…"
+msgstr "إزالة علامة Rev.2 من النصف الموصول…"
+
+#: polyhost/gui/cmd_menu.py:206
 msgid "Reset overlays"
 msgstr "إعادة تعيين التراكبات"
 
-#: polyhost/gui/cmd_menu.py:196
+#: polyhost/gui/cmd_menu.py:208
 msgid "Reset keymap to default…"
 msgstr "إعادة تعيين مخطط المفاتيح إلى الافتراضي…"
 
-#: polyhost/gui/cmd_menu.py:202
+#: polyhost/gui/cmd_menu.py:214
 msgid "Flash firmware file (.bin)…"
 msgstr "كتابة ملف البرنامج الثابت (.bin)…"
 
-#: polyhost/gui/cmd_menu.py:205
+#: polyhost/gui/cmd_menu.py:217
 msgid "Activate bootloader…"
 msgstr "تنشيط محمّل الإقلاع…"
 
-#: polyhost/gui/cmd_menu.py:211
+#: polyhost/gui/cmd_menu.py:223
 msgid "Overlays"
 msgstr "التراكبات"
 
-#: polyhost/gui/cmd_menu.py:212
+#: polyhost/gui/cmd_menu.py:224
 msgid "Enable shortcut overlays"
 msgstr "تمكين تراكبات الاختصارات"
 
-#: polyhost/gui/cmd_menu.py:214
+#: polyhost/gui/cmd_menu.py:226
 msgid "Disable shortcut overlays"
 msgstr "تعطيل تراكبات الاختصارات"
 
-#: polyhost/gui/cmd_menu.py:217
+#: polyhost/gui/cmd_menu.py:229
 msgid "Reset overlay buffers"
 msgstr "إعادة تعيين مخازن التراكبات"
 
-#: polyhost/gui/cmd_menu.py:219
+#: polyhost/gui/cmd_menu.py:231
 msgid "Reset overlay mapping"
 msgstr "إعادة تعيين تعيين التراكبات"
 
-#: polyhost/gui/cmd_menu.py:221
+#: polyhost/gui/cmd_menu.py:233
 msgid "Clear overlay usage"
 msgstr "مسح استخدام التراكبات"
 
-#: polyhost/gui/cmd_menu.py:223
+#: polyhost/gui/cmd_menu.py:235
 msgid "Set all overlay mapping"
 msgstr "ضبط كل تعيينات التراكبات"
 
-#: polyhost/gui/cmd_menu.py:227
+#: polyhost/gui/cmd_menu.py:239
 msgid "Idle"
 msgstr "الخمول"
 
-#: polyhost/gui/cmd_menu.py:228
+#: polyhost/gui/cmd_menu.py:240
 msgid "Start idle now"
 msgstr "بدء الخمول الآن"
 
-#: polyhost/gui/cmd_menu.py:230
+#: polyhost/gui/cmd_menu.py:242
 msgid "Stop idle"
 msgstr "إيقاف الخمول"
 
-#: polyhost/gui/cmd_menu.py:234 polyhost/gui/cmd_menu.py:423
-#: polyhost/gui/cmd_menu.py:428 polyhost/gui/cmd_menu.py:436
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:246 polyhost/gui/cmd_menu.py:476
+#: polyhost/gui/cmd_menu.py:481 polyhost/gui/cmd_menu.py:489
+#: polyhost/gui/cmd_menu.py:493
 msgid "Keymap"
 msgstr "مخطط المفاتيح"
 
-#: polyhost/gui/cmd_menu.py:235
+#: polyhost/gui/cmd_menu.py:247
 msgid "Layer count"
 msgstr "عدد الطبقات"
 
-#: polyhost/gui/cmd_menu.py:237
+#: polyhost/gui/cmd_menu.py:249
 msgid "Default layer"
 msgstr "الطبقة الافتراضية"
 
-#: polyhost/gui/cmd_menu.py:239
+#: polyhost/gui/cmd_menu.py:251
 msgid "Dump keymap buffer to the log"
 msgstr "تفريغ مخزن مخطط المفاتيح إلى السجل"
 
-#: polyhost/gui/cmd_menu.py:243 polyhost/gui/cmd_menu.py:447
-#: polyhost/gui/cmd_menu.py:450 polyhost/gui/cmd_menu.py:461
+#: polyhost/gui/cmd_menu.py:255 polyhost/gui/cmd_menu.py:500
+#: polyhost/gui/cmd_menu.py:503 polyhost/gui/cmd_menu.py:514
 msgid "Font Pack"
 msgstr "حزمة الخطوط"
 
-#: polyhost/gui/cmd_menu.py:244
+#: polyhost/gui/cmd_menu.py:256
 msgid "Per-bundle status…"
 msgstr "حالة كل رزمة…"
 
-#: polyhost/gui/cmd_menu.py:246
+#: polyhost/gui/cmd_menu.py:258
 msgid "Sync (flash missing/updated bundles)"
 msgstr "مزامنة (كتابة الرزم المفقودة/المحدّثة)"
 
-#: polyhost/gui/cmd_menu.py:248
+#: polyhost/gui/cmd_menu.py:260
 msgid "Re-flash ALL bundles (force)…"
 msgstr "إعادة كتابة كل الرزم (إجباري)…"
 
-#: polyhost/gui/cmd_menu.py:250
+#: polyhost/gui/cmd_menu.py:262
 msgid "Wipe (empty all bundles)"
 msgstr "مسح (إفراغ كل الرزم)"
 
-#: polyhost/gui/cmd_menu.py:256
+#: polyhost/gui/cmd_menu.py:268
 msgid "Firmware"
 msgstr "البرنامج الثابت"
 
-#: polyhost/gui/cmd_menu.py:257
+#: polyhost/gui/cmd_menu.py:269
 msgid "Flash only (.bin, stage)…"
 msgstr "كتابة فقط (.bin، تجهيز)…"
 
-#: polyhost/gui/cmd_menu.py:260
+#: polyhost/gui/cmd_menu.py:272
 msgid "Apply staged firmware…"
 msgstr "تطبيق البرنامج الثابت المُجهَّز…"
 
-#: polyhost/gui/cmd_menu.py:265
+#: polyhost/gui/cmd_menu.py:277
 msgid "Boot-loop test…"
 msgstr "اختبار حلقة الإقلاع…"
 
-#: polyhost/gui/cmd_menu.py:271
+#: polyhost/gui/cmd_menu.py:283
 msgid "Run command file (.poly.cmd)…"
 msgstr "تشغيل ملف أوامر (.poly.cmd)…"
 
-#: polyhost/gui/cmd_menu.py:297
+#: polyhost/gui/cmd_menu.py:309
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>هل تريد تعيين النصف الموصول به كابل USB على أنه الجانب الأيسر؟</b><br><br>يصبح النصف الآخر هو الجانب الأيمن. يحفظ كلا النصفين الاتجاه الجديد ويعيدان التشغيل عليه (نحو 10 ثوانٍ، دون الحاجة إلى إعادة التوصيل).<br><br>تأكد من أن كابل USB موصول بالنصف الذي تريده أن يكون الجانب <b>الأيسر</b>، ثم تابع."
 
-#: polyhost/gui/cmd_menu.py:304
+#: polyhost/gui/cmd_menu.py:316
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>هل تريد تعيين النصف الموصول به كابل USB على أنه الجانب الأيمن؟</b><br><br>يصبح النصف الآخر هو الجانب الأيسر. يحفظ كلا النصفين الاتجاه الجديد ويعيدان التشغيل عليه (نحو 10 ثوانٍ، دون الحاجة إلى إعادة التوصيل).<br><br>تأكد من أن كابل USB موصول بالنصف الذي تريده أن يكون الجانب <b>الأيمن</b>، ثم تابع."
 
-#: polyhost/gui/cmd_menu.py:330
-msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br>Continue?"
-msgstr "<b>هل تريد إعادة تعيين مخطط مفاتيح لوحة المفاتيح إلى الإعداد الافتراضي للبرنامج الثابت؟</b><br><br>يعود كل مفتاح أعدت تعيينه إلى التخطيط المضمَّن في البرنامج الثابت. لا يمكن التراجع عن ذلك.<br><br>هل تريد المتابعة؟"
+#: polyhost/gui/cmd_menu.py:341
+msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>هل تريد تمييز النصف الموصول به كابل USB على أنه لوحة Rev.2؟</b><br><br>تمرّر لوحات Rev.2 (اليسرى \"Rev 2 04/2023\"، اليمنى \"Rev.2 03/2023\") طاقة USB عبر كابل الوصل، لذلك يبدأ كلا النصفين كنصف رئيسي ولا يتصلان. مع العلامة يصبح النصف الموصول بالحاسوب هو النصف الرئيسي.<br><br>صِل هذا النصف وحده، دون كابل الوصل، وميّز كل نصف على حدة. يحفظ النصف العلامة وجانبه ثم يعيد التشغيل.<br><br>أي جانب هذا النصف؟"
 
-#: polyhost/gui/cmd_menu.py:335
+#: polyhost/gui/cmd_menu.py:351
+msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
+msgstr "<b>هل تريد إزالة علامة Rev.2 من النصف الموصول به كابل USB؟</b><br><br>يحفظ النصف جانبه ثم يعيد التشغيل.<br><br>أي جانب هذا النصف؟"
+
+#: polyhost/gui/cmd_menu.py:355
+#: polyhost/gui/layout_dialog/keycode_composer.py:89
+msgid "Left"
+msgstr "يسار"
+
+#: polyhost/gui/cmd_menu.py:356
+#: polyhost/gui/layout_dialog/keycode_composer.py:90
+msgid "Right"
+msgstr "يمين"
+
+#: polyhost/gui/cmd_menu.py:357 polyhost/gui/fontpack_extend_dialog.py:241
+#: polyhost/gui/fontpack_extend_dialog.py:814
+#: polyhost/gui/hid_fw_up_dialog.py:207
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
+#: polyhost/gui/log_viewer.py:273 polyhost/host.py:265
+msgid "Cancel"
+msgstr "إلغاء"
+
+#: polyhost/gui/cmd_menu.py:382
+msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
+msgstr "<b>هل تريد إعادة تعيين مخطط مفاتيح لوحة المفاتيح إلى الإعداد الافتراضي للبرنامج الثابت؟</b><br><br>يعود كل مفتاح أعدت تعيينه إلى التخطيط المضمَّن في البرنامج الثابت. لا يمكن التراجع عن ذلك.<br><br><b>سيتم حذف جميع وحدات الماكرو أيضًا.</b><br><br>هل تريد المتابعة؟"
+
+#: polyhost/gui/cmd_menu.py:388
 msgid "Reset Keymap"
 msgstr "إعادة تعيين مخطط المفاتيح"
 
-#: polyhost/gui/cmd_menu.py:389
+#: polyhost/gui/cmd_menu.py:442
 msgid "Re-flash Font Pack"
 msgstr "إعادة كتابة حزمة الخطوط"
 
-#: polyhost/gui/cmd_menu.py:390
+#: polyhost/gui/cmd_menu.py:443
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>هل تريد إعادة كتابة كل رزم حزمة الخطوط؟</b><br><br>يُعاد إرسال كل رزمة مرفقة حتى لو أفادت لوحة المفاتيح بأنها محدّثة — استخدم هذا عندما يُعرض رمز بشكل خاطئ أو عندما يُبلَّغ عن فشل كتابة سابقة. يستغرق نحو دقيقة؛ وتبقى الكتابة على لوحة المفاتيح ممكنة طوال الوقت.<br><br>هل تريد المتابعة؟"
 
-#: polyhost/gui/cmd_menu.py:406
+#: polyhost/gui/cmd_menu.py:459
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>هل تريد مسح حزمة الخطوط من الذاكرة الخارجية؟</b><br><br>تُفرَّغ كل خانات رزم حزمة الخطوط — ولا تعرض لوحة المفاتيح إلا خطوطها المدمجة (المقيمة) حتى تُكتب الحزمة مرة أخرى. تُعاد كتابة الرزم المرفقة بهذا المضيف تلقائيًا عند الاتصال التالي (أو عبر حزمة الخطوط ← مزامنة).<br><br>هل تريد المتابعة؟"
 
-#: polyhost/gui/cmd_menu.py:413
+#: polyhost/gui/cmd_menu.py:466
 msgid "Wipe Font Pack"
 msgstr "مسح حزمة الخطوط"
 
-#: polyhost/gui/cmd_menu.py:423
+#: polyhost/gui/cmd_menu.py:476
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "الطبقات: {count}"
 
-#: polyhost/gui/cmd_menu.py:424
+#: polyhost/gui/cmd_menu.py:477
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "تعذّرت قراءة عدد الطبقات: {error}"
 
-#: polyhost/gui/cmd_menu.py:428
+#: polyhost/gui/cmd_menu.py:481
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "الطبقة الافتراضية: {layer}"
 
-#: polyhost/gui/cmd_menu.py:429
+#: polyhost/gui/cmd_menu.py:482
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "تعذّرت قراءة الطبقة الافتراضية: {error}"
 
-#: polyhost/gui/cmd_menu.py:436
+#: polyhost/gui/cmd_menu.py:489
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "تعذّرت قراءة مخزن مخطط المفاتيح: {error}"
 
-#: polyhost/gui/cmd_menu.py:440
+#: polyhost/gui/cmd_menu.py:493
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "تمت كتابة مخزن مخطط المفاتيح ({size} بايت) إلى السجل."
 
-#: polyhost/gui/cmd_menu.py:447
+#: polyhost/gui/cmd_menu.py:500
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "تعذّرت قراءة حالة حزمة الخطوط: {error}"
 
-#: polyhost/gui/cmd_menu.py:450
+#: polyhost/gui/cmd_menu.py:503
 msgid "This host ships no font-pack bundles."
 msgstr "لا يتضمن هذا المضيف أي رزم لحزمة الخطوط."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:459
+#: polyhost/gui/cmd_menu.py:512
 msgid "stale"
 msgstr "قديمة"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:459 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:512 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "سليم"
 
-#: polyhost/gui/cmd_menu.py:462
+#: polyhost/gui/cmd_menu.py:515
 msgid "bundle"
 msgstr "الرزمة"
 
-#: polyhost/gui/cmd_menu.py:463
+#: polyhost/gui/cmd_menu.py:516
 msgid "device"
 msgstr "الجهاز"
 
-#: polyhost/gui/cmd_menu.py:464
+#: polyhost/gui/cmd_menu.py:517
 msgid "shipped"
 msgstr "المرفقة"
 
-#: polyhost/gui/cmd_menu.py:470
+#: polyhost/gui/cmd_menu.py:523
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "أوامر PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:470 polyhost/host.py:2243
+#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2350
 msgid "Open file"
 msgstr "فتح ملف"
 
-#: polyhost/gui/cmd_menu.py:500 polyhost/gui/cmd_menu.py:623
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:203
+#: polyhost/gui/cmd_menu.py:553 polyhost/gui/cmd_menu.py:678
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "غير متصل"
 
-#: polyhost/gui/cmd_menu.py:501 polyhost/gui/cmd_menu.py:624
+#: polyhost/gui/cmd_menu.py:554 polyhost/gui/cmd_menu.py:679
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd غير متصلة. يرجى توصيل لوحة المفاتيح والمحاولة مرة أخرى."
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:557
 msgid "Select Firmware Binary"
 msgstr "اختيار ملف البرنامج الثابت الثنائي"
 
-#: polyhost/gui/cmd_menu.py:504
+#: polyhost/gui/cmd_menu.py:557
 msgid "Firmware binary (*.bin)"
 msgstr "ملف البرنامج الثابت الثنائي (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:568
 msgid "File Error"
 msgstr "خطأ في الملف"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:569
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -528,65 +867,65 @@ msgstr ""
 "تعذّرت قراءة ملف البرنامج الثابت:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:521
+#: polyhost/gui/cmd_menu.py:574
 msgid "Invalid Firmware File"
 msgstr "ملف برنامج ثابت غير صالح"
 
-#: polyhost/gui/cmd_menu.py:526
+#: polyhost/gui/cmd_menu.py:579
 msgid "Wrong Keyboard"
 msgstr "لوحة مفاتيح خاطئة"
 
-#: polyhost/gui/cmd_menu.py:536
+#: polyhost/gui/cmd_menu.py:589
 msgid "Unsigned Firmware"
 msgstr "برنامج ثابت غير موقَّع"
 
-#: polyhost/gui/cmd_menu.py:541
+#: polyhost/gui/cmd_menu.py:595
 msgid "Flash + Apply Firmware"
 msgstr "كتابة البرنامج الثابت + تطبيقه"
 
-#: polyhost/gui/cmd_menu.py:543
+#: polyhost/gui/cmd_menu.py:597
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "سيؤدي هذا إلى نقل البرنامج الثابت الجديد إلى لوحة المفاتيح والتحقق منه (CRC32)، ثم <b>تنشيطه</b> — يعيد كلا النصفين التشغيل على البرنامج الثابت الجديد تلقائيًا (دون الحاجة إلى إعادة التوصيل)."
 
-#: polyhost/gui/cmd_menu.py:548
+#: polyhost/gui/cmd_menu.py:602
 msgid "Flash Firmware"
 msgstr "كتابة البرنامج الثابت"
 
-#: polyhost/gui/cmd_menu.py:550
+#: polyhost/gui/cmd_menu.py:604
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "سيؤدي هذا إلى نقل البرنامج الثابت الجديد وتجهيزه على لوحة المفاتيح، ثم التحقق منه (CRC32). تُخزَّن الصورة لكنها <b>لا تُنشَّط بعد</b> — تواصل لوحة المفاتيح تشغيل برنامجها الثابت الحالي حتى تطبّقه بشكل منفصل."
 
-#: polyhost/gui/cmd_menu.py:568
+#: polyhost/gui/cmd_menu.py:622
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "البرنامج الثابت الحالي للوحة المفاتيح: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:571
+#: polyhost/gui/cmd_menu.py:625
 msgid "Could not query current firmware version."
 msgstr "تعذّر الاستعلام عن إصدار البرنامج الثابت الحالي."
 
-#: polyhost/gui/cmd_menu.py:572
+#: polyhost/gui/cmd_menu.py:626
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "الملف المحدد:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:573
+#: polyhost/gui/cmd_menu.py:627
 msgid "Continue?"
 msgstr "هل تريد المتابعة؟"
 
-#: polyhost/gui/cmd_menu.py:601
+#: polyhost/gui/cmd_menu.py:656
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>هل تريد تطبيق البرنامج الثابت المُجهَّز؟</b><br><br>سيثبّت كلا نصفي لوحة المفاتيح الصورة المُجهَّزة سابقًا ويعيدان التشغيل على البرنامج الثابت الجديد تلقائيًا (دون الحاجة إلى إعادة التوصيل).<br><br>إذا لم يُبنَ هذا البرنامج الثابت مع تمكين التطبيق من داخل التطبيق، فستُبلغ لوحة المفاتيح بأمان بأن التطبيق غير متاح وتترك الصورة المُجهَّزة دون تغيير.<br><br>هل تريد المتابعة؟"
 
-#: polyhost/gui/cmd_menu.py:610
+#: polyhost/gui/cmd_menu.py:665
 msgid "Apply Staged Firmware"
 msgstr "تطبيق البرنامج الثابت المُجهَّز"
 
-#: polyhost/gui/cmd_menu.py:635
+#: polyhost/gui/cmd_menu.py:690
 msgid "Firmware Applied"
 msgstr "تم تطبيق البرنامج الثابت"
 
-#: polyhost/gui/cmd_menu.py:637
+#: polyhost/gui/cmd_menu.py:692
 msgid "Apply Failed"
 msgstr "فشل التطبيق"
 
@@ -737,7 +1076,7 @@ msgid "HarfBuzz sequence"
 msgstr "تسلسل HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:75 polyhost/gui/settings_dialog.py:83
+#: polyhost/gui/settings_dialog.py:79 polyhost/gui/settings_dialog.py:88
 msgid "Mode"
 msgstr "الوضع"
 
@@ -898,20 +1237,13 @@ msgid "Preview:"
 msgstr "المعاينة:"
 
 #: polyhost/gui/fontpack_extend_dialog.py:236
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:91
 msgid "OK"
 msgstr "موافق"
 
 #: polyhost/gui/fontpack_extend_dialog.py:237
 msgid "Keep the built glyph (added to the bundle in memory; save it from the inspector's “Save as…”)"
 msgstr "الاحتفاظ بالرمز المبني (يُضاف إلى الرزمة في الذاكرة؛ احفظه من «حفظ باسم…» في أداة الفحص)"
-
-#: polyhost/gui/fontpack_extend_dialog.py:241
-#: polyhost/gui/fontpack_extend_dialog.py:807
-#: polyhost/gui/hid_fw_up_dialog.py:204
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:77 polyhost/host.py:227
-msgid "Cancel"
-msgstr "إلغاء"
 
 #: polyhost/gui/fontpack_extend_dialog.py:253
 msgid "Pick a font, set options, then Build / Preview."
@@ -922,7 +1254,7 @@ msgid "Scroll here to zoom the preview"
 msgstr "مرّر عجلة الفأرة هنا لتكبير المعاينة"
 
 #: polyhost/gui/fontpack_extend_dialog.py:280
-#: polyhost/gui/fontpack_extend_dialog.py:574
+#: polyhost/gui/fontpack_extend_dialog.py:581
 msgid "No valid shipped bundles available to extend."
 msgstr "لا توجد رزم مرفقة صالحة متاحة للتوسيع."
 
@@ -949,36 +1281,36 @@ msgstr "تمت تعبئة الإعدادات الأصلية مسبقًا؛ اخ�
 msgid "Editing {codepoint} in '{bundle}' — Build to preview, then OK to keep it (Cancel to discard)."
 msgstr "تحرير {codepoint} في '{bundle}' — «بناء» للمعاينة، ثم «موافق» للاحتفاظ به («إلغاء» للتجاهل)."
 
-#: polyhost/gui/fontpack_extend_dialog.py:489
+#: polyhost/gui/fontpack_extend_dialog.py:496
 msgid "Reset to the default render settings."
 msgstr "إعادة التعيين إلى إعدادات العرض الافتراضية."
 
-#: polyhost/gui/fontpack_extend_dialog.py:513
+#: polyhost/gui/fontpack_extend_dialog.py:520
 msgid "Select font"
 msgstr "اختيار خط"
 
-#: polyhost/gui/fontpack_extend_dialog.py:514
+#: polyhost/gui/fontpack_extend_dialog.py:521
 msgid "Fonts (*.ttf *.otf)"
 msgstr "الخطوط (*.ttf *.otf)"
 
-#: polyhost/gui/fontpack_extend_dialog.py:514
+#: polyhost/gui/fontpack_extend_dialog.py:521
 #: polyhost/gui/fontpack_inspector_dialog.py:766
 msgid "All files (*)"
 msgstr "كل الملفات (*)"
 
-#: polyhost/gui/fontpack_extend_dialog.py:574
-#: polyhost/gui/fontpack_extend_dialog.py:578
-#: polyhost/gui/fontpack_extend_dialog.py:582
-#: polyhost/gui/fontpack_extend_dialog.py:592
-#: polyhost/gui/fontpack_extend_dialog.py:615
+#: polyhost/gui/fontpack_extend_dialog.py:581
+#: polyhost/gui/fontpack_extend_dialog.py:585
+#: polyhost/gui/fontpack_extend_dialog.py:589
+#: polyhost/gui/fontpack_extend_dialog.py:599
+#: polyhost/gui/fontpack_extend_dialog.py:622
 msgid "Build"
 msgstr "بناء"
 
-#: polyhost/gui/fontpack_extend_dialog.py:578
+#: polyhost/gui/fontpack_extend_dialog.py:585
 msgid "Pick an existing font file first."
 msgstr "اختر ملف خط موجودًا أولًا."
 
-#: polyhost/gui/fontpack_extend_dialog.py:582
+#: polyhost/gui/fontpack_extend_dialog.py:589
 #, python-brace-format
 msgid ""
 "Building glyphs needs these font-generation dependencies, which aren't installed in this environment:\n"
@@ -993,7 +1325,7 @@ msgstr ""
 "\n"
 "(تُثبَّت عادةً عند تثبيت PolyKybdHost: pip install -e .)"
 
-#: polyhost/gui/fontpack_extend_dialog.py:592
+#: polyhost/gui/fontpack_extend_dialog.py:599
 #, python-brace-format
 msgid ""
 "Font building dependencies are missing or broken:\n"
@@ -1006,16 +1338,16 @@ msgstr ""
 "\n"
 "({error})"
 
-#: polyhost/gui/fontpack_extend_dialog.py:607
+#: polyhost/gui/fontpack_extend_dialog.py:614
 #, python-brace-format
 msgid "(auto preview) {error}"
 msgstr "(معاينة تلقائية) {error}"
 
-#: polyhost/gui/fontpack_extend_dialog.py:609
+#: polyhost/gui/fontpack_extend_dialog.py:616
 msgid "Build failed"
 msgstr "فشل البناء"
 
-#: polyhost/gui/fontpack_extend_dialog.py:615
+#: polyhost/gui/fontpack_extend_dialog.py:622
 #, python-brace-format
 msgid "Editing a single glyph ({codepoint}), but this built {n} glyph. Narrow the range / sequence to one glyph."
 msgid_plural "Editing a single glyph ({codepoint}), but this built {n} glyphs. Narrow the range / sequence to one glyph."
@@ -1026,7 +1358,7 @@ msgstr[3] "تحرير رمز واحد ({codepoint})، لكن هذا بنى {n} �
 msgstr[4] "تحرير رمز واحد ({codepoint})، لكن هذا بنى {n} رمز. ضيّق النطاق / التسلسل إلى رمز واحد."
 msgstr[5] "تحرير رمز واحد ({codepoint})، لكن هذا بنى {n} رمزًا. ضيّق النطاق / التسلسل إلى رمز واحد."
 
-#: polyhost/gui/fontpack_extend_dialog.py:626
+#: polyhost/gui/fontpack_extend_dialog.py:633
 #, python-brace-format
 msgid "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
 msgid_plural "Built {n} glyph(s), {range}, global index {index}. OK to keep it in the '{bundle}' bundle, Cancel to discard."
@@ -1037,16 +1369,16 @@ msgstr[3] "تم بناء {n} رموز، {range}، الفهرس العام {index
 msgstr[4] "تم بناء {n} رمز، {range}، الفهرس العام {index}. «موافق» للاحتفاظ بها في الرزمة '{bundle}'، «إلغاء» للتجاهل."
 msgstr[5] "تم بناء {n} رمزًا، {range}، الفهرس العام {index}. «موافق» للاحتفاظ بها في الرزمة '{bundle}'، «إلغاء» للتجاهل."
 
-#: polyhost/gui/fontpack_extend_dialog.py:678
+#: polyhost/gui/fontpack_extend_dialog.py:685
 #, python-brace-format
 msgid "Zoom {scale}×  (scroll over the preview to change)"
 msgstr "التكبير {scale}×  (مرّر عجلة الفأرة فوق المعاينة للتغيير)"
 
-#: polyhost/gui/fontpack_extend_dialog.py:718
+#: polyhost/gui/fontpack_extend_dialog.py:725
 msgid "Download"
 msgstr "تنزيل"
 
-#: polyhost/gui/fontpack_extend_dialog.py:719
+#: polyhost/gui/fontpack_extend_dialog.py:726
 #, python-brace-format
 msgid ""
 "Could not read the font catalog:\n"
@@ -1055,30 +1387,30 @@ msgstr ""
 "تعذّرت قراءة فهرس الخطوط:\n"
 "{error}"
 
-#: polyhost/gui/fontpack_extend_dialog.py:726
+#: polyhost/gui/fontpack_extend_dialog.py:733
 msgid "Source fonts — click to use (✓ = downloaded; uncached downloads first)"
 msgstr "خطوط المصدر — انقر للاستخدام (✓ = تم التنزيل؛ غير المخزّن مؤقتًا يُنزَّل أولًا)"
 
-#: polyhost/gui/fontpack_extend_dialog.py:728
-#: polyhost/gui/fontpack_extend_dialog.py:793
-#: polyhost/gui/fontpack_extend_dialog.py:797
+#: polyhost/gui/fontpack_extend_dialog.py:735
+#: polyhost/gui/fontpack_extend_dialog.py:800
+#: polyhost/gui/fontpack_extend_dialog.py:804
 msgid "Download all"
 msgstr "تنزيل الكل"
 
-#: polyhost/gui/fontpack_extend_dialog.py:729
+#: polyhost/gui/fontpack_extend_dialog.py:736
 msgid "Fetch every Noto font in the list into the cache"
 msgstr "جلب كل خطوط Noto في القائمة إلى ذاكرة التخزين المؤقت"
 
-#: polyhost/gui/fontpack_extend_dialog.py:746
+#: polyhost/gui/fontpack_extend_dialog.py:753
 #, python-brace-format
 msgid "{name}  ({filename})  ✓ cached"
 msgstr "{name}  ({filename})  ✓ مخزّن مؤقتًا"
 
-#: polyhost/gui/fontpack_extend_dialog.py:779
+#: polyhost/gui/fontpack_extend_dialog.py:786
 msgid "Download failed"
 msgstr "فشل التنزيل"
 
-#: polyhost/gui/fontpack_extend_dialog.py:780
+#: polyhost/gui/fontpack_extend_dialog.py:787
 #, python-brace-format
 msgid ""
 "Could not download {name}:\n"
@@ -1087,11 +1419,11 @@ msgstr ""
 "تعذّر تنزيل {name}:\n"
 "{error}"
 
-#: polyhost/gui/fontpack_extend_dialog.py:793
+#: polyhost/gui/fontpack_extend_dialog.py:800
 msgid "All fonts are already cached."
 msgstr "كل الخطوط مخزّنة مؤقتًا بالفعل."
 
-#: polyhost/gui/fontpack_extend_dialog.py:798
+#: polyhost/gui/fontpack_extend_dialog.py:805
 #, python-brace-format
 msgid ""
 "Stopped on an error:\n"
@@ -1100,16 +1432,16 @@ msgstr ""
 "توقف بسبب خطأ:\n"
 "{error}"
 
-#: polyhost/gui/fontpack_extend_dialog.py:807
+#: polyhost/gui/fontpack_extend_dialog.py:814
 msgid "Downloading…"
 msgstr "جارٍ التنزيل…"
 
-#: polyhost/gui/fontpack_extend_dialog.py:819
+#: polyhost/gui/fontpack_extend_dialog.py:826
 #, python-brace-format
 msgid "Downloading {name}  ({index}/{count})…"
 msgstr "جارٍ تنزيل {name}  ({index}/{count})…"
 
-#: polyhost/gui/fontpack_extend_dialog.py:848
+#: polyhost/gui/fontpack_extend_dialog.py:855
 msgid "Download Noto source font"
 msgstr "تنزيل خط مصدر Noto"
 
@@ -1413,71 +1745,43 @@ msgstr "بدأت الكتابة — تابع علبة النظام/السجل."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "هل تريد تجاهل كل التعديلات المعلّقة على '{label}'؟"
 
-#: polyhost/gui/hid_fw_up_dialog.py:22
-msgid "This firmware is not signed. Confirm on the KEYBOARD: press the highlighted A (accept) or R (reject) key."
-msgstr "هذا البرنامج الثابت غير موقَّع. أكّد على لوحة المفاتيح: اضغط المفتاح المميَّز A (قبول) أو R (رفض)."
-
-#: polyhost/gui/hid_fw_up_dialog.py:24
-msgid ""
-"Timed out waiting for confirmation on the keyboard.\n"
-"\n"
-"The keyboard asks for a physical ACCEPT/REJECT because this image is not validly signed. Start the flash again and press the highlighted A key on the left half within a minute."
-msgstr ""
-"انتهت مهلة انتظار التأكيد على لوحة المفاتيح.\n"
-"\n"
-"تطلب لوحة المفاتيح قبولًا أو رفضًا فعليًا (ACCEPT/REJECT) لأن هذه الصورة غير موقَّعة توقيعًا صالحًا. ابدأ الكتابة مرة أخرى واضغط المفتاح المميَّز A على النصف الأيسر خلال دقيقة."
-
-#: polyhost/gui/hid_fw_up_dialog.py:28
-msgid ""
-"The keyboard refused this firmware: it is not signed.\n"
-"\n"
-"Released firmware ships a matching '.sig' file — download it next to the .bin and flash again.\n"
-"\n"
-"To flash a build you compiled yourself, flash again and press the highlighted A (accept) key on the keyboard when it asks."
-msgstr ""
-"رفضت لوحة المفاتيح هذا البرنامج الثابت: إنه غير موقَّع.\n"
-"\n"
-"يأتي البرنامج الثابت المنشور مع ملف '.sig' مطابق — نزّله بجانب ملف .bin وأعد الكتابة.\n"
-"\n"
-"لكتابة إصدار بنيته بنفسك، أعد الكتابة واضغط المفتاح المميَّز A (قبول) على لوحة المفاتيح عندما تطلب ذلك."
-
-#: polyhost/gui/hid_fw_up_dialog.py:163 polyhost/host.py:2856
-#: polyhost/host.py:2880
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2944
+#: polyhost/host.py:2985 polyhost/host.py:3012
 msgid "Firmware Update"
 msgstr "تحديث البرنامج الثابت"
 
-#: polyhost/gui/hid_fw_up_dialog.py:172
+#: polyhost/gui/hid_fw_up_dialog.py:175
 #, python-brace-format
 msgid "<b>File:</b> {path}"
 msgstr "<b>الملف:</b> {path}"
 
-#: polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/gui/hid_fw_up_dialog.py:180
 msgid "Applying staged firmware…"
 msgstr "جارٍ تطبيق البرنامج الثابت المُجهَّز…"
 
-#: polyhost/forwarder.py:239 polyhost/gui/hid_fw_up_dialog.py:177
+#: polyhost/forwarder.py:242 polyhost/gui/hid_fw_up_dialog.py:180
 msgid "Starting…"
 msgstr "جارٍ البدء…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:270
+#: polyhost/gui/hid_fw_up_dialog.py:273
 #, python-brace-format
 msgid "~{seconds} s remaining"
 msgstr "متبقٍ ~{seconds} ث"
 
-#: polyhost/gui/hid_fw_up_dialog.py:275
+#: polyhost/gui/hid_fw_up_dialog.py:278
 #, python-brace-format
 msgid "~{minutes}m {seconds}s remaining"
 msgstr "متبقٍ ~{minutes} د {seconds} ث"
 
-#: polyhost/gui/hid_fw_up_dialog.py:388
+#: polyhost/gui/hid_fw_up_dialog.py:415
 msgid "Applying — activating the staged firmware…"
 msgstr "جارٍ التطبيق — تنشيط البرنامج الثابت المُجهَّز…"
 
-#: polyhost/gui/hid_fw_up_dialog.py:468
+#: polyhost/gui/hid_fw_up_dialog.py:495
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "جارٍ الإلغاء — بانتظار انتهاء الجزء الحالي…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:78
 msgid "Language"
 msgstr "اللغة"
 
@@ -1485,57 +1789,57 @@ msgstr "اللغة"
 msgid "The new language is used after a restart. Restart now?"
 msgstr "تُستخدم اللغة الجديدة بعد إعادة التشغيل. هل تريد إعادة التشغيل الآن؟"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:61
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:76
 msgid "Edit Key"
 msgstr "تحرير المفتاح"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:66
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:81
 msgid "QMK Keycode:"
 msgstr "رمز مفتاح QMK:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:69
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:84
 msgid "Visual Label:"
 msgstr "التسمية المرئية:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:72
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:87
 #, python-brace-format
 msgid "Rotation: {angle}° around ({x}, {y})"
 msgstr "الدوران: {angle}° حول ({x}, {y})"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:74
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:89
 msgid "Info:"
 msgstr "معلومات:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:99
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:114
 msgid "PolyKybd Split72 Layout"
 msgstr "تخطيط PolyKybd Split72"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:204
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:219
 msgid "PolyKybd is not reachable. Please connect the keyboard and try again."
 msgstr "لا يمكن الوصول إلى PolyKybd. يرجى توصيل لوحة المفاتيح والمحاولة مرة أخرى."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:205
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:220
 msgid "Could not read layers from device"
 msgstr "تعذّرت قراءة الطبقات من الجهاز"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:217
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:232
 msgid "Layers:"
 msgstr "الطبقات:"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:292
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:308
 msgid "Draw each key as the keycap the keyboard shows. A key whose legend is not modelled here keeps its keycode text."
 msgstr "رسم كل مفتاح كغطاء المفتاح الذي تعرضه لوحة المفاتيح. المفتاح الذي لا تُحاكى تسميته هنا يحتفظ بنص رمز المفتاح."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:294
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:310
 msgid "Unavailable: the keycap fonts and layout tables could not be loaded, so keys show their keycode."
 msgstr "غير متاح: تعذّر تحميل خطوط أغطية المفاتيح وجداول التخطيط، لذا تعرض المفاتيح رموزها."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:300
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:316
 #, python-brace-format
 msgid "Partly unavailable — {reason}"
 msgstr "غير متاح جزئيًا — {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:305
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:321
 #, python-brace-format
 msgid ""
 "Legends read from:\n"
@@ -1545,38 +1849,50 @@ msgstr ""
 "{source}"
 
 #. TRANSLATORS: keycap display mode -- show the raw keycode text.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:338
 msgid "Symbol"
 msgstr "الرمز"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:322
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:338
 msgid "Every key shows its keycode."
 msgstr "يعرض كل مفتاح رمز المفتاح الخاص به."
 
 #. TRANSLATORS: keycap display mode -- the rendered keycap image.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:324
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:340
 msgid "Preview"
 msgstr "معاينة"
 
 #. TRANSLATORS: keycap display mode -- the keycap through the panel simulation.
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:342
 msgid "Real"
 msgstr "واقعي"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:326
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:342
 msgid "Through the panel simulation: emissive pixels, bloom and the diffusion of the clear keycap cover — how the key actually reads."
 msgstr "عبر محاكاة اللوحة: بكسلات مضيئة وتوهج وانتشار الضوء عبر غطاء المفتاح الشفاف — كما يبدو المفتاح فعلًا."
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:344
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:360
 #, python-brace-format
 msgid "Unavailable: {reason}"
 msgstr "غير متاح: {reason}"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:415
+msgid "Preview language:"
+msgstr "لغة المعاينة:"
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:427
+msgid "The layout the previews draw their legends in. Only the preview changes, not the keyboard."
+msgstr "التخطيط الذي ترسم به المعاينات رموز المفاتيح. تتغير المعاينة فقط، لا لوحة المفاتيح."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:429
+msgid "Unavailable: the language table could not be loaded."
+msgstr "غير متاح: تعذّر تحميل جدول اللغات."
+
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:698
 msgid "Error"
 msgstr "خطأ"
 
-#: polyhost/gui/layout_dialog/kb_layout_dialog.py:596
+#: polyhost/gui/layout_dialog/kb_layout_dialog.py:698
 #, python-brace-format
 msgid ""
 "Failed to load:\n"
@@ -1587,19 +1903,19 @@ msgstr ""
 "{error}\n"
 "{details}"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:346
+#: polyhost/gui/layout_dialog/keycap_preview.py:350
 msgid "no preview data (shipped or checkout)"
 msgstr "لا توجد بيانات معاينة (مرفقة أو من نسخة مصدرية)"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:383
+#: polyhost/gui/layout_dialog/keycap_preview.py:388
 msgid "the shipped language table is missing"
 msgstr "جدول اللغات المرفق مفقود"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:548 polyhost/host.py:2836
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2960
 msgid "unknown"
 msgstr "غير معروف"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:549
+#: polyhost/gui/layout_dialog/keycap_preview.py:567
 #, python-brace-format
 msgid ""
 "shipped with this host\n"
@@ -1608,7 +1924,7 @@ msgstr ""
 "مرفق مع هذا المضيف\n"
 "البرنامج الثابت {version}"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:553
+#: polyhost/gui/layout_dialog/keycap_preview.py:571
 msgid "(a firmware checkout is present but is not newer)"
 msgstr "(توجد نسخة مصدرية من البرنامج الثابت لكنها ليست أحدث)"
 
@@ -1701,14 +2017,6 @@ msgstr "Alt"
 #: polyhost/gui/layout_dialog/keycode_composer.py:86
 msgid "GUI"
 msgstr "GUI"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:89
-msgid "Left"
-msgstr "يسار"
-
-#: polyhost/gui/layout_dialog/keycode_composer.py:90
-msgid "Right"
-msgstr "يمين"
 
 #: polyhost/gui/layout_dialog/keycode_composer.py:105
 msgid "Inner key:"
@@ -1938,7 +2246,7 @@ msgid "Steps…"
 msgstr "الخطوات…"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:190
-msgid "Build the macro out of key presses, chords and pauses — or record them"
+msgid "Build the macro out of key presses, key combinations and pauses — or record them"
 msgstr "بناء الماكرو من ضغطات المفاتيح والتركيبات وفترات التوقف — أو تسجيلها"
 
 #: polyhost/gui/layout_dialog/macro_tab.py:205
@@ -2109,89 +2417,109 @@ msgid "Standard"
 msgstr "قياسية"
 
 #: polyhost/gui/log_bundle_dialog.py:30
+msgid "Last 5 minutes"
+msgstr "آخر 5 دقائق"
+
+#: polyhost/gui/log_bundle_dialog.py:31
 msgid "Last 15 minutes"
 msgstr "آخر 15 دقيقة"
 
-#: polyhost/gui/log_bundle_dialog.py:31
+#: polyhost/gui/log_bundle_dialog.py:32
+msgid "Last 30 minutes"
+msgstr "آخر 30 دقيقة"
+
+#: polyhost/gui/log_bundle_dialog.py:33
 msgid "Last hour"
 msgstr "آخر ساعة"
 
-#: polyhost/gui/log_bundle_dialog.py:32
+#: polyhost/gui/log_bundle_dialog.py:34
+msgid "Last 3 hours"
+msgstr "آخر 3 ساعات"
+
+#: polyhost/gui/log_bundle_dialog.py:35
+msgid "Last 12 hours"
+msgstr "آخر 12 ساعة"
+
+#: polyhost/gui/log_bundle_dialog.py:36
 msgid "Last 24 hours"
 msgstr "آخر 24 ساعة"
 
-#: polyhost/gui/log_bundle_dialog.py:33
+#: polyhost/gui/log_bundle_dialog.py:37
+msgid "Last 3 days"
+msgstr "آخر 3 أيام"
+
+#: polyhost/gui/log_bundle_dialog.py:38
 msgid "Last 7 days"
 msgstr "آخر 7 أيام"
 
-#: polyhost/gui/log_bundle_dialog.py:34
+#: polyhost/gui/log_bundle_dialog.py:39
 msgid "Everything on disk"
 msgstr "كل ما هو على القرص"
 
-#: polyhost/gui/log_bundle_dialog.py:88
+#: polyhost/gui/log_bundle_dialog.py:101
 #, python-brace-format
 msgid "Log collection failed: {error}"
 msgstr "فشل جمع السجلات: {error}"
 
-#: polyhost/gui/log_bundle_dialog.py:106
+#: polyhost/gui/log_bundle_dialog.py:119
 msgid "Collect Logs"
 msgstr "جمع السجلات"
 
-#: polyhost/gui/log_bundle_dialog.py:111
+#: polyhost/gui/log_bundle_dialog.py:124
 msgid "Collects every PolyHost log — including the daemon's and the keyboard console — with their rotated backups, plus version and connection details, into a single file you can attach to a bug report."
 msgstr "يجمع كل سجلات PolyHost — بما فيها سجل الخدمة الخلفية ووحدة تحكم لوحة المفاتيح — مع نسخها الاحتياطية المدوَّرة، بالإضافة إلى تفاصيل الإصدار والاتصال، في ملف واحد يمكنك إرفاقه بتقرير خطأ."
 
-#: polyhost/gui/log_bundle_dialog.py:123
+#: polyhost/gui/log_bundle_dialog.py:136
 msgid "Timeframe:"
 msgstr "الفترة الزمنية:"
 
-#: polyhost/gui/log_bundle_dialog.py:126
+#: polyhost/gui/log_bundle_dialog.py:139
 msgid "Mask window titles"
 msgstr "إخفاء عناوين النوافذ"
 
-#: polyhost/gui/log_bundle_dialog.py:128
+#: polyhost/gui/log_bundle_dialog.py:141
 msgid "Window titles can name the documents you had open. Masking keeps application names (which is what overlay matching is debugged from) but replaces each title with a placeholder."
 msgstr "قد تكشف عناوين النوافذ أسماء المستندات التي كانت مفتوحة لديك. يُبقي الإخفاء أسماء التطبيقات (وهي ما يُعتمد عليه في تصحيح مطابقة التراكبات) لكنه يستبدل كل عنوان بعنصر نائب."
 
-#: polyhost/gui/log_bundle_dialog.py:145
+#: polyhost/gui/log_bundle_dialog.py:158
 msgid "Show in Folder"
 msgstr "الإظهار في المجلد"
 
-#: polyhost/gui/log_bundle_dialog.py:155
+#: polyhost/gui/log_bundle_dialog.py:168
 msgid "Save Bundle…"
 msgstr "حفظ الحزمة…"
 
-#: polyhost/gui/log_bundle_dialog.py:169
+#: polyhost/gui/log_bundle_dialog.py:182
 msgid "Window titles will be replaced with placeholders. Application names are kept."
 msgstr "سيتم استبدال عناوين النوافذ بعناصر نائبة. تُحفظ أسماء التطبيقات."
 
-#: polyhost/gui/log_bundle_dialog.py:173
+#: polyhost/gui/log_bundle_dialog.py:186
 msgid "The logs record the titles of windows you focused, which can name open documents."
 msgstr "تسجّل السجلات عناوين النوافذ التي ركّزت عليها، وقد تكشف أسماء المستندات المفتوحة."
 
-#: polyhost/gui/log_bundle_dialog.py:175
+#: polyhost/gui/log_bundle_dialog.py:188
 msgid "Tick the box above to mask them."
 msgstr "حدّد المربع أعلاه لإخفائها."
 
-#: polyhost/gui/log_bundle_dialog.py:196
+#: polyhost/gui/log_bundle_dialog.py:209
 msgid "Collecting…"
 msgstr "جارٍ الجمع…"
 
-#: polyhost/gui/log_bundle_dialog.py:218
+#: polyhost/gui/log_bundle_dialog.py:231
 msgid "Save Log Bundle"
 msgstr "حفظ حزمة السجلات"
 
-#: polyhost/gui/log_bundle_dialog.py:219
+#: polyhost/gui/log_bundle_dialog.py:232
 msgid "Zip archives (*.zip)"
 msgstr "أرشيفات Zip (*.zip)"
 
-#: polyhost/gui/log_bundle_dialog.py:229
+#: polyhost/gui/log_bundle_dialog.py:242
 #: polyhost/gui/report_problem_dialog.py:199
 #, python-brace-format
 msgid "Saved {summary}"
 msgstr "تم حفظ {summary}"
 
-#: polyhost/gui/log_bundle_dialog.py:239
+#: polyhost/gui/log_bundle_dialog.py:252
 #, python-brace-format
 msgid "Copied {n} line to the clipboard."
 msgid_plural "Copied {n} lines to the clipboard."
@@ -2227,28 +2555,72 @@ msgid "Save all logs as a .zip, or copy them to the clipboard"
 msgstr "حفظ كل السجلات كملف .zip، أو نسخها إلى الحافظة"
 
 #: polyhost/gui/log_viewer.py:211
+msgid "Clear Logs..."
+msgstr "مسح السجلات..."
+
+#: polyhost/gui/log_viewer.py:212
+msgid "Empty every log file, including the crash log"
+msgstr "إفراغ كل ملفات السجلات، بما فيها سجل الانهيار"
+
+#: polyhost/gui/log_viewer.py:216
 msgid "Open Folder"
 msgstr "فتح المجلد"
 
-#: polyhost/gui/log_viewer.py:215
+#: polyhost/gui/log_viewer.py:220
 msgid "Reload"
 msgstr "إعادة التحميل"
 
-#: polyhost/gui/log_viewer.py:238
+#: polyhost/gui/log_viewer.py:263 polyhost/gui/log_viewer.py:270
+#: polyhost/gui/log_viewer.py:293
+msgid "Clear Logs"
+msgstr "مسح السجلات"
+
+#: polyhost/gui/log_viewer.py:264
+msgid "Empty every log file?"
+msgstr "هل تريد إفراغ كل ملفات السجلات؟"
+
+#: polyhost/gui/log_viewer.py:266
+msgid "This clears the history behind every tab, including the crash log — the record of whether this app has crashed. It cannot be undone, and a problem report filed afterwards will carry nothing from before now."
+msgstr "يؤدي هذا إلى مسح السجل الكامل وراء كل علامة تبويب، بما في ذلك سجل الانهيار — وهو ما يوثّق ما إذا كان هذا التطبيق قد انهار. لا يمكن التراجع عن ذلك، ولن يتضمن أي تقرير مشكلة يُرسل بعد ذلك شيئًا مما قبل هذه اللحظة."
+
+#: polyhost/gui/log_viewer.py:271
+msgid "Collect First..."
+msgstr "اجمع أولًا..."
+
+#: polyhost/gui/log_viewer.py:296
+#, python-brace-format
+msgid "Cleared {n} file, freed {kb} KB."
+msgid_plural "Cleared {n} files, freed {kb} KB."
+msgstr[0] "تم مسح {n} ملف، وتحرير {kb} KB."
+msgstr[1] "تم مسح {n} ملف، وتحرير {kb} KB."
+msgstr[2] "تم مسح {n} ملفين، وتحرير {kb} KB."
+msgstr[3] "تم مسح {n} ملفات، وتحرير {kb} KB."
+msgstr[4] "تم مسح {n} ملف، وتحرير {kb} KB."
+msgstr[5] "تم مسح {n} ملفًا، وتحرير {kb} KB."
+
+#: polyhost/gui/log_viewer.py:300
+msgid "No log files to clear."
+msgstr "لا توجد ملفات سجلات لمسحها."
+
+#: polyhost/gui/log_viewer.py:303
+msgid "Some files could not be cleared:"
+msgstr "تعذّر مسح بعض الملفات:"
+
+#: polyhost/gui/log_viewer.py:313
 #, python-brace-format
 msgid "Failed to load log file '{path}': {error}"
 msgstr "فشل تحميل ملف السجل '{path}': {error}"
 
-#: polyhost/gui/log_viewer.py:290
+#: polyhost/gui/log_viewer.py:365
 msgid "No matches"
 msgstr "لا توجد تطابقات"
 
-#: polyhost/gui/log_viewer.py:314
+#: polyhost/gui/log_viewer.py:389
 #, python-brace-format
 msgid "{index} of {total}"
 msgstr "{index} من {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1877
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:1985
 msgid "Mock keyboard"
 msgstr "لوحة مفاتيح وهمية (mock)"
 
@@ -2504,254 +2876,430 @@ msgstr "<b>أرفق ملف السجل</b> (يكشفه الزر الموجود ع
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "اضغط «إرسال». (لم يُنشأ أي ملف سجل — انظر أعلاه.)"
 
-#: polyhost/gui/settings_dialog.py:26
+#: polyhost/gui/settings_dialog.py:29
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "تلقائي ({language})"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:39
 msgid "Automatic"
 msgstr "تلقائي"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:39
 msgid "Light"
 msgstr "فاتح"
 
-#: polyhost/gui/settings_dialog.py:36
+#: polyhost/gui/settings_dialog.py:39
 msgid "Dark"
 msgstr "داكن"
 
-#: polyhost/gui/settings_dialog.py:38
+#: polyhost/gui/settings_dialog.py:41
 msgid "Errors"
 msgstr "الأخطاء"
 
-#: polyhost/gui/settings_dialog.py:39
+#: polyhost/gui/settings_dialog.py:42
 msgid "Errors and warnings"
 msgstr "الأخطاء والتحذيرات"
 
-#: polyhost/gui/settings_dialog.py:47
+#: polyhost/gui/settings_dialog.py:50
 msgid "General"
 msgstr "عام"
 
-#: polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/settings_dialog.py:51
 msgid "Browser"
 msgstr "المتصفح"
 
-#: polyhost/gui/settings_dialog.py:48
+#: polyhost/gui/settings_dialog.py:51
 msgid "Daemon"
 msgstr "الخدمة الخلفية"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:52
 msgid "Delay"
 msgstr "التأخير"
 
-#: polyhost/gui/settings_dialog.py:49
+#: polyhost/gui/settings_dialog.py:52
 msgid "Dev"
 msgstr "التطوير"
 
-#: polyhost/gui/settings_dialog.py:49 polyhost/host.py:800
+#: polyhost/gui/settings_dialog.py:52 polyhost/host.py:866
 msgid "Developer"
 msgstr "المطوّر"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:53
 msgid "Fontpack"
 msgstr "حزمة الخطوط"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:53
+msgid "Game"
+msgstr "اللعبة"
+
+#: polyhost/gui/settings_dialog.py:53
 msgid "Generic"
 msgstr "عامة"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:53
 msgid "Hid"
 msgstr "HID"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:54
 msgid "Irradiance"
 msgstr "الإشعاع الشمسي"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:54
 msgid "Problem"
 msgstr "المشكلات"
 
-#: polyhost/gui/settings_dialog.py:51 polyhost/gui/settings_dialog.py:62
+#: polyhost/gui/settings_dialog.py:54 polyhost/gui/settings_dialog.py:65
 msgid "Max"
 msgstr "الحد الأقصى"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:55
 msgid "Shortcut"
 msgstr "الاختصارات"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:55
 msgid "Telemetry"
 msgstr "القياس عن بُعد"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:55
 msgid "Ui"
 msgstr "الواجهة"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:56
 msgid "Unicode"
 msgstr "Unicode"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:56
 msgid "Window"
 msgstr "النافذة"
 
-#: polyhost/gui/settings_dialog.py:57
+#: polyhost/gui/settings_dialog.py:60
 msgid "Send Composition Mode"
 msgstr "إرسال وضع الإدخال المركّب"
 
-#: polyhost/gui/settings_dialog.py:58
+#: polyhost/gui/settings_dialog.py:61
 msgid "Set Daylight Dependent"
 msgstr "الضبط حسب ضوء النهار"
 
-#: polyhost/gui/settings_dialog.py:59
+#: polyhost/gui/settings_dialog.py:62
 msgid "Allow Online Irradiance Request"
 msgstr "السماح بطلب الإشعاع الشمسي عبر الإنترنت"
 
-#: polyhost/gui/settings_dialog.py:60
+#: polyhost/gui/settings_dialog.py:63
 msgid "Allow Online Location Lookup"
 msgstr "السماح بالبحث عن الموقع عبر الإنترنت"
 
-#: polyhost/gui/settings_dialog.py:61
+#: polyhost/gui/settings_dialog.py:64
 msgid "Min"
 msgstr "الحد الأدنى"
 
-#: polyhost/gui/settings_dialog.py:63
+#: polyhost/gui/settings_dialog.py:66
 msgid "Prescaler"
 msgstr "المقسِّم المسبق"
 
-#: polyhost/gui/settings_dialog.py:64
+#: polyhost/gui/settings_dialog.py:67
 msgid "Gamma"
 msgstr "غاما"
 
-#: polyhost/gui/settings_dialog.py:65
+#: polyhost/gui/settings_dialog.py:68
 msgid "Overlays Enabled"
 msgstr "تمكين التراكبات"
 
-#: polyhost/gui/settings_dialog.py:66
-msgid "Overlays Fill Gaps"
-msgstr "التراكبات تملأ الفجوات"
+#: polyhost/gui/settings_dialog.py:69
+msgid "Overlays Add Escape Mark"
+msgstr "إضافة علامة Escape إلى التراكبات"
 
-#: polyhost/gui/settings_dialog.py:67
+#: polyhost/gui/settings_dialog.py:70
+msgid "Overlays Add Shortcut Icons"
+msgstr "إضافة أيقونات الاختصارات إلى التراكبات"
+
+#: polyhost/gui/settings_dialog.py:71
 msgid "Icons Enabled"
 msgstr "تمكين الأيقونات"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:72
 msgid "Icon Auto Fetch"
 msgstr "جلب الأيقونات تلقائيًا"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:73
 msgid "Enable Accessibility"
 msgstr "تمكين إمكانية الوصول"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:74
 msgid "Hid Message Before Delay"
 msgstr "رسائل HID قبل التأخير"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:75
 msgid "Time After Max Hid Messages"
 msgstr "الوقت بعد الحد الأقصى لرسائل HID"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:76
 msgid "Reconnect Retries"
 msgstr "محاولات إعادة الاتصال"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:77
 msgid "Theme"
 msgstr "السمة"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:80
 msgid "Mock Enabled"
 msgstr "تمكين المحاكاة (mock)"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:81
 msgid "Mock Primary"
 msgstr "المحاكاة كجهاز أساسي"
 
-#: polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/settings_dialog.py:82
 msgid "Mock Protocol"
 msgstr "بروتوكول المحاكاة"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:84
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "تشغيل اكتشاف النوافذ في حال عدم الاتصال بـ PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:85
 msgid "Win Native Set Language"
 msgstr "ضبط اللغة بطريقة Windows الأصلية"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:86
 msgid "Legacy Plaintext Relay"
 msgstr "المُرحِّل القديم بنص غير مشفّر"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:87
+msgid "Force HID Link"
+msgstr "فرض وصلة HID"
+
+#: polyhost/gui/settings_dialog.py:89
 msgid "Report Network Enabled"
 msgstr "تمكين التقارير عبر الشبكة"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:90
 msgid "Auto Flash"
 msgstr "الكتابة التلقائية"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:91
 msgid "Path"
 msgstr "المسار"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:92
 msgid "Url Detection"
 msgstr "اكتشاف عناوين URL"
 
-#: polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:93
 msgid "Report Local Enabled"
 msgstr "تمكين التقارير المحلية"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:94
 msgid "Report Port"
 msgstr "منفذ التقارير"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:95
 msgid "Report Token"
 msgstr "رمز التقارير المميز"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:96
 msgid "Enabled"
 msgstr "مُمكَّن"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:97
 msgid "Endpoint"
 msgstr "نقطة النهاية"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:98
 msgid "Install Id"
 msgstr "معرّف التثبيت"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:99
 msgid "Scan Keyboard Console"
 msgstr "فحص وحدة تحكم لوحة المفاتيح"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:100
 msgid "Scan Host Logs"
 msgstr "فحص سجلات المضيف"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:101
 msgid "Scan Level"
 msgstr "مستوى الفحص"
 
+#: polyhost/gui/settings_dialog.py:102
+msgid "Art From Installed Games"
+msgstr "رسوم من الألعاب المثبتة"
+
+#: polyhost/gui/settings_dialog.py:111
+msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
+msgstr "يُبلغ لوحة المفاتيح بطريقة إدخال Unicode في هذا الكمبيوتر (مثل WinCompose)، عند الاتصال وكلما تغيّرت. عند الإيقاف: تحتفظ لوحة المفاتيح بالوضع المخزّن فيها."
+
+#: polyhost/gui/settings_dialog.py:115
+msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
+msgstr "يضبط سطوع أغطية المفاتيح حسب ضوء النهار في موقعك، كل عشر دقائق."
+
+#: polyhost/gui/settings_dialog.py:118
+msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
+msgstr "يطلب من open-meteo.com ضوء الشمس لهذه الساعة في موقعك، بما في ذلك الغيوم. عند الإيقاف: يحسب المضيف قيمة لسماء صافية من الموقع والوقت."
+
+#: polyhost/gui/settings_dialog.py:122
+msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
+msgstr "يحدّد موقعك التقريبي من عنوان IP الخاص بك (ip-api.com)، مرة واحدة في كل تشغيل. عند الإيقاف: يتبع السطوع ساعة اليوم."
+
+#: polyhost/gui/settings_dialog.py:124
+msgid "The sunlight value that gives the dimmest brightness level."
+msgstr "قيمة ضوء الشمس التي تعطي أخفت مستوى سطوع."
+
+#: polyhost/gui/settings_dialog.py:126
+msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
+msgstr "قيمة ضوء الشمس التي تعطي أعلى مستوى سطوع. اخفضها للوصول إلى السطوع الكامل في يوم غائم."
+
+#: polyhost/gui/settings_dialog.py:128
+msgid "Multiplies the sunlight value before Min and Max apply."
+msgstr "يضرب قيمة ضوء الشمس قبل تطبيق «الحد الأدنى» و«الحد الأقصى»."
+
+#: polyhost/gui/settings_dialog.py:130
+msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
+msgstr "يشكّل منحنى ضوء النهار. فوق 1 يصبح منتصف النهار أخفت، وتحت 1 أكثر سطوعًا. لا يتغيّر أخفت مستوى ولا أعلى مستوى."
+
+#: polyhost/gui/settings_dialog.py:133
+msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
+msgstr "أيقونات للتطبيقات التي ليس لها تراكب خاص بها: علامة التطبيق على Escape وأيقونة لكل اختصار من اختصاراته. عند الإيقاف: لا يُرسم أي شيء عام لأي تطبيق."
+
+#: polyhost/gui/settings_dialog.py:136
+msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
+msgstr "التطبيق الذي له تراكب خاص به يحصل أيضًا على علامته على Escape، عندما يترك التراكب مفتاح Escape فارغًا."
+
+#: polyhost/gui/settings_dialog.py:139
+msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
+msgstr "التطبيق الذي له تراكب خاص به تُقرأ اختصاراته أيضًا، مع أيقونات على المفاتيح التي يتركها التراكب فارغة. قد تستغرق قراءة تطبيق كبير، مثل متصفح يعرض صفحة طويلة، عدة دقائق."
+
+#: polyhost/gui/settings_dialog.py:143
+msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
+msgstr "يقرأ اختصارات التطبيق النشط لرسم أيقونة لكل منها. عند الإيقاف: لا يُقرأ أي تطبيق ولا تُرسم أي أيقونات للاختصارات. لإزالة كل الأيقونات العامة، بما فيها العلامة على Escape، أوقف «تمكين التراكبات»."
+
+#: polyhost/gui/settings_dialog.py:147
+msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
+msgstr "ينزّل الأيقونات المفقودة. عند الإيقاف: تظل الأيقونات المنزّلة مسبقًا تعمل، ويتم تخطي الأيقونات الجديدة."
+
+#: polyhost/gui/settings_dialog.py:150
+msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
+msgstr "Linux فقط. يشغّل مفتاح إمكانية الوصول في سطح المكتب لكي تنشر تطبيقات Qt وKDE اختصاراتها. عند الإيقاف: تُقرأ فقط التطبيقات التي تنشرها على أي حال (GTK)."
+
+#: polyhost/gui/settings_dialog.py:154
+msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
+msgstr "نقل USB: عدد رسائل الصور التي تُرسل قبل توقف قصير، لكي تظل لوحة المفاتيح تستجيب للكتابة. لا تغيّره إلا إذا طُلب منك ذلك أثناء الإبلاغ عن مشكلة."
+
+#: polyhost/gui/settings_dialog.py:158
+msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
+msgstr "نقل USB: مدة هذا التوقف بالثواني. لا تغيّره إلا إذا طُلب منك ذلك أثناء الإبلاغ عن مشكلة."
+
+#: polyhost/gui/settings_dialog.py:161
+msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
+msgstr "عدد المرات التي يطلب فيها المضيف من لوحة المفاتيح معرّفها (ID) قبل أن يعيد فتح اتصال USB."
+
+#: polyhost/gui/settings_dialog.py:164
+msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
+msgstr "مظهر قائمة علبة النظام والنوافذ الحوارية. «تلقائي» يتبع إعداد سطح المكتب الفاتح أو الداكن."
+
+#: polyhost/gui/settings_dialog.py:167
+msgid "The language of the menus and dialogs. Applies when the tray app restarts."
+msgstr "لغة القوائم والنوافذ الحوارية. تُطبَّق عند إعادة تشغيل تطبيق علبة النظام."
+
 #: polyhost/gui/settings_dialog.py:169
+msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
+msgstr "يُظهر القائمة الفرعية «المطوّر» في قائمة علبة النظام وإعدادات المطوّر في هذه النافذة."
+
+#: polyhost/gui/settings_dialog.py:171
+msgid "Adds a simulated keyboard next to the real one."
+msgstr "يضيف لوحة مفاتيح وهمية بجانب اللوحة الحقيقية."
+
+#: polyhost/gui/settings_dialog.py:173
+msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
+msgstr "يستخدم لوحة مفاتيح وهمية بدلًا من لوحة حقيقية، فيعمل التطبيق دون أجهزة."
+
+#: polyhost/gui/settings_dialog.py:176
+msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
+msgstr "إصدار البروتوكول الذي تُبلغ عنه لوحة المفاتيح الوهمية. القيمة 0 تستخدم أحدث إصدار يعرفه هذا المضيف."
+
+#: polyhost/gui/settings_dialog.py:179
+msgid "Tracks the active window even when no keyboard is connected."
+msgstr "يتتبّع النافذة النشطة حتى عندما لا تكون أي لوحة مفاتيح متصلة."
+
+#: polyhost/gui/settings_dialog.py:181
+msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
+msgstr "Windows فقط، تجريبي. يغيّر لغة الإدخال باستدعاءات Win32 بدلًا من الطريقة القياسية، ويعود إليها عند الفشل."
+
+#: polyhost/gui/settings_dialog.py:184
+msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
+msgstr "يستخدم قناة USB HID فقط، كما لو أن لوحة المفاتيح بلا وصلة سريعة: تحديثات البرنامج الثابت تمر عبر HID. لاختبار مسار HID يدويًا."
+
+#: polyhost/gui/settings_dialog.py:187
+msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
+msgstr "يقبل تقارير النوافذ من أدوات إعادة التوجيه القديمة عبر TCP غير مشفّر وغير موثّق (المنفذ 50162) على كل واجهات الشبكة. شغّله فقط لأداة إعادة توجيه قديمة."
+
+#: polyhost/gui/settings_dialog.py:191
+msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
+msgstr "يشغّل اتصال لوحة المفاتيح في عملية في الخلفية يتصل بها تطبيق علبة النظام، فيبقى الاتصال قائمًا عند إعادة تشغيل تطبيق علبة النظام."
+
+#: polyhost/gui/settings_dialog.py:194
+msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
+msgstr "يقبل تقارير النوافذ من مُعيد توجيه على كمبيوتر آخر. يفتح منفذ شبكة. يُطبَّق بعد إعادة التشغيل."
+
+#: polyhost/gui/settings_dialog.py:197
+msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
+msgstr "يكتب رزم حزمة الخطوط المفقودة أو القديمة عند اتصال لوحة المفاتيح."
+
+#: polyhost/gui/settings_dialog.py:199
+msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
+msgstr "ملف .plyf يُكتب بدلًا من حزمة الخطوط المرفقة مع التطبيق. إذا كان فارغًا تُستخدم الحزمة المرفقة."
+
+#: polyhost/gui/settings_dialog.py:202
+msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
+msgstr "يطابق التراكبات مع موقع الويب في علامة تبويب المتصفح النشطة. عند الإيقاف: تُطابَق تراكبات المتصفح حسب عنوان النافذة فقط."
+
+#: polyhost/gui/settings_dialog.py:205
+msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
+msgstr "يشغّل المستقبِل الذي ترسل إليه إضافة المتصفح تقاريرها. يستمع على 127.0.0.1 فقط."
+
+#: polyhost/gui/settings_dialog.py:208
+msgid "The receiver's port. It must match the Host port in the browser extension."
+msgstr "منفذ المستقبِل. يجب أن يطابق Host port في إضافة المتصفح."
+
+#: polyhost/gui/settings_dialog.py:210
+msgid "A shared secret. When set, the browser extension must send the same token."
+msgstr "سرّ مشترك. عند ضبطه، يجب أن ترسل إضافة المتصفح الرمز المميز نفسه."
+
+#: polyhost/gui/settings_dialog.py:212
+msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
+msgstr "يرسل تقرير استخدام مجهول الهوية واحدًا يوميًا: الإصدارات ونظام التشغيل وبعض العدّادات. لا يرسل أبدًا عناوين النوافذ أو أسماء التطبيقات."
+
+#: polyhost/gui/settings_dialog.py:214
+msgid "Where the usage report goes. Empty sends nothing."
+msgstr "وجهة تقرير الاستخدام. إذا كان فارغًا لا يُرسل شيء."
+
+#: polyhost/gui/settings_dialog.py:216
+msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
+msgstr "المعرّف (ID) العشوائي لهذا التثبيت، يُنشأ مع أول تقرير. احذفه ليُحسب التثبيت كتثبيت جديد."
+
+#: polyhost/gui/settings_dialog.py:219
+msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
+msgstr "يراقب وحدة تحكم لوحة المفاتيح بحثًا عن رسائل فشل معروفة ويعرض الإبلاغ عن مشكلة."
+
+#: polyhost/gui/settings_dialog.py:221
+msgid "Watches this app's own log for known failure messages."
+msgstr "يراقب سجل هذا التطبيق نفسه بحثًا عن رسائل فشل معروفة."
+
+#: polyhost/gui/settings_dialog.py:222
+msgid "What counts as a problem: errors only, or errors and warnings."
+msgstr "ما يُعدّ مشكلة: الأخطاء فقط، أو الأخطاء والتحذيرات."
+
+#: polyhost/gui/settings_dialog.py:224
+msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
+msgstr "يرسم بعض تراكبات الألعاب من ملفات اللعبة نفسها عندما تكون اللعبة مثبتة على هذا الحاسوب. تبقى الصور على هذا الحاسوب. عند الإيقاف: تُستخدم التراكبات المرفقة."
+
+#: polyhost/gui/settings_dialog.py:321
 msgid "PolyKybd Settings"
 msgstr "إعدادات PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:346
 msgid "Some settings might need a restart to take effect."
 msgstr "قد تحتاج بعض الإعدادات إلى إعادة التشغيل لتسري."
-
-#: polyhost/gui/settings_dialog.py:237
-msgid "Reset glyph script to Standard"
-msgstr "إعادة تعيين نص الحروف إلى «قياسي»"
-
-#: polyhost/gui/settings_dialog.py:238
-msgid "Turn off any fantasy/alternative script override and show the normal language legends again."
-msgstr "إيقاف أي تجاوز بنص خيالي/بديل وإظهار تسميات اللغة العادية مرة أخرى."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -2806,284 +3354,292 @@ msgstr "{prefix} — يتوفر المضيف v{host_version}"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — يتوفر البرنامج الثابت v{fw_version}"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:694
+#: polyhost/gui/tray_notify.py:81 polyhost/host.py:740
 msgid "Updates"
 msgstr "التحديثات"
 
-#: polyhost/gui/update_dialog.py:98
+#: polyhost/gui/update_dialog.py:116
 msgid "What's new"
 msgstr "ما الجديد"
 
-#: polyhost/gui/update_dialog.py:101
+#: polyhost/gui/update_dialog.py:119
 #, python-brace-format
 msgid "What's new — {release_name}"
 msgstr "ما الجديد — {release_name}"
+
+#: polyhost/gui/update_dialog.py:137
+msgid "View full release notes on GitHub"
+msgstr "عرض ملاحظات الإصدار الكاملة على GitHub"
 
 #: polyhost/gui/update_ui.py:29
 msgid "Restarting to complete update…"
 msgstr "جارٍ إعادة التشغيل لإكمال التحديث…"
 
-#: polyhost/host.py:55
+#: polyhost/host.py:58
 msgid "Standard (normal legends)"
 msgstr "قياسي (التسميات العادية)"
 
-#: polyhost/host.py:56
+#: polyhost/host.py:59
 msgid "Tengwar (fantasy)"
 msgstr "Tengwar (خيالي)"
 
-#: polyhost/host.py:57
+#: polyhost/host.py:60
 msgid "Elder Futhark runes"
 msgstr "رونية Elder Futhark"
 
-#: polyhost/host.py:58
+#: polyhost/host.py:61
 msgid "Aurebesh (sci-fi)"
 msgstr "Aurebesh (خيال علمي)"
 
-#: polyhost/host.py:59
+#: polyhost/host.py:62
 msgid "Standard Galactic"
 msgstr "Standard Galactic"
 
-#: polyhost/host.py:60
+#: polyhost/host.py:63
 msgid "Cirth / Angerthas"
 msgstr "Cirth / Angerthas"
 
-#: polyhost/host.py:61
+#: polyhost/host.py:64
 msgid "IBM VGA / CP437"
 msgstr "IBM VGA / CP437"
 
-#: polyhost/host.py:62
+#: polyhost/host.py:65
 msgid "Commodore 64 (screen)"
 msgstr "Commodore 64 (الشاشة)"
 
-#: polyhost/host.py:63
+#: polyhost/host.py:66
 msgid "Commodore 64 (keycap)"
 msgstr "Commodore 64 (غطاء المفتاح)"
 
-#: polyhost/host.py:64
+#: polyhost/host.py:67
 msgid "Amiga Topaz"
 msgstr "Amiga Topaz"
 
-#: polyhost/host.py:65
+#: polyhost/host.py:68
 msgid "APL"
 msgstr "APL"
 
-#: polyhost/host.py:66
+#: polyhost/host.py:69
 msgid "Braille"
 msgstr "برايل"
 
-#: polyhost/host.py:72
+#: polyhost/host.py:75
 msgid "Small (standard)"
 msgstr "صغير (قياسي)"
 
-#: polyhost/host.py:73
+#: polyhost/host.py:76
 msgid "Medium"
 msgstr "متوسط"
 
-#: polyhost/host.py:74
+#: polyhost/host.py:77
 msgid "Large"
 msgstr "كبير"
 
-#: polyhost/host.py:253
+#: polyhost/host.py:291
 msgid "Updating keyboard font pack — please wait, do not unplug…"
 msgstr "جارٍ تحديث حزمة الخطوط في لوحة المفاتيح — يرجى الانتظار، لا تفصل الجهاز…"
 
-#: polyhost/host.py:254
+#: polyhost/host.py:292
 #, python-brace-format
 msgid "PolyKybd — updating font pack ({percent}%)"
 msgstr "PolyKybd — جارٍ تحديث حزمة الخطوط ({percent}%)"
 
-#: polyhost/host.py:255
+#: polyhost/host.py:293
 msgid "Keyboard font pack is up to date."
 msgstr "حزمة الخطوط في لوحة المفاتيح محدَّثة."
 
-#: polyhost/host.py:256
+#: polyhost/host.py:294
 #, python-brace-format
 msgid "Font pack update failed: {error}"
 msgstr "فشل تحديث حزمة الخطوط: {error}"
 
-#: polyhost/host.py:259
+#: polyhost/host.py:297
 msgid "Updating keyboard game data — please wait, do not unplug…"
 msgstr "جارٍ تحديث بيانات اللعبة في لوحة المفاتيح — يرجى الانتظار، لا تفصل الجهاز…"
 
-#: polyhost/host.py:260
+#: polyhost/host.py:298
 #, python-brace-format
 msgid "PolyKybd — updating game data ({percent}%)"
 msgstr "PolyKybd — جارٍ تحديث بيانات اللعبة ({percent}%)"
 
-#: polyhost/host.py:261
+#: polyhost/host.py:299
 msgid "Keyboard game data is up to date."
 msgstr "بيانات اللعبة في لوحة المفاتيح محدَّثة."
 
-#: polyhost/host.py:262
+#: polyhost/host.py:300
 #, python-brace-format
 msgid "Game data update failed: {error}"
 msgstr "فشل تحديث بيانات اللعبة: {error}"
 
-#: polyhost/host.py:265
+#: polyhost/host.py:303
 msgid "Updating keyboard engine pack — please wait, do not unplug…"
 msgstr "جارٍ تحديث حزمة المحرك في لوحة المفاتيح — يرجى الانتظار، لا تفصل الجهاز…"
 
-#: polyhost/host.py:266
+#: polyhost/host.py:304
 #, python-brace-format
 msgid "PolyKybd — updating engine pack ({percent}%)"
 msgstr "PolyKybd — جارٍ تحديث حزمة المحرك ({percent}%)"
 
-#: polyhost/host.py:267
+#: polyhost/host.py:305
 msgid "Keyboard engine pack is up to date."
 msgstr "حزمة المحرك في لوحة المفاتيح محدَّثة."
 
-#: polyhost/host.py:268
+#: polyhost/host.py:306
 #, python-brace-format
 msgid "Engine pack update failed: {error}"
 msgstr "فشل تحديث حزمة المحرك: {error}"
 
-#: polyhost/host.py:454 polyhost/host.py:1446
+#: polyhost/host.py:500 polyhost/host.py:1551
 msgid "Waiting for PolyKybd..."
 msgstr "بانتظار PolyKybd..."
 
-#: polyhost/host.py:455 polyhost/host.py:1298
+#: polyhost/host.py:501 polyhost/host.py:1398
 msgid "Press to pause connection"
 msgstr "اضغط لإيقاف الاتصال مؤقتًا"
 
-#: polyhost/forwarder.py:308 polyhost/host.py:458
+#: polyhost/forwarder.py:311 polyhost/host.py:504
 msgid "Quit"
 msgstr "إنهاء"
 
-#: polyhost/host.py:467
+#: polyhost/host.py:513
 msgid "Quit && stop background daemon"
 msgstr "إنهاء && إيقاف الخدمة الخلفية"
 
-#: polyhost/forwarder.py:275 polyhost/host.py:472
+#: polyhost/forwarder.py:278 polyhost/host.py:518
 msgid "About"
 msgstr "حول"
 
-#: polyhost/forwarder.py:264 polyhost/host.py:476
+#: polyhost/forwarder.py:267 polyhost/host.py:522
 msgid "Settings..."
 msgstr "الإعدادات..."
 
-#: polyhost/forwarder.py:279 polyhost/host.py:480
+#: polyhost/forwarder.py:282 polyhost/host.py:526
 msgid "Log file..."
 msgstr "ملف السجل..."
 
-#: polyhost/forwarder.py:285 polyhost/host.py:489
+#: polyhost/forwarder.py:288 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "الإبلاغ عن مشكلة..."
 
-#: polyhost/forwarder.py:291 polyhost/host.py:508
+#: polyhost/forwarder.py:294 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "جمع السجلات..."
 
-#: polyhost/host.py:517
+#: polyhost/host.py:563
 msgid "Read keyboard crash record"
 msgstr "قراءة سجل انهيار لوحة المفاتيح"
 
-#: polyhost/host.py:519
+#: polyhost/host.py:565
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "قراءة آخر سجل انهيار للوحة المفاتيح من كلا النصفين ونسخه إلى الحافظة."
 
-#: polyhost/host.py:524
+#: polyhost/host.py:570
 msgid "Inspect Font Packs..."
 msgstr "فحص حزم الخطوط..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:245 polyhost/forwarder.py:366 polyhost/host.py:538
-#: polyhost/host.py:1300
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:369 polyhost/host.py:584
+#: polyhost/host.py:1400
 msgid "Pause"
 msgstr "إيقاف مؤقت"
 
-#: polyhost/host.py:548
+#: polyhost/host.py:594
 msgid "Firmware newer than this app — safe mode…"
 msgstr "البرنامج الثابت أحدث من هذا التطبيق — الوضع الآمن…"
 
-#: polyhost/host.py:550
+#: polyhost/host.py:596
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "اختر كيفية التعامل مع لوحة مفاتيح برنامجها الثابت أحدث من تطبيق المضيف هذا."
 
-#: polyhost/host.py:586
+#: polyhost/host.py:632
 msgid "Idle Display"
 msgstr "شاشة الخمول"
 
-#: polyhost/host.py:589
+#: polyhost/host.py:635
 msgid "Pulse (legacy)"
 msgstr "نبض (قديم)"
 
-#: polyhost/host.py:591
+#: polyhost/host.py:637
 msgid "Jitter (move legend)"
 msgstr "اهتزاز (تحريك التسمية)"
 
-#: polyhost/host.py:595
+#: polyhost/host.py:641
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD (عرض توضيحي)"
 
-#: polyhost/host.py:599
+#: polyhost/host.py:645
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:619
+#: polyhost/host.py:665
 msgid "Idle After"
 msgstr "الخمول بعد"
 
-#: polyhost/host.py:640
+#: polyhost/host.py:686
 msgid "Keycap Script"
 msgstr "نص أغطية المفاتيح"
 
-#: polyhost/host.py:668
+#: polyhost/host.py:714
 msgid "Keycap Size"
 msgstr "حجم أغطية المفاتيح"
 
-#: polyhost/host.py:686
+#: polyhost/host.py:732
 msgid "Configure Keymap"
 msgstr "تكوين مخطط المفاتيح"
 
-#: polyhost/host.py:696
+#: polyhost/host.py:742
 msgid "Check for host update..."
 msgstr "التحقق من وجود تحديث للمضيف..."
 
-#: polyhost/host.py:735
+#: polyhost/host.py:781
 msgid "Check for keyboard firmware update…"
 msgstr "التحقق من وجود تحديث للبرنامج الثابت للوحة المفاتيح…"
 
-#: polyhost/host.py:744
+#: polyhost/host.py:790
 msgid "Keyboard fonts"
 msgstr "خطوط لوحة المفاتيح"
 
-#: polyhost/host.py:778
+#: polyhost/host.py:824
 msgid "Install WinCompose…"
 msgstr "تثبيت WinCompose…"
 
-#: polyhost/host.py:802
+#: polyhost/host.py:846
+msgid "Allow access to the keyboard (udev rule)…"
+msgstr "السماح بالوصول إلى لوحة المفاتيح (قاعدة udev)…"
+
+#: polyhost/host.py:868
 msgid "Change System Input Language"
 msgstr "تغيير لغة الإدخال في النظام"
 
-#: polyhost/host.py:808
+#: polyhost/host.py:874
 msgid "Inspect MRU Cache..."
 msgstr "فحص ذاكرة MRU المؤقتة..."
 
-#: polyhost/host.py:814
+#: polyhost/host.py:880
 msgid "Mock Keyboard..."
 msgstr "لوحة مفاتيح وهمية..."
 
-#: polyhost/host.py:822
+#: polyhost/host.py:888
 msgid "Refresh unicode input mode"
 msgstr "تحديث وضع إدخال Unicode"
 
-#: polyhost/host.py:826
+#: polyhost/host.py:892
 msgid "Save MRU cache now"
 msgstr "حفظ ذاكرة MRU المؤقتة الآن"
 
-#: polyhost/forwarder.py:301 polyhost/host.py:840
+#: polyhost/forwarder.py:304 polyhost/host.py:906
 msgid "Help && About"
 msgstr "التعليمات && حول"
 
-#: polyhost/forwarder.py:297 polyhost/host.py:849
+#: polyhost/forwarder.py:300 polyhost/host.py:915
 msgid "Open config folder"
 msgstr "فتح مجلد التكوين"
 
-#: polyhost/host.py:962
+#: polyhost/host.py:1028
 msgid "System language query not supported for this platform."
 msgstr "الاستعلام عن لغة النظام غير مدعوم على هذا النظام الأساسي."
 
-#: polyhost/host.py:1161
+#: polyhost/host.py:1227
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
@@ -3094,12 +3650,12 @@ msgstr[3] "إعادة محاولة خطوط لوحة المفاتيح (فشلت 
 msgstr[4] "إعادة محاولة خطوط لوحة المفاتيح (فشلت {n} رزمة)…"
 msgstr[5] "إعادة محاولة خطوط لوحة المفاتيح (فشلت {n} رزمةً)…"
 
-#: polyhost/host.py:1163
+#: polyhost/host.py:1229
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "إعادة كتابة رزم الخطوط التي فشلت محاولتها الأخيرة: {bundles}"
 
-#: polyhost/host.py:1169
+#: polyhost/host.py:1235
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
@@ -3110,16 +3666,16 @@ msgstr[3] "تحديث خطوط لوحة المفاتيح ({n})…"
 msgstr[4] "تحديث خطوط لوحة المفاتيح ({n})…"
 msgstr[5] "تحديث خطوط لوحة المفاتيح ({n})…"
 
-#: polyhost/host.py:1171
+#: polyhost/host.py:1237
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "كتابة رزم الخطوط المفقودة من لوحة المفاتيح أو القديمة فيها أو التي فشل استلامها: {bundles}"
 
-#: polyhost/host.py:1176
+#: polyhost/host.py:1242
 msgid "Keyboard fonts: up to date"
 msgstr "خطوط لوحة المفاتيح: محدّثة"
 
-#: polyhost/host.py:1177
+#: polyhost/host.py:1243
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3127,69 +3683,84 @@ msgstr ""
 "كل رزم الخطوط المرفقة موجودة بالفعل على لوحة المفاتيح.\n"
 "المطوّر ← حزمة الخطوط ← إعادة كتابة كل الرزم تفرض إعادة الإرسال إذا ظلت أغطية المفاتيح تُعرض بشكل خاطئ."
 
-#: polyhost/forwarder.py:711 polyhost/host.py:1207
+#: polyhost/forwarder.py:714 polyhost/host.py:1273
 msgid "Config folder"
 msgstr "مجلد التكوين"
 
+#. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
+#: polyhost/host.py:1371
+#, python-brace-format
+msgid "{rate} link"
+msgstr "وصلة {rate}"
+
+#. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
+#: polyhost/host.py:1373
+#, python-brace-format
+msgid "HID link, up to {kbps} KB/s"
+msgstr "وصلة HID، حتى {kbps} ك.ب/ث"
+
+#. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
+#. to 64 KB/s".
+#: polyhost/host.py:1380
+#, python-brace-format
+msgid "Connected: {link}"
+msgstr "متصل: {link}"
+
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1292
+#: polyhost/host.py:1392
 msgid "Reconnect"
 msgstr "إعادة الاتصال"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:366 polyhost/host.py:1295
+#: polyhost/forwarder.py:369 polyhost/host.py:1395
 msgid "Resume"
 msgstr "استئناف"
 
-#: polyhost/host.py:1374 polyhost/host.py:1438
+#: polyhost/host.py:1478 polyhost/host.py:1543
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "تعذّر تغيير لغة نظام التشغيل {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1462
+#: polyhost/host.py:1567
 msgid "Firmware image (*.bin)"
 msgstr "صورة البرنامج الثابت (*.bin)"
 
-#: polyhost/host.py:1463
+#: polyhost/host.py:1568
 msgid "Select firmware .bin"
 msgstr "اختيار ملف .bin للبرنامج الثابت"
 
-#: polyhost/host.py:1514
+#: polyhost/host.py:1619
 msgid "Firmware apply failed"
 msgstr "فشل تطبيق البرنامج الثابت"
 
-#: polyhost/host.py:1515
+#: polyhost/host.py:1620
 msgid "Firmware flash failed"
 msgstr "فشلت كتابة البرنامج الثابت"
 
-#: polyhost/host.py:1555 polyhost/host.py:1608
+#: polyhost/host.py:1668 polyhost/host.py:1721
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "اللغة المحددة: {language} {country}"
 
-#: polyhost/host.py:1578
-msgid "Other"
-msgstr "أخرى"
-
-#: polyhost/host.py:1664
+#: polyhost/host.py:1772
 msgid "PolyHost settings"
 msgstr "إعدادات PolyHost"
 
-#: polyhost/host.py:1665
+#: polyhost/host.py:1773
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "تم تطبيق الإعدادات، لكن تعذّر حفظها في ملف الإعدادات. قد يكون برنامج آخر يُبقي الملف مفتوحًا. غيّر أحد الإعدادات لاحقًا لإعادة المحاولة، أو راجع السجل."
 
-#: polyhost/host.py:1767
+#: polyhost/host.py:1875
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: سجل غير قابل للقراءة {record}"
 
-#: polyhost/host.py:1770
+#: polyhost/host.py:1878
 msgid "Neither keyboard half holds a crash record."
 msgstr "لا يحمل أي من نصفي لوحة المفاتيح سجل انهيار."
 
-#: polyhost/host.py:1772
+#: polyhost/host.py:1880
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3200,46 +3771,58 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1774
+#: polyhost/host.py:1882
 msgid "Keyboard crash record"
 msgstr "سجل انهيار لوحة المفاتيح"
 
-#: polyhost/host.py:1783
+#: polyhost/host.py:1891
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "تم النسخ إلى الحافظة. لم تُقرأ: {errors}"
 
-#: polyhost/host.py:1868
+#: polyhost/host.py:1976
 msgid "MRU Cache"
 msgstr "ذاكرة MRU المؤقتة"
 
-#: polyhost/host.py:1868
+#: polyhost/host.py:1976
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "ذاكرة MRU المؤقتة غير نشطة (الجهاز غير متصل أو وضع MRU معطّل)."
 
-#: polyhost/host.py:1917
+#: polyhost/host.py:2025
 msgid "daemon client"
 msgstr "عميل للخدمة الخلفية"
 
-#: polyhost/host.py:1917
+#: polyhost/host.py:2025
 msgid "standalone"
 msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:772 polyhost/host.py:1973
+#: polyhost/forwarder.py:775 polyhost/host.py:2083
 msgid "paused"
 msgstr "متوقف مؤقتًا"
 
-#: polyhost/host.py:1975
+#: polyhost/host.py:2085
 msgid "connected"
 msgstr "متصل"
 
-#: polyhost/host.py:1976
+#: polyhost/host.py:2086
 msgid "present — not connected (protocol/version)"
 msgstr "موجود — غير متصل (البروتوكول/الإصدار)"
 
-#: polyhost/host.py:1990
+#: polyhost/host.py:2093
+msgid "Keyboard"
+msgstr "لوحة المفاتيح"
+
+#: polyhost/host.py:2094
+msgid "No keyboard connected."
+msgstr "لا توجد لوحة مفاتيح متصلة."
+
+#: polyhost/host.py:2098
+msgid "⚠ mismatch"
+msgstr "⚠ عدم تطابق"
+
+#: polyhost/host.py:2100
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
@@ -3250,32 +3833,37 @@ msgstr[3] "تم تحميل {n} لغات"
 msgstr[4] "تم تحميل {n} لغة"
 msgstr[5] "تم تحميل {n} لغةً"
 
-#: polyhost/host.py:1993
+#: polyhost/host.py:2103
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>لوحة المفاتيح المتصلة:</b> {name} {state}"
 
-#: polyhost/host.py:1995
+#: polyhost/host.py:2105
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>البرنامج الثابت:</b> {firmware} &nbsp;·&nbsp; البروتوكول {protocol}"
 
-#: polyhost/host.py:1997
+#: polyhost/host.py:2107
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>العتاد:</b> {hardware}"
 
-#: polyhost/host.py:1998
+#: polyhost/host.py:2108
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>اللغة:</b> {language}"
 
-#: polyhost/host.py:2005
+#: polyhost/host.py:2111
+#, python-brace-format
+msgid "<b>Link:</b> {link}"
+msgstr "<b>الوصلة:</b> {link}"
+
+#: polyhost/host.py:2118
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>مدة التشغيل:</b> {uptime}"
 
-#: polyhost/host.py:2007
+#: polyhost/host.py:2120
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
@@ -3286,26 +3874,26 @@ msgstr[3] "<b>تعيينات التراكبات:</b> {n} تطبيقات"
 msgstr[4] "<b>تعيينات التراكبات:</b> {n} تطبيق"
 msgstr[5] "<b>تعيينات التراكبات:</b> {n} تطبيقًا"
 
-#: polyhost/forwarder.py:789 polyhost/host.py:2009
+#: polyhost/forwarder.py:792 polyhost/host.py:2122
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>التكوين:</b> {path}"
 
-#: polyhost/forwarder.py:790 polyhost/host.py:2010
+#: polyhost/forwarder.py:793 polyhost/host.py:2123
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>السجلات:</b> {path}"
 
-#: polyhost/forwarder.py:808 polyhost/host.py:2061
+#: polyhost/forwarder.py:811 polyhost/host.py:2177
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "بروتوكول HID P{protocol}"
 
-#: polyhost/host.py:2066
+#: polyhost/host.py:2182
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "برنامج المضيف للوحة المفاتيح المنقسمة PolyKybd ذات شاشات OLED في كل غطاء مفتاح — يتتبّع النافذة النشطة ويرسل التراكبات واللغة وتحديثات مخطط المفاتيح إلى لوحة المفاتيح."
 
-#: polyhost/host.py:2092
+#: polyhost/host.py:2208
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3314,61 +3902,61 @@ msgstr ""
 "فشل تغيير لغة الإدخال إلى '{language}' مع الخطأ:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2112 polyhost/host.py:2127
+#: polyhost/host.py:2228 polyhost/host.py:2243
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "تعذّر ضبط {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2242
+#: polyhost/host.py:2349
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "تعيين تراكبات PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2321 polyhost/host.py:2799 polyhost/host.py:2927
+#: polyhost/host.py:2437 polyhost/host.py:2916 polyhost/host.py:3059
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "تحديث البرنامج الثابت إلى v{version}…"
 
-#: polyhost/host.py:2323 polyhost/host.py:2834 polyhost/host.py:2996
+#: polyhost/host.py:2439 polyhost/host.py:2957 polyhost/host.py:3130
 msgid "Check for firmware update…"
 msgstr "التحقق من وجود تحديث للبرنامج الثابت…"
 
-#: polyhost/forwarder.py:846 polyhost/forwarder.py:857
-#: polyhost/forwarder.py:863 polyhost/host.py:2341 polyhost/host.py:2462
-#: polyhost/host.py:2466
+#: polyhost/forwarder.py:849 polyhost/forwarder.py:860
+#: polyhost/forwarder.py:866 polyhost/host.py:2457 polyhost/host.py:2578
+#: polyhost/host.py:2582
 msgid "Check for updates..."
 msgstr "التحقق من وجود تحديثات..."
 
-#: polyhost/host.py:2409
+#: polyhost/host.py:2525
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "يتوفر تحديث إلى v{version}"
 
-#: polyhost/forwarder.py:859 polyhost/forwarder.py:865
-#: polyhost/forwarder.py:876 polyhost/host.py:2420 polyhost/host.py:2460
-#: polyhost/host.py:2467 polyhost/host.py:2490
+#: polyhost/forwarder.py:862 polyhost/forwarder.py:868
+#: polyhost/forwarder.py:879 polyhost/host.py:2536 polyhost/host.py:2576
+#: polyhost/host.py:2583 polyhost/host.py:2606
 msgid "PolyKybdHost Update"
 msgstr "تحديث PolyKybdHost"
 
-#: polyhost/host.py:2421
+#: polyhost/host.py:2537
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "يتوفر الإصدار {version}. انقر على أيقونة علبة النظام للتحديث."
 
-#: polyhost/forwarder.py:834 polyhost/host.py:2446
+#: polyhost/forwarder.py:837 polyhost/host.py:2562
 msgid "Checking for updates..."
 msgstr "جارٍ التحقق من وجود تحديثات..."
 
-#: polyhost/host.py:2459
+#: polyhost/host.py:2575
 msgid "No updates available"
 msgstr "لا توجد تحديثات متاحة"
 
-#: polyhost/forwarder.py:860 polyhost/host.py:2461
+#: polyhost/forwarder.py:863 polyhost/host.py:2577
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "أنت تستخدم أحدث إصدار (v{version})."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2468
+#: polyhost/forwarder.py:869 polyhost/host.py:2584
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3383,59 +3971,63 @@ msgstr ""
 "\n"
 "شغّل مع --dev 1 لمزيد من التفاصيل."
 
-#: polyhost/host.py:2473 polyhost/host.py:2860
+#: polyhost/host.py:2589 polyhost/host.py:2989
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "تاريخ الإصدار: {date}"
 
-#: polyhost/forwarder.py:847 polyhost/host.py:2474
+#: polyhost/forwarder.py:850 polyhost/host.py:2590
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "يتوفر الإصدار {version}."
 
-#: polyhost/forwarder.py:848 polyhost/host.py:2475
+#: polyhost/forwarder.py:851 polyhost/host.py:2591
 msgid "Update PolyKybdHost"
 msgstr "تحديث PolyKybdHost"
 
-#: polyhost/host.py:2479
+#: polyhost/host.py:2595
 msgid "Download, install, and restart now?"
 msgstr "هل تريد التنزيل والتثبيت وإعادة التشغيل الآن؟"
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2490
+#: polyhost/forwarder.py:878 polyhost/host.py:2606
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "جارٍ تنزيل v{version}…"
 
-#: polyhost/forwarder.py:916 polyhost/host.py:2615
+#: polyhost/forwarder.py:919 polyhost/host.py:2731
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "تعذّر بدء مُرحِّل التحديث؛ التحديث غير مكتمل. راجع السجل لمزيد من التفاصيل."
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2630
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "Update failed"
 msgstr "فشل التحديث"
 
-#: polyhost/forwarder.py:928 polyhost/host.py:2630
+#: polyhost/forwarder.py:931 polyhost/host.py:2746
 msgid "The update did not finish."
 msgstr "لم يكتمل التحديث."
 
-#: polyhost/host.py:2810
+#: polyhost/host.py:2927
 msgid "PolyKybd Firmware Update"
 msgstr "تحديث البرنامج الثابت لـ PolyKybd"
 
-#: polyhost/host.py:2811
+#: polyhost/host.py:2928
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "يتوفر برنامج ثابت جديد v{version}. انقر على أيقونة علبة النظام للتحديث."
 
-#: polyhost/host.py:2828
+#: polyhost/host.py:2945 polyhost/host.py:2986
+msgid "The keyboard must be connected to update the firmware."
+msgstr "يجب توصيل لوحة المفاتيح لتحديث البرنامج الثابت."
+
+#: polyhost/host.py:2951
 msgid "Checking for firmware update…"
 msgstr "جارٍ التحقق من وجود تحديث للبرنامج الثابت…"
 
-#: polyhost/host.py:2841 polyhost/host.py:2849
+#: polyhost/host.py:2965 polyhost/host.py:2975 polyhost/host.py:2978
 msgid "PolyKybd Firmware"
 msgstr "البرنامج الثابت لـ PolyKybd"
 
-#: polyhost/host.py:2842
+#: polyhost/host.py:2966
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -3446,46 +4038,55 @@ msgstr ""
 "\n"
 "لوحة مفاتيحك على الإصدار v{current}. يعني هذا عادةً أن بناء الإصدار فشل — وستحصل صفحة الإصدار على برنامجها الثابت بمجرد إصلاح ذلك."
 
-#: polyhost/host.py:2850
+#: polyhost/host.py:2976
+msgid "No firmware release could be found."
+msgstr "تعذّر العثور على إصدار للبرنامج الثابت."
+
+#: polyhost/host.py:2979
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "أنت تستخدم أحدث برنامج ثابت (v{version})."
 
-#: polyhost/host.py:2857
-msgid "The keyboard must be connected to update the firmware."
-msgstr "يجب توصيل لوحة المفاتيح لتحديث البرنامج الثابت."
+#: polyhost/host.py:2991
+#, python-brace-format
+msgid "Installed: v{version}"
+msgstr "المثبّت: v{version}"
 
-#: polyhost/host.py:2861
+#: polyhost/host.py:2992
+msgid "Installed: unknown (the keyboard did not report its version)"
+msgstr "المثبّت: غير معروف (لم تُبلغ لوحة المفاتيح عن إصدارها)"
+
+#: polyhost/host.py:2993
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "يتوفر البرنامج الثابت {version}."
 
-#: polyhost/host.py:2863
+#: polyhost/host.py:2995
 msgid "Both halves update over HID and reboot automatically."
 msgstr "يتم تحديث كلا النصفين عبر HID ويُعاد تشغيلهما تلقائيًا."
 
-#: polyhost/host.py:2864
+#: polyhost/host.py:2996
 msgid "Update PolyKybd Firmware"
 msgstr "تحديث البرنامج الثابت لـ PolyKybd"
 
-#: polyhost/host.py:2868
+#: polyhost/host.py:3000
 msgid "Download and flash now?"
 msgstr "هل تريد التنزيل والكتابة الآن؟"
 
-#: polyhost/host.py:2879
+#: polyhost/host.py:3011
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "جارٍ تنزيل البرنامج الثابت v{version}…"
 
-#: polyhost/host.py:2901 polyhost/host.py:3112
+#: polyhost/host.py:3033 polyhost/host.py:3334
 msgid "Cancelling…"
 msgstr "جارٍ الإلغاء…"
 
-#: polyhost/host.py:2938
+#: polyhost/host.py:3070
 msgid "Firmware Update Failed"
 msgstr "فشل تحديث البرنامج الثابت"
 
-#: polyhost/host.py:2939
+#: polyhost/host.py:3071
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -3496,12 +4097,53 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3076 polyhost/host.py:3090 polyhost/host.py:3136
-#: polyhost/host.py:3145 polyhost/host.py:3151
+#: polyhost/host.py:3177 polyhost/host.py:3219 polyhost/host.py:3227
+msgid "Allow access to the keyboard"
+msgstr "السماح بالوصول إلى لوحة المفاتيح"
+
+#: polyhost/host.py:3178
+msgid ""
+"On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
+"\n"
+"The system will ask for your password (PolicyKit). Afterwards, unplug the keyboard and plug it in again."
+msgstr ""
+"في Linux تتيح قاعدة udev لهذا التطبيق فتح لوحة المفاتيح دون صلاحيات root: واجهة HID الخاصة بها، ومنفذها التسلسلي لتحديثات أسرع للبرنامج الثابت وحزمة الخطوط. ملف القاعدة هو /etc/udev/rules.d/99-hid.rules.\n"
+"\n"
+"سيطلب النظام كلمة المرور الخاصة بك (PolicyKit). بعد ذلك، افصل لوحة المفاتيح وأعد توصيلها."
+
+#: polyhost/host.py:3220
+msgid ""
+"The udev rule is installed.\n"
+"\n"
+"Unplug the keyboard and plug it in again so the new permissions apply."
+msgstr ""
+"تم تثبيت قاعدة udev.\n"
+"\n"
+"افصل لوحة المفاتيح وأعد توصيلها لكي تسري الأذونات الجديدة."
+
+#: polyhost/host.py:3228
+msgid "The udev rule was not installed."
+msgstr "لم يتم تثبيت قاعدة udev."
+
+#: polyhost/host.py:3229
+#, python-brace-format
+msgid ""
+"{error}\n"
+"\n"
+"You can also run these commands in a terminal:\n"
+"{commands}"
+msgstr ""
+"{error}\n"
+"\n"
+"يمكنك أيضًا تنفيذ هذه الأوامر في الطرفية:\n"
+"{commands}"
+
+#: polyhost/host.py:3298 polyhost/host.py:3312 polyhost/host.py:3358
+#: polyhost/host.py:3367 polyhost/host.py:3373
 msgid "Install WinCompose"
 msgstr "تثبيت WinCompose"
 
-#: polyhost/host.py:3077
+#: polyhost/host.py:3299
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -3511,11 +4153,11 @@ msgstr ""
 "\n"
 "سيتم تنزيل إصدار PolyKybd من WinCompose من GitHub وتشغيل برنامج تثبيته (سيطلب منك Windows التأكيد)."
 
-#: polyhost/host.py:3090
+#: polyhost/host.py:3312
 msgid "Looking for the latest WinCompose release…"
 msgstr "جارٍ البحث عن أحدث إصدار من WinCompose…"
 
-#: polyhost/host.py:3137
+#: polyhost/host.py:3359
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -3525,7 +4167,7 @@ msgstr ""
 "\n"
 "ستُفتح صفحة الإصدارات في متصفحك — نزّل برنامج الإعداد وشغّله من هناك."
 
-#: polyhost/host.py:3146
+#: polyhost/host.py:3368
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -3536,7 +4178,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3152
+#: polyhost/host.py:3374
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -3553,31 +4195,178 @@ msgstr ""
 "تم حفظه في:\n"
 "{path}"
 
-#: polyhost/host.py:3160
+#: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "بدأ برنامج تثبيت WinCompose. بمجرد انتهائه وتشغيل WinCompose، ستنتقل PolyKybd إليه تلقائيًا."
 
-#: polyhost/services/lang_regions.py:128
+#: polyhost/services/game_assets/westwood_td/__init__.py:13
+msgid "Command and Conquer Folder"
+msgstr "مجلد Command and Conquer"
+
+#: polyhost/services/game_assets/westwood_td/__init__.py:14
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgstr "مجلد يحوي ملفات Command & Conquer الكلاسيكية CONQUER.MIX و TEMPERAT.MIX. فارغ: يُبحث في تثبيتات Remastered Collection من Steam و EA app."
+
+#: polyhost/services/game_assets/westwood_td/__init__.py:17
+msgid "Command and Conquer Faction"
+msgstr "فصيل Command and Conquer"
+
+#: polyhost/services/game_assets/westwood_td/__init__.py:18
+msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgstr "الفصيل الذي يعرض تراكب C&C Remastered وحداته ومبانيه."
+
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
+msgid "GDI"
+msgstr "GDI"
+
+#: polyhost/services/game_assets/westwood_td/__init__.py:19
+msgid "Nod"
+msgstr "Nod"
+
+#: polyhost/services/lang_regions.py:148
+msgid "Other"
+msgstr "أخرى"
+
+#: polyhost/services/lang_regions.py:154
 msgid "Americas"
 msgstr "الأمريكتان"
 
-#: polyhost/services/lang_regions.py:129
+#: polyhost/services/lang_regions.py:155
 msgid "Europe"
 msgstr "أوروبا"
 
-#: polyhost/services/lang_regions.py:130
+#: polyhost/services/lang_regions.py:156
 msgid "Middle East & Caucasus"
 msgstr "الشرق الأوسط والقوقاز"
 
-#: polyhost/services/lang_regions.py:131
+#: polyhost/services/lang_regions.py:157
 msgid "Africa"
 msgstr "أفريقيا"
 
-#: polyhost/services/lang_regions.py:132
+#: polyhost/services/lang_regions.py:158
 msgid "Asia"
 msgstr "آسيا"
 
-#: polyhost/services/lang_regions.py:133
+#: polyhost/services/lang_regions.py:159
 msgid "Oceania"
 msgstr "أوقيانوسيا"
+
+#: polyhost/services/linux_udev.py:52
+msgid "The udev rule is only needed on Linux."
+msgstr "قاعدة udev مطلوبة على Linux فقط."
+
+#: polyhost/services/linux_udev.py:53
+msgid "The 'pkexec' command (PolicyKit) is not installed, so the rule cannot be written from here."
+msgstr "الأمر 'pkexec' (PolicyKit) غير مثبّت، لذا لا يمكن كتابة القاعدة من هنا."
+
+#: polyhost/services/linux_udev.py:54
+msgid "The password prompt was closed."
+msgstr "تم إغلاق مطالبة كلمة المرور."
+
+#: polyhost/services/linux_udev.py:55
+msgid "PolicyKit refused the authorisation."
+msgstr "رفض PolicyKit التفويض."
+
+#: polyhost/services/linux_udev.py:56
+msgid "The password prompt was not answered in time."
+msgstr "لم تتم الإجابة على مطالبة كلمة المرور في الوقت المحدد."
+
+#: polyhost/services/linux_udev.py:57
+#, python-brace-format
+msgid ""
+"The command failed (exit code {code}):\n"
+"{output}"
+msgstr ""
+"فشل الأمر (رمز الخروج {code}):\n"
+"{output}"
+
+#: polyhost/services/linux_udev.py:58
+#, python-brace-format
+msgid "The command could not be started: {error}"
+msgstr "تعذّر بدء الأمر: {error}"
+
+#: polyhost/services/linux_udev.py:59
+#, python-brace-format
+msgid "The rule file in this checkout was refused: {reason}"
+msgstr "تم رفض ملف القواعد في هذه النسخة: {reason}"
+
+#: polyhost/services/updater.py:39
+#, python-brace-format
+msgid "Preflight failed: {details}"
+msgstr "فشل الفحص المسبق: {details}"
+
+#: polyhost/services/updater.py:40
+#, python-brace-format
+msgid "Warning — {name}: {detail}"
+msgstr "تحذير — {name}: {detail}"
+
+#: polyhost/services/updater.py:41
+#, python-brace-format
+msgid "Install dir not writable: {error}"
+msgstr "لا يمكن الكتابة في مجلد التثبيت: {error}"
+
+#: polyhost/services/updater.py:42
+#, python-brace-format
+msgid "Could not create a temp directory for the update: {error}"
+msgstr "تعذّر إنشاء مجلد مؤقت للتحديث: {error}"
+
+#: polyhost/services/updater.py:43
+msgid "Starting download..."
+msgstr "جارٍ بدء التنزيل..."
+
+#: polyhost/services/updater.py:44
+#, python-brace-format
+msgid "Downloading v{version}..."
+msgstr "جارٍ تنزيل v{version}..."
+
+#: polyhost/services/updater.py:45
+msgid "Applying update..."
+msgstr "جارٍ تطبيق التحديث..."
+
+#: polyhost/services/updater.py:46
+msgid "Connecting…"
+msgstr "جارٍ الاتصال…"
+
+#: polyhost/services/updater.py:47
+#, python-brace-format
+msgid "Downloading firmware… {done} / {total} KB"
+msgstr "جارٍ تنزيل البرنامج الثابت… {done} / {total} KB"
+
+#: polyhost/services/updater.py:48
+#, python-brace-format
+msgid "Downloading firmware… {done} KB"
+msgstr "جارٍ تنزيل البرنامج الثابت… {done} KB"
+
+#: polyhost/services/updater.py:49
+msgid "Download cancelled."
+msgstr "أُلغي التنزيل."
+
+#: polyhost/services/updater.py:50
+msgid "Downloading signature…"
+msgstr "جارٍ تنزيل التوقيع…"
+
+#: polyhost/services/updater.py:52
+#, python-brace-format
+msgid ""
+"The image downloaded, but its signature did not ({error}).\n"
+"\n"
+"Flashing without it would make the keyboard treat this release as an unsigned build and ask you to confirm on the keys, so the update was stopped instead."
+msgstr ""
+"نُزّلت الصورة، لكن توقيعها لم يُنزَّل ({error}).\n"
+"\n"
+"الكتابة دونه ستجعل لوحة المفاتيح تعامل هذا الإصدار كبنية غير موقَّعة وتطلب منك التأكيد على المفاتيح، لذا أُوقف التحديث بدلًا من ذلك."
+
+#: polyhost/services/wincompose_install.py:51
+msgid "Looking for the latest release…"
+msgstr "جارٍ البحث عن أحدث إصدار…"
+
+#: polyhost/services/wincompose_install.py:52
+#, python-brace-format
+msgid "Downloading WinCompose… {done} / {total} KB"
+msgstr "جارٍ تنزيل WinCompose… {done} / {total} KB"
+
+#: polyhost/services/wincompose_install.py:53
+#, python-brace-format
+msgid "Downloading WinCompose… {done} KB"
+msgstr "جارٍ تنزيل WinCompose… {done} KB"
 

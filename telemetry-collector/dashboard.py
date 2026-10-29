@@ -15,8 +15,13 @@ Usage:
     python dashboard.py                    # query the remote DB, write dashboard.html
     python dashboard.py --open             # ... and open it in a browser
     python dashboard.py --days 90          # widen the time-series window (default 30)
+    python dashboard.py --days all         # ... or cover every day in the data
     python dashboard.py --local            # query the local dev DB instead
     python dashboard.py --from-json rows.json   # no wrangler; feed saved --json output
+    python dashboard.py --from-json data/       # ... or a directory of them (*.json, recursive)
+    python dashboard.py --export-days data/     # append each finished UTC day as
+                                                # data/YYYY/YYYY-MM-DD.json, then render
+                                                # from the whole directory
     python dashboard.py --out /tmp/t.html
 
 Stdlib only, so it runs from a bare checkout on any OS.
@@ -34,7 +39,7 @@ import subprocess
 import sys
 import webbrowser
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 DB_NAME = "polyhost-telemetry"
@@ -120,7 +125,7 @@ def split_command(cmd: str) -> list[str]:
     return shlex.split(cmd)
 
 
-def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
+def fetch_rows(remote: bool, wrangler: str, sql: str = SELECT_ALL) -> list[dict]:
     # shell=False with an argv list: the string below is tokenised, never
     # interpreted by a shell, so there is no metacharacter to inject through.
     # It also comes from this process's own --wrangler argument, i.e. from
@@ -128,7 +133,7 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
     parts = split_command(wrangler) + [
         "d1", "execute", DB_NAME,
         "--remote" if remote else "--local",
-        "--json", "--command", SELECT_ALL,
+        "--json", "--command", sql,
     ]
     exe = shutil.which(parts[0])
     if exe is None:
@@ -166,6 +171,111 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
     return parse_wrangler_json(proc.stdout)
 
 
+def load_rows(path: Path) -> list[dict]:
+    """Rows from one saved export, or from every *.json under a directory.
+
+    A directory is what `--export-days` writes: one file per UTC day. Files
+    are read in sorted path order, so the result does not depend on the
+    order the file system lists them in.
+    """
+    if not path.is_dir():
+        return parse_wrangler_json(path.read_text(encoding="utf-8"))
+    rows: list[dict] = []
+    for file in sorted(path.rglob("*.json")):
+        rows.extend(parse_wrangler_json(file.read_text(encoding="utf-8")))
+    return rows
+
+
+# --------------------------------------------------------------------------
+# Daily export — one file per finished UTC day, for an archive kept in git
+# --------------------------------------------------------------------------
+
+def newest_export_day(directory: Path) -> date | None:
+    """The newest day that already has a file under `directory`, or None.
+
+    Only names that parse as YYYY-MM-DD count, so a stray file cannot move
+    the start of the next export.
+    """
+    newest = None
+    for file in directory.rglob("*.json"):
+        try:
+            day = date.fromisoformat(file.stem)
+        except ValueError:
+            continue
+        if newest is None or day > newest:
+            newest = day
+    return newest
+
+
+def export_query(after: date | None, before: date) -> str:
+    """SELECT for the days strictly between `after` and `before`.
+
+    Both bounds are `date` objects, so their isoformat() is digits and
+    dashes only and is safe to put in the SQL text. Today (UTC) is the
+    upper bound and is excluded: installs that have not reported yet today
+    still can, and the next run starts after the newest file, so a day
+    exported early would stay incomplete. A day is final once it has ended.
+    """
+    where = f"day < '{before.isoformat()}'"
+    if after is not None:
+        where = f"day > '{after.isoformat()}' AND {where}"
+    return f"SELECT * FROM ping WHERE {where} ORDER BY day, received_at, id"
+
+
+def split_by_day(rows: list[dict], after: date | None, before: date) -> dict[str, list[dict]]:
+    """Group rows by their `day`, keeping only days in (after, before)."""
+    lo = after.isoformat() if after else ""
+    hi = before.isoformat()
+    out: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        day = str(r.get("day") or "")
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            continue
+        if lo < day < hi:
+            out[day].append(r)
+    for day_rows in out.values():
+        day_rows.sort(key=lambda r: (str(r.get("received_at") or ""), r.get("id") or 0))
+    return dict(out)
+
+
+def write_day_files(directory: Path, by_day: dict[str, list[dict]]) -> list[Path]:
+    """Write each day as `<directory>/YYYY/YYYY-MM-DD.json`.
+
+    One row per line with sorted keys, so a later change to a file (which
+    should never happen) shows as a readable diff.
+    """
+    written = []
+    for day in sorted(by_day):
+        file = directory / day[:4] / f"{day}.json"
+        file.parent.mkdir(parents=True, exist_ok=True)
+        lines = ",\n".join(
+            json.dumps(r, sort_keys=True, ensure_ascii=False) for r in by_day[day]
+        )
+        # Written beside the target and renamed, so an interrupted run never
+        # leaves a truncated YYYY-MM-DD.json that the next run would take as
+        # the newest finished day.
+        tmp = file.with_name(file.name + ".tmp")
+        tmp.write_text(f"[\n{lines}\n]\n", encoding="utf-8")
+        os.replace(tmp, file)
+        written.append(file)
+    return written
+
+
+def export_days(directory: Path, remote: bool, wrangler: str, today: date) -> list[Path]:
+    """Fetch every finished day newer than the newest file, and write it."""
+    directory.mkdir(parents=True, exist_ok=True)
+    after = newest_export_day(directory)
+    if after is not None and after >= today - timedelta(days=1):
+        print(f"{directory}: up to date (newest day {after})")
+        return []
+    rows = fetch_rows(remote, wrangler, export_query(after, today))
+    written = write_day_files(directory, split_by_day(rows, after, today))
+    print(f"{directory}: wrote {len(written)} day file(s) from {len(rows)} reports")
+    return written
+
+
 # --------------------------------------------------------------------------
 # Aggregation — pure functions over the row dicts, so they are unit-testable
 # without a database. Every one of them must survive an empty dataset: for the
@@ -185,21 +295,27 @@ def _jsonmap(value) -> dict:
     return out if isinstance(out, dict) else {}
 
 
-def day_range(rows: list[dict], days: int) -> list[str]:
+def day_range(rows: list[dict], days: int | None) -> list[str]:
     """Every day in the window, including ones with no pings.
 
     Gaps matter here — a day where nobody reported is a real observation, and
     plotting only the days that have rows silently closes the gap and turns an
-    outage into a straight line.
+    outage into a straight line. `days=None` starts the window at the first
+    valid day in the data.
     """
-    if not rows:
+    valid = []
+    for r in rows:
+        try:
+            valid.append(date.fromisoformat(str(r.get("day") or "")))
+        except ValueError:
+            continue
+    if not valid:
         return []
-    last = max(str(r.get("day") or "") for r in rows)
-    try:
-        end = date.fromisoformat(last)
-    except ValueError:
-        return []
-    start = end - timedelta(days=max(days, 1) - 1)
+    end = max(valid)
+    if days is None:
+        start = min(valid)
+    else:
+        start = end - timedelta(days=max(days, 1) - 1)
     return [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
 
 
@@ -332,6 +448,9 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
         parts.append(f'<text class="tick" x="{pad_l - 6}" y="{y + 4:.1f}" text-anchor="end">{label}</text>')
 
     every = max(1, -(-len(series) // max(1, max_labels - 1)))
+    # MM-DD is enough inside one year. A window across years (--days all)
+    # needs the year, or 08-07 at both ends reads as the same day.
+    one_year = series[0][0][:4] == series[-1][0][:4]
     for i, (day, value) in enumerate(series):
         h = plot_h * (value / top)
         x = pad_l + i * step + (step - bar_w) / 2
@@ -340,10 +459,17 @@ def svg_bars(series: list[tuple[str, int]], height: int = 170, max_labels: int =
             f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" rx="1">'
             f"<title>{esc(day)}: {value}</title></rect>"
         )
-        if i % every == 0 or i == len(series) - 1:
+        # A regular tick closer than half an interval to the last label would
+        # run into it (30 days: ticks at 28 and 29), so it is left out.
+        regular = i % every == 0 and (len(series) - 1 - i) * 2 >= every
+        if regular or i == len(series) - 1:
+            # The last label ends at its bar instead of centring on it, so a
+            # full YYYY-MM-DD is not cut off at the right edge of the chart.
+            last = i == len(series) - 1 and len(series) > 1
+            lx, anchor = (x + bar_w, "end") if last else (x + bar_w / 2, "middle")
             parts.append(
-                f'<text class="tick" x="{x + bar_w / 2:.1f}" y="{height - 6}" '
-                f'text-anchor="middle">{esc(day[5:])}</text>'
+                f'<text class="tick" x="{lx:.1f}" y="{height - 6}" '
+                f'text-anchor="{anchor}">{esc(day[5:] if one_year else day)}</text>'
             )
     parts.append("</svg>")
     return "".join(parts)
@@ -440,10 +566,13 @@ footer{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.7}
 """
 
 
-def render(rows: list[dict], days: int, generated: str) -> str:
+def render(rows: list[dict], days: int | None, generated: str) -> str:
     window = day_range(rows, days)
     latest = latest_per_install(rows)
-    in_window = [r for r in rows if str(r.get("day") or "") in set(window)]
+    # One set for the whole pass: with --days all the window is every day in
+    # the archive, and rebuilding it per row is O(rows x days).
+    window_days = set(window)
+    in_window = [r for r in rows if str(r.get("day") or "") in window_days]
     installs_today = daily_installs(rows, window)[-1][1] if window else 0
 
     kpis = [
@@ -483,7 +612,7 @@ def render(rows: list[dict], days: int, generated: str) -> str:
 <title>PolyHost telemetry</title><style>{CSS}</style></head>
 <body><div class="wrap">
 <h1>PolyHost telemetry</h1>
-<p class="sub">Generated {esc(generated)} · window: last {days} days · {len(rows)} reports
+<p class="sub">Generated {esc(generated)} · window: {esc(_window_label(days, len(window)))} · {len(rows)} reports
 from {len(latest)} installs</p>
 
 <div class="kpis" style="margin-bottom:16px">{kpi_html}</div>
@@ -521,17 +650,25 @@ not lost in a crowd either. Nothing on this page left your machine to produce it
 
 # --------------------------------------------------------------------------
 
-def _positive_days(value: str) -> int:
-    """Reject --days 0 / negatives at parse time.
+def _window_label(days: int | None, shown: int) -> str:
+    if days is None:
+        return f"all {shown} days"
+    return f"last {days} days"
+
+
+def _positive_days(value: str) -> int | None:
+    """Reject --days 0 / negatives at parse time; "all" means no limit (None).
 
     `day_range` clamps to 1 defensively, but the page subtitle prints whatever
     was passed — so without this the header cheerfully reads "window: last 0
     days" over a chart showing one.
     """
+    if value == "all":
+        return None
     try:
         days = int(value)
     except ValueError:
-        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer or 'all'") from None
     if days < 1:
         raise argparse.ArgumentTypeError("must be 1 or more")
     return days
@@ -542,16 +679,26 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=str(Path(__file__).with_name("dashboard.html")),
                     help="output file (default: dashboard.html beside this script)")
     ap.add_argument("--days", type=_positive_days, default=30,
-                    help="time-series window in days (default 30)")
+                    help="time-series window in days, or 'all' for every day (default 30)")
     ap.add_argument("--local", action="store_true", help="query the local dev DB instead of the remote one")
-    ap.add_argument("--from-json", metavar="FILE",
-                    help="read saved `wrangler d1 execute --json` output instead of querying")
+    src = ap.add_mutually_exclusive_group()
+    src.add_argument("--from-json", metavar="PATH",
+                     help="read saved `wrangler d1 execute --json` output instead of querying; "
+                          "a directory reads every *.json under it")
+    src.add_argument("--export-days", metavar="DIR",
+                     help="write each finished UTC day newer than DIR's newest file to "
+                          "DIR/YYYY/YYYY-MM-DD.json, then render from all of DIR")
     ap.add_argument("--wrangler", default="npx wrangler", help="how to invoke wrangler")
     ap.add_argument("--open", action="store_true", help="open the result in a browser")
     args = ap.parse_args(argv)
 
-    if args.from_json:
-        rows = parse_wrangler_json(Path(args.from_json).read_text(encoding="utf-8"))
+    if args.export_days:
+        export_dir = Path(args.export_days)
+        today_utc = datetime.now(timezone.utc).date()
+        export_days(export_dir, remote=not args.local, wrangler=args.wrangler, today=today_utc)
+        rows = load_rows(export_dir)
+    elif args.from_json:
+        rows = load_rows(Path(args.from_json))
     else:
         rows = fetch_rows(remote=not args.local, wrangler=args.wrangler)
 

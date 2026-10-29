@@ -20,7 +20,8 @@ from polyhost.device.hid_helper import DisconnectedHid
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
-from polyhost.device.poly_kybd import PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL
+from polyhost.device.poly_kybd import (PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL,
+                                     SPLIT_VBUS_FLAG_MIN_PROTOCOL)
 from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
@@ -318,6 +319,44 @@ class TestSendOnlyCommands(unittest.TestCase, LockCheckMixin):
         ok, _ = keeb.set_handedness(False)
         self.assertTrue(ok)
         self.assertEqual(device.payloads()[0][:3], bytes([POLY, 25, 1]))
+
+    def test_set_handedness_without_flag_sends_keep(self):
+        """No flag -> data[3] is the zero pad, which the firmware reads as KEEP."""
+        keeb, device = make_keeb()
+        keeb.set_handedness(True)
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 25, 0, 0]))
+
+    def test_set_handedness_split_vbus_on_and_off(self):
+        keeb, device = make_keeb()
+        self.assertTrue(keeb.set_handedness(True, split_vbus=True)[0])
+        self.assertTrue(keeb.set_handedness(False, split_vbus=False)[0])
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 25, 0, 2]))
+        self.assertEqual(device.payloads()[1][:4], bytes([POLY, 25, 1, 1]))
+
+    def test_split_vbus_flag_refused_below_protocol_24(self):
+        """v23 firmware ignores data[3]: it would set the side and NOT the flag."""
+        keeb, device = make_keeb()
+        keeb.protocol_version = SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1
+        ok, msg = keeb.set_handedness(True, split_vbus=True)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertEqual(device.payloads(), [])
+
+    def test_mock_firmware_below_24_sets_the_side_but_not_the_flag(self):
+        """The emulator must behave like v23 firmware: it ignores data[3]."""
+        from polyhost.device.mock_firmware import MockFirmware
+        for protocol, expect in ((SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1, False),
+                                 (SPLIT_VBUS_FLAG_MIN_PROTOCOL, True)):
+            fw = MockFirmware(protocol)
+            fw.split_vbus = False
+            fw._dispatch(bytes([POLY, 25, 1, 2]) + bytes(60))
+            self.assertEqual(fw.split_vbus, expect, f"v{protocol}")
+
+    def test_plain_handedness_still_works_below_protocol_24(self):
+        keeb, device = make_keeb()
+        keeb.protocol_version = SPLIT_VBUS_FLAG_MIN_PROTOCOL - 1
+        self.assertTrue(keeb.set_handedness(True)[0])
+        self.assertEqual(device.payloads()[0][:3], bytes([POLY, 25, 0]))
 
 
 class TestKeypressCommands(unittest.TestCase, LockCheckMixin):
@@ -987,27 +1026,27 @@ def keeb_payload() -> int:
 
 class TestConnect(unittest.TestCase):
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_first_connect_opens_interfaces(self, MockHid, MockSerial):
+    def test_first_connect_opens_interfaces(self, MockHid):
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
         self.assertTrue(keeb.connect())
         MockHid.assert_called_once()
-        MockSerial.assert_called_once()
+        # The bulk pipe is probed by the core after the connect, not here.
+        self.assertIsNone(keeb.get_transport())
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_first_connect_failure_leaves_clean_state(self, MockHid, MockSerial):
+    def test_first_connect_failure_leaves_clean_state(self, MockHid):
         MockHid.side_effect = RuntimeError("no permission")
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        keeb.transport, keeb.pipe_info = "pipe", {"port": "COM7"}   # stale from before
         self.assertFalse(keeb.connect())
         self.assertIsInstance(keeb.hid, DisconnectedHid)
         self.assertFalse(keeb.hid.interface_acquired())
-        self.assertIsNone(keeb.serial)
+        self.assertIsNone(keeb.get_transport())
+        self.assertIsNone(keeb.get_pipe_info())
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_a_job_after_a_failed_open_fails_instead_of_raising(self, MockHid, MockSerial):
+    def test_a_job_after_a_failed_open_fails_instead_of_raising(self, MockHid):
         # The field case (2026-10-01): the device vanished while the firmware
         # rebooted after a flash, re-enumeration found nothing, and an overlay
         # job already queued called set_idle on a None handle.
@@ -1021,9 +1060,8 @@ class TestConnect(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(keeb.get_console_output(), "")
 
-    @mock.patch("polyhost.device.poly_kybd.SerialHelper")
     @mock.patch("polyhost.device.poly_kybd.HidHelper")
-    def test_after_a_failed_open_the_next_connect_opens_afresh(self, MockHid, MockSerial):
+    def test_after_a_failed_open_the_next_connect_opens_afresh(self, MockHid):
         # No GET_ID retry loop against a handle that has no device behind it.
         MockHid.side_effect = RuntimeError("gone")
         keeb = PolyKybd(DeviceSettings(), StubPolySettings())
