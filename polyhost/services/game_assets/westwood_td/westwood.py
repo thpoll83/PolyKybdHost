@@ -41,15 +41,20 @@ def td_hash(name: str) -> int:
 
 class Mix:
     """An unencrypted Tiberian Dawn MIX archive (the freeware and Remastered
-    `.MIX` files): a count, a body size, then (hash, offset, size) entries."""
+    `.MIX` files): a count, a body size, then (hash, offset, size) entries.
 
-    def __init__(self, data: bytes):
+    `header` is the header when it is not at the start of `data` (Red Alert
+    keeps it after a flags word, and encrypted), and `body` the offset of the
+    files in `data`; see ``westwood_ra/mix.py``."""
+
+    def __init__(self, data: bytes, header: bytes | None = None, body: int | None = None):
+        head = data if header is None else header
+        count, _size = struct.unpack_from("<HI", head, 0)
         self.data = data
-        count, _size = struct.unpack_from("<HI", data, 0)
-        self.body = 6 + 12 * count
+        self.body = 6 + 12 * count if body is None else body
         self.entries = {}
         for i in range(count):
-            h, off, sz = struct.unpack_from("<III", data, 6 + 12 * i)
+            h, off, sz = struct.unpack_from("<III", head, 6 + 12 * i)
             self.entries[h] = (off, sz)
 
     @classmethod

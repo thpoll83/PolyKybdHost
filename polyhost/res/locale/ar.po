@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-28 12:19+0000\n"
+"POT-Creation-Date: 2026-10-29 07:42+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -4199,21 +4199,45 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "بدأ برنامج تثبيت WinCompose. بمجرد انتهائه وتشغيل WinCompose، ستنتقل PolyKybd إليه تلقائيًا."
 
+#: polyhost/services/game_assets/westwood_ra/__init__.py:13
+msgid "Red Alert Folder"
+msgstr "مجلد Red Alert"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:14
+msgid "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and LOCAL.MIX. Empty: the content folder of OpenRA is searched."
+msgstr "مجلد يحوي ملفات Red Alert الكلاسيكية CONQUER.MIX و HIRES.MIX و LOCAL.MIX. فارغ: يُبحث في مجلد المحتوى الخاص بـ OpenRA."
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:16
+msgid "Red Alert Faction"
+msgstr "فصيل Red Alert"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:17
+msgid "Whose units and buildings the OpenRA Red Alert overlay shows."
+msgstr "الفصيل الذي يعرض تراكب OpenRA Red Alert وحداته ومبانيه."
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Allies"
+msgstr "الحلفاء"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Soviets"
+msgstr "السوفييت"
+
 #: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer Folder"
 msgstr "مجلد Command and Conquer"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:14
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
-msgstr "مجلد يحوي ملفات Command & Conquer الكلاسيكية CONQUER.MIX و TEMPERAT.MIX. فارغ: يُبحث في تثبيتات Remastered Collection من Steam و EA app."
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection and the content folder of OpenRA are searched."
+msgstr "مجلد يحوي ملفات Command & Conquer الكلاسيكية CONQUER.MIX و TEMPERAT.MIX. فارغ: يُبحث في تثبيتات Remastered Collection من Steam و EA app وفي مجلد المحتوى الخاص بـ OpenRA."
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer Faction"
 msgstr "فصيل Command and Conquer"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:18
-msgid "Whose units and buildings the C&C Remastered overlay shows."
-msgstr "الفصيل الذي يعرض تراكب C&C Remastered وحداته ومبانيه."
+msgid "Whose units and buildings the C&C Remastered and OpenRA overlays show."
+msgstr "الفصيل الذي تعرض تراكبات C&C Remastered و OpenRA وحداته ومبانيه."
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "GDI"

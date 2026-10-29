@@ -380,11 +380,14 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `game_assets/` — overlay art read from games installed on this machine.
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
-  recipe for each icon, keyed by variant (the C&C faction) where they differ.
+  recipe for each icon, keyed by variant (the faction) where they differ.
   - Shared, at the top of the package: `__init__.py` (below), `build.py` and
     `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
     `Setting` declarations and the registry of readers.
-  - One subfolder per game reader (`westwood_td/` for Command & Conquer). Its
+  - One subfolder per game reader (`westwood_td/` for Command & Conquer,
+    `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
+    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
+    OpenRA installs the original game files; both readers search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
@@ -403,9 +406,13 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `override_for()` serves the copy to `get_overlay_path()`; `take_changed()`
     makes the window tick `force_resend()`; `reset()` from
     `note_settings_changed()` rebuilds on the next send.
-  - `build.py` (numpy, PIL): recipes per variant, fitting, the Ctrl plus,
-    patching the shipped PNG's primary tier, cache name, temp files. A recipe
-    that fails skips only its own key.
+  - `build.py` (numpy, PIL): recipes per variant, fitting, the Ctrl plus and
+    the modifier marks (`{plus: group4}`, `{mark: ring, of: group4}`), patching
+    the shipped primary or `.combo` PNG (the GUI tiers keep the shipped art),
+    cache name, temp files. The cache name keeps `.combo` right before
+    `.mods.png`, because the converter picks the channel layout by it. A recipe
+    that fails skips only its own key. `register_mapping()` also reads title, URL
+    and OS sub-entries, so a sub-entry can opt in on its own.
   Game art is never committed; it stays in the user's cache.
 
 ### Transport probe (bulk pipe vs HID only)
