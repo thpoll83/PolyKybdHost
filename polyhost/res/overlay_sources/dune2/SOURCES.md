@@ -131,3 +131,7 @@ The reader looks for DUNE.PAK (any case) in this order:
 |---|---|---|
 | `game_dune2_data_dir` | empty | a folder with DUNE.PAK; empty searches as above |
 | `game_dune2_house` | `atreides` | `atreides`, `harkonnen` or `ordos` |
+
+To choose which game picture draws each key, and how it is dithered, generate
+the icon picker from `picker.yaml` (`tools/ICON_PICKER.md`). The page holds
+art from the game files: keep it local.

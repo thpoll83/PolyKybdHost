@@ -1,0 +1,160 @@
+# Candidates for tools/gen_icon_picker.py: for each key of the two Dune II
+# overlays, the pictures from the user's DUNE.PAK to choose from. See
+# tools/ICON_PICKER.md for the source syntax and the presets.
+title: Dune II icon picker
+reader: westwood_d2
+fonts: {8p: new8p.fnt, 6p: new6p.fnt}
+presets:
+  portrait: {engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.0, curve: 0.3,
+             sharpen: 1.0, floor: 0.15, outline: true, mirror: false}
+  whole: {engine: dither, cut: false, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.0, curve: 0.3,
+          sharpen: 1.0, floor: 0.15, outline: false, mirror: false}
+  map: {engine: dither, cut: false, frame: 0, mode: levels, lo: 5, hi: 95, gamma: 1.0, curve: 0.3,
+        sharpen: 1.0, floor: 0.15, outline: false, mirror: false}
+  sprite: {engine: pixel, lit: edge+bright, scale: 0, mirror: false}
+  cursor: {engine: pixel, lit: nonzero, scale: 0, mirror: false}
+  arrow: {engine: pixel, lit: centre, scale: 0, mirror: false}
+  digit: {engine: pixel, lit: darker, pct: 50, scale: 0, mirror: false}
+  button: {engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [2, 3], smooth_w: 72, valign: bottom}
+  word: {font: 8p, body: true, shade: true, outline: false, scale: 1, valign: bottom, gap: 1}
+
+overlays:
+  - id: dune_legacy
+    title: Dune Legacy
+    spec: dune_legacy.yaml
+    template: dune_legacy_template.mods.png
+    keys:
+      - {key: "1", label: Group 1, candidates: [{label: "portrait 81: infantry", src: "shp:shapes.shp:81", preset: portrait},
+                                                {label: "map sprite: infantry", src: "sprite:units:99", preset: sprite}]}
+      - {key: "2", label: Group 2, candidates: [{label: "portrait 91: troopers", src: "shp:shapes.shp:91", preset: portrait},
+                                                {label: "map sprite: troopers", src: "sprite:units:111", preset: sprite}]}
+      - {key: "3", label: Group 3, candidates: [{label: "portrait 80: trike", src: "shp:shapes.shp:80", preset: portrait},
+                                                {label: "map sprite: trike", src: "sprite:units:8", preset: sprite}]}
+      - {key: "4", label: Group 4, candidates: [{label: "portrait 74: quad", src: "shp:shapes.shp:74", preset: portrait},
+                                                {label: "map sprite: quad", src: "sprite:units:3", preset: sprite}]}
+      - {key: "5", label: Group 5, candidates: [{label: "portrait 78: combat tank", src: "shp:shapes.shp:78", preset: portrait,
+                                                 mode: fs, curve: 0.6, sharpen: 1.5, gamma: 0.6},
+                                                {label: "map sprite: combat tank", src: "sprite:units2:3+8", preset: sprite}]}
+      - {key: "6", label: Group 6, candidates: [{label: "portrait 72: siege tank", src: "shp:shapes.shp:72", preset: portrait},
+                                                {label: "map sprite: siege tank", src: "sprite:units2:13+18", preset: sprite}]}
+      - {key: "7", label: Group 7, candidates: [{label: "portrait 73: launcher", src: "shp:shapes.shp:73", preset: portrait},
+                                                {label: "map sprite: launcher", src: "sprite:units2:3+38", preset: sprite}]}
+      - {key: "8", variant: atreides, label: Group 8 (Atreides), candidates: [
+          {label: "portrait 79: sonic tank", src: "shp:shapes.shp:79", preset: portrait},
+          {label: "map sprite: sonic tank", src: "sprite:units2:3+33", preset: sprite}]}
+      - {key: "8", variant: harkonnen, label: Group 8 (Harkonnen), candidates: [
+          {label: "portrait 75: devastator", src: "shp:shapes.shp:75", preset: portrait, mode: fs, lo: 15, hi: 85,
+           curve: 0.6, sharpen: 1.5},
+          {label: "map sprite: devastator", src: "sprite:units2:23+28", preset: sprite}]}
+      - {key: "8", variant: ordos, label: Group 8 (Ordos), candidates: [
+          {label: "portrait 86: deviator", src: "shp:shapes.shp:86", preset: portrait},
+          {label: "portrait 84: saboteur", src: "shp:shapes.shp:84", preset: portrait},
+          {label: "map sprite: saboteur", src: "sprite:units:69", preset: sprite}]}
+      - {key: "9", label: Group 9, candidates: [{label: "portrait 85: ornithopter", src: "shp:shapes.shp:85", preset: portrait},
+                                                {label: "map sprite: ornithopter", src: "sprite:units:54", preset: sprite}]}
+      - {key: "0", label: Deselect all, candidates: [{word: None}]}
+      - {key: "0", mods: [CTRL], label: Remove from groups, candidates: [{word: Ungroup}]}
+      - {key: A, label: Attack, candidates: [{label: "cursor 5: target", src: "shp:mouse.shp:5", preset: cursor},
+                                             {label: "shapes 16: target", src: "shp:shapes.shp:16", preset: whole},
+                                             {label: "portrait 18: death hand", src: "shp:shapes.shp:18", preset: portrait},
+                                             {word: Attack}]}
+      - {key: M, label: Move, candidates: [{label: "cursor 0: pointer", src: "shp:mouse.shp:0", preset: cursor},
+                                           {label: "shapes 17: target", src: "shp:shapes.shp:17", preset: whole},
+                                           {word: Move}]}
+      - {key: C, label: Capture, candidates: [{label: "portrait 62: barracks", src: "shp:shapes.shp:62", preset: portrait},
+                                              {word: Capture}]}
+      - {key: D, label: Carryall drop, candidates: [{label: "portrait 77: carryall", src: "shp:shapes.shp:77", preset: portrait},
+                                                    {label: "map sprite: carryall", src: "sprite:units:46", preset: sprite},
+                                                    {word: Drop}]}
+      - {key: H, label: "Harvester: return", candidates: [
+          {label: "portrait 88: harvester", src: "shp:shapes.shp:88", preset: portrait},
+          {label: "map sprite: harvester", src: "sprite:units:13", preset: sprite}, {word: Return}]}
+      - {key: R, label: Repair, candidates: [{label: "portrait 65: repair yard", src: "shp:shapes.shp:65", preset: portrait},
+                                             {label: "map: repair pad", src: "icn:22:12:3x2", preset: map},
+                                             {word: Repair}]}
+      - {key: U, label: Upgrade, candidates: [{label: "arrow 47: up", src: "shp:shapes.shp:47", preset: arrow},
+                                              {label: "arrow 48: red up", src: "shp:shapes.shp:48", preset: arrow},
+                                              {word: Upgrade}]}
+      - {key: P, label: Place, candidates: [{label: "map: slab", src: "icntile:126:1", preset: map},
+                                            {label: "map: 4 slabs", src: "icntile:126:2", preset: map},
+                                            {label: "portrait 53: slab", src: "shp:shapes.shp:53", preset: portrait},
+                                            {label: "portrait 71: 4 slabs", src: "shp:shapes.shp:71", preset: portrait},
+                                            {word: Place}]}
+      - {key: O, label: Select all ornithopters, candidates: [
+          {label: "portrait 85: ornithopter", src: "shp:shapes.shp:85", preset: portrait},
+          {label: "map sprite: ornithopter", src: "sprite:units:54", preset: sprite}, {word: Ornis}]}
+      - {key: G, label: Next construction yard, candidates: [
+          {label: "portrait 60: construction yard", src: "shp:shapes.shp:60", preset: portrait},
+          {label: "map: construction yard", src: "icn:17:8:2x2", preset: map}, {word: Yard}]}
+      - {key: F, label: Next factory, candidates: [
+          {label: "portrait 56: heavy factory", src: "shp:shapes.shp:56", preset: portrait},
+          {label: "portrait 55: light factory", src: "shp:shapes.shp:55", preset: portrait},
+          {label: "map: heavy factory", src: "icn:13:12:3x2", preset: map},
+          {label: "map: light factory", src: "icn:12:8:2x2", preset: map}, {word: Factory}]}
+      - {key: MINUS, label: Game speed down, candidates: [{label: "arrow 49: down", src: "shp:shapes.shp:49", preset: arrow},
+                                                          {word: Slower}]}
+      - {key: EQUAL, label: Game speed up, candidates: [{label: "arrow 47: up", src: "shp:shapes.shp:47", preset: arrow},
+                                                        {word: Faster}]}
+      - {key: SPACE, label: Pause, candidates: [{word: Pause}]}
+      - {key: T, label: Game clock, candidates: [{label: "portrait 70: radar", src: "shp:shapes.shp:70", preset: portrait},
+                                                 {word: Clock}]}
+      - {key: F1, label: Zoom level 1, candidates: [{label: "digit 1", src: "shp:shapes.shp:3", preset: digit},
+                                                    {label: "portrait 70: radar", src: "shp:shapes.shp:70", preset: portrait},
+                                                    {word: Zoom1}]}
+      - {key: F2, label: Zoom level 2, candidates: [{label: "digit 2", src: "shp:shapes.shp:4", preset: digit}, {word: Zoom2}]}
+      - {key: F3, label: Zoom level 3, candidates: [{label: "digit 3", src: "shp:shapes.shp:5", preset: digit}, {word: Zoom3}]}
+      - {key: F4, label: Skip 10 s, candidates: [{word: +10s}]}
+      - {key: F5, label: Skip 30 s, candidates: [{word: +30s}]}
+      - {key: F6, label: Skip 2 min, candidates: [{word: +2min}]}
+      - {key: F10, label: Sound on / off, candidates: [{word: Sound}]}
+      - {key: F11, label: Music on / off, candidates: [{word: Music}]}
+      - {key: F12, label: Frame rate, candidates: [{word: FPS}]}
+      - {key: ENTER, label: Chat, candidates: [{label: "portrait 70: radar", src: "shp:shapes.shp:70", preset: portrait},
+                                               {label: "portrait 63: starport", src: "shp:shapes.shp:63", preset: portrait},
+                                               {word: Chat}]}
+      - {key: ENTER, mods: [ALT], label: Full screen / window, candidates: [{word: Screen}]}
+      - {key: PRTSC, label: Screenshot, candidates: [{word: Photo}]}
+
+  - id: dune2
+    title: Original Dune II (OpenDUNE, DOSBox)
+    spec: dune2.yaml
+    template: dune2_template.mods.png
+    keys:
+      - {key: A, label: Attack, candidates: [{label: "cursor 5: target", src: "shp:mouse.shp:5", preset: cursor},
+                                             {label: "shapes 16: target", src: "shp:shapes.shp:16", preset: whole},
+                                             {word: Attack}]}
+      - {key: M, label: Move, candidates: [{label: "cursor 0: pointer", src: "shp:mouse.shp:0", preset: cursor},
+                                           {label: "shapes 17: target", src: "shp:shapes.shp:17", preset: whole},
+                                           {word: Move}]}
+      - {key: R, label: Retreat, candidates: [{label: "portrait 54: palace", src: "shp:shapes.shp:54", preset: portrait},
+                                              {word: Retreat}]}
+      - {key: G, label: Guard, candidates: [{label: "map: gun turret", src: "icnset:23:2", preset: map},
+                                            {label: "map: rocket turret", src: "icnset:24:2", preset: map},
+                                            {label: "portrait 67: gun turret", src: "shp:shapes.shp:67", preset: portrait},
+                                            {word: Guard}]}
+      - {key: H, label: Harvest, candidates: [{label: "portrait 88: harvester", src: "shp:shapes.shp:88", preset: portrait},
+                                              {label: "map sprite: harvester", src: "sprite:units:13", preset: sprite},
+                                              {word: Harvest}]}
+      - {key: S, label: Stop / Sabotage, candidates: [{label: "portrait 66: wall", src: "shp:shapes.shp:66", preset: portrait},
+                                                      {word: Stop}]}
+      - {key: D, label: Deploy / Destruct, candidates: [{label: "portrait 89: MCV", src: "shp:shapes.shp:89", preset: portrait},
+                                                        {label: "map sprite: MCV", src: "sprite:units:18", preset: sprite},
+                                                        {word: Deploy}]}
+      - {key: B, label: Build it, candidates: [{label: "portrait 60: construction yard", src: "shp:shapes.shp:60", preset: portrait},
+                                               {label: "map: construction yard", src: "icn:17:8:2x2", preset: map},
+                                               {word: Build it}]}
+      - {key: P, label: Place it, candidates: [{label: "map: slab", src: "icntile:126:1", preset: map},
+                                               {label: "map: 4 slabs", src: "icntile:126:2", preset: map},
+                                               {label: "portrait 53: slab", src: "shp:shapes.shp:53", preset: portrait},
+                                               {word: Place it}]}
+      - {key: U, label: Upgrade, candidates: [{label: "arrow 47: up", src: "shp:shapes.shp:47", preset: arrow},
+                                              {label: "arrow 48: red up", src: "shp:shapes.shp:48", preset: arrow},
+                                              {word: Upgrade}]}
+      - {key: TAB, label: Next unit, candidates: [{label: "cursor 2: right", src: "shp:mouse.shp:2", preset: cursor},
+                                                  {word: Next}]}
+      - {key: TAB, mods: [SHIFT], label: Previous unit, candidates: [{label: "cursor 4: left", src: "shp:mouse.shp:4", preset: cursor},
+                                                                     {word: Prev}]}
+      - {key: F1, label: Mentat, candidates: [{label: "button 94: MENTAT", src: "shp:shapes.shp:94", preset: button},
+                                              {word: Mentat}]}
+      - {key: F2, label: Options, candidates: [{label: "button 96: OPTIONS", src: "shp:shapes.shp:96", preset: button},
+                                               {word: Options}]}

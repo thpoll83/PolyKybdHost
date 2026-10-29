@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/*TITLE*/</title>
+<style>
+  :root { --bg:#14161a; --panel:#1d2026; --line:#30343c; --text:#e6e6e6; --dim:#9aa0a8; --accent:#e8a23a; --pick:#3ab0e8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.4 system-ui, sans-serif; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); z-index:2; }
+  header h1 { font-size:16px; margin:0 12px 0 0; }
+  button, select, input[type=text], input[type=number] { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:5px 9px; font:inherit; }
+  button { cursor:pointer; }
+  button.on { border-color:var(--accent); color:var(--accent); }
+  .wrap { display:grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 52px); }
+  nav { border-right:1px solid var(--line); overflow-y:auto; max-height: calc(100vh - 52px); position:sticky; top:52px; }
+  nav .k { display:flex; gap:8px; align-items:center; padding:5px 10px; cursor:pointer; border-bottom:1px solid #1b1e23; }
+  nav .k:hover { background:#1a1d22; }
+  nav .k.sel { background:#222832; }
+  nav .k canvas { flex:none; image-rendering:pixelated; border:1px solid var(--line); }
+  nav .k .t { font-size:12px; }
+  nav .k .t b { display:block; font-weight:600; }
+  nav .k .t span { color:var(--dim); }
+  nav .k.done .t b::after { content:" ✓"; color:var(--pick); }
+  main { padding:14px 18px; }
+  .cards { display:flex; flex-wrap:wrap; gap:12px; }
+  .card { background:var(--panel); border:2px solid var(--line); border-radius:6px; padding:6px; cursor:pointer; }
+  .card.pick { border-color:var(--pick); }
+  .card.edit { box-shadow: 0 0 0 2px var(--accent) inset; }
+  .card canvas { display:block; image-rendering:pixelated; }
+  .card .cap { font-size:12px; color:var(--dim); margin-top:4px; max-width:288px; }
+  .card.pick .cap { color:var(--pick); }
+  .params { margin-top:16px; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px; max-width:900px; }
+  .params h3 { margin:0 0 8px; font-size:14px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:8px 18px; }
+  .row { display:grid; grid-template-columns: 90px 1fr 46px; gap:8px; align-items:center; font-size:13px; }
+  .row input[type=range] { width:100%; }
+  .row .v { color:var(--accent); font-variant-numeric: tabular-nums; text-align:right; }
+  .hint { color:var(--dim); font-size:12px; margin:6px 0 12px; }
+  .overview { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px; }
+  .overview div { font-size:11px; color:var(--dim); }
+  .overview canvas { display:block; image-rendering:pixelated; border:1px solid var(--line); cursor:pointer; }
+  textarea { width:100%; height:300px; background:#0e1013; color:#cfe; border:1px solid var(--line); border-radius:4px; font:12px/1.35 ui-monospace, monospace; padding:8px; }
+  .actions { display:flex; gap:8px; margin:8px 0 16px; flex-wrap:wrap; }
+  @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { position:static; max-height:260px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>/*TITLE*/</h1>
+  <span id="tabs"></span>
+  <button id="btnOverview">Overview</button>
+  <button id="btnExport">Export picks</button>
+</header>
+<div class="wrap">
+  <nav id="keys"></nav>
+  <main id="main"></main>
+</div>
+<script>
+const DATA = /*DATA*/null;
+// ---------------------------------------------------------------- decoding
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const PAL = b64(DATA.palette);
+const PICS = {}; for (const [id, p] of Object.entries(DATA.pics)) PICS[id] = { w: p.w, h: p.h, idx: b64(p.idx) };
+const FONTS = {}; for (const [id, f] of Object.entries(DATA.fonts)) {
+  FONTS[id] = { h: f.h, g: {} };
+  for (const [c, g] of Object.entries(f.g)) FONTS[id].g[c] = { w: g.w, d: b64(g.d) };
+}
+for (const o of DATA.overlays) for (const k of o.keys) { k.legendM = b64(k.legend); k.shippedM = b64(k.shipped); }
+const W = 72, H = 40;
+
+// ---------------------------------------------------------------- state
+const STORE = DATA.store;
+let state = { overlay: DATA.overlays[0].id, key: 0, view: "key", picks: {} };
+try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (s && s.picks) state.picks = s.picks; } catch (e) {}
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ picks: state.picks })); } catch (e) {} };
+const keyId = k => [...k.mods, k.key].join("+") + (k.label.includes("(") ? " " + k.label.slice(k.label.indexOf("(")) : "");
+function entry(ov, k) {               // {pick: index (-1 = shipped), params: [per candidate]}
+  const id = ov + "/" + keyId(k);
+  if (!state.picks[id]) state.picks[id] = { pick: null, params: {} };
+  const e = state.picks[id];
+  k.candidates.forEach((c, i) => { if (!e.params[i]) e.params[i] = JSON.parse(JSON.stringify(c.params)); });
+  return e;
+}
+
+// ---------------------------------------------------------------- image helpers
+function grey(i) { return (0.299 * PAL[3 * i] + 0.587 * PAL[3 * i + 1] + 0.114 * PAL[3 * i + 2]) / 255; }
+function arr(w, h, fill = 0) { return { w, h, a: new Float32Array(w * h).fill(fill) }; }
+function crop(m, x0, y0, x1, y1) { const o = arr(x1 - x0, y1 - y0); for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) o.a[(y - y0) * o.w + x - x0] = m.a[y * m.w + x]; return o; }
+function bbox(m) { let x0 = m.w, y0 = m.h, x1 = -1, y1 = -1; for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (m.a[y * m.w + x] > 0.5) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return x1 < 0 ? null : [x0, y0, x1 + 1, y1 + 1]; }
+function mirror(m) { const o = arr(m.w, m.h); for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) o.a[y * m.w + x] = m.a[y * m.w + m.w - 1 - x]; return o; }
+function resample(m, tw, th) {        // area average
+  const o = arr(tw, th), sx = m.w / tw, sy = m.h / th;
+  for (let ty = 0; ty < th; ty++) for (let tx = 0; tx < tw; tx++) {
+    const x0 = tx * sx, x1 = x0 + sx, y0 = ty * sy, y1 = y0 + sy; let s = 0, n = 0;
+    for (let y = Math.floor(y0); y < Math.ceil(y1); y++) { const wy = Math.min(y + 1, y1) - Math.max(y, y0); if (wy <= 0) continue;
+      for (let x = Math.floor(x0); x < Math.ceil(x1); x++) { const wx = Math.min(x + 1, x1) - Math.max(x, x0); if (wx <= 0) continue;
+        s += m.a[Math.min(y, m.h - 1) * m.w + Math.min(x, m.w - 1)] * wx * wy; n += wx * wy; } }
+    o.a[ty * tw + tx] = n ? s / n : 0;
+  }
+  return o;
+}
+function gauss(m, sigma) {
+  const r = Math.ceil(sigma * 3), k = []; let ks = 0;
+  for (let i = -r; i <= r; i++) { const v = Math.exp(-i * i / (2 * sigma * sigma)); k.push(v); ks += v; }
+  const t = arr(m.w, m.h), o = arr(m.w, m.h);
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { let s = 0; for (let i = -r; i <= r; i++) s += k[i + r] * m.a[y * m.w + Math.min(m.w - 1, Math.max(0, x + i))]; t.a[y * m.w + x] = s / ks; }
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) { let s = 0; for (let i = -r; i <= r; i++) s += k[i + r] * t.a[Math.min(m.h - 1, Math.max(0, y + i)) * m.w + x]; o.a[y * m.w + x] = s / ks; }
+  return o;
+}
+function pct(vals, p) { if (!vals.length) return 0; const s = Float32Array.from(vals).sort(); const i = (s.length - 1) * p / 100, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); }
+function edgeOf(a) { const o = arr(a.w, a.h); for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w; x++) { if (a.a[y * a.w + x] < 0.5) continue;
+  const n = (xx, yy) => xx < 0 || yy < 0 || xx >= a.w || yy >= a.h || a.a[yy * a.w + xx] < 0.5;
+  if (n(x - 1, y) || n(x + 1, y) || n(x, y - 1) || n(x, y + 1)) o.a[y * a.w + x] = 1; } return o; }
+function kron(m, k) { const o = arr(m.w * k, m.h * k); for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) o.a[y * o.w + x] = m.a[Math.floor(y / k) * m.w + Math.floor(x / k)]; return o; }
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+// ---------------------------------------------------------------- the renderers
+function srcMaps(pic, p) {
+  let { w, h, idx } = pic, y0 = 0, x0 = 0, y1 = h, x1 = w;
+  if (p.crop) { y0 = p.crop[0]; y1 = h - p.crop[0]; x0 = p.crop[1]; x1 = w - p.crop[1]; }
+  else if (p.frame) { y0 = x0 = p.frame; y1 = h - p.frame; x1 = w - p.frame; }
+  const cw = x1 - x0, ch = y1 - y0, I = new Uint8Array(cw * ch), g = arr(cw, ch);
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) { const v = idx[(y + y0) * w + x + x0]; I[y * cw + x] = v; g.a[y * cw + x] = grey(v); }
+  return { I, g, w: cw, h: ch };
+}
+function cutCover(I, w, h, cut) {
+  const c = arr(w, h, 1); if (!cut) return c;
+  const cnt = new Map(); const add = v => cnt.set(v, (cnt.get(v) || 0) + 1);
+  for (let x = 0; x < w; x++) { add(I[x]); add(I[(h - 1) * w + x]); } for (let y = 0; y < h; y++) { add(I[y * w]); add(I[y * w + w - 1]); }
+  let bg = 0, best = -1; for (const [v, n] of cnt) if (n > best) { best = n; bg = v; }
+  for (let i = 0; i < w * h; i++) c.a[i] = I[i] !== bg ? 1 : 0;
+  const o = arr(w, h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { if (!c.a[y * w + x]) continue;      // drop single stray pixels
+    const nb = (xx, yy) => xx >= 0 && yy >= 0 && xx < w && yy < h && c.a[yy * w + xx]; if (nb(x - 1, y) || nb(x + 1, y) || nb(x, y - 1) || nb(x, y + 1)) o.a[y * w + x] = 1; }
+  let any = false; for (const v of o.a) if (v) { any = true; break; }
+  return any ? o : arr(w, h, 1);
+}
+function renderDither(pic, p, region) {
+  const s0 = srcMaps(pic, p); let g = s0.g, cov = cutCover(s0.I, s0.w, s0.h, p.cut);
+  const bb = bbox(cov); if (!bb) return arr(1, 1);
+  g = crop(g, ...bb); cov = crop(cov, ...bb);
+  if (p.mirror) { g = mirror(g); cov = mirror(cov); }
+  const s = Math.min(region[0] / g.w, region[1] / g.h), tw = Math.max(1, Math.round(g.w * s)), th = Math.max(1, Math.round(g.h * s));
+  let gr = resample(g, tw, th); const a = resample(cov, tw, th); for (let i = 0; i < a.a.length; i++) a.a[i] = a.a[i] > 0.5 ? 1 : 0;
+  if (p.sharpen > 0) { const b = gauss(gr, 1.5); for (let i = 0; i < gr.a.length; i++) gr.a[i] = Math.min(1, Math.max(0, gr.a[i] + p.sharpen * (gr.a[i] - b.a[i]))); }
+  const inC = []; for (let i = 0; i < a.a.length; i++) if (a.a[i]) inC.push(gr.a[i]);
+  const lo = pct(inC, p.lo), hi = pct(inC, p.hi), k = 1 + 4 * p.curve, nk = 2 * Math.tanh(0.5 * k);
+  const out = p.outline ? edgeOf(a) : arr(tw, th), res = arr(tw, th), v = new Float32Array(tw * th);
+  for (let i = 0; i < v.length; i++) {
+    if (!a.a[i] || out.a[i]) continue;
+    let x = Math.min(1, Math.max(0, (gr.a[i] - lo) / Math.max(hi - lo, 1e-6))) ** p.gamma;
+    if (p.curve) x = 0.5 + Math.tanh((x - 0.5) * k) / nk;
+    v[i] = p.floor + (1 - p.floor) * x;
+  }
+  if (p.mode === "fs") { const e = Float32Array.from(v);
+    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x, on = e[i] >= 0.5 ? 1 : 0, err = e[i] - on; res.a[i] = on;
+      if (x + 1 < tw) e[i + 1] += err * 7 / 16; if (y + 1 < th) { if (x > 0) e[i + tw - 1] += err * 3 / 16; e[i + tw] += err * 5 / 16; if (x + 1 < tw) e[i + tw + 1] += err / 16; } } }
+  else for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x, q = v[i];
+    if (p.mode === "levels") res.a[i] = (q > 2 / 3 || (q > 1 / 3 && (x + y) % 2 === 0)) ? 1 : 0;
+    else if (p.mode === "bayer") res.a[i] = q > (BAYER[(y % 4) * 4 + x % 4] / 16 + 1 / 32) ? 1 : 0;
+    else res.a[i] = q > (p.thr ?? 0.5) ? 1 : 0; }
+  for (let i = 0; i < res.a.length; i++) if (out.a[i]) res.a[i] = 1;
+  for (let i = 0; i < res.a.length; i++) if (!a.a[i]) res.a[i] = 0;
+  return res;
+}
+function renderPixel(pic, p, region) {
+  const s0 = srcMaps(pic, p), { I, g, w, h } = s0; let m = arr(w, h);
+  const nz = []; for (let i = 0; i < w * h; i++) if (I[i]) nz.push(g.a[i]);
+  if (p.lit === "nonzero") for (let i = 0; i < w * h; i++) m.a[i] = I[i] ? 1 : 0;
+  else if (p.lit === "centre") { const c = I[Math.floor(h / 2) * w + Math.floor(w / 2)]; for (let i = 0; i < w * h; i++) m.a[i] = I[i] === c ? 1 : 0; }
+  else if (p.lit === "darker") { const t = pct(nz, p.pct ?? 50); for (let i = 0; i < w * h; i++) m.a[i] = I[i] && g.a[i] < t ? 1 : 0; }
+  else if (p.lit === "brighter") { const t = pct(nz, p.pct ?? 50); for (let i = 0; i < w * h; i++) m.a[i] = I[i] && g.a[i] > t ? 1 : 0; }
+  else { const cov = arr(w, h); for (let i = 0; i < w * h; i++) cov.a[i] = I[i] ? 1 : 0; const e = edgeOf(cov), t = pct(nz, p.pct ?? 50);
+    for (let i = 0; i < w * h; i++) m.a[i] = e.a[i] || (cov.a[i] && g.a[i] > t) ? 1 : 0; }
+  const bb = bbox(m); if (!bb) return arr(1, 1); m = crop(m, ...bb);
+  if (p.mirror) m = mirror(m);
+  if (p.smooth_w) { const tw = Math.min(p.smooth_w, region[0]), th = Math.max(1, Math.round(m.h * tw / m.w)); const r = resample(m, tw, th); for (let i = 0; i < r.a.length; i++) r.a[i] = r.a[i] > 0.43 ? 1 : 0; return r; }
+  const k = p.scale > 0 ? p.scale : Math.max(1, Math.min(Math.floor(region[0] / m.w), Math.floor(region[1] / m.h)));
+  return kron(m, k);
+}
+function renderWord(p) {
+  const f = FONTS[p.font]; const parts = []; let wsum = 0;
+  for (const ch of p.text) { const g = f.g[String(ch.charCodeAt(0))]; if (!g) continue; parts.push(g); wsum += g.w + p.gap; }
+  if (!parts.length) return arr(1, 1);
+  let m = arr(Math.max(1, wsum - p.gap), f.h), x0 = 0;
+  for (const g of parts) { for (let y = 0; y < f.h; y++) for (let x = 0; x < g.w; x++) { const v = g.d[y * g.w + x];
+      if ((v === 1 && p.body) || (v === 2 && p.shade) || (v === 3 && p.outline)) m.a[y * m.w + x0 + x] = 1; } x0 += g.w + p.gap; }
+  const bb = bbox(m); if (!bb) return arr(1, 1); m = crop(m, ...bb);
+  return p.scale > 1 ? kron(m, p.scale) : m;
+}
+function regionOf(k, p) { return [p.rw ?? k.region[0], p.rh ?? k.region[1]]; }
+function place(k, m, p, word) {      // as build.py: region box from anchor+margin, icon right/top aligned in it
+  const out = new Uint8Array(W * H); let bw, bh, bx, by;
+  if (word) { bw = W; bh = H; bx = 0; by = 0; }
+  else { const r = regionOf(k, p); bw = Math.min(r[0], W); bh = Math.min(r[1], H); const a = k.anchor.toLowerCase(), mg = k.margin;
+    bx = a.includes("right") ? W - bw - mg : a.includes("left") ? mg : Math.floor((W - bw) / 2);
+    by = a.includes("bottom") ? H - bh - mg : a.includes("top") ? mg : Math.floor((H - bh) / 2); bx = Math.max(0, bx); by = Math.max(0, by); }
+  const w = Math.min(m.w, bw), h = Math.min(m.h, bh), va = p.valign || "top";
+  const oy = by + (va === "bottom" ? bh - h - (word ? 1 : 0) : va === "centre" ? Math.floor((bh - h) / 2) : 0), ox = bx + bw - w;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (m.a[y * m.w + (m.w - w) + x] > 0.5) out[(oy + y) * W + ox + x] = 1;
+  return out;
+}
+function courtyard(mask) {           // port of tools/courtyard_preview.py courtyard_current
+  const cl = new Uint8Array(W * H);
+  const line = (fr, to, row) => { if (row >= 0 && row < H) for (let x = Math.max(0, fr); x < Math.min(W, to); x++) cl[row * W + x] = 1; };
+  let first = 127, last = 0, numEmpty = 0, prevEmpty = true, top = 0;
+  for (let by = 0; by < H; by++) {
+    numEmpty++;
+    for (let bx = 0; bx < W; bx++) if (mask[by * W + bx]) { first = Math.min(bx - 3, first); last = Math.max(bx + 3, last); numEmpty = 0; }
+    if (first !== 127) {
+      if (numEmpty === 0) {
+        top = prevEmpty ? 0 : (top < 3 ? top + 1 : 3);
+        if (top === 0) { line(first + 16, last - 16, by - 2); line(first + 12, last - 12, by - 1); }
+        const inset = [8, 4, 2, 0][top]; line(first + inset, last - inset, by); prevEmpty = false;
+      } else { numEmpty = Math.min(numEmpty, 6); line(first, last, by); prevEmpty = true; }
+      const d = 2 ** (numEmpty + 1); first += d; last -= d;
+      if (first >= last) { first = 127; last = 0; numEmpty = 0; }
+    }
+  }
+  return cl;
+}
+function iconFor(k, ci, p) {
+  if (ci < 0) return k.shippedM;
+  const c = k.candidates[ci];
+  if (c.kind === "word") return place(k, renderWord(p), p, true);
+  const pic = PICS[c.src], r = regionOf(k, p);
+  return place(k, p.engine === "dither" ? renderDither(pic, p, r) : renderPixel(pic, p, r), p, false);
+}
+function keycap(k, icon) { const cy = courtyard(icon), o = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) o[i] = icon[i] || (k.legendM[i] && !cy[i]) ? 1 : 0; return o; }
+function draw(canvas, m, sc) {
+  canvas.width = W * sc; canvas.height = H * sc; const c = canvas.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, W * sc, H * sc); c.fillStyle = "#fff";
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) c.fillRect(x * sc, y * sc, sc, sc);
+}
+
+// ---------------------------------------------------------------- parameter editor
+const FIELDS = {
+  dither: [["mode", "select", ["levels", "fs", "bayer", "threshold"], "Dither"], ["lo", "range", [0, 45, 1], "Black at %"], ["hi", "range", [55, 100, 1], "White at %"],
+           ["gamma", "range", [0.3, 2.5, 0.05], "Gamma"], ["curve", "range", [0, 1.5, 0.05], "S-curve"], ["sharpen", "range", [0, 3, 0.1], "Sharpen"],
+           ["floor", "range", [0, 0.5, 0.01], "Floor"], ["thr", "range", [0.1, 0.9, 0.02], "Threshold"], ["outline", "check", null, "Outline"],
+           ["cut", "check", null, "Cut background"], ["frame", "range", [0, 3, 1], "Frame crop"], ["mirror", "check", null, "Mirror"],
+           ["rw", "range", [16, 72, 1], "Width"], ["rh", "range", [10, 40, 1], "Height"], ["valign", "select", ["top", "centre", "bottom"], "Align"]],
+  pixel: [["lit", "select", ["edge+bright", "nonzero", "centre", "darker", "brighter"], "Lit pixels"], ["pct", "range", [5, 95, 1], "Percentile"],
+          ["scale", "range", [0, 5, 1], "Scale (0 auto)"], ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"],
+          ["rh", "range", [10, 40, 1], "Height"], ["valign", "select", ["top", "centre", "bottom"], "Align"]],
+  word: [["text", "text", null, "Text"], ["font", "select", ["8p", "6p"], "Font"], ["body", "check", null, "Body"], ["shade", "check", null, "Shade"],
+         ["outline", "check", null, "Outline"], ["gap", "range", [0, 3, 1], "Letter gap"], ["scale", "range", [1, 3, 1], "Scale"],
+         ["valign", "select", ["top", "centre", "bottom"], "Align"]],
+};
+function editor(k, ci, e, onChange) {
+  const box = document.createElement("div"); box.className = "params";
+  const c = k.candidates[ci], p = e.params[ci], kind = c.kind === "word" ? "word" : p.engine;
+  box.innerHTML = `<h3>${c.label}</h3><div class="hint">Changes apply to this candidate on this key. "Reset" restores the start values.</div>`;
+  const grid = document.createElement("div"); grid.className = "grid"; box.appendChild(grid);
+  if (c.kind !== "word") {
+    const row = document.createElement("label"); row.className = "row";
+    row.innerHTML = `<span>Engine</span><select><option>dither</option><option>pixel</option></select><span></span>`;
+    const s = row.querySelector("select"); s.value = p.engine;
+    s.onchange = () => { p.engine = s.value; const d = { dither: { mode: "levels", lo: 5, hi: 95, gamma: 1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, cut: true, frame: 1 }, pixel: { lit: "edge+bright", scale: 0 } }[s.value];
+      for (const [kk, vv] of Object.entries(d)) if (p[kk] === undefined) p[kk] = vv; onChange(true); };
+    grid.appendChild(row);
+  }
+  for (const [f, type, opt, lab] of FIELDS[kind]) {
+    const row = document.createElement("label"); row.className = "row";
+    let val = p[f]; if (f === "rw") val = val ?? k.region[0]; if (f === "rh") val = val ?? k.region[1];
+    if (f === "valign") val = val ?? "top"; if (f === "thr") val = val ?? 0.5; if (f === "pct") val = val ?? 50; if (f === "gap") val = val ?? 1;
+    if (type === "range") {
+      row.innerHTML = `<span>${lab}</span><input type="range" min="${opt[0]}" max="${opt[1]}" step="${opt[2]}"><span class="v"></span>`;
+      const i = row.querySelector("input"), v = row.querySelector(".v"); i.value = val; v.textContent = val;
+      i.oninput = () => { p[f] = parseFloat(i.value); v.textContent = i.value; onChange(false); };
+    } else if (type === "select") {
+      row.innerHTML = `<span>${lab}</span><select>${opt.map(o => `<option>${o}</option>`).join("")}</select><span></span>`;
+      const s = row.querySelector("select"); s.value = val; s.onchange = () => { p[f] = s.value; onChange(false); };
+    } else if (type === "check") {
+      row.innerHTML = `<span>${lab}</span><input type="checkbox"><span></span>`;
+      const i = row.querySelector("input"); i.checked = !!val; i.onchange = () => { p[f] = i.checked; onChange(false); };
+    } else {
+      row.innerHTML = `<span>${lab}</span><input type="text"><span></span>`;
+      const i = row.querySelector("input"); i.value = val; i.oninput = () => { p[f] = i.value; onChange(false); };
+    }
+    grid.appendChild(row);
+  }
+  const acts = document.createElement("div"); acts.className = "actions";
+  const reset = document.createElement("button"); reset.textContent = "Reset"; reset.onclick = () => { e.params[ci] = JSON.parse(JSON.stringify(c.params)); onChange(true); };
+  acts.appendChild(reset);
+  if (c.kind !== "word") {
+    const all = document.createElement("button"); all.textContent = "Use these settings for every picture on this overlay";
+    all.onclick = () => { const ov = DATA.overlays.find(o => o.id === state.overlay);
+      for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc.kind === "pic" && ee.params[j].engine === p.engine) {
+        const keep = { mirror: ee.params[j].mirror, rw: ee.params[j].rw, rh: ee.params[j].rh, crop: ee.params[j].crop, smooth_w: ee.params[j].smooth_w, lit: ee.params[j].lit };
+        ee.params[j] = Object.assign(JSON.parse(JSON.stringify(p)), Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined))); } }); }
+      onChange(true); };
+    acts.appendChild(all);
+  }
+  box.appendChild(acts);
+  return box;
+}
+
+// ---------------------------------------------------------------- views
+let editIdx = null;
+function render() {
+  const ov = DATA.overlays.find(o => o.id === state.overlay);
+  document.getElementById("tabs").innerHTML = "";
+  for (const o of DATA.overlays) { const b = document.createElement("button"); b.textContent = o.title; b.className = o.id === state.overlay && state.view !== "export" ? "on" : "";
+    b.onclick = () => { state.overlay = o.id; state.key = 0; state.view = "key"; editIdx = null; render(); }; document.getElementById("tabs").appendChild(b); }
+  const nav = document.getElementById("keys"); nav.innerHTML = "";
+  ov.keys.forEach((k, i) => { const e = entry(ov.id, k), d = document.createElement("div");
+    d.className = "k" + (i === state.key && state.view === "key" ? " sel" : "") + (e.pick !== null ? " done" : "");
+    const cv = document.createElement("canvas"); const ci = e.pick ?? -1; draw(cv, keycap(k, iconFor(k, ci, e.params[ci])), 1);
+    const t = document.createElement("div"); t.className = "t"; t.innerHTML = `<b>${keyId(k).replace(/ \(.*/, "")}</b><span>${k.label}</span>`;
+    d.append(cv, t); d.onclick = () => { state.key = i; state.view = "key"; editIdx = null; render(); }; nav.appendChild(d); });
+  const main = document.getElementById("main"); main.innerHTML = "";
+  if (state.view === "overview") return overview(main, ov);
+  if (state.view === "export") return exportView(main);
+  const k = ov.keys[state.key], e = entry(ov.id, k);
+  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 4px;font-size:18px">${keyId(k)}: ${k.label}</h2>
+    <div class="hint">Click a keycap to pick it (blue). The picked one opens its settings below; click another to compare. Lit pixels are white, as on the keycap; the legend is cleared around the icon the way the firmware does it.</div>`);
+  const cards = document.createElement("div"); cards.className = "cards"; main.appendChild(cards);
+  const list = [[-1, "shipped icon (no game file)"], ...k.candidates.map((c, i) => [i, c.label])];
+  const canv = {};
+  for (const [ci, lab] of list) {
+    const card = document.createElement("div"); card.className = "card" + ((e.pick ?? -1) === ci && e.pick !== null ? " pick" : "") + (editIdx === ci ? " edit" : "");
+    const cv = document.createElement("canvas"); draw(cv, keycap(k, iconFor(k, ci, e.params[ci])), 4); canv[ci] = cv;
+    const cap = document.createElement("div"); cap.className = "cap"; cap.textContent = lab;
+    card.append(cv, cap); card.onclick = () => { e.pick = ci; editIdx = ci >= 0 ? ci : null; save(); render(); }; cards.appendChild(card);
+  }
+  if (editIdx !== null && editIdx >= 0) main.appendChild(editor(k, editIdx, e, full => { save();
+    if (full) return render(); draw(canv[editIdx], keycap(k, iconFor(k, editIdx, e.params[editIdx])), 4); }));
+}
+function overview(main, ov) {
+  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 8px;font-size:18px">${ov.title}: every key as picked</h2><div class="hint">Keys without a pick show the shipped icon. Click a key to edit it.</div>`);
+  const g = document.createElement("div"); g.className = "overview"; main.appendChild(g);
+  ov.keys.forEach((k, i) => { const e = entry(ov.id, k), ci = e.pick ?? -1, d = document.createElement("div"), cv = document.createElement("canvas");
+    draw(cv, keycap(k, iconFor(k, ci, e.params[ci])), 2); d.append(cv, document.createTextNode(`${keyId(k)} ${ci < 0 ? "(shipped)" : k.candidates[ci].label}`));
+    cv.onclick = () => { state.key = i; state.view = "key"; editIdx = e.pick ?? null; render(); }; g.appendChild(d); });
+}
+function exportView(main) {
+  const out = {};
+  for (const ov of DATA.overlays) { out[ov.id] = {};
+    for (const k of ov.keys) { const e = entry(ov.id, k); if (e.pick === null) continue; const id = keyId(k);
+      if (e.pick < 0) { out[ov.id][id] = { pick: "shipped" }; continue; }
+      const c = k.candidates[e.pick]; out[ov.id][id] = { pick: c.label, src: c.src || null, params: e.params[e.pick] }; } }
+  const n = Object.values(out).reduce((s, o) => s + Object.keys(o).length, 0);
+  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 4px;font-size:18px">Export</h2><div class="hint">${n} keys picked. Copy this and paste it into the chat.</div>`);
+  const ta = document.createElement("textarea"); ta.value = JSON.stringify(out, null, 1); main.appendChild(ta);
+  const acts = document.createElement("div"); acts.className = "actions";
+  const copy = document.createElement("button"); copy.textContent = "Copy"; copy.onclick = async () => { try { await navigator.clipboard.writeText(ta.value); copy.textContent = "Copied"; } catch (err) { ta.select(); document.execCommand("copy"); copy.textContent = "Copied"; } };
+  const clear = document.createElement("button"); clear.textContent = "Clear all picks"; clear.onclick = () => { if (confirm("Clear every pick and setting?")) { state.picks = {}; save(); render(); } };
+  acts.append(copy, clear); main.appendChild(acts);
+}
+document.getElementById("btnOverview").onclick = () => { state.view = "overview"; render(); };
+document.getElementById("btnExport").onclick = () => { state.view = "export"; render(); };
+render();
+</script>
+</body>
+</html>
