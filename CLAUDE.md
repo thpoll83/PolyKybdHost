@@ -340,9 +340,12 @@ Tests are unittest, not pytest; GUI tests need `xvfb-run -a`.
 Host tag `vX.Y.Z`, version in `polyhost/_version.py`. Shared rules are in polykybd-claude;
 mechanics and the `release-notes` branch: [`docs/releases.md`](docs/releases.md).
 
-- ⚠️ **Here `release.yml`'s version check detects rather than prevents.** This workflow
-  uploads nothing, and the release is public before the step runs. The tarball users
-  install is `archive/refs/tags/<tag>.tar.gz`, so withdrawing a bad one is manual.
+- ⚠️ **Here `release.yml`'s version check WITHDRAWS a bad release** — it marks it a
+  prerelease, dropping it out of the `releases/latest` that `updater.py` reads, because
+  failing the job retracts nothing: this workflow uploads nothing, and the release is
+  public before the step runs. It stops new DISCOVERY, not an offer already made, and
+  the tarball users install is `archive/refs/tags/<tag>.tar.gz` — so fixing the tag is
+  still the fix.
 - ⚠️ **The version bump arrives as its own auto-merged PR, because `main` requires a PR.** It
   depends on "Allow GitHub Actions to create and approve pull requests" and on the `main`
   rule requiring nothing more than a PR.
