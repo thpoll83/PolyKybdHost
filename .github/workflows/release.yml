@@ -111,8 +111,31 @@ jobs:
             # Deliberately NOT a delete: reversible by unchecking one box, keeps the
             # notes somebody wrote, keeps the tag where it is, and leaves the human
             # decision (move the tag, or cut the next patch) exactly where it was.
-            if [ "$EVENT" = "release" ] && [ -n "$RELEASE_ID" ]; then
-              if gh api -X PATCH "repos/$REPO/releases/$RELEASE_ID" -F prerelease=true >/dev/null; then
+            #
+            # ⚠️ ASK whether a release holds this tag; do not infer it from the EVENT.
+            # A force-push that MOVES a tag fires `push`, and that tag can already carry
+            # a release -- which is exactly the recovery docs/releases.md sends an
+            # operator into (move the tag, then publish), aimed at the wrong commit.
+            # Nothing stops it: there is no tag ruleset and no tag protection on this
+            # repo (checked). So "a tag push creates no release" was false in the one
+            # case the docs actively ask for. (Greptile P2 on #354.)
+            #
+            # Only a 404 counts as "no release" -- the three-valued contract
+            # scripts/publish_release.py already uses, for the same reason: an auth or
+            # network failure reading as "nothing to withdraw" is how a gate goes quiet.
+            rid="$RELEASE_ID"
+            held=unknown
+            if [ -n "$rid" ]; then
+              held=yes
+            elif out=$(gh api "repos/$REPO/releases/tags/$TAG_NAME" --jq '.id' 2>&1); then
+              rid="$out"; held=yes
+            elif printf '%s' "$out" | grep -qiE '(^|[^0-9])404([^0-9]|$)|not found'; then
+              held=no
+            else
+              echo "::error::could not tell whether a release holds $TAG_NAME: $out"
+            fi
+            if [ "$held" = yes ] && [ -n "$rid" ]; then
+              if gh api -X PATCH "repos/$REPO/releases/$rid" -F prerelease=true >/dev/null; then
                 echo "WITHDRAWN: $TAG_NAME is marked a prerelease, so it is no longer"
                 echo "releases/latest and no app will DISCOVER it. Nothing else changed --"
                 echo "the tag, the notes and any assets are where they were."
@@ -125,15 +148,14 @@ jobs:
                 echo "while being told it is $want, and will be offered the same update"
                 echo "forever. The gh api PATCH above failed; check the token permissions."
               fi
-            elif [ "$EVENT" = "release" ]; then
-              # A release event with no id should not happen; if it does, the release
-              # IS public and this is the one case that must not read as reassuring.
-              echo "::error::A release is public but its id was not in the event payload,"
-              echo "so it could not be withdrawn automatically. MARK $TAG_NAME A PRERELEASE"
-              echo "(or delete it) BY HAND, NOW."
+            elif [ "$held" = no ]; then
+              echo "Nothing is public: no release holds $TAG_NAME (the API says 404), so"
+              echo "there is nothing to withdraw. Fix the tag before publishing."
             else
-              echo "Nothing is public yet (event=$EVENT): a tag push creates no release,"
-              echo "so there is nothing to withdraw. Fix the tag before publishing."
+              echo "::error::CHECK $TAG_NAME BY HAND, NOW: this could not establish whether a"
+              echo "release holds it, so it may be public and installable. If one exists,"
+              echo "mark it a prerelease (or delete it). Until then, anyone updating gets"
+              echo "$have while being told it is $want."
             fi
             echo "polyhost/_version.py is what the installed app reports, and the updater"
             echo "compares it against the tag. The tag has to point at a commit declaring"

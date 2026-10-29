@@ -35,6 +35,15 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     the TAG exists), and on `release: published` the release is public before the step
     runs. A red job beside a live, installable, mislabelled release is a note nobody
     reads in time.
+    - ⚠️ **It asks whether a release HOLDS the tag rather than inferring it from the
+      event.** A force-push that MOVES a tag fires `push`, and that tag can already
+      carry a release — which is exactly the recovery below, aimed at the wrong commit.
+      So the withdrawal fires there too; "a tag push creates no release" was false in
+      the one case this page actively asks for (Greptile P2 on #354). Only a **404**
+      counts as "no release": a lookup that fails for any other reason says so loudly
+      and tells the operator to check by hand, because an auth or network failure
+      reading as "nothing to withdraw" is how a gate goes quiet — the same three-valued
+      contract `scripts/publish_release.py` uses.
     - **`prerelease` is the lever because `releases/latest` excludes prereleases, and
       that is the only channel `updater.py` reads** — both its API path
       (`api.github.com/repos/<repo>/releases/latest`) and its rate-limit web fallback
