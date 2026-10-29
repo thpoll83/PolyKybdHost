@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-28 12:19+0000\n"
+"POT-Creation-Date: 2026-10-29 07:42+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -4094,21 +4094,45 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執行後，PolyKybd 會自動切換使用它。"
 
+#: polyhost/services/game_assets/westwood_ra/__init__.py:13
+msgid "Red Alert Folder"
+msgstr "Red Alert 資料夾"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:14
+msgid "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and LOCAL.MIX. Empty: the content folder of OpenRA is searched."
+msgstr "包含經典 Red Alert 檔案 CONQUER.MIX、HIRES.MIX 和 LOCAL.MIX 的資料夾。留空：搜尋 OpenRA 的內容資料夾。"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:16
+msgid "Red Alert Faction"
+msgstr "Red Alert 陣營"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:17
+msgid "Whose units and buildings the OpenRA Red Alert overlay shows."
+msgstr "OpenRA Red Alert 疊加層顯示哪一方的單位和建築。"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Allies"
+msgstr "盟軍"
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Soviets"
+msgstr "蘇軍"
+
 #: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer Folder"
 msgstr "Command and Conquer 資料夾"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:14
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
-msgstr "包含經典 Command & Conquer 檔案 CONQUER.MIX 和 TEMPERAT.MIX 的資料夾。留空：搜尋 Remastered Collection 的 Steam 和 EA app 安裝。"
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection and the content folder of OpenRA are searched."
+msgstr "包含經典 Command & Conquer 檔案 CONQUER.MIX 和 TEMPERAT.MIX 的資料夾。留空：搜尋 Remastered Collection 的 Steam 和 EA app 安裝，以及 OpenRA 的內容資料夾。"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer Faction"
 msgstr "Command and Conquer 陣營"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:18
-msgid "Whose units and buildings the C&C Remastered overlay shows."
-msgstr "C&C Remastered 疊加層顯示哪一方的單位和建築。"
+msgid "Whose units and buildings the C&C Remastered and OpenRA overlays show."
+msgstr "C&C Remastered 和 OpenRA 疊加層顯示哪一方的單位和建築。"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:19
 msgid "GDI"

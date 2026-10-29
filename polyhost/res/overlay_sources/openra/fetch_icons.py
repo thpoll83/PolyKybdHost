@@ -26,6 +26,7 @@ from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import wz_units  # noqa: E402
 from polyhost.res.overlay_sources.icon_fetch import _get  # noqa: E402
+from polyhost.services.game_assets import dither  # noqa: E402
 
 CNC_ICONS = Path(__file__).resolve().parents[1] / "cnc_remastered" / "icons"
 
@@ -70,42 +71,6 @@ MODS = {"ra": "RA", "cnc": "C&C"}          # logo file stem -> the name beside i
 MARK = 13                                   # size of a group's modifier mark, px
 
 
-def _ring(H, W, cy, cx, r):
-    import numpy as np
-    yy, xx = np.mgrid[0:H, 0:W]
-    disc = (yy - cy) ** 2 + (xx - cx) ** 2 <= r * r
-    return disc, disc & program_mark.dilate(~disc, 1)
-
-
-def _mark(mask, kind):
-    """`mask` (a group) with a modifier mark in the lower-right corner, the
-    group cleared 2 px around it: "ring" a plus in a ring (Ctrl+Shift: add to
-    the group), "box" a plus in a square (Shift: add the group to the
-    selection), "sight" a ring with four ticks (Alt: jump to the group)."""
-    import numpy as np
-    H, W = mask.shape
-    h = MARK // 2
-    cy, cx = H - h - 3, W - h - 3                  # the ring (radius h + 1) inside the cell
-    m = np.zeros((H, W), bool)
-    plus = np.zeros((H, W), bool)
-    plus[cy - 1:cy + 2, cx - h + 2:cx + h - 1] = True
-    plus[cy - h + 2:cy + h - 1, cx - 1:cx + 2] = True
-    if kind == "ring":
-        area, ring = _ring(H, W, cy, cx, h + 1)
-        m = ring | plus
-    elif kind == "box":
-        area = np.zeros((H, W), bool)
-        area[cy - h:cy + h + 1, cx - h:cx + h + 1] = True
-        m = (area & program_mark.dilate(~area, 1)) | plus
-    else:
-        area, ring = _ring(H, W, cy, cx, h - 1)
-        m = ring.copy()
-        m[cy, cx - h:cx - h + 4] = m[cy, cx + h - 3:cx + h + 1] = True
-        m[cy - h:cy - h + 4, cx] = m[cy + h - 3:cy + h + 1, cx] = True
-        area = area | m
-    return (mask & ~program_mark.dilate(area, 2)) | m
-
-
 def groups(out: Path) -> None:
     """group<N> (select) and groupnew<N> (Ctrl: create) as in the C&C set, plus
     groupadd<N> (Ctrl+Shift), groupcombine<N> (Shift) and groupjump<N> (Alt)."""
@@ -116,7 +81,7 @@ def groups(out: Path) -> None:
             shutil.copy(CNC_ICONS / f"{stem}.png", out / f"{stem}.png")
         g = np.asarray(Image.open(CNC_ICONS / f"group{d}.png").convert("RGBA").getchannel("A")) > 127
         for stem, kind in (("groupadd", "ring"), ("groupcombine", "box"), ("groupjump", "sight")):
-            cnc._save_mask(_mark(g, kind), out / f"{stem}{d}.png")
+            cnc._save_mask(dither.with_mark(g, kind, MARK), out / f"{stem}{d}.png")
     print("  group, groupnew (C&C) + groupadd, groupcombine, groupjump  <- C&C group icons")
 
 

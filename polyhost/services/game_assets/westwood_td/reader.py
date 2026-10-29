@@ -3,7 +3,8 @@
 Reads the user's own classic game files: CONQUER.MIX (unit and building
 sprites), TEMPERAT.MIX (the palette) and, when present, CCLOCAL.MIX (the mouse
 cursors). C&C Remastered keeps these files for its classic graphics mode; the
-1995 freeware release has the same files. Nothing read here leaves the machine.
+1995 freeware release has the same files, and OpenRA's content installer writes
+them to ``Content/cnc/`` (``openra.py``). Nothing read here leaves the machine.
 
 The reader knows nothing about keys: an overlay spec's ``game_assets:`` block
 says what to draw on each key, as a recipe (``draw()``), and the shared build
@@ -30,7 +31,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from polyhost.services.game_assets import dither
+from polyhost.services.game_assets import dither, openra
 from polyhost.services.game_assets.westwood_td import westwood
 
 REQUIRED = ("conquer.mix", "temperat.mix")
@@ -261,11 +262,12 @@ def _cursor(sp: Sprites, frame: int, size, bright=-1.0):
 def find(folder: str = "", hint=None) -> dict | None:
     """The game files to read: from `folder` when set; else from the install
     that `hint` (the folder of the running game's executable) belongs to;
-    else from the first Steam or EA app install that has them."""
+    else from the first Steam or EA app install that has them; else from
+    OpenRA's Tiberian Dawn content folder."""
     if folder:
         return data_files(Path(folder).expanduser())
     candidates = _td_folders(Path(hint)) if hint else []
-    for d in candidates + install_candidates():
+    for d in candidates + install_candidates() + openra.content_dirs("cnc", hint):
         files = data_files(d)
         if files:
             return files

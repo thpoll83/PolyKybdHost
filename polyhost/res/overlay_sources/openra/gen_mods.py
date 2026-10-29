@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Write openra_cnc.yaml (OpenRA, Tiberian Dawn mod) from openra_ra.yaml.
 
-All OpenRA mods share their default keys, so only the name, the output file and
-the ESC mark differ; this copies the Red Alert spec and changes those lines.
+All OpenRA mods share their default keys, so only the name, the output file,
+the ESC mark and the game-art block differ; this copies the Red Alert spec,
+changes those lines and puts cnc_game_assets.yaml in place of its game-art
+block (everything from GAME_ASSETS on).
 
     python polyhost/res/overlay_sources/openra/gen_mods.py
 """
@@ -14,6 +16,7 @@ CHANGES = {
     "output: openra_ra_template\n": "output: openra_cnc_template\n",
     "program_icon: program_ra.png\n": "program_icon: program_cnc.png\n",
 }
+GAME_ASSETS = "# Keys redrawn from the user's own Red Alert files"
 
 
 def render() -> str:
@@ -23,11 +26,15 @@ def render() -> str:
            "# OpenRA, Tiberian Dawn mod.\n"]
     seen = set()
     for line in lines:
+        if line.startswith(GAME_ASSETS):
+            seen.add(GAME_ASSETS)
+            out.append((HERE / "cnc_game_assets.yaml").read_text(encoding="utf-8"))
+            break
         if line in CHANGES:
             seen.add(line)
             line = CHANGES[line]
         out.append(line)
-    missing = set(CHANGES) - seen
+    missing = (set(CHANGES) | {GAME_ASSETS}) - seen
     assert not missing, f"openra_ra.yaml no longer has: {missing}"
     return "".join(out)
 

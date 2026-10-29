@@ -1,0 +1,68 @@
+# Keys redrawn from the user's own Tiberian Dawn files, by the westwood_td
+# reader in polyhost/services/game_assets; the units are those of the C&C
+# Remastered set (cnc_remastered.yaml). Faction: the game_cnc_faction setting.
+# gen_mods.py puts this block in openra_cnc.yaml in place of the Red Alert one.
+game_assets:
+  reader: westwood_td
+  icons:
+    group1: {crowd: e1, frame: 5}
+    group2: {gdi: {unit: jeep, face: 12, turret: 44}, nod: {unit: bggy, face: 28, turret: 60}}
+    group3: {gdi: {unit: apc, face: 28}, nod: {unit: bike, face: 20}}
+    group4: {gdi: {unit: mtnk, face: 28, turret: 60}, nod: {unit: ltnk, face: 28, turret: 60}}
+    group5: {gdi: {unit: htnk, face: 28, turret: 60}, nod: {unit: ftnk, face: 12}}
+    group6: {gdi: {unit: msam, face: 4, turret: 68}, nod: {unit: stnk, face: 4}}
+    group7: {gdi: {unit: orca, face: 28}, nod: {unit: arty, face: 28}}
+    group8: {gdi: {unit: a10, face: 28}, nod: {unit: mlrs, face: 4, turret: 36}}
+    group9:
+      gdi: {helicopter: tran, face: 28, rotors: [[597, 85, lrotor, 1], [-597, 171, rrotor, 3]],
+            rotor_scale: 0.8, rotor_pull: 0.85, fit: [46, 38], inset: 1}
+      nod: {helicopter: heli, face: 12, rotors: [[0, 85, lrotor, 4]], along_hull: false}
+    group0: {unit: harv, face: 12}
+    groupnew1: {plus: group1}
+    groupnew2: {plus: group2}
+    groupnew3: {plus: group3}
+    groupnew4: {plus: group4}
+    groupnew5: {plus: group5}
+    groupnew6: {plus: group6}
+    groupnew7: {plus: group7}
+    groupnew8: {plus: group8}
+    groupnew9: {plus: group9}
+    groupnew0: {plus: group0}
+    groupadd1: {mark: ring, of: group1}
+    groupadd2: {mark: ring, of: group2}
+    groupadd3: {mark: ring, of: group3}
+    groupadd4: {mark: ring, of: group4}
+    groupadd5: {mark: ring, of: group5}
+    groupadd6: {mark: ring, of: group6}
+    groupadd7: {mark: ring, of: group7}
+    groupadd8: {mark: ring, of: group8}
+    groupadd9: {mark: ring, of: group9}
+    groupadd0: {mark: ring, of: group0}
+    groupcombine1: {mark: box, of: group1}
+    groupcombine2: {mark: box, of: group2}
+    groupcombine3: {mark: box, of: group3}
+    groupcombine4: {mark: box, of: group4}
+    groupcombine5: {mark: box, of: group5}
+    groupcombine6: {mark: box, of: group6}
+    groupcombine7: {mark: box, of: group7}
+    groupcombine8: {mark: box, of: group8}
+    groupcombine9: {mark: box, of: group9}
+    groupcombine0: {mark: box, of: group0}
+    groupjump1: {mark: sight, of: group1}
+    groupjump2: {mark: sight, of: group2}
+    groupjump3: {mark: sight, of: group3}
+    groupjump4: {mark: sight, of: group4}
+    groupjump5: {mark: sight, of: group5}
+    groupjump6: {mark: sight, of: group6}
+    groupjump7: {mark: sight, of: group7}
+    groupjump8: {mark: sight, of: group8}
+    groupjump9: {mark: sight, of: group9}
+    groupjump0: {mark: sight, of: group0}
+    tabstructures: {unit: fact}
+    conyard: {unit: fact}
+    lastevent: {unit: hq}
+    harvesters: {unit: harv, face: 12}
+    stop: {cursor: 9}
+    scatter: {cursor: 10}
+    # The guard cursor's dark ring pixels make it a solid disc at this size.
+    guard: {cursor: 88, threshold: 0.3}

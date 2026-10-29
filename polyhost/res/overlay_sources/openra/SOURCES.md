@@ -88,3 +88,61 @@ OpenRA repository, compatible with this host's GPL-3.0-or-later.
 | `groupadd*.png`, `groupcombine*.png`, `groupjump*.png` | the C&C group icons with a mark drawn by `fetch_icons.py` | | GPL-2.0-or-later |
 | `program_ra.png` | OpenRA `packaging/artwork/ra_scalable.svg` (commit cd20761) + text in Black Ops One | OpenRA developers; Black Ops One by James Grieshaber | GPL-3.0; SIL OFL 1.1 |
 | `program_cnc.png` | OpenRA `packaging/artwork/cnc_scalable.svg` (commit cd20761) + text in Black Ops One | OpenRA developers; Black Ops One by James Grieshaber | GPL-3.0; SIL OFL 1.1 |
+
+## Keys drawn from the game files
+
+When OpenRA has installed the original game files, the host draws 57 keys of
+each overlay from the game's own sprites instead. The shipped files above stay
+the fallback and are the only art in the repository. The game's sprites are
+never shipped: the host reads them from the user's machine, writes the patched
+copies to the user's cache directory, and sends them only to the keyboard.
+
+The mapping entries opt in with `game_assets: openra/openra_ra.yaml` and
+`openra/openra_cnc.yaml`. The Red Alert set uses the `westwood_ra` reader; the
+Tiberian Dawn set uses `westwood_td`, the reader of the C&C Remastered overlay,
+with that overlay's units (`cnc_game_assets.yaml`, which `gen_mods.py` puts in
+`openra_cnc.yaml`).
+
+| Keys | From the game |
+|---|---|
+| 1 to 0 with no modifier, Ctrl, Shift, Alt and Ctrl+Shift | map sprites of the chosen faction, with the same marks as above |
+| Tab, H, Space, N | construction yard, radar dome (Red Alert) or communications center (Tiberian Dawn), harvester |
+| S, D, Ctrl+X | mouse cursors |
+
+| Group | Allies | Soviets |
+|---|---|---|
+| 1 | riflemen | riflemen |
+| 2 | ranger | V2 rocket launcher |
+| 3 | APC | heavy tank |
+| 4 | light tank | mammoth tank |
+| 5 | medium tank | submarine |
+| 6 | artillery | supply truck |
+| 7 | destroyer | MiG |
+| 8 | spies | Yak |
+| 9 | Longbow | Hind |
+| 0 | harvester | harvester |
+
+The Red Alert reader needs `conquer.mix`, `hires.mix` and `local.mix` (any
+case); `hires.mix` and `local.mix` are encrypted, and the reader decrypts their
+headers. It looks in this order:
+
+1. the folder in the `game_ra_data_dir` setting, when set;
+2. `Content/ra/v2/` in OpenRA's support folder: `Support/` beside the game
+   (a portable install), `%APPDATA%\OpenRA`, `~/Library/Application
+   Support/OpenRA`, `~/.config/openra`, `~/.openra`, and the copies kept by
+   Flatpak (`~/.var/app/*/config/openra`) and Snap
+   (`~/snap/*/current/.config/openra`);
+3. any folder up to three levels below each `Content/` folder that has the
+   three files. The Combined Arms content folder was not checked on an install.
+
+The Tiberian Dawn reader adds `Content/cnc/` of the same support folders after
+the C&C Remastered installs.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `game_ra_data_dir` | empty | a folder with the Red Alert MIX files; empty searches as above |
+| `game_ra_faction` | `allies` | `allies` or `soviets` |
+| `game_cnc_faction` | `gdi` | `gdi` or `nod`, shared with the C&C Remastered overlay |
+
+The mouse cursors on S, D and Ctrl+X are the game's own and differ from the
+shipped icons.

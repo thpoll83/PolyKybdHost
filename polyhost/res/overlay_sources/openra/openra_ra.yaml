@@ -131,3 +131,71 @@ bindings:
   - { key: P, mods: [CTRL], icon: screenshot.png, label: "Screenshot" }
   - { key: ENTER, icon: teamchat.png, label: "Team chat" }
   - { key: ENTER, mods: [SHIFT], icon: allchat.png, label: "Chat to all" }
+
+# Keys redrawn from the user's own Red Alert files (OpenRA's content folder),
+# by the westwood_ra reader in polyhost/services/game_assets. Faction: the
+# game_ra_faction setting. gen_mods.py replaces this block with
+# cnc_game_assets.yaml in the Tiberian Dawn copy.
+game_assets:
+  reader: westwood_ra
+  icons:
+    group1: {allies: {crowd: e1, frame: 5}, soviets: {crowd: e1, frame: 5}}
+    group2: {allies: {unit: jeep, face: 12, turret: 44}, soviets: {unit: v2rl, face: 28}}
+    group3: {allies: {unit: apc, face: 28}, soviets: {unit: 3tnk, face: 28, turret: 60}}
+    group4: {allies: {unit: 1tnk, face: 28, turret: 60}, soviets: {unit: 4tnk, face: 28, turret: 60}}
+    group5: {allies: {unit: 2tnk, face: 28, turret: 60}, soviets: {unit: ss, face: 6}}
+    group6: {allies: {unit: arty, face: 28}, soviets: {unit: truk, face: 28}}
+    group7: {allies: {unit: dd, face: 6}, soviets: {unit: mig, face: 6}}
+    group8: {allies: {crowd: spy, frame: 5}, soviets: {unit: yak, face: 4}}
+    group9: 
+      allies: {helicopter: heli, face: 12, rotors: [[0, 85, lrotor, 4]], along_hull: false}
+      soviets: {helicopter: hind, face: 12, rotors: [[0, 85, lrotor, 4]], along_hull: false}
+    group0: {unit: harv, face: 12}
+    groupnew1: {plus: group1}
+    groupnew2: {plus: group2}
+    groupnew3: {plus: group3}
+    groupnew4: {plus: group4}
+    groupnew5: {plus: group5}
+    groupnew6: {plus: group6}
+    groupnew7: {plus: group7}
+    groupnew8: {plus: group8}
+    groupnew9: {plus: group9}
+    groupnew0: {plus: group0}
+    groupadd1: {mark: ring, of: group1}
+    groupadd2: {mark: ring, of: group2}
+    groupadd3: {mark: ring, of: group3}
+    groupadd4: {mark: ring, of: group4}
+    groupadd5: {mark: ring, of: group5}
+    groupadd6: {mark: ring, of: group6}
+    groupadd7: {mark: ring, of: group7}
+    groupadd8: {mark: ring, of: group8}
+    groupadd9: {mark: ring, of: group9}
+    groupadd0: {mark: ring, of: group0}
+    groupcombine1: {mark: box, of: group1}
+    groupcombine2: {mark: box, of: group2}
+    groupcombine3: {mark: box, of: group3}
+    groupcombine4: {mark: box, of: group4}
+    groupcombine5: {mark: box, of: group5}
+    groupcombine6: {mark: box, of: group6}
+    groupcombine7: {mark: box, of: group7}
+    groupcombine8: {mark: box, of: group8}
+    groupcombine9: {mark: box, of: group9}
+    groupcombine0: {mark: box, of: group0}
+    groupjump1: {mark: sight, of: group1}
+    groupjump2: {mark: sight, of: group2}
+    groupjump3: {mark: sight, of: group3}
+    groupjump4: {mark: sight, of: group4}
+    groupjump5: {mark: sight, of: group5}
+    groupjump6: {mark: sight, of: group6}
+    groupjump7: {mark: sight, of: group7}
+    groupjump8: {mark: sight, of: group8}
+    groupjump9: {mark: sight, of: group9}
+    groupjump0: {mark: sight, of: group0}
+    tabstructures: {unit: fact}
+    conyard: {unit: fact}
+    lastevent: {unit: dome}
+    harvesters: {unit: harv, face: 12}
+    stop: {cursor: 9}
+    scatter: {cursor: 10}
+    # The guard cursor's dark ring pixels make it a solid disc at this size.
+    guard: {cursor: 82, threshold: 0.3}

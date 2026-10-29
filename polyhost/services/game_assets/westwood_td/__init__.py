@@ -13,9 +13,9 @@ READER = Reader(
         Setting("game_cnc_data_dir", "", N_("Command and Conquer Folder"), N_(
             "A folder with the classic Command & Conquer files CONQUER.MIX and "
             "TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered "
-            "Collection are searched."), None),
+            "Collection and the content folder of OpenRA are searched."), None),
         Setting("game_cnc_faction", "gdi", N_("Command and Conquer Faction"),
-                N_("Whose units and buildings the C&C Remastered overlay shows."),
+                N_("Whose units and buildings the C&C Remastered and OpenRA overlays show."),
                 (("gdi", N_("GDI")), ("nod", N_("Nod")))),
     ),
     folder="game_cnc_data_dir",

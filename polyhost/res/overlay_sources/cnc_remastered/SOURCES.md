@@ -145,7 +145,8 @@ The reader looks for `CONQUER.MIX` and `TEMPERAT.MIX` (any case) in this order:
 1. the folder in the `game_cnc_data_dir` setting, when set;
 2. `Data/CNCDATA/TIBERIAN_DAWN/` under the folder of the running game's
    executable (under Proton: the game's working folder);
-3. the same path under each Steam library and the EA app folder.
+3. the same path under each Steam library and the EA app folder;
+4. `Content/cnc/` in OpenRA's support folder (`../openra/SOURCES.md`).
 
 The Remastered path was not checked on an install. The 1995 freeware release
 has the same files; point the setting at its folder.
@@ -154,7 +155,7 @@ has the same files; point the setting at its folder.
 |---|---|---|
 | `game_assets_enabled` | `true` | `false` always sends the shipped file |
 | `game_cnc_data_dir` | empty | a folder with the MIX files; empty searches as above |
-| `game_cnc_faction` | `gdi` | `gdi` or `nod` |
+| `game_cnc_faction` | `gdi` | `gdi` or `nod`, for this overlay and OpenRA's Tiberian Dawn overlay |
 
 The last two are the reader's own settings (`polyhost/services/game_assets/westwood_td/__init__.py`).
 `polyctl settings set game_cnc_faction nod` switches the faction; the copy is

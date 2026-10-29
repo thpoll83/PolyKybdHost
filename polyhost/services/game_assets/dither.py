@@ -76,6 +76,41 @@ def with_plus(mask: np.ndarray, size: int = 13, bar: int = 3, top: bool = False,
     return (mask & ~dilate(p, seam)) | p
 
 
+def _disc(h, w, cy, cx, r):
+    yy, xx = np.mgrid[0:h, 0:w]
+    disc = (yy - cy) ** 2 + (xx - cx) ** 2 <= r * r
+    return disc, disc & dilate(~disc, 1)
+
+
+def with_mark(mask: np.ndarray, kind: str, size: int = 13) -> np.ndarray:
+    """`mask` (a control group) with a modifier mark in the bottom-right corner,
+    the group cleared 2 px around it: "ring" a plus in a ring (Ctrl+Shift: add
+    to the group), "box" a plus in a square (Shift: add the group to the
+    selection), "sight" a ring with four ticks (Alt: jump to the group)."""
+    if kind not in ("ring", "box", "sight"):
+        raise ValueError(f"unknown mark {kind!r}")
+    h, w = mask.shape
+    r = size // 2
+    cy, cx = h - r - 3, w - r - 3                  # the ring (radius r + 1) inside the cell
+    plus = np.zeros((h, w), bool)
+    plus[cy - 1:cy + 2, cx - r + 2:cx + r - 1] = True
+    plus[cy - r + 2:cy + r - 1, cx - 1:cx + 2] = True
+    if kind == "ring":
+        area, ring = _disc(h, w, cy, cx, r + 1)
+        m = ring | plus
+    elif kind == "box":
+        area = np.zeros((h, w), bool)
+        area[cy - r:cy + r + 1, cx - r:cx + r + 1] = True
+        m = (area & dilate(~area, 1)) | plus
+    else:
+        area, ring = _disc(h, w, cy, cx, r - 1)
+        m = ring.copy()
+        m[cy, cx - r:cx - r + 4] = m[cy, cx + r - 3:cx + r + 1] = True
+        m[cy - r:cy - r + 4, cx] = m[cy + r - 3:cy + r + 1, cx] = True
+        area = area | m
+    return (mask & ~dilate(area, 2)) | m
+
+
 def scale2x(m: np.ndarray) -> np.ndarray:
     """EPX / Scale2x on a boolean image: doubles it and rounds the stair-steps."""
     p = np.pad(m, 1, mode="edge")
