@@ -122,11 +122,13 @@ def _td_folders(inst: Path) -> list[Path]:
 class Sprites:
     """The archives and palette. A shape file is decoded only up to the highest
     frame a recipe asked for, and cached. `mixes` are searched in order for each
-    shape file; `where` names them in an error. The Red Alert reader builds one
-    from its own archives."""
+    shape file; `where` names them in an error; `decode` reads a shape file
+    (Dune II's are in the format of MOUSE.SHP). The Red Alert and Dune II
+    readers build one from their own archives."""
 
-    def __init__(self, mixes: list, pal: bytes, mouse: bytes | None, where: str):
-        self.mixes, self.where = mixes, where
+    def __init__(self, mixes: list, pal: bytes, mouse: bytes | None, where: str,
+                 decode=westwood.shp_frames):
+        self.mixes, self.where, self.decode = mixes, where, decode
         self.pal = westwood.palette(pal)
         self.mouse = mouse                      # MOUSE.SHP bytes, when present
         self._shp = {}
@@ -148,7 +150,7 @@ class Sprites:
         data = self.get(f"{name}.shp")
         if data is None:
             raise KeyError(f"{name}.shp is not in {self.where}")
-        return self._frame(name, data, westwood.shp_frames, i)
+        return self._frame(name, data, self.decode, i)
 
     def cursor(self, i: int) -> np.ndarray:
         return self._frame(":mouse", self.mouse, westwood.shp_d2_frames, i)
