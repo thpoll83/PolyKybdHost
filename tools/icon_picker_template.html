@@ -37,6 +37,10 @@
   .row { display:grid; grid-template-columns: 90px 1fr 46px; gap:8px; align-items:center; font-size:13px; }
   .row input[type=range] { width:100%; }
   .row .v { color:var(--accent); font-variant-numeric: tabular-nums; text-align:right; }
+  .stages { display:flex; flex-wrap:wrap; gap:16px; margin:4px 0 14px; align-items:flex-end; }
+  .stages figure { margin:0; }
+  .stages canvas { display:block; image-rendering:pixelated; border:1px solid var(--line); background:#000; }
+  .stages figcaption { font-size:12px; color:var(--dim); margin-top:4px; max-width:240px; }
   .hint { color:var(--dim); font-size:12px; margin:6px 0 12px; }
   .overview { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:10px; }
   .overview div { font-size:11px; color:var(--dim); }
@@ -136,8 +140,10 @@ function cutCover(I, w, h, cut) {
   let any = false; for (const v of o.a) if (v) { any = true; break; }
   return any ? o : arr(w, h, 1);
 }
+let STAGE = null;                    // what the last render saw, for the editor's stage view
 function renderDither(pic, p, region) {
   const s0 = srcMaps(pic, p); let g = s0.g, cov = cutCover(s0.I, s0.w, s0.h, p.cut);
+  STAGE = { I: s0.I, w: s0.w, h: s0.h, cover: Float32Array.from(cov.a), grey: null };
   const bb = bbox(cov); if (!bb) return arr(1, 1);
   g = crop(g, ...bb); cov = crop(cov, ...bb);
   if (p.mirror) { g = mirror(g); cov = mirror(cov); }
@@ -153,6 +159,7 @@ function renderDither(pic, p, region) {
     if (p.curve) x = 0.5 + Math.tanh((x - 0.5) * k) / nk;
     v[i] = p.floor + (1 - p.floor) * x;
   }
+  STAGE.grey = { w: tw, h: th, v: Float32Array.from(v), a: Float32Array.from(a.a), out: Float32Array.from(out.a) };
   if (p.mode === "fs") { const e = Float32Array.from(v);
     for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const i = y * tw + x, on = e[i] >= 0.5 ? 1 : 0, err = e[i] - on; res.a[i] = on;
       if (x + 1 < tw) e[i + 1] += err * 7 / 16; if (y + 1 < th) { if (x > 0) e[i + tw - 1] += err * 3 / 16; e[i + tw] += err * 5 / 16; if (x + 1 < tw) e[i + tw + 1] += err / 16; } } }
@@ -166,6 +173,7 @@ function renderDither(pic, p, region) {
 }
 function renderPixel(pic, p, region) {
   const s0 = srcMaps(pic, p), { I, g, w, h } = s0; let m = arr(w, h);
+  STAGE = { I, w, h, cover: null, grey: null };
   const nz = []; for (let i = 0; i < w * h; i++) if (I[i]) nz.push(g.a[i]);
   if (p.lit === "nonzero") for (let i = 0; i < w * h; i++) m.a[i] = I[i] ? 1 : 0;
   else if (p.lit === "centre") { const c = I[Math.floor(h / 2) * w + Math.floor(w / 2)]; for (let i = 0; i < w * h; i++) m.a[i] = I[i] === c ? 1 : 0; }
@@ -173,6 +181,7 @@ function renderPixel(pic, p, region) {
   else if (p.lit === "brighter") { const t = pct(nz, p.pct ?? 50); for (let i = 0; i < w * h; i++) m.a[i] = I[i] && g.a[i] > t ? 1 : 0; }
   else { const cov = arr(w, h); for (let i = 0; i < w * h; i++) cov.a[i] = I[i] ? 1 : 0; const e = edgeOf(cov), t = pct(nz, p.pct ?? 50);
     for (let i = 0; i < w * h; i++) m.a[i] = e.a[i] || (cov.a[i] && g.a[i] > t) ? 1 : 0; }
+  STAGE.grey = { w, h, v: Float32Array.from(m.a), a: new Float32Array(w * h).fill(1), out: new Float32Array(w * h) };
   const bb = bbox(m); if (!bb) return arr(1, 1); m = crop(m, ...bb);
   if (p.mirror) m = mirror(m);
   if (p.smooth_w) { const tw = Math.min(p.smooth_w, region[0]), th = Math.max(1, Math.round(m.h * tw / m.w)); const r = resample(m, tw, th); for (let i = 0; i < r.a.length; i++) r.a[i] = r.a[i] > 0.43 ? 1 : 0; return r; }
@@ -183,9 +192,10 @@ function renderWord(p) {
   const f = FONTS[p.font]; const parts = []; let wsum = 0;
   for (const ch of p.text) { const g = f.g[String(ch.charCodeAt(0))]; if (!g) continue; parts.push(g); wsum += g.w + p.gap; }
   if (!parts.length) return arr(1, 1);
-  let m = arr(Math.max(1, wsum - p.gap), f.h), x0 = 0;
-  for (const g of parts) { for (let y = 0; y < f.h; y++) for (let x = 0; x < g.w; x++) { const v = g.d[y * g.w + x];
+  let m = arr(Math.max(1, wsum - p.gap), f.h), x0 = 0; const raw = new Uint8Array(m.w * m.h);
+  for (const g of parts) { for (let y = 0; y < f.h; y++) for (let x = 0; x < g.w; x++) { const v = g.d[y * g.w + x]; raw[y * m.w + x0 + x] = v;
       if ((v === 1 && p.body) || (v === 2 && p.shade) || (v === 3 && p.outline)) m.a[y * m.w + x0 + x] = 1; } x0 += g.w + p.gap; }
+  STAGE = { word: raw, w: m.w, h: m.h, grey: { w: m.w, h: m.h, v: Float32Array.from(m.a), a: new Float32Array(m.w * m.h).fill(1), out: new Float32Array(m.w * m.h) } };
   const bb = bbox(m); if (!bb) return arr(1, 1); m = crop(m, ...bb);
   return p.scale > 1 ? kron(m, p.scale) : m;
 }
@@ -233,6 +243,27 @@ function draw(canvas, m, sc) {
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) c.fillRect(x * sc, y * sc, sc, sc);
 }
 
+function fitScale(w, h, bw, bh) { return Math.max(1, Math.min(Math.floor(bw / w), Math.floor(bh / h))); }
+function drawOriginal(canvas, st) {      // the game's picture, background that is cut away dimmed
+  const sc = fitScale(st.w, st.h, 240, 150); canvas.width = st.w * sc; canvas.height = st.h * sc;
+  const c = canvas.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, canvas.width, canvas.height);
+  const WORD = ["#000", "#fff", "#888", "#4a8cff"];
+  for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) { const i = y * st.w + x;
+    if (st.word) c.fillStyle = WORD[st.word[i]] || "#000";
+    else { const v = st.I[i]; c.fillStyle = `rgb(${PAL[3 * v]},${PAL[3 * v + 1]},${PAL[3 * v + 2]})`; }
+    c.fillRect(x * sc, y * sc, sc, sc);
+    if (st.cover && !st.cover[i]) { c.fillStyle = "rgba(0,0,0,0.7)"; c.fillRect(x * sc, y * sc, sc, sc); } }
+}
+function drawGrey(canvas, g) {            // after the filters, before the dither
+  const sc = fitScale(g.w, g.h, 240, 150); canvas.width = g.w * sc; canvas.height = g.h * sc;
+  const c = canvas.getContext("2d");
+  for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) { const i = y * g.w + x;
+    if (!g.a[i]) c.fillStyle = "#3a1010";
+    else if (g.out[i]) c.fillStyle = "#ffd24a";
+    else { const q = Math.round(Math.min(1, Math.max(0, g.v[i])) * 255); c.fillStyle = `rgb(${q},${q},${q})`; }
+    c.fillRect(x * sc, y * sc, sc, sc); }
+}
+
 // ---------------------------------------------------------------- parameter editor
 const FIELDS = {
   dither: [["mode", "select", ["levels", "fs", "bayer", "threshold"], "Dither"], ["lo", "range", [0, 45, 1], "Black at %"], ["hi", "range", [55, 100, 1], "White at %"],
@@ -250,14 +281,29 @@ const FIELDS = {
 function editor(k, ci, e, onChange) {
   const box = document.createElement("div"); box.className = "params";
   const c = k.candidates[ci], p = e.params[ci], kind = c.kind === "word" ? "word" : p.engine;
-  box.innerHTML = `<h3>${c.label}</h3><div class="hint">Changes apply to this candidate on this key. "Reset" restores the start values.</div>`;
+  box.innerHTML = `<h3>${c.label}</h3><div class="hint">Changes apply to this candidate on this key. Double-click a setting's name to reset only that setting.</div>`;
+  const top = document.createElement("div"); top.className = "actions";
+  const reset = document.createElement("button"); reset.textContent = "Reset to suggested values";
+  reset.onclick = () => { e.params[ci] = JSON.parse(JSON.stringify(c.params)); onChange(true); };
+  top.appendChild(reset); box.appendChild(top);
+  const stages = document.createElement("div"); stages.className = "stages";
+  const fig = (title) => { const f = document.createElement("figure"), cv = document.createElement("canvas"), cap = document.createElement("figcaption");
+    cap.textContent = title; f.append(cv, cap); stages.appendChild(f); return cv; };
+  const cvOrig = fig(c.kind === "word" ? "Font glyphs: body white, shade grey, outline blue" : "Original picture (dimmed: background that is cut away)");
+  const cvGrey = fig(c.kind === "word" ? "Lit pixels" : p.engine === "dither" ? "After the filters, before the dither (yellow: outline, red: not drawn)" : "Lit pixels, before scaling");
+  const cvCap = fig("On the keycap");
+  box.appendChild(stages);
+  const refresh = () => { const icon = iconFor(k, ci, p); const st = STAGE;
+    if (st) { drawOriginal(cvOrig, st); if (st.grey) drawGrey(cvGrey, st.grey); }
+    draw(cvCap, keycap(k, icon), 3); };
+  const change = full => { onChange(full); if (!full) refresh(); };
   const grid = document.createElement("div"); grid.className = "grid"; box.appendChild(grid);
   if (c.kind !== "word") {
     const row = document.createElement("label"); row.className = "row";
     row.innerHTML = `<span>Engine</span><select><option>dither</option><option>pixel</option></select><span></span>`;
     const s = row.querySelector("select"); s.value = p.engine;
     s.onchange = () => { p.engine = s.value; const d = { dither: { mode: "levels", lo: 5, hi: 95, gamma: 1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, cut: true, frame: 1 }, pixel: { lit: "edge+bright", scale: 0 } }[s.value];
-      for (const [kk, vv] of Object.entries(d)) if (p[kk] === undefined) p[kk] = vv; onChange(true); };
+      for (const [kk, vv] of Object.entries(d)) if (p[kk] === undefined) p[kk] = vv; change(true); };
     grid.appendChild(row);
   }
   for (const [f, type, opt, lab] of FIELDS[kind]) {
@@ -267,32 +313,33 @@ function editor(k, ci, e, onChange) {
     if (type === "range") {
       row.innerHTML = `<span>${lab}</span><input type="range" min="${opt[0]}" max="${opt[1]}" step="${opt[2]}"><span class="v"></span>`;
       const i = row.querySelector("input"), v = row.querySelector(".v"); i.value = val; v.textContent = val;
-      i.oninput = () => { p[f] = parseFloat(i.value); v.textContent = i.value; onChange(false); };
+      i.oninput = () => { p[f] = parseFloat(i.value); v.textContent = i.value; change(false); };
     } else if (type === "select") {
       row.innerHTML = `<span>${lab}</span><select>${opt.map(o => `<option>${o}</option>`).join("")}</select><span></span>`;
-      const s = row.querySelector("select"); s.value = val; s.onchange = () => { p[f] = s.value; onChange(false); };
+      const s = row.querySelector("select"); s.value = val; s.onchange = () => { p[f] = s.value; change(false); };
     } else if (type === "check") {
       row.innerHTML = `<span>${lab}</span><input type="checkbox"><span></span>`;
-      const i = row.querySelector("input"); i.checked = !!val; i.onchange = () => { p[f] = i.checked; onChange(false); };
+      const i = row.querySelector("input"); i.checked = !!val; i.onchange = () => { p[f] = i.checked; change(false); };
     } else {
       row.innerHTML = `<span>${lab}</span><input type="text"><span></span>`;
-      const i = row.querySelector("input"); i.value = val; i.oninput = () => { p[f] = i.value; onChange(false); };
+      const i = row.querySelector("input"); i.value = val; i.oninput = () => { p[f] = i.value; change(false); };
     }
+    const name = row.querySelector("span"); name.title = "Double-click: reset to the suggested value"; name.style.cursor = "help";
+    name.ondblclick = ev => { ev.preventDefault(); if (c.params[f] === undefined) delete p[f]; else p[f] = JSON.parse(JSON.stringify(c.params[f])); change(true); };
     grid.appendChild(row);
   }
   const acts = document.createElement("div"); acts.className = "actions";
-  const reset = document.createElement("button"); reset.textContent = "Reset"; reset.onclick = () => { e.params[ci] = JSON.parse(JSON.stringify(c.params)); onChange(true); };
-  acts.appendChild(reset);
   if (c.kind !== "word") {
     const all = document.createElement("button"); all.textContent = "Use these settings for every picture on this overlay";
     all.onclick = () => { const ov = DATA.overlays.find(o => o.id === state.overlay);
       for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc.kind === "pic" && ee.params[j].engine === p.engine) {
         const keep = { mirror: ee.params[j].mirror, rw: ee.params[j].rw, rh: ee.params[j].rh, crop: ee.params[j].crop, smooth_w: ee.params[j].smooth_w, lit: ee.params[j].lit };
         ee.params[j] = Object.assign(JSON.parse(JSON.stringify(p)), Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined))); } }); }
-      onChange(true); };
+      change(true); };
     acts.appendChild(all);
   }
   box.appendChild(acts);
+  refresh();
   return box;
 }
 

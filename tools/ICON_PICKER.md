@@ -24,9 +24,13 @@ Without `--data-dir` the generator looks where the game's reader looks
 
 - The left column lists every key of the spec. Click a keycap to pick it (blue
   border); its settings open below. The first card is the icon that ships now.
-- Sliders and switches change only that candidate on that key. **Reset**
-  restores the spec's start values; **Use these settings for every picture on
-  this overlay** copies them to every candidate with the same engine.
+- Sliders and switches change only that candidate on that key. Above them, three
+  stages show the original picture (the background that is cut away dimmed),
+  the greyscale after the filters and before the dither, and the keycap.
+  **Reset to suggested values** restores the spec's start values, and a
+  double-click on a setting's name resets only that setting. **Use these
+  settings for every picture on this overlay** copies them to every candidate
+  with the same engine.
 - **Overview** shows the whole overlay as picked. **Export picks** gives JSON
   (key, picked candidate, its `src` and settings). Paste it into the chat, or
   turn it into recipes by hand. Picks are kept in the browser between visits.
