@@ -21,6 +21,7 @@ south-east.
 from __future__ import annotations
 
 import os
+import struct
 from pathlib import Path
 
 import numpy as np
@@ -74,11 +75,21 @@ def fingerprint(files: dict) -> list:
     return sorted(files.values())
 
 
+def is_v1_0(shp: bytes) -> bool:
+    """Whether a shape file is from Dune II 1.0 (the 1992 demo and first
+    release): its frame offsets are 2 bytes, those of 1.07 are 4."""
+    return len(shp) >= 6 and (struct.unpack_from("<I", shp, 2)[0] & 0xFF0000) > 0
+
+
 def open_source(files: dict) -> td.Sprites:
     pak = Pak.open(files["dune.pak"])
     pal = pak.get("ibm.pal")
     if pal is None:
         raise KeyError("IBM.PAL is not in DUNE.PAK")
+    units = pak.get("units.shp")
+    if units is not None and is_v1_0(units):
+        # 1.0 numbers its frames differently: the recipes would draw the wrong units.
+        raise ValueError("DUNE.PAK is from Dune II 1.0; the recipes number the frames of 1.07")
     return td.Sprites([pak], pal, pak.get("mouse.shp"), "DUNE.PAK", decode=westwood.shp_d2_frames)
 
 

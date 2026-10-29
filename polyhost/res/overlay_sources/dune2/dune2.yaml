@@ -1,0 +1,60 @@
+# Dune II overlay for PolyKybd: the original game (DOS, in DOSBox) and OpenDUNE,
+# which plays it from the same files with the same keys.
+#
+# Keys: the game has no control groups. Each command button answers to the
+# first letter of its name, so a letter means the command of that name on the
+# selected unit or building (OpenDUNE src/gui/widget_draw.c, the names in
+# src/table/actioninfo.c and widgetinfo.c, https://github.com/OpenDUNE/OpenDUNE
+# at ebea79a). The icons show the most common one. See SOURCES.md.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/dune2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/dune2/dune2.yaml --preview /tmp/dune2_preview
+app: dune2
+match: [opendune]
+output: dune2_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+# DUNE over II over the whole cell, without the ESC legend (protocol v25).
+program_icon: program_dune2.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Unit commands
+  - { key: A, icon: attackmove.png, label: "Attack" }
+  - { key: M, icon: move.png, label: "Move" }
+  - { key: R, icon: retreat.png, label: "Retreat (units), Return (harvester), Repair (buildings)" }
+  - { key: G, icon: guard.png, label: "Guard" }
+  - { key: H, icon: harvesters.png, label: "Harvest" }
+  - { key: S, icon: stop.png, label: "Stop (harvester, MCV), Sabotage (saboteur)" }
+  - { key: D, icon: deploy.png, label: "Deploy (MCV), Destruct (devastator)" }
+
+  # Building commands
+  - { key: B, icon: build.png, label: "Build it" }
+  - { key: P, icon: place.png, label: "Place it" }
+  - { key: U, icon: tabupgrade.png, label: "Upgrade" }
+
+  # Selection and menus
+  - { key: TAB, icon: nextunit.png, label: "Next unit" }
+  - { key: TAB, mods: [SHIFT], icon: prevunit.png, label: "Previous unit" }
+  - { key: F1, icon: mentat.png, label: "Mentat", region: [30, 40] }
+  - { key: F2, icon: options.png, label: "Options", region: [30, 40] }
+
+# Keys redrawn from the user's own Dune II files (DUNE.PAK), by the westwood_d2
+# reader in polyhost/services/game_assets.
+game_assets:
+  reader: westwood_d2
+  icons:
+    harvesters: {unit: units, face: 13}
+    deploy: {unit: units, face: 18}

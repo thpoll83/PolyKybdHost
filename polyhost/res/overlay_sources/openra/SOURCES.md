@@ -122,17 +122,18 @@ OpenRA repository, compatible with this host's GPL-3.0-or-later.
 ## Keys drawn from the game files
 
 When OpenRA has installed the original game files, the host draws 57 keys of
-the Red Alert and Tiberian Dawn overlays from the game's own sprites instead.
-The Dune 2000 set has no reader; it always shows the shipped icons. The shipped files above stay
+the Red Alert and Tiberian Dawn overlays, and 52 keys of the Dune 2000 overlay,
+from the game's own sprites instead. The shipped files above stay
 the fallback and are the only art in the repository. The game's sprites are
 never shipped: the host reads them from the user's machine, writes the patched
 copies to the user's cache directory, and sends them only to the keyboard.
 
 The mapping entries opt in with `game_assets: openra/openra_ra.yaml` and
-`openra/openra_cnc.yaml`. The Red Alert set uses the `westwood_ra` reader; the
+`openra/openra_cnc.yaml` and `openra/openra_d2k.yaml`. The Red Alert set uses the `westwood_ra` reader; the
 Tiberian Dawn set uses `westwood_td`, the reader of the C&C Remastered overlay,
 with that overlay's units (`cnc_game_assets.yaml`, which `gen_mods.py` puts in
-`openra_cnc.yaml`).
+`openra_cnc.yaml`). The Dune 2000 set uses `westwood_d2k` with the recipes in
+`d2k_game_assets.yaml`.
 
 | Keys | From the game |
 |---|---|
@@ -177,3 +178,33 @@ the C&C Remastered installs.
 
 The mouse cursors on S, D and Ctrl+X are the game's own and differ from the
 shipped icons.
+
+### Dune 2000
+
+The `westwood_d2k` reader needs `DATA.R16` and `PALETTE.BIN` (any case), which
+OpenRA's content installer writes to `Content/d2k/v3/`. It looks in the folder
+in the `game_d2k_data_dir` setting, then in `Content/d2k/v3/` and `Content/d2k/`
+of the support folders listed above. Frame numbers are the `Start` of each unit
+in OpenRA's `mods/d2k/sequences/*.yaml` (commit cd20761), drawn at facing 20 of
+32 for vehicles and 3 of 8 for infantry.
+
+| Group | Atreides | Harkonnen | Ordos |
+|---|---|---|---|
+| 1 | light infantry | light infantry | light infantry |
+| 2 | troopers | troopers | troopers |
+| 3 | trike | trike | trike |
+| 4 | quad | quad | quad |
+| 5 | combat tank | combat tank | combat tank |
+| 6 | siege tank | siege tank | siege tank |
+| 7 | missile tank | missile tank | missile tank |
+| 8 | sonic tank | devastator | raider |
+| 9 | ornithopter | ornithopter | ornithopter |
+| 0 | harvester | harvester | harvester |
+
+N draws the harvester and H the construction yard. Groups 5 and 8 differ by
+house; the other units are the same sprite in every house.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `game_d2k_data_dir` | empty | a folder with `DATA.R16` and `PALETTE.BIN`; empty searches as above |
+| `game_d2k_house` | `atreides` | `atreides`, `harkonnen` or `ordos` |

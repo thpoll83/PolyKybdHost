@@ -210,6 +210,13 @@ Per-platform implementations:
     `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
     `claude`, `zed` and `cursor` all resolve their macOS templates with no
     window, and `kicad` correctly does not.
+  - **An entry with no `overlay` is a router.** It matches only through its
+    title, URL or `os:` sub-maps, and returns nothing when none of them match.
+    The DOSBox entry uses this: it has no overlay of its own, and its
+    `titles-contains: DUNE2` sub-map selects the Dune II overlay, so other DOS
+    games in DOSBox get no overlay
+    (`tests/handler/matcher_test.py` →
+    `test_an_entry_without_an_overlay_routes_by_its_title_sub_map`).
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
@@ -386,8 +393,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `Setting` declarations and the registry of readers.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
-    OpenRA installs the original game files; both readers search them. Its
+    the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
+    PAK archives and Dune II shape files and refuses the 1.0 release;
+    `westwood_d2k/` for Dune 2000, which reads the R16 sprite file). `openra.py` lists the folders where
+    OpenRA installs the original game files; the Red Alert, Tiberian Dawn and
+    Dune 2000 readers search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;

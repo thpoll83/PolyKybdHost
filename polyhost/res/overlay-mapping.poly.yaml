@@ -1897,6 +1897,7 @@ openra:
       game_assets: openra/openra_cnc.yaml
     Dune 2000:
       overlay: [openra_d2k_template.mods.png, openra_d2k_template.combo.mods.png]
+      game_assets: openra/openra_d2k.yaml
 openra-ca:
   overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
   game_assets: openra/openra_ra.yaml
@@ -1910,6 +1911,31 @@ tiberiandawn,tiberiandawn.exe:
   game_assets: openra/openra_cnc.yaml
 dune2000,dune2000.exe:
   overlay: [openra_d2k_template.mods.png, openra_d2k_template.combo.mods.png]
+  game_assets: openra/openra_d2k.yaml
+# Dune II (overlay_sources/dune2/). Dune Legacy, the open-source remake, has its
+# own keys (dune_legacy.yaml); OpenDUNE and the DOS game share the original ones
+# (dune2.yaml). Names from the projects' sources (window titles "Dune Legacy",
+# "OpenDUNE - v0.9"), not checked on an install. Keys redrawn from the user's
+# own DUNE.PAK.
+dunelegacy,dunelegacy.exe:
+  overlay: dune_legacy_template.mods.png
+  game_assets: dune2/dune_legacy.yaml
+opendune,opendune.exe:
+  overlay: dune2_template.mods.png
+  game_assets: dune2/dune2.yaml
+# DOSBox runs any DOS program, so only a title naming Dune II's executable
+# loads the overlay: "...Program:    DUNE2" (DOSBox 0.74), "DUNE2.EXE - 3000
+# cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 - ..." (DOSBox-X). The
+# titles are read off the DOSBox sources, not seen. The game files are found
+# only through the game_dune2_data_dir setting: the executable is DOSBox's.
+dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
+  titles-contains:
+    DUNE2:
+      overlay: dune2_template.mods.png
+      game_assets: dune2/dune2.yaml
+    DUNE2.EXE:
+      overlay: dune2_template.mods.png
+      game_assets: dune2/dune2.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.

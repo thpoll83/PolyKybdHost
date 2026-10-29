@@ -44,7 +44,7 @@ MODS = {
                  _tab("I", "tabvehicles", "Production tab: tanks"),
                  _tab("O", "tabstarport", "Production tab: starport"),
                  _tab("X", "powerdown", "Power down")],
-        "game_assets": None,                   # no reader for the Dune 2000 files
+        "game_assets": "d2k_game_assets.yaml",
     },
 }
 

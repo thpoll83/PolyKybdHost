@@ -308,7 +308,11 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
 
-    if not (has_overlay or has_remote):
+    # An entry without an overlay of its own is still a router: its sub-maps may
+    # name one (DOSBox: only a title naming DUNE2 gives an overlay). It matches
+    # nothing by itself, see the end of this function.
+    if not (has_overlay or has_remote or has_starts_with or has_ends_with or has_contains
+            or has_urls_contains or has_os):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -401,4 +405,6 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
         return None
     if title and has_title and not re.search(entry[TITLE], title):
         return None
+    if not (has_overlay or has_remote):
+        return None                             # a router whose sub-maps matched nothing
     return entry
