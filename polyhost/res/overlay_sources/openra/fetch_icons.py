@@ -32,6 +32,7 @@ CNC_ICONS = Path(__file__).resolve().parents[1] / "cnc_remastered" / "icons"
 
 # The same action as in the C&C Remastered overlay: the same picture.
 SHARED = ["stop", "guard", "scatter", "selectall", "conyard", "lastevent", "tabstructures",
+          "tabinfantry", "tabvehicles",
           *(f"bookmark{n}" for n in "1234"), *(f"bookmarkset{n}" for n in "1234")]
 
 ICONS = {
@@ -47,6 +48,16 @@ ICONS = {
     "harvesters": "fa:truck",
     "toselection": "fa:crosshairs",
     "cycleproduction": "fa:industry",
+    # Production tabs (each mod's own keys, gen_mods.py) and power
+    "tabdefense": "gi:delapouite/watchtower",
+    "tabaircraft": "gi:delapouite/jet-fighter",
+    "tabnaval": "fa:ship",
+    "tabupgrade": "gi:delapouite/upgrade",
+    "tablight": "gi:delapouite/jeep",
+    "tabstarport": "gi:delapouite/space-shuttle",
+    "prevtab": "fa:angles-left",
+    "nexttab": "fa:angles-right",
+    "powerdown": "fa:power-off",
     # Base
     "sell": "fa:dollar-sign",
     "repair": "fa:wrench",
@@ -63,10 +74,12 @@ ICONS = {
     "allchat": "gi:delapouite/megaphone",
 }
 
-# OpenRA's mod logos, GPL-3.0 like the rest of the OpenRA repository.
-LOGO_URL = ("https://raw.githubusercontent.com/OpenRA/OpenRA/"
-            "cd207614b55d53bd2897408386fcec8a1f48cce0/packaging/artwork/{}_scalable.svg")
-MODS = {"ra": "RA", "cnc": "C&C"}          # logo file stem -> the name beside it
+# OpenRA's mod logos, GPL-3.0 like the rest of the OpenRA repository. Dune 2000
+# has no SVG logo there, only PNGs; the 256 px one is used.
+ARTWORK = ("https://raw.githubusercontent.com/OpenRA/OpenRA/"
+           "cd207614b55d53bd2897408386fcec8a1f48cce0/packaging/artwork/")
+LOGOS = {"ra": "ra_scalable.svg", "cnc": "cnc_scalable.svg", "d2k": "d2k_256x256.png"}
+MODS = {"ra": "RA", "cnc": "C&C", "d2k": "D2K"}   # logo file stem -> the name beside it
 
 MARK = 13                                   # size of a group's modifier mark, px
 
@@ -122,14 +135,21 @@ def programs(out: Path) -> None:
     import numpy as np
     from PIL import Image
     for stem, name in MODS.items():
-        svg = _get(LOGO_URL.format(stem))
-        im = Image.open(io.BytesIO(cairosvg.svg2png(bytestring=svg, output_width=320, output_height=320)))
+        data = _get(ARTWORK + LOGOS[stem])
+        if LOGOS[stem].endswith(".svg"):
+            data = cairosvg.svg2png(bytestring=data, output_width=320, output_height=320)
+        im = Image.open(io.BytesIO(data))
         a = np.asarray(im.convert("RGBA")).astype(float) / 255
         lum = a[..., :3] @ [0.299, 0.587, 0.114]
-        ink = Image.fromarray((((a[..., 3] > 0.5) & (lum < 0.4)) * 255).astype(np.uint8))
-        ink = ink.crop(ink.getbbox())
-        s = min(36 / ink.width, 36 / ink.height)
-        logo = np.asarray(ink.resize((round(ink.width * s), round(ink.height * s)), Image.LANCZOS)) > 127
+        if LOGOS[stem].endswith(".svg"):
+            ink = Image.fromarray((((a[..., 3] > 0.5) & (lum < 0.4)) * 255).astype(np.uint8))
+            ink = ink.crop(ink.getbbox())
+            s = min(36 / ink.width, 36 / ink.height)
+            logo = np.asarray(ink.resize((round(ink.width * s), round(ink.height * s)), Image.LANCZOS)) > 127
+        else:
+            # A shaded picture (the planet and its moons) has no linework: its
+            # outline is lit and its shading dithered, as for the unit icons.
+            logo = dither.keycap(lum, a[..., 3] > 0.5, (36, 36), lo_p=5, hi_p=95, curve=0.6)
         w, h = program_mark.W, program_mark.H
         canvas = np.zeros((h, w), bool)
         y = (h - logo.shape[0]) // 2
@@ -147,7 +167,7 @@ def programs(out: Path) -> None:
             canvas[y:y + m.shape[0], x:x + m.shape[1]] = m
             y += m.shape[0] + 3
         cnc._save_mask(canvas, out / f"program_{stem}.png")
-        print(f"  program_{stem}.png  <- OpenRA {stem}_scalable.svg + OPEN {name}")
+        print(f"  program_{stem}.png  <- OpenRA {LOGOS[stem]} + OPEN {name}")
 
 
 def main() -> int:

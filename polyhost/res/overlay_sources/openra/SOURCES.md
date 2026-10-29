@@ -1,27 +1,44 @@
 # OpenRA overlay: sources
 
-`fetch_icons.py` rebuilds `icons/`, `gen_mods.py` writes `openra_cnc.yaml` from
-`openra_ra.yaml`, and `scripts/generate_app_overlays.py` renders both.
+`fetch_icons.py` rebuilds `icons/`, `gen_mods.py` writes `openra_cnc.yaml` and
+`openra_d2k.yaml` from `openra_ra.yaml`, and `scripts/generate_app_overlays.py`
+renders all three.
 
 | Set | Loads for |
 |---|---|
 | `openra_ra_template` (2 files) | OpenRA's Red Alert mod, and any OpenRA window whose title names no other mod; the Combined Arms Snap (`openra-ca-<version>`); the Windows launcher `RedAlert.exe` |
 | `openra_cnc_template` (2 files) | OpenRA's Tiberian Dawn mod: a title containing "Tiberian Dawn"; the Windows launcher `TiberianDawn.exe` |
+| `openra_d2k_template` (2 files) | OpenRA's Dune 2000 mod: a title containing "Dune 2000"; the Windows launcher `Dune2000.exe` |
 
 The Flatpak (`net.openra.OpenRA`) reports `openra` for every mod, with the
 title `OpenRA - Red Alert` (measured 2026-10-28 on Linux). The Tiberian Dawn
-title is assumed to follow the same pattern; it was not seen. The Combined Arms
-Snap reports `openra-ca-1.08.2` and the title `OpenRA Combined Arms`; the
-matcher drops the trailing version (`overlay-mapping.md`). On Windows the
-installer starts each mod through its own launcher (`RedAlert.exe`,
-`TiberianDawn.exe`, `packaging/windows/buildpackage.sh`); those names were not
-seen on an install.
+and Dune 2000 titles are assumed to follow the same pattern; they were not
+seen. The Combined Arms Snap reports `openra-ca-1.08.2` and the title `OpenRA
+Combined Arms`; the matcher drops the trailing version (`overlay-mapping.md`).
+On Windows the installer starts each mod through its own launcher
+(`RedAlert.exe`, `TiberianDawn.exe`, `Dune2000.exe`,
+`packaging/windows/buildpackage.sh`); those names were not seen on an install.
 
 ## Shortcut reference
 
 OpenRA's default hotkeys, `mods/common/hotkeys/*.yaml` in
-<https://github.com/OpenRA/OpenRA> (bleed, commit cd20761, 2026-10-28). Every
-mod loads these files, so the two sets differ only in the ESC mark. In OpenRA
+<https://github.com/OpenRA/OpenRA> (bleed, commit cd20761, 2026-10-28), which
+every mod loads, and each mod's own `mods/<mod>/hotkeys.yaml`: the production
+tabs and power down. `gen_mods.py` writes each mod's own keys:
+
+| Key | Red Alert | Tiberian Dawn | Dune 2000 |
+|---|---|---|---|
+| E | buildings | buildings | buildings |
+| R | defenses | defenses | upgrades |
+| T | infantry | infantry | infantry |
+| Y | vehicles | vehicles | light vehicles |
+| U | aircraft | aircraft | aircraft |
+| I | naval | | tanks |
+| O | | | starport |
+| X | power down | | power down |
+| Page Up / Page Down | | previous / next tab | |
+
+In OpenRA
 the letter orders do not depend on the selection (A attack move, S stop, D
 guard, F deploy, Alt+A/S/D/F stances), so they are labelled, unlike in the
 original games.
@@ -32,7 +49,8 @@ the group to the selection (a plus in a square), Alt jumps to it (a sight).
 
 ## Left out
 
-- F1 to F12 and Ctrl+F1 to Ctrl+F12: production tabs, which differ per mod.
+- F1 to F12 and Ctrl+F1 to Ctrl+F12: the items of the open production tab,
+  which change with the tab.
 - Pause, the media keys and Enter on the keypad (quick save): no overlay cell.
 - The arrow keys and Alt+arrows (scroll, jump to the map edge): they keep their
   own legends.
@@ -57,7 +75,15 @@ OpenRA repository, compatible with this host's GPL-3.0-or-later.
 | `selectall.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
 | `conyard.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
 | `lastevent.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
-| `tabstructures.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
+| `tabstructures.png`, `tabinfantry.png`, `tabvehicles.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
+| `tabdefense.png` | game-icons.net `delapouite/watchtower` | delapouite | CC BY 3.0 |
+| `tabaircraft.png` | game-icons.net `delapouite/jet-fighter` | delapouite | CC BY 3.0 |
+| `tabnaval.png` | Font Awesome Free 6.5.2 `ship` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `tabupgrade.png` | game-icons.net `delapouite/upgrade` | delapouite | CC BY 3.0 |
+| `tablight.png` | game-icons.net `delapouite/jeep` | delapouite | CC BY 3.0 |
+| `tabstarport.png` | game-icons.net `delapouite/space-shuttle` | delapouite | CC BY 3.0 |
+| `prevtab.png`, `nexttab.png` | Font Awesome Free 6.5.2 `angles-left`, `angles-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `powerdown.png` | Font Awesome Free 6.5.2 `power-off` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `bookmark1.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
 | `bookmark2.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
 | `bookmark3.png` | copied from `../cnc_remastered/icons/` | see `../cnc_remastered/SOURCES.md` | |
@@ -91,11 +117,13 @@ OpenRA repository, compatible with this host's GPL-3.0-or-later.
 | `groupadd*.png`, `groupcombine*.png`, `groupjump*.png` | the C&C group icons with a mark drawn by `fetch_icons.py` | | GPL-2.0-or-later |
 | `program_ra.png` | OpenRA `packaging/artwork/ra_scalable.svg` (commit cd20761) + text in Black Ops One | OpenRA developers; Black Ops One by James Grieshaber | GPL-3.0; SIL OFL 1.1 |
 | `program_cnc.png` | OpenRA `packaging/artwork/cnc_scalable.svg` (commit cd20761) + text in Black Ops One | OpenRA developers; Black Ops One by James Grieshaber | GPL-3.0; SIL OFL 1.1 |
+| `program_d2k.png` | OpenRA `packaging/artwork/d2k_256x256.png` (commit cd20761), outline lit and shading dithered, + text in Black Ops One | OpenRA developers; Black Ops One by James Grieshaber | GPL-3.0; SIL OFL 1.1 |
 
 ## Keys drawn from the game files
 
 When OpenRA has installed the original game files, the host draws 57 keys of
-each overlay from the game's own sprites instead. The shipped files above stay
+the Red Alert and Tiberian Dawn overlays from the game's own sprites instead.
+The Dune 2000 set has no reader; it always shows the shipped icons. The shipped files above stay
 the fallback and are the only art in the repository. The game's sprites are
 never shipped: the host reads them from the user's machine, writes the patched
 copies to the user's cache directory, and sends them only to the keyboard.

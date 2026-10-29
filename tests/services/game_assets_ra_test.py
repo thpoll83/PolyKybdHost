@@ -273,13 +273,14 @@ class OpenRaSpecTest(unittest.TestCase):
                     if base is not None:
                         self.assertIn(base, got, f"{stem} marks nothing")
 
-    def test_the_tiberian_dawn_spec_is_generated_from_the_current_files(self):
+    def test_the_other_mods_specs_are_generated_from_the_current_files(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("gen_mods", SOURCES / "gen_mods.py")
         gen = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(gen)
-        self.assertEqual(gen.render(), TD_SPEC.read_text(encoding="utf-8"),
-                         "run overlay_sources/openra/gen_mods.py")
+        for mod in gen.MODS:
+            self.assertEqual(gen.render(mod), (SOURCES / f"openra_{mod}.yaml").read_text(encoding="utf-8"),
+                             "run overlay_sources/openra/gen_mods.py")
 
     def test_the_mapping_registers_both_overlays_and_the_nested_one(self):
         import yaml
