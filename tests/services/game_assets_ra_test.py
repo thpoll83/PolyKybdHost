@@ -116,6 +116,25 @@ class RaMixTest(unittest.TestCase):
                 self.assertEqual(m.get(name), data, f"{name}, encrypted={encrypted}")
             self.assertIsNone(m.get("missing.shp"))
 
+    def test_a_header_encrypted_by_westwood_decrypts(self):
+        """The first 92 bytes of LOCAL.MIX from the 2008 freeware Red Alert (the
+        flags, the 80 key bytes and the first encrypted block; no game art).
+        Westwood's encoder wrote them, so this checks the public key, the RSA
+        block order and the Blowfish word order against real data, which the
+        round trips above cannot: they encrypt with the reader's own key."""
+        head = bytes.fromhex(
+            "000003002967338b33abc5de30cf31678d1a95d7ac42a39aab404f8070d85d9c"
+            "1665fd1129d0acaf477df730eac83ea56b864c121ff24360ab8831fa12d8a3ed"
+            "e4b0f2d98407ee0c9ca7faeffc29de5f9acaa802c9581af0901acedd")
+        self.assertEqual(struct.unpack_from("<I", head)[0], mix.ENCRYPTED | 0x10000)
+        key = mix.blowfish_key(head[4:4 + mix.KEY_SOURCE])
+        count, size = struct.unpack_from("<HI", mix.Blowfish(key).decrypt(head[84:92]))
+        self.assertEqual(count, 66)
+        # Header, body and the 20-byte SHA-1 of the checksum flag fill the
+        # 3,829,837-byte file exactly.
+        body = 4 + mix.KEY_SOURCE + -(-(6 + 12 * count) // 8) * 8
+        self.assertEqual(body + size + 20, 3829837)
+
     def test_a_tiberian_dawn_archive_is_read_too(self):
         with tempfile.TemporaryDirectory() as d:
             from tests.services.game_assets_test import write_mix
@@ -269,6 +288,8 @@ class OpenRaSpecTest(unittest.TestCase):
         with mock.patch.dict(game_assets._specs, clear=True):
             game_assets.register_mapping(mapping)
             for app, spec in (("openra_ra", RA_SPEC), ("openra_cnc", TD_SPEC)):
+                launcher = "redalert,redalert.exe" if app == "openra_ra" else "tiberiandawn,tiberiandawn.exe"
+                self.assertEqual(mapping[launcher]["game_assets"], str(spec.relative_to(build.RES / "overlay_sources")))
                 for template in (f"{app}_template.mods.png", f"{app}_template.combo.mods.png"):
                     self.assertEqual(game_assets._specs.get(template), spec, template)
 

@@ -5,14 +5,17 @@
 
 | Set | Loads for |
 |---|---|
-| `openra_ra_template` (2 files) | OpenRA's Red Alert mod, and any OpenRA window whose title names no other mod; the Combined Arms Snap (`openra-ca-<version>`) |
-| `openra_cnc_template` (2 files) | OpenRA's Tiberian Dawn mod: a title containing "Tiberian Dawn" |
+| `openra_ra_template` (2 files) | OpenRA's Red Alert mod, and any OpenRA window whose title names no other mod; the Combined Arms Snap (`openra-ca-<version>`); the Windows launcher `RedAlert.exe` |
+| `openra_cnc_template` (2 files) | OpenRA's Tiberian Dawn mod: a title containing "Tiberian Dawn"; the Windows launcher `TiberianDawn.exe` |
 
 The Flatpak (`net.openra.OpenRA`) reports `openra` for every mod, with the
 title `OpenRA - Red Alert` (measured 2026-10-28 on Linux). The Tiberian Dawn
 title is assumed to follow the same pattern; it was not seen. The Combined Arms
 Snap reports `openra-ca-1.08.2` and the title `OpenRA Combined Arms`; the
-matcher drops the trailing version (`overlay-mapping.md`).
+matcher drops the trailing version (`overlay-mapping.md`). On Windows the
+installer starts each mod through its own launcher (`RedAlert.exe`,
+`TiberianDawn.exe`, `packaging/windows/buildpackage.sh`); those names were not
+seen on an install.
 
 ## Shortcut reference
 

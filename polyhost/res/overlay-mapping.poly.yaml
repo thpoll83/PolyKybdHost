@@ -1893,6 +1893,14 @@ openra:
 openra-ca:
   overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
   game_assets: openra/openra_ra.yaml
+# The Windows installer starts each mod through its own launcher
+# (packaging/windows/buildpackage.sh, commit cd20761); not checked on an install.
+redalert,redalert.exe:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
+  game_assets: openra/openra_ra.yaml
+tiberiandawn,tiberiandawn.exe:
+  overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
+  game_assets: openra/openra_cnc.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
