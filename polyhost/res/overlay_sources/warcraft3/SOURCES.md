@@ -18,7 +18,7 @@ Frozen Throne uses the same defaults; that was not checked. A user's
 
 Control groups: 1 to 0 select a group, Ctrl+digit creates one, Shift+digit
 adds the selection to the active group. Each digit has its own unit, drawn
-twice as a group: 1 footman, 2 archer, 3 knight, 4 dwarf, 5 wolf rider,
+once at full height: 1 footman, 2 archer, 3 knight, 4 dwarf, 5 wolf rider,
 6 trebuchet, 7 gryphon, 8 wyvern, 9 dragon, 0 peasant. The game does not tie a
 group number to a unit type; the icons only suggest a habit.
 
@@ -43,20 +43,27 @@ right edge.
 
 All icons are flat 1-bit silhouettes, as in the AoE2 set. Save, Load, Help and
 Chat are solid shapes and fill a 34×34 box instead of 40×40, so they do not
-outweigh the outline icons. F1 to F3 stamp the hero number into the helmet. The
-control groups are drawn twice, like AoE2's; Ctrl adds a plus, Shift a plus in
-a ring.
+outweigh the outline icons; Zoom in, Zoom out, Music and Screenshot fill a 30×30
+box (maintainer's choice). F1 to F3 show three different heroes: a paladin, an
+archmage and a lich. Insert and Delete show a person with an arrow round their feet,
+pointing left for Insert and right for Delete (`rotate_icons()`). The control groups show one unit each, not two as in AoE2: drawn
+twice, the thin units (spear, bow, trebuchet) broke apart (maintainer's choice).
+Ctrl adds a plus, Shift a plus in a ring.
 
 ESC shows WARCRAFT over a large III in Cinzel Black (SIL OFL 1.1, the `wght`
 900 instance of `ofl/cinzel/Cinzel[wght].ttf` from google/fonts at commit
 e7db6ca), drawn over the whole cell without the ESC legend
 (`program_icon_legend: false`, protocol v25). The game's logo art is not used.
+A pixel of WARCRAFT is lit from grey 60 of 255 and a pixel of III from 110: at
+110 the serifs of WARCRAFT break off, and at 60 those of III join.
 
 ## Icons
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `hero.png` | game-icons.net `lorc/visored-helm` | lorc | CC BY 3.0 |
+| `hero1.png` | game-icons.net `lorc/visored-helm` | lorc | CC BY 3.0 |
+| `hero2.png` | game-icons.net `delapouite/wizard-face` | delapouite | CC BY 3.0 |
+| `hero3.png` | game-icons.net `lorc/crowned-skull` | lorc | CC BY 3.0 |
 | `idleworker.png` | game-icons.net `delapouite/miner` | delapouite | CC BY 3.0 |
 | `townhall.png` | game-icons.net `delapouite/castle` | delapouite | CC BY 3.0 |
 | `lastevent.png` | game-icons.net `lorc/ringing-bell` | lorc | CC BY 3.0 |
@@ -64,8 +71,7 @@ e7db6ca), drawn over the whole cell without the ESC legend
 | `portrait.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `zoomin.png` | Font Awesome Free 6.5.2 `magnifying-glass-plus` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `zoomout.png` | Font Awesome Free 6.5.2 `magnifying-glass-minus` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `rotateleft.png` | Font Awesome Free 6.5.2 `rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `rotateright.png` | Font Awesome Free 6.5.2 `rotate-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `rotateleft.png`, `rotateright.png` | Font Awesome Free 6.5.2 `street-view` (solid), with an arrow drawn by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
 | `questlog.png` | game-icons.net `lorc/scroll-unfurled` | lorc | CC BY 3.0 |
 | `gamemenu.png` | Font Awesome Free 6.5.2 `bars` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `allies.png` | game-icons.net `delapouite/shaking-hands` | delapouite | CC BY 3.0 |
