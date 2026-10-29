@@ -31,9 +31,9 @@ def dilate(m: np.ndarray, n: int) -> np.ndarray:
 
 
 def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
-           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0):
+           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0, outline=True):
     """Fit `img` (grey, 0..1) inside `size` (w, h), dither the inside and light
-    the 1 px outline of `cover`.
+    the 1 px outline of `cover` (with `outline` False, dither all of `cover`).
 
     `lo_p`/`hi_p` are the percentiles stretched to black and white. `curve` > 0
     adds an S-curve that pushes mid-tones to black or white, and `sharpen` > 0 an
@@ -57,7 +57,7 @@ def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
     if curve:
         k = 1 + 4 * curve
         g = 0.5 + np.tanh((g - 0.5) * k) / (2 * np.tanh(0.5 * k))
-    out = edge(a)
+    out = edge(a) if outline else np.zeros_like(a)
     inside = a & ~out
     v = np.where(inside, floor + (1 - floor) * g, 0)
     fill = np.asarray(Image.fromarray((v * 255).astype(np.uint8)).convert("1")) > 0
