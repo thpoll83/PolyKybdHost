@@ -132,9 +132,11 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
-- ⚠️ **`Firmware restart detected` is the KEYBOARD rebooting, and an empty crash
-  record does not make it harmless.** The host logs that line when the board comes
-  back with a fresh-boot marker. Ask for `polyctl crash show` on the master: an
+- ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
+  crash record does not make it harmless.** The host logs that line when GET_ID
+  carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
+  firmware re-raises it so the host re-pushes its overlays), so first check the
+  console for a DOOM exit just before. Then ask for `polyctl crash show` on the master: an
   empty record rules out a HardFault and a firmware watchdog timeout, which leaves
   power loss, the RUN pin or a deliberate `mcu_reset()`. From fw 1.9.11 the
   console's boot banner names the cause in one line,
