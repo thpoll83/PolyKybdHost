@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-28 12:19+0000\n"
+"POT-Creation-Date: 2026-10-29 07:42+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3997,12 +3997,36 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr ""
 
+#: polyhost/services/game_assets/westwood_ra/__init__.py:13
+msgid "Red Alert Folder"
+msgstr ""
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:14
+msgid "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and LOCAL.MIX. Empty: the content folder of OpenRA is searched."
+msgstr ""
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:16
+msgid "Red Alert Faction"
+msgstr ""
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:17
+msgid "Whose units and buildings the OpenRA Red Alert overlay shows."
+msgstr ""
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Allies"
+msgstr ""
+
+#: polyhost/services/game_assets/westwood_ra/__init__.py:18
+msgid "Soviets"
+msgstr ""
+
 #: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer Folder"
 msgstr ""
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:14
-msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection are searched."
+msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection and the content folder of OpenRA are searched."
 msgstr ""
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:17
@@ -4010,7 +4034,7 @@ msgid "Command and Conquer Faction"
 msgstr ""
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:18
-msgid "Whose units and buildings the C&C Remastered overlay shows."
+msgid "Whose units and buildings the C&C Remastered and OpenRA overlays show."
 msgstr ""
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:19

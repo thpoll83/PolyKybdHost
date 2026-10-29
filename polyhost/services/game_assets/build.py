@@ -8,11 +8,13 @@ An overlay spec (``res/overlay_sources/<app>/<app>.yaml``) that opts in has a
       icons:                       # icon stem -> recipe, or {variant: recipe}
         group4: {gdi: {unit: mtnk, face: 28, turret: 60}, nod: {unit: ltnk, face: 28}}
         groupnew4: {plus: group4}  # the same picture with the Ctrl plus
+        groupadd4: {mark: ring, of: group4}   # with a modifier mark (dither.with_mark)
         stop: {cursor: 9}
 
 The reader draws each recipe (its ``draw()``); this module fits the result to
-the key's area, writes a copy of the shipped overlay with those cells replaced
-(primary tier only), and caches it. A recipe may also set ``region: [w, h]``
+the key's area, writes a copy of the shipped overlay with those cells replaced,
+and caches it. A primary overlay holds the plain, Ctrl, Alt and Shift keys, a
+``.combo`` overlay the two-modifier ones (``overlay_layout.py``). A recipe may also set ``region: [w, h]``
 (the area on the key, instead of the binding's), ``fit: [w, h]`` (the size the
 reader fits the picture to) and ``inset`` (px kept free at the top and right).
 """
@@ -80,10 +82,10 @@ def _canvas(mask, size, inset=0):
 def render(reader, source, spec: dict, variant: str) -> dict:
     """{icon stem: (canvas mask, region (w, h) or None for the binding's own)}."""
     regions = {Path(str(b.get("icon", ""))).stem: tuple(b["region"]) for b in bindings(spec)}
-    icons, plus = {}, {}
+    icons, derived = {}, {}
     for stem, recipe in recipes(spec, variant).items():
-        if "plus" in recipe:
-            plus[stem] = recipe["plus"]
+        if "plus" in recipe or "mark" in recipe:
+            derived[stem] = recipe
             continue
         region = tuple(recipe["region"]) if "region" in recipe else None
         size = region or regions.get(stem, (40, 40))
@@ -95,11 +97,26 @@ def render(reader, source, spec: dict, variant: str) -> dict:
             continue
         if mask is not None:
             icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region)
-    for stem, base in plus.items():
+    for stem, recipe in derived.items():
+        base = recipe.get("plus", recipe.get("of"))
         if base in icons:
             canvas, region = icons[base]
-            icons[stem] = (dither.with_plus(canvas), region)
+            marked = dither.with_plus(canvas) if "plus" in recipe else dither.with_mark(canvas, recipe["mark"])
+            icons[stem] = (marked, region)
     return icons
+
+
+def modifier(mods):
+    """The overlay variant of a binding's modifier list, or None for a list with
+    a modifier the game sets do not use (GUI, CMDCTRL)."""
+    from polyhost.device.keys import Modifier
+    bits = 0
+    for m in mods or []:
+        name = str(m).upper()
+        if name not in ("CTRL", "ALT", "SHIFT"):
+            return None
+        bits |= Modifier[name].value
+    return Modifier(bits)
 
 
 def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
@@ -109,9 +126,10 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
     from PIL.PngImagePlugin import PngInfo
 
     from polyhost.device.im_converter import NO_LEGEND_CHUNK
-    from polyhost.device.keys import KeyCode, Modifier
+    from polyhost.device.keys import KeyCode
     from polyhost.res.overlay_layout import (
         CH,
+        COMBO_CH,
         PRIMARY_CH,
         SLOT_H,
         SLOT_W,
@@ -123,21 +141,23 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         im.load()
         no_legend = im.info.get(NO_LEGEND_CHUNK)
         arr = np.array(im.convert("RGBA"))
+    # Only the primary and the combo file are patched; the rarer GUI tiers keep
+    # the shipped art.
+    tiers = {"": PRIMARY_CH, ".combo": COMBO_CH}.get(_kind(Path(shipped).name), {})
     count = 0
     for b in bindings(spec):
         stem = Path(str(b.get("icon", ""))).stem
         if stem not in icons:
             continue
-        mods = [str(m).upper() for m in b.get("mods") or []]
-        mod = Modifier.CTRL if mods == ["CTRL"] else Modifier.NO_MOD if not mods else None
-        if mod is None:
-            continue                            # only the primary tier is patched
+        mod = modifier(b.get("mods"))
+        if mod not in tiers:
+            continue                            # the binding is in the other file
         kc = KeyCode[f"KC_{str(b['key']).upper()}"]
         mask, region = icons[stem]
         x0, y0, bw, bh = region_box(b["anchor"], tuple(region or b["region"]),
                                     0 if region else b["margin"])
         row, col = cell_for(kc)
-        ch = CH[PRIMARY_CH[mod]]
+        ch = CH[tiers[mod]]
         cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, ch]
         cell[:] = 0
         h, w = min(mask.shape[0], bh), min(mask.shape[1], bw)
@@ -166,7 +186,15 @@ def cache_name(template: str, paths: list, variant: str, reader_name: str) -> st
         st = os.stat(p)
         h.update(f"{Path(p).name}:{st.st_size}:{int(st.st_mtime)}".encode())
     stem = template.removesuffix(".png").removesuffix(".mods")
-    return f"{stem}.{variant or 'all'}.{h.hexdigest()[:12]}.mods.png"
+    # The file kind (".combo") stays right before ".mods.png": the converter
+    # picks the channel layout by it.
+    stem, kind = (stem.removesuffix(k), k) if (k := _kind(template)) else (stem, "")
+    return f"{stem}.{variant or 'all'}.{h.hexdigest()[:12]}{kind}.mods.png"
+
+
+def _kind(name: str) -> str:
+    """".combo", ".gui" or ".extra" for those overlay files, "" for a primary one."""
+    return next((k for k in (".combo", ".gui", ".extra") if name.endswith(f"{k}.mods.png")), "")
 
 
 def remove_stale_temp(cache_dir: Path) -> None:

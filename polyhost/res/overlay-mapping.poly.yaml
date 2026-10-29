@@ -1883,6 +1883,29 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
+# and tells them apart by the window title ("OpenRA - Red Alert", measured
+# 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
+# dropped by the matcher) and plays like Red Alert. All mods share the keys.
+# Keys redrawn from the game files OpenRA installed (Content/ra/v2, Content/cnc).
+openra:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
+  game_assets: openra/openra_ra.yaml
+  titles-contains:
+    Tiberian Dawn:
+      overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
+      game_assets: openra/openra_cnc.yaml
+openra-ca:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
+  game_assets: openra/openra_ra.yaml
+# The Windows installer starts each mod through its own launcher
+# (packaging/windows/buildpackage.sh, commit cd20761); not checked on an install.
+redalert,redalert.exe:
+  overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
+  game_assets: openra/openra_ra.yaml
+tiberiandawn,tiberiandawn.exe:
+  overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
+  game_assets: openra/openra_cnc.yaml
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.

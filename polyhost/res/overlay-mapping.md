@@ -32,6 +32,9 @@ catch must be listed:
 - **A trailing release year is dropped** when the exact name is not a key, so
   `adobe photoshop` also matches macOS's `Adobe Photoshop 2025` and every later
   release. Only a final four-digit `19xx`/`20xx` token is dropped.
+- **A trailing dotted version is dropped** the same way, so `openra-ca` also
+  matches the Snap's `openra-ca-1.08.2`. It needs at least one dot and a space,
+  `-` or `_` before it, so `age2_x1` and `photoshop 2` keep their digits.
 
 Because it is an exact lookup, **one app name can appear in only one entry**. Two
 entries keyed on `soffice` do not both apply; the later simply wins. Split by

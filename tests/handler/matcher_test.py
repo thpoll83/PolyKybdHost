@@ -497,6 +497,16 @@ class TestMappingKey(unittest.TestCase):
         self.assertIsNone(mapping_key("adobe 2025 photoshop", self.M))
         self.assertEqual(mapping_key("photoshop 2", self.M), "photoshop 2")
 
+    def test_a_trailing_dotted_version_is_dropped(self):
+        # The OpenRA Combined Arms Snap reports `openra-ca-1.08.2`.
+        m = {"openra-ca": 1, "age2_x1": 1}
+        self.assertEqual(mapping_key("openra-ca-1.08.2", m), "openra-ca")
+        self.assertEqual(mapping_key("openra-ca 1.9", m), "openra-ca")
+        self.assertEqual(mapping_key("openra-ca_v2.0.1", m), "openra-ca")
+        # Digits without a dot are part of the name.
+        self.assertEqual(mapping_key("age2_x1", m), "age2_x1")
+        self.assertIsNone(mapping_key("openra-ca-108", m))
+
     def test_unknown_and_empty_names_resolve_to_none(self):
         self.assertIsNone(mapping_key("notepad", self.M))
         self.assertIsNone(mapping_key("", self.M))
