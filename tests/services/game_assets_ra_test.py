@@ -289,7 +289,7 @@ class OpenRaSpecTest(unittest.TestCase):
             game_assets.register_mapping(mapping)
             for app, spec in (("openra_ra", RA_SPEC), ("openra_cnc", TD_SPEC)):
                 launcher = "redalert,redalert.exe" if app == "openra_ra" else "tiberiandawn,tiberiandawn.exe"
-                self.assertEqual(mapping[launcher]["game_assets"], str(spec.relative_to(build.RES / "overlay_sources")))
+                self.assertEqual(mapping[launcher]["game_assets"], spec.relative_to(build.RES / "overlay_sources").as_posix())
                 for template in (f"{app}_template.mods.png", f"{app}_template.combo.mods.png"):
                     self.assertEqual(game_assets._specs.get(template), spec, template)
 
