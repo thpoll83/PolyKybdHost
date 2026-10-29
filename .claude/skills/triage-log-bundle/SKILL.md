@@ -132,6 +132,22 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
+  crash record does not make it harmless.** The host logs that line when GET_ID
+  carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
+  firmware re-raises it so the host re-pushes its overlays), so first check the
+  console for a DOOM exit just before. Then ask for `polyctl crash show` on the master: an
+  empty record rules out a HardFault and a firmware watchdog timeout, which leaves
+  power loss, the RUN pin or a deliberate `mcu_reset()`, unless someone cleared the
+  record since (`polyctl crash clear`, the crash dialog's Clear). The banner's
+  `record=` field below survives a clear, so prefer it when there is a console. From fw 1.9.11 the
+  console's boot banner names the cause in one line,
+  `reset: cause=… reason=0x… ram=… record=…` (qmk `CRASH_DIAGNOSTICS.md` → *A reset
+  with no record*), so look for that line just after the restart before asking for
+  anything. ⚠️ `polyctl crash show --slave` can print an OLD record: check its
+  `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master
+  reset on 1.9.9). The `boot: spans … 2=65535` on firmware built before 2026-10-22
+  is a timing bug, not a slow boot.
 - **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
   process appends `=== fault dump(s) above were written before this time | … ===`
   after a dump once the file has been steady for ~60 s, so a dump is dated to
