@@ -18,7 +18,6 @@ from pathlib import Path
 from polyhost.services.game_assets import openra
 from polyhost.services.game_assets.westwood_ra import mix
 from polyhost.services.game_assets.westwood_td import reader as td
-from polyhost.services.game_assets.westwood_td import westwood
 
 REQUIRED = ("conquer.mix", "hires.mix", "local.mix")
 PALETTE = "temperat.pal"
@@ -31,32 +30,6 @@ def data_files(d: Path) -> dict | None:
     if not all(r in names for r in REQUIRED):
         return None
     return {n: d / names[n] for n in REQUIRED}
-
-
-class Sprites(td.Sprites):
-    """The archives and palette, searched in REQUIRED order for each file."""
-
-    def __init__(self, files: dict):
-        self.mixes = [mix.Mix(Path(files[n]).read_bytes()) for n in REQUIRED]
-        pal = self._get(PALETTE)
-        if pal is None:
-            raise KeyError(f"{PALETTE} is not in {', '.join(REQUIRED)}")
-        self.pal = westwood.palette(pal)
-        self.mouse = self._get("mouse.shp")
-        self._shp = {}
-
-    def _get(self, name: str) -> bytes | None:
-        for m in self.mixes:
-            data = m.get(name)
-            if data is not None:
-                return data
-        return None
-
-    def frame(self, name: str, i: int):
-        data = self._get(f"{name}.shp")
-        if data is None:
-            raise KeyError(f"{name}.shp is not in {', '.join(REQUIRED)}")
-        return self._frame(name, data, westwood.shp_frames, i)
 
 
 # --------------------------------------------------------------------------- #
@@ -81,8 +54,18 @@ def fingerprint(files: dict) -> list:
     return sorted(files.values())
 
 
-def open_source(files: dict) -> Sprites:
-    return Sprites(files)
+def open_source(files: dict) -> td.Sprites:
+    """The archives in REQUIRED order, each searched for every file."""
+    mixes = [mix.read(Path(files[n]).read_bytes()) for n in REQUIRED]
+    where = ", ".join(REQUIRED)
+
+    def get(name):
+        return next((d for m in mixes if (d := m.get(name)) is not None), None)
+
+    pal = get(PALETTE)
+    if pal is None:
+        raise KeyError(f"{PALETTE} is not in {where}")
+    return td.Sprites(mixes, pal, get("mouse.shp"), where)
 
 
 draw = td.draw

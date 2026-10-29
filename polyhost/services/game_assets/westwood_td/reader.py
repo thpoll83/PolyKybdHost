@@ -121,16 +121,22 @@ def _td_folders(inst: Path) -> list[Path]:
 
 class Sprites:
     """The archives and palette. A shape file is decoded only up to the highest
-    frame a recipe asked for, and cached."""
+    frame a recipe asked for, and cached. `mixes` are searched in order for each
+    shape file; `where` names them in an error. The Red Alert reader builds one
+    from its own archives."""
 
-    def __init__(self, files: dict):
-        self.conquer = westwood.Mix.open(files["conquer.mix"])
-        temperat = westwood.Mix.open(files["temperat.mix"])
-        self.pal = westwood.palette(temperat.get("temperat.pal"))
-        self.mouse = None                       # MOUSE.SHP bytes, when present
-        if "cclocal.mix" in files:
-            self.mouse = westwood.Mix.open(files["cclocal.mix"]).get("mouse.shp")
+    def __init__(self, mixes: list, pal: bytes, mouse: bytes | None, where: str):
+        self.mixes, self.where = mixes, where
+        self.pal = westwood.palette(pal)
+        self.mouse = mouse                      # MOUSE.SHP bytes, when present
         self._shp = {}
+
+    def get(self, name: str) -> bytes | None:
+        for m in self.mixes:
+            data = m.get(name)
+            if data is not None:
+                return data
+        return None
 
     def _frame(self, key: str, data: bytes, decode, i: int) -> np.ndarray:
         have = self._shp.get(key, [])
@@ -139,9 +145,9 @@ class Sprites:
         return have[i]                          # IndexError past the last frame
 
     def frame(self, name: str, i: int) -> np.ndarray:
-        data = self.conquer.get(f"{name}.shp")
+        data = self.get(f"{name}.shp")
         if data is None:
-            raise KeyError(f"{name}.shp is not in CONQUER.MIX")
+            raise KeyError(f"{name}.shp is not in {self.where}")
         return self._frame(name, data, westwood.shp_frames, i)
 
     def cursor(self, i: int) -> np.ndarray:
@@ -280,7 +286,12 @@ def fingerprint(files: dict) -> list:
 
 
 def open_source(files: dict) -> Sprites:
-    return Sprites(files)
+    temperat = westwood.Mix.open(files["temperat.mix"])
+    mouse = None
+    if "cclocal.mix" in files:
+        mouse = westwood.Mix.open(files["cclocal.mix"]).get("mouse.shp")
+    return Sprites([westwood.Mix.open(files["conquer.mix"])], temperat.get("temperat.pal"),
+                   mouse, "CONQUER.MIX")
 
 
 def draw(sp: Sprites, recipe: dict, size):

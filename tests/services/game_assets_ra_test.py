@@ -111,7 +111,7 @@ class RaMixTest(unittest.TestCase):
 
     def test_encrypted_and_plain_archives_round_trip(self):
         for encrypted in (True, False):
-            m = mix.Mix(ra_mix(self.FILES, encrypted))
+            m = mix.read(ra_mix(self.FILES, encrypted))
             for name, data in self.FILES.items():
                 self.assertEqual(m.get(name), data, f"{name}, encrypted={encrypted}")
             self.assertIsNone(m.get("missing.shp"))
@@ -120,13 +120,13 @@ class RaMixTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             from tests.services.game_assets_test import write_mix
             write_mix(Path(d, "t.mix"), self.FILES)
-            self.assertEqual(mix.Mix(Path(d, "t.mix").read_bytes()).get("a.shp"), b"first")
+            self.assertEqual(mix.read(Path(d, "t.mix").read_bytes()).get("a.shp"), b"first")
 
     def test_a_key_that_does_not_decrypt_is_refused(self):
         source = next(bytes([b]) * mix.KEY_SOURCE for b in range(1, 256)
                       if self._raises(bytes([b]) * mix.KEY_SOURCE))
         with self.assertRaises(ValueError):
-            mix.Mix(struct.pack("<I", mix.ENCRYPTED) + source + bytes(16))
+            mix.read(struct.pack("<I", mix.ENCRYPTED) + source + bytes(16))
 
     @staticmethod
     def _raises(source):
@@ -139,12 +139,12 @@ class RaMixTest(unittest.TestCase):
     def test_a_header_longer_than_the_file_is_refused(self):
         data = ra_mix(self.FILES)
         with self.assertRaises(ValueError):
-            mix.Mix(data[:4 + mix.KEY_SOURCE + 4])
+            mix.read(data[:4 + mix.KEY_SOURCE + 4])
         # A count that claims more entries than the file holds.
         source = key_source()
         head = encrypt(mix.blowfish_key(source), struct.pack("<HI", 5000, 0) + b"\0\0")
         with self.assertRaises(ValueError):
-            mix.Mix(struct.pack("<I", mix.ENCRYPTED) + source + head)
+            mix.read(struct.pack("<I", mix.ENCRYPTED) + source + head)
 
 
 class OpenRaFoldersTest(unittest.TestCase):

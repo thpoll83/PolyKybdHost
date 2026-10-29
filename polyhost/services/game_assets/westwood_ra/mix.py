@@ -105,26 +105,21 @@ def blowfish_key(source: bytes) -> bytes:
     return out[:56]
 
 
-class Mix(westwood.Mix):
+def read(data: bytes) -> westwood.Mix:
     """A Red Alert MIX archive, encrypted or not; a Tiberian Dawn MIX is read too."""
-
-    def __init__(self, data: bytes):
-        if len(data) < 6 or data[:2] != b"\0\0":
-            super().__init__(data)              # a Tiberian Dawn MIX
-            return
-        flags, = struct.unpack_from("<I", data, 0)
-        if not flags & ENCRYPTED:
-            super().__init__(data[4:])
-            self.data, self.body = data, self.body + 4
-            return
-        start = 4 + KEY_SOURCE
-        if len(data) < start + 8:
-            raise ValueError("MIX header ends early")
-        bf = Blowfish(blowfish_key(data[4:start]))
-        count, = struct.unpack_from("<H", bf.decrypt(data[start:start + 8]))
-        size = 6 + 12 * count
-        padded = -(-size // 8) * 8
-        if start + padded > len(data):
-            raise ValueError(f"MIX header of {count} entries is longer than the file")
-        super().__init__(bf.decrypt(data[start:start + padded])[:size])
-        self.data, self.body = data, start + padded
+    if len(data) < 6 or data[:2] != b"\0\0":
+        return westwood.Mix(data)               # a Tiberian Dawn MIX
+    flags, = struct.unpack_from("<I", data, 0)
+    if not flags & ENCRYPTED:
+        count, = struct.unpack_from("<H", data, 4)
+        return westwood.Mix(data, data[4:], 4 + 6 + 12 * count)
+    start = 4 + KEY_SOURCE
+    if len(data) < start + 8:
+        raise ValueError("MIX header ends early")
+    bf = Blowfish(blowfish_key(data[4:start]))
+    count, = struct.unpack_from("<H", bf.decrypt(data[start:start + 8]))
+    size = 6 + 12 * count
+    padded = -(-size // 8) * 8
+    if start + padded > len(data):
+        raise ValueError(f"MIX header of {count} entries is longer than the file")
+    return westwood.Mix(data, bf.decrypt(data[start:start + padded])[:size], start + padded)
