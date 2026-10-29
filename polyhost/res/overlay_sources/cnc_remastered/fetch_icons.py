@@ -14,6 +14,7 @@ laid out like the game's title; the game's logo art is not used.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -156,7 +157,17 @@ def _font(url: str) -> Path:
     import tempfile
     path = Path(tempfile.gettempdir()) / url.rsplit("/", 1)[1]
     if not path.exists():
-        path.write_bytes(_get(url))
+        # Written whole to a file created for this run only, then renamed, so an
+        # interrupted run never leaves a truncated font that the next run would
+        # take as cached, and a name planted in the shared temp dir is never
+        # written through.
+        fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f"{path.name}.", suffix=".part")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(_get(url))
+            os.replace(tmp, path)
+        finally:
+            Path(tmp).unlink(missing_ok=True)
     return path
 
 
