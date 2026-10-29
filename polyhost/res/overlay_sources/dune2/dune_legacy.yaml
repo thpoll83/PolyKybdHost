@@ -108,12 +108,12 @@ game_assets:
     group2: {portrait: 91}
     group3: {portrait: 80}
     group4: {portrait: 74}
-    group5: {portrait: 78}
+    group5: {portrait: 78, style: lighter}
     group6: {portrait: 72}
     group7: {portrait: 73}
     group8:
       atreides: {portrait: 79}
-      harkonnen: {portrait: 75}
+      harkonnen: {portrait: 75, style: stretch}
       ordos: {portrait: 86}
     group9: {portrait: 85}
     groupnew1: {plus: group1}

@@ -236,6 +236,14 @@ class BuildTest(unittest.TestCase):
             sp2.frame = lambda name, k: np.full((24, 32), 100, np.uint8)
             d2.draw(sp2, {"portrait": 1}, (48, 40))
 
+    def test_each_portrait_style_draws_differently_and_an_unknown_one_is_refused(self):
+        sp = d2.open_source(d2.find(str(self.d2)))
+        got = {st: d2.draw(sp, {"portrait": 78, "style": st}, (48, 40)).tobytes() for st in d2.STYLES}
+        self.assertEqual(len(set(got.values())), len(d2.STYLES))
+        self.assertEqual(got["levels"], d2.draw(sp, {"portrait": 78}, (48, 40)).tobytes())
+        with self.assertRaises(ValueError):
+            d2.draw(sp, {"portrait": 78, "style": "bold"}, (48, 40))
+
 
 class MappingTest(unittest.TestCase):
 

@@ -105,7 +105,10 @@ and are the only art in the repository; the game's pictures are never shipped.
 
 The pictures are the 32x24 build portraits in SHAPES.SHP, the ones the game
 shows in its sidebar. The reader cuts away each portrait's 1 px frame and its
-one-colour background and dithers the unit. The portrait numbers are those
+one-colour background and draws the unit in three levels (unlit, a 50 %
+checker, lit) inside a lit outline. Two portraits use error diffusion
+instead (`style:` in the recipe): the combat tank with lighter mid-tones
+(`lighter`) and the devastator with a stronger contrast stretch (`stretch`). The portrait numbers are those
 of Dune Legacy's `src/FileClasses/GFXManager.cpp` (72 siege tank to 91
 troopers). The Dune II 1.0 demo has the same portraits and unit sprites at
 the same numbers, so the reader reads 1.0 and 1.07 files alike; the numbers

@@ -6,7 +6,10 @@ the palette IBM.PAL. Dune Legacy and OpenDUNE both play from these files (see
 ``find``). Nothing read here leaves the machine. Recipes:
 
 - ``{portrait: 78}``: a 32x24 build portrait of SHAPES.SHP. Its one-colour
-  background is cut away and the unit dithered like the C&C sprites;
+  background is cut away and the unit drawn in three levels (unlit, a 50 %
+  checker, lit) inside a lit outline. ``style: lighter`` or ``style:
+  stretch`` draw it with error diffusion instead, for the portraits that
+  lose their shape in three levels (see ``STYLES``);
 - ``{unit: units2, face: 3, turret: 8}``: a map sprite, with an optional
   second frame (a turret) drawn over it, the two centred on each other. The
   sprites are 16 to 24 px, too small to dither: a unit is drawn pixel for
@@ -111,9 +114,21 @@ def pixel_icon(sp: td.Sprites, idx: np.ndarray, size) -> np.ndarray:
     return np.kron(m, np.ones((k, k), bool))
 
 
-def portrait(sp: td.Sprites, k: int, size) -> np.ndarray:
+# How a portrait is dithered, chosen per recipe by comparing the 14 unit
+# portraits in eight variants on the black keycap.
+STYLES = {
+    "levels": {"lo_p": 5, "hi_p": 95, "curve": 0.3, "sharpen": 1.0, "levels": 3},
+    "lighter": {"lo_p": 5, "hi_p": 95, "curve": 0.6, "sharpen": 1.5, "gamma": 0.6},
+    "stretch": {"lo_p": 15, "hi_p": 85, "curve": 0.6, "sharpen": 1.5},
+}
+
+
+def portrait(sp: td.Sprites, k: int, size, style: str = "levels") -> np.ndarray:
     """Build portrait `k` without its 1 px frame and its background (the
-    colour most common along the edge), dithered to fit `size` (w, h)."""
+    colour most common along the edge), dithered to fit `size` (w, h) in
+    `style`, a key of STYLES."""
+    if style not in STYLES:
+        raise ValueError(f"unknown portrait style {style!r}")
     f = sp.frame("shapes", k)[1:-1, 1:-1]
     cover = f != np.bincount(np.concatenate([f[0], f[-1], f[:, 0], f[:, -1]])).argmax()
     p = np.pad(cover, 1)
@@ -122,12 +137,12 @@ def portrait(sp: td.Sprites, k: int, size) -> np.ndarray:
         raise ValueError(f"portrait {k} is all background")
     g = sp.pal[f].astype(float) @ [0.299, 0.587, 0.114] / 255
     up = np.ones((10, 10))
-    return dither.keycap(np.kron(g, up), np.kron(cover, up).astype(bool), size, **td.SHARP)
+    return dither.keycap(np.kron(g, up), np.kron(cover, up).astype(bool), size, **STYLES[style])
 
 
 def draw(sp: td.Sprites, recipe: dict, size):
     if "portrait" in recipe:
-        return portrait(sp, recipe["portrait"], size)
+        return portrait(sp, recipe["portrait"], size, recipe.get("style", "levels"))
     if "unit" in recipe:
         return pixel_icon(sp, _pixels(sp, recipe), size)
     if "cursor" in recipe:
