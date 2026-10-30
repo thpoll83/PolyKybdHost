@@ -1,0 +1,270 @@
+# The slicer shortcut table: ONE list for PrusaSlicer, Bambu Studio and
+# OrcaSlicer. gen_slicer_bindings.py writes one binding file per app from it.
+#
+# A row is one chord with one meaning. `apps` names the apps that bind it and,
+# for each, where that app's source says so:
+#
+#   prusa  src/slic3r/GUI/KBShortcutsDialog.cpp (prusa3d/PrusaSlicer)
+#   bambu  src/slic3r/GUI/KBShortcutsDialog.cpp (bambulab/BambuStudio), or the
+#          gizmo file that sets the key when the dialog does not list it
+#   orca   src/slic3r/GUI/Shortcuts.cpp shortcut_table (the enum name), or a
+#          fixed row of KBShortcutsDialog.cpp (SoftFever/OrcaSlicer)
+#
+# Commits and dates are in SOURCES.md. Where two apps give one chord different
+# meanings, each meaning is its own row. `CMDCTRL` is the dialogs' `ctrl`
+# prefix (shortkey_ctrl_prefix(), or wxMOD_CONTROL in Orca's table), which is
+# Cmd on macOS. `only:` / `except:` carry the dialogs' #ifdef __APPLE__ and
+# __WINDOWS__ branches.
+#
+# `editor` is the 3D plater (Prepare tab) of each app. `gcodeviewer` is
+# PrusaSlicer's separate G-code Viewer.
+
+editor:
+  # ------------------------------------------------------------- project
+  - {key: N, mods: [CMDCTRL], label: "New project", icon: new_project,
+     apps: {prusa: "New project, clear plater", bambu: "New Project", orca: NewProject}}
+  - {key: O, mods: [CMDCTRL], label: "Open",
+     apps: {prusa: "Open project AMF/3MF with config", bambu: "Open Project", orca: OpenProject}}
+  - {key: S, mods: [CMDCTRL], label: "Save",
+     apps: {prusa: "Save project (3mf)", bambu: "Save Project", orca: SaveProject}}
+  - {key: S, mods: [CMDCTRL, ALT], label: "Save as", apps: {prusa: "Save project as (3mf)"}}
+  - {key: S, mods: [CMDCTRL, SHIFT], label: "Save as",
+     apps: {bambu: "Save Project as", orca: SaveProjectAs}}
+  - {key: I, mods: [CMDCTRL], label: "Import model", icon: import_model,
+     apps: {prusa: "Import STL/3MF/STEP/OBJ/AMF without config", bambu: "Import geometry data",
+            orca: ImportModel}}
+  - {key: L, mods: [CMDCTRL], label: "Import config", icon: import_config,
+     apps: {prusa: "Import Config from ini/amf/3mf/gcode"}}
+  - {key: L, mods: [CMDCTRL, ALT], label: "Load config and merge", icon: merge_config,
+     apps: {prusa: "Load Config from ini/amf/3mf/gcode and merge"}}
+  - {key: E, mods: [CMDCTRL], label: "Export config", icon: export_config,
+     apps: {prusa: "Export config"}}
+  - {key: E, mods: [CMDCTRL, SHIFT], label: "Publish 3MF", icon: publish, apps: {orca: Publish3mf}}
+  - {key: I, mods: [CMDCTRL, SHIFT], label: "New instance", icon: new_instance,
+     apps: {prusa: "Open new instance"}}
+
+  # ------------------------------------------------- slicing and printing
+  - {key: R, mods: [CMDCTRL], label: "Slice", icon: slice,
+     apps: {prusa: "(Re)slice", bambu: "Slice plate", orca: SlicePlate}}
+  - {key: G, mods: [CMDCTRL], label: "Export G-code", icon: export_gcode,
+     apps: {prusa: "Export G-code", bambu: "Export plate sliced file", orca: ExportSlicedFile}}
+  - {key: G, mods: [CMDCTRL, SHIFT], label: "Send G-code", icon: send_gcode,
+     apps: {prusa: "Send G-code"}}
+  - {key: G, mods: [CMDCTRL, SHIFT], label: "Print plate", icon: print,
+     apps: {bambu: "Print plate", orca: PrintPlate}}
+  - {key: J, mods: [CMDCTRL], label: "Upload queue", icon: host_queue,
+     apps: {prusa: "Print host upload queue", orca: PrintHostQueue}}
+  - {key: U, mods: [CMDCTRL], label: "Export to SD card", icon: sd_card,
+     apps: {prusa: "Export to SD card / Flash drive"}}
+  - {key: T, mods: [CMDCTRL], label: "Eject SD card", icon: eject,
+     apps: {prusa: "Eject SD card / Flash drive"}}
+
+  # ------------------------------------------------------------ editing
+  - {key: A, mods: [CMDCTRL], label: "Select all",
+     apps: {prusa: "Select all objects", bambu: "Select all objects", orca: SelectAll}}
+  - {key: A, mods: [CMDCTRL, SHIFT], label: "Select all plates", icon: select_plates,
+     apps: {orca: SelectAllPlates}}
+  - {key: Z, mods: [CMDCTRL], label: "Undo", apps: {prusa: "Undo", bambu: "Undo", orca: Undo}}
+  - {key: Y, mods: [CMDCTRL], label: "Redo", apps: {prusa: "Redo", bambu: "Redo", orca: Redo}}
+  - {key: Z, mods: [CMDCTRL, SHIFT], label: "Redo", apps: {bambu: "Redo"}}
+  - {key: X, mods: [CMDCTRL], label: "Cut", apps: {bambu: "Cut", orca: Cut}}
+  - {key: C, mods: [CMDCTRL], label: "Copy",
+     apps: {prusa: "Copy to clipboard", bambu: "Copy to clipboard", orca: Copy}}
+  - {key: V, mods: [CMDCTRL], label: "Paste",
+     apps: {prusa: "Paste from clipboard", bambu: "Paste from clipboard", orca: Paste}}
+  - {key: DEL, label: "Delete", apps: {prusa: "Delete selected"}}
+  - {key: DEL, label: "Delete", except: [macos],
+     apps: {bambu: "Delete selected", orca: "DeleteSelected (WXK_DELETE)"}}
+  - {key: BACKSPACE, label: "Delete", only: [macos],
+     apps: {bambu: "Delete selected (BackSpace)", orca: "DeleteSelected (WXK_BACK)"}}
+  - {key: DEL, mods: [CMDCTRL], label: "Delete all", icon: delete_all, apps: {prusa: "Delete all"}}
+  - {key: D, mods: [CMDCTRL, SHIFT], label: "Delete all", icon: delete_all, apps: {bambu: "Delete all"}}
+  - {key: D, mods: [CMDCTRL], label: "Delete all", icon: delete_all, apps: {orca: DeleteAll}}
+  - {key: K, mods: [CMDCTRL], label: "Clone", icon: clone,
+     apps: {bambu: "Clone selected (Objects List)", orca: CloneSelected}}
+  - {key: F5, label: "Reload from disk", icon: reload, except: [macos],
+     apps: {prusa: "Reload plater from disk"}}
+  - {key: R, mods: [CMDCTRL, SHIFT], label: "Reload from disk", icon: reload, only: [macos],
+     apps: {prusa: "Reload plater from disk"}}
+  - {key: F, mods: [CMDCTRL], label: "Search", icon: search, apps: {prusa: "Search", orca: Search}}
+
+  # ---------------------------------------------------- objects, placement
+  - {key: A, label: "Arrange", icon: arrange,
+     apps: {prusa: "Arrange", bambu: "Arrange all objects", orca: Arrange}}
+  - {key: A, mods: [SHIFT], label: "Arrange selection", icon: arrange_sel,
+     apps: {prusa: "Arrange selection"}}
+  - {key: A, mods: [SHIFT], label: "Arrange plate", icon: arrange_sel,
+     apps: {bambu: "Arrange objects on selected plates", orca: ArrangePlate}}
+  - {key: Q, label: "Auto orient", icon: orient, apps: {orca: Orient}}
+  - {key: Q, mods: [SHIFT], label: "Auto orient plate", icon: orient, apps: {orca: OrientPlate}}
+  - {key: R, mods: [SHIFT], label: "Auto orient", icon: orient, apps: {bambu: "Auto orientates selected objects or all objects"}}
+  # '+' and '-' are characters: on a US layout '+' is Shift+=.
+  - {key: "=", mods: [SHIFT], label: "Add instance", icon: add_instance,
+     apps: {prusa: "Add Instance of the selected object", orca: AddInstance}}
+  - {key: "-", label: "Remove instance", icon: remove_instance,
+     apps: {prusa: "Remove Instance of the selected object", orca: RemoveInstance}}
+  - {key: V, label: "Toggle printable", icon: printable, apps: {orca: TogglePrintable}}
+  - {key: PGUP, label: "Rotate 45° CCW", icon: rotate_ccw,
+     apps: {prusa: "Rotate selection 45 degrees CCW", orca: RotateSelectionLeft}}
+  - {key: PGDN, label: "Rotate 45° CW", icon: rotate_cw,
+     apps: {prusa: "Rotate selection 45 degrees CW", orca: RotateSelectionRight}}
+  - {key: UP, label: "Move +Y 10 mm", icon: move_up_10,
+     apps: {prusa: "Move selection 10 mm in positive Y direction", bambu: "Move selection 10 mm in positive Y direction", orca: MoveSelectionUp}}
+  - {key: DOWN, label: "Move -Y 10 mm", icon: move_down_10,
+     apps: {prusa: "Move selection 10 mm in negative Y direction", bambu: "Move selection 10 mm in negative Y direction", orca: MoveSelectionDown}}
+  - {key: LEFT, label: "Move -X 10 mm", icon: move_left_10,
+     apps: {prusa: "Move selection 10 mm in negative X direction", bambu: "Move selection 10 mm in negative X direction", orca: MoveSelectionLeft}}
+  - {key: RIGHT, label: "Move +X 10 mm", icon: move_right_10,
+     apps: {prusa: "Move selection 10 mm in positive X direction", bambu: "Move selection 10 mm in positive X direction", orca: MoveSelectionRight}}
+  - {key: UP, mods: [SHIFT], label: "Move +Y 1 mm", icon: move_up_1,
+     apps: {prusa: "Shift+Any arrow: step 1 mm", bambu: "Shift+Any arrow: step 1 mm", orca: "Shift+Key: step 1mm"}}
+  - {key: DOWN, mods: [SHIFT], label: "Move -Y 1 mm", icon: move_down_1,
+     apps: {prusa: "Shift+Any arrow: step 1 mm", bambu: "Shift+Any arrow: step 1 mm", orca: "Shift+Key: step 1mm"}}
+  - {key: LEFT, mods: [SHIFT], label: "Move -X 1 mm", icon: move_left_1,
+     apps: {prusa: "Shift+Any arrow: step 1 mm", bambu: "Shift+Any arrow: step 1 mm", orca: "Shift+Key: step 1mm"}}
+  - {key: RIGHT, mods: [SHIFT], label: "Move +X 1 mm", icon: move_right_1,
+     apps: {prusa: "Shift+Any arrow: step 1 mm", bambu: "Shift+Any arrow: step 1 mm", orca: "Shift+Key: step 1mm"}}
+  - {key: UP, mods: [CMDCTRL], label: "Move up (camera)", icon: move_up_cam,
+     apps: {prusa: "Ctrl+Any arrow: camera space", bambu: "Ctrl+Any arrow: camera space", orca: "Ctrl+Key: camera space"}}
+  - {key: DOWN, mods: [CMDCTRL], label: "Move down (camera)", icon: move_down_cam,
+     apps: {prusa: "Ctrl+Any arrow: camera space", bambu: "Ctrl+Any arrow: camera space", orca: "Ctrl+Key: camera space"}}
+  - {key: LEFT, mods: [CMDCTRL], label: "Move left (camera)", icon: move_left_cam,
+     apps: {prusa: "Ctrl+Any arrow: camera space", bambu: "Ctrl+Any arrow: camera space", orca: "Ctrl+Key: camera space"}}
+  - {key: RIGHT, mods: [CMDCTRL], label: "Move right (camera)", icon: move_right_cam,
+     apps: {prusa: "Ctrl+Any arrow: camera space", bambu: "Ctrl+Any arrow: camera space", orca: "Ctrl+Key: camera space"}}
+  # Bambu and Orca: 1-9 set the filament of the selected object or part.
+  - {key: "1", label: "Filament 1", icon: filament_1, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "2", label: "Filament 2", icon: filament_2, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "3", label: "Filament 3", icon: filament_3, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "4", label: "Filament 4", icon: filament_4, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "5", label: "Filament 5", icon: filament_5, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "6", label: "Filament 6", icon: filament_6, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "7", label: "Filament 7", icon: filament_7, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "8", label: "Filament 8", icon: filament_8, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+  - {key: "9", label: "Filament 9", icon: filament_9, apps: {bambu: "1-9: set filament", orca: "1-9: set filament"}}
+
+  # ------------------------------------------------------------- gizmos
+  - {key: M, label: "Move", icon: gizmo_move, apps: {prusa: "Gizmo move", bambu: "Gizmo move", orca: GizmoMove}}
+  - {key: S, label: "Scale", icon: gizmo_scale, apps: {prusa: "Gizmo scale", bambu: "Gizmo scale", orca: GizmoScale}}
+  - {key: R, label: "Rotate", icon: gizmo_rotate, apps: {prusa: "Gizmo rotate", bambu: "Gizmo rotate", orca: GizmoRotate}}
+  - {key: C, label: "Cut object", icon: gizmo_cut, apps: {prusa: "Gizmo cut", bambu: "Gizmo cut", orca: GizmoCut}}
+  - {key: F, label: "Place on face", icon: gizmo_face,
+     apps: {prusa: "Gizmo Place face on bed", bambu: "Gizmo Place face on bed", orca: GizmoFlatten}}
+  - {key: L, label: "Paint supports", icon: paint_supports,
+     apps: {prusa: "Gizmo FDM paint-on supports", bambu: "Gizmo SLA support points (GLGizmoFdmSupports.cpp: L)",
+            orca: GizmoFdmSupports}}
+  - {key: P, label: "Paint seam", icon: paint_seam,
+     apps: {prusa: "Gizmo FDM paint-on seam", bambu: "Gizmo FDM paint-on seam", orca: GizmoSeam}}
+  - {key: H, label: "Fuzzy skin", icon: gizmo_fuzzy,
+     apps: {prusa: "Gizmo FDM paint-on fuzzy skin", bambu: "GLGizmoFuzzySkin.cpp: WXK_CONTROL_H", orca: GizmoFuzzySkin}}
+  - {key: N, label: "Paint colors", icon: paint_mmu,
+     apps: {prusa: "Gizmo Multi Material painting", bambu: "GLGizmoMmuSegmentation.cpp: WXK_CONTROL_N", orca: GizmoMmuSegmentation}}
+  - {key: T, label: "Text", icon: gizmo_text,
+     apps: {prusa: "Gizmo Text emboss / engrave", bambu: "GLGizmoText.cpp: WXK_CONTROL_T", orca: GizmoEmboss}}
+  - {key: B, label: "Mesh boolean", icon: gizmo_boolean,
+     apps: {bambu: "GLGizmoMeshBoolean.cpp: WXK_CONTROL_B", orca: GizmoMeshBoolean}}
+  - {key: U, label: "Measure", icon: gizmo_measure,
+     apps: {bambu: "GLGizmoMeasure.cpp: WXK_CONTROL_U", orca: GizmoMeasure}}
+  - {key: Y, label: "Assemble", icon: gizmo_assembly,
+     apps: {bambu: "GLGizmoAssembly.cpp: WXK_CONTROL_Y", orca: GizmoAssembly}}
+  - {key: E, label: "Brim ears", icon: brim_ears,
+     apps: {bambu: "GLGizmoBrimEars.cpp: WXK_CONTROL_E", orca: GizmoBrimEars}}
+  - {key: D, label: "Paint texture", icon: paint_texture, apps: {orca: GizmoDisplacement}}
+
+  # ------------------------------------------------------------- camera
+  - {key: "0", label: "Iso view", icon: view_iso, apps: {prusa: "0-6 Camera view (GLCanvas3D: iso)"}}
+  - {key: "1", label: "Top view", icon: view_top, apps: {prusa: "0-6 Camera view (GLCanvas3D: top)"}}
+  - {key: "2", label: "Bottom view", icon: view_bottom, apps: {prusa: "0-6 Camera view (GLCanvas3D: bottom)"}}
+  - {key: "3", label: "Front view", icon: view_front, apps: {prusa: "0-6 Camera view (GLCanvas3D: front)"}}
+  - {key: "4", label: "Rear view", icon: view_rear, apps: {prusa: "0-6 Camera view (GLCanvas3D: rear)"}}
+  - {key: "5", label: "Left view", icon: view_left, apps: {prusa: "0-6 Camera view (GLCanvas3D: left)"}}
+  - {key: "6", label: "Right view", icon: view_right, apps: {prusa: "0-6 Camera view (GLCanvas3D: right)"}}
+  - {key: "0", mods: [CMDCTRL], label: "Default view", icon: view_default,
+     apps: {bambu: "Camera view - Default", orca: ViewDefault}}
+  - {key: "1", mods: [CMDCTRL], label: "Top view", icon: view_top, apps: {bambu: "Camera view - Top", orca: ViewTop}}
+  - {key: "2", mods: [CMDCTRL], label: "Bottom view", icon: view_bottom, apps: {bambu: "Camera view - Bottom", orca: ViewBottom}}
+  - {key: "3", mods: [CMDCTRL], label: "Front view", icon: view_front, apps: {bambu: "Camera view - Front", orca: ViewFront}}
+  - {key: "4", mods: [CMDCTRL], label: "Rear view", icon: view_rear, apps: {bambu: "Camera view - Behind", orca: ViewRear}}
+  - {key: "5", mods: [CMDCTRL], label: "Left view", icon: view_left, apps: {bambu: "Camera view - Left", orca: ViewLeft}}
+  - {key: "6", mods: [CMDCTRL], label: "Right view", icon: view_right, apps: {bambu: "Camera view - Right", orca: ViewRight}}
+  - {key: "7", mods: [CMDCTRL], label: "Iso view", icon: view_iso, apps: {bambu: "Camera view - Isometric"}}
+  - {key: "7", mods: [CMDCTRL], label: "Plate view", icon: view_plate, apps: {orca: ViewPlate}}
+  - {key: K, label: "Camera type", icon: camera_type, apps: {prusa: "Change camera type (perspective, orthographic)"}}
+  - {key: B, label: "Zoom to bed", icon: zoom_bed, apps: {prusa: "Zoom to Bed"}}
+  - {key: Z, label: "Zoom to selection", icon: zoom_fit,
+     apps: {prusa: "Zoom to selected object or all objects", bambu: "Camera view - Fit to scene or selection"}}
+  - {key: I, label: "Zoom in", apps: {prusa: "Zoom in", orca: ZoomIn}}
+  - {key: O, label: "Zoom out", apps: {prusa: "Zoom out", orca: ZoomOut}}
+  - {key: M, mods: [CMDCTRL], label: "3Dconnexion settings", icon: mouse3d, except: [macos],
+     apps: {prusa: "Show/Hide 3Dconnexion devices settings dialog", orca: "Mouse3DSettings (Ctrl+M)"}}
+  - {key: M, mods: [CMDCTRL, SHIFT], label: "3Dconnexion settings", icon: mouse3d, only: [macos],
+     apps: {prusa: "Show/Hide 3Dconnexion devices settings dialog", orca: "Mouse3DSettings (Cmd+Shift+M)"}}
+
+  # ------------------------------------------------------------ display
+  - {key: E, label: "Show labels", icon: labels, apps: {prusa: "Show/Hide object/instance labels"}}
+  - {key: E, mods: [CMDCTRL], label: "Show labels", icon: labels, apps: {orca: ShowLabels}}
+  - {key: E, mods: [CMDCTRL], label: "Labels by layer", icon: layer_labels, apps: {bambu: "Show Labels by Layer"}}
+  - {key: E, mods: [SHIFT], label: "Labels by object", icon: labels, apps: {bambu: "Show Labels by Object"}}
+  - {key: L, mods: [CMDCTRL], label: "Show overhang", icon: overhang, apps: {bambu: "Show &Overhang"}}
+  - {key: K, mods: [CMDCTRL, SHIFT], label: "Collision volumes", icon: collision, apps: {orca: ShowCollisionVolumes}}
+  - {key: ENTER, mods: [CMDCTRL, SHIFT], label: "Wireframe", icon: wireframe, apps: {orca: ShowWireframe}}
+
+  # -------------------------------------------------------- application
+  - {key: "1", mods: [CMDCTRL], label: "Plater tab", icon: tab_plater, apps: {prusa: "Select Plater Tab"}}
+  - {key: "2", mods: [CMDCTRL], label: "Print settings", icon: tab_print, apps: {prusa: "Select Print Settings Tab"}}
+  - {key: "3", mods: [CMDCTRL], label: "Filament settings", icon: spool, apps: {prusa: "Select Filament Settings Tab"}}
+  - {key: "4", mods: [CMDCTRL], label: "Printer settings", icon: tab_printer, apps: {prusa: "Select Printer Settings Tab"}}
+  - {key: "5", mods: [CMDCTRL], label: "3D view", icon: view_3d, apps: {prusa: "Switch to 3D"}}
+  - {key: "6", mods: [CMDCTRL], label: "Preview", icon: preview, apps: {prusa: "Switch to Preview"}}
+  - {key: TAB, label: "Prepare / Preview", icon: switch_view,
+     apps: {prusa: "Switch between Editor/Preview", orca: SwitchView}}
+  - {key: TAB, mods: [SHIFT], label: "Collapse sidebar", icon: sidebar,
+     apps: {prusa: "Collapse/Expand the sidebar", bambu: "Collapse/Expand the sidebar", orca: CollapseSidebar}}
+  # Orca binds the physical Control key on every OS (wxMOD_RAW_CONTROL on macOS).
+  - {key: TAB, mods: [CTRL], label: "Next tab", icon: next_tab, apps: {orca: TabNext}}
+  - {key: TAB, mods: [CTRL, SHIFT], label: "Previous tab", icon: prev_tab, apps: {orca: TabPrevious}}
+  - {key: TAB, mods: [CMDCTRL], label: "Next tab", icon: next_tab, except: [macos], apps: {bambu: "Switch tab page"}}
+  - {key: W, mods: [CMDCTRL], label: "Reset layout", icon: window_reset, apps: {bambu: "Reset Window Layout"}}
+  - {key: P, mods: [CMDCTRL], label: "Settings", except: [macos],
+     apps: {prusa: "Preferences", bambu: "Preferences", orca: "Preferences (Ctrl+P)"}}
+  - {key: ",", mods: [CMDCTRL], label: "Settings", only: [macos],
+     apps: {prusa: "Preferences", bambu: "Preferences", orca: "Preferences (Cmd+,)"}}
+  # '?' is Shift+/ on a US layout.
+  - {key: "/", mods: [SHIFT], label: "Keyboard shortcuts", icon: shortcuts,
+     apps: {prusa: "Show keyboard shortcuts list", orca: KeyboardShortcuts}}
+  - {key: "/", mods: [SHIFT], label: "Keyboard shortcuts", icon: shortcuts, except: [windows],
+     apps: {bambu: "Show keyboard shortcuts list (Shift+?)"}}
+  - {key: "/", mods: [ALT, SHIFT], label: "Keyboard shortcuts", icon: shortcuts, only: [windows],
+     apps: {bambu: "Show keyboard shortcuts list (Shift+Alt+?)"}}
+  - {key: F5, label: "Reload device page", icon: reload_device, apps: {orca: ReloadDevicePage}}
+  - {key: Q, mods: [CMDCTRL], label: "Quit", apps: {orca: Quit}}
+  - {key: SPACE, label: "Speed Dial", icon: speed_dial, apps: {orca: SpeedDial}}
+  - {key: "1", mods: [ALT], label: "Favorite 1", icon: fav_1, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "2", mods: [ALT], label: "Favorite 2", icon: fav_2, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "3", mods: [ALT], label: "Favorite 3", icon: fav_3, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "4", mods: [ALT], label: "Favorite 4", icon: fav_4, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "5", mods: [ALT], label: "Favorite 5", icon: fav_5, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "6", mods: [ALT], label: "Favorite 6", icon: fav_6, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "7", mods: [ALT], label: "Favorite 7", icon: fav_7, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "8", mods: [ALT], label: "Favorite 8", icon: fav_8, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "9", mods: [ALT], label: "Favorite 9", icon: fav_9, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+  - {key: "0", mods: [ALT], label: "Favorite 10", icon: fav_10, apps: {orca: "Alt+1-9, 0: Run favorite 1 to 10"}}
+
+# PrusaSlicer G-code Viewer: the dialog's "Commands" page in viewer mode, then
+# its "Preview" page.
+gcodeviewer:
+  - {key: O, mods: [CMDCTRL], label: "Open", apps: {prusa: "Open a G-code file"}}
+  - {key: F5, label: "Reload from disk", icon: reload, except: [macos], apps: {prusa: "Reload plater from disk"}}
+  - {key: R, mods: [CMDCTRL, SHIFT], label: "Reload from disk", icon: reload, only: [macos],
+     apps: {prusa: "Reload the plater from disk"}}
+  - {key: UP, label: "Layer up", icon: layer_up, apps: {prusa: "Vertical slider - Move active thumb Up"}}
+  - {key: W, label: "Layer up", icon: layer_up, apps: {prusa: "Vertical slider - Move active thumb Up"}}
+  - {key: DOWN, label: "Layer down", icon: layer_down, apps: {prusa: "Vertical slider - Move active thumb Down"}}
+  - {key: S, label: "Layer down", icon: layer_down, apps: {prusa: "Vertical slider - Move active thumb Down"}}
+  - {key: LEFT, label: "Move back", icon: move_back, apps: {prusa: "Horizontal slider - Move active thumb Left"}}
+  - {key: A, label: "Move back", icon: move_back, apps: {prusa: "Horizontal slider - Move active thumb Left"}}
+  - {key: RIGHT, label: "Move forward", icon: move_fwd, apps: {prusa: "Horizontal slider - Move active thumb Right"}}
+  - {key: D, label: "Move forward", icon: move_fwd, apps: {prusa: "Horizontal slider - Move active thumb Right"}}
+  - {key: X, label: "One layer mode", icon: one_layer, apps: {prusa: "On/Off one layer mode of the vertical slider"}}
+  - {key: L, label: "Legend", icon: legend, apps: {prusa: "Show/Hide legend"}}
+  - {key: C, label: "G-code window", icon: gcode_window, apps: {prusa: "Show/Hide G-code window"}}
