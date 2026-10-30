@@ -1774,6 +1774,7 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
             ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "Song - YouTube", "youtube_template"),
             ("https://m.youtube.com/watch?v=dQw4w9WgXcQ", None, "youtube_template"),
+            ("https://www.youtube.com/live/abc123", None, "youtube_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
@@ -1797,6 +1798,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
                             "https://music.youtube.com/watch?v=dQw4w9WgXcQ",
+                            "https://www.youtube.com/",
+                            "https://www.youtube.com/results?search_query=keyboard",
                             "https://www.google.com/search?q=youtube.com",
                             "https://www.google.com/search?q=linear.app",
                             "https://github.com/o/r/tree/main"):

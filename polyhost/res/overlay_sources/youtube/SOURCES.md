@@ -5,7 +5,7 @@
 
 | Set | Loads for |
 |---|---|
-| `youtube_template` (1 file), `_mac` (1 file) | a browser tab on www.youtube.com or m.youtube.com, or a window title ending in "- YouTube" when no URL is known |
+| `youtube_template` (1 file), `_mac` (1 file) | a browser tab on a www.youtube.com or m.youtube.com page with a player (`/watch`, `/live/`, `/embed/`), or a window title ending in "- YouTube" when no URL is known |
 
 The set is under the browser entries (Chrome and the other Chromium browsers,
 Firefox and Safari, through the shared `&web_urls` maps). YouTube Music and
