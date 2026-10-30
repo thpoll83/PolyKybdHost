@@ -43,7 +43,7 @@ Engines and settings:
 |---|---|---|
 | `dither` | Crop the frame, cut the background (the colour most common along the edge), fit into the region, sharpen, stretch the contrast, then dither inside a lit outline. The same steps as `dither.keycap`. | dither (`levels` = unlit / 50 % checker / lit, `fs` = error diffusion, `bayer`, `threshold`), black and white percentiles, gamma, S-curve, sharpen, floor, outline, background cut, frame crop, mirror, region size, vertical alignment |
 | re-rasterized icon | The shipped icon redrawn from its SVG: the silhouette is shaded as a raised plate (a port of `cnc_remastered/fetch_icons.py` `relief()`) or filled with one grey, then dithered like `dither`. The suggested values are the ones `fetch_icons.py` uses. | relief on/off, edge slope, light direction and height, ambient, falloff, grain and its seed, flat grey, then the `dither` settings |
-| `pixel` | Pixel art at a whole-number scale. | lit pixels (`edge+bright` = the reader's sprite rule, `nonzero`, `centre` colour, `darker` / `brighter` than a percentile), scale, mirror, region, alignment |
+| `pixel` | Pixel art at a whole-number scale. | lit pixels (`edge+bright` = the reader's sprite rule, `nonzero`, `centre` colour, `darker` / `brighter` than a percentile), scale, crop top/bottom and sides, mirror, region, alignment |
 | word | A word in one of the game's fonts. | text, font, which glyph parts are lit (body, shade, outline), letter gap, scale, alignment |
 
 ## Applying the picks

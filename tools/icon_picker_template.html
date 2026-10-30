@@ -320,7 +320,8 @@ const FIELDS = {
            ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"], ["rh", "range", [10, 40, 1], "Height"],
            ["valign", "select", ["top", "centre", "bottom"], "Align"]],
   pixel: [["lit", "select", ["edge+bright", "nonzero", "centre", "darker", "brighter"], "Lit pixels"], ["pct", "range", [5, 95, 1], "Percentile"],
-          ["scale", "range", [0, 5, 1], "Scale (0 auto)"], ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"],
+          ["scale", "range", [0, 5, 1], "Scale (0 auto)"], ["cropy", "range", [0, 6, 1], "Crop top/bottom"], ["cropx", "range", [0, 6, 1], "Crop sides"],
+          ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"],
           ["rh", "range", [10, 40, 1], "Height"], ["valign", "select", ["top", "centre", "bottom"], "Align"]],
   word: [["text", "text", null, "Text"], ["font", "select", ["8p", "6p"], "Font"], ["body", "check", null, "Body"], ["shade", "check", null, "Shade"],
          ["outline", "check", null, "Outline"], ["gap", "range", [0, 3, 1], "Letter gap"], ["scale", "range", [1, 3, 1], "Scale"],
@@ -358,11 +359,15 @@ function editor(k, ci, e, onChange) {
   for (const [f, type, opt, lab] of FIELDS[kind]) {
     const row = document.createElement("label"); row.className = "row";
     let val = p[f]; if (f === "rw") val = val ?? k.region[0]; if (f === "rh") val = val ?? k.region[1];
+    const CROP = { cropy: 0, cropx: 1 };
+    if (f in CROP) val = (p.crop || [0, 0])[CROP[f]];
     if (f === "valign") val = val ?? "top"; if (f === "thr") val = val ?? 0.5; if (f === "pct") val = val ?? 50; if (f === "gap") val = val ?? 1;
     if (type === "range") {
       row.innerHTML = `<span>${lab}</span><input type="range" min="${opt[0]}" max="${opt[1]}" step="${opt[2]}"><span class="v"></span>`;
       const i = row.querySelector("input"), v = row.querySelector(".v"); i.value = val; v.textContent = val;
-      i.oninput = () => { p[f] = parseFloat(i.value); v.textContent = i.value; change(false); };
+      i.oninput = () => { const x = parseFloat(i.value); v.textContent = i.value;
+        if (f in CROP) { const c = p.crop ? [...p.crop] : [0, 0]; c[CROP[f]] = x; p.crop = c; } else p[f] = x;
+        change(false); };
     } else if (type === "select") {
       row.innerHTML = `<span>${lab}</span><select>${opt.map(o => `<option>${o}</option>`).join("")}</select><span></span>`;
       const s = row.querySelector("select"); s.value = val; s.onchange = () => { p[f] = s.value; change(false); };
@@ -374,7 +379,10 @@ function editor(k, ci, e, onChange) {
       const i = row.querySelector("input"); i.value = val; i.oninput = () => { p[f] = i.value; change(false); };
     }
     const name = row.querySelector("span"); name.title = "Double-click: reset to the suggested value"; name.style.cursor = "help";
-    name.ondblclick = ev => { ev.preventDefault(); if (c.params[f] === undefined) delete p[f]; else p[f] = JSON.parse(JSON.stringify(c.params[f])); change(true); };
+    name.ondblclick = ev => { ev.preventDefault();
+      if (f in CROP) { const c0 = (c.params.crop || [0, 0])[CROP[f]], cur = p.crop ? [...p.crop] : [0, 0]; cur[CROP[f]] = c0; p.crop = cur; }
+      else if (c.params[f] === undefined) delete p[f]; else p[f] = JSON.parse(JSON.stringify(c.params[f]));
+      change(true); };
     grid.appendChild(row);
   }
   const acts = document.createElement("div"); acts.className = "actions";
