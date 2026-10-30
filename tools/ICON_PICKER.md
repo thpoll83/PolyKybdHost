@@ -13,10 +13,11 @@ commit it, attach it to a PR or publish it.
 
 ```bash
 .venv/bin/python tools/gen_icon_picker.py polyhost/res/overlay_sources/dune2/picker.yaml \
-    --data-dir <folder with DUNE.PAK> --out /tmp/dune2_icon_picker.html
+    --data-dir <folder with DUNE.PAK> --out ~/dune2_icon_picker.html
 ```
 
-Without `--data-dir` the generator looks where the game's reader looks
+Without `--out` the page goes to a new file in the system's temporary folder,
+and the generator prints its name. Without `--data-dir` the generator looks where the game's reader looks
 (`find()` of the reader the spec names). The legends come from
 `../qmk_firmware` (`--qmk` to change it), as in `oled_preview.py`.
 

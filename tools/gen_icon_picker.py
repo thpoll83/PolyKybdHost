@@ -2,7 +2,7 @@
 """Generate an offline HTML page to choose the game-drawn icons of an overlay.
 
     .venv/bin/python tools/gen_icon_picker.py polyhost/res/overlay_sources/dune2/picker.yaml
-    .venv/bin/python tools/gen_icon_picker.py <picker.yaml> --data-dir ~/games/dune2 --out /tmp/dune2.html
+    .venv/bin/python tools/gen_icon_picker.py <picker.yaml> --data-dir ~/games/dune2 --out ~/dune2.html
 
 The picker spec (a YAML file beside the overlay sources) lists, per key, the
 pictures of the user's own game files to choose from and the start values of
@@ -130,7 +130,7 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
                     try:
                         a = svg_silhouette.silhouette(vspec)
                         vectors[vspec] = {"w": int(a.shape[1]), "h": int(a.shape[0]), "alpha": b64(a)}
-                    except OSError as e:                 # offline: the key keeps its other candidates
+                    except (OSError, RuntimeError) as e:  # offline (icon_fetch._get raises RuntimeError): the key keeps its other candidates
                         print(f"  {vspec}: not fetched ({e})", file=sys.stderr)
                 if vspec in vectors:
                     cands.insert(0, {"label": f"shipped icon, re-rasterized ({vspec})", "kind": "vector", "src": vspec, "preset": "vector",
@@ -158,14 +158,22 @@ def main() -> None:
     ap.add_argument("spec", type=Path, help="picker YAML beside the overlay sources")
     ap.add_argument("--data-dir", default="", help="folder with the game files; default: where the reader looks")
     ap.add_argument("--qmk", type=Path, default=ROOT.parent / "qmk_firmware", help="qmk_firmware checkout, for the legends")
-    ap.add_argument("--out", type=Path, help="output HTML; default /tmp/<spec folder>_icon_picker.html")
+    ap.add_argument("--out", type=Path, help="output HTML; default a new file <spec folder>_icon_picker_*.html "
+                                              "in the system's temporary folder")
     a = ap.parse_args()
     spec_path = a.spec.resolve()
     data = build_data(spec_path, a.data_dir, a.qmk)
     page = (HERE / "icon_picker_template.html").read_text(encoding="utf-8")
     page = page.replace("/*TITLE*/", data["title"]).replace("/*DATA*/null", json.dumps(data))
-    out = a.out or Path("/tmp") / f"{spec_path.parent.name}_icon_picker.html"
-    out.write_text(page, encoding="utf-8")
+    if a.out:
+        out = a.out
+        out.write_text(page, encoding="utf-8")
+    else:                                    # a new file of our own: no fixed name a planted link could take
+        import tempfile
+        fd, name = tempfile.mkstemp(prefix=f"{spec_path.parent.name}_icon_picker_", suffix=".html")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(page)
+        out = Path(name)
     n = sum(len(o["keys"]) for o in data["overlays"])
     print(f"{out}: {n} keys, {len(data['pics'])} pictures, {out.stat().st_size // 1024} KB. Keep it local: it holds game art.")
 

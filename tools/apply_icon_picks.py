@@ -68,6 +68,13 @@ def recipe_for(pick: dict, binding: dict, fonts: dict) -> tuple[str, dict]:
     return "recipe", {"src": pick["src"], **_keep(p, keys), "region": region, "margin": binding["margin"]}
 
 
+def _shown(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def _flow(obj) -> str:
     return yaml.safe_dump(obj, default_flow_style=True, sort_keys=False, width=10000, allow_unicode=True).strip()
 
@@ -109,11 +116,11 @@ def set_binding_region(path: Path, stem: str, region: list) -> int:
     return n
 
 
-def main() -> None:
+def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("spec", type=Path, help="the picker.yaml the page was generated from")
     ap.add_argument("picks", type=Path, help="the JSON from the page's Export picks")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     a.spec = a.spec.resolve()
     spec = yaml.safe_load(a.spec.read_text(encoding="utf-8"))
     picks = json.loads(a.picks.read_text(encoding="utf-8"))
@@ -145,9 +152,23 @@ def main() -> None:
                 continue
             chosen[slot] = (kid, kind, entry)
         plans.append((path, icons, chosen))
+    # The icon files are shared by the spec's overlays, and so is rasterize.yaml:
+    # two overlays re-rasterizing one icon must agree on it.
+    raster_picks: dict = {}                 # stem -> (overlay id, key id, entry)
+    for (path, icons, chosen), ov in zip(plans, spec["overlays"]):
+        for (stem, _v), (kid, kind, entry) in chosen.items():
+            if kind != "raster":
+                continue
+            if stem in raster_picks and raster_picks[stem][2] != entry:
+                o, k, _e = raster_picks[stem]
+                errors.append(f"{o}/{k} and {ov['id']}/{kid} both re-rasterize {stem}.png but differently; "
+                              f"pick the same settings or give one of them its own icon file")
+            raster_picks.setdefault(stem, (ov["id"], kid, entry))
     if errors:                               # nothing is written when two picks disagree
         raise SystemExit("\n".join(errors))
-    for path, icons, chosen in plans:
+    had_raster = raster_path.exists()
+    for (path, icons, chosen), ov in zip(plans, spec["overlays"]):
+        shared = {s for o, stems in stems_by_overlay.items() if o != ov["id"] for s in stems}
         for (stem, variant), (kid, kind, entry) in chosen.items():
             if kind == "raster":
                 raster[stem] = entry
@@ -169,18 +190,22 @@ def main() -> None:
                 icons.pop(stem, None)
             else:
                 icons[stem] = entry
+            # A game recipe or "shipped" returns the icon file to its default,
+            # unless another overlay draws the same file.
+            if not variant and stem not in shared and stem not in raster_picks:
                 raster.pop(stem, None)
         write_game_assets(path, spec["reader"], icons)
-        print(f"{path.relative_to(ROOT)}: {len(chosen)} keys picked, {len(icons)} recipes")
+        print(f"{_shown(path)}: {len(chosen)} keys picked, {len(icons)} recipes")
     for stem in raster:
         users = [o for o, stems in stems_by_overlay.items() if stem in stems]
         if len(users) > 1:
             print(f"note: {stem}.png is re-rasterized for every overlay that uses it: {', '.join(users)}")
-    if raster:
+    if raster or had_raster:                 # an emptied file is written, not left stale
         raster_path.write_text("# Icons re-rasterized from their SVG, as picked in the icon picker\n"
                                "# (tools/apply_icon_picks.py); fetch_icons.py renders them.\n"
-                               + "\n".join(f"{s}: {_flow(e)}" for s, e in raster.items()) + "\n", encoding="utf-8")
-        print(f"{raster_path.relative_to(ROOT)}: {len(raster)} icons")
+                               + ("\n".join(f"{s}: {_flow(e)}" for s, e in raster.items()) if raster else "{}") + "\n",
+                               encoding="utf-8")
+        print(f"{_shown(raster_path)}: {len(raster)} icons")
 
 
 if __name__ == "__main__":
