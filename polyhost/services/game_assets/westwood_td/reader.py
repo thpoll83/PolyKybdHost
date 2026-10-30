@@ -32,6 +32,7 @@ import numpy as np
 from PIL import Image
 
 from polyhost.services.game_assets import dither, openra
+from polyhost.services.game_assets.steam import libraries as _steam_libraries
 from polyhost.services.game_assets.westwood_td import westwood
 
 REQUIRED = ("conquer.mix", "temperat.mix")
@@ -62,34 +63,6 @@ def data_files(d: Path) -> dict | None:
     if not all(r in names for r in REQUIRED):
         return None
     return {n: d / names[n] for n in REQUIRED + OPTIONAL if n in names}
-
-
-def _steam_roots() -> list[Path]:
-    home = Path.home()
-    roots = [home / ".steam" / "steam", home / ".local" / "share" / "Steam",
-             home / ".var" / "app" / "com.valvesoftware.Steam" / ".local" / "share" / "Steam",
-             home / "Library" / "Application Support" / "Steam"]
-    for env in ("PROGRAMFILES(X86)", "PROGRAMFILES"):
-        if os.environ.get(env):
-            roots.append(Path(os.environ[env]) / "Steam")
-    return roots
-
-
-def _steam_libraries() -> list[Path]:
-    """Every Steam library folder named in the roots' libraryfolders.vdf."""
-    libs = []
-    for root in _steam_roots():
-        vdf = root / "steamapps" / "libraryfolders.vdf"
-        libs.append(root)
-        try:
-            text = vdf.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        for line in text.splitlines():
-            parts = line.strip().split('"')
-            if len(parts) >= 4 and parts[1] == "path":
-                libs.append(Path(parts[3].replace("\\\\", "\\")))
-    return libs
 
 
 def install_candidates() -> list[Path]:

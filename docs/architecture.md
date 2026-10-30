@@ -386,8 +386,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `Setting` declarations and the registry of readers.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
-    OpenRA installs the original game files; both readers search them. Its
+    the encrypted MIX format in `mix.py`; `factorio/` for Factorio 2.0, which
+    reads PNG icons from the game's `data` folder and draws each one as a
+    silhouette, a threshold or a dither). `openra.py` lists the folders where
+    OpenRA installs the original game files; both Westwood readers search them.
+    `steam.py` lists the Steam library folders for every reader. Each reader's
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;

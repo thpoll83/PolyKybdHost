@@ -129,3 +129,37 @@ bindings:
   - { key: F9, mods: [SHIFT], icon: zoom2x.png, label: "Zoom level 2x" }
   - { key: F10, icon: replaynext.png, label: "Next player in replay" }
   - { key: F4, mods: [CTRL, SHIFT], icon: hidegui.png, label: "Toggle GUI visibility" }
+
+# Art read at runtime from the user's own Factorio install, when it is on the
+# machine (polyhost/services/game_assets, reader factorio). It replaces the
+# shipped icon of the same name; nothing read from the game is committed. Each
+# `file` is the path the game's own prototype definitions give for that control
+# or item (wube/factorio-data, see SOURCES.md), relative to the data folder.
+# `silhouette` draws the shape of a one-colour GUI symbol; `threshold` lights
+# the light parts of coloured item art (it read better than `dither` at 40 px).
+game_assets:
+  reader: factorio
+  icons:
+    # The buttons at the top right of the game screen open the same panels.
+    library: {file: core/graphics/side-menu-buttons.png, size: 64, row: 0, mode: silhouette}
+    production: {file: core/graphics/side-menu-buttons.png, size: 64, row: 1, mode: silhouette}
+    trains: {file: core/graphics/side-menu-buttons.png, size: 64, row: 4, mode: silhouette}
+    map: {file: core/graphics/side-menu-buttons.png, size: 64, row: 7, mode: silhouette}
+    networks: {file: core/graphics/side-menu-buttons.png, size: 64, row: 9, mode: silhouette}
+    technology: {file: core/graphics/side-menu-buttons.png, size: 64, row: 11, mode: silhouette}
+    # The shortcut bar buttons of the same controls (associated_control_input):
+    # 56 px since Factorio 2.0.18, 32 px before; the first file found is read.
+    newblueprint: {file: [base/graphics/icons/shortcut-toolbar/mip/new-blueprint-x56.png, base/graphics/icons/shortcut-toolbar/mip/new-blueprint-x32.png], mode: silhouette}
+    newdecon: {file: [base/graphics/icons/shortcut-toolbar/mip/new-deconstruction-planner-x56.png, base/graphics/icons/shortcut-toolbar/mip/new-deconstruction-planner-x32.png], mode: silhouette}
+    newupgrade: {file: [base/graphics/icons/shortcut-toolbar/mip/new-upgrade-planner-x56.png, base/graphics/icons/shortcut-toolbar/mip/new-upgrade-planner-x32.png], mode: silhouette}
+    artillery: {file: [base/graphics/icons/shortcut-toolbar/mip/artillery-targeting-remote-x56.png, base/graphics/icons/shortcut-toolbar/mip/artillery-targeting-remote-x32.png], mode: silhouette}
+    discharge: {file: [base/graphics/icons/shortcut-toolbar/mip/discharge-defense-remote-x56.png, base/graphics/icons/shortcut-toolbar/mip/discharge-defense-remote-x32.png], mode: silhouette}
+    spidertron: {file: [base/graphics/icons/shortcut-toolbar/mip/new-rts-tool-x56.png, base/graphics/icons/shortcut-toolbar/mip/new-rts-tool-x32.png], mode: silhouette}
+    exoskeleton: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x32.png], mode: silhouette}
+    roboport: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x32.png], mode: silhouette}
+    # Item and character art. F1 and Alt+L share the icon, in F1's 34 px area.
+    weapon: {file: base/graphics/icons/pistol.png, mode: threshold}
+    vehicle: {file: base/graphics/icons/car.png, mode: threshold}
+    raillayer: {file: base/graphics/icons/rail.png, mode: threshold}
+    logistics: {file: base/graphics/icons/logistic-robot.png, mode: threshold, region: [34, 40]}
+    character: {file: core/graphics/icons/entity/character.png, mode: silhouette}
