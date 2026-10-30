@@ -195,12 +195,17 @@ def _rle_zeros(src: bytes, size: int) -> bytes:
 
 def shp_d2_frames(data: bytes, count: int | None = None) -> list[np.ndarray]:
     """The first `count` frames (all when None) of a Dune-2-style shape file, the
-    format of TD's MOUSE.SHP: a frame count, 2- or 4-byte offsets, then per frame
+    format of TD's MOUSE.SHP and of Dune II's shapes (1.0 and 1.07): a frame count, 2- or 4-byte offsets, then per frame
     a small header, an optional colour table, LCW and a zero-run encoding."""
     n, = struct.unpack_from("<H", data, 0)
     two_byte = (struct.unpack_from("<I", data, 2)[0] & 0xFF0000) > 0
     fmt, step = ("<H", 2) if two_byte else ("<I", 4)
-    offs = [struct.unpack_from(fmt, data, 2 + step * i)[0] + 2 for i in range(n + 1)]
+    offs = [struct.unpack_from(fmt, data, 2 + step * i)[0] for i in range(n + 1)]
+    # The first frame starts where the offset table ends. Dune II 1.07 and
+    # C&C count the offsets from after the frame count; Dune II 1.0 from the
+    # start of the file.
+    base = 0 if offs[0] == 2 + step * (n + 1) else 2
+    offs = [o + base for o in offs]
     frames = []
     for i in range(n if count is None else min(n, count)):
         p = offs[i]

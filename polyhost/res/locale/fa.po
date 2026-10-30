@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-29 07:42+0000\n"
+"POT-Creation-Date: 2026-10-29 12:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -4093,6 +4093,53 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "نصب‌کنندهٔ WinCompose اجرا شد. پس از پایان نصب و اجرای WinCompose، PolyKybd خودکار به آن تغییر می‌کند."
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:13
+msgid "Dune II Folder"
+msgstr "پوشهٔ Dune II"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:14
+msgid "A folder with the original Dune II file DUNE.PAK. Empty: the data folders of Dune Legacy and OpenDUNE are searched."
+msgstr "پوشه‌ای با پروندهٔ اصلی Dune II یعنی DUNE.PAK. خالی: پوشه‌های داده‌ی Dune Legacy و OpenDUNE جست‌وجو می‌شود."
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:16
+msgid "Dune II House"
+msgstr "خاندان Dune II"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:17
+msgid "Whose units the Dune II overlays show."
+msgstr "خاندانی که پوشش‌های Dune II واحدهایش را نشان می‌دهند."
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Atreides"
+msgstr "آتریدیز"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Harkonnen"
+msgstr "هارکونن"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:19
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:19
+msgid "Ordos"
+msgstr "اوردوس"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:13
+msgid "Dune 2000 Folder"
+msgstr "پوشهٔ Dune 2000"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:14
+msgid "A folder with the Dune 2000 files DATA.R16 (or DATA.R8) and PALETTE.BIN. Empty: the content folder of OpenRA is searched."
+msgstr "پوشه‌ای با پرونده‌های Dune 2000 یعنی DATA.R16 (یا DATA.R8) و PALETTE.BIN. خالی: پوشهٔ محتوای OpenRA جست‌وجو می‌شود."
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:16
+msgid "Dune 2000 House"
+msgstr "خاندان Dune 2000"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:17
+msgid "Whose units the OpenRA Dune 2000 overlay shows."
+msgstr "خاندانی که پوشش OpenRA Dune 2000 واحدهایش را نشان می‌دهد."
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert Folder"

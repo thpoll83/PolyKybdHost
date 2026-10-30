@@ -210,6 +210,13 @@ Per-platform implementations:
     `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
     `claude`, `zed` and `cursor` all resolve their macOS templates with no
     window, and `kicad` correctly does not.
+  - **An entry with no `overlay` is a router.** It matches only through its
+    title, URL or `os:` sub-maps, and returns nothing when none of them match.
+    The DOSBox entry uses this: it has no overlay of its own, and its
+    `titles-contains: DUNE2` sub-map selects the Dune II overlay, so other DOS
+    games in DOSBox get no overlay
+    (`tests/handler/matcher_test.py` →
+    `test_an_entry_without_an_overlay_routes_by_its_title_sub_map`).
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
@@ -381,13 +388,22 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
   recipe for each icon, keyed by variant (the faction) where they differ.
-  - Shared, at the top of the package: `__init__.py` (below), `build.py` and
-    `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
-    `Setting` declarations and the registry of readers.
+  - Shared, at the top of the package: `__init__.py` (below), `build.py`,
+    `dither.py` and `picture.py`; `readers.py` (light, imported at start) holds
+    the `Reader` and `Setting` declarations and the registry of readers.
+    `picture.py` is the icon picker's renderer in Python (`tools/ICON_PICKER.md`):
+    a reader whose recipes come from the picker draws with it, so the keyboard
+    shows what the page showed. ⚠️ It mirrors the page's JavaScript step for step;
+    change both together and regenerate the pins of
+    `tests/services/game_assets_picture_test.py` from the page.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
-    OpenRA installs the original game files; both readers search them. Its
+    the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
+    PAK archives, shape files, map tiles and fonts of Dune II 1.0 and 1.07 and
+    draws the picker's recipes;
+    `westwood_d2k/` for Dune 2000, which reads the R16 sprite file). `openra.py` lists the folders where
+    OpenRA installs the original game files; the Red Alert, Tiberian Dawn and
+    Dune 2000 readers search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;

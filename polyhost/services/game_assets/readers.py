@@ -30,8 +30,9 @@ Reader = namedtuple("Reader", "module settings folder variant")
 def _registry() -> dict:
     """{name: Reader}. Each reader is a subfolder of game_assets whose
     ``__init__.py`` declares ``READER``; add a new one here."""
-    from polyhost.services.game_assets import westwood_ra, westwood_td
-    return {"westwood_td": westwood_td.READER, "westwood_ra": westwood_ra.READER}
+    from polyhost.services.game_assets import westwood_d2, westwood_d2k, westwood_ra, westwood_td
+    return {"westwood_td": westwood_td.READER, "westwood_ra": westwood_ra.READER,
+            "westwood_d2": westwood_d2.READER, "westwood_d2k": westwood_d2k.READER}
 
 
 READERS = _registry()

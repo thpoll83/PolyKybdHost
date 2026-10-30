@@ -31,14 +31,16 @@ def dilate(m: np.ndarray, n: int) -> np.ndarray:
 
 
 def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
-           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0):
+           lo_p=3, hi_p=97, curve=0.0, sharpen=0.0, outline=True, gamma=1.0, levels=0):
     """Fit `img` (grey, 0..1) inside `size` (w, h), dither the inside and light
-    the 1 px outline of `cover`.
+    the 1 px outline of `cover` (with `outline` False, dither all of `cover`).
 
     `lo_p`/`hi_p` are the percentiles stretched to black and white. `curve` > 0
     adds an S-curve that pushes mid-tones to black or white, and `sharpen` > 0 an
-    unsharp mask before the dither; both give small sprites firmer shapes. The
-    defaults reproduce the shipped Warzone renders byte for byte."""
+    unsharp mask before the dither; both give small sprites firmer shapes.
+    `gamma` < 1 lightens the mid-tones. `levels` 3 replaces the error diffusion
+    with three flat levels: unlit, a 50 % checker, lit. The defaults reproduce
+    the shipped Warzone renders byte for byte."""
     ys, xs = np.nonzero(cover)
     img = img[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
     cover = cover[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
@@ -53,14 +55,20 @@ def keycap(img, cover, size, blur=0.4, floor=0.15, mirror=False,
     g = np.asarray(gi, float) / 255
     a = np.asarray(Image.fromarray((cover * 255).astype(np.uint8)).resize(size, Image.LANCZOS)) > 127
     lo, hi = np.percentile(g[a], lo_p), np.percentile(g[a], hi_p)
-    g = np.clip((g - lo) / max(hi - lo, 1e-6), 0, 1)
+    g = np.clip((g - lo) / max(hi - lo, 1e-6), 0, 1) ** gamma
     if curve:
         k = 1 + 4 * curve
         g = 0.5 + np.tanh((g - 0.5) * k) / (2 * np.tanh(0.5 * k))
-    out = edge(a)
+    out = edge(a) if outline else np.zeros_like(a)
     inside = a & ~out
     v = np.where(inside, floor + (1 - floor) * g, 0)
-    fill = np.asarray(Image.fromarray((v * 255).astype(np.uint8)).convert("1")) > 0
+    if levels == 3:
+        yy, xx = np.mgrid[0:v.shape[0], 0:v.shape[1]]
+        fill = (v > 2 / 3) | ((v > 1 / 3) & ((yy + xx) % 2 == 0))
+    elif levels:
+        raise ValueError(f"levels must be 0 or 3, not {levels}")
+    else:
+        fill = np.asarray(Image.fromarray((v * 255).astype(np.uint8)).convert("1")) > 0
     return out | (fill & inside)
 
 
