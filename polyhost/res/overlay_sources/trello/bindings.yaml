@@ -5,7 +5,8 @@
 # Chromium). Trello writes Control (Windows) / Command (Mac), so `CMDCTRL`
 # serves every OS. The single keys act when no text field has focus. Keys
 # that only work while typing (@ to mention, Shift+Enter while creating a
-# card) and mouse actions (Shift+click, Shift+scroll) are left out.
+# card) and mouse actions (Shift+click, Shift+scroll) are left out. Esc shows
+# the program mark, and the arrows (same as J/K) keep their legends.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/trello/fetch_icons.py

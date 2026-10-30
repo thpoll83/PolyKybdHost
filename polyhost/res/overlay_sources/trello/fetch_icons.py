@@ -71,12 +71,14 @@ def _tag(d: ImageDraw.ImageDraw, x0: int, y0: int, w: int, h: int) -> None:
 
 def label_icons(out: Path) -> None:
     """Draw label_<digit>.png: a tag above the colour's short name, 1-bit."""
-    font = ImageFont.truetype(BOLD, 13)
+    font = None
     for digit, name in LABELS.items():
         dest = out / f"label_{digit}.png"
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
             continue
+        # Loaded only when a label is drawn: the committed PNGs need no font.
+        font = font or ImageFont.truetype(BOLD, 13)
         mask = Image.new("L", LABEL_SIZE, 0)
         d = ImageDraw.Draw(mask)
         _tag(d, 3, 1, 34, 20)

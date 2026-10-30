@@ -1795,6 +1795,16 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     got = find_matching_entry("JupyterLab Documentation - Google Chrome", entry, None,
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
+                # Without a URL, only a title ending in "| Trello" selects Trello.
+                with self.subTest(browser=browser, os=os_name, title="trello suffix"):
+                    got = find_matching_entry("Roadmap | Trello - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertIn(f"trello_template{suffix}.mods.png",
+                                  [str(f) for f in got["overlay"]])
+                with self.subTest(browser=browser, os=os_name, title="trello mention"):
+                    got = find_matching_entry("Trello vs Jira - Google Search", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("trello_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
                             "https://trello.com/",
                             "https://www.atlassian.com/software/trello",
