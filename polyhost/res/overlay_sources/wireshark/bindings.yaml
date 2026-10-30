@@ -86,15 +86,15 @@ bindings:
   - { key: LEFT, mods: [SHIFT], icon: subcollapse.png, label: "Collapse subtrees" }
   - { key: RIGHT, mods: [CMDCTRL], icon: expandall.png, label: "Expand all" }
   - { key: LEFT, mods: [CMDCTRL], icon: collapseall.png, label: "Collapse all" }
-  - { key: "1", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 1" }
-  - { key: "2", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 2" }
-  - { key: "3", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 3" }
-  - { key: "4", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 4" }
-  - { key: "5", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 5" }
-  - { key: "6", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 6" }
-  - { key: "7", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 7" }
-  - { key: "8", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 8" }
-  - { key: "9", mods: [CMDCTRL], icon: colorize.png, label: "Colorize conversation 9" }
+  - { key: "1", mods: [CMDCTRL], icon: color1.png, label: "Colorize conversation 1", mode: alpha, region: [40, 40] }
+  - { key: "2", mods: [CMDCTRL], icon: color2.png, label: "Colorize conversation 2", mode: alpha, region: [40, 40] }
+  - { key: "3", mods: [CMDCTRL], icon: color3.png, label: "Colorize conversation 3", mode: alpha, region: [40, 40] }
+  - { key: "4", mods: [CMDCTRL], icon: color4.png, label: "Colorize conversation 4", mode: alpha, region: [40, 40] }
+  - { key: "5", mods: [CMDCTRL], icon: color5.png, label: "Colorize conversation 5", mode: alpha, region: [40, 40] }
+  - { key: "6", mods: [CMDCTRL], icon: color6.png, label: "Colorize conversation 6", mode: alpha, region: [40, 40] }
+  - { key: "7", mods: [CMDCTRL], icon: color7.png, label: "Colorize conversation 7", mode: alpha, region: [40, 40] }
+  - { key: "8", mods: [CMDCTRL], icon: color8.png, label: "Colorize conversation 8", mode: alpha, region: [40, 40] }
+  - { key: "9", mods: [CMDCTRL], icon: color9.png, label: "Colorize conversation 9", mode: alpha, region: [40, 40] }
   - { key: SPACE, mods: [CTRL], icon: resetcolor.png, label: "Reset colorization" }
   - { key: R, mods: [CMDCTRL], icon: reload.png, label: "Reload or restart capture" }
   - { key: F, mods: [CMDCTRL, SHIFT], icon: reloadfmt.png, label: "Reload as file format", mode: alpha, region: [40, 40] }

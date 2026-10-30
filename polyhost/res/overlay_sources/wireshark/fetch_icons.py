@@ -11,7 +11,7 @@ Three sources:
   `ms:` entries, for the actions the toolbar has no icon for.
 * `labelled()`: a glyph above a short word, 1-bit at 40x40, for the families
   that differ only by a word (Follow TCP/UDP/TLS, Copy description/value,
-  next/previous mark, time display formats).
+  next/previous mark, time display formats, conversation colours).
 
 The ESC mark is the Wireshark logo from Simple Icons (CC0 artwork; nominative
 use, see `../brand_marks.py`).
@@ -78,9 +78,6 @@ FLUENT = {
     "decodeas": "ms:transform",
     "bytes": "ms:data_array",
     "fileprops": "Info",
-    # Wireshark's view-colorize draws colour stripes, which are plain lines
-    # in 1 bit; a palette reads as "colour".
-    "colorize": "Color",
 }
 
 # Bases for the labelled icons; fetched like FLUENT, never bound directly.
@@ -98,6 +95,9 @@ BASES = {
     "_reload": "Arrow Clockwise",
     "_chevright": "Chevron Right",
     "_chevleft": "Chevron Left",
+    # Wireshark's view-colorize draws colour stripes, which are plain lines
+    # in 1 bit; a palette reads as "colour".
+    "_palette": "Color",
 }
 
 # output stem -> (base stem, word)
@@ -135,6 +135,17 @@ LABELLED = {
     "reloadfmt": ("_reload", "FMT"),
     "convnext": ("_chevright", "CONV"),
     "convprev": ("_chevleft", "CONV"),
+    # Colorize conversation 1..9: Wireshark's default background colours
+    # (epan/prefs.c, gui_colorized_bg), named by their nearest common colour.
+    "color1": ("_palette", "RED"),     # ffc0c0
+    "color2": ("_palette", "PINK"),    # ffc0ff
+    "color3": ("_palette", "MAUV"),    # e0c0e0
+    "color4": ("_palette", "BLUE"),    # c0c0ff
+    "color5": ("_palette", "TEAL"),    # c0e0e0
+    "color6": ("_palette", "CYAN"),    # c0ffff
+    "color7": ("_palette", "GRN"),     # c0ffc0
+    "color8": ("_palette", "YEL"),     # ffffc0
+    "color9": ("_palette", "OLIV"),    # e0e0c0
 }
 
 BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"

@@ -77,10 +77,26 @@ Left out:
 | `capstart.png`, `capstop.png`, `capoptions.png`, `reload.png`, `fileclose.png`, `goto.png`, `first.png`, `last.png`, `resizecols.png`, `resetlayout.png`, `zoomreset.png`, `resetcolor.png`, `comment.png` | Wireshark `resources/svg_icons/` at commit 58dbdf1edd71c808aa982ba30bdd43fc00f688a7: capture-start, capture-stop, capture-options, file-reload, file-close, nav-goto, nav-first, nav-last, view-resize-columns, layout-reset-1, zoom-reset, reset, capture-comment | GPL-2.0-or-later (Wireshark); several are Fluent icons, see that folder's README.adoc |
 | the `FLUENT` and `BASES` entries of `fetch_icons.py` | Microsoft Fluent UI System Icons, <https://github.com/microsoft/fluentui-system-icons> | MIT |
 | the `ms:` entries | Material Symbols, <https://github.com/google/material-design-icons> | Apache-2.0 |
-| the `LABELLED` entries (`copydesc.png`, `followtcp.png`, `fmt1.png` …) | drawn by `fetch_icons.labelled()`: a base glyph scaled to 24 px high (or to the cell width) above a word in Liberation Sans Bold 12 px, 1-bit at 40×40 | (this repo) |
+| the `LABELLED` entries (`copydesc.png`, `followtcp.png`, `fmt1.png`, `color1.png` …) | drawn by `fetch_icons.labelled()`: a base glyph scaled to 24 px high (or to the cell width) above a word in Liberation Sans Bold 12 px, 1-bit at 40×40 | (this repo) |
 | `wireshark.png` (ESC) | Simple Icons `wireshark` | CC0-1.0 artwork; nominative use, see `../brand_marks.py` |
 
 Wireshark's `view-colorize` icon draws colour stripes, which become plain lines
-in 1 bit, so Ctrl+1 … 9 use Fluent `Color` (a palette) instead. Open, Save,
+in 1 bit, so Ctrl+1 … 9 use Fluent `Color` (a palette) above the name of the
+colour each key applies. The colours are Wireshark's defaults
+(`epan/prefs.c`, `gui_colorized_bg`), named by the nearest common colour:
+
+| Key | Background | Word |
+|---|---|---|
+| Ctrl+1 | ffc0c0 | RED |
+| Ctrl+2 | ffc0ff | PINK |
+| Ctrl+3 | e0c0e0 | MAUV |
+| Ctrl+4 | c0c0ff | BLUE |
+| Ctrl+5 | c0e0e0 | TEAL |
+| Ctrl+6 | c0ffff | CYAN |
+| Ctrl+7 | c0ffc0 | GRN |
+| Ctrl+8 | ffffc0 | YEL |
+| Ctrl+9 | e0e0c0 | OLIV |
+
+A user who changed the colours in the preferences sees the default names. Open, Save,
 Save as, Print, Quit, Copy, Find, Zoom in, Zoom out and Help are drawn by the
 shared concept renderer.
