@@ -1799,6 +1799,15 @@ postman:
   os:
     macos:
       overlay: [postman_template_mac.mods.png, postman_template_mac.combo.mods.png, postman_template_mac.extra.mods.png]
+# Wireshark (sources: overlay_sources/wireshark/). Windows reports
+# Wireshark.exe, Linux the WM_CLASS `wireshark` (the Flatpak app id
+# org.wireshark.Wireshark), macOS the display name. None of the names was
+# checked on an install.
+wireshark,org.wireshark.wireshark:
+  overlay: [wireshark_template.mods.png, wireshark_template.combo.mods.png, wireshark_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [wireshark_template_mac.mods.png, wireshark_template_mac.combo.mods.png, wireshark_template_mac.extra.mods.png, wireshark_template_mac.gui.mods.png]
 # DBeaver (sources: overlay_sources/dbeaver/). Commit and Rollback differ on
 # Linux, so it has its own set. On Linux under X11 the process is the bundled
 # JVM (`java`); the `java` entry routes titles starting "DBeaver" to this set.
