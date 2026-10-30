@@ -134,3 +134,17 @@ bindings:
   - { key: "8", mods: [CTRL, SHIFT], icon: slot8.png, label: "Hotbar slot 8" }
   - { key: "9", mods: [CTRL, SHIFT], icon: slot9.png, label: "Hotbar slot 9" }
   - { key: KC_LEFT_CTRL, mods: [CTRL, SHIFT], icon: sprint.png, label: "Sprint", region: [34, 40] }
+
+# Keys redrawn from the item pictures of the user's own client jar, by the
+# minecraft_java reader in polyhost/services/game_assets (see SOURCES.md, Game
+# art). Every other key, and every key when no jar is found, keeps the shipped
+# icon. Each texture path is in the 1.21.10, 1.21.11, 26.1, 26.2 and 26.3 client
+# jars (file listings on mcasset.cloud, read 2026-10-30).
+game_assets:
+  reader: minecraft_java
+  icons:
+    inventory: {texture: item/bundle}           # E: open / close inventory
+    chat: {texture: item/writable_book}         # T: open chat (book and quill)
+    advancements: {texture: item/nether_star}   # L: advancements
+    screenshot: {texture: item/painting}        # F2: take screenshot
+    perspective: {texture: item/armor_stand}    # F5: toggle perspective

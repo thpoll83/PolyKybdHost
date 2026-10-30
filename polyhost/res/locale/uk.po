@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-29 07:42+0000\n"
+"POT-Creation-Date: 2026-10-30 19:46+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -4135,6 +4135,14 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
+
+#: polyhost/services/game_assets/minecraft_java/__init__.py:13
+msgid "Minecraft Folder"
+msgstr "Тека Minecraft"
+
+#: polyhost/services/game_assets/minecraft_java/__init__.py:14
+msgid "The Minecraft: Java Edition game folder, the one with the versions folder. The item pictures are read from the newest release installed there. Empty: the standard game folder of the Minecraft Launcher is searched."
+msgstr "Ігрова тека Minecraft: Java Edition, та, у якій є тека versions. Зображення предметів читаються з найновішого встановленого там релізу. Порожньо: пошук у стандартній ігровій теці Minecraft Launcher."
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert Folder"
