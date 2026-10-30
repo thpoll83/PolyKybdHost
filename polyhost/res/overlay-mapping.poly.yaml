@@ -60,6 +60,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     excalidraw.com:
       url: '^https?://([^/?#]+\.)?excalidraw\.com/'
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    # Figma (sources: overlay_sources/figma/figma_web.yaml): the design editor
+    # and prototypes only. FigJam (/board/) and Figma Slides (/slides/) have
+    # other tool keys and keep the browser set.
+    figma.com:
+      url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
+      overlay: [figma_web_template.mods.png, figma_web_template.combo.mods.png]
     linear.app:
       url: '^https?://([^/?#]+\.)?linear\.app/'
       overlay: [linear_template.mods.png, linear_template.combo.mods.png]
@@ -198,6 +204,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
     draw.io:
       overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    # A Figma file tab is titled "<file> – Figma" (a FigJam board ends in
+    # "– FigJam"); the gate keeps pages that only name Figma off the set.
+    Figma:
+      title: ' – Figma( [-—] [^–—-]+)?$'
+      overlay: [figma_web_template.mods.png, figma_web_template.combo.mods.png]
     Excalidraw:
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
     Online LaTeX Editor:
@@ -267,6 +278,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         excalidraw.com:
           url: '^https?://([^/?#]+\.)?excalidraw\.com/'
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        figma.com:
+          url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
+          overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
         linear.app:
           url: '^https?://([^/?#]+\.)?linear\.app/'
           overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
@@ -353,6 +367,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
         draw.io:
           overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        Figma:
+          title: ' – Figma( [-—] [^–—-]+)?$'
+          overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
         Excalidraw:
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
         Online LaTeX Editor:
