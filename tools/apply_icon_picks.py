@@ -172,25 +172,25 @@ def main(argv=None) -> None:
         for (stem, variant), (kid, kind, entry) in chosen.items():
             if kind == "raster":
                 raster[stem] = entry
-                icons.pop(stem, None)
                 for other, _i, _c in plans:     # every overlay drawing this file: the file has one size
                     set_binding_region(other, stem, entry["region"])
-                continue
+            # A re-rasterized icon, like "shipped", draws the file: only this
+            # pick's recipe goes, the other variants keep theirs.
             if variant:
                 cur = icons.get(stem)
                 cur = dict(cur) if isinstance(cur, dict) and not {"src", "word", "plus", "mark"} & set(cur) else {}
-                if kind == "shipped":
-                    cur.pop(variant, None)
-                else:
+                if kind == "recipe":
                     cur[variant] = entry
+                else:
+                    cur.pop(variant, None)
                 if cur:
                     icons[stem] = cur
                 else:
                     icons.pop(stem, None)
-            elif kind == "shipped":
-                icons.pop(stem, None)
-            else:
+            elif kind == "recipe":
                 icons[stem] = entry
+            else:
+                icons.pop(stem, None)
             # A game recipe or "shipped" returns the icon file to its default,
             # unless another overlay draws the same file.
             if not variant and stem not in shared and stem not in raster_picks:

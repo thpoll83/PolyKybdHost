@@ -199,6 +199,30 @@ class ApplyTest(unittest.TestCase):
         self.assertIn("x", self.raster())
         self.assertEqual(self.icons()["x"]["word"], "Go")
 
+    def use_variants(self):
+        """Key 1 of overlay a as two variants, each with its own recipe for g."""
+        spec = yaml.safe_load((self.d / "picker.yaml").read_text(encoding="utf-8"))
+        spec["overlays"][0]["keys"][2:] = [
+            {"key": "1", "variant": v, "label": f"Group 1 ({v.title()})", "candidates": [{"word": "Go"}]}
+            for v in ("atreides", "harkonnen")]
+        (self.d / "picker.yaml").write_text(yaml.safe_dump(spec), encoding="utf-8")
+        text = (self.d / "a.yaml").read_text(encoding="utf-8")
+        (self.d / "a.yaml").write_text(text.replace("g: {plus: x}", "g:\n      atreides: {plus: x}\n"
+                                                                    "      harkonnen: {plus: y}"), encoding="utf-8")
+
+    def test_a_re_rasterized_variant_keeps_the_other_variants_recipes(self):
+        self.use_variants()
+        self.run_picks({"a": {"1 (Atreides)": raster_pick()}})
+        self.assertEqual(self.icons()["g"], {"harkonnen": {"plus": "y"}})
+        self.assertIn("g", self.raster())
+
+    def test_two_variants_re_rasterizing_one_icon_must_agree(self):
+        self.use_variants()
+        before = (self.d / "a.yaml").read_text(encoding="utf-8")
+        with self.assertRaises(SystemExit):
+            self.run_picks({"a": {"1 (Atreides)": raster_pick(1.0), "1 (Harkonnen)": raster_pick(1.5)}})
+        self.assertEqual((self.d / "a.yaml").read_text(encoding="utf-8"), before)
+
     def test_the_last_re_rasterized_icon_removed_empties_the_file(self):
         self.run_picks({"a": {"B": raster_pick()}})
         self.assertIn("y", self.raster())
