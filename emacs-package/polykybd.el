@@ -57,6 +57,9 @@ Leave empty otherwise."
 (defconst polykybd--timeout 2.0
   "Seconds after which an unanswered request is dropped.")
 
+(defconst polykybd--exit-wait 0.3
+  "Seconds the report at exit may take in all: connect, send and reply.")
+
 (defvar polykybd--last-input (float-time)
   "When this Emacs last ran a command (a key or mouse input).")
 
@@ -67,6 +70,8 @@ Leave empty otherwise."
 (defvar polykybd--timer nil "The keep-alive timer.")
 (defvar polykybd--proc nil "The request in flight, or nil.")
 (defvar polykybd--queued nil "A report waiting for `polykybd--proc' to finish.")
+(defvar polykybd--exiting nil
+  "Non-nil once the report at exit is under way: nothing is sent after it.")
 
 ;;;; The report
 
@@ -156,9 +161,13 @@ call finds PROC current, so the queued report is sent once."
 
 (defun polykybd--send (body)
   "POST BODY to the host without waiting for anything.
-While a request is in flight only the newest BODY is kept and sent after it."
-  (if (and polykybd--proc (process-live-p polykybd--proc))
-      (setq polykybd--queued body)
+While a request is in flight only the newest BODY is kept and sent after it.
+Nothing is sent once the report at exit is under way."
+  (cond
+   (polykybd--exiting nil)
+   ((and polykybd--proc (process-live-p polykybd--proc))
+    (setq polykybd--queued body))
+   (t
     (setq polykybd--proc nil)
     (condition-case nil
         (let ((proc (make-network-process
@@ -168,22 +177,43 @@ While a request is in flight only the newest BODY is kept and sent after it."
           (process-put proc 'polykybd-request (polykybd--request body))
           (setq polykybd--proc proc)
           (run-with-timer polykybd--timeout nil #'polykybd--finish proc))
-      (error nil))))
+      (error nil)))))
 
 (defun polykybd--send-now (body)
-  "POST BODY and wait for the reply, at most 0.3 s.  For `kill-emacs-hook'.
-A connect to a loopback port with nothing listening fails at once."
-  (condition-case nil
-      (let ((proc (make-network-process
-                   :name "polykybd-exit" :host "127.0.0.1" :service polykybd-port
-                   :noquery t :coding 'binary :buffer nil :filter #'ignore
-                   :sentinel #'ignore)))
-        (unwind-protect
-            (progn
-              (process-send-string proc (polykybd--request body))
-              (accept-process-output proc 0.3))
-          (delete-process proc)))
-    (error nil)))
+  "POST BODY as the last report, in at most `polykybd--exit-wait' seconds.
+For `kill-emacs-hook'.  The keep-alive stops and a queued report is
+dropped, so no report is sent after this one.  A request still in flight
+gets half the time to finish first, so the host does not receive it after
+this one.  The connect does not block: a listener that does not accept
+costs the deadline, not the system's connect timeout."
+  (let* ((start (float-time))
+         (deadline (+ start polykybd--exit-wait))
+         (request (polykybd--request body))
+         (done nil))
+    (setq polykybd--exiting t
+          polykybd--queued nil)
+    (when polykybd--timer
+      (cancel-timer polykybd--timer)
+      (setq polykybd--timer nil))
+    (while (and polykybd--proc (process-live-p polykybd--proc)
+                (< (float-time) (+ start (/ polykybd--exit-wait 2))))
+      (accept-process-output polykybd--proc 0.02))
+    (condition-case nil
+        (let ((proc (make-network-process
+                     :name "polykybd-exit" :host "127.0.0.1" :service polykybd-port
+                     :nowait t :noquery t :coding 'binary :buffer nil
+                     :filter (lambda (_proc _output) (setq done t))
+                     :sentinel (lambda (proc event)
+                                 (if (string-prefix-p "open" event)
+                                     (condition-case nil
+                                         (process-send-string proc request)
+                                       (error (setq done t)))
+                                   (setq done t))))))
+          (unwind-protect
+              (while (and (not done) (< (float-time) deadline))
+                (accept-process-output proc 0.02))
+            (delete-process proc)))
+      (error nil))))
 
 ;;;; Events
 
@@ -259,7 +289,8 @@ Sends only the major mode (and the evil state) of the selected window, to
   (if polykybd-mode
       (progn
         (setq polykybd--mode nil polykybd--state nil polykybd--url nil
-              polykybd--focused nil polykybd--last-input (float-time))
+              polykybd--focused nil polykybd--last-input (float-time)
+              polykybd--exiting nil)
         (add-hook 'post-command-hook #'polykybd--post-command)
         (add-hook 'window-selection-change-functions #'polykybd--window-change)
         (add-hook 'window-buffer-change-functions #'polykybd--window-change)

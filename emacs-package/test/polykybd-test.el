@@ -225,6 +225,39 @@
                               (should-not (and polykybd--proc (process-live-p polykybd--proc)))
                               (polykybd--send-now (polykybd--payload nil nil))))))
 
+(ert-deftest polykybd-exit-report-is-the-last-one ()
+  ;; A report in flight and one queued behind it when Emacs exits: the one in
+  ;; flight arrives first, the queued one never, the withdrawal last.
+  (polykybd-test--with-listener
+   (polykybd-test--focused t
+                           (with-temp-buffer
+                             (switch-to-buffer (current-buffer))
+                             (polykybd-mode 1)
+                             (polykybd-test--wait 1)
+                             (let ((n (length polykybd-test--bodies)))
+                               (polykybd--send (polykybd--payload "emacs://in-flight" t))
+                               (polykybd--send (polykybd--payload "emacs://queued" t))
+                               (polykybd--exit)
+                               (should-not polykybd--timer)
+                               (polykybd-test--wait-quiet)
+                               (let ((urls (mapcar (lambda (i) (cdr (assoc "url" (polykybd-test--json i))))
+                                                   (number-sequence n (1- (length polykybd-test--bodies))))))
+                                 (should (equal urls '("emacs://in-flight" nil)))))))))
+
+(ert-deftest polykybd-exit-report-keeps-its-deadline ()
+  ;; A listener that accepts and never answers costs 0.3 s, not more.
+  (let* ((server (make-network-process
+                  :name "polykybd-mute" :server t :host "127.0.0.1" :service t
+                  :coding 'binary :noquery t :filter #'ignore))
+         (polykybd-port (process-contact server :service))
+         (polykybd--proc nil) (polykybd--queued nil) (polykybd--exiting nil)
+         (t0 (float-time)))
+    (unwind-protect
+        (progn
+          (polykybd--send-now (polykybd--payload nil nil))
+          (should (< (- (float-time) t0) (+ polykybd--exit-wait 0.15))))
+      (delete-process server))))
+
 (ert-deftest polykybd-batch-frame-is-never-focused ()
   ;; --batch and a daemon have only the frame on the initial terminal.
   (should-not (polykybd--focused-p)))
