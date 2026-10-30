@@ -2022,6 +2022,15 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                       title_known=True, os_name=os_name)
                     self.assertIn(self.MC_JAVA, self._overlays(got))
 
+    def test_MINECRAFT_with_no_title_off_WINDOWS_is_JAVA(self):
+        """Bedrock runs only on Windows. An unreadable (empty) title on macOS or
+        Linux must not fall back to the Bedrock set."""
+        for os_name in ("LINUX", "MACOS"):
+            with self.subTest(os=os_name):
+                overlays = self._overlays(self._match("minecraft", title="", title_known=True,
+                                                      os_name=os_name))
+                self.assertEqual(overlays, [self.MC_JAVA, "minecraft_java_template.combo.mods.png"])
+
     def test_MINECRAFT_BEDROCK_gets_its_set(self):
         got = self._match("minecraft", title="Minecraft", title_known=True, os_name="WINDOWS")
         self.assertIn(self.MC_BEDROCK, self._overlays(got))
@@ -2032,7 +2041,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
     def test_the_MINECRAFT_LAUNCHER_gets_no_game_keys(self):
         """The launcher is titled "Minecraft Launcher"; neither edition's gate
         may take it, or its menus would show movement keys."""
-        for app, os_name in (("minecraft", "WINDOWS"), ("javaw", "WINDOWS"),
+        for app, os_name in (("minecraft", "WINDOWS"), ("minecraft", "LINUX"),
+                             ("minecraft", "MACOS"), ("javaw", "WINDOWS"),
                              ("java", "WINDOWS"), ("java", "LINUX"), ("java", "MACOS"),
                              ("applicationframehost", "WINDOWS")):
             with self.subTest(app=app, os=os_name):

@@ -116,3 +116,22 @@ bindings:
   - { key: F8, icon: paperdoll.png, label: "Paper doll on / off", region: [34, 40] }
   - { key: F10, icon: controllerhints.png, label: "Controller hints on / off" }
   - { key: F11, icon: fullscreen.png, label: "Toggle fullscreen" }
+
+  # Sprint and sneak held together select the Ctrl+Shift layer: the movement,
+  # hotbar, sprint and sneak keys repeat there so they stay visible.
+  - { key: W, mods: [CTRL, SHIFT], icon: forward.png, label: "Walk forward" }
+  - { key: A, mods: [CTRL, SHIFT], icon: left.png, label: "Strafe left" }
+  - { key: S, mods: [CTRL, SHIFT], icon: back.png, label: "Walk backward" }
+  - { key: D, mods: [CTRL, SHIFT], icon: right.png, label: "Strafe right" }
+  - { key: SPACE, mods: [CTRL, SHIFT], icon: jump.png, label: "Jump / fly up" }
+  - { key: KC_LEFT_SHIFT, mods: [CTRL, SHIFT], icon: sneak.png, label: "Sneak / fly down", region: [34, 40] }
+  - { key: "1", mods: [CTRL, SHIFT], icon: slot1.png, label: "Hotbar slot 1" }
+  - { key: "2", mods: [CTRL, SHIFT], icon: slot2.png, label: "Hotbar slot 2" }
+  - { key: "3", mods: [CTRL, SHIFT], icon: slot3.png, label: "Hotbar slot 3" }
+  - { key: "4", mods: [CTRL, SHIFT], icon: slot4.png, label: "Hotbar slot 4" }
+  - { key: "5", mods: [CTRL, SHIFT], icon: slot5.png, label: "Hotbar slot 5" }
+  - { key: "6", mods: [CTRL, SHIFT], icon: slot6.png, label: "Hotbar slot 6" }
+  - { key: "7", mods: [CTRL, SHIFT], icon: slot7.png, label: "Hotbar slot 7" }
+  - { key: "8", mods: [CTRL, SHIFT], icon: slot8.png, label: "Hotbar slot 8" }
+  - { key: "9", mods: [CTRL, SHIFT], icon: slot9.png, label: "Hotbar slot 9" }
+  - { key: KC_LEFT_CTRL, mods: [CTRL, SHIFT], icon: sprint.png, label: "Sprint", region: [34, 40] }

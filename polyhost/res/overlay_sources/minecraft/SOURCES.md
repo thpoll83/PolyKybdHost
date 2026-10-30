@@ -32,6 +32,14 @@ player moves. So the sprint icon is drawn on Left Ctrl itself, with and without
 Ctrl held, and the sneak icon on Left Shift, with and without Shift held. The
 movement keys, Space and the hotbar digits are drawn on the Ctrl and Shift
 layers as well, because they do the same thing while sprint or sneak is held.
+Holding both selects the Ctrl+Shift layer, so the movement keys, Space, the
+hotbar digits and both sprint and sneak are repeated there too (in the
+`.combo` file). The copies are the same images, so they take no extra slots.
+
+Bedrock runs only on Windows. On macOS and Linux the app name `minecraft` is
+Java Edition, so the mapping gives those platforms the Java set even when the
+window title cannot be read; the launcher window ("Minecraft Launcher") is
+kept off it by its title.
 
 ### Java Edition
 

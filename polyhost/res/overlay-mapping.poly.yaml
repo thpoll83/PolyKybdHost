@@ -1037,10 +1037,10 @@ java:
   titles-startswith: &minecraft_java_titles
     Minecraft:
       title: '^Minecraft\*? \d'
-      overlay: minecraft_java_template.mods.png
+      overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
     "Minecraft*":
       title: '^Minecraft\*? \d'
-      overlay: minecraft_java_template.mods.png
+      overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
@@ -1059,10 +1059,10 @@ java:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
         Minecraft:
           title: '^Minecraft\*? \d'
-          overlay: minecraft_java_template.mods.png
+          overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
         "Minecraft*":
           title: '^Minecraft\*? \d'
-          overlay: minecraft_java_template.mods.png
+          overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
@@ -1077,7 +1077,7 @@ java:
 # `javaw.exe` of its bundled runtime. Not checked on an install. The title gate
 # keeps every other `javaw` program unmatched.
 javaw:
-  overlay: minecraft_java_template.mods.png
+  overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
   title: '^Minecraft\*? \d'
 # Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
 # Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
@@ -1095,9 +1095,19 @@ minecraft:
   title: '^Minecraft( Preview)?$'
   overlay: [minecraft_bedrock_template.mods.png, minecraft_bedrock_template.combo.mods.png]
   titles-startswith: *minecraft_java_titles
+  # Bedrock runs only on Windows. On macOS and Linux `minecraft` is Java, and a
+  # title that cannot be read (empty) must not fall back to the Bedrock set.
+  # The gate keeps the launcher window ("Minecraft Launcher") off the Java set.
+  os:
+    macos:
+      title: '^(?!Minecraft Launcher)'
+      overlay: &minecraft_java [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    linux:
+      title: '^(?!Minecraft Launcher)'
+      overlay: *minecraft_java
 "minecraft*":
   title: '^Minecraft\*? \d'
-  overlay: minecraft_java_template.mods.png
+  overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
 # Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
 # WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
