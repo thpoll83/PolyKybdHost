@@ -86,12 +86,36 @@ let state = { overlay: DATA.overlays[0].id, key: 0, view: "key", picks: {} };
 try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); if (s && s.picks) state.picks = s.picks; } catch (e) {}
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ picks: state.picks })); } catch (e) {} };
 const keyId = k => [...k.mods, k.key].join("+") + (k.label.includes("(") ? " " + k.label.slice(k.label.indexOf("(")) : "");
-function entry(ov, k) {               // {pick: index (-1 = shipped), params: [per candidate]}
-  const id = ov + "/" + keyId(k);
-  if (!state.picks[id]) state.picks[id] = { pick: null, params: {} };
-  const e = state.picks[id];
-  k.candidates.forEach((c, i) => { if (!e.params[i]) e.params[i] = JSON.parse(JSON.stringify(c.params)); });
-  return e;
+// Picks and settings are stored by candidate LABEL ({v: 3, pick: label | "shipped" | null,
+// params: {label: settings}}), so a changed candidate list cannot point a stored pick
+// at the wrong candidate. entry() gives the views an index-based handle on it:
+// e.pick is the candidate's index (-1 shipped, null none), e.params[i] its settings.
+const fits = (c, p) => !!p && (c.kind === "word" ? "text" in p : c.kind === "vector" ? "relief" in p : "engine" in p);
+function stored(k, id) {
+  let st = state.picks[id];
+  if (st && st.v !== 3) {               // an earlier page stored by index: keep what still fits
+    const params = {};
+    for (const [i, p] of Object.entries(st.params || {})) { const c = k.candidates[i]; if (c && fits(c, p)) params[c.label] = p; }
+    const c = st.pick === null || st.pick === undefined || st.pick < 0 ? null : k.candidates[st.pick];
+    const pick = st.pick === -1 ? "shipped" : c && fits(c, (st.params || {})[st.pick]) ? c.label : null;
+    st = state.picks[id] = { v: 3, pick, params };
+  }
+  if (!st) st = state.picks[id] = { v: 3, pick: null, params: {} };
+  return st;
+}
+function entry(ov, k) {
+  const st = stored(k, ov + "/" + keyId(k));
+  k.candidates.forEach(c => { if (!fits(c, st.params[c.label])) st.params[c.label] = JSON.parse(JSON.stringify(c.params)); });
+  if (st.pick !== null && st.pick !== "shipped" && !k.candidates.some(c => c.label === st.pick)) st.pick = null;
+  const params = new Proxy([], {
+    get: (_, i) => { const c = k.candidates[i]; return c ? st.params[c.label] : undefined; },
+    set: (_, i, v) => { const c = k.candidates[i]; if (c) st.params[c.label] = v; return true; },
+  });
+  return {
+    params,
+    get pick() { return st.pick === null ? null : st.pick === "shipped" ? -1 : k.candidates.findIndex(c => c.label === st.pick); },
+    set pick(i) { st.pick = i === null ? null : i < 0 ? "shipped" : k.candidates[i].label; },
+  };
 }
 
 // ---------------------------------------------------------------- image helpers
