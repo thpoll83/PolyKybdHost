@@ -15,8 +15,10 @@ The archives are the user's own and are only ever read.
 from __future__ import annotations
 
 import bz2
+import os
 import struct
 import zlib
+from pathlib import Path
 
 from polyhost.services.game_assets.starcraft.explode import explode
 
@@ -134,45 +136,77 @@ def decompress_sector(data: bytes, size: int, flags: int) -> bytes:
     return out
 
 
-class Archive:
-    """An MPQ archive in memory: `get(name)` returns a file's bytes or None."""
+# Bytes read at a time while looking for the header.
+SCAN_CHUNK = 1024 * 1024
 
-    def __init__(self, data: bytes, where: str = "MPQ"):
-        self.data, self.where = data, where
-        self.base = self._find_header(data)
+
+class Archive:
+    """An MPQ archive: `get(name)` returns a file's bytes or None.
+
+    `data` is the archive's bytes (the tests) or, from `open()`, its path. A
+    path is read in parts: the header, the two tables, and each file asked
+    for, so a 100 MB archive costs only its tables in memory. The file is
+    opened for each read; no handle stays open."""
+
+    def __init__(self, data, where: str = "MPQ"):
+        if isinstance(data, (bytes, bytearray)):
+            self.path, self.data, self.size = None, bytes(data), len(data)
+        else:
+            self.path, self.data = str(data), None
+            self.size = os.path.getsize(self.path)
+        self.where = where
+        self.base = self._find_header()
+        head = self._read(self.base, 32)
+        if len(head) < 32:
+            raise ValueError(f"{where}: the header runs past the end of the file")
         (_magic, _hsize, _asize, _version, shift, hash_pos, block_pos,
-         hash_count, block_count) = struct.unpack_from("<4sIIHHIIII", data, self.base)
+         hash_count, block_count) = struct.unpack_from("<4sIIHHIIII", head)
         self.sector = 512 << shift
         if hash_count == 0 or hash_count & (hash_count - 1):
             raise ValueError(f"{where}: hash table size {hash_count} is not a power of two")
         for pos, count in ((hash_pos, hash_count), (block_pos, block_count)):
-            if self.base + pos + 16 * count > len(data):
+            if self.base + pos + 16 * count > self.size:
                 raise ValueError(f"{where}: a table runs past the end of the file")
-        ht = decrypt(data[self.base + hash_pos:self.base + hash_pos + 16 * hash_count],
+        ht = decrypt(self._read(self.base + hash_pos, 16 * hash_count),
                      hash_string("(hash table)", HASH_KEY))
-        bt = decrypt(data[self.base + block_pos:self.base + block_pos + 16 * block_count],
+        bt = decrypt(self._read(self.base + block_pos, 16 * block_count),
                      hash_string("(block table)", HASH_KEY))
         self.hashes = [struct.unpack_from("<IIHHI", ht, 16 * i) for i in range(hash_count)]
         self.blocks = [struct.unpack_from("<IIII", bt, 16 * i) for i in range(block_count)]
 
-    @staticmethod
-    def _find_header(data: bytes) -> int:
+    def _read(self, pos: int, n: int) -> bytes:
+        """Up to `n` bytes at `pos`; fewer at the end of the archive."""
+        if self.data is not None:
+            return self.data[pos:pos + n]
+        try:
+            with open(self.path, "rb") as f:
+                f.seek(pos)
+                return f.read(n)
+        except OSError as e:
+            # A file that went away mid-build costs the key being drawn only.
+            raise ValueError(f"{self.where}: {e}") from e
+
+    def _find_header(self) -> int:
         """The archive's offset: at 0 or a multiple of 512 (an archive appended
         to a program), or where a user-data header points."""
-        for pos in range(0, len(data) - 32, 512):
-            magic = data[pos:pos + 4]
-            if magic == MAGIC:
-                return pos
-            if magic == USER_DATA:
-                (offset,) = struct.unpack_from("<I", data, pos + 8)
-                if data[pos + offset:pos + offset + 4] == MAGIC:
-                    return pos + offset
+        for start in range(0, max(self.size - 32, 0), SCAN_CHUNK):
+            chunk = self._read(start, SCAN_CHUNK)
+            for rel in range(0, len(chunk), 512):
+                pos = start + rel
+                if pos >= self.size - 32:
+                    break
+                magic = chunk[rel:rel + 4]
+                if magic == MAGIC:
+                    return pos
+                if magic == USER_DATA and len(chunk) >= rel + 12:
+                    (offset,) = struct.unpack_from("<I", chunk, rel + 8)
+                    if self._read(pos + offset, 4) == MAGIC:
+                        return pos + offset
         raise ValueError("not an MPQ archive")
 
     @classmethod
     def open(cls, path) -> Archive:
-        with open(path, "rb") as f:
-            return cls(f.read(), str(path))
+        return cls(Path(path), str(path))
 
     def _block(self, name: str):
         n = len(self.hashes)
@@ -202,7 +236,7 @@ class Archive:
         if size > MAX_FILE or csize > MAX_FILE:
             raise ValueError(f"{name} in {self.where} claims {size} bytes")
         start = self.base + offset
-        raw = self.data[start:start + csize]
+        raw = self._read(start, csize)
         if len(raw) != csize:
             raise ValueError(f"{name} runs past the end of {self.where}")
         key = file_key(name, offset, size, flags) if flags & ENCRYPTED else None

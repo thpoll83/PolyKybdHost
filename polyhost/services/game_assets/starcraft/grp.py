@@ -27,6 +27,10 @@ import numpy as np
 # header can claim; a whole GRP may claim 65535 frames, so frames are decoded
 # only when asked for.
 MAX_FRAMES = 4096
+# A frame's x and y offset and its width and height are u8, so no frame reaches
+# past 255 + 255 px. A header box larger than that is damaged, and would
+# otherwise size the array (65535 x 65535 is 4 GiB).
+MAX_BOX = 255 + 255
 
 
 def frame_count(data: bytes) -> int:
@@ -40,6 +44,8 @@ def frame(data: bytes, index: int) -> np.ndarray:
     count, w, h = struct.unpack_from("<HHH", data, 0)
     if not 0 <= index < min(count, MAX_FRAMES):
         raise IndexError(f"frame {index} of {count}")
+    if w > MAX_BOX or h > MAX_BOX:
+        raise ValueError(f"the frame box is {w}x{h}, larger than a GRP frame can be")
     x, y, fw, fh, off = struct.unpack_from("<BBBBI", data, 6 + 8 * index)
     out = np.zeros((max(h, y + fh), max(w, x + fw)), np.uint8)
     for row in range(fh):

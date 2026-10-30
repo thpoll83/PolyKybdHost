@@ -362,6 +362,25 @@ class MpqTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             a.get("x")
 
+    def test_an_archive_on_disk_is_read_in_parts(self):
+        """open() keeps the path, not the bytes; a header past the first
+        scan chunk and a file deleted after opening are handled."""
+        files = {f"unit\\{m}.grp": (self.DATA, m, {"encrypt", "fix_key"})
+                 for m in ("stored", "zlib", "pkware", "single")}
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "StarDat.mpq"
+            path.write_bytes(write_mpq(files, prefix=bytes(3 * 512), hash_size=16))
+            with mock.patch.object(mpq, "SCAN_CHUNK", 1024):
+                a = mpq.Archive.open(path)
+            self.assertIsNone(a.data)
+            self.assertEqual(a.base, 3 * 512)
+            for name in files:
+                with self.subTest(name):
+                    self.assertEqual(a.get(name), self.DATA)
+            path.unlink()
+            with self.assertRaises(ValueError):           # what build.render skips per key
+                a.get("unit\\zlib.grp")
+
     def test_sound_compressions_are_refused(self):
         raw = bytes([mpq.HUFFMAN]) + b"\0" * 8
         a = mpq.Archive(write_mpq({"x.wav": (raw, "raw", set(), 64)}, hash_size=4))
@@ -392,6 +411,14 @@ class GrpTest(unittest.TestCase):
             grp.frame(bytes(data), 0)
         with self.assertRaises(ValueError):
             grp.frame(bytes(data[:first + 1]), 0)
+
+    def test_a_box_larger_than_any_frame_is_refused(self):
+        data = bytearray(write_grp([blob_frame(6, 6, 0)]))
+        struct.pack_into("<HH", data, 2, 0xFFFF, 0xFFFF)     # 65535 x 65535: 4 GiB
+        with self.assertRaisesRegex(ValueError, "larger than a GRP frame"):
+            grp.frame(bytes(data), 0)
+        struct.pack_into("<HH", data, 2, grp.MAX_BOX, grp.MAX_BOX)
+        self.assertEqual(grp.frame(bytes(data), 0).shape, (grp.MAX_BOX, grp.MAX_BOX))
 
     def test_the_wpe_palette(self):
         pal = grp.wpe_palette(wpe())
