@@ -1021,14 +1021,27 @@ code:
 # Alt+Shift+Left are GNOME chords that do nothing on Windows.
 # The matcher tries `linux_gnome` / `linux_kde` before `linux` on those desktops.
 # Launchers running under a bare `java` process (old Linux installs):
+# Ghidra runs in a plain JVM too (`java` on X11 and, unverified, on macOS when
+# the Dock name is not reported). Its CodeBrowser window is titled
+# "CodeBrowser: <project>:/<program>"; the `titles-startswith` sub-maps below
+# route that title to the Ghidra set (sources: overlay_sources/ghidra/) before
+# the JetBrains title gate is tried. A second CodeBrowser instance is titled
+# "CodeBrowser(2): ..." and keeps the default here.
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+  titles-startswith:
+    "CodeBrowser:":
+      overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
                 jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        "CodeBrowser:":
+          overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
+                                ghidra_template_mac.extra.mods.png]
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1039,14 +1052,41 @@ java:
       titles-startswith:
         DBeaver:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
+        "CodeBrowser:":
+          overlay: *ghidra_win
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        "CodeBrowser:":
+          overlay: *ghidra_win
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        "CodeBrowser:":
+          overlay: *ghidra_win
+# Ghidra on Windows: ghidraRun.bat starts it with javaw.exe (support/launch.bat,
+# "bg" mode); the "fg" and "debug" modes use java.exe, which the `java` entry
+# above routes. Only the CodeBrowser window gets the set; the project window
+# ("Ghidra: <project>") does not.
+javaw:
+  overlay: *ghidra_win
+  title: '^CodeBrowser(\(\d+\))?: '
+# Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
+# which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
+# (unverified on an install). macOS: launch.sh passes -Xdock:name=Ghidra, so
+# the display name is probably "Ghidra" (unverified; it may be "java", which
+# the `java` entry routes).
+ghidra-ghidra,ghidra:
+  overlay: *ghidra_win
+  title: '^CodeBrowser(\(\d+\))?: '
+  os:
+    macos:
+      overlay: *ghidra_mac
+      title: '^CodeBrowser(\(\d+\))?: '
 # Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
 # WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
