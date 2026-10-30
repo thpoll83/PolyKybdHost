@@ -92,13 +92,23 @@ def bindings_for(rows: list[dict], app: str) -> list[dict]:
     return out
 
 
-def write(name: str, keys: dict) -> Path:
+def load_keys() -> dict:
+    return yaml.safe_load((HERE / "keys.yaml").read_text(encoding="utf-8"))
+
+
+def render(name: str, keys: dict) -> str:
+    """The text of bindings_<name>.yaml (tests/res/slicer_bindings_test.py
+    compares it with the committed file)."""
     section, app, output, mark, title = SETS[name]
     spec = dict(SPEC, app=name, match=[], output=output, program_icon=mark,
                 bindings=bindings_for(keys[section], app))
-    path = HERE / f"bindings_{name}.yaml"
     body = yaml.safe_dump(spec, sort_keys=False, allow_unicode=True, width=200)
-    path.write_text(HEADER.format(title=title) + body, encoding="utf-8")
+    return HEADER.format(title=title) + body
+
+
+def write(name: str, keys: dict) -> Path:
+    path = HERE / f"bindings_{name}.yaml"
+    path.write_text(render(name, keys), encoding="utf-8")
     return path
 
 
@@ -108,7 +118,7 @@ def main() -> int:
                     help="also run scripts/generate_app_overlays.py on each file")
     ap.add_argument("--preview", type=Path, help="preview directory (with --render)")
     args = ap.parse_args()
-    keys = yaml.safe_load((HERE / "keys.yaml").read_text(encoding="utf-8"))
+    keys = load_keys()
     for name in SETS:
         path = write(name, keys)
         print(f"wrote {path.relative_to(REPO_ROOT)}")

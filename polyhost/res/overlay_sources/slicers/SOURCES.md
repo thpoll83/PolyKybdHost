@@ -301,4 +301,8 @@ inherit it, so none of their art is used.
 | `bambustudio` (ESC) | Simple Icons `bambulab` | CC0-1.0 (nominative use) |
 | `prusaslicer`, `orcaslicer`, `prusa_gcodeviewer` (ESC) | drawn letter tiles P / O / G with two print-layer lines (Simple Icons has no mark for these apps) | this repo |
 
-Words on composites are Liberation Sans Bold 13 px.
+Words on composites are Liberation Sans Bold 13 px (fonts-liberation 1:2.1.5,
+OFL). `fetch_icons.py` reads it from the Debian/Ubuntu path; on another system
+set `POLYKYBD_LIBERATION_SANS_BOLD` to the `.ttf`. Only a missing icon is
+redrawn, so a rebuild with the committed `icons/` needs no font. A different
+font version can change pixels.

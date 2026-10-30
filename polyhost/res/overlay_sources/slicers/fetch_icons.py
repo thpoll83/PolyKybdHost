@@ -25,6 +25,7 @@ re-run. Fluent and Material downloads are deterministic and re-fetch freely.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -145,7 +146,19 @@ COMPOSITES = {
     **{f"fav_{n}": ("_star", str(n)) for n in range(1, 11)},
 }
 
-BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+# Liberation Sans Bold (OFL; Debian/Ubuntu package fonts-liberation, the
+# committed words were drawn with 1:2.1.5). Elsewhere, point
+# POLYKYBD_LIBERATION_SANS_BOLD at the .ttf. Only a missing icon is redrawn.
+BOLD = os.environ.get("POLYKYBD_LIBERATION_SANS_BOLD",
+                      "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf")
+
+
+def _bold(px: int) -> ImageFont.FreeTypeFont:
+    try:
+        return ImageFont.truetype(BOLD, px)
+    except OSError as e:
+        raise SystemExit(f"Liberation Sans Bold not found at {BOLD}: install fonts-liberation "
+                         "or set POLYKYBD_LIBERATION_SANS_BOLD to its .ttf") from e
 SIZE = 40          # composites are drawn 1:1 at the bound region
 GLYPH_H = 24       # height of the glyph above the word
 TEXT_PX = 13       # one static size for every word, so a family reads as a set
@@ -173,7 +186,7 @@ def composites(out: Path, parts: Path) -> None:
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
             continue
-        font = font or ImageFont.truetype(BOLD, TEXT_PX)
+        font = font or _bold(TEXT_PX)
         g = _mask(parts / f"{glyph}.png")
         g = g.resize((round(g.width * GLYPH_H / g.height), GLYPH_H), Image.LANCZOS)
         mask = Image.new("L", (SIZE, SIZE), 0)
@@ -217,7 +230,7 @@ def spool(out: Path) -> None:
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
             continue
-        font = font or ImageFont.truetype(BOLD, TEXT_PX)
+        font = font or _bold(TEXT_PX)
         mask = Image.new("L", (SIZE, SIZE), 0)
         _spool(mask, 9, 0, 22, GLYPH_H)
         d = ImageDraw.Draw(mask)
@@ -254,7 +267,7 @@ def letter_tile(dest: Path, letter: str) -> None:
     mask = Image.new("L", (w, h), 0)
     d = ImageDraw.Draw(mask)
     d.rounded_rectangle([0, 0, w - 1, h - 1], radius=6, fill=255)
-    font = ImageFont.truetype(BOLD, 21)
+    font = _bold(21)
     box = d.textbbox((0, 0), letter, font=font)
     d.text(((w - (box[2] - box[0])) / 2 - box[0], 3 - box[1]), letter, font=font, fill=0)
     for y in (24, 27):                       # two layer lines under the letter
