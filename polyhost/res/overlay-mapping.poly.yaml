@@ -1064,6 +1064,20 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
+# Eclipse IDE (sources: overlay_sources/eclipse/), the Default key scheme. Linux
+# has its own set because GTK moves Redo to Ctrl+Shift+Z and Occurrences in
+# File to Ctrl+Alt+U. Windows reports eclipse.exe -> `eclipse`, Linux the
+# native launcher's process `eclipse` (it loads the JVM in-process) or WM_CLASS
+# `Eclipse`, macOS the app name `Eclipse`. None of the three was checked on an
+# install. An Eclipse started as `java -jar ...equinox.launcher...` reports
+# `java` and gets no overlay.
+eclipse:
+  overlay: [eclipse_template.mods.png, eclipse_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [eclipse_template_mac.mods.png, eclipse_template_mac.combo.mods.png, eclipse_template_mac.extra.mods.png]
+    linux:
+      overlay: [eclipse_template_linux.mods.png, eclipse_template_linux.combo.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png, visualstudio_template.extra.mods.png]
 lockapp:
