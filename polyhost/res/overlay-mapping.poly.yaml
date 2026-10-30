@@ -1109,6 +1109,7 @@ windowsterminal,wt:
   urls-contains: &editor_urls
     "vim://normal": { overlay: vim_normal_template.mods.png }
     "vim://visual": { overlay: vim_visual_template.mods.png }
+    "vim://select": { overlay: vim_select_template.mods.png }
     "vim://insert": { overlay: vim_insert_template.mods.png }
     "vim://replace": { overlay: vim_replace_template.mods.png }
     "vim://cmdline": { overlay: vim_cmdline_template.mods.png }

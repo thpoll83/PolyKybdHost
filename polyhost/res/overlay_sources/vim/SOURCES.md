@@ -7,7 +7,8 @@ from GUI Vim (`overlay-mapping.poly.yaml`, the `&editor_urls` map).
 | Set | Loads for |
 |---|---|
 | `vim_normal_template` | `vim://normal`; GUI Vim with no report |
-| `vim_visual_template` | `vim://visual` (Visual, Visual line, Visual block, Select) |
+| `vim_visual_template` | `vim://visual` (Visual, Visual line, Visual block) |
+| `vim_select_template` | `vim://select` (Select mode: the Visual set without the printable keys, which replace the selection) |
 | `vim_insert_template` | `vim://insert` |
 | `vim_replace_template` | `vim://replace` |
 | `vim_cmdline_template` | `vim://cmdline` (`:` `/` `?` and the prompts) |
@@ -35,12 +36,19 @@ Vim's command index, `:help index`: `runtime/doc/index.txt`, "For Vim version
 2026-10-30. Sections used: *insert-index*, *normal-index*, *visual-index*,
 *ex-edit-index*. Replace mode is Insert mode with `<BS>`, CTRL-W and CTRL-U
 restoring the replaced text (`:help Replace-mode`). Terminal mode:
-`:help terminal` (Vim) and `:help terminal-input` (Neovim). Default bindings
-only.
+`:help terminal` (Vim) and `:help terminal-input` (Neovim). Select mode:
+`runtime/doc/visual.txt` "8. Select mode" ("For Vim version 9.2. Last change:
+2026 May 22") and `v_<BS>` / `v_CTRL-H` in `change.txt`, read 2026-10-30.
+Default bindings only.
 
 How a mode is put together (`gen_vim_bindings.py`): Normal = motions + Normal
 commands; Visual = motions + *visual-index* (a Visual key replaces a motion on
-the same key); Replace = Insert + the Replace changes.
+the same key); Select = Visual + BS, CTRL-H (delete the selection), CTRL-G
+(Visual mode), CTRL-O (one Visual mode command) and CTRL-R (the register for
+the deleted text), without any printable key: a letter, digit, punctuation
+key, Space or Enter, alone or with Shift, replaces the selection with itself
+and starts Insert mode; every other key works as in Visual mode. Replace =
+Insert + the Replace changes.
 
 Keys are US positions: `$` is Shift+4, `~` is Shift+`, `{` is Shift+[. On
 another layout the icon is on the US key's position, as in every other
@@ -158,7 +166,7 @@ everywhere:
 | insert | a text cursor before, after, at either end of a line, or on a new line | `insert`, `append`, `insert_bol`, `append_eol`, `open_below`, `open_above` |
 | Visual | the selected area | `visual_char`, `visual_line`, `visual_block`, `other_end`, `other_corner` |
 | a glyph with a suffix | a small Fluent glyph over an arrow to the line end, two rows (the line), a box (one character), or a word | `delete_eol`, `change_char`, `undo_line`, `del_word_before`, `restore_*` ... |
-| text | characters and an arrow | `replace_char` ("a→b"), `replace_mode`, `swap_case`, `to_upper`, `to_lower`, `digraph` ("e:→ë"), `literal` ("^M raw"), `normal_once`, `increment` ("+1"), `decrement` |
+| text | characters and an arrow | `replace_char` ("a→b"), `replace_mode`, `swap_case`, `to_upper`, `to_lower`, `digraph` ("e:→ë"), `literal` ("^M raw"), `normal_once`, `visual_once`, `increment` ("+1"), `decrement` |
 | other | | `join`, `match_pair`, `cmdline`, `complete*` (a completion menu), `char_above`, `char_below`, `history_*`, `tag_*`, `alt_file`, `mark_*`, `esc` (a key with "Esc") |
 
 ### ESC mark

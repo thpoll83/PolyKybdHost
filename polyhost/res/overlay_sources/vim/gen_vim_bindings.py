@@ -7,6 +7,7 @@ overlay is a combination of sections:
 
     normal   = motions + normal
     visual   = motions + visual     (a visual key replaces a motion on the same chord)
+    select   = motions + visual + select, without the printable keys
     insert   = insert
     replace  = insert + replace     (a replace key replaces an insert one)
     cmdline  = cmdline
@@ -36,6 +37,7 @@ REPO_ROOT = HERE.parents[3]
 MODES = {
     "normal": ("motions", "normal"),
     "visual": ("motions", "visual"),
+    "select": ("motions", "visual", "select"),
     "insert": ("insert",),
     "replace": ("insert", "replace"),
     "cmdline": ("cmdline",),
@@ -66,6 +68,18 @@ SPEC = {
 }
 
 
+# In Select mode a printable key, Enter or Space replaces the selection with
+# itself; every other key works as in Visual mode (`:help Select-mode`). So the
+# Select set draws no printable key.
+PRINTABLE_ONLY = {"select"}
+
+
+def _printable(b: dict) -> bool:
+    key = str(b["key"]).upper()
+    typed = len(key) == 1 or key in ("SPACE", "ENTER")
+    return typed and set(m.upper() for m in b.get("mods", [])) <= {"SHIFT"}
+
+
 def _chord(b: dict) -> tuple:
     return (str(b["key"]).upper(), tuple(sorted(m.upper() for m in b.get("mods", []))))
 
@@ -79,6 +93,8 @@ def bindings_for(keys: dict, mode: str) -> list[dict]:
             merged[_chord(b)] = b
     out = []
     for b in merged.values():
+        if mode in PRINTABLE_ONLY and _printable(b):
+            continue
         e = {"key": b["key"]}
         if b.get("mods"):
             e["mods"] = list(b["mods"])

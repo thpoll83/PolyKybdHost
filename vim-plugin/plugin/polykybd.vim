@@ -37,15 +37,17 @@ let s:sent_url = ''
 let s:sent_focused = -1
 
 " mode(1) -> the mode name in the URL. Operator-pending and the CTRL-O
-" variants of Normal mode (no, niI ...) are Normal; Select mode is Visual;
-" the hit-enter and confirm prompts (r, rm, r?) and a running shell
+" variants of Normal mode (no, niI ...) are Normal; Select mode has its own
+" set, because a printable key there replaces the selection; the hit-enter and confirm prompts (r, rm, r?) and a running shell
 " command (!) count as the command line.
 function! s:Mode() abort
   let l:c = mode(1)[0]
   if l:c ==# 'n'
     return 'normal'
-  elseif index(['v', 'V', "\<C-V>", 's', 'S', "\<C-S>"], l:c) >= 0
+  elseif index(['v', 'V', "\<C-V>"], l:c) >= 0
     return 'visual'
+  elseif index(['s', 'S', "\<C-S>"], l:c) >= 0
+    return 'select'
   elseif l:c ==# 'i'
     return 'insert'
   elseif l:c ==# 'R'
@@ -151,6 +153,9 @@ function! s:Post(request, wait_ms) abort
   if s:inflight != -1
     let s:pending = a:request
   else
+    " This report is newer than any waiting one (left over from a request that
+    " timed out); s:Done() must not send the older one after it.
+    let s:pending = ''
     call s:Open(a:request, a:wait_ms)
   endif
 endfunction
