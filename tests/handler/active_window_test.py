@@ -1991,5 +1991,19 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    def test_FACTORIO_gets_its_set_and_the_cmd_set_on_macos(self):
+        pc = ["factorio_template.mods.png", "factorio_template.combo.mods.png"]
+        # The macOS .extra file carries Cmd+Shift+Z (redo).
+        mac = ["factorio_template_mac.mods.png", "factorio_template_mac.combo.mods.png",
+               "factorio_template_mac.extra.mods.png"]
+        for os_name, files in (("WINDOWS", pc), ("LINUX", pc), ("MACOS", mac)):
+            for app in ("factorio", "factorio.exe", "steam_app_427520"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Factorio 2.0.72", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertEqual([str(f) for f in got["overlay"]], files)
+
+
 if __name__ == "__main__":
     unittest.main()
