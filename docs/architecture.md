@@ -393,7 +393,10 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `steam.py` lists the Steam library folders for every reader. Each reader's
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
-    `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
+    `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`,
+    and optionally `inputs(files, recipes)`: the per-recipe files, which join the
+    cache key when `fingerprint` does not cover them (Factorio's loose PNGs; a
+    missing file counts as "missing", so restoring it builds a new copy);
     the game's file formats sit beside it (`westwood.py`, which refuses a frame
     larger than 640x400 px before decoding and decodes a shape file only up to
     the highest frame a recipe asks for). A new reader is a new

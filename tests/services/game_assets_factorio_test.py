@@ -111,6 +111,7 @@ def make_data(data: Path, shortcut_px: int = 56, skip=()) -> Path:
 def no_known_installs(test: unittest.TestCase, home: Path) -> None:
     """No real Steam library, Program Files folder or home folder may answer."""
     for p in (mock.patch.object(factorio, "_steam_libraries", return_value=[]),
+              mock.patch.object(factorio, "SYSTEM_APPS", home / "system-apps"),
               mock.patch.dict(os.environ, {"PROGRAMFILES": "", "PROGRAMFILES(X86)": ""}),
               mock.patch.object(Path, "home", return_value=home)):
         p.start()
@@ -169,6 +170,12 @@ class FindTest(unittest.TestCase):
             make_data(Path(home) / "factorio" / "data")
             with mock.patch.object(Path, "home", return_value=Path(home)):
                 self.assertEqual(factorio.find("")["data"], Path(home) / "factorio" / "data")
+
+    def test_the_system_applications_folder_is_searched(self):
+        data = self.root / "home" / "system-apps" / "factorio.app" / "Contents" / "data"
+        self.assertIsNone(factorio.find(""))
+        make_data(data)
+        self.assertEqual(factorio.find("")["data"], data)
 
     def test_the_running_game_folder_is_searched_first(self):
         """The executable is bin/x64/factorio; the data folder is two levels up.
@@ -418,6 +425,24 @@ class BuildTest(unittest.TestCase):
             self.assertEqual(shipped[kc], patched[kc], key)
         kc = KeyCode.KC_ENTER.value
         self.assertNotEqual(shipped[kc], patched[kc])
+
+    def test_a_repaired_icon_makes_a_new_copy(self):
+        """Repairing the game files restores a PNG and leaves info.json as it
+        was; the copy built without that PNG is not reused."""
+        with tempfile.TemporaryDirectory() as d:
+            data = make_data(Path(d) / "data", skip={"pistol.png"})
+            manifests = factorio.fingerprint({"data": data})
+            stamps = [os.stat(p) for p in manifests]
+            with self.assertLogs("PolyHost", "WARNING"):
+                before = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
+            make_data(data)                                    # the repair: pistol.png is back
+            for p, st in zip(manifests, stamps):
+                os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
+            after = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
+            self.assertNotEqual(before, after)
+            cells_before, _ = self._cells(before, Modifier.NO_MOD)
+            cells_after, _ = self._cells(after, Modifier.NO_MOD)
+        self.assertNotEqual(cells_before, cells_after)
 
     def test_the_old_32_px_shortcut_icons_are_read(self):
         with tempfile.TemporaryDirectory() as d:

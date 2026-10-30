@@ -47,6 +47,8 @@ FLAT = 0.12
 # A picture whose shape fills more than this of its bounding box has no
 # transparent background to draw the shape from.
 SOLID = 0.9
+# The macOS system applications folder (a module name, so tests can move it).
+SYSTEM_APPS = Path("/Applications")
 # Larger files are not Factorio icons; refused before decoding.
 MAX_PIXELS = 4096 * 4096
 
@@ -92,7 +94,7 @@ def install_candidates() -> list[Path]:
         if os.environ.get(env):
             out.append(Path(os.environ[env]) / "Factorio" / "data")
     out.append(home / "factorio" / "data")
-    for apps in (Path("/Applications"), home / "Applications"):
+    for apps in (SYSTEM_APPS, home / "Applications"):
         out.append(apps / "factorio.app" / "Contents" / "data")
     return out
 
@@ -116,6 +118,20 @@ def fingerprint(files: dict) -> list:
     """The files whose size and time key the cached copy: each mod's info.json,
     which a game update rewrites with the new version."""
     return [files["data"] / "base" / "info.json", files["data"] / "core" / "info.json"]
+
+
+def inputs(files: dict, recipes: dict) -> list:
+    """Every PNG the recipes name, present or not. Repairing the game files
+    rewrites a damaged or missing PNG and leaves info.json as it was, so these
+    are part of the cache key too (build.build)."""
+    out = []
+    for recipe in recipes.values():
+        names = recipe.get("file") or []
+        for name in names if isinstance(names, list) else [names]:
+            rel = PurePosixPath(str(name))
+            if not rel.is_absolute() and ".." not in rel.parts:
+                out.append(files["data"].joinpath(*rel.parts))
+    return out
 
 
 # --------------------------------------------------------------------------- #
