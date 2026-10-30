@@ -1125,11 +1125,31 @@ windowsterminal,wt:
       overlay: [emacs_dired_template.mods.png, emacs_dired_template.combo.mods.png]
     "emacs://":
       overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
+  # GNU nano (sources: overlay_sources/nano/) sets no window title and has no
+  # plugin, so it is seen only when the shell or the terminal puts the running
+  # command into the title (overlay_sources/nano/SOURCES.md has the formats and
+  # the shell snippets). The word `nano` (or iTerm2's `(nano)`) only selects the
+  # route; the `title` regex then requires nano at the COMMAND position: at the
+  # start (and not followed by " — ", Terminal.app's directory separator, or
+  # " : ", Konsole's), after " - " (cmd.exe), " — " (Terminal.app), " : "
+  # (Konsole), "(" (iTerm2) or "] " (fish over SSH), optionally after `sudo`.
+  # So `vim nano`, `man nano` and a prompt in ~/nano-docs do not load it. A
+  # mode report (urls-contains above) takes priority: with a URL known the
+  # matcher skips titles-contains. Only this entry has the list: the entry
+  # below has no overlay of its own and routes only through urls-contains
+  # (tests/handler/nano_routing_test.py).
+  titles-contains: &editor_titles
+    nano: &nano_title
+      title: '^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)(?:sudo\s+)?nano(?:$|\s|\))'
+      overlay: [nano_template.mods.png, nano_template.combo.mods.png]
+    "(nano)": *nano_title
+    "(nano": *nano_title
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report it matches nothing, and the terminal keeps the generic
 # shortcut harvest it had before (handler/common.py, find_matching_entry).
 # None of the names was checked on an install (docs/architecture.md,
-# "Terminal-hosted editors").
+# "Terminal-hosted editors"). It cannot carry `&editor_titles` (GNU nano): an
+# entry with no overlay routes through urls-contains only.
 alacritty,com.gexperts.tilix,com.mitchellh.ghostty,conhost,foot,ghostty,gnome-terminal,gnome-terminal-server,iterm,iterm2,kgx,kitty,konsole,openconsole,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.wezfurlong.wezterm,ptyxis,terminal,terminator,tilix,urxvt,uxterm,wezterm,wezterm-gui,xfce4-terminal,xterm:
   urls-contains: *editor_urls
 # GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS

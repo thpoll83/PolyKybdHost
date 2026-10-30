@@ -114,6 +114,21 @@ set use this to route the editors' mode reports (`&editor_urls`).
 (`tests/handler/matcher_test.py::TestRoutesOnlyEntry`,
 `tests/handler/vim_routing_test.py`.)
 
+### An editor seen only in the window title (GNU nano)
+
+GNU nano sends no report and sets no title, so it is visible only when the
+shell or the terminal puts the running command into the window title (cmd.exe,
+macOS Terminal and iTerm2, Konsole, fish and oh-my-zsh do by default; bash,
+PowerShell and plain zsh need the snippets in
+[`overlay_sources/nano/SOURCES.md`](overlay_sources/nano/SOURCES.md)). The
+`windowsterminal,wt` entry carries `titles-contains: &editor_titles`: the word
+`nano` selects the route and the sub-entry's `title` regex requires nano at
+the command position, so `vim nano` or a prompt in `~/nano-docs` keeps the
+terminal's set. A mode report still takes priority, because a known URL skips
+`titles-contains`. The entry for the other terminals has no overlay of its
+own, so it cannot route by title (see above).
+(`tests/handler/nano_routing_test.py`.)
+
 ## `os:` — per-platform artwork
 
 An app's shortcuts are a property of the platform it runs on. Sublime Text binds
