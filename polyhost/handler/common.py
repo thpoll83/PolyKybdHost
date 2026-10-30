@@ -258,8 +258,8 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     title, url and os sub-maps hold further annotated entries. An entry matches when it
     carries an overlay/remote and every constraint it declares is satisfied —
     recursing into the more-specific sub-maps first (first match wins). An
-    entry with only ``urls-contains`` (no overlay, no remote) matches through
-    that sub-map and never by itself:
+    entry with no overlay and no remote matches only through its
+    ``urls-contains`` and title sub-maps, never by itself:
     ``os`` first of all (the platform decides which keymap the app even has),
     then ``urls-contains`` before the title sub-maps, because a URL identifies a
     browser web-app far more reliably than its window title.
@@ -311,11 +311,13 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_os = len(flags) > 8 and flags[8]
 
     # An entry with no overlay of its own can still ROUTE: the terminal entry
-    # only sends a vim:// or emacs:// mode report to an editor's overlay. It
-    # never matches by itself, so a terminal with no report gets None, exactly
-    # as an app with no entry, and keeps the generic shortcut harvest.
+    # only sends a vim:// or emacs:// mode report, or a title naming nano, to
+    # an editor's overlay. It never matches by itself, so a terminal with no
+    # report and no editor in its title gets None, exactly as an app with no
+    # entry, and keeps the generic shortcut harvest.
     routes_only = not (has_overlay or has_remote)
-    if routes_only and not has_urls_contains:
+    if routes_only and not (has_urls_contains or has_starts_with
+                            or has_ends_with or has_contains):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -345,8 +347,6 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                 m = find_matching_entry(title, sub, url, os_name, title_known)
                 if m is not None:
                     return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
-    if routes_only:
-        return None
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
@@ -395,6 +395,10 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                             if has_urls_contains and has_overlay and entry.get(LAYER, True):
                                 return _layered(entry, m)
                             return m
+
+    if routes_only:
+        # Nothing routed: an entry with no overlay never matches by itself.
+        return None
 
     # A hard ``url`` regex constraint can only be satisfied when a URL is known;
     # with no URL it simply doesn't match (not a false positive). ``urls-contains``
