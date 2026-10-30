@@ -13,7 +13,6 @@ SOURCES.md credits each. The ESC mark is RIM over WORLD set in Orbitron Bold
 """
 from __future__ import annotations
 
-import io
 import sys
 from pathlib import Path
 
