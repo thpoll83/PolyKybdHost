@@ -271,6 +271,38 @@ class TestLayerOptOut(unittest.TestCase):
         self.assertIs(find_matching_entry("A Titled page", e, url=None), ctx)
 
 
+class TestRoutingOnlyEntry(unittest.TestCase):
+    """An entry with `urls-contains` and no overlay of its own only routes.
+
+    A terminal without an overlay set routes the `emacs://` report of an editor
+    running in it. Without a report it must match NOTHING, exactly as if the
+    terminal had no entry, so the generic shortcut harvest still runs.
+    """
+
+    def setUp(self):
+        self.ctx = named(entry(), ["emacs_template.mods.png"])
+        self.e = entry(overlay=False, urls_contains={"emacs://": self.ctx})
+        self.e["layer"] = False
+
+    def test_no_url_matches_nothing(self):
+        self.assertIsNone(find_matching_entry("bash", self.e, url=None))
+        self.assertIsNone(find_matching_entry("", self.e, url=None, title_known=False))
+
+    def test_a_url_that_hits_no_needle_matches_nothing(self):
+        self.assertIsNone(find_matching_entry("vim", self.e, url="vim://normal"))
+
+    def test_a_routed_url_returns_the_sub_entry(self):
+        self.assertIs(find_matching_entry("x", self.e, url="emacs://org-mode"), self.ctx)
+
+    def test_never_layered_even_without_layer_false(self):
+        # There is no parent overlay to put underneath.
+        del self.e["layer"]
+        self.assertIs(find_matching_entry("x", self.e, url="emacs://org-mode"), self.ctx)
+
+    def test_an_entry_with_nothing_still_matches_nothing(self):
+        self.assertIsNone(find_matching_entry("x", entry(overlay=False), url="emacs://x"))
+
+
 class TestBrowserLayering(unittest.TestCase):
     """A web app runs inside the browser, so the browser's shortcuts stay.
 

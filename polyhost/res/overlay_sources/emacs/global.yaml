@@ -1,0 +1,182 @@
+# GNU Emacs, global keys (every major mode) for PolyKybd. See SOURCES.md.
+#
+# Keys: the GNU Emacs Reference Card (for version 31) and the manual's key
+# index, checked against the global keymap of GNU Emacs 29.3 (`emacs -Q
+# --batch`, dump in SOURCES.md). Emacs writes C- for Ctrl and M- (Meta) for
+# Alt; a character that needs Shift on a US layout is drawn on the Shift
+# variant of its key (M-< is Alt+Shift+comma, M-% is Alt+Shift+5).
+#
+# Single key combinations only. Prefix sequences (C-x C-f, C-c ..., M-g g,
+# M-s ...) need two keys and are left out, as are the digit and negative
+# arguments (C-0..9, M-0..9, C--, M--): see SOURCES.md. Esc shows the program
+# mark. No macOS set: Emacs binds no Cmd key by default in a terminal, and GUI
+# Emacs on macOS uses Option as Meta, which is Alt here too.
+#
+# Used three ways (overlay-mapping.poly.yaml): alone for `emacs://` reports,
+# under emacs_org_template for org-mode, and in GUI Emacs with no report.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/emacs/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/emacs/global.yaml --preview /tmp/emacs_preview
+app: emacs
+match: [emacs]
+output: emacs_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+# The drawn composites are 40x32 and placed 1:1 in this region.
+region: [40, 32]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: emacs.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [40, 40]
+program_icon_margin: 0
+
+bindings:
+  # --- Ctrl ---
+  - { key: A, mods: [CTRL], icon: line_start.png, label: "Line start" }
+  - { key: E, mods: [CTRL], icon: line_end.png, label: "Line end" }
+  - { key: F, mods: [CTRL], icon: char_fwd.png, label: "Forward char" }
+  - { key: B, mods: [CTRL], icon: char_back.png, label: "Backward char" }
+  - { key: N, mods: [CTRL], icon: line_next.png, label: "Next line" }
+  - { key: P, mods: [CTRL], icon: line_prev.png, label: "Previous line" }
+  - { key: V, mods: [CTRL], icon: page_down.png, label: "Next screen" }
+  - { key: L, mods: [CTRL], icon: recenter.png, label: "Recenter" }
+  - { key: K, mods: [CTRL], icon: kill_line.png, label: "Kill line" }
+  - { key: W, mods: [CTRL], label: "Cut" }                      # kill-region
+  - { key: Y, mods: [CTRL], label: "Paste" }                    # yank
+  - { key: D, mods: [CTRL], icon: del_char.png, label: "Delete char" }
+  - { key: "/", mods: [CTRL], label: "Undo" }
+  - { key: "-", mods: [CTRL, SHIFT], label: "Undo" }             # C-_
+  - { key: "/", mods: [CTRL, SHIFT], label: "Redo" }             # C-? (undo-redo), GUI only
+  - { key: S, mods: [CTRL], icon: isearch_fwd.png, label: "Search forward" }
+  - { key: R, mods: [CTRL], icon: isearch_back.png, label: "Search backward" }
+  - { key: G, mods: [CTRL], icon: abort.png, label: "Abort command" }
+  - { key: SPACE, mods: [CTRL], icon: set_mark.png, label: "Set mark" }
+  - { key: T, mods: [CTRL], icon: tr_char.png, label: "Transpose chars" }
+  - { key: O, mods: [CTRL], icon: openline.png, label: "Open line" }
+  - { key: J, mods: [CTRL], icon: newline_indent.png, label: "Newline and indent" }
+  - { key: Q, mods: [CTRL], icon: quoted.png, label: "Quoted insert" }
+  - { key: Z, mods: [CTRL], icon: suspend.png, label: "Suspend / iconify" }
+  - { key: U, mods: [CTRL], icon: universal.png, label: "Universal argument" }
+  - { key: H, mods: [CTRL], label: "Help" }                     # help prefix
+  - { key: "\\", mods: [CTRL], icon: inputmethod.png, label: "Toggle input method" }
+  - { key: "]", mods: [CTRL], icon: recursive_abort.png, label: "Abort recursive edit" }
+  - { key: BACKSPACE, mods: [CTRL, SHIFT], icon: killwholeline.png, label: "Kill whole line" }
+  - { key: LEFT, mods: [CTRL], icon: word_back.png, label: "Backward word" }
+  - { key: RIGHT, mods: [CTRL], icon: word_fwd.png, label: "Forward word" }
+  - { key: UP, mods: [CTRL], icon: para_back.png, label: "Backward paragraph" }
+  - { key: DOWN, mods: [CTRL], icon: para_fwd.png, label: "Forward paragraph" }
+  - { key: HOME, mods: [CTRL], icon: buf_start.png, label: "Buffer start" }
+  - { key: END, mods: [CTRL], icon: buf_end.png, label: "Buffer end" }
+  - { key: PGUP, mods: [CTRL], icon: scroll_right.png, label: "Scroll right" }
+  - { key: PGDN, mods: [CTRL], icon: scroll_left.png, label: "Scroll left" }
+  - { key: INSERT, mods: [CTRL], label: "Copy" }                 # kill-ring-save
+  - { key: F10, mods: [CTRL], icon: buffermenu.png, label: "Buffer menu" }
+
+  # --- Alt (Meta) ---
+  - { key: F, mods: [ALT], icon: word_fwd.png, label: "Forward word" }
+  - { key: B, mods: [ALT], icon: word_back.png, label: "Backward word" }
+  - { key: A, mods: [ALT], icon: sent_back.png, label: "Backward sentence" }
+  - { key: E, mods: [ALT], icon: sent_fwd.png, label: "Forward sentence" }
+  - { key: V, mods: [ALT], icon: page_up.png, label: "Previous screen" }
+  - { key: D, mods: [ALT], icon: kill_word.png, label: "Kill word" }
+  - { key: BACKSPACE, mods: [ALT], icon: kill_word_back.png, label: "Backward kill word" }
+  - { key: K, mods: [ALT], icon: kill_sent.png, label: "Kill sentence" }
+  - { key: Z, mods: [ALT], icon: zap.png, label: "Zap to char" }
+  - { key: W, mods: [ALT], label: "Copy" }                      # kill-ring-save
+  - { key: Y, mods: [ALT], icon: yankpop.png, label: "Yank pop" }
+  - { key: U, mods: [ALT], icon: upcase.png, label: "Upcase word" }
+  - { key: L, mods: [ALT], icon: downcase.png, label: "Downcase word" }
+  - { key: C, mods: [ALT], icon: capitalize.png, label: "Capitalize word" }
+  - { key: T, mods: [ALT], icon: tr_word.png, label: "Transpose words" }
+  - { key: Q, mods: [ALT], icon: fill.png, label: "Fill paragraph" }
+  - { key: X, mods: [ALT], icon: command.png, label: "Run command (M-x)" }
+  - { key: ";", mods: [ALT], icon: comment.png, label: "Comment (dwim)" }
+  - { key: ".", mods: [ALT], icon: definition.png, label: "Find definition" }
+  - { key: ",", mods: [ALT], icon: xref_back.png, label: "Back from definition" }
+  - { key: "/", mods: [ALT], icon: dabbrev.png, label: "Expand word (dabbrev)" }
+  - { key: "=", mods: [ALT], icon: wordcount.png, label: "Count words" }
+  - { key: "\\", mods: [ALT], icon: del_space.png, label: "Delete spaces" }
+  - { key: SPACE, mods: [ALT], icon: cyclespace.png, label: "Cycle spacing" }
+  - { key: H, mods: [ALT], icon: mark_para.png, label: "Mark paragraph" }
+  - { key: M, mods: [ALT], icon: indentation.png, label: "Back to indentation" }
+  - { key: I, mods: [ALT], icon: tabstop.png, label: "Tab to tab stop" }
+  - { key: J, mods: [ALT], icon: newline_indent.png, label: "Newline in comment" }
+  - { key: R, mods: [ALT], icon: windowline.png, label: "Point to window center/top/bottom" }
+  - { key: "`", mods: [ALT], icon: menubar_text.png, label: "Menu bar (text)" }
+  - { key: LEFT, mods: [ALT], icon: word_back.png, label: "Backward word" }
+  - { key: RIGHT, mods: [ALT], icon: word_fwd.png, label: "Forward word" }
+  - { key: F10, mods: [ALT], icon: maximize.png, label: "Maximize frame" }
+
+  # --- Alt+Shift (Meta + a shifted character) ---
+  - { key: ",", mods: [ALT, SHIFT], icon: buf_start.png, label: "Buffer start" }       # M-<
+  - { key: ".", mods: [ALT, SHIFT], icon: buf_end.png, label: "Buffer end" }           # M->
+  - { key: "5", mods: [ALT, SHIFT], icon: queryreplace.png, label: "Query replace" }   # M-%
+  - { key: "6", mods: [ALT, SHIFT], icon: join.png, label: "Join lines" }              # M-^
+  - { key: "1", mods: [ALT, SHIFT], icon: shell.png, label: "Shell command" }          # M-!
+  - { key: "7", mods: [ALT, SHIFT], icon: shell_async.png, label: "Async shell command" }  # M-&
+  - { key: "\\", mods: [ALT, SHIFT], icon: shell_region.png, label: "Shell command on region" }  # M-|
+  - { key: ";", mods: [ALT, SHIFT], icon: eval.png, label: "Eval expression" }         # M-:
+  - { key: "/", mods: [ALT, SHIFT], icon: references.png, label: "Find references" }   # M-?
+  - { key: "[", mods: [ALT, SHIFT], icon: para_back.png, label: "Backward paragraph" } # M-{
+  - { key: "]", mods: [ALT, SHIFT], icon: para_fwd.png, label: "Forward paragraph" }   # M-}
+  - { key: "2", mods: [ALT, SHIFT], icon: mark_word.png, label: "Mark word" }          # M-@
+  - { key: "4", mods: [ALT, SHIFT], icon: spell.png, label: "Check word spelling" }    # M-$
+  - { key: "`", mods: [ALT, SHIFT], icon: unmodified.png, label: "Mark not modified" } # M-~
+  - { key: "9", mods: [ALT, SHIFT], icon: parens.png, label: "Insert parentheses" }    # M-(
+
+  # --- Ctrl+Alt (C-M-) ---
+  - { key: F, mods: [CTRL, ALT], icon: sexp_fwd.png, label: "Forward sexp" }
+  - { key: B, mods: [CTRL, ALT], icon: sexp_back.png, label: "Backward sexp" }
+  - { key: A, mods: [CTRL, ALT], icon: defun_start.png, label: "Function start" }
+  - { key: E, mods: [CTRL, ALT], icon: defun_end.png, label: "Function end" }
+  - { key: N, mods: [CTRL, ALT], icon: list_fwd.png, label: "Forward list" }
+  - { key: P, mods: [CTRL, ALT], icon: list_back.png, label: "Backward list" }
+  - { key: U, mods: [CTRL, ALT], icon: list_up.png, label: "Up list" }
+  - { key: D, mods: [CTRL, ALT], icon: list_down.png, label: "Down list" }
+  - { key: K, mods: [CTRL, ALT], icon: kill_sexp.png, label: "Kill sexp" }
+  - { key: T, mods: [CTRL, ALT], icon: tr_sexp.png, label: "Transpose sexps" }
+  - { key: H, mods: [CTRL, ALT], icon: mark_defun.png, label: "Mark function" }
+  - { key: SPACE, mods: [CTRL, ALT], icon: mark_sexp.png, label: "Mark sexp" }
+  - { key: S, mods: [CTRL, ALT], icon: re_search_fwd.png, label: "Regexp search forward" }
+  - { key: R, mods: [CTRL, ALT], icon: re_search_back.png, label: "Regexp search backward" }
+  - { key: V, mods: [CTRL, ALT], icon: scrollother.png, label: "Scroll other window" }
+  - { key: L, mods: [CTRL, ALT], icon: reposition.png, label: "Reposition window" }
+  - { key: O, mods: [CTRL, ALT], icon: splitline.png, label: "Split line" }
+  - { key: C, mods: [CTRL, ALT], icon: recursive_exit.png, label: "Exit recursive edit" }
+  - { key: I, mods: [CTRL, ALT], icon: complete.png, label: "Complete symbol" }
+  - { key: J, mods: [CTRL, ALT], icon: newline_indent.png, label: "Newline in comment" }
+  - { key: W, mods: [CTRL, ALT], icon: append_kill.png, label: "Append next kill" }
+  - { key: "\\", mods: [CTRL, ALT], icon: indentregion.png, label: "Indent region" }
+  - { key: ",", mods: [CTRL, ALT], icon: xref_forward.png, label: "Forward to definition" }
+  - { key: ".", mods: [CTRL, ALT], icon: apropos.png, label: "Find symbol (apropos)" }
+  - { key: "/", mods: [CTRL, ALT], icon: dabbrev_list.png, label: "Dabbrev completion" }
+  - { key: LEFT, mods: [CTRL, ALT], icon: sexp_back.png, label: "Backward sexp" }
+  - { key: RIGHT, mods: [CTRL, ALT], icon: sexp_fwd.png, label: "Forward sexp" }
+  - { key: UP, mods: [CTRL, ALT], icon: list_up.png, label: "Up list" }
+  - { key: DOWN, mods: [CTRL, ALT], icon: list_down.png, label: "Down list" }
+  - { key: HOME, mods: [CTRL, ALT], icon: defun_start.png, label: "Function start" }
+  - { key: END, mods: [CTRL, ALT], icon: defun_end.png, label: "Function end" }
+
+  # --- Ctrl+Alt+Shift ---
+  - { key: "5", mods: [CTRL, ALT, SHIFT], icon: re_replace.png, label: "Query replace regexp" }  # C-M-%
+  - { key: "-", mods: [CTRL, ALT, SHIFT], label: "Redo" }                                         # C-M-_
+
+  # --- Shift ---
+  - { key: INSERT, mods: [SHIFT], label: "Paste" }               # yank
+  - { key: DELETE, mods: [SHIFT], label: "Cut" }                 # kill-region
+  - { key: F10, mods: [SHIFT], icon: contextmenu.png, label: "Context menu" }
+
+  # --- no modifier ---
+  - { key: F1, label: "Help" }
+  - { key: F3, icon: macro_start.png, label: "Start macro" }
+  - { key: F4, icon: macro_end.png, label: "End / run macro" }
+  - { key: F10, icon: menu.png, label: "Menu bar" }
+  - { key: F11, icon: fullscreen.png, label: "Full screen" }
+  - { key: INSERT, icon: overwrite.png, label: "Overwrite mode" }

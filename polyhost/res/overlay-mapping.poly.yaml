@@ -1096,8 +1096,40 @@ explorer:
 # the app id `org.gnome.Nautilus`.
 nautilus,org.gnome.Nautilus:
   overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
+# GNU Emacs (sources: overlay_sources/emacs/). The `polykybd-mode` package
+# (emacs-package/) reports `emacs://<major-mode>[/<evil-state>]`, from a GUI
+# frame here and from `emacs -nw` through the terminal entries below, which
+# reuse this routing by the `&emacs_urls` anchor. First hit wins, so the
+# specific modes come before `emacs://`. org-mode lists the global set FIRST
+# and its own after it (a later file takes priority per key); Dired's set is
+# complete on its own. `layer: false`: a mode replaces the fallback.
+# Names: emacs(.exe) on Windows, WM_CLASS emacs on Linux, Emacs on macOS (the
+# CONTEXT_REPORTERS name in handler/browser_url.py). Not checked on an install.
+emacs:
+  overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
+  layer: false
+  urls-contains: &emacs_urls
+    "emacs://org-mode":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png, emacs_org_template.mods.png, emacs_org_template.combo.mods.png]
+    "emacs://dired-mode":
+      overlay: [emacs_dired_template.mods.png, emacs_dired_template.combo.mods.png]
+    "emacs://":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
+# Terminals with no overlay of their own that host an editor mode report
+# (TERMINAL_APPS in handler/browser_url.py, except windowsterminal and wt,
+# which have their own entry). This entry only routes: with no report it
+# matches nothing, so the terminal keeps the generic shortcut harvest. Names
+# are not checked on an install.
+openconsole,conhost,alacritty,wezterm-gui,gnome-terminal,gnome-terminal-server,org.gnome.terminal,ptyxis,org.gnome.ptyxis,kgx,org.gnome.console,konsole,org.kde.konsole,kitty,org.wezfurlong.wezterm,wezterm,foot,xterm,uxterm,urxvt,tilix,com.gexperts.tilix,terminator,xfce4-terminal,ghostty,com.mitchellh.ghostty,terminal,iterm2,iterm:
+  layer: false
+  urls-contains:
+    <<: *emacs_urls
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
+  # An editor's mode report replaces Windows Terminal's own keys (layer: false).
+  layer: false
+  urls-contains:
+    <<: *emacs_urls
 notepad:
   overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
 mspaint:

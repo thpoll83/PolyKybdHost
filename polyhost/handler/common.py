@@ -308,7 +308,12 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
 
-    if not (has_overlay or has_remote):
+    # An entry with no overlay of its own can still ROUTE: a terminal that has
+    # no overlay set routes the `emacs://` / `vim://` report of an editor
+    # running in it. Such an entry matches only through `urls-contains` and
+    # answers None otherwise, so a terminal running a shell keeps the generic
+    # shortcut harvest exactly as if it had no entry.
+    if not (has_overlay or has_remote or has_urls_contains):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -338,6 +343,8 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                 m = find_matching_entry(title, sub, url, os_name, title_known)
                 if m is not None:
                     return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
+    if not (has_overlay or has_remote):
+        return None      # a routing-only entry, and no URL routed
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
