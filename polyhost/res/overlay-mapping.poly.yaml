@@ -104,6 +104,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     # Google Meet (sources: overlay_sources/meet/) runs only in a browser.
     meet.google.com:
       overlay: [meet_template.mods.png, meet_template.combo.mods.png]
+    # YouTube (sources: overlay_sources/youtube/): the player keys, on the pages
+    # with a player (/watch, /live/, /embed/). The home page and search results
+    # keep the browser set. The gate also leaves out music.youtube.com and
+    # studio.youtube.com, which have other keys.
+    youtube.com:
+      url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
+      overlay: youtube_template.mods.png
     # Claude Code on the web. MUST stay above claude.ai, which it contains.
     claude.ai/code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
@@ -219,6 +226,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [gmail_template.mods.png, gmail_template.combo.mods.png]
     Google Calendar:
       overlay: [googlecalendar_template.mods.png, googlecalendar_template.combo.mods.png]
+    # A video tab is titled "<video> - YouTube"; the gate requires that ending.
+    YouTube:
+      title: ' - YouTube( [-—] [^-—]+)?$'
+      overlay: youtube_template.mods.png
     Claude Code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
     Claude:
@@ -302,6 +313,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
         meet.google.com:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
+        youtube.com:
+          url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
+          overlay: youtube_template_mac.mods.png
         claude.ai/code:
           overlay: claude_code_web_template_mac.mods.png
         claude.ai:
@@ -373,6 +387,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [gmail_template_mac.mods.png, gmail_template_mac.combo.mods.png, gmail_template_mac.extra.mods.png]
         Google Calendar:
           overlay: [googlecalendar_template_mac.mods.png, googlecalendar_template_mac.combo.mods.png, googlecalendar_template_mac.extra.mods.png]
+        YouTube:
+          title: ' - YouTube( [-—] [^-—]+)?$'
+          overlay: youtube_template_mac.mods.png
         Claude Code:
           overlay: claude_code_web_template_mac.mods.png
         Claude:
