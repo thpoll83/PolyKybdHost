@@ -1913,3 +1913,9 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# 0 A.D. (overlay_sources/zeroad/zeroad.yaml). The engine binary is
+# `pyrogenesis` (premake5.lua project, 0.28.0) and the desktop file declares
+# StartupWMClass=pyrogenesis and starts `0ad`. com.play0ad.zeroad is the
+# Flathub app id. Names not checked on an install.
+pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
+  overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
