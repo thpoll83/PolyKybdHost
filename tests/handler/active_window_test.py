@@ -1972,6 +1972,49 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         self.assertIsNone(self._match(
                             app, title=title, title_known=True, os_name=os_name))
 
+    _SLICER_OS = (("WINDOWS", "", "_template"), ("LINUX", "", "_template"),
+                  ("MACOS", "_mac", "_template_mac"))
+
+    def test_PRUSASLICER_editor_and_gcode_viewer_get_their_sets(self):
+        editor = "cube.3mf - PrusaSlicer-2.9.5 based on Slic3r"
+        viewer = "cube.gcode - PrusaSlicer G-code Viewer-2.9.5"
+        for os_name, _, suffix in self._SLICER_OS:
+            for app in ("prusa-slicer", "prusaslicer", "com.prusa3d.prusaslicer"):
+                for title, stem in ((editor, "prusaslicer"),
+                                    (viewer, "prusa_gcodeviewer")):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+            # The viewer started as its own executable (Windows, a Linux symlink).
+            with self.subTest(os=os_name, app="prusa-gcodeviewer"):
+                got = self._match("prusa-gcodeviewer", title=viewer,
+                                  title_known=True, os_name=os_name)
+                self.assertIn(f"prusa_gcodeviewer{suffix}.mods.png", got["overlay"])
+
+    def test_BAMBU_STUDIO_gets_its_platform_set(self):
+        for os_name, stem in (("WINDOWS", "bambustudio_template"),
+                              ("LINUX", "bambustudio_template_linux"),
+                              ("MACOS", "bambustudio_template_mac")):
+            for app in ("bambu-studio", "bambustudio", "bambu studio",
+                        "com.bambulab.bambustudio"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled - BambuStudio",
+                                      title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_ORCASLICER_gets_its_platform_set(self):
+        for os_name, _, suffix in self._SLICER_OS:
+            for app in ("orca-slicer", "orcaslicer", "com.orcaslicer.orcaslicer",
+                        "io.github.softfever.orcaslicer"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled - OrcaSlicer",
+                                      title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"orcaslicer{suffix}.mods.png", got["overlay"])
+
 
     def test_AOE2_HD_and_CD_versions_get_the_hd_set(self):
         for app in ("age2_x1", "empires2", "aok hd", "age2_x1.exe", "aok hd.exe"):
