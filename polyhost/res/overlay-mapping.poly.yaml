@@ -1883,6 +1883,15 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# StarCraft II (overlay_sources/starcraft2/starcraft2.yaml). The game runs as
+# SC2_x64.exe (SC2.exe for the 32-bit client) from Versions/Base<N>/; under Wine
+# the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
+# assumed macOS name. None of the names was checked on an install.
+# Control groups, F1 and Backspace are redrawn from the user's own StarCraft
+# 1.16.1 files when they are on the machine (game_assets reader `starcraft`).
+sc2_x64,sc2,sc2_x64.exe,sc2.exe,starcraft ii:
+  overlay: [starcraft2_template.mods.png, starcraft2_template.combo.mods.png]
+  game_assets: starcraft2/starcraft2.yaml
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
