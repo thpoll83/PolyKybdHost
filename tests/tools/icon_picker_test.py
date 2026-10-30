@@ -56,7 +56,7 @@ class SpecTest(unittest.TestCase):
     def test_presets_and_overrides(self):
         presets = {"portrait": {"engine": "dither", "lo": 5}, "word": {"font": "8p", "scale": 1}}
         c = gen.candidate({"label": "x", "src": "shp:shapes.shp:1", "preset": "portrait", "lo": 15}, presets)
-        self.assertEqual(c, {"label": "x", "kind": "pic", "src": "shp:shapes.shp:1",
+        self.assertEqual(c, {"label": "x", "kind": "pic", "src": "shp:shapes.shp:1", "preset": "portrait",
                              "params": {"engine": "dither", "lo": 15}})
         w = gen.candidate({"word": "Stop", "scale": 2}, presets)
         self.assertEqual(w["kind"], "word")
