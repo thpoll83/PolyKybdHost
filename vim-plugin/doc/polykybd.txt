@@ -1,0 +1,95 @@
+*polykybd.txt*	Report the editor mode to the PolyKybd keyboard
+
+PolyKybd mode reporter					*polykybd*
+
+1. Introduction				|polykybd-intro|
+2. What is sent				|polykybd-report|
+3. Settings				|polykybd-settings|
+4. Commands				|polykybd-commands|
+5. Focus in a terminal			|polykybd-focus|
+
+==============================================================================
+1. Introduction						*polykybd-intro*
+
+The PolyKybd keyboard has a small display in every key. Its host program,
+PolyKybdHost, shows on each key what that key does in the focused
+application. This plugin tells PolyKybdHost which mode Vim is in, so the
+keys show the commands of that mode: motions and operators in Normal mode,
+the CTRL keys of Insert mode, the selection commands in Visual mode.
+
+Requirements: Vim 8.2.3430 or later with |+channel| and |+timers|, or
+Neovim 0.7 or later. Vim sends with |ch_open()| in raw mode, Neovim over a
+libuv TCP handle. Nothing blocks the editor, and when PolyKybdHost is not
+running every error is ignored without a message.
+
+==============================================================================
+2. What is sent						*polykybd-report*
+
+An HTTP POST to http://127.0.0.1:{port}/report, on every mode change
+(|ModeChanged|), on |FocusGained| and |FocusLost|, and every 3 seconds while
+nothing changes. The body is JSON:
+>
+	{"app": "vim", "url": "vim://insert", "focused": true,
+	 "pid": 4242, "input_age": 0.4}
+<
+"url" names the mode, from |mode()|:
+
+	n, no, nov, niI, nt ...		vim://normal
+	v, V, CTRL-V, s, S, CTRL-S	vim://visual
+	i, ic, ix			vim://insert
+	R, Rv, Rc ...			vim://replace
+	c, cv, ce, r, rm, r?, !		vim://cmdline
+	t				vim://terminal
+
+"pid" is the editor's process id. "input_age" is the number of seconds since
+the last key press or cursor move in this editor; with several editors open,
+PolyKybdHost follows the one with the most recent input. "token" is added
+when |g:polykybd_token| is set. Nothing else is sent: no file name, no
+buffer text, no window title.
+
+When the editor loses the focus the report says "focused": false. When it
+exits (|VimLeavePre|), or the reporting is turned off, one last report has
+"url": null and "focused": false.
+
+==============================================================================
+3. Settings						*polykybd-settings*
+
+						*g:polykybd_enabled*
+g:polykybd_enabled	Number (default 1)
+	0 turns the reporting off. |:PolyKybdToggle| switches it.
+
+						*g:polykybd_port*
+g:polykybd_port		Number (default 50164)
+	The port of PolyKybdHost's report receiver, its "browser_report_port"
+	setting. Read at each send.
+
+						*g:polykybd_token*
+g:polykybd_token	String (default "")
+	Set this only when PolyKybdHost has "browser_report_token" set, to the
+	same value. Read at each send.
+
+==============================================================================
+4. Commands						*polykybd-commands*
+
+							*:PolyKybdToggle*
+:PolyKybdToggle		Turn the reporting off or on. Turning it off sends one
+			last report without a mode, so the keyboard leaves
+			this mode's keys at once.
+
+==============================================================================
+5. Focus in a terminal					*polykybd-focus*
+
+In a terminal, Vim knows that its window lost or got the focus only from the
+terminal's focus reporting. Most terminals support it, and Vim 9 and Neovim
+switch it on themselves. tmux passes it on only with this line in
+~/.tmux.conf:
+>
+	set -g focus-events on
+<
+GNU screen does not pass it on. In Vim, for a terminal that is not
+recognised as xterm-like, set 't_fe' and 't_fd'.
+
+Without focus reporting the plugin keeps saying "focused" while you work in
+another tab of the same terminal, and that tab shows Vim's keys.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

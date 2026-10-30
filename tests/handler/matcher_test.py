@@ -271,6 +271,35 @@ class TestLayerOptOut(unittest.TestCase):
         self.assertIs(find_matching_entry("A Titled page", e, url=None), ctx)
 
 
+class TestRoutesOnlyEntry(unittest.TestCase):
+    """An entry with `urls-contains` and no overlay of its own (the terminals
+    that route a vim:// mode report) matches only through its sub-map."""
+
+    def setUp(self):
+        self.mode = named(entry(), "vim_normal.mods.png")
+        self.e = entry(overlay=False, urls_contains={"vim://normal": self.mode})
+
+    def test_a_matching_url_routes_to_the_sub_entry(self):
+        self.assertIs(find_matching_entry("bash", self.e, url="vim://normal"), self.mode)
+
+    def test_no_url_matches_nothing(self):
+        # None, as for an app with no entry: the generic harvest stays.
+        self.assertIsNone(find_matching_entry("bash", self.e, url=None))
+        self.assertIsNone(find_matching_entry("", self.e, url=None, title_known=False))
+
+    def test_an_unmatched_url_matches_nothing(self):
+        self.assertIsNone(find_matching_entry("bash", self.e, url="emacs://org-mode"))
+
+    def test_title_sub_maps_do_not_make_it_match(self):
+        e = entry(overlay=False, urls_contains={"vim://normal": self.mode},
+                  contains={"bash": named(entry(), "x")})
+        self.assertIsNone(find_matching_entry("bash", e, url=None))
+
+    def test_without_urls_contains_it_still_never_matches(self):
+        e = entry(overlay=False, contains={"bash": named(entry(), "x")})
+        self.assertIsNone(find_matching_entry("bash", e, url="vim://normal"))
+
+
 class TestBrowserLayering(unittest.TestCase):
     """A web app runs inside the browser, so the browser's shortcuts stay.
 
