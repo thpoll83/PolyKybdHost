@@ -271,6 +271,29 @@ class TestTerminalHostedEditors(unittest.TestCase):
             self.assertEqual(self.p.current_url(name), "vim://visual", name)
         self.assertEqual(self.p.current_url("Emacs"), "emacs://dired-mode")
 
+    def test_raw_windows_process_names_from_the_forwarder(self):
+        # The forwarder passes the process name unnormalised.
+        self.p.update(app="vim", url="vim://insert", pid=10)
+        self.assertEqual(self.p.current_url("WindowsTerminal.exe"), "vim://insert")
+        self.assertEqual(self.p.current_url("gvim.exe"), "vim://insert")
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", pid=11)
+        self.assertEqual(self.p.current_url("blender.exe"), "blender://OBJECT/VIEW_3D")
+
+    def test_winner_change_is_a_change_for_the_terminal(self):
+        # vim stays in normal mode; emacs had the newest input. When vim gets
+        # input again, the terminal's answer changes back although vim's own
+        # URL did not: the window must be matched again.
+        self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0)
+        self.clock.t += 1
+        self.p.update(app="emacs", url="emacs://org-mode", pid=20, input_age=0.0)
+        self.assertEqual(self.p.current_url("kitty"), "emacs://org-mode")
+        self.clock.t += 1
+        self.assertTrue(self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0))
+        self.assertEqual(self.p.current_url("kitty"), "vim://normal")
+        # A keep-alive that changes nothing is still no change.
+        self.clock.t += 1
+        self.assertFalse(self.p.update(app="emacs", url="emacs://org-mode", pid=20, input_age=3.0))
+
     def test_stale_editor_report_expires(self):
         self.p.update(app="vim", url="vim://normal", pid=10)
         self.clock.t += 8.5

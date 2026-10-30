@@ -133,19 +133,25 @@ TERMINAL_APPS = frozenset({
 })
 
 
-def context_reporter_for(app_name):
-    """The reporter token for a focused app with a context add-on, or None."""
+def _app_key(app_name):
+    """``app_name`` lowercased and without a Windows ``.exe`` suffix, or None.
+    The window handler passes names already normalised; the forwarder passes
+    the raw Windows process name (``WindowsTerminal.exe``)."""
     if not isinstance(app_name, str):
         return None
-    return CONTEXT_REPORTERS.get(app_name.strip().lower())
+    n = app_name.strip().lower()
+    return n[:-4] if n.endswith(".exe") else n
+
+
+def context_reporter_for(app_name):
+    """The reporter token for a focused app with a context add-on, or None."""
+    return CONTEXT_REPORTERS.get(_app_key(app_name))
 
 
 def is_terminal_app(app_name) -> bool:
-    """Whether ``app_name`` (a normalised getAppName()) is a terminal that can
-    host a vim or emacs mode reporter."""
-    if not isinstance(app_name, str):
-        return False
-    return app_name.strip().lower() in TERMINAL_APPS
+    """Whether ``app_name`` (a getAppName(), normalised or a raw Windows
+    process name) is a terminal that can host a vim or emacs mode reporter."""
+    return _app_key(app_name) in TERMINAL_APPS
 
 
 def is_browser_app(app_name) -> bool:
@@ -211,6 +217,10 @@ class BrowserUrlProvider:
             if token not in _REPORTER_TOKENS:
                 return False
             prev = self._app_url(token)
+            # A terminal answers with the newest input over every hosted
+            # editor, so input to one can change that answer while its own
+            # URL stays the same (vim stays in normal mode, emacs had input).
+            prev_hosted = self._app_url(HOSTED_REPORTERS)
             # Drop instances that stopped reporting (Blender closed), so the
             # per-pid key space cannot grow without bound.
             for k in [k for k, r in self._reports.items()
@@ -225,7 +235,8 @@ class BrowserUrlProvider:
                 # (older add-on) the report itself counts as the input.
                 "input_ts": now - (input_age or 0.0),
             }
-            return self._app_url(token) != prev
+            return (self._app_url(token) != prev
+                    or self._app_url(HOSTED_REPORTERS) != prev_hosted)
         key = ("browser", _canonical_browser(browser))
         prev = self._effective_url(key)
         self._reports[key] = {
