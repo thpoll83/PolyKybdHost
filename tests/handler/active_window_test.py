@@ -1991,5 +1991,16 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    def test_FACTORIO_gets_its_set_and_the_cmd_set_on_macos(self):
+        for os_name, stem in (("WINDOWS", "factorio_template"), ("LINUX", "factorio_template"),
+                              ("MACOS", "factorio_template_mac")):
+            for app in ("factorio", "factorio.exe", "steam_app_427520"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Factorio 2.0.72", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+                    self.assertIn(f"{stem}.combo.mods.png", got["overlay"])
+
 if __name__ == "__main__":
     unittest.main()

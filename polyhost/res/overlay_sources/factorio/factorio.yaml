@@ -1,0 +1,131 @@
+# Factorio 2.0 overlay for PolyKybd.
+#
+# Keys: the default controls listed on the Factorio Wiki "Controls" page
+# (wiki.factorio.com/Keyboard_bindings redirects there). See SOURCES.md.
+#
+# Every labelled key does the same thing whatever is selected. Mouse bindings
+# have no keycap cell. A user who rebinds a control in the game still sees the
+# default here.
+#
+# macOS: the game loads Cut, Copy, Paste, Undo and Redo on Cmd instead of Ctrl
+# (CMDCTRL below), which emits factorio_template_mac.*. Every other modifier is
+# the same on every platform.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/factorio/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/factorio/factorio.yaml --preview /tmp/factorio_preview
+app: factorio
+match: [factorio, factorio.exe, steam_app_427520]
+output: factorio_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for AoE2 and Warcraft III: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# FACTORIO drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement
+  - { key: W, icon: up.png, label: "Move up" }
+  - { key: A, icon: left.png, label: "Move left" }
+  - { key: S, icon: down.png, label: "Move down" }
+  - { key: D, icon: right.png, label: "Move right" }
+
+  # Basic interaction
+  - { key: E, icon: inventory.png, label: "Character screen" }
+  - { key: Q, icon: pipette.png, label: "Pipette / clear cursor" }
+  - { key: R, icon: rotate.png, label: "Rotate" }
+  - { key: R, mods: [SHIFT], icon: rotateback.png, label: "Reverse rotate" }
+  - { key: H, icon: fliph.png, label: "Flip horizontal" }
+  - { key: V, icon: flipv.png, label: "Flip vertical" }
+  - { key: F, icon: pickup.png, label: "Pick up items" }
+  - { key: Z, icon: drop.png, label: "Drop item" }
+  - { key: G, icon: raillayer.png, label: "Toggle rail layer" }
+  - { key: C, icon: weapon.png, label: "Next weapon" }
+  - { key: SPACE, icon: shoot.png, label: "Shoot enemy" }
+  - { key: SPACE, mods: [SHIFT], icon: shootselected.png, label: "Shoot selected" }
+  - { key: ENTER, icon: vehicle.png, label: "Enter / leave vehicle" }
+  - { key: GRAVE, icon: chat.png, label: "Chat and console" }
+
+  # Quickbar: 1..0 use a slot, Shift+digit selects a quickbar, X rotates them
+  - { key: "1", icon: slot1.png, label: "Quickbar slot 1" }
+  - { key: "2", icon: slot2.png, label: "Quickbar slot 2" }
+  - { key: "3", icon: slot3.png, label: "Quickbar slot 3" }
+  - { key: "4", icon: slot4.png, label: "Quickbar slot 4" }
+  - { key: "5", icon: slot5.png, label: "Quickbar slot 5" }
+  - { key: "6", icon: slot6.png, label: "Quickbar slot 6" }
+  - { key: "7", icon: slot7.png, label: "Quickbar slot 7" }
+  - { key: "8", icon: slot8.png, label: "Quickbar slot 8" }
+  - { key: "9", icon: slot9.png, label: "Quickbar slot 9" }
+  - { key: "0", icon: slot0.png, label: "Quickbar slot 10" }
+  - { key: "1", mods: [SHIFT], icon: bar1.png, label: "Select quickbar 1" }
+  - { key: "2", mods: [SHIFT], icon: bar2.png, label: "Select quickbar 2" }
+  - { key: "3", mods: [SHIFT], icon: bar3.png, label: "Select quickbar 3" }
+  - { key: "4", mods: [SHIFT], icon: bar4.png, label: "Select quickbar 4" }
+  - { key: "5", mods: [SHIFT], icon: bar5.png, label: "Select quickbar 5" }
+  - { key: "6", mods: [SHIFT], icon: bar6.png, label: "Select quickbar 6" }
+  - { key: "7", mods: [SHIFT], icon: bar7.png, label: "Select quickbar 7" }
+  - { key: "8", mods: [SHIFT], icon: bar8.png, label: "Select quickbar 8" }
+  - { key: "9", mods: [SHIFT], icon: bar9.png, label: "Select quickbar 9" }
+  - { key: "0", mods: [SHIFT], icon: bar0.png, label: "Select quickbar 10" }
+  - { key: X, icon: quickbars.png, label: "Rotate active quickbars" }
+
+  # Panels
+  - { key: TAB, icon: map.png, label: "World map" }
+  - { key: M, icon: map.png, label: "World map" }
+  - { key: T, icon: technology.png, label: "Technology screen" }
+  - { key: P, icon: production.png, label: "Production statistics" }
+  - { key: L, icon: networks.png, label: "Logistic networks" }
+  - { key: B, icon: library.png, label: "Blueprint library" }
+  - { key: O, icon: trains.png, label: "Train overview" }
+  - { key: F1, icon: logistics.png, label: "Character logistics", region: [34, 40] }
+  - { key: F2, icon: character.png, label: "Character info", region: [34, 40] }
+  - { key: F3, icon: crafting.png, label: "Character crafting" }
+  - { key: LEFT, mods: [ALT], icon: back.png, label: "Previous window" }
+  - { key: RIGHT, mods: [ALT], icon: forward.png, label: "Next window" }
+
+  # Trains
+  - { key: J, icon: connect.png, label: "Connect train" }
+  - { key: K, icon: disconnect.png, label: "Disconnect train" }
+
+  # Tools (Ctrl is Cmd on macOS for these five, see the header)
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: X, mods: [CMDCTRL], label: "Cut" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: Y, mods: [CMDCTRL], label: "Redo" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo" }
+  - { key: F, mods: [CTRL], label: "Find" }
+  - { key: T, mods: [ALT], icon: artillery.png, label: "Artillery targeting remote" }
+  - { key: B, mods: [ALT], icon: newblueprint.png, label: "New blueprint" }
+  - { key: D, mods: [ALT], icon: newdecon.png, label: "New deconstruction planner" }
+  - { key: U, mods: [ALT], icon: newupgrade.png, label: "New upgrade planner" }
+  - { key: C, mods: [ALT], icon: wirecopper.png, label: "Copper wire mode" }
+  - { key: R, mods: [ALT], icon: wirered.png, label: "Red wire mode" }
+  - { key: G, mods: [ALT], icon: wiregreen.png, label: "Green wire mode" }
+  - { key: Y, mods: [ALT], icon: discharge.png, label: "Discharge defense remote" }
+  - { key: A, mods: [ALT], icon: spidertron.png, label: "Spidertron remote" }
+  - { key: E, mods: [ALT], icon: exoskeleton.png, label: "Toggle exoskeleton" }
+  - { key: L, mods: [ALT], icon: logistics.png, label: "Toggle personal logistics requests" }
+  - { key: F, mods: [ALT], icon: roboport.png, label: "Toggle personal roboport" }
+
+  # Miscellaneous and debug
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: F4, icon: debugsettings.png, label: "Debug settings", region: [30, 40] }
+  - { key: F5, icon: basicdebug.png, label: "Basic debug", region: [30, 40] }
+  - { key: F9, icon: resetzoom.png, label: "Reset zoom level" }
+  - { key: F9, mods: [SHIFT], icon: zoom2x.png, label: "Zoom level 2x" }
+  - { key: F10, icon: replaynext.png, label: "Next player in replay" }
+  - { key: F4, mods: [CTRL, SHIFT], icon: hidegui.png, label: "Toggle GUI visibility" }
