@@ -29,7 +29,7 @@ has focus:
   names the evil state: `emacs://org-mode/normal`, `emacs://org-mode/insert`.
   A mode name with characters outside `A-Z a-z 0-9 _ . + -` is not sent.
 - `pid` is Emacs's process id and `input_age` the seconds since this Emacs last
-  ran a command (a key or a mouse click). With several Emacs (or Vim) instances
+  ran a command (a key or a mouse click) or gained focus. With several Emacs (or Vim) instances
   open, the host follows the one with the most recent input, so the keep-alive
   of an instance in another terminal cannot replace the mode of the one you
   are typing in.

@@ -227,7 +227,13 @@ While no frame has focus only the change to unfocused is sent."
   (polykybd--report))
 
 (defun polykybd--focus-change ()
-  "Report focus in or out."
+  "Report focus in or out.
+Gaining focus counts as input, as in the Vim plugin: with several editors
+open the host follows the one with the newest input, so without this an
+editor that just lost focus would keep answering until a key is pressed
+here."
+  (when (and (polykybd--focused-p) (not polykybd--focused))
+    (setq polykybd--last-input (float-time)))
   (polykybd--report))
 
 (defun polykybd--keepalive ()

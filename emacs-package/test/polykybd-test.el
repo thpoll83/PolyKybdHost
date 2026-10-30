@@ -180,6 +180,21 @@
                              (polykybd-test--wait 3)
                              (should (< (cdr (assoc "input_age" (polykybd-test--json 2))) 1.0))))))
 
+(ert-deftest polykybd-focus-gain-counts-as-input ()
+  (polykybd-test--with-listener
+   (let ((focus nil))
+     (polykybd-test--focused focus
+                             (with-temp-buffer
+                               (switch-to-buffer (current-buffer))
+                               (polykybd-mode 1)
+                               (polykybd-test--wait-quiet)
+                               (setq polykybd--last-input (- (float-time) 5.0))
+                               (let ((n (length polykybd-test--bodies)))
+                                 (setq focus t)
+                                 (polykybd--focus-change)
+                                 (polykybd-test--wait (1+ n))
+                                 (should (< (cdr (assoc "input_age" (polykybd-test--json n))) 1.0))))))))
+
 (ert-deftest polykybd-evil-state-is-part-of-the-url ()
   (polykybd-test--with-listener
    (polykybd-test--focused t
