@@ -96,7 +96,7 @@ def candidate(entry: dict, presets: dict) -> dict:
         return {"label": entry.get("label", "word"), "kind": "word", "params": params}
     params = dict(presets[entry["preset"]]) if "preset" in entry else {}
     params.update({k: v for k, v in entry.items() if k not in ("label", "src", "preset")})
-    return {"label": entry["label"], "kind": "pic", "src": entry["src"], "params": params}
+    return {"label": entry["label"], "kind": "pic", "src": entry["src"], "preset": entry.get("preset"), "params": params}
 
 
 def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
@@ -133,7 +133,7 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
                     except OSError as e:                 # offline: the key keeps its other candidates
                         print(f"  {vspec}: not fetched ({e})", file=sys.stderr)
                 if vspec in vectors:
-                    cands.insert(0, {"label": f"shipped icon, re-rasterized ({vspec})", "kind": "vector", "src": vspec,
+                    cands.insert(0, {"label": f"shipped icon, re-rasterized ({vspec})", "kind": "vector", "src": vspec, "preset": "vector",
                                      "params": dict(spec.get("presets", {}).get("vector", {}))})
             for c in cands:
                 if c["kind"] == "pic" and c["src"] not in pics:

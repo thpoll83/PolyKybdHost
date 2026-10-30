@@ -380,9 +380,10 @@ function editor(k, ci, e, onChange) {
   const acts = document.createElement("div"); acts.className = "actions";
   if (c.kind !== "word") {
     const all = document.createElement("button");
-    all.textContent = c.kind === "vector" ? "Use these settings for every re-rasterized icon on this overlay" : "Use these settings for every picture on this overlay";
+    all.textContent = c.preset ? `Use these settings for every "${c.preset}" candidate on this overlay` : "Use these settings for every candidate like this on this overlay";
+    all.title = "Copies to the candidates that started from the same preset in picker.yaml; their mirror, size, crop and lit-pixel rule stay.";
     all.onclick = () => { const ov = DATA.overlays.find(o => o.id === state.overlay);
-      for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc.kind === c.kind && (c.kind === "vector" || ee.params[j].engine === p.engine)) {
+      for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc !== c && cc.kind === c.kind && cc.preset === c.preset && ee.params[j].engine === p.engine) {
         const keep = { mirror: ee.params[j].mirror, rw: ee.params[j].rw, rh: ee.params[j].rh, crop: ee.params[j].crop, smooth_w: ee.params[j].smooth_w, lit: ee.params[j].lit };
         ee.params[j] = Object.assign(JSON.parse(JSON.stringify(p)), Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined))); } }); }
       change(true); };

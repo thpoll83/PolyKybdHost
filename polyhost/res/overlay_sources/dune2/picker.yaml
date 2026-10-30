@@ -26,7 +26,7 @@ presets:
   cursor: {engine: pixel, lit: nonzero, scale: 0, mirror: false}
   arrow: {engine: pixel, lit: centre, scale: 0, mirror: false}
   digit: {engine: pixel, lit: darker, pct: 50, scale: 0, mirror: false}
-  button: {engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [2, 3], smooth_w: 72, valign: bottom}
+  button: {engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [2, 4], smooth_w: 72, valign: bottom}
   word: {font: 8p, body: true, shade: true, outline: false, scale: 1, valign: bottom, gap: 1}
 
 overlays:

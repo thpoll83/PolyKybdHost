@@ -29,8 +29,10 @@ Without `--data-dir` the generator looks where the game's reader looks
   the greyscale after the filters and before the dither, and the keycap.
   **Reset to suggested values** restores the spec's start values, and a
   double-click on a setting's name resets only that setting. **Use these
-  settings for every picture on this overlay** copies them to every candidate
-  with the same engine.
+  settings for every "`<preset>`" candidate** copies them to the candidates on
+  this overlay that started from the same preset of `picker.yaml` (portraits to
+  portraits, map tiles to map tiles); each keeps its mirror, size, crop and
+  lit-pixel rule.
 - **Overview** shows the whole overlay as picked. **Export picks** gives JSON
   (key, picked candidate, its `src` and settings). Paste it into the chat, or
   turn it into recipes by hand. Picks are kept in the browser between visits.
