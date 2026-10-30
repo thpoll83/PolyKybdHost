@@ -1883,6 +1883,13 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# OpenTTD 15.3 (overlay_sources/openttd/openttd.yaml). The CMake target is
+# `openttd` (BINARY_NAME), so openttd on Linux and openttd.exe on Windows;
+# org.openttd.openttd is the Flathub app id, steam_app_1536610 Steam under
+# Proton. The construction toolbars' letter keys are not drawn: the window title
+# does not change when they open. Names not checked on an install.
+openttd,openttd.exe,org.openttd.openttd,steam_app_1536610:
+  overlay: [openttd_template.mods.png, openttd_template.combo.mods.png]
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
