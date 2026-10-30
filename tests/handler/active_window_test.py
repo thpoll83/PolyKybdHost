@@ -1825,6 +1825,17 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
 
+    def test_WIRESHARK_gets_its_platform_set(self):
+        for app, os_name, stem in (
+                ("wireshark", "WINDOWS", "wireshark_template"),
+                ("wireshark", "LINUX", "wireshark_template"),
+                ("org.wireshark.wireshark", "LINUX", "wireshark_template"),
+                ("wireshark", "MACOS", "wireshark_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="x", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
     def test_CAD_apps_get_their_platform_set(self):
         for app, os_name, stem in (
                 ("fusion360", "WINDOWS", "fusion_template"),
