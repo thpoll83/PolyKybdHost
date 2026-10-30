@@ -99,15 +99,59 @@ DEFAULT_MAX_AGE_S = 8.0
 CONTEXT_REPORTERS = {
     "blender": "blender",
     "org.blender.blender": "blender",
+    # Editors with a mode plugin, in their own GUI window. Windows reports
+    # gvim.exe / emacs.exe, Linux the WM_CLASS, macOS the display name.
+    "gvim": "vim",
+    "macvim": "vim",
+    "neovide": "vim",
+    "emacs": "emacs",
 }
-_REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values())
+
+# Reporters that also run INSIDE a terminal (vim, emacs -nw). While a terminal
+# is the focused app, the freshest focused report from one of them answers for
+# it, the way a browser's tab URL answers for the browser. The plugins send
+# focused=false on the terminal's focus-out event and when they exit, so a
+# terminal window running a plain shell gets no URL.
+HOSTED_REPORTERS = frozenset({"vim", "emacs"})
+_REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values()) | HOSTED_REPORTERS
+
+# Terminal apps that host those reporters, as the OS reports them (lowercased).
+# Only local terminals: an editor in an SSH session (PuTTY, a remote shell)
+# cannot reach this host's loopback receiver. None of the names was checked on
+# an install (docs/architecture.md, "Terminal-hosted editors").
+TERMINAL_APPS = frozenset({
+    # Windows
+    "windowsterminal", "wt", "openconsole", "conhost", "alacritty", "wezterm-gui",
+    # Linux (WM_CLASS or Flatpak/app id)
+    "gnome-terminal", "gnome-terminal-server", "org.gnome.terminal",
+    "ptyxis", "org.gnome.ptyxis", "kgx", "org.gnome.console",
+    "konsole", "org.kde.konsole", "kitty", "org.wezfurlong.wezterm", "wezterm",
+    "foot", "xterm", "uxterm", "urxvt", "tilix", "com.gexperts.tilix",
+    "terminator", "xfce4-terminal", "ghostty", "com.mitchellh.ghostty",
+    # macOS (display names)
+    "terminal", "iterm2", "iterm",
+})
+
+
+def _app_key(app_name):
+    """``app_name`` lowercased and without a Windows ``.exe`` suffix, or None.
+    The window handler passes names already normalised; the forwarder passes
+    the raw Windows process name (``WindowsTerminal.exe``)."""
+    if not isinstance(app_name, str):
+        return None
+    n = app_name.strip().lower()
+    return n[:-4] if n.endswith(".exe") else n
 
 
 def context_reporter_for(app_name):
     """The reporter token for a focused app with a context add-on, or None."""
-    if not isinstance(app_name, str):
-        return None
-    return CONTEXT_REPORTERS.get(app_name.strip().lower())
+    return CONTEXT_REPORTERS.get(_app_key(app_name))
+
+
+def is_terminal_app(app_name) -> bool:
+    """Whether ``app_name`` (a getAppName(), normalised or a raw Windows
+    process name) is a terminal that can host a vim or emacs mode reporter."""
+    return _app_key(app_name) in TERMINAL_APPS
 
 
 def is_browser_app(app_name) -> bool:
@@ -173,6 +217,10 @@ class BrowserUrlProvider:
             if token not in _REPORTER_TOKENS:
                 return False
             prev = self._app_url(token)
+            # A terminal answers with the newest input over every hosted
+            # editor, so input to one can change that answer while its own
+            # URL stays the same (vim stays in normal mode, emacs had input).
+            prev_hosted = self._app_url(HOSTED_REPORTERS)
             # Drop instances that stopped reporting (Blender closed), so the
             # per-pid key space cannot grow without bound.
             for k in [k for k, r in self._reports.items()
@@ -187,7 +235,8 @@ class BrowserUrlProvider:
                 # (older add-on) the report itself counts as the input.
                 "input_ts": now - (input_age or 0.0),
             }
-            return self._app_url(token) != prev
+            return (self._app_url(token) != prev
+                    or self._app_url(HOSTED_REPORTERS) != prev_hosted)
         key = ("browser", _canonical_browser(browser))
         prev = self._effective_url(key)
         self._reports[key] = {
@@ -212,10 +261,15 @@ class BrowserUrlProvider:
 
         The winner is picked BEFORE looking at its URL: an instance that
         withdrew its context (reporting turned off) stays the newest and
-        answers None, instead of handing the keyboard to a background one."""
+        answers None, instead of handing the keyboard to a background one.
+
+        ``token`` may also be a set of tokens (the terminal-hosted editors):
+        the winner is then the newest input over all of them, so a vim that
+        lost focus to an emacs in another terminal window answers nothing."""
+        tokens = token if isinstance(token, frozenset) else frozenset((token,))
         best = None
         for k, r in self._reports.items():
-            if k[0] != "app" or k[1] != token or not self._fresh(k):
+            if k[0] != "app" or k[1] not in tokens or not self._fresh(k):
                 continue
             if best is None or r["input_ts"] > best[0]:
                 best = (r["input_ts"], k)
@@ -240,6 +294,9 @@ class BrowserUrlProvider:
         * A **context reporter** (Blender) gets its own add-on's fresh, focused
           pseudo-URL, and nothing else -- never a browser's URL, and no macOS
           fallback.
+        * A **terminal** gets the fresh, focused pseudo-URL of the vim or emacs
+          running in it (``vim://insert``), the one with the newest input, and
+          nothing else.
         * A **browser** gets a fresh, focused report from *that same browser*
           (cross-browser leakage guarded: a Chrome report never answers for
           Firefox). A report naming no recognisable browser (an older
@@ -248,6 +305,8 @@ class BrowserUrlProvider:
         * Any other app gets ``None``, so neither a website nor a background
           Blender's context can ever leak onto a native app's overlay."""
         token = context_reporter_for(app_name)
+        if token is None and is_terminal_app(app_name):
+            token = HOSTED_REPORTERS
         if token is None and not is_browser_app(app_name):
             return None
         with self._lock:

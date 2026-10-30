@@ -1991,5 +1991,73 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class ExpiredModeReportTest(unittest.TestCase):
+    """An editor killed with kill -9 sends no final report. Its report expires
+    with no window or title change, so window tracking asks the provider again
+    each tick and re-matches when the answer changed."""
+
+    @staticmethod
+    def _win(title="vim"):
+        win = MagicMock()
+        win.title = title
+        win.getHandle.return_value = 4242
+        return win
+
+    def _handler(self, app, url):
+        self.url = url
+        self.asked = []
+
+        def provider(name):
+            self.asked.append(name)
+            return self.url
+        handler = OverlayHandler({"someotherapp": {}}, url_provider=provider)
+        # The app's logger has debug_detailed(), which the URL branch calls;
+        # the plain logging.Logger here does not.
+        handler.log = MagicMock()
+        self.window = self._win()             # one window: the same on every tick
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self.window), \
+             patch(mod + ".app_name_for", return_value=app):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return handler
+
+    def test_an_expired_report_in_a_terminal_re_matches(self):
+        handler = self._handler("kitty", "vim://insert")
+        self.assertEqual(handler.current_url, "vim://insert")
+        handler._recheck_context_url()
+        self.assertEqual(handler.title, "vim", "same answer: nothing to re-match")
+        self.url = None                       # vim was killed; its report expired
+        handler._recheck_context_url()
+        self.assertIsNone(handler.title, "the next tick re-matches")
+
+    def test_the_next_tick_drops_the_expired_mode(self):
+        """Same window, same title: only the expired report changed."""
+        handler = self._handler("kitty", "vim://insert")
+        self.url = None
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self.window), \
+             patch(mod + ".app_name_for", return_value="kitty"):
+            handler._decide_active_window(10, 5)
+        self.assertIsNone(handler.current_url)
+        self.assertEqual(handler.title, "vim")
+
+    def test_a_context_reporter_re_matches_too(self):
+        handler = self._handler("blender", "blender://OBJECT/VIEW_3D")
+        self.url = None
+        handler._recheck_context_url()
+        self.assertIsNone(handler.title)
+
+    def test_a_browser_is_not_asked_every_tick(self):
+        """A browser's lookup can be an AppleScript call on macOS."""
+        handler = self._handler("firefox", "https://example.org")
+        n = len(self.asked)
+        self.url = None
+        handler._recheck_context_url()
+        self.assertEqual(len(self.asked), n)
+        self.assertEqual(handler.title, "vim")
+
+
 if __name__ == "__main__":
     unittest.main()

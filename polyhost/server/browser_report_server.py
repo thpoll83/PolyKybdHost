@@ -118,16 +118,16 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(403, {"ok": False, "error": "bad token"})
             return
 
-        report = {
-            "browser": data.get("browser"),
-            "url": data.get("url"),
-            "title": data.get("title"),
-            "focused": data.get("focused", True),
-        }
+        # Text fields pass only as text: a number or an object for `url`
+        # would reach urlsplit() in window tracking and raise there, which
+        # turns the focused window's overlays off for as long as it is resent.
+        report = {key: (data.get(key) if isinstance(data.get(key), str) else None)
+                  for key in ("browser", "url", "title")}
+        report["focused"] = data.get("focused", True)
         # A context reporter (the Blender add-on, `blender-addon/`) names
         # itself with `app` instead of `browser`. Passed only when present, so
         # a browser report reaches the callback exactly as before.
-        if data.get("app") is not None:
+        if isinstance(data.get("app"), str):
             report["app"] = data.get("app")
             # Optional instance identity (several Blenders open at once):
             # passed only when it is a sane number, never as a raw string.

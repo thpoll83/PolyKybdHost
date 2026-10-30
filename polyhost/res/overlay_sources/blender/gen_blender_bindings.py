@@ -428,7 +428,8 @@ def mapping_stanza(out_dir: Path) -> str:
     # Windows reports `blender.exe` cut to `blender`; macOS `Blender`; Linux
     # the process (`blender`, also for Steam and the `blender-softwaregl`
     # wrapper, which execs it); Flatpak/Wayland reporters the app id. These are
-    # exactly `browser_url.CONTEXT_REPORTERS` -- a test keeps the two in step.
+    # exactly the `blender` names of `browser_url.CONTEXT_REPORTERS` -- a test
+    # keeps the two in step.
     names = "blender,org.blender.blender"
     lines = [f"{names}:"] + block(2, "") + ["  os:", "    macos:"] + block(6, "_mac")
     return "\n".join(lines) + "\n"

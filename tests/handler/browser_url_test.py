@@ -216,6 +216,90 @@ class TestContextReporter(unittest.TestCase):
         self.assertEqual(self.p._reports, {})
 
 
+class TestTerminalHostedEditors(unittest.TestCase):
+    """vim and emacs report their mode from inside a terminal; the terminal
+    takes the report like a browser takes its tab's URL."""
+
+    def setUp(self):
+        self.clock = FakeClock()
+        self.mac = []
+        self.p = BrowserUrlProvider(max_age_s=8.0, clock=self.clock,
+                                    macos_lookup=lambda app: self.mac.append(app) or "osa")
+
+    def test_terminal_takes_the_editor_report(self):
+        self.p.update(app="vim", url="vim://insert", pid=10, input_age=0.0)
+        for name in ("windowsterminal", "WindowsTerminal", "gnome-terminal-server",
+                     "org.kde.konsole", "kitty", "Terminal", "iTerm2"):
+            self.assertEqual(self.p.current_url(name), "vim://insert", name)
+        self.assertEqual(self.mac, [])          # never the AppleScript path
+
+    def test_no_report_means_no_url(self):
+        self.assertIsNone(self.p.current_url("konsole"))
+
+    def test_focus_out_clears_the_terminal(self):
+        # The plugin sends focused=false on the terminal's focus-out event: the
+        # shell in another terminal window must not keep vim's keys.
+        self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0)
+        self.clock.t += 1
+        self.assertTrue(self.p.update(app="vim", url="vim://normal", focused=False, pid=10))
+        self.assertIsNone(self.p.current_url("konsole"))
+
+    def test_newest_input_wins_across_editors(self):
+        self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0)
+        self.clock.t += 1
+        self.p.update(app="emacs", url="emacs://org-mode", pid=20, input_age=0.0)
+        self.assertEqual(self.p.current_url("kitty"), "emacs://org-mode")
+        # vim's keep-alive without new input does not take over.
+        self.clock.t += 1
+        self.p.update(app="vim", url="vim://normal", pid=10, input_age=2.0)
+        self.assertEqual(self.p.current_url("kitty"), "emacs://org-mode")
+
+    def test_editor_report_never_leaks_onto_other_apps(self):
+        self.p.update(app="vim", url="vim://normal", pid=10)
+        for name in ("code", "chrome", "blender", "putty", "", None):
+            self.assertNotEqual(self.p.current_url(name), "vim://normal", name)
+
+    def test_terminal_never_takes_a_browser_or_blender_report(self):
+        self.p.update(browser="chrome", url="https://x.com", focused=True)
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", focused=True)
+        self.assertIsNone(self.p.current_url("windowsterminal"))
+
+    def test_gui_editors_are_context_reporters(self):
+        self.p.update(app="vim", url="vim://visual", pid=30)
+        self.p.update(app="emacs", url="emacs://dired-mode", pid=40)
+        for name in ("gvim", "MacVim", "neovide"):
+            self.assertEqual(self.p.current_url(name), "vim://visual", name)
+        self.assertEqual(self.p.current_url("Emacs"), "emacs://dired-mode")
+
+    def test_raw_windows_process_names_from_the_forwarder(self):
+        # The forwarder passes the process name unnormalised.
+        self.p.update(app="vim", url="vim://insert", pid=10)
+        self.assertEqual(self.p.current_url("WindowsTerminal.exe"), "vim://insert")
+        self.assertEqual(self.p.current_url("gvim.exe"), "vim://insert")
+        self.p.update(app="blender", url="blender://OBJECT/VIEW_3D", pid=11)
+        self.assertEqual(self.p.current_url("blender.exe"), "blender://OBJECT/VIEW_3D")
+
+    def test_winner_change_is_a_change_for_the_terminal(self):
+        # vim stays in normal mode; emacs had the newest input. When vim gets
+        # input again, the terminal's answer changes back although vim's own
+        # URL did not: the window must be matched again.
+        self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0)
+        self.clock.t += 1
+        self.p.update(app="emacs", url="emacs://org-mode", pid=20, input_age=0.0)
+        self.assertEqual(self.p.current_url("kitty"), "emacs://org-mode")
+        self.clock.t += 1
+        self.assertTrue(self.p.update(app="vim", url="vim://normal", pid=10, input_age=0.0))
+        self.assertEqual(self.p.current_url("kitty"), "vim://normal")
+        # A keep-alive that changes nothing is still no change.
+        self.clock.t += 1
+        self.assertFalse(self.p.update(app="emacs", url="emacs://org-mode", pid=20, input_age=3.0))
+
+    def test_stale_editor_report_expires(self):
+        self.p.update(app="vim", url="vim://normal", pid=10)
+        self.clock.t += 8.5
+        self.assertIsNone(self.p.current_url("konsole"))
+
+
 class TestConcurrentReports(unittest.TestCase):
     """update() runs on the report server's threads, current_url() on window
     tracking's. A lookup walking the instances while a report adds or prunes
