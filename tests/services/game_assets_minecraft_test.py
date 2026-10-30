@@ -231,6 +231,23 @@ class TextureTest(unittest.TestCase):
         self.assertEqual(set(icons), {"advancements"})
         self.assertEqual(len(logs.output), 2)
 
+    def test_a_damaged_entry_costs_only_its_own_key(self):
+        jar = Path(self.tmp.name) / "damaged.jar"
+        write_jar(jar)
+        good = texture(ITEMS.index("bundle"))
+        raw = jar.read_bytes()
+        at = raw.index(good) + len(good) // 2          # stored, so the PNG bytes are in the file
+        jar.write_bytes(raw[:at] + bytes([raw[at] ^ 0xFF]) + raw[at + 1:])
+        src = mc.Textures(jar)
+        with self.assertRaises(ValueError):            # bad CRC-32, not BadZipFile
+            src.rgba("item/bundle")
+        spec = {"game_assets": {"reader": "minecraft_java", "icons": {
+                    "inventory": {"texture": "item/bundle"}, "advancements": {"texture": "item/nether_star"}}},
+                "bindings": [{"key": k, "icon": f"{s}.png"} for k, s in (("E", "inventory"), ("L", "advancements"))]}
+        with self.assertLogs("PolyHost", "WARNING"):
+            icons = build.render(mc, src, spec, "")
+        self.assertEqual(set(icons), {"advancements"})
+
     def test_draw_refuses_an_unknown_recipe(self):
         with self.assertRaises(ValueError):
             mc.draw(self.src, {"item": "bundle"}, (40, 40))

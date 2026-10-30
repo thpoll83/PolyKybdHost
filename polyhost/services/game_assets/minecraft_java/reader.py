@@ -37,6 +37,7 @@ import io
 import json
 import os
 import zipfile
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -149,8 +150,12 @@ class Textures:
             raise KeyError(f"{name} is not in {self.jar.name}")
         if self.names[name] > MAX_ENTRY_BYTES:
             raise ValueError(f"{name} is larger than a texture")
-        with zipfile.ZipFile(self.jar) as z:
-            data = z.read(name)
+        try:
+            with zipfile.ZipFile(self.jar) as z:
+                data = z.read(name)
+        except (zipfile.BadZipFile, zlib.error, EOFError, OSError) as e:
+            # One damaged entry (a bad CRC-32) costs only its own key.
+            raise ValueError(f"{name}: {e}") from e
         try:
             with Image.open(io.BytesIO(data)) as im:
                 w, h = im.size
