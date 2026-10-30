@@ -1773,6 +1773,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
+            ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
@@ -1794,13 +1796,15 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
+                            "https://trello.com/",
+                            "https://www.atlassian.com/software/trello",
                             "https://www.google.com/search?q=linear.app",
                             "https://github.com/o/r/tree/main"):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
-                                             ("drawio_", "linear_", "jupyter_")), files)
+                                             ("drawio_", "linear_", "jupyter_", "trello_")), files)
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
         for app, os_name, stem in (
