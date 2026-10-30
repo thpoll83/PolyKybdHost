@@ -4,7 +4,7 @@ nano has no plugin and sets no title, so the host sees it only when the shell
 or the terminal puts the running command into the title. Drives
 `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 
-* Windows Terminal loads the nano set for every title format that shows nano
+* every terminal loads the nano set for every title format that shows nano
   as the running command (cmd.exe, fish, oh-my-zsh, the bash and PowerShell
   snippets in overlay_sources/nano/SOURCES.md, and the macOS Terminal, iTerm2
   and Konsole formats the shared `&editor_titles` list is written for);
@@ -12,9 +12,9 @@ or the terminal puts the running command into the title. Drives
   in ~/nano-docs, Terminal.app in a directory named nano) keeps the
   terminal's own overlay;
 * an editor's mode report takes priority over a nano title;
-* the other terminals (the entry with no overlay of its own) do not route by
-  title: that entry matches only through `urls-contains`
-  (`tests/handler/matcher_test.py::TestRoutesOnlyEntry`);
+* the other terminals (the entry with no overlay of its own) route the same
+  titles, and match nothing for any other title, so the generic shortcut
+  harvest still runs for a plain shell;
 * every file named exists.
 """
 
@@ -145,14 +145,22 @@ class NanoRoutingTest(unittest.TestCase):
             self.assertEqual(self._route("wt", title, "emacs://text-mode")[0],
                              EMACS, title)
 
-    def test_the_other_terminals_do_not_route_by_title(self):
-        # The entry has no overlay of its own, so it routes only through
-        # urls-contains; a title alone matches nothing and the generic
-        # shortcut harvest runs, as before.
+    def test_the_other_terminals_route_by_title(self):
         for app in ("kitty", "konsole", "terminal", "iterm2", "conhost"):
-            for title in NANO_TITLES.values():
-                self.assertIsNone(self._route(app, title, os_name="linux"), (app, title))
+            for fmt, title in NANO_TITLES.items():
+                self.assertEqual(self._route(app, title, os_name="linux"),
+                                 [NANO, "nano_template.combo.mods.png"], (app, fmt))
 
+    def test_other_titles_leave_the_other_terminals_unmatched(self):
+        # No match, so the generic shortcut harvest runs, as before.
+        for app in ("kitty", "konsole", "terminal", "iterm2", "conhost"):
+            for fmt, title in OTHER_TITLES.items():
+                self.assertIsNone(self._route(app, title, os_name="linux"), (app, fmt))
+            self.assertIsNone(self._route(app, "", os_name="linux"), app)
+
+    def test_a_mode_report_takes_priority_in_the_other_terminals_too(self):
+        for title in NANO_TITLES.values():
+            self.assertEqual(self._route("kitty", title, "vim://insert"), [VIM_INSERT], title)
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,7 @@ nano has no plugin system and never sets the terminal's window title (there is
 no OSC 0 or OSC 2 escape anywhere in its `src/*.c`). The host therefore sees
 nano only in the terminal's **window title**, when the shell or the terminal
 puts the running command there. The mapping (`overlay-mapping.poly.yaml`,
-`&editor_titles` on the `windowsterminal,wt` entry) selects the route on the
+`&editor_titles` on every terminal entry) selects the route on the
 word `nano` (or `(nano)` / `(nano` for iTerm2) and then requires nano at the
 command position with a `title` regex:
 
@@ -30,12 +30,9 @@ That is: nano at the start of the title (not followed by ` — `, ` : ` or
 ` - `, which there mean the word was a directory name), or after ` - `, ` — `,
 ` : `, `(` or `] `, each optionally with `sudo ` before it.
 
-⚠️ **Only Windows Terminal routes by title today.** The other terminals share
-one entry with no overlay of its own, and such an entry matches only through
-`urls-contains` (`tests/handler/matcher_test.py::TestRoutesOnlyEntry` pins
-that a title sub-map does not make it match). Routing them needs a change to
-`find_matching_entry`; the list is written so that the same `&editor_titles`
-can be added to that entry.
+The entry for the terminals without an overlay set has no overlay of its own,
+so it still matches nothing when the title does not show nano, and the
+terminal keeps the generic shortcut harvest.
 
 ### Title formats
 

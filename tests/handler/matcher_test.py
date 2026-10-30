@@ -272,8 +272,8 @@ class TestLayerOptOut(unittest.TestCase):
 
 
 class TestRoutesOnlyEntry(unittest.TestCase):
-    """An entry with `urls-contains` and no overlay of its own (the terminals
-    that route a vim:// mode report) matches only through its sub-map."""
+    """An entry with no overlay of its own (the terminals that route a vim://
+    mode report or a nano title) matches only through its sub-maps."""
 
     def setUp(self):
         self.mode = named(entry(), "vim_normal.mods.png")
@@ -290,14 +290,31 @@ class TestRoutesOnlyEntry(unittest.TestCase):
     def test_an_unmatched_url_matches_nothing(self):
         self.assertIsNone(find_matching_entry("bash", self.e, url="emacs://org-mode"))
 
-    def test_title_sub_maps_do_not_make_it_match(self):
+    def test_a_title_sub_map_routes_too(self):
+        # The terminals route GNU nano by the window title.
+        nano = named(entry(), "nano.mods.png")
         e = entry(overlay=False, urls_contains={"vim://normal": self.mode},
-                  contains={"bash": named(entry(), "x")})
+                  contains={"nano": nano})
+        self.assertIs(find_matching_entry("nano x.txt", e, url=None), nano)
+        # A title no key names, or no title: still nothing.
         self.assertIsNone(find_matching_entry("bash", e, url=None))
+        self.assertIsNone(find_matching_entry("", e, url=None))
+        self.assertIsNone(find_matching_entry("", e, url=None, title_known=False))
+        # A known URL decides: the report wins, and an unmatched one skips
+        # titles-contains as on a browser entry.
+        self.assertIs(find_matching_entry("nano x.txt", e, url="vim://normal"), self.mode)
+        self.assertIsNone(find_matching_entry("nano x.txt", e, url="other://x"))
 
-    def test_without_urls_contains_it_still_never_matches(self):
+    def test_a_title_route_whose_gate_fails_matches_nothing(self):
+        gated = named(entry(title=r"^nano"), "nano.mods.png")
+        e = entry(overlay=False, contains={"nano": gated})
+        self.assertIs(find_matching_entry("nano x.txt", e), gated)
+        self.assertIsNone(find_matching_entry("vim nano", e))
+
+    def test_a_title_sub_map_alone_routes_but_never_matches_by_itself(self):
         e = entry(overlay=False, contains={"bash": named(entry(), "x")})
-        self.assertIsNone(find_matching_entry("bash", e, url="vim://normal"))
+        self.assertIsNone(find_matching_entry("zsh", e, url="vim://normal"))
+        self.assertEqual(find_matching_entry("bash", e)["overlay"], "x")
 
 
 class TestBrowserLayering(unittest.TestCase):

@@ -106,11 +106,12 @@ same way.
 
 ### An entry with no overlay of its own
 
-An entry may have `urls-contains` and no `overlay`. It then matches only
-through that sub-map and never by itself: with no URL, or a URL no needle
-matches, the matcher returns nothing, exactly as for an app with no entry, and
-the app keeps the generic shortcut harvest. The terminals without an overlay
-set use this to route the editors' mode reports (`&editor_urls`).
+An entry may have `urls-contains` or a title sub-map and no `overlay`. It
+then matches only through those sub-maps and never by itself: when no URL
+needle and no title key routes, the matcher returns nothing, exactly as for an
+app with no entry, and the app keeps the generic shortcut harvest. The
+terminals without an overlay set use this to route the editors' mode reports
+(`&editor_urls`) and GNU nano's title (`&editor_titles`).
 (`tests/handler/matcher_test.py::TestRoutesOnlyEntry`,
 `tests/handler/vim_routing_test.py`.)
 
@@ -121,12 +122,11 @@ shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish and oh-my-zsh do by default; bash,
 PowerShell and plain zsh need the snippets in
 [`overlay_sources/nano/SOURCES.md`](overlay_sources/nano/SOURCES.md)). The
-`windowsterminal,wt` entry carries `titles-contains: &editor_titles`: the word
+terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at
 the command position, so `vim nano` or a prompt in `~/nano-docs` keeps the
 terminal's set. A mode report still takes priority, because a known URL skips
-`titles-contains`. The entry for the other terminals has no overlay of its
-own, so it cannot route by title (see above).
+`titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
 ## `os:` — per-platform artwork
