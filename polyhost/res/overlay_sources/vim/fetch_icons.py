@@ -644,6 +644,7 @@ DRAWN = {
     "char_below": char_from(True), "char_above": char_from(False),
     "insert_again": word_top("ins", "again"),
     "normal_once": word_top("norm", "once"),
+    "visual_once": word_top("vis", "once"),
     "literal": word_top("^M", "raw", top_px=15),
     "digraph": digraph,
     "esc": esc_key,

@@ -32,7 +32,8 @@ on focus in and focus out, and as a keep-alive every 3 s while nothing changes:
   | `mode(1)` | `url` |
   |---|---|
   | `n` and its variants (`no`, `nov`, `niI`, `nt` ...) | `vim://normal` |
-  | `v`, `V`, CTRL-V, and Select mode `s`, `S`, CTRL-S | `vim://visual` |
+  | `v`, `V`, CTRL-V | `vim://visual` |
+  | Select mode `s`, `S`, CTRL-S | `vim://select` |
   | `i`, `ic`, `ix` | `vim://insert` |
   | `R`, `Rv`, `Rc` ... | `vim://replace` |
   | `c`, `cv`, `ce`, `r`, `rm`, `r?`, `!` | `vim://cmdline` |

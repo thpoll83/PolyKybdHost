@@ -25,7 +25,7 @@ from polyhost.handler.common import find_matching_entry
 RES = Path(__file__).resolve().parents[2] / "polyhost" / "res"
 MAPPING = RES / "overlay-mapping.poly.yaml"
 GUI_KEY = "gvim,macvim,neovide"
-MODES = ("normal", "visual", "insert", "replace", "cmdline", "terminal")
+MODES = ("normal", "visual", "select", "insert", "replace", "cmdline", "terminal")
 
 
 def _overlay_handler_class():

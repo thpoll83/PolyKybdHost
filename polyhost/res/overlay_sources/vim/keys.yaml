@@ -14,6 +14,7 @@
 #   motions   - cursor motions, in Normal and Visual mode
 #   normal    - the rest of Normal mode
 #   visual    - Visual mode, drawn over the motions (`:help visual-index`)
+#   select    - Select mode, drawn over Visual mode (`:help Select-mode`)
 #   insert    - Insert mode
 #   replace   - Replace mode: Insert mode with these keys changed
 #   cmdline   - Command-line mode (`:help ex-edit-index`)
@@ -181,6 +182,16 @@ visual:
   - { key: A, mods: [CTRL], icon: increment, label: "Add 1 to numbers", tag: v_CTRL-A }
   - { key: X, mods: [CTRL], icon: decrement, label: "Subtract 1 from numbers", tag: v_CTRL-X }
   - { key: C, mods: [CTRL], icon: esc, label: "Stop Visual mode", tag: v_CTRL-C }
+
+# Select mode (runtime/doc/visual.txt "8. Select mode" and change.txt v_<BS>,
+# Vim 9.2, read 2026-10-30). gen_vim_bindings.py drops the printable keys of
+# the set: they replace the selection.
+select:
+  - { key: BACKSPACE, icon: delete, label: "Delete selection", tag: "v_<BS>" }
+  - { key: H, mods: [CTRL], icon: delete, label: "Delete selection", tag: v_CTRL-H }
+  - { key: G, mods: [CTRL], icon: visual_char, label: "Visual mode", tag: v_CTRL-G }
+  - { key: O, mods: [CTRL], icon: visual_once, label: "One Visual mode command", tag: v_CTRL-O }
+  - { key: R, mods: [CTRL], icon: clip_letter, label: "Register for the deleted text", tag: v_CTRL-R }
 
 insert:
   - { key: W, mods: [CTRL], icon: del_word_before, label: "Delete word before cursor", tag: i_CTRL-W }

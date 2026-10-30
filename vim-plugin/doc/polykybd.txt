@@ -35,7 +35,8 @@ nothing changes. The body is JSON:
 "url" names the mode, from |mode()|:
 
 	n, no, nov, niI, nt ...		vim://normal
-	v, V, CTRL-V, s, S, CTRL-S	vim://visual
+	v, V, CTRL-V			vim://visual
+	s, S, CTRL-S			vim://select
 	i, ic, ix			vim://insert
 	R, Rv, Rc ...			vim://replace
 	c, cv, ce, r, rm, r?, !		vim://cmdline
