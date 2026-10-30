@@ -1096,8 +1096,40 @@ explorer:
 # the app id `org.gnome.Nautilus`.
 nautilus,org.gnome.Nautilus:
   overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
+# Terminals route the mode report of a vim or emacs running in them
+# (handler/browser_url.py: TERMINAL_APPS, HOSTED_REPORTERS): the Vim plugin
+# (vim-plugin/) sends vim://<mode>. `&editor_urls` is the one list of those
+# routes, used by every terminal entry and by GUI Vim. `layer: false`: an
+# editor's mode REPLACES the terminal's own overlay. Without a report (a plain
+# shell, or an editor with no plugin) the terminal keeps its own overlay.
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
+  layer: false
+  urls-contains: &editor_urls
+    "vim://normal": { overlay: vim_normal_template.mods.png }
+    "vim://visual": { overlay: vim_visual_template.mods.png }
+    "vim://select": { overlay: vim_select_template.mods.png }
+    "vim://insert": { overlay: vim_insert_template.mods.png }
+    "vim://replace": { overlay: vim_replace_template.mods.png }
+    "vim://cmdline": { overlay: vim_cmdline_template.mods.png }
+    "vim://terminal": { overlay: vim_terminal_template.mods.png }
+# The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
+# with no editor report it matches nothing, and the terminal keeps the generic
+# shortcut harvest it had before (handler/common.py, find_matching_entry).
+# None of the names was checked on an install (docs/architecture.md,
+# "Terminal-hosted editors").
+alacritty,com.gexperts.tilix,com.mitchellh.ghostty,conhost,foot,ghostty,gnome-terminal,gnome-terminal-server,iterm,iterm2,kgx,kitty,konsole,openconsole,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.wezfurlong.wezterm,ptyxis,terminal,terminator,tilix,urxvt,uxterm,wezterm,wezterm-gui,xfce4-terminal,xterm:
+  urls-contains: *editor_urls
+# GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
+# gvim on Linux, MacVim's display name, Neovide. The plugin reports the mode
+# as in a terminal; without a report Vim's Normal mode set applies. The names
+# are exactly CONTEXT_REPORTERS' "vim" names (tests/handler/vim_routing_test.py).
+# MacVim adds Cmd menu keys, but the modal keys are the same, so there is no
+# macOS set. None of the names was checked on an install.
+gvim,macvim,neovide:
+  overlay: vim_normal_template.mods.png
+  layer: false
+  urls-contains: *editor_urls
 notepad:
   overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
 mspaint:
