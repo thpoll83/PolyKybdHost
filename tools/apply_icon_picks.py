@@ -155,7 +155,7 @@ def main(argv=None) -> None:
     # The icon files are shared by the spec's overlays, and so is rasterize.yaml:
     # two overlays re-rasterizing one icon must agree on it.
     raster_picks: dict = {}                 # stem -> (overlay id, key id, entry)
-    for (path, icons, chosen), ov in zip(plans, spec["overlays"]):
+    for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
         for (stem, _v), (kid, kind, entry) in chosen.items():
             if kind != "raster":
                 continue
@@ -167,13 +167,14 @@ def main(argv=None) -> None:
     if errors:                               # nothing is written when two picks disagree
         raise SystemExit("\n".join(errors))
     had_raster = raster_path.exists()
-    for (path, icons, chosen), ov in zip(plans, spec["overlays"]):
+    for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
         shared = {s for o, stems in stems_by_overlay.items() if o != ov["id"] for s in stems}
         for (stem, variant), (kid, kind, entry) in chosen.items():
             if kind == "raster":
                 raster[stem] = entry
                 icons.pop(stem, None)
-                set_binding_region(path, stem, entry["region"])
+                for other, _i, _c in plans:     # every overlay drawing this file: the file has one size
+                    set_binding_region(other, stem, entry["region"])
                 continue
             if variant:
                 cur = icons.get(stem)

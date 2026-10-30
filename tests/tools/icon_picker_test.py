@@ -185,6 +185,14 @@ class ApplyTest(unittest.TestCase):
         self.run_picks({"a": {"A": raster_pick(1.0)}, "b": {"A": raster_pick(1.0)}})
         self.assertIn("x", self.raster())
 
+    def test_a_re_rasterized_icon_resizes_every_overlay_that_draws_it(self):
+        """x.png is drawn by a and b; picked on a, b's binding gets the region too."""
+        self.run_picks({"a": {"A": raster_pick(rh=24)}})
+        for name in ("a.yaml", "b.yaml"):
+            with self.subTest(name):
+                line = [ln for ln in (self.d / name).read_text(encoding="utf-8").splitlines() if "x.png" in ln][0]
+                self.assertIn("region: [40, 24]", line)
+
     def test_an_icon_another_overlay_draws_keeps_its_re_rasterized_file(self):
         self.run_picks({"a": {"A": raster_pick()}})
         self.run_picks({"a": {"A": WORD}})                   # b still draws x.png
