@@ -65,9 +65,9 @@ Microsoft Fluent UI System Icons (MIT,
 | `nextvideo.png`, `prevvideo.png` | Material `skip_next`, `skip_previous` | Apache-2.0 |
 | `miniplayer.png` | Material `picture_in_picture_alt` | Apache-2.0 |
 | `shortcuts.png` | Fluent `Keyboard` | MIT |
-| `seek_0.png` … `seek_9.png` | drawn by `fetch_icons.seek_icons()`: a bar filled to the digit × 10 %, between end caps at x 0 and x 39, 1-bit at 40×40 | (this repo) |
+| `seek_0.png` … `seek_9.png` | drawn by `fetch_icons.seek_icons()`: a bar filled to the digit × 10 %, between end caps at x 0 and x 39 that mark the ends of the video, 1-bit at 40×40 | (this repo) |
 | `youtube.png` (ESC) | Simple Icons `youtube` | CC0-1.0 artwork; nominative use, see `../brand_marks.py` |
 
-The seek icons are bound with `region: [40, 40]`. The generator crops each icon
-to its ink before it places it, so the end caps give all ten the same ink box
-and the same position.
+The seek icons are bound with `region: [40, 40]`. The generator scales the
+whole 40×40 image into that region, so it places them 1:1 and all ten at the
+same position.

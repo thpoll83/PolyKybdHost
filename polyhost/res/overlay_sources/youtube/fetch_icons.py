@@ -53,8 +53,9 @@ SEEK_SIZE = (40, 40)
 def seek_icons(out: Path) -> None:
     """Draw seek_<digit>.png: a seek bar filled to digit x 10 %.
 
-    End caps at x 0 and x 39 give every digit the same ink box, so the
-    generator places all ten at the same position and scale.
+    Every image is 40x40 and the generator scales the whole image, so all ten
+    are placed at the same position. The end caps at x 0 and x 39 mark the
+    ends of the video.
     """
     w, h = SEEK_SIZE
     x0, x1, cy = 5, w - 6, h - 12
