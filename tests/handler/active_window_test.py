@@ -1991,5 +1991,18 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    def test_RIMWORLD_gets_its_set_on_every_os(self):
+        apps = {"WINDOWS": ("rimworldwin64", "rimworldwin64.exe"),
+                "LINUX": ("rimworldlinux", "rimworld", "rimworldwin64.exe", "steam_app_294100"),
+                "MACOS": ("rimworld", "rimworldmac")}
+        for os_name, names in apps.items():
+            for app in names:
+                for title, known in (("RimWorld", True), (None, False)):
+                    with self.subTest(app=app, os=os_name, title=title):
+                        got = self._match(app, title=title, title_known=known,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn("rimworld_template.mods.png", got["overlay"])
+
 if __name__ == "__main__":
     unittest.main()
