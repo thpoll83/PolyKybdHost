@@ -191,3 +191,107 @@ lit from grey 90 of 255.
 | `zoom2x.png` | Material Symbols `search` + text drawn by `fetch_icons.py` (Liberation Sans Bold) | Google | Apache-2.0 |
 | `slot0.png` … `slot9.png`, `bar0.png` … `bar9.png` | drawn by `fetch_icons.py` (Liberation Sans Bold) | — | this repo (GPL-3.0-or-later) |
 | `program.png` | drawn by `fetch_icons.py` in Bebas Neue | font: Dharma Type | font: SIL OFL 1.1 |
+
+## Art from the user's game files
+
+When a Factorio install is on the machine, the host draws 21 keys of this
+overlay from the game's own icons instead. The shipped files above stay the
+fallback and are the only art in the repository. Wube's images are never
+shipped: the host reads them from the user's install, writes the patched copy
+to the user's cache directory, and sends it only to the keyboard.
+
+⚠️ The reader was not run against a real Factorio install. The paths below are
+from Wube's public prototype definitions, and the tests use synthetic PNG files
+laid out the same way. Neither the look of the real icons at 40 px nor the
+install folders were checked.
+
+The mapping entry and its macOS sub-entry opt in with
+`game_assets: factorio/factorio.yaml`. The `game_assets:` block at the end of
+`factorio.yaml` names the reader (`factorio`) and the file each key reads.
+Nothing is read until the overlay is first sent.
+
+| Keys | From the game | File (under the data folder) |
+|---|---|---|
+| B, P, O, Tab and M, L, T | the buttons at the top right of the screen that open the same panels (blueprint library, production, trains, map, logistic networks, technology) | `core/graphics/side-menu-buttons.png`, 64 px rows 0, 1, 4, 7, 9 and 11 |
+| Alt+B, Alt+D, Alt+U, Alt+T, Alt+Y, Alt+A, Alt+E, Alt+F | the shortcut bar buttons of the same controls | `base/graphics/icons/shortcut-toolbar/mip/` `new-blueprint`, `new-deconstruction-planner`, `new-upgrade-planner`, `artillery-targeting-remote`, `discharge-defense-remote`, `new-rts-tool`, `toggle-exoskeleton`, `toggle-personal-roboport`, each `-x56.png` (`-x32.png` before 2.0.18) |
+| C | the pistol item | `base/graphics/icons/pistol.png` |
+| Enter | the car item | `base/graphics/icons/car.png` |
+| G | the rail item | `base/graphics/icons/rail.png` |
+| F1, Alt+L | the logistic robot item | `base/graphics/icons/logistic-robot.png` |
+| F2 | the character icon | `core/graphics/icons/entity/character.png` |
+
+How the paths were checked: each one is the `icon` or `filename` of the
+prototype named in the table, read from
+[wube/factorio-data](https://github.com/wube/factorio-data) on 2026-10-30 at
+commit `acf5a342afcb66c066b9d88d202e8622112da117` (version 2.1.24) and at the
+tags `2.0.10` and `2.0.77`:
+
+- `base/prototypes/shortcuts.lua`: the shortcuts `give-blueprint`,
+  `give-deconstruction-planner`, `give-upgrade-planner`,
+  `give-artillery-targeting-remote`, `give-discharge-defense-remote`,
+  `give-spidertron-remote`, `toggle-equipment-movement-bonus` and
+  `toggle-personal-roboport`. Each names the control it triggers
+  (`associated_control_input`). The files are `-x56.png` in 2.0.77 and 2.1.24
+  and `-x32.png` in 2.0.10; the changelog of 2.0.18 says "Updated shortcut
+  icons and increased their size to 56px". The reader reads the first of the
+  two that exists.
+- `base/prototypes/item.lua`: the items `pistol`, `car`, `rail` and
+  `logistic-robot`, unchanged from 2.0.10 to 2.1.24.
+- `core/prototypes/utility-sprites.lua`: `side_menu_blueprint_library_icon`,
+  `side_menu_production_icon`, `side_menu_train_icon`, `side_menu_map_icon`,
+  `side_menu_logistic_networks_icon` and `side_menu_technology_icon`
+  (`make_side_menu_button(row)`: 64 px, `y = row * 64`), and the default
+  character modifier icon (`core/graphics/icons/entity/character.png`, 64 px).
+  The same in 2.0.10 and 2.1.24.
+
+The repository has no images, and none were downloaded.
+
+Factorio 2.0 stores an icon with its smaller copies to the right of it (a
+64 px icon is 64 + 32 + 16 + 8 = 120 px wide; the 2.0.7 changelog: "Mipmap
+count will be inferred from icon_size and actual dimensions of the source
+image"). The reader reads only the first square of the file, or the square in
+the given row of a sheet.
+
+Drawing (`mode` in the recipe): the GUI symbols (the side-menu buttons, the
+shortcut icons and the character) are drawn as `silhouette`, the shape of the
+symbol. A symbol that turns out to have parts of different brightness, or no
+transparent background, is drawn as `threshold` instead so its inner lines are
+kept. The item icons are drawn as `threshold`: the outline lit and the parts
+lighter than mid-grey lit. Rendered on synthetic coloured icons (a pistol, a
+car, a blueprint sheet and a robot, flat and shaded with noise) at 40 px,
+`threshold` kept the shapes and `dither` turned the bodies into a dot pattern,
+so no key uses `dither`.
+
+Keys that keep the shipped art: the wire modes Alt+C, Alt+R and Alt+G (the
+game's three wire icons are told apart by colour: the items carry
+`color_hint` "C", "R" and "G", and a 1-bit keycap cannot show colour; the
+shipped icons add CU, RED and GRN), and every key with no game icon of the same
+action (movement, rotate, flip, pick up, drop, shoot, chat, quickbar slots,
+inventory, crafting, train connect, pause, debug and zoom).
+
+The reader looks for a folder with `base/info.json`, `core/info.json` and
+`base/graphics/icons/` in this order:
+
+1. the folder in the `game_factorio_data_dir` setting, when set: the data
+   folder itself, the install folder above it, or `factorio.app`;
+2. the data folder of the install the running game's executable is in
+   (`bin/x64/factorio`, so two levels up; under Proton the game's working
+   folder). macOS gives no executable folder, so a Mac skips this step;
+3. `steamapps/common/Factorio/data` (macOS:
+   `steamapps/common/Factorio/factorio.app/Contents/data`) in each Steam
+   library;
+4. `Factorio\data` under Program Files on Windows, `~/factorio/data` (the
+   Linux archive unpacked in the home folder), and
+   `/Applications/factorio.app/Contents/data` or
+   `~/Applications/factorio.app/Contents/data` on macOS.
+
+None of these folders was checked on an install.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `game_assets_enabled` | `true` | `false` always sends the shipped files |
+| `game_factorio_data_dir` | empty | the Factorio data folder; empty searches as above |
+
+Copies are cached by the size and time of `base/info.json` and
+`core/info.json` (a game update rewrites both), the shipped overlay, the spec
+and `RENDER_VERSION`.

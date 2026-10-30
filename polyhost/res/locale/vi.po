@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-10-29 07:42+0000\n"
+"POT-Creation-Date: 2026-10-30 19:48+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -4093,6 +4093,14 @@ msgstr ""
 #: polyhost/host.py:3382
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Trình cài đặt WinCompose đã khởi chạy. Khi cài xong và WinCompose đang chạy, PolyKybd sẽ tự động chuyển sang dùng nó."
+
+#: polyhost/services/game_assets/factorio/__init__.py:13
+msgid "Factorio Folder"
+msgstr "Thư mục Factorio"
+
+#: polyhost/services/game_assets/factorio/__init__.py:14
+msgid "The data folder of a Factorio install, the folder with base and core in it. Empty: the Steam libraries and the standard install folders are searched."
+msgstr "Thư mục data của bản cài đặt Factorio, thư mục chứa base và core. Trống: tìm trong các thư viện Steam và các thư mục cài đặt tiêu chuẩn."
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert Folder"

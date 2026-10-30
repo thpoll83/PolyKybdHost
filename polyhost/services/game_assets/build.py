@@ -183,7 +183,12 @@ def cache_name(template: str, paths: list, variant: str, reader_name: str) -> st
     overlay, the spec and RENDER_VERSION, so a stale copy is never reused."""
     h = hashlib.sha1(f"{RENDER_VERSION}:{reader_name}:{variant}".encode())
     for p in paths:
-        st = os.stat(p)
+        try:
+            st = os.stat(p)
+        except OSError:
+            # A recipe's file this install lacks: restoring it makes a new copy.
+            h.update(f"{Path(p).name}:missing".encode())
+            continue
         h.update(f"{Path(p).name}:{st.st_size}:{int(st.st_mtime)}".encode())
     stem = template.removesuffix(".png").removesuffix(".mods")
     # The file kind (".combo") stays right before ".mods.png": the converter
@@ -232,8 +237,13 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
         return None
     remove_stale_temp(cache_dir)
     shipped = RES / "overlays" / template
-    out = Path(cache_dir) / cache_name(template, reader.fingerprint(files) + [shipped, spec_path],
-                                       variant, name)
+    key = reader.fingerprint(files) + [shipped, spec_path]
+    if hasattr(reader, "inputs"):
+        # The files the recipes read, for a reader whose fingerprint does not
+        # cover them: a file repaired after a build that skipped its key
+        # makes a new copy.
+        key += reader.inputs(files, recipes(spec, variant))
+    out = Path(cache_dir) / cache_name(template, key, variant, name)
     if out.exists():
         return out
     icons = render(reader, reader.open_source(files), spec, variant)
