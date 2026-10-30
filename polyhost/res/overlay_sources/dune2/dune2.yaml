@@ -69,5 +69,5 @@ game_assets:
     tabupgrade: {word: Upgrade, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
     nextunit: {src: 'shp:mouse.shp:2', engine: pixel, lit: nonzero, scale: 0, mirror: false, region: [40, 40], margin: 0}
     prevunit: {src: 'shp:mouse.shp:4', engine: pixel, lit: nonzero, scale: 0, mirror: false, region: [40, 40], margin: 0}
-    mentat: {src: 'shp:shapes.shp:94', engine: pixel, lit: darker, pct: 53, scale: 0, mirror: false, frame: 0, crop: [2, 4], smooth_w: 72, valign: bottom, region: [70, 40], margin: 0}
-    options: {src: 'shp:shapes.shp:96', engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [2, 4], smooth_w: 72, valign: bottom, region: [72, 40], margin: 0}
+    mentat: {src: 'shp:shapes.shp:94', engine: pixel, lit: darker, pct: 53, scale: 0, mirror: false, frame: 0, crop: [0, 5], smooth_w: 72, valign: bottom, region: [70, 40], margin: 0}
+    options: {src: 'shp:shapes.shp:96', engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [0, 5], smooth_w: 72, valign: bottom, region: [72, 40], margin: 0}

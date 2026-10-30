@@ -138,7 +138,7 @@ game_assets:
     harvesters: {src: 'shp:shapes.shp:88', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.25, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [55, 40], margin: 0}
     ornithopters: {src: 'shp:shapes.shp:85', engine: dither, cut: false, frame: 1, mode: levels, lo: 10, hi: 87, gamma: 1.55, curve: 1.15, sharpen: 0, floor: 0.15, outline: true, mirror: false, region: [57, 40], margin: 0}
     drop: {src: 'shp:shapes.shp:77', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.7, curve: 0.3, sharpen: 1, floor: 0.27, outline: true, mirror: false, valign: bottom, region: [53, 40], margin: 0}
-    deselect: {word: None, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    deselect: {word: Deselect, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
     ungroup: {word: Ungroup, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
     attackmove: {word: Attack, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
     move: {word: Move, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
