@@ -1,0 +1,248 @@
+# Vim's default keys per mode, the input of gen_vim_bindings.py.
+#
+# Source: Vim's own command index, `:help index` (runtime/doc/index.txt,
+# https://vimhelp.org/index.txt.html, "For Vim version 9.2. Last change: 2026
+# Feb 14", read 2026-10-30). `tag` is the help tag of the row each key comes
+# from, so `:help <tag>` shows it. Default bindings only; SOURCES.md lists
+# what was left out and why.
+#
+# Keys are US positions: `$` is SHIFT+4, `~` is SHIFT+GRAVE. One icon file is
+# one picture, so a key that does the same thing in two modes uses the same
+# file and the keyboard keeps one copy of it.
+#
+# Sections:
+#   motions   - cursor motions, in Normal and Visual mode
+#   normal    - the rest of Normal mode
+#   visual    - Visual mode, drawn over the motions (`:help visual-index`)
+#   insert    - Insert mode
+#   replace   - Replace mode: Insert mode with these keys changed
+#   cmdline   - Command-line mode (`:help ex-edit-index`)
+#   terminal  - Terminal mode (`:help terminal`, Neovim `:help terminal-input`)
+
+motions:
+  - { key: H, icon: left, label: "Left", tag: h }
+  - { key: LEFT, icon: left, label: "Left", tag: "<Left>" }
+  - { key: BACKSPACE, icon: left, label: "Left", tag: "<BS>" }
+  - { key: J, icon: down, label: "Down", tag: j }
+  - { key: DOWN, icon: down, label: "Down", tag: "<Down>" }
+  - { key: K, icon: up, label: "Up", tag: k }
+  - { key: UP, icon: up, label: "Up", tag: "<Up>" }
+  - { key: L, icon: right, label: "Right", tag: l }
+  - { key: RIGHT, icon: right, label: "Right", tag: "<Right>" }
+  - { key: SPACE, icon: right, label: "Right", tag: "<Space>" }
+  - { key: W, icon: word_next, label: "Next word", tag: w }
+  - { key: B, icon: word_prev, label: "Previous word", tag: b }
+  - { key: E, icon: word_end, label: "End of word", tag: e }
+  - { key: W, mods: [SHIFT], icon: bigword_next, label: "Next WORD", tag: W }
+  - { key: B, mods: [SHIFT], icon: bigword_prev, label: "Previous WORD", tag: B }
+  - { key: E, mods: [SHIFT], icon: bigword_end, label: "End of WORD", tag: E }
+  - { key: RIGHT, mods: [CTRL], icon: word_next, label: "Next word", tag: "<C-Right>" }
+  - { key: LEFT, mods: [CTRL], icon: word_prev, label: "Previous word", tag: "<C-Left>" }
+  - { key: RIGHT, mods: [SHIFT], icon: word_next, label: "Next word", tag: "<S-Right>" }
+  - { key: LEFT, mods: [SHIFT], icon: word_prev, label: "Previous word", tag: "<S-Left>" }
+  - { key: "0", icon: line_start, label: "Start of line", tag: "0" }
+  - { key: HOME, icon: line_start, label: "Start of line", tag: "<Home>" }
+  - { key: "6", mods: [SHIFT], icon: first_char, label: "First character of line", tag: "^" }
+  - { key: "4", mods: [SHIFT], icon: line_end, label: "End of line", tag: "$" }
+  - { key: END, icon: line_end, label: "End of line", tag: "<End>" }
+  - { key: "\\", mods: [SHIFT], icon: column, label: "To column N", tag: bar }
+  - { key: "-", icon: line_prev, label: "Line up, first character", tag: "-" }
+  - { key: "=", mods: [SHIFT], icon: line_next, label: "Line down, first character", tag: "+" }
+  - { key: ENTER, icon: line_next, label: "Line down, first character", tag: "<CR>" }
+  - { key: "[", mods: [SHIFT], icon: para_prev, label: "Previous paragraph", tag: "{" }
+  - { key: "]", mods: [SHIFT], icon: para_next, label: "Next paragraph", tag: "}" }
+  - { key: "9", mods: [SHIFT], icon: sentence_prev, label: "Previous sentence", tag: "(" }
+  - { key: "0", mods: [SHIFT], icon: sentence_next, label: "Next sentence", tag: ")" }
+  - { key: H, mods: [SHIFT], icon: screen_top, label: "Top of window", tag: H }
+  - { key: M, mods: [SHIFT], icon: screen_mid, label: "Middle of window", tag: M }
+  - { key: L, mods: [SHIFT], icon: screen_bot, label: "Bottom of window", tag: L }
+  - { key: G, mods: [SHIFT], icon: file_end, label: "Last line (or line N)", tag: G }
+  - { key: HOME, mods: [CTRL], icon: file_start, label: "First line", tag: "<C-Home>" }
+  - { key: END, mods: [CTRL], icon: file_end, label: "Last line", tag: "<C-End>" }
+  - { key: "5", mods: [SHIFT], icon: match_pair, label: "Matching bracket", tag: "%" }
+  - { key: F, icon: find_next, label: "Find character right", tag: f }
+  - { key: F, mods: [SHIFT], icon: find_prev, label: "Find character left", tag: F }
+  - { key: T, icon: till_next, label: "Till character right", tag: t }
+  - { key: T, mods: [SHIFT], icon: till_prev, label: "Till character left", tag: T }
+  - { key: ";", icon: find_again, label: "Repeat f t F T", tag: ";" }
+  - { key: ",", icon: find_again_rev, label: "Repeat f t F T, other direction", tag: "," }
+  - { key: "/", icon: search_fwd, label: "Search forward", tag: "/" }
+  - { key: "/", mods: [SHIFT], icon: search_back, label: "Search backward", tag: "?" }
+  - { key: N, icon: match_next, label: "Next match", tag: n }
+  - { key: N, mods: [SHIFT], icon: match_prev, label: "Previous match", tag: N }
+  - { key: "8", mods: [SHIFT], icon: word_search_fwd, label: "Search word under cursor forward", tag: star }
+  - { key: "3", mods: [SHIFT], icon: word_search_back, label: "Search word under cursor backward", tag: "#" }
+  - { key: "`", icon: mark_pos, label: "Go to mark", tag: "`" }
+  - { key: "'", icon: mark_line, label: "Go to line of mark", tag: "'" }
+  - { key: F, mods: [CTRL], icon: page_down, label: "Page down", tag: CTRL-F }
+  - { key: B, mods: [CTRL], icon: page_up, label: "Page up", tag: CTRL-B }
+  - { key: PAGEDOWN, icon: page_down, label: "Page down", tag: "<PageDown>" }
+  - { key: PAGEUP, icon: page_up, label: "Page up", tag: "<PageUp>" }
+  - { key: DOWN, mods: [SHIFT], icon: page_down, label: "Page down", tag: "<S-Down>" }
+  - { key: UP, mods: [SHIFT], icon: page_up, label: "Page up", tag: "<S-Up>" }
+  - { key: D, mods: [CTRL], icon: half_down, label: "Half a page down", tag: CTRL-D }
+  - { key: U, mods: [CTRL], icon: half_up, label: "Half a page up", tag: CTRL-U }
+  - { key: E, mods: [CTRL], icon: scroll_down, label: "Scroll one line down", tag: CTRL-E }
+  - { key: Y, mods: [CTRL], icon: scroll_up, label: "Scroll one line up", tag: CTRL-Y }
+  - { key: "]", mods: [CTRL], icon: tag_jump, label: "Jump to tag", tag: "CTRL-]" }
+
+normal:
+  - { key: I, icon: insert, label: "Insert before cursor", tag: i }
+  - { key: A, icon: append, label: "Append after cursor", tag: a }
+  - { key: I, mods: [SHIFT], icon: insert_bol, label: "Insert at start of line", tag: I }
+  - { key: A, mods: [SHIFT], icon: append_eol, label: "Append at end of line", tag: A }
+  - { key: O, icon: open_below, label: "Open line below", tag: o }
+  - { key: O, mods: [SHIFT], icon: open_above, label: "Open line above", tag: O }
+  - { key: INSERT, icon: insert, label: "Insert before cursor", tag: "<Insert>" }
+  - { key: X, icon: delete_char, label: "Delete character", tag: x }
+  - { key: DELETE, icon: delete_char, label: "Delete character", tag: "<Del>" }
+  - { key: X, mods: [SHIFT], icon: delete_before, label: "Delete character before cursor", tag: X }
+  - { key: D, icon: delete, label: "Delete (operator)", tag: d }
+  - { key: D, mods: [SHIFT], icon: delete_eol, label: "Delete to end of line", tag: D }
+  - { key: C, icon: change, label: "Change (operator)", tag: c }
+  - { key: C, mods: [SHIFT], icon: change_eol, label: "Change to end of line", tag: C }
+  - { key: S, icon: change_char, label: "Substitute character", tag: s }
+  - { key: S, mods: [SHIFT], icon: change_line, label: "Substitute line", tag: S }
+  - { key: Y, icon: copy, label: "Yank (operator)", tag: y }
+  # Vim: yank the line. Neovim maps Y to y$ by default (`:help default-mappings`).
+  - { key: Y, mods: [SHIFT], icon: copy, label: "Yank line (Vim), to end of line (Neovim)", tag: Y }
+  - { key: P, icon: put_after, label: "Put after cursor", tag: p }
+  - { key: P, mods: [SHIFT], icon: put_before, label: "Put before cursor", tag: P }
+  - { key: U, icon: undo, label: "Undo", tag: u }
+  - { key: U, mods: [SHIFT], icon: undo_line, label: "Undo line", tag: U }
+  - { key: R, mods: [CTRL], icon: redo, label: "Redo", tag: CTRL-R }
+  - { key: R, icon: replace_char, label: "Replace character", tag: r }
+  - { key: R, mods: [SHIFT], icon: replace_mode, label: "Replace mode", tag: R }
+  - { key: "`", mods: [SHIFT], icon: swap_case, label: "Switch case", tag: "~" }
+  - { key: J, mods: [SHIFT], icon: join, label: "Join lines", tag: J }
+  - { key: ".", mods: [SHIFT], icon: indent_inc, label: "Indent (operator)", tag: ">" }
+  - { key: ",", mods: [SHIFT], icon: indent_dec, label: "Unindent (operator)", tag: "<" }
+  - { key: "=", icon: align_left, label: "Re-indent (operator)", tag: "=" }
+  - { key: "1", mods: [SHIFT], icon: filter, label: "Filter through command", tag: "!" }
+  - { key: ".", icon: repeat_change, label: "Repeat last change", tag: "." }
+  - { key: "7", mods: [SHIFT], icon: repeat_subst, label: "Repeat last :s", tag: "&" }
+  - { key: Q, icon: record, label: "Record macro", tag: q }
+  - { key: "2", mods: [SHIFT], icon: play, label: "Run macro", tag: "@" }
+  - { key: M, icon: bookmark_add, label: "Set mark", tag: m }
+  - { key: "'", mods: [SHIFT], icon: clip_letter, label: "Use register", tag: quote }
+  - { key: ";", mods: [SHIFT], icon: cmdline, label: "Command line", tag: ":" }
+  - { key: V, icon: visual_char, label: "Visual mode", tag: v }
+  - { key: V, mods: [SHIFT], icon: visual_line, label: "Visual line mode", tag: V }
+  - { key: V, mods: [CTRL], icon: visual_block, label: "Visual block mode", tag: CTRL-V }
+  - { key: K, mods: [SHIFT], icon: book_q, label: "Look up keyword", tag: K }
+  - { key: A, mods: [CTRL], icon: increment, label: "Add 1 to number", tag: CTRL-A }
+  - { key: X, mods: [CTRL], icon: decrement, label: "Subtract 1 from number", tag: CTRL-X }
+  - { key: G, mods: [CTRL], icon: info, label: "File name and position", tag: CTRL-G }
+  - { key: O, mods: [CTRL], icon: jump_older, label: "Older jump", tag: CTRL-O }
+  - { key: I, mods: [CTRL], icon: jump_newer, label: "Newer jump", tag: CTRL-I }
+  - { key: TAB, icon: jump_newer, label: "Newer jump", tag: "<Tab>" }
+  - { key: T, mods: [CTRL], icon: tag_back, label: "Older tag", tag: CTRL-T }
+  # CTRL-^ is CTRL-6 on a US keyboard; most terminals send it for both.
+  - { key: "6", mods: [CTRL], icon: alt_file, label: "Alternate file", tag: "CTRL-^" }
+  - { key: W, mods: [CTRL], icon: split, label: "Window commands", tag: CTRL-W }
+  - { key: L, mods: [CTRL], icon: sync, label: "Redraw", tag: CTRL-L }
+  # In a terminal: suspend Vim. GUI Vim minimizes its window (`:help CTRL-Z`).
+  - { key: Z, mods: [CTRL], icon: pause, label: "Suspend", tag: CTRL-Z }
+  - { key: F1, icon: help, label: "Help", tag: "<F1>" }
+
+visual:
+  - { key: D, icon: delete, label: "Delete selection", tag: v_d }
+  - { key: X, icon: delete, label: "Delete selection", tag: v_x }
+  - { key: DELETE, icon: delete, label: "Delete selection", tag: v_x }
+  - { key: D, mods: [SHIFT], icon: delete_lines, label: "Delete lines", tag: v_D }
+  - { key: X, mods: [SHIFT], icon: delete_lines, label: "Delete lines", tag: v_X }
+  - { key: Y, icon: copy, label: "Yank selection", tag: v_y }
+  - { key: Y, mods: [SHIFT], icon: yank_lines, label: "Yank lines", tag: v_Y }
+  - { key: C, icon: change, label: "Change selection", tag: v_c }
+  - { key: S, icon: change, label: "Change selection", tag: v_s }
+  - { key: C, mods: [SHIFT], icon: change_line, label: "Change lines", tag: v_C }
+  - { key: S, mods: [SHIFT], icon: change_line, label: "Change lines", tag: v_S }
+  - { key: R, mods: [SHIFT], icon: change_line, label: "Change lines", tag: v_R }
+  - { key: ".", mods: [SHIFT], icon: indent_inc, label: "Indent", tag: "v_>" }
+  - { key: ",", mods: [SHIFT], icon: indent_dec, label: "Unindent", tag: "v_<" }
+  - { key: "=", icon: align_left, label: "Re-indent", tag: "v_=" }
+  - { key: "1", mods: [SHIFT], icon: filter, label: "Filter through command", tag: "v_!" }
+  - { key: "`", mods: [SHIFT], icon: swap_case, label: "Switch case", tag: "v_~" }
+  - { key: U, icon: to_lower, label: "Lowercase", tag: v_u }
+  - { key: U, mods: [SHIFT], icon: to_upper, label: "Uppercase", tag: v_U }
+  - { key: J, mods: [SHIFT], icon: join, label: "Join lines", tag: v_J }
+  - { key: O, icon: other_end, label: "Other end of selection", tag: v_o }
+  - { key: O, mods: [SHIFT], icon: other_corner, label: "Other corner of block", tag: v_O }
+  - { key: R, icon: replace_char, label: "Replace every character", tag: v_r }
+  - { key: P, icon: paste, label: "Put over selection", tag: v_p }
+  - { key: P, mods: [SHIFT], icon: paste, label: "Put over selection, keep register", tag: v_P }
+  - { key: I, mods: [SHIFT], icon: insert_bol, label: "Insert before block", tag: v_b_I }
+  - { key: A, mods: [SHIFT], icon: append_eol, label: "Append after block", tag: v_b_A }
+  - { key: ";", mods: [SHIFT], icon: cmdline, label: "Command line on selection", tag: "v_:" }
+  - { key: V, icon: visual_char, label: "Visual mode (or stop)", tag: v_v }
+  - { key: V, mods: [SHIFT], icon: visual_line, label: "Visual line mode (or stop)", tag: v_V }
+  - { key: V, mods: [CTRL], icon: visual_block, label: "Visual block mode (or stop)", tag: v_CTRL-V }
+  - { key: K, mods: [SHIFT], icon: book_q, label: "Look up selection", tag: v_K }
+  - { key: A, mods: [CTRL], icon: increment, label: "Add 1 to numbers", tag: v_CTRL-A }
+  - { key: X, mods: [CTRL], icon: decrement, label: "Subtract 1 from numbers", tag: v_CTRL-X }
+  - { key: C, mods: [CTRL], icon: esc, label: "Stop Visual mode", tag: v_CTRL-C }
+
+insert:
+  - { key: W, mods: [CTRL], icon: del_word_before, label: "Delete word before cursor", tag: i_CTRL-W }
+  - { key: U, mods: [CTRL], icon: del_line_before, label: "Delete entered text in line", tag: i_CTRL-U }
+  - { key: H, mods: [CTRL], icon: delete_before, label: "Delete character before cursor", tag: i_CTRL-H }
+  - { key: T, mods: [CTRL], icon: indent_inc, label: "Indent line", tag: i_CTRL-T }
+  - { key: D, mods: [CTRL], icon: indent_dec, label: "Unindent line", tag: i_CTRL-D }
+  - { key: N, mods: [CTRL], icon: complete_next, label: "Complete, next match", tag: i_CTRL-N }
+  - { key: P, mods: [CTRL], icon: complete_prev, label: "Complete, previous match", tag: i_CTRL-P }
+  - { key: R, mods: [CTRL], icon: paste, label: "Insert register", tag: i_CTRL-R }
+  - { key: O, mods: [CTRL], icon: normal_once, label: "One Normal mode command", tag: i_CTRL-O }
+  - { key: V, mods: [CTRL], icon: literal, label: "Insert next key literally", tag: i_CTRL-V }
+  - { key: K, mods: [CTRL], icon: digraph, label: "Digraph", tag: i_CTRL-K }
+  - { key: E, mods: [CTRL], icon: char_below, label: "Character from line below", tag: i_CTRL-E }
+  - { key: Y, mods: [CTRL], icon: char_above, label: "Character from line above", tag: i_CTRL-Y }
+  - { key: A, mods: [CTRL], icon: insert_again, label: "Insert last inserted text", tag: i_CTRL-A }
+  - { key: "[", mods: [CTRL], icon: esc, label: "Back to Normal mode", tag: "i_CTRL-[" }
+  - { key: C, mods: [CTRL], icon: esc, label: "Back to Normal mode", tag: i_CTRL-C }
+  - { key: INSERT, icon: replace_mode, label: "Replace mode", tag: "i_<Insert>" }
+  - { key: F1, icon: help, label: "Help", tag: "i_<F1>" }
+
+# Replace mode takes Insert mode's keys; <BS>, CTRL-W and CTRL-U restore the
+# replaced text instead of deleting (`:help Replace-mode`).
+replace:
+  - { key: BACKSPACE, icon: restore_char, label: "Restore character", tag: Replace-mode }
+  - { key: H, mods: [CTRL], icon: restore_char, label: "Restore character", tag: Replace-mode }
+  - { key: W, mods: [CTRL], icon: restore_word, label: "Restore word", tag: Replace-mode }
+  - { key: U, mods: [CTRL], icon: restore_line, label: "Restore line", tag: Replace-mode }
+  - { key: INSERT, icon: insert, label: "Insert mode", tag: "i_<Insert>" }
+
+cmdline:
+  - { key: R, mods: [CTRL], icon: paste, label: "Insert register", tag: c_CTRL-R }
+  - { key: W, mods: [CTRL], icon: del_word_before, label: "Delete word before cursor", tag: c_CTRL-W }
+  - { key: U, mods: [CTRL], icon: del_line_before, label: "Delete to start of line", tag: c_CTRL-U }
+  - { key: H, mods: [CTRL], icon: delete_before, label: "Delete character before cursor", tag: c_CTRL-H }
+  - { key: B, mods: [CTRL], icon: line_start, label: "Start of command line", tag: c_CTRL-B }
+  - { key: E, mods: [CTRL], icon: line_end, label: "End of command line", tag: c_CTRL-E }
+  - { key: HOME, icon: line_start, label: "Start of command line", tag: "c_<Home>" }
+  - { key: END, icon: line_end, label: "End of command line", tag: "c_<End>" }
+  - { key: LEFT, mods: [CTRL], icon: word_prev, label: "Previous word", tag: "c_<C-Left>" }
+  - { key: RIGHT, mods: [CTRL], icon: word_next, label: "Next word", tag: "c_<C-Right>" }
+  - { key: LEFT, mods: [SHIFT], icon: word_prev, label: "Previous word", tag: "c_<S-Left>" }
+  - { key: RIGHT, mods: [SHIFT], icon: word_next, label: "Next word", tag: "c_<S-Right>" }
+  - { key: TAB, icon: complete, label: "Complete", tag: "c_<Tab>" }
+  - { key: TAB, mods: [SHIFT], icon: complete_prev, label: "Previous completion", tag: "c_<S-Tab>" }
+  - { key: N, mods: [CTRL], icon: complete_next, label: "Next match or newer command", tag: c_CTRL-N }
+  - { key: P, mods: [CTRL], icon: complete_prev, label: "Previous match or older command", tag: c_CTRL-P }
+  - { key: D, mods: [CTRL], icon: list, label: "List completions", tag: c_CTRL-D }
+  - { key: V, mods: [CTRL], icon: literal, label: "Insert next key literally", tag: c_CTRL-V }
+  - { key: K, mods: [CTRL], icon: digraph, label: "Digraph", tag: c_CTRL-K }
+  - { key: F, mods: [CTRL], icon: window, label: "Command-line window", tag: "'cedit'" }
+  - { key: G, mods: [CTRL], icon: match_next, label: "Next match (incsearch)", tag: c_CTRL-G }
+  - { key: T, mods: [CTRL], icon: match_prev, label: "Previous match (incsearch)", tag: c_CTRL-T }
+  - { key: UP, icon: history_prev, label: "Older command from history", tag: "c_<Up>" }
+  - { key: DOWN, icon: history_next, label: "Newer command from history", tag: "c_<Down>" }
+  - { key: ENTER, icon: play, label: "Run command", tag: "c_<CR>" }
+  - { key: DELETE, icon: delete_char, label: "Delete character", tag: "c_<Del>" }
+  - { key: INSERT, icon: replace_mode, label: "Overstrike mode", tag: "c_<Insert>" }
+  - { key: "[", mods: [CTRL], icon: esc, label: "Abandon command line", tag: "c_CTRL-[" }
+  - { key: C, mods: [CTRL], icon: esc, label: "Abandon command line", tag: c_CTRL-C }
+
+# Vim (Terminal-Job mode) and Neovim (Terminal mode) both leave it with
+# CTRL-\ CTRL-N; every other key goes to the job.
+terminal:
+  - { key: "\\", mods: [CTRL], icon: esc, label: "CTRL-\\ CTRL-N: Normal mode", tag: t_CTRL-\_CTRL-N }

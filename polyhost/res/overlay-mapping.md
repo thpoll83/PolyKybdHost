@@ -104,15 +104,15 @@ terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
 (`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the
 same way.
 
-### An entry with no `overlay` only routes
+### An entry with no overlay of its own
 
-An entry may declare `urls-contains` and no `overlay` of its own. It then
-matches only when the URL hits one of its needles, and matches nothing
-otherwise, exactly as if the app had no entry: the generic shortcut harvest
-still runs for it. The terminals without an overlay set use this to route an
-editor's report (`emacs://`) and keep the harvest while they run a shell.
-(`tests/handler/matcher_test.py::TestRoutingOnlyEntry`,
-`tests/handler/emacs_routing_test.py`.)
+An entry may have `urls-contains` and no `overlay`. It then matches only
+through that sub-map and never by itself: with no URL, or a URL no needle
+matches, the matcher returns nothing, exactly as for an app with no entry, and
+the app keeps the generic shortcut harvest. The terminals without an overlay
+set use this to route the editors' mode reports (`&editor_urls`).
+(`tests/handler/matcher_test.py::TestRoutesOnlyEntry`,
+`tests/handler/vim_routing_test.py`.)
 
 ## `os:` — per-platform artwork
 

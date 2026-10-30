@@ -8,9 +8,9 @@ Drives `polyhost/res/overlay-mapping.poly.yaml` itself. What it pins:
 * org-mode's files are the global set FIRST and the org set after it, so the
   org keys take priority and every other key keeps its global icon;
 * a terminal takes the same routing from the report of an `emacs -nw` in it,
-  and one running a shell (no report) is unchanged: the routing-only terminal
-  entry matches nothing, so the generic shortcut harvest runs, and Windows
-  Terminal keeps its own set;
+  and one running a shell (no report) is unchanged: the terminal entry with
+  no overlay of its own matches nothing, so the generic shortcut harvest runs,
+  and Windows Terminal keeps its own set;
 * the whole chain from a report to the overlay, through `BrowserUrlProvider`;
 * the GUI entry's names are exactly the `emacs` context reporters, and every
   terminal on `TERMINAL_APPS` carries the routes;
@@ -73,13 +73,19 @@ class EmacsMappingFileTest(unittest.TestCase):
                          {n for n, t in CONTEXT_REPORTERS.items() if t == "emacs"})
 
     def test_every_terminal_carries_the_emacs_routes(self):
+        terminals = set(TERMINAL_APPS)
         covered = set()
         for key, e in self.raw.items():
-            if _emacs_routes(e) and key != GUI_KEY:
-                covered |= {n.strip().lower() for n in key.split(",")}
+            names = {n.strip().lower() for n in key.split(",")}
+            if not names & terminals:
+                continue
+            self.assertEqual(_emacs_routes(e), _emacs_routes(self.raw[GUI_KEY]), key)
+            covered |= names & terminals
+            # An editor's mode replaces a terminal's own overlay; an entry
+            # with no overlay of its own has nothing to layer.
+            if "overlay" in e:
                 self.assertIs(e.get("layer"), False, key)
-                self.assertEqual(_emacs_routes(e), _emacs_routes(self.raw[GUI_KEY]), key)
-        self.assertEqual(covered, set(TERMINAL_APPS))
+        self.assertEqual(covered, terminals)
 
     def test_specific_modes_come_before_the_catch_all(self):
         routes = _emacs_routes(self.raw[GUI_KEY])
@@ -88,7 +94,8 @@ class EmacsMappingFileTest(unittest.TestCase):
 
     def test_every_named_file_exists(self):
         files = set()
-        for e in [self.raw[GUI_KEY], *self.raw[GUI_KEY]["urls-contains"].values()]:
+        routes = self.raw[GUI_KEY]["urls-contains"]
+        for e in [self.raw[GUI_KEY], *(routes[k] for k in _emacs_routes(self.raw[GUI_KEY]))]:
             files |= set(_files(e))
         self.assertGreaterEqual(len(files), 7)
         missing = [f for f in files if not (RES / "overlays" / f).is_file()]
