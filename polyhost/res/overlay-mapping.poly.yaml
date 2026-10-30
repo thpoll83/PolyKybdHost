@@ -1021,14 +1021,32 @@ code:
 # Alt+Shift+Left are GNOME chords that do nothing on Windows.
 # The matcher tries `linux_gnome` / `linux_kde` before `linux` on those desktops.
 # Launchers running under a bare `java` process (old Linux installs):
+#
+# Minecraft: Java Edition runs in a JVM too (overlay_sources/minecraft/
+# minecraft_java.yaml), so `java` on every platform and `java.exe` on Windows
+# (`javaw.exe` has its own entry below). The game titles its window
+# "Minecraft <version>", or "Minecraft* <version>" for a modified client, and
+# appends " - Singleplayer" / " - Multiplayer (...)" in a world. The `title:`
+# inside each branch needs the version, so "Minecraft Launcher" (and a bare
+# "Minecraft") stays unmatched. The branch key is the title's first word, so
+# "Minecraft" and "Minecraft*" are two keys. The titles are from the Minecraft
+# Wiki, not checked on an install.
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+  titles-startswith: &minecraft_java_titles
+    Minecraft:
+      title: '^Minecraft\*? \d'
+      overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    "Minecraft*":
+      title: '^Minecraft\*? \d'
+      overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
                 jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith: *minecraft_java_titles
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1039,14 +1057,57 @@ java:
       titles-startswith:
         DBeaver:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
+        Minecraft:
+          title: '^Minecraft\*? \d'
+          overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+        "Minecraft*":
+          title: '^Minecraft\*? \d'
+          overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith: *minecraft_java_titles
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith: *minecraft_java_titles
+# Minecraft: Java Edition on Windows: the launcher starts the game with the
+# `javaw.exe` of its bundled runtime. Not checked on an install. The title gate
+# keeps every other `javaw` program unmatched.
+javaw:
+  overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+  title: '^Minecraft\*? \d'
+# Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
+# Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
+# the window title is "Minecraft" ("Minecraft Preview" for the preview build).
+# The new Windows launcher may also report `minecraft` (Minecraft.exe), with the
+# title "Minecraft Launcher", which neither gate matches.
+# The same key serves Java Edition where the platform reports the window class
+# instead of the process: GLFW names the class after the first window title, so
+# GNOME and KDE Wayland report "Minecraft 1.21.4" or "Minecraft* 1.21.4", and the
+# matcher drops the trailing version (`minecraft`, `minecraft*`). A macOS
+# launcher that sets the Dock name reports "Minecraft". The titles-startswith
+# branch takes the titles with a version (Java); the parent's gate takes the bare
+# title (Bedrock). None of these names were checked on an install.
+minecraft:
+  title: '^Minecraft( Preview)?$'
+  overlay: [minecraft_bedrock_template.mods.png, minecraft_bedrock_template.combo.mods.png]
+  titles-startswith: *minecraft_java_titles
+  # Bedrock runs only on Windows. On macOS and Linux `minecraft` is Java, and a
+  # title that cannot be read (empty) must not fall back to the Bedrock set.
+  # The gate keeps the launcher window ("Minecraft Launcher") off the Java set.
+  os:
+    macos:
+      title: '^(?!Minecraft Launcher)'
+      overlay: &minecraft_java [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    linux:
+      title: '^(?!Minecraft Launcher)'
+      overlay: *minecraft_java
+"minecraft*":
+  title: '^Minecraft\*? \d'
+  overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
 # Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
 # WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
@@ -1329,6 +1390,13 @@ applicationframehost:
       title: "^Voice Recorder"
       icon: mdi:microphone
       overlay: soundrecorder_template.mods.png
+    # Minecraft: Bedrock Edition as a UWP app (the Microsoft Store builds before
+    # the move to a plain Win32 `Minecraft.Windows.exe`), titled "Minecraft".
+    # No `icon:`: the template bakes its own ESC mark, which takes priority over
+    # a named one. Not checked on an install.
+    Minecraft:
+      title: "^Minecraft( Preview)?$"
+      overlay: [minecraft_bedrock_template.mods.png, minecraft_bedrock_template.combo.mods.png]
 calculatorapp:
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an
