@@ -1913,3 +1913,10 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# RimWorld, Steam app 294100 (overlay_sources/rimworld/rimworld.yaml). One set
+# for every OS: the game reads the same key codes everywhere. RimWorldWin64.exe
+# on Windows (rimworldwin64.exe under Wine), RimWorldLinux on Linux (the Unity
+# WM_CLASS; some setups may report `rimworld`), RimWorld or RimWorldMac on macOS,
+# steam_app_294100 under Proton. Names not checked on an install.
+rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294100:
+  overlay: rimworld_template.mods.png

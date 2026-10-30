@@ -1,0 +1,88 @@
+# RimWorld overlay for PolyKybd.
+#
+# Keys: the default key bindings in the game's own data,
+# Data/Core/Defs/Misc/KeyBindings/KeyBindings.xml (KeyBindingDef) and
+# Data/Core/Defs/Misc/MainButtonDefs/MainButtons.xml (MainButtonDef
+# defaultHotKey), checked against the RimWorld Wiki "Controls" page. See
+# SOURCES.md.
+#
+# Only keys that do the same thing whatever is selected are labelled. The
+# "Misc 1" to "Misc 12" letters (B H Y N J U M K I L O P) are reused by every
+# command button and architect designator, so they stay blank.
+#
+# The game reads the same Unity key codes on Windows, Linux and macOS, so one
+# template serves all three.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/rimworld/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/rimworld/rimworld.yaml --preview /tmp/rimworld_preview
+app: rimworld
+match: [rimworldwin64, rimworldwin64.exe, rimworldlinux, rimworld, rimworldmac, steam_app_294100]
+output: rimworld_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for AoE2 and Warcraft III: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# RIM over WORLD drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Time
+  - { key: SPACE, icon: pause.png, label: "Pause / resume", shared: false }
+  - { key: "1", icon: speed1.png, label: "Speed: normal" }
+  - { key: "2", icon: speed2.png, label: "Speed: fast" }
+  - { key: "3", icon: speed3.png, label: "Speed: super fast" }
+  - { key: HOME, icon: faster.png, label: "Speed: faster" }
+  - { key: END, icon: slower.png, label: "Speed: slower" }
+
+  # Camera
+  - { key: W, icon: panup.png, label: "Camera: move up" }
+  - { key: A, icon: panleft.png, label: "Camera: move left" }
+  - { key: S, icon: pandown.png, label: "Camera: move down" }
+  - { key: D, icon: panright.png, label: "Camera: move right" }
+  - { key: PGDN, icon: zoomin.png, label: "Camera: zoom in", shared: false }
+  - { key: PGUP, icon: zoomout.png, label: "Camera: zoom out", shared: false }
+
+  # Main tabs
+  - { key: TAB, icon: architect.png, label: "Architect" }
+  - { key: F1, icon: work.png, label: "Work", region: [34, 40] }
+  - { key: F2, icon: schedule.png, label: "Schedule", region: [34, 40] }
+  - { key: F3, icon: assign.png, label: "Assign", region: [34, 40] }
+  - { key: F4, icon: animals.png, label: "Animals", region: [30, 40] }
+  - { key: F5, icon: wildlife.png, label: "Wildlife", region: [34, 40] }
+  - { key: F6, icon: research.png, label: "Research", region: [34, 40] }
+  - { key: F7, icon: quests.png, label: "Quests", region: [34, 40] }
+  - { key: F8, icon: world.png, label: "World", region: [34, 40] }
+  - { key: F9, icon: history.png, label: "History", shared: false }
+
+  # Screenshots
+  - { key: F10, icon: screenshot.png, label: "Take screenshot", shared: false }
+  - { key: F11, icon: screenshotmode.png, label: "Screenshot mode (hide the interface)", shared: false }
+
+  # Colonists and map displays
+  - { key: COMMA, icon: prevcolonist.png, label: "Previous colonist" }
+  - { key: DOT, icon: nextcolonist.png, label: "Next colonist" }
+  - { key: G, icon: roomstats.png, label: "Room stats display" }
+  - { key: T, icon: beauty.png, label: "Beauty display" }
+  - { key: Z, icon: search.png, label: "Search the map", shared: false }
+
+  # Placing and commands (the same meaning whenever they are offered)
+  - { key: Q, icon: rotateleft.png, label: "Rotate left", shared: false }
+  - { key: E, icon: rotateright.png, label: "Rotate right", shared: false }
+  - { key: R, icon: draft.png, label: "Draft" }
+  - { key: F, icon: forbid.png, label: "Forbid / allow", shared: false }
+  - { key: V, icon: power.png, label: "Power on / off", shared: false }
+  - { key: C, icon: cancel.png, label: "Cancel designation", shared: false }
+  - { key: X, icon: deconstruct.png, label: "Deconstruct", shared: false }
