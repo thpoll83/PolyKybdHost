@@ -1,0 +1,118 @@
+# Minecraft: Bedrock Edition (Windows, keyboard and mouse) overlay for PolyKybd.
+#
+# Keys: the default keyboard and mouse controls of the Bedrock Edition section
+# of the Minecraft Wiki "Controls" page (read 2026-10-30). See SOURCES.md.
+#
+# Every key here does the same thing whatever the player holds. Movement,
+# hotbar and jump are drawn on the Ctrl and Shift layers as well, because Ctrl
+# (sprint) and Shift (sneak) are held while the player moves. Bedrock has no
+# F3 debug screen, no advancements key and no player list key.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/minecraft/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/minecraft/minecraft_bedrock.yaml --preview /tmp/mc_bedrock_preview
+app: minecraft_bedrock
+match: [minecraft]
+output: minecraft_bedrock_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+anchor: right
+region: [40, 40]
+margin: 0
+
+# MINECRAFT / BEDROCK drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program_bedrock.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Movement, also on the Ctrl (sprint) and Shift (sneak) layers
+  - { key: W, icon: forward.png, label: "Walk forward" }
+  - { key: A, icon: left.png, label: "Strafe left" }
+  - { key: S, icon: back.png, label: "Walk backward" }
+  - { key: D, icon: right.png, label: "Strafe right" }
+  - { key: SPACE, icon: jump.png, label: "Jump / fly up" }
+  - { key: W, mods: [CTRL], icon: forward.png, label: "Walk forward" }
+  - { key: A, mods: [CTRL], icon: left.png, label: "Strafe left" }
+  - { key: S, mods: [CTRL], icon: back.png, label: "Walk backward" }
+  - { key: D, mods: [CTRL], icon: right.png, label: "Strafe right" }
+  - { key: SPACE, mods: [CTRL], icon: jump.png, label: "Jump / fly up" }
+  - { key: W, mods: [SHIFT], icon: forward.png, label: "Walk forward" }
+  - { key: A, mods: [SHIFT], icon: left.png, label: "Strafe left" }
+  - { key: S, mods: [SHIFT], icon: back.png, label: "Walk backward" }
+  - { key: D, mods: [SHIFT], icon: right.png, label: "Strafe right" }
+  - { key: SPACE, mods: [SHIFT], icon: jump.png, label: "Jump / fly up" }
+
+  # Sprint (Control) and sneak (Shift): on the left key itself, without and
+  # with that key held
+  - { key: KC_LEFT_CTRL, icon: sprint.png, label: "Sprint", region: [34, 40] }
+  - { key: KC_LEFT_CTRL, mods: [CTRL], icon: sprint.png, label: "Sprint", region: [34, 40] }
+  - { key: KC_LEFT_SHIFT, icon: sneak.png, label: "Sneak / fly down", region: [34, 40] }
+  - { key: KC_LEFT_SHIFT, mods: [SHIFT], icon: sneak.png, label: "Sneak / fly down", region: [34, 40] }
+
+  # Hotbar slots 1 to 9
+  - { key: "1", icon: slot1.png, label: "Hotbar slot 1" }
+  - { key: "2", icon: slot2.png, label: "Hotbar slot 2" }
+  - { key: "3", icon: slot3.png, label: "Hotbar slot 3" }
+  - { key: "4", icon: slot4.png, label: "Hotbar slot 4" }
+  - { key: "5", icon: slot5.png, label: "Hotbar slot 5" }
+  - { key: "6", icon: slot6.png, label: "Hotbar slot 6" }
+  - { key: "7", icon: slot7.png, label: "Hotbar slot 7" }
+  - { key: "8", icon: slot8.png, label: "Hotbar slot 8" }
+  - { key: "9", icon: slot9.png, label: "Hotbar slot 9" }
+  - { key: "1", mods: [CTRL], icon: slot1.png, label: "Hotbar slot 1" }
+  - { key: "2", mods: [CTRL], icon: slot2.png, label: "Hotbar slot 2" }
+  - { key: "3", mods: [CTRL], icon: slot3.png, label: "Hotbar slot 3" }
+  - { key: "4", mods: [CTRL], icon: slot4.png, label: "Hotbar slot 4" }
+  - { key: "5", mods: [CTRL], icon: slot5.png, label: "Hotbar slot 5" }
+  - { key: "6", mods: [CTRL], icon: slot6.png, label: "Hotbar slot 6" }
+  - { key: "7", mods: [CTRL], icon: slot7.png, label: "Hotbar slot 7" }
+  - { key: "8", mods: [CTRL], icon: slot8.png, label: "Hotbar slot 8" }
+  - { key: "9", mods: [CTRL], icon: slot9.png, label: "Hotbar slot 9" }
+  - { key: "1", mods: [SHIFT], icon: slot1.png, label: "Hotbar slot 1" }
+  - { key: "2", mods: [SHIFT], icon: slot2.png, label: "Hotbar slot 2" }
+  - { key: "3", mods: [SHIFT], icon: slot3.png, label: "Hotbar slot 3" }
+  - { key: "4", mods: [SHIFT], icon: slot4.png, label: "Hotbar slot 4" }
+  - { key: "5", mods: [SHIFT], icon: slot5.png, label: "Hotbar slot 5" }
+  - { key: "6", mods: [SHIFT], icon: slot6.png, label: "Hotbar slot 6" }
+  - { key: "7", mods: [SHIFT], icon: slot7.png, label: "Hotbar slot 7" }
+  - { key: "8", mods: [SHIFT], icon: slot8.png, label: "Hotbar slot 8" }
+  - { key: "9", mods: [SHIFT], icon: slot9.png, label: "Hotbar slot 9" }
+
+  # Inventory
+  - { key: E, icon: inventory.png, label: "Inventory" }
+  - { key: Q, icon: drop.png, label: "Drop item" }
+  - { key: Q, mods: [CTRL], icon: dropstack.png, label: "Drop whole stack" }
+  - { key: Z, icon: effects.png, label: "Mob effects" }
+
+  # Chat and social
+  - { key: T, icon: chat.png, label: "Chat" }
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: "/", icon: command.png, label: "Open command" }
+  - { key: B, icon: emote.png, label: "Emote" }
+  - { key: N, icon: notification.png, label: "Open notification" }
+  - { key: B, mods: [CTRL], icon: narrator.png, label: "Text to speech on / off" }
+
+  # Menus
+  - { key: "[", icon: tableft.png, label: "Menu tab left" }
+  - { key: "]", icon: tabright.png, label: "Menu tab right" }
+  - { key: H, mods: [CTRL], icon: contentlog.png, label: "Content log history" }
+
+  # Creator settings: "Copy Coordinate GUI" must be on
+  - { key: C, mods: [CTRL, ALT], icon: copycoords.png, label: "Copy coordinates" }
+  - { key: X, mods: [CTRL, ALT], icon: copyfacing.png, label: "Copy facing coordinates" }
+
+  # Function keys
+  - { key: F1, icon: hidehud.png, label: "Hide HUD", region: [34, 40] }
+  - { key: F2, icon: screenshot.png, label: "Take screenshot", region: [34, 40] }
+  - { key: F4, icon: socialdrawer.png, label: "Social drawer", region: [30, 40] }
+  - { key: F5, icon: perspective.png, label: "Toggle perspective", region: [34, 40] }
+  - { key: F8, icon: paperdoll.png, label: "Paper doll on / off", region: [34, 40] }
+  - { key: F10, icon: controllerhints.png, label: "Controller hints on / off" }
+  - { key: F11, icon: fullscreen.png, label: "Toggle fullscreen" }

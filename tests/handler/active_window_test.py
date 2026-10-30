@@ -1991,5 +1991,66 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    MC_JAVA = "minecraft_java_template.mods.png"
+    MC_BEDROCK = "minecraft_bedrock_template.mods.png"
+    MC_JAVA_TITLES = ("Minecraft 1.21.4", "Minecraft* 1.21.4 - Singleplayer",
+                      "Minecraft 26.1 - Multiplayer (3rd-party Server)")
+
+    def _overlays(self, got):
+        overlay = (got or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_MINECRAFT_JAVA_gets_its_set_in_every_JVM(self):
+        """The game runs in `java` / `javaw`, so only the title tells it apart."""
+        for os_name in ("WINDOWS", "LINUX", "MACOS"):
+            for title in self.MC_JAVA_TITLES:
+                with self.subTest(app="java", os=os_name, title=title):
+                    got = self._match("java", title=title, title_known=True, os_name=os_name)
+                    self.assertIn(self.MC_JAVA, self._overlays(got))
+        for title in self.MC_JAVA_TITLES:
+            with self.subTest(app="javaw", title=title):
+                got = self._match("javaw", title=title, title_known=True, os_name="WINDOWS")
+                self.assertIn(self.MC_JAVA, self._overlays(got))
+
+    def test_MINECRAFT_JAVA_by_window_class_gets_its_set(self):
+        """GNOME and KDE Wayland report the GLFW window class, which is the first
+        window title; the matcher drops the trailing version."""
+        for app in ("minecraft 1.21.4", "minecraft* 1.21.4", "minecraft"):
+            for os_name in ("LINUX", "MACOS"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Minecraft* 1.21.4 - Singleplayer",
+                                      title_known=True, os_name=os_name)
+                    self.assertIn(self.MC_JAVA, self._overlays(got))
+
+    def test_MINECRAFT_BEDROCK_gets_its_set(self):
+        got = self._match("minecraft", title="Minecraft", title_known=True, os_name="WINDOWS")
+        self.assertIn(self.MC_BEDROCK, self._overlays(got))
+        got = self._match("applicationframehost", title="Minecraft", title_known=True,
+                          os_name="WINDOWS")
+        self.assertIn(self.MC_BEDROCK, self._overlays(got))
+
+    def test_the_MINECRAFT_LAUNCHER_gets_no_game_keys(self):
+        """The launcher is titled "Minecraft Launcher"; neither edition's gate
+        may take it, or its menus would show movement keys."""
+        for app, os_name in (("minecraft", "WINDOWS"), ("javaw", "WINDOWS"),
+                             ("java", "WINDOWS"), ("java", "LINUX"), ("java", "MACOS"),
+                             ("applicationframehost", "WINDOWS")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Minecraft Launcher", title_known=True,
+                                  os_name=os_name)
+                overlays = self._overlays(got)
+                self.assertNotIn(self.MC_JAVA, overlays)
+                self.assertNotIn(self.MC_BEDROCK, overlays)
+
+    def test_JAVA_keeps_its_JETBRAINS_and_DBEAVER_routes(self):
+        title = "project – Main.java"
+        self.assertIn("jetbrains_template.mods.png",
+                      self._overlays(self._match("java", title, True, "WINDOWS")))
+        self.assertIn("jetbrains_linux_template.mods.png",
+                      self._overlays(self._match("java", title, True, "LINUX")))
+        self.assertIn("dbeaver_template_linux.mods.png",
+                      self._overlays(self._match("java", "DBeaver 24.1.0", True, "LINUX")))
+        self.assertIsNone(self._match("javaw", "Some Swing App", True, "WINDOWS"))
+
 if __name__ == "__main__":
     unittest.main()
