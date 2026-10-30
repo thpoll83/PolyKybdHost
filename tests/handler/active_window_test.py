@@ -1991,5 +1991,15 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    def test_AOE4_gets_its_set_on_windows_and_under_proton(self):
+        for app in ("reliccardinal", "steam_app_1466860"):
+            for os_name in ("WINDOWS", "LINUX"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Age of Empires IV", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn("aoe4_template.mods.png", got["overlay"])
+                    self.assertIn("aoe4_template.combo.mods.png", got["overlay"])
+
 if __name__ == "__main__":
     unittest.main()
