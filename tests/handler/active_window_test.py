@@ -1725,6 +1725,39 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         # Classic's set off it.
         self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",
                                       title_known=True, os_name="WINDOWS"))
+
+    def test_GHIDRA_CODEBROWSER_gets_its_set_under_every_jvm_name(self):
+        title = "CodeBrowser: crackme:/crackme.exe"
+        for app, os_name, stem in (
+                ("javaw", "WINDOWS", "ghidra_template"),
+                ("java", "WINDOWS", "ghidra_template"),
+                ("java", "LINUX", "ghidra_template"),
+                ("java", "LINUX_GNOME", "ghidra_template"),
+                ("java", "LINUX_KDE", "ghidra_template"),
+                ("java", "MACOS", "ghidra_template_mac"),
+                ("ghidra-ghidra", "LINUX_GNOME", "ghidra_template"),
+                ("ghidra-ghidra", "LINUX_KDE", "ghidra_template"),
+                ("ghidra", "MACOS", "ghidra_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title=title, title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+        # A second CodeBrowser instance carries its number in the title.
+        got = self._match("javaw", title="CodeBrowser(2): crackme:/crackme.exe",
+                          title_known=True, os_name="WINDOWS")
+        self.assertIn("ghidra_template.mods.png", got["overlay"])
+        # The project window gets nothing, and the java routes are unchanged.
+        for app in ("javaw", "ghidra-ghidra"):
+            self.assertIsNone(self._match(app, title="Ghidra: crackme",
+                                          title_known=True, os_name="WINDOWS"))
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="LINUX")
+        self.assertIn("jetbrains_linux_template.mods.png", got["overlay"])
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="MACOS")
+        self.assertIn("jetbrains_mac_template.mods.png", got["overlay"])
+        got = self._match("java", title="DBeaver 26.2.3 - <postgres> Script",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("dbeaver_template_linux.mods.png", got["overlay"])
+
     def test_M365_COPILOT_gets_its_own_set_not_the_consumer_one(self):
         got = self._match("m365copilot", title="Microsoft 365 Copilot",
                           title_known=True, os_name="WINDOWS")
