@@ -1098,8 +1098,9 @@ nautilus,org.gnome.Nautilus:
   overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
 # Terminals route the mode report of a vim or emacs running in them
 # (handler/browser_url.py: TERMINAL_APPS, HOSTED_REPORTERS): the Vim plugin
-# (vim-plugin/) sends vim://<mode>. `&editor_urls` is the one list of those
-# routes, used by every terminal entry and by GUI Vim. `layer: false`: an
+# (vim-plugin/) sends vim://<mode>, the Emacs package (emacs-package/)
+# emacs://<major-mode>. `&editor_urls` is the one list of those routes, used by
+# every terminal entry and by GUI Vim and GUI Emacs. `layer: false`: an
 # editor's mode REPLACES the terminal's own overlay. Without a report (a plain
 # shell, or an editor with no plugin) the terminal keeps its own overlay.
 windowsterminal,wt:
@@ -1113,6 +1114,17 @@ windowsterminal,wt:
     "vim://replace": { overlay: vim_replace_template.mods.png }
     "vim://cmdline": { overlay: vim_cmdline_template.mods.png }
     "vim://terminal": { overlay: vim_terminal_template.mods.png }
+    # GNU Emacs (sources: overlay_sources/emacs/; emacs-package/ sends
+    # emacs://<major-mode>[/<evil-state>]). First hit wins, so the specific
+    # modes come before `emacs://`. org-mode lists the global set FIRST and its
+    # own after it (a later file takes priority per key); Dired's set is
+    # complete on its own.
+    "emacs://org-mode":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png, emacs_org_template.mods.png, emacs_org_template.combo.mods.png]
+    "emacs://dired-mode":
+      overlay: [emacs_dired_template.mods.png, emacs_dired_template.combo.mods.png]
+    "emacs://":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report it matches nothing, and the terminal keeps the generic
 # shortcut harvest it had before (handler/common.py, find_matching_entry).
@@ -1128,6 +1140,16 @@ alacritty,com.gexperts.tilix,com.mitchellh.ghostty,conhost,foot,ghostty,gnome-te
 # macOS set. None of the names was checked on an install.
 gvim,macvim,neovide:
   overlay: vim_normal_template.mods.png
+  layer: false
+  urls-contains: *editor_urls
+# GNU Emacs in its own window (sources: overlay_sources/emacs/): emacs(.exe) on
+# Windows, WM_CLASS emacs on Linux, Emacs on macOS, exactly CONTEXT_REPORTERS'
+# "emacs" name (tests/handler/emacs_routing_test.py). The package reports the
+# major mode as in a terminal; without a report the global set applies.
+# Meta is Alt (Option on macOS), so there is no macOS set. Not checked on an
+# install.
+emacs:
+  overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
   layer: false
   urls-contains: *editor_urls
 notepad:

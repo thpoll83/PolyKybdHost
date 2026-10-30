@@ -76,8 +76,10 @@ class VimMappingFileTest(unittest.TestCase):
         seen = set()
         for name in list(TERMINAL_APPS) + GUI_KEY.split(","):
             _, entry = self.names[name]
-            for sub in (entry.get("urls-contains") or {}).values():
-                seen.update(_files(sub))
+            # Only the vim:// routes: &editor_urls also carries emacs:// ones.
+            for url, sub in (entry.get("urls-contains") or {}).items():
+                if url.startswith("vim://"):
+                    seen.update(_files(sub))
         seen.update(_files(self.raw[GUI_KEY]))
         self.assertEqual(len(seen), len(MODES))
         missing = [f for f in seen if not (RES / "overlays" / f).is_file()]
@@ -114,7 +116,8 @@ class VimRoutingTest(unittest.TestCase):
         # No match -> the generic shortcut harvest runs, as before the entry.
         for app in sorted(TERMINAL_APPS - {"windowsterminal", "wt"}):
             self.assertIsNone(self._route(app, None), app)
-            self.assertIsNone(self._route(app, "emacs://unknown-mode"), app)
+            # A URL no route names (emacs:// is routed since the Emacs sets).
+            self.assertIsNone(self._route(app, "other://unknown"), app)
 
     def test_gui_vim_routes_each_mode(self):
         for app in GUI_KEY.split(","):
