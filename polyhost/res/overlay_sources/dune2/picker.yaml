@@ -4,7 +4,18 @@
 title: Dune II icon picker
 reader: westwood_d2
 fonts: {8p: new8p.fnt, 6p: new6p.fnt}
+# Where each shipped icon's SVG is listed (ICONS of each module, in order). The
+# page then offers the icon re-rasterized from its SVG with its own settings.
+vector_sources:
+  - polyhost.res.overlay_sources.dune2.fetch_icons
+  - polyhost.res.overlay_sources.openra.fetch_icons
+  - polyhost.res.overlay_sources.cnc_remastered.fetch_icons
 presets:
+  # As fetch_icons.py draws the shipped icons: cnc.relief() shading, then
+  # dither.keycap's defaults (error diffusion, lit outline).
+  vector: {relief: true, depth: 0.08, azimuth: 225, elevation: 42, ambient: 0.35, falloff: 0.45, grain: 1.0,
+           seed: 1, flat: 0.6, mode: fs, lo: 3, hi: 97, gamma: 1.0, curve: 0.0, sharpen: 0.0, floor: 0.15,
+           outline: true, mirror: false, valign: bottom}
   portrait: {engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.0, curve: 0.3,
              sharpen: 1.0, floor: 0.15, outline: true, mirror: false}
   whole: {engine: dither, cut: false, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.0, curve: 0.3,

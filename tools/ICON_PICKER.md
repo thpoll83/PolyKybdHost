@@ -40,6 +40,7 @@ Engines and settings:
 | Engine | What it does | Settings |
 |---|---|---|
 | `dither` | Crop the frame, cut the background (the colour most common along the edge), fit into the region, sharpen, stretch the contrast, then dither inside a lit outline. The same steps as `dither.keycap`. | dither (`levels` = unlit / 50 % checker / lit, `fs` = error diffusion, `bayer`, `threshold`), black and white percentiles, gamma, S-curve, sharpen, floor, outline, background cut, frame crop, mirror, region size, vertical alignment |
+| re-rasterized icon | The shipped icon redrawn from its SVG: the silhouette is shaded as a raised plate (a port of `cnc_remastered/fetch_icons.py` `relief()`) or filled with one grey, then dithered like `dither`. The suggested values are the ones `fetch_icons.py` uses. | relief on/off, edge slope, light direction and height, ambient, falloff, grain and its seed, flat grey, then the `dither` settings |
 | `pixel` | Pixel art at a whole-number scale. | lit pixels (`edge+bright` = the reader's sprite rule, `nonzero`, `centre` colour, `darker` / `brighter` than a percentile), scale, mirror, region, alignment |
 | word | A word in one of the game's fonts. | text, font, which glyph parts are lit (body, shade, outline), letter gap, scale, alignment |
 
@@ -68,6 +69,12 @@ overlays:
           {label: "cursor 5: target", src: "shp:mouse.shp:5", preset: cursor},
           {word: Attack}]}
 ```
+
+`vector_sources` lists the `fetch_icons` modules whose `ICONS` name each shipped
+icon's SVG, searched in order (the Dune II set borrows from OpenRA's, OpenRA's
+from C&C Remastered's). For a key whose shipped icon is found there, the
+generator downloads the SVG and adds a re-rasterized candidate with the
+`vector` preset; without network access those keys keep their other candidates.
 
 A candidate is a picture (`label`, `src`, `preset`, and any setting to override)
 or a word (`word`, and any word setting to override). `variant` on a key (a

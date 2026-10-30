@@ -67,6 +67,7 @@ const DATA = /*DATA*/null;
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const PAL = b64(DATA.palette);
 const PICS = {}; for (const [id, p] of Object.entries(DATA.pics)) PICS[id] = { w: p.w, h: p.h, idx: b64(p.idx) };
+const VECS = {}; for (const [id, v] of Object.entries(DATA.vectors || {})) VECS[id] = { w: v.w, h: v.h, alpha: b64(v.alpha) };
 const FONTS = {}; for (const [id, f] of Object.entries(DATA.fonts)) {
   FONTS[id] = { h: f.h, g: {} };
   for (const [c, g] of Object.entries(f.g)) FONTS[id].g[c] = { w: g.w, d: b64(g.d) };
@@ -142,8 +143,11 @@ function cutCover(I, w, h, cut) {
 }
 let STAGE = null;                    // what the last render saw, for the editor's stage view
 function renderDither(pic, p, region) {
-  const s0 = srcMaps(pic, p); let g = s0.g, cov = cutCover(s0.I, s0.w, s0.h, p.cut);
+  const s0 = srcMaps(pic, p), cov = cutCover(s0.I, s0.w, s0.h, p.cut);
   STAGE = { I: s0.I, w: s0.w, h: s0.h, cover: Float32Array.from(cov.a), grey: null };
+  return ditherCore(s0.g, cov, p, region);
+}
+function ditherCore(g, cov, p, region) {   // fit, sharpen, stretch, dither inside a lit outline (dither.keycap)
   const bb = bbox(cov); if (!bb) return arr(1, 1);
   g = crop(g, ...bb); cov = crop(cov, ...bb);
   if (p.mirror) { g = mirror(g); cov = mirror(cov); }
@@ -170,6 +174,40 @@ function renderDither(pic, p, region) {
   for (let i = 0; i < res.a.length; i++) if (out.a[i]) res.a[i] = 1;
   for (let i = 0; i < res.a.length; i++) if (!a.a[i]) res.a[i] = 0;
   return res;
+}
+function seeded(seed) {                    // mulberry32 + Box-Muller: repeatable grain
+  let t = seed >>> 0;
+  const u = () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
+  return () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u());
+}
+function relief(cov, p) {                   // port of cnc_remastered/fetch_icons.py relief()
+  const { w, h } = cov, r = Math.max(2, Math.round(p.depth * Math.min(w, h)));
+  const dist = new Float32Array(w * h); let m = Uint8Array.from(cov.a, v => v > 0.5 ? 1 : 0);
+  for (let it = 0; it < r; it++) {
+    const nm = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; dist[i] += m[i];
+      nm[i] = m[i] && x > 0 && x < w - 1 && y > 0 && y < h - 1 && m[i - 1] && m[i + 1] && m[i - w] && m[i + w] ? 1 : 0; }
+    m = nm;
+  }
+  const az = p.azimuth * Math.PI / 180, el = p.elevation * Math.PI / 180;
+  const L = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
+  const rnd = seeded(p.seed), row = new Float32Array(h); for (let y = 0; y < h; y++) row[y] = rnd() * 0.08;
+  const g = arr(w, h), H_ = i => dist[i] / r;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; const grain = (row[y] + rnd() * 0.05) * p.grain;
+    if (cov.a[i] < 0.5) continue;
+    const gx = x === 0 ? H_(i + 1) - H_(i) : x === w - 1 ? H_(i) - H_(i - 1) : (H_(i + 1) - H_(i - 1)) / 2;
+    const gy = y === 0 ? H_(i + w) - H_(i) : y === h - 1 ? H_(i) - H_(i - w) : (H_(i + w) - H_(i - w)) / 2;
+    let nx = -gx * r, ny = -gy * r, nz = 1; const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
+    const shade = p.ambient + (1 - p.ambient) * Math.min(1, Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]));
+    const fall = p.falloff * (x / w + y / h) / 2;
+    g.a[i] = Math.min(1, Math.max(0, shade - fall + grain)); }
+  return g;
+}
+function renderVector(vec, p, region) {
+  const cov = arr(vec.w, vec.h); for (let i = 0; i < cov.a.length; i++) cov.a[i] = vec.alpha[i] > 127 ? 1 : 0;
+  let g; if (p.relief) g = relief(cov, p); else { g = arr(vec.w, vec.h); for (let i = 0; i < g.a.length; i++) g.a[i] = cov.a[i] ? p.flat : 0; }
+  STAGE = { shaded: g.a, w: vec.w, h: vec.h, cover: Float32Array.from(cov.a), grey: null };
+  return ditherCore(g, cov, p, region);
 }
 function renderPixel(pic, p, region) {
   const s0 = srcMaps(pic, p), { I, g, w, h } = s0; let m = arr(w, h);
@@ -234,6 +272,7 @@ function iconFor(k, ci, p) {
   if (ci < 0) return k.shippedM;
   const c = k.candidates[ci];
   if (c.kind === "word") return place(k, renderWord(p), p, true);
+  if (c.kind === "vector") return place(k, renderVector(VECS[c.src], p, regionOf(k, p)), p, false);
   const pic = PICS[c.src], r = regionOf(k, p);
   return place(k, p.engine === "dither" ? renderDither(pic, p, r) : renderPixel(pic, p, r), p, false);
 }
@@ -250,9 +289,10 @@ function drawOriginal(canvas, st) {      // the game's picture, background that 
   const WORD = ["#000", "#fff", "#888", "#4a8cff"];
   for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) { const i = y * st.w + x;
     if (st.word) c.fillStyle = WORD[st.word[i]] || "#000";
+    else if (st.shaded) { const q = st.cover[i] ? Math.round(st.shaded[i] * 255) : 0; c.fillStyle = st.cover[i] ? `rgb(${q},${q},${q})` : "#1b2a3a"; }
     else { const v = st.I[i]; c.fillStyle = `rgb(${PAL[3 * v]},${PAL[3 * v + 1]},${PAL[3 * v + 2]})`; }
     c.fillRect(x * sc, y * sc, sc, sc);
-    if (st.cover && !st.cover[i]) { c.fillStyle = "rgba(0,0,0,0.7)"; c.fillRect(x * sc, y * sc, sc, sc); } }
+    if (st.cover && !st.cover[i] && !st.shaded) { c.fillStyle = "rgba(0,0,0,0.7)"; c.fillRect(x * sc, y * sc, sc, sc); } }
 }
 function drawGrey(canvas, g) {            // after the filters, before the dither
   const sc = fitScale(g.w, g.h, 240, 150); canvas.width = g.w * sc; canvas.height = g.h * sc;
@@ -271,6 +311,14 @@ const FIELDS = {
            ["floor", "range", [0, 0.5, 0.01], "Floor"], ["thr", "range", [0.1, 0.9, 0.02], "Threshold"], ["outline", "check", null, "Outline"],
            ["cut", "check", null, "Cut background"], ["frame", "range", [0, 3, 1], "Frame crop"], ["mirror", "check", null, "Mirror"],
            ["rw", "range", [16, 72, 1], "Width"], ["rh", "range", [10, 40, 1], "Height"], ["valign", "select", ["top", "centre", "bottom"], "Align"]],
+  vector: [["relief", "check", null, "Relief"], ["depth", "range", [0.02, 0.25, 0.01], "Edge slope"], ["azimuth", "range", [0, 345, 15], "Light from °"],
+           ["elevation", "range", [10, 80, 2], "Light height °"], ["ambient", "range", [0, 0.8, 0.05], "Ambient"], ["falloff", "range", [0, 1, 0.05], "Falloff"],
+           ["grain", "range", [0, 3, 0.1], "Grain"], ["seed", "range", [1, 20, 1], "Grain seed"], ["flat", "range", [0, 1, 0.05], "Flat grey"],
+           ["mode", "select", ["levels", "fs", "bayer", "threshold"], "Dither"], ["lo", "range", [0, 45, 1], "Black at %"], ["hi", "range", [55, 100, 1], "White at %"],
+           ["gamma", "range", [0.3, 2.5, 0.05], "Gamma"], ["curve", "range", [0, 1.5, 0.05], "S-curve"], ["sharpen", "range", [0, 3, 0.1], "Sharpen"],
+           ["floor", "range", [0, 0.5, 0.01], "Floor"], ["thr", "range", [0.1, 0.9, 0.02], "Threshold"], ["outline", "check", null, "Outline"],
+           ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"], ["rh", "range", [10, 40, 1], "Height"],
+           ["valign", "select", ["top", "centre", "bottom"], "Align"]],
   pixel: [["lit", "select", ["edge+bright", "nonzero", "centre", "darker", "brighter"], "Lit pixels"], ["pct", "range", [5, 95, 1], "Percentile"],
           ["scale", "range", [0, 5, 1], "Scale (0 auto)"], ["mirror", "check", null, "Mirror"], ["rw", "range", [16, 72, 1], "Width"],
           ["rh", "range", [10, 40, 1], "Height"], ["valign", "select", ["top", "centre", "bottom"], "Align"]],
@@ -280,7 +328,7 @@ const FIELDS = {
 };
 function editor(k, ci, e, onChange) {
   const box = document.createElement("div"); box.className = "params";
-  const c = k.candidates[ci], p = e.params[ci], kind = c.kind === "word" ? "word" : p.engine;
+  const c = k.candidates[ci], p = e.params[ci], kind = c.kind === "pic" ? p.engine : c.kind;
   box.innerHTML = `<h3>${c.label}</h3><div class="hint">Changes apply to this candidate on this key. Double-click a setting's name to reset only that setting.</div>`;
   const top = document.createElement("div"); top.className = "actions";
   const reset = document.createElement("button"); reset.textContent = "Reset to suggested values";
@@ -289,8 +337,9 @@ function editor(k, ci, e, onChange) {
   const stages = document.createElement("div"); stages.className = "stages";
   const fig = (title) => { const f = document.createElement("figure"), cv = document.createElement("canvas"), cap = document.createElement("figcaption");
     cap.textContent = title; f.append(cv, cap); stages.appendChild(f); return cv; };
-  const cvOrig = fig(c.kind === "word" ? "Font glyphs: body white, shade grey, outline blue" : "Original picture (dimmed: background that is cut away)");
-  const cvGrey = fig(c.kind === "word" ? "Lit pixels" : p.engine === "dither" ? "After the filters, before the dither (yellow: outline, red: not drawn)" : "Lit pixels, before scaling");
+  const cvOrig = fig(c.kind === "word" ? "Font glyphs: body white, shade grey, outline blue"
+    : c.kind === "vector" ? "SVG silhouette, shaded (relief or flat grey)" : "Original picture (dimmed: background that is cut away)");
+  const cvGrey = fig(c.kind === "word" ? "Lit pixels" : (c.kind === "vector" || p.engine === "dither") ? "After the filters, before the dither (yellow: outline, red: not drawn)" : "Lit pixels, before scaling");
   const cvCap = fig("On the keycap");
   box.appendChild(stages);
   const refresh = () => { const icon = iconFor(k, ci, p); const st = STAGE;
@@ -298,7 +347,7 @@ function editor(k, ci, e, onChange) {
     draw(cvCap, keycap(k, icon), 3); };
   const change = full => { onChange(full); if (!full) refresh(); };
   const grid = document.createElement("div"); grid.className = "grid"; box.appendChild(grid);
-  if (c.kind !== "word") {
+  if (c.kind === "pic") {
     const row = document.createElement("label"); row.className = "row";
     row.innerHTML = `<span>Engine</span><select><option>dither</option><option>pixel</option></select><span></span>`;
     const s = row.querySelector("select"); s.value = p.engine;
@@ -330,9 +379,10 @@ function editor(k, ci, e, onChange) {
   }
   const acts = document.createElement("div"); acts.className = "actions";
   if (c.kind !== "word") {
-    const all = document.createElement("button"); all.textContent = "Use these settings for every picture on this overlay";
+    const all = document.createElement("button");
+    all.textContent = c.kind === "vector" ? "Use these settings for every re-rasterized icon on this overlay" : "Use these settings for every picture on this overlay";
     all.onclick = () => { const ov = DATA.overlays.find(o => o.id === state.overlay);
-      for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc.kind === "pic" && ee.params[j].engine === p.engine) {
+      for (const kk of ov.keys) { const ee = entry(ov.id, kk); kk.candidates.forEach((cc, j) => { if (cc.kind === c.kind && (c.kind === "vector" || ee.params[j].engine === p.engine)) {
         const keep = { mirror: ee.params[j].mirror, rw: ee.params[j].rw, rh: ee.params[j].rh, crop: ee.params[j].crop, smooth_w: ee.params[j].smooth_w, lit: ee.params[j].lit };
         ee.params[j] = Object.assign(JSON.parse(JSON.stringify(p)), Object.fromEntries(Object.entries(keep).filter(([, v]) => v !== undefined))); } }); }
       change(true); };

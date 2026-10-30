@@ -76,6 +76,34 @@ def shipped_icon(template: str, key: str, mods: list) -> np.ndarray:
     return arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W, ch] > 127
 
 
+VECTOR_PX = 128                      # the silhouette's longest side in the page
+
+
+def vector_spec(stem: str, modules: list) -> str | None:
+    """The "source:name" SVG an icon stem is rendered from: looked up in each
+    fetch_icons module's ICONS in order (the Dune II set borrows from OpenRA's,
+    OpenRA's from C&C Remastered's). None for icons not drawn from an SVG."""
+    import importlib
+    for name in modules:
+        spec = getattr(importlib.import_module(name), "ICONS", {}).get(stem)
+        if spec:
+            return spec
+    return None
+
+
+def vector_silhouette(spec: str) -> np.ndarray:
+    """The SVG's alpha at VECTOR_PX on its longest side, cropped to the shape."""
+    import io
+    import cairosvg
+    from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc
+    src, name = spec.split(":", 1)
+    png = cairosvg.svg2png(bytestring=cnc._get(cnc.SOURCES[src].format(name)), output_width=512, output_height=512)
+    alpha = Image.open(io.BytesIO(png)).convert("RGBA").getchannel("A")
+    alpha = alpha.crop(alpha.getbbox())
+    k = VECTOR_PX / max(alpha.size)
+    return np.asarray(alpha.resize((max(1, round(alpha.width * k)), max(1, round(alpha.height * k))), Image.LANCZOS))
+
+
 def candidate(entry: dict, presets: dict) -> dict:
     if "word" in entry:
         params = dict(presets.get("word", {}), text=str(entry["word"]))
@@ -97,7 +125,8 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
         raise SystemExit(f"no game files found for {reader_name}; pass --data-dir")
     source = SOURCES[reader_name](files)
     legend = legend_renderer(qmk)
-    pics, overlays = {}, []
+    pics, vectors, overlays = {}, {}, []
+    modules = spec.get("vector_sources") or []
     for ov in spec["overlays"]:
         ospec = build.load_spec(spec_path.parent / ov["spec"])
         binds = {(str(b["key"]).upper(), tuple(m.upper() for m in b.get("mods") or [])): b
@@ -109,6 +138,18 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
             if b is None:
                 raise SystemExit(f"{ov['spec']} binds nothing to {'+'.join(mods + [key])}")
             cands = [candidate(c, spec.get("presets", {})) for c in k["candidates"]]
+            stem = Path(str(b.get("icon", ""))).stem
+            vspec = vector_spec(stem, modules) if modules else None
+            if vspec:
+                if vspec not in vectors:
+                    try:
+                        a = vector_silhouette(vspec)
+                        vectors[vspec] = {"w": int(a.shape[1]), "h": int(a.shape[0]), "alpha": b64(a)}
+                    except OSError as e:                 # offline: the key keeps its other candidates
+                        print(f"  {vspec}: not fetched ({e})", file=sys.stderr)
+                if vspec in vectors:
+                    cands.insert(0, {"label": f"shipped icon, re-rasterized ({vspec})", "kind": "vector", "src": vspec,
+                                     "params": dict(spec.get("presets", {}).get("vector", {}))})
             for c in cands:
                 if c["kind"] == "pic" and c["src"] not in pics:
                     idx = source.picture(c["src"])
@@ -123,8 +164,8 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
         h, chars = source.font(fname)
         fonts[fid] = {"h": h, "g": {str(c): {"w": int(g.shape[1]), "d": b64(g)} for c, g in chars.items() if g.shape[1]}}
     rel = os.path.relpath(spec_path, ROOT)
-    return {"title": spec.get("title", "Icon picker"), "store": "icon-picker:" + rel, "spec": rel,
-            "palette": b64(source.palette), "pics": pics, "fonts": fonts, "overlays": overlays}
+    return {"title": spec.get("title", "Icon picker"), "store": "icon-picker:v2:" + rel, "spec": rel,
+            "palette": b64(source.palette), "pics": pics, "vectors": vectors, "fonts": fonts, "overlays": overlays}
 
 
 def main() -> None:

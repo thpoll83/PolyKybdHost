@@ -136,6 +136,18 @@ class SpecTest(unittest.TestCase):
                         kind = c["src"].split(":")[0]
                         self.assertIn(kind, ("shp", "sprite", "icn", "icnset", "icntile"), c["src"])
             self.assertTrue(sources)
+            if spec.get("vector_sources"):
+                self.assertIn("vector", spec["presets"], path)
+
+    def test_a_shipped_icon_is_traced_to_its_svg_through_the_borrowed_sets(self):
+        """Dune II's own icon, one it borrows from OpenRA, one OpenRA borrows from
+        C&C Remastered, and a rendered unit that has no SVG."""
+        spec = yaml.safe_load((SOURCES / "dune2" / "picker.yaml").read_text(encoding="utf-8"))
+        mods = spec["vector_sources"]
+        self.assertEqual(gen.vector_spec("move", mods), "fa:location-arrow")
+        self.assertEqual(gen.vector_spec("attackmove", mods), "gi:lorc/crossed-swords")
+        self.assertEqual(gen.vector_spec("stop", mods), "fa:hand")
+        self.assertIsNone(gen.vector_spec("group1", mods))
 
 
 if __name__ == "__main__":
