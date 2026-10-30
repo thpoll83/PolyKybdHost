@@ -80,7 +80,9 @@ def _canvas(mask, size, inset=0):
 
 
 def render(reader, source, spec: dict, variant: str) -> dict:
-    """{icon stem: (canvas mask, region (w, h) or None for the binding's own)}."""
+    """{icon stem: (canvas mask, region (w, h) or None for the binding's own,
+    margin or None)}. A recipe with a region is placed with no margin unless it
+    names one (the icon picker's recipes do, to keep the binding's)."""
     regions = {Path(str(b.get("icon", ""))).stem: tuple(b["region"]) for b in bindings(spec)}
     icons, derived = {}, {}
     for stem, recipe in recipes(spec, variant).items():
@@ -96,13 +98,13 @@ def render(reader, source, spec: dict, variant: str) -> dict:
             log.warning("Game art: skipped %s (%s: %s).", stem, type(e).__name__, e)
             continue
         if mask is not None:
-            icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region)
+            icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region, recipe.get("margin"))
     for stem, recipe in derived.items():
         base = recipe.get("plus", recipe.get("of"))
         if base in icons:
-            canvas, region = icons[base]
+            canvas, region, margin = icons[base]
             marked = dither.with_plus(canvas) if "plus" in recipe else dither.with_mark(canvas, recipe["mark"])
-            icons[stem] = (marked, region)
+            icons[stem] = (marked, region, margin)
     return icons
 
 
@@ -153,9 +155,10 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         if mod not in tiers:
             continue                            # the binding is in the other file
         kc = KeyCode[f"KC_{str(b['key']).upper()}"]
-        mask, region = icons[stem]
-        x0, y0, bw, bh = region_box(b["anchor"], tuple(region or b["region"]),
-                                    0 if region else b["margin"])
+        mask, region, margin = icons[stem]
+        if margin is None:
+            margin = 0 if region else b["margin"]
+        x0, y0, bw, bh = region_box(b["anchor"], tuple(region or b["region"]), margin)
         row, col = cell_for(kc)
         ch = CH[tiers[mod]]
         cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, ch]

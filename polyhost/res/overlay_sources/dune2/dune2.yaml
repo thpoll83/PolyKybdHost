@@ -53,8 +53,21 @@ bindings:
 
 # Keys redrawn from the user's own Dune II files (DUNE.PAK), by the westwood_d2
 # reader in polyhost/services/game_assets.
+
 game_assets:
   reader: westwood_d2
   icons:
-    harvesters: {portrait: 88, region: [48, 40]}
-    deploy: {portrait: 89, region: [48, 40]}
+    harvesters: {src: 'shp:shapes.shp:88', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.2, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [55, 40], margin: 0}
+    deploy: {src: 'shp:shapes.shp:89', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 0.85, curve: 0.3, sharpen: 0.3, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [57, 40], margin: 0}
+    attackmove: {word: Attack, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    move: {word: Move, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    retreat: {word: Retreat, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    guard: {word: Guard, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    stop: {word: Stop, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    build: {src: 'shp:shapes.shp:60', engine: dither, cut: false, frame: 1, mode: fs, lo: 5, hi: 95, gamma: 1.45, curve: 0.3, sharpen: 1, floor: 0.03, outline: true, mirror: false, valign: bottom, region: [54, 40], margin: 0}
+    place: {src: 'shp:shapes.shp:53', engine: dither, cut: false, frame: 1, mode: levels, lo: 1, hi: 100, gamma: 1.35, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [53, 40], margin: 0}
+    tabupgrade: {word: Upgrade, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    nextunit: {src: 'shp:mouse.shp:2', engine: pixel, lit: nonzero, scale: 0, mirror: false, region: [40, 40], margin: 0}
+    prevunit: {src: 'shp:mouse.shp:4', engine: pixel, lit: nonzero, scale: 0, mirror: false, region: [40, 40], margin: 0}
+    mentat: {src: 'shp:shapes.shp:94', engine: pixel, lit: darker, pct: 53, scale: 0, mirror: false, frame: 0, crop: [2, 3], smooth_w: 72, valign: bottom, region: [70, 40], margin: 0}
+    options: {src: 'shp:shapes.shp:96', engine: pixel, lit: darker, pct: 45, scale: 0, mirror: false, crop: [2, 3], smooth_w: 72, valign: bottom, region: [72, 40], margin: 0}

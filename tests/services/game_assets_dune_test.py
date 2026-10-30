@@ -35,6 +35,59 @@ def write_pak(files: dict) -> bytes:
     return head + struct.pack("<I", 0) + body
 
 
+def make_icn(tiles, palettes, tile_pal):
+    """An ICON.ICN: 0x18 header bytes, SSET (8 more header bytes, then the 4-bit
+    tiles), RPAL (16 colours per palette), RTBL (a palette per tile)."""
+    sset = b"".join(bytes((t[y, x] << 4) | t[y, x + 1] for y in range(16) for x in range(0, 16, 2)) for t in tiles)
+    out = bytes(0x18) + b"SSET" + struct.pack(">I", len(sset) + 8) + bytes(8) + sset
+    rpal = b"".join(bytes(p) for p in palettes)
+    out += b"RPAL" + struct.pack(">I", len(rpal)) + rpal
+    return out + b"RTBL" + struct.pack(">I", len(tile_pal)) + bytes(tile_pal)
+
+
+def make_map(groups):
+    """An ICON.MAP: a table of word offsets to each group's tile numbers."""
+    head = len(groups)
+    words, body = [], []
+    for g in groups:
+        words.append(head + len(body))
+        body += g
+    return struct.pack(f"<{len(words) + len(body)}H", *words, *body)
+
+
+def make_font(glyphs, height):
+    """A Dune II .FNT with `glyphs` {code: 2-D array of 0..3}, laid out as
+    OpenDUNE's Font_LoadFile reads it."""
+    count = max(glyphs) + 1
+    start, data_start = 14, 20
+    width_list = data_start + 2 * count
+    line_list = width_list + count + 2
+    data = bytearray()
+    data_off = line_list + 2 * count
+    offs, lines = [], []
+    for i in range(count):
+        g = glyphs.get(i)
+        if g is None:
+            offs.append(0)
+            lines.append((0, 0))
+            continue
+        offs.append(data_off + len(data))
+        lines.append((0, g.shape[0]))
+        for row in g:
+            packed = [row[x] | ((row[x + 1] if x + 1 < len(row) else 0) << 4) for x in range(0, len(row), 2)]
+            data += bytes(packed)
+    widths = [glyphs[i].shape[1] if i in glyphs else 0 for i in range(count)]
+    head = bytearray(data_off)
+    head[2:4] = b"\x00\x05"
+    struct.pack_into("<5H", head, 4, start, data_start, width_list, width_list + count, line_list)
+    head[start + 4], head[start + 5] = height, max(widths)
+    struct.pack_into(f"<{count}H", head, data_start, *offs)
+    head[width_list:width_list + count] = bytes(widths)
+    for i, (u, n) in enumerate(lines):
+        head[line_list + 2 * i], head[line_list + 2 * i + 1] = u, n
+    return bytes(head) + bytes(data)
+
+
 def portrait_frame(seed, background=100):
     """A 32x24 build portrait: a 1 px frame (colour 15), a flat background
     and a unit in the middle."""
@@ -54,6 +107,19 @@ def to_v1_0(shp: bytes) -> bytes:
     return struct.pack("<H", n) + b"".join(struct.pack("<H", o - offs[0] + start) for o in offs) + shp[2 + 4 * (n + 1):]
 
 
+def map_and_fonts() -> dict:
+    """ICON.ICN / ICON.MAP with 27 groups of 64 tiles each (a building is a run
+    of a group's tiles) and the two fonts, with a glyph for every printable
+    ASCII character."""
+    rng = np.random.default_rng(7)
+    tiles = [rng.integers(0, 16, (16, 16)) for _ in range(130)]
+    groups = [[(g * 5 + i) % 130 for i in range(64)] for g in range(27)]
+    glyphs = {c: np.array([[3, 3, 3, 0], [3, 1, 2, 0], [3, 1 if c % 2 else 2, 2, 0], [0, 0, 0, 0]], np.uint8)
+              for c in range(32, 127)}
+    return {"ICON.ICN": make_icn(tiles, [list(range(40, 56))], [0] * 130), "ICON.MAP": make_map(groups),
+            "NEW8P.FNT": make_font(glyphs, 4), "NEW6P.FNT": make_font(glyphs, 4)}
+
+
 def make_dune_pak(folder: Path, v1_0=False) -> None:
     """DUNE.PAK with every shape file the Dune II specs draw, in the 1.07 layout
     or, with `v1_0`, in the 1.0 one."""
@@ -65,7 +131,8 @@ def make_dune_pak(folder: Path, v1_0=False) -> None:
              "UNITS.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(120)]),
              "UNITS1.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(90)]),
              "UNITS2.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(40)]),
-             "MOUSE.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(7)])}
+             "MOUSE.SHP": write_d2([blob_frame(16, 16, i, colour=60) for i in range(7)]),
+             **map_and_fonts()}
     if v1_0:
         files = {n: to_v1_0(d) if n.endswith(".SHP") else d for n, d in files.items()}
     folder.mkdir(parents=True, exist_ok=True)
@@ -223,26 +290,52 @@ class BuildTest(unittest.TestCase):
             self._check(SOURCES / "dune2" / "dune2.yaml", ["dune2_template.mods.png"],
                         {"game_dune2_data_dir": d, "game_dune2_house": "atreides"})
 
-    def test_a_portrait_loses_its_frame_and_background(self):
-        sp = d2.open_source(d2.find(str(self.d2)))
-        m = d2.draw(sp, {"portrait": 78}, (48, 40))
-        self.assertTrue(m.any())
-        # The unit is 20 of the 30 inner columns: fitted to 48 px wide it is
-        # about 40 px tall, so the background around it is not drawn.
-        self.assertFalse(m[0].all() or m[:, 0].all())
-        self.assertLess(m.mean(), 0.6)
-        with self.assertRaises(ValueError):
-            sp2 = d2.open_source(d2.find(str(self.d2)))
-            sp2.frame = lambda name, k: np.full((24, 32), 100, np.uint8)
-            d2.draw(sp2, {"portrait": 1}, (48, 40))
+    PORTRAIT = {"src": "shp:shapes.shp:78", "engine": "dither", "cut": True, "frame": 1, "mode": "levels",
+                "lo": 5, "hi": 95, "gamma": 1, "curve": 0.3, "sharpen": 1, "floor": 0.15, "outline": True}
 
-    def test_each_portrait_style_draws_differently_and_an_unknown_one_is_refused(self):
+    def test_a_picture_recipe_cuts_the_frame_and_background(self):
         sp = d2.open_source(d2.find(str(self.d2)))
-        got = {st: d2.draw(sp, {"portrait": 78, "style": st}, (48, 40)).tobytes() for st in d2.STYLES}
-        self.assertEqual(len(set(got.values())), len(d2.STYLES))
-        self.assertEqual(got["levels"], d2.draw(sp, {"portrait": 78}, (48, 40)).tobytes())
-        with self.assertRaises(ValueError):
-            d2.draw(sp, {"portrait": 78, "style": "bold"}, (48, 40))
+        m = d2.draw(sp, self.PORTRAIT, (48, 40))
+        self.assertEqual(m.shape, (40, 48))
+        self.assertTrue(m.any())
+        # The unit is 20 of the 30 inner columns and 14 of the 22 rows: the
+        # flat background around it is not drawn.
+        self.assertFalse(m[0].all() or m[:, -1].all())
+        self.assertLess(m.mean(), 0.6)
+        whole = d2.draw(sp, dict(self.PORTRAIT, cut=False, outline=False, frame=0), (48, 40))
+        self.assertGreater(whole.mean(), m.mean())
+
+    def test_word_map_tile_and_cursor_recipes(self):
+        sp = d2.open_source(d2.find(str(self.d2)))
+        w = d2.draw(sp, {"word": "Ab", "font": "new8p.fnt", "body": True, "valign": "bottom"}, (72, 40))
+        self.assertEqual(w.shape, (40, 72))
+        ys, xs = np.nonzero(w)
+        self.assertEqual((ys.max(), xs.max()), (38, 71))       # bottom right, 1 px above the edge
+        tile = d2.draw(sp, {"src": "icn:22:12:3x2", "engine": "dither", "cut": False, "frame": 0, "mode": "fs",
+                            "lo": 5, "hi": 95, "gamma": 1, "curve": 0, "floor": 0.15}, (48, 40))
+        self.assertEqual(tile.shape, (40, 48))
+        self.assertTrue(tile.any())
+        cur = d2.draw(sp, {"src": "shp:mouse.shp:2", "engine": "pixel", "lit": "nonzero", "scale": 0}, (40, 40))
+        self.assertEqual(int(cur.sum()) % 4, 0)                 # a 16 px cursor at 2x: whole 2x2 blocks
+        for bad in ({"portrait": 78}, {"src": "png:foo"}, dict(self.PORTRAIT, mode="halftone")):
+            with self.subTest(bad), self.assertRaises((ValueError, KeyError)):
+                d2.draw(sp, bad, (48, 40))
+
+    def test_a_recipe_region_keeps_the_margin_it_names(self):
+        """Group 3's recipe is 47 px wide with the binding's 5 px margin: the
+        picture's right edge is 5 px from the cell's."""
+        s = {"game_dune2_data_dir": str(self.d2), "game_dune2_house": "atreides"}
+        out = build.build("dune_legacy_template.mods.png", SOURCES / "dune2" / "dune_legacy.yaml", s.get, self.cache)
+        from PIL import Image
+
+        from polyhost.res.overlay_layout import CH, PRIMARY_CH, SLOT_H, SLOT_W, cell_for
+        r, c = cell_for(KeyCode.KC_3)
+        arr = np.array(Image.open(out).convert("RGBA"))
+        cell = arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W, CH[PRIMARY_CH[build.modifier([])]]] > 127
+        cols = np.nonzero(cell.any(axis=0))[0]
+        self.assertTrue(cols.size)
+        self.assertEqual(cols.max(), SLOT_W - 5 - 1)
+        self.assertGreaterEqual(cols.min(), SLOT_W - 5 - 47)
 
 
 class MappingTest(unittest.TestCase):

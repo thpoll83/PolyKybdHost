@@ -49,11 +49,14 @@ each meaning; the icons show the most common one.
 
 ## Icons
 
-All flat icons are silhouettes, shaded and dithered like the OpenRA set.
+All flat icons are silhouettes, shaded and dithered like the OpenRA set. `pause`,
+`clock`, `sound`, `fullscreen` and `screenshot` are re-rasterized from their SVG
+with the settings picked in the icon picker (`rasterize.yaml`, rendered by
+`fetch_icons.py`).
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `group*.png`, `groupnew*.png`, `groupcombine*.png`, `attackmove.png`, `stop.png`, `guard.png`, `repair.png`, `deploy.png`, `harvesters.png`, `tabupgrade.png`, `conyard.png`, `cycleproduction.png`, `zoomreset.png`, `screenshot.png`, `teamchat.png` | copied from `../openra/icons/` | see `../openra/SOURCES.md` | |
+| `group*.png`, `groupnew*.png`, `groupcombine*.png`, `attackmove.png`, `stop.png`, `guard.png`, `repair.png`, `deploy.png`, `harvesters.png`, `tabupgrade.png`, `conyard.png`, `cycleproduction.png`, `zoomreset.png`, `teamchat.png` | copied from `../openra/icons/` | see `../openra/SOURCES.md` | |
 | `deselect.png` | Font Awesome Free 6.5.2 `xmark` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `ungroup.png` | Font Awesome Free 6.5.2 `link-slash` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `move.png` | Font Awesome Free 6.5.2 `location-arrow` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -64,9 +67,10 @@ All flat icons are silhouettes, shaded and dithered like the OpenRA set.
 | `slower.png` | Font Awesome Free 6.5.2 `backward` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `faster.png` | Font Awesome Free 6.5.2 `forward` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `pause.png` | Font Awesome Free 6.5.2 `pause` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `screenshot.png` | Font Awesome Free 6.5.2 `camera` (solid), the OpenRA set's source | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `clock.png` | Font Awesome Free 6.5.2 `clock` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `skip.png` | Font Awesome Free 6.5.2 `forward-fast` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `skip.png`, `skip10.png`, `skip30.png`, `skip120.png` | Font Awesome Free 6.5.2 `forward-fast` (solid); one file per key | Fonticons, Inc. | CC BY 4.0 |
 | `sound.png` | Font Awesome Free 6.5.2 `volume-high` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `music.png` | Font Awesome Free 6.5.2 `music` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fps.png` | Font Awesome Free 6.5.2 `gauge-high` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -82,14 +86,29 @@ All flat icons are silhouettes, shaded and dithered like the OpenRA set.
 ## Keys drawn from the game files
 
 When the original DUNE.PAK is on the machine, the host draws these keys from
-the game's own build portraits (the `westwood_d2` reader in
+the game's own files (the `westwood_d2` reader in
 `polyhost/services/game_assets`). The shipped files above stay the fallback
 and are the only art in the repository; the game's pictures are never shipped.
+Each key's picture and its settings were chosen in the icon picker
+(`tools/ICON_PICKER.md`) and written by `tools/apply_icon_picks.py`; the
+reader draws them with the picker's own renderer (`game_assets/picture.py`),
+so the keys look as they did in the page.
 
-| Set | Keys |
+| Keys (Dune Legacy) | From the game |
 |---|---|
-| Dune Legacy | 1 to 9 with no modifier, Ctrl and Shift; H (harvester), O (ornithopter), D (carryall) |
-| Original | H (harvester), D (MCV) |
+| 1 to 9 with no modifier, Ctrl and Shift | build portraits of SHAPES.SHP, per house for 8 (table below) |
+| D, H, O | the carryall, harvester and ornithopter portraits |
+| G, P | the construction yard and four-slab portraits |
+| R | the repair pad as the map shows it (ICON.ICN) |
+| U | the sidebar's up arrow |
+| 0, Ctrl+0, A, M, C, `-`, `=`, F1 to F6, F11, F12, Enter | words in the game's font NEW8P.FNT |
+
+| Keys (original set) | From the game |
+|---|---|
+| H, D, B, P | the harvester, MCV, construction yard and slab portraits |
+| Tab, Shift+Tab | the right and left scroll cursors (MOUSE.SHP) |
+| F1, F2 | the MENTAT and OPTIONS buttons |
+| A, M, R, G, S, U | words in the game's font NEW8P.FNT |
 
 | Group | Atreides | Harkonnen | Ordos |
 |---|---|---|---|
@@ -103,17 +122,11 @@ and are the only art in the repository; the game's pictures are never shipped.
 | 8 | sonic tank | devastator | deviator |
 | 9 | ornithopter | ornithopter | ornithopter |
 
-The pictures are the 32x24 build portraits in SHAPES.SHP, the ones the game
-shows in its sidebar. The reader cuts away each portrait's 1 px frame and its
-one-colour background and draws the unit in three levels (unlit, a 50 %
-checker, lit) inside a lit outline. Two portraits use error diffusion
-instead (`style:` in the recipe): the combat tank with lighter mid-tones
-(`lighter`) and the devastator with a stronger contrast stretch (`stretch`). The portrait numbers are those
-of Dune Legacy's `src/FileClasses/GFXManager.cpp` (72 siege tank to 91
-troopers). The Dune II 1.0 demo has the same portraits and unit sprites at
-the same numbers, so the reader reads 1.0 and 1.07 files alike; the numbers
-were checked against the demo, not against 1.07 files. The reader can also
-draw the smaller map sprites (`{unit: ..., face: ...}`), pixel for pixel.
+The portrait numbers are those of Dune Legacy's
+`src/FileClasses/GFXManager.cpp` (72 siege tank to 91 troopers). The Dune II
+1.0 demo has the same portraits and unit sprites at the same numbers, so the
+reader reads 1.0 and 1.07 files alike; the numbers were checked against the
+demo, not against 1.07 files.
 
 The reader looks for DUNE.PAK (any case) in this order:
 
@@ -132,6 +145,6 @@ The reader looks for DUNE.PAK (any case) in this order:
 | `game_dune2_data_dir` | empty | a folder with DUNE.PAK; empty searches as above |
 | `game_dune2_house` | `atreides` | `atreides`, `harkonnen` or `ordos` |
 
-To choose which game picture draws each key, and how it is dithered, generate
-the icon picker from `picker.yaml` (`tools/ICON_PICKER.md`). The page holds
-art from the game files: keep it local.
+To choose again, generate the icon picker from `picker.yaml`
+(`tools/ICON_PICKER.md`), export the picks and apply them. The page holds art
+from the game files: keep it local.

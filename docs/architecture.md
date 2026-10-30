@@ -388,13 +388,19 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
   recipe for each icon, keyed by variant (the faction) where they differ.
-  - Shared, at the top of the package: `__init__.py` (below), `build.py` and
-    `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
-    `Setting` declarations and the registry of readers.
+  - Shared, at the top of the package: `__init__.py` (below), `build.py`,
+    `dither.py` and `picture.py`; `readers.py` (light, imported at start) holds
+    the `Reader` and `Setting` declarations and the registry of readers.
+    `picture.py` is the icon picker's renderer in Python (`tools/ICON_PICKER.md`):
+    a reader whose recipes come from the picker draws with it, so the keyboard
+    shows what the page showed. ⚠️ It mirrors the page's JavaScript step for step;
+    change both together and regenerate the pins of
+    `tests/services/game_assets_picture_test.py` from the page.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
     the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
-    PAK archives and the build portraits and sprites of Dune II 1.0 and 1.07;
+    PAK archives, shape files, map tiles and fonts of Dune II 1.0 and 1.07 and
+    draws the picker's recipes;
     `westwood_d2k/` for Dune 2000, which reads the R16 sprite file). `openra.py` lists the folders where
     OpenRA installs the original game files; the Red Alert, Tiberian Dawn and
     Dune 2000 readers search them. Its

@@ -35,6 +35,7 @@ from generate_app_overlays import resolve_key                # noqa: E402
 from polyhost.res.overlay_layout import CH, PRIMARY_CH, SLOT_H, SLOT_W, cell_for  # noqa: E402
 from polyhost.services.game_assets import build             # noqa: E402
 from polyhost.services.game_assets.readers import READERS   # noqa: E402
+from polyhost.res.overlay_sources import svg_silhouette      # noqa: E402
 
 # The F-row and a few keys draw their legend from a fixed string, not from the
 # language table (as the firmware does).
@@ -76,9 +77,6 @@ def shipped_icon(template: str, key: str, mods: list) -> np.ndarray:
     return arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W, ch] > 127
 
 
-VECTOR_PX = 128                      # the silhouette's longest side in the page
-
-
 def vector_spec(stem: str, modules: list) -> str | None:
     """The "source:name" SVG an icon stem is rendered from: looked up in each
     fetch_icons module's ICONS in order (the Dune II set borrows from OpenRA's,
@@ -89,19 +87,6 @@ def vector_spec(stem: str, modules: list) -> str | None:
         if spec:
             return spec
     return None
-
-
-def vector_silhouette(spec: str) -> np.ndarray:
-    """The SVG's alpha at VECTOR_PX on its longest side, cropped to the shape."""
-    import io
-    import cairosvg
-    from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc
-    src, name = spec.split(":", 1)
-    png = cairosvg.svg2png(bytestring=cnc._get(cnc.SOURCES[src].format(name)), output_width=512, output_height=512)
-    alpha = Image.open(io.BytesIO(png)).convert("RGBA").getchannel("A")
-    alpha = alpha.crop(alpha.getbbox())
-    k = VECTOR_PX / max(alpha.size)
-    return np.asarray(alpha.resize((max(1, round(alpha.width * k)), max(1, round(alpha.height * k))), Image.LANCZOS))
 
 
 def candidate(entry: dict, presets: dict) -> dict:
@@ -143,7 +128,7 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
             if vspec:
                 if vspec not in vectors:
                     try:
-                        a = vector_silhouette(vspec)
+                        a = svg_silhouette.silhouette(vspec)
                         vectors[vspec] = {"w": int(a.shape[1]), "h": int(a.shape[0]), "alpha": b64(a)}
                     except OSError as e:                 # offline: the key keeps its other candidates
                         print(f"  {vspec}: not fetched ({e})", file=sys.stderr)

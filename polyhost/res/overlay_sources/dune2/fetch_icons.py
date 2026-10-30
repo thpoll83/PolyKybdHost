@@ -58,6 +58,10 @@ ICONS = {
     "prevunit": "fa:backward-step",
 }
 
+# F4..F6 skip 10 s, 30 s, 2 min: one picture, a file each, so each key can
+# have its own recipe.
+SKIPS = ("skip10", "skip30", "skip120")
+RASTERIZE = Path(__file__).resolve().parent / "rasterize.yaml"
 ZOOM_LEVELS = "123"                             # F1..F3 in Dune Legacy: zoom level 1..3
 
 
@@ -119,6 +123,23 @@ def zoom_levels(out: Path) -> None:
     print(f"  zoom1..{ZOOM_LEVELS[-1]}.png  <- zoomreset.png + the level in the lens")
 
 
+def rasterize(out: Path) -> None:
+    """The icons picked re-rasterized in the icon picker (rasterize.yaml, written
+    by tools/apply_icon_picks.py): the SVG's silhouette shaded and dithered with
+    the page's settings, by the page's renderer, at the picked region."""
+    import yaml
+
+    from polyhost.res.overlay_sources import svg_silhouette
+    from polyhost.services.game_assets import picture
+    if not RASTERIZE.exists():
+        return
+    entries = yaml.safe_load(RASTERIZE.read_text(encoding="utf-8")) or {}
+    for stem, e in entries.items():
+        m = picture.vector(svg_silhouette.silhouette(e["svg"]), e, tuple(e["region"]))
+        cnc._save_mask(m, out / f"{stem}.png")
+        print(f"  {stem}.png  <- {e['svg']} re-rasterized at {e['region'][0]}x{e['region'][1]}")
+
+
 def programs(out: Path) -> None:
     """program_legacy.png and program_dune2.png: DUNE over LEGACY or II, each line
     at the largest size that fits, over the whole 72x40 cell."""
@@ -149,7 +170,10 @@ def main() -> int:
         shutil.copy(ORA_ICONS / f"{stem}.png", out / f"{stem}.png")
     cnc.render(ICONS, out)
     dither_icons(out)
+    for stem in SKIPS:
+        shutil.copy(out / "skip.png", out / f"{stem}.png")
     zoom_levels(out)
+    rasterize(out)
     programs(out)
     print(f"Wrote icons to {out}")
     return 0

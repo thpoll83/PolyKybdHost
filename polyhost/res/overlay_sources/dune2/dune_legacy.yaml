@@ -80,42 +80,43 @@ bindings:
   # Game
   - { key: MINUS, icon: slower.png, label: "Game speed down" }
   - { key: EQUAL, icon: faster.png, label: "Game speed up" }
-  - { key: SPACE, icon: pause.png, label: "Pause" }
-  - { key: T, icon: clock.png, label: "Game clock on / off" }
+  - { key: SPACE, icon: pause.png, label: "Pause", region: [40, 21] }
+  - { key: T, icon: clock.png, label: "Game clock on / off", region: [40, 24] }
   - { key: F1, icon: zoom1.png, label: "Zoom level 1", region: [30, 40] }
   - { key: F2, icon: zoom2.png, label: "Zoom level 2", region: [30, 40] }
   - { key: F3, icon: zoom3.png, label: "Zoom level 3", region: [30, 40] }
-  - { key: F4, icon: skip.png, label: "Skip 10 seconds (single player)", region: [30, 40] }
-  - { key: F5, icon: skip.png, label: "Skip 30 seconds (single player)", region: [30, 40] }
-  - { key: F6, icon: skip.png, label: "Skip 2 minutes (single player)", region: [30, 40] }
+  - { key: F4, icon: skip10.png, label: "Skip 10 seconds (single player)", region: [30, 40] }
+  - { key: F5, icon: skip30.png, label: "Skip 30 seconds (single player)", region: [30, 40] }
+  - { key: F6, icon: skip120.png, label: "Skip 2 minutes (single player)", region: [30, 40] }
   - { key: F10, icon: sound.png, label: "Sound on / off", region: [30, 40] }
   - { key: F11, icon: music.png, label: "Music on / off", region: [30, 40] }
   - { key: F12, icon: fps.png, label: "Frame rate on / off", region: [30, 40] }
 
   # Other
   - { key: ENTER, icon: teamchat.png, label: "Chat" }
-  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window", region: [30, 40] }
-  - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
-  - { key: P, mods: [CTRL], icon: screenshot.png, label: "Screenshot" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen / window", region: [30, 21] }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot", region: [26, 40] }
+  - { key: P, mods: [CTRL], icon: screenshot.png, label: "Screenshot", region: [26, 40] }
 
 # Keys redrawn from the user's own Dune II files (DUNE.PAK), by the westwood_d2
 # reader in polyhost/services/game_assets. House: the game_dune2_house setting.
 # Portrait numbers are those of SHAPES.SHP (Dune Legacy's GFXManager.cpp).
+
 game_assets:
   reader: westwood_d2
   icons:
-    group1: {portrait: 81}
-    group2: {portrait: 91}
-    group3: {portrait: 80}
-    group4: {portrait: 74}
-    group5: {portrait: 78, style: lighter}
-    group6: {portrait: 72}
-    group7: {portrait: 73}
+    group1: {src: 'shp:shapes.shp:81', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 0.8, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+    group2: {src: 'shp:shapes.shp:91', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+    group3: {src: 'shp:shapes.shp:80', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 0.55, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [47, 40], margin: 5}
+    group4: {src: 'shp:shapes.shp:74', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 0.75, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: top, region: [46, 40], margin: 5}
+    group5: {src: 'shp:shapes.shp:78', engine: dither, cut: true, frame: 1, mode: levels, lo: 0, hi: 100, gamma: 0.65, curve: 0.6, sharpen: 0, floor: 0.28, outline: true, mirror: false, region: [48, 40], margin: 5}
+    group6: {src: 'shp:shapes.shp:72', engine: dither, cut: true, frame: 1, mode: levels, lo: 3, hi: 95, gamma: 1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+    group7: {src: 'shp:shapes.shp:73', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.05, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
     group8:
-      atreides: {portrait: 79}
-      harkonnen: {portrait: 75, style: stretch}
-      ordos: {portrait: 86}
-    group9: {portrait: 85}
+      atreides: {src: 'shp:shapes.shp:79', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+      harkonnen: {src: 'shp:shapes.shp:75', engine: dither, cut: true, frame: 1, mode: fs, lo: 37, hi: 71, gamma: 1, curve: 0.6, sharpen: 1.5, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+      ordos: {src: 'shp:shapes.shp:86', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 0.95, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [48, 40], margin: 5}
+    group9: {src: 'shp:shapes.shp:85', engine: dither, cut: true, frame: 1, mode: levels, lo: 11, hi: 89, gamma: 0.85, curve: 0.3, sharpen: 0, floor: 0.04, outline: true, mirror: true, region: [57, 40], margin: 5}
     groupnew1: {plus: group1}
     groupnew2: {plus: group2}
     groupnew3: {plus: group3}
@@ -134,6 +135,27 @@ game_assets:
     groupcombine7: {mark: box, of: group7}
     groupcombine8: {mark: box, of: group8}
     groupcombine9: {mark: box, of: group9}
-    harvesters: {portrait: 88, region: [48, 40]}
-    ornithopters: {portrait: 85, region: [48, 40]}
-    drop: {portrait: 77, region: [48, 40]}
+    harvesters: {src: 'shp:shapes.shp:88', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.25, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [55, 40], margin: 0}
+    ornithopters: {src: 'shp:shapes.shp:85', engine: dither, cut: false, frame: 1, mode: levels, lo: 10, hi: 87, gamma: 1.55, curve: 1.15, sharpen: 0, floor: 0.15, outline: true, mirror: false, region: [57, 40], margin: 0}
+    drop: {src: 'shp:shapes.shp:77', engine: dither, cut: true, frame: 1, mode: levels, lo: 5, hi: 95, gamma: 1.7, curve: 0.3, sharpen: 1, floor: 0.27, outline: true, mirror: false, valign: bottom, region: [53, 40], margin: 0}
+    deselect: {word: None, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    ungroup: {word: Ungroup, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    attackmove: {word: Attack, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    move: {word: Move, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    capture: {word: Capture, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    repair: {src: 'icn:22:12:3x2', engine: dither, cut: false, frame: 0, mode: levels, lo: 5, hi: 95, gamma: 1.75, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [56, 39], margin: 0}
+    tabupgrade: {src: 'shp:shapes.shp:47', engine: dither, cut: false, frame: 0, mode: bayer, lo: 19, hi: 100, gamma: 0.5, curve: 0, sharpen: 0, floor: 0, outline: false, mirror: false, valign: centre, region: [43, 40], margin: 0}
+    place: {src: 'shp:shapes.shp:71', engine: dither, cut: false, frame: 1, mode: levels, lo: 0, hi: 96, gamma: 1.9, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, region: [55, 40], margin: 0}
+    conyard: {src: 'shp:shapes.shp:60', engine: dither, cut: false, frame: 0, mode: fs, lo: 27, hi: 100, gamma: 1.45, curve: 0.5, sharpen: 3, floor: 0.03, outline: true, mirror: false, region: [54, 40], margin: 0}
+    slower: {word: Slower, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    faster: {word: Faster, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    zoom1: {word: Zoom1, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    zoom2: {word: Zoom2, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    zoom3: {word: Zoom3, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    skip10: {word: +10s, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    skip30: {word: +30s, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    skip120: {word: +2min, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    music: {word: Music, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    fps: {word: FPS, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    teamchat: {word: Chat, font: new8p.fnt, body: true, shade: false, outline: false, gap: 1, scale: 1, valign: bottom, region: [72, 40], margin: 0}
+    cycleproduction: {src: 'icn:13:12:3x2', engine: dither, cut: false, frame: 0, mode: levels, lo: 5, hi: 95, gamma: 1, curve: 0.3, sharpen: 1, floor: 0.15, outline: true, mirror: false, valign: bottom, region: [56, 40], margin: 0}

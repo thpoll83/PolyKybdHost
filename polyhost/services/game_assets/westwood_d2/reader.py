@@ -1,25 +1,23 @@
 """Game-asset reader for Dune II (1992).
 
-Reads the user's own DUNE.PAK: the build portraits SHAPES.SHP, the unit
-sprites UNITS.SHP, UNITS1.SHP and UNITS2.SHP, the mouse cursors MOUSE.SHP and
-the palette IBM.PAL. Dune Legacy and OpenDUNE both play from these files (see
-``find``). Nothing read here leaves the machine. Recipes:
+Reads the user's own DUNE.PAK: the build portraits and buttons of SHAPES.SHP,
+the unit sprites UNITS.SHP and UNITS2.SHP, the mouse cursors MOUSE.SHP, the
+map tiles ICON.ICN / ICON.MAP, the fonts NEW8P.FNT and NEW6P.FNT and the
+palette IBM.PAL. Dune Legacy and OpenDUNE both play from these files (see
+``find``). Nothing read here leaves the machine.
 
-- ``{portrait: 78}``: a 32x24 build portrait of SHAPES.SHP. Its one-colour
-  background is cut away and the unit drawn in three levels (unlit, a 50 %
-  checker, lit) inside a lit outline. ``style: lighter`` or ``style:
-  stretch`` draw it with error diffusion instead, for the portraits that
-  lose their shape in three levels (see ``STYLES``);
-- ``{unit: units2, face: 3, turret: 8}``: a map sprite, with an optional
-  second frame (a turret) drawn over it, the two centred on each other. The
-  sprites are 16 to 24 px, too small to dither: a unit is drawn pixel for
-  pixel at a whole-number scale, its outline lit and the inside lit where it
-  is brighter than the sprite's median;
-- ``{cursor: 5}``: a mouse cursor, as in the C&C reader.
+A recipe is what the icon picker exports (tools/ICON_PICKER.md), drawn by
+the picker's own renderer (``picture.py``), so the keyboard shows what the
+page showed:
 
-Frame numbers are those of Dune Legacy's GFXManager.cpp. The 1.0 demo's
-SHAPES.SHP, UNITS.SHP and UNITS2.SHP have the same pictures at the same
-numbers, so 1.0 and 1.07 files are both read.
+- ``{src: "shp:shapes.shp:81", engine: dither, ...}``: a picture (see
+  ``source``) and the page's settings for it;
+- ``{word: Attack, font: new8p.fnt, ...}``: a word in a game font.
+
+``region`` and ``margin`` place it as the page did. Frame numbers are those
+of Dune Legacy's GFXManager.cpp. The 1.0 demo's SHAPES.SHP, UNITS.SHP and
+UNITS2.SHP have the same pictures at the same numbers, so 1.0 and 1.07 files
+are both read.
 """
 from __future__ import annotations
 
@@ -28,7 +26,8 @@ from pathlib import Path
 
 import numpy as np
 
-from polyhost.services.game_assets import dither
+from polyhost.services.game_assets import picture
+from polyhost.services.game_assets.westwood_d2.formats import font_glyphs, icn_tiles
 from polyhost.services.game_assets.westwood_d2.pak import Pak
 from polyhost.services.game_assets.westwood_td import reader as td
 from polyhost.services.game_assets.westwood_td import westwood
@@ -100,53 +99,61 @@ def _pixels(sp: td.Sprites, recipe: dict) -> np.ndarray:
     return idx
 
 
-def pixel_icon(sp: td.Sprites, idx: np.ndarray, size) -> np.ndarray:
-    """`idx` cropped to its pixels, lit as described above, at the largest
-    whole-number scale that fits `size` (w, h)."""
-    cover = idx != 0
-    ys, xs = np.nonzero(cover)
-    sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
-    idx, cover = idx[sl], cover[sl]
-    g = sp.pal[idx].astype(float) @ [0.299, 0.587, 0.114]
-    edge = dither.edge(cover)
-    m = edge | (cover & ~edge & (g > np.median(g[cover])))
-    k = max(1, min(size[0] // m.shape[1], size[1] // m.shape[0]))
-    return np.kron(m, np.ones((k, k), bool))
+def source(sp: td.Sprites, src: str) -> np.ndarray:
+    """The palette-index image a recipe's `src` names:
+
+    - ``shp:<file>.shp:<frame>``: a frame of a shape file;
+    - ``sprite:<file>:<face>[+<turret>]``: a map sprite, a turret over its base;
+    - ``icn:<group>:<start>:<w>x<h>``: a building as the map shows it, tiles
+      start .. start + w*h - 1 of ICON.MAP group `group`, row by row;
+    - ``icnset:<group>:<i>``: one tile of an ICON.MAP group;
+    - ``icntile:<tile>:<n>``: ICON.ICN tile `tile`, repeated n x n."""
+    kind, _, rest = src.partition(":")
+    if kind == "shp":
+        name, frame = rest.rsplit(":", 1)
+        return sp.frame(name.lower().removesuffix(".shp"), int(frame))
+    if kind == "sprite":
+        name, faces = rest.split(":")
+        face, _, turret = faces.partition("+")
+        recipe = {"unit": name, "face": int(face)}
+        if turret:
+            recipe["turret"] = int(turret)
+        return _pixels(sp, recipe)
+    if kind in ("icn", "icnset", "icntile"):
+        if getattr(sp, "_icn", None) is None:
+            icn, mp = sp.get("icon.icn"), sp.get("icon.map")
+            if icn is None or mp is None:
+                raise KeyError("ICON.ICN or ICON.MAP is not in DUNE.PAK")
+            sp._icn = icn_tiles(icn, mp)
+        tiles, groups = sp._icn
+        if kind == "icn":
+            group, start, size = rest.split(":")
+            tw, th = (int(v) for v in size.split("x"))
+            t = groups[int(group)][int(start):int(start) + tw * th]
+            return np.vstack([np.hstack([tiles[t[r * tw + c]] for c in range(tw)]) for r in range(th)])
+        if kind == "icnset":
+            group, i = rest.split(":")
+            return tiles[groups[int(group)][int(i)]]
+        tile, n = rest.split(":")
+        return np.tile(tiles[int(tile)], (int(n), int(n)))
+    raise ValueError(f"unknown source {src!r}")
 
 
-# How a portrait is dithered, chosen per recipe by comparing the 14 unit
-# portraits in eight variants on the black keycap.
-STYLES = {
-    "levels": {"lo_p": 5, "hi_p": 95, "curve": 0.3, "sharpen": 1.0, "levels": 3},
-    "lighter": {"lo_p": 5, "hi_p": 95, "curve": 0.6, "sharpen": 1.5, "gamma": 0.6},
-    "stretch": {"lo_p": 15, "hi_p": 85, "curve": 0.6, "sharpen": 1.5},
-}
+def font(sp: td.Sprites, name: str) -> tuple[int, dict]:
+    data = sp.get(name.lower())
+    if data is None:
+        raise KeyError(f"{name} is not in DUNE.PAK")
+    return font_glyphs(data)
 
 
-def portrait(sp: td.Sprites, k: int, size, style: str = "levels") -> np.ndarray:
-    """Build portrait `k` without its 1 px frame and its background (the
-    colour most common along the edge), dithered to fit `size` (w, h) in
-    `style`, a key of STYLES."""
-    if style not in STYLES:
-        raise ValueError(f"unknown portrait style {style!r}")
-    f = sp.frame("shapes", k)[1:-1, 1:-1]
-    cover = f != np.bincount(np.concatenate([f[0], f[-1], f[:, 0], f[:, -1]])).argmax()
-    p = np.pad(cover, 1)
-    cover &= p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]   # drop single stray pixels
-    if not cover.any():
-        raise ValueError(f"portrait {k} is all background")
-    g = sp.pal[f].astype(float) @ [0.299, 0.587, 0.114] / 255
-    up = np.ones((10, 10))
-    return dither.keycap(np.kron(g, up), np.kron(cover, up).astype(bool), size, **STYLES[style])
+def palette(sp: td.Sprites) -> np.ndarray:
+    """256 x RGB, as the icon picker page has it."""
+    return np.asarray(sp.pal).astype(np.uint8)
 
 
 def draw(sp: td.Sprites, recipe: dict, size):
-    if "portrait" in recipe:
-        return portrait(sp, recipe["portrait"], size, recipe.get("style", "levels"))
-    if "unit" in recipe:
-        return pixel_icon(sp, _pixels(sp, recipe), size)
-    if "cursor" in recipe:
-        if sp.mouse is None:
-            return None
-        return td._cursor(sp, recipe["cursor"], size, recipe.get("threshold", -1.0))
+    if "word" in recipe:
+        return picture.word(font(sp, recipe.get("font", "new8p.fnt")), dict(recipe, text=recipe["word"]), size)
+    if "src" in recipe:
+        return picture.picture(source(sp, recipe["src"]), palette(sp), recipe, size)
     raise ValueError(f"unknown recipe {recipe!r}")

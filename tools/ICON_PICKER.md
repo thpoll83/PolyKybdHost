@@ -44,9 +44,33 @@ Engines and settings:
 | `pixel` | Pixel art at a whole-number scale. | lit pixels (`edge+bright` = the reader's sprite rule, `nonzero`, `centre` colour, `darker` / `brighter` than a percentile), scale, mirror, region, alignment |
 | word | A word in one of the game's fonts. | text, font, which glyph parts are lit (body, shade, outline), letter gap, scale, alignment |
 
-⚠️ **The page's `dither` engine resamples by area averaging; `dither.keycap`
-uses PIL's LANCZOS.** Results are close, not byte-identical. Re-render the
-chosen settings through the reader before shipping them.
+## Applying the picks
+
+```bash
+.venv/bin/python tools/apply_icon_picks.py polyhost/res/overlay_sources/dune2/picker.yaml picks.json
+python polyhost/res/overlay_sources/dune2/fetch_icons.py          # the re-rasterized icons
+.venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/dune2/dune_legacy.yaml
+```
+
+- A game picture or a word becomes the recipe of the key's icon in the overlay's
+  `game_assets:` block, with its settings, `region` and `margin`. The reader
+  draws it at run time from the user's files.
+- A re-rasterized shipped icon goes to `rasterize.yaml` beside the spec;
+  `fetch_icons.py` renders it into `icons/`, and every binding using that icon
+  gets the picked region. These ship, like any other icon.
+- "shipped" removes the recipe.
+- ⚠️ **Two keys sharing an icon file must pick the same thing**: a recipe is per
+  icon, not per key. The tool stops before writing anything and names them;
+  give one key its own icon file (Dune Legacy's F4 to F6 have `skip10`,
+  `skip30`, `skip120` for this).
+
+The page and the keyboard draw the same pixels: `game_assets/picture.py` is a
+line-by-line port of the page's renderer, storing values as 32-bit floats
+where the page does, and the readers and `fetch_icons.py` call it.
+`tests/services/game_assets_picture_test.py` pins it against values produced by
+the page itself; regenerate those from the page, never from the module. For the
+first Dune II picks all 53 keys were also compared cell by cell, page against
+reader, with no difference.
 
 ## The picker spec
 
