@@ -282,7 +282,10 @@ def main(argv) -> int:
     flat_icons(out)
     drawn = {"program.png": program, "capital.png": capital, "pingattack.png": pings,
              "pingdefend.png": pings, "selectscreen.png": select_screen,
-             "subgroupback.png": subgroup_back, "groupadd0.png": groups_add}
+             "subgroupback.png": subgroup_back}
+    # groups_add() draws all ten; listing each file redraws them when any is missing.
+    for n in range(10):
+        drawn[f"groupadd{n}.png"] = groups_add
     for name in WORDS:
         drawn[f"{name}.png"] = words
     done = set()
