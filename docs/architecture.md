@@ -386,8 +386,10 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `Setting` declarations and the registry of readers.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
-    OpenRA installs the original game files; both readers search them. Its
+    the encrypted MIX format in `mix.py`; `minecraft_java/` for Minecraft: Java
+    Edition, which reads the item pictures from the newest release's client jar).
+    `openra.py` lists the folders where OpenRA installs the original game files;
+    both Westwood readers search them. Each reader's
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;

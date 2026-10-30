@@ -1,6 +1,6 @@
 """The game-asset readers this host has, and the settings each one adds.
 
-Each reader is a subfolder of ``game_assets`` (``westwood_td/``): its
+Each reader is a subfolder of ``game_assets`` (``westwood_td/``, ``minecraft_java/``): its
 ``__init__.py`` declares a ``Reader`` and the reader's own modules sit beside it.
 
 An overlay opts in with ``game_assets: <spec>`` in its overlay-mapping entry;
@@ -30,8 +30,9 @@ Reader = namedtuple("Reader", "module settings folder variant")
 def _registry() -> dict:
     """{name: Reader}. Each reader is a subfolder of game_assets whose
     ``__init__.py`` declares ``READER``; add a new one here."""
-    from polyhost.services.game_assets import westwood_ra, westwood_td
-    return {"westwood_td": westwood_td.READER, "westwood_ra": westwood_ra.READER}
+    from polyhost.services.game_assets import minecraft_java, westwood_ra, westwood_td
+    return {"westwood_td": westwood_td.READER, "westwood_ra": westwood_ra.READER,
+            "minecraft_java": minecraft_java.READER}
 
 
 READERS = _registry()

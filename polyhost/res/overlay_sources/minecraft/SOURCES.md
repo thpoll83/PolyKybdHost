@@ -167,6 +167,72 @@ drawn over the whole cell without the ESC legend (`program_icon_legend: false`,
 protocol v25). The game's logo art is not used, and Simple Icons has no
 Minecraft logo.
 
+## Game art (Java Edition)
+
+When "Art From Installed Games" is on, five keys of the Java set are redrawn
+from the item pictures in the user's own client jar, by the `minecraft_java`
+reader (`polyhost/services/game_assets/minecraft_java/`). The `game_assets:`
+block at the end of `minecraft_java.yaml` lists them; every route in
+`overlay-mapping.poly.yaml` that gives the Java set (`java` with its macOS,
+Linux, GNOME and KDE branches, `javaw`, `minecraft` on macOS and Linux,
+`minecraft*`) has `game_assets: minecraft/minecraft_java.yaml`. No Mojang file
+is in this repository; the copy is written to the user's cache folder and only
+sent to the keyboard.
+
+| Key | Action | Picture in the jar (`assets/minecraft/textures/…`) |
+|---|---|---|
+| E | Open / close inventory | `item/bundle.png` |
+| T | Open chat | `item/writable_book.png` (book and quill) |
+| L | Advancements | `item/nether_star.png` |
+| F2 | Take screenshot | `item/painting.png` |
+| F5 | Toggle perspective | `item/armor_stand.png` |
+
+Every other key keeps the shipped icon: the movement arrows, jump, sprint,
+sneak and the hotbar slots (drawn squares), and the keys with no item that
+shows the action. The shield (swap off hand), the player head (player list),
+the chest (inventory) and the debug stick (debug screen) have no picture of
+their own under `item/` or `block/`; the game draws them from other textures.
+A jar that lacks one of the five pictures (an old version) keeps the shipped
+icon on that key only.
+
+**Which jar.** The `game_minecraft_dir` setting, or else the folder above the
+running game's Java runtime that has a `versions` folder, then
+`%APPDATA%\.minecraft`, `~/Library/Application Support/minecraft`,
+`~/.minecraft` and the Flatpak launcher's
+`~/.var/app/com.mojang.Minecraft/.minecraft`. In the first one that has a
+version, the newest release by `releaseTime` in `versions/<id>/<id>.json` is
+read from `versions/<id>/<id>.jar`. Snapshots are used only when no release
+is installed; mod-loader profiles (`inheritsFrom`) are skipped. Prism Launcher
+and MultiMC keep the client jar under `libraries/`, not `versions/`, so they
+are not searched; their users set the folder of a vanilla install. The
+Flatpak path is from the Flathub app id `com.mojang.Minecraft` and was not
+checked on an install.
+
+**Conversion.** Each picture is cropped to its opaque pixels and converted to
+1 bit at its own 16x16 grid: a pixel is lit when it is opaque and brighter than
+0.8 times the median brightness of the opaque pixels, so the dark outline and
+shading stay dark and the parts of the item stay apart. It is then scaled by
+the largest whole number that fits the key's area (2x for a picture that
+fills most of its 16x16 grid), with no smoothing, at the right edge and centred from top to bottom.
+Error diffusion (Floyd-Steinberg) at 16 px and after scaling, a fixed
+brightness threshold, and the plain silhouette were compared on Minetest Game
+item textures (CC BY-SA 3.0, used as stand-ins for 16x16 item art and not
+committed): error diffusion turned flat areas into noise, a fixed threshold
+lost whole items, the silhouette lost the inner detail.
+
+**What was checked.** Each of the five paths is in the file listings of the
+`assets/minecraft/textures/item/` folder of the 1.21.10, 1.21.11, 26.1, 26.2
+and 26.3 client jars on <https://mcasset.cloud/> (read 2026-10-30; the names
+only, no picture or jar was downloaded). `shield.png`, `player_head.png`,
+`chest.png` and `debug_stick.png` are in neither the 26.3 `item/` nor its
+`block/` listing. The reader was tested only on a synthetic jar
+(`tests/services/game_assets_minecraft_test.py`). It was not run against a real
+install, and the five pictures were not looked at on a keycap.
+
+**Bedrock Edition** is not read. Its files are in a protected install folder
+(a packaged app under `WindowsApps` on Windows), so the Bedrock set keeps the
+shipped art.
+
 ## Icons
 
 | File | Source | Author | Licence |
