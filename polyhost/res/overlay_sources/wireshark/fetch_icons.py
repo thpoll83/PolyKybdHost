@@ -164,12 +164,14 @@ def _lit(path: Path, threshold: int = 150) -> Image.Image:
 
 def labelled(out: Path) -> None:
     """Draw <stem>.png: a base glyph (24 px high) above a short word, 1-bit."""
-    font = ImageFont.truetype(BOLD, FONT_PX)
+    font = None
     for stem, (base, word) in LABELLED.items():
         dest = out / f"{stem}.png"
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
             continue
+        # Loaded only when an icon is drawn: the committed PNGs need no font.
+        font = font or ImageFont.truetype(BOLD, FONT_PX)
         glyph = _lit(out / f"{base}.png")
         box = glyph.getbbox()
         glyph = glyph.crop(box)
