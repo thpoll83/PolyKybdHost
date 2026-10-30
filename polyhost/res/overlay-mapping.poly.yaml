@@ -1883,6 +1883,14 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# Age of Empires IV and its Anniversary Edition, Steam app 1466860
+# (overlay_sources/aoe4/aoe4.yaml). Windows only; there is no macOS version.
+# RelicCardinal.exe is the executable in Steam's launch config (read
+# 2026-10-30); the Microsoft Store copy is assumed to use the same name, and
+# steam_app_1466860 under Proton follows the AoE2 DE entry. Those two names
+# were not checked on an install.
+reliccardinal,steam_app_1466860:
+  overlay: [aoe4_template.mods.png, aoe4_template.combo.mods.png]
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
