@@ -1844,6 +1844,21 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
 
+    def test_ARDUINO_IDE_gets_its_platform_set(self):
+        for app, os_name, stem in (
+                # Arduino IDE.exe, cut at its first dot as the Windows path does.
+                ("Arduino IDE.exe".split(".")[0].lower(), "WINDOWS", "arduino_ide_template"),
+                ("arduino ide", "MACOS", "arduino_ide_template_mac"),
+                ("arduino-ide", "LINUX", "arduino_ide_template_linux"),
+                ("arduino ide", "LINUX", "arduino_ide_template_linux"),
+                ("cc.arduino.ide2", "LINUX", "arduino_ide_template_linux")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Blink | Arduino IDE 2.3.6",
+                                  title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+                self.assertIn(f"{stem}.combo.mods.png", got["overlay"])
+
     def test_THUNDERBIRD_compose_window_gets_its_set_by_title(self):
         # One process for both windows: the compose title ("Write: <subject> -
         # Thunderbird", translated) selects the compose set.
