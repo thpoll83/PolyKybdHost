@@ -1,0 +1,72 @@
+# fheroes2 (free engine for Heroes of Might and Magic II) overlay for PolyKybd.
+#
+# Keys: the default hotkey table in src/fheroes2/game/game_hotkeys.cpp of
+# ihhub/fheroes2, release 1.1.17. See SOURCES.md.
+#
+# The game reads no modifier for its hotkeys (Shift+S saves like S), so only
+# the plain layer is drawn. Where a key means one thing on the adventure map
+# and another in battle or in a town, the adventure-map meaning is drawn.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/fheroes2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/fheroes2/fheroes2.yaml --preview /tmp/fheroes2_preview
+app: fheroes2
+match: [fheroes2, fheroes2.exe, io.github.ihhub.fheroes2]
+output: fheroes2_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for AoE2 and Warcraft III: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "fheroes2" drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Adventure map: heroes and towns
+  - { key: E, icon: endturn.png, label: "End turn" }
+  - { key: H, icon: nexthero.png, label: "Next hero" }
+  - { key: T, icon: nexttown.png, label: "Next town" }
+  - { key: M, icon: movehero.png, label: "Start hero movement" }
+  - { key: Z, icon: sleephero.png, label: "Put hero to sleep" }
+  - { key: C, icon: castspell.png, label: "Cast spell" }
+  - { key: D, icon: dig.png, label: "Dig for artifact" }
+  - { key: SPACE, icon: defaultaction.png, label: "Default action" }
+  - { key: ENTER, icon: openfocus.png, label: "Open hero or town" }
+
+  # Adventure map: views and dialogs
+  - { key: V, icon: viewworld.png, label: "View world" }
+  - { key: K, icon: kingdom.png, label: "Kingdom summary" }
+  - { key: P, icon: puzzle.png, label: "Puzzle map" }
+  - { key: I, icon: scenarioinfo.png, label: "Scenario information" }
+  - { key: A, icon: adventureoptions.png, label: "Adventure options" }
+  - { key: O, icon: systemoptions.png, label: "System options" }
+  - { key: F, icon: fileoptions.png, label: "File options" }
+  - { key: N, icon: newgame.png, label: "New game" }
+  - { key: S, icon: save.png, label: "Save game" }
+  - { key: L, icon: load.png, label: "Load game" }
+  - { key: Q, icon: quit.png, label: "Quit", shared: false }
+  - { key: F2, icon: quicksave.png, label: "Quick save", region: [34, 40] }
+
+  # Battle (no adventure-map meaning)
+  - { key: R, icon: retreat.png, label: "Retreat from battle" }
+
+  # Town and army dialogs (no adventure-map meaning)
+  - { key: W, icon: well.png, label: "Town well" }
+  - { key: B, icon: build.png, label: "Town construction" }
+  - { key: U, icon: upgrade.png, label: "Upgrade troop" }
+  - { key: X, icon: swaparmies.png, label: "Exchange all troops" }
+
+  # Every screen
+  - { key: F4, icon: fullscreen.png, label: "Toggle full screen", region: [30, 40] }
+  - { key: F10, icon: textmode.png, label: "Toggle text support mode" }
