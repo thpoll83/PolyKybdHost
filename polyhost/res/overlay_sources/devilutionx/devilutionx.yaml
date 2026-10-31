@@ -1,0 +1,88 @@
+# DevilutionX (Diablo and Hellfire) overlay for PolyKybd.
+#
+# Keys: the default key bindings of DevilutionX 1.5.5, from InitKeymapActions()
+# and PressKey() in Source/diablo.cpp. See SOURCES.md.
+#
+# DevilutionX binds every action to one key and ignores the modifiers, so the
+# keys are labelled on the unmodified layer. Alt+Enter (full screen) and the
+# held Left Alt (item labels) are the only labels on the Alt layer.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/devilutionx/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/devilutionx/devilutionx.yaml --preview /tmp/devilutionx_preview
+app: devilutionx
+match: [devilutionx, devilutionx.exe, org.diasurgical.devilutionx]
+output: devilutionx_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for Warcraft III: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# "Devilution" over a large X, drawn over the whole cell, without the ESC
+# legend (protocol v25). ESC also opens the game menu.
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Belt: 1 to 8 use the item in that belt slot
+  - { key: "1", icon: belt.png, label: "Use belt item 1" }
+  - { key: "2", icon: belt.png, label: "Use belt item 2" }
+  - { key: "3", icon: belt.png, label: "Use belt item 3" }
+  - { key: "4", icon: belt.png, label: "Use belt item 4" }
+  - { key: "5", icon: belt.png, label: "Use belt item 5" }
+  - { key: "6", icon: belt.png, label: "Use belt item 6" }
+  - { key: "7", icon: belt.png, label: "Use belt item 7" }
+  - { key: "8", icon: belt.png, label: "Use belt item 8" }
+
+  # Spells: F5 to F8 cast (or, with the speedbook open, assign) quick spells 1 to 4
+  - { key: F5, icon: quickspell.png, label: "Quick spell 1", region: [34, 40] }
+  - { key: F6, icon: quickspell.png, label: "Quick spell 2", region: [34, 40] }
+  - { key: F7, icon: quickspell.png, label: "Quick spell 3", region: [34, 40] }
+  - { key: F8, icon: quickspell.png, label: "Quick spell 4", region: [34, 40] }
+  - { key: S, icon: speedbook.png, label: "Speedbook" }
+  - { key: B, icon: spellbook.png, label: "Spellbook" }
+
+  # Panels
+  - { key: I, icon: inventory.png, label: "Inventory" }
+  - { key: C, icon: character.png, label: "Character" }
+  - { key: Q, icon: questlog.png, label: "Quest log" }
+  - { key: TAB, icon: automap.png, label: "Automap" }
+  - { key: SPACE, icon: closepanels.png, label: "Hide info screens" }
+  - { key: L, icon: chatlog.png, label: "Chat log" }
+  - { key: V, icon: gameinfo.png, label: "Game info" }
+  - { key: F1, icon: help.png, label: "Help screen", region: [34, 40] }
+
+  # View
+  - { key: Z, icon: zoom.png, label: "Zoom game screen" }
+  - { key: EQUAL, icon: mapzoomin.png, label: "Automap: zoom in" }
+  - { key: MINUS, icon: mapzoomout.png, label: "Automap: zoom out" }
+  - { key: F, icon: gammaup.png, label: "Increase gamma" }
+  - { key: G, icon: gammadown.png, label: "Decrease gamma" }
+  - { key: KC_LEFT_ALT, icon: highlight.png, label: "Item labels (hold)" }
+  - { key: KC_LEFT_ALT, mods: [ALT], icon: highlight.png, label: "Item labels (hold)" }
+  - { key: KC_RIGHT_CTRL, icon: highlight.png, label: "Item labels on / off" }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Full screen on / off" }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
+
+  # Game
+  - { key: P, icon: pause.png, label: "Pause game" }
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: F2, icon: save.png, label: "Quick save", region: [34, 40] }
+  - { key: F3, icon: load.png, label: "Quick load", region: [34, 40] }
+
+  # Chat: Enter opens the chat line; F9 to F12 send the four quick messages
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: F9, icon: msghelp.png, label: "Quick message 1: I need help! Come Here!" }
+  - { key: F10, icon: msgfollow.png, label: "Quick message 2: Follow me." }
+  - { key: F11, icon: msggift.png, label: "Quick message 3: Here's something for you." }
+  - { key: F12, icon: msgdie.png, label: "Quick message 4: Now you DIE!" }
