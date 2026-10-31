@@ -1913,3 +1913,9 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# fheroes2, the free Heroes of Might and Magic II engine
+# (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
+# in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;
+# the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
+fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
+  overlay: fheroes2_template.mods.png
