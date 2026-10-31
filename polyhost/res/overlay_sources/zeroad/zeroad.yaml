@@ -54,16 +54,16 @@ bindings:
   - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Save group 8", region: [48, 40], margin: 5 }
   - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Save group 9", region: [48, 40], margin: 5 }
   - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Save group 10", region: [48, 40], margin: 5 }
-  - { key: "1", mods: [SHIFT], icon: groupadd1.png, label: "Add to group 1", region: [48, 40], margin: 5 }
-  - { key: "2", mods: [SHIFT], icon: groupadd2.png, label: "Add to group 2", region: [48, 40], margin: 5 }
-  - { key: "3", mods: [SHIFT], icon: groupadd3.png, label: "Add to group 3", region: [48, 40], margin: 5 }
-  - { key: "4", mods: [SHIFT], icon: groupadd4.png, label: "Add to group 4", region: [48, 40], margin: 5 }
-  - { key: "5", mods: [SHIFT], icon: groupadd5.png, label: "Add to group 5", region: [48, 40], margin: 5 }
-  - { key: "6", mods: [SHIFT], icon: groupadd6.png, label: "Add to group 6", region: [48, 40], margin: 5 }
-  - { key: "7", mods: [SHIFT], icon: groupadd7.png, label: "Add to group 7", region: [48, 40], margin: 5 }
-  - { key: "8", mods: [SHIFT], icon: groupadd8.png, label: "Add to group 8", region: [48, 40], margin: 5 }
-  - { key: "9", mods: [SHIFT], icon: groupadd9.png, label: "Add to group 9", region: [48, 40], margin: 5 }
-  - { key: "0", mods: [SHIFT], icon: groupadd0.png, label: "Add to group 10", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], icon: groupadd1.png, label: "Add group 1 to the selection", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], icon: groupadd2.png, label: "Add group 2 to the selection", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], icon: groupadd3.png, label: "Add group 3 to the selection", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], icon: groupadd4.png, label: "Add group 4 to the selection", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], icon: groupadd5.png, label: "Add group 5 to the selection", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], icon: groupadd6.png, label: "Add group 6 to the selection", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], icon: groupadd7.png, label: "Add group 7 to the selection", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], icon: groupadd8.png, label: "Add group 8 to the selection", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], icon: groupadd9.png, label: "Add group 9 to the selection", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], icon: groupadd0.png, label: "Add group 10 to the selection", region: [48, 40], margin: 5 }
 
   # Selection
   - { key: SEMICOLON, icon: idlebuilder.png, label: "Next idle builder" }

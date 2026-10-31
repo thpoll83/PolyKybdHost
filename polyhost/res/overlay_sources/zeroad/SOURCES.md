@@ -24,7 +24,9 @@ A user's `user.cfg` and the in-game hotkey editor change these defaults; the
 overlay shows the defaults.
 
 Control groups: 1 to 0 select groups 1 to 10, Ctrl+digit saves the selection
-as that group, Shift+digit adds the selection to it. Each digit has its own
+as that group, Shift+digit adds that group's units to the current
+selection; the group itself does not change (`performGroup("add")` in
+`gui/session/input.js`). Each digit has its own
 unit, drawn once at full height: 1 hoplite helmet, 2 archer, 3 horse, 4 war
 elephant, 5 spearman, 6 trebuchet, 7 siege tower, 8 trireme, 9 centurion
 helmet, 0 citizen. The game does not tie a group number to a unit type; the
