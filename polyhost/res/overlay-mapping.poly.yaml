@@ -1913,3 +1913,9 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# Warzone 2100 (overlay_sources/warzone2100/warzone2100.yaml). The binary is
+# `warzone2100` (`warzone2100.exe` on Windows), the CMake target's OUTPUT_NAME in
+# src/CMakeLists.txt at tag 4.7.0; the macOS bundle is "Warzone 2100".
+# steam_app_1241950 under Proton. The window names were not checked on an install.
+warzone2100,warzone2100.exe,warzone 2100,steam_app_1241950:
+  overlay: warzone2100_template.mods.png
