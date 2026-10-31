@@ -88,6 +88,12 @@ use them: every icon is from the free sets below.
 
 ## Icons
 
+Licence texts for the icon and font licences named in this file:
+
+- CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+- CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+- SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `pause.png` | Font Awesome Free 6.5.2 `pause` (solid) | Fonticons, Inc. | CC BY 4.0 |
