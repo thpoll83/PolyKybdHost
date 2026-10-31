@@ -1,0 +1,117 @@
+# OpenTTD overlay for PolyKybd.
+#
+# Keys: the default hotkeys of OpenTTD 15.3, from the Hotkey(...) tables in the
+# game's source (src/toolbar_gui.cpp, src/main_gui.cpp, src/terraform_gui.cpp,
+# src/rail_gui.cpp). See SOURCES.md.
+#
+# Only keys that do the same thing whatever window is open are labelled: the
+# main toolbar, the main window, and the four letters the game marks as global
+# (Q W E for the landscaping tools, A for autorail). The construction toolbars
+# bind digits and letters only while they are open, and the window title does
+# not change when they open, so those keys stay blank.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/openttd/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openttd/openttd.yaml --preview /tmp/openttd_preview
+app: openttd
+match: [openttd, openttd.exe, org.openttd.openttd, steam_app_1536610]
+output: openttd_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for Warcraft III: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# OpenTTD drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Main toolbar (src/toolbar_gui.cpp, "maintoolbar")
+  - { key: F1, icon: pause.png, label: "Pause", region: [34, 40] }
+  - { key: PAUSE, icon: pause.png, label: "Pause", region: [34, 40] }
+  - { key: F2, icon: settings.png, label: "Game options", region: [34, 40] }
+  - { key: F3, icon: saveload.png, label: "Save or load game", region: [34, 40] }
+  - { key: F4, icon: smallmap_f4.png, label: "Map of the world", region: [30, 40] }
+  - { key: F5, icon: towns.png, label: "Town directory", region: [30, 40] }
+  - { key: F6, icon: subsidies.png, label: "Subsidies", region: [30, 40] }
+  - { key: F7, icon: stations.png, label: "Station list", region: [30, 40] }
+  - { key: F8, icon: finances.png, label: "Finances", region: [34, 40] }
+  - { key: F9, icon: companies.png, label: "Company information" }
+  - { key: F10, icon: graphs.png, label: "Graphs" }
+  - { key: F11, icon: league.png, label: "Company league table" }
+  - { key: F12, icon: industries.png, label: "Industry directory" }
+  - { key: F1, mods: [SHIFT], icon: trainlist.png, label: "List of trains", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: roadvehlist.png, label: "List of road vehicles", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: shiplist.png, label: "List of ships", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], icon: aircraftlist.png, label: "List of aircraft", region: [30, 40] }
+  - { key: F5, mods: [SHIFT], icon: zoomin_f5.png, label: "Zoom in", region: [30, 40] }
+  - { key: F6, mods: [SHIFT], icon: zoomout_f6.png, label: "Zoom out", region: [30, 40] }
+  - { key: F7, mods: [SHIFT], icon: buildrail.png, label: "Build railway", region: [30, 40] }
+  - { key: F8, mods: [SHIFT], icon: buildroad.png, label: "Build road", region: [34, 40] }
+  - { key: F9, mods: [SHIFT], icon: builddocks.png, label: "Build docks" }
+  - { key: F10, mods: [SHIFT], icon: buildairport.png, label: "Build airport" }
+  - { key: F11, mods: [SHIFT], icon: buildtrees.png, label: "Plant trees" }
+  - { key: F12, mods: [SHIFT], icon: music.png, label: "Music and sound" }
+  - { key: "=", icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: "=", mods: [SHIFT], icon: zoomin.png, label: "Zoom in", shared: false }
+  - { key: "-", icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: "-", mods: [SHIFT], icon: zoomout.png, label: "Zoom out", shared: false }
+  - { key: M, icon: smallmap.png, label: "Map of the world" }
+  - { key: L, icon: landscaping.png, label: "Landscaping toolbar" }
+  - { key: V, icon: viewport.png, label: "Extra viewport" }
+  - { key: S, mods: [CTRL], icon: screenshot.png, label: "Screenshot", shared: false }
+  - { key: P, mods: [CTRL], icon: screenshotzoom.png, label: "Screenshot at the closest zoom" }
+  - { key: D, mods: [CTRL], icon: screenshotdefault.png, label: "Screenshot at the default zoom" }
+  - { key: C, mods: [CTRL, ALT], icon: cheats.png, label: "Cheats" }
+
+  # Global letters (src/terraform_gui.cpp, src/rail_gui.cpp: WKC_GLOBAL_HOTKEY)
+  - { key: Q, icon: lower.png, label: "Lower land" }
+  - { key: W, icon: raise.png, label: "Raise land" }
+  - { key: E, icon: level.png, label: "Level land" }
+  - { key: A, icon: autorail.png, label: "Autorail" }
+
+  # Main window (src/main_gui.cpp, "global")
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", shared: false }
+  - { key: W, mods: [CTRL], icon: abandon.png, label: "Abandon game" }
+  - { key: R, mods: [CTRL], icon: refresh.png, label: "Redraw the screen" }
+  - { key: "`", icon: console.png, label: "Console" }
+  - { key: Z, icon: centerzoom.png, label: "Centre and zoom in on the cursor" }
+  - { key: X, icon: transparency.png, label: "Transparency on / off" }
+  - { key: X, mods: [CTRL], icon: transparencybar.png, label: "Transparency options" }
+  - { key: DEL, icon: closewindows.png, label: "Close windows" }
+  - { key: DEL, mods: [SHIFT], icon: closeall.png, label: "Close all windows, sticky ones too" }
+  - { key: DEL, mods: [CTRL], icon: deletenews.png, label: "Delete all news messages" }
+  - { key: SPACE, icon: closenews.png, label: "Close the news or error message" }
+  - { key: ENTER, icon: chat.png, label: "Chat" }
+  - { key: ENTER, mods: [SHIFT], icon: chatall.png, label: "Chat to all players" }
+  - { key: ENTER, mods: [CTRL], icon: chatcompany.png, label: "Chat to your company" }
+  - { key: ENTER, mods: [CTRL, SHIFT], icon: chatserver.png, label: "Chat to the server" }
+
+  # Transparency (Ctrl+digit) and invisibility (Ctrl+Shift+digit)
+  - { key: "1", mods: [CTRL], icon: transp1.png, label: "Signs transparent" }
+  - { key: "2", mods: [CTRL], icon: transp2.png, label: "Trees transparent" }
+  - { key: "3", mods: [CTRL], icon: transp3.png, label: "Houses transparent" }
+  - { key: "4", mods: [CTRL], icon: transp4.png, label: "Industries transparent" }
+  - { key: "5", mods: [CTRL], icon: transp5.png, label: "Company buildings transparent" }
+  - { key: "6", mods: [CTRL], icon: transp6.png, label: "Bridges transparent" }
+  - { key: "7", mods: [CTRL], icon: transp7.png, label: "Transmitters and lighthouses transparent" }
+  - { key: "8", mods: [CTRL], icon: transp8.png, label: "Catenary transparent" }
+  - { key: "9", mods: [CTRL], icon: transp9.png, label: "Loading indicators transparent" }
+  - { key: "1", mods: [CTRL, SHIFT], icon: invis1.png, label: "Signs invisible" }
+  - { key: "2", mods: [CTRL, SHIFT], icon: invis2.png, label: "Trees invisible" }
+  - { key: "3", mods: [CTRL, SHIFT], icon: invis3.png, label: "Houses invisible" }
+  - { key: "4", mods: [CTRL, SHIFT], icon: invis4.png, label: "Industries invisible" }
+  - { key: "5", mods: [CTRL, SHIFT], icon: invis5.png, label: "Company buildings invisible" }
+  - { key: "6", mods: [CTRL, SHIFT], icon: invis6.png, label: "Bridges invisible" }
+  - { key: "7", mods: [CTRL, SHIFT], icon: invis7.png, label: "Transmitters and lighthouses invisible" }
+  - { key: "8", mods: [CTRL, SHIFT], icon: invis8.png, label: "Catenary invisible" }
