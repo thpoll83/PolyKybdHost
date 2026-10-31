@@ -139,6 +139,12 @@ separate licence for those files was found, and they are not used.
 
 ## Icons
 
+Licence texts for the icon and font licences named in this file:
+
+- CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+- CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+- SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `help.png` | Font Awesome Free 6.5.2 `circle-question` (solid) | Fonticons, Inc. | CC BY 4.0 |
