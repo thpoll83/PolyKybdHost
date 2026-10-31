@@ -105,6 +105,12 @@ License, not a free licence.
 
 ## Icons
 
+Licence texts for the icon and font licences named in this file:
+
+- CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+- CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+- SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `belt.png` | game-icons.net `lorc/round-bottom-flask` | lorc | CC BY 3.0 |
