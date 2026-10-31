@@ -113,6 +113,13 @@ OpenRCT2 does not ship them.
 
 ## Icons
 
+Licence texts for the icon and font licences named in this file:
+
+- CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
+- CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+- Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
+- SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `land.png`, `_land.png` (in `heightland.png`) | Font Awesome Free 6.5.2 `mountain` (solid) | Fonticons, Inc. | CC BY 4.0 |
