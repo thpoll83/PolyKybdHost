@@ -89,10 +89,10 @@ bindings:
   - { key: T, mods: [ALT], icon: track.png, label: "Track unit on / off" }
   - { key: F2, icon: recallpos.png, label: "Go to map position 1", region: [34, 40] }
   - { key: F3, icon: recallpos.png, label: "Go to map position 2", region: [34, 40] }
-  - { key: F4, icon: recallpos.png, label: "Go to map position 3", region: [30, 40] }
+  - { key: F4, icon: recallpos30.png, label: "Go to map position 3", region: [30, 40] }
   - { key: F2, mods: [SHIFT], icon: savepos.png, label: "Store map position 1", region: [34, 40] }
   - { key: F3, mods: [SHIFT], icon: savepos.png, label: "Store map position 2", region: [34, 40] }
-  - { key: F4, mods: [SHIFT], icon: savepos.png, label: "Store map position 3", region: [30, 40] }
+  - { key: F4, mods: [SHIFT], icon: savepos30.png, label: "Store map position 3", region: [30, 40] }
   - { key: B, mods: [CTRL], icon: bigmap.png, label: "Big map on / off" }
   - { key: B, mods: [ALT], icon: bigmap.png, label: "Big map on / off" }
   - { key: V, mods: [ALT], icon: viewport.png, label: "Next viewport layout" }

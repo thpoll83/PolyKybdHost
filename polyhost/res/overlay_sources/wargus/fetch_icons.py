@@ -42,6 +42,8 @@ ICONS = {
     # Map view (Stratagus src/ui/interface.cpp)
     "recallpos": "fa:map-location-dot",
     "savepos": "fa:thumbtack",
+    "recallpos30": "fa:map-location-dot",   # F4: its legend leaves 30 px
+    "savepos30": "fa:thumbtack",
     "lastevent": "fa:bell",
     "center": "fa:crosshairs",
     "track": "fa:video",
@@ -79,7 +81,8 @@ GROUP_UNITS = {
 
 # Key area of each icon, from wargus.yaml; the default is 40 x 40.
 SIZES = {"help": (34, 40), "recallpos": (34, 40), "options": (34, 40), "speedmenu": (34, 40),
-         "soundmenu": (34, 40), "preferences": (34, 40), "savepos": (34, 40)}
+         "soundmenu": (34, 40), "preferences": (34, 40), "savepos": (34, 40),
+         "recallpos30": (30, 40), "savepos30": (30, 40)}
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"save": (34, 34), "load": (34, 34), "help": (30, 30), "chat": (34, 34),
        "music": (30, 30), "screenshot": (30, 30), "faster": (32, 32), "slower": (32, 32),

@@ -161,6 +161,8 @@ Licence texts for the icon and font licences named in this file:
 | `restart.png` | Font Awesome Free 6.5.2 `rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `recallpos.png` | Font Awesome Free 6.5.2 `map-location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `savepos.png` | Font Awesome Free 6.5.2 `thumbtack` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `recallpos30.png` | Font Awesome Free 6.5.2 `map-location-dot` (solid), drawn 30 px wide for F4 | Fonticons, Inc. | CC BY 4.0 |
+| `savepos30.png` | Font Awesome Free 6.5.2 `thumbtack` (solid), drawn 30 px wide for Shift+F4 | Fonticons, Inc. | CC BY 4.0 |
 | `lastevent.png` | Font Awesome Free 6.5.2 `bell` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `center.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `track.png` | Font Awesome Free 6.5.2 `video` (solid) | Fonticons, Inc. | CC BY 4.0 |
