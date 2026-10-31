@@ -1913,3 +1913,9 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# OpenRCT2 (overlay_sources/openrct2/openrct2.yaml). The binary is `openrct2`
+# (add_executable in src/openrct2-ui/CMakeLists.txt, v0.5.6), `openrct2.exe` on
+# Windows (TargetName in openrct2-win.vcxproj), `OpenRCT2` for the macOS bundle,
+# and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
+openrct2,openrct2.exe,io.openrct2.openrct2:
+  overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
