@@ -1,0 +1,142 @@
+# Wargus (Warcraft II on the Stratagus engine) overlay for PolyKybd.
+#
+# Keys: the default bindings in the source of Stratagus v3.3.2
+# (src/ui/interface.cpp, CommandKey()) and Wargus v3.3.2 (scripts/commands.lua,
+# HandleIngameCommandKey()). See SOURCES.md.
+#
+# Only keys that do the same thing whatever is selected are labelled. The
+# letter keys alone train, build and give orders through the button panel, and
+# their meaning changes with the selection, so they stay blank.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/wargus/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/wargus/wargus.yaml --preview /tmp/wargus_preview
+app: wargus
+match: [stratagus, stratagus.exe, wargus, wargus.exe]
+output: wargus_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for Warcraft III: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# WAR over GUS drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Control groups (CommandKey_Group): digit selects, Ctrl+digit creates,
+  # Shift+digit adds the group to the selection, Ctrl+Shift+digit adds the
+  # selection to the group.
+  - { key: "1", icon: group1.png, label: "Select group 1", region: [48, 40], margin: 5 }
+  - { key: "2", icon: group2.png, label: "Select group 2", region: [48, 40], margin: 5 }
+  - { key: "3", icon: group3.png, label: "Select group 3", region: [48, 40], margin: 5 }
+  - { key: "4", icon: group4.png, label: "Select group 4", region: [48, 40], margin: 5 }
+  - { key: "5", icon: group5.png, label: "Select group 5", region: [48, 40], margin: 5 }
+  - { key: "6", icon: group6.png, label: "Select group 6", region: [48, 40], margin: 5 }
+  - { key: "7", icon: group7.png, label: "Select group 7", region: [48, 40], margin: 5 }
+  - { key: "8", icon: group8.png, label: "Select group 8", region: [48, 40], margin: 5 }
+  - { key: "9", icon: group9.png, label: "Select group 9", region: [48, 40], margin: 5 }
+  - { key: "0", icon: group0.png, label: "Select group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL], icon: groupnew1.png, label: "Create group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL], icon: groupnew2.png, label: "Create group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL], icon: groupnew3.png, label: "Create group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL], icon: groupnew4.png, label: "Create group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL], icon: groupnew5.png, label: "Create group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL], icon: groupnew6.png, label: "Create group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL], icon: groupnew7.png, label: "Create group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL], icon: groupnew8.png, label: "Create group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL], icon: groupnew9.png, label: "Create group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL], icon: groupnew0.png, label: "Create group 0", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [SHIFT], icon: groupjoin1.png, label: "Add group 1 to the selection", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [SHIFT], icon: groupjoin2.png, label: "Add group 2 to the selection", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [SHIFT], icon: groupjoin3.png, label: "Add group 3 to the selection", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [SHIFT], icon: groupjoin4.png, label: "Add group 4 to the selection", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [SHIFT], icon: groupjoin5.png, label: "Add group 5 to the selection", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [SHIFT], icon: groupjoin6.png, label: "Add group 6 to the selection", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [SHIFT], icon: groupjoin7.png, label: "Add group 7 to the selection", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [SHIFT], icon: groupjoin8.png, label: "Add group 8 to the selection", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [SHIFT], icon: groupjoin9.png, label: "Add group 9 to the selection", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [SHIFT], icon: groupjoin0.png, label: "Add group 0 to the selection", region: [48, 40], margin: 5 }
+  - { key: "1", mods: [CTRL, SHIFT], icon: groupadd1.png, label: "Add the selection to group 1", region: [48, 40], margin: 5 }
+  - { key: "2", mods: [CTRL, SHIFT], icon: groupadd2.png, label: "Add the selection to group 2", region: [48, 40], margin: 5 }
+  - { key: "3", mods: [CTRL, SHIFT], icon: groupadd3.png, label: "Add the selection to group 3", region: [48, 40], margin: 5 }
+  - { key: "4", mods: [CTRL, SHIFT], icon: groupadd4.png, label: "Add the selection to group 4", region: [48, 40], margin: 5 }
+  - { key: "5", mods: [CTRL, SHIFT], icon: groupadd5.png, label: "Add the selection to group 5", region: [48, 40], margin: 5 }
+  - { key: "6", mods: [CTRL, SHIFT], icon: groupadd6.png, label: "Add the selection to group 6", region: [48, 40], margin: 5 }
+  - { key: "7", mods: [CTRL, SHIFT], icon: groupadd7.png, label: "Add the selection to group 7", region: [48, 40], margin: 5 }
+  - { key: "8", mods: [CTRL, SHIFT], icon: groupadd8.png, label: "Add the selection to group 8", region: [48, 40], margin: 5 }
+  - { key: "9", mods: [CTRL, SHIFT], icon: groupadd9.png, label: "Add the selection to group 9", region: [48, 40], margin: 5 }
+  - { key: "0", mods: [CTRL, SHIFT], icon: groupadd0.png, label: "Add the selection to group 0", region: [48, 40], margin: 5 }
+
+  # Selection and map view (Stratagus CommandKey)
+  - { key: DOT, icon: idleworker.png, label: "Select idle worker" }
+  - { key: I, mods: [CTRL], icon: idleworker.png, label: "Select idle worker" }
+  - { key: I, mods: [ALT], icon: idleworker.png, label: "Select idle worker" }
+  - { key: SPACE, icon: lastevent.png, label: "Go to last event" }
+  - { key: C, mods: [CTRL], icon: center.png, label: "Center on the selection" }
+  - { key: C, mods: [ALT], icon: center.png, label: "Center on the selection" }
+  - { key: T, mods: [CTRL], icon: track.png, label: "Track unit on / off" }
+  - { key: T, mods: [ALT], icon: track.png, label: "Track unit on / off" }
+  - { key: F2, icon: recallpos.png, label: "Go to map position 1", region: [34, 40] }
+  - { key: F3, icon: recallpos.png, label: "Go to map position 2", region: [34, 40] }
+  - { key: F4, icon: recallpos30.png, label: "Go to map position 3", region: [30, 40] }
+  - { key: F2, mods: [SHIFT], icon: savepos.png, label: "Store map position 1", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: savepos.png, label: "Store map position 2", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], icon: savepos30.png, label: "Store map position 3", region: [30, 40] }
+  - { key: B, mods: [CTRL], icon: bigmap.png, label: "Big map on / off" }
+  - { key: B, mods: [ALT], icon: bigmap.png, label: "Big map on / off" }
+  - { key: V, mods: [ALT], icon: viewport.png, label: "Next viewport layout" }
+  - { key: V, mods: [CTRL], icon: viewport.png, label: "Previous viewport layout" }
+  - { key: TAB, icon: terrain.png, label: "Minimap terrain on / off" }
+
+  # Game speed and pause
+  - { key: EQUAL, icon: faster.png, label: "Game speed: faster" }
+  - { key: EQUAL, mods: [SHIFT], icon: faster.png, label: "Game speed: faster" }
+  - { key: MINUS, icon: slower.png, label: "Game speed: slower" }
+  - { key: PAUSE, icon: pause.png, label: "Pause" }
+  - { key: P, mods: [CTRL], icon: pause.png, label: "Pause" }
+  - { key: P, mods: [ALT], icon: pause.png, label: "Pause" }
+
+  # Menus (Wargus scripts/commands.lua)
+  - { key: F1, icon: help.png, label: "Help menu", region: [34, 40] }
+  - { key: H, mods: [CTRL], icon: help.png, label: "Help menu" }
+  - { key: H, mods: [ALT], icon: help.png, label: "Help menu" }
+  - { key: F5, icon: options.png, label: "Game options", region: [34, 40] }
+  - { key: F6, icon: speedmenu.png, label: "Speed options", region: [34, 40] }
+  - { key: F7, icon: soundmenu.png, label: "Sound options", region: [34, 40] }
+  - { key: F8, icon: preferences.png, label: "Preferences", region: [34, 40] }
+  - { key: F9, icon: diplomacy.png, label: "Diplomacy" }
+  - { key: F10, icon: gamemenu.png, label: "Game menu" }
+  - { key: BSPC, icon: gamemenu.png, label: "Game menu" }
+  - { key: F11, icon: save.png, label: "Save game" }
+  - { key: F12, icon: load.png, label: "Load game" }
+  - { key: L, mods: [ALT], icon: load.png, label: "Load game" }
+  - { key: R, mods: [CTRL], icon: restart.png, label: "Restart scenario" }
+  - { key: R, mods: [ALT], icon: restart.png, label: "Restart scenario" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit to main menu" }
+  - { key: Q, mods: [ALT], icon: quit.png, label: "Quit to main menu" }
+  - { key: X, mods: [CTRL], icon: exit.png, label: "Exit the game" }
+  - { key: X, mods: [ALT], icon: exit.png, label: "Exit the game" }
+
+  # Window, sound and messages (Stratagus CommandKey)
+  - { key: F, mods: [CTRL], icon: fullscreen.png, label: "Full screen on / off" }
+  - { key: F, mods: [ALT], icon: fullscreen.png, label: "Full screen on / off" }
+  - { key: G, mods: [CTRL], icon: grabmouse.png, label: "Grab mouse on / off" }
+  - { key: G, mods: [ALT], icon: grabmouse.png, label: "Grab mouse on / off" }
+  - { key: M, mods: [CTRL], icon: music.png, label: "Music on / off" }
+  - { key: S, mods: [CTRL], icon: sound.png, label: "Sound on / off" }
+  - { key: E, mods: [CTRL], icon: messages.png, label: "Messages on / off" }
+  - { key: PRTSC, icon: screenshot.png, label: "Screenshot" }
+
+  # Chat
+  - { key: ENTER, icon: chat.png, label: "Write a message" }

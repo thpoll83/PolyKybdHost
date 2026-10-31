@@ -1906,6 +1906,15 @@ redalert,redalert.exe:
 tiberiandawn,tiberiandawn.exe:
   overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
   game_assets: openra/openra_cnc.yaml
+# Wargus, Warcraft II on the Stratagus engine (overlay_sources/wargus/wargus.yaml).
+# The `wargus` launcher starts the engine `stratagus` (execvp on Linux,
+# CreateProcess on Windows; targets in both repositories' CMakeLists.txt, v3.3.2).
+# Stratagus also runs other games, so the window title "Wargus" (SetFullGameName
+# in Wargus scripts/stratagus.lua) gates the entry. Under Wine the WM_CLASS keeps
+# the `.exe`. Names not checked on an install.
+stratagus,stratagus.exe,wargus,wargus.exe:
+  overlay: [wargus_template.mods.png, wargus_template.combo.mods.png]
+  title: Wargus
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
