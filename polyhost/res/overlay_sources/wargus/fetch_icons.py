@@ -40,15 +40,17 @@ ICONS = {
     "exit": "fa:power-off",
     "restart": "fa:rotate-left",
     # Map view (Stratagus src/ui/interface.cpp)
-    "recallpos": "fa:map-location-dot",
-    "savepos": "fa:thumbtack",
-    "recallpos30": "fa:map-location-dot",   # F4: its legend leaves 30 px
-    "savepos30": "fa:thumbtack",
+    # The three map positions and the two viewport keys share these shapes;
+    # positions() adds the digit or the arrow that tells them apart.
+    "_recallpos": "fa:map-location-dot",
+    "_savepos": "fa:thumbtack",
+    "_recallpos30": "fa:map-location-dot",  # F4: its legend leaves 30 px
+    "_savepos30": "fa:thumbtack",
     "lastevent": "fa:bell",
     "center": "fa:crosshairs",
     "track": "fa:video",
     "bigmap": "fa:map",
-    "viewport": "fa:table-columns",
+    "_viewport": "fa:table-columns",
     "terrain": "fa:mountain-sun",
     # Game and window
     "faster": "fa:forward",
@@ -80,9 +82,14 @@ GROUP_UNITS = {
 }
 
 # Key area of each icon, from wargus.yaml; the default is 40 x 40.
-SIZES = {"help": (34, 40), "recallpos": (34, 40), "options": (34, 40), "speedmenu": (34, 40),
-         "soundmenu": (34, 40), "preferences": (34, 40), "savepos": (34, 40),
-         "recallpos30": (30, 40), "savepos30": (30, 40)}
+SIZES = {"help": (34, 40), "_recallpos": (34, 40), "options": (34, 40), "speedmenu": (34, 40),
+         "soundmenu": (34, 40), "preferences": (34, 40), "_savepos": (34, 40),
+         "_recallpos30": (30, 40), "_savepos30": (30, 40)}
+# Map positions 1 to 3 (F2 to F4): the digit in a free corner of the shape,
+# as tall as fits for all three with POS_GAP dark pixels to the shape.
+POSITIONS = {"recallpos": ("_recallpos", "_recallpos", "_recallpos30", "top"),
+             "savepos": ("_savepos", "_savepos", "_savepos30", "bottom")}
+POS_GAP = 2
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"save": (34, 34), "load": (34, 34), "help": (30, 30), "chat": (34, 34),
        "music": (30, 30), "screenshot": (30, 30), "faster": (32, 32), "slower": (32, 32),
@@ -199,12 +206,84 @@ def program(out: Path) -> None:
     print(f"  program.png  <- WAR / GUS (Germania One, {px / ss:.1f} px)")
 
 
+def _digit(text: str, height: int):
+    """`text` in DejaVu Sans Bold, at most `height` px tall, as a cropped mask."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    ss = MARK_SS
+    path = str(cnc._font(cnc.DIGIT_FONT_URL))
+    for px in range(60, 4, -1):
+        f = ImageFont.truetype(path, px * ss)
+        left, top, right, bottom = f.getbbox(text)
+        im = Image.new("L", (right - left + 2 * ss, bottom - top + 2 * ss), 0)
+        ImageDraw.Draw(im).text((ss - left, ss - top), text, font=f, fill=255)
+        m = np.asarray(im.resize((im.width // ss, im.height // ss), Image.BOX)) > 110
+        ys, xs = np.nonzero(m)
+        m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        if m.shape[0] <= height:
+            return m
+    raise SystemExit(f"no size of {text!r} is {height} px or less")
+
+
+def _load(path: Path):
+    import numpy as np
+    from PIL import Image
+    return np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 127
+
+
+def positions(out: Path) -> None:
+    """recallpos1..3.png (F2 to F4) and savepos1..3.png (Shift+F2 to Shift+F4):
+    the map or the pushpin with the position's digit in its free corner (the
+    top left of the map, the bottom left beside the pin's needle).
+    viewportprev.png (Ctrl+V) and viewportnext.png (Alt+V): the two-pane window
+    with a left arrow in the left pane or a right arrow in the right pane."""
+    import numpy as np
+    for name, (*bases, corner) in POSITIONS.items():
+        shapes = [_load(out / f"{b}.png") for b in bases]
+
+        def stamped(shape, n, height):
+            g = _digit(str(n), height)
+            c = np.zeros_like(shape)
+            y = 0 if corner == "top" else shape.shape[0] - g.shape[0]
+            c[y:y + g.shape[0], :g.shape[1]] = g
+            return c
+
+        for height in range(16, 5, -1):          # one height for all three digits
+            marks = [stamped(sh, n, height) for n, sh in enumerate(shapes, 1)]
+            if not any((m & program_mark.dilate(sh, POS_GAP)).any() for m, sh in zip(marks, shapes)):
+                break
+        else:
+            raise SystemExit(f"{name}: no digit fits beside the shape")
+        for n, (shape, mark) in enumerate(zip(shapes, marks), 1):
+            cnc._save_mask(shape | mark, out / f"{name}{n}.png")
+        print(f"  {name}1..3.png  <- {bases[0]}.png + digits 1 to 3 ({height} px)")
+    window = _load(out / "_viewport.png")
+    for name, left in (("viewportprev", True), ("viewportnext", False)):
+        m = window.copy()
+        # the pane: the unlit pixels of this half in the rows where the frame's
+        # outer column is lit (that leaves out the rounded corners)
+        half = slice(0, window.shape[1] // 2) if left else slice(window.shape[1] // 2, window.shape[1])
+        pane = ~window[:, half] & window[:, :1]
+        py, px = np.nonzero(pane)
+        cy = (py.min() + py.max()) // 2
+        cx = (px.min() + px.max()) // 2 + half.start
+        size = 9
+        mid = size // 2
+        for i in range(mid + 1):                 # the head, a triangle
+            m[cy - i:cy + i + 1, cx - mid + i if left else cx + mid - i] = True
+        for x in (range(cx, cx + mid + 1) if left else range(cx - mid, cx + 1)):
+            m[cy - 1:cy + 2, x] = True            # the shaft, 3 px
+        cnc._save_mask(m, out / f"{name}.png")
+    print("  viewportprev.png, viewportnext.png  <- _viewport.png + an arrow in one pane")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, "_worker": IDLE_WORKER}, out)
     game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
     flat_icons(out)
     idle_worker(out)
+    positions(out)
     groups(out)
     program(out)
     print(f"Wrote icons to {out}")

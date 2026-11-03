@@ -8,6 +8,9 @@
 # letter keys alone train, build and give orders through the button panel, and
 # their meaning changes with the selection, so they stay blank.
 #
+# Where the game binds one action to several keys (Ctrl and Alt, or a plain key
+# as well), only one key shows it: the plain key if there is one, else Ctrl.
+#
 # Regenerate:
 #   python polyhost/res/overlay_sources/wargus/fetch_icons.py
 #   python scripts/generate_app_overlays.py \
@@ -80,59 +83,42 @@ bindings:
 
   # Selection and map view (Stratagus CommandKey)
   - { key: DOT, icon: idleworker.png, label: "Select idle worker" }
-  - { key: I, mods: [CTRL], icon: idleworker.png, label: "Select idle worker" }
-  - { key: I, mods: [ALT], icon: idleworker.png, label: "Select idle worker" }
   - { key: SPACE, icon: lastevent.png, label: "Go to last event" }
   - { key: C, mods: [CTRL], icon: center.png, label: "Center on the selection" }
-  - { key: C, mods: [ALT], icon: center.png, label: "Center on the selection" }
   - { key: T, mods: [CTRL], icon: track.png, label: "Track unit on / off" }
-  - { key: T, mods: [ALT], icon: track.png, label: "Track unit on / off" }
-  - { key: F2, icon: recallpos.png, label: "Go to map position 1", region: [34, 40] }
-  - { key: F3, icon: recallpos.png, label: "Go to map position 2", region: [34, 40] }
-  - { key: F4, icon: recallpos30.png, label: "Go to map position 3", region: [30, 40] }
-  - { key: F2, mods: [SHIFT], icon: savepos.png, label: "Store map position 1", region: [34, 40] }
-  - { key: F3, mods: [SHIFT], icon: savepos.png, label: "Store map position 2", region: [34, 40] }
-  - { key: F4, mods: [SHIFT], icon: savepos30.png, label: "Store map position 3", region: [30, 40] }
+  - { key: F2, icon: recallpos1.png, label: "Go to map position 1", region: [34, 40] }
+  - { key: F3, icon: recallpos2.png, label: "Go to map position 2", region: [34, 40] }
+  - { key: F4, icon: recallpos3.png, label: "Go to map position 3", region: [30, 40] }
+  - { key: F2, mods: [SHIFT], icon: savepos1.png, label: "Store map position 1", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: savepos2.png, label: "Store map position 2", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], icon: savepos3.png, label: "Store map position 3", region: [30, 40] }
   - { key: B, mods: [CTRL], icon: bigmap.png, label: "Big map on / off" }
-  - { key: B, mods: [ALT], icon: bigmap.png, label: "Big map on / off" }
-  - { key: V, mods: [ALT], icon: viewport.png, label: "Next viewport layout" }
-  - { key: V, mods: [CTRL], icon: viewport.png, label: "Previous viewport layout" }
+  - { key: V, mods: [ALT], icon: viewportnext.png, label: "Next viewport layout" }
+  - { key: V, mods: [CTRL], icon: viewportprev.png, label: "Previous viewport layout" }
   - { key: TAB, icon: terrain.png, label: "Minimap terrain on / off" }
 
   # Game speed and pause
   - { key: EQUAL, icon: faster.png, label: "Game speed: faster" }
-  - { key: EQUAL, mods: [SHIFT], icon: faster.png, label: "Game speed: faster" }
   - { key: MINUS, icon: slower.png, label: "Game speed: slower" }
   - { key: PAUSE, icon: pause.png, label: "Pause" }
-  - { key: P, mods: [CTRL], icon: pause.png, label: "Pause" }
-  - { key: P, mods: [ALT], icon: pause.png, label: "Pause" }
 
   # Menus (Wargus scripts/commands.lua)
   - { key: F1, icon: help.png, label: "Help menu", region: [34, 40] }
-  - { key: H, mods: [CTRL], icon: help.png, label: "Help menu" }
-  - { key: H, mods: [ALT], icon: help.png, label: "Help menu" }
   - { key: F5, icon: options.png, label: "Game options", region: [34, 40] }
   - { key: F6, icon: speedmenu.png, label: "Speed options", region: [34, 40] }
   - { key: F7, icon: soundmenu.png, label: "Sound options", region: [34, 40] }
   - { key: F8, icon: preferences.png, label: "Preferences", region: [34, 40] }
   - { key: F9, icon: diplomacy.png, label: "Diplomacy" }
   - { key: F10, icon: gamemenu.png, label: "Game menu" }
-  - { key: BSPC, icon: gamemenu.png, label: "Game menu" }
   - { key: F11, icon: save.png, label: "Save game" }
   - { key: F12, icon: load.png, label: "Load game" }
-  - { key: L, mods: [ALT], icon: load.png, label: "Load game" }
   - { key: R, mods: [CTRL], icon: restart.png, label: "Restart scenario" }
-  - { key: R, mods: [ALT], icon: restart.png, label: "Restart scenario" }
   - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit to main menu" }
-  - { key: Q, mods: [ALT], icon: quit.png, label: "Quit to main menu" }
   - { key: X, mods: [CTRL], icon: exit.png, label: "Exit the game" }
-  - { key: X, mods: [ALT], icon: exit.png, label: "Exit the game" }
 
   # Window, sound and messages (Stratagus CommandKey)
   - { key: F, mods: [CTRL], icon: fullscreen.png, label: "Full screen on / off" }
-  - { key: F, mods: [ALT], icon: fullscreen.png, label: "Full screen on / off" }
   - { key: G, mods: [CTRL], icon: grabmouse.png, label: "Grab mouse on / off" }
-  - { key: G, mods: [ALT], icon: grabmouse.png, label: "Grab mouse on / off" }
   - { key: M, mods: [CTRL], icon: music.png, label: "Music on / off" }
   - { key: S, mods: [CTRL], icon: sound.png, label: "Sound on / off" }
   - { key: E, mods: [CTRL], icon: messages.png, label: "Messages on / off" }

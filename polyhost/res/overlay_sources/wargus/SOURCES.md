@@ -39,7 +39,10 @@ current selection uses that key. The Wargus buttons use letters, so the digits,
 F-keys, Space, Tab, `=`, `-`, `.`, Backspace and Enter keep their global
 meaning.
 
-Labelled:
+The global keys. Where a row names several keys for one action, only the first
+is labelled and the others stay blank, so each action is shown on one key: the
+plain key if there is one, else the Ctrl key. Alt+V and Ctrl+V are two actions
+(next and previous layout), and both are labelled.
 
 | Keys | Action | Source |
 |---|---|---|
@@ -83,7 +86,7 @@ Labelled:
 
 - The letter keys alone. They train, build and give orders through the button
   panel, and what each does depends on the selection. Plain C centers on the
-  selection only when no button uses C, so only Ctrl+C and Alt+C are labelled.
+  selection only when no button uses C, so it is labelled on Ctrl+C.
 - Alt+M (game menu) and Alt+S (save game). `commands.lua` and the help list name
   them, but the engine's `CommandKey()` handles every M and S key itself (Ctrl:
   music, sound; otherwise nothing) and never passes them to the script. F10 and
@@ -124,6 +127,13 @@ the corners of a selection box (add the group to the selection).
 The idle-worker key shows a digging worker with "Zz" in DejaVu Sans Bold (the
 font the C&C set downloads, Bitstream Vera licence).
 
+The map positions show their number: F2 to F4 the map with 1, 2 or 3 in its top
+left corner, Shift+F2 to Shift+F4 the pushpin with the digit at the bottom left,
+beside the needle. The digits are DejaVu Sans Bold, one height for all three
+(the tallest that keeps 2 dark pixels to the shape). Ctrl+V (previous viewport
+layout) shows the two-pane window with a left arrow in the left pane, Alt+V
+(next layout) a right arrow in the right pane.
+
 ESC shows WAR over GUS in Germania One (SIL OFL 1.1,
 `ofl/germaniaone/GermaniaOne-Regular.ttf` from google/fonts at commit e7db6ca),
 drawn over the whole cell without the ESC legend (`program_icon_legend: false`,
@@ -144,6 +154,7 @@ Licence texts for the icon and font licences named in this file:
 - CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
 - CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+- Bitstream Vera licence (DejaVu fonts): https://dejavu-fonts.github.io/License.html
 
 | File | Source | Author | Licence |
 |---|---|---|---|
@@ -159,15 +170,15 @@ Licence texts for the icon and font licences named in this file:
 | `quit.png` | Font Awesome Free 6.5.2 `door-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `exit.png` | Font Awesome Free 6.5.2 `power-off` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `restart.png` | Font Awesome Free 6.5.2 `rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `recallpos.png` | Font Awesome Free 6.5.2 `map-location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `savepos.png` | Font Awesome Free 6.5.2 `thumbtack` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `recallpos30.png` | Font Awesome Free 6.5.2 `map-location-dot` (solid), drawn 30 px wide for F4 | Fonticons, Inc. | CC BY 4.0 |
-| `savepos30.png` | Font Awesome Free 6.5.2 `thumbtack` (solid), drawn 30 px wide for Shift+F4 | Fonticons, Inc. | CC BY 4.0 |
+| `recallpos1.png`, `recallpos2.png` (from `_recallpos.png`) | Font Awesome Free 6.5.2 `map-location-dot` (solid), with the digit in DejaVu Sans Bold | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
+| `recallpos3.png` (from `_recallpos30.png`) | the same, drawn 30 px wide for F4 | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
+| `savepos1.png`, `savepos2.png` (from `_savepos.png`) | Font Awesome Free 6.5.2 `thumbtack` (solid), with the digit in DejaVu Sans Bold | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
+| `savepos3.png` (from `_savepos30.png`) | the same, drawn 30 px wide for Shift+F4 | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
 | `lastevent.png` | Font Awesome Free 6.5.2 `bell` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `center.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `track.png` | Font Awesome Free 6.5.2 `video` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `bigmap.png` | Font Awesome Free 6.5.2 `map` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `viewport.png` | Font Awesome Free 6.5.2 `table-columns` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `viewportprev.png`, `viewportnext.png` (from `_viewport.png`) | Font Awesome Free 6.5.2 `table-columns` (solid), with an arrow drawn by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
 | `terrain.png` | Font Awesome Free 6.5.2 `mountain-sun` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `faster.png` | Font Awesome Free 6.5.2 `forward` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `slower.png` | Font Awesome Free 6.5.2 `backward` (solid) | Fonticons, Inc. | CC BY 4.0 |
