@@ -1708,6 +1708,9 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("dbeaver", "WINDOWS", "DBeaver 26.2.3", "dbeaver_template"),
                 ("dbeaver", "LINUX", "DBeaver 26.2.3", "dbeaver_template_linux"),
                 ("dbeaver", "MACOS", "DBeaver 26.2.3", "dbeaver_template_mac"),
+                ("eclipse", "WINDOWS", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template"),
+                ("eclipse", "LINUX", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_linux"),
+                ("eclipse", "MACOS", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_mac"),
                 ("githubdesktop", "WINDOWS", "GitHub Desktop", "githubdesktop_template"),
                 ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac")):
             with self.subTest(app=app, os=os_name):
