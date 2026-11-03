@@ -101,6 +101,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: *teams_web
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # Trello (sources: overlay_sources/trello/): boards (/b/), cards (/c/) and
+    # the member pages (/u/), where the card keys act. The home page keeps the
+    # browser set.
+    trello.com:
+      url: '^https?://([^/?#]+\.)?trello\.com/[bcu]/'
+      overlay: trello_template.mods.png
     # Google Meet (sources: overlay_sources/meet/) runs only in a browser.
     meet.google.com:
       overlay: [meet_template.mods.png, meet_template.combo.mods.png]
@@ -208,6 +214,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: *teams_web
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # A board tab is titled "<board> | Trello"; the gate requires that ending.
+    Trello:
+      title: ' \| Trello( [-—] [^|—-]+)?$'
+      overlay: trello_template.mods.png
     Google Docs:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
@@ -300,6 +310,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: *teams_web_mac
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        trello.com:
+          url: '^https?://([^/?#]+\.)?trello\.com/[bcu]/'
+          overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         meet.google.com:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         claude.ai/code:
@@ -363,6 +376,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: *teams_web_mac
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        Trello:
+          title: ' \| Trello( [-—] [^|—-]+)?$'
+          overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         Google Docs:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         Google Sheets:
