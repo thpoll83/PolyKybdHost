@@ -205,6 +205,7 @@ def _mark_line(font, text: str, width: int):
     from PIL import Image, ImageDraw
     ss = MARK_SS
     ref = font.font_variant(size=400)
+    ref.set_variation_by_name("Bold")       # font_variant() reopens at the default weight
     b = ref.getbbox(text)
     f = font.font_variant(size=round(400 * width * ss / (b[2] - b[0])))
     f.set_variation_by_name("Bold")
@@ -218,7 +219,8 @@ def _mark_line(font, text: str, width: int):
 
 
 def program(out: Path) -> None:
-    """program.png: RIM (40 px wide) over WORLD (70 px wide), 4 px apart,
+    """program.png: RIM (set to 40 px wide) over WORLD (70 px), 4 px apart, whose
+    ink measures 38 px and 68 px after the threshold,
     centred on the whole 72x40 cell. Left as-is when committed."""
     import numpy as np
     from PIL import ImageFont

@@ -114,8 +114,8 @@ bottom-right corner of their area so they do not outweigh the others.
 ESC shows RIM over WORLD in Orbitron Bold (SIL OFL 1.1, the `wght` 700
 instance of `ofl/orbitron/Orbitron[wght].ttf` from google/fonts at commit
 e7db6ca), drawn over the whole cell without the ESC legend
-(`program_icon_legend: false`, protocol v25). RIM is 40 px wide and WORLD 70 px,
-4 px apart. Simple Icons has no RimWorld logo, and the game's logo art is not
+(`program_icon_legend: false`, protocol v25). RIM is set to 40 px and WORLD to
+70 px, 4 px apart; after the 1-bit threshold their ink measures 38 px and 68 px. Simple Icons has no RimWorld logo, and the game's logo art is not
 used. `fetch_icons.py` keeps a committed `program.png` and loads the font only
 when it draws a new one.
 
