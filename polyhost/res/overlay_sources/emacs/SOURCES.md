@@ -114,7 +114,14 @@ picture use Fluent, with Material Symbols where Fluent has no match. Copy,
 Cut, Paste, Undo, Redo, Help and Print are drawn by the shared renderer (the
 concept icons every app overlay shares), so `icons/` has no file for them.
 
-**Esc (program mark)**: the GNU Emacs logo from Simple Icons, slug
+**Esc** shows which set is loaded: `icons/esc_<set>.png` is EDIT (global, every
+major mode but Org and Dired), ORG or DIRED in Liberation Sans Bold (at most
+33 px wide) left of the logo below at 36 px, drawn by `fetch_icons.py`
+(`esc_mark()`) over the whole 72x40 cell without the ESC legend
+(`program_icon_legend: false`, protocol v25). The Org file comes after the
+global one in the route, so its mark takes priority on ESC.
+
+**Program mark**: the GNU Emacs logo from Simple Icons, slug
 `gnuemacs` (https://github.com/simple-icons/simple-icons, artwork CC0-1.0;
 the mark is used to name the application, see `../brand_marks.py`). The
 alternative, Emacs's own icon from the Emacs repository
@@ -127,6 +134,7 @@ pixels at 40x40) reads better, so it is the one used.
 | file | source | licence |
 |---|---|---|
 | `emacs.png` | Simple Icons `gnuemacs` | CC0-1.0 (nominative use of the mark) |
+| `esc_global.png`, `esc_org.png`, `esc_dired.png` | `emacs.png` and a word, drawn by `fetch_icons.py` | as `emacs.png`; the word GPL-3.0-or-later |
 | `dump_keys.el` | this repository | GPL-3.0-or-later |
 
 ### Microsoft Fluent UI System Icons (MIT)

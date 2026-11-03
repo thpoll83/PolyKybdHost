@@ -153,8 +153,18 @@ def _arrow(d, x0, y0, x1, y1, w=3.0, head=7.0):
     """A thick arrow from (x0, y0) to its tip (x1, y1), in output pixels.
 
     The shaft is a polygon, not `line(width=...)`, which leaves a tick at the
-    tail and a notch under the head at keycap size."""
+    tail and a notch under the head at keycap size.
+
+    Every arrow is horizontal or vertical. Its centre line runs through pixel
+    centres (+0.5), the shaft is 3 px and the head's half-width ends on a pixel
+    edge, so no edge row is half covered: a half-covered row came out patchy
+    after the downscale and threshold (a pixel missing in many arrows)."""
     s = SS
+    if y0 == y1:
+        y0 = y1 = y0 + 0.5
+    elif x0 == x1:
+        x0 = x1 = x0 + 0.5
+    w = 3.0
     dx, dy = x1 - x0, y1 - y0
     n = max(abs(dx), abs(dy))
     ux, uy = dx / n, dy / n
@@ -164,7 +174,7 @@ def _arrow(d, x0, y0, x1, y1, w=3.0, head=7.0):
     d.polygon([((x0 + px * hw) * s, (y0 + py * hw) * s), ((bx + px * hw) * s, (by + py * hw) * s),
                ((bx - px * hw) * s, (by - py * hw) * s), ((x0 - px * hw) * s, (y0 - py * hw) * s)],
               fill=255)
-    hh = head * 0.8
+    hh = int(head * 0.8) + 0.5
     d.polygon([(x1 * s, y1 * s),
                ((bx + px * hh) * s, (by + py * hh) * s),
                ((bx - px * hh) * s, (by - py * hh) * s)], fill=255)
@@ -355,6 +365,41 @@ COMPOSITES = {
 }
 
 
+# The ESC mark of each set: a word for the set left of the GNU Emacs logo, over
+# the whole 72x40 cell, drawn without the ESC legend (program_icon_legend:
+# false in the spec). global.yaml serves every major mode but Org and Dired.
+ESC_WORDS = {"global": "EDIT", "org": "ORG", "dired": "DIRED"}
+ESC_W, ESC_H, ESC_LOGO = 72, 40, 36
+ESC_WORD_PX, ESC_WORD_W = 22, 33
+
+
+def esc_mark(dest: Path, word: str, logo_png: Path) -> None:
+    """`word` (Liberation Sans Bold, at most ESC_WORD_W px wide) left of the
+    logo (its alpha, ESC_LOGO px), both 1 bit."""
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    logo = Image.open(logo_png).convert("RGBA").split()[3].resize((ESC_LOGO, ESC_LOGO), Image.LANCZOS)
+    mask = Image.new("L", (ESC_W, ESC_H), 0)
+    # 80, not 128: the logo's 1 px ring breaks up at the plain cut (as for pasted glyphs).
+    mask.paste(logo.point(lambda v: 255 if v >= 80 else 0), (ESC_W - ESC_LOGO, (ESC_H - ESC_LOGO) // 2))
+    px = ESC_WORD_PX
+    while px > 8:
+        l, t, r, b = _font(px).getbbox(word)
+        if r - l <= ESC_WORD_W:
+            break
+        px -= 1
+    layer = Image.new("L", (r - l + 2, b - t + 2), 0)
+    ImageDraw.Draw(layer).text((1 - l, 1 - t), word, fill=255, font=_font(px))
+    layer = layer.point(lambda v: 255 if v > 127 else 0)
+    layer = layer.crop(layer.getbbox())
+    mask.paste(255, (0, (ESC_H - layer.height) // 2), layer)
+    img = Image.new("RGBA", (ESC_W, ESC_H), (255, 255, 255, 0))
+    img.putalpha(mask)
+    img.save(dest)
+    print(f"  {dest.name}  <- drawn: '{word}' + emacs.png")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -362,6 +407,8 @@ def main() -> int:
     for stem, (glyph, word) in COMPOSITES.items():
         composite(out / f"{stem}.png", glyph, word, out)
     brand_marks.ensure(out / "emacs.png", "gnuemacs")
+    for name, word in ESC_WORDS.items():
+        esc_mark(out / f"esc_{name}.png", word, out / "emacs.png")
     print(f"Wrote icons to {out}")
     return 0
 

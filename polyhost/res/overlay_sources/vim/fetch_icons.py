@@ -592,8 +592,10 @@ DRAWN = {
     "up": arrow("up"), "down": arrow("down"),
     "word_next": h_word("word"), "word_prev": h_word("word", left=True),
     "word_end": h_word("end"),
-    "bigword_next": h_word("WORD"), "bigword_prev": h_word("WORD", left=True),
-    "bigword_end": h_word("END"),
+    # A WORD (W B E) runs to the next blank, punctuation included; the hyphens
+    # say so, where capitals alone looked like the word keys (w b e).
+    "bigword_next": h_word("w-o-r-d"), "bigword_prev": h_word("w-o-r-d", left=True),
+    "bigword_end": h_word("e-n-d"),
     "sentence_prev": h_word("sent.", left=True), "sentence_next": h_word("sent."),
     "jump_older": h_word("jump", left=True), "jump_newer": h_word("jump"),
     "line_start": line_start, "first_char": first_char, "line_end": line_end,
@@ -681,6 +683,39 @@ def vim_logo(dest: Path) -> None:
     print(f"  {dest.name}  <- vim/vim runtime/vimlogo.svg (Vim license)")
 
 
+# The ESC mark of each mode's set: the mode word left of Vim's logo, over the
+# whole 72x40 cell (gen_vim_bindings.py draws it without the ESC legend).
+ESC_WORDS = {"normal": "NOR", "insert": "INS", "visual": "VIS", "select": "SEL",
+             "replace": "REP", "cmdline": "CMD", "terminal": "TERM"}
+ESC_W, ESC_H = 72, 40
+ESC_LOGO = 36                # logo side, right-aligned, 2 px from top and bottom
+ESC_WORD_PX, ESC_WORD_W = 22, 33
+
+
+def esc_mark(word: str) -> Image.Image:
+    """`word` (Liberation Sans Bold, at most ESC_WORD_W px wide) left of the
+    logo, both 1 bit. The logo is lit where it is darker than 170 over white,
+    the threshold the plain vim.png mark used."""
+    logo = Image.open(OUT / "vim.png").convert("RGBA").resize((ESC_LOGO, ESC_LOGO), Image.LANCZOS)
+    white = Image.new("RGBA", logo.size, (255, 255, 255, 255))
+    white.alpha_composite(logo)
+    img = Image.new("L", (ESC_W, ESC_H), 0)
+    img.paste(white.convert("L").point(lambda v: 255 if v < 170 else 0),
+              (ESC_W - ESC_LOGO, (ESC_H - ESC_LOGO) // 2))
+    px = ESC_WORD_PX
+    while px > 8:
+        l, t, r, b = _font(px).getbbox(word)
+        if r - l <= ESC_WORD_W:
+            break
+        px -= 1
+    layer = Image.new("L", (r - l + 2, b - t + 2), 0)
+    ImageDraw.Draw(layer).text((1 - l, 1 - t), word, fill=255, font=_font(px))
+    layer = layer.point(lambda v: 255 if v > 127 else 0)
+    layer = layer.crop(layer.getbbox())
+    img.paste(255, (0, (ESC_H - layer.height) // 2), layer)
+    return img
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--redraw", action="store_true",
@@ -697,6 +732,12 @@ def main() -> int:
         _to_rgba(_draw_one(func)).save(dest)
     print(f"  {len(DRAWN)} drawn glyphs in {OUT}")
     vim_logo(OUT / "vim.png")
+    for mode, word in ESC_WORDS.items():
+        dest = OUT / f"esc_{mode}.png"
+        if dest.exists() and not args.redraw:
+            continue
+        _to_rgba(esc_mark(word)).save(dest)
+    print(f"  {len(ESC_WORDS)} ESC marks (mode word + logo) in {OUT}")
     return 0
 
 

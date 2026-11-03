@@ -315,9 +315,8 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     # an editor's overlay. It never matches by itself, so a terminal with no
     # report and no editor in its title gets None, exactly as an app with no
     # entry, and keeps the generic shortcut harvest.
-    routes_only = not (has_overlay or has_remote)
-    if routes_only and not (has_urls_contains or has_starts_with
-                            or has_ends_with or has_contains):
+    if not (has_overlay or has_remote or has_urls_contains or has_starts_with
+            or has_ends_with or has_contains):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -396,7 +395,7 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                                 return _layered(entry, m)
                             return m
 
-    if routes_only:
+    if not (has_overlay or has_remote):
         # Nothing routed: an entry with no overlay never matches by itself.
         return None
 
