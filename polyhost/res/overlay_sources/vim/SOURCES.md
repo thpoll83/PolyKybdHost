@@ -155,7 +155,7 @@ everywhere:
 
 | Family | Rule | Files |
 |---|---|---|
-| line motions | a horizontal arrow over a word | `word_*`, `bigword_*` ("WORD", "END"), `sentence_*`, `jump_*` |
+| line motions | a horizontal arrow over a word | `word_*`, `bigword_*` ("w-o-r-d", "e-n-d": a WORD includes punctuation), `sentence_*`, `jump_*` |
 | vertical motions | a vertical arrow beside a word | `line_prev`, `line_next`, `para_*` |
 | scrolling | the arrow inside a window frame, beside "page", "half" or "line" | `page_*`, `half_*`, `scroll_*` |
 | positions in the line | a wall and an arrow over text rows | `line_start`, `first_char`, `line_end`, `column` |

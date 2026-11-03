@@ -592,8 +592,10 @@ DRAWN = {
     "up": arrow("up"), "down": arrow("down"),
     "word_next": h_word("word"), "word_prev": h_word("word", left=True),
     "word_end": h_word("end"),
-    "bigword_next": h_word("WORD"), "bigword_prev": h_word("WORD", left=True),
-    "bigword_end": h_word("END"),
+    # A WORD (W B E) runs to the next blank, punctuation included; the hyphens
+    # say so, where capitals alone looked like the word keys (w b e).
+    "bigword_next": h_word("w-o-r-d"), "bigword_prev": h_word("w-o-r-d", left=True),
+    "bigword_end": h_word("e-n-d"),
     "sentence_prev": h_word("sent.", left=True), "sentence_next": h_word("sent."),
     "jump_older": h_word("jump", left=True), "jump_newer": h_word("jump"),
     "line_start": line_start, "first_char": first_char, "line_end": line_end,
