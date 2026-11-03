@@ -371,7 +371,7 @@ class BuildTest(unittest.TestCase):
         return {kc: od.all_bytes for kc, od in cells.items()}, conv.no_legend
 
     # Keys drawn from the game on the primary file, per layer.
-    DRAWN = {Modifier.NO_MOD: {"F2", "TAB", "M", "T", "P", "L", "B", "O"},
+    DRAWN = {Modifier.NO_MOD: {"TAB", "M", "T", "P", "L", "B", "O"},
              Modifier.ALT: {"B", "D", "U", "T", "Y", "A", "E", "F"},
              Modifier.CTRL: set(), Modifier.SHIFT: set()}
 
@@ -400,21 +400,9 @@ class BuildTest(unittest.TestCase):
                 patched, _ = self._cells(self.built[template], mod)
                 self.assertEqual(shipped, patched, f"{template} {mod.name}")
 
-    def test_a_drawn_key_stays_in_its_area(self):
-        """F2 keeps its legend: nothing is lit left of its 34 px area."""
-        from polyhost.res.overlay_layout import CH, PRIMARY_CH, SLOT_H, SLOT_W, cell_for
-        with Image.open(self.built["factorio_template.mods.png"]) as im:
-            arr = np.array(im.convert("RGBA"))
-        for key in ("F2",):
-            row, col = cell_for(KeyCode[f"KC_{key}"])
-            cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W]
-            lit = np.nonzero(cell[..., CH[PRIMARY_CH[Modifier.NO_MOD]]])[1]
-            self.assertTrue(lit.size)
-            self.assertGreaterEqual(lit.min(), SLOT_W - 34, key)
-
     def test_a_missing_icon_costs_only_its_key(self):
         with tempfile.TemporaryDirectory() as d:
-            data = make_data(Path(d) / "data", skip={"character.png", "side-menu-buttons.png"})
+            data = make_data(Path(d) / "data", skip={"new-blueprint-x56.png", "side-menu-buttons.png"})
             with self.assertLogs("PolyHost", "WARNING") as logs:
                 path = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
             shipped_file = build.RES / "overlays" / "factorio_template.mods.png"
@@ -422,29 +410,31 @@ class BuildTest(unittest.TestCase):
             patched, _ = self._cells(path, Modifier.NO_MOD)
             shipped_alt, _ = self._cells(shipped_file, Modifier.ALT)
             patched_alt, _ = self._cells(path, Modifier.ALT)
-        self.assertEqual(len(logs.output), 7, logs.output)    # the character and the six side-menu icons
-        for key in ("F2", "T", "M", "B"):
+        self.assertEqual(len(logs.output), 7, logs.output)    # the new-blueprint and the six side-menu icons
+        for key in ("T", "M", "B"):
             kc = KeyCode[f"KC_{key}"].value
             self.assertEqual(shipped[kc], patched[kc], key)
-        kc = KeyCode.KC_B.value                                # Alt+B: the new-blueprint shortcut icon
+        kc = KeyCode.KC_B.value                                # Alt+B: the missing new-blueprint icon
+        self.assertEqual(shipped_alt[kc], patched_alt[kc])
+        kc = KeyCode.KC_D.value                                # Alt+D: the deconstruction icon is read
         self.assertNotEqual(shipped_alt[kc], patched_alt[kc])
 
     def test_a_repaired_icon_makes_a_new_copy(self):
         """Repairing the game files restores a PNG and leaves info.json as it
         was; the copy built without that PNG is not reused."""
         with tempfile.TemporaryDirectory() as d:
-            data = make_data(Path(d) / "data", skip={"character.png"})
+            data = make_data(Path(d) / "data", skip={"new-blueprint-x56.png"})
             manifests = factorio.fingerprint({"data": data})
             stamps = [os.stat(p) for p in manifests]
             with self.assertLogs("PolyHost", "WARNING"):
                 before = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
-            make_data(data)                                    # the repair: character.png is back
+            make_data(data)                                    # the repair: new-blueprint-x56.png is back
             for p, st in zip(manifests, stamps):
                 os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
             after = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
             self.assertNotEqual(before, after)
-            cells_before, _ = self._cells(before, Modifier.NO_MOD)
-            cells_after, _ = self._cells(after, Modifier.NO_MOD)
+            cells_before, _ = self._cells(before, Modifier.ALT)
+            cells_after, _ = self._cells(after, Modifier.ALT)
         self.assertNotEqual(cells_before, cells_after)
 
     def test_the_old_32_px_shortcut_icons_are_read(self):
