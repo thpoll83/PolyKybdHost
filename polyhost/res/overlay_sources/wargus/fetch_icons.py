@@ -40,16 +40,12 @@ ICONS = {
     "exit": "fa:power-off",
     "restart": "fa:rotate-left",
     # Map view (Stratagus src/ui/interface.cpp)
-    # The three map positions and the two viewport keys share these shapes;
+    # The three stored positions and the two viewport keys share these shapes;
     # positions() adds the digit or the arrow that tells them apart.
-    "_recallpos": "fa:map-location-dot",
     "_savepos": "fa:thumbtack",
-    "_recallpos30": "fa:map-location-dot",  # F4: its legend leaves 30 px
-    "_savepos30": "fa:thumbtack",
     "lastevent": "fa:bell",
     "center": "fa:crosshairs",
     "track": "fa:video",
-    "bigmap": "fa:map",
     "_viewport": "fa:table-columns",
     "terrain": "fa:mountain-sun",
     # Game and window
@@ -82,14 +78,16 @@ GROUP_UNITS = {
 }
 
 # Key area of each icon, from wargus.yaml; the default is 40 x 40.
-SIZES = {"help": (34, 40), "_recallpos": (34, 40), "options": (34, 40), "speedmenu": (34, 40),
-         "soundmenu": (34, 40), "preferences": (34, 40), "_savepos": (34, 40),
-         "_recallpos30": (30, 40), "_savepos30": (30, 40)}
-# Map positions 1 to 3 (F2 to F4): the digit in a free corner of the shape,
-# as tall as fits for all three with POS_GAP dark pixels to the shape.
-POSITIONS = {"recallpos": ("_recallpos", "_recallpos", "_recallpos30", "top"),
-             "savepos": ("_savepos", "_savepos", "_savepos30", "bottom")}
-POS_GAP = 2
+SIZES = {"help": (34, 40), "options": (34, 40), "speedmenu": (34, 40),
+         "soundmenu": (34, 40), "preferences": (34, 40), "_savepos": (34, 40)}
+# The map (F2 to F4 and Ctrl+B): game-icons.net, rendered once as _map.png.
+MAP_ICON = "delapouite/rolled-cloth"
+# Map positions 1 to 3: the digit cut out of the map's sheet (F2 to F4) and out
+# of the pin's head (Shift+F2 to Shift+F4), all 34 x 40, one digit height per
+# set, with POS_MARGIN lit pixels kept around the digit.
+POS_SIZE = (34, 40)
+POS_MARGIN = 2
+POS_DIGIT_MAX = {"recallpos": 14, "savepos": 16}
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"save": (34, 34), "load": (34, 34), "help": (30, 30), "chat": (34, 34),
        "music": (30, 30), "screenshot": (30, 30), "faster": (32, 32), "slower": (32, 32),
@@ -138,25 +136,32 @@ def groups(out: Path) -> None:
         print(f"  group{digit}, groupnew{digit}, groupjoin{digit}, groupadd{digit}  <- _unit{digit}.png")
 
 
+def _fit(path: Path, size, box=None):
+    """The shape in `path` as a flat 1-bit silhouette `size` (w, h), filling
+    `box` (default: all of it) in the bottom-right corner."""
+    import numpy as np
+    from PIL import Image
+    box = box or size
+    alpha = Image.open(path).convert("RGBA").getchannel("A")
+    alpha = alpha.crop(alpha.getbbox())
+    scale = min(box[0] / alpha.width, box[1] / alpha.height)
+    alpha = alpha.resize((max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale))),
+                         Image.LANCZOS)
+    m = np.asarray(alpha) > 150
+    canvas = np.zeros((size[1], size[0]), bool)
+    canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
+    return canvas
+
+
 def flat_icons(out: Path) -> None:
     """Every key icon as a flat 1-bit silhouette, drawn at exactly its key
     area so the generator places it 1:1. The icons in INK fill a smaller box
-    in the bottom-right corner of that area."""
-    import numpy as np
-    from PIL import Image
+    in the bottom-right corner of that area. bigmap.png is the map of F2 to F4."""
     for stem in ICONS:
         size = SIZES.get(stem, (40, 40))
-        box = INK.get(stem, size)
-        alpha = Image.open(out / f"{stem}.png").convert("RGBA").getchannel("A")
-        alpha = alpha.crop(alpha.getbbox())
-        scale = min(box[0] / alpha.width, box[1] / alpha.height)
-        alpha = alpha.resize((max(1, round(alpha.width * scale)), max(1, round(alpha.height * scale))),
-                             Image.LANCZOS)
-        m = np.asarray(alpha) > 150
-        canvas = np.zeros((size[1], size[0]), bool)
-        canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
-        cnc._save_mask(canvas, out / f"{stem}.png")
-    print(f"  {len(ICONS)} key icons drawn flat")
+        cnc._save_mask(_fit(out / f"{stem}.png", size, INK.get(stem, size)), out / f"{stem}.png")
+    cnc._save_mask(_fit(out / "_map.png", (40, 40)), out / "bigmap.png")
+    print(f"  {len(ICONS) + 1} key icons drawn flat")
 
 
 def idle_worker(out: Path) -> None:
@@ -231,32 +236,59 @@ def _load(path: Path):
     return np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 127
 
 
+def _erode(m, n: int):
+    """The pixels of `m` that are at least `n` px inside it; outside the canvas counts as unlit."""
+    import numpy as np
+    p = np.pad(m, n)
+    return ~program_mark.dilate(~p, n)[n:-n, n:-n]
+
+
 def positions(out: Path) -> None:
-    """recallpos1..3.png (F2 to F4) and savepos1..3.png (Shift+F2 to Shift+F4):
-    the map or the pushpin with the position's digit in its free corner (the
-    top left of the map, the bottom left beside the pin's needle).
+    """recallpos1..3.png (F2 to F4): the map with the position's digit cut
+    out of its sheet, as near the middle and the top as fits. savepos1..3.png
+    (Shift+F2 to Shift+F4): the pushpin with the digit cut out of the middle of
+    its head. Each set uses one digit height, the tallest that leaves
+    POS_MARGIN lit pixels around every digit.
     viewportprev.png (Ctrl+V) and viewportnext.png (Alt+V): the two-pane window
     with a left arrow in the left pane or a right arrow in the right pane."""
     import numpy as np
-    for name, (*bases, corner) in POSITIONS.items():
-        shapes = [_load(out / f"{b}.png") for b in bases]
 
-        def stamped(shape, n, height):
-            g = _digit(str(n), height)
-            c = np.zeros_like(shape)
-            y = 0 if corner == "top" else shape.shape[0] - g.shape[0]
-            c[y:y + g.shape[0], :g.shape[1]] = g
-            return c
+    def on_sheet(shape, g):
+        """(row, column) for `g` inside the map, nearest the middle, then the top."""
+        inner = _erode(shape, POS_MARGIN)
+        gh, gw = g.shape
+        spots = [(abs(x + gw / 2 - shape.shape[1] / 2), y, x)
+                 for y in range(shape.shape[0] - gh + 1) for x in range(shape.shape[1] - gw + 1)
+                 if inner[y:y + gh, x:x + gw].all()]
+        return min(spots)[1:] if spots else None
 
-        for height in range(16, 5, -1):          # one height for all three digits
-            marks = [stamped(sh, n, height) for n, sh in enumerate(shapes, 1)]
-            if not any((m & program_mark.dilate(sh, POS_GAP)).any() for m, sh in zip(marks, shapes)):
+    def in_head(shape, g):
+        """(row, column) for `g` centred on the pin's head (the rows above the needle)."""
+        rows = shape.any(1)
+        top = int(np.argmax(rows))
+        end = top
+        while end + 1 < len(rows) and rows[end + 1]:
+            end += 1
+        ys, xs = np.nonzero(shape[:end + 1])
+        gh, gw = g.shape
+        y = int(round((ys.min() + ys.max() + 1) / 2 - gh / 2))
+        x = int(round((xs.min() + xs.max() + 1) / 2 - gw / 2))
+        return (y, x) if _erode(shape, POS_MARGIN)[y:y + gh, x:x + gw].all() else None
+
+    for name, shape, place in (("recallpos", _fit(out / "_map.png", POS_SIZE), on_sheet),
+                               ("savepos", _load(out / "_savepos.png"), in_head)):
+        for height in range(POS_DIGIT_MAX[name], 4, -1):
+            glyphs = [_digit(str(n), height) for n in (1, 2, 3)]
+            spots = [place(shape, g) for g in glyphs]
+            if all(spots):
                 break
         else:
-            raise SystemExit(f"{name}: no digit fits beside the shape")
-        for n, (shape, mark) in enumerate(zip(shapes, marks), 1):
-            cnc._save_mask(shape | mark, out / f"{name}{n}.png")
-        print(f"  {name}1..3.png  <- {bases[0]}.png + digits 1 to 3 ({height} px)")
+            raise SystemExit(f"{name}: no digit fits inside the shape")
+        for n, (g, (y, x)) in enumerate(zip(glyphs, spots), 1):
+            m = shape.copy()
+            m[y:y + g.shape[0], x:x + g.shape[1]] &= ~g
+            cnc._save_mask(m, out / f"{name}{n}.png")
+        print(f"  {name}1..3.png  <- digits 1 to 3 cut out ({height} px)")
     window = _load(out / "_viewport.png")
     for name, left in (("viewportprev", True), ("viewportnext", False)):
         m = window.copy()
@@ -280,7 +312,7 @@ def positions(out: Path) -> None:
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, "_worker": IDLE_WORKER}, out)
-    game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
+    game_icons.render({**{f"_unit{d}": n for d, n in GROUP_UNITS.items()}, "_map": MAP_ICON}, out, render_px=256)
     flat_icons(out)
     idle_worker(out)
     positions(out)

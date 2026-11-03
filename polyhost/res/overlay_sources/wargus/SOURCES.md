@@ -108,9 +108,10 @@ plain key if there is one, else the Ctrl key. Alt+V and Ctrl+V are two actions
 As for Warcraft III (`../warcraft3/SOURCES.md`): every icon sits at the right
 edge and uses the full height, and the firmware clears 3 px around it, so a
 letter legend stays whole. The F-key areas use the Age of Empires II legend
-widths (`../aoe2/SOURCES.md`) as Warcraft III does: F1 to F3 and F5 to F8
-34×40, F4 30×40, F9 to F12 40×40 (F10 to F12 cover the right part of the
-legend). The control groups are 48×40, drawn 1:1, 5 px from the right edge.
+widths (`../aoe2/SOURCES.md`) as Warcraft III does: F1 to F8 34×40, F9 to
+F12 40×40 (F10 to F12 cover the right part of the legend). F4 takes 34 px, not
+the 30 px its legend leaves, so the three map positions have one size; the 3 px
+the firmware clears around the icon touch the right edge of the F4 legend. The control groups are 48×40, drawn 1:1, 5 px from the right edge.
 
 All icons are flat 1-bit silhouettes. Save, Load, Chat and the bell fill a 34×34
 box, Help, Music, Screenshot and Pause a 30×30 box, and the speed arrows a 32×32
@@ -127,10 +128,13 @@ the corners of a selection box (add the group to the selection).
 The idle-worker key shows a digging worker with "Zz" in DejaVu Sans Bold (the
 font the C&C set downloads, Bitstream Vera licence).
 
-The map positions show their number: F2 to F4 the map with 1, 2 or 3 in its top
-left corner, Shift+F2 to Shift+F4 the pushpin with the digit at the bottom left,
-beside the needle. The digits are DejaVu Sans Bold, one height for all three
-(the tallest that keeps 2 dark pixels to the shape). Ctrl+V (previous viewport
+The map keys show a rolled cloth map (game-icons.net `delapouite/rolled-cloth`):
+Ctrl+B (big map) the plain map, F2 to F4 (go to position 1 to 3) the map with
+the digit cut out of its sheet, as near the middle and the top as fits.
+Shift+F2 to Shift+F4 (store position 1 to 3) show the pushpin with the digit cut
+out of the middle of its head. The digits are DejaVu Sans Bold, one height for
+the three maps (14 px) and one for the three pins (16 px): the tallest that
+keeps 2 lit pixels around the digit. Ctrl+V (previous viewport
 layout) shows the two-pane window with a left arrow in the left pane, Alt+V
 (next layout) a right arrow in the right pane.
 
@@ -170,14 +174,12 @@ Licence texts for the icon and font licences named in this file:
 | `quit.png` | Font Awesome Free 6.5.2 `door-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `exit.png` | Font Awesome Free 6.5.2 `power-off` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `restart.png` | Font Awesome Free 6.5.2 `rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `recallpos1.png`, `recallpos2.png` (from `_recallpos.png`) | Font Awesome Free 6.5.2 `map-location-dot` (solid), with the digit in DejaVu Sans Bold | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
-| `recallpos3.png` (from `_recallpos30.png`) | the same, drawn 30 px wide for F4 | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
-| `savepos1.png`, `savepos2.png` (from `_savepos.png`) | Font Awesome Free 6.5.2 `thumbtack` (solid), with the digit in DejaVu Sans Bold | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
-| `savepos3.png` (from `_savepos30.png`) | the same, drawn 30 px wide for Shift+F4 | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
+| `recallpos1.png` to `recallpos3.png` (from `_map.png`) | game-icons.net `delapouite/rolled-cloth`, with the digit in DejaVu Sans Bold cut out | delapouite; Bitstream (DejaVu) | CC BY 3.0; Bitstream Vera licence |
+| `savepos1.png` to `savepos3.png` (from `_savepos.png`) | Font Awesome Free 6.5.2 `thumbtack` (solid), with the digit in DejaVu Sans Bold cut out | Fonticons, Inc.; Bitstream (DejaVu) | CC BY 4.0; Bitstream Vera licence |
 | `lastevent.png` | Font Awesome Free 6.5.2 `bell` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `center.png` | Font Awesome Free 6.5.2 `crosshairs` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `track.png` | Font Awesome Free 6.5.2 `video` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `bigmap.png` | Font Awesome Free 6.5.2 `map` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `bigmap.png` (from `_map.png`) | game-icons.net `delapouite/rolled-cloth` | delapouite | CC BY 3.0 |
 | `viewportprev.png`, `viewportnext.png` (from `_viewport.png`) | Font Awesome Free 6.5.2 `table-columns` (solid), with an arrow drawn by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
 | `terrain.png` | Font Awesome Free 6.5.2 `mountain-sun` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `faster.png` | Font Awesome Free 6.5.2 `forward` (solid) | Fonticons, Inc. | CC BY 4.0 |
