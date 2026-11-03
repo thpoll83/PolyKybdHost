@@ -89,7 +89,8 @@ SIZES = {"logistics": (34, 40), "character": (34, 40), "debugsettings": (30, 40)
 # the bottom right of their key area.
 INK = {"chat": (34, 34), "inventory": (34, 40), "logistics": (34, 34),
        "pause": (30, 34), "trains": (34, 40),
-       "up": (30, 40), "down": (30, 40), "left": (34, 30), "right": (34, 30)}
+       "up": (30, 40), "down": (30, 40), "left": (34, 30), "right": (34, 30),
+       "weapon": (40, 24)}          # leaves the top rows free for the next mark
 # The wire wrapped round both ends of the cable glyph in the wire-mode icons.
 WIRE_GLYPH = "ms:cable"
 # The magnifier the Shift+F9 icon is drawn round.
@@ -248,6 +249,24 @@ def zoom2x(out: Path) -> None:
     print("  zoom2x.png  <- ms:search + 2x")
 
 
+def weapon_next(out: Path) -> None:
+    """weapon.png (C, next weapon): adds a "next" mark (a triangle and a bar,
+    as on a media key) above the pistol that flat_icons() drew in the lower
+    24 rows. Runs on every run, because the pistol is re-rendered."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    path = out / "weapon.png"
+    pistol = np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 127
+    ss = MARK_SS
+    im = Image.new("L", (40 * ss, 40 * ss), 0)
+    d = ImageDraw.Draw(im)
+    d.polygon([(25 * ss, 1 * ss), (34 * ss, 7 * ss), (25 * ss, 13 * ss)], fill=255)
+    d.rectangle([35 * ss, 1 * ss, 38 * ss, 13 * ss], fill=255)
+    mark = np.asarray(im.resize((40, 40), Image.BOX)) > 110
+    cnc._save_mask(pistol | mark, path)
+    print("  weapon.png  <- pistol + next mark")
+
+
 def program(out: Path) -> None:
     """program.png: FACTORIO in Bebas Neue at the largest size that fits
     70 x 38 px, centred on the whole 72x40 cell."""
@@ -275,6 +294,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     render(ICONS, out)
     flat_icons(out)
+    weapon_next(out)
     quickbar(out)
     wires(out)
     zoom2x(out)

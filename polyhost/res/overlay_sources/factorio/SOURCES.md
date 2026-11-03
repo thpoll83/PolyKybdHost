@@ -152,7 +152,7 @@ lit from grey 90 of 255.
 | `pipette.png` | game-icons.net `lorc/eyedropper` | lorc | CC BY 3.0 |
 | `pickup.png` | game-icons.net `lorc/grab` | lorc | CC BY 3.0 |
 | `raillayer.png` | game-icons.net `delapouite/rail-road` | delapouite | CC BY 3.0 |
-| `weapon.png` | game-icons.net `john-colburn/pistol-gun` | John Colburn | CC BY 3.0 |
+| `weapon.png` | game-icons.net `john-colburn/pistol-gun`, with a "next" mark (a triangle and a bar) drawn above it in `fetch_icons.weapon_next()` | John Colburn | CC BY 3.0 |
 | `shoot.png` | game-icons.net `delapouite/crosshair` | delapouite | CC BY 3.0 |
 | `shootselected.png` | game-icons.net `sbed/targeted` | sbed | CC BY 3.0 |
 | `vehicle.png` | game-icons.net `delapouite/car-door` | delapouite | CC BY 3.0 |
