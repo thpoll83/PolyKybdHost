@@ -1808,6 +1808,9 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab - Google Chrome", "jupyter_template"),
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
+            ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "Song - YouTube", "youtube_template"),
+            ("https://m.youtube.com/watch?v=dQw4w9WgXcQ", None, "youtube_template"),
+            ("https://www.youtube.com/live/abc123", None, "youtube_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
             ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
             ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
@@ -1844,6 +1847,10 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("trello_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
+                            "https://music.youtube.com/watch?v=dQw4w9WgXcQ",
+                            "https://www.youtube.com/",
+                            "https://www.youtube.com/results?search_query=keyboard",
+                            "https://www.google.com/search?q=youtube.com",
                             "https://trello.com/",
                             "https://www.atlassian.com/software/trello",
                             "https://www.google.com/search?q=linear.app",
@@ -1855,6 +1862,7 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
                                              ("drawio_", "linear_", "jupyter_", "figma_",
+                                              "youtube_",
                                               "trello_")), files)
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
