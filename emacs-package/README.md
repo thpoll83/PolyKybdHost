@@ -121,6 +121,9 @@ Dired reference cards: `polyhost/res/overlay_sources/emacs/` (`SOURCES.md`).
 | `emacs://dired-mode...` | the Dired keys |
 | any other `emacs://...` | the global keys |
 
+The ESC key shows which set is loaded beside the Emacs logo: EDIT, ORG or DIRED.
+The key is drawn without its "Esc" legend on firmware with protocol 25 or later.
+
 ## Tests
 
 ```bash
