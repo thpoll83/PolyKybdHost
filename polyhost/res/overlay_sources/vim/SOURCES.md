@@ -14,8 +14,8 @@ from GUI Vim (`overlay-mapping.poly.yaml`, the `&editor_urls` map).
 | `vim_cmdline_template` | `vim://cmdline` (`:` `/` `?` and the prompts) |
 | `vim_terminal_template` | `vim://terminal` (a `:terminal` window) |
 
-Each set is one file (no-modifier, Shift and Ctrl layers) and carries Vim's
-logo on ESC. One set serves Windows, Linux and macOS: Vim's modal keys are the
+Each set is one file (no-modifier, Shift and Ctrl layers) and shows its mode
+on ESC: the mode word beside Vim's logo (see "ESC mark" below). One set serves Windows, Linux and macOS: Vim's modal keys are the
 same everywhere, and MacVim adds Cmd menu keys only, which are not drawn.
 
 Regenerate:
@@ -170,6 +170,13 @@ everywhere:
 | other | | `join`, `match_pair`, `cmdline`, `complete*` (a completion menu), `char_above`, `char_below`, `history_*`, `tag_*`, `alt_file`, `mark_*`, `esc` (a key with "Esc") |
 
 ### ESC mark
+
+ESC shows the mode: `icons/esc_<mode>.png` is the mode word (NOR, INS, VIS,
+SEL, REP, CMD, TERM; Liberation Sans Bold, at most 33 px wide) left of Vim's
+logo at 36 px, drawn by `fetch_icons.py` (`esc_mark()`) over the whole 72x40
+cell, without the ESC legend (`program_icon_legend: false`, protocol v25;
+older firmware draws the icon over the legend). The logo inside it is lit
+where it is darker than 170 over white.
 
 `icons/vim.png`: Vim's own logo, `runtime/vimlogo.svg` from the Vim
 repository (<https://github.com/vim/vim/blob/master/runtime/vimlogo.svg>,
