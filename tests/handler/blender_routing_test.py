@@ -64,7 +64,8 @@ class BlenderMappingFileTest(unittest.TestCase):
 
     def test_names_are_the_context_reporter_allow_list(self):
         self.assertIn(KEY, self.raw)
-        self.assertEqual(set(KEY.split(",")), set(CONTEXT_REPORTERS))
+        self.assertEqual(set(KEY.split(",")),
+                         {n for n, t in CONTEXT_REPORTERS.items() if t == "blender"})
 
     def test_every_named_file_exists(self):
         def walk(e):
