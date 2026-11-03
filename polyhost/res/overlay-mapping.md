@@ -120,8 +120,9 @@ terminals without an overlay set use this to route the editors' mode reports
 GNU nano sends no report and sets no title, so it is visible only when the
 shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish and oh-my-zsh do by default; bash,
-PowerShell and plain zsh need the snippets in
-[`overlay_sources/nano/SOURCES.md`](overlay_sources/nano/SOURCES.md)). The
+PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
+tray's Updates → "Show the running command in the terminal title…" or
+`polyctl shell-integration install` adds to their startup files). The
 terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at
 the command position, so `vim nano` or a prompt in `~/nano-docs` keeps the

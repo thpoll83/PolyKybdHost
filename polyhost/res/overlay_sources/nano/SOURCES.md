@@ -44,7 +44,7 @@ terminal keeps the generic shortcut harvest.
 | Konsole | `~/src : nano — Konsole` (tab title format `%d : %n`) | yes |
 | fish | `nano notes.txt ~/s/docs` (`fish_title`; `[host] ` before it over SSH) | yes |
 | zsh with oh-my-zsh | `nano notes.txt` (`omz_termsupport_preexec`) | yes |
-| bash, PowerShell, plain zsh | the prompt's title (`user@host: ~/dir`, the executable path) | no: use a snippet below |
+| bash, PowerShell, plain zsh | the prompt's title (`user@host: ~/dir`, the executable path) | no: use a script below |
 
 The fish title was read on a pty from fish 3.7.0 (`fish -i -N`, then
 `nano --version`: `nano --version /t/c/-/4/s/bashtitle`). The cmd.exe,
@@ -73,73 +73,43 @@ Remaining false positives:
 Missed: nano started through a wrapper (`env nano`, `FOO=1 nano`,
 `/usr/bin/nano`), a command line whose FIRST command is not nano
 (`cat x | nano -`), and nano resumed with `fg` after `^T^Z` where the shell
-writes `fg` into the title (the bash and zsh snippets below; fish and
+writes `fg` into the title (the bash and zsh scripts below; fish and
 oh-my-zsh show the job's command).
 
-## Shell snippets: show the running command in the title
+## Shell scripts: show the running command in the title
 
-Each puts the command line into the window title when a command starts; the
+The scripts are in [`polyhost/res/shell/`](../../shell/):
+`polykybd-title.bash`, `polykybd-title.zsh` and `polykybd-title.ps1`. Each
+puts the command line into the window title when a command starts; the
 prompt's own title (if the prompt sets one) comes back when it ends. Control
-characters are removed from the command line before it is written.
+characters are removed from the command line before it is written. They are
+the one copy: install them with the tray's Updates → "Show the running command
+in the terminal title…" or `polyctl shell-integration install [--shell …]`,
+which adds one line that sources the script to `~/.bashrc`, `~/.zshrc` or the
+PowerShell `$PROFILE`, between `# >>> PolyKybd title integration >>>` and
+`# <<< PolyKybd title integration <<<` (`polyhost/services/shell_title.py`).
+To use one by hand, source it at the end of the startup file.
 
-**bash** (`~/.bashrc`, after `PS1` and any `PROMPT_COMMAND` are set). A DEBUG
-trap writes the first command run after each prompt; `PROMPT_COMMAND` arms it.
-
-```bash
-# PolyKybd: show the running command in the window title.
-__poly_title_armed=
-__poly_title_cmd() {
-  [ -n "$__poly_title_armed" ] || return 0
-  __poly_title_armed=
-  printf '\033]2;%s\007' "${BASH_COMMAND//[[:cntrl:]]/}"
-}
-trap '__poly_title_cmd' DEBUG
-PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND; }__poly_title_armed=1"
-```
-
-Tested on bash 5.2.21 on a pty (Python `pty`) with Ubuntu's prompt
-(`PS1='\[\e]0;\u@\h: \w\a\]…'`): running `nano --version` wrote
-`ESC ]2;nano --version BEL`, and the next prompt wrote
-`ESC ]0;root@vm: /home/user/… BEL` back; an interactive `nano -R notes.txt`
-wrote `ESC ]2;nano -R …/notes.txt BEL` and nano itself wrote no title. It
-replaces another DEBUG trap; with bash-preexec use
-`preexec() { printf '\033]2;%s\007' "${1//[[:cntrl:]]/}"; }` instead. If
-`PROMPT_COMMAND` is an array (bash 5.1+), append `__poly_title_armed=1` as an
-element instead.
-
-**zsh** without a framework that sets the title (`~/.zshrc`):
-
-```zsh
-# PolyKybd: show the running command in the window title.
-autoload -Uz add-zsh-hook
-__poly_title() { print -rn -- $'\e]2;'"${1//[[:cntrl:]]/}"$'\a' }
-add-zsh-hook preexec __poly_title
-```
-
-Tested on zsh 5.9 on a pty: `nano --version` wrote `ESC ]2;nano --version BEL`.
-oh-my-zsh, prezto and similar frameworks already do this.
-
-**PowerShell** (`$PROFILE`; PSReadLine, installed with PowerShell 5.1 and 7):
-
-```powershell
-# PolyKybd: show the running command in the window title.
-$global:PolyBaseTitle = $Host.UI.RawUI.WindowTitle
-Set-PSReadLineKeyHandler -Key Enter -ScriptBlock {
-    $line = $null; $cursor = $null
-    [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState([ref]$line, [ref]$cursor)
-    if ($line.Trim()) {
-        $Host.UI.RawUI.WindowTitle = $line.Trim() -replace '[\x00-\x1f]', ' '
-    }
-    [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
-}
-$global:PolyPrompt = $function:prompt
-function global:prompt {
-    $Host.UI.RawUI.WindowTitle = $global:PolyBaseTitle
-    & $global:PolyPrompt
-}
-```
-
-Not tested: no PowerShell was available.
+- **bash**: a DEBUG trap writes the first command run after the command line
+  is read. `PS0` arms it on bash 4.4 and later, so commands that other tools
+  add to `PROMPT_COMMAND` later never take the title; bash 3.2 (macOS
+  `/bin/bash`) arms it from the end of `PROMPT_COMMAND` (string or array).
+  The trap is set at the first prompt, because a sourced file cannot see a
+  DEBUG trap set outside it: a trap that was set before runs first. With
+  bash-preexec loaded (before or after) it adds a `preexec_functions` hook
+  instead; that path was checked with a stand-in, not with bash-preexec. Tested on bash 5.2.21 on a pty (Python
+  `pty`) with Ubuntu's prompt (`PS1='\[\e]0;\u@\h: \w\a\]…'`): running
+  `nano --version` wrote `ESC ]2;nano --version BEL`, and the next prompt
+  wrote `ESC ]0;root@vm: /home/user/… BEL` back; an interactive
+  `nano -R notes.txt` wrote `ESC ]2;nano -R …/notes.txt BEL` and nano itself
+  wrote no title. For `a; b` the title shows `a`. The installed line is run on
+  a pty by `tests/services/shell_title_test.py`.
+- **zsh**: a `preexec` hook. Tested on zsh 5.9 on a pty: `nano --version`
+  wrote `ESC ]2;nano --version BEL`. oh-my-zsh, prezto and similar frameworks
+  already do this.
+- **PowerShell** (5.1 and 7): a PSReadLine Enter handler sets the title and a
+  wrapper around `prompt` restores it. It replaces a custom Enter key handler.
+  Not tested: no PowerShell was available.
 
 **fish**, **cmd.exe**: nothing to add (see the table). In Windows Terminal the
 profile setting "Suppress title changes" must stay off (the default).

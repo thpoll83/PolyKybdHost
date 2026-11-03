@@ -6,7 +6,7 @@ or the terminal puts the running command into the title. Drives
 
 * every terminal loads the nano set for every title format that shows nano
   as the running command (cmd.exe, fish, oh-my-zsh, the bash and PowerShell
-  snippets in overlay_sources/nano/SOURCES.md, and the macOS Terminal, iTerm2
+  scripts in polyhost/res/shell/, and the macOS Terminal, iTerm2
   and Konsole formats the shared `&editor_titles` list is written for);
 * a title that only CONTAINS nano elsewhere (`vim nano`, `man nano`, a prompt
   in ~/nano-docs, Terminal.app in a directory named nano) keeps the
