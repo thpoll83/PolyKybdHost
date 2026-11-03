@@ -112,7 +112,8 @@ _PS_PATH_RE = re.compile(r"-LiteralPath\s+'((?:[^']|'')*)'")
 
 # The probe answers are cached per executable for the life of the process:
 # the profile path does not change while the app runs, and asking costs a
-# PowerShell start every time the dialog opens.
+# PowerShell start every time the dialog opens. A blocking execution policy
+# is not cached (see probe_powershell).
 _probe_cache = {}
 
 
@@ -178,6 +179,38 @@ def rc_file(shell, home=None, env=None):
     return (Path(zdotdir) if zdotdir else _home(home)) / ".zshrc"
 
 
+# How long `zsh -c` may take to report its startup directory.
+ZSH_PROBE_TIMEOUT_S = 10
+
+
+def probe_zsh_dir(exe, run=subprocess.run, env=None, home=None, timeout=ZSH_PROBE_TIMEOUT_S):
+    """The directory zsh reads ``.zshrc`` from, asked from zsh itself: a
+    ``ZDOTDIR`` set in ``~/.zshenv`` (and not exported to the desktop session
+    this app runs in) is seen only this way, because ``zsh -c`` reads
+    ``.zshenv``. Returns a Path, or None when zsh did not answer. Never raises."""
+    env = dict(os.environ if env is None else env)
+    if home is not None:
+        env["HOME"] = str(home)
+    kwargs = {}
+    if platform.system() == "Windows":
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    try:
+        # Audit (Sourcery dangerous-subprocess-use): argv is a fixed list; exe
+        # is what shutil.which found for "zsh", and the script is a constant.
+        # No shell parses it before zsh.
+        # nosemgrep
+        proc = run([exe, "-c", "print -r -- ${ZDOTDIR:-$HOME}"], capture_output=True,
+                   timeout=timeout, env=env, **kwargs)
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        log.info("zsh did not report its startup directory: %s", exc)
+        return None
+    out = proc.stdout.decode("utf-8", "replace") if isinstance(proc.stdout, bytes) else (proc.stdout or "")
+    lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
+    if proc.returncode != 0 or not lines or not os.path.isabs(lines[-1]):
+        return None
+    return Path(lines[-1])
+
+
 def probe_powershell(exe, run=subprocess.run, timeout=PROBE_TIMEOUT_S, use_cache=True):
     """Ask a PowerShell for its ``$PROFILE`` path and effective execution
     policy. Returns ``(path, policy, error)``: a Path and a str, or None and
@@ -209,7 +242,10 @@ def probe_powershell(exe, run=subprocess.run, timeout=PROBE_TIMEOUT_S, use_cache
             answer = (None, None, (err.strip() or out.strip() or f"exit code {proc.returncode}")[:300])
         else:
             answer = (Path(lines[0]), lines[1], "")
-    if answer[0] is not None:
+    # Cache only an answer that allows an install. A refused one is asked
+    # again on the next status, so the dialog's next refresh sees a
+    # Set-ExecutionPolicy the user ran in the meantime.
+    if answer[0] is not None and answer[1].lower() not in _BLOCKING_POLICIES:
         _probe_cache[exe] = answer
     return answer
 
@@ -246,6 +282,13 @@ class _Text:
         if self.codec != "latin-1":
             return s
         return s.encode(self.encoding).decode("latin-1")
+
+    def unpiece(self, s):
+        """A piece of ``self.text`` back as text: the inverse of piece(). A
+        byte the encoding cannot decode becomes U+FFFD."""
+        if self.codec != "latin-1":
+            return s
+        return s.encode("latin-1").decode(self.encoding, "replace")
 
     def to_bytes(self, text):
         return self.bom + text.encode(self.codec)
@@ -320,19 +363,19 @@ def file_state(shell, rc_path, system=None):
     except OSError as exc:
         return STATE_UNKNOWN, str(exc)
     try:
-        text = _Text(raw, "utf-8").text
+        doc = _Text(raw, _default_encoding(shell, True))
     except UnicodeDecodeError as exc:
         return STATE_UNKNOWN, str(exc)
-    found, _orphan = _blocks(text)
+    found, _orphan = _blocks(doc.text)
     if not found:
         return STATE_NOT_INSTALLED, ""
     want = script_path(shell, system)
     for _s, _e, inner in found:
-        line = _block_line(inner)
+        line = doc.unpiece(_block_line(inner))
         named = _path_in_line(shell, line)
         if line == source_line(shell, want) and Path(named).is_file():
             return STATE_INSTALLED, ""
-    return STATE_STALE, _path_in_line(shell, _block_line(found[0][2]))
+    return STATE_STALE, _path_in_line(shell, doc.unpiece(_block_line(found[0][2])))
 
 
 # --- the public calls -------------------------------------------------------
@@ -361,7 +404,14 @@ def status(shells=None, home=None, env=None, which=shutil.which, run=subprocess.
 def _status_one(shell, home, env, which, run, system, use_cache):
     if shell in (BASH, ZSH):
         rc = rc_file(shell, home, env)
-        present = _bash_present(which, system) if shell == BASH else bool(which("zsh"))
+        if shell == BASH:
+            present = _bash_present(which, system)
+        else:
+            exe = which("zsh")
+            present = bool(exe)
+            zdot = probe_zsh_dir(exe, run=run, env=env, home=home) if exe else None
+            if zdot is not None:
+                rc = zdot / ".zshrc"
         if not present and not rc.exists():
             return ShellStatus(shell, STATE_NOT_PRESENT, rc, "")
         state, detail = file_state(shell, rc, system)

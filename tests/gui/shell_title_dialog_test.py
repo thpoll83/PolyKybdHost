@@ -3,6 +3,7 @@ the service's status, Install/Remove on the ticked shells, results shown."""
 import os
 import time
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -109,6 +110,25 @@ class ShellTitleDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         self.settle(dlg)
         self.assertIn("disk gone", dlg._info.text())
+
+    def test_buttons_come_on_when_the_status_arrives_before_the_thread_ends(self):
+        """`done` is emitted inside run(); handled while the thread still runs,
+        it left both buttons off for good."""
+        def slow_run(thread):
+            thread.done.emit(thread._status_fn())
+            time.sleep(0.4)     # the dialog handles `done` in this window
+
+        with mock.patch.object(std._StatusThread, "run", slow_run):
+            dlg = self.make()
+            end = time.monotonic() + 5
+            while not dlg._thread.isFinished() and time.monotonic() < end:
+                self.app.processEvents()
+                time.sleep(0.01)
+            for _ in range(20):
+                self.app.processEvents()
+                time.sleep(0.01)
+        self.assertTrue(dlg._checking.isHidden())
+        self.assertTrue(dlg.install_button.isEnabled())
 
     def test_every_state_has_a_text(self):
         for state in (st.STATE_INSTALLED, st.STATE_NOT_INSTALLED, st.STATE_STALE,

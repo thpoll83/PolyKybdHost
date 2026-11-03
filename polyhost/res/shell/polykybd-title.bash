@@ -25,7 +25,7 @@ __poly_title_preexec() {
 # line is read. On bash 4.4 and later PS0 arms it, which is expanded after the
 # line is read, so the commands of PROMPT_COMMAND (also ones added after this
 # file) never take the title; the subscript assignment sets the flag and
-# expands to nothing. Older bash (macOS /bin/bash is 3.2) has no PS0, and
+# expands to nothing (the "-" keeps `set -u` quiet). Older bash (macOS /bin/bash is 3.2) has no PS0, and
 # the last command of PROMPT_COMMAND arms it.
 __poly_title_cmd() {
   [ -n "$__poly_title_armed" ] || return 0
@@ -52,7 +52,7 @@ __poly_title_setup() {
     trap '__poly_title_cmd' DEBUG
   fi
   if __poly_title_has_ps0; then
-    PS0="${PS0-}"'${__poly_title_none[__poly_title_armed=1]}'
+    PS0="${PS0-}"'${__poly_title_none[__poly_title_armed=1]-}'
   fi
 }
 

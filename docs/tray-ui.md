@@ -212,7 +212,10 @@ and relative links were adjusted to suit a standalone file.
   Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as needing no setup. The
   status runs on a `QThread`, because the PowerShell `$PROFILE` path and execution
   policy come from running `pwsh -NoProfile -NonInteractive -Command …` (20 s timeout,
-  cached per process). Modeless and retained like the log-bundle dialog.
+  cached per process, except an answer with a blocking policy, so a
+  `Set-ExecutionPolicy` shows on the next refresh). zsh's startup directory comes from
+  `zsh -c 'print -r -- ${ZDOTDIR:-$HOME}'` (10 s timeout), which reads `.zshenv`, so a
+  `ZDOTDIR` set only there is found; without an answer `$ZDOTDIR` or the home is used. Modeless and retained like the log-bundle dialog.
   `services/shell_title.py` (Qt-free, also `polyctl shell-integration install|remove|status
   [--shell …]`, which never connects to the host) adds one line between
   `# >>> PolyKybd title integration >>>` / `# <<< … <<<` that sources

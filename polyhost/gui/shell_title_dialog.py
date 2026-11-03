@@ -133,6 +133,11 @@ class ShellTitleDialog(QDialog):
         self._thread = _StatusThread(self._status_fn, self)
         # noinspection PyUnresolvedReferences
         self._thread.done.connect(self._on_status)
+        # `done` is emitted from run(), so it can be handled while the thread
+        # still counts as running, and _update_buttons() then keeps both
+        # buttons off. `finished` comes after run() has returned.
+        # noinspection PyUnresolvedReferences
+        self._thread.finished.connect(self._update_buttons)
         self._thread.start()
 
     def reopen(self):

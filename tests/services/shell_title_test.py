@@ -6,7 +6,6 @@ outside the block must come back unchanged, and a remove after an install
 must give back the original file."""
 import codecs
 import os
-import pty
 import re
 import select
 import shutil
@@ -14,14 +13,26 @@ import subprocess
 import tempfile
 import time
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 from polyhost.services import shell_title as st
+
+try:   # POSIX only: Windows (Git Bash included) has no pty module
+    import pty
+except ImportError:  # pragma: no cover - Windows
+    pty = None
 
 
 def _which(present):
     """A shutil.which stand-in that finds only ``present`` (name -> path)."""
     return lambda name: present.get(name)
+
+
+def _no_process(argv, **kw):
+    """The default `run` in these tests: no real process starts unless a
+    test asks for one, so the zsh probe falls back to the environment."""
+    raise OSError("no process in this test")
 
 
 class _Home(unittest.TestCase):
@@ -41,6 +52,7 @@ class _Home(unittest.TestCase):
         kw.setdefault("env", self.env)
         kw.setdefault("which", _which(self.present))
         kw.setdefault("system", "Linux")
+        kw.setdefault("run", _no_process)
         return fn(shells, **kw)
 
     def install(self, shells=None, **kw):
@@ -242,9 +254,61 @@ class InstallRemoveTest(_Home):
         self.install([st.ZSH])
         self.assertIn(st.BEGIN_MARKER.encode(), (zdot / ".zshrc").read_bytes())
 
+    def test_zsh_reports_its_startup_dir(self):
+        """A ZDOTDIR set in ~/.zshenv only is what `zsh -c` reports."""
+        zdot = self.home / "zd"
+        self.present["zsh"] = "/opt/zsh"
+        seen = []
+
+        def run(argv, **kw):
+            seen.append((argv, kw))
+            return _FakeProc(f"{zdot}\n".encode())
+        s = self.status([st.ZSH], run=run)[st.ZSH]
+        self.assertEqual(s.rc_path, zdot / ".zshrc")
+        argv, kw = seen[0]
+        self.assertEqual(argv[:2], ["/opt/zsh", "-c"])
+        self.assertNotIn("shell", kw)
+        self.assertEqual(kw["env"]["HOME"], str(self.home))
+        self.assertIn("timeout", kw)
+
+    def test_zsh_probe_failure_falls_back(self):
+        self.present["zsh"] = "/opt/zsh"
+        self.env["ZDOTDIR"] = str(self.home / "fromenv")
+
+        def timeout(argv, **kw):
+            raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+        for run in (timeout, lambda argv, **kw: _FakeProc(b"not a path\n"),
+                    lambda argv, **kw: _FakeProc(b"/x\n", returncode=1)):
+            s = self.status([st.ZSH], run=run)[st.ZSH]
+            self.assertEqual(s.rc_path, self.home / "fromenv" / ".zshrc")
+
+    @unittest.skipUnless(shutil.which("zsh"), "zsh is not installed")
+    def test_real_zsh_reads_zdotdir_from_zshenv(self):
+        self.present["zsh"] = shutil.which("zsh")
+        (self.home / ".zshenv").write_text('ZDOTDIR="$HOME/zd"\n', encoding="utf-8")
+        env = {"SHELL": "/bin/bash", "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+        s = self.status([st.ZSH], run=subprocess.run, env=env)[st.ZSH]
+        self.assertEqual(s.rc_path, self.home / "zd" / ".zshrc")
+
     def test_wsl_launcher_is_not_a_bash(self):
         self.present["bash"] = r"C:\Windows\System32\bash.exe"
         self.assertEqual(self.status(system="Windows")[st.BASH].state, st.STATE_NOT_PRESENT)
+
+    def test_non_ascii_install_path_reads_as_installed(self):
+        """The block is compared in the file's encoding: a UTF-8 file with
+        an install under /home/rené/ is installed, not stale."""
+        scripts = self.home / "rené" / "shell"
+        scripts.mkdir(parents=True)
+        for name in set(st.SCRIPT_NAMES.values()):
+            shutil.copy(st.SCRIPT_DIR / name, scripts / name)
+        with mock.patch.object(st, "SCRIPT_DIR", scripts), \
+                mock.patch.object(st.locale, "getpreferredencoding", return_value="UTF-8"):
+            [r] = self.install()
+            self.assertTrue(r.changed, r)
+            self.assertIn("rené".encode("utf-8"), (self.home / ".bashrc").read_bytes())
+            self.assertEqual(self.status()[st.BASH].state, st.STATE_INSTALLED)
+            [again] = self.install()
+            self.assertFalse(again.changed)
 
     def test_backup_names_do_not_collide(self):
         rc = self.home / ".bashrc"
@@ -348,6 +412,15 @@ class PowerShellTest(_Home):
         [r] = self.remove([st.POWERSHELL], run=run, system="Windows")
         self.assertTrue(r.changed, r)
 
+    def test_a_changed_policy_is_seen_on_the_next_status(self):
+        """After Set-ExecutionPolicy the dialog's next refresh must allow the
+        install; only an allowing answer is cached."""
+        self.status([st.POWERSHELL], run=self.answer(policy="Restricted"), system="Windows")
+        s = self.status([st.POWERSHELL], run=self.answer(policy="RemoteSigned"),
+                        system="Windows")[st.POWERSHELL]
+        self.assertEqual(s.state, st.STATE_NOT_INSTALLED)
+        self.assertEqual(len(self.calls), 2)
+
     def test_not_present_powershell_is_not_probed(self):
         self.present = {}
         s = self.status([st.PWSH, st.POWERSHELL], run=self.answer())
@@ -403,7 +476,8 @@ def _run_in_pty(argv, env, inputs, settle=1.0, step=0.6):
     return bytes(out)
 
 
-@unittest.skipUnless(shutil.which("bash"), "bash is not installed")
+@unittest.skipUnless(pty is not None and os.name == "posix" and shutil.which("bash"),
+                     "needs bash and a pty (POSIX)")
 class BashOnAPtyTest(_Home):
     """The installed line, sourced by a real interactive bash. Ubuntu's prompt
     sets its own title; the command's title must appear when it runs, and the
@@ -449,6 +523,14 @@ class BashOnAPtyTest(_Home):
         titles = re.findall(rb"\x1b\]2;(.*?)\x07", out)
         self.assertEqual(titles, [b"echo hi", b"exit"], out)
 
+    def test_set_u_shell_gets_no_unbound_variable_error(self):
+        rc = self.home / ".bashrc"
+        rc.write_text("set -u\nPS1='$ '\n", encoding="utf-8")
+        self.install([st.BASH])
+        out = _run_in_pty(["bash", "-i"], self.env_for(), [b"echo hi\n", b"exit\n"])
+        self.assertNotIn(b"unbound variable", out, out)
+        self.assertIn(b"\x1b]2;echo hi\x07", out, out)
+
     def test_stale_line_starts_quietly(self):
         rc = self.home / ".bashrc"
         rc.write_text(st.BEGIN_MARKER + "\n"
@@ -459,7 +541,8 @@ class BashOnAPtyTest(_Home):
         self.assertNotIn(b"\x1b]2;", out)
 
 
-@unittest.skipUnless(shutil.which("zsh"), "zsh is not installed")
+@unittest.skipUnless(pty is not None and os.name == "posix" and shutil.which("zsh"),
+                     "needs zsh and a pty (POSIX)")
 class ZshOnAPtyTest(_Home):
     def test_title_escape_after_install(self):
         self.present["zsh"] = shutil.which("zsh")
