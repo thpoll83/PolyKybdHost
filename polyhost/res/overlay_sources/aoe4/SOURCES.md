@@ -91,7 +91,7 @@ twice); the game does not tie a group number to a unit type.
 | Page Up / Page Down | Scroll chat messages, older / newer | `chatback.png` / `chatfwd.png` (AoE2) |
 | F6 | Players and tribute panel | `tribute.png` |
 | Insert | Toggle team or unique player colours | `allycolours.png` (AoE2) |
-| Ctrl+E | Notify ping (then left click) | `flare.png` (AoE2) |
+| Ctrl+E | Notify ping (then left click) | `pingnotify.png` |
 | Ctrl+R | Attack ping (then left click) | `pingattack.png` |
 | Ctrl+T | Defend ping (then left click) | `pingdefend.png` |
 | F8 / F9 | Quick save / quick load (single player) | `save.png` / `load.png` (Warcraft III) |
@@ -143,8 +143,9 @@ Warcraft III set. Follow, Reset camera and Delete are solid shapes and fill a
   the villager, the crossed swords or a group of people, at 40×40. IDLE marks
   "all idle" on Ctrl, ALL marks "all" on Ctrl+Shift.
 - `capital.png`: the village of H with a crown over its top-left corner.
-- `pingattack.png`, `pingdefend.png`: the map marker of the notify ping with a
-  sword or a shield in its lower right, 2 px clear around it.
+- `pingnotify.png`, `pingattack.png`, `pingdefend.png`: a "!" (Liberation Sans
+  Bold, 24 px tall), a sword or a shield, centred between two pairs of arcs that
+  show the waves of a ping, with 1 px of the arcs cleared around the symbol.
 - `selectscreen.png`: a group of people inside the four corners of a screen.
 - `subgroupback.png`: Tab's cycle arrows mirrored.
 - `groupadd<N>.png`: AoE2's group picture with Warcraft III's ringed plus
@@ -181,7 +182,7 @@ New in this set:
 | `tribute.png` | game-icons.net `delapouite/shaking-hands` | Delapouite | CC BY 3.0 |
 | `monks.png` | game-icons.net `delapouite/monk-face` | Delapouite | CC BY 3.0 |
 | `scouts.png` | game-icons.net `lorc/spyglass` | Lorc | CC BY 3.0 |
-| `follow.png` | Font Awesome Free `video` | Fonticons, Inc. | CC BY 4.0 |
+| `follow.png` | game-icons.net `lorc/boot-prints` | Lorc | CC BY 3.0 |
 | `resetcamera.png` | Font Awesome Free `camera-rotate` | Fonticons, Inc. | CC BY 4.0 |
 | `delete.png` | Font Awesome Free `trash-can` | Fonticons, Inc. | CC BY 4.0 |
 | `gatherfood.png` | game-icons.net `lorc/wheat` | Lorc | CC BY 3.0 |
@@ -191,9 +192,8 @@ New in this set:
 | `backtowork.png` | game-icons.net `lorc/hammer-nails` | Lorc | CC BY 3.0 |
 | `_village.png` (in `capital.png`) | game-icons.net `delapouite/village` | Delapouite | CC BY 3.0 |
 | `_crown.png` (in `capital.png`) | game-icons.net `delapouite/imperial-crown` | Delapouite | CC BY 3.0 |
-| `_marker.png` (in the pings) | game-icons.net `delapouite/position-marker` | Delapouite | CC BY 3.0 |
 | `_sword.png` (in `pingattack.png`) | game-icons.net `lorc/broadsword` | Lorc | CC BY 3.0 |
-| `_shield.png` (in `pingdefend.png`) | game-icons.net `sbed/shield` | Sbed | CC BY 3.0 |
+| `_shield.png` (in `pingdefend.png`) | game-icons.net `lorc/checked-shield` | Lorc | CC BY 3.0 |
 | `_frame.png` (in `selectscreen.png`) | Font Awesome Free `expand` | Fonticons, Inc. | CC BY 4.0 |
 | `_people.png` (in `selectscreen.png`, `allunits.png`) | Font Awesome Free `people-group` | Fonticons, Inc. | CC BY 4.0 |
 | `_farmer.png` (in `allidlevillagers.png`, `allvillagers.png`) | game-icons.net `delapouite/farmer` | Delapouite | CC BY 3.0 |
@@ -209,7 +209,6 @@ Copied from the AoE2 set (`../aoe2/icons/`):
 | `idlemilitary.png` | game-icons.net `lorc/crossed-swords` | Lorc | CC BY 3.0 |
 | `chatback.png`, `chatfwd.png` | game-icons.net `lorc/conversation` and `delapouite/plain-arrow` | Lorc, Delapouite | CC BY 3.0 |
 | `allycolours.png` | game-icons.net `delapouite/palette` | Delapouite | CC BY 3.0 |
-| `flare.png` | game-icons.net `delapouite/position-marker` | Delapouite | CC BY 3.0 |
 | `gametime.png` | game-icons.net `lorc/sands-of-time` | Lorc | CC BY 3.0 |
 | `pause.png` | game-icons.net `guard13007/pause-button` | Guard13007 | CC BY 3.0 |
 | `group1.png`, `groupnew1.png` | game-icons.net `lorc/spartan` | Lorc | CC BY 3.0 |

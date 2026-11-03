@@ -111,7 +111,7 @@ bindings:
   - { key: PGDN, icon: chatfwd.png, label: "Scroll chat messages (newer)" }
   - { key: F6, icon: tribute.png, label: "Players and tribute panel", region: [34, 40] }
   - { key: INSERT, icon: allycolours.png, label: "Toggle team or unique player colours" }
-  - { key: E, mods: [CTRL], icon: flare.png, label: "Notify ping" }
+  - { key: E, mods: [CTRL], icon: pingnotify.png, label: "Notify ping" }
   - { key: R, mods: [CTRL], icon: pingattack.png, label: "Attack ping" }
   - { key: T, mods: [CTRL], icon: pingdefend.png, label: "Defend ping" }
 

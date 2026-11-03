@@ -41,7 +41,6 @@ REUSED = {
     "chatback.png": "aoe2/icons/chatback.png",              # Page Up
     "chatfwd.png": "aoe2/icons/chatfwd.png",                # Page Down
     "allycolours.png": "aoe2/icons/allycolours.png",        # Insert
-    "flare.png": "aoe2/icons/flare.png",                    # Ctrl+E
     "gametime.png": "aoe2/icons/gametime.png",              # F11
     "pause.png": "aoe2/icons/pause.png",                    # Pause
     "lastevent.png": "warcraft3/icons/lastevent.png",       # Space
@@ -70,7 +69,7 @@ ICONS = {
     "tribute": "gi:delapouite/shaking-hands",
     "monks": "gi:delapouite/monk-face",
     "scouts": "gi:lorc/spyglass",
-    "follow": "fa:video",
+    "follow": "gi:lorc/boot-prints",
     "resetcamera": "fa:camera-rotate",
     "delete": "fa:trash-can",
     "gatherfood": "gi:lorc/wheat",
@@ -83,9 +82,8 @@ ICONS = {
 PARTS = {
     "_village": "gi:delapouite/village",
     "_crown": "gi:delapouite/imperial-crown",
-    "_marker": "gi:delapouite/position-marker",
     "_sword": "gi:lorc/broadsword",
-    "_shield": "gi:sbed/shield",
+    "_shield": "gi:lorc/checked-shield",
     "_frame": "fa:expand",
     "_people": "fa:people-group",
     "_farmer": "gi:delapouite/farmer",
@@ -98,7 +96,7 @@ SIZES = {"milbuildings": (34, 40), "ecobuildings": (34, 40), "techbuildings": (3
          "landmarks": (30, 40), "focus": (34, 40), "tribute": (34, 40)}
 # Solid icons that read heavier than the rest: drawn in a smaller box, as in
 # the Warcraft III set.
-INK = {"follow": (34, 34), "resetcamera": (34, 34), "delete": (34, 34)}
+INK = {"resetcamera": (34, 34), "delete": (34, 34)}
 
 # Word composites: a word over an icon, drawn 1-bit at 40 x 40.
 # The IV is set in the bold face: the thin left stroke of the regular V
@@ -200,19 +198,56 @@ def capital(out: Path) -> None:
     print("  capital.png  <- _village.png + _crown.png")
 
 
-def pings(out: Path) -> None:
-    """pingattack.png and pingdefend.png (Ctrl+R, Ctrl+T): the map marker of
-    the notify ping (Ctrl+E) with a sword or a shield in its lower right."""
+PING_SYMBOLS = {"pingnotify": None, "pingattack": ("_sword", (20, 24)),
+                "pingdefend": ("_shield", (17, 22))}
+
+
+def _ping_waves(symbol):
+    """`symbol` (40 x 40) between two pairs of arcs, the waves of a ping, with
+    1 px of the arcs cleared around the symbol."""
     import numpy as np
-    marker = np.zeros((40, 40), bool)
-    m = _fit(out / "_marker.png", (40, 34))
-    _paste(marker, m, 0, 0)
-    for stem, part, box in (("pingattack", "_sword", (24, 24)), ("pingdefend", "_shield", (20, 22))):
-        sym = np.zeros((40, 40), bool)
-        s = _fit(out / f"{part}.png", box)
-        _paste(sym, s, 40 - s.shape[1], 40 - s.shape[0])
-        cnc._save_mask(_clear_around(marker, sym, 2), out / f"{stem}.png")
-        print(f"  {stem}.png  <- _marker.png + {part}.png")
+    from PIL import Image, ImageDraw
+    ss = 8
+    im = Image.new("L", (40 * ss, 40 * ss), 0)
+    d = ImageDraw.Draw(im)
+    c = 20 * ss
+    for r in (14.5, 19):
+        rr = r * ss
+        for a0, a1 in ((-42, 42), (138, 222)):
+            d.arc([c - rr, c - rr, c + rr, c + rr], a0, a1, fill=255, width=int(2.4 * ss))
+    waves = np.asarray(im.resize((40, 40), Image.BOX)) > 110
+    return _clear_around(waves, symbol, 1)
+
+
+def _bang():
+    """A "!" in Liberation Sans Bold, 24 px tall, centred in 40 x 40."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    ss = 8
+    f = ImageFont.truetype(str(WORD_FONT), 24 * ss * 1.35)
+    im = Image.new("L", (40 * ss, 40 * ss), 0)
+    ImageDraw.Draw(im).text((20 * ss, 20 * ss), "!", font=f, fill=255, anchor="mm")
+    m = np.asarray(im.resize((40, 40), Image.BOX)) > 110
+    ys, xs = np.nonzero(m)
+    m = m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    canvas = np.zeros((40, 40), bool)
+    _paste(canvas, m, (40 - m.shape[1]) // 2, (40 - m.shape[0]) // 2)
+    return canvas
+
+
+def pings(out: Path) -> None:
+    """pingnotify/pingattack/pingdefend.png (Ctrl+E, Ctrl+R, Ctrl+T): a "!", a
+    sword or a shield, centred between the waves of a ping."""
+    import numpy as np
+    for stem, part in PING_SYMBOLS.items():
+        if part is None:
+            symbol = _bang()
+        else:
+            symbol = np.zeros((40, 40), bool)
+            s = _fit(out / f"{part[0]}.png", part[1])
+            _paste(symbol, s, (40 - s.shape[1]) // 2, (40 - s.shape[0]) // 2)
+        cnc._save_mask(_ping_waves(symbol), out / f"{stem}.png")
+        print(f"  {stem}.png  <- {part[0] + '.png' if part else '!'} between ping waves")
 
 
 def select_screen(out: Path) -> None:
@@ -280,8 +315,8 @@ def main(argv) -> int:
     reuse(out)
     cnc.render({**ICONS, **PARTS}, out)
     flat_icons(out)
-    drawn = {"program.png": program, "capital.png": capital, "pingattack.png": pings,
-             "pingdefend.png": pings, "selectscreen.png": select_screen,
+    drawn = {"program.png": program, "capital.png": capital, "pingnotify.png": pings,
+             "pingattack.png": pings, "pingdefend.png": pings, "selectscreen.png": select_screen,
              "subgroupback.png": subgroup_back}
     # groups_add() draws all ten; listing each file redraws them when any is missing.
     for n in range(10):
