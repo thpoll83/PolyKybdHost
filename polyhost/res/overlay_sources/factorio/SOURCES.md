@@ -210,15 +210,14 @@ The mapping entry and its macOS sub-entry opt in with
 `factorio.yaml` names the reader (`factorio`) and the file each key reads.
 Nothing is read until the overlay is first sent. C (next weapon) is not read:
 it keeps the shipped pistol with the next mark, which the game's pistol icon
-does not have.
+does not have. Enter (car), G (rail), F1 and Alt+L (logistic robot) are not
+read either: on the Factorio 2.1.23 demo files the coloured item art for them
+turned into noise at 1 bit, so they keep the shipped icons.
 
 | Keys | From the game | File (under the data folder) |
 |---|---|---|
 | B, P, O, Tab and M, L, T | the buttons at the top right of the screen that open the same panels (blueprint library, production, trains, map, logistic networks, technology) | `core/graphics/side-menu-buttons.png`, 64 px rows 0, 1, 4, 7, 9 and 11 |
 | Alt+B, Alt+D, Alt+U, Alt+T, Alt+Y, Alt+A, Alt+E, Alt+F | the shortcut bar buttons of the same controls | `base/graphics/icons/shortcut-toolbar/mip/` `new-blueprint`, `new-deconstruction-planner`, `new-upgrade-planner`, `artillery-targeting-remote`, `discharge-defense-remote`, `new-rts-tool`, `toggle-exoskeleton`, `toggle-personal-roboport`, each `-x56.png` (`-x32.png` before 2.0.18) |
-| Enter | the car item | `base/graphics/icons/car.png` |
-| G | the rail item | `base/graphics/icons/rail.png` |
-| F1, Alt+L | the logistic robot item | `base/graphics/icons/logistic-robot.png` |
 | F2 | the character icon | `core/graphics/icons/entity/character.png` |
 
 How the paths were checked: each one is the `icon` or `filename` of the
@@ -236,8 +235,6 @@ tags `2.0.10` and `2.0.77`:
   and `-x32.png` in 2.0.10; the changelog of 2.0.18 says "Updated shortcut
   icons and increased their size to 56px". The reader reads the first of the
   two that exists.
-- `base/prototypes/item.lua`: the items `car`, `rail` and
-  `logistic-robot`, unchanged from 2.0.10 to 2.1.24.
 - `core/prototypes/utility-sprites.lua`: `side_menu_blueprint_library_icon`,
   `side_menu_production_icon`, `side_menu_train_icon`, `side_menu_map_icon`,
   `side_menu_logistic_networks_icon` and `side_menu_technology_icon`
@@ -257,11 +254,10 @@ Drawing (`mode` in the recipe): the GUI symbols (the side-menu buttons, the
 shortcut icons and the character) are drawn as `silhouette`, the shape of the
 symbol. A symbol that turns out to have parts of different brightness, or no
 transparent background, is drawn as `threshold` instead so its inner lines are
-kept. The item icons are drawn as `threshold`: the outline lit and the parts
-lighter than mid-grey lit. Rendered on synthetic coloured icons (a pistol, a
-car, a blueprint sheet and a robot, flat and shaded with noise) at 40 px,
-`threshold` kept the shapes and `dither` turned the bodies into a dot pattern,
-so no key uses `dither`.
+kept. No coloured item icon is read: on the 2.1.23 demo files the car, rail
+and logistic robot drawn as `threshold` (outline and parts lighter than
+mid-grey lit) did not read at 1 bit, and `dither` turns such a body into a dot
+pattern.
 
 Keys that keep the shipped art: the wire modes Alt+C, Alt+R and Alt+G (the
 game's three wire icons are told apart by colour: the items carry

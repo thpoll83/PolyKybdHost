@@ -135,8 +135,8 @@ bindings:
 # shipped icon of the same name; nothing read from the game is committed. Each
 # `file` is the path the game's own prototype definitions give for that control
 # or item (wube/factorio-data, see SOURCES.md), relative to the data folder.
-# `silhouette` draws the shape of a one-colour GUI symbol; `threshold` lights
-# the light parts of coloured item art (it read better than `dither` at 40 px).
+# `silhouette` draws the shape of a one-colour GUI symbol. No coloured item
+# art is read: it turned into noise at 1 bit.
 game_assets:
   reader: factorio
   icons:
@@ -157,10 +157,10 @@ game_assets:
     spidertron: {file: [base/graphics/icons/shortcut-toolbar/mip/new-rts-tool-x56.png, base/graphics/icons/shortcut-toolbar/mip/new-rts-tool-x32.png], mode: silhouette}
     exoskeleton: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x32.png], mode: silhouette}
     roboport: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x32.png], mode: silhouette}
-    # Item and character art. F1 and Alt+L share the icon, in F1's 34 px area.
+    # Character art.
     # C (next weapon) keeps the shipped pistol: it has a next mark above it,
-    # which the game's pistol icon does not.
-    vehicle: {file: base/graphics/icons/car.png, mode: threshold}
-    raillayer: {file: base/graphics/icons/rail.png, mode: threshold}
-    logistics: {file: base/graphics/icons/logistic-robot.png, mode: threshold, region: [34, 40]}
+    # which the game's pistol icon does not. Enter (car), G (rail), F1 and
+    # Alt+L (logistic robot) keep the shipped icons too: the game's coloured
+    # item art for them turned into noise at 1 bit (checked on the 2.1.23 demo
+    # files).
     character: {file: core/graphics/icons/entity/character.png, mode: silhouette}
