@@ -314,8 +314,7 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     # only sends a vim:// or emacs:// mode report to an editor's overlay. It
     # never matches by itself, so a terminal with no report gets None, exactly
     # as an app with no entry, and keeps the generic shortcut harvest.
-    routes_only = not (has_overlay or has_remote)
-    if routes_only and not has_urls_contains:
+    if not (has_overlay or has_remote or has_urls_contains):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -345,8 +344,8 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                 m = find_matching_entry(title, sub, url, os_name, title_known)
                 if m is not None:
                     return _layered(entry, m) if has_overlay and entry.get(LAYER, True) else m
-    if routes_only:
-        return None
+    if not (has_overlay or has_remote):
+        return None             # an entry with no overlay never matches by itself
 
     # Split unconditionally: each branch below gates on its own `has_*` flag, so
     # a gate here would have to list every word-based matcher and stay in sync
