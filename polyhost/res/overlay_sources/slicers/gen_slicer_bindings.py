@@ -126,7 +126,10 @@ def main() -> int:
             cmd = [sys.executable, str(REPO_ROOT / "scripts" / "generate_app_overlays.py"), str(path)]
             if args.preview:
                 cmd += ["--preview", str(args.preview / name)]
-            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+            # Audit: an argv list, no shell. The program is this interpreter and
+            # the arguments are repository paths plus the --preview directory the
+            # developer typed on their own command line; nothing outside reaches it.
+            subprocess.run(cmd, check=True, cwd=REPO_ROOT)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit, python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
     return 0
 
 
