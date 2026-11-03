@@ -1773,6 +1773,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
+            ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
@@ -1793,14 +1795,26 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     got = find_matching_entry("JupyterLab Documentation - Google Chrome", entry, None,
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
+                # Without a URL, only a title ending in "| Trello" selects Trello.
+                with self.subTest(browser=browser, os=os_name, title="trello suffix"):
+                    got = find_matching_entry("Roadmap | Trello - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertIn(f"trello_template{suffix}.mods.png",
+                                  [str(f) for f in got["overlay"]])
+                with self.subTest(browser=browser, os=os_name, title="trello mention"):
+                    got = find_matching_entry("Trello vs Jira - Google Search", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("trello_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
+                            "https://trello.com/",
+                            "https://www.atlassian.com/software/trello",
                             "https://www.google.com/search?q=linear.app",
                             "https://github.com/o/r/tree/main"):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
-                                             ("drawio_", "linear_", "jupyter_")), files)
+                                             ("drawio_", "linear_", "jupyter_", "trello_")), files)
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
         for app, os_name, stem in (
@@ -1843,6 +1857,21 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                   os_name=os_name)
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_ARDUINO_IDE_gets_its_platform_set(self):
+        for app, os_name, stem in (
+                # Arduino IDE.exe, cut at its first dot as the Windows path does.
+                ("Arduino IDE.exe".split(".")[0].lower(), "WINDOWS", "arduino_ide_template"),
+                ("arduino ide", "MACOS", "arduino_ide_template_mac"),
+                ("arduino-ide", "LINUX", "arduino_ide_template_linux"),
+                ("arduino ide", "LINUX", "arduino_ide_template_linux"),
+                ("cc.arduino.ide2", "LINUX", "arduino_ide_template_linux")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Blink | Arduino IDE 2.3.6",
+                                  title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+                self.assertIn(f"{stem}.combo.mods.png", got["overlay"])
 
     def test_THUNDERBIRD_compose_window_gets_its_set_by_title(self):
         # One process for both windows: the compose title ("Write: <subject> -
@@ -2033,6 +2062,74 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                       title_known=True, os_name=os_name)
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class ExpiredModeReportTest(unittest.TestCase):
+    """An editor killed with kill -9 sends no final report. Its report expires
+    with no window or title change, so window tracking asks the provider again
+    each tick and re-matches when the answer changed."""
+
+    @staticmethod
+    def _win(title="vim"):
+        win = MagicMock()
+        win.title = title
+        win.getHandle.return_value = 4242
+        return win
+
+    def _handler(self, app, url):
+        self.url = url
+        self.asked = []
+
+        def provider(name):
+            self.asked.append(name)
+            return self.url
+        handler = OverlayHandler({"someotherapp": {}}, url_provider=provider)
+        # The app's logger has debug_detailed(), which the URL branch calls;
+        # the plain logging.Logger here does not.
+        handler.log = MagicMock()
+        self.window = self._win()             # one window: the same on every tick
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self.window), \
+             patch(mod + ".app_name_for", return_value=app):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return handler
+
+    def test_an_expired_report_in_a_terminal_re_matches(self):
+        handler = self._handler("kitty", "vim://insert")
+        self.assertEqual(handler.current_url, "vim://insert")
+        handler._recheck_context_url()
+        self.assertEqual(handler.title, "vim", "same answer: nothing to re-match")
+        self.url = None                       # vim was killed; its report expired
+        handler._recheck_context_url()
+        self.assertIsNone(handler.title, "the next tick re-matches")
+
+    def test_the_next_tick_drops_the_expired_mode(self):
+        """Same window, same title: only the expired report changed."""
+        handler = self._handler("kitty", "vim://insert")
+        self.url = None
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=self.window), \
+             patch(mod + ".app_name_for", return_value="kitty"):
+            handler._decide_active_window(10, 5)
+        self.assertIsNone(handler.current_url)
+        self.assertEqual(handler.title, "vim")
+
+    def test_a_context_reporter_re_matches_too(self):
+        handler = self._handler("blender", "blender://OBJECT/VIEW_3D")
+        self.url = None
+        handler._recheck_context_url()
+        self.assertIsNone(handler.title)
+
+    def test_a_browser_is_not_asked_every_tick(self):
+        """A browser's lookup can be an AppleScript call on macOS."""
+        handler = self._handler("firefox", "https://example.org")
+        n = len(self.asked)
+        self.url = None
+        handler._recheck_context_url()
+        self.assertEqual(len(self.asked), n)
+        self.assertEqual(handler.title, "vim")
+
 
 if __name__ == "__main__":
     unittest.main()
