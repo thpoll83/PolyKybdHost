@@ -41,7 +41,8 @@ EXTRA_EXTRACT = (
     "polyhost/device/command_ids.py", "polyhost/services/lang_regions.py",
     "polyhost/device/hid_fw_up.py", "polyhost/device/split_link.py",
     "polyhost/services/updater.py", "polyhost/services/wincompose_install.py",
-    "polyhost/services/linux_udev.py", "polyhost/services/game_assets/westwood_td/__init__.py",
+    "polyhost/services/linux_udev.py", "polyhost/services/shell_title.py",
+    "polyhost/services/game_assets/westwood_td/__init__.py",
     "polyhost/services/game_assets/westwood_ra/__init__.py",
 )
 
