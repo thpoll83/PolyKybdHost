@@ -5,8 +5,10 @@ The key icons are flat 1-bit silhouettes from Font Awesome Free (CC BY 4.0)
 and game-icons.net (CC BY 3.0), as in the Warcraft III set. The transparency
 keys (Ctrl+1 to Ctrl+9) show the object with a checkered inside, the
 invisibility keys (Ctrl+Shift+1 to Ctrl+Shift+8) the object struck through.
-SOURCES.md credits each icon. The ESC mark is OpenTTD set in Alfa Slab One
-(SIL OFL 1.1); the game's own logo and the OpenGFX graphics are not used.
+SOURCES.md credits each icon. The ESC mark is drawn here after the look of
+OpenTTD's icon: a dollar sign in Archivo Black (SIL OFL 1.1) inside a diamond,
+with OPEN and TTD cut out of two strips along its lower edges. No pixel of the
+game's icon or of the OpenGFX graphics is used.
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/openttd/fetch_icons.py
@@ -105,9 +107,22 @@ INK = {"saveload": (30, 30), "settings": (30, 30), "pause": (24, 30), "smallmap"
        "deletenews": (28, 32), "console": (34, 30), "quit": (32, 32), "chat": (34, 34),
        "chatcompany": (36, 32), "chatserver": (30, 34), "viewport": (34, 34)}
 
-# The ESC mark is set in Alfa Slab One (SIL OFL 1.1).
+# The ESC mark: a diamond (centre, half-diagonal, ring width) with a dollar sign
+# in Archivo Black (SIL OFL 1.1) inside, and two strips along its lower edges.
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
-            "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/alfaslabone/AlfaSlabOne-Regular.ttf")
+            "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/archivoblack/ArchivoBlack-Regular.ttf")
+MARK_DIAMOND = (36, 19.5, 20, 2)
+MARK_DOLLAR_CAP = 21                         # height of a capital H at the dollar sign's size, px
+MARK_DOLLAR_DARK = [(8, 34)]                 # (row, column): a stray lit corner of the dollar sign
+# Each strip is the pixels outside the diamond with y - x and y + x in these
+# ranges: (y - x low, high, y + x low, high, left of the centre column).
+MARK_STRIPS = [(4, 11, 41, 67, True), (-30, -4, 76, 82, False)]
+# Upright pixel letters, cut out of the strips: (glyph, top row, left column).
+MARK_GLYPHS = {"O": [".oo.", "o..o", "o..o", ".oo."], "P": ["ooo", "o.o", "ooo", "o.."],
+               "E": ["ooo", "oo.", "o..", "ooo"], "n": ["oo.", "o.o", "o.o", "o.o"],
+               "T": ["ooo", ".o.", ".o.", ".o."], "D": ["oo.", "o.o", "o.o", "oo."]}
+MARK_LETTERS = [("O", 24, 17), ("P", 27, 21), ("E", 30, 24), ("n", 33, 27),
+                ("T", 33, 43), ("T", 29, 47), ("D", 25, 51)]
 SS = 8                                       # supersampling factor for drawn icons
 MARK_THRESHOLD = 110                         # grey level (0..255) from which a mark pixel is lit
 
@@ -294,36 +309,55 @@ def close_all(out: Path) -> None:
     print("  closeall.png  <- fa:rectangle-xmark twice")
 
 
-def _mark_font(px: int):
-    from PIL import ImageFont
-    return ImageFont.truetype(str(cnc._font(FONT_URL)), px)
+def _dollar():
+    """The dollar sign in Archivo Black at MARK_DOLLAR_CAP, as a cropped 1-bit mask."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    path = str(cnc._font(FONT_URL))
+    ref = ImageFont.truetype(path, 400).getbbox("H")
+    f = ImageFont.truetype(path, round(MARK_DOLLAR_CAP * SS * 400 / (ref[3] - ref[1])))
+    left, top, right, bottom = f.getbbox("$")
+    im = Image.new("L", (right - left + 2 * SS, bottom - top + 2 * SS), 0)
+    ImageDraw.Draw(im).text((SS - left, SS - top), "$", font=f, fill=255)
+    m = np.asarray(im.resize((im.width // SS, im.height // SS), Image.BOX)) > MARK_THRESHOLD
+    ys, xs = np.nonzero(m)
+    return m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
 
 def program(out: Path) -> None:
-    """program.png: "Open" over a larger "TTD", centred on the whole 72x40
-    cell. Drawn at SS times the size and box-filtered down."""
+    """program.png: the dollar sign in a diamond, as in OpenTTD's icon, with
+    OPEN and TTD cut out of two lit strips along the diamond's lower edges.
+    Every letter pixel keeps lit neighbours on the strip, except where a
+    letter meets the diamond."""
     import numpy as np
-    from PIL import Image, ImageDraw
-    w, h, ss = program_mark.W, program_mark.H, SS
-    gap = 3 * ss
-    for cap in range(20, 5, -1):
-        ref = _mark_font(200).getbbox("H")
-        px = round(200 * cap * ss / (ref[3] - ref[1]))
-        top, bottom = _mark_font(round(px * 0.6)), _mark_font(px)
-        tb, bb = top.getbbox("Open"), bottom.getbbox("TTD")
-        height = (tb[3] - tb[1]) + gap + (bb[3] - bb[1])
-        if bb[2] - bb[0] <= (w - 2) * ss and height <= (h - 2) * ss:
-            break
-    y = (h * ss - height) // 2
-    canvas = np.zeros((h, w), bool)
-    for text, font, box in (("Open", top, tb), ("TTD", bottom, bb)):
-        im = Image.new("L", (w * ss, h * ss), 0)
-        ImageDraw.Draw(im).text(((w * ss - (box[2] - box[0])) // 2 - box[0], y - box[1]),
-                                text, font=font, fill=255)
-        canvas |= np.asarray(im.resize((w, h), Image.BOX)) > MARK_THRESHOLD
-        y += box[3] - box[1] + gap
+    w, h = program_mark.W, program_mark.H
+    cx, cy, r, ring = MARK_DIAMOND
+    yy, xx = np.mgrid[0:h, 0:w]
+    d = np.abs(xx - cx) + np.abs(yy - cy)
+    canvas = (d <= r) & (d > r - ring)
+    dollar = _dollar()
+    dh, dw = dollar.shape
+    y0, x0 = round(cy + 0.5) - dh // 2, cx - dw // 2
+    canvas[y0:y0 + dh, x0:x0 + dw] |= dollar
+    for y, x in MARK_DOLLAR_DARK:
+        if not canvas[y, x]:
+            raise SystemExit(f"program.png: pixel {(y, x)} of the dollar sign is not lit; check MARK_DOLLAR_DARK")
+        canvas[y, x] = False
+    strips = np.zeros((h, w), bool)
+    for a0, a1, b0, b1, left in MARK_STRIPS:
+        a, b = yy - xx, yy + xx
+        side = xx < cx if left else xx > cx
+        strips |= (d > r) & side & (a >= a0) & (a <= a1) & (b >= b0) & (b <= b1)
+    cut = np.zeros((h, w), bool)
+    for glyph, top, left in MARK_LETTERS:
+        for i, row in enumerate(MARK_GLYPHS[glyph]):
+            for j, c in enumerate(row):
+                cut[top + i, left + j] |= c == "o"
+    if (cut & ~strips).any():
+        raise SystemExit("program.png: a letter of OPEN / TTD leaves its strip")
+    canvas |= strips & ~cut
     cnc._save_mask(canvas, out / "program.png")
-    print(f"  program.png  <- Open / TTD (Alfa Slab One, cap {cap} px)")
+    print("  program.png  <- a dollar sign in a diamond (Archivo Black) + OPEN / TTD strips")
 
 
 def main() -> int:

@@ -82,10 +82,14 @@ DejaVu Sans Bold (Bitstream Vera licence, the copy bundled with matplotlib
 3.9.2). Shift+Delete (close all windows, sticky ones too) is the closed window
 twice.
 
-ESC shows "Open" over a larger "TTD" in Alfa Slab One by JM Solé (SIL OFL 1.1,
-`ofl/alfaslabone/AlfaSlabOne-Regular.ttf` from google/fonts at commit
-e7db6ca), drawn over the whole cell without the ESC legend
-(`program_icon_legend: false`, protocol v25).
+ESC shows a mark drawn in `fetch_icons.py` after the look of OpenTTD's icon:
+a dollar sign in a diamond, with OPEN and TTD cut out of two strips along the
+diamond's lower edges as upright 3 and 4 px wide pixel letters. The dollar sign
+is set in Archivo Black by Hector Gatti, Omnibus-Type (SIL OFL 1.1,
+`ofl/archivoblack/ArchivoBlack-Regular.ttf` from google/fonts at commit
+e7db6ca); the diamond, the strips and the letters are drawn pixel by pixel. No
+pixel of the game's icon is used. The mark is drawn over the whole cell without
+the ESC legend (`program_icon_legend: false`, protocol v25).
 
 ## Game art: not used
 
@@ -162,7 +166,7 @@ row says otherwise.
 | `transp7.png`, `invis7.png` | Font Awesome `tower-broadcast` | Fonticons, Inc. | CC BY 4.0 |
 | `transp8.png`, `invis8.png` | Font Awesome `bolt` | Fonticons, Inc. | CC BY 4.0 |
 | `transp9.png` | Font Awesome `percent` | Fonticons, Inc. | CC BY 4.0 |
-| `program.png` | "Open" / "TTD" set in Alfa Slab One | JM Solé | SIL OFL 1.1 |
+| `program.png` | dollar sign in Archivo Black; diamond, strips and letters drawn by `fetch_icons.py` | Hector Gatti, Omnibus-Type (The Archivo Black Project Authors) | SIL OFL 1.1 |
 
 The files starting with `_` are the downloaded sources that `fetch_icons.py`
 turns into the files above.
