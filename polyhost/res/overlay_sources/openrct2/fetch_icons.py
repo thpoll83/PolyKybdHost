@@ -7,8 +7,9 @@ Warcraft III set. A few are composed here from those shapes: the see-through
 toggles (the shape as an outline, or every second pixel for the supports), the
 height marks (a ruler beside the shape), Build new ride (the rides list's
 ferris wheel with a plus), and the two land toggles (an isometric block with
-one part dotted). SOURCES.md credits each. The ESC mark is OpenRCT2
-set in Fredoka Bold (SIL OFL 1.1); the game's logo art is not used.
+one part dotted). SOURCES.md credits each. The ESC mark is OpenRCT2's own
+logo (GPL-3.0-or-later), dithered to 1 bit, with OPEN and RCT in Silkscreen
+Bold (SIL OFL 1.1) either side of its bottom tip.
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/openrct2/fetch_icons.py
@@ -94,10 +95,18 @@ OUTLINE = 2
 # Height marks (8, 9, 0): a ruler on the left, the shape on the right.
 HEIGHTS = {"heightland": "_land", "heighttrack": "_track", "heightpaths": "_paths"}
 
-# The ESC mark is set in Fredoka (SIL OFL 1.1), its Bold instance.
+# The ESC mark: OpenRCT2's logo at tag v0.5.6 (GPL-3.0-or-later, like the game)
+# and its text in Silkscreen Bold (SIL OFL 1.1).
+LOGO_URL = ("https://raw.githubusercontent.com/OpenRCT2/OpenRCT2/"
+            "82b309798a83346b7f9fc61a53847f4323deb19d/resources/logo/icon_x256.png")
+# The cache is named after the file, so a different icon_x256.png in the temp dir is refused.
+LOGO_SHA256 = "abf1529f307f63594e7fe1324466738ad03b03829e659dd0a299fafe42add4d1"
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
-            "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/fredoka/Fredoka%5Bwdth,wght%5D.ttf")
-MARK_SS = 8                                     # supersampling factor for the ESC mark
+            "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/silkscreen/Silkscreen-Bold.ttf")
+MARK_TEXT = ("OPEN", "RCT")                     # bottom-left and bottom-right of the logo
+MARK_CAP = 5                                    # capital height of the text, px
+MARK_GAP = 2                                    # unlit pixels between the text and the logo
+MARK_SS = 8                                     # supersampling factor for drawn shapes and text
 MARK_THRESHOLD = 110                            # grey level (0..255) from which a pixel is lit
 
 
@@ -219,45 +228,66 @@ def land_blocks(out: Path) -> None:
 
 def _mark_font(px: int):
     from PIL import ImageFont
-    f = ImageFont.truetype(str(cnc._font(FONT_URL)), px)
-    f.set_variation_by_name("Bold")
-    return f
+    return ImageFont.truetype(str(cnc._font(FONT_URL)), px)
+
+
+def _mark_word(text: str):
+    """`text` with capitals MARK_CAP px tall, as a cropped 1-bit mask."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    ss = MARK_SS
+    b = _mark_font(400).getbbox("H")
+    f = _mark_font(round(MARK_CAP * ss * 400 / (b[3] - b[1])))
+    left, top, right, bottom = f.getbbox(text)
+    im = Image.new("L", (right - left + 2 * ss, bottom - top + 2 * ss), 0)
+    ImageDraw.Draw(im).text((ss - left, ss - top), text, font=f, fill=255)
+    m = np.asarray(im.resize((im.width // ss, im.height // ss), Image.BOX)) > MARK_THRESHOLD
+    ys, xs = np.nonzero(m)
+    return m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+
+def _logo_grey():
+    """The logo as grey (0..1) by colour, and its cover: the yellow stripes and
+    the grey slide are bright; the red stripes, the blue sky and the dark frame
+    are dark, so the tower stands out from the sky."""
+    import colorsys
+    import numpy as np
+    from PIL import Image
+    import hashlib
+    path = cnc._font(LOGO_URL)
+    if hashlib.sha256(path.read_bytes()).hexdigest() != LOGO_SHA256:
+        raise SystemExit(f"{path} is not the OpenRCT2 logo of v0.5.6; delete it and run again")
+    im = np.asarray(Image.open(path).convert("RGBA"), float) / 255
+    mx, mn = im[..., :3].max(-1), im[..., :3].min(-1)
+    sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+    hue = np.vectorize(lambda r, g, b: colorsys.rgb_to_hsv(r, g, b)[0] * 360)(im[..., 0], im[..., 1], im[..., 2])
+    bright = ((hue > 30) & (hue < 80) & (sat > 0.25)) | (sat < 0.25)
+    v = np.where(bright, mx, 0.1 * mx)
+    return np.where(mx < 0.3, 0, v), im[..., 3] > 0.5
 
 
 def program(out: Path) -> None:
-    """program.png: "Open" over "RCT2", each at the largest size that fits 68 px
-    wide, the pair centred on the whole 72x40 cell. Drawn at MARK_SS times the
-    size and box-filtered down."""
+    """program.png: OpenRCT2's logo dithered into a 40 px diamond in the middle
+    of the 72x40 cell, OPEN at the bottom left and RCT at the bottom right."""
     import numpy as np
-    from PIL import Image, ImageDraw
-    w, h, ss = program_mark.W, program_mark.H, MARK_SS
-    gap = 3 * ss
-    lines = []
-    for text in ("Open", "RCT2"):
-        px = 400
-        while True:
-            f = _mark_font(px)
-            b = f.getbbox(text)
-            if b[2] - b[0] <= 68 * ss:
-                break
-            px -= 4
-        lines.append((text, f, b))
-    height = sum(b[3] - b[1] for _, _, b in lines) + gap
-    if height > (h - 2) * ss:                   # too tall: scale both lines down together
-        k = (h - 2) * ss / height
-        lines = [(t, _mark_font(round(f.size * k)), None) for t, f, _ in lines]
-        lines = [(t, f, f.getbbox(t)) for t, f, _ in lines]
-        height = sum(b[3] - b[1] for _, _, b in lines) + gap
-    y = (h * ss - height) // 2
+    from polyhost.services.game_assets.dither import keycap
+    w, h = program_mark.W, program_mark.H
+    grey, cover = _logo_grey()
+    logo = keycap(grey, cover, (h, h), floor=0, curve=2.0, sharpen=1.5)
     canvas = np.zeros((h, w), bool)
-    for text, font, box in lines:
-        im = Image.new("L", (w * ss, h * ss), 0)
-        ImageDraw.Draw(im).text(((w * ss - (box[2] - box[0])) // 2 - box[0], y - box[1]),
-                                text, font=font, fill=255)
-        canvas |= np.asarray(im.resize((w, h), Image.BOX)) > MARK_THRESHOLD
-        y += box[3] - box[1] + gap
+    lh, lw = logo.shape
+    canvas[(h - lh) // 2:(h - lh) // 2 + lh, (w - lw) // 2:(w - lw) // 2 + lw] = logo
+    keep_off = program_mark.dilate(canvas, MARK_GAP)
+    for text, x_of in zip(MARK_TEXT, (lambda tw: 0, lambda tw: w - tw), strict=True):
+        m = _mark_word(text)
+        th, tw = m.shape
+        word = np.zeros((h, w), bool)
+        word[h - 1 - th:h - 1, x_of(tw):x_of(tw) + tw] = m
+        if (word & keep_off).any():
+            raise SystemExit(f"program.png: {text} comes closer than {MARK_GAP} px to the logo")
+        canvas |= word
     cnc._save_mask(canvas, out / "program.png")
-    print("  program.png  <- Open / RCT2 (Fredoka Bold)")
+    print("  program.png  <- OpenRCT2 logo (dithered) + OPEN / RCT (Silkscreen Bold)")
 
 
 def main() -> int:

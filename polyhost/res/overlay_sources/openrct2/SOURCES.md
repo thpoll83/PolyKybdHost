@@ -98,27 +98,34 @@ Pause 26×30; the two speed arrows 34×26. Composed icons:
   dotted and the side faces solid; V (hide vertical land) draws the top face
   solid and the side faces dotted.
 
-ESC shows "Open" over "RCT2" in Fredoka Bold (SIL OFL 1.1, the Bold instance
-of `ofl/fredoka/Fredoka[wdth,wght].ttf` from google/fonts at commit e7db6ca),
-drawn over the whole cell without the ESC legend
-(`program_icon_legend: false`, protocol v25).
+ESC shows OpenRCT2's logo, dithered to 1 bit in a 40 px diamond in the middle
+of the cell, with OPEN at the bottom left and RCT at the bottom right in
+Silkscreen Bold, 5 px capitals. It is drawn over the whole cell without the
+ESC legend (`program_icon_legend: false`, protocol v25). `fetch_icons.py` maps
+the logo's colours to grey before the dither: the yellow stripes and the grey
+slide are bright, the red stripes, the blue sky and the frame are dark.
 
 ## Game art
 
-No art from the game is used. OpenRCT2's own logo (`resources/logo/` in the
-repository) is distributed in the GPL-3.0 repository and could be an option
-for the ESC mark; its licence was not checked file by file. The game graphics
-come from the user's RollerCoaster Tycoon 2 files, which are proprietary, and
-OpenRCT2 does not ship them.
+The ESC mark uses OpenRCT2's logo, `resources/logo/icon_x256.png` at tag
+v0.5.6 (commit 82b309798a83346b7f9fc61a53847f4323deb19d, SHA-256
+`abf1529f307f63594e7fe1324466738ad03b03829e659dd0a299fafe42add4d1`, which
+`fetch_icons.py` checks). The folder has no licence notice of its own, so the
+repository's licence applies: GPL-3.0-or-later (`licence.txt` and the readme's
+Licence section). `contributors.md` credits the logo to Yannic Geurts. No other
+art from the game is used. The game graphics come from the user's
+RollerCoaster Tycoon 2 files, which are proprietary, and OpenRCT2 does not ship
+them.
 
 ## Icons
 
-Licence texts for the icon and font licences named in this file:
+Licence texts for the icon, logo and font licences named in this file:
 
 - CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
 - CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 - Apache-2.0: https://www.apache.org/licenses/LICENSE-2.0
 - SIL OFL 1.1: https://openfontlicense.org/open-font-license-official-text/
+- GPL-3.0: https://www.gnu.org/licenses/gpl-3.0.html
 
 | File | Source | Author | Licence |
 |---|---|---|---|
@@ -162,6 +169,7 @@ Licence texts for the icon and font licences named in this file:
 | `load.png` | Font Awesome Free 6.5.2 `folder-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `save.png` | Font Awesome Free 6.5.2 `floppy-disk` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `hidebase.png`, `hidevertical.png` | drawn by `fetch_icons.py` | | |
-| `program.png` | Fredoka Bold, google/fonts commit e7db6ca | Milena Brandão, Hafontia (The Fredoka Project Authors) | SIL OFL 1.1 |
+| `program.png` | OpenRCT2 logo `resources/logo/icon_x256.png`, tag v0.5.6, dithered | Yannic Geurts, the OpenRCT2 developers | GPL-3.0-or-later |
+| `program.png` (text) | Silkscreen Bold, google/fonts commit e7db6ca | Jason Kottke (The Silkscreen Project Authors) | SIL OFL 1.1 |
 
 Material Design Icons are from Templarian/MaterialDesign at commit 2424e74.
