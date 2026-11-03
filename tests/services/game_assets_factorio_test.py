@@ -371,7 +371,7 @@ class BuildTest(unittest.TestCase):
         return {kc: od.all_bytes for kc, od in cells.items()}, conv.no_legend
 
     # Keys drawn from the game on the primary file, per layer.
-    DRAWN = {Modifier.NO_MOD: {"C", "ENTER", "G", "F1", "F2", "TAB", "M", "T", "P", "L", "B", "O"},
+    DRAWN = {Modifier.NO_MOD: {"ENTER", "G", "F1", "F2", "TAB", "M", "T", "P", "L", "B", "O"},
              Modifier.ALT: {"B", "D", "U", "T", "Y", "A", "E", "F", "L"},
              Modifier.CTRL: set(), Modifier.SHIFT: set()}
 
@@ -414,28 +414,28 @@ class BuildTest(unittest.TestCase):
 
     def test_a_missing_icon_costs_only_its_key(self):
         with tempfile.TemporaryDirectory() as d:
-            data = make_data(Path(d) / "data", skip={"pistol.png", "side-menu-buttons.png"})
+            data = make_data(Path(d) / "data", skip={"car.png", "side-menu-buttons.png"})
             with self.assertLogs("PolyHost", "WARNING") as logs:
                 path = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
             shipped, _ = self._cells(build.RES / "overlays" / "factorio_template.mods.png", Modifier.NO_MOD)
             patched, _ = self._cells(path, Modifier.NO_MOD)
-        self.assertEqual(len(logs.output), 7, logs.output)    # pistol and the six side-menu icons
-        for key in ("C", "T", "M", "B"):
+        self.assertEqual(len(logs.output), 7, logs.output)    # car and the six side-menu icons
+        for key in ("ENTER", "T", "M", "B"):
             kc = KeyCode[f"KC_{key}"].value
             self.assertEqual(shipped[kc], patched[kc], key)
-        kc = KeyCode.KC_ENTER.value
+        kc = KeyCode.KC_G.value
         self.assertNotEqual(shipped[kc], patched[kc])
 
     def test_a_repaired_icon_makes_a_new_copy(self):
         """Repairing the game files restores a PNG and leaves info.json as it
         was; the copy built without that PNG is not reused."""
         with tempfile.TemporaryDirectory() as d:
-            data = make_data(Path(d) / "data", skip={"pistol.png"})
+            data = make_data(Path(d) / "data", skip={"car.png"})
             manifests = factorio.fingerprint({"data": data})
             stamps = [os.stat(p) for p in manifests]
             with self.assertLogs("PolyHost", "WARNING"):
                 before = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")
-            make_data(data)                                    # the repair: pistol.png is back
+            make_data(data)                                    # the repair: car.png is back
             for p, st in zip(manifests, stamps):
                 os.utime(p, ns=(st.st_atime_ns, st.st_mtime_ns))
             after = self.build_copy("factorio_template.mods.png", data, Path(d) / "cache")

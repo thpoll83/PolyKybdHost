@@ -158,7 +158,8 @@ game_assets:
     exoskeleton: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-exoskeleton-x32.png], mode: silhouette}
     roboport: {file: [base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x56.png, base/graphics/icons/shortcut-toolbar/mip/toggle-personal-roboport-x32.png], mode: silhouette}
     # Item and character art. F1 and Alt+L share the icon, in F1's 34 px area.
-    weapon: {file: base/graphics/icons/pistol.png, mode: threshold}
+    # C (next weapon) keeps the shipped pistol: it has a next mark above it,
+    # which the game's pistol icon does not.
     vehicle: {file: base/graphics/icons/car.png, mode: threshold}
     raillayer: {file: base/graphics/icons/rail.png, mode: threshold}
     logistics: {file: base/graphics/icons/logistic-robot.png, mode: threshold, region: [34, 40]}

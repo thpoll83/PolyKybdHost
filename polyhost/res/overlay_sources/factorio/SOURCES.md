@@ -152,7 +152,7 @@ lit from grey 90 of 255.
 | `pipette.png` | game-icons.net `lorc/eyedropper` | lorc | CC BY 3.0 |
 | `pickup.png` | game-icons.net `lorc/grab` | lorc | CC BY 3.0 |
 | `raillayer.png` | game-icons.net `delapouite/rail-road` | delapouite | CC BY 3.0 |
-| `weapon.png` | game-icons.net `john-colburn/pistol-gun` | John Colburn | CC BY 3.0 |
+| `weapon.png` | game-icons.net `john-colburn/pistol-gun`, with a "next" mark (a triangle and a bar) drawn above it in `fetch_icons.weapon_next()` | John Colburn | CC BY 3.0 |
 | `shoot.png` | game-icons.net `delapouite/crosshair` | delapouite | CC BY 3.0 |
 | `shootselected.png` | game-icons.net `sbed/targeted` | sbed | CC BY 3.0 |
 | `vehicle.png` | game-icons.net `delapouite/car-door` | delapouite | CC BY 3.0 |
@@ -208,13 +208,14 @@ install folders were checked.
 The mapping entry and its macOS sub-entry opt in with
 `game_assets: factorio/factorio.yaml`. The `game_assets:` block at the end of
 `factorio.yaml` names the reader (`factorio`) and the file each key reads.
-Nothing is read until the overlay is first sent.
+Nothing is read until the overlay is first sent. C (next weapon) is not read:
+it keeps the shipped pistol with the next mark, which the game's pistol icon
+does not have.
 
 | Keys | From the game | File (under the data folder) |
 |---|---|---|
 | B, P, O, Tab and M, L, T | the buttons at the top right of the screen that open the same panels (blueprint library, production, trains, map, logistic networks, technology) | `core/graphics/side-menu-buttons.png`, 64 px rows 0, 1, 4, 7, 9 and 11 |
 | Alt+B, Alt+D, Alt+U, Alt+T, Alt+Y, Alt+A, Alt+E, Alt+F | the shortcut bar buttons of the same controls | `base/graphics/icons/shortcut-toolbar/mip/` `new-blueprint`, `new-deconstruction-planner`, `new-upgrade-planner`, `artillery-targeting-remote`, `discharge-defense-remote`, `new-rts-tool`, `toggle-exoskeleton`, `toggle-personal-roboport`, each `-x56.png` (`-x32.png` before 2.0.18) |
-| C | the pistol item | `base/graphics/icons/pistol.png` |
 | Enter | the car item | `base/graphics/icons/car.png` |
 | G | the rail item | `base/graphics/icons/rail.png` |
 | F1, Alt+L | the logistic robot item | `base/graphics/icons/logistic-robot.png` |
@@ -235,7 +236,7 @@ tags `2.0.10` and `2.0.77`:
   and `-x32.png` in 2.0.10; the changelog of 2.0.18 says "Updated shortcut
   icons and increased their size to 56px". The reader reads the first of the
   two that exists.
-- `base/prototypes/item.lua`: the items `pistol`, `car`, `rail` and
+- `base/prototypes/item.lua`: the items `car`, `rail` and
   `logistic-robot`, unchanged from 2.0.10 to 2.1.24.
 - `core/prototypes/utility-sprites.lua`: `side_menu_blueprint_library_icon`,
   `side_menu_production_icon`, `side_menu_train_icon`, `side_menu_map_icon`,
