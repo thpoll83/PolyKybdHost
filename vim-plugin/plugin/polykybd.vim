@@ -85,6 +85,7 @@ endfunction
 let s:seq = 0                   " number of the last request opened
 let s:inflight = -1             " number of the request in flight, or -1
 let s:inflight_since = reltime()
+let s:inflight_ch = v:null      " its channel, closed if it times out
 let s:pending = ''
 
 function! s:Done(seq) abort
@@ -97,6 +98,17 @@ function! s:Done(seq) abort
     let s:pending = ''
     call s:Open(l:next, 0)
   endif
+endfunction
+
+" Give up on the request in flight and close its channel. close_cb does not
+" run after ch_close(), and a late reply finds s:inflight changed.
+function! s:Abandon() abort
+  try
+    call ch_close(s:inflight_ch)
+  catch
+  endtry
+  let s:inflight = -1
+  let s:inflight_ch = v:null
 endfunction
 
 function! s:OnReply(channel, seq) abort
@@ -119,6 +131,7 @@ function! s:Open(request, wait_ms) abort
     if ch_status(l:ch) ==# 'open'
       let s:inflight = l:seq
       let s:inflight_since = reltime()
+      let s:inflight_ch = l:ch
       call ch_sendraw(l:ch, a:request)
     endif
   catch
@@ -138,9 +151,10 @@ function! s:Post(request, wait_ms) abort
     endtry
     return
   endif
-  " A host that never answers must not stop reporting for good.
+  " A host that never answers must not stop reporting for good, nor collect
+  " one open connection per keep-alive: close the timed-out channel.
   if s:inflight != -1 && reltimefloat(reltime(s:inflight_since)) > 2.0
-    let s:inflight = -1
+    call s:Abandon()
   endif
   if s:inflight != -1 && a:wait_ms > 0
     let l:waited = 0
@@ -148,7 +162,9 @@ function! s:Post(request, wait_ms) abort
       sleep 10m                   " lets the channel callbacks run
       let l:waited += 10
     endwhile
-    let s:inflight = -1
+    if s:inflight != -1
+      call s:Abandon()
+    endif
   endif
   if s:inflight != -1
     let s:pending = a:request

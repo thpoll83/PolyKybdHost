@@ -13,7 +13,7 @@ overlay is a combination of sections:
     cmdline  = cmdline
     terminal = terminal
 
-Every set carries Vim's logo on ESC, and every key draws this folder's own
+Every set carries its mode word beside Vim's logo on ESC, and every key draws this folder's own
 art (`shared: false`, see `bindings_for`). The output is `bindings_<mode>.yaml`
 next to this file; `--render` also runs scripts/generate_app_overlays.py on
 each (`--preview DIR` writes its review sheets to DIR/<mode>/).
@@ -59,12 +59,13 @@ SPEC = {
     "region": [40, 40],
     "margin": 0,
     "mode": "alpha",
-    "program_icon": "vim.png",
-    "program_icon_mode": "luma",
-    "program_icon_threshold": 170,
+    # ESC: icons/esc_<mode>.png, the mode word beside Vim's logo, drawn 1:1
+    # over the whole cell without the ESC legend (fetch_icons.py, esc_mark()).
+    "program_icon_mode": "alpha",
     "program_icon_anchor": "right",
-    "program_icon_region": [40, 40],
+    "program_icon_region": [72, 40],
     "program_icon_margin": 0,
+    "program_icon_legend": False,
 }
 
 
@@ -109,7 +110,8 @@ def bindings_for(keys: dict, mode: str) -> list[dict]:
 
 
 def write(mode: str, keys: dict) -> Path:
-    spec = dict(SPEC, output=f"vim_{mode}_template", bindings=bindings_for(keys, mode))
+    spec = dict(SPEC, output=f"vim_{mode}_template", program_icon=f"esc_{mode}.png",
+                bindings=bindings_for(keys, mode))
     path = HERE / f"bindings_{mode}.yaml"
     body = yaml.safe_dump(spec, sort_keys=False, allow_unicode=True, width=200)
     path.write_text(HEADER.format(mode=mode) + body, encoding="utf-8")

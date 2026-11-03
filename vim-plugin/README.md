@@ -116,5 +116,9 @@ own command index (`:help index`):
 terminal entry has the routes, and so does the entry for GUI Vim (`gvim`,
 `macvim`, `neovide`), which shows the Normal mode set until the first report.
 
+The ESC key shows the current mode beside Vim's logo: NOR, INS, VIS, SEL, REP,
+CMD or TERM. The key is drawn without its "Esc" legend on firmware with protocol
+25 or later.
+
 An editor in an SSH session cannot reach the host's loopback receiver, so it
 reports nothing.

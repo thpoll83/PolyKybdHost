@@ -1773,6 +1773,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
+            ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
@@ -1793,14 +1795,26 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     got = find_matching_entry("JupyterLab Documentation - Google Chrome", entry, None,
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("jupyter_" in str(f) for f in got["overlay"]))
+                # Without a URL, only a title ending in "| Trello" selects Trello.
+                with self.subTest(browser=browser, os=os_name, title="trello suffix"):
+                    got = find_matching_entry("Roadmap | Trello - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertIn(f"trello_template{suffix}.mods.png",
+                                  [str(f) for f in got["overlay"]])
+                with self.subTest(browser=browser, os=os_name, title="trello mention"):
+                    got = find_matching_entry("Trello vs Jira - Google Search", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("trello_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
+                            "https://trello.com/",
+                            "https://www.atlassian.com/software/trello",
                             "https://www.google.com/search?q=linear.app",
                             "https://github.com/o/r/tree/main"):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
-                                             ("drawio_", "linear_", "jupyter_")), files)
+                                             ("drawio_", "linear_", "jupyter_", "trello_")), files)
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
         for app, os_name, stem in (
@@ -1843,6 +1857,21 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                   os_name=os_name)
                 self.assertIsNotNone(got)
                 self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_ARDUINO_IDE_gets_its_platform_set(self):
+        for app, os_name, stem in (
+                # Arduino IDE.exe, cut at its first dot as the Windows path does.
+                ("Arduino IDE.exe".split(".")[0].lower(), "WINDOWS", "arduino_ide_template"),
+                ("arduino ide", "MACOS", "arduino_ide_template_mac"),
+                ("arduino-ide", "LINUX", "arduino_ide_template_linux"),
+                ("arduino ide", "LINUX", "arduino_ide_template_linux"),
+                ("cc.arduino.ide2", "LINUX", "arduino_ide_template_linux")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Blink | Arduino IDE 2.3.6",
+                                  title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+                self.assertIn(f"{stem}.combo.mods.png", got["overlay"])
 
     def test_THUNDERBIRD_compose_window_gets_its_set_by_title(self):
         # One process for both windows: the compose title ("Write: <subject> -

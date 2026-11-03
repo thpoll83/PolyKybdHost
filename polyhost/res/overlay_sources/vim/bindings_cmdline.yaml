@@ -11,15 +11,15 @@ region:
 - 40
 margin: 0
 mode: alpha
-program_icon: vim.png
-program_icon_mode: luma
-program_icon_threshold: 170
+program_icon_mode: alpha
 program_icon_anchor: right
 program_icon_region:
-- 40
+- 72
 - 40
 program_icon_margin: 0
+program_icon_legend: false
 output: vim_cmdline_template
+program_icon: esc_cmdline.png
 bindings:
 - key: R
   mods:
