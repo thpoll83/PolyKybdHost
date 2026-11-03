@@ -264,6 +264,18 @@ class PolyForwarder(QApplication):
         self.update_action.triggered.connect(self._on_update_clicked)
         self.menu.addAction(self.update_action)
 
+        # The forwarder reports THIS machine's window title, so a terminal here
+        # needs the same shell setup as one on the keyboard's machine. Same
+        # label and dialog as the tray app's Updates entry; top level for the
+        # reason the update row is (services/shell_title.py).
+        self.shell_title_dialog = None
+        self.shell_title_action = QAction(get_icon("terminal.svg"),
+                                          _("Show the running command in the terminal title\u2026"),
+                                          parent=self)
+        # noinspection PyUnresolvedReferences
+        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
+        self.menu.addAction(self.shell_title_action)
+
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
         self.settings_action.triggered.connect(self.open_settings)
@@ -687,6 +699,16 @@ class PolyForwarder(QApplication):
                 parent=None, diagnostics_cb=self._diagnostics_text)
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
+
+    def open_shell_title_dialog(self):
+        """Shell title integration (retained instance, see PolyHost.open_shell_title_dialog)."""
+        from polyhost.gui.shell_title_dialog import ShellTitleDialog
+        if self.shell_title_dialog is None:
+            self.shell_title_dialog = ShellTitleDialog(parent=None)
+        elif not self.shell_title_dialog.isVisible():
+            self.shell_title_dialog.reopen()
+        self.shell_title_dialog.show()
+        bring_to_front(self.shell_title_dialog)
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately

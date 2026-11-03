@@ -1,0 +1,270 @@
+# Eclipse IDE shortcut overlays for PolyKybd (Windows, Linux and macOS).
+#
+# Keys: the "Default" key scheme of the Eclipse IDE for Java Developers, read
+# from the plugin.xml files on master of eclipse.platform.ui, eclipse.platform,
+# eclipse.jdt.ui, EGit and m2e (2026-10-30). See SOURCES.md.
+#
+# How Eclipse spells a chord, and how it is written here:
+#   M1 (Ctrl, Cmd on macOS)         -> CMDCTRL
+#   M2 (Shift)                      -> SHIFT
+#   M3 (Alt, Option on macOS)       -> ALT
+#   M4 (Control, macOS only)        -> CTRL with `only: [macos]`
+#   a literal CTRL / ALT / COMMAND  -> CTRL / ALT / GUI. A literal CTRL stays
+#                                      Control on macOS (Ctrl+Space, Ctrl+Q, ...).
+#   a chord the macOS scheme moves  -> written twice with disjoint `only:` lists.
+#   a `[gtk]` / `(not gtk)` row     -> `only: [linux]` / `except: [linux]`; Eclipse
+#                                      on Linux is always the GTK port.
+#
+# A key bound in several contexts draws the Java editor's meaning (Java editor
+# > text editor > window). F5..F8 draw the debugging meaning. SOURCES.md lists
+# each meaning that was not drawn.
+#
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python polyhost/res/overlay_sources/eclipse/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/eclipse/bindings.yaml --preview /tmp/eclipse_preview
+app: eclipse
+match: [eclipse]
+output: eclipse_template
+output_macos: eclipse_template_mac
+output_linux: eclipse_template_linux
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: eclipse.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+# JetBrains' whole-cell drawings (borrowed) render 1:1, as they do there.
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
+# Word composites are drawn 1-bit at 40x40 and placed 1:1.
+_worded: &worded { region: [40, 40], mode: alpha }
+
+bindings:
+  # ===================================================== no modifier =========
+  - { key: F2, icon: quickdoc.png, label: "Show tooltip description" }
+  - { key: F3, icon: gotodeclaration.png, <<: *reclaimed, label: "Open declaration" }
+  - { key: F4, icon: typehierarchy.png, label: "Open type hierarchy" }
+  - { key: F5, icon: stepinto.png, <<: *reclaimed, label: "Step into" }
+  - { key: F6, icon: stepover.png, <<: *reclaimed, label: "Step over" }
+  - { key: F7, icon: stepout.png, <<: *reclaimed, label: "Step return" }
+  - { key: F8, icon: resume.png, <<: *reclaimed, label: "Resume" }
+  - { key: F11, except: [macos], icon: debug.png, <<: *reclaimed, label: "Debug" }
+  - { key: F11, mods: [GUI], only: [macos], icon: debug.png, <<: *reclaimed, label: "Debug" }
+  - { key: F12, except: [macos], icon: activateeditor.png, label: "Activate editor" }
+  - { key: F12, mods: [GUI], only: [macos], icon: activateeditor.png, label: "Activate editor" }
+
+  # ===================================================== Ctrl (Cmd) ==========
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: X, mods: [CMDCTRL], label: "Cut" }
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: Y, mods: [CTRL], only: [windows], label: "Redo" }
+  - { key: S, mods: [CMDCTRL], label: "Save" }
+  - { key: P, mods: [CMDCTRL], label: "Print" }
+  - { key: N, mods: [CMDCTRL], label: "New" }
+  - { key: W, mods: [CMDCTRL], label: "Close" }
+  - { key: F4, mods: [CTRL], except: [macos], label: "Close" }
+  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find/replace" }
+  - { key: "1", mods: [CMDCTRL], icon: intentions.png, label: "Quick fix" }
+  - { key: "3", mods: [CMDCTRL], icon: findaction.png, label: "Find actions" }
+  - { key: "7", mods: [CMDCTRL], icon: comment.png, label: "Toggle comment" }
+  - { key: "/", mods: [CMDCTRL], icon: comment.png, label: "Toggle comment" }
+  - { key: B, mods: [CMDCTRL], icon: build.png, label: "Build all" }
+  - { key: D, mods: [CMDCTRL], icon: deleteline.png, label: "Delete line" }
+  - { key: E, mods: [CMDCTRL], icon: tabswitcher.png, label: "Quick switch editor" }
+  - { key: G, mods: [CMDCTRL], icon: searchdecl.png, <<: *worded, label: "Declarations in workspace" }
+  - { key: I, mods: [CMDCTRL], icon: indent.png, label: "Correct indentation" }
+  - { key: J, mods: [CMDCTRL], icon: incfind.png, <<: *worded, label: "Incremental find" }
+  - { key: K, mods: [CMDCTRL], icon: findnext.png, label: "Find next", shared: false }
+  - { key: L, mods: [CMDCTRL], icon: gotoline.png, label: "Go to line" }
+  - { key: M, mods: [CTRL], icon: maximize.png, label: "Maximize view or editor" }
+  - { key: O, mods: [CMDCTRL], icon: win_structure.png, label: "Quick outline" }
+  - { key: Q, mods: [CTRL], icon: editprev.png, label: "Previous edit location" }
+  - { key: R, mods: [CMDCTRL], icon: runtocursor.png, label: "Run to line" }
+  - { key: T, mods: [CMDCTRL], icon: quickhierarchy.png, label: "Quick hierarchy" }
+  - { key: U, mods: [CMDCTRL], icon: execute.png, label: "Execute" }
+  - { key: ",", mods: [CTRL], except: [macos], icon: focusprev.png, label: "Previous" }
+  - { key: ".", mods: [CMDCTRL], icon: focusnext.png, label: "Next" }
+  - { key: "=", mods: [CMDCTRL], label: "Zoom in" }
+  - { key: "-", mods: [CMDCTRL], label: "Zoom out" }
+  - { key: F2, mods: [CMDCTRL], icon: stop.png, <<: *reclaimed, label: "Terminate" }
+  - { key: F3, mods: [CMDCTRL], icon: outlinestructure.png, label: "Open structure" }
+  - { key: F5, mods: [CTRL], except: [macos], icon: smartstepinto.png, <<: *reclaimed, label: "Step into selection" }
+  - { key: F6, mods: [CMDCTRL], icon: nexteditor.png, <<: *worded, label: "Next editor" }
+  - { key: F7, mods: [CMDCTRL], icon: nextview.png, <<: *worded, label: "Next view" }
+  - { key: F8, mods: [CMDCTRL], icon: nextpersp.png, <<: *worded, label: "Next perspective" }
+  - { key: F10, mods: [CMDCTRL], icon: linenumbers.png, label: "Ruler context menu" }
+  - { key: F11, mods: [CTRL], except: [macos], icon: run.png, <<: *reclaimed, label: "Run" }
+  - { key: PGUP, mods: [CTRL], icon: prevtab.png, label: "Previous tab" }
+  - { key: PGDN, mods: [CTRL], icon: nexttab.png, label: "Next tab" }
+  - { key: INSERT, mods: [CTRL], except: [macos], label: "Copy" }
+  - { key: UP, mods: [CTRL], except: [macos], icon: scrollup.png, label: "Scroll line up" }
+  - { key: DOWN, mods: [CTRL], except: [macos], icon: scrolldown.png, label: "Scroll line down" }
+  - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Content assist" }
+  # macOS: M4+. is Word completion (Alt+/ elsewhere).
+  - { key: ".", mods: [CTRL], only: [macos], icon: autocomplete.png, label: "Word completion" }
+
+  # ===================================================== Shift ===============
+  - { key: F2, mods: [SHIFT], icon: javadocext.png, label: "Open attached Javadoc" }
+  - { key: F5, mods: [SHIFT], icon: stepfilters.png, label: "Use step filters" }
+  - { key: F8, mods: [SHIFT], icon: resumeothers.png, label: "Resume other threads" }
+  - { key: F10, mods: [SHIFT], only: [macos], icon: contextmenu.png, label: "Show context menu" }
+  - { key: ENTER, mods: [SHIFT], icon: insertafter.png, label: "Insert line below" }
+  - { key: DEL, mods: [SHIFT], except: [macos], label: "Cut" }
+  - { key: INSERT, mods: [SHIFT], except: [macos], label: "Paste" }
+
+  # ===================================================== Alt (Option) ========
+  - { key: ",", mods: [ALT], icon: resultprev.png, label: "Previous search result" }
+  - { key: ".", mods: [ALT], icon: resultnext.png, label: "Next search result" }
+  - { key: "-", mods: [ALT], except: [macos], icon: systemmenu.png, label: "Show system menu" }
+  - { key: "/", mods: [ALT], except: [macos], icon: autocomplete.png, label: "Word completion" }
+  - { key: ENTER, mods: [ALT], icon: properties.png, label: "Properties" }
+  - { key: F5, mods: [ALT], except: [macos], icon: mvnupdate.png, <<: *worded, label: "Update Maven project" }
+  # macOS: M3+F5 is Step Into Selection (debugging), which takes priority over Update Maven Project.
+  - { key: F5, mods: [ALT], only: [macos], icon: smartstepinto.png, <<: *reclaimed, label: "Step into selection" }
+  - { key: F7, mods: [ALT], icon: nextpage.png, label: "Next page" }
+  - { key: F11, mods: [ALT], except: [macos], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: LEFT, mods: [ALT], except: [macos], icon: back.png, <<: *reclaimed, label: "Back" }
+  - { key: RIGHT, mods: [ALT], except: [macos], icon: forward.png, <<: *reclaimed, label: "Forward" }
+  - { key: UP, mods: [ALT], icon: swapup.png, label: "Move lines up" }
+  - { key: DOWN, mods: [ALT], icon: swapdown.png, label: "Move lines down" }
+  - { key: PGUP, mods: [ALT], icon: subtabprev.png, label: "Previous sub-tab" }
+  - { key: PGDN, mods: [ALT], icon: subtabnext.png, label: "Next sub-tab" }
+
+  # ===================================================== Ctrl+Shift (Cmd+Shift)
+  - { key: Z, mods: [CMDCTRL, SHIFT], except: [windows], label: "Redo" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveall.png, label: "Save all" }
+  - { key: W, mods: [CMDCTRL, SHIFT], icon: closeall.png, label: "Close all" }
+  - { key: F4, mods: [CTRL, SHIFT], except: [macos], icon: closeall.png, label: "Close all" }
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: comment.png, label: "Toggle comment" }
+  - { key: D, mods: [CMDCTRL, SHIFT], icon: evaluate.png, label: "Display" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: switcheditor.png, label: "Switch to editor" }
+  - { key: F, mods: [CMDCTRL, SHIFT], icon: reformat.png, <<: *reclaimed, label: "Format" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: searchrefs.png, <<: *worded, label: "References in workspace" }
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: typehierarchy.png, label: "Open type in hierarchy" }
+  - { key: I, mods: [CMDCTRL, SHIFT], icon: inspect.png, label: "Inspect" }
+  - { key: J, mods: [CMDCTRL, SHIFT], icon: incfindrev.png, <<: *worded, label: "Incremental find reverse" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: findprev.png, label: "Find previous" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: keyassist.png, label: "Show key assist" }
+  - { key: M, mods: [CMDCTRL, SHIFT], icon: addimport.png, label: "Add import" }
+  - { key: N, mods: [CMDCTRL, SHIFT], icon: allinstances.png, label: "All instances" }
+  - { key: O, mods: [CMDCTRL, SHIFT], icon: optimizeimports.png, label: "Organize imports" }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: matchbracket.png, label: "Go to matching bracket" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: gotofile.png, <<: *reclaimed, label: "Open resource" }
+  - { key: T, mods: [CMDCTRL, SHIFT], icon: gotoclass.png, label: "Open type" }
+  - { key: U, mods: [CMDCTRL, SHIFT], except: [linux], icon: searchocc.png, <<: *worded, label: "Occurrences in file" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: openclipboard.png, label: "Open from clipboard" }
+  - { key: X, mods: [CMDCTRL, SHIFT], icon: uppercase.png, label: "To upper case" }
+  - { key: Y, mods: [CMDCTRL, SHIFT], icon: lowercase.png, label: "To lower case" }
+  - { key: Q, mods: [CTRL, SHIFT], icon: hunk.png, label: "Quick diff toggle" }
+  - { key: SPACE, mods: [CTRL, SHIFT], icon: paraminfo.png, label: "Context information" }
+  # Ctrl+# and Ctrl++, Ctrl+_, Ctrl+{ are the shifted characters of the US layout.
+  - { key: "3", mods: [CTRL, SHIFT], except: [macos], icon: win_commit.png, label: "Commit" }
+  - { key: "=", mods: [CMDCTRL, SHIFT], label: "Zoom in" }
+  - { key: "-", mods: [CMDCTRL, SHIFT], icon: splith.png, label: "Toggle split editor (horizontal)" }
+  - { key: "[", mods: [CMDCTRL, SHIFT], icon: splitv.png, label: "Toggle split editor (vertical)" }
+  - { key: "'", mods: [CMDCTRL, SHIFT], icon: textblock.png, label: "Add text block" }
+  - { key: "/", mods: [CTRL, SHIFT], except: [macos], icon: blockcommentadd.png, label: "Add block comment" }
+  - { key: "\\", mods: [CMDCTRL, SHIFT], icon: blockcommentdel.png, label: "Remove block comment" }
+  - { key: DEL, mods: [CMDCTRL, SHIFT], icon: deleteeol.png, label: "Delete to end of line" }
+  - { key: ENTER, mods: [CMDCTRL, SHIFT], icon: insertbefore.png, label: "Insert line above" }
+  - { key: INSERT, mods: [CMDCTRL, SHIFT], icon: insertmode.png, label: "Toggle insert mode" }
+  - { key: UP, mods: [CTRL, SHIFT], except: [macos], icon: nodeprev.png, label: "Previous member" }
+  - { key: DOWN, mods: [CTRL, SHIFT], except: [macos], icon: nodenext.png, label: "Next member" }
+  - { key: F6, mods: [CMDCTRL, SHIFT], icon: preveditor.png, <<: *worded, label: "Previous editor" }
+  - { key: F7, mods: [CMDCTRL, SHIFT], icon: prevview.png, <<: *worded, label: "Previous view" }
+  - { key: F8, mods: [CMDCTRL, SHIFT], icon: prevpersp.png, <<: *worded, label: "Previous perspective" }
+  - { key: F11, mods: [GUI, SHIFT], only: [macos], icon: run.png, <<: *reclaimed, label: "Run" }
+  - { key: F10, mods: [GUI, SHIFT], only: [macos], icon: systemmenu.png, label: "Show system menu" }
+  # macOS: Previous is Shift+Cmd+. (Cmd+, is the system Settings key).
+  - { key: ".", mods: [GUI, SHIFT], only: [macos], icon: focusprev.png, label: "Previous" }
+
+  # ===================================================== Ctrl+Alt ============
+  - { key: B, mods: [CTRL, ALT], icon: skipbreakpoints.png, label: "Skip all breakpoints" }
+  - { key: G, mods: [CMDCTRL, ALT], icon: searchtext.png, <<: *worded, label: "Text in workspace" }
+  - { key: H, mods: [CTRL, ALT], icon: callhierarchy.png, label: "Open call hierarchy" }
+  - { key: J, mods: [CTRL, ALT], except: [macos], icon: joinlines.png, label: "Join lines" }
+  - { key: U, mods: [CTRL, ALT], only: [linux], icon: searchocc.png, <<: *worded, label: "Occurrences in file" }
+  - { key: LEFT, mods: [CTRL, ALT], icon: editprev.png, label: "Previous edit location" }
+  - { key: RIGHT, mods: [CTRL, ALT], icon: editnext.png, label: "Next edit location" }
+  - { key: UP, mods: [CMDCTRL, ALT], icon: dupup.png, label: "Duplicate lines" }
+  - { key: DOWN, mods: [CMDCTRL, ALT], icon: dupdown.png, label: "Copy lines" }
+  # macOS moves Previous/Next member from Ctrl+Shift to Control+Option.
+  - { key: UP, mods: [CTRL, ALT], only: [macos], icon: nodeprev.png, label: "Previous member" }
+  - { key: DOWN, mods: [CTRL, ALT], only: [macos], icon: nodenext.png, label: "Next member" }
+
+  # ===================================================== Alt+Shift (Cmd+Option on macOS)
+  # Refactoring and source keys: Alt+Shift on Windows/Linux, Cmd+Option on macOS.
+  - { key: A, mods: [ALT, SHIFT], except: [macos], icon: blockselect.png, label: "Toggle block selection" }
+  - { key: A, mods: [GUI, ALT], only: [macos], icon: blockselect.png, label: "Toggle block selection" }
+  - { key: B, mods: [ALT, SHIFT], except: [macos], icon: breadcrumb.png, label: "Show in breadcrumb" }
+  - { key: B, mods: [GUI, ALT], only: [macos], icon: breadcrumb.png, label: "Show in breadcrumb" }
+  - { key: C, mods: [ALT, SHIFT], except: [macos], icon: changesig.png, <<: *worded, label: "Change method signature" }
+  - { key: F, mods: [ALT, SHIFT], except: [macos], icon: forcereturn.png, label: "Force return" }
+  - { key: F, mods: [GUI, ALT], only: [macos], icon: forcereturn.png, label: "Force return" }
+  - { key: I, mods: [ALT, SHIFT], except: [macos], icon: inline.png, label: "Inline" }
+  - { key: I, mods: [GUI, ALT], only: [macos], icon: inline.png, label: "Inline" }
+  - { key: J, mods: [ALT, SHIFT], except: [macos], icon: javadoc.png, label: "Add Javadoc comment" }
+  - { key: J, mods: [GUI, ALT], only: [macos], icon: javadoc.png, label: "Add Javadoc comment" }
+  - { key: K, mods: [ALT, SHIFT], except: [macos], icon: makestatic.png, <<: *worded, label: "Make static" }
+  - { key: K, mods: [GUI, ALT], only: [macos], icon: makestatic.png, <<: *worded, label: "Make static" }
+  - { key: L, mods: [ALT, SHIFT], except: [macos], icon: introducevariable.png, label: "Extract local variable" }
+  - { key: L, mods: [GUI, ALT], only: [macos], icon: introducevariable.png, label: "Extract local variable" }
+  - { key: M, mods: [ALT, SHIFT], except: [macos], icon: extractmethod.png, label: "Extract method" }
+  - { key: M, mods: [GUI, ALT], only: [macos], icon: extractmethod.png, label: "Extract method" }
+  - { key: N, mods: [ALT, SHIFT], except: [macos], icon: newmenu.png, label: "New menu" }
+  - { key: N, mods: [GUI, ALT], only: [macos], icon: newmenu.png, label: "New menu" }
+  - { key: O, mods: [ALT, SHIFT], except: [macos], icon: markocc.png, label: "Toggle mark occurrences" }
+  - { key: O, mods: [GUI, ALT], only: [macos], icon: markocc.png, label: "Toggle mark occurrences" }
+  - { key: P, mods: [ALT, SHIFT], icon: mvnpom.png, <<: *worded, label: "Open Maven POM" }
+  # Rename: Alt+Shift+R everywhere (the Java editor binds it on macOS too), and Cmd+Option+R on macOS.
+  - { key: R, mods: [ALT, SHIFT], icon: rename.png, <<: *reclaimed, label: "Rename" }
+  - { key: R, mods: [GUI, ALT], only: [macos], icon: rename.png, <<: *reclaimed, label: "Rename" }
+  - { key: S, mods: [ALT, SHIFT], except: [macos], icon: generate.png, label: "Source menu" }
+  - { key: S, mods: [GUI, ALT], only: [macos], icon: generate.png, label: "Source menu" }
+  - { key: T, mods: [ALT, SHIFT], except: [macos], icon: refactorthis.png, label: "Refactor menu" }
+  - { key: T, mods: [GUI, ALT], only: [macos], icon: refactorthis.png, label: "Refactor menu" }
+  - { key: U, mods: [ALT, SHIFT], except: [macos], icon: occremove.png, label: "Remove occurrence annotations" }
+  - { key: U, mods: [GUI, ALT], only: [macos], icon: occremove.png, label: "Remove occurrence annotations" }
+  - { key: V, mods: [ALT, SHIFT], except: [macos], icon: move.png, label: "Move" }
+  - { key: V, mods: [GUI, ALT], only: [macos], icon: move.png, label: "Move" }
+  - { key: W, mods: [ALT, SHIFT], except: [macos], icon: showin.png, label: "Show in" }
+  - { key: W, mods: [GUI, ALT], only: [macos], icon: showin.png, label: "Show in" }
+  - { key: Y, mods: [ALT, SHIFT], except: [macos], icon: wordwrap.png, label: "Toggle word wrap" }
+  - { key: Y, mods: [GUI, ALT], only: [macos], icon: wordwrap.png, label: "Toggle word wrap" }
+  - { key: Z, mods: [ALT, SHIFT], except: [macos], icon: surround.png, label: "Surround with" }
+  - { key: Z, mods: [GUI, ALT], only: [macos], icon: surround.png, label: "Surround with" }
+  - { key: F3, mods: [ALT, SHIFT], icon: plugin.png, label: "Show contributing plug-in" }
+  - { key: F7, mods: [ALT, SHIFT], icon: prevpage.png, label: "Previous page" }
+  # Java editor structured selection: Alt+Shift+arrows; macOS uses Control+Shift+PgUp/PgDn/Home/End.
+  - { key: UP, mods: [ALT, SHIFT], except: [macos], icon: extendselection.png, label: "Select enclosing element" }
+  - { key: DOWN, mods: [ALT, SHIFT], except: [macos], icon: shrinkselection.png, label: "Restore last selection" }
+  - { key: LEFT, mods: [ALT, SHIFT], except: [macos], icon: elemprev.png, label: "Select previous element" }
+  - { key: RIGHT, mods: [ALT, SHIFT], except: [macos], icon: elemnext.png, label: "Select next element" }
+  - { key: PGUP, mods: [CTRL, SHIFT], only: [macos], icon: extendselection.png, label: "Select enclosing element" }
+  - { key: PGDN, mods: [CTRL, SHIFT], only: [macos], icon: shrinkselection.png, label: "Restore last selection" }
+  - { key: HOME, mods: [CTRL, SHIFT], only: [macos], icon: elemprev.png, label: "Select previous element" }
+  - { key: END, mods: [CTRL, SHIFT], only: [macos], icon: elemnext.png, label: "Select next element" }
+
+  # ===================================================== macOS only ==========
+  # Back / Forward: Cmd+[ / Cmd+] and Cmd+Option+Left / Right.
+  - { key: "[", mods: [GUI], only: [macos], icon: back.png, <<: *reclaimed, label: "Back" }
+  - { key: "]", mods: [GUI], only: [macos], icon: forward.png, <<: *reclaimed, label: "Forward" }
+  - { key: LEFT, mods: [GUI, ALT], only: [macos], icon: back.png, <<: *reclaimed, label: "Back" }
+  - { key: RIGHT, mods: [GUI, ALT], only: [macos], icon: forward.png, <<: *reclaimed, label: "Forward" }
+  - { key: ",", mods: [GUI, ALT], only: [macos], icon: resultprev.png, label: "Previous search result" }
+  - { key: ".", mods: [GUI, ALT], only: [macos], icon: resultnext.png, label: "Next search result" }
+  - { key: "3", mods: [GUI, ALT], only: [macos], icon: win_commit.png, label: "Commit" }
+  - { key: F, mods: [CTRL, GUI], only: [macos], icon: fullscreen.png, label: "Toggle full screen" }
+  - { key: "/", mods: [CTRL, GUI], only: [macos], icon: blockcommentadd.png, label: "Add block comment" }
+  - { key: "\\", mods: [CTRL, GUI], only: [macos], icon: blockcommentdel.png, label: "Remove block comment" }
