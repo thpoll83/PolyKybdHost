@@ -67,7 +67,9 @@ over the legend with the 3 px clearance.
 The units are 3D models from [Warzone 2100](https://github.com/Warzone2100/warzone2100),
 GPL-2.0-or-later (its `COPYING.README`), with textures from
 [Warzone2100/data-texpages](https://github.com/Warzone2100/data-texpages)
-(same licence). `wz_units.py` fetches them from pinned commits (`WZ_SHA`,
+(same licence). The weapon texture `page-17-droid-weapons.png` is CC BY-SA 3.0
+(listed in that repository's `COPYING.NONGPL`) and is not used: the turrets are
+drawn in flat grey (`wz_units.NONGPL_TEXTURES`). `wz_units.py` fetches them from pinned commits (`WZ_SHA`,
 `TEX_SHA`), assembles body, propulsion and weapon as the game does, renders
 them with an orthographic camera and a top-front light, and Floyd-Steinberg
 dithers the result with a lit 1 px outline.
