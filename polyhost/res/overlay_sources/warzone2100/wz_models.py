@@ -43,7 +43,14 @@ MODELS.update({
     "heavytank": ("Heavy tank, cannon (land combat)", *_droid("drhbod09.pie", "prhtrk3.pie", "trhcan.pie", "gnhcan.pie")),
     "transporters": ("Transport", [(f"{B}/bodies/drtrans.pie", (0, 0, 0))], dict(yaw=60, pitch=30)),
     "cyborgs": ("Cyborg, machine gun", [(f"{B}/bodies/cybd_std.pie", (0, 0, 0)),
+                                         (f"{B}/weapons/cybody.pie", "body-connector"),
                                          (f"{B}/weapons/cy_gun.pie", "body-connector")], dict(yaw=30, pitch=15)),
+    "engineers": ("Combat engineer (cyborg)", [(f"{B}/bodies/cybd_std.pie", (0, 0, 0)),
+                                               (f"{B}/weapons/cybody.pie", "body-connector"),
+                                               (f"{M}/weapons/cy_con.pie", "body-connector")], dict(yaw=30, pitch=15)),
+    "mechanics": ("Cyborg mechanic", [(f"{B}/bodies/cybd_std.pie", (0, 0, 0)),
+                                      (f"{B}/weapons/cybody.pie", "body-connector"),
+                                      (f"{M}/weapons/cy_rep.pie", "body-connector")], dict(yaw=30, pitch=15)),
 })
 
 

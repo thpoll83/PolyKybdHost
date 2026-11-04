@@ -583,3 +583,438 @@ overlays:
     - label: '3D model: vtols, yaw 0, pitch 80'
       src: model:vtols@0,80
       preset: model
+  - key: F7
+    label: Quick save
+    candidates:
+    - label: 'interface: image_des_save'
+      src: intfac:image_des_save
+      preset: button
+    - label: 'interface: image_des_save, pixels'
+      src: intfac:image_des_save
+      preset: pixels
+  - key: F7
+    mods:
+    - SHIFT
+    label: Toggle radar
+    candidates:
+    - label: 'interface: image_intelmap_up'
+      src: intfac:image_intelmap_up
+      preset: button
+    - label: 'interface: image_intelmap_up, pixels'
+      src: intfac:image_intelmap_up
+      preset: pixels
+    - label: 'interface: image_intel_mission'
+      src: intfac:image_intel_mission
+      preset: button
+    - label: 'interface: image_intel_mission, pixels'
+      src: intfac:image_intel_mission
+      preset: pixels
+  - key: F8
+    label: Quick load
+    candidates:
+    - label: 'interface: image_des_back'
+      src: intfac:image_des_back
+      preset: button
+    - label: 'interface: image_des_back, pixels'
+      src: intfac:image_des_back
+      preset: pixels
+  - key: F8
+    mods:
+    - SHIFT
+    label: Toggle console display
+    candidates:
+    - label: 'interface: image_multi_chan'
+      src: intfac:image_multi_chan
+      preset: button
+    - label: 'interface: image_multi_chan, pixels'
+      src: intfac:image_multi_chan
+      preset: pixels
+  - key: F9
+    label: Toggle damage bars
+    candidates:
+    - label: 'interface: image_des_bodypoints'
+      src: intfac:image_des_bodypoints
+      preset: button
+    - label: 'interface: image_des_bodypoints, pixels'
+      src: intfac:image_des_bodypoints
+      preset: pixels
+    - label: 'interface: image_pbar_avail'
+      src: intfac:image_pbar_avail
+      preset: button
+    - label: 'interface: image_pbar_avail, pixels'
+      src: intfac:image_pbar_avail
+      preset: pixels
+  - key: F10
+    label: Take screenshot
+    candidates: []
+  - key: F11
+    label: Toggle formation speed limiting
+    candidates:
+    - label: 'interface: image_des_crosscountry'
+      src: intfac:image_des_crosscountry
+      preset: button
+    - label: 'interface: image_des_crosscountry, pixels'
+      src: intfac:image_des_crosscountry
+      preset: pixels
+    - label: 'interface: image_des_road'
+      src: intfac:image_des_road
+      preset: button
+    - label: 'interface: image_des_road, pixels'
+      src: intfac:image_des_road
+      preset: pixels
+  - key: F12
+    label: View location of previous message
+    candidates:
+    - label: 'interface: image_audio_lastsample'
+      src: intfac:image_audio_lastsample
+      preset: button
+    - label: 'interface: image_audio_lastsample, pixels'
+      src: intfac:image_audio_lastsample
+      preset: pixels
+  - key: F12
+    mods:
+    - SHIFT
+    label: Toggle sensor display
+    candidates:
+    - label: 'interface: image_origin_sensor_standard'
+      src: intfac:image_origin_sensor_standard
+      preset: button
+    - label: 'interface: image_origin_sensor_standard, pixels'
+      src: intfac:image_origin_sensor_standard
+      preset: pixels
+    - label: 'interface: image_des_systems'
+      src: intfac:image_des_systems
+      preset: button
+    - label: 'interface: image_des_systems, pixels'
+      src: intfac:image_des_systems
+      preset: pixels
+    - label: 'interface: image_ecm'
+      src: intfac:image_ecm
+      preset: button
+    - label: 'interface: image_ecm, pixels'
+      src: intfac:image_ecm
+      preset: pixels
+  - key: SPACE
+    label: Toggle tracking camera
+    candidates:
+    - label: 'interface: image_observe_up'
+      src: intfac:image_observe_up
+      preset: button
+    - label: 'interface: image_observe_up, pixels'
+      src: intfac:image_observe_up
+      preset: pixels
+    - label: 'interface: image_cursor_scout'
+      src: intfac:image_cursor_scout
+      preset: button
+    - label: 'interface: image_cursor_scout, pixels'
+      src: intfac:image_cursor_scout
+      preset: pixels
+  - key: DOWN
+    mods:
+    - CTRL
+    label: View south
+    candidates: []
+  - key: LEFT
+    mods:
+    - CTRL
+    label: View east
+    candidates: []
+  - key: RIGHT
+    mods:
+    - CTRL
+    label: View west
+    candidates: []
+  - key: MINUS
+    mods:
+    - CTRL
+    label: Decrease game speed
+    candidates: []
+  - key: EQUAL
+    mods:
+    - CTRL
+    label: Increase game speed
+    candidates: []
+  - key: BSPC
+    mods:
+    - CTRL
+    label: Reset game speed
+    candidates:
+    - label: 'interface: image_pause_up'
+      src: intfac:image_pause_up
+      preset: button
+    - label: 'interface: image_pause_up, pixels'
+      src: intfac:image_pause_up
+      preset: pixels
+  - key: TAB
+    label: Toggle overlays
+    candidates: []
+  - key: TAB
+    mods:
+    - CTRL
+    label: Toggle radar terrain
+    candidates:
+    - label: 'interface: image_intel_mission'
+      src: intfac:image_intel_mission
+      preset: button
+    - label: 'interface: image_intel_mission, pixels'
+      src: intfac:image_intel_mission
+      preset: pixels
+    - label: 'interface: image_intelmap_up'
+      src: intfac:image_intelmap_up
+      preset: button
+    - label: 'interface: image_intelmap_up, pixels'
+      src: intfac:image_intelmap_up
+      preset: pixels
+  - key: TAB
+    mods:
+    - SHIFT
+    label: Toggle ally-enemy radar view
+    candidates:
+    - label: 'interface: image_multi_al'
+      src: intfac:image_multi_al
+      preset: button
+    - label: 'interface: image_multi_al, pixels'
+      src: intfac:image_multi_al
+      preset: pixels
+    - label: 'interface: image_multi_noal'
+      src: intfac:image_multi_noal
+      preset: button
+    - label: 'interface: image_multi_noal, pixels'
+      src: intfac:image_multi_noal
+      preset: pixels
+  - key: S
+    mods:
+    - ALT
+    label: Toggle shadows
+    candidates: []
+  - key: T
+    mods:
+    - ALT
+    label: Trap cursor
+    candidates:
+    - label: 'interface: image_cursor_default'
+      src: intfac:image_cursor_default
+      preset: button
+    - label: 'interface: image_cursor_default, pixels'
+      src: intfac:image_cursor_default
+      preset: pixels
+    - label: 'interface: image_cursor_select'
+      src: intfac:image_cursor_select
+      preset: button
+    - label: 'interface: image_cursor_select, pixels'
+      src: intfac:image_cursor_select
+      preset: pixels
+  - key: ENTER
+    mods:
+    - ALT
+    label: Toggle fullscreen
+    candidates: []
+  - key: M
+    label: Show all keyboard mappings
+    candidates: []
+  - key: B
+    label: Center view on HQ
+    candidates:
+    - label: 'interface: image_ord_gotohqup'
+      src: intfac:image_ord_gotohqup
+      preset: button
+    - label: 'interface: image_ord_gotohqup, pixels'
+      src: intfac:image_ord_gotohqup
+      preset: pixels
+    - label: 'interface: image_cursor_dest'
+      src: intfac:image_cursor_dest
+      preset: button
+    - label: 'interface: image_cursor_dest, pixels'
+      src: intfac:image_cursor_dest
+      preset: pixels
+  - key: D
+    label: View unassigned units
+    candidates:
+    - label: 'interface: image_question_mark'
+      src: intfac:image_question_mark
+      preset: button
+    - label: 'interface: image_question_mark, pixels'
+      src: intfac:image_question_mark
+      preset: pixels
+    - label: 'interface: image_res_questionmark'
+      src: intfac:image_res_questionmark
+      preset: button
+    - label: 'interface: image_res_questionmark, pixels'
+      src: intfac:image_res_questionmark
+      preset: pixels
+  - key: H
+    mods:
+    - ALT
+    label: Drop a beacon
+    candidates:
+    - label: 'interface: image_target1'
+      src: intfac:image_target1
+      preset: button
+    - label: 'interface: image_target1, pixels'
+      src: intfac:image_target1
+      preset: pixels
+    - label: 'interface: image_target3'
+      src: intfac:image_target3
+      preset: button
+    - label: 'interface: image_target3, pixels'
+      src: intfac:image_target3
+      preset: pixels
+    - label: 'interface: image_indicator_dot'
+      src: intfac:image_indicator_dot
+      preset: button
+    - label: 'interface: image_indicator_dot, pixels'
+      src: intfac:image_indicator_dot
+      preset: pixels
+  - key: D
+    mods:
+    - CTRL
+    label: Select all heavily damaged units
+    candidates:
+    - label: 'interface: image_repair_up'
+      src: intfac:image_repair_up
+      preset: button
+    - label: 'interface: image_repair_up, pixels'
+      src: intfac:image_repair_up
+      preset: pixels
+    - label: 'interface: image_autorepair_up'
+      src: intfac:image_autorepair_up
+      preset: button
+    - label: 'interface: image_autorepair_up, pixels'
+      src: intfac:image_autorepair_up
+      preset: pixels
+    - label: 'interface: image_ord_repair1up'
+      src: intfac:image_ord_repair1up
+      preset: button
+    - label: 'interface: image_ord_repair1up, pixels'
+      src: intfac:image_ord_repair1up
+      preset: pixels
+  - key: S
+    mods:
+    - CTRL
+    label: Select all units on screen
+    candidates:
+    - label: 'interface: image_cursor_select'
+      src: intfac:image_cursor_select
+      preset: button
+    - label: 'interface: image_cursor_select, pixels'
+      src: intfac:image_cursor_select
+      preset: pixels
+    - label: 'interface: image_observe_up'
+      src: intfac:image_observe_up
+      preset: button
+    - label: 'interface: image_observe_up, pixels'
+      src: intfac:image_observe_up
+      preset: pixels
+  - key: U
+    mods:
+    - CTRL
+    label: Select every unit
+    candidates:
+    - label: 'interface: image_generic_tank'
+      src: intfac:image_generic_tank
+      preset: button
+    - label: 'interface: image_generic_tank, pixels'
+      src: intfac:image_generic_tank
+      preset: pixels
+    - label: 'interface: unittype_tank'
+      src: intfac:unittype_tank
+      preset: button
+    - label: 'interface: unittype_tank, pixels'
+      src: intfac:unittype_tank
+      preset: pixels
+  - key: Z
+    mods:
+    - CTRL
+    label: Select all units with the same components
+    candidates:
+    - label: 'interface: image_des_body'
+      src: intfac:image_des_body
+      preset: button
+    - label: 'interface: image_des_body, pixels'
+      src: intfac:image_des_body
+      preset: pixels
+    - label: 'interface: image_des_propulsion'
+      src: intfac:image_des_propulsion
+      preset: button
+    - label: 'interface: image_des_propulsion, pixels'
+      src: intfac:image_des_propulsion
+      preset: pixels
+    - label: 'interface: image_des_turret'
+      src: intfac:image_des_turret
+      preset: button
+    - label: 'interface: image_des_turret, pixels'
+      src: intfac:image_des_turret
+      preset: pixels
+  - key: E
+    mods:
+    - SHIFT
+    label: Select all engineers
+    candidates:
+    - label: 'interface: image_build_up'
+      src: intfac:image_build_up
+      preset: button
+    - label: 'interface: image_build_up, pixels'
+      src: intfac:image_build_up
+      preset: pixels
+    - label: '3D model: engineers'
+      src: model:engineers
+      preset: model
+  - key: M
+    mods:
+    - SHIFT
+    label: Select all mechanics
+    candidates:
+    - label: 'interface: image_repair_up'
+      src: intfac:image_repair_up
+      preset: button
+    - label: 'interface: image_repair_up, pixels'
+      src: intfac:image_repair_up
+      preset: pixels
+    - label: '3D model: mechanics'
+      src: model:mechanics
+      preset: model
+  - key: ENTER
+    label: Send global text message
+    candidates:
+    - label: 'interface: image_multi_chan'
+      src: intfac:image_multi_chan
+      preset: button
+    - label: 'interface: image_multi_chan, pixels'
+      src: intfac:image_multi_chan
+      preset: pixels
+  - key: ENTER
+    mods:
+    - CTRL
+    label: Send team text message
+    candidates:
+    - label: 'interface: image_multi_al'
+      src: intfac:image_multi_al
+      preset: button
+    - label: 'interface: image_multi_al, pixels'
+      src: intfac:image_multi_al
+      preset: pixels
+    - label: 'interface: image_multi_chan'
+      src: intfac:image_multi_chan
+      preset: button
+    - label: 'interface: image_multi_chan, pixels'
+      src: intfac:image_multi_chan
+      preset: pixels
+  - key: ENTER
+    mods:
+    - SHIFT
+    label: Send team quick chat
+    candidates:
+    - label: 'interface: image_multi_chan'
+      src: intfac:image_multi_chan
+      preset: button
+    - label: 'interface: image_multi_chan, pixels'
+      src: intfac:image_multi_chan
+      preset: pixels
+  - key: GRAVE
+    label: Toggle console history
+    candidates: []
+  - key: GRAVE
+    mods:
+    - CTRL
+    label: Toggle team chat history
+    candidates: []
