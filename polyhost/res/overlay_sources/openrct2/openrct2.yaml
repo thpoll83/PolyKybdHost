@@ -1,0 +1,92 @@
+# OpenRCT2 overlay for PolyKybd.
+#
+# Keys: the default shortcuts registered in ShortcutManager::registerDefaultShortcuts()
+# (src/openrct2-ui/input/Shortcuts.cpp, OpenRCT2 v0.5.6), with the names from
+# data/language/en-GB.txt. See SOURCES.md.
+#
+# Every default shortcut on a key with a cell is labelled; none of them changes
+# meaning with the selection. The ride construction keys are all on the
+# numeric keypad, which has no cell, so they are left out.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/openrct2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/openrct2/openrct2.yaml --preview /tmp/openrct2_preview
+app: openrct2
+match: [openrct2, openrct2.exe, io.openrct2.openrct2]
+output: openrct2_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for AoE2 and Warcraft III: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# OpenRCT2 drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Construction windows
+  - { key: F1, icon: land.png, label: "Adjust land", region: [34, 40] }
+  - { key: F2, icon: water.png, label: "Adjust water", region: [34, 40] }
+  - { key: F3, icon: scenery.png, label: "Build scenery" }
+  - { key: F4, icon: paths.png, label: "Build paths", region: [30, 40] }
+  - { key: F5, icon: newride.png, label: "Build new ride", region: [30, 40] }
+  - { key: B, icon: clearscenery.png, label: "Clear scenery" }
+  - { key: Z, icon: rotateobject.png, label: "Rotate construction object" }
+
+  # Information windows
+  - { key: F, icon: finances.png, label: "Show financial information" }
+  - { key: D, icon: research.png, label: "Show research information" }
+  - { key: R, icon: rides.png, label: "Show rides list" }
+  - { key: P, icon: park.png, label: "Show park information" }
+  - { key: G, icon: guests.png, label: "Show guest list" }
+  - { key: S, icon: staff.png, label: "Show staff list" }
+  - { key: M, icon: messages.png, label: "Show recent messages" }
+  - { key: TAB, icon: map.png, label: "Show map" }
+  - { key: C, icon: chat.png, label: "Send message" }
+  - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Open keyboard shortcuts window" }
+  - { key: T, mods: [CTRL], icon: transparency.png, label: "Open transparency options" }
+  - { key: C, mods: [CTRL, ALT], icon: cheats.png, label: "Open cheats window" }
+  - { key: "`", icon: console.png, label: "Console" }
+
+  # View toggles
+  - { key: "1", icon: underground.png, label: "Underground view toggle" }
+  - { key: "2", icon: transparentwater.png, label: "Transparent water" }
+  - { key: "3", icon: seerides.png, label: "See-through rides toggle" }
+  - { key: "4", icon: seescenery.png, label: "See-through scenery toggle" }
+  - { key: "5", icon: seesupports.png, label: "Invisible supports toggle" }
+  - { key: "6", icon: seeguests.png, label: "Hide guests toggle" }
+  - { key: "7", icon: gridlines.png, label: "Gridlines display toggle" }
+  - { key: "8", icon: heightland.png, label: "Height marks on land toggle" }
+  - { key: "9", icon: heighttrack.png, label: "Height marks on ride tracks toggle" }
+  - { key: "0", icon: heightpaths.png, label: "Height marks on paths toggle" }
+  - { key: H, icon: hidebase.png, label: "Hide base land toggle" }
+  - { key: V, icon: hidevertical.png, label: "Hide vertical land toggle" }
+  - { key: I, icon: pathissues.png, label: "Highlight path issues" }
+
+  # Camera
+  - { key: PGUP, icon: zoomout.png, label: "Zoom view out" }
+  - { key: PGDN, icon: zoomin.png, label: "Zoom view in" }
+  - { key: ENTER, icon: rotatecw.png, label: "Rotate view clockwise" }
+  - { key: ENTER, mods: [SHIFT], icon: rotateccw.png, label: "Rotate view anti-clockwise" }
+  - { key: ENTER, mods: [ALT], icon: windowed.png, label: "Toggle windowed mode" }
+
+  # Game
+  - { key: PAUSE, icon: pause.png, label: "Pause game" }
+  - { key: "-", icon: slower.png, label: "Reduce game speed" }
+  - { key: "=", icon: faster.png, label: "Increase game speed" }
+  - { key: BSPC, icon: closetop.png, label: "Close top-most window" }
+  - { key: BSPC, mods: [SHIFT], icon: closeall.png, label: "Close all floating windows" }
+  - { key: S, mods: [CTRL], icon: screenshot.png, label: "Screenshot" }
+  - { key: S, mods: [CTRL, SHIFT], icon: giantscreenshot.png, label: "Giant screenshot" }
+  - { key: L, mods: [CTRL], icon: load.png, label: "Load game" }
+  - { key: F10, mods: [CTRL], icon: save.png, label: "Save game" }
