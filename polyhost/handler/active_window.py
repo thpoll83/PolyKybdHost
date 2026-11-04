@@ -776,6 +776,22 @@ class OverlayHandler:
                         else:
                             return None, OverlayCommand.DISABLE
         else:
+            # ⚠️ "No window" gets the same accept delay as a new window. On
+            # KDE Wayland the backend reports no window for ONE tick (~270 ms)
+            # and then the same window again, every ~10 s in bursts, with nobody
+            # at the desk. Acting on that tick sent a DISABLE, the return sent
+            # the whole overlay set again, and every send ends in
+            # `set_idle(False)`: Eden stopped 21 times in 30 minutes (field
+            # bundle 2026-11-04). The window branch always waited for
+            # `accept_time_msec`; this branch did not.
+            if self.prev_win is not None:
+                self.prev_win = None
+                self.last_update_msec = 0
+            if self.win is not None and self.last_update_msec < accept_time_msec:
+                # Keep the query paid on macOS until the loss is decided, or the
+                # skip would answer "same app" and the loss would never be seen.
+                self._macos_resolved = False
+                return None, OverlayCommand.NONE
             # ⚠️ NO WINDOW IS NOT NO APPLICATION, and treating the two as the
             # same left three apps with a blank board. `getActiveWindow()`
             # returns None for some macOS apps -- Photos, Notes and Freeform,

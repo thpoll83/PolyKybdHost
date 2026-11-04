@@ -205,8 +205,8 @@ and relative links were adjusted to suit a standalone file.
 - **Shell title integration (every OS)**: the host sees a program inside a terminal
   (GNU nano) only through the window title, and plain bash, zsh and PowerShell show the
   prompt's title, not the command. **"Show the running command in the terminal title…"**
-  is always visible under Updates, after the udev row, and at the top level of the
-  forwarder's menu (the forwarder reports its own machine's titles). It opens
+  is always visible under Updates, after the udev row, in the tray app and in the
+  forwarder (the forwarder reports its own machine's titles). It opens
   `gui/shell_title_dialog.py`: one row per shell found (bash, zsh, PowerShell 7 `pwsh`,
   Windows PowerShell 5.1) with its startup file and state, a checkbox, and Install /
   Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as needing no setup. The
@@ -333,15 +333,15 @@ and relative links were adjusted to suit a standalone file.
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 
   - **Its menu follows the tray app's SHAPE, minus the device group** (2026-09-14):
-    status · Pause · — · Check for host update… · Settings… · Help & About · Quit,
-    against the tray app's status · Pause · *device rows* · — · Updates ·
-    Maintenance · Settings… · Help & About · Quit. It had been seven flat rows in
-    no particular order, so the four support entries the two apps share sat in
-    different places depending on which one you opened. The one deliberate
-    departure is **Updates**: the tray app's is a submenu because it holds the
-    firmware and font-pack rows too, and a forwarder owns no keyboard — so the row
-    keeps the label it has *inside* that submenu and sits in the submenu's slot,
-    rather than nesting one entry.
+    status · Pause · — · Updates · Settings… · Help & About · Quit, against the
+    tray app's status · Pause · *device rows* · — · Updates · Maintenance ·
+    Settings… · Help & About · Quit. It had been seven flat rows in no particular
+    order, so the four support entries the two apps share sat in different places
+    depending on which one you opened. The forwarder's **Updates** submenu holds
+    "Check for host update…" and "Show the running command in the terminal
+    title…"; it has no firmware, font-pack or udev rows because it owns no
+    keyboard. Until 2026-11-04 those two were top-level rows, so the shell title
+    entry sat at a different depth in each app.
     - **The status row and the tray mark now track whether reports are LANDING.**
       `send_to_host` is a wrapper that records the verdict in `relay_ok` and
       repaints; the transport is `_send_to_host`, so every exit path of it runs

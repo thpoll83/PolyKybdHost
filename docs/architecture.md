@@ -400,10 +400,13 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
     the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
     PAK archives, shape files, map tiles and fonts of Dune II 1.0 and 1.07 and
-    draws the picker's recipes;
-    `westwood_d2k/` for Dune 2000, which reads the R16 sprite file). `openra.py` lists the folders where
-    OpenRA installs the original game files; the Red Alert, Tiberian Dawn and
-    Dune 2000 readers search them. Its
+    draws the picker's recipes; `westwood_d2k/` for Dune 2000, which reads the
+    R16 sprite file; `starcraft/` for the StarCraft 1.16.1 MPQ archives, drawing
+    the StarCraft II control groups, with the MPQ format in `mpq.py`, PKWARE
+    explode in `explode.py` and GRP sprites in `grp.py`; it was not run against
+    real game files). `openra.py` lists the folders where OpenRA installs the
+    original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
+    search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
@@ -411,6 +414,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     larger than 640x400 px before decoding and decodes a shape file only up to
     the highest frame a recipe asks for). A new reader is a new
     subfolder plus one line in `readers._registry()`.
+  - ⚠️ Before merging a reader, run it on real game files and compare each key
+    it changes with the shipped icon, white on black: the
+    `evaluate-game-asset-reader` skill. Synthetic test files prove the decoder,
+    not the picture; readers for Factorio and Minecraft were dropped this way
+    (`docs/FUTURE_WORK.md`).
   - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
     settings dialog adds their labels, descriptions and dropdowns, so a reader
     brings its own settings.
