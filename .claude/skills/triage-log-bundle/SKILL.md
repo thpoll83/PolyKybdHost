@@ -132,19 +132,25 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
-- **"Eden / idle keeps turning off"**: read `keyboard-console.txt` for
-  `Stop idle.` and the line before it. `Overlay flags 0x1 cleared` 250–500 ms
-  before a `Stop idle.` means the HOST woke the keyboard: every overlay send
-  ends in `set_idle(False)`, so any overlay traffic during idle ends Eden, even
-  a resend of the same app from cache. Then find what made the host send at
-  that second in `daemon.txt`. The 2026-11-04 case was `No active window` and
-  the same app again ~270 ms later, about every 10 s, on KDE Wayland (fixed in
-  1.17.86, #531: a lost window now waits for the accept timer). A `Stop idle.`
-  after `Wake by keypress`, or with no overlay line before it, is the user.
-  Two lines that are not faults: `Turning off` is the firmware's display-off
-  at `TURN_OFF_TIME` (20 min after the last activity, so ~19 min of
-  `Eden idle` lines), and `Eden start … welcome said` followed by
-  `Tutorial …` is a manual Eden run, not the idle path.
+- **"Eden / idle keeps turning off"**: for each `Stop idle.` in
+  `keyboard-console.txt`, look in `daemon.txt` at the same second for
+  `Setting idle state to False...` (DEBUG, so the daemon must log at `--dev 1`
+  or higher). That line is the host waking the keyboard. Every overlay send
+  ends in it, even a resend of the same app from cache and a send that failed
+  (`Failed to send …` warning). So does `idle_set` from `polyctl` or the
+  developer menu. Then find what started the send. The 2026-11-04 case was
+  `No active window` and the same app again ~270 ms later, about every 10 s,
+  on KDE Wayland (fixed for LOCAL window tracking in 1.17.86, #531: a lost
+  window now waits for the accept timer). ⚠️ A forwarder still reports a lost
+  window on the first tick (`forwarder.py`, `active_window_reporter`), so a
+  forwarded app can still cause it; look for `Remote window changed` at those
+  seconds. ⚠️ `Overlay flags 0x1 cleared` before a `Stop idle.` is a hint, not
+  proof: a DISABLE on its own does not call `set_idle`. A `Stop idle.` with no
+  host line at that second is a keypress, or `Wake by keypress` after the
+  display turned off. Two lines that are not faults: `Turning off` is the
+  firmware's display-off at `TURN_OFF_TIME` (20 min after the last activity,
+  so ~19 min of `Eden idle` lines), and `Eden start … welcome said` followed
+  by `Tutorial …` is a manual Eden run, not the idle path.
 - ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
   crash record does not make it harmless.** The host logs that line when GET_ID
   carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the

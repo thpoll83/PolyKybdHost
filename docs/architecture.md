@@ -276,10 +276,15 @@ Per-platform implementations:
     coming back re-sent the whole overlay set. Every overlay send in
     `poly_core.py` ends in `set_idle(False)`, so each blip also took the
     keyboard out of Eden: 21 stops in 30 minutes (field bundle 2026-11-04).
-    ⚠️ **A blip the timer absorbs logs nothing.** `No active window` appears
-    only for a loss that lasted past `NEW_WINDOW_ACCEPT_TIME_MSEC`. A bundle
-    can therefore show that the fix holds (Eden runs to `Turning off`), but it
-    cannot count the blips it swallowed.
+    ⚠️ **A blip the timer absorbs logs nothing.** After a TRACKED window is
+    lost, `No active window` appears only once the loss has lasted past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`. (With no window tracked before, a change of
+    windowless app is logged at once.) A bundle can therefore show that the
+    fix holds (Eden runs to `Turning off`), but it cannot count the blips it
+    swallowed. ⚠️ **The fix covers LOCAL tracking only.** The forwarder's
+    `active_window_reporter` still sends an empty report on the first tick
+    with no window, so the host sees a forwarded blip as a remote change and
+    re-sends overlays.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch
