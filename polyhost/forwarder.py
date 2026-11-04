@@ -1053,11 +1053,22 @@ class PolyForwarder(QApplication):
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)
         elif self.win:
-            self.log.info("No active window")
-            self.win = None
-            self.title = None
-            self.heartbeat_msec = 0
-            self.send_to_host(0, "", "")
+            # ⚠️ A lost window waits for the same accept delay as a new one,
+            # as `OverlayHandler._decide_active_window` does since #531. On
+            # KDE Wayland the backend reports no window for ONE tick and then
+            # the same window again, about every 10 s. Sent at once, the empty
+            # report and the window that follows are two remote changes on the
+            # keyboard machine: a DISABLE, then the whole overlay set again,
+            # whose `set_idle(False)` takes the keyboard out of Eden.
+            if self.prev_win is not None:
+                self.prev_win = None
+                self.last_update_msec = 0
+            if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
+                self.log.info("No active window")
+                self.win = None
+                self.title = None
+                self.heartbeat_msec = 0
+                self.send_to_host(0, "", "")
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)

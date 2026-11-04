@@ -268,6 +268,23 @@ Per-platform implementations:
     ⚠️ `polyhost/forwarder.py`
     holds the **second copy** of that timer, on the other machine, and had the
     same inflation — there it also stretched `HEARTBEAT_MSEC` (15 s) to 150 s.
+  - ⚠️ **A LOST window waits for the same accept timer as a new one** (#531,
+    1.17.86). Before, the windowless branch of `_decide_active_window` acted on
+    the first tick with no window. On KDE Wayland the backend reports no window
+    for ONE tick (~270 ms) and then the same window again, about every 10 s in
+    bursts, with nobody at the desk. Each blip sent a DISABLE, and the window
+    coming back re-sent the whole overlay set. Every overlay send in
+    `poly_core.py` ends in `set_idle(False)`, so each blip also took the
+    keyboard out of Eden: 21 stops in 30 minutes (field bundle 2026-11-04).
+    ⚠️ **A blip the timer absorbs logs nothing.** After a TRACKED window is
+    lost, `No active window` appears only once the loss has lasted past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`. (With no window tracked before, a change of
+    windowless app is logged at once.) A bundle can therefore show that the
+    fix holds (Eden runs to `Turning off`), but it cannot count the blips it
+    swallowed. **The forwarder's copy of the timer does the same**
+    (`active_window_reporter`, since #534): before that, it sent an empty
+    report on the first tick with no window, so the keyboard machine saw a
+    forwarded blip as two remote changes and re-sent the overlays.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch
