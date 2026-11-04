@@ -114,6 +114,7 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
     source = SOURCES[reader_name](files)
     legend = legend_renderer(qmk)
     pics, vectors, overlays = {}, {}, []
+    failed: set = set()                      # SVGs that could not be fetched: not retried for every key
     modules = spec.get("vector_sources") or []
     for ov in spec["overlays"]:
         ospec = build.load_spec(spec_path.parent / ov["spec"])
@@ -128,13 +129,14 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
             cands = [candidate(c, spec.get("presets", {})) for c in k["candidates"]]
             stem = Path(str(b.get("icon", ""))).stem
             vspec = vector_spec(stem, modules) if modules else None
-            if vspec:
+            if vspec and vspec not in failed:
                 if vspec not in vectors:
                     try:
                         a = svg_silhouette.silhouette(vspec)
                         vectors[vspec] = {"w": int(a.shape[1]), "h": int(a.shape[0]), "alpha": b64(a)}
                     except (OSError, RuntimeError) as e:  # offline (icon_fetch._get raises RuntimeError): the key keeps its other candidates
                         print(f"  {vspec}: not fetched ({e})", file=sys.stderr)
+                        failed.add(vspec)
                 if vspec in vectors:
                     cands.insert(0, {"label": f"shipped icon, re-rasterized ({vspec})", "kind": "vector", "src": vspec, "preset": "vector",
                                      "params": dict(spec.get("presets", {}).get("vector", {}))})

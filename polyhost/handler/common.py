@@ -414,6 +414,4 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
         return None
     if title and has_title and not re.search(entry[TITLE], title):
         return None
-    if not (has_overlay or has_remote):
-        return None                             # a router whose sub-maps matched nothing
     return entry

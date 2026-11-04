@@ -72,6 +72,7 @@ class SpecTest(unittest.TestCase):
         self.assertTrue(specs)
         for path in specs:
             spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+            self.assertIn(spec["reader"], src.SOURCES, path)
             sources = src.SOURCES[spec["reader"]]
             for ov in spec["overlays"]:
                 binds = {(str(b["key"]).upper(), tuple(m.upper() for m in b.get("mods") or []))
@@ -87,7 +88,6 @@ class SpecTest(unittest.TestCase):
                         self.assertIn(c.get("preset"), spec["presets"], f"{ov['id']} {key} {c['label']}")
                         kind = c["src"].split(":")[0]
                         self.assertIn(kind, sources.KINDS, c["src"])
-            self.assertTrue(sources)
             if spec.get("vector_sources"):
                 self.assertIn("vector", spec["presets"], path)
 
