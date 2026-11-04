@@ -222,6 +222,57 @@ class TestWebFallback(unittest.TestCase):
         self.assertEqual(rel.tarball_url,
                          "https://github.com/thpoll83/PolyKybdHost/archive/refs/tags/v0.9.0.tar.gz")
 
+    def test_host_403_web_fallback_reads_notes_from_release_notes_branch(self):
+        """The rate-limited path used to show a bare Yes/No box: no notes, no
+        date. The notes now come from the release-notes branch on
+        raw.githubusercontent.com, which the API limit does not cover."""
+        notes_resp = _make_response(200)
+        notes_resp.text = "# v0.9.0 Big things\n\n## 0.9.0: New\n- One\n- Two\n"
+
+        def get(url, **kw):
+            if url.startswith("https://raw.githubusercontent.com/"):
+                self.assertEqual(
+                    url, "https://raw.githubusercontent.com/thpoll83/PolyKybdHost/release-notes/v0.9.0.md")
+                return notes_resp
+            return _make_response(403)
+
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", side_effect=get), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual(rel.name, "v0.9.0 Big things")
+        self.assertEqual(rel.notes, "## 0.9.0: New\n- One\n- Two")
+
+    def test_host_403_web_fallback_prefers_cached_notes_for_the_same_tag(self):
+        self.mock_load.return_value = {"host": {
+            "etag": "x", "tag": "v0.9.0", "version": "0.9.0", "tarball_url": "t",
+            "name": "Cached title", "notes": "cached notes", "published_at": "2026-11-04T07:23:20Z"}}
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(403)) as get, \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual((rel.name, rel.notes, rel.published_at),
+                         ("Cached title", "cached notes", "2026-11-04T07:23:20Z"))
+        self.assertEqual(get.call_count, 1)  # only the API call; no notes fetch
+
+    def test_host_403_web_fallback_without_notes_still_offers_the_update(self):
+        def get(url, **kw):
+            if url.startswith("https://raw.githubusercontent.com/"):
+                raise requests.RequestException("offline")
+            return _make_response(403)
+        with mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", side_effect=get), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertEqual(rel.version, "0.9.0")
+        self.assertEqual(rel.notes, "")
+
     def test_host_403_web_says_up_to_date_returns_none(self):
         with mock.patch.object(updater, "_current_version", return_value=Version("9.9.9")), \
              mock.patch.object(updater.requests, "get", return_value=_make_response(403)), \
@@ -243,13 +294,18 @@ class TestWebFallback(unittest.TestCase):
                 '<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.uf2">')
         asset_resp = _make_response(200)
         asset_resp.text = html
+        notes_resp = _make_response(200)
+        notes_resp.text = "# PolyKybd v0.9.0 Title\n\n## 0.9.0: Thing\n- Line\n"
         with mock.patch.object(updater.requests, "get",
-                               side_effect=[_make_response(403), asset_resp]), \
+                               side_effect=[_make_response(403), asset_resp, notes_resp]), \
              mock.patch.object(updater.requests, "head",
                                return_value=_redirect_response(
                                    "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
             fw = updater.check_fw_latest("0.8.0")
         self.assertIsNotNone(fw)
+        # The fallback still brings the release notes for the confirm dialog.
+        self.assertEqual(fw.name, "PolyKybd v0.9.0 Title")
+        self.assertEqual(fw.notes, "## 0.9.0: Thing\n- Line")
         self.assertEqual(fw.version, "0.9.0")
         self.assertTrue(fw.bin_url.endswith("/poly.bin"))
         self.assertTrue(fw.uf2_url.endswith("/poly.uf2"))
@@ -269,7 +325,7 @@ class TestWebFallback(unittest.TestCase):
         asset_resp = _make_response(200)
         asset_resp.text = html
         with mock.patch.object(updater.requests, "get",
-                               side_effect=[_make_response(403), asset_resp]), \
+                               side_effect=[_make_response(403), asset_resp, _make_response(404)]), \
              mock.patch.object(updater.requests, "head",
                                return_value=_redirect_response(
                                    "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
