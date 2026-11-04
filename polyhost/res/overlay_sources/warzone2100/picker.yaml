@@ -1,0 +1,585 @@
+# Candidates for tools/gen_icon_picker.py: for each key of the Warzone 2100
+# overlay, the game's interface images (intfac:) and its units rendered from
+# the 3D models (model:, wz_models.py). Warzone's art is GPL-2.0-or-later, so
+# the picks ship as icons. See tools/ICON_PICKER.md.
+title: Warzone 2100 icon picker
+reader: warzone2100
+palette_from:
+- image_build_up
+- image_commanddroid_up
+- image_design_up
+- image_hovercraft
+- image_intelmap_up
+- image_manufacture_up
+- image_ord_destruct1up
+- image_ord_embarkup
+- image_ord_fatwillup
+- image_ord_gotohqup
+- image_ord_guardup
+- image_ord_haltup
+- image_ord_holdfireup
+- image_ord_patrolup
+- image_ord_pursueup
+- image_ord_range1up
+- image_ord_range2up
+- image_ord_range3up
+- image_ord_repair1up
+- image_ord_repair2up
+- image_ord_repair3up
+- image_ord_retfireup
+- image_ord_rtrup
+- image_research_up
+- image_stop_up
+- image_tracks
+- radar_north
+- unittype_cyborg
+- unittype_tank
+- unittype_vtol
+vector_sources:
+- polyhost.res.overlay_sources.warzone2100.fetch_icons
+presets:
+  vector:
+    relief: true
+    depth: 0.08
+    azimuth: 225
+    elevation: 42
+    ambient: 0.35
+    falloff: 0.45
+    grain: 1.0
+    seed: 1
+    flat: 0.6
+    mode: fs
+    lo: 3
+    hi: 97
+    gamma: 1.0
+    curve: 0.0
+    sharpen: 0.0
+    floor: 0.15
+    outline: true
+    mirror: false
+    valign: bottom
+  model:
+    engine: dither
+    cut: true
+    frame: 0
+    mode: fs
+    lo: 3
+    hi: 97
+    gamma: 1.0
+    curve: 0.0
+    sharpen: 0.0
+    floor: 0.15
+    outline: true
+    mirror: true
+  button:
+    engine: dither
+    cut: true
+    frame: 3
+    mode: levels
+    lo: 5
+    hi: 95
+    gamma: 1.0
+    curve: 0.3
+    sharpen: 1.0
+    floor: 0.15
+    outline: true
+    mirror: false
+  pixels:
+    engine: pixel
+    lit: brighter
+    pct: 60
+    scale: 0
+    mirror: false
+    crop:
+    - 3
+    - 3
+overlays:
+- id: warzone2100
+  title: Warzone 2100
+  spec: warzone2100.yaml
+  template: warzone2100_template.mods.png
+  keys:
+  - key: F1
+    label: Manufacture
+    candidates:
+    - label: 'interface: image_manufacture_up'
+      src: intfac:image_manufacture_up
+      preset: button
+    - label: 'interface: image_manufacture_up, pixels'
+      src: intfac:image_manufacture_up
+      preset: pixels
+  - key: F2
+    label: Research
+    candidates:
+    - label: 'interface: image_research_up'
+      src: intfac:image_research_up
+      preset: button
+    - label: 'interface: image_research_up, pixels'
+      src: intfac:image_research_up
+      preset: pixels
+  - key: F3
+    label: Build
+    candidates:
+    - label: 'interface: image_build_up'
+      src: intfac:image_build_up
+      preset: button
+    - label: 'interface: image_build_up, pixels'
+      src: intfac:image_build_up
+      preset: pixels
+  - key: F4
+    label: Design
+    candidates:
+    - label: 'interface: image_design_up'
+      src: intfac:image_design_up
+      preset: button
+    - label: 'interface: image_design_up, pixels'
+      src: intfac:image_design_up
+      preset: pixels
+  - key: F5
+    label: Intelligence display
+    candidates:
+    - label: 'interface: image_intelmap_up'
+      src: intfac:image_intelmap_up
+      preset: button
+    - label: 'interface: image_intelmap_up, pixels'
+      src: intfac:image_intelmap_up
+      preset: pixels
+  - key: F6
+    label: Commanders
+    candidates:
+    - label: 'interface: image_commanddroid_up'
+      src: intfac:image_commanddroid_up
+      preset: button
+    - label: 'interface: image_commanddroid_up, pixels'
+      src: intfac:image_commanddroid_up
+      preset: pixels
+    - label: '3D model: commander'
+      src: model:commander
+      preset: model
+  - key: '1'
+    label: Select group 1
+    candidates:
+    - label: '3D model: group1'
+      src: model:group1
+      preset: model
+  - key: '2'
+    label: Select group 2
+    candidates:
+    - label: '3D model: group2'
+      src: model:group2
+      preset: model
+  - key: '3'
+    label: Select group 3
+    candidates:
+    - label: '3D model: group3'
+      src: model:group3
+      preset: model
+  - key: '4'
+    label: Select group 4
+    candidates:
+    - label: '3D model: group4'
+      src: model:group4
+      preset: model
+  - key: '5'
+    label: Select group 5
+    candidates:
+    - label: '3D model: group5'
+      src: model:group5
+      preset: model
+  - key: '6'
+    label: Select group 6
+    candidates:
+    - label: '3D model: group6'
+      src: model:group6
+      preset: model
+  - key: '7'
+    label: Select group 7
+    candidates:
+    - label: '3D model: group7'
+      src: model:group7
+      preset: model
+  - key: '8'
+    label: Select group 8
+    candidates:
+    - label: '3D model: group8'
+      src: model:group8
+      preset: model
+  - key: '9'
+    label: Select group 9
+    candidates:
+    - label: '3D model: group9'
+      src: model:group9
+      preset: model
+  - key: '0'
+    label: Select group 0
+    candidates:
+    - label: '3D model: group0'
+      src: model:group0
+      preset: model
+  - key: '1'
+    mods:
+    - ALT
+    label: Select commander 1
+    candidates:
+    - label: '3D model: commander'
+      src: model:commander
+      preset: model
+  - key: C
+    label: Hold fire
+    candidates:
+    - label: 'interface: image_ord_holdfireup'
+      src: intfac:image_ord_holdfireup
+      preset: button
+    - label: 'interface: image_ord_holdfireup, pixels'
+      src: intfac:image_ord_holdfireup
+      preset: pixels
+  - key: E
+    label: Return fire
+    candidates:
+    - label: 'interface: image_ord_retfireup'
+      src: intfac:image_ord_retfireup
+      preset: button
+    - label: 'interface: image_ord_retfireup, pixels'
+      src: intfac:image_ord_retfireup
+      preset: pixels
+  - key: F
+    label: Fire at will
+    candidates:
+    - label: 'interface: image_ord_fatwillup'
+      src: intfac:image_ord_fatwillup
+      preset: button
+    - label: 'interface: image_ord_fatwillup, pixels'
+      src: intfac:image_ord_fatwillup
+      preset: pixels
+  - key: G
+    label: Guard position
+    candidates:
+    - label: 'interface: image_ord_guardup'
+      src: intfac:image_ord_guardup
+      preset: button
+    - label: 'interface: image_ord_guardup, pixels'
+      src: intfac:image_ord_guardup
+      preset: pixels
+  - key: H
+    label: Hold position
+    candidates:
+    - label: 'interface: image_ord_haltup'
+      src: intfac:image_ord_haltup
+      preset: button
+    - label: 'interface: image_ord_haltup, pixels'
+      src: intfac:image_ord_haltup
+      preset: pixels
+  - key: P
+    label: Pursue
+    candidates:
+    - label: 'interface: image_ord_pursueup'
+      src: intfac:image_ord_pursueup
+      preset: button
+    - label: 'interface: image_ord_pursueup, pixels'
+      src: intfac:image_ord_pursueup
+      preset: pixels
+  - key: Q
+    label: Patrol
+    candidates:
+    - label: 'interface: image_ord_patrolup'
+      src: intfac:image_ord_patrolup
+      preset: button
+    - label: 'interface: image_ord_patrolup, pixels'
+      src: intfac:image_ord_patrolup
+      preset: pixels
+  - key: H
+    mods:
+    - SHIFT
+    label: Return to HQ
+    candidates:
+    - label: 'interface: image_ord_gotohqup'
+      src: intfac:image_ord_gotohqup
+      preset: button
+    - label: 'interface: image_ord_gotohqup, pixels'
+      src: intfac:image_ord_gotohqup
+      preset: pixels
+  - key: R
+    label: Return for repair
+    candidates:
+    - label: 'interface: image_ord_rtrup'
+      src: intfac:image_ord_rtrup
+      preset: button
+    - label: 'interface: image_ord_rtrup, pixels'
+      src: intfac:image_ord_rtrup
+      preset: pixels
+  - key: R
+    mods:
+    - CTRL
+    label: Return for recycling
+    candidates:
+    - label: 'interface: image_ord_destruct1up'
+      src: intfac:image_ord_destruct1up
+      preset: button
+    - label: 'interface: image_ord_destruct1up, pixels'
+      src: intfac:image_ord_destruct1up
+      preset: pixels
+  - key: T
+    label: Go to transport
+    candidates:
+    - label: 'interface: image_ord_embarkup'
+      src: intfac:image_ord_embarkup
+      preset: button
+    - label: 'interface: image_ord_embarkup, pixels'
+      src: intfac:image_ord_embarkup
+      preset: pixels
+  - key: I
+    label: Optimum range
+    candidates:
+    - label: 'interface: image_ord_range3up'
+      src: intfac:image_ord_range3up
+      preset: button
+    - label: 'interface: image_ord_range3up, pixels'
+      src: intfac:image_ord_range3up
+      preset: pixels
+  - key: O
+    label: Short range
+    candidates:
+    - label: 'interface: image_ord_range1up'
+      src: intfac:image_ord_range1up
+      preset: button
+    - label: 'interface: image_ord_range1up, pixels'
+      src: intfac:image_ord_range1up
+      preset: pixels
+  - key: U
+    label: Long range
+    candidates:
+    - label: 'interface: image_ord_range2up'
+      src: intfac:image_ord_range2up
+      preset: button
+    - label: 'interface: image_ord_range2up, pixels'
+      src: intfac:image_ord_range2up
+      preset: pixels
+  - key: COMMA
+    label: Retreat at medium damage
+    candidates:
+    - label: 'interface: image_ord_repair2up'
+      src: intfac:image_ord_repair2up
+      preset: button
+    - label: 'interface: image_ord_repair2up, pixels'
+      src: intfac:image_ord_repair2up
+      preset: pixels
+  - key: DOT
+    label: Retreat at heavy damage
+    candidates:
+    - label: 'interface: image_ord_repair1up'
+      src: intfac:image_ord_repair1up
+      preset: button
+    - label: 'interface: image_ord_repair1up, pixels'
+      src: intfac:image_ord_repair1up
+      preset: pixels
+  - key: SLASH
+    label: Do or die
+    candidates:
+    - label: 'interface: image_ord_repair3up'
+      src: intfac:image_ord_repair3up
+      preset: button
+    - label: 'interface: image_ord_repair3up, pixels'
+      src: intfac:image_ord_repair3up
+      preset: pixels
+  - key: S
+    label: Stop
+    candidates:
+    - label: 'interface: image_stop_up'
+      src: intfac:image_stop_up
+      preset: button
+    - label: 'interface: image_stop_up, pixels'
+      src: intfac:image_stop_up
+      preset: pixels
+  - key: BSPC
+    label: Snap view to north
+    candidates:
+    - label: 'interface: radar_north'
+      src: intfac:radar_north
+      preset: button
+    - label: 'interface: radar_north, pixels'
+      src: intfac:radar_north
+      preset: pixels
+  - key: C
+    mods:
+    - CTRL
+    label: Select all cyborgs
+    candidates:
+    - label: 'interface: unittype_cyborg'
+      src: intfac:unittype_cyborg
+      preset: button
+    - label: 'interface: unittype_cyborg, pixels'
+      src: intfac:unittype_cyborg
+      preset: pixels
+    - label: '3D model: cyborgs'
+      src: model:cyborgs
+      preset: model
+  - key: V
+    mods:
+    - CTRL
+    label: Select all VTOLs
+    candidates:
+    - label: 'interface: unittype_vtol'
+      src: intfac:unittype_vtol
+      preset: button
+    - label: 'interface: unittype_vtol, pixels'
+      src: intfac:unittype_vtol
+      preset: pixels
+    - label: '3D model: vtols'
+      src: model:vtols
+      preset: model
+  - key: H
+    mods:
+    - CTRL
+    label: Select all hovers
+    candidates:
+    - label: 'interface: image_hovercraft'
+      src: intfac:image_hovercraft
+      preset: button
+    - label: 'interface: image_hovercraft, pixels'
+      src: intfac:image_hovercraft
+      preset: pixels
+    - label: '3D model: hovers'
+      src: model:hovers
+      preset: model
+  - key: T
+    mods:
+    - CTRL
+    label: Select all tracks
+    candidates:
+    - label: 'interface: image_tracks'
+      src: intfac:image_tracks
+      preset: button
+    - label: 'interface: image_tracks, pixels'
+      src: intfac:image_tracks
+      preset: pixels
+    - label: '3D model: tracks'
+      src: model:tracks
+      preset: model
+  - key: F
+    mods:
+    - CTRL
+    label: Select all half-tracks
+    candidates:
+    - label: '3D model: halftracks'
+      src: model:halftracks
+      preset: model
+  - key: W
+    mods:
+    - CTRL
+    label: Select all wheels
+    candidates:
+    - label: '3D model: wheels'
+      src: model:wheels
+      preset: model
+  - key: A
+    mods:
+    - CTRL
+    label: Select all combat units
+    candidates:
+    - label: 'interface: unittype_tank'
+      src: intfac:unittype_tank
+      preset: button
+    - label: 'interface: unittype_tank, pixels'
+      src: intfac:unittype_tank
+      preset: pixels
+    - label: '3D model: group5'
+      src: model:group5
+      preset: model
+  - key: G
+    mods:
+    - SHIFT
+    label: Select all land combat units
+    candidates:
+    - label: 'interface: unittype_tank'
+      src: intfac:unittype_tank
+      preset: button
+    - label: 'interface: unittype_tank, pixels'
+      src: intfac:unittype_tank
+      preset: pixels
+    - label: '3D model: heavytank, yaw 60, pitch 25'
+      src: model:heavytank@60,25
+      preset: model
+    - label: '3D model: heavytank, yaw 30, pitch 15'
+      src: model:heavytank@30,15
+      preset: model
+    - label: '3D model: heavytank, yaw 90, pitch 20'
+      src: model:heavytank@90,20
+      preset: model
+    - label: '3D model: heavytank, yaw 300, pitch 25'
+      src: model:heavytank@300,25
+      preset: model
+    - label: '3D model: heavytank, yaw 45, pitch 40'
+      src: model:heavytank@45,40
+      preset: model
+  - key: C
+    mods:
+    - SHIFT
+    label: Select all combat cyborgs
+    candidates:
+    - label: '3D model: cyborgs'
+      src: model:cyborgs
+      preset: model
+  - key: P
+    mods:
+    - SHIFT
+    label: Select all transporters
+    candidates:
+    - label: '3D model: transporters, yaw 60, pitch 30'
+      src: model:transporters@60,30
+      preset: model
+    - label: '3D model: transporters, yaw 90, pitch 15'
+      src: model:transporters@90,15
+      preset: model
+    - label: '3D model: transporters, yaw 30, pitch 10'
+      src: model:transporters@30,10
+      preset: model
+    - label: '3D model: transporters, yaw 270, pitch 20'
+      src: model:transporters@270,20
+      preset: model
+    - label: '3D model: transporters, yaw 60, pitch 60'
+      src: model:transporters@60,60
+      preset: model
+  - key: R
+    mods:
+    - SHIFT
+    label: Select all repair tanks
+    candidates:
+    - label: '3D model: repairtanks'
+      src: model:repairtanks
+      preset: model
+  - key: S
+    mods:
+    - SHIFT
+    label: Select all sensor units
+    candidates:
+    - label: '3D model: sensors'
+      src: model:sensors
+      preset: model
+  - key: T
+    mods:
+    - SHIFT
+    label: Select all trucks
+    candidates:
+    - label: '3D model: trucks'
+      src: model:trucks
+      preset: model
+  - key: V
+    mods:
+    - SHIFT
+    label: Select all fully-armed VTOLs
+    candidates:
+    - label: '3D model: vtols, yaw 60, pitch 45'
+      src: model:vtols@60,45
+      preset: model
+    - label: '3D model: vtols, yaw 90, pitch 70'
+      src: model:vtols@90,70
+      preset: model
+    - label: '3D model: vtols, yaw 30, pitch 20'
+      src: model:vtols@30,20
+      preset: model
+    - label: '3D model: vtols, yaw 60, pitch 15'
+      src: model:vtols@60,15
+      preset: model
+    - label: '3D model: vtols, yaw 0, pitch 80'
+      src: model:vtols@0,80
+      preset: model
