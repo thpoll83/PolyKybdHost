@@ -132,8 +132,9 @@ def set_binding_region(path: Path, stem: str, region: list) -> int:
             if isinstance(b, dict) and Path(str(b.get("icon", ""))).stem == stem:
                 if re.search(r"region:\s*\[[^\]]*\]", line):
                     line = re.sub(r"region:\s*\[[^\]]*\]", new, line, count=1)
-                else:
-                    line = re.sub(r"\s*\}", f", {new} }}", line, count=1) if line.count("}") == 1 else line
+                else:                            # before the brace that closes the binding's flow map
+                    end = m.end(1) - 1
+                    line = line[:end].rstrip() + f", {new} " + line[end:]
                 n += 1
         out.append(line)
     path.write_text("".join(out), encoding="utf-8")

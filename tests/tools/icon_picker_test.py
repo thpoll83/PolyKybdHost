@@ -243,6 +243,15 @@ class ApplyTest(unittest.TestCase):
         self.run_picks({"a": {"1 (Atreides)": {"pick": "shipped"}}})
         self.assertNotIn("g", self.raster())
 
+    def test_a_region_is_written_on_a_binding_with_a_brace_in_its_label(self):
+        text = (self.d / "a.yaml").read_text(encoding="utf-8")
+        (self.d / "a.yaml").write_text(text.replace('label: "Build" }', 'label: "Build {fast}" }  # note'),
+                                       encoding="utf-8")
+        self.assertEqual(apply.set_binding_region(self.d / "a.yaml", "y", [40, 21]), 1)
+        b = [b for b in build.load_spec(self.d / "a.yaml")["bindings"] if b["icon"] == "y.png"][0]
+        self.assertEqual((b["label"], b["region"]), ("Build {fast}", [40, 21]))
+        self.assertIn('label: "Build {fast}", region: [40, 21] }  # note', (self.d / "a.yaml").read_text(encoding="utf-8"))
+
     def test_an_overlay_without_picks_or_a_block_is_left_alone(self):
         before = (self.d / "b.yaml").read_text(encoding="utf-8")
         self.run_picks({"a": {"B": WORD}})
