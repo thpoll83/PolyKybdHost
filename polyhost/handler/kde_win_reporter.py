@@ -29,12 +29,12 @@ def getActiveWindow():
 
     if reg_script_number is None:
         _log.warning("KWin: could not find script number in dbus output (transient)")
-        return None
+        return _keep_last("no script number")
     try:
         reg_script_number = str(int(reg_script_number))
     except ValueError:
         _log.warning("KWin: unexpected script number format '%s' (transient)", reg_script_number)
-        return None
+        return _keep_last("bad script number")
     
     datetime_now = datetime.now()
     subprocess.run(
@@ -64,25 +64,58 @@ def getActiveWindow():
         .rstrip()
         .split("\n")
     )
-    result = [elem.removeprefix("js: ") for elem in msg]
-    if not result or not result[0]:
-        return None  # transient: KWin script produced no output this cycle
-    try:
-        return KWin(result)
-    except ValueError as e:
-        _log.warning("KWin: malformed window response (transient): %s", e)
+    return read_reply(msg)
+
+
+# The script's line starts with this; anything else in kwin_wayland's journal
+# (KWin's own messages arrive there too) is not the answer.
+REPLY_PREFIX = "polykybd-window:"
+NO_WINDOW = "none"
+
+# The window of the last good read. ⚠️ A read that finds no reply line is a
+# FAILED read, not "no window": the script's print is not always in the
+# journal yet when journalctl runs (more often while a game keeps the system
+# busy), and reporting None then cleared the keycaps for about a second at a
+# time (OpenRA, 2026-11-04). Only the script's explicit "none" means no window.
+_last = None
+
+
+def _keep_last(reason):
+    _log.debug("KWin: no reply this cycle (%s); keeping the last window", reason)
+    return _last
+
+
+def read_reply(lines):
+    """The active window from the journal lines the script run left: a KWin,
+    None when the script reported no active window, or the last window when
+    the lines hold no reply (a failed read)."""
+    global _last
+    replies = [ln.removeprefix("js: ") for ln in lines]
+    replies = [ln[len(REPLY_PREFIX):] for ln in replies if ln.startswith(REPLY_PREFIX)]
+    if not replies:
+        return _keep_last("no reply line")
+    reply = replies[-1]
+    if reply == NO_WINDOW:
+        _last = None
         return None
+    try:
+        _last = KWin(reply)
+    except ValueError as e:
+        _log.warning("KWin: malformed window reply (transient): %s", e)
+        return _keep_last("malformed reply")
+    return _last
 
 
 class KWin:
-    def __init__(self, msg):
-        elems = msg[0].split(";")
-        if len(elems) != 3:
-            raise ValueError(f"Unexpected format reported by KWin Script: '{msg}'")
-
-        self.name = elems[0]
-        self.title = elems[1]
-        self.handle = int(elems[2]) if len(elems[2])>0 else hash(self.name)
+    def __init__(self, reply):
+        """`reply` is "<class>;<caption>;<pid>"; the caption may contain ";"."""
+        name, sep, rest = reply.partition(";")
+        title, sep2, pid = rest.rpartition(";")
+        if not sep or not sep2:
+            raise ValueError(f"Unexpected format reported by KWin Script: '{reply}'")
+        self.name = name
+        self.title = title
+        self.handle = int(pid) if pid else hash(self.name)
         # log = logging.getLogger("PolyHost")
         # log.info("KWin %s", msg)
     

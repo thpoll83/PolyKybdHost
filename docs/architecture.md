@@ -163,8 +163,14 @@ Per-platform implementations:
 - `remote_window.py` — TCP-based window title relay for multi-machine setups
 - `own_process.py` — tells PolyHost's own windows from other Python windows. Both run as the interpreter, so the tracker names them `python3`/`pythonw`/`Python`; `own_app_name()` reads the process command line (`/proc` on Linux, `NtQueryInformationProcess` on Windows, `KERN_PROCARGS2` on macOS) and renames a `-m polyhost` process to `polyhost`. The handler and the forwarder both call it, and `app_icons.program_overlay` draws the built-in PolyKybd mark for that name, ahead of the OS icon (which is Python's). ⚠️ The Windows and macOS readers are ctypes calls the suite cannot execute.
   - The command line is only ONE of three answers, because a tracker can name our window without a usable pid. The GNOME Wayland and KDE reporters have no pid and name a window by its WM class, so `own_app_name()` accepts the class `PolyHost` (set in `main_app`). The forwarder also passes Qt's own answer, `activeWindow() is not None`, which is exact and needs no pid; it counts only for a Python or empty name, so a focus change between the two reads cannot relabel another app. ⚠️ **Why the Qt check exists:** a GNOME forwarder reported its own Log Viewer as `python` with a pid that was neither its own nor a `-m polyhost` command line (field, 2026-09-23). The cause is still unknown. The forwarder now logs `Window '…' belongs to a Python process that is not PolyHost (pid …, this process …, interpreter …, runs …)` once per pid, so ask for that line when it recurs. It names the interpreter and the entry point only; another process's arguments can carry secrets and the log travels in support bundles.
-- `kde_win_reporter.py` — KDE D-Bus integration for window events
-- `browser_url.py` / `browser_url_source.py` — the URL the matcher's `url` / `urls-contains` keys see: the focused browser's active tab, reported by `browser-extension/` to the loopback `server/browser_report_server.py` (macOS AppleScript as a fallback), **or** a context pseudo-URL from an app on the `CONTEXT_REPORTERS` allow-list — the Blender add-on (`blender-addon/`) reports `blender://<mode>/<editor>` over the same endpoint (`{app, url, focused, pid, input_age}`, same token, loopback, JSON-only and size-cap). Reports are stored **per source** (one per browser brand, one per running reporter instance, keyed by pid; with several Blenders open the one with the most recent input wins, and a browser's own fresh report, even a cleared tab, keeps an anonymous older-extension report from answering for it), because the add-on cannot see OS focus and its 3 s keep-alive would otherwise overwrite the browser's report. A report counts only while it is fresh (`DEFAULT_MAX_AGE_S` 8 s) and its own app is the focused one, so a background Blender never steers the foreground app's overlay. Blender's mapping entry sets `layer: false` so a context replaces its fallback (`polyhost/res/overlay-mapping.md`).
+- `kde_win_reporter.py` — KDE D-Bus integration for window events. It loads
+  `active_win.js` into KWin, runs it and reads its line back from the
+  journal. The script always prints `polykybd-window:<class>;<caption>;<pid>`
+  or `polykybd-window:none`. ⚠️ A read without that line is a failed read (the
+  print is not always in the journal yet) and keeps the last window; only
+  `none` reports no window. Treating a failed read as no window cleared the
+  keycaps for about a second at a time during OpenRA games.
+- `browser_url.py` / `browser_url_source.py` — the URL the matcher's `url` / `urls-contains` keys see: the focused browser's active tab, reported by `browser-extension/` to the loopback `server/browser_report_server.py` (macOS AppleScript as a fallback), **or** a context pseudo-URL from an app on the `CONTEXT_REPORTERS` allow-list — the Blender add-on (`blender-addon/`) reports `blender://<mode>/<editor>` over the same endpoint (`{app, url, focused, pid, input_age}`, same token, loopback, JSON-only and size-cap). Reports are stored **per source** (one per browser brand, one per running reporter instance, keyed by pid; with several Blenders open the one with the most recent input wins, and a browser's own fresh report, even a cleared tab, keeps an anonymous older-extension report from answering for it), because the add-on cannot see OS focus and its 3 s keep-alive would otherwise overwrite the browser's report. A report counts only while it is fresh (`DEFAULT_MAX_AGE_S` 8 s) and its own app is the focused one, so a background Blender never steers the foreground app's overlay. Blender's mapping entry sets `layer: false` so a context replaces its fallback (`polyhost/res/overlay-mapping.md`). **Terminal-hosted editors**: vim and emacs (`HOSTED_REPORTERS`) report their mode (`vim://insert`, `emacs://org-mode`) from inside a terminal. While an app on `TERMINAL_APPS` is focused, the fresh, focused report with the newest input among them answers for it, as a tab's URL answers for a browser. The editor learns focus from the terminal's focus events and sends `focused: false` on focus-out and on exit, so another terminal window running a shell gets no URL. An editor that dies without that report (`kill -9`, a crash) leaves a report that expires after 8 s with no window or title change, so `OverlayHandler._recheck_context_url()` asks the provider again on every tick while a mode reporter's app (Blender, GUI Vim and Emacs, a terminal) is focused with a URL, and re-matches when the answer differs. Browsers are left out: their lookup can be an AppleScript call. GUI Vim (`gvim`, `macvim`, `neovide`) and Emacs are ordinary context reporters. The Vim and Neovim plugin is `vim-plugin/`; the mapping routes its `vim://<mode>` through the `&editor_urls` map on every terminal entry, and the terminals without an overlay set have an entry with no overlay of its own, which matches only through its sub-maps (`polyhost/res/overlay-mapping.md`). Only local terminals are listed: an editor in an SSH session cannot reach the loopback receiver. None of the terminal app names was checked on an install. GNU nano has no plugin and sets no title, so it is routed by the terminal's window title instead (`titles-contains: &editor_titles` with a `title` regex that requires nano at the command position); the shared terminal entry, which has no overlay of its own, routes it the same way and still matches nothing for any other title. The title formats are in `polyhost/res/overlay_sources/nano/SOURCES.md`. The bash, zsh and PowerShell scripts that put the running command into the title are `polyhost/res/shell/polykybd-title.*`, installed into the user's startup files by `services/shell_title.py` (tray: Updates → "Show the running command in the terminal title…", also in the forwarder's menu; `polyctl shell-integration install|remove|status`, which never connects to the host).
 - **Active-window backend selection** (in both `active_window.py` and `forwarder.py`): `XDG_CURRENT_DESKTOP == "KDE"` → `kde_win_reporter` (KWin script → journal); else `XDG_SESSION_TYPE == "wayland"` → `gnome_wayland_reporter`; else → `pywinctl` (X11). `gnome_wayland_reporter.py` is **⚠️ UNTESTED on hardware** — pywinctl can't see native Wayland windows, so it queries our own purpose-built, **read-only** *PolyKybd Window Reporter* GNOME Shell extension (`org.polykybd.WindowReporter`, repo `thpoll83/gnome-wayland-winreader`) over `gdbus` via a single `GetFocusedWindow()` call (the extension exposes no window-modifying methods, unlike the general *Window Calls* extension it replaces); **without the extension it falls back to pywinctl (X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) under XWayland are still tracked, native Wayland windows are not — and warns **once** (instead of pywinctl's silent Wayland failure). The fallback imports pywinctl **lazily + guarded** (it can `sys.exit()` with no X server), so the module still loads with zero pywinctl/Qt at import (headless-safe). The fallback is only consulted when the extension is *unavailable* — an extension that's up but reports "no focused window" returns None directly (so a stale XWayland window can't mask it). The **X11 path is unaffected** (it never enters the Wayland branch); only the output parsing + fallback routing are unit-tested. Full GNOME-Wayland coverage still needs the extension or an Xorg login session.
 - ⚠️ **macOS: THREE things the window backend does not tell you** — all found in the
   field (2026-09-21/22), each producing a confidently *wrong* keycap rather than a
@@ -210,6 +216,13 @@ Per-platform implementations:
     `TheShippedMappingResolvesWindowlessAppsTest`: `code`, `google chrome`,
     `claude`, `zed` and `cursor` all resolve their macOS templates with no
     window, and `kicad` correctly does not.
+  - **An entry with no `overlay` is a router.** It matches only through its
+    title, URL or `os:` sub-maps, and returns nothing when none of them match.
+    The DOSBox entry uses this: it has no overlay of its own, and its
+    `titles-contains: DUNE2` sub-map selects the Dune II overlay, so other DOS
+    games in DOSBox get no overlay
+    (`tests/handler/matcher_test.py` →
+    `test_an_entry_without_an_overlay_routes_by_its_title_sub_map`).
   - ⚠️ **NO WINDOW IS NOT NO APPLICATION.** `pywinctl.getActiveWindow()` returns
     `None` intermittently on macOS, and **the failing SET changes between runs** —
     Photos/Notes/Freeform failed while Chess/Maps/Terminal/Finder answered in the
@@ -268,6 +281,23 @@ Per-platform implementations:
     ⚠️ `polyhost/forwarder.py`
     holds the **second copy** of that timer, on the other machine, and had the
     same inflation — there it also stretched `HEARTBEAT_MSEC` (15 s) to 150 s.
+  - ⚠️ **A LOST window waits for the same accept timer as a new one** (#531,
+    1.17.86). Before, the windowless branch of `_decide_active_window` acted on
+    the first tick with no window. On KDE Wayland the backend reports no window
+    for ONE tick (~270 ms) and then the same window again, about every 10 s in
+    bursts, with nobody at the desk. Each blip sent a DISABLE, and the window
+    coming back re-sent the whole overlay set. Every overlay send in
+    `poly_core.py` ends in `set_idle(False)`, so each blip also took the
+    keyboard out of Eden: 21 stops in 30 minutes (field bundle 2026-11-04).
+    ⚠️ **A blip the timer absorbs logs nothing.** After a TRACKED window is
+    lost, `No active window` appears only once the loss has lasted past
+    `NEW_WINDOW_ACCEPT_TIME_MSEC`. (With no window tracked before, a change of
+    windowless app is logged at once.) A bundle can therefore show that the
+    fix holds (Eden runs to `Turning off`), but it cannot count the blips it
+    swallowed. **The forwarder's copy of the timer does the same**
+    (`active_window_reporter`, since #534): before that, it sent an empty
+    report on the first tick with no window, so the keyboard machine saw a
+    forwarded blip as two remote changes and re-sent the overlays.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch
@@ -381,13 +411,25 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
   recipe for each icon, keyed by variant (the faction) where they differ.
-  - Shared, at the top of the package: `__init__.py` (below), `build.py` and
-    `dither.py`; `readers.py` (light, imported at start) holds the `Reader` and
-    `Setting` declarations and the registry of readers.
+  - Shared, at the top of the package: `__init__.py` (below), `build.py`,
+    `dither.py` and `picture.py`; `readers.py` (light, imported at start) holds
+    the `Reader` and `Setting` declarations and the registry of readers.
+    `picture.py` is the icon picker's renderer in Python (`tools/ICON_PICKER.md`):
+    a reader whose recipes come from the picker draws with it, so the keyboard
+    shows what the page showed. ⚠️ It mirrors the page's JavaScript step for step;
+    change both together and regenerate the pins of
+    `tests/services/game_assets_picture_test.py` from the page.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
-    OpenRA installs the original game files; both readers search them. Its
+    the encrypted MIX format in `mix.py`; `westwood_d2/` for Dune II, which reads
+    PAK archives, shape files, map tiles and fonts of Dune II 1.0 and 1.07 and
+    draws the picker's recipes; `westwood_d2k/` for Dune 2000, which reads the
+    R16 sprite file; `starcraft/` for the StarCraft 1.16.1 MPQ archives, drawing
+    the StarCraft II control groups, with the MPQ format in `mpq.py`, PKWARE
+    explode in `explode.py` and GRP sprites in `grp.py`; it was not run against
+    real game files). `openra.py` lists the folders where OpenRA installs the
+    original game files; the Red Alert, Tiberian Dawn and Dune 2000 readers
+    search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,
     `fingerprint(files)`, `open_source(files)` and `draw(source, recipe, size)`;
@@ -395,6 +437,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     larger than 640x400 px before decoding and decodes a shape file only up to
     the highest frame a recipe asks for). A new reader is a new
     subfolder plus one line in `readers._registry()`.
+  - ⚠️ Before merging a reader, run it on real game files and compare each key
+    it changes with the shipped icon, white on black: the
+    `evaluate-game-asset-reader` skill. Synthetic test files prove the decoder,
+    not the picture; readers for Factorio and Minecraft were dropped this way
+    (`docs/FUTURE_WORK.md`).
   - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
     settings dialog adds their labels, descriptions and dropdowns, so a reader
     brings its own settings.

@@ -11,6 +11,7 @@ from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry, mapping_key, OS,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
+from polyhost.handler.browser_url import context_reporter_for, is_terminal_app
 from polyhost.handler.remote_window import RemoteHandler
 from polyhost.handler.own_process import (
     own_app_name, own_front_app, window_pid,
@@ -642,6 +643,9 @@ class OverlayHandler:
     def _decide_active_window(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = (self.last_update_msec
                                  + self._tick_elapsed_msec(update_cycle_time_msec))
+        # Before the macOS skip, which would otherwise answer "same app,
+        # nothing changed" for ever.
+        self._recheck_context_url()
         if _IS_MACOS and self._macos_can_skip_tick():
             return None, OverlayCommand.NONE
         win = None
@@ -772,6 +776,22 @@ class OverlayHandler:
                         else:
                             return None, OverlayCommand.DISABLE
         else:
+            # ⚠️ "No window" gets the same accept delay as a new window. On
+            # KDE Wayland the backend reports no window for ONE tick (~270 ms)
+            # and then the same window again, every ~10 s in bursts, with nobody
+            # at the desk. Acting on that tick sent a DISABLE, the return sent
+            # the whole overlay set again, and every send ends in
+            # `set_idle(False)`: Eden stopped 21 times in 30 minutes (field
+            # bundle 2026-11-04). The window branch always waited for
+            # `accept_time_msec`; this branch did not.
+            if self.prev_win is not None:
+                self.prev_win = None
+                self.last_update_msec = 0
+            if self.win is not None and self.last_update_msec < accept_time_msec:
+                # Keep the query paid on macOS until the loss is decided, or the
+                # skip would answer "same app" and the loss would never be seen.
+                self._macos_resolved = False
+                return None, OverlayCommand.NONE
             # ⚠️ NO WINDOW IS NOT NO APPLICATION, and treating the two as the
             # same left three apps with a blank board. `getActiveWindow()`
             # returns None for some macOS apps -- Photos, Notes and Freeform,
@@ -1007,6 +1027,23 @@ class OverlayHandler:
         has no overlay, are both "not covered".
         """
         return self.get_overlay_data() is not None
+
+    def _recheck_context_url(self):
+        """Re-match when the URL a mode reporter gave this window has changed.
+
+        A report that expires (8 s) without a final one changes the answer
+        with no window or title change and no report to say so: an editor
+        killed with ``kill -9``, or a Blender that crashed, sends nothing, and
+        its mode stayed on the keys. Only for the apps whose URL comes from a
+        mode reporter (Blender, GUI Vim and Emacs, the terminals): their lookup
+        reads the stored reports and nothing else, while a browser's falls
+        back to an AppleScript call on macOS, which must not run every tick."""
+        if not self.current_url or self.url_provider is None or not self.app_name:
+            return
+        if context_reporter_for(self.app_name) is None and not is_terminal_app(self.app_name):
+            return
+        if self.url_provider(self.app_name) != self.current_url:
+            self.invalidate_window_cache()
 
     def invalidate_window_cache(self):
         """Force the next poll to re-evaluate the focused window even if the OS

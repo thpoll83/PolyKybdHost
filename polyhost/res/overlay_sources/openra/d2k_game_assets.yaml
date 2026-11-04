@@ -1,0 +1,66 @@
+# Keys redrawn from the user's own Dune 2000 files (DATA.R16), by the
+# westwood_d2k reader in polyhost/services/game_assets. House: the
+# game_d2k_house setting. Frame numbers are the Start of each unit in OpenRA's
+# mods/d2k/sequences/*.yaml (commit cd20761), plus the facing: 20 of 32 for
+# vehicles, 3 of 8 for infantry. gen_mods.py puts this block in openra_d2k.yaml.
+game_assets:
+  reader: westwood_d2k
+  icons:
+    group1: {crowd: 209}
+    group2: {crowd: 461}
+    group3: {frame: 1655}
+    group4: {frame: 1687}
+    group5: 
+      atreides: {frame: 1751, turret: 1879}
+      harkonnen: {frame: 2071, turret: 2135}
+      ordos: {frame: 2473, turret: 2505}
+    group6: {frame: 1783, turret: 1911}
+    group7: {frame: 1623}
+    group8: 
+      atreides: {frame: 1847}
+      harkonnen: {frame: 2103}
+      ordos: {frame: 2441}
+    group9: {frame: 1975}
+    group0: {frame: 1719}
+    groupnew1: {plus: group1}
+    groupnew2: {plus: group2}
+    groupnew3: {plus: group3}
+    groupnew4: {plus: group4}
+    groupnew5: {plus: group5}
+    groupnew6: {plus: group6}
+    groupnew7: {plus: group7}
+    groupnew8: {plus: group8}
+    groupnew9: {plus: group9}
+    groupnew0: {plus: group0}
+    groupadd1: {mark: ring, of: group1}
+    groupadd2: {mark: ring, of: group2}
+    groupadd3: {mark: ring, of: group3}
+    groupadd4: {mark: ring, of: group4}
+    groupadd5: {mark: ring, of: group5}
+    groupadd6: {mark: ring, of: group6}
+    groupadd7: {mark: ring, of: group7}
+    groupadd8: {mark: ring, of: group8}
+    groupadd9: {mark: ring, of: group9}
+    groupadd0: {mark: ring, of: group0}
+    groupcombine1: {mark: box, of: group1}
+    groupcombine2: {mark: box, of: group2}
+    groupcombine3: {mark: box, of: group3}
+    groupcombine4: {mark: box, of: group4}
+    groupcombine5: {mark: box, of: group5}
+    groupcombine6: {mark: box, of: group6}
+    groupcombine7: {mark: box, of: group7}
+    groupcombine8: {mark: box, of: group8}
+    groupcombine9: {mark: box, of: group9}
+    groupcombine0: {mark: box, of: group0}
+    groupjump1: {mark: sight, of: group1}
+    groupjump2: {mark: sight, of: group2}
+    groupjump3: {mark: sight, of: group3}
+    groupjump4: {mark: sight, of: group4}
+    groupjump5: {mark: sight, of: group5}
+    groupjump6: {mark: sight, of: group6}
+    groupjump7: {mark: sight, of: group7}
+    groupjump8: {mark: sight, of: group8}
+    groupjump9: {mark: sight, of: group9}
+    groupjump0: {mark: sight, of: group0}
+    harvesters: {frame: 1719}
+    conyard: {frame: 1815}
