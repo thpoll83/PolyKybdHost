@@ -3,11 +3,13 @@
 
 Warzone 2100's models and textures are GPL-2.0-or-later (its COPYING.README;
 the texture repository's README says the same), so they may be used in this
-GPL-3.0-or-later host. Command & Conquer's own art is EA's and is not used.
+GPL-3.0-or-later host. The exceptions in its COPYING.NONGPL are not used: the
+weapon texture (NONGPL_TEXTURES) is replaced by flat grey. Command & Conquer's
+own art is EA's and is not used.
 
 A unit is assembled the way the game does it: a body, a propulsion, and a
 weapon (turret mount + gun) placed at the body's first connector. It is drawn
-with its texture and a top-front light from an orthographic camera
+with its texture (the turrets in flat grey) and a top-front light from an orthographic camera
 (`yaw`, `pitch`), fitted into 48x40, Floyd-Steinberg dithered, and given a lit
 1 px outline so the shape stays closed on the black OLED.
 
@@ -134,7 +136,14 @@ def load(path: str):
 _textures = {}
 
 
+# Textures that are not GPL (COPYING.NONGPL of Warzone2100/data-texpages): the
+# faces that use them are drawn in flat grey, lit like the rest.
+NONGPL_TEXTURES = {"page-17-droid-weapons.png"}       # CC BY-SA 3.0, the turrets
+
+
 def texture(name: str):
+    if name in NONGPL_TEXTURES:
+        return None
     if name not in _textures:
         p = _fetch(TEX_URL.format(name), CACHE / "texpages" / name)
         _textures[name] = np.asarray(Image.open(p).convert("RGB"), float).mean(-1) / 255

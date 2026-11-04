@@ -517,6 +517,53 @@ class BadRecipeTest(unittest.TestCase):
         self.assertEqual(len(logs.output), 2)
 
 
+class PatchKeyNameTest(unittest.TestCase):
+
+    def test_a_binding_named_by_a_generator_alias_is_patched(self):
+        """`PRTSC`, `DOT`, `BSPC` are generator spellings with no `KC_<name>`
+        member; the runtime patch must resolve them the same way."""
+        from PIL import Image
+
+        from polyhost.res.overlay_layout import CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W, cell_for
+        spec = {"bindings": [{"key": k, "icon": f"i{k}.png", "region": [20, 20]}
+                             for k in ("PRTSC", "DOT", "BSPC")]}
+        mask = np.ones((20, 20), bool)
+        icons = {f"i{k}": (mask, None, None) for k in ("PRTSC", "DOT", "BSPC")}
+        with tempfile.TemporaryDirectory() as d:
+            shipped = Path(d) / "x.mods.png"
+            Image.new("RGBA", (IMG_W, IMG_H), (0, 0, 0, 0)).save(shipped)
+            out = Path(d) / "out.mods.png"
+            self.assertEqual(build.patch(shipped, spec, icons, out), 3)
+            arr = np.array(Image.open(out).convert("RGBA"))
+        for kc in (KeyCode.KC_PRINT_SCREEN, KeyCode.KC_DOT, KeyCode.KC_BACKSPACE):
+            r, c = cell_for(kc)
+            cell = arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W,
+                       CH[PRIMARY_CH[Modifier.NO_MOD]]]
+            self.assertEqual(int((cell == 255).sum()), 400, kc.name)
+
+
+class PatchEdgeTest(unittest.TestCase):
+
+    def test_a_box_pushed_past_the_cell_edge_is_clipped(self):
+        """A left anchor with a margin and a full-width region reaches past the
+        cell's right edge; the pixels there are dropped, the neighbour untouched."""
+        from PIL import Image
+
+        from polyhost.res.overlay_layout import CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W, cell_for
+        spec = {"bindings": [{"key": "A", "icon": "x.png", "region": [72, 40], "anchor": "left", "margin": 2}]}
+        icons = {"x": (np.ones((40, 72), bool), None, None)}
+        with tempfile.TemporaryDirectory() as d:
+            shipped = Path(d) / "x.mods.png"
+            Image.new("RGBA", (IMG_W, IMG_H), (0, 0, 0, 0)).save(shipped)
+            out = Path(d) / "out.mods.png"
+            self.assertEqual(build.patch(shipped, spec, icons, out), 1)
+            arr = np.array(Image.open(out).convert("RGBA"))[..., CH[PRIMARY_CH[Modifier.NO_MOD]]]
+        r, c = cell_for(KeyCode.KC_A)
+        cell = arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W]
+        self.assertEqual(int((cell == 255).sum()), (SLOT_W - 2) * SLOT_H)      # the margin is on the left only
+        self.assertEqual(int((arr == 255).sum()), (SLOT_W - 2) * SLOT_H)       # nothing outside the cell
+
+
 class SpecTest(unittest.TestCase):
     """The C&C spec's game_assets block against its own bindings."""
 

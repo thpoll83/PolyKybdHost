@@ -1,8 +1,10 @@
 # OpenRA overlay for PolyKybd: the Red Alert mod. gen_mods.py writes the
-# Tiberian Dawn copy (openra_cnc.yaml) from this file; edit this one.
+# Tiberian Dawn and Dune 2000 copies (openra_cnc.yaml, openra_d2k.yaml) from
+# this file; edit this one.
 #
 # Keys: OpenRA's defaults, from mods/common/hotkeys/*.yaml in the OpenRA
-# repository. All mods share them. Unlike the original games, OpenRA's letter
+# repository, which all mods share, and the mod's own mods/<mod>/hotkeys.yaml
+# (production tabs, power down). Unlike the original games, OpenRA's letter
 # orders (A attack move, S stop, D guard, F deploy) do not change with the
 # selection, so they are labelled. See SOURCES.md.
 #
@@ -106,6 +108,17 @@ bindings:
   - { key: SPACE, icon: lastevent.png, label: "Jump to last event" }
   - { key: TAB, icon: tabstructures.png, label: "Select production building" }
   - { key: TAB, mods: [CTRL], icon: cycleproduction.png, label: "Next production building" }
+
+  # Production tabs and power: each mod's own keys (mods/<mod>/hotkeys.yaml).
+  # gen_mods.py writes the other mods' keys in place of this block.
+  - { key: E, icon: tabstructures.png, label: "Production tab: buildings" }
+  - { key: R, icon: tabdefense.png, label: "Production tab: defenses" }
+  - { key: T, icon: tabinfantry.png, label: "Production tab: infantry" }
+  - { key: Y, icon: tabvehicles.png, label: "Production tab: vehicles" }
+  - { key: U, icon: tabaircraft.png, label: "Production tab: aircraft" }
+  - { key: I, icon: tabnaval.png, label: "Production tab: naval" }
+  - { key: X, icon: powerdown.png, label: "Power down" }
+  # End of the mod keys
 
   # Base
   - { key: Z, icon: sell.png, label: "Sell" }

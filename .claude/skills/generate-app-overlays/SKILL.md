@@ -300,6 +300,22 @@ legibility **before** you commit. The icons are 1-bit at 72×40; never skip the
 eyeball. (Don't hand-roll a centered/standalone icon sheet — it misrepresents
 placement; this preview reads back the actual overlay.)
 
+**Show the maintainer the keys white on black, as the OLED shows them.** The
+`--preview` sheet is black on white. When the maintainer asks to see a set ("show
+me the icons", "show me all"), send the sheet from `preview_black.py` (next to
+this file). It reads the generated PNGs, draws every binding of one platform plus
+the ESC mark with its `Mods+Key: label`, and prints the key count from the spec:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/preview_black.py \
+    polyhost/res/overlay_sources/<app>/<spec>.yaml --out /tmp/<app>.png
+#   --platform macos | linux   the macOS or Linux set
+#   --check-1to1               game sets: every cell is its icon placed 1:1
+```
+
+Write a caption's key count from the script's output: two captions written by
+eye said 87 and 37 keys for sets with 74 and 36 (2026-11-03).
+
 ### 5. Wire the mapping + verify
 
 - Paste the printed stanza into `polyhost/res/overlay-mapping.poly.yaml` (confirm
@@ -414,6 +430,49 @@ to **commit it to the working branch** (e.g. `icons/<name>.png`) or give a URL;
 then `git fetch` + `git merge --ff-only` and wire it. (This is how the Notepad++
 mascot ESC logo was added.)
 
+## Replacing one icon the maintainer does not like
+
+Done seven times on 2026-11-03/04 (AoE4 pings and follow unit, RimWorld draft,
+Factorio next weapon, Minecraft inventory and sneak, three StarCraft II keys).
+The loop:
+
+1. **Candidates on the real cell.** `icon_candidates.py` (next to this file)
+   renders `fa:` and `gi:` names into the key's area, white on black, with the
+   legend corner marked and the committed icon first:
+
+   ```bash
+   .venv/bin/python .claude/skills/generate-app-overlays/icon_candidates.py \
+       --area 34x40 --legend F2 --current polyhost/res/overlay_sources/<app>/icons/<icon>.png \
+       --out /tmp/f2.png fa:person-military-rifle gi:lorc/rally-the-troops gi:lorc/battle-gear
+   ```
+
+   ⚠️ Many guessed game-icons.net names do not exist (in one probe 11 of 39 did);
+   the script reports each 404 and goes on, so list several. It does not take
+   `ms:` names. When no icon set has the shape, a hand-drawn pixel map is an
+   option (Minecraft's `SNEAK` in `minecraft/fetch_icons.py`).
+2. **Ask with a recommendation.** Send the sheet, then one `AskUserQuestion`
+   per key with the recommended option first.
+3. **Change the source, not the PNG.** Edit the icon's spec in `fetch_icons.py`
+   and its row in `SOURCES.md` (author and licence), re-run `fetch_icons.py` and
+   the generator.
+4. **Check three things before the push.** `git status` lists only the icons
+   you meant to change. A second `fetch_icons.py` run changes no bytes. For a
+   game set, `preview_black.py --check-1to1` reports no cell.
+
+## Pixel fonts and the block style
+
+- **Fonts that stay exact at 1 bit**: Press Start 2P at 8 px; Monocraft
+  Regular at 9 px (5×7 digits drawn after Minecraft's; SIL OFL 1.1, pinned in
+  `minecraft/fetch_icons.py`). At those sizes no pixel is grey, so any whole
+  multiple stays exact. ⚠️ Monocraft's Bold and Black weights are not exact at
+  any size, and at 9 px their letters merge.
+- **Liberation Sans Bold** is read from the Debian/Ubuntu path; the slicer and
+  StarCraft II scripts take `POLYKYBD_LIBERATION_SANS_BOLD` to point elsewhere.
+- **Pixel-art blocks (the Minecraft sets, 2 px).** Render each icon at half its
+  area and repeat every pixel twice across and down; keep every key area and
+  `INK` box a multiple of the block. ⚠️ Draw a composed icon on the half grid
+  too: snapping a finished 40 px composite to blocks merged a cube into a blob.
+
 ## Environment & gotchas
 
 - `pip install "Pillow>=10" numpy PyYAML cairosvg` (PyQt5 is NOT needed).
@@ -439,5 +498,5 @@ mascot ESC logo was added.)
   and `SOURCES.md` (provenance + licenses).
 - `polyhost/res/overlays/<output>.mods.png` (+ combo if used) are generated and
   the mapping entry is added.
-- The user has been shown `overlay_preview.png` (real placement + program icon)
-  and approved legibility.
+- The user has been shown `overlay_preview.png` (real placement + program icon),
+  or the white-on-black sheet from `preview_black.py`, and approved legibility.
