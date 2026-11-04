@@ -43,15 +43,15 @@ bindings:
   - { key: F6, icon: commanders.png, label: "Commanders", region: [34, 40] }
 
   # F7 to F12
-  - { key: F7, icon: quicksave.png, label: "Quick save", region: [34, 40] }
-  - { key: F7, mods: [SHIFT], icon: radar.png, label: "Toggle radar", region: [34, 40] }
-  - { key: F8, icon: quickload.png, label: "Quick load", region: [34, 40] }
-  - { key: F8, mods: [SHIFT], icon: console.png, label: "Toggle console display", region: [34, 40] }
-  - { key: F9, icon: damagebars.png, label: "Toggle damage bars", region: [34, 40] }
-  - { key: F10, icon: screenshot.png, label: "Take screenshot", region: [40, 40] }
-  - { key: F11, icon: formationspeed.png, label: "Toggle formation speed limiting", region: [40, 40] }
-  - { key: F12, icon: lastmessage.png, label: "View location of previous message", region: [40, 40] }
-  - { key: F12, mods: [SHIFT], icon: sensordisplay.png, label: "Toggle sensor display", region: [40, 40] }
+  - { key: F7, icon: quicksave.png, label: "Quick save", region: [38, 40] }
+  - { key: F7, mods: [SHIFT], icon: radar.png, label: "Toggle radar", region: [40, 40] }
+  - { key: F8, icon: quickload.png, label: "Quick load", region: [31, 40] }
+  - { key: F8, mods: [SHIFT], icon: console.png, label: "Toggle console display", region: [28, 40] }
+  - { key: F9, icon: damagebars.png, label: "Toggle damage bars", region: [27, 40] }
+  - { key: F10, icon: screenshot.png, label: "Take screenshot", region: [26, 40] }
+  - { key: F11, icon: formationspeed.png, label: "Toggle formation speed limiting", region: [29, 40] }
+  - { key: F12, icon: lastmessage.png, label: "View location of previous message", region: [48, 40] }
+  - { key: F12, mods: [SHIFT], icon: sensordisplay.png, label: "Toggle sensor display", region: [25, 40] }
 
   # Control groups: digit selects, Ctrl+digit assigns, Shift+digit adds the
   # selection, Alt+digit selects commander N
@@ -98,30 +98,30 @@ bindings:
 
   # Camera and game speed
   - { key: BSPC, icon: north.png, label: "Snap view to north" }
-  - { key: SPACE, icon: trackcamera.png, label: "Toggle tracking camera" }
+  - { key: SPACE, icon: trackcamera.png, label: "Toggle tracking camera", region: [46, 40] }
   - { key: UP, mods: [CTRL], icon: north.png, label: "View north" }
   - { key: DOWN, mods: [CTRL], icon: south.png, label: "View south" }
   - { key: LEFT, mods: [CTRL], icon: east.png, label: "View east" }
   - { key: RIGHT, mods: [CTRL], icon: west.png, label: "View west" }
-  - { key: MINUS, mods: [CTRL], icon: slowdown.png, label: "Decrease game speed" }
-  - { key: EQUAL, mods: [CTRL], icon: speedup.png, label: "Increase game speed" }
-  - { key: BSPC, mods: [CTRL], icon: normalspeed.png, label: "Reset game speed" }
+  - { key: MINUS, mods: [CTRL], icon: slowdown.png, label: "Decrease game speed", region: [36, 40] }
+  - { key: EQUAL, mods: [CTRL], icon: speedup.png, label: "Increase game speed", region: [36, 40] }
+  - { key: BSPC, mods: [CTRL], icon: normalspeed.png, label: "Reset game speed", region: [23, 40] }
 
   # Radar (with the mouse over the radar) and display
   - { key: MINUS, icon: radarzoomout.png, label: "Zoom radar out" }
   - { key: EQUAL, icon: radarzoomin.png, label: "Zoom radar in" }
-  - { key: TAB, icon: overlays.png, label: "Toggle overlays" }
-  - { key: TAB, mods: [CTRL], icon: radarterrain.png, label: "Toggle radar terrain" }
-  - { key: TAB, mods: [SHIFT], icon: radarallies.png, label: "Toggle ally-enemy radar view" }
-  - { key: S, mods: [ALT], icon: shadows.png, label: "Toggle shadows" }
-  - { key: T, mods: [ALT], icon: trapcursor.png, label: "Trap cursor" }
-  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle fullscreen" }
-  - { key: M, icon: mappings.png, label: "Show all keyboard mappings" }
+  - { key: TAB, icon: overlays.png, label: "Toggle overlays", region: [30, 40] }
+  - { key: TAB, mods: [CTRL], icon: radarterrain.png, label: "Toggle radar terrain", region: [34, 40] }
+  - { key: TAB, mods: [SHIFT], icon: radarallies.png, label: "Toggle ally-enemy radar view", region: [40, 40] }
+  - { key: S, mods: [ALT], icon: shadows.png, label: "Toggle shadows", region: [36, 40] }
+  - { key: T, mods: [ALT], icon: trapcursor.png, label: "Trap cursor", region: [40, 40] }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle fullscreen", region: [40, 40] }
+  - { key: M, icon: mappings.png, label: "Show all keyboard mappings", region: [31, 40] }
 
   # Unit orders
-  - { key: B, icon: centrehq.png, label: "Center view on HQ" }
+  - { key: B, icon: centrehq.png, label: "Center view on HQ", region: [40, 40] }
   - { key: C, icon: holdfire.png, label: "Hold fire", region: [56, 40] }
-  - { key: D, icon: unassigned.png, label: "View unassigned units" }
+  - { key: D, icon: unassigned.png, label: "View unassigned units", region: [40, 40] }
   - { key: E, icon: returnfire.png, label: "Return fire", region: [53, 40] }
   - { key: F, icon: fireatwill.png, label: "Fire at will", region: [54, 40] }
   - { key: G, icon: guard.png, label: "Guard position", region: [40, 40] }
@@ -139,24 +139,24 @@ bindings:
   - { key: COMMA, icon: retreatmedium.png, label: "Retreat at medium damage", region: [66, 40] }
   - { key: DOT, icon: retreatheavy.png, label: "Retreat at heavy damage", region: [66, 40] }
   - { key: SLASH, icon: doordie.png, label: "Do or die", region: [64, 40] }
-  - { key: H, mods: [ALT], icon: beacon.png, label: "Drop a beacon" }
+  - { key: H, mods: [ALT], icon: beacon.png, label: "Drop a beacon", region: [25, 40] }
 
   # Select units by type (Alt: only units in no group)
   - { key: A, mods: [CTRL], icon: combat.png, label: "Select all combat units", region: [55, 40] }
   - { key: C, mods: [CTRL], icon: cyborgs.png, label: "Select all cyborgs", region: [26, 40] }
-  - { key: D, mods: [CTRL], icon: damaged.png, label: "Select all heavily damaged units" }
+  - { key: D, mods: [CTRL], icon: damaged.png, label: "Select all heavily damaged units", region: [29, 40] }
   - { key: F, mods: [CTRL], icon: halftracks.png, label: "Select all half-tracks", region: [55, 40] }
   - { key: H, mods: [CTRL], icon: hovers.png, label: "Select all hovers", region: [51, 40] }
-  - { key: S, mods: [CTRL], icon: onscreen.png, label: "Select all units on screen" }
+  - { key: S, mods: [CTRL], icon: onscreen.png, label: "Select all units on screen", region: [40, 40] }
   - { key: T, mods: [CTRL], icon: tracks.png, label: "Select all tracks", region: [55, 40] }
-  - { key: U, mods: [CTRL], icon: everyunit.png, label: "Select every unit" }
+  - { key: U, mods: [CTRL], icon: everyunit.png, label: "Select every unit", region: [40, 40] }
   - { key: V, mods: [CTRL], icon: vtols.png, label: "Select all VTOLs", region: [43, 40] }
   - { key: W, mods: [CTRL], icon: wheels.png, label: "Select all wheels", region: [53, 40] }
-  - { key: Z, mods: [CTRL], icon: samecomponents.png, label: "Select all units with the same components" }
+  - { key: Z, mods: [CTRL], icon: samecomponents.png, label: "Select all units with the same components", region: [45, 40] }
   - { key: C, mods: [SHIFT], icon: combatcyborgs.png, label: "Select all combat cyborgs", region: [40, 40] }
-  - { key: E, mods: [SHIFT], icon: engineers.png, label: "Select all engineers" }
+  - { key: E, mods: [SHIFT], icon: engineers.png, label: "Select all engineers", region: [40, 40] }
   - { key: G, mods: [SHIFT], icon: landcombat.png, label: "Select all land combat units", region: [51, 40] }
-  - { key: M, mods: [SHIFT], icon: mechanics.png, label: "Select all mechanics" }
+  - { key: M, mods: [SHIFT], icon: mechanics.png, label: "Select all mechanics", region: [40, 40] }
   - { key: P, mods: [SHIFT], icon: transporters.png, label: "Select all transporters", region: [50, 40] }
   - { key: R, mods: [SHIFT], icon: repairtanks.png, label: "Select all repair tanks", region: [51, 40] }
   - { key: S, mods: [SHIFT], icon: sensors.png, label: "Select all sensor units", region: [57, 40] }
@@ -170,8 +170,8 @@ bindings:
   - { key: V, mods: [ALT], icon: armedvtols_nogroup.png, label: "Select all fully-armed VTOLs without group" }
 
   # Chat and messages
-  - { key: ENTER, icon: chat.png, label: "Send global text message" }
-  - { key: ENTER, mods: [CTRL], icon: teamchat.png, label: "Send team text message" }
-  - { key: ENTER, mods: [SHIFT], icon: quickchat.png, label: "Send team quick chat" }
-  - { key: GRAVE, icon: consolehistory.png, label: "Toggle console history" }
-  - { key: GRAVE, mods: [CTRL], icon: teamchathistory.png, label: "Toggle team chat history" }
+  - { key: ENTER, icon: chat.png, label: "Send global text message", region: [25, 40] }
+  - { key: ENTER, mods: [CTRL], icon: teamchat.png, label: "Send team text message", region: [30, 40] }
+  - { key: ENTER, mods: [SHIFT], icon: quickchat.png, label: "Send team quick chat", region: [28, 40] }
+  - { key: GRAVE, icon: consolehistory.png, label: "Toggle console history", region: [34, 40] }
+  - { key: GRAVE, mods: [CTRL], icon: teamchathistory.png, label: "Toggle team chat history", region: [40, 40] }

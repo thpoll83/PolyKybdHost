@@ -8,7 +8,8 @@ the unit type of a "select all" key.
 
 ⚠️ `prm[lr]whl1.pie` (the left and right wheels) are CC BY-SA 3.0 in Warzone's
 `COPYING.NONGPL`; the plain `prmwhl1.pie` used here is GPL. The weapon texture
-`page-17-droid-weapons.png` is CC BY-SA 3.0 as well (see SOURCES.md).
+`page-17-droid-weapons.png` is CC BY-SA 3.0 as well; `wz_units` draws the
+turrets in flat grey instead of it.
 """
 from __future__ import annotations
 

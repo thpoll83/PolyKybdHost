@@ -95,7 +95,7 @@ outweigh the outline icons.
   commander N) shows the command turret tank, as F6.
 - The Alt selections ("without group") add a struck-through ring in the
   bottom-right corner to the Shift or Ctrl icon of the same units.
-- `-` and `=` (radar zoom) are the radar of Shift+F7 with a minus or a plus.
+- `-` and `=` (radar zoom) are the `lorc/radar-sweep` radar with a minus or a plus.
 - Backspace and Ctrl+arrows show the compass letter in a ring.
 
 ESC shows WARZONE over a larger 2100 in Orbitron Black (SIL OFL 1.1, the `wght`
@@ -120,12 +120,10 @@ commit and their textures from Warzone2100/data-texpages at
 - Units (`model:`): body, propulsion and turret assembled as the game does,
   drawn by `../cnc_remastered/wz_units.py`; `wz_models.py` lists them.
   `prm[lr]whl1.pie` (CC BY-SA 3.0) is not used; the plain `prmwhl1.pie` is GPL.
-- ⚠️ **The weapon texture `page-17-droid-weapons.png` is CC BY-SA 3.0**
-  (Mysteryem, 2009; `COPYING.NONGPL` of Warzone2100/data-texpages). It colours
-  the turrets of the rendered units, here and in the C&C set. Whether it may
-  ship in a GPL-3.0-or-later program (through CC BY-SA 4.0, which CC declared
-  one-way compatible with GPLv3) is the maintainer's call; drawing the turrets
-  untextured removes it.
+- The weapon texture `page-17-droid-weapons.png` is CC BY-SA 3.0
+  (Mysteryem, 2009; `COPYING.NONGPL` of Warzone2100/data-texpages) and is not
+  used: `wz_units.NONGPL_TEXTURES` draws the faces that would use it (the
+  turrets) in flat grey, lit like the rest, here and in the C&C set.
 
 `pictures.yaml` and `rasterize.yaml` are written by `tools/apply_icon_picks.py`
 from the picks; `fetch_icons.py` renders them with `game_assets/picture.py`,
@@ -146,16 +144,12 @@ Licence texts for the icon and font licences named in this file:
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `quicksave.png` | Font Awesome Free 6.5.2 `floppy-disk` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `quickload.png` | Font Awesome Free 6.5.2 `folder-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `damagebars.png` | Font Awesome Free 6.5.2 `bars-progress` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `screenshot.png` | Font Awesome Free 6.5.2 `camera` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `formationspeed.png` | game-icons.net `delapouite/speedometer` | delapouite | CC BY 3.0 |
-| `lastmessage.png` | game-icons.net `lorc/ringing-bell` | lorc | CC BY 3.0 |
-| `radar.png`, `_radar.png`, `_radar40.png`, `radarzoomin.png`, `radarzoomout.png` | game-icons.net `lorc/radar-sweep`, with a mark drawn by `fetch_icons.py` | lorc | CC BY 3.0 |
+| `_radar.png`, `_radar40.png`, `radarzoomin.png`, `radarzoomout.png` | game-icons.net `lorc/radar-sweep`, with a mark drawn by `fetch_icons.py` | lorc | CC BY 3.0 |
 | `console.png` | Font Awesome Free 6.5.2 `terminal` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `sensordisplay.png` | Font Awesome Free 6.5.2 `satellite-dish` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `trackcamera.png` | Font Awesome Free 6.5.2 `video` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `overlays.png` | Font Awesome Free 6.5.2 `layer-group` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `consolehistory.png` | Font Awesome Free 6.5.2 `clock-rotate-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `teamchathistory.png` | Font Awesome Free 6.5.2 `comments` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -163,9 +157,7 @@ Licence texts for the icon and font licences named in this file:
 | `speedup.png` | Font Awesome Free 6.5.2 `forward` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `normalspeed.png` | Font Awesome Free 6.5.2 `play` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `radarterrain.png` | Font Awesome Free 6.5.2 `mountain` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `radarallies.png` | Font Awesome Free 6.5.2 `people-arrows` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `shadows.png` | Font Awesome Free 6.5.2 `circle-half-stroke` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `trapcursor.png` | Font Awesome Free 6.5.2 `computer-mouse` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `mappings.png` | Font Awesome Free 6.5.2 `keyboard` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `centrehq.png` | Font Awesome Free 6.5.2 `building-flag` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -179,11 +171,9 @@ Licence texts for the icon and font licences named in this file:
 | `cyborgs.png` | game-icons.net `delapouite/cyborg-face` | delapouite | CC BY 3.0 |
 | `combatcyborgs.png`, `combatcyborgs_nogroup.png` | game-icons.net `delapouite/battle-mech`, with a mark drawn by `fetch_icons.py` | delapouite | CC BY 3.0 |
 | `engineers.png` | Font Awesome Free 6.5.2 `helmet-safety` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `mechanics.png` | Font Awesome Free 6.5.2 `screwdriver-wrench` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `damaged.png` | Font Awesome Free 6.5.2 `heart-crack` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `onscreen.png` | Font Awesome Free 6.5.2 `display` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `everyunit.png` | Font Awesome Free 6.5.2 `earth-europe` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `samecomponents.png` | Font Awesome Free 6.5.2 `clone` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `chat.png` | game-icons.net `delapouite/chat-bubble` | delapouite | CC BY 3.0 |
 | `teamchat.png` | game-icons.net `lorc/conversation` | lorc | CC BY 3.0 |
 | `quickchat.png` | Font Awesome Free 6.5.2 `comment-dots` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -199,18 +189,18 @@ Picked in the icon picker (`pictures.yaml`, `rasterize.yaml`):
 | `build.png` | Warzone 2100 interface image `image_build_up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `design.png` | Warzone 2100 interface image `image_design_up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `intelligence.png` | Warzone 2100 interface image `image_intelmap_up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
-| `commanders.png` | Warzone 2100 unit: Command turret (`commander`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
+| `commanders.png` | Warzone 2100 unit: Command turret (`commander`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `group1.png`, `groupnew1.png`, `groupadd1.png` | Warzone 2100 unit: Infantry crowd (12 scavenger soldiers) (`group1`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `group2.png`, `groupnew2.png`, `groupadd2.png` | Warzone 2100 unit: Scavenger trike (`group2`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
-| `group3.png`, `groupnew3.png`, `groupadd3.png` | Warzone 2100 unit: Pulse laser tank (`group3`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group4.png`, `groupnew4.png`, `groupadd4.png` | Warzone 2100 unit: Half-track, machine gun (`group4`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group5.png`, `groupnew5.png`, `groupadd5.png` | Warzone 2100 unit: Heavy tank, cannon (`group5`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group6.png`, `groupnew6.png`, `groupadd6.png` | Warzone 2100 unit: Sensor (`group6`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group7.png`, `groupnew7.png`, `groupadd7.png` | Warzone 2100 unit: Rail gun tank (`group7`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group8.png`, `groupnew8.png`, `groupadd8.png` | Warzone 2100 unit: Howitzer (`group8`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `group9.png`, `groupnew9.png`, `groupadd9.png` | Warzone 2100 unit: Rocket array (`group9`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
+| `group3.png`, `groupnew3.png`, `groupadd3.png` | Warzone 2100 unit: Pulse laser tank (`group3`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group4.png`, `groupnew4.png`, `groupadd4.png` | Warzone 2100 unit: Half-track, machine gun (`group4`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group5.png`, `groupnew5.png`, `groupadd5.png` | Warzone 2100 unit: Heavy tank, cannon (`group5`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group6.png`, `groupnew6.png`, `groupadd6.png` | Warzone 2100 unit: Sensor (`group6`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group7.png`, `groupnew7.png`, `groupadd7.png` | Warzone 2100 unit: Rail gun tank (`group7`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group8.png`, `groupnew8.png`, `groupadd8.png` | Warzone 2100 unit: Howitzer (`group8`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `group9.png`, `groupnew9.png`, `groupadd9.png` | Warzone 2100 unit: Rocket array (`group9`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `group0.png`, `groupnew0.png`, `groupadd0.png` | Warzone 2100 unit: Scavenger helicopter (`group0`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
-| `commander.png` | Warzone 2100 unit: Command turret (`commander`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
+| `commander.png` | Warzone 2100 unit: Command turret (`commander`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `holdfire.png` | Warzone 2100 interface image `image_ord_holdfireup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `returnfire.png` | Warzone 2100 interface image `image_ord_retfireup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `fireatwill.png` | Warzone 2100 interface image `image_ord_fatwillup.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
@@ -224,18 +214,18 @@ Picked in the icon picker (`pictures.yaml`, `rasterize.yaml`):
 | `retreatmedium.png` | Warzone 2100 interface image `image_ord_repair2up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `retreatheavy.png` | Warzone 2100 interface image `image_ord_repair1up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `doordie.png` | Warzone 2100 interface image `image_ord_repair3up.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
-| `vtols.png` | Warzone 2100 unit: VTOL, lancer (`vtols`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `hovers.png` | Warzone 2100 unit: Hover, machine gun (`hovers`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `tracks.png`, `tracks_nogroup.png` | Warzone 2100 unit: Tracks, machine gun (`tracks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `halftracks.png`, `halftracks_nogroup.png` | Warzone 2100 unit: Half-tracks, machine gun (`halftracks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `wheels.png` | Warzone 2100 unit: Wheels, machine gun (`wheels`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `combat.png` | Warzone 2100 unit: Heavy tank, cannon (`group5`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
-| `landcombat.png`, `landcombat_nogroup.png` | Warzone 2100 unit: Heavy tank, cannon (land combat) (`heavytank`, camera yaw,pitch 45,40), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
+| `vtols.png` | Warzone 2100 unit: VTOL, lancer (`vtols`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `hovers.png` | Warzone 2100 unit: Hover, machine gun (`hovers`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `tracks.png`, `tracks_nogroup.png` | Warzone 2100 unit: Tracks, machine gun (`tracks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `halftracks.png`, `halftracks_nogroup.png` | Warzone 2100 unit: Half-tracks, machine gun (`halftracks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `wheels.png` | Warzone 2100 unit: Wheels, machine gun (`wheels`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `combat.png` | Warzone 2100 unit: Heavy tank, cannon (`group5`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `landcombat.png`, `landcombat_nogroup.png` | Warzone 2100 unit: Heavy tank, cannon (land combat) (`heavytank`, camera yaw,pitch 45,40), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `transporters.png` | Warzone 2100 unit: Transport (`transporters`, camera yaw,pitch 30,10), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `repairtanks.png` | Warzone 2100 unit: Repair turret (`repairtanks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `sensors.png`, `sensors_nogroup.png` | Warzone 2100 unit: Sensor turret (`sensors`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `trucks.png` | Warzone 2100 unit: Truck (`trucks`), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
-| `armedvtols.png`, `armedvtols_nogroup.png` | Warzone 2100 unit: VTOL, lancer (`vtols`, camera yaw,pitch 60,45), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later; weapon texture CC BY-SA 3.0 |
+| `armedvtols.png`, `armedvtols_nogroup.png` | Warzone 2100 unit: VTOL, lancer (`vtols`, camera yaw,pitch 60,45), dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
 | `guard.png` | `fa:shield-halved`, re-rasterized as picked (credited in the table above) | | |
 | `patrol.png` | `fa:arrow-right-arrow-left`, re-rasterized as picked (credited in the table above) | | |
 | `recycle.png` | `fa:recycle`, re-rasterized as picked (credited in the table above) | | |
@@ -243,3 +233,12 @@ Picked in the icon picker (`pictures.yaml`, `rasterize.yaml`):
 | `stop.png` | `fa:hand`, re-rasterized as picked (credited in the table above) | | |
 | `cyborgs.png` | `gi:delapouite/cyborg-face`, re-rasterized as picked (credited in the table above) | | |
 | `combatcyborgs.png` | `gi:delapouite/battle-mech`, re-rasterized as picked (credited in the table above) | | |
+| `lastmessage.png` | Warzone 2100 interface image `image_audio_lastsample.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `mechanics.png` | Warzone 2100 interface image `image_repair_up.png`, drawn as pixels as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `quicksave.png` | Warzone 2100 interface image `image_des_save.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `radar.png` | Warzone 2100 interface image `image_intel_mission.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `radarallies.png` | Warzone 2100 interface image `image_multi_al.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `samecomponents.png` | Warzone 2100 interface image `image_des_propulsion.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `sensordisplay.png` | Warzone 2100 interface image `image_origin_sensor_standard.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `trackcamera.png` | Warzone 2100 interface image `image_observe_up.png`, drawn as pixels as picked | Warzone 2100 developers | GPL-2.0-or-later |
+| `trapcursor.png` | Warzone 2100 interface image `image_cursor_select.png`, dithered as picked | Warzone 2100 developers | GPL-2.0-or-later |
