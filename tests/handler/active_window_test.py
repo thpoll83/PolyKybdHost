@@ -1708,6 +1708,9 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("dbeaver", "WINDOWS", "DBeaver 26.2.3", "dbeaver_template"),
                 ("dbeaver", "LINUX", "DBeaver 26.2.3", "dbeaver_template_linux"),
                 ("dbeaver", "MACOS", "DBeaver 26.2.3", "dbeaver_template_mac"),
+                ("eclipse", "WINDOWS", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template"),
+                ("eclipse", "LINUX", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_linux"),
+                ("eclipse", "MACOS", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_mac"),
                 ("githubdesktop", "WINDOWS", "GitHub Desktop", "githubdesktop_template"),
                 ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac")):
             with self.subTest(app=app, os=os_name):
@@ -1725,6 +1728,39 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         # Classic's set off it.
         self.assertIsNone(self._match("lightroom", title="Adobe Lightroom",
                                       title_known=True, os_name="WINDOWS"))
+
+    def test_GHIDRA_CODEBROWSER_gets_its_set_under_every_jvm_name(self):
+        title = "CodeBrowser: crackme:/crackme.exe"
+        for app, os_name, stem in (
+                ("javaw", "WINDOWS", "ghidra_template"),
+                ("java", "WINDOWS", "ghidra_template"),
+                ("java", "LINUX", "ghidra_template"),
+                ("java", "LINUX_GNOME", "ghidra_template"),
+                ("java", "LINUX_KDE", "ghidra_template"),
+                ("java", "MACOS", "ghidra_template_mac"),
+                ("ghidra-ghidra", "LINUX_GNOME", "ghidra_template"),
+                ("ghidra-ghidra", "LINUX_KDE", "ghidra_template"),
+                ("ghidra", "MACOS", "ghidra_template_mac")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title=title, title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+        # A second CodeBrowser instance carries its number in the title.
+        got = self._match("javaw", title="CodeBrowser(2): crackme:/crackme.exe",
+                          title_known=True, os_name="WINDOWS")
+        self.assertIn("ghidra_template.mods.png", got["overlay"])
+        # The project window gets nothing, and the java routes are unchanged.
+        for app in ("javaw", "ghidra-ghidra"):
+            self.assertIsNone(self._match(app, title="Ghidra: crackme",
+                                          title_known=True, os_name="WINDOWS"))
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="LINUX")
+        self.assertIn("jetbrains_linux_template.mods.png", got["overlay"])
+        got = self._match("java", title="proj – main.py", title_known=True, os_name="MACOS")
+        self.assertIn("jetbrains_mac_template.mods.png", got["overlay"])
+        got = self._match("java", title="DBeaver 26.2.3 - <postgres> Script",
+                          title_known=True, os_name="LINUX")
+        self.assertIn("dbeaver_template_linux.mods.png", got["overlay"])
+
     def test_M365_COPILOT_gets_its_own_set_not_the_consumer_one(self):
         got = self._match("m365copilot", title="Microsoft 365 Copilot",
                           title_known=True, os_name="WINDOWS")
@@ -1772,10 +1808,15 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("http://localhost:8888/lab/tree/a.ipynb", "a.ipynb - JupyterLab - Google Chrome", "jupyter_template"),
             ("https://hub.example.org/user/sam/notebooks/a.ipynb", "a - Jupyter Notebook", "jupyter_template"),
             ("https://app.diagrams.net/#G1x", "Untitled Diagram - draw.io", "drawio_template"),
+            ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "Song - YouTube", "youtube_template"),
+            ("https://m.youtube.com/watch?v=dQw4w9WgXcQ", None, "youtube_template"),
+            ("https://www.youtube.com/live/abc123", None, "youtube_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
             ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
             ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
+            ("https://www.figma.com/design/abc123/Landing", "Landing – Figma", "figma_web_template"),
+            ("https://www.figma.com/proto/abc123/Landing", "Landing – Figma - Google Chrome", "figma_web_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Overleaf, Online LaTeX Editor", "overleaf_template"),
             ("https://www.overleaf.com/project/abc", "Paper - Online LaTeX Editor Overleaf", "overleaf_template"))
         for browser in ("chrome", "firefox"):
@@ -1806,15 +1847,23 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                                               OsType[os_name], title_known=True)
                     self.assertFalse(any("trello_" in str(f) for f in got["overlay"]))
                 for url in ("https://www.google.com/search?q=draw.io",
+                            "https://music.youtube.com/watch?v=dQw4w9WgXcQ",
+                            "https://www.youtube.com/",
+                            "https://www.youtube.com/results?search_query=keyboard",
+                            "https://www.google.com/search?q=youtube.com",
                             "https://trello.com/",
                             "https://www.atlassian.com/software/trello",
                             "https://www.google.com/search?q=linear.app",
+                            "https://www.figma.com/board/abc123/Retro",
+                            "https://help.figma.com/hc/en-us",
                             "https://github.com/o/r/tree/main"):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
-                                             ("drawio_", "linear_", "jupyter_", "trello_")), files)
+                                             ("drawio_", "linear_", "jupyter_", "figma_",
+                                              "youtube_",
+                                              "trello_")), files)
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
         for app, os_name, stem in (
@@ -1834,6 +1883,17 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("draw.io.exe".split(".")[0], "WINDOWS", "drawio_template"),
                 ("draw.io", "MACOS", "drawio_template_mac"),
                 ("linear", "WINDOWS", "linear_template")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="x", title_known=True, os_name=os_name)
+                self.assertIsNotNone(got)
+                self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_WIRESHARK_gets_its_platform_set(self):
+        for app, os_name, stem in (
+                ("wireshark", "WINDOWS", "wireshark_template"),
+                ("wireshark", "LINUX", "wireshark_template"),
+                ("org.wireshark.wireshark", "LINUX", "wireshark_template"),
+                ("wireshark", "MACOS", "wireshark_template_mac")):
             with self.subTest(app=app, os=os_name):
                 got = self._match(app, title="x", title_known=True, os_name=os_name)
                 self.assertIsNotNone(got)
@@ -2001,6 +2061,49 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         self.assertIsNone(self._match(
                             app, title=title, title_known=True, os_name=os_name))
 
+    _SLICER_OS = (("WINDOWS", "", "_template"), ("LINUX", "", "_template"),
+                  ("MACOS", "_mac", "_template_mac"))
+
+    def test_PRUSASLICER_editor_and_gcode_viewer_get_their_sets(self):
+        editor = "cube.3mf - PrusaSlicer-2.9.5 based on Slic3r"
+        viewer = "cube.gcode - PrusaSlicer G-code Viewer-2.9.5"
+        for os_name, _, suffix in self._SLICER_OS:
+            for app in ("prusa-slicer", "prusaslicer", "com.prusa3d.prusaslicer"):
+                for title, stem in ((editor, "prusaslicer"),
+                                    (viewer, "prusa_gcodeviewer")):
+                    with self.subTest(os=os_name, app=app, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn(f"{stem}{suffix}.mods.png", got["overlay"])
+            # The viewer started as its own executable (Windows, a Linux symlink).
+            with self.subTest(os=os_name, app="prusa-gcodeviewer"):
+                got = self._match("prusa-gcodeviewer", title=viewer,
+                                  title_known=True, os_name=os_name)
+                self.assertIn(f"prusa_gcodeviewer{suffix}.mods.png", got["overlay"])
+
+    def test_BAMBU_STUDIO_gets_its_platform_set(self):
+        for os_name, stem in (("WINDOWS", "bambustudio_template"),
+                              ("LINUX", "bambustudio_template_linux"),
+                              ("MACOS", "bambustudio_template_mac")):
+            for app in ("bambu-studio", "bambustudio", "bambu studio",
+                        "com.bambulab.bambustudio"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled - BambuStudio",
+                                      title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"{stem}.mods.png", got["overlay"])
+
+    def test_ORCASLICER_gets_its_platform_set(self):
+        for os_name, _, suffix in self._SLICER_OS:
+            for app in ("orca-slicer", "orcaslicer", "com.orcaslicer.orcaslicer",
+                        "io.github.softfever.orcaslicer"):
+                with self.subTest(os=os_name, app=app):
+                    got = self._match(app, title="Untitled - OrcaSlicer",
+                                      title_known=True, os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn(f"orcaslicer{suffix}.mods.png", got["overlay"])
+
 
     def test_AOE2_HD_and_CD_versions_get_the_hd_set(self):
         for app in ("age2_x1", "empires2", "aok hd", "age2_x1.exe", "aok hd.exe"):
@@ -2032,6 +2135,127 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("starcraft2_template.mods.png", got["overlay"])
                     self.assertIn("starcraft2_template.combo.mods.png", got["overlay"])
+
+    MC_JAVA = "minecraft_java_template.mods.png"
+    MC_BEDROCK = "minecraft_bedrock_template.mods.png"
+    MC_JAVA_TITLES = ("Minecraft 1.21.4", "Minecraft* 1.21.4 - Singleplayer",
+                      "Minecraft 26.1 - Multiplayer (3rd-party Server)")
+
+    def _overlays(self, got):
+        overlay = (got or {}).get("overlay") or []
+        return overlay if isinstance(overlay, list) else [overlay]
+
+    def test_MINECRAFT_JAVA_gets_its_set_in_every_JVM(self):
+        """The game runs in `java` / `javaw`, so only the title tells it apart."""
+        for os_name in ("WINDOWS", "LINUX", "MACOS"):
+            for title in self.MC_JAVA_TITLES:
+                with self.subTest(app="java", os=os_name, title=title):
+                    got = self._match("java", title=title, title_known=True, os_name=os_name)
+                    self.assertIn(self.MC_JAVA, self._overlays(got))
+        for title in self.MC_JAVA_TITLES:
+            with self.subTest(app="javaw", title=title):
+                got = self._match("javaw", title=title, title_known=True, os_name="WINDOWS")
+                self.assertIn(self.MC_JAVA, self._overlays(got))
+
+    def test_MINECRAFT_JAVA_by_window_class_gets_its_set(self):
+        """GNOME and KDE Wayland report the GLFW window class, which is the first
+        window title; the matcher drops the trailing version."""
+        for app in ("minecraft 1.21.4", "minecraft* 1.21.4", "minecraft"):
+            for os_name in ("LINUX", "MACOS"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Minecraft* 1.21.4 - Singleplayer",
+                                      title_known=True, os_name=os_name)
+                    self.assertIn(self.MC_JAVA, self._overlays(got))
+
+    def test_MINECRAFT_with_no_title_off_WINDOWS_is_JAVA(self):
+        """Bedrock runs only on Windows. An unreadable (empty) title on macOS or
+        Linux must not fall back to the Bedrock set."""
+        for os_name in ("LINUX", "MACOS"):
+            with self.subTest(os=os_name):
+                overlays = self._overlays(self._match("minecraft", title="", title_known=True,
+                                                      os_name=os_name))
+                self.assertEqual(overlays, [self.MC_JAVA, "minecraft_java_template.combo.mods.png"])
+
+    def test_MINECRAFT_BEDROCK_gets_its_set(self):
+        got = self._match("minecraft", title="Minecraft", title_known=True, os_name="WINDOWS")
+        self.assertIn(self.MC_BEDROCK, self._overlays(got))
+        got = self._match("applicationframehost", title="Minecraft", title_known=True,
+                          os_name="WINDOWS")
+        self.assertIn(self.MC_BEDROCK, self._overlays(got))
+
+    def test_the_MINECRAFT_LAUNCHER_gets_no_game_keys(self):
+        """The launcher is titled "Minecraft Launcher"; neither edition's gate
+        may take it, or its menus would show movement keys."""
+        for app, os_name in (("minecraft", "WINDOWS"), ("minecraft", "LINUX"),
+                             ("minecraft", "MACOS"), ("javaw", "WINDOWS"),
+                             ("java", "WINDOWS"), ("java", "LINUX"), ("java", "MACOS"),
+                             ("applicationframehost", "WINDOWS")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Minecraft Launcher", title_known=True,
+                                  os_name=os_name)
+                overlays = self._overlays(got)
+                self.assertNotIn(self.MC_JAVA, overlays)
+                self.assertNotIn(self.MC_BEDROCK, overlays)
+
+    def test_JAVA_keeps_its_JETBRAINS_and_DBEAVER_routes(self):
+        title = "project – Main.java"
+        self.assertIn("jetbrains_template.mods.png",
+                      self._overlays(self._match("java", title, True, "WINDOWS")))
+        self.assertIn("jetbrains_linux_template.mods.png",
+                      self._overlays(self._match("java", title, True, "LINUX")))
+        self.assertIn("dbeaver_template_linux.mods.png",
+                      self._overlays(self._match("java", "DBeaver 24.1.0", True, "LINUX")))
+        self.assertIsNone(self._match("javaw", "Some Swing App", True, "WINDOWS"))
+
+    def test_JAVA_and_JAVAW_route_MINECRAFT_and_GHIDRA_by_title(self):
+        """Both programs run in a plain JVM; the window title picks the set."""
+        ghidra = "ghidra_template.mods.png"
+        for app, os_name in (("javaw", "WINDOWS"), ("java", "WINDOWS"), ("java", "LINUX")):
+            with self.subTest(app=app, os=os_name):
+                self.assertIn(ghidra, self._overlays(self._match(
+                    app, "CodeBrowser: proj:/a.out", True, os_name)))
+                self.assertIn(self.MC_JAVA, self._overlays(self._match(
+                    app, "Minecraft 1.21.4 - Singleplayer", True, os_name)))
+        self.assertIn(ghidra, self._overlays(self._match(
+            "javaw", "CodeBrowser(2): proj:/a.out", True, "WINDOWS")))
+        self.assertIn("ghidra_template_mac.mods.png", self._overlays(self._match(
+            "java", "CodeBrowser: proj:/a.out", True, "MACOS")))
+
+    def test_FACTORIO_gets_its_set_and_the_cmd_set_on_macos(self):
+        pc = ["factorio_template.mods.png", "factorio_template.combo.mods.png"]
+        # The macOS .extra file carries Cmd+Shift+Z (redo).
+        mac = ["factorio_template_mac.mods.png", "factorio_template_mac.combo.mods.png",
+               "factorio_template_mac.extra.mods.png"]
+        for os_name, files in (("WINDOWS", pc), ("LINUX", pc), ("MACOS", mac)):
+            for app in ("factorio", "factorio.exe", "steam_app_427520"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Factorio 2.0.72", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertEqual([str(f) for f in got["overlay"]], files)
+
+    def test_RIMWORLD_gets_its_set_on_every_os(self):
+        apps = {"WINDOWS": ("rimworldwin64", "rimworldwin64.exe"),
+                "LINUX": ("rimworldlinux", "rimworld", "rimworldwin64.exe", "steam_app_294100"),
+                "MACOS": ("rimworld", "rimworldmac")}
+        for os_name, names in apps.items():
+            for app in names:
+                for title, known in (("RimWorld", True), (None, False)):
+                    with self.subTest(app=app, os=os_name, title=title):
+                        got = self._match(app, title=title, title_known=known,
+                                          os_name=os_name)
+                        self.assertIsNotNone(got)
+                        self.assertIn("rimworld_template.mods.png", got["overlay"])
+
+    def test_AOE4_gets_its_set_on_windows_and_under_proton(self):
+        for app in ("reliccardinal", "steam_app_1466860"):
+            for os_name in ("WINDOWS", "LINUX"):
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Age of Empires IV", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn("aoe4_template.mods.png", got["overlay"])
+                    self.assertIn("aoe4_template.combo.mods.png", got["overlay"])
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class ExpiredModeReportTest(unittest.TestCase):
