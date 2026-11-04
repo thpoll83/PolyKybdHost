@@ -120,7 +120,7 @@ height. The game's logo art is not used.
 | File | Source | Author | Licence |
 |---|---|---|---|
 | `idleworker.png` | game-icons.net `delapouite/miner` | delapouite | CC BY 3.0 |
-| `army.png` | Font Awesome Free 6.5.2 `person-military-rifle` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `army.png` | game-icons.net `lorc/rally-the-troops` | Lorc | CC BY 3.0 |
 | `bases.png` | Font Awesome Free 6.5.2 `industry` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `lastalert.png` | Font Awesome Free 6.5.2 `triangle-exclamation` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `subgroupnext.png` | Font Awesome Free 6.5.2 `forward-step` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -141,7 +141,7 @@ height. The game's logo art is not used.
 | `hpall.png`, `hpown.png`, `hpallies.png`, `hpenemies.png` | drawn by `fetch_icons.py`; the words in Liberation Sans Bold | - | SIL OFL 1.1 (font) |
 | `ping.png` | Material Design Icons `map-marker-radius` (pinned commit 2424e74) | Pictogrammers | Apache-2.0 |
 | `alliancecolours.png` | Font Awesome Free 6.5.2 `palette` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `terrain.png` | Font Awesome Free 6.5.2 `mountain` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `terrain.png` | Font Awesome Free 6.5.2 `map-location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fps.png` | Font Awesome Free 6.5.2 `gauge-high` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `pause.png` | Font Awesome Free 6.5.2 `pause` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `quicksave.png` | Font Awesome Free 6.5.2 `floppy-disk` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -154,7 +154,7 @@ height. The game's logo art is not used.
 | `messagelog.png` | game-icons.net `delapouite/notebook` | delapouite | CC BY 3.0 |
 | `help.png` | Font Awesome Free 6.5.2 `circle-question` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `social.png` | Font Awesome Free 6.5.2 `user-group` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `resources.png` | Font Awesome Free 6.5.2 `gem` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `resources.png` | game-icons.net `lorc/crystal-growth` | Lorc | CC BY 3.0 |
 | `program.png` | drawn by `fetch_icons.py` in Teko SemiBold | - | SIL OFL 1.1 (font) |
 | `group1.png` and its marked copies (`groupnew1`, `groupadd1`, `groupsteal1`, `groupaddsteal1`) | game-icons.net `lorc/space-suit` | lorc | CC BY 3.0 |
 | `group2.png` and its marked copies | game-icons.net `delapouite/walking-turret` | delapouite | CC BY 3.0 |

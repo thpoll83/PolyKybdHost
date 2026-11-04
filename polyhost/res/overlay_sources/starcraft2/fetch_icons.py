@@ -29,7 +29,7 @@ from polyhost.services.game_assets import dither  # noqa: E402
 ICONS = {
     # Selection
     "idleworker": "gi:delapouite/miner",
-    "army": "fa:person-military-rifle",
+    "army": "gi:lorc/rally-the-troops",
     "bases": "fa:industry",
     "lastalert": "fa:triangle-exclamation",
     "subgroupnext": "fa:forward-step",
@@ -51,7 +51,7 @@ ICONS = {
     # Interface
     "ping": "mdi:map-marker-radius",
     "alliancecolours": "fa:palette",
-    "terrain": "fa:mountain",
+    "terrain": "fa:map-location-dot",
     "fps": "fa:gauge-high",
     "pause": "fa:pause",
     "quicksave": "fa:floppy-disk",
@@ -65,7 +65,7 @@ ICONS = {
     "messagelog": "gi:delapouite/notebook",
     "help": "fa:circle-question",
     "social": "fa:user-group",
-    "resources": "fa:gem",
+    "resources": "gi:lorc/crystal-growth",
 }
 
 # Control groups: one unit per digit, drawn once at full height. A neutral
