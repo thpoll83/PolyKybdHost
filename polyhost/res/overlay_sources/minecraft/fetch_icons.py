@@ -32,7 +32,6 @@ ICONS = {
     "back": "fa:arrow-down",
     "right": "fa:arrow-right",
     "jump": "gi:delapouite/jump-across",
-    "sneak": "fa:user-ninja",
     "sprint": "fa:person-running",
     # Inventory
     "inventory": "gi:delapouite/cardboard-box-closed",
@@ -154,6 +153,42 @@ def _paste(canvas, m, cx: int, top: int) -> None:
     canvas[top:top + m.shape[0], x:x + m.shape[1]] |= m
 
 
+# sneak.png (Left Shift): a player in the sneak pose, side view, facing right,
+# drawn by hand. One character is one BLOCK x BLOCK square; `#` is lit.
+SNEAK = """
+............####.
+............####.
+............####.
+............####.
+.........######..
+.......########..
+.....#########...
+....########.....
+....######.##....
+....#####...##...
+.....####....#...
+....##..##.......
+...##....##......
+..##......##.....
+.##........##....
+###.......###....
+"""
+
+
+def sneak_icon(out: Path) -> None:
+    """sneak.png: SNEAK at BLOCK px per character, in the bottom-right corner
+    of the key's 34 x 40 area."""
+    import numpy as np
+    rows = SNEAK.strip("\n").splitlines()
+    cells = np.array([[c == "#" for c in r] for r in rows], bool)
+    m = np.kron(cells, np.ones((BLOCK, BLOCK), bool))
+    w, h = SIZES["sneak"]
+    canvas = np.zeros((h, w), bool)
+    canvas[h - m.shape[0]:, w - m.shape[1]:] = m
+    cnc._save_mask(canvas, out / "sneak.png")
+    print("  sneak.png  <- drawn player in the sneak pose")
+
+
 def _pixel_block(n: int, ring: int):
     """A square block of n x n cells: a lit frame `ring` cells wide, a dark ring
     of the same width, and a lit centre, like a block in the game's hotbar."""
@@ -257,6 +292,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, **PARTS}, out)
     flat_icons(out)
+    sneak_icon(out)
     drop_icons(out)
     slots(out)
     program(out)

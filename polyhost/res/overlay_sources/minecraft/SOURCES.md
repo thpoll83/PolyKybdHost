@@ -179,7 +179,7 @@ Minecraft logo.
 |---|---|---|---|
 | `forward.png`, `left.png`, `back.png`, `right.png` | Font Awesome Free 6.5.2 `arrow-up`, `arrow-left`, `arrow-down`, `arrow-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
-| `sneak.png` | Font Awesome Free 6.5.2 `user-ninja` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `sneak.png` | drawn by `fetch_icons.py` (`SNEAK`): a player in the sneak pose, pixel by pixel | (this repo) | |
 | `sprint.png` | Font Awesome Free 6.5.2 `person-running` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `inventory.png` | game-icons.net `delapouite/cardboard-box-closed` | delapouite | CC BY 3.0 |
 | `offhand.png` | Font Awesome Free 6.5.2 `right-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
