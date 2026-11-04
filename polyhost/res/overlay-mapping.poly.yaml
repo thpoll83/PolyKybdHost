@@ -2127,6 +2127,17 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# Factorio 2.0 (overlay_sources/factorio/factorio.yaml). `factorio` is the
+# Windows process (factorio.exe), the native Linux binary and the macOS app
+# (factorio.app); `factorio.exe` covers Wine, which keeps the `.exe`, and
+# `steam_app_427520` Proton, which is unlikely because the game has a native
+# Linux build. None of the names was checked on an install. macOS gets the set
+# with Cut, Copy, Paste, Undo and Redo on Cmd.
+factorio,factorio.exe,steam_app_427520:
+  overlay: [factorio_template.mods.png, factorio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [factorio_template_mac.mods.png, factorio_template_mac.combo.mods.png, factorio_template_mac.extra.mods.png]
 # Age of Empires IV and its Anniversary Edition, Steam app 1466860
 # (overlay_sources/aoe4/aoe4.yaml). Windows only; there is no macOS version.
 # RelicCardinal.exe is the executable in Steam's launch config (read
