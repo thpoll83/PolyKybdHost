@@ -2231,6 +2231,31 @@ reliccardinal,steam_app_1466860:
 # does not change when they open. Names not checked on an install.
 openttd,openttd.exe,org.openttd.openttd,steam_app_1536610:
   overlay: [openttd_template.mods.png, openttd_template.combo.mods.png]
+# Freeciv 3.2 GTK clients (overlay_sources/freeciv/freeciv.yaml). The
+# executables are freeciv-gtk3.22 and freeciv-gtk4 (meson.build, R3_2_6).
+# Windows cuts the name at the first dot, so freeciv-gtk3.22.exe arrives as
+# freeciv-gtk3; the `.exe` names are for a forwarded Windows window, which is
+# tried by its whole name first. org.freeciv.* are the desktop file ids
+# (Flathub, Wayland). Names not checked on an install.
+freeciv-gtk3.22,freeciv-gtk3,freeciv-gtk4,freeciv-gtk3.22.exe,freeciv-gtk4.exe,org.freeciv.gtk322,org.freeciv.gtk4:
+  overlay: [freeciv_template.mods.png, freeciv_template.combo.mods.png]
+# Freeciv 3.2 Qt client (freeciv/freeciv_qt.yaml, generated from freeciv.yaml).
+freeciv-qt,freeciv-qt.exe,org.freeciv.qt:
+  overlay: [freeciv_qt_template.mods.png, freeciv_qt_template.combo.mods.png]
+# Freeciv 3.2 SDL2 and SDL3 clients (freeciv/freeciv_sdl.yaml): the GTK unit
+# orders and reports, without the Ctrl keys the SDL clients bind otherwise.
+freeciv-sdl2,freeciv-sdl3,freeciv-sdl2.exe,freeciv-sdl3.exe,org.freeciv.sdl2,org.freeciv.sdl3:
+  overlay: [freeciv_sdl_template.mods.png, freeciv_sdl_template.combo.mods.png]
+# Freeciv21 3.1 (freeciv/freeciv21.yaml). The CMake target is freeciv21-client;
+# Linux X11 reports the process name from `ps -o comm=`, which the kernel cuts
+# to 15 characters (freeciv21-clien). net.longturn.freeciv21 is the desktop
+# file id. Names not checked on an install.
+freeciv21-client,freeciv21-clien,freeciv21-client.exe,net.longturn.freeciv21:
+  overlay: [freeciv21_template.mods.png, freeciv21_template.combo.mods.png]
+# Civilization II (freeciv/civ2.yaml). civ2.exe on Windows (civ2), and under
+# Wine the WM_CLASS keeps the `.exe`. The name is not checked on an install.
+civ2,civ2.exe:
+  overlay: civ2_template.mods.png
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
@@ -2271,9 +2296,10 @@ dunelegacy,dunelegacy.exe:
 opendune,opendune.exe:
   overlay: dune2_template.mods.png
   game_assets: dune2/dune2.yaml
-# DOSBox runs any DOS program, so only a title naming Dune II's executable
-# loads the overlay: "...Program:    DUNE2" (DOSBox 0.74), "DUNE2.EXE - 3000
-# cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 - ..." (DOSBox-X). The
+# DOSBox runs any DOS program, so only a title naming Dune II's or
+# Civilization's executable loads an overlay: "...Program:    DUNE2" (DOSBox
+# 0.74), "DUNE2.EXE - 3000 cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 -
+# ..." (DOSBox-X). The
 # titles are read off the DOSBox sources, not seen. The game files are found
 # only through the game_dune2_data_dir setting: the executable is DOSBox's.
 # DOSBox Staging's `titlebar = program=path` shows the path as one word
@@ -2286,6 +2312,11 @@ dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
     DUNE2.EXE:
       overlay: dune2_template.mods.png
       game_assets: dune2/dune2.yaml
+    # Civilization I (freeciv/civ1.yaml): CIV.EXE, the same title formats.
+    CIV:
+      overlay: civ1_template.mods.png
+    CIV.EXE:
+      overlay: civ1_template.mods.png
 # Wargus, Warcraft II on the Stratagus engine (overlay_sources/wargus/wargus.yaml).
 # The `wargus` launcher starts the engine `stratagus` (execvp on Linux,
 # CreateProcess on Windows; targets in both repositories' CMakeLists.txt, v3.3.2).

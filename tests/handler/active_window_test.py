@@ -2313,6 +2313,101 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIn("aoe4_template.mods.png", got["overlay"])
                     self.assertIn("aoe4_template.combo.mods.png", got["overlay"])
 
+    # The app names as the handler sees them, from the real executable names.
+    # Windows cuts the process name at its FIRST dot (`_decide_active_window`),
+    # so freeciv-gtk3.22.exe arrives as freeciv-gtk3. Linux X11 reports
+    # `ps -o comm=`, which the kernel cuts to 15 characters. A forwarded Windows
+    # window is also tried by its whole lower-cased name.
+    @staticmethod
+    def _windows_name(exe):
+        return exe.split(".")[0].lower()
+
+    FREECIV = {
+        "freeciv_template": {
+            "WINDOWS": ("freeciv-gtk3.22.exe", "freeciv-gtk4.exe"),
+            "LINUX": ("freeciv-gtk3.22", "freeciv-gtk4", "org.freeciv.gtk322",
+                      "org.freeciv.gtk4", "freeciv-gtk3.22.exe", "freeciv-gtk4.exe")},
+        "freeciv_qt_template": {
+            "WINDOWS": ("freeciv-qt.exe",),
+            "LINUX": ("freeciv-qt", "org.freeciv.qt", "freeciv-qt.exe")},
+        "freeciv_sdl_template": {
+            "WINDOWS": ("freeciv-sdl2.exe", "freeciv-sdl3.exe"),
+            "LINUX": ("freeciv-sdl2", "freeciv-sdl3", "org.freeciv.sdl2", "org.freeciv.sdl3")},
+        "freeciv21_template": {
+            "WINDOWS": ("freeciv21-client.exe",),
+            "LINUX": ("freeciv21-client", "freeciv21-client"[:15], "net.longturn.freeciv21",
+                      "freeciv21-client.exe")},
+    }
+
+    def test_FREECIV_clients_get_their_sets(self):
+        for stem, by_os in self.FREECIV.items():
+            for os_name, names in by_os.items():
+                for raw in names:
+                    app = self._windows_name(raw) if os_name == "WINDOWS" else raw
+                    for title, known in (("Freeciv", True), (None, False)):
+                        with self.subTest(app=app, os=os_name, title=title):
+                            got = self._match(app, title=title, title_known=known,
+                                              os_name=os_name)
+                            self.assertEqual([str(f) for f in self._overlays(got)],
+                                             [f"{stem}.mods.png", f"{stem}.combo.mods.png"])
+
+    def test_the_FREECIV_launcher_server_and_tools_get_no_game_keys(self):
+        """The multiplayer launchers (freeciv-mp-*), the server and the ruleset
+        tools have no unit orders; no Freeciv entry may take them."""
+        from polyhost.handler.common import mapping_key
+        for raw in ("freeciv-mp-gtk3", "freeciv-mp-gtk4", "freeciv-mp-qt", "freeciv-mp-cli",
+                    "freeciv-server", "freeciv-ruledit", "freeciv-ruleup", "freeciv21-server",
+                    "freeciv21-modpack-qt", "org.freeciv.gtk4.mp", "org.freeciv.server"):
+            for app in (raw, self._windows_name(raw + ".exe")):
+                with self.subTest(app=app):
+                    self.assertIsNone(mapping_key(app, self.handler.mapping))
+
+    def test_CIVILIZATION_II_gets_its_set(self):
+        """civ2.exe on Windows (civ2), and under Wine the WM_CLASS keeps `.exe`."""
+        for app, os_name in ((self._windows_name("CIV2.EXE"), "WINDOWS"),
+                             ("civ2.exe", "LINUX")):
+            with self.subTest(app=app, os=os_name):
+                got = self._match(app, title="Civilization II", title_known=True,
+                                  os_name=os_name)
+                self.assertEqual(self._overlays(got), ["civ2_template.mods.png"])
+
+    DOSBOX = ("dosbox", "dosbox.exe", "dosbox-staging", "dosbox-staging.exe",
+              "dosbox-x", "dosbox-x.exe")
+
+    def test_CIVILIZATION_I_in_DOSBOX_is_routed_by_the_program_name(self):
+        """The titles of the three DOSBox flavours while CIV.EXE runs."""
+        titles = ("DOSBox 0.74-3, Cpu speed:     3000 cycles, Frameskip  0, Program:      CIV",
+                  "DOSBox 0.74-3, Cpu speed: max 100% cycles, Frameskip  0, Program:      CIV",
+                  "CIV.EXE - 3000 cycles/ms",
+                  "CIV.EXE - DOSBox Staging 0.82.2 - 3000 cycles/ms",
+                  "DOSBox-X 2025.02.01: CIV - 3000 cycles/ms")
+        for app in self.DOSBOX:
+            for os_name in ("WINDOWS", "LINUX", "MACOS"):
+                for title in titles:
+                    with self.subTest(app=app, os=os_name, title=title):
+                        got = self._match(app, title=title, title_known=True,
+                                          os_name=os_name)
+                        self.assertEqual(self._overlays(got), ["civ1_template.mods.png"])
+
+    def test_another_DOS_program_in_DOSBOX_gets_no_civilization_keys(self):
+        """Only the word CIV or CIV.EXE routes. Another program, a path shown as
+        one word, or a name that merely starts with CIV keeps the board blank;
+        Dune II keeps its own set."""
+        for app in self.DOSBOX:
+            for title in ("DOSBox 0.74-3, Cpu speed:     3000 cycles, Frameskip  0, Program:     DOOM",
+                          "DOSBox 0.74-3, Cpu speed:     3000 cycles, Frameskip  0, Program: COLONIZE",
+                          "DOSBox 0.74-3, Cpu speed:     3000 cycles, Frameskip  0, Program:  CIVEDIT",
+                          r"C:\CIV\CIV.EXE - 3000 cycles/ms",
+                          "civ.exe - 3000 cycles/ms",
+                          "DOSBox Staging", ""):
+                with self.subTest(app=app, title=title):
+                    self.assertIsNone(self._match(app, title=title, title_known=True,
+                                                  os_name="WINDOWS"))
+            with self.subTest(app=app, title="DUNE2"):
+                got = self._match(app, title="DUNE2.EXE - 3000 cycles/ms", title_known=True,
+                                  os_name="WINDOWS")
+                self.assertEqual(self._overlays(got), ["dune2_template.mods.png"])
+
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class ExpiredModeReportTest(unittest.TestCase):
     """An editor killed with kill -9 sends no final report. Its report expires
