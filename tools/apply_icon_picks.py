@@ -17,8 +17,10 @@ game picture is not a run-time recipe: it goes to `pictures.yaml` beside the
 picker spec, which the overlay's fetch_icons.py renders into `icons/`, and the
 bindings that use the icon get its region, as for a re-rasterized icon.
 
-Two keys that share an icon file must pick the same thing; the tool stops and
-names them otherwise. Run the overlay's fetch_icons.py and
+Two keys of one overlay that share an icon file must pick the same thing, and
+two overlays that redraw a shared icon file (re-rasterized or picture picks)
+must agree on it; the tool stops and names them otherwise. A recipe is per
+overlay, so overlays may pick different recipes for one file. Run the overlay's fetch_icons.py and
 scripts/generate_app_overlays.py afterwards.
 """
 from __future__ import annotations
