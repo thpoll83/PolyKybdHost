@@ -96,13 +96,13 @@ def write_game_assets(path: Path, reader: str, icons: dict) -> None:
     after it. A new block goes at the end; a spec with no block and no recipes
     is left as it is."""
     text = path.read_text(encoding="utf-8")
-    i = text.find("\ngame_assets:")
-    if i < 0 and not icons:
+    found = re.search(r"^game_assets:", text, re.M)   # at a line start, the first line too
+    if not found and not icons:
         return
     head, tail = text, ""
-    if i >= 0:
-        head = text[:i + 1]
-        rest = text[i + 1:].partition("\n")[2]          # the lines after "game_assets:"
+    if found:
+        head = text[:found.start()]
+        rest = text[found.start():].partition("\n")[2]  # the lines after "game_assets:"
         m = re.search(r"^\S", rest, re.M)                # the block ends at the next unindented line
         tail = rest[m.start():] if m else ""
     lines = ["game_assets:", f"  reader: {reader}", "  icons:"]
@@ -114,7 +114,8 @@ def write_game_assets(path: Path, reader: str, icons: dict) -> None:
         else:
             lines.append(f"    {stem}: {_flow(entry)}")
     block = "\n".join(lines) + "\n"
-    path.write_text(head.rstrip("\n") + "\n\n" + block + ("\n" + tail if tail else ""), encoding="utf-8")
+    head = head.rstrip("\n") + "\n\n" if head.strip() else ""
+    path.write_text(head + block + ("\n" + tail if tail else ""), encoding="utf-8")
 
 
 def set_binding_region(path: Path, stem: str, region: list) -> int:
@@ -233,8 +234,9 @@ def main(argv=None) -> None:
             else:
                 icons.pop(stem, None)
             # A game recipe or "shipped" returns the icon file to its default,
-            # unless another overlay draws the same file.
-            if not variant and stem not in shared and stem not in raster_picks:
+            # unless another overlay draws the same file. "shipped" on one
+            # variant does too: no pick of this export redraws it (checked above).
+            if (kind == "shipped" or not variant) and stem not in shared and stem not in raster_picks:
                 raster.pop(stem, None)
         if not ships:
             write_game_assets(path, spec["reader"], icons)

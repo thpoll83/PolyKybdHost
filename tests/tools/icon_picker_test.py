@@ -225,6 +225,24 @@ class ApplyTest(unittest.TestCase):
         self.run_picks({"a": {"A": WORD}})                           # a second write changes nothing
         self.assertEqual((self.d / "a.yaml").read_text(encoding="utf-8"), text)
 
+    def test_a_block_on_the_first_line_is_replaced(self):
+        text = (self.d / "b.yaml").read_text(encoding="utf-8")
+        (self.d / "b.yaml").write_text("game_assets:\n  reader: westwood_d2\n  icons:\n    x: {plus: y}\n" + text,
+                                       encoding="utf-8")
+        self.run_picks({"b": {"A": {"pick": "shipped"}}})
+        new = (self.d / "b.yaml").read_text(encoding="utf-8")
+        self.assertEqual(new.count("game_assets:"), 1)
+        self.assertTrue(new.startswith("game_assets:\n"))
+        self.assertEqual(build.load_spec(self.d / "b.yaml")["game_assets"]["icons"], None)
+        self.assertEqual(len(build.load_spec(self.d / "b.yaml")["bindings"]), 1)
+
+    def test_a_shipped_variant_drops_an_earlier_redraw(self):
+        self.use_variants()
+        self.run_picks({"a": {"1 (Atreides)": raster_pick()}})
+        self.assertIn("g", self.raster())
+        self.run_picks({"a": {"1 (Atreides)": {"pick": "shipped"}}})
+        self.assertNotIn("g", self.raster())
+
     def test_an_overlay_without_picks_or_a_block_is_left_alone(self):
         before = (self.d / "b.yaml").read_text(encoding="utf-8")
         self.run_picks({"a": {"B": WORD}})
@@ -313,12 +331,12 @@ class ApplyTest(unittest.TestCase):
 class PageTest(unittest.TestCase):
 
     def test_spec_text_cannot_end_the_title_or_the_script_block(self):
-        bad = "</title></script><img src=x onerror=alert(1)>"
+        bad = "</title></script></SCRIPT><img src=x onerror=alert(1)>"
         page = gen.page_html({"title": bad, "overlays": [{"title": bad, "keys": [{"label": bad}]}]})
         template = (HOST / "tools" / "icon_picker_template.html").read_text(encoding="utf-8")
         for tag in ("</title>", "</script>"):
-            self.assertEqual(page.count(tag), template.count(tag), tag)
-        self.assertEqual(page.count("&lt;/title&gt;&lt;/script&gt;&lt;img"), 2)    # <title> and <h1>
+            self.assertEqual(page.lower().count(tag), template.lower().count(tag), tag)
+        self.assertEqual(page.count("&lt;/title&gt;&lt;/script&gt;&lt;/SCRIPT&gt;&lt;img"), 2)    # <title>, <h1>
 
     def test_a_shipped_icon_with_two_modifiers_comes_from_the_combo_file(self):
         from PIL import Image
