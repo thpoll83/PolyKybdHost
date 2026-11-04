@@ -281,10 +281,10 @@ Per-platform implementations:
     `NEW_WINDOW_ACCEPT_TIME_MSEC`. (With no window tracked before, a change of
     windowless app is logged at once.) A bundle can therefore show that the
     fix holds (Eden runs to `Turning off`), but it cannot count the blips it
-    swallowed. ⚠️ **The fix covers LOCAL tracking only.** The forwarder's
-    `active_window_reporter` still sends an empty report on the first tick
-    with no window, so the host sees a forwarded blip as a remote change and
-    re-sends overlays.
+    swallowed. **The forwarder's copy of the timer does the same**
+    (`active_window_reporter`, since #534): before that, it sent an empty
+    report on the first tick with no window, so the keyboard machine saw a
+    forwarded blip as two remote changes and re-sent the overlays.
   - ⚠️ **An untitled window identifies NOTHING.** `MacOSWindow.getHandle()` derives
     the handle **from the title** and returns `("", "")` when it is empty, so two
     untitled apps are byte-identical to a handle-plus-title change test — the switch

@@ -208,6 +208,9 @@ class TestPolyHostModes(unittest.TestCase):
             self.skipTest("pywinctl not installed — forwarder cannot be imported")
         self.assertIn("FWD_PAUSED Forwarding paused | Resume | sent=0", proc.stdout)
         self.assertIn("FWD_RESUMED_CLEARS_DEDUPE True", proc.stdout)
+        # One tick with no window sends nothing, nor does the same window
+        # coming back; a loss that outlasts the accept delay is sent.
+        self.assertIn("FWD_BLIP blip=0 back=0 lasting=(0, '', '')", proc.stdout)
         # The mark tracks whether reports are LANDING, not whether the process
         # is up — it used to be set connected once at startup and never again.
         self.assertIn("FWD_ICON reach=connected fail=disconnected paused=disconnected",
@@ -310,6 +313,31 @@ def _smoke_forwarder():
                             f"sent={len(sent)}")
         app.toggle_pause()
         print("FWD_RESUMED_CLEARS_DEDUPE", app.win is None and app.title is None)
+
+        # A lost window waits for the accept delay (#531's rule, on this
+        # machine too): one tick with no window sends nothing, the same
+        # window coming back sends nothing, and a loss that lasts is sent.
+        import polyhost.forwarder as fwd_mod
+        held = mock.MagicMock()
+        held.getHandle.return_value = 1234
+        held.title = "Konsole"
+        sent.clear()
+        app.win, app.title, app.prev_win = held, "Konsole", held
+        app.last_update_msec = fwd_mod.NEW_WINDOW_ACCEPT_TIME_MSEC * 2
+        app.heartbeat_msec = 0
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=None):
+            app.active_window_reporter()
+        blip = len(sent)
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=held), \
+             mock.patch.object(fwd_mod, "app_name_for", return_value="konsole"):
+            for _ in range(3):
+                app.active_window_reporter()
+        back = len(sent)
+        with mock.patch.object(fwd_mod.pwc, "getActiveWindow", return_value=None):
+            for _ in range(3):
+                app.active_window_reporter()
+        print("FWD_BLIP", f"blip={blip} back={back} "
+                          f"lasting={sent[-1] if len(sent) > back else None}")
 
         diag = app._diagnostics_text()
         print("FWD_DIAG_MODE", "FORWARDER" in diag and "192.168.1.50" in diag)

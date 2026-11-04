@@ -140,11 +140,10 @@ These are the ones that have produced wrong diagnoses:
   (`Failed to send …` warning). So does `idle_set` from `polyctl` or the
   developer menu. Then find what started the send. The 2026-11-04 case was
   `No active window` and the same app again ~270 ms later, about every 10 s,
-  on KDE Wayland (fixed for LOCAL window tracking in 1.17.86, #531: a lost
-  window now waits for the accept timer). ⚠️ A forwarder still reports a lost
-  window on the first tick (`forwarder.py`, `active_window_reporter`), so a
-  forwarded app can still cause it; look for `Remote window changed` at those
-  seconds. ⚠️ `Overlay flags 0x1 cleared` before a `Stop idle.` is a hint, not
+  on KDE Wayland (fixed in 1.17.86, #531: a lost window now waits for the
+  accept timer). A forwarder got the same delay later (#534), so before that
+  release a forwarded app can still cause it: look for `Remote window
+  changed` at those seconds. ⚠️ `Overlay flags 0x1 cleared` before a `Stop idle.` is a hint, not
   proof: a DISABLE on its own does not call `set_idle`. A `Stop idle.` with no
   host line at that second is a keypress, or `Wake by keypress` after the
   display turned off. Two lines that are not faults: `Turning off` is the
