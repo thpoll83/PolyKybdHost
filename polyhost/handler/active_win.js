@@ -22,4 +22,5 @@ for (const window of workspace.windowList()) {
         }
     }
 }
-print("polykybd-window:" + info);
+// A line break in a caption would split the reply, or forge a second one.
+print("polykybd-window:" + info.replace(/[\r\n]/g, " "));

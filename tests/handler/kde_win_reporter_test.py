@@ -50,7 +50,7 @@ class ReadReplyTest(unittest.TestCase):
 
     def test_the_script_always_prints_a_reply(self):
         js = (Path(kwr.__file__).parent / "active_win.js").read_text(encoding="utf-8")
-        self.assertIn('print("polykybd-window:" + info)', js)
+        self.assertIn('print("polykybd-window:" + info.replace(/[\\r\\n]/g, " "))', js)   # one line per reply
         self.assertIn('var info = "none"', js)
 
 
