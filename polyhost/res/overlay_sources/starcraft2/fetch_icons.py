@@ -15,6 +15,7 @@ used.
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -102,7 +103,10 @@ CAMERA_SIZE = (34, 40)
 
 # Health bars (' \ [ ]): a bar over a word, all words at one size.
 HP_WORDS = {"hpall": "ALL", "hpown": "OWN", "hpallies": "ALLY", "hpenemies": "ENEMY"}
-HP_FONT = Path("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf")
+# Liberation Sans Bold (OFL; Debian/Ubuntu package fonts-liberation). Elsewhere,
+# point POLYKYBD_LIBERATION_SANS_BOLD at the .ttf, as for the slicer icons.
+HP_FONT = Path(os.environ.get("POLYKYBD_LIBERATION_SANS_BOLD",
+                              "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"))
 
 # The ESC mark is set in Teko (SIL OFL 1.1), its SemiBold instance.
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
@@ -202,7 +206,12 @@ def health_bars(out: Path) -> None:
     from PIL import ImageFont
     size = 40
     for px in range(30, 6, -1):
-        font = ImageFont.truetype(str(HP_FONT), px)
+        try:
+            font = ImageFont.truetype(str(HP_FONT), px)
+        except OSError as e:
+            raise SystemExit(f"Liberation Sans Bold not found at {HP_FONT}: install "
+                             "fonts-liberation or set POLYKYBD_LIBERATION_SANS_BOLD "
+                             "to its .ttf") from e
         words = {stem: _text(word, font) for stem, word in HP_WORDS.items()}
         if max(m.shape[1] for m in words.values()) <= size:
             break

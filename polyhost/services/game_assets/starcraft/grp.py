@@ -33,23 +33,32 @@ MAX_FRAMES = 4096
 MAX_BOX = 255 + 255
 
 
+def _unpack(fmt: str, data: bytes, offset: int, what: str):
+    """struct.unpack_from, with a short file reported as ValueError (damaged),
+    so that IndexError keeps meaning "no such frame"."""
+    try:
+        return struct.unpack_from(fmt, data, offset)
+    except struct.error as e:
+        raise ValueError(f"the file ends inside {what}") from e
+
+
 def frame_count(data: bytes) -> int:
-    return struct.unpack_from("<H", data, 0)[0]
+    return _unpack("<H", data, 0, "the header")[0]
 
 
 def frame(data: bytes, index: int) -> np.ndarray:
     """Frame `index` as an (h, w) array of palette indices in the GRP's full
     box, 0 where transparent. IndexError past the last frame, ValueError on a
     damaged frame."""
-    count, w, h = struct.unpack_from("<HHH", data, 0)
+    count, w, h = _unpack("<HHH", data, 0, "the header")
     if not 0 <= index < min(count, MAX_FRAMES):
         raise IndexError(f"frame {index} of {count}")
     if w > MAX_BOX or h > MAX_BOX:
         raise ValueError(f"the frame box is {w}x{h}, larger than a GRP frame can be")
-    x, y, fw, fh, off = struct.unpack_from("<BBBBI", data, 6 + 8 * index)
+    x, y, fw, fh, off = _unpack("<BBBBI", data, 6 + 8 * index, f"the entry of frame {index}")
     out = np.zeros((max(h, y + fh), max(w, x + fw)), np.uint8)
     for row in range(fh):
-        (rel,) = struct.unpack_from("<H", data, off + 2 * row)
+        (rel,) = _unpack("<H", data, off + 2 * row, f"the line table of frame {index}")
         i, px = off + rel, 0
         line = bytearray(fw)
         while px < fw:
@@ -61,6 +70,8 @@ def frame(data: bytes, index: int) -> np.ndarray:
                 px += b & 0x7F
             elif b & 0x40:                      # one colour repeated
                 n = b & 0x3F
+                if i >= len(data):
+                    raise ValueError(f"frame {index}: row {row} ends inside a repeat")
                 line[px:px + n] = bytes([data[i]]) * n
                 i += 1
                 px += n

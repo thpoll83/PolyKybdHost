@@ -412,6 +412,24 @@ class GrpTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             grp.frame(bytes(data[:first + 1]), 0)
 
+    def test_a_truncated_file_is_refused_as_damaged(self):
+        """Every cut-short file is a ValueError, not an IndexError (which means
+        "no such frame") or a struct.error."""
+        data = bytearray(write_grp([blob_frame(6, 6, 0)]))
+        table = struct.unpack_from("<I", data, 6 + 4)[0]
+        first = table + struct.unpack_from("<H", data, table)[0]
+        repeat = bytearray(data)
+        repeat[first] = 0x41                                 # repeat the next byte once
+        for cut in (bytes(data[:3]),                         # inside the header
+                    bytes(data[:8]),                         # inside the frame entry
+                    bytes(data[:table + 1]),                 # inside the line table
+                    bytes(repeat[:first + 1])):              # a repeat code as the last byte
+            with self.subTest(length=len(cut)):
+                with self.assertRaises(ValueError):
+                    grp.frame(cut, 0)
+        with self.assertRaises(ValueError):
+            grp.frame_count(bytes(data[:1]))
+
     def test_a_box_larger_than_any_frame_is_refused(self):
         data = bytearray(write_grp([blob_frame(6, 6, 0)]))
         struct.pack_into("<HH", data, 2, 0xFFFF, 0xFFFF)     # 65535 x 65535: 4 GiB
