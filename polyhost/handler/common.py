@@ -310,13 +310,14 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
 
-    # An entry with no overlay of its own can still ROUTE: the terminal entry
-    # only sends a vim:// or emacs:// mode report, or a title naming nano, to
-    # an editor's overlay. It never matches by itself, so a terminal with no
-    # report and no editor in its title gets None, exactly as an app with no
-    # entry, and keeps the generic shortcut harvest.
+    # An entry with no overlay of its own can still ROUTE: its sub-maps may name
+    # one. The terminal entry only sends a vim:// or emacs:// mode report, or a
+    # title naming nano, to an editor's overlay; DOSBox gives an overlay only to a
+    # title naming DUNE2. It never matches by itself (see the end of this
+    # function), so a terminal with no report and no editor in its title gets
+    # None, exactly as an app with no entry, and keeps the generic shortcut harvest.
     if not (has_overlay or has_remote or has_urls_contains or has_starts_with
-            or has_ends_with or has_contains):
+            or has_ends_with or has_contains or has_os):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it

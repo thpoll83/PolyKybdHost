@@ -80,7 +80,9 @@ def _canvas(mask, size, inset=0):
 
 
 def render(reader, source, spec: dict, variant: str) -> dict:
-    """{icon stem: (canvas mask, region (w, h) or None for the binding's own)}."""
+    """{icon stem: (canvas mask, region (w, h) or None for the binding's own,
+    margin or None)}. A recipe with a region is placed with no margin unless it
+    names one (the icon picker's recipes do, to keep the binding's)."""
     regions = {Path(str(b.get("icon", ""))).stem: tuple(b["region"]) for b in bindings(spec)}
     icons, derived = {}, {}
     for stem, recipe in recipes(spec, variant).items():
@@ -96,13 +98,13 @@ def render(reader, source, spec: dict, variant: str) -> dict:
             log.warning("Game art: skipped %s (%s: %s).", stem, type(e).__name__, e)
             continue
         if mask is not None:
-            icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region)
+            icons[stem] = (_canvas(mask, size, recipe.get("inset", 0)), region, recipe.get("margin"))
     for stem, recipe in derived.items():
         base = recipe.get("plus", recipe.get("of"))
         if base in icons:
-            canvas, region = icons[base]
+            canvas, region, margin = icons[base]
             marked = dither.with_plus(canvas) if "plus" in recipe else dither.with_mark(canvas, recipe["mark"])
-            icons[stem] = (marked, region)
+            icons[stem] = (marked, region, margin)
     return icons
 
 
@@ -126,7 +128,6 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
     from PIL.PngImagePlugin import PngInfo
 
     from polyhost.device.im_converter import NO_LEGEND_CHUNK
-    from polyhost.device.keys import KeyCode
     from polyhost.res.overlay_layout import (
         CH,
         COMBO_CH,
@@ -135,6 +136,7 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         SLOT_W,
         cell_for,
         region_box,
+        resolve_key,
     )
 
     with Image.open(shipped) as im:
@@ -152,15 +154,17 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         mod = modifier(b.get("mods"))
         if mod not in tiers:
             continue                            # the binding is in the other file
-        kc = KeyCode[f"KC_{str(b['key']).upper()}"]
-        mask, region = icons[stem]
-        x0, y0, bw, bh = region_box(b["anchor"], tuple(region or b["region"]),
-                                    0 if region else b["margin"])
+        kc = resolve_key(b["key"])           # the generator's names: PRTSC, DOT, BSPC...
+        mask, region, margin = icons[stem]
+        if margin is None:
+            margin = 0 if region else b["margin"]
+        x0, y0, bw, bh = region_box(b["anchor"], tuple(region or b["region"]), margin)
         row, col = cell_for(kc)
         ch = CH[tiers[mod]]
         cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, ch]
         cell[:] = 0
-        h, w = min(mask.shape[0], bh), min(mask.shape[1], bw)
+        # A margin can push the box past the cell edge: what falls outside is dropped.
+        h, w = max(0, min(mask.shape[0], bh, SLOT_H - y0)), max(0, min(mask.shape[1], bw, SLOT_W - x0))
         cell[y0:y0 + h, x0:x0 + w] = np.where(mask[:h, :w], 255, 0)
         count += 1
     info = PngInfo()

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-03 09:50+0000\n"
+"POT-Creation-Date: 2026-11-04 15:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -335,105 +335,105 @@ msgstr "برای مکث ارسال کلیک کنید"
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "ارسال پنجرهٔ فعال این رایانه به رایانهٔ صفحه‌کلید متوقف شود."
 
-#: polyhost/forwarder.py:262
+#: polyhost/forwarder.py:265
 msgid "Check for host update…"
 msgstr "بررسی به‌روزرسانی میزبان…"
 
-#: polyhost/forwarder.py:355
+#: polyhost/forwarder.py:357
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "بدون میزبان (در انتظار {path})"
 
-#: polyhost/forwarder.py:356
+#: polyhost/forwarder.py:358
 msgid "no host configured"
 msgstr "میزبانی پیکربندی نشده است"
 
-#: polyhost/forwarder.py:359
+#: polyhost/forwarder.py:361
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (ارسال‌کننده) → {target}"
 
-#: polyhost/forwarder.py:364
+#: polyhost/forwarder.py:366
 msgid "Forwarding paused"
 msgstr "ارسال متوقف شد"
 
-#: polyhost/forwarder.py:367
+#: polyhost/forwarder.py:369
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "در حال ارسال به {target}…"
 
-#: polyhost/forwarder.py:369
+#: polyhost/forwarder.py:371
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "ارسال به {target}"
 
-#: polyhost/forwarder.py:370
+#: polyhost/forwarder.py:372
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "دسترسی به {target} ممکن نیست"
 
-#: polyhost/forwarder.py:773
+#: polyhost/forwarder.py:775
 msgid "PolyForwarder settings"
 msgstr "تنظیمات PolyForwarder"
 
-#: polyhost/forwarder.py:774
+#: polyhost/forwarder.py:776
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "تنظیمات در فایل تنظیمات ذخیره نشد، بنابراین اعمال نخواهد شد. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. دوباره تلاش کنید یا لاگ را ببینید."
 
-#: polyhost/forwarder.py:793
+#: polyhost/forwarder.py:795
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC احراز هویت‌شده (درگاه {port})"
 
-#: polyhost/forwarder.py:795
+#: polyhost/forwarder.py:797
 msgid "legacy plaintext TCP relay"
 msgstr "رلهٔ قدیمی TCP متن ساده"
 
-#: polyhost/forwarder.py:798
+#: polyhost/forwarder.py:800
 msgid "reaching the keyboard machine"
 msgstr "در ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:799
+#: polyhost/forwarder.py:801
 msgid "not reaching the keyboard machine"
 msgstr "بدون ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:800
+#: polyhost/forwarder.py:802
 msgid "starting up"
 msgstr "در حال راه‌اندازی"
 
-#: polyhost/forwarder.py:802
+#: polyhost/forwarder.py:804
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>حالت:</b> ارسال‌کننده — هیچ صفحه‌کلیدی به این رایانه وصل نیست"
 
-#: polyhost/forwarder.py:803
+#: polyhost/forwarder.py:805
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>مقصد:</b> {target}"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:807
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>گزارش‌های پنجره:</b> {transport}"
 
-#: polyhost/forwarder.py:808
+#: polyhost/forwarder.py:810
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>فایل میزبان:</b> {path}"
 
-#: polyhost/forwarder.py:829
+#: polyhost/forwarder.py:831
 msgid "About PolyKybdHost (forwarder)"
 msgstr "دربارهٔ PolyKybdHost (ارسال‌کننده)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:836
+#: polyhost/forwarder.py:838
 msgid "forwarder"
 msgstr "ارسال‌کننده"
 
-#: polyhost/forwarder.py:838
+#: polyhost/forwarder.py:840
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "حالت ارسال‌کننده: این رایانه صفحه‌کلید ندارد. پنجرهٔ فعال اینجا را دنبال می‌کند و آن را به PolyKybdHost در حال اجرا روی رایانه‌ای که صفحه‌کلید به آن وصل است می‌فرستد."
 
-#: polyhost/forwarder.py:877
+#: polyhost/forwarder.py:879
 msgid "Download, install, and restart the forwarder now?"
 msgstr "ارسال‌کننده اکنون بارگیری، نصب و دوباره راه‌اندازی شود؟"
 
@@ -3257,44 +3257,44 @@ msgstr ""
 "\n"
 "«نصب» یک خط بین دو توضیح نشانه به فایل آغازین هر پوستهٔ انتخاب‌شده اضافه می‌کند و پیش از آن یک نسخه از فایل را کنار آن ذخیره می‌کند. «حذف» این خط‌ها را پاک می‌کند. تغییر برای پنجره‌های ترمینالی اعمال می‌شود که پس از آن باز شوند."
 
-#: polyhost/gui/shell_title_dialog.py:96
+#: polyhost/gui/shell_title_dialog.py:97
 msgid "Checking the shells…"
 msgstr "در حال بررسی پوسته‌ها…"
 
-#: polyhost/gui/shell_title_dialog.py:109
+#: polyhost/gui/shell_title_dialog.py:110
 msgid "Install"
 msgstr "نصب"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:111
 msgid "Remove"
 msgstr "حذف"
 
-#: polyhost/gui/shell_title_dialog.py:146
+#: polyhost/gui/shell_title_dialog.py:152
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "پوسته‌ها بررسی نشدند: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:164
+#: polyhost/gui/shell_title_dialog.py:170
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: فرمان را بدون تنظیم نشان می‌دهد."
 
-#: polyhost/gui/shell_title_dialog.py:188
+#: polyhost/gui/shell_title_dialog.py:198
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "bash، zsh یا PowerShell روی این رایانه پیدا نشد."
 
-#: polyhost/gui/shell_title_dialog.py:211
+#: polyhost/gui/shell_title_dialog.py:222
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "تغییر ناموفق بود: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:218
+#: polyhost/gui/shell_title_dialog.py:229
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "نسخهٔ فایل قبلی: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:220
+#: polyhost/gui/shell_title_dialog.py:231
 msgid "Open a new terminal window for the change to take effect."
 msgstr "برای اعمال تغییر، یک پنجرهٔ ترمینال تازه باز کنید."
 
@@ -3351,7 +3351,8 @@ msgstr "{prefix} — میزبان v{host_version} در دسترس است"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — میان‌افزار v{fw_version} در دسترس است"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:740
+#: polyhost/forwarder.py:262 polyhost/gui/tray_notify.py:81
+#: polyhost/host.py:740
 msgid "Updates"
 msgstr "به‌روزرسانی‌ها"
 
@@ -3494,7 +3495,7 @@ msgstr "در انتظار PolyKybd..."
 msgid "Press to pause connection"
 msgstr "برای مکث اتصال کلیک کنید"
 
-#: polyhost/forwarder.py:323 polyhost/host.py:504
+#: polyhost/forwarder.py:325 polyhost/host.py:504
 msgid "Quit"
 msgstr "خروج"
 
@@ -3502,23 +3503,23 @@ msgstr "خروج"
 msgid "Quit && stop background daemon"
 msgstr "خروج && توقف سرویس پس‌زمینه"
 
-#: polyhost/forwarder.py:290 polyhost/host.py:518
+#: polyhost/forwarder.py:292 polyhost/host.py:518
 msgid "About"
 msgstr "درباره"
 
-#: polyhost/forwarder.py:279 polyhost/host.py:522
+#: polyhost/forwarder.py:281 polyhost/host.py:522
 msgid "Settings..."
 msgstr "تنظیمات..."
 
-#: polyhost/forwarder.py:294 polyhost/host.py:526
+#: polyhost/forwarder.py:296 polyhost/host.py:526
 msgid "Log file..."
 msgstr "فایل لاگ..."
 
-#: polyhost/forwarder.py:300 polyhost/host.py:535
+#: polyhost/forwarder.py:302 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "گزارش مشکل..."
 
-#: polyhost/forwarder.py:306 polyhost/host.py:554
+#: polyhost/forwarder.py:308 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "جمع‌آوری لاگ‌ها..."
 
@@ -3535,7 +3536,7 @@ msgid "Inspect Font Packs..."
 msgstr "بررسی بسته‌های فونت..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:381 polyhost/host.py:584
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:383 polyhost/host.py:584
 #: polyhost/host.py:1413
 msgid "Pause"
 msgstr "مکث"
@@ -3604,7 +3605,7 @@ msgstr "نصب WinCompose…"
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "اجازهٔ دسترسی به صفحه‌کلید (قانون udev)…"
 
-#: polyhost/forwarder.py:273 polyhost/host.py:862
+#: polyhost/forwarder.py:275 polyhost/host.py:862
 msgid "Show the running command in the terminal title…"
 msgstr "نمایش فرمان در حال اجرا در عنوان ترمینال…"
 
@@ -3628,11 +3629,11 @@ msgstr "تازه‌سازی حالت ورودی یونیکد"
 msgid "Save MRU cache now"
 msgstr "ذخیرهٔ حافظهٔ نهان MRU اکنون"
 
-#: polyhost/forwarder.py:316 polyhost/host.py:919
+#: polyhost/forwarder.py:318 polyhost/host.py:919
 msgid "Help && About"
 msgstr "راهنما && درباره"
 
-#: polyhost/forwarder.py:312 polyhost/host.py:928
+#: polyhost/forwarder.py:314 polyhost/host.py:928
 msgid "Open config folder"
 msgstr "باز کردن پوشهٔ پیکربندی"
 
@@ -3674,7 +3675,7 @@ msgstr ""
 "همهٔ مجموعه‌های فونت همراه برنامه از قبل روی صفحه‌کلید هستند.\n"
 "اگر کلاهک‌ها هنوز نادرست نمایش داده می‌شوند، توسعه‌دهنده ← بستهٔ فونت ← فلش دوبارهٔ همهٔ مجموعه‌ها ارسال دوباره را اجباری می‌کند."
 
-#: polyhost/forwarder.py:736 polyhost/host.py:1286
+#: polyhost/forwarder.py:738 polyhost/host.py:1286
 msgid "Config folder"
 msgstr "پوشهٔ پیکربندی"
 
@@ -3703,7 +3704,7 @@ msgid "Reconnect"
 msgstr "اتصال مجدد"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:381 polyhost/host.py:1408
+#: polyhost/forwarder.py:383 polyhost/host.py:1408
 msgid "Resume"
 msgstr "ازسرگیری"
 
@@ -3789,7 +3790,7 @@ msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:797 polyhost/host.py:2108
+#: polyhost/forwarder.py:799 polyhost/host.py:2108
 msgid "paused"
 msgstr "مکث‌شده"
 
@@ -3855,17 +3856,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>نگاشت‌های هم‌پوشانی:</b> {n} برنامه"
 
-#: polyhost/forwarder.py:814 polyhost/host.py:2147
+#: polyhost/forwarder.py:816 polyhost/host.py:2147
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>پیکربندی:</b> {path}"
 
-#: polyhost/forwarder.py:815 polyhost/host.py:2148
+#: polyhost/forwarder.py:817 polyhost/host.py:2148
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>لاگ‌ها:</b> {path}"
 
-#: polyhost/forwarder.py:833 polyhost/host.py:2202
+#: polyhost/forwarder.py:835 polyhost/host.py:2202
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "پروتکل HID P{protocol}"
@@ -3902,8 +3903,8 @@ msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 msgid "Check for firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
-#: polyhost/forwarder.py:871 polyhost/forwarder.py:882
-#: polyhost/forwarder.py:888 polyhost/host.py:2482 polyhost/host.py:2603
+#: polyhost/forwarder.py:873 polyhost/forwarder.py:884
+#: polyhost/forwarder.py:890 polyhost/host.py:2482 polyhost/host.py:2603
 #: polyhost/host.py:2607
 msgid "Check for updates..."
 msgstr "بررسی به‌روزرسانی‌ها..."
@@ -3913,8 +3914,8 @@ msgstr "بررسی به‌روزرسانی‌ها..."
 msgid "Update to v{version} available"
 msgstr "به‌روزرسانی به v{version} در دسترس است"
 
-#: polyhost/forwarder.py:884 polyhost/forwarder.py:890
-#: polyhost/forwarder.py:901 polyhost/host.py:2561 polyhost/host.py:2601
+#: polyhost/forwarder.py:886 polyhost/forwarder.py:892
+#: polyhost/forwarder.py:903 polyhost/host.py:2561 polyhost/host.py:2601
 #: polyhost/host.py:2608 polyhost/host.py:2631
 msgid "PolyKybdHost Update"
 msgstr "به‌روزرسانی PolyKybdHost"
@@ -3924,7 +3925,7 @@ msgstr "به‌روزرسانی PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "نسخهٔ {version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/forwarder.py:859 polyhost/host.py:2587
+#: polyhost/forwarder.py:861 polyhost/host.py:2587
 msgid "Checking for updates..."
 msgstr "در حال بررسی به‌روزرسانی‌ها..."
 
@@ -3932,12 +3933,12 @@ msgstr "در حال بررسی به‌روزرسانی‌ها..."
 msgid "No updates available"
 msgstr "به‌روزرسانی‌ای در دسترس نیست"
 
-#: polyhost/forwarder.py:885 polyhost/host.py:2602
+#: polyhost/forwarder.py:887 polyhost/host.py:2602
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "شما آخرین نسخه (v{version}) را اجرا می‌کنید."
 
-#: polyhost/forwarder.py:891 polyhost/host.py:2609
+#: polyhost/forwarder.py:893 polyhost/host.py:2609
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3957,12 +3958,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "تاریخ انتشار: {date}"
 
-#: polyhost/forwarder.py:872 polyhost/host.py:2615
+#: polyhost/forwarder.py:874 polyhost/host.py:2615
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "نسخهٔ {version} در دسترس است."
 
-#: polyhost/forwarder.py:873 polyhost/host.py:2616
+#: polyhost/forwarder.py:875 polyhost/host.py:2616
 msgid "Update PolyKybdHost"
 msgstr "به‌روزرسانی PolyKybdHost"
 
@@ -3970,20 +3971,20 @@ msgstr "به‌روزرسانی PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "اکنون بارگیری، نصب و راه‌اندازی مجدد شود؟"
 
-#: polyhost/forwarder.py:900 polyhost/host.py:2631
+#: polyhost/forwarder.py:902 polyhost/host.py:2631
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "در حال بارگیری v{version}…"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2756
+#: polyhost/forwarder.py:943 polyhost/host.py:2756
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "رلهٔ به‌روزرسانی شروع نشد؛ به‌روزرسانی ناقص است. برای جزئیات لاگ را ببینید."
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2771
+#: polyhost/forwarder.py:955 polyhost/host.py:2771
 msgid "Update failed"
 msgstr "به‌روزرسانی ناموفق بود"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2771
+#: polyhost/forwarder.py:955 polyhost/host.py:2771
 msgid "The update did not finish."
 msgstr "به‌روزرسانی کامل نشد."
 
@@ -4207,6 +4208,53 @@ msgstr ""
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
 msgstr ""
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:13
+msgid "Dune II Folder"
+msgstr "پوشهٔ Dune II"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:14
+msgid "A folder with the original Dune II file DUNE.PAK. Empty: the data folders of Dune Legacy and OpenDUNE are searched."
+msgstr "پوشه‌ای با پروندهٔ اصلی Dune II یعنی DUNE.PAK. خالی: پوشه‌های داده‌ی Dune Legacy و OpenDUNE جست‌وجو می‌شود."
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:16
+msgid "Dune II House"
+msgstr "خاندان Dune II"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:17
+msgid "Whose units the Dune II overlays show."
+msgstr "خاندانی که پوشش‌های Dune II واحدهایش را نشان می‌دهند."
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Atreides"
+msgstr "آتریدیز"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Harkonnen"
+msgstr "هارکونن"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:19
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:19
+msgid "Ordos"
+msgstr "اوردوس"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:13
+msgid "Dune 2000 Folder"
+msgstr "پوشهٔ Dune 2000"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:14
+msgid "A folder with the Dune 2000 files DATA.R16 (or DATA.R8) and PALETTE.BIN. Empty: the content folder of OpenRA is searched."
+msgstr "پوشه‌ای با پرونده‌های Dune 2000 یعنی DATA.R16 (یا DATA.R8) و PALETTE.BIN. خالی: پوشهٔ محتوای OpenRA جست‌وجو می‌شود."
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:16
+msgid "Dune 2000 House"
+msgstr "خاندان Dune 2000"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:17
+msgid "Whose units the OpenRA Dune 2000 overlay shows."
+msgstr "خاندانی که پوشش OpenRA Dune 2000 واحدهایش را نشان می‌دهد."
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert Folder"

@@ -47,6 +47,15 @@ class TestFindMatchingEntry(unittest.TestCase):
     def test_no_overlay_or_remote_never_matches(self):
         self.assertIsNone(find_matching_entry("x", entry(overlay=False)))
 
+    def test_an_entry_without_an_overlay_routes_by_its_title_sub_map(self):
+        """DOSBox: only a title naming the game's executable gives an overlay;
+        any other title matches nothing, as an entry without an overlay did."""
+        leaf = entry()
+        e = entry(overlay=False, contains={"DUNE2": leaf})
+        self.assertIs(find_matching_entry("DOSBox 0.74-3, Program:    DUNE2", e), leaf)
+        self.assertIsNone(find_matching_entry("DOSBox 0.74-3, Program:    DOOM", e))
+        self.assertIsNone(find_matching_entry("", e))
+
     def test_remote_only_matches(self):
         e = entry(overlay=False, remote=True)
         self.assertIs(find_matching_entry("x", e), e)

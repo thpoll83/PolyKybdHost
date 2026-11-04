@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-03 09:50+0000\n"
+"POT-Creation-Date: 2026-11-04 15:35+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -335,105 +335,105 @@ msgstr "点击暂停转发"
 msgid "Stop sending this machine's active window to the keyboard machine."
 msgstr "停止将本机的活动窗口发送到键盘所在的电脑。"
 
-#: polyhost/forwarder.py:262
+#: polyhost/forwarder.py:265
 msgid "Check for host update…"
 msgstr "检查主机端更新…"
 
-#: polyhost/forwarder.py:355
+#: polyhost/forwarder.py:357
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "无主机（正在等待 {path}）"
 
-#: polyhost/forwarder.py:356
+#: polyhost/forwarder.py:358
 msgid "no host configured"
 msgstr "未配置主机"
 
-#: polyhost/forwarder.py:359
+#: polyhost/forwarder.py:361
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version}（转发器）→ {target}"
 
-#: polyhost/forwarder.py:364
+#: polyhost/forwarder.py:366
 msgid "Forwarding paused"
 msgstr "转发已暂停"
 
-#: polyhost/forwarder.py:367
+#: polyhost/forwarder.py:369
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "正在转发到 {target}…"
 
-#: polyhost/forwarder.py:369
+#: polyhost/forwarder.py:371
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "正在转发到 {target}"
 
-#: polyhost/forwarder.py:370
+#: polyhost/forwarder.py:372
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "无法连接 {target}"
 
-#: polyhost/forwarder.py:773
+#: polyhost/forwarder.py:775
 msgid "PolyForwarder settings"
 msgstr "PolyForwarder 设置"
 
-#: polyhost/forwarder.py:774
+#: polyhost/forwarder.py:776
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "设置无法保存到设置文件，因此不会生效。可能有其他程序正在占用该文件。请重试，或查看日志。"
 
-#: polyhost/forwarder.py:793
+#: polyhost/forwarder.py:795
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "经过身份验证的 RPC（端口 {port}）"
 
-#: polyhost/forwarder.py:795
+#: polyhost/forwarder.py:797
 msgid "legacy plaintext TCP relay"
 msgstr "旧版明文 TCP 中继"
 
-#: polyhost/forwarder.py:798
+#: polyhost/forwarder.py:800
 msgid "reaching the keyboard machine"
 msgstr "可连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:799
+#: polyhost/forwarder.py:801
 msgid "not reaching the keyboard machine"
 msgstr "无法连接到键盘所在的电脑"
 
-#: polyhost/forwarder.py:800
+#: polyhost/forwarder.py:802
 msgid "starting up"
 msgstr "正在启动"
 
-#: polyhost/forwarder.py:802
+#: polyhost/forwarder.py:804
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>模式：</b>转发器 — 本机未连接键盘"
 
-#: polyhost/forwarder.py:803
+#: polyhost/forwarder.py:805
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>目标：</b>{target}"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:807
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>窗口报告：</b>{transport}"
 
-#: polyhost/forwarder.py:808
+#: polyhost/forwarder.py:810
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>主机文件：</b>{path}"
 
-#: polyhost/forwarder.py:829
+#: polyhost/forwarder.py:831
 msgid "About PolyKybdHost (forwarder)"
 msgstr "关于 PolyKybdHost（转发器）"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:836
+#: polyhost/forwarder.py:838
 msgid "forwarder"
 msgstr "转发器"
 
-#: polyhost/forwarder.py:838
+#: polyhost/forwarder.py:840
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "转发器模式：本机没有连接键盘。它会监视本机的活动窗口，并将其转发给运行在连接键盘的电脑上的 PolyKybdHost。"
 
-#: polyhost/forwarder.py:877
+#: polyhost/forwarder.py:879
 msgid "Download, install, and restart the forwarder now?"
 msgstr "立即下载、安装并重新启动转发器吗？"
 
@@ -3257,44 +3257,44 @@ msgstr ""
 "\n"
 "“安装”会在每个所选 shell 的启动文件中，于两条标记注释之间添加一行，并先在旁边保存该文件的副本。“移除”会删除这些行。更改对之后打开的终端窗口生效。"
 
-#: polyhost/gui/shell_title_dialog.py:96
+#: polyhost/gui/shell_title_dialog.py:97
 msgid "Checking the shells…"
 msgstr "正在检查 shell…"
 
-#: polyhost/gui/shell_title_dialog.py:109
+#: polyhost/gui/shell_title_dialog.py:110
 msgid "Install"
 msgstr "安装"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:111
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/shell_title_dialog.py:146
+#: polyhost/gui/shell_title_dialog.py:152
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "无法检查 shell：{error}"
 
-#: polyhost/gui/shell_title_dialog.py:164
+#: polyhost/gui/shell_title_dialog.py:170
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}：无需设置即可显示命令。"
 
-#: polyhost/gui/shell_title_dialog.py:188
+#: polyhost/gui/shell_title_dialog.py:198
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "在这台电脑上未找到 bash、zsh 或 PowerShell。"
 
-#: polyhost/gui/shell_title_dialog.py:211
+#: polyhost/gui/shell_title_dialog.py:222
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "更改失败：{error}"
 
-#: polyhost/gui/shell_title_dialog.py:218
+#: polyhost/gui/shell_title_dialog.py:229
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "原文件的副本：{path}"
 
-#: polyhost/gui/shell_title_dialog.py:220
+#: polyhost/gui/shell_title_dialog.py:231
 msgid "Open a new terminal window for the change to take effect."
 msgstr "请打开新的终端窗口，使更改生效。"
 
@@ -3351,7 +3351,8 @@ msgstr "{prefix} — 有可用更新：主机端 v{host_version}"
 msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — 有可用更新：固件 v{fw_version}"
 
-#: polyhost/gui/tray_notify.py:81 polyhost/host.py:740
+#: polyhost/forwarder.py:262 polyhost/gui/tray_notify.py:81
+#: polyhost/host.py:740
 msgid "Updates"
 msgstr "更新"
 
@@ -3494,7 +3495,7 @@ msgstr "正在等待 PolyKybd..."
 msgid "Press to pause connection"
 msgstr "点击暂停连接"
 
-#: polyhost/forwarder.py:323 polyhost/host.py:504
+#: polyhost/forwarder.py:325 polyhost/host.py:504
 msgid "Quit"
 msgstr "退出"
 
@@ -3502,23 +3503,23 @@ msgstr "退出"
 msgid "Quit && stop background daemon"
 msgstr "退出 && 停止后台守护进程"
 
-#: polyhost/forwarder.py:290 polyhost/host.py:518
+#: polyhost/forwarder.py:292 polyhost/host.py:518
 msgid "About"
 msgstr "关于"
 
-#: polyhost/forwarder.py:279 polyhost/host.py:522
+#: polyhost/forwarder.py:281 polyhost/host.py:522
 msgid "Settings..."
 msgstr "设置..."
 
-#: polyhost/forwarder.py:294 polyhost/host.py:526
+#: polyhost/forwarder.py:296 polyhost/host.py:526
 msgid "Log file..."
 msgstr "日志文件..."
 
-#: polyhost/forwarder.py:300 polyhost/host.py:535
+#: polyhost/forwarder.py:302 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "报告问题..."
 
-#: polyhost/forwarder.py:306 polyhost/host.py:554
+#: polyhost/forwarder.py:308 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "收集日志..."
 
@@ -3535,7 +3536,7 @@ msgid "Inspect Font Packs..."
 msgstr "检查字体包..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:381 polyhost/host.py:584
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:383 polyhost/host.py:584
 #: polyhost/host.py:1413
 msgid "Pause"
 msgstr "暂停"
@@ -3604,7 +3605,7 @@ msgstr "安装 WinCompose…"
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "允许访问键盘（udev 规则）…"
 
-#: polyhost/forwarder.py:273 polyhost/host.py:862
+#: polyhost/forwarder.py:275 polyhost/host.py:862
 msgid "Show the running command in the terminal title…"
 msgstr "在终端标题中显示正在运行的命令…"
 
@@ -3628,11 +3629,11 @@ msgstr "刷新 Unicode 输入模式"
 msgid "Save MRU cache now"
 msgstr "立即保存 MRU 缓存"
 
-#: polyhost/forwarder.py:316 polyhost/host.py:919
+#: polyhost/forwarder.py:318 polyhost/host.py:919
 msgid "Help && About"
 msgstr "帮助 && 关于"
 
-#: polyhost/forwarder.py:312 polyhost/host.py:928
+#: polyhost/forwarder.py:314 polyhost/host.py:928
 msgid "Open config folder"
 msgstr "打开配置文件夹"
 
@@ -3674,7 +3675,7 @@ msgstr ""
 "所有随附的字体分包都已在键盘上。\n"
 "如果键帽仍显示错误，可通过“开发者 → 字体包 → 重新刷写所有分包”强制重新发送。"
 
-#: polyhost/forwarder.py:736 polyhost/host.py:1286
+#: polyhost/forwarder.py:738 polyhost/host.py:1286
 msgid "Config folder"
 msgstr "配置文件夹"
 
@@ -3703,7 +3704,7 @@ msgid "Reconnect"
 msgstr "重新连接"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:381 polyhost/host.py:1408
+#: polyhost/forwarder.py:383 polyhost/host.py:1408
 msgid "Resume"
 msgstr "继续"
 
@@ -3789,7 +3790,7 @@ msgstr "独立运行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:797 polyhost/host.py:2108
+#: polyhost/forwarder.py:799 polyhost/host.py:2108
 msgid "paused"
 msgstr "已暂停"
 
@@ -3855,17 +3856,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>叠加图标映射：</b>{n} 个应用"
 
-#: polyhost/forwarder.py:814 polyhost/host.py:2147
+#: polyhost/forwarder.py:816 polyhost/host.py:2147
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>配置：</b>{path}"
 
-#: polyhost/forwarder.py:815 polyhost/host.py:2148
+#: polyhost/forwarder.py:817 polyhost/host.py:2148
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>日志：</b>{path}"
 
-#: polyhost/forwarder.py:833 polyhost/host.py:2202
+#: polyhost/forwarder.py:835 polyhost/host.py:2202
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 协议 P{protocol}"
@@ -3902,8 +3903,8 @@ msgstr "将固件更新到 v{version}…"
 msgid "Check for firmware update…"
 msgstr "检查固件更新…"
 
-#: polyhost/forwarder.py:871 polyhost/forwarder.py:882
-#: polyhost/forwarder.py:888 polyhost/host.py:2482 polyhost/host.py:2603
+#: polyhost/forwarder.py:873 polyhost/forwarder.py:884
+#: polyhost/forwarder.py:890 polyhost/host.py:2482 polyhost/host.py:2603
 #: polyhost/host.py:2607
 msgid "Check for updates..."
 msgstr "检查更新..."
@@ -3913,8 +3914,8 @@ msgstr "检查更新..."
 msgid "Update to v{version} available"
 msgstr "有可用更新：v{version}"
 
-#: polyhost/forwarder.py:884 polyhost/forwarder.py:890
-#: polyhost/forwarder.py:901 polyhost/host.py:2561 polyhost/host.py:2601
+#: polyhost/forwarder.py:886 polyhost/forwarder.py:892
+#: polyhost/forwarder.py:903 polyhost/host.py:2561 polyhost/host.py:2601
 #: polyhost/host.py:2608 polyhost/host.py:2631
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
@@ -3924,7 +3925,7 @@ msgstr "PolyKybdHost 更新"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已可用。点击托盘图标进行更新。"
 
-#: polyhost/forwarder.py:859 polyhost/host.py:2587
+#: polyhost/forwarder.py:861 polyhost/host.py:2587
 msgid "Checking for updates..."
 msgstr "正在检查更新..."
 
@@ -3932,12 +3933,12 @@ msgstr "正在检查更新..."
 msgid "No updates available"
 msgstr "没有可用的更新"
 
-#: polyhost/forwarder.py:885 polyhost/host.py:2602
+#: polyhost/forwarder.py:887 polyhost/host.py:2602
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在运行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:891 polyhost/host.py:2609
+#: polyhost/forwarder.py:893 polyhost/host.py:2609
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3957,12 +3958,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "发布日期：{date}"
 
-#: polyhost/forwarder.py:872 polyhost/host.py:2615
+#: polyhost/forwarder.py:874 polyhost/host.py:2615
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已可用。"
 
-#: polyhost/forwarder.py:873 polyhost/host.py:2616
+#: polyhost/forwarder.py:875 polyhost/host.py:2616
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
@@ -3970,20 +3971,20 @@ msgstr "更新 PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "立即下载、安装并重新启动吗？"
 
-#: polyhost/forwarder.py:900 polyhost/host.py:2631
+#: polyhost/forwarder.py:902 polyhost/host.py:2631
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下载 v{version}…"
 
-#: polyhost/forwarder.py:941 polyhost/host.py:2756
+#: polyhost/forwarder.py:943 polyhost/host.py:2756
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "无法启动更新中继程序；更新未完成。详细信息请查看日志。"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2771
+#: polyhost/forwarder.py:955 polyhost/host.py:2771
 msgid "Update failed"
 msgstr "更新失败"
 
-#: polyhost/forwarder.py:953 polyhost/host.py:2771
+#: polyhost/forwarder.py:955 polyhost/host.py:2771
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
@@ -4207,6 +4208,53 @@ msgstr ""
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
 msgstr ""
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:13
+msgid "Dune II Folder"
+msgstr "Dune II 文件夹"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:14
+msgid "A folder with the original Dune II file DUNE.PAK. Empty: the data folders of Dune Legacy and OpenDUNE are searched."
+msgstr "包含原版 Dune II 文件 DUNE.PAK 的文件夹。留空：搜索 Dune Legacy 和 OpenDUNE 的数据文件夹。"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:16
+msgid "Dune II House"
+msgstr "Dune II 家族"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:17
+msgid "Whose units the Dune II overlays show."
+msgstr "Dune II 叠加层显示哪一家族的单位。"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Atreides"
+msgstr "亚崔迪"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:18
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:18
+msgid "Harkonnen"
+msgstr "哈克南"
+
+#: polyhost/services/game_assets/westwood_d2/__init__.py:19
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:19
+msgid "Ordos"
+msgstr "奥多斯"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:13
+msgid "Dune 2000 Folder"
+msgstr "Dune 2000 文件夹"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:14
+msgid "A folder with the Dune 2000 files DATA.R16 (or DATA.R8) and PALETTE.BIN. Empty: the content folder of OpenRA is searched."
+msgstr "包含 Dune 2000 文件 DATA.R16（或 DATA.R8）和 PALETTE.BIN 的文件夹。留空：搜索 OpenRA 的内容文件夹。"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:16
+msgid "Dune 2000 House"
+msgstr "Dune 2000 家族"
+
+#: polyhost/services/game_assets/westwood_d2k/__init__.py:17
+msgid "Whose units the OpenRA Dune 2000 overlay shows."
+msgstr "OpenRA Dune 2000 叠加层显示哪一家族的单位。"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert Folder"
