@@ -398,6 +398,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     larger than 640x400 px before decoding and decodes a shape file only up to
     the highest frame a recipe asks for). A new reader is a new
     subfolder plus one line in `readers._registry()`.
+  - ⚠️ Before merging a reader, run it on real game files and compare each key
+    it changes with the shipped icon, white on black: the
+    `evaluate-game-asset-reader` skill. Synthetic test files prove the decoder,
+    not the picture; readers for Factorio and Minecraft were dropped this way
+    (`docs/FUTURE_WORK.md`).
   - `settings.py` merges the readers' defaults into `DEFAULT_SETTINGS`, and the
     settings dialog adds their labels, descriptions and dropdowns, so a reader
     brings its own settings.

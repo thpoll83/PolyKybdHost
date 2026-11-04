@@ -11,6 +11,32 @@ Siblings: `qmk_firmware/keyboards/polykybd/lang/FUTURE_LANGUAGES.md`,
 
 ---
 
+## Game-file readers for Factorio and Minecraft
+
+**Status:** built, run on real game files, not merged (2026-11-04). Both readers
+read art from the player's own install (the `game_assets` mechanism, like the
+Westwood and StarCraft readers) and replaced some of the shipped icons. Both PRs
+were closed with the comparison on the PR: PolyKybdHost#496 (Factorio) and #494
+(Minecraft Java). Factorio (#491) and Minecraft (#492) shipped without them.
+
+**What was compared.** Each reader was run through its own `build.build` on real
+files, every changed key drawn white on black beside the shipped icon:
+
+- Factorio 2.1.23 demo files. The side-menu buttons and shortcut-bar icons
+  (15 keys) converted cleanly, but the shipped icons were as clear or clearer.
+  The car, rail, logistic robot and character are 3D renders; none of `threshold`,
+  nine `dither` contrast settings or a silhouette read as well as the shipped
+  icon. C keeps the shipped pistol for its "next" mark.
+- Minecraft 26.3 client jar. The five 16×16 item textures (bundle, book and
+  quill, nether star, painting, armor stand) read worse on every key: their shape
+  is in the colour, which 1 bit drops.
+
+**What would reopen it.** A game whose own icons are flat, one-colour symbols at
+32 px or more, for keys where the shipped icon is weak. The skill
+`evaluate-game-asset-reader` repeats the comparison.
+
+---
+
 ## `AXMenuItemCmdGlyph` — the macOS Carbon glyph path
 
 **Status:** deferred, no work started. `parse_mac_accel`
