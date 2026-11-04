@@ -6,8 +6,8 @@ writes `civ4_classic.yaml` from `civ4_bts.yaml`.
 
 | Set | Loads for |
 |---|---|
-| `civ4_bts_template` (2 files, 76 keys) | Beyond the Sword: `civ4beyondsword` on Windows, `civ4beyondsword.exe` under Wine, `steam_app_8800` under Proton |
-| `civ4_classic_template` (2 files, 69 keys) | The base game and Warlords: `civilization4` and `civ4warlords` on Windows, `civilization4.exe` and `civ4warlords.exe` under Wine, `steam_app_3900` and `steam_app_3990` under Proton |
+| `civ4_bts_template` (2 files, 88 keys) | Beyond the Sword: `civ4beyondsword` on Windows, `civ4beyondsword.exe` under Wine, `steam_app_8800` under Proton |
+| `civ4_classic_template` (2 files, 81 keys) | The base game and Warlords: `civilization4` and `civ4warlords` on Windows, `civilization4.exe` and `civ4warlords.exe` under Wine, `steam_app_3900` and `steam_app_3990` under Proton |
 
 The executable names `Civilization4.exe`, `Civ4Warlords.exe` and
 `Civ4BeyondSword.exe` are from the Lutris installer for the GOG edition
@@ -33,12 +33,12 @@ that branch changed them (`git log` of each file lists only official updates).
 
 | File (Beyond the Sword) | Keys drawn |
 |---|---|
-| `BtS/Assets/XML/Units/CIV4ControlInfos.xml` | F1 to F12, Shift+F7, Alt+F1, Shift+F5, Shift+F8, Ctrl+E, Shift+D, Enter, Shift+Enter, W, Space (end turn), C, Ctrl+C, Ctrl+H, Insert, Home, End, `.`, `,`, `/`, `\`, Ctrl+`\`, Ctrl+A, Ctrl+T, Ctrl+B, Ctrl+Y, Ctrl+R, Alt+U, Alt+O, Alt+F, Ctrl+Alt+F, Alt+Shift+F, Ctrl+Left, Ctrl+Right, Ctrl+S, Ctrl+Alt+S, Ctrl+L, Ctrl+O, Alt+Q, Ctrl+W, Ctrl+Shift+H, Alt+D, Alt+Shift+D, Alt+S, Tab, Shift+Tab, Ctrl+Tab |
-| `BtS/Assets/XML/Units/CIV4MissionInfos.xml` | Space (skip the unit's turn) |
-| `Civ4/Assets/XML/Units/CIV4CommandInfos.xml` (Beyond the Sword has no copy and loads the base game's) | U, Shift+U, Delete, Backspace, Shift+Backspace |
-| `BtS/Assets/XML/Units/CIV4AutomateInfos.xml` | A, E, Ctrl+Shift+C |
-| `BtS/Assets/XML/Interface/CIV4InterfaceModeInfos.xml` | G, Ctrl+G, Alt+G, Shift+A |
-| `BtS/Assets/XML/Units/CIV4BuildInfos.xml` | M, T, Q, O, Ctrl+F, Shift+F |
+| `BtS/Assets/XML/Units/CIV4ControlInfos.xml` | F1 to F12, Shift+F7, Alt+F1, Shift+F5, Shift+F8, Ctrl+E, Shift+D, Enter, Shift+Enter, W, Space (end turn), C, Ctrl+C, Ctrl+H, Insert, Home, End, `.`, `,`, `/`, `\`, Ctrl+`\`, Ctrl+A, Ctrl+T, Ctrl+B, Ctrl+Y, Ctrl+R, Alt+U, Alt+O, Alt+F, Ctrl+Alt+F, Alt+Shift+F, Ctrl+Left, Ctrl+Right, Ctrl+S, Ctrl+Alt+S, Ctrl+L, Ctrl+O, Alt+Q, Ctrl+W, Ctrl+Shift+H, Alt+D, Alt+Shift+D, Alt+S, Tab, Shift+Tab, Ctrl+Tab, P |
+| `BtS/Assets/XML/Units/CIV4MissionInfos.xml` | Space (skip the unit's turn), B, F, H, S, Shift+P |
+| `Civ4/Assets/XML/Units/CIV4CommandInfos.xml` (Beyond the Sword has no copy and loads the base game's) | U, Shift+U, Delete, Backspace, Shift+Backspace, L |
+| `BtS/Assets/XML/Units/CIV4AutomateInfos.xml` | A, E, Ctrl+Shift+C, N |
+| `BtS/Assets/XML/Interface/CIV4InterfaceModeInfos.xml` | G, Ctrl+G, Alt+G, Shift+A, Alt+R |
+| `BtS/Assets/XML/Units/CIV4BuildInfos.xml` | M, T, Q, O, Ctrl+F, Shift+F, R, I, K |
 
 The labels follow the English text of each action's `<Description>`, from
 the game's `Assets/XML/Text/*.xml`. Four labels follow the game's own code
@@ -65,6 +65,40 @@ drawn once: Space skips the unit's turn, or ends the turn when no unit waits
 next unit (`CONTROL_ENDTURN`, `CONTROL_CYCLEUNIT`); Backspace cancels the last
 order, or stops automation (`COMMAND_CANCEL`, `COMMAND_STOP_AUTOMATION`).
 
+### Keys with more than one action
+
+The XML gives each of these keys to actions of different units. The game
+runs the action that the selected unit can do; when two can, it runs the one
+with the higher `iHotKeyPriority`. Each key is drawn with the meaning it has
+for the common case, as in the Freeciv set. The other meanings are
+exceptions: the key does that instead when such a unit is selected.
+
+| Key | Drawn | Exceptions (Beyond the Sword XML) | Why this meaning |
+|---|---|---|---|
+| B | Found a city (`MISSION_FOUND`, settler) | Bombard (siege units, ships), ranged attack (BtS only), air bomb (aircraft) | The maintainer's choice; founding is the priority-1 action |
+| F | Fortify (`MISSION_FORTIFY`, military units) | Sleep (units that cannot fortify), wake a sleeping unit (`COMMAND_WAKE`), build fishing boats (work boat) | The maintainer's choice |
+| S | Sentry (`MISSION_SENTRY`) | Sabotage (spy), air strike (aircraft), scrub fallout (worker) | The maintainer's choice |
+| R | Build a road or a railroad (`BUILD_ROAD`, `BUILD_RAILROAD`, worker) | Recon (aircraft), spread religion (automated, missionary; BtS only) | The maintainer's choice; the railroad has priority 1 once it can be built |
+| I | Build a farm (`BUILD_FARM`, worker) | Intercept (`MISSION_AIRPATROL`, fighters) | The maintainer's choice |
+| L | Load onto a transport (`COMMAND_LOAD`) | Build a lumbermill (worker on a forest) | The maintainer's choice |
+| Shift+P | Pillage (`MISSION_PILLAGE`) | Blockade (`MISSION_PLUNDER`, ships; BtS only), build a plantation or a pasture (worker) | The XML gives the key to pillage in all three games |
+| P | Ping the map (`CONTROL_PING`) | Sea patrol (ships; BtS only), paradrop (paratroopers; BtS only) | Ping is a control action: it works with any selection or none. The other two need a ship or a paratrooper |
+| H | Fortify until healed (`MISSION_HEAL`) | Build a camp (worker) | Heal applies to every wounded unit; the camp only to a worker on a tile with a camp resource |
+| N | Build a trade network (automated, `AUTOMATE_NETWORK`, worker) | Nuke (nuclear units) | Workers are common; nuclear units come only at the end of the game |
+| K | Build a workshop (`BUILD_WORKSHOP`, worker) | None that a player can use | BtS also gives K to `MISSION_DIE_ANIMATION` (text "Kill nearby spy"), but `CvSelectionGroup::canStartMission()` always returns false for it |
+| Alt+R | Build a road to a tile (`INTERFACEMODE_ROUTE_TO`, worker) | Rebase (aircraft) | As for I: the worker action is the common one |
+
+Warlords and the base game give each drawn key the same meaning. Warlords
+has no `CIV4InterfaceModeInfos.xml`, `CIV4AutomateInfos.xml` or
+`CIV4CommandInfos.xml` and loads the base game's. Their exceptions are fewer:
+B has no ranged attack, R does not spread religion, P has no sea patrol or
+paradrop, and Shift+P has no blockade. So every key above is in both sets,
+and none is marked `classic: false`.
+
+Labels: "Found a city", "Load onto a transport", "Ping the map" and "Build a
+road to a tile (route to)" rewrite the game's texts "Build City", "Load",
+"Ping" and "Route To Mode" so that they say what the key does.
+
 ### The base game and Warlords
 
 Warlords ships its own `CIV4MissionInfos.xml`, `CIV4ControlInfos.xml` and
@@ -89,36 +123,22 @@ classic set serves both, so it draws neither.
 ### Checked against
 
 The CivFanatics shortcut list (<https://www.civfanatics.com/?p=672>, read
-2026-11-04) agrees with the XML for every drawn key, with one difference: it
-gives the World Builder as Alt+W; the XML gives Ctrl+W, and the overlay draws
-Ctrl+W.
+2026-11-04) agrees with the XML for every key with one action, with one
+difference: it gives the World Builder as Alt+W; the XML gives Ctrl+W, and the
+overlay draws Ctrl+W. The keys with more than one action were checked against
+the XML and the game's code only, not against this list.
 
 ## Left out
 
-**Keys whose action depends on the selected unit or the terrain.** The XML
-gives each of these keys to two or more actions of different units, so the
-keycap cannot show one meaning:
+**Keys with no common meaning.** The XML gives each of these keys to actions
+that no one meaning covers:
 
-| Key | Actions in the Beyond the Sword XML |
-|---|---|
-| B | Build city (settler), bombard, ranged attack, air bomb |
-| F | Fortify (military units), sleep (other units), wake the unit, build fishing boats (work boat) |
-| S | Sentry, sabotage, air strike, scrub fallout (worker) |
-| P | Ping the map, sea patrol (ships), paradrop |
-| R | Build a road or a railroad (worker), recon (aircraft), spread religion automatically (missionary) |
-| I | Build a farm (irrigate, worker), intercept (fighters) |
-| L | Build a lumbermill (worker), load |
-| H | Fortify until healed, build a camp (worker) |
-| N | Build a trade network (automated, worker), nuke |
-| K | Build a workshop (worker), kill a nearby spy |
-| Shift+P | Pillage, blockade (ships), build a plantation or a pasture (worker) |
-| Shift+W | Build a windmill, watermill, well or winery (worker, by terrain and resource), whaling boats (work boat) |
-| Alt+C | Select all units, remove jungle or chop down a forest (worker) |
-| Alt+R | Route to (worker), rebase (aircraft) |
+| Key | Actions in the Beyond the Sword XML | Why it is not drawn |
+|---|---|---|
+| Shift+W | Build a windmill, watermill, well or winery (worker, by terrain and resource), whaling boats (work boat) | Four different worker builds, picked by the tile |
+| Alt+C | Select all units (`CONTROL_SELECTYUNITALL`), remove jungle or chop down a forest (worker) | All three have priority 0, and chopping a forest is a common worker action, so neither meaning covers the common case |
 
-The base game and Warlords give K, P and some others to fewer actions (P is
-only "Ping the map" there), but the classic set draws the same keys as the
-Beyond the Sword set.
+The base game and Warlords give these keys the same actions.
 
 **Other keys:**
 
@@ -171,6 +191,8 @@ Composed icons (`BADGED` and `TWICE` in `fetch_icons.py`):
 - Home and End (next and previous city), `.` and `,` (next and previous unit on
   the tile): a city or a person with a triangle pointing right or left.
 - Ctrl+Alt+S (save game, group): the floppy disk twice.
+- N (build a trade network, automated): the road with the robot of A
+  (automated improvements) at the top right.
 
 ESC shows the text CIV IV in Cinzel Bold by Natanael Gama (SIL OFL 1.1, the
 Bold instance of `ofl/cinzel/Cinzel[wght].ttf` from google/fonts at commit
@@ -266,7 +288,22 @@ row says game-icons.net (CC BY 3.0, credit to the author named).
 | `chatteam.png` | Font Awesome `comment` | Fonticons, Inc. | CC BY 4.0 |
 | `chatall.png` | Font Awesome `bullhorn` | Fonticons, Inc. | CC BY 4.0 |
 | `eventlog.png` | Font Awesome `list` | Fonticons, Inc. | CC BY 4.0 |
+| `foundcity.png` | Font Awesome `building-flag` | Fonticons, Inc. | CC BY 4.0 |
+| `fortify.png` | Font Awesome `shield-halved` | Fonticons, Inc. | CC BY 4.0 |
+| `heal.png` | Font Awesome `shield-heart` | Fonticons, Inc. | CC BY 4.0 |
+| `sentry.png` | Font Awesome `binoculars` | Fonticons, Inc. | CC BY 4.0 |
+| `loadunit.png` | Font Awesome `right-to-bracket` | Fonticons, Inc. | CC BY 4.0 |
+| `pillage.png` | Font Awesome `fire` | Fonticons, Inc. | CC BY 4.0 |
+| `ping.png` | Font Awesome `bullseye` | Fonticons, Inc. | CC BY 4.0 |
+| `road.png` | Font Awesome `road` | Fonticons, Inc. | CC BY 4.0 |
+| `routeto.png` | Font Awesome `route` | Fonticons, Inc. | CC BY 4.0 |
+| `farm.png` | Font Awesome `tractor` | Fonticons, Inc. | CC BY 4.0 |
+| `workshop.png` | game-icons.net `lorc/anvil` | Lorc | CC BY 3.0 |
+| `network.png` | Font Awesome `road` and `robot` | Fonticons, Inc. | CC BY 4.0 |
 | `program.png` | CIV IV in Cinzel Bold | Natanael Gama (The Cinzel Project Authors) | SIL OFL 1.1 |
+
+S (sentry) uses binoculars and not the Freeciv set's eye, because the eye is
+already Alt+U (enemy unit display).
 
 The files starting with `_` are the downloaded sources that `fetch_icons.py`
 turns into the composed icons above.

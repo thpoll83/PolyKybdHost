@@ -43,6 +43,14 @@ ICONS = {
     "forceendturn": "fa:forward-fast",
     "wait": "fa:clock",
     # Unit orders
+    "foundcity": "fa:building-flag",
+    "fortify": "fa:shield-halved",
+    "sentry": "fa:binoculars",
+    "heal": "fa:shield-heart",
+    "loadunit": "fa:right-to-bracket",
+    "pillage": "fa:fire",
+    "ping": "fa:bullseye",
+    "routeto": "fa:route",
     "goto": "fa:location-dot",
     "automate": "fa:robot",
     "automoves": "fa:circle-play",
@@ -50,6 +58,9 @@ ICONS = {
     "explore": "fa:compass",
     "improvecity": "fa:person-digging",
     "mine": "gi:lorc/mining",
+    "road": "fa:road",
+    "farm": "fa:tractor",
+    "workshop": "gi:lorc/anvil",
     "cottage": "fa:house-chimney",
     "quarry": "fa:cubes-stacked",
     "fort": "fa:chess-rook",
@@ -97,7 +108,8 @@ ICONS = {
 
 # Sources of the composed icons, rendered as `_<stem>.png` and not drawn on a key.
 PARTS = {"_bolt": "fa:bolt", "_person": "fa:person", "_city": "fa:city",
-         "_unload": "fa:person-walking-arrow-right", "_cancel": "fa:ban"}
+         "_unload": "fa:person-walking-arrow-right", "_cancel": "fa:ban",
+         "_robot": "fa:robot"}
 
 # Key area of each icon, from civ4_bts.yaml; the default is 40 x 40.
 SIZES = {"domestic": (34, 40), "financial": (34, 40), "civics": (34, 40), "freecolony": (34, 40),
@@ -119,15 +131,19 @@ INK = {"domestic": (34, 32), "financial": (30, 30), "civics": (30, 30), "freecol
        "save": (30, 30), "load": (36, 30), "options": (32, 32), "retire": (36, 32),
        "worldbuilder": (36, 32), "espionage": (30, 34), "diplomacy": (28, 34),
        "details": (36, 28), "gamedetails": (32, 32), "chatteam": (30, 30),
-       "chatall": (30, 28), "eventlog": (30, 28), "unload": (36, 32)}
+       "chatall": (30, 28), "eventlog": (30, 28), "unload": (36, 32),
+       "foundcity": (36, 32), "fortify": (28, 32), "sentry": (34, 30), "heal": (30, 32),
+       "loadunit": (32, 30), "pillage": (28, 32), "ping": (32, 32), "routeto": (34, 32),
+       "road": (34, 30), "farm": (36, 30), "workshop": (36, 28)}
 
 # Composed icons: a glyph with a mark, or a glyph drawn twice.
-# stem -> (glyph, mark, key area). A mark is "=", "ALL", "bolt", ">" or "<".
+# stem -> (glyph, mark, key area). A mark is "=", "ALL", "bolt", "robot", ">" or "<".
 BADGED = {"gototype": ("goto", "=", (40, 40)), "gotoall": ("goto", "ALL", (40, 40)),
           "quicksave": ("save", "bolt", (30, 40)), "quickload": ("load", "bolt", (34, 40)),
           "nextcity": ("_city", ">", (40, 40)), "prevcity": ("_city", "<", (40, 40)),
           "nextunit": ("_person", ">", (40, 40)), "prevunit": ("_person", "<", (40, 40)),
-          "unloadall": ("_unload", "ALL", (40, 40)), "cancelall": ("_cancel", "ALL", (40, 40))}
+          "unloadall": ("_unload", "ALL", (40, 40)), "cancelall": ("_cancel", "ALL", (40, 40)),
+          "network": ("road", "robot", (40, 40))}
 TWICE = {"savegroup": "save"}
 
 # The ESC mark: CIV IV in Cinzel Bold (SIL OFL 1.1), centred on the whole cell.
@@ -172,6 +188,8 @@ def _chevron(right: bool, h: int = 13):
 def _mark(kind: str):
     if kind == "bolt":
         return ottd._fit(Path(OUT) / "_bolt.png", (10, 15))
+    if kind == "robot":
+        return ottd._fit(Path(OUT) / "_robot.png", (16, 13))
     if kind in "<>":
         return _chevron(kind == ">")
     if kind == "=":

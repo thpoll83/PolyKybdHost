@@ -6,9 +6,10 @@
 # Keys: the default hotkeys of Beyond the Sword 3.19, read from the game's XML
 # (<HotKey>, <bCtrlDown>, <bAltDown>, <bShiftDown>). See SOURCES.md.
 #
-# Only keys that name one action whatever unit is selected are labelled. A key
-# that the XML gives to two actions of different units (B, F, S, P, R, I, L, H,
-# N, K, Shift+P, Shift+W, Alt+C, Alt+R) stays blank; SOURCES.md lists them.
+# A key that the XML gives to actions of different units is labelled with the
+# meaning it has for the common case (B found city, F fortify, and so on), as
+# in the Freeciv set. SOURCES.md lists the other units' meanings of each such
+# key. Shift+W and Alt+C have no common meaning and stay blank.
 #
 # The base game and Warlords use the same keys minus the ones Beyond the Sword
 # added. gen_classic.py writes civ4_classic.yaml from this file and drops the
@@ -79,6 +80,22 @@ bindings:
   - { key: DEL, icon: delete.png, label: "Delete the unit", shared: false }
   - { key: BSPC, icon: cancel.png, label: "Cancel last order / stop automation" }
   - { key: BSPC, mods: [SHIFT], icon: cancelall.png, label: "Cancel all orders" }
+
+  # Unit orders whose key other units use for another action; SOURCES.md lists
+  # the other actions (CIV4MissionInfos.xml, CIV4CommandInfos.xml,
+  # CIV4BuildInfos.xml, CIV4AutomateInfos.xml, CIV4InterfaceModeInfos.xml)
+  - { key: B, icon: foundcity.png, label: "Found a city", shared: false }
+  - { key: F, icon: fortify.png, label: "Fortify", shared: false }
+  - { key: H, icon: heal.png, label: "Fortify until healed", shared: false }
+  - { key: S, icon: sentry.png, label: "Sentry", shared: false }
+  - { key: L, icon: loadunit.png, label: "Load onto a transport", shared: false }
+  - { key: P, mods: [SHIFT], icon: pillage.png, label: "Pillage", shared: false }
+  - { key: P, icon: ping.png, label: "Ping the map", shared: false }
+  - { key: R, icon: road.png, label: "Build a road or a railroad", shared: false }
+  - { key: R, mods: [ALT], icon: routeto.png, label: "Build a road to a tile (route to)", shared: false }
+  - { key: I, icon: farm.png, label: "Build a farm", shared: false }
+  - { key: K, icon: workshop.png, label: "Build a workshop", shared: false }
+  - { key: N, icon: network.png, label: "Build a trade network (automated)", shared: false }
 
   # Worker and work boat builds (CIV4BuildInfos.xml)
   - { key: M, icon: mine.png, label: "Build a mine" }
