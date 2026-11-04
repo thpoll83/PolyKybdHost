@@ -461,6 +461,9 @@ class LosingTheWindowTest(unittest.TestCase):
         mod = "polyhost.handler.active_window"
         with patch(mod + ".pwc.getActiveWindow", return_value=None), \
              patch(mod + ".frontmost_app", return_value=(None, None)):
+            # Two ticks: a loss, like a new window, is accepted only once it
+            # has lasted `accept_time_msec` (see `OneTickWithNoWindowTest`).
+            handler._decide_active_window(10, 5)
             return handler._decide_active_window(10, 5)
 
     def test_the_handler_stops_NAMING_the_app_it_can_no_longer_see(self):
@@ -487,6 +490,7 @@ class LosingTheWindowTest(unittest.TestCase):
         handler.overlays_enabled = False
         with patch("polyhost.handler.active_window.pwc.getActiveWindow",
                    return_value=None):
+            handler.handle_active_window(10, 5)   # held by the accept delay
             _, cmd = handler.handle_active_window(10, 5)
         self.assertEqual(cmd, OverlayCommand.NONE)
 
@@ -500,6 +504,58 @@ class LosingTheWindowTest(unittest.TestCase):
             handler._decide_active_window(10, 5)
             handler._decide_active_window(10, 5)
         self.assertEqual(handler.focused_app(), ("terminal", None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class OneTickWithNoWindowTest(unittest.TestCase):
+    """⚠️ A single tick with no window must not reach the keyboard.
+
+    KDE Wayland reported no window for one tick and then Konsole again, every
+    ~10 s, with nobody at the desk. Each blip sent a DISABLE and then the whole
+    overlay set, and every send ends in `set_idle(False)`: Eden stopped 21 times
+    in 30 minutes (field bundle 2026-11-04). A loss now waits for the same
+    accept delay a new window does.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _handler_on_an_app(self):
+        handler = OverlayHandler({"someotherapp": {}})
+        with patch(self.MOD + ".pwc.getActiveWindow",
+                   return_value=LosingTheWindowTest._win()), \
+             patch(self.MOD + ".app_name_for", return_value="Terminal"):
+            handler.handle_active_window(10, 5)
+            handler.handle_active_window(10, 5)
+        self.assertEqual(handler.focused_app(), ("terminal", None))
+        # Generic icons are drawn: the core sends them, not this handler.
+        handler.overlays_enabled = True
+        return handler
+
+    def _tick(self, handler, win):
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=win), \
+             patch(self.MOD + ".frontmost_app", return_value=(None, None)), \
+             patch(self.MOD + ".app_name_for", return_value="Terminal"):
+            return handler.handle_active_window(10, 5)
+
+    def test_one_tick_with_no_window_sends_nothing(self):
+        handler = self._handler_on_an_app()
+        self.assertEqual(self._tick(handler, None), (None, OverlayCommand.NONE))
+        self.assertTrue(handler.overlays_enabled)
+        self.assertEqual(handler.focused_app(), ("terminal", None))
+
+    def test_the_same_window_coming_back_sends_nothing(self):
+        handler = self._handler_on_an_app()
+        win = LosingTheWindowTest._win()
+        self._tick(handler, None)
+        for _ in range(3):
+            self.assertEqual(self._tick(handler, win)[1], OverlayCommand.NONE)
+        self.assertTrue(handler.overlays_enabled)
+
+    def test_a_loss_that_LASTS_still_disables(self):
+        handler = self._handler_on_an_app()
+        self._tick(handler, None)
+        self.assertEqual(self._tick(handler, None)[1], OverlayCommand.DISABLE)
+        self.assertFalse(handler.overlays_enabled)
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
