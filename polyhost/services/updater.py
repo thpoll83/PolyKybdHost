@@ -264,6 +264,45 @@ def _latest_tag_via_web(repo: str) -> Optional[str]:
     return unquote(match.group(1))
 
 
+_NOTES_URL = "https://raw.githubusercontent.com/{repo}/release-notes/{tag}.md"
+
+
+def _release_text_via_web(repo: str, tag: str, cached: Optional[dict] = None) -> dict:
+    """Title, notes and date of release ``tag`` WITHOUT the rate-limited API.
+
+    The web fallback learns only the tag from the redirect, so without this the
+    confirm dialog had no notes and no date, only its Yes/No question. Returns
+    ``{"name", "notes", "published_at"}`` with empty strings for what is unknown:
+
+    - from ``cached`` (the ETag cache entry) when it is for the same tag, which
+      also gives the date;
+    - otherwise from the release's notes file on the ``release-notes`` branch,
+      served by raw.githubusercontent.com, which the API limit does not cover.
+      ``scripts/publish_release.py`` publishes that file as the release: its
+      first line ``# <title>`` is the name and the rest is the body.
+    """
+    out = {"name": "", "notes": "", "published_at": ""}
+    if cached and cached.get("tag") == tag and cached.get("notes"):
+        out.update(name=cached.get("name", "") or "", notes=cached.get("notes", "") or "",
+                   published_at=cached.get("published_at", "") or "")
+        return out
+    try:
+        resp = requests.get(_NOTES_URL.format(repo=repo, tag=tag), timeout=HTTP_TIMEOUT,
+                            headers={"User-Agent": USER_AGENT})
+    except requests.RequestException as e:
+        log.debug("Release notes lookup failed for %s %s: %s", repo, tag, e)
+        return out
+    if resp.status_code != 200:
+        log.debug("Release notes lookup for %s %s: HTTP %s", repo, tag, resp.status_code)
+        return out
+    lines = (resp.text or "").splitlines()
+    if lines and lines[0].startswith("# "):
+        out["name"] = lines[0][2:].strip()
+        lines = lines[1:]
+    out["notes"] = "\n".join(lines).strip("\n")
+    return out
+
+
 def parse_asset_urls(html: str) -> list:
     """Every release-asset download URL in an expanded_assets HTML fragment.
 
@@ -329,7 +368,7 @@ def _release_assets_via_web(repo: str, tag: str) -> dict:
     return assets
 
 
-def _check_latest_via_web() -> Optional[ReleaseInfo]:
+def _check_latest_via_web(cached: Optional[dict] = None) -> Optional[ReleaseInfo]:
     """Host-update check using only github.com (no rate-limited API).
 
     Returns ReleaseInfo when a newer release exists, None when up to date, and
@@ -347,14 +386,16 @@ def _check_latest_via_web() -> Optional[ReleaseInfo]:
         log.debug("Update check (web): current %s is up-to-date (latest %s)", __version__, latest)
         return None
     log.info("Update check (web fallback): new version available: %s -> %s", __version__, latest)
+    text = _release_text_via_web(HOST_REPO, tag, cached)
     return ReleaseInfo(
         tag=tag, version=str(latest),
         tarball_url=f"https://github.com/{HOST_REPO}/archive/refs/tags/{tag}.tar.gz",
         html_url=f"https://github.com/{HOST_REPO}/releases/tag/{tag}",
-        published_at="")
+        published_at=text["published_at"], name=text["name"], notes=text["notes"])
 
 
-def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
+def _check_fw_latest_via_web(current: Version,
+                             cached: Optional[dict] = None) -> Optional[FwUpCheckResult]:
     """Firmware-update check using only github.com (no rate-limited API).
 
     Gets the tag via the redirect, then the .bin/.uf2 URLs from the
@@ -379,9 +420,11 @@ def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
                            reason="no_bin_asset")
     log.info("Firmware update check (web fallback): new version available: %s -> %s",
              current, latest)
+    text = _release_text_via_web(FW_REPO, tag, cached)
     return FwUpReleaseInfo(
         tag=tag, version=str(latest), bin_url=bin_url, uf2_url=assets.get("uf2", ""),
-        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="",
+        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}",
+        published_at=text["published_at"], name=text["name"], notes=text["notes"],
         sig_url=assets.get("sig", ""))
 
 
@@ -434,7 +477,7 @@ def check_latest() -> Optional[ReleaseInfo]:
         # API rate-limited — fall back to the github.com web redirect, which is
         # not subject to the API limit, so a (manual) check still works.
         log.info("Host update API rate-limited; trying the web fallback.")
-        return _check_latest_via_web()
+        return _check_latest_via_web(host)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -555,7 +598,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
 
     if resp.status_code == 403:
         log.info("Firmware update API rate-limited; trying the web fallback.")
-        return _check_fw_latest_via_web(current)
+        return _check_fw_latest_via_web(current, fw)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 

@@ -69,6 +69,16 @@ class TestBrowserReportServer(unittest.TestCase):
         self.assertNotIn("pid", self.reports[0])
         self.assertNotIn("input_age", self.reports[0])
 
+    def test_text_fields_that_are_not_text_pass_as_none(self):
+        _post(self.port, {"app": "vim", "url": {"a": 1}, "title": 5,
+                          "browser": ["chrome"], "focused": True})
+        self.assertIsNone(self.reports[0]["url"])
+        self.assertIsNone(self.reports[0]["title"])
+        self.assertIsNone(self.reports[0]["browser"])
+        _post(self.port, {"app": 7, "url": 12345, "focused": True})
+        self.assertNotIn("app", self.reports[1])
+        self.assertIsNone(self.reports[1]["url"])
+
     def test_browser_report_carries_no_app_key(self):
         # Callbacks written before context reporters keep their signature.
         _post(self.port, {"browser": "chrome", "url": "https://a", "focused": True})

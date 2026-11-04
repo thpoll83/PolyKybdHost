@@ -60,6 +60,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     excalidraw.com:
       url: '^https?://([^/?#]+\.)?excalidraw\.com/'
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    # Figma (sources: overlay_sources/figma/figma_web.yaml): the design editor
+    # and prototypes only. FigJam (/board/) and Figma Slides (/slides/) have
+    # other tool keys and keep the browser set.
+    figma.com:
+      url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
+      overlay: [figma_web_template.mods.png, figma_web_template.combo.mods.png]
     linear.app:
       url: '^https?://([^/?#]+\.)?linear\.app/'
       overlay: [linear_template.mods.png, linear_template.combo.mods.png]
@@ -101,9 +107,22 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: *teams_web
     notion.so:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # Trello (sources: overlay_sources/trello/): boards (/b/), cards (/c/) and
+    # the member pages (/u/), where the card keys act. The home page keeps the
+    # browser set.
+    trello.com:
+      url: '^https?://([^/?#]+\.)?trello\.com/[bcu]/'
+      overlay: trello_template.mods.png
     # Google Meet (sources: overlay_sources/meet/) runs only in a browser.
     meet.google.com:
       overlay: [meet_template.mods.png, meet_template.combo.mods.png]
+    # YouTube (sources: overlay_sources/youtube/): the player keys, on the pages
+    # with a player (/watch, /live/, /embed/). The home page and search results
+    # keep the browser set. The gate also leaves out music.youtube.com and
+    # studio.youtube.com, which have other keys.
+    youtube.com:
+      url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
+      overlay: youtube_template.mods.png
     # Claude Code on the web. MUST stay above claude.ai, which it contains.
     claude.ai/code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
@@ -198,6 +217,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [jupyter_template.mods.png, jupyter_template.combo.mods.png]
     draw.io:
       overlay: [drawio_template.mods.png, drawio_template.combo.mods.png, drawio_template.extra.mods.png]
+    # A Figma file tab is titled "<file> – Figma" (a FigJam board ends in
+    # "– FigJam"); the gate keeps pages that only name Figma off the set.
+    Figma:
+      title: ' – Figma( [-—] [^–—-]+)?$'
+      overlay: [figma_web_template.mods.png, figma_web_template.combo.mods.png]
     Excalidraw:
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
     Online LaTeX Editor:
@@ -208,6 +232,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: *teams_web
     Notion:
       overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+    # A board tab is titled "<board> | Trello"; the gate requires that ending.
+    Trello:
+      title: ' \| Trello( [-—] [^|—-]+)?$'
+      overlay: trello_template.mods.png
     Google Docs:
       overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
                 googledocs_template.extra.mods.png]
@@ -219,6 +247,10 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [gmail_template.mods.png, gmail_template.combo.mods.png]
     Google Calendar:
       overlay: [googlecalendar_template.mods.png, googlecalendar_template.combo.mods.png]
+    # A video tab is titled "<video> - YouTube"; the gate requires that ending.
+    YouTube:
+      title: ' - YouTube( [-—] [^-—]+)?$'
+      overlay: youtube_template.mods.png
     Claude Code:
       overlay: [claude_code_web_template.mods.png, claude_code_web_template.combo.mods.png]
     Claude:
@@ -267,6 +299,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         excalidraw.com:
           url: '^https?://([^/?#]+\.)?excalidraw\.com/'
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        figma.com:
+          url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
+          overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
         linear.app:
           url: '^https?://([^/?#]+\.)?linear\.app/'
           overlay: [linear_template_mac.mods.png, linear_template_mac.combo.mods.png, linear_template_mac.extra.mods.png]
@@ -300,8 +335,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: *teams_web_mac
         notion.so:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        trello.com:
+          url: '^https?://([^/?#]+\.)?trello\.com/[bcu]/'
+          overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         meet.google.com:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
+        youtube.com:
+          url: '^https?://(www\.|m\.)?youtube\.com/(watch[?/]|live/|embed/)'
+          overlay: youtube_template_mac.mods.png
         claude.ai/code:
           overlay: claude_code_web_template_mac.mods.png
         claude.ai:
@@ -353,6 +394,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [jupyter_template_mac.mods.png, jupyter_template_mac.combo.mods.png, jupyter_template_mac.extra.mods.png]
         draw.io:
           overlay: [drawio_template_mac.mods.png, drawio_template_mac.combo.mods.png, drawio_template_mac.extra.mods.png, drawio_template_mac.gui.mods.png]
+        Figma:
+          title: ' – Figma( [-—] [^–—-]+)?$'
+          overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
         Excalidraw:
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
         Online LaTeX Editor:
@@ -363,6 +407,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: *teams_web_mac
         Notion:
           overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+        Trello:
+          title: ' \| Trello( [-—] [^|—-]+)?$'
+          overlay: [trello_template_mac.mods.png, trello_template_mac.combo.mods.png]
         Google Docs:
           overlay: [googledocs_template_mac.mods.png, googledocs_template_mac.combo.mods.png, googledocs_template_mac.extra.mods.png, googledocs_template_mac.gui.mods.png]
         Google Sheets:
@@ -373,6 +420,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [gmail_template_mac.mods.png, gmail_template_mac.combo.mods.png, gmail_template_mac.extra.mods.png]
         Google Calendar:
           overlay: [googlecalendar_template_mac.mods.png, googlecalendar_template_mac.combo.mods.png, googlecalendar_template_mac.extra.mods.png]
+        YouTube:
+          title: ' - YouTube( [-—] [^-—]+)?$'
+          overlay: youtube_template_mac.mods.png
         Claude Code:
           overlay: claude_code_web_template_mac.mods.png
         Claude:
@@ -1021,14 +1071,44 @@ code:
 # Alt+Shift+Left are GNOME chords that do nothing on Windows.
 # The matcher tries `linux_gnome` / `linux_kde` before `linux` on those desktops.
 # Launchers running under a bare `java` process (old Linux installs):
+#
+# Minecraft: Java Edition runs in a JVM too (overlay_sources/minecraft/
+# minecraft_java.yaml), so `java` on every platform and `java.exe` on Windows
+# (`javaw.exe` has its own entry below). The game titles its window
+# "Minecraft <version>", or "Minecraft* <version>" for a modified client, and
+# appends " - Singleplayer" / " - Multiplayer (...)" in a world. The `title:`
+# inside each branch needs the version, so "Minecraft Launcher" (and a bare
+# "Minecraft") stays unmatched. The branch key is the title's first word, so
+# "Minecraft" and "Minecraft*" are two keys. The titles are from the Minecraft
+# Wiki, not checked on an install.
+#
+# Ghidra runs in a plain JVM too (`java` on X11 and, unverified, on macOS when
+# the Dock name is not reported). Its CodeBrowser window is titled
+# "CodeBrowser: <project>:/<program>"; the `titles-startswith` sub-maps below
+# route that title to the Ghidra set (sources: overlay_sources/ghidra/) before
+# the JetBrains title gate is tried. A second CodeBrowser instance is titled
+# "CodeBrowser(2): ..." and keeps the default here.
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+  titles-startswith:
+    Minecraft: &minecraft_java_branch
+      title: '^Minecraft\*? \d'
+      overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    "Minecraft*": *minecraft_java_branch
+    "CodeBrowser:":
+      overlay: &ghidra_win [ghidra_template.mods.png, ghidra_template.combo.mods.png]
   os:
     macos:
       overlay: [jetbrains_mac_template.mods.png, jetbrains_mac_template.combo.mods.png,
                 jetbrains_mac_template.extra.mods.png, jetbrains_mac_template.gui.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        Minecraft: *minecraft_java_branch
+        "Minecraft*": *minecraft_java_branch
+        "CodeBrowser:":
+          overlay: &ghidra_mac [ghidra_template_mac.mods.png, ghidra_template_mac.combo.mods.png,
+                                ghidra_template_mac.extra.mods.png]
     linux:
       overlay: [jetbrains_linux_template.mods.png, jetbrains_linux_template.combo.mods.png,
                 jetbrains_linux_template.extra.mods.png]
@@ -1039,14 +1119,86 @@ java:
       titles-startswith:
         DBeaver:
           overlay: [dbeaver_template_linux.mods.png, dbeaver_template_linux.combo.mods.png, dbeaver_template_linux.extra.mods.png]
+        Minecraft: *minecraft_java_branch
+        "Minecraft*": *minecraft_java_branch
+        "CodeBrowser:":
+          overlay: *ghidra_win
     linux_gnome:
       overlay: [jetbrains_gnome_template.mods.png, jetbrains_gnome_template.combo.mods.png,
                 jetbrains_gnome_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        Minecraft: *minecraft_java_branch
+        "Minecraft*": *minecraft_java_branch
+        "CodeBrowser:":
+          overlay: *ghidra_win
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
       title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+      titles-startswith:
+        Minecraft: *minecraft_java_branch
+        "Minecraft*": *minecraft_java_branch
+        "CodeBrowser:":
+          overlay: *ghidra_win
+# `javaw` on Windows serves two programs, told apart by the window title. The
+# title sub-map is tried before the parent's own title gate.
+# Minecraft: Java Edition: the launcher starts the game with the `javaw.exe` of
+# its bundled runtime. Not checked on an install.
+# Ghidra: ghidraRun.bat starts it with javaw.exe (support/launch.bat, "bg"
+# mode); the "fg" and "debug" modes use java.exe, which the `java` entry above
+# routes. Only the CodeBrowser window gets the set; the project window
+# ("Ghidra: <project>") does not.
+# Every other `javaw` program matches neither and stays unmatched.
+javaw:
+  overlay: *ghidra_win
+  title: '^CodeBrowser(\(\d+\))?: '
+  titles-startswith:
+    Minecraft: *minecraft_java_branch
+    "Minecraft*": *minecraft_java_branch
+# Ghidra under its own name. Linux: on GNOME and KDE the host reports WM_CLASS,
+# which Java sets from the main class `ghidra.Ghidra` as "ghidra-Ghidra"
+# (unverified on an install). macOS: launch.sh passes -Xdock:name=Ghidra, so
+# the display name is probably "Ghidra" (unverified; it may be "java", which
+# the `java` entry routes).
+ghidra-ghidra,ghidra:
+  overlay: *ghidra_win
+  title: '^CodeBrowser(\(\d+\))?: '
+  os:
+    macos:
+      overlay: *ghidra_mac
+      title: '^CodeBrowser(\(\d+\))?: '
+# Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
+# Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
+# the window title is "Minecraft" ("Minecraft Preview" for the preview build).
+# The new Windows launcher may also report `minecraft` (Minecraft.exe), with the
+# title "Minecraft Launcher", which neither gate matches.
+# The same key serves Java Edition where the platform reports the window class
+# instead of the process: GLFW names the class after the first window title, so
+# GNOME and KDE Wayland report "Minecraft 1.21.4" or "Minecraft* 1.21.4", and the
+# matcher drops the trailing version (`minecraft`, `minecraft*`). A macOS
+# launcher that sets the Dock name reports "Minecraft". The titles-startswith
+# branch takes the titles with a version (Java); the parent's gate takes the bare
+# title (Bedrock). None of these names were checked on an install.
+minecraft:
+  title: '^Minecraft( Preview)?$'
+  overlay: [minecraft_bedrock_template.mods.png, minecraft_bedrock_template.combo.mods.png]
+  titles-startswith:
+    Minecraft: *minecraft_java_branch
+    "Minecraft*": *minecraft_java_branch
+  # Bedrock runs only on Windows. On macOS and Linux `minecraft` is Java, and a
+  # title that cannot be read (empty) must not fall back to the Bedrock set.
+  # The gate keeps the launcher window ("Minecraft Launcher") off the Java set.
+  os:
+    macos:
+      title: '^(?!Minecraft Launcher)'
+      overlay: &minecraft_java [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
+    linux:
+      title: '^(?!Minecraft Launcher)'
+      overlay: *minecraft_java
+"minecraft*":
+  title: '^Minecraft\*? \d'
+  overlay: [minecraft_java_template.mods.png, minecraft_java_template.combo.mods.png]
 # Windows reports the executable (idea64.exe -> idea64), Linux the launcher or
 # WM_CLASS (idea / jetbrains-idea), macOS the display name ("IntelliJ IDEA").
 idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datagrip64,rustrover64,studio64,jetbrains_client,idea,pycharm,clion,webstorm,goland,rider,phpstorm,rubymine,datagrip,rustrover,jetbrains-idea,jetbrains-idea-ce,jetbrains-pycharm,jetbrains-pycharm-ce,jetbrains-clion,jetbrains-webstorm,jetbrains-goland,jetbrains-rider,jetbrains-phpstorm,jetbrains-rubymine,jetbrains-datagrip,jetbrains-rustrover,jetbrains-studio,intellij idea,intellij idea ce,intellij idea ultimate,pycharm ce,pycharm professional,android studio:
@@ -1064,6 +1216,20 @@ idea64,pycharm64,clion64,webstorm64,goland64,rider64,phpstorm64,rubymine64,datag
     linux_kde:
       overlay: [jetbrains_kde_template.mods.png, jetbrains_kde_template.combo.mods.png,
                 jetbrains_kde_template.extra.mods.png]
+# Eclipse IDE (sources: overlay_sources/eclipse/), the Default key scheme. Linux
+# has its own set because GTK moves Redo to Ctrl+Shift+Z and Occurrences in
+# File to Ctrl+Alt+U. Windows reports eclipse.exe -> `eclipse`, Linux the
+# native launcher's process `eclipse` (it loads the JVM in-process) or WM_CLASS
+# `Eclipse`, macOS the app name `Eclipse`. None of the three was checked on an
+# install. An Eclipse started as `java -jar ...equinox.launcher...` reports
+# `java` and gets no overlay.
+eclipse:
+  overlay: [eclipse_template.mods.png, eclipse_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [eclipse_template_mac.mods.png, eclipse_template_mac.combo.mods.png, eclipse_template_mac.extra.mods.png]
+    linux:
+      overlay: [eclipse_template_linux.mods.png, eclipse_template_linux.combo.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png, visualstudio_template.extra.mods.png]
 lockapp:
@@ -1096,8 +1262,81 @@ explorer:
 # the app id `org.gnome.Nautilus`.
 nautilus,org.gnome.Nautilus:
   overlay: [nautilus_template.mods.png, nautilus_template.combo.mods.png]
+# Terminals route the mode report of a vim or emacs running in them
+# (handler/browser_url.py: TERMINAL_APPS, HOSTED_REPORTERS): the Vim plugin
+# (vim-plugin/) sends vim://<mode>, the Emacs package (emacs-package/)
+# emacs://<major-mode>. `&editor_urls` is the one list of those routes, used by
+# every terminal entry and by GUI Vim and GUI Emacs. `layer: false`: an
+# editor's mode REPLACES the terminal's own overlay. Without a report (a plain
+# shell, or an editor with no plugin) the terminal keeps its own overlay.
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
+  layer: false
+  urls-contains: &editor_urls
+    "vim://normal": { overlay: vim_normal_template.mods.png }
+    "vim://visual": { overlay: vim_visual_template.mods.png }
+    "vim://select": { overlay: vim_select_template.mods.png }
+    "vim://insert": { overlay: vim_insert_template.mods.png }
+    "vim://replace": { overlay: vim_replace_template.mods.png }
+    "vim://cmdline": { overlay: vim_cmdline_template.mods.png }
+    "vim://terminal": { overlay: vim_terminal_template.mods.png }
+    # GNU Emacs (sources: overlay_sources/emacs/; emacs-package/ sends
+    # emacs://<major-mode>[/<evil-state>]). First hit wins, so the specific
+    # modes come before `emacs://`. org-mode lists the global set FIRST and its
+    # own after it (a later file takes priority per key); Dired's set is
+    # complete on its own.
+    "emacs://org-mode":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png, emacs_org_template.mods.png, emacs_org_template.combo.mods.png]
+    "emacs://dired-mode":
+      overlay: [emacs_dired_template.mods.png, emacs_dired_template.combo.mods.png]
+    "emacs://":
+      overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
+  # GNU nano (sources: overlay_sources/nano/) sets no window title and has no
+  # plugin, so it is seen only when the shell or the terminal puts the running
+  # command into the title (overlay_sources/nano/SOURCES.md has the formats and
+  # the shell snippets). The word `nano` (or iTerm2's `(nano)`) only selects the
+  # route; the `title` regex then requires nano at the COMMAND position: at the
+  # start (and not followed by " — ", Terminal.app's directory separator, or
+  # " : ", Konsole's), after " - " (cmd.exe), " — " (Terminal.app), " : "
+  # (Konsole), "(" (iTerm2) or "] " (fish over SSH), optionally after `sudo`.
+  # So `vim nano`, `man nano` and a prompt in ~/nano-docs do not load it. A
+  # mode report (urls-contains above) takes priority: with a URL known the
+  # matcher skips titles-contains (tests/handler/nano_routing_test.py).
+  titles-contains: &editor_titles
+    nano: &nano_title
+      title: '^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)(?:sudo\s+)?nano(?:$|\s|\))'
+      overlay: [nano_template.mods.png, nano_template.combo.mods.png]
+    "(nano)": *nano_title
+    "(nano": *nano_title
+# The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
+# with no editor report and no nano title it matches nothing, and the terminal
+# keeps the generic shortcut harvest it had before (handler/common.py,
+# find_matching_entry).
+# None of the names was checked on an install (docs/architecture.md,
+# "Terminal-hosted editors").
+alacritty,com.gexperts.tilix,com.mitchellh.ghostty,conhost,foot,ghostty,gnome-terminal,gnome-terminal-server,iterm,iterm2,kgx,kitty,konsole,openconsole,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.wezfurlong.wezterm,ptyxis,terminal,terminator,tilix,urxvt,uxterm,wezterm,wezterm-gui,xfce4-terminal,xterm:
+  urls-contains: *editor_urls
+  titles-contains: *editor_titles
+# GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
+# gvim on Linux, MacVim's display name, Neovide. The plugin reports the mode
+# as in a terminal; without a report Vim's Normal mode set applies. The names
+# are exactly CONTEXT_REPORTERS' "vim" names (tests/handler/vim_routing_test.py).
+# MacVim adds Cmd menu keys, but the modal keys are the same, so there is no
+# macOS set. None of the names was checked on an install.
+gvim,macvim,neovide:
+  overlay: vim_normal_template.mods.png
+  layer: false
+  urls-contains: *editor_urls
+# GNU Emacs in its own window (sources: overlay_sources/emacs/): emacs(.exe) on
+# Windows, WM_CLASS emacs on Linux, Emacs on macOS, exactly CONTEXT_REPORTERS'
+# "emacs" name (tests/handler/emacs_routing_test.py). The package reports the
+# major mode as in a terminal; without a report the global set applies.
+# Meta is Alt (Option on macOS), so there is no macOS set. Not checked on an
+# install.
+emacs:
+  overlay: [emacs_template.mods.png, emacs_template.combo.mods.png, emacs_template.extra.mods.png]
+  layer: false
+  urls-contains: *editor_urls
 notepad:
   overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
 mspaint:
@@ -1329,6 +1568,13 @@ applicationframehost:
       title: "^Voice Recorder"
       icon: mdi:microphone
       overlay: soundrecorder_template.mods.png
+    # Minecraft: Bedrock Edition as a UWP app (the Microsoft Store builds before
+    # the move to a plain Win32 `Minecraft.Windows.exe`), titled "Minecraft".
+    # No `icon:`: the template bakes its own ESC mark, which takes priority over
+    # a named one. Not checked on an install.
+    Minecraft:
+      title: "^Minecraft( Preview)?$"
+      overlay: [minecraft_bedrock_template.mods.png, minecraft_bedrock_template.combo.mods.png]
 calculatorapp:
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an
@@ -1559,6 +1805,64 @@ freecad,org.freecad.freecad:
       overlay: [freecad_template_mac.mods.png, freecad_template_mac.combo.mods.png, freecad_template_mac.extra.mods.png]
     linux:
       overlay: [freecad_template_linux.mods.png, freecad_template_linux.combo.mods.png]
+# 3D-print slicers (sources: overlay_sources/slicers/, one key table for the
+# three apps). Names from each project's build files: the Windows executable
+# and Linux binary (`prusa-slicer`, `bambu-studio`, `orca-slicer`, also the
+# .desktop StartupWMClass), the macOS bundle name (`PrusaSlicer`, `BambuStudio`,
+# `OrcaSlicer`) and the Flatpak id. Not checked on an install: every macOS
+# name (Bambu Studio's Info.plist.in says BambuStudio and its CMake bundle name
+# says "Bambu Studio", so both are listed), `com.bambulab.bambustudio`
+# (Flathub, not in the repo) and `io.github.softfever.orcaslicer` (the Flathub
+# id before the project moved to com.orcaslicer.OrcaSlicer).
+#
+# PrusaSlicer's G-code Viewer is the same binary started with --gcodeviewer
+# (the Linux .desktop file, and macOS) or the `prusa-gcodeviewer` executable
+# (Windows; a symlink on Linux). Its title is "<file> - PrusaSlicer G-code
+# Viewer-<version>", and the editor's never has "PrusaSlicer G-code" as two
+# words, so `titles-contains` picks the viewer set.
+prusa-slicer,prusaslicer,com.prusa3d.prusaslicer:
+  overlay: [prusaslicer_template.mods.png, prusaslicer_template.combo.mods.png]
+  titles-contains:
+    PrusaSlicer G-code: {overlay: &prusa_gcv [prusa_gcodeviewer_template.mods.png]}
+  os:
+    macos:
+      overlay: [prusaslicer_template_mac.mods.png, prusaslicer_template_mac.combo.mods.png, prusaslicer_template_mac.extra.mods.png]
+      titles-contains:
+        PrusaSlicer G-code: {overlay: &prusa_gcv_mac [prusa_gcodeviewer_template_mac.mods.png, prusa_gcodeviewer_template_mac.combo.mods.png, prusa_gcodeviewer_template_mac.extra.mods.png]}
+prusa-gcodeviewer,prusagcodeviewer:
+  overlay: *prusa_gcv
+  os:
+    macos:
+      overlay: *prusa_gcv_mac
+# Bambu Studio's Linux set differs from Windows by one cell: the shortcut list
+# is Alt+Shift+? on Windows and Shift+? elsewhere.
+bambu-studio,bambustudio,bambu studio,com.bambulab.bambustudio:
+  overlay: [bambustudio_template.mods.png, bambustudio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [bambustudio_template_mac.mods.png, bambustudio_template_mac.combo.mods.png, bambustudio_template_mac.extra.mods.png]
+    linux:
+      overlay: [bambustudio_template_linux.mods.png, bambustudio_template_linux.combo.mods.png]
+orca-slicer,orcaslicer,com.orcaslicer.orcaslicer,io.github.softfever.orcaslicer:
+  overlay: [orcaslicer_template.mods.png, orcaslicer_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [orcaslicer_template_mac.mods.png, orcaslicer_template_mac.combo.mods.png, orcaslicer_template_mac.extra.mods.png]
+
+# Arduino IDE 2.x (sources: overlay_sources/arduino_ide/). `Arduino IDE.exe`
+# on Windows and the `Arduino IDE` app bundle on macOS both arrive as
+# `arduino ide`. Linux: the AppImage and zip run the `arduino-ide` binary (its
+# process name), the X11 WM_CLASS is likely `Arduino IDE`, and the Flathub app
+# id is cc.arduino.IDE2. None of these names was checked on an install.
+# Linux has its own set: Monaco's copy-line, add-cursor, block-comment and
+# peek-definition keys differ there.
+arduino ide,arduino-ide,cc.arduino.ide2:
+  overlay: [arduino_ide_template.mods.png, arduino_ide_template.combo.mods.png, arduino_ide_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [arduino_ide_template_mac.mods.png, arduino_ide_template_mac.combo.mods.png, arduino_ide_template_mac.extra.mods.png, arduino_ide_template_mac.gui.mods.png]
+    linux:
+      overlay: [arduino_ide_template_linux.mods.png, arduino_ide_template_linux.combo.mods.png, arduino_ide_template_linux.extra.mods.png]
 # BEGIN generated by overlay_sources/thunderbird/gen_titles.py -- do not edit by hand
 # Thunderbird (sources: overlay_sources/thunderbird/). The main window and the
 # compose window are one process, so the compose window is told apart by its
@@ -1799,6 +2103,15 @@ postman:
   os:
     macos:
       overlay: [postman_template_mac.mods.png, postman_template_mac.combo.mods.png, postman_template_mac.extra.mods.png]
+# Wireshark (sources: overlay_sources/wireshark/). Windows reports
+# Wireshark.exe, Linux the WM_CLASS `wireshark` (the Flatpak app id
+# org.wireshark.Wireshark), macOS the display name. None of the names was
+# checked on an install.
+wireshark,org.wireshark.wireshark:
+  overlay: [wireshark_template.mods.png, wireshark_template.combo.mods.png, wireshark_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [wireshark_template_mac.mods.png, wireshark_template_mac.combo.mods.png, wireshark_template_mac.extra.mods.png, wireshark_template_mac.gui.mods.png]
 # DBeaver (sources: overlay_sources/dbeaver/). Commit and Rollback differ on
 # Linux, so it has its own set. On Linux under X11 the process is the bundled
 # JVM (`java`); the `java` entry routes titles starting "DBeaver" to this set.
@@ -1883,6 +2196,41 @@ aoe2de_s,steam_app_813780:
 # keeps the `.exe`. Names not checked on an install.
 war3,war3.exe,warcraft iii,warcraft iii.exe,frozen throne,frozen throne.exe:
   overlay: warcraft3_template.mods.png
+# StarCraft II (overlay_sources/starcraft2/starcraft2.yaml). The game runs as
+# SC2_x64.exe (SC2.exe for the 32-bit client) from Versions/Base<N>/; under Wine
+# the WM_CLASS keeps the `.exe`. `starcraft ii` is the launcher's name and the
+# assumed macOS name. None of the names was checked on an install.
+# Control groups, F1 and Backspace are redrawn from the user's own StarCraft
+# 1.16.1 files when they are on the machine (game_assets reader `starcraft`).
+sc2_x64,sc2,sc2_x64.exe,sc2.exe,starcraft ii:
+  overlay: [starcraft2_template.mods.png, starcraft2_template.combo.mods.png]
+  game_assets: starcraft2/starcraft2.yaml
+# Factorio 2.0 (overlay_sources/factorio/factorio.yaml). `factorio` is the
+# Windows process (factorio.exe), the native Linux binary and the macOS app
+# (factorio.app); `factorio.exe` covers Wine, which keeps the `.exe`, and
+# `steam_app_427520` Proton, which is unlikely because the game has a native
+# Linux build. None of the names was checked on an install. macOS gets the set
+# with Cut, Copy, Paste, Undo and Redo on Cmd.
+factorio,factorio.exe,steam_app_427520:
+  overlay: [factorio_template.mods.png, factorio_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [factorio_template_mac.mods.png, factorio_template_mac.combo.mods.png, factorio_template_mac.extra.mods.png]
+# Age of Empires IV and its Anniversary Edition, Steam app 1466860
+# (overlay_sources/aoe4/aoe4.yaml). Windows only; there is no macOS version.
+# RelicCardinal.exe is the executable in Steam's launch config (read
+# 2026-10-30); the Microsoft Store copy is assumed to use the same name, and
+# steam_app_1466860 under Proton follows the AoE2 DE entry. Those two names
+# were not checked on an install.
+reliccardinal,steam_app_1466860:
+  overlay: [aoe4_template.mods.png, aoe4_template.combo.mods.png]
+# OpenTTD 15.3 (overlay_sources/openttd/openttd.yaml). The CMake target is
+# `openttd` (BINARY_NAME), so openttd on Linux and openttd.exe on Windows;
+# org.openttd.openttd is the Flathub app id, steam_app_1536610 Steam under
+# Proton. The construction toolbars' letter keys are not drawn: the window title
+# does not change when they open. Names not checked on an install.
+openttd,openttd.exe,org.openttd.openttd,steam_app_1536610:
+  overlay: [openttd_template.mods.png, openttd_template.combo.mods.png]
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
@@ -1895,6 +2243,9 @@ openra:
     Tiberian Dawn:
       overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
       game_assets: openra/openra_cnc.yaml
+    Dune 2000:
+      overlay: [openra_d2k_template.mods.png, openra_d2k_template.combo.mods.png]
+      game_assets: openra/openra_d2k.yaml
 openra-ca:
   overlay: [openra_ra_template.mods.png, openra_ra_template.combo.mods.png]
   game_assets: openra/openra_ra.yaml
@@ -1906,6 +2257,44 @@ redalert,redalert.exe:
 tiberiandawn,tiberiandawn.exe:
   overlay: [openra_cnc_template.mods.png, openra_cnc_template.combo.mods.png]
   game_assets: openra/openra_cnc.yaml
+dune2000,dune2000.exe:
+  overlay: [openra_d2k_template.mods.png, openra_d2k_template.combo.mods.png]
+  game_assets: openra/openra_d2k.yaml
+# Dune II (overlay_sources/dune2/). Dune Legacy, the open-source remake, has its
+# own keys (dune_legacy.yaml); OpenDUNE and the DOS game share the original ones
+# (dune2.yaml). Names from the projects' sources (window titles "Dune Legacy",
+# "OpenDUNE - v0.9"), not checked on an install. Keys redrawn from the user's
+# own DUNE.PAK.
+dunelegacy,dunelegacy.exe:
+  overlay: dune_legacy_template.mods.png
+  game_assets: dune2/dune_legacy.yaml
+opendune,opendune.exe:
+  overlay: dune2_template.mods.png
+  game_assets: dune2/dune2.yaml
+# DOSBox runs any DOS program, so only a title naming Dune II's executable
+# loads the overlay: "...Program:    DUNE2" (DOSBox 0.74), "DUNE2.EXE - 3000
+# cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 - ..." (DOSBox-X). The
+# titles are read off the DOSBox sources, not seen. The game files are found
+# only through the game_dune2_data_dir setting: the executable is DOSBox's.
+# DOSBox Staging's `titlebar = program=path` shows the path as one word
+# (C:\GAMES\DUNE2.EXE), which matches neither key.
+dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
+  titles-contains:
+    DUNE2:
+      overlay: dune2_template.mods.png
+      game_assets: dune2/dune2.yaml
+    DUNE2.EXE:
+      overlay: dune2_template.mods.png
+      game_assets: dune2/dune2.yaml
+# Wargus, Warcraft II on the Stratagus engine (overlay_sources/wargus/wargus.yaml).
+# The `wargus` launcher starts the engine `stratagus` (execvp on Linux,
+# CreateProcess on Windows; targets in both repositories' CMakeLists.txt, v3.3.2).
+# Stratagus also runs other games, so the window title "Wargus" (SetFullGameName
+# in Wargus scripts/stratagus.lua) gates the entry. Under Wine the WM_CLASS keeps
+# the `.exe`. Names not checked on an install.
+stratagus,stratagus.exe,wargus,wargus.exe:
+  overlay: [wargus_template.mods.png, wargus_template.combo.mods.png]
+  title: Wargus
 # Command & Conquer Remastered Collection, Steam app 1213210
 # (overlay_sources/cnc_remastered/cnc_remastered.yaml). ClientG.exe on Windows,
 # steam_app_1213210 under Proton. Names not checked on an install.
@@ -1913,6 +2302,25 @@ clientg,clientg.exe,steam_app_1213210:
   overlay: cnc_remastered_template.mods.png
   # Keys redrawn from the user's own game files when they are installed.
   game_assets: cnc_remastered/cnc_remastered.yaml
+# Warzone 2100 (overlay_sources/warzone2100/warzone2100.yaml). The binary is
+# `warzone2100` (`warzone2100.exe` on Windows), the CMake target's OUTPUT_NAME in
+# src/CMakeLists.txt at tag 4.7.0; the macOS bundle is "Warzone 2100".
+# steam_app_1241950 under Proton. The window names were not checked on an install.
+warzone2100,warzone2100.exe,warzone 2100,steam_app_1241950:
+  overlay: warzone2100_template.mods.png
+# RimWorld, Steam app 294100 (overlay_sources/rimworld/rimworld.yaml). One set
+# for every OS: the game reads the same key codes everywhere. RimWorldWin64.exe
+# on Windows (rimworldwin64.exe under Wine), RimWorldLinux on Linux (the Unity
+# WM_CLASS; some setups may report `rimworld`), RimWorld or RimWorldMac on macOS,
+# steam_app_294100 under Proton. Names not checked on an install.
+rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294100:
+  overlay: rimworld_template.mods.png
+# OpenRCT2 (overlay_sources/openrct2/openrct2.yaml). The binary is `openrct2`
+# (add_executable in src/openrct2-ui/CMakeLists.txt, v0.5.6), `openrct2.exe` on
+# Windows (TargetName in openrct2-win.vcxproj), `OpenRCT2` for the macOS bundle,
+# and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
+openrct2,openrct2.exe,io.openrct2.openrct2:
+  overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
 # 0 A.D. (overlay_sources/zeroad/zeroad.yaml). The engine binary is
 # `pyrogenesis` (premake5.lua project, 0.28.0) and the desktop file declares
 # StartupWMClass=pyrogenesis and starts `0ad`. com.play0ad.zeroad is the
