@@ -6,11 +6,11 @@
       "id": "symbol",
       "index": 0,
       "file": "symbol.plyf",
-      "content_version": 13,
-      "size": 58260,
+      "content_version": 14,
+      "size": 65472,
       "slot_offset": 4096,
       "slot_size": 98304,
-      "sha256": "2c7b02628b0393e8"
+      "sha256": "b96178c9da4973d9"
     },
     {
       "id": "mideast",
