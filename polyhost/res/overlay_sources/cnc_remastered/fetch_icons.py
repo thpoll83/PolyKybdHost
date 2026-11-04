@@ -4,7 +4,7 @@
 The key icons are silhouettes from Font Awesome Free (CC BY 4.0), Material
 Design Icons (Apache-2.0) and game-icons.net (CC BY 3.0), shaded and dithered
 like the units. The ten control-group units are Warzone
-2100 models (GPL-2.0-or-later) rendered by wz_units.py: textured, lit,
+2100 models (GPL-2.0-or-later) rendered by wz_units.py: textured (turrets flat grey), lit,
 dithered, with a lit outline; a plus for Ctrl. SOURCES.md credits each. The ESC
 mark is COMMAND & CONQUER set in the stencil face Black Ops One (SIL OFL 1.1),
 laid out like the game's title; the game's logo art is not used.
