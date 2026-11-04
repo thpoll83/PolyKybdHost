@@ -5,8 +5,13 @@ The key icons are flat silhouettes from game-icons.net (CC BY 3.0), Font
 Awesome Free (CC BY 4.0) and one from Material Design Icons (Apache-2.0), as in
 the Warcraft III set. A few are drawn here: the three firing ranges, the
 compass letters, the track, the half-track, the hover unit, and the small marks
-added to an icon (plus, ringed plus, "no group", return arrow). SOURCES.md credits each. The ESC mark is WARZONE over 2100 set in
-Orbitron Black (SIL OFL 1.1); the game's own art (GPL) is not used.
+added to an icon (plus, ringed plus, "no group", return arrow). Most keys were
+then picked in the icon picker (picker.yaml) from the game's own art
+(GPL-2.0-or-later): its interface images and its units rendered from the 3D
+models (wz_models.py). tools/apply_icon_picks.py writes those picks to
+pictures.yaml and rasterize.yaml, and this script draws them over the icons
+above. SOURCES.md credits each. The ESC mark is WARZONE over 2100 set in
+Orbitron Black (SIL OFL 1.1).
 
     pip install cairosvg numpy pillow
     python polyhost/res/overlay_sources/warzone2100/fetch_icons.py
@@ -18,7 +23,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import game_icons  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import fetch_icons as aoe2  # noqa: E402
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
@@ -97,11 +101,6 @@ ICONS = {
     "quickchat": "fa:comment-dots",
 }
 
-# Control groups: one tank at full height. Alt+digit (select commander N): the
-# commander's chevrons, drawn the same way.
-GROUP_UNIT = "lorc/tank"
-COMMANDER = "delapouite/sergeant"
-
 # Key area of each icon, from warzone2100.yaml; the default is 40 x 40.
 SIZES = {"manufacture": (34, 40), "research": (34, 40), "build": (34, 40),
          "design": (30, 40), "intelligence": (34, 40), "commanders": (34, 40),
@@ -141,6 +140,13 @@ FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
             "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/orbitron/Orbitron%5Bwght%5D.ttf")
 SS = 8                                       # supersampling factor for drawn icons
 SEAM = aoe2.GROUP_SEAM                       # unlit pixels between an icon and its mark
+HERE = Path(__file__).resolve().parent
+# Written by tools/apply_icon_picks.py from the icon picker (picker.yaml): the
+# icons re-rasterized from their SVG, and the game's own pictures (its interface
+# images and its units rendered from the 3D models, GPL-2.0-or-later).
+RASTERIZE = HERE / "rasterize.yaml"
+PICTURES = HERE / "pictures.yaml"
+PICKER = HERE / "picker.yaml"
 MARK = 13                                    # size of a corner mark, in px
 RETURN_SIZE = (46, 40)                        # Shift+H: the building and the arrow beside it
 
@@ -208,13 +214,63 @@ def _mark(kind: str):
     return _draw(draw, (MARK, MARK))
 
 
+def _picks(path: Path) -> dict:
+    import yaml
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}) or {}
+
+
+def picked() -> set:
+    """The icon stems the icon picker draws (rasterize.yaml and pictures.yaml)."""
+    return set(_picks(RASTERIZE)) | set(_picks(PICTURES))
+
+
+def rasterize(out: Path) -> None:
+    """The icons picked re-rasterized (rasterize.yaml): the SVG's silhouette
+    shaded and dithered by the picker's renderer, at the picked region."""
+    from polyhost.res.overlay_sources import svg_silhouette
+    from polyhost.services.game_assets import picture
+    for stem, e in _picks(RASTERIZE).items():
+        cnc._save_mask(picture.vector(svg_silhouette.silhouette(e["svg"]), e, tuple(e["region"])), out / f"{stem}.png")
+        print(f"  {stem}.png  <- {e['svg']} re-rasterized at {e['region'][0]}x{e['region'][1]}")
+
+
+def pictures(out: Path) -> None:
+    """The game's pictures picked in the icon picker (pictures.yaml): Warzone's
+    interface images, fetched from the pinned commit, and its units rendered
+    from the 3D models, drawn by the picker's own renderer (game_assets/picture.py)
+    with the picker's palette, so the keycap shows what the page showed."""
+    import yaml
+
+    from polyhost.res.overlay_sources.cnc_remastered import wz_units
+    from polyhost.services.game_assets import picture
+    sys.path.insert(0, str(HERE.parents[3] / "tools"))
+    from icon_picker_sources import Warzone2100
+    entries = _picks(PICTURES)
+    if not entries:
+        return
+    palette_from = yaml.safe_load(PICKER.read_text(encoding="utf-8")).get("palette_from") or []
+    names = set(palette_from) | {e["src"].split(":", 1)[1] for e in entries.values() if e["src"].startswith("intfac:")}
+    for name in sorted(names):                # the same tree as data/base, under wz_units' cache
+        path = f"base/images/intfac/{name}.png"
+        wz_units._fetch(wz_units.WZ_URL.format(path), wz_units.CACHE / path)
+    source = Warzone2100(dict(Warzone2100.find(str(wz_units.CACHE)), palette_from=palette_from))
+    for stem, e in entries.items():
+        m = picture.picture(source.picture(e["src"]), source.palette, e, tuple(e["region"]))
+        cnc._save_mask(m, out / f"{stem}.png")
+        print(f"  {stem}.png  <- {e['src']} at {e['region'][0]}x{e['region'][1]}")
+
+
 def marked(out: Path) -> None:
     """The icons in MARKED: the source icon with a corner mark, (strike) with
     a diagonal line through it, or (return) narrower with an arrow pointing into
     it from the left. SEAM px of the icon are cleared around the
-    mark, as around the plus of a control group."""
+    mark, as around the plus of a control group. An icon the picker draws is
+    left as picked."""
     import numpy as np
+    skip = picked()
     for stem, (src, kind) in MARKED.items():
+        if stem in skip:
+            continue
         icon = _load_mask(out / f"{src}.png")
         H, W = icon.shape
         if kind == "strike":                     # from bottom left to top right
@@ -299,16 +355,17 @@ def tracks(out: Path) -> None:
 
 
 def groups(out: Path) -> None:
-    """group.png (select), groupnew.png (Ctrl: assign, a plus), groupadd.png
-    (Shift: add, a ringed plus) and commander.png (Alt), 48 x 40 like the
-    Warcraft III groups. One image for all ten digits: the legend tells the
-    digit."""
-    g = wc3._single(out / "_group.png")
-    aoe2._save_cell(g, out / "group.png")
-    aoe2._save_cell(aoe2._with_plus(g), out / "groupnew.png")
-    aoe2._save_cell(wc3._with_ring_plus(g), out / "groupadd.png")
-    aoe2._save_cell(wc3._single(out / "_commander.png"), out / "commander.png")
-    print("  group.png, groupnew.png, groupadd.png  <- _group.png; commander.png  <- _commander.png")
+    """groupnew<N>.png (Ctrl: assign, a plus) and groupadd<N>.png (Shift: add,
+    a ringed plus), 48 x 40 like the Warcraft III groups, from group<N>.png,
+    the unit picked for digit N (pictures.yaml)."""
+    missing = [d for d in "1234567890" if f"group{d}" not in _picks(PICTURES)]
+    if missing:
+        raise SystemExit(f"pictures.yaml has no unit for group {', '.join(missing)}; pick one in the icon picker")
+    for d in "1234567890":
+        g = _load_mask(out / f"group{d}.png")
+        aoe2._save_cell(aoe2._with_plus(g), out / f"groupnew{d}.png")
+        aoe2._save_cell(wc3._with_ring_plus(g), out / f"groupadd{d}.png")
+    print("  groupnew1..0.png, groupadd1..0.png  <- group1..0.png + a plus or a ringed plus")
 
 
 def _mark_font(px: int):
@@ -351,13 +408,14 @@ def program(out: Path) -> None:
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, "_radar": ICONS["radar"]}, out)
-    game_icons.render({"_group": GROUP_UNIT, "_commander": COMMANDER}, out, render_px=256)
     flat_icons(out)
     hover(out)
     tracks(out)
-    marked(out)
     compass(out)
     ranges(out)
+    rasterize(out)                           # the picker's icons replace the drawn ones
+    pictures(out)
+    marked(out)
     groups(out)
     program(out)
     print(f"Wrote icons to {out}")
