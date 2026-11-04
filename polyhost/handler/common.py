@@ -257,7 +257,9 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_contains, has_url, has_urls_contains, has_os]`` from ``annotate()``; the
     title, url and os sub-maps hold further annotated entries. An entry matches when it
     carries an overlay/remote and every constraint it declares is satisfied —
-    recursing into the more-specific sub-maps first (first match wins):
+    recursing into the more-specific sub-maps first (first match wins). An
+    entry with no overlay and no remote matches only through its
+    ``urls-contains`` and title sub-maps, never by itself:
     ``os`` first of all (the platform decides which keymap the app even has),
     then ``urls-contains`` before the title sub-maps, because a URL identifies a
     browser web-app far more reliably than its window title.
@@ -308,11 +310,14 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
 
-    # An entry without an overlay of its own is still a router: its sub-maps may
-    # name one (DOSBox: only a title naming DUNE2 gives an overlay). It matches
-    # nothing by itself, see the end of this function.
-    if not (has_overlay or has_remote or has_starts_with or has_ends_with or has_contains
-            or has_urls_contains or has_os):
+    # An entry with no overlay of its own can still ROUTE: its sub-maps may name
+    # one. The terminal entry only sends a vim:// or emacs:// mode report, or a
+    # title naming nano, to an editor's overlay; DOSBox gives an overlay only to a
+    # title naming DUNE2. It never matches by itself (see the end of this
+    # function), so a terminal with no report and no editor in its title gets
+    # None, exactly as an app with no entry, and keeps the generic shortcut harvest.
+    if not (has_overlay or has_remote or has_urls_contains or has_starts_with
+            or has_ends_with or has_contains or has_os):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -390,6 +395,10 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
                             if has_urls_contains and has_overlay and entry.get(LAYER, True):
                                 return _layered(entry, m)
                             return m
+
+    if not (has_overlay or has_remote):
+        # Nothing routed: an entry with no overlay never matches by itself.
+        return None
 
     # A hard ``url`` regex constraint can only be satisfied when a URL is known;
     # with no URL it simply doesn't match (not a false positive). ``urls-contains``

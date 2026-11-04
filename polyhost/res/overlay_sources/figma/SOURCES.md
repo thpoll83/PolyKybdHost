@@ -175,3 +175,17 @@ Deliberately NOT added:
   documented one.
 - **Ctrl+W (Close tab)**: not found in any source consulted; left off rather than guessed.
 - **Find next / Replace**: Figma's find-and-replace lives inside Ctrl+F with no separate chord.
+
+## Figma in a browser (`figma_web.yaml`)
+
+`gen_web_spec.py` writes `figma_web.yaml` from `bindings.yaml`, so the web set
+uses the same icons and cannot drift from the desktop set. It drops the chords a
+browser keeps for itself before the page sees them: Ctrl/Cmd + N, T, W and Tab,
+alone or with Shift. Of the desktop bindings that removes only Ctrl/Cmd+N (New
+file), which in a browser opens a new window. Run it with `--check` to confirm
+the committed spec is current.
+
+The mapping routes `figma.com/design/`, `/file/` and `/proto/` to this set.
+FigJam (`/board/`) and Figma Slides (`/slides/`) have their own tool keys and
+keep the browser set. Without a URL, a tab title ending in "– Figma" selects
+it. That title form was not checked in a browser.
