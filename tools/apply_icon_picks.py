@@ -12,6 +12,11 @@ For each picked key (see ICON_PICKER.md):
   bindings that use that icon get its region;
 - "shipped" removes the icon's recipe.
 
+For a game whose art may ship (a picker source with ``SHIPS``, Warzone 2100), a
+game picture is not a run-time recipe: it goes to `pictures.yaml` beside the
+picker spec, which the overlay's fetch_icons.py renders into `icons/`, and the
+bindings that use the icon get its region, as for a re-rasterized icon.
+
 Two keys that share an icon file must pick the same thing; the tool stops and
 names them otherwise. Run the overlay's fetch_icons.py and
 scripts/generate_app_overlays.py afterwards.
@@ -30,6 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT)]
 
 from polyhost.services.game_assets import build  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from icon_picker_sources import SOURCES  # noqa: E402
 
 DITHER_KEYS = ("engine", "cut", "frame", "crop", "mode", "lo", "hi", "gamma", "curve", "sharpen", "floor", "outline",
                "mirror", "valign")
@@ -128,6 +136,9 @@ def main(argv=None) -> None:
     raster_path = base / "rasterize.yaml"
     raster = yaml.safe_load(raster_path.read_text(encoding="utf-8")) if raster_path.exists() else {}
     raster = raster or {}
+    ships = getattr(SOURCES.get(spec["reader"]), "SHIPS", False)
+    pictures_path = base / "pictures.yaml"
+    pictures = (yaml.safe_load(pictures_path.read_text(encoding="utf-8")) if pictures_path.exists() else {}) or {}
     stems_by_overlay, errors, plans = {}, [], []
     for ov in spec["overlays"]:
         path = base / ov["spec"]
@@ -145,6 +156,8 @@ def main(argv=None) -> None:
             b = binds[(str(k["key"]).upper(), tuple(m.upper() for m in k.get("mods") or []))]
             stem = Path(str(b["icon"])).stem
             kind, entry = recipe_for(pick, b, spec.get("fonts") or {})
+            if ships and kind == "recipe":
+                kind = "picture"                     # drawn into icons/ by fetch_icons.py, not at run time
             slot = (stem, k.get("variant"))
             if slot in chosen and chosen[slot][1:] != (kind, entry):
                 errors.append(f"{ov['id']}: {chosen[slot][0]} and {kid} both draw {stem}.png but picked differently; "
@@ -152,12 +165,12 @@ def main(argv=None) -> None:
                 continue
             chosen[slot] = (kid, kind, entry)
         plans.append((path, icons, chosen))
-    # The icon files are shared by the spec's overlays, and so is rasterize.yaml:
-    # two overlays re-rasterizing one icon must agree on it.
+    # The icon files are shared by the spec's overlays, and so are rasterize.yaml
+    # and pictures.yaml: two overlays drawing one icon file must agree on it.
     raster_picks: dict = {}                 # stem -> (overlay id, key id, entry)
     for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
         for (stem, _v), (kid, kind, entry) in chosen.items():
-            if kind != "raster":
+            if kind not in ("raster", "picture"):
                 continue
             if stem in raster_picks and raster_picks[stem][2] != entry:
                 o, k, _e = raster_picks[stem]
@@ -170,12 +183,19 @@ def main(argv=None) -> None:
     for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
         shared = {s for o, stems in stems_by_overlay.items() if o != ov["id"] for s in stems}
         for (stem, variant), (kid, kind, entry) in chosen.items():
-            if kind == "raster":
-                raster[stem] = entry
+            if kind in ("raster", "picture"):
+                (raster if kind == "raster" else pictures)[stem] = entry
+                (pictures if kind == "raster" else raster).pop(stem, None)
                 for other, _i, _c in plans:     # every overlay drawing this file: the file has one size
                     set_binding_region(other, stem, entry["region"])
+            elif not variant and stem not in shared:
+                pictures.pop(stem, None)         # a recipe or "shipped": the file is no longer a picture
             # A re-rasterized icon, like "shipped", draws the file: only this
             # pick's recipe goes, the other variants keep theirs.
+            if ships:                            # no run-time recipes for a game whose art ships
+                if kind == "shipped" and stem not in shared:
+                    raster.pop(stem, None)
+                continue
             if variant:
                 cur = icons.get(stem)
                 cur = dict(cur) if isinstance(cur, dict) and not {"src", "word", "plus", "mark"} & set(cur) else {}
@@ -195,7 +215,8 @@ def main(argv=None) -> None:
             # unless another overlay draws the same file.
             if not variant and stem not in shared and stem not in raster_picks:
                 raster.pop(stem, None)
-        write_game_assets(path, spec["reader"], icons)
+        if not ships:
+            write_game_assets(path, spec["reader"], icons)
         print(f"{_shown(path)}: {len(chosen)} keys picked, {len(icons)} recipes")
     for stem in raster:
         users = [o for o, stems in stems_by_overlay.items() if stem in stems]
@@ -207,6 +228,12 @@ def main(argv=None) -> None:
                                + ("\n".join(f"{s}: {_flow(e)}" for s, e in raster.items()) if raster else "{}") + "\n",
                                encoding="utf-8")
         print(f"{_shown(raster_path)}: {len(raster)} icons")
+    if pictures or pictures_path.exists():
+        pictures_path.write_text("# Game pictures picked in the icon picker (tools/apply_icon_picks.py), for a\n"
+                                 "# game whose art ships; fetch_icons.py renders them into icons/.\n"
+                                 + ("\n".join(f"{s}: {_flow(e)}" for s, e in pictures.items()) if pictures else "{}")
+                                 + "\n", encoding="utf-8")
+        print(f"{_shown(pictures_path)}: {len(pictures)} icons")
 
 
 if __name__ == "__main__":

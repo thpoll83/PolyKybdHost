@@ -62,6 +62,11 @@ python polyhost/res/overlay_sources/dune2/fetch_icons.py          # the re-raste
   `fetch_icons.py` renders it into `icons/`, and every binding using that icon
   gets the picked region. These ship, like any other icon.
 - "shipped" removes the recipe.
+- For a game whose art may ship (a source with `SHIPS`, Warzone 2100), a game
+  picture becomes no recipe: it goes to `pictures.yaml` beside the spec, the
+  overlay's `fetch_icons.py` renders it into `icons/` with
+  `game_assets/picture.py`, and every binding using that icon gets the picked
+  region, as for a re-rasterized icon.
 - ⚠️ **Two keys sharing an icon file must pick the same thing**: a recipe is per
   icon, not per key. The tool stops before writing anything and names them;
   give one key its own icon file (Dune Legacy's F4 to F6 have `skip10`,

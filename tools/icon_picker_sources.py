@@ -46,6 +46,7 @@ class Warzone2100:
 
     BG = 255
     KINDS = ("intfac", "model")
+    SHIPS = True               # GPL art: apply_icon_picks.py writes its picks to pictures.yaml
 
     @staticmethod
     def find(data_dir: str):

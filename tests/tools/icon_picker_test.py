@@ -274,5 +274,53 @@ class ApplyTest(unittest.TestCase):
         self.assertEqual(self.raster(), {})
 
 
+class ShippedApplyTest(unittest.TestCase):
+    """For a source whose art ships (Warzone 2100), a picked game picture goes to
+    pictures.yaml and the binding's region, never to a run-time recipe."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        (self.d / "w.yaml").write_text(
+            "bindings:\n"
+            "  - { key: A, icon: x.png, label: \"Attack\" }\n"
+            "  - { key: B, icon: y.png, label: \"Build\" }\n", encoding="utf-8")
+        keys = [{"key": "A", "label": "Attack", "candidates": [{"word": "Go"}]},
+                {"key": "B", "label": "Build", "candidates": [{"word": "Go"}]}]
+        (self.d / "picker.yaml").write_text(yaml.safe_dump({
+            "reader": "warzone2100", "overlays": [{"id": "w", "spec": "w.yaml", "template": "w.png", "keys": keys}]}),
+            encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_picks(self, picks):
+        (self.d / "picks.json").write_text(json.dumps({"w": picks}), encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            apply.main([str(self.d / "picker.yaml"), str(self.d / "picks.json")])
+
+    def pictures(self):
+        return yaml.safe_load((self.d / "pictures.yaml").read_text(encoding="utf-8")) or {}
+
+    def test_a_picture_ships_and_shipped_takes_it_back(self):
+        self.assertTrue(src.Warzone2100.SHIPS)
+        pic = dict(PIC, src="intfac:image_x")
+        self.run_picks({"A": pic, "B": raster_pick()})
+        self.assertEqual((self.pictures()["x"]["src"], self.pictures()["x"]["region"]), ("intfac:image_x", [47, 40]))
+        text = (self.d / "w.yaml").read_text(encoding="utf-8")
+        self.assertNotIn("game_assets", text)                       # no run-time recipe
+        self.assertIn('icon: x.png, label: "Attack", region: [47, 40] }', text)
+        self.assertEqual(set(yaml.safe_load((self.d / "rasterize.yaml").read_text(encoding="utf-8"))), {"y"})
+        self.run_picks({"A": {"pick": "shipped"}, "B": {"pick": "shipped"}})
+        self.assertEqual(self.pictures(), {})
+        self.assertEqual(yaml.safe_load((self.d / "rasterize.yaml").read_text(encoding="utf-8")) or {}, {})
+
+    def test_a_re_rasterized_pick_replaces_a_picture(self):
+        self.run_picks({"A": dict(PIC, src="intfac:image_x")})
+        self.run_picks({"A": raster_pick()})
+        self.assertNotIn("x", self.pictures())
+        self.assertIn("x", yaml.safe_load((self.d / "rasterize.yaml").read_text(encoding="utf-8")))
+
+
 if __name__ == "__main__":
     unittest.main()
