@@ -35,7 +35,7 @@ ICONS = {
     "sneak": "fa:user-ninja",
     "sprint": "fa:person-running",
     # Inventory
-    "inventory": "gi:lorc/knapsack",
+    "inventory": "gi:delapouite/cardboard-box-closed",
     "offhand": "fa:right-left",
     "savehotbar": "fa:floppy-disk",
     "loadhotbar": "fa:folder-open",
@@ -69,10 +69,8 @@ ICONS = {
     "fullscreen": "fa:expand",
 }
 
-# Part of the drawn drop icons; not used by a binding directly.
-PARTS = {
-    "_block": "gi:delapouite/cube",
-}
+# Parts used only to draw other icons; none at the moment.
+PARTS: dict[str, str] = {}
 
 # Key area of each icon, from the two specs; the default is 40 x 40. The narrow
 # ones keep the key's own legend whole (widths measured for AoE2, see
@@ -98,6 +96,11 @@ FONT_PX = 8
 DIGIT_FONT_URL = ("https://raw.githubusercontent.com/IdreesInc/Monocraft/"
                   "e498bf70aeb25b4bdcff1e44d878fb2cb4f7c2a9/dist/Monocraft-ttf/Monocraft.ttf")
 DIGIT_PX = 9
+# The key icons are drawn on a grid of BLOCK x BLOCK px squares, like the game's
+# pixel art: each icon is rendered at 1/BLOCK of its size and every pixel is
+# repeated BLOCK times across and down. Every key area and INK box is a multiple
+# of BLOCK, so the grid lines up with the bottom-right corner the icon sits in.
+BLOCK = 2
 SLOT = 40          # hotbar slot image, square
 SLOT_BORDER = 2    # px
 SLOT_SCALE = 4     # digit: the 5 x 7 glyph at 4x, 20 x 28 px
@@ -122,11 +125,15 @@ def flat_icons(out: Path) -> None:
     import numpy as np
     for stem in ICONS:
         size = SIZES.get(stem, (40, 40))
-        m = _mask(out / f"{stem}.png", INK.get(stem, size))
+        box = INK.get(stem, size)
+        assert box[0] % BLOCK == 0 and box[1] % BLOCK == 0, (stem, box)
+        m = _mask(out / f"{stem}.png", (box[0] // BLOCK, box[1] // BLOCK))
+        m = np.kron(m, np.ones((BLOCK, BLOCK), bool))
         canvas = np.zeros((size[1], size[0]), bool)
         canvas[size[1] - m.shape[0]:, size[0] - m.shape[1]:] = m
         cnc._save_mask(canvas, out / f"{stem}.png")
-    print(f"  {len(ICONS)} key icons drawn flat")
+    print(f"  {len(ICONS)} key icons drawn flat, in {BLOCK} px blocks")
+
 
 
 def _arrow_down(width: int = 14, head: int = 7, shaft: int = 4, length: int = 13):
@@ -147,26 +154,39 @@ def _paste(canvas, m, cx: int, top: int) -> None:
     canvas[top:top + m.shape[0], x:x + m.shape[1]] |= m
 
 
+def _pixel_block(n: int, ring: int):
+    """A square block of n x n cells: a lit frame `ring` cells wide, a dark ring
+    of the same width, and a lit centre, like a block in the game's hotbar."""
+    import numpy as np
+    b = np.ones((n, n), bool)
+    b[ring:n - ring, ring:n - ring] = False
+    if n > 4 * ring:
+        b[2 * ring:n - 2 * ring, 2 * ring:n - 2 * ring] = True
+    return b
+
+
 def drop_icons(out: Path) -> None:
     """drop.png (Q) and dropstack.png (Ctrl+Q), 40x40: one block, or three
     blocks (one on top of two), over a solid down arrow, all centred on one
-    vertical axis."""
+    vertical axis. Drawn cell by cell on a 20 x 20 grid and doubled, so they
+    have the same BLOCK px squares as the other icons."""
     import numpy as np
-    arrow = _arrow_down()
+    n = 40 // BLOCK
+    arrow = _arrow_down(width=8, head=4, shaft=2, length=6)
     for stem in ("drop", "dropstack"):
         if (out / f"{stem}.png").exists():
             print(f"  {stem}.png  <- committed asset (left as-is)")
             continue
-        canvas = np.zeros((40, 40), bool)
+        canvas = np.zeros((n, n), bool)
         if stem == "drop":
-            _paste(canvas, _mask(out / "_block.png", (24, 24)), 20, 0)
+            _paste(canvas, _pixel_block(12, 2), n // 2, 0)
         else:
-            block = _mask(out / "_block.png", (13, 13))
-            _paste(canvas, block, 20, 0)
-            _paste(canvas, block, 20 - 7, 13)
-            _paste(canvas, block, 20 + 7, 13)
-        _paste(canvas, arrow, 20, 40 - arrow.shape[0])
-        cnc._save_mask(canvas, out / f"{stem}.png")
+            block = _pixel_block(6, 1)
+            _paste(canvas, block, n // 2, 0)
+            _paste(canvas, block, n // 2 - 4, 7)
+            _paste(canvas, block, n // 2 + 4, 7)
+        _paste(canvas, arrow, n // 2, n - arrow.shape[0])
+        cnc._save_mask(np.kron(canvas, np.ones((BLOCK, BLOCK), bool)), out / f"{stem}.png")
         print(f"  {stem}.png  <- {'one block' if stem == 'drop' else 'three blocks'} over a down arrow")
 
 

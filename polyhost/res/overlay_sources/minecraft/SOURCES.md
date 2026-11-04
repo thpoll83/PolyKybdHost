@@ -153,7 +153,10 @@ Each icon is drawn 1-bit by `fetch_icons.py` at the size of its key area, so the
 generator places it 1:1. The solid icons that read heavier than the outline
 ones (save, load, camera, chat bubble and others in `INK`) fill a smaller box
 in the bottom-right corner of that area. The WASD arrows fill a 30×36 or 36×30
-box.
+box. Every key icon is drawn on a grid of 2 px squares, like the game's pixel
+art (`BLOCK` in `fetch_icons.py`): it is rendered at half its size and each
+pixel is doubled, and the drop icons are drawn cell by cell on the same grid. The
+hotbar digits and the ESC marks are not changed.
 
 The hotbar slots 1 to 9 are a square slot with a 2 px border and the digit in
 Monocraft (SIL OFL 1.1, `dist/Monocraft-ttf/Monocraft.ttf` from
@@ -178,7 +181,7 @@ Minecraft logo.
 | `jump.png` | game-icons.net `delapouite/jump-across` | delapouite | CC BY 3.0 |
 | `sneak.png` | Font Awesome Free 6.5.2 `user-ninja` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `sprint.png` | Font Awesome Free 6.5.2 `person-running` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `inventory.png` | game-icons.net `lorc/knapsack` | lorc | CC BY 3.0 |
+| `inventory.png` | game-icons.net `delapouite/cardboard-box-closed` | delapouite | CC BY 3.0 |
 | `offhand.png` | Font Awesome Free 6.5.2 `right-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `savehotbar.png` | Font Awesome Free 6.5.2 `floppy-disk` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `loadhotbar.png` | Font Awesome Free 6.5.2 `folder-open` (solid) | Fonticons, Inc. | CC BY 4.0 |
@@ -206,6 +209,6 @@ Minecraft logo.
 | `paperdoll.png` | Font Awesome Free 6.5.2 `person` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `controllerhints.png` | Font Awesome Free 6.5.2 `gamepad` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `_block.png` (part), `drop.png`, `dropstack.png` | game-icons.net `delapouite/cube`, with an arrow drawn by `fetch_icons.py` | delapouite | CC BY 3.0 |
+| `drop.png`, `dropstack.png` | drawn by `fetch_icons.py`: square pixel blocks over a down arrow | (this repo) | |
 | `slot1.png` .. `slot9.png` | drawn by `fetch_icons.py`; digits in Monocraft | Idrees Hassan | SIL OFL 1.1 |
 | `program_java.png`, `program_bedrock.png` | drawn by `fetch_icons.py` in Press Start 2P | The Press Start 2P Project Authors | SIL OFL 1.1 |
