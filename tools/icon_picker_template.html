@@ -277,7 +277,8 @@ function place(k, m, p, word) {      // as build.py: region box from anchor+marg
     by = a.includes("bottom") ? H - bh - mg : a.includes("top") ? mg : Math.floor((H - bh) / 2); bx = Math.max(0, bx); by = Math.max(0, by); }
   const w = Math.min(m.w, bw), h = Math.min(m.h, bh), va = p.valign || "top";
   const oy = by + (va === "bottom" ? bh - h - (word ? 1 : 0) : va === "centre" ? Math.floor((bh - h) / 2) : 0), ox = bx + bw - w;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (m.a[y * m.w + (m.w - w) + x] > 0.5) out[(oy + y) * W + ox + x] = 1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++)    // past the cell edge is dropped, as in build.py
+    if (ox + x < W && oy + y < H && m.a[y * m.w + (m.w - w) + x] > 0.5) out[(oy + y) * W + ox + x] = 1;
   return out;
 }
 function courtyard(mask) {           // port of tools/courtyard_preview.py courtyard_current

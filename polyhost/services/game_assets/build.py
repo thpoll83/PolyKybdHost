@@ -163,7 +163,8 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         ch = CH[tiers[mod]]
         cell = arr[row * SLOT_H:(row + 1) * SLOT_H, col * SLOT_W:(col + 1) * SLOT_W, ch]
         cell[:] = 0
-        h, w = min(mask.shape[0], bh), min(mask.shape[1], bw)
+        # A margin can push the box past the cell edge: what falls outside is dropped.
+        h, w = min(mask.shape[0], bh, SLOT_H - y0), min(mask.shape[1], bw, SLOT_W - x0)
         cell[y0:y0 + h, x0:x0 + w] = np.where(mask[:h, :w], 255, 0)
         count += 1
     info = PngInfo()
