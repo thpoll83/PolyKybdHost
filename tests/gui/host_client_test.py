@@ -267,7 +267,8 @@ def _smoke_forwarder():
         print("SMOKE SKIP no-pywinctl")
         return
     with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"):
-        from polyhost.forwarder import PolyForwarder
+        import polyhost.forwarder as fwd_mod
+        PolyForwarder = fwd_mod.PolyForwarder
         app = PolyForwarder(logging.CRITICAL, host="192.168.1.50",
                             report_rpc=True, report_port=50163)
         app.relay_ok = True
@@ -317,7 +318,6 @@ def _smoke_forwarder():
         # A lost window waits for the accept delay (#531's rule, on this
         # machine too): one tick with no window sends nothing, the same
         # window coming back sends nothing, and a loss that lasts is sent.
-        import polyhost.forwarder as fwd_mod
         held = mock.MagicMock()
         held.getHandle.return_value = 1234
         held.title = "Konsole"
