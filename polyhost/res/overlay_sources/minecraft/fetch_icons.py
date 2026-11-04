@@ -3,7 +3,8 @@
 
 The key icons are flat 1-bit silhouettes from Font Awesome Free (CC BY 4.0) and
 game-icons.net (CC BY 3.0), as in the Warcraft III set. The hotbar slots 1 to 9
-are a square slot with the digit in Press Start 2P (SIL OFL 1.1). Drop item and
+are a square slot with the digit in Monocraft (SIL OFL 1.1), a font drawn after
+the game's pixel letters; the game's own font is not used. Drop item and
 drop stack are one block or three blocks over a drawn down arrow. The ESC marks
 are MINECRAFT over JAVA or BEDROCK, set in Press Start 2P; the game's logo art
 is not used. SOURCES.md credits each icon.
@@ -92,9 +93,14 @@ INK = {"savehotbar": (32, 32), "loadhotbar": (34, 34), "screenshot": (30, 30),
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
             "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/pressstart2p/PressStart2P-Regular.ttf")
 FONT_PX = 8
+# Monocraft (SIL OFL 1.1) draws its digits on the game's 5 x 7 pixel grid. At
+# 9 px it renders 1:1 with no grey pixels, so any integer multiple stays exact.
+DIGIT_FONT_URL = ("https://raw.githubusercontent.com/IdreesInc/Monocraft/"
+                  "e498bf70aeb25b4bdcff1e44d878fb2cb4f7c2a9/dist/Monocraft-ttf/Monocraft.ttf")
+DIGIT_PX = 9
 SLOT = 40          # hotbar slot image, square
 SLOT_BORDER = 2    # px
-SLOT_SCALE = 3     # digit: the 8 px glyph at 3x
+SLOT_SCALE = 4     # digit: the 5 x 7 glyph at 4x, 20 x 28 px
 
 
 def _mask(path: Path, box: tuple[int, int]):
@@ -164,12 +170,12 @@ def drop_icons(out: Path) -> None:
         print(f"  {stem}.png  <- {'one block' if stem == 'drop' else 'three blocks'} over a down arrow")
 
 
-def _text(font, s: str, sx: int = 1, sy: int = 1):
-    """`s` in Press Start 2P at 8 px, trimmed to its ink and scaled by whole
+def _text(font, s: str, sx: int = 1, sy: int = 1, px: int = FONT_PX):
+    """`s` in `font` (set at `px`), trimmed to its ink and scaled by whole
     pixels (sx across, sy down)."""
     import numpy as np
     from PIL import Image, ImageDraw
-    im = Image.new("L", (FONT_PX * (len(s) + 1), FONT_PX + 4), 0)
+    im = Image.new("L", (px * (len(s) + 1), px + 4), 0)
     ImageDraw.Draw(im).text((0, 0), s, font=font, fill=255)
     a = np.asarray(im) > 127
     ys, xs = np.nonzero(a)
@@ -184,22 +190,23 @@ def _load_font(font):
 
 def slots(out: Path) -> None:
     """slot1.png .. slot9.png: a square hotbar slot with a 2 px border and the
-    digit at 3x inside it, 40x40."""
+    Monocraft digit at 4x inside it, 40x40."""
     import numpy as np
+    from PIL import ImageFont
     font = None
     for d in "123456789":
         path = out / f"slot{d}.png"
         if path.exists():
             continue
-        font = _load_font(font)
+        font = font or ImageFont.truetype(str(cnc._font(DIGIT_FONT_URL)), DIGIT_PX)
         c = np.zeros((SLOT, SLOT), bool)
         b = SLOT_BORDER
         c[:b, :] = c[-b:, :] = c[:, :b] = c[:, -b:] = True
-        g = _text(font, d, SLOT_SCALE, SLOT_SCALE)
+        g = _text(font, d, SLOT_SCALE, SLOT_SCALE, DIGIT_PX)
         y, x = (SLOT - g.shape[0]) // 2, (SLOT - g.shape[1]) // 2
         c[y:y + g.shape[0], x:x + g.shape[1]] |= g
         cnc._save_mask(c, path)
-        print(f"  {path.name}  <- slot + {d} (Press Start 2P, 3x)")
+        print(f"  {path.name}  <- slot + {d} (Monocraft, 4x)")
 
 
 def program(out: Path) -> None:

@@ -156,7 +156,10 @@ in the bottom-right corner of that area. The WASD arrows fill a 30×36 or 36×30
 box.
 
 The hotbar slots 1 to 9 are a square slot with a 2 px border and the digit in
-Press Start 2P at three times its 8 px size, so its pixel grid stays exact. Drop
+Monocraft (SIL OFL 1.1, `dist/Monocraft-ttf/Monocraft.ttf` from
+IdreesInc/Monocraft at commit e498bf7), a font drawn after the game's pixel
+letters. At 9 px each digit is 5×7 pixels with no grey pixels; it is drawn at 4x
+(20×28 px), so its pixel grid stays exact. The game's own font is not used. Drop
 item is one block over a drawn down arrow; drop stack is three blocks over the
 same arrow.
 
@@ -204,5 +207,5 @@ Minecraft logo.
 | `controllerhints.png` | Font Awesome Free 6.5.2 `gamepad` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `_block.png` (part), `drop.png`, `dropstack.png` | game-icons.net `delapouite/cube`, with an arrow drawn by `fetch_icons.py` | delapouite | CC BY 3.0 |
-| `slot1.png` .. `slot9.png` | drawn by `fetch_icons.py`; digits in Press Start 2P | The Press Start 2P Project Authors | SIL OFL 1.1 |
+| `slot1.png` .. `slot9.png` | drawn by `fetch_icons.py`; digits in Monocraft | Idrees Hassan | SIL OFL 1.1 |
 | `program_java.png`, `program_bedrock.png` | drawn by `fetch_icons.py` in Press Start 2P | The Press Start 2P Project Authors | SIL OFL 1.1 |
