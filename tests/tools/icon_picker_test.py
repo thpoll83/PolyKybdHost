@@ -225,6 +225,11 @@ class ApplyTest(unittest.TestCase):
         self.run_picks({"a": {"A": WORD}})                           # a second write changes nothing
         self.assertEqual((self.d / "a.yaml").read_text(encoding="utf-8"), text)
 
+    def test_an_overlay_without_picks_or_a_block_is_left_alone(self):
+        before = (self.d / "b.yaml").read_text(encoding="utf-8")
+        self.run_picks({"a": {"B": WORD}})
+        self.assertEqual((self.d / "b.yaml").read_text(encoding="utf-8"), before)
+
     def test_shipped_on_one_overlay_and_redrawn_on_another_must_agree(self):
         with self.assertRaises(SystemExit):
             self.run_picks({"a": {"A": raster_pick()}, "b": {"A": {"pick": "shipped"}}})

@@ -93,9 +93,12 @@ def _flow(obj) -> str:
 def write_game_assets(path: Path, reader: str, icons: dict) -> None:
     """Replace the `game_assets:` block of an overlay spec, keeping everything
     above it (the comment that introduces it included) and any top-level key
-    after it. A new block goes at the end."""
+    after it. A new block goes at the end; a spec with no block and no recipes
+    is left as it is."""
     text = path.read_text(encoding="utf-8")
     i = text.find("\ngame_assets:")
+    if i < 0 and not icons:
+        return
     head, tail = text, ""
     if i >= 0:
         head = text[:i + 1]
