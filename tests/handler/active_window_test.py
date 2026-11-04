@@ -2123,6 +2123,19 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIsNotNone(got)
                     self.assertIn("aoe2_de_template.mods.png", got["overlay"])
 
+    def test_STARCRAFT_II_gets_its_set_on_every_os(self):
+        """Windows strips `.exe` (sc2_x64), Wine keeps it in the WM_CLASS."""
+        names = {"WINDOWS": ("sc2_x64", "sc2"), "LINUX": ("sc2_x64.exe", "sc2.exe"),
+                 "MACOS": ("sc2", "starcraft ii")}
+        for os_name, apps in names.items():
+            for app in apps:
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="StarCraft II", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertIn("starcraft2_template.mods.png", got["overlay"])
+                    self.assertIn("starcraft2_template.combo.mods.png", got["overlay"])
+
     MC_JAVA = "minecraft_java_template.mods.png"
     MC_BEDROCK = "minecraft_bedrock_template.mods.png"
     MC_JAVA_TITLES = ("Minecraft 1.21.4", "Minecraft* 1.21.4 - Singleplayer",

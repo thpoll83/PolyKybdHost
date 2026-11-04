@@ -298,7 +298,7 @@ class MarkTest(unittest.TestCase):
 
     def test_each_mark_stays_inside_the_cell_and_clears_around_itself(self):
         full, empty = np.ones((40, 48), bool), np.zeros((40, 48), bool)
-        for kind in ("ring", "box", "sight"):
+        for kind in ("ring", "box", "sight", "disc"):
             m = dither.with_mark(full, kind)
             self.assertEqual(m.shape, full.shape)
             self.assertTrue(m[0, 0], "the group outside the mark stays")

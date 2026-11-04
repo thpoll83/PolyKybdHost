@@ -44,6 +44,7 @@ EXTRA_EXTRACT = (
     "polyhost/services/linux_udev.py", "polyhost/services/shell_title.py",
     "polyhost/services/game_assets/westwood_td/__init__.py",
     "polyhost/services/game_assets/westwood_ra/__init__.py",
+    "polyhost/services/game_assets/starcraft/__init__.py",
 )
 
 KEYWORDS = ("_", "_f", "N_", "M_", "_nf:1,2", "ngettext:1,2", "pgettext:1c,2")

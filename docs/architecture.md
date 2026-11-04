@@ -386,7 +386,10 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
     `Setting` declarations and the registry of readers.
   - One subfolder per game reader (`westwood_td/` for Command & Conquer,
     `westwood_ra/` for Red Alert, which reuses the Tiberian Dawn drawing and adds
-    the encrypted MIX format in `mix.py`). `openra.py` lists the folders where
+    the encrypted MIX format in `mix.py`; `starcraft/` for the StarCraft 1.16.1
+    MPQ archives, drawing the StarCraft II control groups, with the MPQ format in
+    `mpq.py`, PKWARE explode in `explode.py` and GRP sprites in `grp.py`; it was
+    not run against real game files). `openra.py` lists the folders where
     OpenRA installs the original game files; both readers search them. Its
     `__init__.py` declares `READER` (module, settings, folder and variant
     settings) and stays light; `reader.py` has `find(folder, hint)`,

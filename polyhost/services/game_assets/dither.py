@@ -84,10 +84,12 @@ def _disc(h, w, cy, cx, r):
 
 def with_mark(mask: np.ndarray, kind: str, size: int = 13) -> np.ndarray:
     """`mask` (a control group) with a modifier mark in the bottom-right corner,
-    the group cleared 2 px around it: "ring" a plus in a ring (Ctrl+Shift: add
-    to the group), "box" a plus in a square (Shift: add the group to the
-    selection), "sight" a ring with four ticks (Alt: jump to the group)."""
-    if kind not in ("ring", "box", "sight"):
+    the group cleared 2 px around it: "ring" a plus in a ring, "box" a plus in
+    a square, "sight" a ring with four ticks, "disc" a plus cut out of a filled
+    disc. Each game set says which modifier has which mark (C&C: ring
+    Ctrl+Shift add to the group, box Shift add the group to the selection,
+    sight Alt jump to the group)."""
+    if kind not in ("ring", "box", "sight", "disc"):
         raise ValueError(f"unknown mark {kind!r}")
     h, w = mask.shape
     r = size // 2
@@ -102,6 +104,9 @@ def with_mark(mask: np.ndarray, kind: str, size: int = 13) -> np.ndarray:
         area = np.zeros((h, w), bool)
         area[cy - r:cy + r + 1, cx - r:cx + r + 1] = True
         m = (area & dilate(~area, 1)) | plus
+    elif kind == "disc":
+        area, _ring = _disc(h, w, cy, cx, r + 1)
+        m = area & ~plus
     else:
         area, ring = _disc(h, w, cy, cx, r - 1)
         m = ring.copy()
