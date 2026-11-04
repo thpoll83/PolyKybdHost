@@ -254,27 +254,29 @@ class PolyForwarder(QApplication):
 
         self.menu.addSeparator()
 
-        # The tray app groups this under "Updates" alongside the firmware and
-        # font-pack rows. The forwarder owns no keyboard, so a submenu of one
-        # would be a level of nesting over a single entry — it keeps the label
-        # the tray app uses inside that submenu, in the slot the submenu holds.
+        # --- Updates: same submenu, icon and labels as the tray app's ---------
+        # It used to be a single top-level row, because a forwarder owns no
+        # keyboard and so has no firmware or font-pack rows. Once the shell
+        # title row joined it, the two flat rows no longer matched the tray
+        # app: the same entries sat at a different depth in each app.
+        self.updates_menu = self.menu.addMenu(get_icon("update.svg"), _("Updates"))
+
         self.update_action = QAction(get_icon("browser_updated.svg"),
                                      _("Check for host update\u2026"), parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
-        self.menu.addAction(self.update_action)
+        self.updates_menu.addAction(self.update_action)
 
         # The forwarder reports THIS machine's window title, so a terminal here
         # needs the same shell setup as one on the keyboard's machine. Same
-        # label and dialog as the tray app's Updates entry; top level for the
-        # reason the update row is (services/shell_title.py).
+        # label and dialog as the tray app's entry (services/shell_title.py).
         self.shell_title_dialog = None
         self.shell_title_action = QAction(get_icon("terminal.svg"),
                                           _("Show the running command in the terminal title\u2026"),
                                           parent=self)
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
-        self.menu.addAction(self.shell_title_action)
+        self.updates_menu.addAction(self.shell_title_action)
 
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences

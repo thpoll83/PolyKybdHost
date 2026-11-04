@@ -186,8 +186,14 @@ class TestPolyHostModes(unittest.TestCase):
         rows = _grab(proc.stdout, "FWD_MENU").split("|")
         self.assertEqual(rows[1], "Pause")
         self.assertEqual(rows[-1], "Quit")
-        for expected in ("Check for host update\u2026", "Settings...", "Help && About"):
+        for expected in ("Updates", "Settings...", "Help && About"):
             self.assertIn(expected, rows)
+        # The same Updates submenu as the tray app, holding the same two rows
+        # the forwarder can act on. They were top-level rows before.
+        self.assertEqual(_grab(proc.stdout, "FWD_UPDATES").split("|"),
+                         ["Check for host update\u2026",
+                          "Show the running command in the terminal title\u2026"])
+        self.assertNotIn("Check for host update\u2026", rows)
         # The status row leads, and it names the target rather than the app.
         self.assertTrue(rows[0].endswith("192.168.1.50"), rows[0])
         self.assertIn("FWD_ICON_PREFIX f", proc.stdout)
@@ -267,6 +273,8 @@ def _smoke_forwarder():
                                    if not a.isSeparator()))
         print("FWD_HELP", "|".join(a.text() for a in app.help_menu.actions()
                                    if not a.isSeparator()))
+        print("FWD_UPDATES", "|".join(a.text() for a in app.updates_menu.actions()
+                                      if not a.isSeparator()))
         # The forwarder wears the F mark, the tray app the P one.
         print("FWD_ICON_PREFIX",
               "f" if app.icon_manager.connected is get_icon("fcolor.png") else "p")
