@@ -474,7 +474,7 @@ class FindTest(unittest.TestCase):
     def test_a_remastered_install_is_named_in_the_log_once(self):
         d = self.home / "StarCraft"
         (d / "Data" / "data").mkdir(parents=True)
-        (d / ".build.info").write_text("x")
+        (d / ".build.info").write_text("x", encoding="utf-8")
         with self.assertLogs("PolyHost", "INFO") as logs:
             self.assertIsNone(sc.find(str(d)))
             self.assertIsNone(sc.find(str(d)))
