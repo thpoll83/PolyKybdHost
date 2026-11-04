@@ -88,11 +88,17 @@ def _flow(obj) -> str:
 
 
 def write_game_assets(path: Path, reader: str, icons: dict) -> None:
-    """Replace the `game_assets:` block at the end of an overlay spec, keeping
-    everything above it (the comment that introduces it included)."""
+    """Replace the `game_assets:` block of an overlay spec, keeping everything
+    above it (the comment that introduces it included) and any top-level key
+    after it. A new block goes at the end."""
     text = path.read_text(encoding="utf-8")
     i = text.find("\ngame_assets:")
-    head = text if i < 0 else text[:i + 1]
+    head, tail = text, ""
+    if i >= 0:
+        head = text[:i + 1]
+        rest = text[i + 1:].partition("\n")[2]          # the lines after "game_assets:"
+        m = re.search(r"^\S", rest, re.M)                # the block ends at the next unindented line
+        tail = rest[m.start():] if m else ""
     lines = ["game_assets:", f"  reader: {reader}", "  icons:"]
     for stem, entry in icons.items():
         if isinstance(entry, dict) and entry and all(isinstance(v, dict) for v in entry.values()) \
@@ -101,7 +107,8 @@ def write_game_assets(path: Path, reader: str, icons: dict) -> None:
             lines += [f"      {v}: {_flow(r)}" for v, r in entry.items()]
         else:
             lines.append(f"    {stem}: {_flow(entry)}")
-    path.write_text(head.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
+    block = "\n".join(lines) + "\n"
+    path.write_text(head.rstrip("\n") + "\n\n" + block + ("\n" + tail if tail else ""), encoding="utf-8")
 
 
 def set_binding_region(path: Path, stem: str, region: list) -> int:
@@ -177,6 +184,14 @@ def main(argv=None) -> None:
                 errors.append(f"{o}/{k} and {ov['id']}/{kid} both re-rasterize {stem}.png but differently; "
                               f"pick the same settings or give one of them its own icon file")
             raster_picks.setdefault(stem, (ov["id"], kid, entry))
+    # "shipped" keeps the icon file as fetch_icons.py draws it, so another
+    # overlay may not redraw that same file (the shipped key would show it).
+    for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
+        for (stem, variant), (kid, kind, entry) in chosen.items():
+            if kind == "shipped" and not variant and stem in raster_picks and raster_picks[stem][0] != ov["id"]:
+                o, k, _e = raster_picks[stem]
+                errors.append(f"{o}/{k} redraws {stem}.png, which {ov['id']}/{kid} keeps as shipped; "
+                              f"pick the same for both or give one of them its own icon file")
     if errors:                               # nothing is written when two picks disagree
         raise SystemExit("\n".join(errors))
     had_raster = raster_path.exists()

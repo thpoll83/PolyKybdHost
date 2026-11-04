@@ -149,6 +149,7 @@ class WarzoneSourceTest(unittest.TestCase):
             self.assertTrue((idx[0] == src.Warzone2100.BG).all())    # transparent row
             self.assertNotEqual(idx[1, 1], src.Warzone2100.BG)       # opaque pixel
             self.assertNotIn(int(idx[1, 1]), (src.Warzone2100.BG, 254))
+            self.assertEqual(tuple(int(v) for v in s.palette[idx[1, 1]]), (200, 40, 40))   # the block's own colour
 
     def test_no_game_files_and_an_unknown_kind(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -211,6 +212,23 @@ class ApplyTest(unittest.TestCase):
         line = [ln for ln in (self.d / "a.yaml").read_text(encoding="utf-8").splitlines() if "y.png" in ln][0]
         self.assertEqual(line, '  - { key: B, icon: y.png, label: "Build", region: [40, 21] }')
         self.assertIn("# game art", (self.d / "a.yaml").read_text(encoding="utf-8"))
+
+    def test_keys_after_the_game_assets_block_are_kept(self):
+        with (self.d / "a.yaml").open("a", encoding="utf-8") as f:
+            f.write("# after the block\nlater_key: 7\n")
+        self.run_picks({"a": {"A": WORD}})
+        text = (self.d / "a.yaml").read_text(encoding="utf-8")
+        self.assertEqual(build.load_spec(self.d / "a.yaml")["later_key"], 7)
+        self.assertIn("# after the block\nlater_key: 7\n", text)
+        self.assertEqual(self.icons()["x"]["word"], "Go")
+        self.assertEqual(text.count("game_assets:"), 1)
+        self.run_picks({"a": {"A": WORD}})                           # a second write changes nothing
+        self.assertEqual((self.d / "a.yaml").read_text(encoding="utf-8"), text)
+
+    def test_shipped_on_one_overlay_and_redrawn_on_another_must_agree(self):
+        with self.assertRaises(SystemExit):
+            self.run_picks({"a": {"A": raster_pick()}, "b": {"A": {"pick": "shipped"}}})
+        self.assertFalse((self.d / "rasterize.yaml").exists())       # nothing written
 
     def test_two_keys_on_one_icon_must_agree(self):
         (self.d / "a.yaml").write_text((self.d / "a.yaml").read_text(encoding="utf-8").replace("y.png", "x.png"),
