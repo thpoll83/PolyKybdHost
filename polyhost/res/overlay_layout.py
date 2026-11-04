@@ -119,7 +119,7 @@ def resolve_key(token: str) -> KeyCode:
     if name in KeyCode.__members__:
         kc = KeyCode[name]
         # only the mapped 90 keys carry a cell
-        if name in {k.name for k in KEY_ALIASES.values()} or _has_cell(kc):
+        if _has_cell(kc):                  # every alias target has one too
             return kc
         raise ValueError(
             f"key {token!r} has no overlay cell (not one of the 90 grid keys)")

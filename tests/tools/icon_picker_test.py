@@ -285,11 +285,48 @@ class ApplyTest(unittest.TestCase):
             self.run_picks({"a": {"1 (Atreides)": raster_pick(1.0), "1 (Harkonnen)": raster_pick(1.5)}})
         self.assertEqual((self.d / "a.yaml").read_text(encoding="utf-8"), before)
 
+    def test_a_shipped_variant_and_a_redrawn_variant_must_agree(self):
+        """Both variants draw g.png: one keeping it shipped while the other redraws it
+        would show the redrawn file on the shipped one."""
+        self.use_variants()
+        with self.assertRaises(SystemExit):
+            self.run_picks({"a": {"1 (Atreides)": raster_pick(), "1 (Harkonnen)": {"pick": "shipped"}}})
+        self.assertFalse((self.d / "rasterize.yaml").exists())
+
+    def test_a_word_in_a_font_the_spec_does_not_list_is_refused(self):
+        with self.assertRaises(SystemExit) as e:
+            self.run_picks({"a": {"A": dict(WORD, params=dict(WORD["params"], font="12p"))}})
+        self.assertIn("'12p'", str(e.exception))
+
     def test_the_last_re_rasterized_icon_removed_empties_the_file(self):
         self.run_picks({"a": {"B": raster_pick()}})
         self.assertIn("y", self.raster())
         self.run_picks({"a": {"B": {"pick": "shipped"}}})
         self.assertEqual(self.raster(), {})
+
+
+class PageTest(unittest.TestCase):
+
+    def test_spec_text_cannot_end_the_title_or_the_script_block(self):
+        bad = "</title></script><img src=x onerror=alert(1)>"
+        page = gen.page_html({"title": bad, "overlays": [{"title": bad, "keys": [{"label": bad}]}]})
+        template = (HOST / "tools" / "icon_picker_template.html").read_text(encoding="utf-8")
+        for tag in ("</title>", "</script>"):
+            self.assertEqual(page.count(tag), template.count(tag), tag)
+        self.assertEqual(page.count("&lt;/title&gt;&lt;/script&gt;&lt;img"), 2)    # <title> and <h1>
+
+    def test_a_shipped_icon_with_two_modifiers_comes_from_the_combo_file(self):
+        from PIL import Image
+
+        from polyhost.device.keys import KeyCode, Modifier
+        from polyhost.res.overlay_layout import CH, COMBO_CH, SLOT_H, SLOT_W, cell_for
+        got = gen.shipped_icon("ableton_template.mods.png", "A", ["CTRL", "SHIFT"])
+        arr = np.array(Image.open(build.RES / "overlays" / "ableton_template.combo.mods.png").convert("RGBA"))
+        r, c = cell_for(KeyCode.KC_A)
+        want = arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W, CH[COMBO_CH[Modifier.CTRL_SHIFT]]] > 127
+        self.assertTrue((got == want).all())
+        with self.assertRaises(SystemExit):
+            gen.shipped_icon("ableton_template.mods.png", "A", ["GUI"])
 
 
 class ShippedApplyTest(unittest.TestCase):

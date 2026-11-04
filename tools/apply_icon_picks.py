@@ -67,7 +67,10 @@ def recipe_for(pick: dict, binding: dict, fonts: dict) -> tuple[str, dict]:
         return "shipped", {}
     p = pick.get("params") or {}
     if pick["pick"] == "word" or "text" in p:
-        r = {"word": p["text"], "font": fonts[p.get("font", "8p")], **_keep(p, WORD_KEYS)}
+        font = p.get("font", "8p")
+        if font not in fonts:
+            raise SystemExit(f"a word pick uses font {font!r}, which the picker spec does not list under fonts")
+        r = {"word": p["text"], "font": fonts[font], **_keep(p, WORD_KEYS)}
         return "recipe", dict(r, region=[72, 40], margin=0)
     region = [p.get("rw", binding["region"][0]), p.get("rh", binding["region"][1])]
     if "re-rasterized" in pick["pick"]:
@@ -184,11 +187,11 @@ def main(argv=None) -> None:
                 errors.append(f"{o}/{k} and {ov['id']}/{kid} both re-rasterize {stem}.png but differently; "
                               f"pick the same settings or give one of them its own icon file")
             raster_picks.setdefault(stem, (ov["id"], kid, entry))
-    # "shipped" keeps the icon file as fetch_icons.py draws it, so another
-    # overlay may not redraw that same file (the shipped key would show it).
+    # "shipped" keeps the icon file as fetch_icons.py draws it, so no other key,
+    # variant or overlay may redraw that same file (the shipped key would show it).
     for (path, icons, chosen), ov in zip(plans, spec["overlays"], strict=True):
-        for (stem, variant), (kid, kind, entry) in chosen.items():
-            if kind == "shipped" and not variant and stem in raster_picks and raster_picks[stem][0] != ov["id"]:
+        for (stem, _v), (kid, kind, entry) in chosen.items():
+            if kind == "shipped" and stem in raster_picks:
                 o, k, _e = raster_picks[stem]
                 errors.append(f"{o}/{k} redraws {stem}.png, which {ov['id']}/{kid} keeps as shipped; "
                               f"pick the same for both or give one of them its own icon file")

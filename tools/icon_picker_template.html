@@ -68,6 +68,8 @@ const showError = msg => { const d = document.getElementById("err"); d.style.dis
 window.addEventListener("error", e => showError(`Error: ${e.message} (line ${e.lineno})`));
 window.addEventListener("unhandledrejection", e => showError(`Error: ${e.reason}`));
 const DATA = /*DATA*/null;
+// Text from the picker spec (titles, labels) goes into HTML strings through esc().
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c]);
 // ---------------------------------------------------------------- decoding
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const PAL = b64(DATA.palette);
@@ -359,7 +361,7 @@ const FIELDS = {
 function editor(k, ci, e, onChange) {
   const box = document.createElement("div"); box.className = "params";
   const c = k.candidates[ci], p = e.params[ci], kind = c.kind === "pic" ? p.engine : c.kind;
-  box.innerHTML = `<h3>${c.label}</h3><div class="hint">Changes apply to this candidate on this key. Double-click a setting's name to reset only that setting.</div>`;
+  box.innerHTML = `<h3>${esc(c.label)}</h3><div class="hint">Changes apply to this candidate on this key. Double-click a setting's name to reset only that setting.</div>`;
   const top = document.createElement("div"); top.className = "actions";
   const reset = document.createElement("button"); reset.textContent = "Reset to suggested values";
   reset.onclick = () => { e.params[ci] = JSON.parse(JSON.stringify(c.params)); onChange(true); };
@@ -398,7 +400,7 @@ function editor(k, ci, e, onChange) {
         if (f in CROP) { const c = p.crop ? [...p.crop] : [0, 0]; c[CROP[f]] = x; p.crop = c; } else p[f] = x;
         change(false); };
     } else if (type === "select") {
-      row.innerHTML = `<span>${lab}</span><select>${opt.map(o => `<option>${o}</option>`).join("")}</select><span></span>`;
+      row.innerHTML = `<span>${lab}</span><select>${opt.map(o => `<option>${esc(o)}</option>`).join("")}</select><span></span>`;
       const s = row.querySelector("select"); s.value = val; s.onchange = () => { p[f] = s.value; change(false); };
     } else if (type === "check") {
       row.innerHTML = `<span>${lab}</span><input type="checkbox"><span></span>`;
@@ -442,13 +444,13 @@ function render() {
   ov.keys.forEach((k, i) => { const e = entry(ov.id, k), d = document.createElement("div");
     d.className = "k" + (i === state.key && state.view === "key" ? " sel" : "") + (e.pick !== null ? " done" : "");
     const cv = document.createElement("canvas"); const ci = e.pick ?? -1; draw(cv, keycap(k, iconFor(k, ci, e.params[ci])), 1);
-    const t = document.createElement("div"); t.className = "t"; t.innerHTML = `<b>${keyId(k).replace(/ \(.*/, "")}</b><span>${k.label}</span>`;
+    const t = document.createElement("div"); t.className = "t"; t.innerHTML = `<b>${esc(keyId(k).replace(/ \(.*/, ""))}</b><span>${esc(k.label)}</span>`;
     d.append(cv, t); d.onclick = () => { state.key = i; state.view = "key"; editIdx = null; render(); }; nav.appendChild(d); });
   const main = document.getElementById("main"); main.innerHTML = "";
   if (state.view === "overview") return overview(main, ov);
   if (state.view === "export") return exportView(main);
   const k = ov.keys[state.key], e = entry(ov.id, k);
-  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 4px;font-size:18px">${keyId(k)}: ${k.label}</h2>
+  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 4px;font-size:18px">${esc(keyId(k))}: ${esc(k.label)}</h2>
     <div class="hint">Click a keycap to pick it (blue). The picked one opens its settings below; click another to compare. Lit pixels are white, as on the keycap; the legend is cleared around the icon the way the firmware does it.</div>`);
   const cards = document.createElement("div"); cards.className = "cards"; main.appendChild(cards);
   const list = [[-1, "shipped icon (no game file)"], ...k.candidates.map((c, i) => [i, c.label])];
@@ -463,7 +465,7 @@ function render() {
     if (full) return render(); draw(canv[editIdx], keycap(k, iconFor(k, editIdx, e.params[editIdx])), 4); }));
 }
 function overview(main, ov) {
-  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 8px;font-size:18px">${ov.title}: every key as picked</h2><div class="hint">Keys without a pick show the shipped icon. Click a key to edit it.</div>`);
+  main.insertAdjacentHTML("beforeend", `<h2 style="margin:0 0 8px;font-size:18px">${esc(ov.title)}: every key as picked</h2><div class="hint">Keys without a pick show the shipped icon. Click a key to edit it.</div>`);
   const g = document.createElement("div"); g.className = "overview"; main.appendChild(g);
   ov.keys.forEach((k, i) => { const e = entry(ov.id, k), ci = e.pick ?? -1, d = document.createElement("div"), cv = document.createElement("canvas");
     draw(cv, keycap(k, iconFor(k, ci, e.params[ci])), 2); d.append(cv, document.createTextNode(`${keyId(k)} ${ci < 0 ? "(shipped)" : k.candidates[ci].label}`));

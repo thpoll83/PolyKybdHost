@@ -2198,6 +2198,8 @@ opendune,opendune.exe:
 # cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 - ..." (DOSBox-X). The
 # titles are read off the DOSBox sources, not seen. The game files are found
 # only through the game_dune2_data_dir setting: the executable is DOSBox's.
+# DOSBox Staging's `titlebar = program=path` shows the path as one word
+# (C:\GAMES\DUNE2.EXE), which matches neither key.
 dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
   titles-contains:
     DUNE2:

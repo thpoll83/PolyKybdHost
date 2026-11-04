@@ -61,7 +61,9 @@ python polyhost/res/overlay_sources/dune2/fetch_icons.py          # the re-raste
 - A re-rasterized shipped icon goes to `rasterize.yaml` beside the spec;
   `fetch_icons.py` renders it into `icons/`, and every binding using that icon
   gets the picked region. These ship, like any other icon.
-- "shipped" removes the recipe.
+- "shipped" removes the recipe. ⚠️ It does not restore a binding `region:` that an
+  earlier re-rasterized or picture pick set: the spec does not record the old
+  value. Take it back from `git diff` of the binding file.
 - For a game whose art may ship (a source with `SHIPS`, Warzone 2100), a game
   picture becomes no recipe: it goes to `pictures.yaml` beside the spec, the
   overlay's `fetch_icons.py` renders it into `icons/` with

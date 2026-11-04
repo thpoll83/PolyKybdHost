@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import html
 import json
 import os
 import sys
@@ -31,8 +32,7 @@ ROOT = HERE.parent
 sys.path[:0] = [str(HERE), str(ROOT), str(ROOT / "scripts")]
 
 from icon_picker_sources import SOURCES                       # noqa: E402
-from generate_app_overlays import resolve_key                # noqa: E402
-from polyhost.res.overlay_layout import CH, PRIMARY_CH, SLOT_H, SLOT_W, cell_for  # noqa: E402
+from polyhost.res.overlay_layout import CH, COMBO_CH, PRIMARY_CH, SLOT_H, SLOT_W, cell_for, resolve_key  # noqa: E402
 from polyhost.services.game_assets import build             # noqa: E402
 from polyhost.services.game_assets.readers import READERS   # noqa: E402
 from polyhost.res.overlay_sources import svg_silhouette      # noqa: E402
@@ -70,10 +70,18 @@ def legend_renderer(qmk: Path):
 
 
 def shipped_icon(template: str, key: str, mods: list) -> np.ndarray:
-    """The icon the shipped overlay draws on this key and modifier."""
-    arr = np.array(Image.open(build.RES / "overlays" / template).convert("RGBA"))
+    """The icon the shipped overlay draws on this key and modifier: the primary
+    file for none or one modifier, the `.combo` file for two."""
+    mod = build.modifier(mods)
+    if mod in PRIMARY_CH:
+        name, tier = template, PRIMARY_CH
+    elif mod in COMBO_CH:
+        name, tier = template.replace(".mods.png", ".combo.mods.png"), COMBO_CH
+    else:                                    # the game-art build patches these two files only
+        raise SystemExit(f"picker key {'+'.join(mods)}+{key}: only none, one or two of Ctrl, Alt, Shift")
+    arr = np.array(Image.open(build.RES / "overlays" / name).convert("RGBA"))
     r, c = cell_for(resolve_key(key))
-    ch = CH[PRIMARY_CH[build.modifier(mods)]]
+    ch = CH[tier[mod]]
     return arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W, ch] > 127
 
 
@@ -158,6 +166,14 @@ def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
             "palette": b64(source.palette), "pics": pics, "vectors": vectors, "fonts": fonts, "overlays": overlays}
 
 
+def page_html(data: dict) -> str:
+    """The picker page for `data`. The title goes into HTML text and the data into
+    a <script> block, where a "</" would end the block."""
+    page = (HERE / "icon_picker_template.html").read_text(encoding="utf-8")
+    page = page.replace("/*TITLE*/", html.escape(data["title"]))
+    return page.replace("/*DATA*/null", json.dumps(data).replace("</", "<\\/"))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("spec", type=Path, help="picker YAML beside the overlay sources")
@@ -168,8 +184,7 @@ def main() -> None:
     a = ap.parse_args()
     spec_path = a.spec.resolve()
     data = build_data(spec_path, a.data_dir, a.qmk)
-    page = (HERE / "icon_picker_template.html").read_text(encoding="utf-8")
-    page = page.replace("/*TITLE*/", data["title"]).replace("/*DATA*/null", json.dumps(data))
+    page = page_html(data)
     if a.out:
         out = a.out
         out.write_text(page, encoding="utf-8")
