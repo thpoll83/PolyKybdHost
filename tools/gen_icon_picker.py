@@ -102,12 +102,15 @@ def candidate(entry: dict, presets: dict) -> dict:
 def build_data(spec_path: Path, data_dir: str, qmk: Path) -> dict:
     spec = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
     reader_name = spec["reader"]
-    decl = READERS[reader_name]
     import importlib
-    reader = importlib.import_module(decl.module)
-    files = reader.find(data_dir)
+    if reader_name in READERS:               # pictures the keyboard reads from the user's files
+        files = importlib.import_module(READERS[reader_name].module).find(data_dir)
+    else:                                    # a source whose picks ship as icons (Warzone 2100)
+        files = SOURCES[reader_name].find(data_dir)
     if not files:
         raise SystemExit(f"no game files found for {reader_name}; pass --data-dir")
+    if spec.get("palette_from"):
+        files = dict(files, palette_from=spec["palette_from"])
     source = SOURCES[reader_name](files)
     legend = legend_renderer(qmk)
     pics, vectors, overlays = {}, {}, []

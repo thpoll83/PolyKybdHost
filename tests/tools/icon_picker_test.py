@@ -86,7 +86,7 @@ class SpecTest(unittest.TestCase):
                             continue
                         self.assertIn(c.get("preset"), spec["presets"], f"{ov['id']} {key} {c['label']}")
                         kind = c["src"].split(":")[0]
-                        self.assertIn(kind, ("shp", "sprite", "icn", "icnset", "icntile"), c["src"])
+                        self.assertIn(kind, sources.KINDS, c["src"])
             self.assertTrue(sources)
             if spec.get("vector_sources"):
                 self.assertIn("vector", spec["presets"], path)
@@ -115,6 +115,50 @@ def raster_pick(gamma=1.0, rh=21):
                        "falloff": 0.45, "grain": 1, "seed": 1, "flat": 0.6, "mode": "fs", "lo": 3, "hi": 97,
                        "gamma": gamma, "curve": 0, "sharpen": 0, "floor": 0.15, "outline": True,
                        "mirror": False, "valign": "bottom", "rh": rh}}
+
+
+class WarzoneSourceTest(unittest.TestCase):
+    """The Warzone 2100 source reads interface images from a data/base folder or
+    from base.wz, and marks their transparent pixels as the page's background."""
+
+    @staticmethod
+    def _png(path: Path) -> bytes:
+        from PIL import Image
+        a = np.zeros((4, 6, 4), np.uint8)
+        a[1:3, 1:5] = (200, 40, 40, 255)          # an opaque red block, the rest transparent
+        Image.fromarray(a, "RGBA").save(path)
+        return path.read_bytes()
+
+    def test_a_data_folder_and_base_wz_give_the_same_picture(self):
+        import zipfile
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "data" / "base" / "images" / "intfac"
+            d.mkdir(parents=True)
+            data = self._png(d / "image_x.png")
+            with zipfile.ZipFile(Path(tmp) / "base.wz", "w") as z:
+                z.writestr("images/intfac/image_x.png", data)
+            pics = []
+            for root in (Path(tmp), Path(tmp) / "base.wz"):
+                files = src.Warzone2100.find(str(root))
+                self.assertIsNotNone(files, root)
+                s = src.Warzone2100(dict(files, palette_from=["image_x"]))
+                self.assertEqual(s.palette.shape, (256, 3))
+                pics.append(s.picture("intfac:image_x"))
+            np.testing.assert_array_equal(pics[0], pics[1])
+            idx = pics[0]
+            self.assertTrue((idx[0] == src.Warzone2100.BG).all())    # transparent row
+            self.assertNotEqual(idx[1, 1], src.Warzone2100.BG)       # opaque pixel
+            self.assertNotIn(int(idx[1, 1]), (src.Warzone2100.BG, 254))
+
+    def test_no_game_files_and_an_unknown_kind(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(src.Warzone2100.find(tmp))
+            d = Path(tmp) / "images" / "intfac"
+            d.mkdir(parents=True)
+            self._png(d / "image_x.png")
+            s = src.Warzone2100(src.Warzone2100.find(tmp))
+            with self.assertRaises(ValueError):
+                s.picture("shp:x:1")
 
 
 class ApplyTest(unittest.TestCase):

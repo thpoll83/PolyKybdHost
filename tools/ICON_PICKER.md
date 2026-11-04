@@ -115,6 +115,9 @@ ICON.MAP), `icnset:<group>:<i>`, `icntile:<tile>:<n>`.
 ## Adding a game
 
 1. Add a class to `icon_picker_sources.py` with `palette` (256 x RGB),
-   `picture(src)` and `font(name)`, constructed from the reader's `find()`
-   result, and register it in `SOURCES`.
+   `picture(src)`, `font(name)` and `KINDS` (the `src` prefixes it reads),
+   constructed from the reader's `find()` result, and register it in `SOURCES`.
+   A game whose art may ship (Warzone 2100, GPL) has no reader: its class has
+   its own `find(data_dir)`, and the generator uses that when `reader:` names no
+   entry of `READERS`.
 2. Write a `picker.yaml` beside the game's overlay sources.
