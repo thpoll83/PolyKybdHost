@@ -517,6 +517,31 @@ class BadRecipeTest(unittest.TestCase):
         self.assertEqual(len(logs.output), 2)
 
 
+class PatchKeyNameTest(unittest.TestCase):
+
+    def test_a_binding_named_by_a_generator_alias_is_patched(self):
+        """`PRTSC`, `DOT`, `BSPC` are generator spellings with no `KC_<name>`
+        member; the runtime patch must resolve them the same way."""
+        from PIL import Image
+
+        from polyhost.res.overlay_layout import CH, IMG_H, IMG_W, PRIMARY_CH, SLOT_H, SLOT_W, cell_for
+        spec = {"bindings": [{"key": k, "icon": f"i{k}.png", "region": [20, 20]}
+                             for k in ("PRTSC", "DOT", "BSPC")]}
+        mask = np.ones((20, 20), bool)
+        icons = {f"i{k}": (mask, None, None) for k in ("PRTSC", "DOT", "BSPC")}
+        with tempfile.TemporaryDirectory() as d:
+            shipped = Path(d) / "x.mods.png"
+            Image.new("RGBA", (IMG_W, IMG_H), (0, 0, 0, 0)).save(shipped)
+            out = Path(d) / "out.mods.png"
+            self.assertEqual(build.patch(shipped, spec, icons, out), 3)
+            arr = np.array(Image.open(out).convert("RGBA"))
+        for kc in (KeyCode.KC_PRINT_SCREEN, KeyCode.KC_DOT, KeyCode.KC_BACKSPACE):
+            r, c = cell_for(kc)
+            cell = arr[r * SLOT_H:(r + 1) * SLOT_H, c * SLOT_W:(c + 1) * SLOT_W,
+                       CH[PRIMARY_CH[Modifier.NO_MOD]]]
+            self.assertEqual(int((cell == 255).sum()), 400, kc.name)
+
+
 class SpecTest(unittest.TestCase):
     """The C&C spec's game_assets block against its own bindings."""
 

@@ -128,7 +128,6 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
     from PIL.PngImagePlugin import PngInfo
 
     from polyhost.device.im_converter import NO_LEGEND_CHUNK
-    from polyhost.device.keys import KeyCode
     from polyhost.res.overlay_layout import (
         CH,
         COMBO_CH,
@@ -137,6 +136,7 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         SLOT_W,
         cell_for,
         region_box,
+        resolve_key,
     )
 
     with Image.open(shipped) as im:
@@ -154,7 +154,7 @@ def patch(shipped: Path, spec: dict, icons: dict, out: Path) -> int:
         mod = modifier(b.get("mods"))
         if mod not in tiers:
             continue                            # the binding is in the other file
-        kc = KeyCode[f"KC_{str(b['key']).upper()}"]
+        kc = resolve_key(b["key"])           # the generator's names: PRTSC, DOT, BSPC...
         mask, region, margin = icons[stem]
         if margin is None:
             margin = 0 if region else b["margin"]
