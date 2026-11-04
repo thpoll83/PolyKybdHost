@@ -132,6 +132,19 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- **"Eden / idle keeps turning off"**: read `keyboard-console.txt` for
+  `Stop idle.` and the line before it. `Overlay flags 0x1 cleared` 250–500 ms
+  before a `Stop idle.` means the HOST woke the keyboard: every overlay send
+  ends in `set_idle(False)`, so any overlay traffic during idle ends Eden, even
+  a resend of the same app from cache. Then find what made the host send at
+  that second in `daemon.txt`. The 2026-11-04 case was `No active window` and
+  the same app again ~270 ms later, about every 10 s, on KDE Wayland (fixed in
+  1.17.86, #531: a lost window now waits for the accept timer). A `Stop idle.`
+  after `Wake by keypress`, or with no overlay line before it, is the user.
+  Two lines that are not faults: `Turning off` is the firmware's display-off
+  at `TURN_OFF_TIME` (20 min after the last activity, so ~19 min of
+  `Eden idle` lines), and `Eden start … welcome said` followed by
+  `Tutorial …` is a manual Eden run, not the idle path.
 - ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
   crash record does not make it harmless.** The host logs that line when GET_ID
   carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
