@@ -1915,6 +1915,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
             ("https://m.youtube.com/watch?v=dQw4w9WgXcQ", None, "youtube_template"),
             ("https://www.youtube.com/live/abc123", None, "youtube_template"),
             ("https://excalidraw.com/", "Excalidraw | Hand-drawn look", "excalidraw_template"),
+            ("https://www.photopea.com/", "Photopea | Online Photo Editor", "photopea_template"),
+            ("https://www.photopea.com/#%7B%22files%22%3A%5B%5D%7D", None, "photopea_template"),
             ("https://trello.com/b/AbC123/roadmap", "Roadmap | Trello", "trello_template"),
             ("https://trello.com/c/XyZ789/12-fix-login", None, "trello_template"),
             ("https://linear.app/acme/issue/ENG-1", None, "linear_template"),
@@ -1959,14 +1961,21 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                             "https://www.google.com/search?q=linear.app",
                             "https://www.figma.com/board/abc123/Retro",
                             "https://help.figma.com/hc/en-us",
-                            "https://github.com/o/r/tree/main"):
+                            "https://github.com/o/r/tree/main",
+                            "https://www.photopea.com/learn/workspace",
+                            "https://www.google.com/search?q=photopea.com"):
                     with self.subTest(browser=browser, os=os_name, url=url):
                         got = find_matching_entry("x", entry, url, OsType[os_name], title_known=True)
                         files = [str(f) for f in got["overlay"]]
                         self.assertFalse(any(s in f for f in files for s in
                                              ("drawio_", "linear_", "jupyter_", "figma_",
-                                              "youtube_",
+                                              "youtube_", "photopea_",
                                               "trello_")), files)
+                # Photopea's learn pages are titled "Photopea - <topic>".
+                with self.subTest(browser=browser, os=os_name, title="photopea learn"):
+                    got = find_matching_entry("Photopea - Workspace - Google Chrome", entry, None,
+                                              OsType[os_name], title_known=True)
+                    self.assertFalse(any("photopea_" in str(f) for f in got["overlay"]))
 
     def test_PDF_SCIENCE_and_DESKTOP_tools_get_their_platform_set(self):
         for app, os_name, stem in (

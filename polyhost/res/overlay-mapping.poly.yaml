@@ -28,6 +28,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   urls-contains: &web_urls
     miro.com:
       overlay: miro_template.mods.png
+    # Photopea (sources: overlay_sources/webapps/photopea.yaml). The editor
+    # is the bare host; the gate keeps /learn, /blog and /tutorials off the set.
+    photopea.com:
+      url: '^https?://(www\.)?photopea\.com/([?#].*)?$'
+      overlay: [photopea_template.mods.png, photopea_template.combo.mods.png]
     outlook.office.com:
       overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     outlook.live.com:
@@ -199,6 +204,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
   titles-contains: &web_titles
     Miro:
       overlay: miro_template.mods.png
+    # The editor tab is titled "Photopea | Online Photo Editor"; the learn
+    # pages are "Photopea - <topic>" and stay off the set.
+    Photopea:
+      title: '^Photopea \| Online Photo Editor'
+      overlay: [photopea_template.mods.png, photopea_template.combo.mods.png]
     Google Meet:
       overlay: [meet_template.mods.png, meet_template.combo.mods.png]
     # A meeting tab is titled "Meet - <code>"; the gate requires the code
@@ -302,6 +312,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       urls-contains: &web_urls_mac
         miro.com:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        photopea.com:
+          url: '^https?://(www\.)?photopea\.com/([?#].*)?$'
+          overlay: [photopea_template_mac.mods.png, photopea_template_mac.combo.mods.png, photopea_template_mac.extra.mods.png]
         outlook.office.com:
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         outlook.live.com:
@@ -411,6 +424,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
+        Photopea:
+          title: '^Photopea \| Online Photo Editor'
+          overlay: [photopea_template_mac.mods.png, photopea_template_mac.combo.mods.png, photopea_template_mac.extra.mods.png]
         Google Meet:
           overlay: [meet_template_mac.mods.png, meet_template_mac.combo.mods.png, meet_template_mac.extra.mods.png]
         Meet:

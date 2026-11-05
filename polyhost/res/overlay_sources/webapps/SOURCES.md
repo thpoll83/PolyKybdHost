@@ -509,3 +509,50 @@ Choices and keys left out:
 - **Left out:** the video keys (Space play or pause, M mute), which act only on a
   selected video; the heading and body text styles, which only Canva Docs has;
   Ctrl+Backspace (delete empty page), which only third-party lists name.
+
+## Photopea
+
+`photopea.yaml`, written by hand. It uses `CMDCTRL`: Photopea's key handler
+takes Cmd for Ctrl on macOS.
+
+Keys were read from Photopea itself (www.photopea.com, 2026-11-05) in headless
+Chromium. The menu chords are the shortcut labels of every File, Edit, Image,
+Layer, Select, Filter and View entry, submenus included, with a new document
+open. The tool letters are the letters in each toolbar group's tool list. S
+(clone stamp) and Z (zoom) have no group menu and were checked by pressing the
+key. X and D are from `photopea.com/learn/workspace`.
+
+Photopea moves the chords a browser keeps for itself: New is Ctrl+Alt+N, Free
+Transform is Ctrl+Alt+T and Open from storage is Ctrl+Alt+O. Ctrl+Z is Step
+Backward and Ctrl+Shift+Z is Step Forward.
+
+Left out:
+
+- **Ctrl+Shift+N** (Layer > New > Layer). Chrome and Firefox open a private
+  window, and the page never sees the key.
+- **macOS only:** Cmd+H (Extras) and Cmd+M (Curves), which macOS takes to hide
+  and minimize the browser, and Cmd+Shift+[ and ] (Bring to front, Send to
+  back), which switch tabs in Chrome and Safari.
+- Delete (Clear), the Export as entries (they show file extensions, not keys),
+  the Blur/Sharpen/Smudge group (no letter), and the group-cycling Shift+letter.
+
+Icons: the Photoshop set (`../photoshop/icons`, the spec's `icon_dir`) wherever
+the action is the same, because Photopea's tools and menus copy Photoshop's.
+The commands that set has no icon for are `pp_*.png` in this folder
+(`fetch_icons.py` → `PHOTOPEA`, Material Symbols Apache-2.0 and Fluent MIT).
+Rotate view, Preferences, Bring to front, Send to back and Grid reuse
+`rotateccw.png`, `settings.png`, `bringfront.png`, `sendback.png` and
+`dio_grid.png` from this folder.
+
+ESC mark: Photopea's logo from Simple Icons (`photopea`, artwork CC0-1.0,
+nominative use, see `../brand_marks.py`), as for Linear and Overleaf.
+
+Routing: a `urls-contains` entry `photopea.com` with a `url` gate on the bare
+host, because the editor runs at `https://www.photopea.com/` and the learn,
+blog and tutorial pages are under the same host. The title fallback is
+"Photopea | Online Photo Editor", the editor's tab title; the learn pages are
+titled "Photopea - <topic>".
+
+| Set | Keys (Windows/Linux, macOS) |
+|---|---|
+| `photopea_template` | 69, 65 |
