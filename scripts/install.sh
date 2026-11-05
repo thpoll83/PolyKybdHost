@@ -39,9 +39,21 @@ elif [ -d "$TARGET_DIR/.git" ]; then
     git -C "$TARGET_DIR" pull --ff-only
 else
     echo ">> Cloning into '$TARGET_DIR'."
-    # Only the latest commit: 19 MB instead of 47 MB for the full history.
+    # Only the latest commit: the full history is 47 MB.
     # `git pull` still updates it. Run `git fetch --unshallow` for the history.
-    git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
+    # The sparse checkout leaves out what the app never reads: tests/ and the
+    # overlay build inputs in polyhost/res/overlay_sources/ except the per-app
+    # YAML specs. That is about 10,000 of 12,000 files, and the blobs are not
+    # downloaded either (--filter=blob:none). `git sparse-checkout disable`
+    # brings them back. The patterns are SPARSE_PATTERNS in
+    # polyhost/services/updater.py, which the updater applies too.
+    git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$TARGET_DIR"
+    printf '%s\n' \
+        '/*' \
+        '!/tests/' \
+        '!/polyhost/res/overlay_sources/**' \
+        '/polyhost/res/overlay_sources/*/*.yaml' \
+        | git -C "$TARGET_DIR" sparse-checkout set --no-cone --stdin
 fi
 cd "$TARGET_DIR"
 
