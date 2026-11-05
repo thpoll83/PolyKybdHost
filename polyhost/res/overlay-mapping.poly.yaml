@@ -1712,6 +1712,13 @@ resolve,davinci resolve:
   os:
     macos:
       overlay: [resolve_template_mac.mods.png, resolve_template_mac.combo.mods.png, resolve_template_mac.extra.mods.png]
+# CapCut desktop (sources: overlay_sources/capcut/). The process is CapCut.exe on
+# Windows and CapCut.app on macOS; there is no Linux build. macOS gets the Cmd set.
+capcut:
+  overlay: [capcut_template.mods.png, capcut_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [capcut_template_mac.mods.png, capcut_template_mac.combo.mods.png, capcut_template_mac.extra.mods.png]
 adobe premiere pro:
   overlay: [premiere_template.mods.png, premiere_template.combo.mods.png]
   os:
