@@ -34,6 +34,13 @@ class TestReportWindow(unittest.TestCase):
         # Identical report → no further change.
         self.assertFalse(rh.remote_changed({}))
 
+    def test_a_window_without_a_title_is_stored_as_an_empty_title(self):
+        # pywinctl gives None for a window without a title, and str(None) made
+        # it the text "None" (field log 2026-11-05: Title: "None").
+        rh = self._handler(_annotated())
+        rh.report_window(5, "Code.exe", None)
+        self.assertEqual(rh.connections["_report"]["title"], "")
+
     def test_report_window_unmapped_app_matches_nothing(self):
         rh = self._handler(_annotated())
         rh.report_window(1, "Unknown.exe", "x")
