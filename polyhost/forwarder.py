@@ -658,7 +658,10 @@ class PolyForwarder(QApplication):
             s.connect((str(ip), TCP_PORT))
             # 4th field = this machine's OS (an OsType value int); older daemons
             # split on ';' and read the first three fields, ignoring the extra one.
-            s.send(f"{handle};{name};{title};{self._os_value}".encode("utf-8"))
+            # pywinctl gives None for a window without a title; it must arrive
+            # as an empty title, not as the text "None" (field log, 2026-11-05).
+            title_text = "" if title is None else title
+            s.send(f"{handle};{name};{title_text};{self._os_value}".encode("utf-8"))
             s.close()
             return True
         except socket.timeout as err:
