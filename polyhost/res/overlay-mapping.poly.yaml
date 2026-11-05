@@ -2664,3 +2664,8 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# Everything, the voidtools file search (overlay_sources/everything/). Windows
+# only. Both the 1.4.1.1032 and the 1.5.0.1424b downloads ship the program as
+# `Everything.exe`. Not checked on a running install.
+everything:
+  overlay: [everything_template.mods.png, everything_template.combo.mods.png]
