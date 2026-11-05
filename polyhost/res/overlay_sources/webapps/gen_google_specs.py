@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the Google Sheets, Slides, Gmail, Calendar and Keep overlay specs.
+"""Write the Google Sheets, Slides, Gmail, Calendar, Keep and Drive overlay specs.
 
 Each table row is (icon, label, Windows/Linux key, macOS key), read from the
 PC and Mac tables of Google's help pages (see SOURCES.md). A key is written as
@@ -344,6 +344,39 @@ KEEP = [
     ("outdent", "Dedent list item", "C+[", "M+["),
 ]
 
+DRIVE = [
+    # --- application ---
+    ("shortcuts", "Keyboard shortcuts", "C+/", "M+/"),
+    ("search", "Search Drive", "/", "/"),
+    ("find", "Find", "C+F", "M+F"),
+    ("print", "Print", "C+P", "M+P"),
+    (None, "Undo", "C+Z", "M+Z"),
+    (None, "Redo", "C+Y", "M+Y"),
+    (None, "Select all", "C+A", "M+A"),
+    # --- selected items ---
+    ("newtab", "Open in new tab", "C+Enter", "M+Enter"),
+    ("rename", "Rename", "F2", "F2"),
+    ("share", "Share", "CA+A", "AM+A"),
+    ("gdr_movefolder", "Move to new folder", "CA+M", "AM+M"),
+    ("starred", "Star or unstar", "CA+S", "AM+S"),
+    ("gdr_shortcut", "Create shortcut", "CA+R", "AM+R"),
+    ("delete", "Remove", "Del", "Del"),
+    ("link", "Copy links", "CA+L", "AM+L"),
+    ("gdr_copytitle", "Copy titles", "CS+C", "MS+C"),
+    (None, "Copy", "C+C", "M+C"),
+    (None, "Cut", "C+X", "M+X"),
+    (None, "Paste", "C+V", "M+V"),
+    ("gdr_pasteshortcut", "Paste as shortcut", "CS+V", "MS+V"),
+    ("preview", "Preview", "CA+P", "AM+P"),
+    # --- menus ---
+    ("gdr_create", "Create menu", "A+N", "C+N"),
+    ("actions", "More actions", "A+A", "C+A"),
+    ("actions", "More actions", "S+F10", "S+F10"),
+    ("gdr_foldermenu", "Folder actions", "AS+A", "CS+A"),
+    ("sortorder", "Sort menu", "A+R", "C+R"),
+    ("settings", "Settings menu", "CS+S", "MS+S"),
+]
+
 # Gmail's single keys work only after the user turns "Keyboard shortcuts on" in
 # Gmail's settings; Calendar's are on by default.
 LETTERS_OUT = ("Bare letters, digits and Shift+letter keys are left out: they would replace\n"
@@ -354,6 +387,10 @@ LETTERS_GMAIL = ("Gmail's single keys are included. They work only after the use
                  "# sequences (g then i, * then a) are left out.")
 LETTERS_KEEP = ("Keep's single keys are included: they are on by default and act only\n"
                 "# when no text field has focus.")
+LETTERS_DRIVE = ("Drive's single keys (/ to search, F2, Delete) are included; they act only\n"
+                 "# when no text field has focus. The two-key sequences (Alt+G then N, Alt+C\n"
+                 "# then T, ...), the arrow-key selection keys and the preview-only keys are\n"
+                 "# left out. Copy and Paste are not in Google's table; Drive added them in 2022.")
 LETTERS_IN = ("Calendar's single keys are included: they are on by default and act only\n"
               "# when no text field has focus.")
 
@@ -458,6 +495,9 @@ SPECS = {
     "googlekeep.yaml": (KEEP, dict(name="Google Keep", app="googlekeep", mark="gkeep.png",
                                    page="https://support.google.com/keep/answer/12862970",
                                    mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_KEEP)),
+    "googledrive.yaml": (DRIVE, dict(name="Google Drive", app="googledrive", mark="gdrive.png",
+                                     page="https://support.google.com/drive/answer/2563044",
+                                     mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_DRIVE)),
 }
 
 

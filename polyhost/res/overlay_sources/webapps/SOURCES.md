@@ -306,10 +306,10 @@ Two deliberate choices, both of which have been queried:
 - **Two adjacent edges only.** Drawing all four offset edges reads as a second
   box rather than as a shadow.
 
-## Google Sheets, Slides, Gmail, Calendar and Keep
+## Google Sheets, Slides, Gmail, Calendar, Keep and Drive
 
 `gen_google_specs.py` writes `googlesheets.yaml`, `googleslides.yaml`,
-`gmail.yaml`, `googlecalendar.yaml` and `googlekeep.yaml` from one table per app. Each row has a
+`gmail.yaml`, `googlecalendar.yaml`, `googlekeep.yaml` and `googledrive.yaml` from one table per app. Each row has a
 Windows/Linux key and a macOS key. A row whose Mac key is the Windows key with
 Ctrl replaced by Cmd becomes one `CMDCTRL` binding; every other row is written
 twice, under `except: [macos]` and `only: [macos]`.
@@ -321,6 +321,7 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
 | Google Calendar | <https://support.google.com/calendar/answer/37034> | 27, 27 |
 | Google Keep | <https://support.google.com/keep/answer/12862970>, PC and Mac tables (read 2026-11-05) | 21, 21 |
+| Google Drive | <https://support.google.com/drive/answer/2563044>, read 2026-11-05 | 27, 27 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 
@@ -345,7 +346,16 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   (feedback) are left out because they need Shift on a US layout, and Esc
   (finish editing) shows the program mark. Ctrl+Enter, the other key for finish
   editing, is drawn.
-- Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`):
+- Google Drive: its single keys are drawn (`/` search, F2 rename, Delete
+  remove). `#` (remove) needs Shift on a US layout and is left out, as are the
+  arrow-key selection keys and the preview-only keys (Space, `=`, `-`). Copy
+  (Ctrl+C) and Paste (Ctrl+V) are not in Google's table; Drive added them in
+  May 2022 and they are drawn. Google's table lists Ctrl+Shift+V twice (paste,
+  and paste as a shortcut); the set labels it "Paste as shortcut". Its Mac
+  column gives Create shortcut as both ⌘⌥R and ⌘⌃R; the set uses ⌘⌥R, the
+  form every other row of that group has.
+- Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`,
+  Drive's Alt+G then N and Alt+C then T):
   an overlay cell shows what one key press does.
 - The menu keys (Alt+F, Alt+E, ...): Chrome and other browsers use different
   modifiers for them (Alt in Chrome, Alt+Shift elsewhere).
@@ -370,8 +380,13 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `calday.png`, `calweek.png` and `calmonth.png`.
 - `gs.png` and `gsl.png` are labelled document frames from `../doc_mark.py`,
   like Google Docs' `gd.png`, with the calc and impress motifs.
-- `gmail.png`, `gcal.png` and `gkeep.png` are the Gmail, Google Calendar and
-  Google Keep marks from Simple Icons (CC0-1.0 artwork), used to name the application
+- Google Drive's own icons are Fluent (`gdr_movefolder` Folder Arrow Right,
+  `gdr_shortcut` Arrow Forward, `gdr_pasteshortcut` Clipboard Link,
+  `gdr_create` Add) and Material (`gdr_copytitle` title, `gdr_foldermenu`
+  folder_managed). Star, Share, Sort, More actions and the rest reuse icons
+  already in the folder.
+- `gmail.png`, `gcal.png`, `gkeep.png` and `gdrive.png` are the Gmail, Google Calendar,
+  Google Keep and Google Drive marks from Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
 
 ## draw.io, Excalidraw, Linear and Overleaf
