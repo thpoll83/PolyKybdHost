@@ -221,6 +221,34 @@ class BuiltDialogTest(unittest.TestCase):
         extra = [b for b in dlg.findChildren(QPushButton) if b.parent() is not box]
         self.assertEqual(extra, [])
 
+    def test_each_game_folder_row_has_a_browse_button(self):
+        from unittest import mock
+        from PyQt5.QtWidgets import QToolButton
+        from polyhost.gui import settings_dialog as sd
+        self.assertIn("game_d2k_data_dir", sd.FOLDER_KEYS)
+        dlg = self._dialog()
+        buttons = dlg.findChildren(QToolButton)
+        self.assertEqual(len([b for b in buttons if b.text() == "…"]), len(sd.FOLDER_KEYS))
+        edit = dlg.edit_widgets["game_d2k_data_dir"]
+        button = next(b for b in edit.parentWidget().findChildren(QToolButton))
+        with mock.patch.object(sd.QFileDialog, "getExistingDirectory",
+                               return_value="/games/d2k/") as chooser:
+            button.click()
+        self.assertEqual(chooser.call_args.args[2], sd.browse_start(""))
+        self.assertEqual(edit.text(), os.path.normpath("/games/d2k"))
+        self.assertEqual(dlg.get_updated_settings()["game_d2k_data_dir"], edit.text())
+        with mock.patch.object(sd.QFileDialog, "getExistingDirectory", return_value=""):
+            button.click()
+        self.assertEqual(edit.text(), os.path.normpath("/games/d2k"))
+
+    def test_the_chooser_opens_at_the_nearest_existing_folder(self):
+        import tempfile
+        from polyhost.gui.settings_dialog import browse_start
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(browse_start(d), d)
+            self.assertEqual(browse_start(os.path.join(d, "gone", "deeper")), d)
+        self.assertEqual(browse_start(""), os.path.expanduser("~"))
+
 
 if __name__ == "__main__":
     unittest.main()

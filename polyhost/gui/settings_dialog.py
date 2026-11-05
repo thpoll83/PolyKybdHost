@@ -1,4 +1,5 @@
 import html
+import os
 import string
 from collections import defaultdict
 
@@ -7,7 +8,7 @@ from PyQt5.QtGui import QCursor, QGuiApplication
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
-    QScrollArea, QComboBox
+    QScrollArea, QComboBox, QToolButton, QFileDialog
 )
 
 from polyhost import i18n
@@ -233,6 +234,10 @@ for _s in game_asset_readers.all_settings():
     if _s.choices:
         CHOICES[_s.key] = _s.choices
 
+# Settings that hold a folder: each game-asset reader's folder to read from. Their
+# rows get a "…" button that opens a folder chooser.
+FOLDER_KEYS = frozenset(r.folder for r in game_asset_readers.READERS.values() if r.folder)
+
 # The size the dialog had before it followed the screen. It stays the minimum.
 MIN_DIALOG_SIZE = QSize(640, 480)
 
@@ -315,6 +320,18 @@ def create_editor(value, key=None):
         return line_edit
 
 
+def browse_start(text):
+    """The folder a chooser opens at: the folder in `text` when it exists,
+    else its nearest existing parent, else the home folder."""
+    path = os.path.expanduser(text.strip()) if text.strip() else ""
+    while path and not os.path.isdir(path):
+        parent = os.path.dirname(path)
+        if parent == path:
+            break
+        path = parent
+    return path if path and os.path.isdir(path) else os.path.expanduser("~")
+
+
 class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -383,6 +400,8 @@ class SettingsDialog(QDialog):
                 field_layout.setContentsMargins(0, 0, 0, 0)
                 field_layout.setAlignment(Qt.AlignRight)  # Right-align the widget inside the field cell
                 field_layout.addWidget(widget)
+                if full_key in FOLDER_KEYS and isinstance(widget, QLineEdit):
+                    field_layout.addWidget(self._browse_button(full_key, widget))
                 field_container.setLayout(field_layout)
 
                 group_layout.addRow(label, field_container)
@@ -406,6 +425,21 @@ class SettingsDialog(QDialog):
         buttons.rejected.connect(self.reject)
         main_layout.addWidget(buttons, alignment=Qt.AlignCenter)
         self._fit_to_screen()
+
+    def _browse_button(self, full_key, line_edit):
+        button = QToolButton()
+        button.setText("…")
+        button.setToolTip(_("Browse…"))
+        button.setAccessibleName(_("Browse…"))
+        button.clicked.connect(lambda: self._browse_folder(full_key, line_edit))
+        return button
+
+    def _browse_folder(self, full_key, line_edit):
+        """Put the folder the user picks into `line_edit`; Cancel keeps it."""
+        folder = QFileDialog.getExistingDirectory(
+            self, setting_label(full_key), browse_start(line_edit.text()))
+        if folder:
+            line_edit.setText(os.path.normpath(folder))
 
     def get_updated_settings(self):
         updated = dict(self._all_settings)

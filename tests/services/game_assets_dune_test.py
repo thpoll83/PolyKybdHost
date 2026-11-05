@@ -235,6 +235,24 @@ class FindTest(unittest.TestCase):
         make_d2k_files(v3, frames=3)
         self.assertEqual(d2k.find("")["sprites"].name, "DATA.R16")
 
+    def test_the_log_names_each_folder_searched_and_whether_it_exists(self):
+        from polyhost.services.game_assets.build import searched_text
+        flatpak = self.home / ".var" / "app" / "net.openra.OpenRA" / "config" / "openra"
+        (flatpak / "Content" / "d2k").mkdir(parents=True)
+        text = searched_text(d2k, "")
+        self.assertIn(str(Path("~") / ".config" / "openra" / "Content" / "d2k" / "v3")
+                      + " (missing)", text)
+        shown = str(Path("~") / ".var" / "app" / "net.openra.OpenRA" / "config" / "openra"
+                    / "Content" / "d2k")
+        self.assertIn(shown + ",", text + ",")
+        self.assertNotIn(shown + " (missing)", text)
+        self.assertNotIn(str(self.home), text)
+
+    def test_the_log_names_a_folder_set_in_settings(self):
+        from polyhost.services.game_assets.build import searched_text
+        self.assertEqual(searched_text(d2k, str(self.home / "D2K")),
+                         "the folder set in Settings, " + str(Path("~") / "D2K") + " (missing)")
+
 
 class BuildTest(unittest.TestCase):
 
