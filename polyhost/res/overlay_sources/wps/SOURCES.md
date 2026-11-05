@@ -112,7 +112,8 @@ from Office.
   cut out. The letters are Liberation Sans Bold. The glyph sits 2 keycap pixels
   up and left of the centre. The marks are drawn at 32x32, the size the keycap
   shows, so the bands stay exact: the right 3 columns of the tile are a
-  checkerboard, and the bottom 3 rows leave one pixel dark in each 2x2 block. The WPS logo is a proprietary mark and Simple
+  checkerboard, and the bottom 3 rows are a diagonal hatch with two pixels of
+  every three lit. The WPS logo is a proprietary mark and Simple
   Icons does not carry it (`wpsoffice`, `wps` and `kingsoft` all return 404).
   The files are committed, and `fetch_icons.py` does not overwrite them. Delete
   a file to draw it again.

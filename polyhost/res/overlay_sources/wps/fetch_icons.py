@@ -90,8 +90,8 @@ def _side_on(x: int, y: int) -> bool:
 
 
 def _bottom_on(x: int, y: int) -> bool:
-    """Bottom band: denser, one pixel dark in each 2x2 block (75% lit)."""
-    return not (x % 2 == 1 and y % 2 == 1)
+    """Bottom band: a diagonal hatch, two pixels of every three lit (67%)."""
+    return (x + y) % 3 != 0
 
 
 def _shape(glyph: str) -> Image.Image:
@@ -127,7 +127,7 @@ def draw_mark(path: Path, glyph: str) -> None:
     """Rounded tile with `glyph` cut out and two dithered bands, as in WPS.
 
     The BAND columns on BAND_SIDE are a checkerboard (`_side_on`), and the
-    bottom BAND rows are denser (`_bottom_on`). The side band takes the corner.
+    bottom BAND rows a denser diagonal hatch (`_bottom_on`). The side band takes the corner.
     White on transparent, so the binding uses `program_icon_mode: alpha`.
     """
     from PIL import Image
