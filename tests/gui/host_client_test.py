@@ -192,7 +192,7 @@ class TestPolyHostModes(unittest.TestCase):
         # the forwarder can act on. They were top-level rows before.
         self.assertEqual(_grab(proc.stdout, "FWD_UPDATES").split("|"),
                          ["Check for host update\u2026",
-                          "Show the running command in the terminal title\u2026"])
+                          "Set up the terminal and editors\u2026"])
         self.assertNotIn("Check for host update\u2026", rows)
         # The status row leads, and it names the target rather than the app.
         self.assertTrue(rows[0].endswith("192.168.1.50"), rows[0])
