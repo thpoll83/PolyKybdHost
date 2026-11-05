@@ -31,7 +31,7 @@ ICONS = {
     "inventory": "gi:lorc/knapsack",
     "character": "gi:delapouite/skills",
     "questlog": "gi:lorc/scroll-unfurled",
-    "automap": "fa:map",
+    "automap": "gi:lorc/compass",
     "closepanels": "fa:rectangle-xmark",
     "chatlog": "gi:delapouite/notebook",
     "gameinfo": "fa:circle-info",

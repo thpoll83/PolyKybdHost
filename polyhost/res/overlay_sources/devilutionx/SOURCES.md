@@ -123,7 +123,7 @@ Licence texts for the icon and font licences named in this file:
 | `inventory.png` | game-icons.net `lorc/knapsack` | lorc | CC BY 3.0 |
 | `character.png` | game-icons.net `delapouite/skills` | delapouite | CC BY 3.0 |
 | `questlog.png` | game-icons.net `lorc/scroll-unfurled` | lorc | CC BY 3.0 |
-| `automap.png` | Font Awesome Free 6.5.2 `map` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `automap.png` | game-icons.net `lorc/compass` | lorc | CC BY 3.0 |
 | `closepanels.png` | Font Awesome Free 6.5.2 `rectangle-xmark` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `chatlog.png` | game-icons.net `delapouite/notebook` | delapouite | CC BY 3.0 |
 | `gameinfo.png` | Font Awesome Free 6.5.2 `circle-info` (solid) | Fonticons, Inc. | CC BY 4.0 |
