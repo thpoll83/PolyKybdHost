@@ -25,7 +25,7 @@ def _statuses():
         st.ShellStatus(st.ZSH, st.STATE_INSTALLED, Path("/h/.zshrc"), ""),
         st.ShellStatus(st.PWSH, st.STATE_STALE, Path("/h/profile.ps1"), "/old/polykybd-title.ps1"),
         st.ShellStatus(st.POWERSHELL, st.STATE_NOT_PRESENT, None, ""),
-        st.ShellStatus(st.FISH, st.STATE_NO_SETUP, None, ""),
+        st.ShellStatus(st.NUSHELL, st.STATE_NO_SETUP, None, ""),
     ]
 
 
@@ -95,7 +95,7 @@ class ShellTitleDialogTest(unittest.TestCase):
         # by default_selection; the stale one is.
         self.assertTrue(dlg._boxes[st.PWSH].isChecked())
         self.assertFalse(dlg._boxes[st.ZSH].isChecked())
-        self.assertIn("fish", dlg._info.text())
+        self.assertIn("Nushell", dlg._info.text())
         self.assertTrue(dlg.install_button.isEnabled())
 
     def test_install_passes_the_ticked_shells_and_the_shown_statuses(self):
@@ -189,6 +189,12 @@ class ShellTitleDialogTest(unittest.TestCase):
                 time.sleep(0.01)
         self.assertTrue(dlg._checking.isHidden())
         self.assertTrue(dlg.install_button.isEnabled())
+
+    def test_fish_says_it_needs_setup_only_for_codex(self):
+        text = std.state_text(st.ShellStatus(st.FISH, st.STATE_NOT_INSTALLED, None, ""))
+        self.assertIn("Codex", text)
+        self.assertNotEqual(text, std.state_text(
+            st.ShellStatus(st.BASH, st.STATE_NOT_INSTALLED, None, "")))
 
     def test_every_state_has_a_text(self):
         for state in (st.STATE_INSTALLED, st.STATE_NOT_INSTALLED, st.STATE_STALE,
