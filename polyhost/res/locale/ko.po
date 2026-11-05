@@ -3245,25 +3245,25 @@ msgstr "설정 없이 명령을 표시합니다"
 
 #: polyhost/gui/shell_title_dialog.py:74
 msgid "Set up with older plugin files. Install copies the current ones."
-msgstr ""
+msgstr "이전 플러그인 파일로 설정되어 있습니다. 설치는 현재 파일을 복사합니다."
 
 #: polyhost/gui/shell_title_dialog.py:76
 msgid "Set up, and changed by hand since. This app leaves it alone."
-msgstr ""
+msgstr "설정되었지만 그 후 직접 변경되었습니다. 이 앱은 그대로 둡니다."
 
 #: polyhost/gui/shell_title_dialog.py:80
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
-msgstr ""
+msgstr "플러그인이 이미 {path}에서 로드되어 있습니다."
 
 #: polyhost/gui/shell_title_dialog.py:82 polyhost/services/editor_plugins.py:91
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
-msgstr ""
+msgstr "이 설치에는 플러그인 파일이 없습니다({path})."
 
 #: polyhost/gui/shell_title_dialog.py:125
 msgid "Terminal and editor setup"
-msgstr ""
+msgstr "터미널 및 편집기 설정"
 
 #: polyhost/gui/shell_title_dialog.py:129
 msgid ""
@@ -3281,6 +3281,9 @@ msgid ""
 "\n"
 "Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
 msgstr ""
+"Vim, Neovim, Emacs는 PolyKybd 플러그인이 있을 때만 키보드에 모드(Normal 또는 Insert 모드, Org 또는 Dired 키)를 알립니다.\n"
+"\n"
+"설치는 이 설치의 플러그인을 편집기가 로드하는 위치로 복사합니다. Emacs의 경우 플러그인을 로드하는 줄도 init 파일의 두 개의 표시 주석 사이에 추가하며, 그 전에 파일의 사본을 저장합니다. 이 앱이 업데이트되면 다음 시작 시 새 플러그인 파일을 복사합니다. 변경 사항을 적용하려면 편집기를 다시 시작하십시오."
 
 #: polyhost/gui/shell_title_dialog.py:163
 msgid "Checking the shells…"
@@ -3312,21 +3315,21 @@ msgstr "이 컴퓨터에서 bash, zsh, PowerShell을 찾지 못했습니다."
 #: polyhost/gui/shell_title_dialog.py:298
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
-msgstr ""
+msgstr "편집기를 확인할 수 없습니다: {error}"
 
 #: polyhost/gui/shell_title_dialog.py:321
 msgid "No Vim, Neovim or Emacs was found on this computer."
-msgstr ""
+msgstr "이 컴퓨터에서 Vim, Neovim, Emacs를 찾지 못했습니다."
 
 #: polyhost/gui/shell_title_dialog.py:327
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
-msgstr ""
+msgstr "이 앱은 포트 {port}에서 수신 대기하며 토큰이 필요합니다. 플러그인은 포트 50164를 사용하고 토큰을 사용하지 않습니다. Vim에서는 g:polykybd_port와 g:polykybd_token을, Emacs에서는 polykybd-port와 polykybd-token을 같은 값으로 설정하십시오."
 
 #: polyhost/gui/shell_title_dialog.py:332
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
-msgstr ""
+msgstr "이 앱은 포트 {port}에서 수신 대기합니다. 플러그인은 포트 50164를 사용합니다. Vim에서는 g:polykybd_port를, Emacs에서는 polykybd-port를 같은 값으로 설정하십시오."
 
 #: polyhost/gui/shell_title_dialog.py:367
 #: polyhost/gui/shell_title_dialog.py:380
@@ -3346,7 +3349,7 @@ msgstr "변경 사항을 적용하려면 새 터미널 창을 여십시오."
 
 #: polyhost/gui/shell_title_dialog.py:386
 msgid "Restart the editor for the change to take effect."
-msgstr ""
+msgstr "변경 사항을 적용하려면 편집기를 다시 시작하십시오."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -3657,7 +3660,7 @@ msgstr "키보드 접근 허용(udev 규칙)…"
 
 #: polyhost/forwarder.py:280 polyhost/host.py:867
 msgid "Set up the terminal and editors…"
-msgstr ""
+msgstr "터미널 및 편집기 설정…"
 
 #: polyhost/host.py:886
 msgid "Change System Input Language"
@@ -4234,42 +4237,42 @@ msgstr "WinCompose 설치 프로그램이 시작되었습니다. 설치가 끝�
 #: polyhost/services/editor_plugins.py:85
 #, python-brace-format
 msgid "Copied the plugin to {path}."
-msgstr ""
+msgstr "플러그인을 {path}에 복사했습니다."
 
 #: polyhost/services/editor_plugins.py:86
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
-msgstr ""
+msgstr "{path}의 플러그인을 이 설치의 플러그인으로 교체했습니다."
 
 #: polyhost/services/editor_plugins.py:88
 #, python-brace-format
 msgid "Removed the plugin from {path}."
-msgstr ""
+msgstr "{path}에서 플러그인을 제거했습니다."
 
 #: polyhost/services/editor_plugins.py:90
 #, python-brace-format
 msgid "{editor} was not found on this computer."
-msgstr ""
+msgstr "이 컴퓨터에서 {editor}을(를) 찾지 못했습니다."
 
 #: polyhost/services/editor_plugins.py:92
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
-msgstr ""
+msgstr "{path}이(가) 직접 변경되었습니다. 직접 제거하거나 업데이트하십시오."
 
 #: polyhost/services/editor_plugins.py:95
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
-msgstr ""
+msgstr "플러그인을 {path}에 복사하고, 이를 로드하는 줄을 {init}에 추가했습니다."
 
 #: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
-msgstr ""
+msgstr "{init}에서 플러그인을 로드하는 줄을 제거했습니다."
 
 #: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
-msgstr ""
+msgstr "{init}에서 플러그인을 로드하는 줄을 제거하고, {path}에서 플러그인을 제거했습니다."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"

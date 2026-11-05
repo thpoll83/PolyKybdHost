@@ -3262,25 +3262,25 @@ msgstr "Mostra o comando sem configuração"
 
 #: polyhost/gui/shell_title_dialog.py:74
 msgid "Set up with older plugin files. Install copies the current ones."
-msgstr ""
+msgstr "Configurado com arquivos de plugin antigos. Instalar copia os atuais."
 
 #: polyhost/gui/shell_title_dialog.py:76
 msgid "Set up, and changed by hand since. This app leaves it alone."
-msgstr ""
+msgstr "Configurado e alterado manualmente desde então. Este aplicativo não o altera."
 
 #: polyhost/gui/shell_title_dialog.py:80
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
-msgstr ""
+msgstr "O plugin já é carregado de {path}."
 
 #: polyhost/gui/shell_title_dialog.py:82 polyhost/services/editor_plugins.py:91
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
-msgstr ""
+msgstr "Esta instalação não tem arquivos de plugin ({path})."
 
 #: polyhost/gui/shell_title_dialog.py:125
 msgid "Terminal and editor setup"
-msgstr ""
+msgstr "Configuração do terminal e dos editores"
 
 #: polyhost/gui/shell_title_dialog.py:129
 msgid ""
@@ -3298,6 +3298,9 @@ msgid ""
 "\n"
 "Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
 msgstr ""
+"Vim, Neovim e Emacs informam o seu modo ao teclado (modo Normal ou Insert, as teclas de Org ou Dired) somente com o plugin PolyKybd.\n"
+"\n"
+"Instalar copia o plugin desta instalação para o local de onde o editor o carrega. Para o Emacs, também adiciona ao arquivo init linhas que carregam o plugin, entre dois comentários de marcação, e antes salva uma cópia do arquivo. Quando este aplicativo é atualizado, ele copia os novos arquivos do plugin na próxima inicialização. Reinicie o editor para que a alteração tenha efeito."
 
 #: polyhost/gui/shell_title_dialog.py:163
 msgid "Checking the shells…"
@@ -3329,21 +3332,21 @@ msgstr "Nenhum bash, zsh ou PowerShell foi encontrado neste computador."
 #: polyhost/gui/shell_title_dialog.py:298
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
-msgstr ""
+msgstr "Não foi possível verificar os editores: {error}"
 
 #: polyhost/gui/shell_title_dialog.py:321
 msgid "No Vim, Neovim or Emacs was found on this computer."
-msgstr ""
+msgstr "Nenhum Vim, Neovim ou Emacs foi encontrado neste computador."
 
 #: polyhost/gui/shell_title_dialog.py:327
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
-msgstr ""
+msgstr "Este aplicativo escuta na porta {port} e exige um token. Os plugins usam a porta 50164 e nenhum token: defina g:polykybd_port e g:polykybd_token no Vim, ou polykybd-port e polykybd-token no Emacs, com os mesmos valores."
 
 #: polyhost/gui/shell_title_dialog.py:332
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
-msgstr ""
+msgstr "Este aplicativo escuta na porta {port}. Os plugins usam a porta 50164: defina g:polykybd_port no Vim, ou polykybd-port no Emacs, com o mesmo valor."
 
 #: polyhost/gui/shell_title_dialog.py:367
 #: polyhost/gui/shell_title_dialog.py:380
@@ -3363,7 +3366,7 @@ msgstr "Abra uma nova janela de terminal para que a alteração tenha efeito."
 
 #: polyhost/gui/shell_title_dialog.py:386
 msgid "Restart the editor for the change to take effect."
-msgstr ""
+msgstr "Reinicie o editor para que a alteração tenha efeito."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -3674,7 +3677,7 @@ msgstr "Permitir acesso ao teclado (regra udev)…"
 
 #: polyhost/forwarder.py:280 polyhost/host.py:867
 msgid "Set up the terminal and editors…"
-msgstr ""
+msgstr "Configurar o terminal e os editores…"
 
 #: polyhost/host.py:886
 msgid "Change System Input Language"
@@ -4255,42 +4258,42 @@ msgstr "O instalador do WinCompose foi iniciado. Quando ele terminar e o WinComp
 #: polyhost/services/editor_plugins.py:85
 #, python-brace-format
 msgid "Copied the plugin to {path}."
-msgstr ""
+msgstr "O plugin foi copiado para {path}."
 
 #: polyhost/services/editor_plugins.py:86
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
-msgstr ""
+msgstr "O plugin em {path} foi substituído pelo desta instalação."
 
 #: polyhost/services/editor_plugins.py:88
 #, python-brace-format
 msgid "Removed the plugin from {path}."
-msgstr ""
+msgstr "O plugin foi removido de {path}."
 
 #: polyhost/services/editor_plugins.py:90
 #, python-brace-format
 msgid "{editor} was not found on this computer."
-msgstr ""
+msgstr "{editor} não foi encontrado neste computador."
 
 #: polyhost/services/editor_plugins.py:92
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
-msgstr ""
+msgstr "{path} foi alterado manualmente. Remova-o ou atualize-o manualmente."
 
 #: polyhost/services/editor_plugins.py:95
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
-msgstr ""
+msgstr "O plugin foi copiado para {path} e as linhas que o carregam foram adicionadas a {init}."
 
 #: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
-msgstr ""
+msgstr "As linhas que carregam o plugin foram removidas de {init}."
 
 #: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
-msgstr ""
+msgstr "As linhas que carregam o plugin foram removidas de {init}, e o plugin, de {path}."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"

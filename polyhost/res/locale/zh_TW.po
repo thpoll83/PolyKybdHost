@@ -3245,25 +3245,25 @@ msgstr "不需設定即可顯示命令"
 
 #: polyhost/gui/shell_title_dialog.py:74
 msgid "Set up with older plugin files. Install copies the current ones."
-msgstr ""
+msgstr "已使用舊版外掛程式檔案設定。「安裝」會複製目前的檔案。"
 
 #: polyhost/gui/shell_title_dialog.py:76
 msgid "Set up, and changed by hand since. This app leaves it alone."
-msgstr ""
+msgstr "已設定，但之後曾被手動變更。本應用程式不會變動它。"
 
 #: polyhost/gui/shell_title_dialog.py:80
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
-msgstr ""
+msgstr "外掛程式已從 {path} 載入。"
 
 #: polyhost/gui/shell_title_dialog.py:82 polyhost/services/editor_plugins.py:91
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
-msgstr ""
+msgstr "此安裝中沒有外掛程式檔案（{path}）。"
 
 #: polyhost/gui/shell_title_dialog.py:125
 msgid "Terminal and editor setup"
-msgstr ""
+msgstr "終端機和編輯器設定"
 
 #: polyhost/gui/shell_title_dialog.py:129
 msgid ""
@@ -3281,6 +3281,9 @@ msgid ""
 "\n"
 "Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
 msgstr ""
+"只有安裝了 PolyKybd 外掛程式，Vim、Neovim 和 Emacs 才會將其模式（Normal 或 Insert 模式、Org 或 Dired 按鍵）告知鍵盤。\n"
+"\n"
+"「安裝」會將此安裝中的外掛程式複製到編輯器載入外掛程式的位置。對於 Emacs，它還會在 init 檔案中，於兩行標記註解之間加入載入該外掛程式的行，並先儲存該檔案的副本。本應用程式更新後，會在下次啟動時複製新的外掛程式檔案。請重新啟動編輯器，讓變更生效。"
 
 #: polyhost/gui/shell_title_dialog.py:163
 msgid "Checking the shells…"
@@ -3312,21 +3315,21 @@ msgstr "在這台電腦上找不到 bash、zsh 或 PowerShell。"
 #: polyhost/gui/shell_title_dialog.py:298
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
-msgstr ""
+msgstr "無法檢查編輯器：{error}"
 
 #: polyhost/gui/shell_title_dialog.py:321
 msgid "No Vim, Neovim or Emacs was found on this computer."
-msgstr ""
+msgstr "在這台電腦上找不到 Vim、Neovim 或 Emacs。"
 
 #: polyhost/gui/shell_title_dialog.py:327
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
-msgstr ""
+msgstr "本應用程式在連接埠 {port} 上監聽，並且需要權杖。外掛程式使用連接埠 50164，且不使用權杖：請將 Vim 中的 g:polykybd_port 和 g:polykybd_token，或 Emacs 中的 polykybd-port 和 polykybd-token 設定為相同的值。"
 
 #: polyhost/gui/shell_title_dialog.py:332
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
-msgstr ""
+msgstr "本應用程式在連接埠 {port} 上監聽。外掛程式使用連接埠 50164：請將 Vim 中的 g:polykybd_port，或 Emacs 中的 polykybd-port 設定為相同的值。"
 
 #: polyhost/gui/shell_title_dialog.py:367
 #: polyhost/gui/shell_title_dialog.py:380
@@ -3346,7 +3349,7 @@ msgstr "請開啟新的終端機視窗，讓變更生效。"
 
 #: polyhost/gui/shell_title_dialog.py:386
 msgid "Restart the editor for the change to take effect."
-msgstr ""
+msgstr "請重新啟動編輯器，讓變更生效。"
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -3657,7 +3660,7 @@ msgstr "允許存取鍵盤（udev 規則）…"
 
 #: polyhost/forwarder.py:280 polyhost/host.py:867
 msgid "Set up the terminal and editors…"
-msgstr ""
+msgstr "設定終端機和編輯器…"
 
 #: polyhost/host.py:886
 msgid "Change System Input Language"
@@ -4234,42 +4237,42 @@ msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執�
 #: polyhost/services/editor_plugins.py:85
 #, python-brace-format
 msgid "Copied the plugin to {path}."
-msgstr ""
+msgstr "已將外掛程式複製到 {path}。"
 
 #: polyhost/services/editor_plugins.py:86
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
-msgstr ""
+msgstr "已將 {path} 中的外掛程式替換為此安裝中的外掛程式。"
 
 #: polyhost/services/editor_plugins.py:88
 #, python-brace-format
 msgid "Removed the plugin from {path}."
-msgstr ""
+msgstr "已從 {path} 移除外掛程式。"
 
 #: polyhost/services/editor_plugins.py:90
 #, python-brace-format
 msgid "{editor} was not found on this computer."
-msgstr ""
+msgstr "在這台電腦上找不到 {editor}。"
 
 #: polyhost/services/editor_plugins.py:92
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
-msgstr ""
+msgstr "{path} 已被手動變更。請手動移除或更新它。"
 
 #: polyhost/services/editor_plugins.py:95
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
-msgstr ""
+msgstr "已將外掛程式複製到 {path}，並將載入它的行加入 {init}。"
 
 #: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
-msgstr ""
+msgstr "已從 {init} 移除載入外掛程式的行。"
 
 #: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
-msgstr ""
+msgstr "已從 {init} 移除載入外掛程式的行，並從 {path} 移除外掛程式。"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"
