@@ -1,0 +1,106 @@
+# League of Legends overlay for PolyKybd (the in-game window only).
+#
+# Keys: the Click-to-Move defaults on the League of Legends Wiki page
+# "Controls and Hotkeys/Click to Move". See SOURCES.md.
+#
+# Every labelled key does the same thing whatever champion is played. The
+# ability keys (Q W E R), the summoner spells (D F), the role quest key (V) and
+# the champion interactions (Shift+F1..F6) change with the champion, so they
+# stay blank; Ctrl+Q..R (level up an ability) is the same for every champion
+# and is drawn. Mouse bindings have no keycap cell. A user who rebinds a
+# control in the game, or plays with WASD movement, still sees the
+# Click-to-Move default here.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/lol/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/lol/lol.yaml --preview /tmp/lol_preview
+app: league of legends
+match: [league of legends, league of legends.exe, leagueoflegends]
+output: lol_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for Factorio and AoE2: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# LEAGUE drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Abilities: level up (the same on every champion)
+  - { key: Q, mods: [CTRL], icon: levelup.png, label: "Level up ability 1" }
+  - { key: W, mods: [CTRL], icon: levelup.png, label: "Level up ability 2" }
+  - { key: E, mods: [CTRL], icon: levelup.png, label: "Level up ability 3" }
+  - { key: R, mods: [CTRL], icon: levelup.png, label: "Level up ability 4" }
+
+  # Items: 1 2 3 are the top row of the inventory, 5 6 7 the bottom row
+  - { key: "1", icon: item1.png, label: "Item slot 1" }
+  - { key: "2", icon: item2.png, label: "Item slot 2" }
+  - { key: "3", icon: item3.png, label: "Item slot 3" }
+  - { key: "4", icon: trinket.png, label: "Trinket" }
+  - { key: "5", icon: item5.png, label: "Item slot 4" }
+  - { key: "6", icon: item6.png, label: "Item slot 5" }
+  - { key: "7", icon: item7.png, label: "Item slot 6" }
+  - { key: B, icon: recall.png, label: "Recall" }
+  - { key: GRAVE, icon: champonly.png, label: "Target champions only" }
+
+  # Player movement
+  - { key: A, icon: attackmove.png, label: "Attack move" }
+  - { key: X, icon: attackmove.png, label: "Attack move" }
+  - { key: J, icon: hold.png, label: "Hold position" }
+  - { key: S, icon: stop.png, label: "Stop" }
+
+  # Camera
+  - { key: SPACE, icon: centre.png, label: "Center camera on champion" }
+  - { key: Y, icon: camlock.png, label: "Toggle camera lock" }
+  - { key: F1, icon: self.png, label: "Select self", region: [34, 40] }
+  - { key: F2, icon: ally1.png, label: "Select ally 1", region: [34, 40] }
+  - { key: F3, icon: ally2.png, label: "Select ally 2", region: [34, 40] }
+  - { key: F4, icon: ally3.png, label: "Select ally 3", region: [34, 40] }
+  - { key: F5, icon: ally4.png, label: "Select ally 4", region: [34, 40] }
+
+  # Display
+  - { key: F, mods: [CTRL], icon: fps.png, label: "Toggle FPS display" }
+  - { key: F9, icon: mouselock.png, label: "Toggle mouse screen lock", region: [34, 40] }
+  - { key: F12, icon: screenshot.png, label: "Take screenshot", region: [30, 40] }
+  - { key: ENTER, mods: [ALT], icon: fullscreen.png, label: "Toggle fullscreen" }
+  - { key: M, mods: [ALT], icon: minimapdrag.png, label: "Toggle minimap camera drag" }
+
+  # Communication
+  - { key: G, icon: ping.png, label: "Alert ping" }
+  - { key: H, icon: visionping.png, label: "Enemy vision ping" }
+  - { key: "1", mods: [CTRL], icon: joke.png, label: "Joke" }
+  - { key: "2", mods: [CTRL], icon: taunt.png, label: "Taunt" }
+  - { key: "3", mods: [CTRL], icon: dance.png, label: "Dance" }
+  - { key: "4", mods: [CTRL], icon: laugh.png, label: "Laugh" }
+  - { key: "5", mods: [CTRL], icon: emotetoggle.png, label: "Toggle emote" }
+  - { key: "6", mods: [CTRL], icon: mastery.png, label: "Mastery emote" }
+  - { key: U, icon: fistbump.png, label: "Fist bump" }
+  - { key: I, icon: mybad.png, label: "My bad" }
+  - { key: T, icon: emotewheel.png, label: "Emote wheel" }
+  - { key: ENTER, icon: chat.png, label: "Open chat" }
+  - { key: ENTER, mods: [SHIFT], icon: allchat.png, label: "Open all chat" }
+  - { key: Z, icon: chathistory.png, label: "Chat history" }
+  - { key: COMMA, icon: mic.png, label: "Toggle microphone" }
+
+  # Menus
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard (hold)" }
+  - { key: O, icon: scoreboard.png, label: "Scoreboard (toggle)" }
+  - { key: '\', icon: menu.png, label: "System menu" }
+  - { key: C, icon: stats.png, label: "Advanced player stats" }
+  - { key: C, mods: [CTRL], icon: basicstats.png, label: "Toggle basic player stats" }
+
+  # Item shop
+  - { key: P, icon: shop.png, label: "Open shop" }
+  - { key: L, mods: [CTRL], icon: shopsearch.png, label: "Shop search" }
+  - { key: TAB, mods: [CTRL], icon: shoptabs.png, label: "Switch shop tabs" }
