@@ -46,12 +46,15 @@ def _overlay_handler_class():
     try:
         from polyhost.handler.active_window import OverlayHandler
     except SystemExit as e:
-        raise unittest.SkipTest(f"window backend exited at import: {e!r}")
+        raise unittest.SkipTest(f"window backend exited at import: {e!r}") from e
     except Exception as e:
-        if not (isinstance(e, ModuleNotFoundError)
+        # Skip only for a missing third-party backend or an Xlib display error.
+        # A missing polyhost module is a real failure.
+        if not ((isinstance(e, ModuleNotFoundError)
+                 and not (e.name or "").startswith("polyhost"))
                 or type(e).__module__.split(".")[0] == "Xlib"):
             raise
-        raise unittest.SkipTest(f"active_window needs a display: {e}")
+        raise unittest.SkipTest(f"active_window needs a display: {e}") from e
     return OverlayHandler
 
 
@@ -81,7 +84,9 @@ class OnlyofficeRoutingTest(unittest.TestCase):
             self.assertEqual(self._route(title, "macos"), SHEET_MAC, title)
 
     def test_presentation_extensions_load_the_presentation_set(self):
-        for title in ("Presentation1.pptx", "*Talk.odp", "deck.ppt", "show.ppsx"):
+        # "Notes.xlsx final.pptx": only the final extension counts.
+        for title in ("Presentation1.pptx", "*Talk.odp", "deck.ppt", "show.ppsx",
+                      "Notes.xlsx final.pptx", "Notes.xlsx final.pptx (Read only)"):
             self.assertEqual(self._route(title), PRES, title)
             self.assertEqual(self._route(title, "macos"), PRES_MAC, title)
 

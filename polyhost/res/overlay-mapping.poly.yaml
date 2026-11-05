@@ -1889,18 +1889,18 @@ wpp:
 desktopeditors,onlyoffice,onlyoffice-desktopeditors,org.onlyoffice.desktopeditors:
   overlay: [onlyoffice_document_template.mods.png, onlyoffice_document_template.combo.mods.png]
   titles-match:
-    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=\s|$)':
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
       overlay: [onlyoffice_spreadsheet_template.mods.png, onlyoffice_spreadsheet_template.combo.mods.png]
-    '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=\s|$)':
+    '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
       overlay: [onlyoffice_presentation_template.mods.png, onlyoffice_presentation_template.combo.mods.png]
   # A matched `os:` branch replaces the entry, so the title sub-map is repeated.
   os:
     macos:
       overlay: [onlyoffice_document_template_mac.mods.png, onlyoffice_document_template_mac.combo.mods.png, onlyoffice_document_template_mac.extra.mods.png]
       titles-match:
-        '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=\s|$)':
+        '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
           overlay: [onlyoffice_spreadsheet_template_mac.mods.png, onlyoffice_spreadsheet_template_mac.combo.mods.png, onlyoffice_spreadsheet_template_mac.extra.mods.png]
-        '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=\s|$)':
+        '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
           overlay: [onlyoffice_presentation_template_mac.mods.png, onlyoffice_presentation_template_mac.combo.mods.png, onlyoffice_presentation_template_mac.extra.mods.png]
 
 # ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
