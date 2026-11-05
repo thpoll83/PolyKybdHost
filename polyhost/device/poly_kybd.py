@@ -230,6 +230,13 @@ def decode_layer_names(payload: bytes) -> list[str] | None:
 # most one reopen attempt per interval.
 CONSOLE_FAIL_REOPEN_THRESHOLD = 20
 CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
+# The firmware sends a console line in report-sized pieces, and the 250 ms poll
+# can fall between two of them. get_console_output() keeps an unfinished line
+# back until its newline arrives, so the log file shows one line with one
+# timestamp. A piece with no newline is released after this many seconds, so a
+# line the firmware never finishes still reaches the log. Every split seen in a
+# field console log (2026-11-05) closed on the next poll, 250-260 ms later.
+CONSOLE_PARTIAL_LINE_HOLD_S = 1.0
 
 
 
@@ -243,6 +250,9 @@ class PolyKybd:
         self.console_buffer = ""
         self._console_fail_count = 0
         self._console_reopen_at = 0.0
+        # When the unfinished line at the end of console_buffer started
+        # waiting for its newline (time.monotonic()), or None.
+        self._console_partial_since = None
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
@@ -410,10 +420,31 @@ class PolyKybd:
                 self._maybe_reopen_console()
 
         if flush_and_return:
-            console_out = self.console_buffer
-            self.console_buffer = ""
-            return console_out
+            return self._take_complete_console_lines()
         return None
+
+    def _take_complete_console_lines(self) -> str:
+        """Return the buffered console text up to and including the last newline.
+
+        The rest, an unfinished line, stays in the buffer for the next poll.
+        It is returned anyway once it has waited CONSOLE_PARTIAL_LINE_HOLD_S.
+        """
+        buf = self.console_buffer
+        cut = buf.rfind("\n") + 1
+        if cut == len(buf):
+            self._console_partial_since = None
+            self.console_buffer = ""
+            return buf
+        now = time.monotonic()
+        if cut > 0 or self._console_partial_since is None:
+            # A newline arrived, so what follows it is a new unfinished line.
+            self._console_partial_since = now
+        if now - self._console_partial_since >= CONSOLE_PARTIAL_LINE_HOLD_S:
+            self._console_partial_since = None
+            self.console_buffer = ""
+            return buf
+        self.console_buffer = buf[cut:]
+        return buf[:cut]
 
     def _maybe_reopen_console(self):
         """Throttled console-interface reopen (see get_console_output)."""

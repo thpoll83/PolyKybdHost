@@ -9,6 +9,7 @@ import unittest
 
 from polyhost.device.poly_kybd import (
     CONSOLE_FAIL_REOPEN_THRESHOLD,
+    CONSOLE_PARTIAL_LINE_HOLD_S,
     CONSOLE_REOPEN_MIN_INTERVAL_S,
 )
 
@@ -54,8 +55,8 @@ class TestConsoleSelfHeal(unittest.TestCase):
         self.assertEqual(out, "")
 
     def test_normal_reads_accumulate_and_flush(self):
-        keeb, _ = make_console_keeb(lines=[bytearray(b"hello "), bytearray(b"world")])
-        self.assertEqual(keeb.get_console_output(), "hello world")
+        keeb, _ = make_console_keeb(lines=[bytearray(b"hello "), bytearray(b"world\n")])
+        self.assertEqual(keeb.get_console_output(), "hello world\n")
         # Flushed — a second call returns the (now empty) buffer.
         self.assertEqual(keeb.get_console_output(), "")
 
@@ -93,6 +94,54 @@ class TestConsoleSelfHeal(unittest.TestCase):
         stub.raise_on_read = True
         keeb.get_console_output()               # one new failure must not reopen
         self.assertEqual(stub.reopen_calls, 0)
+
+
+class TestConsolePartialLines(unittest.TestCase):
+    """A console line split across two polls reaches the log as one line.
+
+    Field console log, 2026-11-05: "Set brightness to: 4 (flags 0x1," and
+    " auto 1)." were written as two log lines 253 ms apart."""
+
+    def test_a_line_split_across_two_polls_comes_out_whole(self):
+        keeb, stub = make_console_keeb(lines=[bytearray(b"Set brightness to: 4 (flags 0x1,")])
+        self.assertEqual(keeb.get_console_output(), "")
+        stub.lines.append(bytearray(b" auto 1).\n"))
+        self.assertEqual(keeb.get_console_output(), "Set brightness to: 4 (flags 0x1, auto 1).\n")
+
+    def test_complete_lines_go_out_and_the_unfinished_one_waits(self):
+        keeb, stub = make_console_keeb(lines=[bytearray(b"Stop idle.\nSplit link: 2400 tx e")])
+        self.assertEqual(keeb.get_console_output(), "Stop idle.\n")
+        stub.lines.append(bytearray(b"rr=0.0%\n"))
+        self.assertEqual(keeb.get_console_output(), "Split link: 2400 tx err=0.0%\n")
+
+    def test_an_unfinished_line_is_released_after_the_hold(self):
+        keeb, _ = make_console_keeb(lines=[bytearray(b"no newline")])
+        self.assertEqual(keeb.get_console_output(), "")
+        self.assertEqual(keeb.get_console_output(), "", "released before the hold ran out")
+        keeb._console_partial_since = time.monotonic() - CONSOLE_PARTIAL_LINE_HOLD_S - 0.1
+        self.assertEqual(keeb.get_console_output(), "no newline")
+        self.assertEqual(keeb.get_console_output(), "")
+
+    def test_the_hold_restarts_for_the_line_after_a_newline(self):
+        # The text after a newline is a new line and gets its own full wait,
+        # even when the line before it had nearly used up its own.
+        keeb, stub = make_console_keeb(lines=[bytearray(b"first")])
+        keeb.get_console_output()
+        keeb._console_partial_since = time.monotonic() - CONSOLE_PARTIAL_LINE_HOLD_S + 0.2
+        stub.lines.append(bytearray(b" line\nsecond"))
+        self.assertEqual(keeb.get_console_output(), "first line\n")
+        self.assertGreater(keeb._console_partial_since,
+                           time.monotonic() - CONSOLE_PARTIAL_LINE_HOLD_S + 0.2)
+        self.assertEqual(keeb.get_console_output(), "")
+
+    def test_a_failed_read_keeps_the_unfinished_line(self):
+        keeb, stub = make_console_keeb(lines=[bytearray(b"half")])
+        keeb.get_console_output()
+        stub.raise_on_read = True
+        self.assertEqual(keeb.get_console_output(), "")
+        stub.raise_on_read = False
+        stub.lines.append(bytearray(b" line\n"))
+        self.assertEqual(keeb.get_console_output(), "half line\n")
 
 
 if __name__ == '__main__':
