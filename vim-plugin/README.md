@@ -73,7 +73,13 @@ a report only while a terminal is the focused application.
 
 ## Install
 
-Copy or link the `vim-plugin` folder as a package, or use a plugin manager.
+PolyKybdHost can copy the plugin for you: tray menu → Updates → "Set up the
+terminal and editors…", or `polyctl editor-plugins install --editor vim`
+(`--editor neovim`). It copies the plugin to the package folder below and
+copies it again when the host starts after an update.
+
+To do it by hand, copy or link the `vim-plugin` folder as a package, or use a
+plugin manager.
 
 ```bash
 # Vim

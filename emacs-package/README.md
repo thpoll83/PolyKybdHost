@@ -67,6 +67,13 @@ so this works only for an Emacs running on the computer that has PolyKybdHost.
 
 ## Install
 
+PolyKybdHost can copy the package for you: tray menu → Updates → "Set up the
+terminal and editors…", or `polyctl editor-plugins install --editor emacs`. It
+copies `polykybd.el` to a `polykybd` folder beside your init file, adds the
+lines that load it and turn `polykybd-mode` on to the init file (between two
+marker comments, after saving a copy of the file), and copies the file again
+when the host starts after an update. Otherwise:
+
 **Emacs 29 or later**, from this repository (it clones all of PolyKybdHost):
 
 ```elisp
