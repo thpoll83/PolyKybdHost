@@ -1756,6 +1756,15 @@ notion:
   os:
     macos:
       overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+# Logseq desktop (sources: overlay_sources/logseq/). Logseq.exe on Windows,
+# Logseq on macOS and the Linux AppImage, all from electron-builder's
+# productName, or the Flatpak app id com.logseq.Logseq. Read from the
+# packaging, not checked on an install.
+logseq,com.logseq.logseq:
+  overlay: [logseq_template.mods.png, logseq_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [logseq_template_mac.mods.png, logseq_template_mac.combo.mods.png, logseq_template_mac.extra.mods.png]
 # Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
 # why it is one mode and not both).
 #
