@@ -230,6 +230,13 @@ def decode_layer_names(payload: bytes) -> list[str] | None:
 # most one reopen attempt per interval.
 CONSOLE_FAIL_REOPEN_THRESHOLD = 20
 CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
+# The firmware sends a console line in report-sized pieces, and the 250 ms poll
+# can fall between two of them. get_console_output() keeps an unfinished line
+# back until its newline arrives, so the log file shows one line with one
+# timestamp. A piece with no newline is released after this many seconds, so a
+# line the firmware never finishes still reaches the log. Every split seen in a
+# field console log (2026-11-05) closed on the next poll, 250-260 ms later.
+CONSOLE_PARTIAL_LINE_HOLD_S = 1.0
 
 
 
@@ -243,6 +250,9 @@ class PolyKybd:
         self.console_buffer = ""
         self._console_fail_count = 0
         self._console_reopen_at = 0.0
+        # When the unfinished line at the end of console_buffer started
+        # waiting for its newline (time.monotonic()), or None.
+        self._console_partial_since = None
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
@@ -296,6 +306,7 @@ class PolyKybd:
         hid.HIDException when the device shows up in enumeration but can't be
         opened yet — a race that happens while the firmware comes back up after
         a flash — so this must never propagate out of connect()."""
+        self._end_console_partial_line()
         try:
             self.hid = HidHelper(self.device_settings)
             return True
@@ -394,7 +405,7 @@ class PolyKybd:
                 self._maybe_reopen_console()
             last_line = self.hid.get_console_output()
             while len(last_line) > 0:
-                self.console_buffer += last_line.decode().strip('\x00')
+                self._append_console_text(last_line.decode().strip('\x00'))
                 last_line = self.hid.get_console_output()
             self._console_fail_count = 0
         except Exception as e:
@@ -410,10 +421,53 @@ class PolyKybd:
                 self._maybe_reopen_console()
 
         if flush_and_return:
-            console_out = self.console_buffer
-            self.console_buffer = ""
-            return console_out
+            return self._take_complete_console_lines()
         return None
+
+    def _append_console_text(self, text):
+        """Add console text to the buffer and note when the unfinished line at
+        its end started: on the read that brought it, flushing or not."""
+        if not text:
+            return
+        self.console_buffer += text
+        if self.console_buffer.endswith("\n"):
+            self._console_partial_since = None
+        elif "\n" in text or self._console_partial_since is None:
+            # What follows the last newline is a new unfinished line.
+            self._console_partial_since = time.monotonic()
+
+    def _end_console_partial_line(self):
+        """End a held unfinished line with a newline, so it reaches the log on
+        its own. Called when the console interface is replaced: the next
+        session's text must not be joined to the last session's fragment."""
+        if self.console_buffer and not self.console_buffer.endswith("\n"):
+            self.console_buffer += "\n"
+        self._console_partial_since = None
+
+    def flush_console(self) -> str:
+        """Return every buffered console character, an unfinished line too,
+        ignoring the hold. For shutdown, when no later poll will send it."""
+        rest = self.console_buffer
+        self.console_buffer = ""
+        self._console_partial_since = None
+        return rest
+
+    def _take_complete_console_lines(self) -> str:
+        """Return the buffered console text up to and including the last newline.
+
+        The rest, an unfinished line, stays in the buffer for the next poll.
+        It is returned anyway once it has waited CONSOLE_PARTIAL_LINE_HOLD_S.
+        """
+        buf = self.console_buffer
+        cut = buf.rfind("\n") + 1
+        since = self._console_partial_since
+        if cut == len(buf) or since is None \
+                or time.monotonic() - since >= CONSOLE_PARTIAL_LINE_HOLD_S:
+            self._console_partial_since = None
+            self.console_buffer = ""
+            return buf
+        self.console_buffer = buf[cut:]
+        return buf[:cut]
 
     def _maybe_reopen_console(self):
         """Throttled console-interface reopen (see get_console_output)."""
@@ -422,6 +476,7 @@ class PolyKybd:
             return
         self._console_reopen_at = now
         if self.hid and self.hid.reopen_console():
+            self._end_console_partial_line()
             self.log.info("HID console (re)attached")
 
     def query_id(self) -> tuple[bool, str]:

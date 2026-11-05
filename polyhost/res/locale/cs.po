@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-04 15:35+0000\n"
+"POT-Creation-Date: 2026-11-05 11:52+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: cs\n"
@@ -339,101 +339,101 @@ msgstr "Přestat posílat aktivní okno tohoto počítače na počítač s kláv
 msgid "Check for host update…"
 msgstr "Vyhledat aktualizaci aplikace…"
 
-#: polyhost/forwarder.py:357
+#: polyhost/forwarder.py:362
 #, python-brace-format
 msgid "no host (waiting for {path})"
 msgstr "žádný hostitel (čeká se na {path})"
 
-#: polyhost/forwarder.py:358
+#: polyhost/forwarder.py:363
 msgid "no host configured"
 msgstr "není nastaven žádný hostitel"
 
-#: polyhost/forwarder.py:361
+#: polyhost/forwarder.py:366
 #, python-brace-format
 msgid "PolyKybdHost {version} (forwarder) → {target}"
 msgstr "PolyKybdHost {version} (přeposílač) → {target}"
 
-#: polyhost/forwarder.py:366
+#: polyhost/forwarder.py:371
 msgid "Forwarding paused"
 msgstr "Přeposílání pozastaveno"
 
-#: polyhost/forwarder.py:369
+#: polyhost/forwarder.py:374
 #, python-brace-format
 msgid "Forwarding to {target}…"
 msgstr "Přeposílání na {target}…"
 
-#: polyhost/forwarder.py:371
+#: polyhost/forwarder.py:376
 #, python-brace-format
 msgid "Forwarding to {target}"
 msgstr "Přeposílání na {target}"
 
-#: polyhost/forwarder.py:372
+#: polyhost/forwarder.py:377
 #, python-brace-format
 msgid "Cannot reach {target}"
 msgstr "{target} není dostupný"
 
-#: polyhost/forwarder.py:775
+#: polyhost/forwarder.py:780
 msgid "PolyForwarder settings"
 msgstr "Nastavení PolyForwarder"
 
-#: polyhost/forwarder.py:776
+#: polyhost/forwarder.py:781
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Nastavení se nepodařilo uložit do souboru nastavení, takže se neprojeví. Soubor možná drží otevřený jiný program. Zkuste to znovu nebo se podívejte do protokolu."
 
-#: polyhost/forwarder.py:795
+#: polyhost/forwarder.py:800
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "ověřené RPC (port {port})"
 
-#: polyhost/forwarder.py:797
+#: polyhost/forwarder.py:802
 msgid "legacy plaintext TCP relay"
 msgstr "starší nešifrované přeposílání přes TCP"
 
-#: polyhost/forwarder.py:800
+#: polyhost/forwarder.py:805
 msgid "reaching the keyboard machine"
 msgstr "počítač s klávesnicí je dostupný"
 
-#: polyhost/forwarder.py:801
+#: polyhost/forwarder.py:806
 msgid "not reaching the keyboard machine"
 msgstr "počítač s klávesnicí není dostupný"
 
-#: polyhost/forwarder.py:802
+#: polyhost/forwarder.py:807
 msgid "starting up"
 msgstr "spouštění"
 
-#: polyhost/forwarder.py:804
+#: polyhost/forwarder.py:809
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Režim:</b> přeposílač — k tomuto počítači není připojena žádná klávesnice"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:810
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Cíl:</b> {target}"
 
-#: polyhost/forwarder.py:807
+#: polyhost/forwarder.py:812
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Hlášení oken:</b> {transport}"
 
-#: polyhost/forwarder.py:810
+#: polyhost/forwarder.py:815
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>Soubor hostitele:</b> {path}"
 
-#: polyhost/forwarder.py:831
+#: polyhost/forwarder.py:836
 msgid "About PolyKybdHost (forwarder)"
 msgstr "O aplikaci PolyKybdHost (přeposílač)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:838
+#: polyhost/forwarder.py:843
 msgid "forwarder"
 msgstr "přeposílač"
 
-#: polyhost/forwarder.py:840
+#: polyhost/forwarder.py:845
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Režim přeposílače: tento počítač nemá klávesnici. Sleduje zde aktivní okno a předává ho aplikaci PolyKybdHost spuštěné na počítači, ke kterému je klávesnice připojena."
 
-#: polyhost/forwarder.py:879
+#: polyhost/forwarder.py:884
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Stáhnout, nainstalovat a restartovat přeposílač nyní?"
 
@@ -830,7 +830,7 @@ msgstr "dodáno"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Příkazy PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2375
+#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2380
 msgid "Open file"
 msgstr "Otevřít soubor"
 
@@ -1724,8 +1724,8 @@ msgstr "Nahrávání zahájeno — sledujte oznamovací oblast/protokol."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Zahodit všechny čekající úpravy v '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2969
-#: polyhost/host.py:3010 polyhost/host.py:3037
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2974
+#: polyhost/host.py:3015 polyhost/host.py:3042
 msgid "Firmware Update"
 msgstr "Aktualizace firmwaru"
 
@@ -1890,7 +1890,7 @@ msgstr "žádná data náhledu (dodaná ani ze zdrojového stromu)"
 msgid "the shipped language table is missing"
 msgstr "dodaná tabulka jazyků chybí"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2985
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2990
 msgid "unknown"
 msgstr "neznámé"
 
@@ -2571,7 +2571,7 @@ msgstr "Žádné shody"
 msgid "{index} of {total}"
 msgstr "{index} z {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2010
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2015
 msgid "Mock keyboard"
 msgstr "Simulovaná klávesnice"
 
@@ -2866,7 +2866,7 @@ msgstr "Prodleva"
 msgid "Dev"
 msgstr "Vývoj"
 
-#: polyhost/gui/settings_dialog.py:52 polyhost/host.py:879
+#: polyhost/gui/settings_dialog.py:52 polyhost/host.py:884
 msgid "Developer"
 msgstr "Vývojář"
 
@@ -3246,42 +3246,60 @@ msgstr "Nastavení PolyKybd"
 msgid "Some settings might need a restart to take effect."
 msgstr "Některá nastavení se mohou projevit až po restartu."
 
-#: polyhost/gui/shell_title_dialog.py:38
+#: polyhost/gui/shell_title_dialog.py:40 polyhost/gui/shell_title_dialog.py:70
 msgid "Set up"
 msgstr "Nastaveno"
 
-#: polyhost/gui/shell_title_dialog.py:40
+#: polyhost/gui/shell_title_dialog.py:42 polyhost/gui/shell_title_dialog.py:72
 msgid "Not set up"
 msgstr "Nenastaveno"
 
-#: polyhost/gui/shell_title_dialog.py:42
+#: polyhost/gui/shell_title_dialog.py:44 polyhost/gui/shell_title_dialog.py:78
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Nastaveno pro jinou kopii aplikace: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:44
+#: polyhost/gui/shell_title_dialog.py:46 polyhost/gui/shell_title_dialog.py:83
 msgid "Not found"
 msgstr "Nenalezeno"
 
-#: polyhost/gui/shell_title_dialog.py:46
+#: polyhost/gui/shell_title_dialog.py:48
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "Cesta k profilu není známa: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:48
+#: polyhost/gui/shell_title_dialog.py:50
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "Zásady spouštění PowerShellu ({policy}) nespouštějí skripty profilu."
 
-#: polyhost/gui/shell_title_dialog.py:50
+#: polyhost/gui/shell_title_dialog.py:52
 msgid "Shows the command without setup"
 msgstr "Zobrazuje příkaz bez nastavení"
 
-#: polyhost/gui/shell_title_dialog.py:80
-msgid "Command in the terminal title"
-msgstr "Příkaz v titulku terminálu"
+#: polyhost/gui/shell_title_dialog.py:74
+msgid "Set up with older plugin files. Install copies the current ones."
+msgstr "Nastaveno se staršími soubory pluginu. Nainstalovat zkopíruje aktuální."
 
-#: polyhost/gui/shell_title_dialog.py:84
+#: polyhost/gui/shell_title_dialog.py:76
+msgid "Set up, and changed by hand since. This app leaves it alone."
+msgstr "Nastaveno a od té doby ručně změněno. Tato aplikace to nemění."
+
+#: polyhost/gui/shell_title_dialog.py:80
+#, python-brace-format
+msgid "The plugin is already loaded from {path}."
+msgstr "Plugin se již načítá z {path}."
+
+#: polyhost/gui/shell_title_dialog.py:82 polyhost/services/editor_plugins.py:91
+#, python-brace-format
+msgid "This installation has no plugin files ({path})."
+msgstr "Tato instalace neobsahuje soubory pluginu ({path})."
+
+#: polyhost/gui/shell_title_dialog.py:125
+msgid "Terminal and editor setup"
+msgstr "Nastavení terminálu a editorů"
+
+#: polyhost/gui/shell_title_dialog.py:129
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3291,46 +3309,81 @@ msgstr ""
 "\n"
 "Nainstalovat přidá do spouštěcího souboru každého vybraného shellu jeden řádek mezi dva značkovací komentáře a předtím uloží vedle kopii souboru. Odebrat tyto řádky smaže. Změna platí pro okna terminálu otevřená potom."
 
-#: polyhost/gui/shell_title_dialog.py:97
+#: polyhost/gui/shell_title_dialog.py:144
+msgid ""
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"\n"
+"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+msgstr ""
+"Vim, Neovim a Emacs sdělují klávesnici svůj režim (režim Normal nebo Insert, klávesy Org nebo Dired) jen s pluginem PolyKybd.\n"
+"\n"
+"Nainstalovat zkopíruje plugin z této instalace tam, odkud ho editor načítá. U editoru Emacs navíc přidá do inicializačního souboru řádky, které plugin načítají, mezi dva značkovací komentáře a předtím uloží kopii souboru. Když se tato aplikace aktualizuje, při příštím spuštění zkopíruje nové soubory pluginu. Restartujte editor, aby se změna projevila."
+
+#: polyhost/gui/shell_title_dialog.py:163
 msgid "Checking the shells…"
 msgstr "Kontrola shellů…"
 
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:176
 msgid "Install"
 msgstr "Nainstalovat"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:111
+#: polyhost/gui/shell_title_dialog.py:177
 msgid "Remove"
 msgstr "Odebrat"
 
-#: polyhost/gui/shell_title_dialog.py:152
+#: polyhost/gui/shell_title_dialog.py:228
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Shelly nelze zkontrolovat: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:170
+#: polyhost/gui/shell_title_dialog.py:251
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: zobrazuje příkaz bez nastavení."
 
-#: polyhost/gui/shell_title_dialog.py:198
+#: polyhost/gui/shell_title_dialog.py:279
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Na tomto počítači nebyl nalezen bash, zsh ani PowerShell."
 
-#: polyhost/gui/shell_title_dialog.py:222
+#: polyhost/gui/shell_title_dialog.py:298
+#, python-brace-format
+msgid "The editors could not be checked: {error}"
+msgstr "Editory nebylo možné zkontrolovat: {error}"
+
+#: polyhost/gui/shell_title_dialog.py:321
+msgid "No Vim, Neovim or Emacs was found on this computer."
+msgstr "Na tomto počítači nebyl nalezen Vim, Neovim ani Emacs."
+
+#: polyhost/gui/shell_title_dialog.py:327
+#, python-brace-format
+msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
+msgstr "Tato aplikace naslouchá na portu {port} a vyžaduje token. Pluginy používají port 50164 bez tokenu: nastavte stejné hodnoty pro g:polykybd_port a g:polykybd_token v editoru Vim nebo pro polykybd-port a polykybd-token v editoru Emacs."
+
+#: polyhost/gui/shell_title_dialog.py:332
+#, python-brace-format
+msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
+msgstr "Tato aplikace naslouchá na portu {port}. Pluginy používají port 50164: nastavte stejnou hodnotu pro g:polykybd_port v editoru Vim nebo pro polykybd-port v editoru Emacs."
+
+#: polyhost/gui/shell_title_dialog.py:367
+#: polyhost/gui/shell_title_dialog.py:380
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Změna se nezdařila: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:229
+#: polyhost/gui/shell_title_dialog.py:371
+#: polyhost/gui/shell_title_dialog.py:384
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Kopie předchozího souboru: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:231
+#: polyhost/gui/shell_title_dialog.py:373
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Otevřete nové okno terminálu, aby se změna projevila."
+
+#: polyhost/gui/shell_title_dialog.py:386
+msgid "Restart the editor for the change to take effect."
+msgstr "Restartujte editor, aby se změna projevila."
 
 #: polyhost/gui/split_link_dialog.py:36
 msgid "<p>The half connected by USB answered, but the other half did not. Updates and font installs need both halves, so this one stopped.</p><p><b>1.</b> Unplug the cable between the halves and plug it back in firmly at both ends. Then try the update again.</p><p><b>2.</b> If the other half still shows no lights and blank keycaps, it is not running firmware. Unplug both halves. Hold the <b>BOOT</b> button on that half while you connect it to the computer by USB. A drive named <b>RPI-RP2</b> appears. Drag the .uf2 onto it; the drive disappears when the copy is done. Then reconnect both halves.</p>"
@@ -3521,15 +3574,15 @@ msgstr "Balíček enginu klávesnice je aktuální."
 msgid "Engine pack update failed: {error}"
 msgstr "Aktualizace balíčku enginu selhala: {error}"
 
-#: polyhost/host.py:500 polyhost/host.py:1564
+#: polyhost/host.py:500 polyhost/host.py:1569
 msgid "Waiting for PolyKybd..."
 msgstr "Čekání na PolyKybd..."
 
-#: polyhost/host.py:501 polyhost/host.py:1411
+#: polyhost/host.py:501 polyhost/host.py:1416
 msgid "Press to pause connection"
 msgstr "Stisknutím pozastavíte připojení"
 
-#: polyhost/forwarder.py:325 polyhost/host.py:504
+#: polyhost/forwarder.py:330 polyhost/host.py:504
 msgid "Quit"
 msgstr "Ukončit"
 
@@ -3537,23 +3590,23 @@ msgstr "Ukončit"
 msgid "Quit && stop background daemon"
 msgstr "Ukončit && zastavit démona na pozadí"
 
-#: polyhost/forwarder.py:292 polyhost/host.py:518
+#: polyhost/forwarder.py:297 polyhost/host.py:518
 msgid "About"
 msgstr "O aplikaci"
 
-#: polyhost/forwarder.py:281 polyhost/host.py:522
+#: polyhost/forwarder.py:286 polyhost/host.py:522
 msgid "Settings..."
 msgstr "Nastavení..."
 
-#: polyhost/forwarder.py:296 polyhost/host.py:526
+#: polyhost/forwarder.py:301 polyhost/host.py:526
 msgid "Log file..."
 msgstr "Soubor protokolu..."
 
-#: polyhost/forwarder.py:302 polyhost/host.py:535
+#: polyhost/forwarder.py:307 polyhost/host.py:535
 msgid "Report a Problem..."
 msgstr "Nahlásit problém..."
 
-#: polyhost/forwarder.py:308 polyhost/host.py:554
+#: polyhost/forwarder.py:313 polyhost/host.py:554
 msgid "Collect logs..."
 msgstr "Shromáždit protokoly..."
 
@@ -3570,8 +3623,8 @@ msgid "Inspect Font Packs..."
 msgstr "Prozkoumat balíčky písem..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:383 polyhost/host.py:584
-#: polyhost/host.py:1413
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:388 polyhost/host.py:584
+#: polyhost/host.py:1418
 msgid "Pause"
 msgstr "Pozastavit"
 
@@ -3639,43 +3692,43 @@ msgstr "Nainstalovat WinCompose…"
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Povolit přístup ke klávesnici (pravidlo udev)…"
 
-#: polyhost/forwarder.py:275 polyhost/host.py:862
-msgid "Show the running command in the terminal title…"
-msgstr "Zobrazit spuštěný příkaz v titulku terminálu…"
+#: polyhost/forwarder.py:280 polyhost/host.py:867
+msgid "Set up the terminal and editors…"
+msgstr "Nastavit terminál a editory…"
 
-#: polyhost/host.py:881
+#: polyhost/host.py:886
 msgid "Change System Input Language"
 msgstr "Změnit vstupní jazyk systému"
 
-#: polyhost/host.py:887
+#: polyhost/host.py:892
 msgid "Inspect MRU Cache..."
 msgstr "Prozkoumat mezipaměť MRU..."
 
-#: polyhost/host.py:893
+#: polyhost/host.py:898
 msgid "Mock Keyboard..."
 msgstr "Simulovaná klávesnice..."
 
-#: polyhost/host.py:901
+#: polyhost/host.py:906
 msgid "Refresh unicode input mode"
 msgstr "Obnovit režim vstupu Unicode"
 
-#: polyhost/host.py:905
+#: polyhost/host.py:910
 msgid "Save MRU cache now"
 msgstr "Uložit mezipaměť MRU nyní"
 
-#: polyhost/forwarder.py:318 polyhost/host.py:919
+#: polyhost/forwarder.py:323 polyhost/host.py:924
 msgid "Help && About"
 msgstr "Nápověda && O aplikaci"
 
-#: polyhost/forwarder.py:314 polyhost/host.py:928
+#: polyhost/forwarder.py:319 polyhost/host.py:933
 msgid "Open config folder"
 msgstr "Otevřít složku konfigurace"
 
-#: polyhost/host.py:1041
+#: polyhost/host.py:1046
 msgid "System language query not supported for this platform."
 msgstr "Zjištění jazyka systému není na této platformě podporováno."
 
-#: polyhost/host.py:1240
+#: polyhost/host.py:1245
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
@@ -3683,12 +3736,12 @@ msgstr[0] "Zkusit znovu písma klávesnice ({n} selhala)…"
 msgstr[1] "Zkusit znovu písma klávesnice ({n} selhaly)…"
 msgstr[2] "Zkusit znovu písma klávesnice ({n} selhalo)…"
 
-#: polyhost/host.py:1242
+#: polyhost/host.py:1247
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Znovu nahrát sady písem, jejichž poslední pokus selhal: {bundles}"
 
-#: polyhost/host.py:1248
+#: polyhost/host.py:1253
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
@@ -3696,16 +3749,16 @@ msgstr[0] "Aktualizovat písma klávesnice ({n})…"
 msgstr[1] "Aktualizovat písma klávesnice ({n})…"
 msgstr[2] "Aktualizovat písma klávesnice ({n})…"
 
-#: polyhost/host.py:1250
+#: polyhost/host.py:1255
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Nahrát sady písem, které klávesnici chybí, jsou zastaralé nebo se je nepodařilo nahrát: {bundles}"
 
-#: polyhost/host.py:1255
+#: polyhost/host.py:1260
 msgid "Keyboard fonts: up to date"
 msgstr "Písma klávesnice: aktuální"
 
-#: polyhost/host.py:1256
+#: polyhost/host.py:1261
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3713,84 +3766,84 @@ msgstr ""
 "Všechny dodané sady písem už jsou v klávesnici.\n"
 "Pokud klávesy stále vykreslují špatně, Vývojář → Balíček písem → Znovu nahrát všechny sady vynutí opětovné odeslání."
 
-#: polyhost/forwarder.py:738 polyhost/host.py:1286
+#: polyhost/forwarder.py:743 polyhost/host.py:1291
 msgid "Config folder"
 msgstr "Složka konfigurace"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1384
+#: polyhost/host.py:1389
 #, python-brace-format
 msgid "{rate} link"
 msgstr "spojení {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1386
+#: polyhost/host.py:1391
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "spojení HID, až {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1393
+#: polyhost/host.py:1398
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Připojeno: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1405
+#: polyhost/host.py:1410
 msgid "Reconnect"
 msgstr "Znovu připojit"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:383 polyhost/host.py:1408
+#: polyhost/forwarder.py:388 polyhost/host.py:1413
 msgid "Resume"
 msgstr "Pokračovat"
 
-#: polyhost/host.py:1491 polyhost/host.py:1556
+#: polyhost/host.py:1496 polyhost/host.py:1561
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Nelze změnit jazyk systému {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1580
+#: polyhost/host.py:1585
 msgid "Firmware image (*.bin)"
 msgstr "Obraz firmwaru (*.bin)"
 
-#: polyhost/host.py:1581
+#: polyhost/host.py:1586
 msgid "Select firmware .bin"
 msgstr "Vybrat firmware .bin"
 
-#: polyhost/host.py:1632
+#: polyhost/host.py:1637
 msgid "Firmware apply failed"
 msgstr "Použití firmwaru selhalo"
 
-#: polyhost/host.py:1633
+#: polyhost/host.py:1638
 msgid "Firmware flash failed"
 msgstr "Nahrání firmwaru selhalo"
 
-#: polyhost/host.py:1681 polyhost/host.py:1734
+#: polyhost/host.py:1686 polyhost/host.py:1739
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Vybraný jazyk: {language} {country}"
 
-#: polyhost/host.py:1785
+#: polyhost/host.py:1790
 msgid "PolyHost settings"
 msgstr "Nastavení PolyHost"
 
-#: polyhost/host.py:1786
+#: polyhost/host.py:1791
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Nastavení jsou použita, ale nepodařilo se je uložit do souboru nastavení. Soubor možná drží otevřený jiný program. Pro nový pokus později znovu změňte některé nastavení, nebo se podívejte do protokolu."
 
-#: polyhost/host.py:1888
+#: polyhost/host.py:1893
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: nečitelný záznam {record}"
 
-#: polyhost/host.py:1891
+#: polyhost/host.py:1896
 msgid "Neither keyboard half holds a crash record."
 msgstr "Ani jedna polovina klávesnice nemá uložen záznam o pádu."
 
-#: polyhost/host.py:1893
+#: polyhost/host.py:1898
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3801,58 +3854,58 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1895
+#: polyhost/host.py:1900
 msgid "Keyboard crash record"
 msgstr "Záznam o pádu klávesnice"
 
-#: polyhost/host.py:1904
+#: polyhost/host.py:1909
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Zkopírováno do schránky. Nepřečteno: {errors}"
 
-#: polyhost/host.py:2001
+#: polyhost/host.py:2006
 msgid "MRU Cache"
 msgstr "Mezipaměť MRU"
 
-#: polyhost/host.py:2001
+#: polyhost/host.py:2006
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "Mezipaměť MRU není aktivní (zařízení není připojeno nebo je režim MRU vypnutý)."
 
-#: polyhost/host.py:2050
+#: polyhost/host.py:2055
 msgid "daemon client"
 msgstr "klient démona"
 
-#: polyhost/host.py:2050
+#: polyhost/host.py:2055
 msgid "standalone"
 msgstr "samostatně"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:799 polyhost/host.py:2108
+#: polyhost/forwarder.py:804 polyhost/host.py:2113
 msgid "paused"
 msgstr "pozastaveno"
 
-#: polyhost/host.py:2110
+#: polyhost/host.py:2115
 msgid "connected"
 msgstr "připojeno"
 
-#: polyhost/host.py:2111
+#: polyhost/host.py:2116
 msgid "present — not connected (protocol/version)"
 msgstr "přítomna — nepřipojena (protokol/verze)"
 
-#: polyhost/host.py:2118
+#: polyhost/host.py:2123
 msgid "Keyboard"
 msgstr "Klávesnice"
 
-#: polyhost/host.py:2119
+#: polyhost/host.py:2124
 msgid "No keyboard connected."
 msgstr "Není připojena žádná klávesnice."
 
-#: polyhost/host.py:2123
+#: polyhost/host.py:2128
 msgid "⚠ mismatch"
 msgstr "⚠ neshoda"
 
-#: polyhost/host.py:2125
+#: polyhost/host.py:2130
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
@@ -3860,37 +3913,37 @@ msgstr[0] "Načten {n} jazyk"
 msgstr[1] "Načteny {n} jazyky"
 msgstr[2] "Načteno {n} jazyků"
 
-#: polyhost/host.py:2128
+#: polyhost/host.py:2133
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Připojená klávesnice:</b> {name} {state}"
 
-#: polyhost/host.py:2130
+#: polyhost/host.py:2135
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protokol {protocol}"
 
-#: polyhost/host.py:2132
+#: polyhost/host.py:2137
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Hardware:</b> {hardware}"
 
-#: polyhost/host.py:2133
+#: polyhost/host.py:2138
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Jazyk:</b> {language}"
 
-#: polyhost/host.py:2136
+#: polyhost/host.py:2141
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Spojení:</b> {link}"
 
-#: polyhost/host.py:2143
+#: polyhost/host.py:2148
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Doba provozu:</b> {uptime}"
 
-#: polyhost/host.py:2145
+#: polyhost/host.py:2150
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
@@ -3898,26 +3951,26 @@ msgstr[0] "<b>Mapování překryvů:</b> {n} aplikace"
 msgstr[1] "<b>Mapování překryvů:</b> {n} aplikace"
 msgstr[2] "<b>Mapování překryvů:</b> {n} aplikací"
 
-#: polyhost/forwarder.py:816 polyhost/host.py:2147
+#: polyhost/forwarder.py:821 polyhost/host.py:2152
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Konfigurace:</b> {path}"
 
-#: polyhost/forwarder.py:817 polyhost/host.py:2148
+#: polyhost/forwarder.py:822 polyhost/host.py:2153
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Protokoly:</b> {path}"
 
-#: polyhost/forwarder.py:835 polyhost/host.py:2202
+#: polyhost/forwarder.py:840 polyhost/host.py:2207
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protokol HID P{protocol}"
 
-#: polyhost/host.py:2207
+#: polyhost/host.py:2212
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Hostitelský software pro dělenou klávesnici PolyKybd s OLED displejem na každé klávese — sleduje aktivní okno a posílá do klávesnice překryvy, jazyk a změny rozložení kláves."
 
-#: polyhost/host.py:2233
+#: polyhost/host.py:2238
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3926,61 +3979,61 @@ msgstr ""
 "Změna vstupního jazyka na '{language}' selhala s chybou:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2253 polyhost/host.py:2268
+#: polyhost/host.py:2258 polyhost/host.py:2273
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Nelze nastavit {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2374
+#: polyhost/host.py:2379
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Mapování překryvů PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2462 polyhost/host.py:2941 polyhost/host.py:3084
+#: polyhost/host.py:2467 polyhost/host.py:2946 polyhost/host.py:3089
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Aktualizovat firmware na v{version}…"
 
-#: polyhost/host.py:2464 polyhost/host.py:2982 polyhost/host.py:3155
+#: polyhost/host.py:2469 polyhost/host.py:2987 polyhost/host.py:3160
 msgid "Check for firmware update…"
 msgstr "Vyhledat aktualizaci firmwaru…"
 
-#: polyhost/forwarder.py:873 polyhost/forwarder.py:884
-#: polyhost/forwarder.py:890 polyhost/host.py:2482 polyhost/host.py:2603
-#: polyhost/host.py:2607
+#: polyhost/forwarder.py:878 polyhost/forwarder.py:889
+#: polyhost/forwarder.py:895 polyhost/host.py:2487 polyhost/host.py:2608
+#: polyhost/host.py:2612
 msgid "Check for updates..."
 msgstr "Vyhledat aktualizace..."
 
-#: polyhost/host.py:2550
+#: polyhost/host.py:2555
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "K dispozici je aktualizace na v{version}"
 
-#: polyhost/forwarder.py:886 polyhost/forwarder.py:892
-#: polyhost/forwarder.py:903 polyhost/host.py:2561 polyhost/host.py:2601
-#: polyhost/host.py:2608 polyhost/host.py:2631
+#: polyhost/forwarder.py:891 polyhost/forwarder.py:897
+#: polyhost/forwarder.py:908 polyhost/host.py:2566 polyhost/host.py:2606
+#: polyhost/host.py:2613 polyhost/host.py:2636
 msgid "PolyKybdHost Update"
 msgstr "Aktualizace PolyKybdHost"
 
-#: polyhost/host.py:2562
+#: polyhost/host.py:2567
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Je k dispozici verze {version}. Aktualizujte kliknutím na ikonu v oznamovací oblasti."
 
-#: polyhost/forwarder.py:861 polyhost/host.py:2587
+#: polyhost/forwarder.py:866 polyhost/host.py:2592
 msgid "Checking for updates..."
 msgstr "Vyhledávání aktualizací..."
 
-#: polyhost/host.py:2600
+#: polyhost/host.py:2605
 msgid "No updates available"
 msgstr "Žádné aktualizace nejsou k dispozici"
 
-#: polyhost/forwarder.py:887 polyhost/host.py:2602
+#: polyhost/forwarder.py:892 polyhost/host.py:2607
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Používáte nejnovější verzi (v{version})."
 
-#: polyhost/forwarder.py:893 polyhost/host.py:2609
+#: polyhost/forwarder.py:898 polyhost/host.py:2614
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -3995,63 +4048,63 @@ msgstr ""
 "\n"
 "Podrobnosti zobrazíte spuštěním s --dev 1."
 
-#: polyhost/host.py:2614 polyhost/host.py:3014
+#: polyhost/host.py:2619 polyhost/host.py:3019
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Vydáno: {date}"
 
-#: polyhost/forwarder.py:874 polyhost/host.py:2615
+#: polyhost/forwarder.py:879 polyhost/host.py:2620
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Je k dispozici verze {version}."
 
-#: polyhost/forwarder.py:875 polyhost/host.py:2616
+#: polyhost/forwarder.py:880 polyhost/host.py:2621
 msgid "Update PolyKybdHost"
 msgstr "Aktualizovat PolyKybdHost"
 
-#: polyhost/host.py:2620
+#: polyhost/host.py:2625
 msgid "Download, install, and restart now?"
 msgstr "Stáhnout, nainstalovat a restartovat nyní?"
 
-#: polyhost/forwarder.py:902 polyhost/host.py:2631
+#: polyhost/forwarder.py:907 polyhost/host.py:2636
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Stahování v{version}…"
 
-#: polyhost/forwarder.py:943 polyhost/host.py:2756
+#: polyhost/forwarder.py:948 polyhost/host.py:2761
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Nepodařilo se spustit předávání aktualizace; aktualizace není dokončena. Podrobnosti najdete v protokolu."
 
-#: polyhost/forwarder.py:955 polyhost/host.py:2771
+#: polyhost/forwarder.py:960 polyhost/host.py:2776
 msgid "Update failed"
 msgstr "Aktualizace selhala"
 
-#: polyhost/forwarder.py:955 polyhost/host.py:2771
+#: polyhost/forwarder.py:960 polyhost/host.py:2776
 msgid "The update did not finish."
 msgstr "Aktualizace nebyla dokončena."
 
-#: polyhost/host.py:2952
+#: polyhost/host.py:2957
 msgid "PolyKybd Firmware Update"
 msgstr "Aktualizace firmwaru PolyKybd"
 
-#: polyhost/host.py:2953
+#: polyhost/host.py:2958
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Je k dispozici nový firmware v{version}. Aktualizujte kliknutím na ikonu v oznamovací oblasti."
 
-#: polyhost/host.py:2970 polyhost/host.py:3011
+#: polyhost/host.py:2975 polyhost/host.py:3016
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Pro aktualizaci firmwaru musí být klávesnice připojena."
 
-#: polyhost/host.py:2976
+#: polyhost/host.py:2981
 msgid "Checking for firmware update…"
 msgstr "Vyhledávání aktualizace firmwaru…"
 
-#: polyhost/host.py:2990 polyhost/host.py:3000 polyhost/host.py:3003
+#: polyhost/host.py:2995 polyhost/host.py:3005 polyhost/host.py:3008
 msgid "PolyKybd Firmware"
 msgstr "Firmware PolyKybd"
 
-#: polyhost/host.py:2991
+#: polyhost/host.py:2996
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4062,55 +4115,55 @@ msgstr ""
 "\n"
 "Vaše klávesnice má v{current}. Obvykle to znamená, že sestavení vydání selhalo — stránka vydání dostane firmware, jakmile bude chyba opravena."
 
-#: polyhost/host.py:3001
+#: polyhost/host.py:3006
 msgid "No firmware release could be found."
 msgstr "Nebylo nalezeno žádné vydání firmwaru."
 
-#: polyhost/host.py:3004
+#: polyhost/host.py:3009
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Používáte nejnovější firmware (v{version})."
 
-#: polyhost/host.py:3016
+#: polyhost/host.py:3021
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Nainstalováno: v{version}"
 
-#: polyhost/host.py:3017
+#: polyhost/host.py:3022
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Nainstalováno: neznámé (klávesnice nenahlásila svou verzi)"
 
-#: polyhost/host.py:3018
+#: polyhost/host.py:3023
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Je k dispozici firmware {version}."
 
-#: polyhost/host.py:3020
+#: polyhost/host.py:3025
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Obě poloviny se aktualizují přes HID a automaticky se restartují."
 
-#: polyhost/host.py:3021
+#: polyhost/host.py:3026
 msgid "Update PolyKybd Firmware"
 msgstr "Aktualizovat firmware PolyKybd"
 
-#: polyhost/host.py:3025
+#: polyhost/host.py:3030
 msgid "Download and flash now?"
 msgstr "Stáhnout a nahrát nyní?"
 
-#: polyhost/host.py:3036
+#: polyhost/host.py:3041
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Stahování firmwaru v{version}…"
 
-#: polyhost/host.py:3058 polyhost/host.py:3359
+#: polyhost/host.py:3063 polyhost/host.py:3364
 msgid "Cancelling…"
 msgstr "Rušení…"
 
-#: polyhost/host.py:3095
+#: polyhost/host.py:3100
 msgid "Firmware Update Failed"
 msgstr "Aktualizace firmwaru selhala"
 
-#: polyhost/host.py:3096
+#: polyhost/host.py:3101
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4121,11 +4174,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3202 polyhost/host.py:3244 polyhost/host.py:3252
+#: polyhost/host.py:3207 polyhost/host.py:3249 polyhost/host.py:3257
 msgid "Allow access to the keyboard"
 msgstr "Povolit přístup ke klávesnici"
 
-#: polyhost/host.py:3203
+#: polyhost/host.py:3208
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4135,7 +4188,7 @@ msgstr ""
 "\n"
 "Systém se zeptá na vaše heslo (PolicyKit). Poté klávesnici odpojte a znovu ji připojte."
 
-#: polyhost/host.py:3245
+#: polyhost/host.py:3250
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4145,11 +4198,11 @@ msgstr ""
 "\n"
 "Odpojte klávesnici a znovu ji připojte, aby se nová oprávnění projevila."
 
-#: polyhost/host.py:3253
+#: polyhost/host.py:3258
 msgid "The udev rule was not installed."
 msgstr "Pravidlo udev nebylo nainstalováno."
 
-#: polyhost/host.py:3254
+#: polyhost/host.py:3259
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4162,12 +4215,12 @@ msgstr ""
 "Tyto příkazy můžete také spustit v terminálu:\n"
 "{commands}"
 
-#: polyhost/host.py:3323 polyhost/host.py:3337 polyhost/host.py:3383
-#: polyhost/host.py:3392 polyhost/host.py:3398
+#: polyhost/host.py:3328 polyhost/host.py:3342 polyhost/host.py:3388
+#: polyhost/host.py:3397 polyhost/host.py:3403
 msgid "Install WinCompose"
 msgstr "Nainstalovat WinCompose"
 
-#: polyhost/host.py:3324
+#: polyhost/host.py:3329
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4177,11 +4230,11 @@ msgstr ""
 "\n"
 "Sestavení WinCompose od PolyKybd se stáhne z GitHubu a spustí se jeho instalační program (Windows vás požádají o potvrzení)."
 
-#: polyhost/host.py:3337
+#: polyhost/host.py:3342
 msgid "Looking for the latest WinCompose release…"
 msgstr "Vyhledávání nejnovějšího vydání WinCompose…"
 
-#: polyhost/host.py:3384
+#: polyhost/host.py:3389
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4191,7 +4244,7 @@ msgstr ""
 "\n"
 "V prohlížeči se otevře stránka vydání — stáhněte a spusťte instalaci odtud."
 
-#: polyhost/host.py:3393
+#: polyhost/host.py:3398
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4202,7 +4255,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3399
+#: polyhost/host.py:3404
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4219,37 +4272,77 @@ msgstr ""
 "Byl uložen do:\n"
 "{path}"
 
-#: polyhost/host.py:3407
+#: polyhost/host.py:3412
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Instalační program WinCompose byl spuštěn. Jakmile instalace skončí a WinCompose poběží, PolyKybd na něj automaticky přepne."
 
+#: polyhost/services/editor_plugins.py:85
+#, python-brace-format
+msgid "Copied the plugin to {path}."
+msgstr "Plugin byl zkopírován do {path}."
+
+#: polyhost/services/editor_plugins.py:86
+#, python-brace-format
+msgid "Replaced the plugin in {path} with the one from this installation."
+msgstr "Plugin v {path} byl nahrazen pluginem z této instalace."
+
+#: polyhost/services/editor_plugins.py:88
+#, python-brace-format
+msgid "Removed the plugin from {path}."
+msgstr "Plugin byl odebrán z {path}."
+
+#: polyhost/services/editor_plugins.py:90
+#, python-brace-format
+msgid "{editor} was not found on this computer."
+msgstr "{editor} nebyl na tomto počítači nalezen."
+
+#: polyhost/services/editor_plugins.py:92
+#, python-brace-format
+msgid "{path} was changed by hand. Remove or update it by hand."
+msgstr "{path} byl změněn ručně. Odeberte ho nebo ho aktualizujte ručně."
+
+#: polyhost/services/editor_plugins.py:95
+#, python-brace-format
+msgid "Copied the plugin to {path} and added the lines that load it to {init}."
+msgstr "Plugin byl zkopírován do {path} a do {init} byly přidány řádky, které ho načítají."
+
+#: polyhost/services/editor_plugins.py:96
+#, python-brace-format
+msgid "Removed the lines that load the plugin from {init}."
+msgstr "Z {init} byly odebrány řádky, které načítají plugin."
+
+#: polyhost/services/editor_plugins.py:97
+#, python-brace-format
+msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
+msgstr "Z {init} byly odebrány řádky, které načítají plugin, a z {path} plugin."
+
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"
-msgstr ""
+msgstr "Složka StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
-msgstr ""
+msgstr "Složka se soubory StarCraft 1.16.1 StarDat.mpq a pro jednotky Brood War BrooDat.mpq. Prázdné: prohledají se obvyklé instalační složky ve Windows, macOS a Wine. StarCraft: Remastered ukládá soubory ve formátu, který tato aplikace nečte; pak se použije přiložená grafika."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft Race"
-msgstr ""
+msgstr "Rasa StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
-msgstr ""
+msgstr "Čí jednotky ukazuje překryv StarCraft II, když je kreslí ze souborů StarCraft."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Terran"
-msgstr ""
+msgstr "Terrané"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Protoss"
-msgstr ""
+msgstr "Protossové"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
-msgstr ""
+msgstr "Zergové"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II Folder"
@@ -4423,7 +4516,7 @@ msgstr "Řádek byl přidán do {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Řádek v {path} byl nahrazen řádkem pro tuto instalaci."
 
-#: polyhost/services/shell_title.py:96
+#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:96
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "V {path} již nastaveno."
@@ -4433,7 +4526,7 @@ msgstr "V {path} již nastaveno."
 msgid "Removed the line from {path}."
 msgstr "Řádek byl odebrán z {path}."
 
-#: polyhost/services/shell_title.py:98
+#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:98
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "V {path} není co odebrat."
@@ -4453,12 +4546,12 @@ msgstr "{shell} neuvedl cestu ke svému profilu: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Zásady spouštění PowerShellu ({policy}) nespouštějí skripty profilu. Nejprve v PowerShellu spusťte 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'."
 
-#: polyhost/services/shell_title.py:103
+#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} má počáteční značku bez koncové značky. Odeberte blok ručně."
 
-#: polyhost/services/shell_title.py:104
+#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "{path} nelze změnit: {error}"

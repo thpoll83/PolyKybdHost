@@ -90,6 +90,13 @@ class WindowReportServerTest(unittest.TestCase):
         self.assertEqual(self.reports, [("1234", "code.exe", "main.py - VS Code")])
         self.assertIsNone(self.last_os)  # no os field -> callback gets None
 
+    def test_a_window_without_a_title_arrives_as_an_empty_title(self):
+        # pywinctl gives None for a window without a title; it must not cross
+        # the wire as the text "None".
+        c = self._client()
+        c.report(7, "gnome-terminal-server", None)
+        self.assertEqual(self.reports, [("7", "gnome-terminal-server", "")])
+
     def test_report_forwards_the_url_over_the_socket(self):
         # End-to-end over a real AF_INET connection: the optional url param
         # survives the framing and reaches the injected callback.

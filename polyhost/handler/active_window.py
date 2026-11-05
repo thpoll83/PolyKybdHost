@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry, mapping_key, OS,
-    TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
+    TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, TITLE_RE, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.browser_url import context_reporter_for, is_terminal_app
 from polyhost.handler.remote_window import RemoteHandler
@@ -35,7 +35,8 @@ _monotonic = time.monotonic
 #: every tick, so the macOS early-out below never skips one.
 _TITLE_FLAGS = (
     Flags.HAS_TITLE, Flags.HAS_TITLES_STARTS_W, Flags.HAS_TITLES_ENDS_W,
-    Flags.HAS_TITLES_CONTAINS, Flags.HAS_URL, Flags.HAS_URLS_CONTAINS,
+    Flags.HAS_TITLES_CONTAINS, Flags.HAS_TITLES_MATCH, Flags.HAS_URL,
+    Flags.HAS_URLS_CONTAINS,
     # ⚠️ `HAS_OS` too, conservatively: an `os:` branch holds its own entries
     # with their own flags (3 in the shipped mapping, all of them carrying
     # `urls-contains`), and reading the parent's flags would answer for a level
@@ -370,6 +371,7 @@ class OverlayHandler:
             has_url = URL in entry.keys()
             has_urls_contains = URL_HAS in entry.keys() and entry[URL_HAS]
             has_os = OS in entry.keys() and entry[OS]
+            has_match = TITLE_RE in entry.keys() and entry[TITLE_RE]
 
             entry[FLAGS] = [
                 has_overlay,
@@ -381,6 +383,7 @@ class OverlayHandler:
                 has_url,
                 has_urls_contains,
                 has_os,
+                has_match,
             ]
             if has_starts_with:
                 self.annotate(entry[TITLE_SW].items(), False)
@@ -392,6 +395,8 @@ class OverlayHandler:
                 self.annotate(entry[URL_HAS].items(), False)
             if has_os:
                 self.annotate(entry[OS].items(), False)
+            if has_match:
+                self.annotate(entry[TITLE_RE].items(), False)
 
             if return_copy:
                 keys = keys.split(",")

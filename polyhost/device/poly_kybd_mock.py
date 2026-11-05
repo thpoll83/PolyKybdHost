@@ -725,6 +725,9 @@ class PolyKybdMock:
     def get_console_output(self, flush_and_return=True):
         return "" if flush_and_return else None
 
+    def flush_console(self):
+        return ""
+
     def execute_commands(self, command_list, cancel=None):
         for cmd_str in command_list:
             if cancel is not None and cancel.is_set():
