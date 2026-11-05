@@ -388,6 +388,8 @@ Linux gets the PC keys. The ChromeOS tables are not used.
 - `gmail.png`, `gcal.png`, `gkeep.png` and `gdrive.png` are the Gmail, Google Calendar,
   Google Keep and Google Drive marks from Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
+  `gkeep.png` gets a second thread band on the bulb's base (`_keep_winding` in
+  `fetch_icons.py`), because at 32 px the single band reads as a plain stub.
 
 ## draw.io, Excalidraw, Linear and Overleaf
 
