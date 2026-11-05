@@ -2688,3 +2688,8 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
+# executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
+# lowercase to `ssms`. Name not checked on an install.
+ssms:
+  overlay: [ssms_template.mods.png, ssms_template.combo.mods.png]
