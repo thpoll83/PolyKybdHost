@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the Google Sheets, Slides, Gmail, Calendar and Drive overlay specs.
+"""Write the Google Sheets, Slides, Gmail, Calendar, Keep and Drive overlay specs.
 
 Each table row is (icon, label, Windows/Linux key, macOS key), read from the
 PC and Mac tables of Google's help pages (see SOURCES.md). A key is written as
@@ -313,6 +313,37 @@ CALENDAR = [
     ("sidepanel", "Side panel", "CA+,", "AM+,"),
 ]
 
+# Keep's single keys are on by default and act only outside a text field. "?"
+# (shortcut help), "#" (trash) and "@" (feedback) are left out: they need Shift
+# on a US layout. Esc (finish editing) is the program mark's key.
+KEEP = [
+    # --- navigation ---
+    ("keep_nextnote", "Next note", "J", "J"),
+    ("keep_prevnote", "Previous note", "K", "K"),
+    ("keep_movenote_down", "Move note down", "S+J", "S+J"),
+    ("keep_movenote_up", "Move note up", "S+K", "S+K"),
+    ("keep_nextitem", "Next list item", "N", "N"),
+    ("keep_previtem", "Previous list item", "P", "P"),
+    ("keep_moveitem_down", "Move list item down", "S+N", "S+N"),
+    ("keep_moveitem_up", "Move list item up", "S+P", "S+P"),
+    # --- application ---
+    ("keep_newnote", "New note", "C", "C"),
+    ("keep_newlist", "New list", "L", "L"),
+    ("search", "Search notes", "/", "/"),
+    (None, "Select all", "C+A", "M+A"),
+    # --- actions ---
+    ("keep_archive", "Archive note", "E", "E"),
+    ("keep_pin", "Pin or unpin", "F", "F"),
+    ("keep_select", "Select note", "X", "X"),
+    ("keep_open", "Open note", "Enter", "Enter"),
+    ("keep_view", "List or grid view", "C+G", "M+G"),
+    # --- editor ---
+    ("keep_done", "Finish editing", "C+Enter", "M+Enter"),
+    ("keep_checkboxes", "Toggle checkboxes", "CS+8", "MS+8"),
+    ("indent", "Indent list item", "C+]", "M+]"),
+    ("outdent", "Dedent list item", "C+[", "M+["),
+]
+
 DRIVE = [
     # --- application ---
     ("shortcuts", "Keyboard shortcuts", "C+/", "M+/"),
@@ -354,6 +385,8 @@ LETTERS_GMAIL = ("Gmail's single keys are included. They work only after the use
                  "# \"Keyboard shortcuts on\" in Gmail's settings, and only when no text field has\n"
                  "# focus. Keys that need Shift on a US layout (! # _ : ~ * + ?) and the two-key\n"
                  "# sequences (g then i, * then a) are left out.")
+LETTERS_KEEP = ("Keep's single keys are included: they are on by default and act only\n"
+                "# when no text field has focus.")
 LETTERS_DRIVE = ("Drive's single keys (/ to search, F2, Delete) are included; they act only\n"
                  "# when no text field has focus. The two-key sequences (Alt+G then N, Alt+C\n"
                  "# then T, ...), the arrow-key selection keys and the preview-only keys are\n"
@@ -459,6 +492,9 @@ SPECS = {
     "googlecalendar.yaml": (CALENDAR, dict(name="Google Calendar", app="googlecalendar",
                                            mark="gcal.png", page="https://support.google.com/calendar/answer/37034",
                                            mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_IN)),
+    "googlekeep.yaml": (KEEP, dict(name="Google Keep", app="googlekeep", mark="gkeep.png",
+                                   page="https://support.google.com/keep/answer/12862970",
+                                   mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_KEEP)),
     "googledrive.yaml": (DRIVE, dict(name="Google Drive", app="googledrive", mark="gdrive.png",
                                      page="https://support.google.com/drive/answer/2563044",
                                      mark_geometry=BRAND_GEOMETRY, keys_note=LETTERS_DRIVE)),

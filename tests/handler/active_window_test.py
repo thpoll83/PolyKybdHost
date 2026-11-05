@@ -1735,7 +1735,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("https://docs.google.com/spreadsheets/d/x/edit", "Budget - Google Sheets", "googlesheets_template"),
                 ("https://docs.google.com/presentation/d/x/edit", "Deck - Google Slides", "googleslides_template"),
                 ("https://mail.google.com/mail/u/0/#inbox", "Inbox (3) - me@example.org - Gmail", "gmail_template"),
-                ("https://calendar.google.com/calendar/r", "Google Calendar - Week of 19 October", "googlecalendar_template")):
+                ("https://calendar.google.com/calendar/r", "Google Calendar - Week of 19 October", "googlecalendar_template"),
+                ("https://keep.google.com/u/0/#home", "Google Keep", "googlekeep_template")):
             for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
                 for u in (url, None):
                     with self.subTest(stem=stem, os=os_name, url=u):
@@ -1743,6 +1744,27 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                         self.assertIsNotNone(got)
                         self.assertIn(f"{stem}{suffix}.mods.png",
                                       [str(f) for f in got["overlay"]])
+
+    def test_a_page_that_only_names_GOOGLE_KEEP_keeps_the_browser_set(self):
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        entry = self.handler.mapping[mapping_key("chrome", self.handler.mapping)]
+        title = "Keyboard shortcuts for Google Keep - Computer - Google Keep Help"
+        for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
+            with self.subTest(os=os_name):
+                got = find_matching_entry(title, entry, None, OsType[os_name], title_known=True)
+                self.assertIsNotNone(got)
+                files = [str(f) for f in got["overlay"]]
+                self.assertIn(f"chrome_template{suffix}.mods.png", files)
+                self.assertFalse(any("googlekeep" in f for f in files), files)
+            # A URL that only mentions the Keep host (a search for it) is not Keep.
+            with self.subTest(os=os_name, url="search"):
+                got = find_matching_entry("keep.google.com - Google Search", entry,
+                                          "https://www.google.com/search?q=keep.google.com",
+                                          OsType[os_name], title_known=True)
+                files = [str(f) for f in got["overlay"]]
+                self.assertIn(f"chrome_template{suffix}.mods.png", files)
+                self.assertFalse(any("googlekeep" in f for f in files), files)
 
     def test_MEDIA_CREATIVE_and_DEV_apps_get_their_platform_set(self):
         for app, os_name, title, stem in (

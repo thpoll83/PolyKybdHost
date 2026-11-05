@@ -201,7 +201,7 @@ FLUENT = {
     "calnext": "Arrow Next",
 }
 
-# Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
+# Google Sheets, Slides, Gmail, Calendar and Keep (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
     # --- Google Drive ---
@@ -342,6 +342,24 @@ GOOGLE = {
     "gm_more": "ms:more_vert",
     "gm_move": "ms:drive_file_move",
     "gm_label": "ms:label",
+    # --- Google Keep ---
+    "keep_nextnote": "Arrow Down",
+    "keep_prevnote": "Arrow Up",
+    "keep_movenote_down": "ms:move_down",
+    "keep_movenote_up": "ms:move_up",
+    "keep_nextitem": "ms:keyboard_arrow_down",
+    "keep_previtem": "ms:keyboard_arrow_up",
+    "keep_moveitem_down": "ms:keyboard_double_arrow_down",
+    "keep_moveitem_up": "ms:keyboard_double_arrow_up",
+    "keep_newnote": "Note Add",
+    "keep_newlist": "ms:checklist",
+    "keep_archive": "Archive",
+    "keep_pin": "Pin",
+    "keep_select": "ms:check_circle",
+    "keep_open": "Open",
+    "keep_view": "ms:grid_view",
+    "keep_done": "Checkmark",
+    "keep_checkboxes": "ms:check_box",
 }
 # draw.io, Excalidraw, Linear and Overleaf (diagram, whiteboard, project and
 # LaTeX web apps). Prefixed by app where the same action has another meaning
@@ -498,7 +516,42 @@ ROTATED = {"narrower.png": ("shorter.png", 90)}
 # REAL logo (nominative use; see brand_marks).
 BRAND = {"gh.png": "github", "gl.png": "gitlab",
          "gmail.png": "gmail", "gcal.png": "googlecalendar",
-         "gdrive.png": "googledrive"}
+         "gkeep.png": "googlekeep", "gdrive.png": "googledrive"}
+
+
+def _keep_winding(dest: Path, shift: int = 23) -> None:
+    """Give the Keep bulb's base a second thread: copy its one cut band lower.
+
+    At 32 px the Simple Icons bulb has a single thread band, which reads as a
+    plain stub. The band is found from the alpha (the lowest transparent run in
+    the middle column) and repeated `shift` px further down. 23 was picked by rendering 22..27: it
+    is the shift at which the second band shows the same keycap pixels as the
+    first (24, the nominal 3 px, rounds differently near the bottom edge).
+    """
+    import numpy as np
+    img = Image.open(dest).convert("RGBA")
+    a = np.array(img.split()[3])
+    mid = a.shape[1] // 2
+    col = a[:, mid] < 128
+    cut = [y for y in range(a.shape[0]) if col[y]]
+    y1 = cut[-1] if cut else 0                          # bottom of the cut band
+    y0 = y1
+    while y0 > 0 and col[y0 - 1]:
+        y0 -= 1
+    xs = np.where(a[(y0 + y1) // 2] < 128)[0]
+    xs = xs[(xs > a.shape[1] // 4) & (xs < a.shape[1] * 3 // 4)]
+    if not cut or y0 == 0 or y1 + shift >= a.shape[0] - 1 or not len(xs):
+        # The upstream artwork changed shape: keep it unmodified, do not abort.
+        print(f"  WARNING {dest.name}: no thread band found, second band not added")
+        return
+    a[y0 + shift:y1 + shift + 1, xs.min():xs.max() + 1] = \
+        a[y0:y1 + 1, xs.min():xs.max() + 1]
+    white = Image.new("L", img.size, 255)
+    Image.merge("RGBA", (white, white, white, Image.fromarray(a))).save(dest)
+
+
+# Post-processing applied when a BRAND mark is rendered fresh.
+BRAND_TWEAKS = {"gkeep.png": _keep_winding}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS"),
@@ -537,7 +590,11 @@ def main() -> int:
         print(f"  {stem}.png  <- material-symbols/{name}")
     n += len(MATERIAL)
     for fname, slug in {**BRAND, **DIAGRAM_ETC_BRAND}.items():
+        fresh = not (out / fname).exists()
         brand_marks.ensure(out / fname, slug)
+        if fresh and fname in BRAND_TWEAKS:
+            BRAND_TWEAKS[fname](out / fname)
+            print(f"  {fname}  <- {BRAND_TWEAKS[fname].__name__}")
     for fname, (app, label) in DOC.items():
         dest = out / fname
         if dest.exists():

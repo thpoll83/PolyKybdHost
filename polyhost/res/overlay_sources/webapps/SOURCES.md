@@ -306,10 +306,10 @@ Two deliberate choices, both of which have been queried:
 - **Two adjacent edges only.** Drawing all four offset edges reads as a second
   box rather than as a shadow.
 
-## Google Sheets, Slides, Gmail, Calendar and Drive
+## Google Sheets, Slides, Gmail, Calendar, Keep and Drive
 
 `gen_google_specs.py` writes `googlesheets.yaml`, `googleslides.yaml`,
-`gmail.yaml`, `googlecalendar.yaml` and `googledrive.yaml` from one table per app. Each row has a
+`gmail.yaml`, `googlecalendar.yaml`, `googlekeep.yaml` and `googledrive.yaml` from one table per app. Each row has a
 Windows/Linux key and a macOS key. A row whose Mac key is the Windows key with
 Ctrl replaced by Cmd becomes one `CMDCTRL` binding; every other row is written
 twice, under `except: [macos]` and `only: [macos]`.
@@ -320,6 +320,7 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
 | Google Calendar | <https://support.google.com/calendar/answer/37034> | 27, 27 |
+| Google Keep | <https://support.google.com/keep/answer/12862970>, PC and Mac tables (read 2026-11-05) | 21, 21 |
 | Google Drive | <https://support.google.com/drive/answer/2563044>, read 2026-11-05 | 27, 27 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
@@ -339,6 +340,12 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `m`, `x`, `a`, and `c`, `e`, Backspace, Delete and `z`. Calendar's `+` (add a
   calendar) is left out, because the key that types `+` depends on the layout,
   and Esc (back to the grid) shows the program mark.
+- Google Keep's single keys are on by default and act whenever no text field
+  has focus, so its set has them: `j`/`k`, `n`/`p` and their Shift forms, `c`,
+  `l`, `/`, `e`, `f`, `x` and Enter. `?` (shortcut help), `#` (trash) and `@`
+  (feedback) are left out because they need Shift on a US layout, and Esc
+  (finish editing) shows the program mark. Ctrl+Enter, the other key for finish
+  editing, is drawn.
 - Google Drive: its single keys are drawn (`/` search, F2 rename, Delete
   remove). `#` (remove) needs Shift on a US layout and is left out, as are the
   arrow-key selection keys and the preview-only keys (Space, `=`, `-`). Copy
@@ -378,10 +385,11 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `gdr_create` Add) and Material (`gdr_copytitle` title, `gdr_foldermenu`
   folder_managed). Star, Share, Sort, More actions and the rest reuse icons
   already in the folder.
-- `gmail.png`, `gcal.png` and `gdrive.png` are the Gmail, Google Calendar and
-  Google Drive marks from
-  Simple Icons (CC0-1.0 artwork), used to name the application
+- `gmail.png`, `gcal.png`, `gkeep.png` and `gdrive.png` are the Gmail, Google Calendar,
+  Google Keep and Google Drive marks from Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
+  `gkeep.png` gets a second thread band on the bulb's base (`_keep_winding` in
+  `fetch_icons.py`), because at 32 px the single band reads as a plain stub.
 
 ## draw.io, Excalidraw, Linear and Overleaf
 
