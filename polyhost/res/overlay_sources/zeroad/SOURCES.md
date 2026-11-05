@@ -137,7 +137,7 @@ Licence texts for the icon and font licences named in this file:
 | `scrolldown.png` | Font Awesome Free 6.5.2 `arrow-down` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `scrollleft.png` | Font Awesome Free 6.5.2 `arrow-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `scrollright.png` | Font Awesome Free 6.5.2 `arrow-right` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `jump.png` | Font Awesome Free 6.5.2 `location-dot` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `jump1.png` … `jump4.png` | Font Awesome Free 6.5.2 `location-dot` (solid), with the position number cut out of the head by `fetch_icons.py` in DejaVu Sans Bold (the copy bundled with matplotlib v3.9.2, pinned commit) | Fonticons, Inc.; the digits Bitstream | CC BY 4.0; the digits Bitstream Vera |
 | `idlebuilder.png` | Font Awesome Free 6.5.2 `helmet-safety` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `idleworker.png` | game-icons.net `delapouite/farmer` | delapouite | CC BY 3.0 |
 | `idlewarrior.png` | game-icons.net `lorc/crossed-swords` | lorc | CC BY 3.0 |
@@ -160,7 +160,7 @@ Licence texts for the icon and font licences named in this file:
 | `chat.png` | game-icons.net `delapouite/chat-bubble` | delapouite | CC BY 3.0 |
 | `teamchat.png` | game-icons.net `lorc/conversation` | lorc | CC BY 3.0 |
 | `privatechat.png` | Font Awesome Free 6.5.2 `envelope` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `jumpset.png` | Font Awesome Free 6.5.2 `location-dot` (solid), with a plus drawn by `fetch_icons.py` | Fonticons, Inc. | CC BY 4.0 |
+| `jumpset1.png` … `jumpset4.png` | Font Awesome Free 6.5.2 `location-dot` (solid), with the position number (DejaVu Sans Bold, as above) and a plus drawn by `fetch_icons.py` | Fonticons, Inc.; the digits Bitstream | CC BY 4.0; the digits Bitstream Vera |
 | `scrollfast.png`, `scrollslow.png` | Font Awesome Free 6.5.2 `arrows-up-down-left-right` (solid), with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |
 | `rotatefast.png`, `rotateslow.png` | Font Awesome Free 6.5.2 `rotate` (solid), with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |
 | `zoomfast.png`, `zoomslow.png` | Font Awesome Free 6.5.2 `magnifying-glass` (solid), with a plus or a minus | Fonticons, Inc. | CC BY 4.0 |

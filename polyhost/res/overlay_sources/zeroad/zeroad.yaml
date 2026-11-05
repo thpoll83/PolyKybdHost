@@ -105,14 +105,14 @@ bindings:
   - { key: "-", icon: zoomout.png, label: "Camera: zoom out" }
   - { key: SPACE, icon: lastattack.png, label: "Go to last attack" }
   - { key: TAB, mods: [SHIFT], icon: birdseye.png, label: "Bird's eye view" }
-  - { key: F5, icon: jump.png, label: "Jump to camera position 1", region: [34, 40] }
-  - { key: F6, icon: jump.png, label: "Jump to camera position 2", region: [34, 40] }
-  - { key: F7, icon: jump.png, label: "Jump to camera position 3", region: [34, 40] }
-  - { key: F8, icon: jump.png, label: "Jump to camera position 4", region: [34, 40] }
-  - { key: F5, mods: [CTRL], icon: jumpset.png, label: "Set camera position 1", region: [34, 40] }
-  - { key: F6, mods: [CTRL], icon: jumpset.png, label: "Set camera position 2", region: [34, 40] }
-  - { key: F7, mods: [CTRL], icon: jumpset.png, label: "Set camera position 3", region: [34, 40] }
-  - { key: F8, mods: [CTRL], icon: jumpset.png, label: "Set camera position 4", region: [34, 40] }
+  - { key: F5, icon: jump1.png, label: "Jump to camera position 1", region: [34, 40] }
+  - { key: F6, icon: jump2.png, label: "Jump to camera position 2", region: [34, 40] }
+  - { key: F7, icon: jump3.png, label: "Jump to camera position 3", region: [34, 40] }
+  - { key: F8, icon: jump4.png, label: "Jump to camera position 4", region: [34, 40] }
+  - { key: F5, mods: [CTRL], icon: jumpset1.png, label: "Set camera position 1", region: [34, 40] }
+  - { key: F6, mods: [CTRL], icon: jumpset2.png, label: "Set camera position 2", region: [34, 40] }
+  - { key: F7, mods: [CTRL], icon: jumpset3.png, label: "Set camera position 3", region: [34, 40] }
+  - { key: F8, mods: [CTRL], icon: jumpset4.png, label: "Set camera position 4", region: [34, 40] }
   - { key: S, mods: [CTRL, SHIFT], icon: scrollfast.png, label: "Scroll speed up" }
   - { key: S, mods: [CTRL, ALT], icon: scrollslow.png, label: "Scroll speed down" }
   - { key: R, mods: [CTRL, SHIFT], icon: rotatefast.png, label: "Rotation speed up" }

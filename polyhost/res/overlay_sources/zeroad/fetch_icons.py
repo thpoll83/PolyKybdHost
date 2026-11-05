@@ -67,7 +67,6 @@ ICONS = {
     "scrolldown": "fa:arrow-down",
     "scrollleft": "fa:arrow-left",
     "scrollright": "fa:arrow-right",
-    "jump": "fa:location-dot",
     # Selection
     "idlebuilder": "fa:helmet-safety",
     "idleworker": "gi:delapouite/farmer",
@@ -117,10 +116,16 @@ GROUP_UNITS = {
     "0": "delapouite/roman-toga",
 }
 
+# The camera-position pins (F5 to F8). JUMP_HEAD_CENTRE is the centre of the
+# round head below the pin's top, in px at the 24 x 32 pin size.
+JUMP_PIN = "fa:location-dot"
+JUMP_POSITIONS = (1, 2, 3, 4)
+JUMP_DIGIT_PX, JUMP_HEAD_CENTRE, JUMPSET_SHIFT = 13, 12, 5
+
 # Key area of each icon, from zeroad.yaml; the default is 40 x 40. The F-key
 # areas use the legend widths measured for Age of Empires II.
 SIZES = {"screenshot": (34, 40), "bigscreenshot": (34, 40), "mousegrab": (34, 40),
-         "quicksave": (34, 40), "quickload": (34, 40), "jump": (34, 40)}
+         "quicksave": (34, 40), "quickload": (34, 40)}
 # Solid icons that read heavier than the rest: drawn in a smaller box.
 INK = {"quicksave": (30, 30), "quickload": (30, 30), "chat": (34, 34),
        "zoomin": (30, 30), "zoomout": (30, 30), "screenshot": (28, 28),
@@ -176,12 +181,58 @@ def _with_minus(mask, size=13, bar=3):
     return (mask & ~program_mark.dilate(p, aoe2.GROUP_SEAM)) | p
 
 
-def jump_set(out: Path) -> None:
-    """jumpset.png (Ctrl+F5 to F8: set a camera position): the jump pin with
-    the Ctrl plus."""
-    pin = _flat(out / "_jump.png", (34, 40), (24, 32))
-    cnc._save_mask(aoe2._with_plus(pin), out / "jumpset.png")
-    print("  jumpset.png  <- fa:location-dot + a plus")
+def _fill_holes(mask):
+    """`mask` with every unlit area that does not touch the border lit."""
+    import numpy as np
+    outside = np.zeros_like(mask)
+    outside[0, :] = outside[-1, :] = True
+    outside[:, 0] = outside[:, -1] = True
+    outside &= ~mask
+    while True:
+        grown = program_mark.dilate(outside, 1) & ~mask
+        if (grown == outside).all():
+            return ~outside
+        outside = grown
+
+
+def _digit(text: str, height: int):
+    """`text` in DejaVu Sans Bold as a 1-bit mask at most `height` px tall."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    for px in range(40, 5, -1):
+        f = ImageFont.truetype(str(cnc._font(cnc.DIGIT_FONT_URL)), px)
+        left, top, right, bottom = f.getbbox(text)
+        im = Image.new("L", (right - left + 4, bottom - top + 4), 0)
+        ImageDraw.Draw(im).text((2 - left, 2 - top), text, font=f, fill=255)
+        g = np.array(im) > 110
+        ys, xs = np.nonzero(g)
+        g = g[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+        if g.shape[0] <= height:
+            return g
+    raise ValueError(f"no size of the digit font fits {height} px")
+
+
+def jump_pins(out: Path) -> None:
+    """jump<N>.png (F5 to F8: jump to camera position N) and jumpset<N>.png
+    (Ctrl+F5 to F8: set it): the location pin with N cut out of its head. The
+    pin's own hole is filled first, so the digit has the whole head. For Ctrl
+    the pin moves up and left by JUMPSET_SHIFT px, so the plus has its own
+    corner and does not clip the digit."""
+    import numpy as np
+    for n in JUMP_POSITIONS:
+        pin = _fill_holes(_flat(out / "_jump.png", (34, 40), (24, 32)))
+        ys, xs = np.nonzero(pin)
+        g = _digit(str(n), JUMP_DIGIT_PX)
+        cy = ys.min() + JUMP_HEAD_CENTRE
+        cx = (xs.min() + xs.max() + 1) // 2
+        y0, x0 = cy - g.shape[0] // 2, cx - g.shape[1] // 2
+        pin[y0:y0 + g.shape[0], x0:x0 + g.shape[1]] &= ~g
+        cnc._save_mask(pin, out / f"jump{n}.png")
+        k = JUMPSET_SHIFT
+        moved = np.zeros_like(pin)
+        moved[:-k, :-k] = pin[k:, k:]
+        cnc._save_mask(aoe2._with_plus(moved), out / f"jumpset{n}.png")
+        print(f"  jump{n}.png, jumpset{n}.png  <- {JUMP_PIN} with a {n} (+ a plus)")
 
 
 def speed_icons(out: Path) -> None:
@@ -230,12 +281,12 @@ def program(out: Path) -> None:
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
-    parts = {"_person": ROTATE_PERSON, "_jump": ICONS["jump"],
+    parts = {"_person": ROTATE_PERSON, "_jump": JUMP_PIN,
              **{f"_{b}": s for b, s in SPEED_BASES.items()}}
     cnc.render({**ICONS, **parts}, out)
     game_icons.render({f"_unit{d}": n for d, n in GROUP_UNITS.items()}, out, render_px=256)
     flat_icons(out)
-    jump_set(out)
+    jump_pins(out)
     speed_icons(out)
     groups(out)
     wc3.rotate_icons(out)
