@@ -50,6 +50,7 @@ window title (or OS) instead — see below.
 | `titles-startswith` | sub-map | Keyed on the title's **first word(s)**. |
 | `titles-endswith` | sub-map | Keyed on the title's **last word(s)**. |
 | `titles-contains` | sub-map | Keyed on **one word or an adjacent run of words** anywhere in the title. |
+| `titles-match` | sub-map | Keyed on a **regex**, `re.search` against the whole title, tried in file order. For a signal inside a word, such as a file extension. |
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
@@ -64,7 +65,7 @@ Most specific first; the first branch that yields a match wins:
 
 1. **`os`** — the platform decides which keymap the app even has.
 2. **`urls-contains`** — a tab's URL identifies a web app far better than its title.
-3. `titles-startswith`, then `titles-endswith`, then `titles-contains` (the last
+3. `titles-startswith`, then `titles-endswith`, then `titles-match`, then `titles-contains` (the last
    only when no URL is known, if the entry declares `urls-contains` — see below).
 4. The entry's own `title` / `url` gates, then its own `overlay`.
 
@@ -121,7 +122,7 @@ GNU nano sends no report and sets no title, so it is visible only when the
 shell or the terminal puts the running command into the window title (cmd.exe,
 macOS Terminal and iTerm2, Konsole, fish and oh-my-zsh do by default; bash,
 PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
-tray's Updates → "Show the running command in the terminal title…" or
+tray's Updates → "Set up the terminal and editors…" or
 `polyctl shell-integration install` adds to their startup files). The
 terminal entries carry `titles-contains: &editor_titles`: the word
 `nano` selects the route and the sub-entry's `title` regex requires nano at

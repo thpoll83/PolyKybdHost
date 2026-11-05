@@ -106,6 +106,10 @@ class HeadlessHost:
         # Core-owned active-window tracking (no-op without a display).
         self.core.start_window_tracking()
         self._maybe_start_window_report_server()
+        # Refresh the editor plugin copies made from this installation, as the
+        # tray app and the forwarder do (services/editor_plugins.py).
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
         self.log.info("PolyKybdHost running headless. Drive it with `polyctl`.")
 
     def _maybe_start_window_report_server(self):

@@ -1,0 +1,148 @@
+# Civilization IV: Beyond the Sword overlay for PolyKybd.
+#
+# Keys: the default hotkeys of Beyond the Sword 3.19, read from the game's XML
+# (<HotKey>, <bCtrlDown>, <bAltDown>, <bShiftDown>). See SOURCES.md.
+#
+# A key that the XML gives to actions of different units is labelled with the
+# meaning it has for the common case (B found city, F fortify, and so on), as
+# in the Freeciv set. SOURCES.md lists the other units' meanings of each such
+# key. Shift+W and Alt+C have no common meaning and stay blank.
+#
+# The base game and Warlords use the same keys minus the ones Beyond the Sword
+# added. gen_classic.py writes civ4_classic.yaml from this file and drops the
+# bindings marked `classic: false`.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/civ4/fetch_icons.py
+#   python polyhost/res/overlay_sources/civ4/gen_classic.py   # writes civ4_classic.yaml
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/civ4/civ4_bts.yaml --preview /tmp/civ4_preview
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/civ4/civ4_classic.yaml --preview /tmp/civ4_classic_preview
+app: civ4_bts
+match: [civ4beyondsword, civ4beyondsword.exe, steam_app_8800]
+output: civ4_bts_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for OpenTTD: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# CIV IV drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Advisors and screens (CIV4ControlInfos.xml)
+  - { key: F1, icon: domestic.png, label: "Domestic advisor", region: [34, 40] }
+  - { key: F2, icon: financial.png, label: "Financial advisor", region: [34, 40] }
+  - { key: F3, icon: civics.png, label: "Civics", region: [34, 40] }
+  - { key: F4, icon: foreign.png, label: "Foreign advisor", region: [30, 40] }
+  - { key: F5, icon: military.png, label: "Military advisor", region: [30, 40] }
+  - { key: F6, icon: technology.png, label: "Technology advisor", region: [30, 40] }
+  - { key: F7, icon: religion.png, label: "Religion advisor", region: [30, 40] }
+  - { key: F8, icon: victory.png, label: "Victory conditions", region: [34, 40] }
+  - { key: F9, icon: info.png, label: "Info screen" }
+  - { key: F10, icon: capital.png, label: "Select capital" }
+  - { key: F11, icon: globe.png, label: "Globe view" }
+  - { key: F12, icon: civilopedia.png, label: "Civilopedia" }
+  - { key: F7, mods: [SHIFT], icon: corporation.png, label: "Corporation advisor", region: [30, 40], classic: false }
+  - { key: E, mods: [CTRL], icon: espionage.png, label: "Espionage screen", classic: false }
+  - { key: F1, mods: [ALT], icon: freecolony.png, label: "Grant independence to colonies", region: [34, 40], classic: false }
+  - { key: D, mods: [SHIFT], icon: diplomacy.png, label: "Start diplomacy" }
+  - { key: TAB, mods: [CTRL], icon: eventlog.png, label: "Event log", region: [30, 40] }
+
+  # Turn (CIV4MissionInfos.xml, CIV4ControlInfos.xml)
+  - { key: SPACE, icon: skip.png, label: "Skip unit turn, or end turn" }
+  - { key: ENTER, icon: endturn.png, label: "End turn, or next unit" }
+  - { key: ENTER, mods: [SHIFT], icon: forceendturn.png, label: "Force end of turn" }
+  - { key: W, icon: wait.png, label: "Next unit (wait)" }
+
+  # Unit orders that one key names for every unit
+  - { key: G, icon: goto.png, label: "Go to", shared: false }
+  - { key: G, mods: [CTRL], icon: gototype.png, label: "Go to (units of the same type)", shared: false }
+  - { key: G, mods: [ALT], icon: gotoall.png, label: "Go to (all units)", shared: false }
+  - { key: E, icon: explore.png, label: "Explore (automated)" }
+  - { key: A, icon: automate.png, label: "Build improvements (automated)" }
+  - { key: A, mods: [CTRL], icon: automoves.png, label: "Run all automated moves" }
+  - { key: A, mods: [SHIFT], icon: airlift.png, label: "Airlift" }
+  - { key: C, mods: [CTRL, SHIFT], icon: improvecity.png, label: "Improve nearest city (automated)" }
+  - { key: U, icon: unload.png, label: "Unload" }
+  - { key: U, mods: [SHIFT], icon: unloadall.png, label: "Unload all" }
+  - { key: DEL, icon: delete.png, label: "Delete the unit", shared: false }
+  - { key: BSPC, icon: cancel.png, label: "Cancel last order / stop automation" }
+  - { key: BSPC, mods: [SHIFT], icon: cancelall.png, label: "Cancel all orders" }
+
+  # Unit orders whose key other units use for another action; SOURCES.md lists
+  # the other actions (CIV4MissionInfos.xml, CIV4CommandInfos.xml,
+  # CIV4BuildInfos.xml, CIV4AutomateInfos.xml, CIV4InterfaceModeInfos.xml)
+  - { key: B, icon: foundcity.png, label: "Found a city", shared: false }
+  - { key: F, icon: fortify.png, label: "Fortify", shared: false }
+  - { key: H, icon: heal.png, label: "Fortify until healed", shared: false }
+  - { key: S, icon: sentry.png, label: "Sentry", shared: false }
+  - { key: L, icon: loadunit.png, label: "Load onto a transport", shared: false }
+  - { key: P, mods: [SHIFT], icon: pillage.png, label: "Pillage", shared: false }
+  - { key: P, icon: ping.png, label: "Ping the map", shared: false }
+  - { key: R, icon: road.png, label: "Build a road or a railroad", shared: false }
+  - { key: R, mods: [ALT], icon: routeto.png, label: "Build a road to a tile (route to)", shared: false }
+  - { key: I, icon: farm.png, label: "Build a farm", shared: false }
+  - { key: K, icon: workshop.png, label: "Build a workshop", shared: false }
+  - { key: N, icon: network.png, label: "Build a trade network (automated)", shared: false }
+
+  # Worker and work boat builds (CIV4BuildInfos.xml)
+  - { key: M, icon: mine.png, label: "Build a mine" }
+  - { key: T, icon: cottage.png, label: "Build a cottage" }
+  - { key: Q, icon: quarry.png, label: "Build a quarry" }
+  - { key: O, icon: offshore.png, label: "Build an offshore platform" }
+  - { key: F, mods: [CTRL], icon: fort.png, label: "Build a fort" }
+  - { key: F, mods: [SHIFT], icon: preserve.png, label: "Preserve the forest", classic: false }
+
+  # Selection (CIV4ControlInfos.xml)
+  - { key: C, icon: centre.png, label: "Centre on the selection" }
+  - { key: C, mods: [CTRL], icon: selecttype.png, label: "Select all units of the same type" }
+  - { key: H, mods: [CTRL], icon: selectwounded.png, label: "Select the wounded units on the tile", classic: false }
+  - { key: INS, icon: selectcity.png, label: "Select the city in view" }
+  - { key: HOME, icon: nextcity.png, label: "Next city" }
+  - { key: END, icon: prevcity.png, label: "Previous city" }
+  - { key: ".", icon: nextunit.png, label: "Next unit on the tile" }
+  - { key: ",", icon: prevunit.png, label: "Previous unit on the tile" }
+  - { key: "/", icon: cycleworkers.png, label: "Cycle workers" }
+  - { key: "\\", icon: lastunit.png, label: "Select the last selected unit" }
+
+  # Map display and camera
+  - { key: T, mods: [CTRL], icon: grid.png, label: "Show tiles on / off" }
+  - { key: B, mods: [CTRL], icon: baremap.png, label: "Bare map on / off" }
+  - { key: Y, mods: [CTRL], icon: yields.png, label: "Yield display on / off" }
+  - { key: R, mods: [CTRL], icon: resources.png, label: "Resource display on / off" }
+  - { key: U, mods: [ALT], icon: enemyunits.png, label: "Enemy unit display on / off", classic: false }
+  - { key: O, mods: [ALT], icon: ortho.png, label: "Orthographic camera" }
+  - { key: F, mods: [ALT], icon: topdown.png, label: "Top-down camera on / off" }
+  - { key: F, mods: [CTRL, ALT], icon: flying.png, label: "Flying camera on / off" }
+  - { key: F, mods: [ALT, SHIFT], icon: mousefly.png, label: "Unlock the flying camera mouse" }
+  - { key: "\\", mods: [CTRL], icon: flymodes.png, label: "Cycle camera flying modes" }
+  - { key: LEFT, mods: [CTRL], icon: rotleft.png, label: "Turn the camera 45 degrees left" }
+  - { key: RIGHT, mods: [CTRL], icon: rotright.png, label: "Turn the camera 45 degrees right" }
+
+  # Game
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save game", shared: false }
+  - { key: S, mods: [CTRL, ALT], icon: savegroup.png, label: "Save game (group)" }
+  - { key: F5, mods: [SHIFT], icon: quicksave.png, label: "Quick save", region: [30, 40] }
+  - { key: F8, mods: [SHIFT], icon: quickload.png, label: "Quick load", region: [34, 40] }
+  - { key: L, mods: [CTRL], icon: load.png, label: "Load game", shared: false }
+  - { key: O, mods: [CTRL], icon: options.png, label: "Options", shared: false }
+  - { key: Q, mods: [ALT], icon: retire.png, label: "Retire from the game" }
+  - { key: W, mods: [CTRL], icon: worldbuilder.png, label: "World Builder" }
+  - { key: H, mods: [CTRL, SHIFT], icon: halloffame.png, label: "Hall of Fame", classic: false }
+  - { key: D, mods: [ALT], icon: details.png, label: "Your details" }
+  - { key: D, mods: [ALT, SHIFT], icon: gamedetails.png, label: "Game details" }
+  - { key: S, mods: [ALT], icon: sign.png, label: "Place a sign" }
+  - { key: TAB, icon: chatteam.png, label: "Chat to your team", region: [30, 40] }
+  - { key: TAB, mods: [SHIFT], icon: chatall.png, label: "Chat to all", region: [30, 40] }
