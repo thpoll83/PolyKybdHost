@@ -57,6 +57,11 @@ What the routes therefore cannot see:
 - **A named Qwen session that is idle**: only the name is shown.
 - **Aider, and every CLI whose title is switched off, in bash, zsh or
   PowerShell without the shell scripts**: the title then shows only the prompt.
+- **A CLI inside tmux**, unless `~/.tmux.conf` passes the pane title on
+  (`set -g set-titles on`, `set -g set-titles-string '#T'`; see
+  [`../nano/SOURCES.md`](../nano/SOURCES.md) → *Inside tmux*).
+- **A CLI in an editor's built-in terminal** (VS Code, Cursor, JetBrains IDEs,
+  Zed): the focused window is the editor, and its title is the editor's.
 
 ### The Codex option of the shell integration
 

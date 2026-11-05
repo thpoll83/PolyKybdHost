@@ -53,6 +53,23 @@ defaults and were not checked on an install. On macOS 12.3 and later
 `/usr/bin/nano` starts `pico`, which has other keys; this set is for GNU nano
 (Homebrew, MacPorts), and Terminal.app may then show `pico` as the process.
 
+### Inside tmux
+
+tmux does not pass the title of the program in a pane on to the terminal
+unless it is told to, so the terminal shows tmux's own title and no set loads.
+Add to `~/.tmux.conf`:
+
+```
+set -g set-titles on
+set -g set-titles-string '#T'
+```
+
+`#T` is the pane's title, which the program or the shell scripts below set.
+Checked with tmux 3.4 on a pty: without the two lines, a pane that wrote
+`ESC ]2;✳ Claude Code BEL` sent no title to the outer terminal; with them the
+terminal received `ESC ]2;✳ Claude Code BEL`. GNU screen and Zellij were not
+checked.
+
 ### Titles that do not load the set
 
 Checked in `tests/handler/nano_routing_test.py`: `user@host: ~/nano-docs`,

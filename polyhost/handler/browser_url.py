@@ -124,6 +124,8 @@ TERMINAL_APPS = frozenset({
     "windowsterminal", "wt", "openconsole", "conhost", "alacritty", "wezterm-gui",
     "mintty",                       # Git Bash, MSYS2, Cygwin
     "conemu", "conemu64",           # ConEmu, Cmder
+    "fluentterminal.app",           # Fluent Terminal
+    "mobaxterm",                    # MobaXterm (local terminal tabs)
     # Linux (WM_CLASS or Flatpak/app id)
     "gnome-terminal", "gnome-terminal-server", "org.gnome.terminal",
     "ptyxis", "org.gnome.ptyxis", "kgx", "org.gnome.console",
@@ -135,9 +137,11 @@ TERMINAL_APPS = frozenset({
     "deepin-terminal", "qterminal", "lxterminal", "mate-terminal", "sakura",
     "cool-retro-term", "contour", "org.contourterminal.contour",
     "com.raggesilver.blackbox", "io.elementary.terminal",
+    "roxterm", "mlterm", "zutty", "eterm", "aterm",
     "com.system76.cosmicterm", "cosmic-term",
     # Cross-platform (process name, or the macOS display name lowercased)
     "warp", "dev.warp.warp", "tabby", "hyper", "wave", "waveterm", "rio",
+    "extraterm", "extratermqt",
     # macOS (display names)
     "terminal", "iterm2", "iterm",
 })
