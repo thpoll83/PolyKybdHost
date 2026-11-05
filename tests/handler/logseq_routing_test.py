@@ -30,12 +30,15 @@ def _overlay_handler_class():
     try:
         from polyhost.handler.active_window import OverlayHandler
     except SystemExit as e:
-        raise unittest.SkipTest(f"window backend exited at import: {e!r}")
+        raise unittest.SkipTest(f"window backend exited at import: {e!r}") from e
     except Exception as e:
-        if not (isinstance(e, ModuleNotFoundError)
+        # Skip only for a missing third-party backend or an Xlib display error.
+        # A missing polyhost module is a real failure.
+        if not ((isinstance(e, ModuleNotFoundError)
+                 and not (e.name or "").startswith("polyhost"))
                 or type(e).__module__.split(".")[0] == "Xlib"):
             raise
-        raise unittest.SkipTest(f"active_window needs a display: {e}")
+        raise unittest.SkipTest(f"active_window needs a display: {e}") from e
     return OverlayHandler
 
 
@@ -61,6 +64,11 @@ class LogseqRoutingTest(unittest.TestCase):
 
     def test_macos_loads_the_macos_set(self):
         self.assertEqual(self._route("logseq", "macos"), MAC)
+
+
+
+class LogseqAssetsTest(unittest.TestCase):
+    """Needs no window backend, so it runs where the routing test skips."""
 
     def test_every_named_file_exists(self):
         missing = [f for f in WIN + MAC if not (RES / "overlays" / f).is_file()]
