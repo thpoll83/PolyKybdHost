@@ -2404,6 +2404,14 @@ githubdesktop,github desktop:
   os:
     macos:
       overlay: [githubdesktop_template_mac.mods.png, githubdesktop_template_mac.combo.mods.png, githubdesktop_template_mac.extra.mods.png, githubdesktop_template_mac.gui.mods.png]
+# GitKraken Desktop (sources: overlay_sources/gitkraken/). Executable `gitkraken`
+# on Linux and `GitKraken` on macOS (read from the 12.6.2 packages); the
+# Windows name was not checked on an install.
+gitkraken:
+  overlay: [gitkraken_template.mods.png, gitkraken_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gitkraken_template_mac.mods.png, gitkraken_template_mac.combo.mods.png, gitkraken_template_mac.extra.mods.png]
 # PDF readers. Adobe Acrobat (sources: overlay_sources/acrobat/): Reader and Pro
 # share one keymap; Acrobat.exe for both today, AcroRd32.exe for the old
 # Reader. SumatraPDF (overlay_sources/sumatrapdf/), Windows only. Okular

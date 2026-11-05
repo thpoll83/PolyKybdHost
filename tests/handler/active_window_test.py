@@ -1790,7 +1790,10 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("eclipse", "LINUX", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_linux"),
                 ("eclipse", "MACOS", "ws - app/src/Main.java - Eclipse IDE", "eclipse_template_mac"),
                 ("githubdesktop", "WINDOWS", "GitHub Desktop", "githubdesktop_template"),
-                ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac")):
+                ("github desktop", "MACOS", "GitHub Desktop", "githubdesktop_template_mac"),
+                ("gitkraken", "WINDOWS", "GitKraken Desktop", "gitkraken_template"),
+                ("gitkraken", "LINUX", "GitKraken Desktop", "gitkraken_template"),
+                ("gitkraken", "MACOS", "GitKraken Desktop", "gitkraken_template_mac")):
             with self.subTest(app=app, os=os_name):
                 got = self._match(app, title=title, title_known=True, os_name=os_name)
                 self.assertIsNotNone(got)
