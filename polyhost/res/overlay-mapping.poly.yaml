@@ -2658,3 +2658,9 @@ devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
 # Flathub app id. Names not checked on an install.
 pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
   overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]
+# League of Legends (overlay_sources/lol/lol.yaml), the in-game window only. The
+# game is `League of Legends.exe` on Windows and the `LeagueofLegends` app on
+# macOS. The lobby client (LeagueClient, LeagueClientUx) is a different process
+# and gets no overlay. Names not checked on an install.
+league of legends,league of legends.exe,leagueoflegends:
+  overlay: lol_template.mods.png
