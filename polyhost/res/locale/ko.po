@@ -4183,31 +4183,31 @@ msgstr "WinCompose 설치 프로그램이 시작되었습니다. 설치가 끝�
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"
-msgstr ""
+msgstr "StarCraft 폴더"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
-msgstr ""
+msgstr "StarCraft 1.16.1 파일 StarDat.mpq와 Brood War 유닛용 BrooDat.mpq가 있는 폴더입니다. 비어 있음: Windows, macOS, Wine의 일반 설치 폴더를 검색합니다. StarCraft: Remastered는 이 앱이 읽지 못하는 형식으로 파일을 저장하므로, 그때는 함께 제공되는 그림을 사용합니다."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft Race"
-msgstr ""
+msgstr "StarCraft 종족"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
-msgstr ""
+msgstr "StarCraft II 오버레이가 StarCraft 파일에서 유닛을 그릴 때 어느 종족의 유닛을 보여 줄지 정합니다."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Terran"
-msgstr ""
+msgstr "테란"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Protoss"
-msgstr ""
+msgstr "프로토스"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
-msgstr ""
+msgstr "저그"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II Folder"
