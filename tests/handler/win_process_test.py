@@ -217,6 +217,47 @@ class TestTruncatedProcessNames(unittest.TestCase):
         rl.assert_not_called()
 
 
+class _Ewmh:
+    def __init__(self, pid):
+        self._pid = pid
+
+    def getPid(self):
+        return self._pid
+
+
+class Pywinctl03Window:
+    """PyWinCtl 0.3's Linux window: getAppName() and the ewmhlib window, but no
+    getPID(). A field forwarder on Ubuntu GNOME ran this version (2026-11-05)."""
+
+    def __init__(self, app_name, pid=4321, title="nano"):
+        self._app_name = app_name
+        self._win = _Ewmh(pid)
+        self.title = title
+
+    def getHandle(self):
+        return 52428810
+
+    def getAppName(self):
+        return self._app_name
+
+
+class TestPywinctl03Window(unittest.TestCase):
+
+    def test_a_cut_name_is_resolved_without_getpid(self):
+        win = Pywinctl03Window("gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/usr/libexec/gnome-terminal-server") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-server")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_main_is_resolved_without_getpid(self):
+        win = Pywinctl03Window("main")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/mscore4portable"):
+            self.assertEqual(win_process.app_name_for(win), "mscore4portable")
+
+
 class TestNativeBindings(unittest.TestCase):
 
     def test_open_process_returns_a_pointer_sized_handle(self):
