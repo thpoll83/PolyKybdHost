@@ -90,8 +90,11 @@ the shifted symbol, which the game does not use.
 All icons are flat 1-bit silhouettes, as in the Warcraft III set. The solid
 Font Awesome icons fill a smaller box (30×30 or 34×34, `INK` in
 `fetch_icons.py`) so they do not outweigh the outline icons. The belt keys
-share one flask and F5 to F8 share one spell icon, because what a slot holds
-depends on the player. F9 to F12 show the default quick messages: a raised hand
+show one flask and F5 to F8 one spell icon, because what a slot holds depends
+on the player; each carries its slot number so the keys can be told apart
+(`numbered_icons()`): cut out of the flask's liquid for 1 to 8, and lit in the
+empty top-right corner of the ray for F5 to F8 (quick spells 1 to 4). The digit
+is DejaVu Sans Bold, as for the 0 A.D. camera pins. F9 to F12 show the default quick messages: a raised hand
 (help), a footprint (follow me), a present (something for you) and a skull (now
 you die). F and G show a sun with a plus or a minus (`gamma_icons()`). Left Alt
 and Right Ctrl both show the item labels icon.
@@ -113,8 +116,8 @@ Licence texts for the icon and font licences named in this file:
 
 | File | Source | Author | Licence |
 |---|---|---|---|
-| `belt.png` | game-icons.net `lorc/round-bottom-flask` | lorc | CC BY 3.0 |
-| `quickspell.png` | game-icons.net `lorc/fire-ray` | lorc | CC BY 3.0 |
+| `belt1.png` to `belt8.png` | game-icons.net `lorc/round-bottom-flask`, with the slot number in DejaVu Sans Bold (the copy bundled with matplotlib v3.9.2, pinned commit) | lorc; the digits Bitstream | CC BY 3.0; the digits Bitstream Vera |
+| `quickspell1.png` to `quickspell4.png` | game-icons.net `lorc/fire-ray`, with the slot number in DejaVu Sans Bold (the copy bundled with matplotlib v3.9.2, pinned commit) | lorc; the digits Bitstream | CC BY 3.0; the digits Bitstream Vera |
 | `speedbook.png` | game-icons.net `lorc/magic-palm` | lorc | CC BY 3.0 |
 | `spellbook.png` | game-icons.net `lorc/book-aura` | lorc | CC BY 3.0 |
 | `inventory.png` | game-icons.net `lorc/knapsack` | lorc | CC BY 3.0 |

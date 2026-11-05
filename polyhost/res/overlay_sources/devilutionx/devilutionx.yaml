@@ -35,20 +35,20 @@ program_icon_legend: false
 bindings:
 
   # Belt: 1 to 8 use the item in that belt slot
-  - { key: "1", icon: belt.png, label: "Use belt item 1" }
-  - { key: "2", icon: belt.png, label: "Use belt item 2" }
-  - { key: "3", icon: belt.png, label: "Use belt item 3" }
-  - { key: "4", icon: belt.png, label: "Use belt item 4" }
-  - { key: "5", icon: belt.png, label: "Use belt item 5" }
-  - { key: "6", icon: belt.png, label: "Use belt item 6" }
-  - { key: "7", icon: belt.png, label: "Use belt item 7" }
-  - { key: "8", icon: belt.png, label: "Use belt item 8" }
+  - { key: "1", icon: belt1.png, label: "Use belt item 1" }
+  - { key: "2", icon: belt2.png, label: "Use belt item 2" }
+  - { key: "3", icon: belt3.png, label: "Use belt item 3" }
+  - { key: "4", icon: belt4.png, label: "Use belt item 4" }
+  - { key: "5", icon: belt5.png, label: "Use belt item 5" }
+  - { key: "6", icon: belt6.png, label: "Use belt item 6" }
+  - { key: "7", icon: belt7.png, label: "Use belt item 7" }
+  - { key: "8", icon: belt8.png, label: "Use belt item 8" }
 
   # Spells: F5 to F8 cast (or, with the speedbook open, assign) quick spells 1 to 4
-  - { key: F5, icon: quickspell.png, label: "Quick spell 1", region: [34, 40] }
-  - { key: F6, icon: quickspell.png, label: "Quick spell 2", region: [34, 40] }
-  - { key: F7, icon: quickspell.png, label: "Quick spell 3", region: [34, 40] }
-  - { key: F8, icon: quickspell.png, label: "Quick spell 4", region: [34, 40] }
+  - { key: F5, icon: quickspell1.png, label: "Quick spell 1", region: [34, 40] }
+  - { key: F6, icon: quickspell2.png, label: "Quick spell 2", region: [34, 40] }
+  - { key: F7, icon: quickspell3.png, label: "Quick spell 3", region: [34, 40] }
+  - { key: F8, icon: quickspell4.png, label: "Quick spell 4", region: [34, 40] }
   - { key: S, icon: speedbook.png, label: "Speedbook" }
   - { key: B, icon: spellbook.png, label: "Spellbook" }
 

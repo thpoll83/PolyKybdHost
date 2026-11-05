@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources.aoe2 import program_mark  # noqa: E402
 from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # noqa: E402
+from polyhost.res.overlay_sources.zeroad import fetch_icons as zeroad  # noqa: E402
 
 ICONS = {
     # Belt and spells
@@ -60,6 +61,13 @@ INK = {"save": (30, 30), "load": (30, 30), "help": (30, 30), "gameinfo": (34, 34
        "closepanels": (34, 34), "pause": (30, 30), "chat": (34, 34), "msghelp": (34, 34),
        "screenshot": (30, 30), "zoom": (30, 30), "mapzoomin": (30, 30),
        "mapzoomout": (30, 30), "highlight": (34, 34), "fullscreen": (30, 30)}
+
+# 1 to 8 (belt slots) and F5 to F8 (quick spells 1 to 4) each carry their own
+# number, so the eight flasks and the four rays can be told apart.
+BELT_SLOTS = range(1, 9)
+SPELL_SLOTS = range(1, 5)
+BELT_DIGIT_MARGIN = 2   # lit px kept above and below the digit in the liquid
+SPELL_DIGIT_PX = 13     # digit height drawn in the empty top-right of the ray
 
 # G and F (gamma down and up): a sun with a minus or a plus.
 SUN = "fa:sun"
@@ -120,6 +128,65 @@ def gamma_icons(out: Path) -> None:
     print(f"  gammaup.png, gammadown.png  <- {SUN} + a plus or a minus")
 
 
+def _load_mask(path: Path):
+    import numpy as np
+    from PIL import Image
+    return np.asarray(Image.open(path).convert("RGBA").getchannel("A")) > 0
+
+
+def _largest_area(mask):
+    """The largest 4-connected lit area of `mask`. For the flask that is the
+    liquid: the outline, the neck and the stopper are thinner and apart."""
+    import numpy as np
+    seen = np.zeros_like(mask)
+    best = np.zeros_like(mask)
+    h, w = mask.shape
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if seen[y0, x0]:
+            continue
+        area = np.zeros_like(mask)
+        stack = [(y0, x0)]
+        seen[y0, x0] = True
+        while stack:
+            y, x = stack.pop()
+            area[y, x] = True
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        if area.sum() > best.sum():
+            best = area
+    return best
+
+
+def numbered_icons(out: Path) -> None:
+    """belt<N>.png (1 to 8): the flask with N cut out of its liquid, so the
+    digit reads light on dark. quickspell<N>.png (F5 to F8): the ray with N
+    lit in the empty top-right corner of its key area. The plain belt.png and
+    quickspell.png are removed, as nothing draws them."""
+    import numpy as np
+    flask = _load_mask(out / "belt.png")
+    ys, xs = np.nonzero(_largest_area(flask))
+    cy, cx = (ys.min() + ys.max() + 1) // 2, (xs.min() + xs.max() + 1) // 2
+    digit_px = ys.max() + 1 - ys.min() - 2 * BELT_DIGIT_MARGIN
+    for n in BELT_SLOTS:
+        g = zeroad._digit(str(n), digit_px)
+        m = flask.copy()
+        y0, x0 = cy - g.shape[0] // 2, cx - g.shape[1] // 2
+        m[y0:y0 + g.shape[0], x0:x0 + g.shape[1]] &= ~g
+        cnc._save_mask(m, out / f"belt{n}.png")
+    ray = _load_mask(out / "quickspell.png")
+    for n in SPELL_SLOTS:
+        g = zeroad._digit(str(n), SPELL_DIGIT_PX)
+        m = ray.copy()
+        x0 = m.shape[1] - g.shape[1]
+        m[0:g.shape[0], x0:] |= g
+        cnc._save_mask(m, out / f"quickspell{n}.png")
+    (out / "belt.png").unlink()
+    (out / "quickspell.png").unlink()
+    print(f"  belt1..{BELT_SLOTS[-1]}.png, quickspell1..{SPELL_SLOTS[-1]}.png  <- numbered")
+
+
 def _mark_font(px: int):
     from PIL import ImageFont
     return ImageFont.truetype(str(cnc._font(FONT_URL)), px)
@@ -157,6 +224,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     cnc.render({**ICONS, "_sun": SUN}, out)
     flat_icons(out)
+    numbered_icons(out)
     gamma_icons(out)
     (out / "_sun.png").unlink()
     program(out)
