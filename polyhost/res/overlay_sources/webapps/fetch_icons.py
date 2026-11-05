@@ -454,9 +454,26 @@ DIAGRAM_ETC = {
     "ol_first": "ms:vertical_align_top",
     "ol_last": "ms:vertical_align_bottom",
 }
+# Photopea (photopea.yaml) takes most of its art from the Photoshop set
+# (../photoshop/icons), because its tools and menus copy Photoshop's. These are
+# the menu commands that set has no icon for.
+PHOTOPEA = {
+    "pp_trim": "ms:close_fullscreen",
+    "pp_forward": "ms:move_up",
+    "pp_backward": "ms:move_down",
+    "pp_canvassize": "ms:aspect_ratio",
+    "pp_imagesize": "ms:photo_size_select_large",
+    "pp_clipmask": "ms:subdirectory_arrow_right",
+    "pp_lastfilter": "ms:filter",
+    "pp_fade": "ms:opacity",
+    "pp_cameraraw": "Camera",
+    "pp_storage": "ms:cloud_download",
+    "pp_guides": "ms:border_inner",
+}
 # Their ESC marks: each app's own logo from Simple Icons (CC0 artwork).
 DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
-                     "linear.png": "linear", "overleaf.png": "overleaf"}
+                     "linear.png": "linear", "overleaf.png": "overleaf",
+                     "photopea.png": "photopea"}
 
 # narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
 # "Arrow Minimize" but no horizontal one.
@@ -497,6 +514,7 @@ def main() -> int:
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.fluent(GOOGLE, out)
     n += icon_fetch.fluent(DIAGRAM_ETC, out)
+    n += icon_fetch.fluent(PHOTOPEA, out)
     for fname, (src, angle) in ROTATED.items():
         Image.open(out / src).rotate(angle).save(out / fname)
         print(f"  {fname}  <- {src} turned {angle} degrees")
