@@ -569,6 +569,29 @@ discord:
   os:
     macos:
       overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
+# Telegram Desktop (sources: overlay_sources/telegram/). Telegram.exe on
+# Windows; on Linux the tarball binary `Telegram` (WM_CLASS TelegramDesktop),
+# the distribution package `telegram-desktop`, or the Flatpak id. No name was
+# checked on an install. This entry has no default overlay on purpose: the Mac
+# App Store's "Telegram" is a different app with other keys, so on macOS the
+# name matches nothing and the window gets generic icons. The Mac App Store
+# build of the Qt app is "Telegram Lite" (tdesktop build.sh, macstore target)
+# and gets the macOS set below, as does a window named "Telegram Desktop".
+telegram,telegramdesktop,telegram-desktop,org.telegram.desktop:
+  os:
+    windows:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+    linux:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+telegram desktop:
+  overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
+telegram lite:
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 # Mathematica, renamed Wolfram in 14.1 (sources: overlay_sources/mathematica/).
