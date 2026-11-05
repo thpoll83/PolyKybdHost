@@ -107,7 +107,9 @@ from Office.
 | deleteslide.png | Delete |
 
 - **Program marks** (`wps_writer.png`, `wps_sheets.png`, `wps_presentation.png`):
-  drawn letter tiles from `../program_marks.py` (W with a document corner, S
-  with a grid, P with a screen). The WPS logo is a proprietary mark and Simple
+  drawn in `fetch_icons.py` in the shape of the WPS app icons: a filled rounded
+  square with a "W" (Writer), a 2x2 grid (Spreadsheets) or a "P" (Presentation)
+  cut out. The letters are Liberation Sans Bold. The WPS logo is a proprietary mark and Simple
   Icons does not carry it (`wpsoffice`, `wps` and `kingsoft` all return 404).
-  The files are committed, and `fetch_icons.py` does not overwrite them.
+  The files are committed, and `fetch_icons.py` does not overwrite them. Delete
+  a file to draw it again.
