@@ -5,6 +5,7 @@ The startup files are the user's, so most tests compare BYTES: everything
 outside the block must come back unchanged, and a remove after an install
 must give back the original file."""
 import codecs
+import contextlib
 import os
 import re
 import select
@@ -752,10 +753,10 @@ class FishOnAPtyTest(_Home):
                 os.write(fd, data)
                 pump(step)
         finally:
-            try:
+            # The shell may have exited already (fish ends on EOF); only the
+            # reaping below matters then.
+            with contextlib.suppress(ProcessLookupError):
                 os.kill(pid, 9)
-            except OSError:
-                pass
             os.waitpid(pid, 0)
             os.close(fd)
         return out
