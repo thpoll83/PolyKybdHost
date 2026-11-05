@@ -459,6 +459,27 @@ The loop:
    you meant to change. A second `fetch_icons.py` run changes no bytes. For a
    game set, `preview_black.py --check-1to1` reports no cell.
 
+## Numbering repeated slot icons
+
+When several keys do the same thing for different slots (a potion belt on 1 to 8,
+spell slots on F5 to F8, control groups), one shared icon makes the keys look
+identical. Draw the slot number into each copy in `fetch_icons.py`, not by hand.
+`devilutionx/fetch_icons.py` → `numbered_icons()` is the pattern:
+
+- `zeroad._digit(text, height)` returns the digit as a 1-bit mask at most `height`
+  px tall, and `cnc._save_mask(mask, path)` writes it as an icon PNG.
+- **Cut the digit out of a filled area** (`icon &= ~digit`) so it reads dark on
+  lit, or **light it in an empty corner** (`icon |= digit`). Leave at least 2 px of
+  lit pixels above and below a cut-out digit.
+- ⚠️ **Centre a cut-out digit on the largest connected lit area, not on the icon's
+  bounding box.** The flask's box includes the neck and stopper, so a digit
+  centred on it sat too high and cut into the stopper. `_largest_area()` in
+  `devilutionx/fetch_icons.py` returns the liquid alone. `zeroad._fill_holes()`
+  fills the inside of an outline icon first when the icon has no filled area.
+- Give every numbered copy its own name (`belt1.png` … `belt8.png`) in
+  `bindings.yaml` and `SOURCES.md`, and delete the plain source icon when nothing
+  draws it.
+
 ## Pixel fonts and the block style
 
 - **Fonts that stay exact at 1 bit**: Press Start 2P at 8 px; Monocraft
@@ -472,6 +493,25 @@ The loop:
   area and repeat every pixel twice across and down; keep every key area and
   `INK` box a multiple of the block. ⚠️ Draw a composed icon on the half grid
   too: snapping a finished 40 px composite to blocks merged a cube into a blob.
+
+## Several overlay PRs open at once
+
+Every new overlay appends its entry to the end of
+`polyhost/res/overlay-mapping.poly.yaml`. So two open overlay PRs always
+conflict there, and each merge makes the next one conflict again. Both sides
+are needed. To land them:
+
+1. Merge one PR.
+2. In the next one: `git fetch origin main && git merge origin/main`, then keep
+   both sides of every conflict in the mapping file (remove only the three
+   marker lines).
+3. Check the result loads and the entries are all there:
+   `.venv/bin/python -c "import yaml; yaml.safe_load(open('polyhost/res/overlay-mapping.poly.yaml', encoding='utf-8'))"`,
+   then `xvfb-run -a .venv/bin/python scripts/run_tests.py -s tests/res`.
+4. Push, wait for its CI to finish green, then merge it. Repeat for the next PR.
+
+On 2026-11-05 the fheroes2 PR (#500) had been merged with `main` once and
+conflicted again as soon as the DevilutionX PR (#499) merged.
 
 ## Environment & gotchas
 

@@ -289,6 +289,12 @@ and relative links were adjusted to suit a standalone file.
   finish before whatever kills the shell, or the dump is lost — under a 120 s tool
   timeout an outer kill lands first: SIGTERM, exit 143, **no traceback**. Run it
   backgrounded, or raise the Bash tool's own timeout well past the run.
+  ⚠️ **In the cloud container the full suite needs `--timeout 600`.**
+  `tests/services/icon_library_test` builds the icon library: its 19 tests took
+  346 s there, and one of them runs past the default 120 s per test. The default
+  then stops the run at that test with a stall dump that looks like a hang
+  (2026-11-05):
+  `xvfb-run -a .venv/bin/python scripts/run_tests.py --timeout 600 > /tmp/tr.log 2>&1`.
   Redirect to a file (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not**
   pipe it through `tail`, which has eaten the dump before.
   - ⚠️ **Why the watchdog is per test (2026-10-01): every whole-run figure went

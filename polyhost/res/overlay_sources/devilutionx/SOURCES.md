@@ -143,4 +143,4 @@ Licence texts for the icon and font licences named in this file:
 | `msgfollow.png` | game-icons.net `lorc/footprint` | lorc | CC BY 3.0 |
 | `msggift.png` | game-icons.net `delapouite/present` | delapouite | CC BY 3.0 |
 | `msgdie.png` | game-icons.net `lorc/skull-crossed-bones` | lorc | CC BY 3.0 |
-| `program.png` | "Devilution X" set in New Rocker | Impallari Type | SIL OFL 1.1 |
+| `program.png` | "Devilution" over a large "X", set in New Rocker | Impallari Type | SIL OFL 1.1 |

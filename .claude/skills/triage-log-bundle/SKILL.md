@@ -166,6 +166,15 @@ These are the ones that have produced wrong diagnoses:
   `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master
   reset on 1.9.9). The `boot: spans … 2=65535` on firmware built before 2026-10-22
   is a timing bug, not a slow boot.
+- ⚠️ **A second boot banner in the console is not a reboot.** The firmware
+  prints the banner again on the first GET_ID after 5 s without a GET_ID
+  (`boot_banner_on_host_probe()`, qmk `boot_diag.c`, `BANNER_HOST_GAP_MS`): a
+  restarted host, a woken PC, a reconnect. So a banner in the middle of a log
+  marks a new host session. To tell the two apart, compare a counter that a boot
+  resets across the two banners: the split-link `tx` count or the `oled_i2c #N`
+  number. A count that kept rising means no reboot, and so does a host log with no
+  `Firmware restart detected` at that second. On 2026-11-05 a console log with
+  several banners was first read as reboots; the `tx` count rose across all of them.
 - **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
   process appends `=== fault dump(s) above were written before this time | … ===`
   after a dump once the file has been steady for ~60 s, so a dump is dated to
