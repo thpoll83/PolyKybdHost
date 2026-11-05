@@ -173,6 +173,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     onenote:
       url: '(?i)^https?://(([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft)/.*[?&]ithint=onenote|(www\.)?onenote\.com/)'
       overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
+    # Todoist (sources: overlay_sources/todoist/): the web app is under
+    # app.todoist.com/app; the marketing and help pages keep the browser keys.
+    todoist.com/app:
+      url: '^https?://(app\.)?todoist\.com/app'
+      overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -257,6 +262,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
     ChatGPT:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+    # Todoist (sources: overlay_sources/todoist/): the app's tabs are titled
+    # "<view> - Todoist" or "Todoist"; the gate keeps pages that only mention
+    # Todoist ("Use keyboard shortcuts in Todoist") off the set.
+    Todoist:
+      title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
+      overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
@@ -362,6 +373,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         pptx:
           url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
           overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
+        todoist.com/app:
+          url: '^https?://(app\.)?todoist\.com/app'
+          overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -429,6 +443,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
         ChatGPT:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+        Todoist:
+          title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
+          overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
 # Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
 # keymap, so it has its own entry, but the web-app routing is the browser
 # entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
@@ -1512,6 +1529,15 @@ obsidian:
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+# Todoist desktop app (sources: overlay_sources/todoist/). Todoist.exe on
+# Windows, Todoist on macOS, todoist (AppImage, snap) or the Flatpak app id
+# com.todoist.Todoist on Linux. The web app (todoist.com) is in the browser
+# entries: it has none of the window, back and scroll keys.
+todoist,com.todoist.todoist:
+  overlay: [todoist_template.mods.png, todoist_template.combo.mods.png, todoist_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [todoist_template_mac.mods.png, todoist_template_mac.combo.mods.png, todoist_template_mac.extra.mods.png, todoist_template_mac.gui.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
   os:
