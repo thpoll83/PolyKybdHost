@@ -89,9 +89,17 @@ def main() -> int:
     rw, rh = spec.get("program_icon_region", (pb.SLOT_W, pb.SLOT_H))
     side = min(rw, rh, pb.SLOT_H)
     icon = _icon(args)
-    gray = np.asarray(icon.convert("L").resize((side, side), Image.LANCZOS))
+    # Fit like the generator's "contain": keep the aspect ratio and centre it.
+    # The padding is white, the same as the transparent parts after _icon().
+    src = icon.convert("L")
+    scale = side / max(src.size)
+    fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
+                        Image.LANCZOS)
+    square = Image.new("L", (side, side), 255)
+    square.paste(fitted, ((side - fitted.width) // 2, (side - fitted.height) // 2))
+    gray = np.asarray(square)
     xs = np.nonzero(ours.any(axis=0))[0]
-    x0 = min(int(xs.max()) + 1, pb.SLOT_W) - side
+    x0 = max(0, min(int(xs.max()) + 1, pb.SLOT_W) - side)
     y0 = (pb.SLOT_H - side) // 2
 
     def placed(m: np.ndarray) -> np.ndarray:
