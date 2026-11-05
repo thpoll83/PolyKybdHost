@@ -1353,6 +1353,26 @@ taskmgr:
   overlay: sevenzip_template.mods.png
 winscp:
   overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
+# KeePassXC (sources: overlay_sources/keepassxc/). KeePassXC.exe on Windows,
+# keepassxc on Linux and macOS; Wayland and Flatpak report the desktop file
+# name org.keepassxc.KeePassXC (set in src/main.cpp).
+keepassxc,org.keepassxc.keepassxc:
+  overlay: [keepassxc_template.mods.png, keepassxc_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [keepassxc_template_mac.mods.png, keepassxc_template_mac.combo.mods.png, keepassxc_template_mac.extra.mods.png]
+    linux:
+      overlay: [keepassxc_template_linux.mods.png, keepassxc_template_linux.combo.mods.png]
+# KeePass 2.x, the original KeePass (sources: overlay_sources/keepassxc/keepass.yaml,
+# sharing the KeePassXC icons). KeePass.exe on Windows. On Linux it runs under
+# Mono; the Debian/Ubuntu package starts it as `keepass2`. Names not checked on
+# an install. Under Mono the move keys are Ctrl+Shift+F5..F8, so Linux
+# has its own set.
+keepass,keepass2:
+  overlay: [keepass_template.mods.png, keepass_template.combo.mods.png]
+  os:
+    linux:
+      overlay: [keepass_template_linux.mods.png, keepass_template_linux.combo.mods.png]
 putty:
   overlay: putty_template.mods.png
 # Office on macOS reports its display name, `Microsoft Word` and so on.
