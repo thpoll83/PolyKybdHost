@@ -411,6 +411,8 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the
   recipe for each icon, keyed by variant (the faction) where they differ.
+  The spec must be `<app>/<name>.yaml`, one level down: user installs have only
+  those files of `res/overlay_sources` (`updater.is_build_only()`).
   - Shared, at the top of the package: `__init__.py` (below), `build.py`,
     `dither.py` and `picture.py`; `readers.py` (light, imported at start) holds
     the `Reader` and `Setting` declarations and the registry of readers.
