@@ -18,9 +18,11 @@ try:
     from polyhost.handler.active_window import OverlayHandler
     _IMPORT_ERR = None
 except Exception as e:
-    # Narrow on purpose: only a missing dependency or Xlib refusing a missing
-    # display may skip. Anything else is a real regression and re-raises.
-    if not (isinstance(e, ModuleNotFoundError)
+    # Narrow on purpose: only a missing third-party dependency or Xlib refusing
+    # a missing display may skip. A missing polyhost module, or anything else,
+    # is a real regression and re-raises.
+    if not ((isinstance(e, ModuleNotFoundError)
+             and not (e.name or "").startswith("polyhost"))
             or type(e).__module__.split(".")[0] == "Xlib"):
         raise
     _IMPORT_ERR = e
