@@ -4,7 +4,7 @@
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
 `confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
 `bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
-Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `linear.yaml` and
+Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `canva.yaml`, `linear.yaml` and
 `overleaf.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -411,6 +411,8 @@ DIAGRAM_ETC = {
     "exc_clear": "ms:delete_sweep",
     "exc_textsize_dn": "ms:text_decrease",
     "exc_textsize_up": "ms:text_increase",
+    # --- Canva (the other Canva keys reuse draw.io and Excalidraw icons) ---
+    "canva_elbow": "ms:subdirectory_arrow_right",
     # --- Linear ---
     "lin_layout": "ms:view_kanban",
     "lin_agent": "Sparkle",
@@ -457,6 +459,27 @@ DIAGRAM_ETC = {
 # Their ESC marks: each app's own logo from Simple Icons (CC0 artwork).
 DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
                      "linear.png": "linear", "overleaf.png": "overleaf"}
+
+# Canva: Simple Icons removed the Canva logo and MDI has none, so there is no
+# licensed copy of the mark. The substitute is drawn here: a filled disc with an
+# italic serif C knocked out, the shape of Canva's app icon without its artwork.
+CANVA_MARK = "canva.png"
+CANVA_SERIF_BOLD_ITALIC = "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf"
+
+
+def _draw_canva_mark(dest: Path, px: int = 32, ss: int = 8) -> None:
+    """A px*px disc with a knocked-out italic C, 1-bit, placed 1:1 by the spec."""
+    from PIL import ImageDraw, ImageFont
+    big = px * ss
+    img = Image.new("L", (big, big), 0)
+    d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, big - 1, big - 1], fill=255)
+    font = ImageFont.truetype(CANVA_SERIF_BOLD_ITALIC, int(big * 0.82))
+    l, t, r, b = d.textbbox((0, 0), "C", font=font)
+    d.text(((big - (r - l)) / 2 - l, (big - (b - t)) / 2 - t), "C", fill=0, font=font)
+    a = img.resize((px, px), Image.LANCZOS).point(lambda v: 255 if v > 128 else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+
 
 # narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
 # "Arrow Minimize" but no horizontal one.
@@ -521,7 +544,12 @@ def main() -> int:
         rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
     for fname, draw in GEO.items():
         draw(out / fname)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
+    if (out / CANVA_MARK).exists():
+        print(f"  {CANVA_MARK}  <- committed asset (left as-is)")
+    else:
+        _draw_canva_mark(out / CANVA_MARK)
+        print(f"  {CANVA_MARK}  <- drawn disc + knocked-out C")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)+1} program marks) to {out}")
     return 0
 
 

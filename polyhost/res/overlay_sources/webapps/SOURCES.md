@@ -442,3 +442,43 @@ Choices and keys left out:
 - **Overleaf:** Tab and Shift+Tab (indent), the multi-cursor keys
   (Ctrl+Alt+arrows) and the cursor movement keys are left out. Ctrl+U,
   Ctrl+Shift+U and Ctrl+Space use Ctrl on macOS as well, as the source binds them.
+
+## Canva
+
+One spec, written by hand: `canva.yaml`. It uses `CMDCTRL`, so it gives a
+Windows/Linux set (46 keys) and a macOS set (45 keys). Most icons are reused
+from the draw.io and Excalidraw sets. The one new key icon is `canva_elbow.png`
+(Material Symbols `subdirectory_arrow_right`, Apache-2.0), listed in
+`fetch_icons.py` → `DIAGRAM_ETC`.
+
+Shortcuts: Canva Help Center, "Canva keyboard shortcuts",
+<https://www.canva.com/help/canva-keyboard-shortcuts/>, with "Group, layer, and
+align elements" (`/help/layer-group-align/`) and "Lock and unlock pages or
+elements" (`/help/lock-and-unlock-elements/`). canva.com refuses automated
+fetches, so the keys were read from search-engine extracts of these pages on
+2026-11-05, not from the pages themselves. Check them against the live page in
+a browser.
+
+ESC mark: Simple Icons no longer has a Canva icon (`canva.svg` returns 404 on
+`develop`) and Material Design Icons has none, so there is no licensed copy of
+Canva's logo. `canva.png` is drawn in `fetch_icons.py` (`_draw_canva_mark`): a
+filled disc with an italic serif C (Liberation Serif Bold Italic, SIL OFL)
+knocked out, 32×32 px, placed 1:1.
+
+Routing: a `urls-contains` entry with a `url` gate on `canva.com/design/`, so
+only the editor gets the set. The home page and the help pages do not, because
+the bare tool letters would draw over their search fields. There is no title
+fallback: the help pages also have "Canva" in their titles.
+
+Choices and keys left out:
+
+- **Tool letters.** T, R, C, L and S (text, rectangle, circle, line, sticky note)
+  and Shift+\ (elbow line) are drawn as bare keys, as in the Miro and Excalidraw
+  sets.
+- **Redo** is drawn on Ctrl+Shift+Z everywhere and on Ctrl+Y on Windows and Linux
+  only.
+- **Bring to front and send to back** are Ctrl+Alt+] and Ctrl+Alt+[ (Cmd+Option
+  on macOS). The help page names Bring to front; Send to back is its pair.
+- **Left out:** the video keys (Space play or pause, M mute), which act only on a
+  selected video; the heading and body text styles, which only Canva Docs has;
+  Ctrl+Backspace (delete empty page), which only third-party lists name.
