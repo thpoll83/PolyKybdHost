@@ -55,15 +55,33 @@ if ($TargetDir -eq ".") {
     if ($env:POLYKYBD_REF) { $cloneArgs += @("--branch", $env:POLYKYBD_REF) }
     git @cloneArgs $RepoUrl $TargetDir
     if ($LASTEXITCODE -ne 0) { throw "git clone failed." }
-    # Through stdin, so no shell or C runtime expands the * in a pattern.
-    @(
+    # The patterns are written to the sparse-checkout file directly, with LF
+    # line ends and no BOM. Piping them into `sparse-checkout set --stdin`
+    # works in PowerShell 7 but not in Windows PowerShell 5.1: git received
+    # patterns that matched nothing and emptied the checkout (CI, 2026-11-05).
+    # Passing them as arguments would leave the * to the shell.
+    $patterns = @(
         '/*'
         '!/tests/'
         '!/polyhost/res/overlay_sources/**'
         '/polyhost/res/overlay_sources/*/*.yaml'
-    ) | git -C $TargetDir sparse-checkout set --no-cone --stdin
+    )
+    # `init --no-cone` and not `git config core.sparseCheckoutCone false`:
+    # `clone --sparse` stores cone mode in the worktree config, which takes
+    # priority over the repository config.
+    git -C $TargetDir sparse-checkout init --no-cone
+    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout init failed." }
+    # Resolve-Path: [System.IO.File] resolves a relative path against the
+    # process directory, not the PowerShell location.
+    $sparseFile = Join-Path (Resolve-Path $TargetDir).Path ".git\info\sparse-checkout"
+    [System.IO.File]::WriteAllText($sparseFile, (($patterns -join "`n") + "`n"),
+                                   (New-Object System.Text.UTF8Encoding $false))
+    git -C $TargetDir sparse-checkout reapply
     # Without the patterns a --sparse clone has only the top-level files.
-    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout failed." }
+    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout reapply failed." }
+    if (-not (Test-Path (Join-Path $TargetDir "requirements.txt"))) {
+        throw "The sparse checkout left out requirements.txt; the patterns did not apply."
+    }
 }
 Set-Location $TargetDir
 
