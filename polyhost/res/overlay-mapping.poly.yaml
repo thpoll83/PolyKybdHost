@@ -1747,6 +1747,20 @@ sublime_text,sublime text:
       overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png, sublime_mac_template.extra.mods.png]
     linux:
       overlay: [sublime_linux_template.mods.png, sublime_linux_template.combo.mods.png]
+# OBS Studio (sources: overlay_sources/obs/). The executable is obs64.exe on
+# Windows and `obs` on Linux (OUTPUT_NAME in obs-studio frontend/CMakeLists.txt;
+# the .desktop file sets StartupWMClass=obs); the Flatpak id is
+# com.obsproject.Studio. The macOS bundle is OBS.app (PRODUCT_NAME OBS,
+# CFBundleDisplayName "OBS Studio"), so both names are keys. No name was
+# checked on an install. Linux has its own set because only Linux binds Exit to
+# Ctrl+Q.
+obs,obs64,obs studio,com.obsproject.studio:
+  overlay: [obs_template.mods.png, obs_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [obs_template_mac.mods.png, obs_template_mac.combo.mods.png, obs_template_mac.extra.mods.png]
+    linux:
+      overlay: [obs_template_linux.mods.png, obs_template_linux.combo.mods.png]
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
   os:
