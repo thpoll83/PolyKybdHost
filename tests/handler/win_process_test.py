@@ -144,6 +144,53 @@ class TestUninformativeProcessNames(unittest.TestCase):
             self.assertEqual(win_process.app_name_for(win), expected)
 
 
+class TestTruncatedProcessNames(unittest.TestCase):
+    """The kernel keeps 15 characters of a process name, so GNOME Terminal's
+    ``gnome-terminal-server`` reaches ``ps -o comm=`` as ``gnome-terminal-``.
+    The executable name replaces it only when it starts with it."""
+
+    def test_a_cut_name_becomes_the_executable_name_on_linux(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink",
+                           return_value="/usr/libexec/gnome-terminal-server") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-server")
+        rl.assert_called_once_with("/proc/4321/exe")
+
+    def test_an_executable_that_does_not_extend_the_name_is_ignored(self):
+        # A program that sets its own comm keeps the name it chose.
+        win = FakeWindow(app_name="some-daemon-nam")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/python3.12"):
+            self.assertEqual(win_process.app_name_for(win), "some-daemon-nam")
+
+    def test_an_executable_of_the_same_name_keeps_it(self):
+        win = FakeWindow(app_name="exactly15chars_")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/exactly15chars_"):
+            self.assertEqual(win_process.app_name_for(win), "exactly15chars_")
+
+    def test_a_shorter_name_never_reads_the_executable(self):
+        win = FakeWindow(app_name="gnome-terminal")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal")
+        rl.assert_not_called()
+
+    def test_an_unreadable_executable_keeps_the_cut_name(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", side_effect=PermissionError):
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-")
+
+    def test_macos_keeps_a_15_character_name(self):
+        win = FakeWindow(app_name="gnome-terminal-")
+        with mock.patch("sys.platform", "darwin"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(win), "gnome-terminal-")
+        rl.assert_not_called()
+
+
 class TestNativeBindings(unittest.TestCase):
 
     def test_open_process_returns_a_pointer_sized_handle(self):
