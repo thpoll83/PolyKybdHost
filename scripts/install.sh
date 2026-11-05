@@ -39,7 +39,9 @@ elif [ -d "$TARGET_DIR/.git" ]; then
     git -C "$TARGET_DIR" pull --ff-only
 else
     echo ">> Cloning into '$TARGET_DIR'."
-    git clone "$REPO_URL" "$TARGET_DIR"
+    # Only the latest commit: 19 MB instead of 47 MB for the full history.
+    # `git pull` still updates it. Run `git fetch --unshallow` for the history.
+    git clone --depth 1 "$REPO_URL" "$TARGET_DIR"
 fi
 cd "$TARGET_DIR"
 
@@ -166,12 +168,22 @@ case "$(uname -s)" in
         fi
         ;;
     Linux)
-        echo ">> Installing native hidapi (sudo may prompt for your password)"
-        if command -v apt-get >/dev/null 2>&1; then
+        # A re-run, or a system that already has the library, skips the
+        # package manager. `apt-get update` alone takes 10-30 s.
+        if command -v dpkg >/dev/null 2>&1 && dpkg -s libhidapi-hidraw0 >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (libhidapi-hidraw0)."
+        elif command -v rpm >/dev/null 2>&1 && rpm -q hidapi >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (hidapi)."
+        elif command -v pacman >/dev/null 2>&1 && pacman -Q hidapi >/dev/null 2>&1; then
+            echo ">> Native hidapi already installed (hidapi)."
+        elif command -v apt-get >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             sudo apt-get update && sudo apt-get install -y libhidapi-hidraw0
         elif command -v dnf >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             sudo dnf install -y hidapi
         elif command -v pacman >/dev/null 2>&1; then
+            echo ">> Installing native hidapi (sudo may prompt for your password)"
             # Plain -S (not -Sy): refreshing only the hidapi entry risks partial
             # upgrades on rolling distros. Assume the system is kept up to date.
             sudo pacman -S --noconfirm hidapi

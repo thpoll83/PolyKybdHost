@@ -38,7 +38,9 @@ if ($TargetDir -eq ".") {
     git -C $TargetDir pull --ff-only
 } else {
     Write-Host ">> Cloning into '$TargetDir'."
-    git clone $RepoUrl $TargetDir
+    # Only the latest commit: 19 MB instead of 47 MB for the full history.
+    # `git pull` still updates it. Run `git fetch --unshallow` for the history.
+    git clone --depth 1 $RepoUrl $TargetDir
 }
 Set-Location $TargetDir
 

@@ -9,7 +9,9 @@ computer the keyboard is plugged into.
 
 These commands clone the repo, create a virtual environment, install the Python
 requirements, and (on Linux/macOS) set up the native hidapi library and HID
-permissions.
+permissions. The clone has only the latest commit (`git clone --depth 1`), which
+downloads 19 MB instead of 47 MB. `git pull` still updates it; run
+`git fetch --unshallow` in the folder if you want the full history.
 
 By default the app is installed into a `PolyKybdHost/` folder **in the
 directory you run the command from**. The installer prints this location and
