@@ -476,10 +476,13 @@ fetches, so the keys were read from search-engine extracts of these pages on
 a browser.
 
 ESC mark: Simple Icons no longer has a Canva icon (`canva.svg` returns 404 on
-`develop`) and Material Design Icons has none, so there is no licensed copy of
-Canva's logo. `canva.png` is drawn in `fetch_icons.py` (`_draw_canva_mark`): a
-filled disc with an italic serif C (Liberation Serif Bold Italic, SIL OFL)
-knocked out, 32×32 px, placed 1:1.
+`develop`) and Material Design Icons has none. `canva.png` is Canva's own app
+icon (a white script C on a square tile), made by `_canva_mark` in
+`fetch_icons.py`: the 180×180 icon from canva.com (fetched through Google's
+favicon service, because canva.com answers automated requests with a bot
+check), reduced to 32×32 and cut at luma 200, so the tile is lit and the C is
+cut out. It is placed 1:1. The Canva logo is Canva's trademark; it is used here
+only to name the app the overlay belongs to.
 
 Routing: a `urls-contains` entry with a `url` gate on `canva.com/design/`, so
 only the editor gets the set. The home page and the help pages do not, because

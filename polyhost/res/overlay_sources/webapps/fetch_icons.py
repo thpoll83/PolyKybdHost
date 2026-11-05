@@ -21,7 +21,6 @@ rebuilt from its geometry (`../geo_marks.py`).
 """
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -468,34 +467,24 @@ DIAGRAM_ETC = {
 DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
                      "linear.png": "linear", "overleaf.png": "overleaf"}
 
-# Canva: Simple Icons removed the Canva logo and MDI has none, so there is no
-# licensed copy of the mark. The substitute is drawn here: a filled disc with an
-# italic serif C knocked out, the shape of Canva's app icon without its artwork.
+# Canva: Simple Icons removed the Canva logo and MDI has none. The mark is
+# Canva's own app icon (a white script C on a square tile), reduced to 1 bit at
+# the 32x32 keycap size: the tile is lit and the C is cut out.
 CANVA_MARK = "canva.png"
-# Liberation Serif Bold Italic (OFL; Debian/Ubuntu package fonts-liberation).
-# Elsewhere, point POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC at the .ttf. The mark is
-# committed, so the font is read only when canva.png is missing.
-CANVA_SERIF_BOLD_ITALIC = os.environ.get(
-    "POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC",
-    "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf")
+# canva.com answers automated requests with a bot check, so the icon (canva.com's
+# 180x180 apple-touch-icon) comes through Google's favicon service.
+CANVA_ICON_URL = "https://www.google.com/s2/favicons?domain=canva.com&sz=256"
+CANVA_C_LUMA = 200  # pixels brighter than this are the white C
 
 
-def _draw_canva_mark(dest: Path, px: int = 32, ss: int = 8) -> None:
-    """A px*px disc with a knocked-out italic C, 1-bit, placed 1:1 by the spec."""
-    from PIL import ImageDraw, ImageFont
-    big = px * ss
-    img = Image.new("L", (big, big), 0)
-    d = ImageDraw.Draw(img)
-    d.ellipse([0, 0, big - 1, big - 1], fill=255)
-    try:
-        font = ImageFont.truetype(CANVA_SERIF_BOLD_ITALIC, int(big * 0.82))
-    except OSError as e:
-        raise SystemExit(f"Liberation Serif Bold Italic not found at {CANVA_SERIF_BOLD_ITALIC}: "
-                         "install fonts-liberation or set "
-                         "POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC to its .ttf") from e
-    l, t, r, b = d.textbbox((0, 0), "C", font=font)
-    d.text(((big - (r - l)) / 2 - l, (big - (b - t)) / 2 - t), "C", fill=0, font=font)
-    a = img.resize((px, px), Image.LANCZOS).point(lambda v: 255 if v > 128 else 0)
+def _canva_mark(dest: Path, px: int = 32) -> None:
+    """Canva's square app icon as a px*px 1-bit tile with the C cut out."""
+    import io
+    import urllib.request
+    with urllib.request.urlopen(CANVA_ICON_URL, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("L")
+    a = icon.resize((px, px), Image.LANCZOS).point(
+        lambda v: 255 if v <= CANVA_C_LUMA else 0)
     Image.merge("RGBA", (a, a, a, a)).save(dest)
 
 
@@ -566,8 +555,8 @@ def main() -> int:
     if (out / CANVA_MARK).exists():
         print(f"  {CANVA_MARK}  <- committed asset (left as-is)")
     else:
-        _draw_canva_mark(out / CANVA_MARK)
-        print(f"  {CANVA_MARK}  <- drawn disc + knocked-out C")
+        _canva_mark(out / CANVA_MARK)
+        print(f"  {CANVA_MARK}  <- Canva app icon, 1-bit tile with the C cut out")
     print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)+1} program marks) to {out}")
     return 0
 
