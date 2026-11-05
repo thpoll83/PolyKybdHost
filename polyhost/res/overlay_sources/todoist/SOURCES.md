@@ -56,7 +56,7 @@ Left out:
 |---|---|---|
 | 55 shortcut icons (all not listed below) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `addbottom.png` (`add_row_below`), `addtop.png` (`add_row_above`), `changepriority.png` (`low_priority`), `scrolltop.png` (`vertical_align_top`), `scrollbottom.png` (`vertical_align_bottom`) | [Material Symbols](https://github.com/google/material-design-icons) | Apache-2.0 |
-| `priority1..priority4.png` | `priority.png` (Fluent `Flag`) with the digit drawn beside it in Liberation Sans Bold, `fetch_icons.py` | MIT (glyph), SIL OFL 1.1 (font) |
+| `priority1..priority4.png` | `priority.png` (Fluent `Flag`) with the digit centred in the banner (size 34/96, centre 0.42, 0.38) in Liberation Sans Bold, `number_badge.py` | MIT (glyph), SIL OFL 1.1 (font) |
 | `todoist.png` (ESC program mark) | [Simple Icons](https://github.com/simple-icons/simple-icons) `todoist`, via `../brand_marks.py` | artwork CC0-1.0 |
 
 `fetch_icons.py` prints which source each glyph came from.

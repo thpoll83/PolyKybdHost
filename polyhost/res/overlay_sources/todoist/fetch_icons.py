@@ -91,23 +91,15 @@ ICONS = {
 
 
 def numbered_flags(base: Path, out: Path) -> int:
-    """`priority1..4.png`: the priority flag with its number beside it.
+    """`priority1..4.png`: the priority flag with its number in the banner.
 
     Todoist's 1..4 keys set priority 1..4, and the number is the information.
-    Inside the flag the digit collides with the banner's notch at keycap size,
-    so it stands to the right of the pole, in the same font as number_badge.
+    The digit is centred on the inside of the banner, measured on the 96 px
+    Fluent `Flag`: x 18..63 (the notch starts at 63), y 15..57, so the centre
+    is (0.42, 0.38). Size 34/96 leaves space between digit and outline.
     """
-    from PIL import Image, ImageDraw, ImageFont
-    im = Image.open(base).convert("RGBA")
-    w = im.width
-    font = ImageFont.truetype(number_badge.BOLD, int(w * 0.62))
-    for d in "1234":
-        canvas = Image.new("RGBA", (int(w * 1.5), w), (0, 0, 0, 0))
-        canvas.paste(im, (0, 0), im)
-        ImageDraw.Draw(canvas).text((w * 1.22, w * 0.62), d, fill=(0, 0, 0, 255),
-                                    font=font, anchor="mm")
-        canvas.save(out / f"priority{d}.png")
-    print("  priority1..priority4.png  <- composite (priority flag + digit)")
+    number_badge.numbered(base, "1234", out, "priority", size=34 / 96,
+                          centre=(0.42, 0.38))
     return 4
 
 
