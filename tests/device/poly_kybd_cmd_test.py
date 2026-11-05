@@ -1150,18 +1150,18 @@ class TestConsoleOutput(unittest.TestCase):
 
     def test_accumulates_and_flushes(self):
         keeb, _ = make_keeb()
-        console = FakeHidDevice(replies=[pad(b'boot ok'), b''])
+        console = FakeHidDevice(replies=[pad(b'boot ok\n'), b''])
         keeb.hid = make_hid_helper(FakeHidDevice(), console=console)
         out = keeb.get_console_output()
-        self.assertEqual(out, 'boot ok')
+        self.assertEqual(out, 'boot ok\n')
 
     def test_no_flush_buffers_for_later(self):
         keeb, _ = make_keeb()
         console = FakeHidDevice(replies=[pad(b'part1'), b''])
         keeb.hid = make_hid_helper(FakeHidDevice(), console=console)
         self.assertIsNone(keeb.get_console_output(flush_and_return=False))
-        console.replies.extend([pad(b'part2'), b''])
-        self.assertEqual(keeb.get_console_output(), 'part1part2')
+        console.replies.extend([pad(b'part2\n'), b''])
+        self.assertEqual(keeb.get_console_output(), 'part1part2\n')
 
 
 if __name__ == '__main__':

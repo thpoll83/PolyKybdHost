@@ -491,6 +491,7 @@ class PolyCore(Observable):
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
             self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
+        self._flush_console_remainder()
         if self._sleep_listener is not None:
             self._sleep_listener.close()
         self.telemetry.stop()
@@ -498,6 +499,21 @@ class PolyCore(Observable):
         self.browser_url_source.close()
         if self.overlay_handler is not None:
             self.overlay_handler.close()
+
+    def _flush_console_remainder(self):
+        """Publish the console text PolyKybd still holds for an unfinished line
+        (``PolyKybd.get_console_output`` keeps it up to
+        ``CONSOLE_PARTIAL_LINE_HOLD_S`` for its newline). No poll follows a
+        shutdown, so without this the last fragment would never reach the
+        log. On the worker, which owns the device object. Never raises."""
+        try:
+            rest = self.worker.run_sync(
+                "console_flush", lambda c: self.keeb.flush_console(), timeout=1)
+        except Exception as e:  # never let it break shutdown
+            self.log.debug("Console flush failed: %s: %s", type(e).__name__, e)
+            return
+        if isinstance(rest, str) and rest:
+            self.emit("console", (None, rest))
 
     def save_mru(self):
         """Best-effort request to persist the keyboard's emoji/language MRU.
