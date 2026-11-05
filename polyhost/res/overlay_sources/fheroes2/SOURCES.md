@@ -95,9 +95,10 @@ outweigh the outline icons (`INK` in `fetch_icons.py`). F2 is the floppy disk at
 26 px with a bolt above its left edge, cut out of the disk by a 2 px gap
 (`quicksave()`).
 
-ESC shows the name "fheroes2" in Pirata One (SIL OFL 1.1,
-`ofl/pirataone/PirataOne-Regular.ttf` from google/fonts at commit e7db6ca), at
-the largest size that fits 70×38 px, drawn over the whole cell without the ESC
+ESC shows "Free" over "Heroes2" in Pirata One (SIL OFL 1.1,
+`ofl/pirataone/PirataOne-Regular.ttf` from google/fonts at commit e7db6ca), both
+lines at the largest one size at which each fits 70 px wide and both, 2 px
+apart, fit 38 px high, drawn over the whole cell without the ESC
 legend (`program_icon_legend: false`, protocol v25). A pixel is lit from grey 80
 of 255; at 120 the thin joins of the "r" and "s" break.
 
@@ -145,4 +146,4 @@ Licence texts for the icon and font licences named in this file:
 | `swaparmies.png` | Font Awesome Free 6.5.2 `right-left` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `fullscreen.png` | Font Awesome Free 6.5.2 `expand` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `textmode.png` | Font Awesome Free 6.5.2 `font` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `program.png` | "fheroes2" set in Pirata One by `fetch_icons.py` | Rodrigo Fuenzalida, Nicolas Massi (font) | SIL OFL 1.1 |
+| `program.png` | "Free" over "Heroes2" set in Pirata One by `fetch_icons.py` | Rodrigo Fuenzalida, Nicolas Massi (font) | SIL OFL 1.1 |

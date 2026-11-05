@@ -4,7 +4,7 @@
 The key icons are flat silhouettes from game-icons.net (CC BY 3.0) and Font
 Awesome Free (CC BY 4.0), as in the Warcraft III set. F2 (quick save) is the
 Font Awesome floppy disk with a bolt beside it. SOURCES.md credits each. The
-ESC mark is the name "fheroes2" set in Pirata One (SIL OFL 1.1); the game's own
+ESC mark is "Free" over "Heroes2" set in Pirata One (SIL OFL 1.1); the game's own
 icon and logo art are not used.
 
     pip install cairosvg numpy pillow
@@ -67,7 +67,8 @@ INK = {"save": (34, 34), "load": (34, 34), "fileoptions": (32, 34),
 # The ESC mark is set in Pirata One (SIL OFL 1.1).
 FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
             "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/pirataone/PirataOne-Regular.ttf")
-MARK_TEXT = "fheroes2"
+MARK_LINES = ("Free", "Heroes2")   # the ESC mark, one line each
+MARK_GAP = 2                # px between the two lines
 MARK_SS = 8                 # supersampling factor for the ESC mark
 # Grey level (0..255) from which a box-filtered ESC mark pixel is lit. At 120
 # the thin joins of the "r" and "s" break; at 80 they hold.
@@ -118,24 +119,30 @@ def quicksave(out: Path) -> None:
 
 
 def program(out: Path) -> None:
-    """program.png: "fheroes2" at the largest size that fits 70x38 px, centred
-    on the whole 72x40 cell. Drawn at MARK_SS times the size and box-filtered
-    down."""
+    """program.png: "Free" over "Heroes2", both lines at the largest one size
+    at which each fits 70 px wide and both, with MARK_GAP between them, fit
+    38 px high, centred on the whole 72x40 cell. Drawn at MARK_SS times the
+    size and box-filtered down."""
     import numpy as np
     from PIL import Image, ImageDraw, ImageFont
     w, h, ss = 72, 40, MARK_SS
+    gap = MARK_GAP * ss
     path = str(cnc._font(FONT_URL))
     for px in range(400, 40, -4):
         font = ImageFont.truetype(path, px)
-        box = font.getbbox(MARK_TEXT)
-        if box[2] - box[0] <= (w - 2) * ss and box[3] - box[1] <= (h - 2) * ss:
+        boxes = [font.getbbox(line) for line in MARK_LINES]
+        height = sum(b[3] - b[1] for b in boxes) + gap * (len(boxes) - 1)
+        if all(b[2] - b[0] <= (w - 2) * ss for b in boxes) and height <= (h - 2) * ss:
             break
     im = Image.new("L", (w * ss, h * ss), 0)
-    ImageDraw.Draw(im).text(((w * ss - (box[2] - box[0])) // 2 - box[0],
-                             (h * ss - (box[3] - box[1])) // 2 - box[1]),
-                            MARK_TEXT, font=font, fill=255)
+    draw = ImageDraw.Draw(im)
+    y = (h * ss - height) // 2
+    for line, box in zip(MARK_LINES, boxes):
+        draw.text(((w * ss - (box[2] - box[0])) // 2 - box[0], y - box[1]),
+                  line, font=font, fill=255)
+        y += box[3] - box[1] + gap
     cnc._save_mask(np.asarray(im.resize((w, h), Image.BOX)) > MARK_THRESHOLD, out / "program.png")
-    print(f"  program.png  <- {MARK_TEXT} (Pirata One, {px / ss:.1f} px)")
+    print(f"  program.png  <- {' / '.join(MARK_LINES)} (Pirata One, {px / ss:.1f} px)")
 
 
 def main() -> int:
