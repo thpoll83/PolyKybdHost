@@ -217,7 +217,10 @@ class RemoteHandler:
         self.connections["_report"] = {
             "handle": str(handle),
             "name": str(name),
-            "title": str(title),
+            # None (no title) is an EMPTY title, which `find_matching_entry`
+            # treats as unknown and skips a `title:` regex for; str(None)
+            # made it the real-looking text "None" (field log, 2026-11-05).
+            "title": "" if title is None else str(title),
         }
         self.connections["_latest"] = "_report"
         if os is not None:

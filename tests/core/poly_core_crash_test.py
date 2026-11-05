@@ -196,5 +196,34 @@ class ConnectTimeCrashReadTest(unittest.TestCase):
         self.assertEqual(self._crashes(), [])
 
 
+class ConsoleShutdownFlushTest(unittest.TestCase):
+    """Shutdown publishes the console text PolyKybd still holds for an
+    unfinished line: no later poll would send it (CodeRabbit, #571)."""
+
+    def make(self, rest):
+        core = make_core(connected=True)
+        core.keeb.flush_console.return_value = rest
+        core.worker.run_sync.side_effect = lambda name, fn, timeout=None: fn(core)
+        events = []
+        core.subscribe(lambda name, payload: events.append((name, payload)))
+        return core, events
+
+    def test_the_held_line_is_published(self):
+        core, events = self.make("half a line")
+        core._flush_console_remainder()
+        self.assertEqual(events, [("console", (None, "half a line"))])
+
+    def test_nothing_held_publishes_nothing(self):
+        core, events = self.make("")
+        core._flush_console_remainder()
+        self.assertEqual(events, [])
+
+    def test_a_stopped_worker_is_quiet(self):
+        core, events = self.make("x")
+        core.worker.run_sync.side_effect = RuntimeError("HidWorker is stopping")
+        core._flush_console_remainder()
+        self.assertEqual(events, [])
+
+
 if __name__ == "__main__":
     unittest.main()

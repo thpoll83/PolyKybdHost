@@ -1,0 +1,80 @@
+# Runs the Windows one-line installer (scripts/install.ps1) on a clean Windows
+# runner, then checks the result with scripts/check_install_tree.py.
+#
+# Nothing else runs install.ps1: the app's updater does not call it, and the
+# unit suite runs on Linux. Without this job, a broken installer is found by
+# the next Windows user who installs from the README.
+#
+# The installer clones from GitHub, not from this checkout. POLYKYBD_REPO_URL
+# and POLYKYBD_REF point it at the pull request's own branch (a fork's too),
+# so the job installs the code under review and not main.
+name: Windows installer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/install.ps1
+      - scripts/check_install_tree.py
+      - polyhost/services/updater.py
+      - requirements.txt
+      - setup.py
+      - .github/workflows/windows-installer.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/install.ps1
+      - scripts/check_install_tree.py
+      - polyhost/services/updater.py
+      - requirements.txt
+      - setup.py
+      - .github/workflows/windows-installer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: install.ps1 (${{ matrix.shell }})
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # `powershell` is Windows PowerShell 5.1, which is what most users run
+        # the `irm ... | iex` line in. `pwsh` is PowerShell 7.
+        shell: [powershell, pwsh]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      # Only for the script itself; the installer clones its own copy.
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run install.ps1
+        env:
+          POLYKYBD_DIR: ${{ runner.temp }}\PolyKybdHost
+          POLYKYBD_NO_LAUNCH: "1"
+          POLYKYBD_REPO_URL: ${{ github.event.pull_request.head.repo.clone_url || format('{0}/{1}.git', github.server_url, github.repository) }}
+          POLYKYBD_REF: ${{ github.head_ref || github.ref_name }}
+          INSTALLER: ${{ github.workspace }}\scripts\install.ps1
+        # Started from runner.temp, so the installer does not find itself
+        # inside a checkout and takes the clone path.
+        working-directory: ${{ runner.temp }}
+        run: |
+          $start = Get-Date
+          & $env:INSTALLER
+          Write-Host ("install.ps1 took {0:N0} s" -f ((Get-Date) - $start).TotalSeconds)
+
+      - name: Check the installed tree
+        working-directory: ${{ runner.temp }}\PolyKybdHost
+        run: |
+          .venv\Scripts\python.exe scripts\check_install_tree.py .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .venv\Scripts\polyctl.exe --help
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

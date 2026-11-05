@@ -204,7 +204,7 @@ and relative links were adjusted to suit a standalone file.
 
 - **Shell title integration (every OS)**: the host sees a program inside a terminal
   (GNU nano) only through the window title, and plain bash, zsh and PowerShell show the
-  prompt's title, not the command. **"Show the running command in the terminal title…"**
+  prompt's title, not the command. **"Set up the terminal and editors…"**
   is always visible under Updates, after the udev row, in the tray app and in the
   forwarder (the forwarder reports its own machine's titles). It opens
   `gui/shell_title_dialog.py`: one row per shell found (bash, zsh, PowerShell 7 `pwsh`,
@@ -237,6 +237,25 @@ and relative links were adjusted to suit a standalone file.
     refused with the `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` hint: a
     profile it cannot run prints an error at every start. On Windows a `bash` in
     System32 is the WSL launcher and is not counted.
+  - **Editor plugins, in the same dialog** (`services/editor_plugins.py`, also
+    `polyctl editor-plugins install|remove|status [--editor …]`): a second list with
+    Vim, Neovim and Emacs, each found on `PATH` or by its folder. Install copies
+    `vim-plugin/` (`plugin/`, `lua/`, `doc/` and a generated `doc/tags`, byte-identical
+    to `:helptags`) to `~/.vim/pack/polykybd/start/polykybd` (`~/vimfiles` on Windows)
+    or the Neovim `site/pack` folder, and `emacs-package/polykybd.el` to
+    `<emacs dir>/polykybd/`, plus a block between `;; >>> PolyKybd editor integration >>>`
+    markers in the init file Emacs reads (`~/.emacs`, `~/.emacs.el`,
+    `~/.emacs.d/init.el`, `$XDG_CONFIG_HOME/emacs/init.el`, the first that exists),
+    changed like a shell startup file. Each copy has a `.polykybd-host.json` stamp with
+    the SHA-256 of every file. At every start the tray app, the forwarder and the daemon
+    copy the shipped files again where the copy matches its stamp and the shipped files
+    differ (an update); a copy changed by hand reads `modified` and is left alone. A
+    folder with the plugin and no stamp (a copy made by hand from the README) reads
+    `manual`; Install moves it to `pack/polykybd/polykybd-backup-<time>`, where Vim does
+    not load it. A plugin manager's copy (`plugged/`, another `pack/`, lazy.nvim) or an
+    init file that loads `polykybd` outside the block also reads `manual` and is not
+    ticked. A host port other than 50164 or a token shows a note: the plugins read
+    those from the editor's own settings.
 
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`

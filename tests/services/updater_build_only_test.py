@@ -85,7 +85,8 @@ class TestSparsePatterns(unittest.TestCase):
     def test_installers_pass_the_same_patterns(self):
         for script in ("scripts/install.sh", "scripts/install.ps1"):
             text = (REPO / script).read_text(encoding="utf-8")
-            block = text[text.index("--sparse"):text.index("sparse-checkout set")]
+            end = "sparse-checkout set" if script.endswith(".sh") else "sparse-checkout reapply"
+            block = text[text.index("--sparse"):text.index(end)]
             found = re.findall(r"^\s*'([^']+)'", block, re.M)
             self.assertEqual(tuple(found), updater.SPARSE_PATTERNS, script)
 

@@ -1,0 +1,627 @@
+"""Editor plugins: copy the Vim/Neovim plugin and the Emacs package shipped
+with this installation to where the editor loads them.
+
+The plugins (``vim-plugin/``, ``emacs-package/``) tell the host which mode the
+editor is in, so the keycaps follow Normal and Insert mode in Vim or the Org
+and Dired keys in Emacs. Without them an editor in a terminal shows the
+terminal's keys. This module does the copy that their READMEs describe:
+
+- Vim: ``~/.vim/pack/polykybd/start/polykybd`` (``~/vimfiles`` on Windows).
+- Neovim: ``$XDG_DATA_HOME/nvim/site/pack/polykybd/start/polykybd``
+  (``%LOCALAPPDATA%/nvim-data/site`` on Windows).
+- Emacs: ``polykybd.el`` into ``<emacs dir>/polykybd/``, and a marked block in
+  the init file that loads it and turns ``polykybd-mode`` on.
+
+Each copy gets a stamp file with the SHA-256 of every file written.
+:func:`refresh_installed` runs at every start: it copies the shipped files
+again where a stamp exists and the shipped files changed (an update). A copy
+whose files differ from the stamp was changed by hand and is left alone.
+
+The init file is the user's own: it is changed the way ``shell_title``
+changes a shell startup file (bytes outside the block are kept, a timestamped
+copy is written first), with that module's helpers.
+
+Qt-free and stdlib-only: ``polyctl`` imports it without PyQt5, and the tray
+dialog (``gui/shell_title_dialog.py``) only shows it.
+"""
+import hashlib
+import json
+import logging
+import os
+import platform
+import re
+import shutil
+import tempfile
+import threading
+import time
+from collections import namedtuple
+from pathlib import Path
+
+from polyhost.i18n import M_
+from polyhost.services.shell_title import _backup, _Text, _write
+
+log = logging.getLogger(__name__)
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+VIM_SOURCE = REPO_ROOT / "vim-plugin"
+EMACS_SOURCE = REPO_ROOT / "emacs-package"
+
+VIM = "vim"
+NEOVIM = "neovim"
+EMACS = "emacs"
+EDITORS = (VIM, NEOVIM, EMACS)
+
+# The plugin folders a Vim package needs. README.md stays behind.
+_VIM_DIRS = ("plugin", "lua", "doc")
+_EMACS_FILES = ("polykybd.el",)
+
+STAMP_NAME = ".polykybd-host.json"
+BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
+END_MARKER = ";; <<< PolyKybd editor integration <<<"
+
+# The port and token the plugins use when nothing is set. A host with another
+# port or a token needs the same values in the editor's own settings.
+DEFAULT_PORT = 50164
+
+STATE_INSTALLED = "installed"
+STATE_NOT_INSTALLED = "not-installed"
+STATE_OUTDATED = "outdated"        # this app's copy, older than the shipped files
+STATE_MODIFIED = "modified"        # this app's copy, changed by hand since
+STATE_STALE = "stale"              # the init block loads another folder
+STATE_MANUAL = "manual"            # loaded from somewhere this app did not write
+STATE_NOT_PRESENT = "not-present"
+STATE_NO_SOURCE = "no-source"      # this installation has no plugin files
+
+EditorStatus = namedtuple("EditorStatus", "editor state target detail")
+EditorStatus.__doc__ = """One editor's state. ``target`` is the plugin folder
+(Vim, Neovim) or the init file (Emacs), a Path or None. ``detail`` is the
+other copy's path for STATE_MANUAL and STATE_STALE, "" otherwise."""
+
+Result = namedtuple("Result", "editor ok changed message backup")
+Result.__doc__ = """What install()/remove() did for one editor. ``message``
+is English text from an ``M_()`` template, ``backup`` the copy of the init
+file or of the replaced folder, or None."""
+
+MSG_INSTALLED = M_("Copied the plugin to {path}.")
+MSG_UPDATED = M_("Replaced the plugin in {path} with the one from this installation.")
+MSG_ALREADY = M_("Already set up in {path}.")
+MSG_REMOVED = M_("Removed the plugin from {path}.")
+MSG_NOT_INSTALLED = M_("Nothing to remove in {path}.")
+MSG_NOT_PRESENT = M_("{editor} was not found on this computer.")
+MSG_NO_SOURCE = M_("This installation has no plugin files ({path}).")
+MSG_MODIFIED = M_("{path} was changed by hand. Remove or update it by hand.")
+MSG_NO_END_MARKER = M_("{path} has a start marker without an end marker. Remove the block by hand.")
+MSG_WRITE_FAILED = M_("Could not change {path}: {error}")
+MSG_EMACS_INSTALLED = M_("Copied the plugin to {path} and added the lines that load it to {init}.")
+MSG_EMACS_REMOVED = M_("Removed the lines that load the plugin from {init}.")
+MSG_EMACS_REMOVED_ALL = M_("Removed the lines that load the plugin from {init}, and the plugin from {path}.")
+
+
+# --- where the editors look -----------------------------------------------
+
+def _home(home, env, system):
+    if home is not None:
+        return Path(home)
+    if system == "Windows" and env.get("HOME"):
+        # Vim, Neovim and Emacs on Windows all use HOME when it is set.
+        return Path(env["HOME"])
+    return Path.home()
+
+
+def vim_dir(editor, home=None, env=None, system=None):
+    """The package folder ``editor`` (VIM or NEOVIM) loads the plugin from."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = _home(home, env, system)
+    if editor == VIM:
+        base = h / ("vimfiles" if system == "Windows" else ".vim")
+    elif system == "Windows":
+        local = env.get("LOCALAPPDATA")
+        base = (Path(local) if local else h / "AppData" / "Local") / "nvim-data" / "site"
+    else:
+        data = env.get("XDG_DATA_HOME")
+        base = (Path(data) if data else h / ".local" / "share") / "nvim" / "site"
+    return base / "pack" / "polykybd" / "start" / "polykybd"
+
+
+def emacs_init_file(home=None, env=None, system=None):
+    """The init file Emacs reads, in Emacs's own order: ``~/.emacs``,
+    ``~/.emacs.el``, ``~/.emacs.d/init.el``, ``$XDG_CONFIG_HOME/emacs/init.el``.
+    When none exists, ``~/.emacs.d/init.el``, or the XDG one if only that
+    folder exists."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = _home(home, env, system)
+    xdg = Path(env["XDG_CONFIG_HOME"]) if env.get("XDG_CONFIG_HOME") else h / ".config"
+    dot_d = h / ".emacs.d"
+    for candidate in (h / ".emacs", h / ".emacs.el", dot_d / "init.el", xdg / "emacs" / "init.el"):
+        if candidate.is_file():
+            return candidate
+    if not dot_d.is_dir() and (xdg / "emacs").is_dir():
+        return xdg / "emacs" / "init.el"
+    return dot_d / "init.el"
+
+
+def emacs_lisp_dir(init_file):
+    """The folder ``polykybd.el`` is copied to, beside the init file."""
+    init_file = Path(init_file)
+    if init_file.name in (".emacs", ".emacs.el"):
+        return init_file.parent / ".emacs.d" / "polykybd"
+    return init_file.parent / "polykybd"
+
+
+def _present(editor, which, system):
+    which = which or shutil.which
+    names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs")}[editor]
+    return any(which(n) for n in names)
+
+
+# --- the files to copy ------------------------------------------------------
+
+_TAG_RE = re.compile(r"(?:^|(?<=[\s]))\*([^\s|*]+)\*(?=\s|$)", re.M)
+
+
+def help_tags(doc_name, text):
+    """The ``tags`` file Vim's ``:helptags`` writes for one help file:
+    ``tag<Tab>file<Tab>/*tag*``, sorted by byte value. Written here so no
+    editor has to be started."""
+    tags = sorted(set(_TAG_RE.findall(text)), key=lambda t: t.encode("utf-8"))
+    lines = []
+    for tag in tags:
+        pattern = tag.replace("\\", "\\\\").replace("/", "\\/")
+        lines.append(f"{tag}\t{doc_name}\t/*{pattern}*\n")
+    return "".join(lines).encode("utf-8")
+
+
+def shipped_files(editor, source=None):
+    """``{relative path: bytes}`` to write for ``editor``, or None when this
+    installation has no plugin files."""
+    if editor == EMACS:
+        source = Path(source or EMACS_SOURCE)
+        if not all((source / name).is_file() for name in _EMACS_FILES):
+            return None
+        return {name: (source / name).read_bytes() for name in _EMACS_FILES}
+    source = Path(source or VIM_SOURCE)
+    if not (source / "plugin" / "polykybd.vim").is_file():
+        return None
+    files = {}
+    for sub in _VIM_DIRS:
+        for path in sorted((source / sub).rglob("*")):
+            if path.is_file() and path.name != "tags":
+                files[path.relative_to(source).as_posix()] = path.read_bytes()
+    for rel, data in list(files.items()):
+        if rel.startswith("doc/") and rel.endswith(".txt"):
+            tags = help_tags(rel[len("doc/"):], data.decode("utf-8", "replace"))
+            files["doc/tags"] = files.get("doc/tags", b"") + tags
+    return files
+
+
+def _sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def read_stamp(folder):
+    """The stamp's ``{relative path: sha256}``, or None when there is none."""
+    try:
+        data = json.loads((Path(folder) / STAMP_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    files = data.get("files") if isinstance(data, dict) else None
+    return files if isinstance(files, dict) else None
+
+
+def _copy_state(folder, shipped):
+    """STATE_INSTALLED, STATE_OUTDATED, STATE_MODIFIED or STATE_MANUAL for a
+    folder that exists, STATE_NOT_INSTALLED for one that does not."""
+    folder = Path(folder)
+    stamp = read_stamp(folder)
+    if stamp is None:
+        return STATE_MANUAL if folder.is_dir() and any(folder.iterdir()) else STATE_NOT_INSTALLED
+    for rel, digest in stamp.items():
+        try:
+            if _sha((folder / rel).read_bytes()) != digest:
+                return STATE_MODIFIED
+        except FileNotFoundError:
+            return STATE_OUTDATED
+        except OSError:
+            return STATE_MODIFIED
+    want = {rel: _sha(data) for rel, data in shipped.items()}
+    return STATE_INSTALLED if want == stamp else STATE_OUTDATED
+
+
+def _write_copy(folder, shipped, old_stamp=None):
+    """Write ``shipped`` into ``folder``, each file through a temporary file
+    and a rename, and the stamp last. Files an older stamp listed and the
+    new copy has not are deleted."""
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    for rel, data in shipped.items():
+        dest = folder / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=dest.parent, prefix=".polykybd-")
+        try:
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(data)
+            os.replace(tmp, dest)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+    for rel in (old_stamp or {}):
+        if rel not in shipped:
+            try:
+                (folder / rel).unlink()
+            except OSError:
+                pass
+    stamp = {"files": {rel: _sha(data) for rel, data in shipped.items()}}
+    (folder / STAMP_NAME).write_text(json.dumps(stamp, indent=1, sort_keys=True), encoding="utf-8")
+
+
+def _delete_copy(folder):
+    """Delete this app's copy: the stamped files, the stamp, then every
+    folder that is left empty, up to the ``pack`` folder."""
+    folder = Path(folder)
+    for rel in read_stamp(folder) or {}:
+        try:
+            (folder / rel).unlink()
+        except FileNotFoundError:
+            pass
+    (folder / STAMP_NAME).unlink()
+    dirs = sorted((p for p in folder.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True)
+    for d in dirs + [folder]:
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+    for parent in (folder.parent, folder.parent.parent):     # start/, polykybd/
+        if parent.name in ("start", "polykybd"):
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+
+
+def _set_aside(folder, now=None):
+    """Move a folder this app did not write out of the way, beside the
+    package's ``start`` folder, where Vim does not load it."""
+    folder = Path(folder)
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime(now))
+    dest = folder.parent.parent / f"polykybd-backup-{stamp}"
+    n = 1
+    while dest.exists():
+        dest = folder.parent.parent / f"polykybd-backup-{stamp}-{n}"
+        n += 1
+    shutil.move(str(folder), str(dest))
+    return dest
+
+
+# --- the Emacs init block ---------------------------------------------------
+
+_BLOCK_RE = re.compile(
+    r"(?m)^" + re.escape(BEGIN_MARKER) + r"[ \t]*\r?\n(.*?)^"
+    + re.escape(END_MARKER) + r"[ \t]*(?:\r?\n|\Z)", re.S)
+_LOAD_PATH_RE = re.compile(r"\(add-to-list 'load-path \"((?:[^\"\\]|\\.)*)\"\)")
+
+
+def _lisp_string(path):
+    s = Path(path).as_posix()
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def init_block(lisp_dir, nl="\n"):
+    """The lines that load the copied package. ``file-readable-p`` keeps
+    Emacs starting without an error when the folder has gone."""
+    d = _lisp_string(lisp_dir)
+    f = _lisp_string(Path(lisp_dir) / "polykybd.el")
+    lines = [BEGIN_MARKER,
+             f"(when (file-readable-p {f})",
+             f"  (add-to-list 'load-path {d})",
+             "  (require 'polykybd)",
+             "  (polykybd-mode 1))",
+             END_MARKER]
+    return nl.join(lines) + nl
+
+
+def _read_init(path):
+    try:
+        raw = Path(path).read_bytes()
+    except FileNotFoundError:
+        return None
+    return _Text(raw, "utf-8")
+
+
+def _init_blocks(text):
+    found = [(m.start(), m.end(), m.group(1)) for m in _BLOCK_RE.finditer(text)]
+    rest = _BLOCK_RE.sub("", text)
+    orphan = re.search(r"(?m)^" + re.escape(BEGIN_MARKER), rest) is not None
+    return found, orphan, rest
+
+
+def _block_dir(inner):
+    m = _LOAD_PATH_RE.search(inner)
+    if not m:
+        return ""
+    return re.sub(r"\\(.)", r"\1", m.group(1))
+
+
+def _mentions_polykybd(rest):
+    """Whether the init file loads the package outside the marked block."""
+    for line in rest.splitlines():
+        code = line.split(";", 1)[0]
+        if "polykybd" in code:
+            return True
+    return False
+
+
+# --- status -----------------------------------------------------------------
+
+def _other_vim_copies(editor, folder):
+    """Plugin copies another plugin manager or a hand copy put elsewhere."""
+    base = Path(folder).parents[3]          # ~/.vim, .../nvim/site
+    patterns = ["pack/*/start/*/plugin/polykybd.vim", "pack/*/opt/*/plugin/polykybd.vim",
+                "plugged/*/plugin/polykybd.vim", "bundle/*/plugin/polykybd.vim"]
+    searches = [(base, p) for p in patterns]
+    if editor == NEOVIM:
+        # lazy.nvim keeps its plugins beside site/, not in it.
+        searches.append((base.parent / "lazy", "*/plugin/polykybd.vim"))
+    own = Path(folder) / "plugin" / "polykybd.vim"
+    for root, pattern in searches:
+        for hit in sorted(root.glob(pattern)):
+            if hit != own:
+                return hit.parent.parent
+    return None
+
+
+def status(editors=None, home=None, env=None, which=None, system=None,
+           vim_source=None, emacs_source=None):
+    """An EditorStatus for each editor (``editors`` filters by id)."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    out = []
+    for editor in EDITORS:
+        if editors is not None and editor not in editors:
+            continue
+        out.append(_status_one(editor, home, env, which, system,
+                               emacs_source if editor == EMACS else vim_source))
+    return out
+
+
+def _status_one(editor, home, env, which, system, source):
+    shipped = shipped_files(editor, source)
+    if editor == EMACS:
+        init = emacs_init_file(home, env, system)
+        if shipped is None:
+            return EditorStatus(editor, STATE_NO_SOURCE, init, str(source or EMACS_SOURCE))
+        doc = _read_init(init)
+        if not _present(editor, which, system) and doc is None:
+            return EditorStatus(editor, STATE_NOT_PRESENT, init, "")
+        found, _orphan, rest = _init_blocks(doc.text) if doc is not None else ([], False, "")
+        if not found:
+            if _mentions_polykybd(rest):
+                return EditorStatus(editor, STATE_MANUAL, init, str(init))
+            return EditorStatus(editor, STATE_NOT_INSTALLED, init, "")
+        want = emacs_lisp_dir(init)
+        named = _block_dir(doc.unpiece(found[0][2]))
+        if Path(named) != want or len(found) > 1:
+            return EditorStatus(editor, STATE_STALE, init, named)
+        state = _copy_state(want, shipped)
+        if state in (STATE_NOT_INSTALLED, STATE_MANUAL):
+            # The block is there and the copy is gone or not ours.
+            state = STATE_OUTDATED if state == STATE_NOT_INSTALLED else STATE_MANUAL
+        return EditorStatus(editor, state, init, str(want) if state == STATE_MANUAL else "")
+    folder = vim_dir(editor, home, env, system)
+    if shipped is None:
+        return EditorStatus(editor, STATE_NO_SOURCE, folder, str(source or VIM_SOURCE))
+    if not _present(editor, which, system) and not folder.exists():
+        return EditorStatus(editor, STATE_NOT_PRESENT, folder, "")
+    state = _copy_state(folder, shipped)
+    detail = str(folder) if state == STATE_MANUAL else ""
+    if state == STATE_NOT_INSTALLED:
+        other = _other_vim_copies(editor, folder)
+        if other is not None:
+            state, detail = STATE_MANUAL, str(other)
+    return EditorStatus(editor, state, folder, detail)
+
+
+def default_selection(st):
+    """Whether "all editors" includes ``st``: an editor found on this computer
+    that this app can set up and has not yet, or set up with older files."""
+    return st.state in (STATE_NOT_INSTALLED, STATE_OUTDATED, STATE_STALE)
+
+
+def needs_settings(port, token):
+    """Whether the editors need the host's port or token set by hand: the
+    plugins default to port 50164 and no token."""
+    return int(port or DEFAULT_PORT) != DEFAULT_PORT or bool(token)
+
+
+# --- install / remove -------------------------------------------------------
+
+def _install_vim(st, shipped, now):
+    folder = Path(st.target)
+    backup = None
+    if st.state == STATE_INSTALLED:
+        return Result(st.editor, True, False, MSG_ALREADY.format(path=folder), None)
+    if st.state == STATE_MODIFIED:
+        return Result(st.editor, False, False, MSG_MODIFIED.format(path=folder), None)
+    try:
+        if st.state == STATE_MANUAL and Path(st.detail) == folder:
+            backup = _set_aside(folder, now)
+        _write_copy(folder, shipped, read_stamp(folder))
+    except OSError as exc:
+        return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=folder, error=exc), backup)
+    msg = MSG_UPDATED if st.state == STATE_OUTDATED or backup else MSG_INSTALLED
+    log.info("Editor plugin: %s %s (backup %s)", st.editor, folder, backup)
+    return Result(st.editor, True, True, msg.format(path=folder), backup)
+
+
+def _install_emacs(st, shipped, now):
+    init = Path(st.target)
+    lisp_dir = emacs_lisp_dir(init)
+    if st.state == STATE_INSTALLED:
+        return Result(st.editor, True, False, MSG_ALREADY.format(path=init), None)
+    if st.state == STATE_MODIFIED:
+        return Result(st.editor, False, False, MSG_MODIFIED.format(path=lisp_dir), None)
+    doc = _read_init(init)
+    exists = doc is not None
+    if doc is None:
+        doc = _Text(b"", "utf-8")
+    text = doc.text
+    found, orphan, _rest = _init_blocks(text)
+    if orphan:
+        return Result(st.editor, False, False, MSG_NO_END_MARKER.format(path=init), None)
+    nl = "\r\n" if "\r\n" in text else "\n"
+    try:
+        if _copy_state(lisp_dir, shipped) != STATE_INSTALLED:
+            _write_copy(lisp_dir, shipped, read_stamp(lisp_dir))
+    except OSError as exc:
+        return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=lisp_dir, error=exc), None)
+    block = doc.piece(init_block(lisp_dir, nl))
+    if found:
+        new = text[:found[0][0]] + block
+        prev = found[0][1]
+        for s, e, _inner in found[1:]:
+            new += text[prev:s]
+            prev = e
+        new += text[prev:]
+    else:
+        sep = nl if text and not text.endswith("\n") else ""
+        new = text + doc.piece(sep) + block
+    backup = None
+    if new != text:
+        try:
+            if exists:
+                backup = _backup(init, now)
+            _write(init, doc.to_bytes(new))
+        except OSError as exc:
+            return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=init, error=exc), backup)
+    log.info("Editor plugin: emacs %s, init %s (backup %s)", lisp_dir, init, backup)
+    msg = MSG_EMACS_INSTALLED.format(path=lisp_dir, init=init)
+    return Result(st.editor, True, True, msg, backup)
+
+
+def _remove_vim(st):
+    folder = Path(st.target)
+    if st.state not in (STATE_INSTALLED, STATE_OUTDATED):
+        if st.state == STATE_MODIFIED:
+            return Result(st.editor, False, False, MSG_MODIFIED.format(path=folder), None)
+        return Result(st.editor, True, False, MSG_NOT_INSTALLED.format(path=folder), None)
+    try:
+        _delete_copy(folder)
+    except OSError as exc:
+        return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=folder, error=exc), None)
+    log.info("Editor plugin: removed %s from %s", st.editor, folder)
+    return Result(st.editor, True, True, MSG_REMOVED.format(path=folder), None)
+
+
+def _remove_emacs(st, now):
+    init = Path(st.target)
+    doc = _read_init(init)
+    found, _orphan, _rest = _init_blocks(doc.text) if doc is not None else ([], False, "")
+    lisp_dir = emacs_lisp_dir(init)
+    if not found:
+        return Result(st.editor, True, False, MSG_NOT_INSTALLED.format(path=init), None)
+    text, new, prev = doc.text, "", 0
+    for s, e, _inner in found:
+        new += text[prev:s]
+        prev = e
+    new += text[prev:]
+    try:
+        backup = _backup(init, now)
+        _write(init, doc.to_bytes(new))
+    except OSError as exc:
+        return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=init, error=exc), None)
+    msg = MSG_EMACS_REMOVED.format(init=init)
+    if read_stamp(lisp_dir) is not None and _copy_state(lisp_dir, {}) != STATE_MODIFIED:
+        try:
+            _delete_copy(lisp_dir)
+            msg = MSG_EMACS_REMOVED_ALL.format(init=init, path=lisp_dir)
+        except OSError as exc:
+            log.warning("Editor plugin: could not delete %s: %s", lisp_dir, exc)
+    log.info("Editor plugin: removed emacs block from %s (backup %s)", init, backup)
+    return Result(st.editor, True, True, msg, backup)
+
+
+def _change(st, install, sources, now=None):
+    if st.state == STATE_NOT_PRESENT:
+        return Result(st.editor, False, False, MSG_NOT_PRESENT.format(editor=st.editor), None)
+    if st.state == STATE_NO_SOURCE:
+        return Result(st.editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)
+    if not install:
+        return _remove_emacs(st, now) if st.editor == EMACS else _remove_vim(st)
+    shipped = shipped_files(st.editor, sources.get(st.editor))
+    if shipped is None:
+        return Result(st.editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)
+    if st.editor == EMACS:
+        return _install_emacs(st, shipped, now)
+    return _install_vim(st, shipped, now)
+
+
+def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source):
+    if statuses is None:
+        statuses = status(editors, home=home, env=env, which=which, system=system,
+                          vim_source=vim_source, emacs_source=emacs_source)
+    sources = {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source}
+    results = []
+    for st in statuses:
+        if editors is not None and st.editor not in editors:
+            continue
+        if editors is None:
+            if install and not default_selection(st):
+                continue
+            if not install and st.state not in (STATE_INSTALLED, STATE_OUTDATED, STATE_STALE):
+                continue
+        results.append(_change(st, install, sources))
+    return results
+
+
+def install(editors=None, statuses=None, home=None, env=None, which=None,
+            system=None, vim_source=None, emacs_source=None):
+    """Copy the plugin for each editor (the ones default_selection() picks
+    when ``editors`` is None). Returns a list of Result."""
+    return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source)
+
+
+def remove(editors=None, statuses=None, home=None, env=None, which=None,
+           system=None, vim_source=None, emacs_source=None):
+    """Delete this app's copy and, for Emacs, the marked block."""
+    return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source)
+
+
+def refresh_installed(home=None, env=None, which=None, system=None,
+                      vim_source=None, emacs_source=None):
+    """Copy the shipped files again for each editor whose copy is this app's
+    and older than them. Runs at every start, so an update reaches the
+    editors without a visit to the dialog. Returns the editors refreshed.
+    Never raises."""
+    refreshed = []
+    try:
+        statuses = status(None, home=home, env=env, which=which, system=system,
+                          vim_source=vim_source, emacs_source=emacs_source)
+    except Exception:  # noqa: BLE001 - a start must not fail for this
+        log.warning("Editor plugin refresh: status failed", exc_info=True)
+        return refreshed
+    sources = {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source}
+    for st in statuses:
+        if st.state != STATE_OUTDATED:
+            continue
+        try:
+            r = _change(st, True, sources)
+        except Exception:  # noqa: BLE001
+            log.warning("Editor plugin refresh failed for %s", st.editor, exc_info=True)
+            continue
+        if r.changed:
+            refreshed.append(st.editor)
+            log.info("Editor plugin refreshed for %s: %s", st.editor, r.message)
+    return refreshed
+
+
+def start_refresh_thread():
+    """Run refresh_installed() on a daemon thread, so a start never waits on
+    the file system. The tray app, the daemon and the forwarder each call it;
+    two of them on one computer write the same bytes, file by file through a
+    rename, so the second finds nothing to do or rewrites identical files."""
+    threading.Thread(target=refresh_installed, name="editor-plugin-refresh",
+                     daemon=True).start()

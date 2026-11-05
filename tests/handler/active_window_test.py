@@ -1857,6 +1857,31 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertNotIn(f"meet_template{suffix}.mods.png",
                                      [str(f) for f in (got or {}).get("overlay", [])])
 
+    def test_CANVA_routes_only_the_design_editor(self):
+        """The Canva set is for the editor (/design/<id>/edit). Other /design/
+        pages (view, watch), the home page and the help pages keep the browser
+        set, because the bare tool letters would draw over their own keys."""
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.common import find_matching_entry, mapping_key
+        editor = ("https://www.canva.com/design/DAF1a2b3c4d/edit",
+                  "https://www.canva.com/design/DAF1a2b3c4d/edit?utm=1",
+                  "https://canva.com/design/DAF1a2b3c4d/edit#page-2")
+        other = ("https://www.canva.com/design/DAF1a2b3c4d/view",
+                 "https://www.canva.com/design/DAF1a2b3c4d/watch",
+                 "https://www.canva.com/design/DAF1a2b3c4d/editor-notes",
+                 "https://www.canva.com/",
+                 "https://www.canva.com/help/keyboard-shortcuts/")
+        for browser in ("chrome", "firefox"):
+            entry = self.handler.mapping[mapping_key(browser, self.handler.mapping)]
+            for os_name, suffix in (("WINDOWS", ""), ("MACOS", "_mac")):
+                for url in editor + other:
+                    with self.subTest(browser=browser, os=os_name, url=url):
+                        got = find_matching_entry("Design - Canva", entry, url,
+                                                  OsType[os_name], title_known=True)
+                        files = [str(f) for f in got["overlay"]]
+                        self.assertEqual(f"canva_template{suffix}.mods.png" in files,
+                                         url in editor, files)
+
     def test_JUPYTER_and_WEB_TOOLS_route_by_gated_url_and_title(self):
         from polyhost.device.command_ids import OsType
         from polyhost.handler.common import find_matching_entry, mapping_key

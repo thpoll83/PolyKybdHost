@@ -227,6 +227,58 @@ def _cmd_shell_integration(_client, args):
     return 0 if all(r.ok for r in results) else 1
 
 
+_EDITOR_STATE_TEXT = {
+    "installed": "set up",
+    "not-installed": "not set up",
+    "outdated": "set up with older plugin files (install copies the current ones)",
+    "modified": "set up, then changed by hand (left alone)",
+    "stale": "the init file loads another copy",
+    "manual": "the plugin is loaded from somewhere else",
+    "not-present": "not found",
+    "no-source": "this installation has no plugin files",
+}
+
+
+def _cmd_editor_plugins(_client, args):
+    """Copy, remove or show the editor mode plugins (services/editor_plugins.py).
+
+    Purely local, like shell-integration (see _is_local_command)."""
+    from polyhost.services import editor_plugins
+    from polyhost.settings import read_setting
+
+    editors = args.editor or None
+    if args.ep_action == "status":
+        for st in editor_plugins.status(editors):
+            line = f"{st.editor:<8}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
+            if st.target is not None:
+                line += f"  ({st.target})"
+            if st.detail:
+                line += f"\n{'':<8}{st.detail}"
+            print(line)
+        port = read_setting("browser_report_port", 50164)
+        token = read_setting("browser_report_token", "")
+        if editor_plugins.needs_settings(port, token):
+            print(f"note: the host listens on port {port}{' with a token' if token else ''}; "
+                  "set g:polykybd_port/g:polykybd_token (Vim) or polykybd-port/"
+                  "polykybd-token (Emacs) to match.")
+        return 0
+    if args.ep_action == "install":
+        results = editor_plugins.install(editors)
+    else:
+        results = editor_plugins.remove(editors)
+    if not results:
+        print("nothing to do" if args.ep_action == "remove"
+              else "no editor to set up was found (name one with --editor)")
+        return 0
+    for r in results:
+        print(f"{r.editor}: {r.message}")
+        if r.backup is not None:
+            print(f"{'':<{len(r.editor) + 2}}backup: {r.backup}")
+    if args.ep_action == "install" and any(r.changed for r in results):
+        print("Restart the editor for the change to take effect.")
+    return 0 if all(r.ok for r in results) else 1
+
+
 def _cmd_logs(client, args):
     """Collect log files — the one command that must work with no daemon.
 
@@ -1360,6 +1412,27 @@ def build_parser():
                             "each shell has)")
     p_si.set_defaults(func=_cmd_shell_integration)
 
+    # --- editor-plugins --------------------------------------------------
+    # Local only, like shell-integration.
+    p_ep = sub.add_parser(
+        "editor-plugins",
+        help="copy the Vim/Neovim plugin and the Emacs package that report the "
+             "editor's mode (works with the host stopped)",
+        description="Copies the plugin shipped with this installation to "
+                    "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
+                    "site/pack folder, or <emacs dir>/polykybd (Emacs, plus a "
+                    "marked block in the init file, saved first). Copies made "
+                    "this way are refreshed when the app starts after an update.")
+    ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
+    ep_install = ep_sub.add_parser(
+        "install", help="copy the plugin (default: every editor found that is not set up)")
+    ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
+    ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
+    for p in (ep_install, ep_remove, ep_status):
+        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs"),
+                       help="only this editor (repeat for more)")
+    p_ep.set_defaults(func=_cmd_editor_plugins)
+
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)
     sub.add_parser("shutdown", help="ask the host to shut down").set_defaults(func=_cmd_shutdown)
 
@@ -1402,8 +1475,8 @@ def _is_offline_command(args) -> bool:
 
 def _is_local_command(args) -> bool:
     """True for commands that never talk to the host: ``shell-integration``
-    edits the user's shell startup files and has nothing to ask it."""
-    return getattr(args, "command", None) == "shell-integration"
+    and ``editor-plugins`` edit the user's own files and have nothing to ask it."""
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins")
 
 
 def main(argv=None):

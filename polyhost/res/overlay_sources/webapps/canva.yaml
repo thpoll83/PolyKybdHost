@@ -1,0 +1,86 @@
+# Canva (canva.com) shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Keys: Canva Help Center, "Canva keyboard shortcuts"
+# (https://www.canva.com/help/canva-keyboard-shortcuts/), with the element and
+# text pages it links. Canva writes Ctrl on Windows and Cmd on macOS for the same
+# key, so those are `CMDCTRL`; Alt is Option on macOS. The tool keys are bare
+# letters, drawn as in the Miro and Excalidraw sets: in the editor the canvas
+# has the focus, not a text field.
+#
+# Left out: the video keys (Space, M), which act only on a selected video, and
+# the shortcuts that only Canva Docs has (heading and body text styles).
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/webapps/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/webapps/canva.yaml --preview /tmp/canva_preview
+app: canva
+match: [canva]
+output: canva_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+# A drawn substitute (fetch_icons.py: _draw_canva_mark), placed 1:1.
+program_icon: canva.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [32, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- tools ---
+  - { key: T, mods: [], icon: textbox.png, label: "Text" }
+  - { key: R, mods: [], icon: dio_rect.png, label: "Rectangle" }
+  - { key: C, mods: [], icon: ellipse.png, label: "Circle" }
+  - { key: L, mods: [], icon: line.png, label: "Line" }
+  - { key: S, mods: [], icon: sticky.png, label: "Sticky note" }
+  - { key: "\\", mods: [SHIFT], icon: canva_elbow.png, label: "Elbow line" }
+  # --- basic ---
+  - { key: Z, mods: [CMDCTRL], label: "Undo" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], label: "Redo" }
+  - { key: Y, mods: [CMDCTRL], label: "Redo", except: [macos] }
+  - { key: X, mods: [CMDCTRL], label: "Cut" }
+  - { key: C, mods: [CMDCTRL], label: "Copy" }
+  - { key: V, mods: [CMDCTRL], label: "Paste" }
+  - { key: A, mods: [CMDCTRL], label: "Select all" }
+  - { key: P, mods: [CMDCTRL], icon: print.png, label: "Print" }
+  - { key: ENTER, mods: [CMDCTRL], icon: newpage.png, label: "Add page" }
+  # --- elements ---
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: "Duplicate" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: "Ungroup" }
+  - { key: L, mods: [ALT, SHIFT], icon: lock.png, label: "Lock" }
+  - { key: RBRACKET, mods: [CMDCTRL], icon: bringforward.png, label: "Bring forward" }
+  - { key: LBRACKET, mods: [CMDCTRL], icon: sendbackward.png, label: "Send backward" }
+  - { key: RBRACKET, mods: [CMDCTRL, ALT], icon: bringfront.png, label: "Bring to front" }
+  - { key: LBRACKET, mods: [CMDCTRL, ALT], icon: sendback.png, label: "Send to back" }
+  - { key: K, mods: [CMDCTRL], icon: link.png, label: "Link" }
+  - { key: N, mods: [CMDCTRL, ALT], icon: addcomment.png, label: "Add comment" }
+  # --- text ---
+  - { key: B, mods: [CMDCTRL], label: "Bold" }
+  - { key: I, mods: [CMDCTRL], label: "Italic" }
+  - { key: U, mods: [CMDCTRL], label: "Underline" }
+  - { key: K, mods: [CMDCTRL, SHIFT], icon: ol_upper.png, label: "Uppercase" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: alignleft.png, label: "Align left" }
+  - { key: C, mods: [CMDCTRL, SHIFT], icon: aligncenter.png, label: "Align center" }
+  - { key: R, mods: [CMDCTRL, SHIFT], icon: alignright.png, label: "Align right" }
+  - { key: "7", mods: [CMDCTRL, SHIFT], icon: numberlist.png, label: "Numbered list" }
+  - { key: "8", mods: [CMDCTRL, SHIFT], icon: bulletlist.png, label: "Bulleted list" }
+  - { key: "9", mods: [CMDCTRL, SHIFT], icon: todo.png, label: "Checklist" }
+  - { key: DOT, mods: [CMDCTRL, SHIFT], icon: exc_textsize_up.png, label: "Larger font" }
+  - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: exc_textsize_dn.png, label: "Smaller font" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: dio_copystyle.png, label: "Copy text style" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: dio_pastestyle.png, label: "Paste text style" }
+  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find and replace" }
+  # --- view ---
+  - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
+  - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }
+  - { key: "0", mods: [CMDCTRL], icon: zoomreset.png, label: "Actual size" }
+  - { key: "0", mods: [CMDCTRL, ALT], icon: zoomfit.png, label: "Zoom to fit" }
+  - { key: "3", mods: [CMDCTRL, ALT], icon: dio_grid.png, label: "Grid view" }
+  - { key: R, mods: [SHIFT], icon: dio_geometry.png, label: "Rulers and guides" }

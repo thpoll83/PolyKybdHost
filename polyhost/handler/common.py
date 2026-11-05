@@ -7,6 +7,10 @@ TITLE = "title"
 TITLE_SW = "titles-startswith"
 TITLE_EW = "titles-endswith"
 TITLE_HAS = "titles-contains"
+# Regex sub-map: each key is a regex searched against the WHOLE title. For a
+# signal inside a word, which the word sub-maps cannot see: a file extension in
+# "Book1.xlsx - WPS Office".
+TITLE_RE = "titles-match"
 # URL constraints — only ever satisfiable when a URL is known for the focused
 # window (a browser reporting its active tab, see handler/browser_url.py). URL
 # is a regex constraint on the whole URL (like TITLE); URL_HAS is a substring
@@ -154,6 +158,7 @@ class Flags(Enum):
     HAS_URL = 6
     HAS_URLS_CONTAINS = 7
     HAS_OS = 8
+    HAS_TITLES_MATCH = 9
 
 
 def _phrase_keys(sub_map):
@@ -252,9 +257,9 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     drift. Pure (no side effects), so it is unit-testable without a display;
     callers add the ENABLE/OFF_ON decision and the current/last bookkeeping.
 
-    ``entry[FLAGS]`` is the 9-bool list
+    ``entry[FLAGS]`` is the 10-bool list
     ``[has_overlay, has_remote, has_title, has_starts_with, has_ends_with,
-    has_contains, has_url, has_urls_contains, has_os]`` from ``annotate()``; the
+    has_contains, has_url, has_urls_contains, has_os, has_match]`` from ``annotate()``; the
     title, url and os sub-maps hold further annotated entries. An entry matches when it
     carries an overlay/remote and every constraint it declares is satisfied —
     recursing into the more-specific sub-maps first (first match wins). An
@@ -309,6 +314,7 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     has_url = len(flags) > 6 and flags[6]
     has_urls_contains = len(flags) > 7 and flags[7]
     has_os = len(flags) > 8 and flags[8]
+    has_match = len(flags) > 9 and flags[9]
 
     # An entry with no overlay of its own can still ROUTE: its sub-maps may name
     # one. The terminal entry only sends a vim:// or emacs:// mode report, or a
@@ -317,7 +323,7 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
     # function), so a terminal with no report and no editor in its title gets
     # None, exactly as an app with no entry, and keeps the generic shortcut harvest.
     if not (has_overlay or has_remote or has_urls_contains or has_starts_with
-            or has_ends_with or has_contains or has_os):
+            or has_ends_with or has_contains or has_os or has_match):
         return None
 
     # OS sub-map first. Which *keymap* an app uses is decided by the platform it
@@ -366,6 +372,15 @@ def find_matching_entry(title, entry, url=None, os_name=None, title_known=True):
             for kw, key in _phrase_keys(entry[TITLE_EW]):
                 if words[-len(kw):] == kw:
                     m = find_matching_entry(title, entry[TITLE_EW][key], url, os_name, title_known)
+                    if m is not None:
+                        return m
+        # `titles-match`: a regex key searched against the whole title, tried in
+        # file order. It sits with the positional matchers above, before the
+        # word-anywhere fallback, and is not suppressed by a known URL.
+        if has_match:
+            for pattern, sub in entry[TITLE_RE].items():
+                if re.search(str(pattern), title):
+                    m = find_matching_entry(title, sub, url, os_name, title_known)
                     if m is not None:
                         return m
         # `titles-contains` is the weakest signal here — any single word anywhere

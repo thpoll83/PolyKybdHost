@@ -270,9 +270,14 @@ class PolyForwarder(QApplication):
         # The forwarder reports THIS machine's window title, so a terminal here
         # needs the same shell setup as one on the keyboard's machine. Same
         # label and dialog as the tray app's entry (services/shell_title.py).
+        # The same dialog copies the Vim/Neovim/Emacs mode plugins
+        # (services/editor_plugins.py); the copies made earlier are refreshed
+        # from this installation on a thread at every start.
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
         self.shell_title_dialog = None
         self.shell_title_action = QAction(get_icon("terminal.svg"),
-                                          _("Show the running command in the terminal title\u2026"),
+                                          _("Set up the terminal and editors\u2026"),
                                           parent=self)
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
@@ -658,7 +663,10 @@ class PolyForwarder(QApplication):
             s.connect((str(ip), TCP_PORT))
             # 4th field = this machine's OS (an OsType value int); older daemons
             # split on ';' and read the first three fields, ignoring the extra one.
-            s.send(f"{handle};{name};{title};{self._os_value}".encode("utf-8"))
+            # pywinctl gives None for a window without a title; it must arrive
+            # as an empty title, not as the text "None" (field log, 2026-11-05).
+            title_text = "" if title is None else title
+            s.send(f"{handle};{name};{title_text};{self._os_value}".encode("utf-8"))
             s.close()
             return True
         except socket.timeout as err:

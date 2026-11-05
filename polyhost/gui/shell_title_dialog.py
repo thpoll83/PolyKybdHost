@@ -1,9 +1,11 @@
-"""The tray-side front end for :mod:`polyhost.services.shell_title`.
+"""The tray-side front end for :mod:`polyhost.services.shell_title` and
+:mod:`polyhost.services.editor_plugins`.
 
 Lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it,
-and installs or removes that line for the shells the user ticks. The rows ARE
-the confirmation: each names the file that changes.
+then each editor (Vim, Neovim, Emacs) with the folder or init file its plugin
+goes to. Install and Remove act on the ticked rows of both lists. The rows ARE
+the confirmation: each names the file or folder that changes.
 
 Local files only, no device and no daemon, so it works the same in client
 mode, with no keyboard, and in the forwarder (which reports the window title
@@ -16,7 +18,7 @@ from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
                              QLabel, QPushButton, QVBoxLayout)
 
 from polyhost.i18n import _, _f, translate_message
-from polyhost.services import shell_title
+from polyhost.services import editor_plugins, shell_title
 
 
 def shell_label(shell):
@@ -50,6 +52,37 @@ def state_text(st):
     return _("Shows the command without setup")
 
 
+def _read_report_settings():
+    """This computer's (port, token) of the report listener the plugins send to."""
+    from polyhost.settings import read_setting
+    return read_setting("browser_report_port", 50164), read_setting("browser_report_token", "")
+
+
+def editor_label(editor):
+    """The editor's name as the dialog shows it (product names, not translated)."""
+    return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
+            editor_plugins.EMACS: "Emacs"}.get(editor, editor)
+
+
+def editor_state_text(st):
+    """One editor's state, translated."""
+    if st.state == editor_plugins.STATE_INSTALLED:
+        return _("Set up")
+    if st.state == editor_plugins.STATE_NOT_INSTALLED:
+        return _("Not set up")
+    if st.state == editor_plugins.STATE_OUTDATED:
+        return _("Set up with older plugin files. Install copies the current ones.")
+    if st.state == editor_plugins.STATE_MODIFIED:
+        return _("Set up, and changed by hand since. This app leaves it alone.")
+    if st.state == editor_plugins.STATE_STALE:
+        return _f("Set up for another copy of the app: {path}", path=st.detail or "?")
+    if st.state == editor_plugins.STATE_MANUAL:
+        return _f("The plugin is already loaded from {path}.", path=st.detail or "?")
+    if st.state == editor_plugins.STATE_NO_SOURCE:
+        return _f("This installation has no plugin files ({path}).", path=st.detail)
+    return _("Not found")
+
+
 class _StatusThread(QThread):
     done = pyqtSignal(object)
 
@@ -69,15 +102,27 @@ class ShellTitleDialog(QDialog):
     """``status_fn``, ``install_fn`` and ``remove_fn`` are the service's
     functions; tests pass fakes."""
 
-    def __init__(self, parent=None, status_fn=None, install_fn=None, remove_fn=None):
+    def __init__(self, parent=None, status_fn=None, install_fn=None, remove_fn=None,
+                 editor_status_fn=None, editor_install_fn=None, editor_remove_fn=None,
+                 report_settings=None):
         super().__init__(parent)
-        self._status_fn = status_fn or shell_title.status
+        self._shell_status_fn = status_fn or shell_title.status
+        self._editor_status_fn = editor_status_fn or editor_plugins.status
+        self._status_fn = self._status_both
         self._install_fn = install_fn or shell_title.install
         self._remove_fn = remove_fn or shell_title.remove
+        self._editor_install_fn = editor_install_fn or editor_plugins.install
+        self._editor_remove_fn = editor_remove_fn or editor_plugins.remove
+        # (port, token) of the report listener, read from the settings file when
+        # None; the plugins assume 50164 and no token.
+        self._report_settings = report_settings
         self._statuses = []
+        self._editor_statuses = []
         self._boxes = {}
+        self._editor_boxes = {}
+        self._editor_error = None
         self._thread = None
-        self.setWindowTitle(_("Command in the terminal title"))
+        self.setWindowTitle(_("Terminal and editor setup"))
 
         layout = QVBoxLayout(self)
         intro = QLabel(_(
@@ -108,6 +153,27 @@ class ShellTitleDialog(QDialog):
         # noinspection PyUnresolvedReferences
         self.codex_box.clicked.connect(self._on_codex_clicked)
         layout.addWidget(self.codex_box)
+
+        editor_intro = QLabel(_(
+            "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert "
+            "mode, the Org or Dired keys) only with the PolyKybd plugin.\n\n"
+            "Install copies the plugin from this installation to where the editor "
+            "loads it. For Emacs it also adds lines that load the plugin to the init "
+            "file, between two marker comments, and first saves a copy of the file. "
+            "When this app is updated, it copies the new plugin files at its next "
+            "start. Restart the editor for the change to take effect."))
+        editor_intro.setWordWrap(True)
+        layout.addSpacing(10)
+        layout.addWidget(editor_intro)
+        self._editor_grid = QGridLayout()
+        self._editor_grid.setColumnStretch(1, 1)
+        layout.addLayout(self._editor_grid)
+        self._settings_note = QLabel()
+        self._settings_note.setWordWrap(True)
+        self._settings_note.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self._settings_note.hide()
+        layout.addWidget(self._settings_note)
+
         self._checking = QLabel(_("Checking the shells…"))
         layout.addWidget(self._checking)
         self._info = QLabel()
@@ -137,6 +203,16 @@ class ShellTitleDialog(QDialog):
         self.refresh()
 
     # --- status ---------------------------------------------------------
+    def _status_both(self):
+        """Both lists, read on the status thread. An editor check that fails
+        leaves the shell rows working."""
+        shells = self._shell_status_fn()
+        try:
+            editors = list(self._editor_status_fn())
+        except Exception as exc:  # noqa: BLE001 - shown in the dialog
+            editors = exc
+        return shells, editors
+
     def refresh(self):
         """Read the state again on a thread; the rows are rebuilt when it ends."""
         if self._thread is not None and self._thread.isRunning():
@@ -167,20 +243,25 @@ class ShellTitleDialog(QDialog):
             self._info.show()
             self._update_buttons()
             return
-        self._statuses = list(result)
+        shells, editors = result
+        self._statuses = list(shells)
+        self._editor_error = editors if isinstance(editors, Exception) else None
+        self._editor_statuses = [] if self._editor_error else list(editors)
         if not self._codex_touched:
             self.codex_box.setChecked(any(getattr(st, "codex", False) for st in self._statuses))
         self._rebuild_rows()
+        self._rebuild_editor_rows()
+        # The rows just replaced are deleted on the next event loop pass, and
+        # until then the layout reports a height too small for the new ones
+        # (the window showed 173 of 202 px). Fit again once they are gone.
+        QTimer.singleShot(0, self._fit)
 
     def _on_codex_clicked(self):
         self._codex_touched = True
 
     def _rebuild_rows(self):
         old = {shell: box.isChecked() for shell, box in self._boxes.items()}
-        while self._grid.count():
-            item = self._grid.takeAt(0)
-            if item.widget() is not None:
-                item.widget().deleteLater()
+        self._clear(self._grid)
         self._boxes = {}
         row = 0
         info = []
@@ -219,13 +300,65 @@ class ShellTitleDialog(QDialog):
         self._info.setVisible(bool(info))
         self._update_buttons()
         self._fit()
-        # The new rows are shown on the next pass of the event loop (Qt shows a
-        # widget added to a visible window later), so the height above left
-        # them out and the intro text overlapped them. Measure again then.
-        QTimer.singleShot(0, self._fit)
+
+    @staticmethod
+    def _clear(grid):
+        while grid.count():
+            item = grid.takeAt(0)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+
+    def _rebuild_editor_rows(self):
+        old = {editor: box.isChecked() for editor, box in self._editor_boxes.items()}
+        self._clear(self._editor_grid)
+        self._editor_boxes = {}
+        row = 0
+        if self._editor_error is not None:
+            self._editor_grid.addWidget(QLabel(_f("The editors could not be checked: {error}",
+                                                  error=str(self._editor_error))), 0, 0, 1, 2)
+        for st in self._editor_statuses:
+            if st.state == editor_plugins.STATE_NOT_PRESENT:
+                continue
+            box = QCheckBox(editor_label(st.editor))
+            box.setChecked(old.get(st.editor, editor_plugins.default_selection(st)))
+            box.setEnabled(st.state != editor_plugins.STATE_NO_SOURCE)
+            # noinspection PyUnresolvedReferences
+            box.toggled.connect(self._update_buttons)
+            self._editor_boxes[st.editor] = box
+            path = QLabel(str(st.target) if st.target is not None else "")
+            path.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            path.setToolTip(path.text())
+            state = QLabel(editor_state_text(st))
+            state.setWordWrap(True)
+            state.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            self._editor_grid.addWidget(box, row, 0, Qt.AlignTop)
+            self._editor_grid.addWidget(path, row, 1)
+            self._editor_grid.addWidget(state, row + 1, 1)
+            row += 2
+        if not self._editor_boxes and self._editor_error is None:
+            self._editor_grid.addWidget(
+                QLabel(_("No Vim, Neovim or Emacs was found on this computer.")), 0, 0, 1, 2)
+        note = ""
+        if self._editor_boxes:
+            port, token = self._report_settings or _read_report_settings()
+            if editor_plugins.needs_settings(port, token):
+                if token:
+                    note = _f("This app listens on port {port} and requires a token. The "
+                              "plugins use port 50164 and no token: set g:polykybd_port and "
+                              "g:polykybd_token in Vim, or polykybd-port and polykybd-token "
+                              "in Emacs, to the same values.", port=port)
+                else:
+                    note = _f("This app listens on port {port}. The plugins use port 50164: "
+                              "set g:polykybd_port in Vim, or polykybd-port in Emacs, to the "
+                              "same value.", port=port)
+        self._settings_note.setText(note)
+        self._settings_note.setVisible(bool(note))
+        self._update_buttons()
+        self._fit()
 
     def _update_buttons(self):
-        any_checked = any(box.isChecked() for box in self._boxes.values())
+        any_checked = any(box.isChecked() for box in self._boxes.values()) or any(
+            box.isChecked() and box.isEnabled() for box in self._editor_boxes.values())
         busy = self._thread is not None and self._thread.isRunning()
         self.install_button.setEnabled(any_checked and not busy)
         self.remove_button.setEnabled(any_checked and not busy)
@@ -234,27 +367,45 @@ class ShellTitleDialog(QDialog):
     def selected(self):
         return [shell for shell, box in self._boxes.items() if box.isChecked()]
 
+    def selected_editors(self):
+        return [editor for editor, box in self._editor_boxes.items()
+                if box.isChecked() and box.isEnabled()]
+
     def _apply(self, install):
         shells = self.selected()
-        if not shells:
-            return
-        try:
-            if install:
-                results = self._install_fn(shells, statuses=self._statuses,
-                                           codex=self.codex_box.isChecked())
-            else:
-                results = self._remove_fn(shells, statuses=self._statuses)
-        except Exception as exc:  # noqa: BLE001 - a dialog must not take the tray down
-            self._show_results([_f("The change failed: {error}", error=str(exc))])
-            self.refresh()
+        editors = self.selected_editors()
+        if not shells and not editors:
             return
         lines = []
-        for r in results:
-            lines.append(f"{shell_label(r.shell)}: {translate_message(r.message)}")
-            if r.backup is not None:
-                lines.append(_f("Copy of the previous file: {path}", path=str(r.backup)))
-        if install and any(r.changed for r in results):
-            lines.append(_("Open a new terminal window for the change to take effect."))
+        if shells:
+            try:
+                if install:
+                    results = self._install_fn(shells, statuses=self._statuses,
+                                               codex=self.codex_box.isChecked())
+                else:
+                    results = self._remove_fn(shells, statuses=self._statuses)
+            except Exception as exc:  # noqa: BLE001 - a dialog must not take the tray down
+                results = []
+                lines.append(_f("The change failed: {error}", error=str(exc)))
+            for r in results:
+                lines.append(f"{shell_label(r.shell)}: {translate_message(r.message)}")
+                if r.backup is not None:
+                    lines.append(_f("Copy of the previous file: {path}", path=str(r.backup)))
+            if install and any(r.changed for r in results):
+                lines.append(_("Open a new terminal window for the change to take effect."))
+        if editors:
+            fn = self._editor_install_fn if install else self._editor_remove_fn
+            try:
+                results = fn(editors, statuses=self._editor_statuses)
+            except Exception as exc:  # noqa: BLE001
+                results = []
+                lines.append(_f("The change failed: {error}", error=str(exc)))
+            for r in results:
+                lines.append(f"{editor_label(r.editor)}: {translate_message(r.message)}")
+                if r.backup is not None:
+                    lines.append(_f("Copy of the previous file: {path}", path=str(r.backup)))
+            if install and any(r.changed for r in results):
+                lines.append(_("Restart the editor for the change to take effect."))
         self._show_results(lines)
         self.refresh()
 

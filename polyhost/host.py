@@ -857,9 +857,14 @@ class PolyHost(QApplication):
         # program inside a terminal (the nano overlay matches the title). Local
         # files only, no device, so it works in client mode and with no keyboard
         # (services/shell_title.py, gui/shell_title_dialog.py).
+        # The same dialog copies the Vim/Neovim/Emacs mode plugins
+        # (services/editor_plugins.py); the copies made earlier are refreshed
+        # from this installation on a thread at every start.
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
         self.shell_title_dialog = None
         self.shell_title_action = QAction(get_icon("terminal.svg"),
-                                          _("Show the running command in the terminal title\u2026"),
+                                          _("Set up the terminal and editors\u2026"),
                                           parent=self)
         # noinspection PyUnresolvedReferences
         self.shell_title_action.triggered.connect(self.open_shell_title_dialog)

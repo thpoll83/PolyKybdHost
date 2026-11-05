@@ -167,8 +167,11 @@ def _linux_exe_name(win):
     ``mscore4portable`` where ``comm`` says ``main``, ``openscad`` where it
     says ``AppRun``.
     """
+    # Imported here: own_process is the one place that knows every way a
+    # backend exposes the pid (PyWinCtl 0.3 has no getPID() on Linux).
+    from polyhost.handler.own_process import window_pid
     try:
-        pid = win.getPID()
+        pid = window_pid(win)
         if not pid:
             return ""
         path = os.readlink(f"/proc/{pid}/exe")
