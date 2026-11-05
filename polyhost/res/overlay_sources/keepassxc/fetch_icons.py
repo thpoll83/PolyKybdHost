@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 import icon_fetch  # noqa: E402
 import number_badge  # noqa: E402
+import program_marks  # noqa: E402
 
 TAG = "2.8.0"
 RAW = ("https://raw.githubusercontent.com/keepassxreboot/keepassxc/"
@@ -90,7 +91,25 @@ FLUENT = {
     "kp_focusentries": "Text Bullet List",
     "kp_ontop": "Pin",
     "kp_database": "Database",
+    # KeePass 2.x only (keepass.yaml)
+    "kp2_openurl": "Folder Globe",
+    "kp2_print": "Print",
+    "kp2_sync": "Arrow Sync",
+    "kp2_syncurl": "Cloud Sync",
+    "kp2_selectall": "Select All On",
+    "kp2_copyentries": "Copy Arrow Right",
+    "kp2_pasteentries": "Clipboard Paste",
+    "kp2_compare": "ms:compare",
+    "kp2_markcompare": "ms:bookmark_add",
+    "kp2_movetop": "ms:vertical_align_top",
+    "kp2_movebottom": "ms:vertical_align_bottom",
+    "kp2_findgroup": "Folder Search",
+    "kp2_help": "Question Circle",
 }
+
+# KeePass 2.x's own application icon (GPL-2.0-or-later), for keepass.yaml.
+KP2_ICO = ("https://raw.githubusercontent.com/dlech/KeePass2.x/"
+           "master/KeePass/KeePass.ico")
 
 PROGMARK = "apps/keepassxc-monochrome-light"
 
@@ -172,6 +191,10 @@ def main() -> int:
     n += number_badge.numbered(out / "kp_database.png", "123456789", out, "kp_db",
                                size=44 / 96, centre=(0.50, 0.64))
     close_db(out / "kp_database.png", out / "kp_closedb.png")
+    n += 1
+
+    program_marks.own_icon(out / "kp2_progmark.png", KP2_ICO, frame=64,
+                           credit="KeePass 2.x KeePass.ico")
     n += 1
 
     mark = out / "progmark.png"

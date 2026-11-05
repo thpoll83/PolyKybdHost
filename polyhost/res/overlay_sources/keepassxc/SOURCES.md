@@ -57,3 +57,29 @@ Left out:
 This host is GPL-3.0-or-later, which is compatible with all of these licences.
 `fetch_icons.py` rebuilds every file except `progmark.png`, which it leaves as
 committed.
+
+## KeePass 2.x (`keepass.yaml`)
+
+The original KeePass shares this icon folder. Its set is built from the same
+KeePassXC icons where the action is the same, plus the `kp2_*` icons below.
+
+- **Keys:** KeePass 2.59 source, `KeePass/Forms/MainForm_Functions.cs`: the
+  `AssignShortcut` calls and the key handlers `HandleMainWindowKeyMessage`,
+  `HandleGroupKeyEvent` and `HandleEntryKeyEvent`. Read from the GitHub mirror
+  of the SourceForge releases,
+  https://github.com/dlech/KeePass2.x/blob/master/KeePass/Forms/MainForm_Functions.cs.
+- **Differences from KeePassXC:** Ctrl+I adds an entry (Ctrl+N is a new
+  database), Ctrl+K duplicates an entry, Ctrl+U opens the URL and Ctrl+Shift+U
+  copies it, Ctrl+R synchronizes with a file, Ctrl+D compares entries.
+- **Linux:** under Mono the move keys are Ctrl+Shift+F5..F8 instead of
+  Alt+Home/Up/Down/End (`MonoWorkarounds` 1245), so the Linux set swaps them.
+  There is no macOS set.
+- **Left out:** Ctrl+Num* and Ctrl+Num/ (expand and collapse groups; keypad keys
+  have no cell) and the global auto-type hotkey Ctrl+Alt+A (it works while
+  another app has focus, when this overlay is not shown).
+
+| File | Source | Licence |
+|---|---|---|
+| `kp2_progmark.png` | KeePass 2.x `KeePass/KeePass.ico`, 64 px frame (the 32 px frame is different art) | GPL-2.0-or-later |
+| `kp2_openurl`, `kp2_print`, `kp2_sync`, `kp2_syncurl`, `kp2_selectall`, `kp2_copyentries`, `kp2_pasteentries`, `kp2_findgroup`, `kp2_help` | Microsoft Fluent UI System Icons | MIT |
+| `kp2_compare`, `kp2_markcompare`, `kp2_movetop`, `kp2_movebottom` | Google Material Symbols | Apache-2.0 |
