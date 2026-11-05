@@ -306,6 +306,7 @@ class PolyKybd:
         hid.HIDException when the device shows up in enumeration but can't be
         opened yet — a race that happens while the firmware comes back up after
         a flash — so this must never propagate out of connect()."""
+        self._end_console_partial_line()
         try:
             self.hid = HidHelper(self.device_settings)
             return True
@@ -404,7 +405,7 @@ class PolyKybd:
                 self._maybe_reopen_console()
             last_line = self.hid.get_console_output()
             while len(last_line) > 0:
-                self.console_buffer += last_line.decode().strip('\x00')
+                self._append_console_text(last_line.decode().strip('\x00'))
                 last_line = self.hid.get_console_output()
             self._console_fail_count = 0
         except Exception as e:
@@ -423,6 +424,26 @@ class PolyKybd:
             return self._take_complete_console_lines()
         return None
 
+    def _append_console_text(self, text):
+        """Add console text to the buffer and note when the unfinished line at
+        its end started: on the read that brought it, flushing or not."""
+        if not text:
+            return
+        self.console_buffer += text
+        if self.console_buffer.endswith("\n"):
+            self._console_partial_since = None
+        elif "\n" in text or self._console_partial_since is None:
+            # What follows the last newline is a new unfinished line.
+            self._console_partial_since = time.monotonic()
+
+    def _end_console_partial_line(self):
+        """End a held unfinished line with a newline, so it reaches the log on
+        its own. Called when the console interface is replaced: the next
+        session's text must not be joined to the last session's fragment."""
+        if self.console_buffer and not self.console_buffer.endswith("\n"):
+            self.console_buffer += "\n"
+        self._console_partial_since = None
+
     def _take_complete_console_lines(self) -> str:
         """Return the buffered console text up to and including the last newline.
 
@@ -431,15 +452,9 @@ class PolyKybd:
         """
         buf = self.console_buffer
         cut = buf.rfind("\n") + 1
-        if cut == len(buf):
-            self._console_partial_since = None
-            self.console_buffer = ""
-            return buf
-        now = time.monotonic()
-        if cut > 0 or self._console_partial_since is None:
-            # A newline arrived, so what follows it is a new unfinished line.
-            self._console_partial_since = now
-        if now - self._console_partial_since >= CONSOLE_PARTIAL_LINE_HOLD_S:
+        since = self._console_partial_since
+        if cut == len(buf) or since is None \
+                or time.monotonic() - since >= CONSOLE_PARTIAL_LINE_HOLD_S:
             self._console_partial_since = None
             self.console_buffer = ""
             return buf
@@ -453,6 +468,7 @@ class PolyKybd:
             return
         self._console_reopen_at = now
         if self.hid and self.hid.reopen_console():
+            self._end_console_partial_line()
             self.log.info("HID console (re)attached")
 
     def query_id(self) -> tuple[bool, str]:

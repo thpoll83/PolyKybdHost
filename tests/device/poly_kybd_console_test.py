@@ -6,6 +6,7 @@ and the console interface silently staying detached after a firmware apply.
 """
 import time
 import unittest
+import unittest.mock as mock
 
 from polyhost.device.poly_kybd import (
     CONSOLE_FAIL_REOPEN_THRESHOLD,
@@ -19,10 +20,11 @@ from tests.device.poly_kybd_cmd_test import make_keeb
 class ConsoleStubHid:
     """Just the console surface of HidHelper that get_console_output touches."""
 
-    def __init__(self, acquired=True, lines=None, raise_on_read=False):
+    def __init__(self, acquired=True, lines=None, raise_on_read=False, reopen_result=False):
         self.acquired = acquired
         self.lines = list(lines or [])
         self.raise_on_read = raise_on_read
+        self.reopen_result = reopen_result
         self.reopen_calls = 0
 
     def console_acquired(self):
@@ -30,7 +32,7 @@ class ConsoleStubHid:
 
     def reopen_console(self):
         self.reopen_calls += 1
-        return False
+        return self.reopen_result
 
     def get_console_output(self):
         if self.raise_on_read:
@@ -142,6 +144,31 @@ class TestConsolePartialLines(unittest.TestCase):
         stub.raise_on_read = False
         stub.lines.append(bytearray(b" line\n"))
         self.assertEqual(keeb.get_console_output(), "half line\n")
+
+
+    def test_a_read_that_does_not_flush_starts_the_hold(self):
+        keeb, _ = make_console_keeb(lines=[bytearray(b"buffered")])
+        self.assertIsNone(keeb.get_console_output(flush_and_return=False))
+        self.assertIsNotNone(keeb._console_partial_since)
+        keeb._console_partial_since = time.monotonic() - CONSOLE_PARTIAL_LINE_HOLD_S - 0.1
+        self.assertEqual(keeb.get_console_output(), "buffered")
+
+    def test_a_reattached_console_does_not_join_the_old_fragment(self):
+        keeb, stub = make_console_keeb(lines=[bytearray(b"half a li")])
+        self.assertEqual(keeb.get_console_output(), "")
+        stub.acquired = False
+        stub.reopen_result = True
+        stub.lines.append(bytearray(b"== banner ==\n"))
+        self.assertEqual(keeb.get_console_output(), "half a li\n== banner ==\n")
+        self.assertEqual(stub.reopen_calls, 1)
+
+    def test_a_reconnect_does_not_join_the_old_fragment(self):
+        keeb, _ = make_console_keeb(lines=[bytearray(b"half a li")])
+        self.assertEqual(keeb.get_console_output(), "")
+        fresh = ConsoleStubHid(lines=[bytearray(b"== banner ==\n")])
+        with mock.patch("polyhost.device.poly_kybd.HidHelper", return_value=fresh):
+            self.assertTrue(keeb._open_interfaces())
+        self.assertEqual(keeb.get_console_output(), "half a li\n== banner ==\n")
 
 
 if __name__ == '__main__':
