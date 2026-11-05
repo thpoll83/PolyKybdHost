@@ -171,5 +171,13 @@ class TestConsolePartialLines(unittest.TestCase):
         self.assertEqual(keeb.get_console_output(), "half a li\n== banner ==\n")
 
 
+    def test_flush_console_returns_the_held_line_at_once(self):
+        keeb, _ = make_console_keeb(lines=[bytearray(b"done\nhalf")])
+        self.assertEqual(keeb.get_console_output(), "done\n")
+        self.assertEqual(keeb.flush_console(), "half")
+        self.assertEqual(keeb.flush_console(), "")
+        self.assertIsNone(keeb._console_partial_since)
+
+
 if __name__ == '__main__':
     unittest.main()

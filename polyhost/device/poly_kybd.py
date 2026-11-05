@@ -444,6 +444,14 @@ class PolyKybd:
             self.console_buffer += "\n"
         self._console_partial_since = None
 
+    def flush_console(self) -> str:
+        """Return every buffered console character, an unfinished line too,
+        ignoring the hold. For shutdown, when no later poll will send it."""
+        rest = self.console_buffer
+        self.console_buffer = ""
+        self._console_partial_since = None
+        return rest
+
     def _take_complete_console_lines(self) -> str:
         """Return the buffered console text up to and including the last newline.
 
