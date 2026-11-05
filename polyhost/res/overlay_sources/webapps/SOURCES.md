@@ -306,10 +306,10 @@ Two deliberate choices, both of which have been queried:
 - **Two adjacent edges only.** Drawing all four offset edges reads as a second
   box rather than as a shadow.
 
-## Google Sheets, Slides, Gmail and Calendar
+## Google Sheets, Slides, Gmail, Calendar and Keep
 
 `gen_google_specs.py` writes `googlesheets.yaml`, `googleslides.yaml`,
-`gmail.yaml` and `googlecalendar.yaml` from one table per app. Each row has a
+`gmail.yaml`, `googlecalendar.yaml` and `googlekeep.yaml` from one table per app. Each row has a
 Windows/Linux key and a macOS key. A row whose Mac key is the Windows key with
 Ctrl replaced by Cmd becomes one `CMDCTRL` binding; every other row is written
 twice, under `except: [macos]` and `only: [macos]`.
@@ -320,6 +320,7 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
 | Google Calendar | <https://support.google.com/calendar/answer/37034> | 27, 27 |
+| Google Keep | <https://support.google.com/keep/answer/12862970>, PC and Mac tables (read 2026-11-05) | 21, 21 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 
@@ -338,6 +339,12 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `m`, `x`, `a`, and `c`, `e`, Backspace, Delete and `z`. Calendar's `+` (add a
   calendar) is left out, because the key that types `+` depends on the layout,
   and Esc (back to the grid) shows the program mark.
+- Google Keep's single keys are on by default and act whenever no text field
+  has focus, so its set has them: `j`/`k`, `n`/`p` and their Shift forms, `c`,
+  `l`, `/`, `e`, `f`, `x` and Enter. `?` (shortcut help), `#` (trash) and `@`
+  (feedback) are left out because they need Shift on a US layout, and Esc
+  (finish editing) shows the program mark. Ctrl+Enter, the other key for finish
+  editing, is drawn.
 - Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`):
   an overlay cell shows what one key press does.
 - The menu keys (Alt+F, Alt+E, ...): Chrome and other browsers use different
@@ -363,8 +370,8 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `calday.png`, `calweek.png` and `calmonth.png`.
 - `gs.png` and `gsl.png` are labelled document frames from `../doc_mark.py`,
   like Google Docs' `gd.png`, with the calc and impress motifs.
-- `gmail.png` and `gcal.png` are the Gmail and Google Calendar marks from
-  Simple Icons (CC0-1.0 artwork), used to name the application
+- `gmail.png`, `gcal.png` and `gkeep.png` are the Gmail, Google Calendar and
+  Google Keep marks from Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
 
 ## draw.io, Excalidraw, Linear and Overleaf

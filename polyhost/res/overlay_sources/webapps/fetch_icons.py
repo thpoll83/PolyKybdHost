@@ -201,7 +201,7 @@ FLUENT = {
     "calnext": "Arrow Next",
 }
 
-# Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
+# Google Sheets, Slides, Gmail, Calendar and Keep (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
     # --- Google Calendar ---
@@ -335,6 +335,24 @@ GOOGLE = {
     "gm_more": "ms:more_vert",
     "gm_move": "ms:drive_file_move",
     "gm_label": "ms:label",
+    # --- Google Keep ---
+    "keep_nextnote": "Arrow Down",
+    "keep_prevnote": "Arrow Up",
+    "keep_movenote_down": "ms:move_down",
+    "keep_movenote_up": "ms:move_up",
+    "keep_nextitem": "ms:keyboard_arrow_down",
+    "keep_previtem": "ms:keyboard_arrow_up",
+    "keep_moveitem_down": "ms:keyboard_double_arrow_down",
+    "keep_moveitem_up": "ms:keyboard_double_arrow_up",
+    "keep_newnote": "Note Add",
+    "keep_newlist": "ms:checklist",
+    "keep_archive": "Archive",
+    "keep_pin": "Pin",
+    "keep_select": "ms:check_circle",
+    "keep_open": "Open",
+    "keep_view": "ms:grid_view",
+    "keep_done": "Checkmark",
+    "keep_checkboxes": "ms:check_box",
 }
 # draw.io, Excalidraw, Linear and Overleaf (diagram, whiteboard, project and
 # LaTeX web apps). Prefixed by app where the same action has another meaning
@@ -467,7 +485,8 @@ ROTATED = {"narrower.png": ("shorter.png", 90)}
 # silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
 # REAL logo (nominative use; see brand_marks).
 BRAND = {"gh.png": "github", "gl.png": "gitlab",
-         "gmail.png": "gmail", "gcal.png": "googlecalendar"}
+         "gmail.png": "gmail", "gcal.png": "googlecalendar",
+         "gkeep.png": "googlekeep"}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS"),

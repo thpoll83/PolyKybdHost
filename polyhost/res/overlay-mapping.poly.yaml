@@ -36,6 +36,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     gitlab.com:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # Google Keep (sources: overlay_sources/webapps/googlekeep.yaml).
+    keep.google.com:
+      overlay: [googlekeep_template.mods.png, googlekeep_template.combo.mods.png]
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
     # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
     # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -206,6 +209,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [github_template.mods.png, github_template.combo.mods.png]
     GitLab:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # A Keep tab title starts with "Google Keep"; the gate keeps pages that only
+    # name Keep, such as its help pages ("... - Google Keep Help"), off the set.
+    Google Keep:
+      title: '^Google Keep( [-—] |$)'
+      overlay: [googlekeep_template.mods.png, googlekeep_template.combo.mods.png]
     # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
     # (the browser may append its own name); the gate keeps a page that only
     # mentions Jupyter, such as its documentation, off the set.
@@ -275,6 +283,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        keep.google.com:
+          overlay: [googlekeep_template_mac.mods.png, googlekeep_template_mac.combo.mods.png, googlekeep_template_mac.extra.mods.png]
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
         # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
         # host (or /user/<name>), so github.com/<o>/<r>/tree/... does not match;
@@ -383,6 +393,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
         GitLab:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
+        Google Keep:
+          title: '^Google Keep( [-—] |$)'
+          overlay: [googlekeep_template_mac.mods.png, googlekeep_template_mac.combo.mods.png, googlekeep_template_mac.extra.mods.png]
         # A Jupyter tab title ends in " - JupyterLab" or " - Jupyter Notebook"
         # (the browser may append its own name); the gate keeps a page that only
         # mentions Jupyter, such as its documentation, off the set.
