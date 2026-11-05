@@ -188,7 +188,8 @@ class AiCliRoutingTest(unittest.TestCase):
 
     def test_each_cli_title_loads_its_set_in_the_other_terminals(self):
         for os_name in ("linux", "macos"):
-            for app in ("kitty", "konsole", "iterm2", "warp", "mintty", "ghostty"):
+            for app in ("kitty", "konsole", "iterm2", "warp", "mintty", "ghostty",
+                            "roxterm", "mobaxterm"):
                 for stem, titles in TITLES.items():
                     for title in titles:
                         files = self._route(app, title, os_name=os_name)
