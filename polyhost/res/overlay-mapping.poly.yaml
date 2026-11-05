@@ -1268,6 +1268,16 @@ slack:
   os:
     macos:
       overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
+# Signal Desktop (sources: overlay_sources/signal/). Signal.exe on Windows,
+# "Signal" on macOS, WM_CLASS signal or the Flatpak id org.signal.Signal on
+# Linux, signal-desktop for the package and Snap. Not checked on an install.
+signal,signal-desktop,org.signal.signal:
+  overlay: [signal_template.mods.png, signal_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [signal_template_mac.mods.png, signal_template_mac.combo.mods.png, signal_template_mac.extra.mods.png]
+    linux:
+      overlay: [signal_template_linux.mods.png, signal_template_linux.combo.mods.png]
 # Cisco Webex (sources: overlay_sources/webex/). The Webex App runs as
 # CiscoCollabHost on Windows and Linux (measured on Linux, 46.10, under Xvfb)
 # and is "Webex" on macOS. The older Webex Meetings desktop app has its own
