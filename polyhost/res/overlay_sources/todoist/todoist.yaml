@@ -61,10 +61,10 @@ bindings:
   - { key: E, mods: [CMDCTRL], icon: edit.png, label: "Edit task", shared: false }
   - { key: T, icon: setdate.png, label: "Set date" }
   - { key: T, mods: [SHIFT], icon: removedate.png, label: "Remove date" }
-  - { key: "1", icon: priority.png, label: "Priority 1" }
-  - { key: "2", icon: priority.png, label: "Priority 2" }
-  - { key: "3", icon: priority.png, label: "Priority 3" }
-  - { key: "4", icon: priority.png, label: "Priority 4" }
+  - { key: "1", icon: priority1.png, label: "Priority 1" }
+  - { key: "2", icon: priority2.png, label: "Priority 2" }
+  - { key: "3", icon: priority3.png, label: "Priority 3" }
+  - { key: "4", icon: priority4.png, label: "Priority 4" }
   - { key: Y, icon: changepriority.png, label: "Change priority" }
   - { key: C, icon: comment.png, label: "Comment" }
   - { key: L, icon: label.png, label: "Add label", shared: false }

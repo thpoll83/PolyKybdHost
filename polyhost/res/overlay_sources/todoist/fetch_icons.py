@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import brand_marks  # noqa: E402
 import icon_fetch  # noqa: E402
+import number_badge  # noqa: E402
 
 ICONS = {
     # general
@@ -89,9 +90,31 @@ ICONS = {
 }
 
 
+def numbered_flags(base: Path, out: Path) -> int:
+    """`priority1..4.png`: the priority flag with its number beside it.
+
+    Todoist's 1..4 keys set priority 1..4, and the number is the information.
+    Inside the flag the digit collides with the banner's notch at keycap size,
+    so it stands to the right of the pole, in the same font as number_badge.
+    """
+    from PIL import Image, ImageDraw, ImageFont
+    im = Image.open(base).convert("RGBA")
+    w = im.width
+    font = ImageFont.truetype(number_badge.BOLD, int(w * 0.62))
+    for d in "1234":
+        canvas = Image.new("RGBA", (int(w * 1.5), w), (0, 0, 0, 0))
+        canvas.paste(im, (0, 0), im)
+        ImageDraw.Draw(canvas).text((w * 1.22, w * 0.62), d, fill=(0, 0, 0, 255),
+                                    font=font, anchor="mm")
+        canvas.save(out / f"priority{d}.png")
+    print("  priority1..priority4.png  <- composite (priority flag + digit)")
+    return 4
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(ICONS, out)
+    n += numbered_flags(out / "priority.png", out)
     brand_marks.ensure(out / "todoist.png", "todoist")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
