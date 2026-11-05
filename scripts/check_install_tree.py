@@ -56,9 +56,9 @@ def check_imports() -> list[str]:
                    "polyhost.device.hid_helper", "polyhost.cli.polyctl"):
         try:
             __import__(module)
-        # BaseException: pymonctl (under pywinctl) calls sys.exit() when it
+        # SystemExit too: pymonctl (under pywinctl) calls sys.exit() when it
         # finds no display server, and that must be reported, not end the run.
-        except BaseException as exc:  # report every failure, not only the first
+        except (Exception, SystemExit) as exc:  # report every failure, not only the first
             errors.append("import %s failed: %s: %s" % (module, type(exc).__name__, exc))
     return errors
 
