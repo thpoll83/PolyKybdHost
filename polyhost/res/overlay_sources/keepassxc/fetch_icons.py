@@ -21,7 +21,6 @@ KeePassXC uses one terminal icon for both, so a plus or minus is added.
 """
 from __future__ import annotations
 
-import io
 import sys
 import time
 import urllib.request
