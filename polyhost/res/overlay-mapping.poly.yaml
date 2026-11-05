@@ -1704,6 +1704,30 @@ soffice,soffice.bin,libreoffice,startcenter:
         Impress:
           overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]
 
+# WPS Office (sources: overlay_sources/wps/). In the multi-component window
+# mode each editor is its own program: wps.exe Writer, et.exe Spreadsheets,
+# wpp.exe Presentation. On Linux /usr/bin/wps, et and wpp start
+# office6/wps, et and wpp, so the names are the same. The all-in-one window
+# mode (one window, a tab per document) has no title that names the editor, so
+# a tab there gets the set of the program that owns the window. WPS Office for
+# Mac is one app for all three editors and has no set here.
+# In the all-in-one window mode every WPS document is a tab of the `wps` process,
+# so the Writer default would show over a spreadsheet or a presentation too.
+# `titles-match` routes on the file extension in the title. The title format is
+# not documented and not checked on an install; an unsaved document ("Book1")
+# shows no extension and gets the Writer set.
+wps:
+  overlay: [wps_writer_template.mods.png, wps_writer_template.combo.mods.png]
+  titles-match:
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xlt|et|ett|csv)\b':
+      overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
+    '(?i)\.(pptx|pptm|ppt|ppsx|pps|potx|pot|dps|dpt)\b':
+      overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
+et:
+  overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
+wpp:
+  overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
+
 # ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
 # app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
 # and on its Linux app id, which is also its X11 WM_CLASS and Wayland app id.
