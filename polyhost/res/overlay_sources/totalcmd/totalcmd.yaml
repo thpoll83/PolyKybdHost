@@ -1,0 +1,147 @@
+# Total Commander shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are Ghisler's own list, KEYBOARD.TXT, which ships in the Total Commander
+# 11.58.1 installer and is the "Keyboard layout" section of TOTALCMD.CHM.
+# Total Commander is Windows only, so there is one set.
+#
+# Most of the set is the F-key row with no modifier (F3 view, F4 edit, F5 copy,
+# F6 move, F7 new folder, F8 delete), as in the 7-Zip File Manager set.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/totalcmd/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/totalcmd/totalcmd.yaml --preview /tmp/totalcmd_preview
+app: total commander
+match: [totalcmd, totalcmd64]
+output: totalcmd_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+# A drawn "TC" tile. The Total Commander logo is proprietary shareware art, and
+# no licence allows it to be redistributed here.
+program_icon: progmark.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: the F-key row --------------------------------------------
+  - { key: F1, mods: [], label: Help }
+  - { key: F2, mods: [], icon: reread.png, label: "Reread panel" }
+  - { key: F3, mods: [], icon: view.png, label: "View file" }
+  - { key: F4, mods: [], icon: edit.png, label: "Edit file" }
+  - { key: F5, mods: [], icon: copyto.png, label: "Copy files" }
+  - { key: F6, mods: [], icon: moveto.png, label: "Move / rename" }
+  - { key: F7, mods: [], icon: newfolder.png, label: "New folder" }
+  - { key: F8, mods: [], label: Delete }
+  - { key: DELETE, mods: [], label: Delete }
+  - { key: F9, mods: [], icon: panelmenu.png, label: "Panel menu" }
+  - { key: F10, mods: [], icon: menubar.png, label: "Menu bar" }
+  - { key: TAB, mods: [], icon: switchpanel.png, label: "Switch panel" }
+  - { key: BACKSPACE, mods: [], icon: parent.png, label: "Parent folder" }
+  - { key: INSERT, mods: [], icon: selectfile.png, label: "Select file" }
+
+  # --- Shift -------------------------------------------------------------------
+  - { key: F1, mods: [SHIFT], icon: columns.png, label: "Custom columns" }
+  - { key: F2, mods: [SHIFT], icon: compare.png, label: "Compare file lists" }
+  - { key: F3, mods: [SHIFT], icon: viewone.png, label: "View file under cursor" }
+  - { key: F4, mods: [SHIFT], icon: newfile.png, label: "New text file" }
+  - { key: F5, mods: [SHIFT], icon: copyhere.png, label: "Copy in same folder" }
+  - { key: F6, mods: [SHIFT], icon: rename.png, label: "Rename in place" }
+  - { key: F7, mods: [SHIFT], icon: mkdirtarget.png, label: "New folder in target" }
+  - { key: F8, mods: [SHIFT], icon: deleteperm.png, label: "Delete directly", shared: false }
+  - { key: DELETE, mods: [SHIFT], icon: deleteperm.png, label: "Delete directly", shared: false }
+  - { key: F10, mods: [SHIFT], icon: contextmenu.png, label: "Context menu" }
+
+  # --- Alt ---------------------------------------------------------------------
+  - { key: F1, mods: [ALT], icon: driveleft.png, label: "Left drive" }
+  - { key: F2, mods: [ALT], icon: driveright.png, label: "Right drive" }
+  - { key: F3, mods: [ALT], icon: altviewer.png, label: "Alternate viewer" }
+  - { key: F4, mods: [ALT], icon: exit.png, label: Exit }
+  - { key: F5, mods: [ALT], icon: pack.png, label: "Pack files" }
+  - { key: F6, mods: [ALT], icon: unpack.png, label: "Unpack files" }
+  - { key: F7, mods: [ALT], icon: find.png, label: "Find files" }
+  - { key: F8, mods: [ALT], icon: cmdhistory.png, label: "Command history" }
+  - { key: F9, mods: [ALT], icon: unpack.png, label: "Unpack files" }
+  - { key: F10, mods: [ALT], icon: treedialog.png, label: "Folder tree dialog" }
+  - { key: F11, mods: [ALT], icon: breadcrumb.png, label: "Left path bar" }
+  - { key: F12, mods: [ALT], icon: breadcrumb.png, label: "Right path bar" }
+  - { key: LEFT, mods: [ALT], icon: back.png, label: Back }
+  - { key: RIGHT, mods: [ALT], icon: forward.png, label: Forward }
+  - { key: DOWN, mods: [ALT], icon: history.png, label: "Folder history" }
+  - { key: ENTER, mods: [ALT], icon: props.png, label: Properties }
+
+  # --- Alt+Shift ---------------------------------------------------------------
+  - { key: F3, mods: [ALT, SHIFT], icon: lister.png, label: "Internal viewer" }
+  - { key: F5, mods: [ALT, SHIFT], icon: movetoarc.png, label: "Move to archive" }
+  - { key: F7, mods: [ALT, SHIFT], icon: findproc.png, label: "Find, separate process" }
+  - { key: F9, mods: [ALT, SHIFT], icon: testarc.png, label: "Test archives" }
+  - { key: F11, mods: [ALT, SHIFT], icon: buttonbar.png, label: "Focus button bar" }
+  - { key: F12, mods: [ALT, SHIFT], icon: buttonbar.png, label: "Focus vertical bar" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: history.png, label: "Full folder history" }
+  - { key: ENTER, mods: [ALT, SHIFT], icon: dirsizes.png, label: "Count folder sizes" }
+
+  # --- Ctrl: F-keys ------------------------------------------------------------
+  - { key: F1, mods: [CTRL], icon: brief.png, label: "Brief view" }
+  - { key: F2, mods: [CTRL], icon: full.png, label: "Full view" }
+  - { key: F3, mods: [CTRL], icon: sortname.png, label: "Sort by name" }
+  - { key: F4, mods: [CTRL], icon: sortext.png, label: "Sort by extension" }
+  - { key: F5, mods: [CTRL], icon: sortdate.png, label: "Sort by date" }
+  - { key: F6, mods: [CTRL], icon: sortsize.png, label: "Sort by size" }
+  - { key: F7, mods: [CTRL], icon: unsorted.png, label: Unsorted }
+  - { key: F8, mods: [CTRL], icon: tree.png, label: "Folder tree" }
+  - { key: F9, mods: [CTRL], icon: print.png, label: "Print file" }
+  - { key: F10, mods: [CTRL], icon: allfiles.png, label: "All files" }
+  - { key: F11, mods: [CTRL], icon: programs.png, label: "Programs only" }
+  - { key: F12, mods: [CTRL], icon: userfiles.png, label: "User-defined files" }
+
+  # --- Ctrl: letters and navigation -------------------------------------------
+  - { key: A, mods: [CTRL], label: "Select all" }
+  - { key: C, mods: [CTRL], label: Copy }
+  - { key: X, mods: [CTRL], label: Cut }
+  - { key: V, mods: [CTRL], label: Paste }
+  - { key: B, mods: [CTRL], icon: branch.png, label: "Branch view" }
+  - { key: D, mods: [CTRL], icon: hotlist.png, label: "Folder hotlist" }
+  - { key: F, mods: [CTRL], icon: ftpconnect.png, label: "FTP connect" }
+  - { key: N, mods: [CTRL], icon: ftpnew.png, label: "New FTP connection" }
+  - { key: I, mods: [CTRL], icon: gotarget.png, label: "Go to target folder" }
+  - { key: L, mods: [CTRL], icon: calcspace.png, label: "Calculate space" }
+  - { key: M, mods: [CTRL], icon: multirename.png, label: "Multi-Rename tool" }
+  - { key: P, mods: [CTRL], icon: pathtocmd.png, label: "Path to command line" }
+  - { key: Q, mods: [CTRL], icon: quickview.png, label: "Quick View panel" }
+  - { key: R, mods: [CTRL], icon: reread.png, label: "Reread panel" }
+  - { key: S, mods: [CTRL], icon: quickfilter.png, label: "Quick filter" }
+  - { key: T, mods: [CTRL], icon: newtab.png, label: "New tab" }
+  - { key: U, mods: [CTRL], icon: exchange.png, label: "Swap panels" }
+  - { key: W, mods: [CTRL], icon: closetab.png, label: "Close tab" }
+  - { key: Z, mods: [CTRL], icon: comment.png, label: "Edit comment" }
+  - { key: PGUP, mods: [CTRL], icon: parent.png, label: "Parent folder" }
+  - { key: PGDN, mods: [CTRL], icon: openarchive.png, label: "Open folder / archive" }
+  - { key: BACKSLASH, mods: [CTRL], icon: root.png, label: "Root folder" }
+  - { key: LEFT, mods: [CTRL], icon: showleft.png, label: "Show in left panel" }
+  - { key: RIGHT, mods: [CTRL], icon: showright.png, label: "Show in right panel" }
+  - { key: UP, mods: [CTRL], icon: opentab.png, label: "Open in new tab" }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab" }
+
+  # --- Ctrl+Shift --------------------------------------------------------------
+  - { key: F1, mods: [CTRL, SHIFT], icon: thumbs.png, label: Thumbnails }
+  - { key: F2, mods: [CTRL, SHIFT], icon: comments.png, label: "Comments view" }
+  - { key: F5, mods: [CTRL, SHIFT], icon: shortcuts.png, label: "Create shortcuts" }
+  - { key: F8, mods: [CTRL, SHIFT], icon: tree.png, label: "Cycle tree view" }
+  - { key: A, mods: [CTRL, SHIFT], icon: tablist.png, label: "List open tabs" }
+  - { key: B, mods: [CTRL, SHIFT], icon: branch.png, label: "Branch view, selected" }
+  - { key: F, mods: [CTRL, SHIFT], icon: ftpdisconnect.png, label: "FTP disconnect" }
+  - { key: M, mods: [CTRL, SHIFT], icon: ftpmode.png, label: "FTP transfer mode" }
+  - { key: Q, mods: [CTRL, SHIFT], icon: quickviewwin.png, label: "Quick View window" }
+  - { key: S, mods: [CTRL, SHIFT], icon: lastfilter.png, label: "Last quick filter" }
+  - { key: T, mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab, background" }
+  - { key: U, mods: [CTRL, SHIFT], icon: exchange.png, label: "Swap panels and tabs" }
+  - { key: W, mods: [CTRL, SHIFT], icon: closetabs.png, label: "Close all tabs" }
+  - { key: UP, mods: [CTRL, SHIFT], icon: opentabother.png, label: "Open in other panel" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab" }

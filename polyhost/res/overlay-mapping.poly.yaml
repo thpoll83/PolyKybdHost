@@ -2664,3 +2664,8 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
+# installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
+# on a running install.
+totalcmd,totalcmd64:
+  overlay: [totalcmd_template.mods.png, totalcmd_template.combo.mods.png]
