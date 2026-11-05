@@ -1662,6 +1662,13 @@ krita:
   os:
     macos:
       overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
+# Clip Studio Paint (sources: overlay_sources/clipstudio/). Windows reports the
+# process `CLIPStudioPaint.exe`; the macOS app is `CLIP STUDIO PAINT.app`.
+clipstudiopaint,clip studio paint:
+  overlay: [clipstudio_template.mods.png, clipstudio_template.combo.mods.png, clipstudio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [clipstudio_template_mac.mods.png, clipstudio_template_mac.combo.mods.png, clipstudio_template_mac.extra.mods.png, clipstudio_template_mac.gui.mods.png]
 # Blender: one overlay per mode / editor, routed on the `blender://<mode>/<editor>`
 # pseudo-URL the Blender add-on (blender-addon/) reports. GENERATED: copy of
 # overlay_sources/blender/mapping_stanza.yaml (gen_blender_bindings.py). `layer: false`
