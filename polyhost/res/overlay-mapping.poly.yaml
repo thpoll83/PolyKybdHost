@@ -1742,6 +1742,15 @@ obsidian:
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+# Joplin desktop (sources: overlay_sources/joplin/). Joplin.exe on Windows,
+# Joplin on macOS (electron-builder productName), joplin (AppImage and .deb
+# executableName) or the Flatpak app id net.cozic.joplin_desktop on Linux.
+# Read from the packaging, not checked on an install.
+joplin,net.cozic.joplin_desktop:
+  overlay: [joplin_template.mods.png, joplin_template.combo.mods.png, joplin_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [joplin_template_mac.mods.png, joplin_template_mac.combo.mods.png, joplin_template_mac.extra.mods.png, joplin_template_mac.gui.mods.png]
 # Todoist desktop app (sources: overlay_sources/todoist/). Todoist.exe on
 # Windows, Todoist on macOS, todoist (AppImage, snap) or the Flatpak app id
 # com.todoist.Todoist on Linux. The web app (todoist.com) is in the browser
