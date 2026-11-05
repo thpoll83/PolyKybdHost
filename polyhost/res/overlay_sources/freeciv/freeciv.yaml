@@ -1,0 +1,145 @@
+# Freeciv 3.2 overlay for PolyKybd: the GTK clients (freeciv-gtk3.22 and
+# freeciv-gtk4). This is the base spec. gen_variants.py writes the Qt client,
+# SDL client, Freeciv21, Civilization II and Civilization I specs from it.
+#
+# Keys: the default accelerators of Freeciv 3.2.6 (tag R3_2_6), from
+# client/gui-gtk-4.0/menu.c and client/gui-gtk-3.22/menu.c (the menu_entries
+# tables) and the key handlers in client/gui-gtk-4.0/gui_main.c and
+# client/gui-gtk-3.22/gui_main.c. Only keys that both GTK clients bind the
+# same way are drawn. See SOURCES.md.
+#
+# A unit order keeps one meaning per key, so the letters are drawn. Where the
+# result depends on the unit (B and R for a Caravan), the common meaning is
+# drawn and SOURCES.md names the exception.
+#
+# macOS: the GTK clients use Cmd where the table says Ctrl (ACCL_MOD_KEY is
+# "<Meta>" on __APPLE__). The overlay shows the Windows and Linux keys.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/freeciv/fetch_icons.py
+#   python polyhost/res/overlay_sources/freeciv/gen_variants.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/freeciv/freeciv.yaml --preview /tmp/freeciv_preview
+app: freeciv
+match: [freeciv-gtk3.22, freeciv-gtk3, freeciv-gtk4, freeciv-gtk3.22.exe, freeciv-gtk4.exe,
+        org.freeciv.gtk322, org.freeciv.gtk4]
+output: freeciv_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for OpenTTD: the icon uses the full height on the right; the firmware
+# clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# FREECIV drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program_freeciv.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Unit orders: Unit, Work and Combat menus (menu.c)
+  - { key: B, icon: build_city.png, label: "Build city" }
+  - { key: R, icon: road.png, label: "Build road" }
+  - { key: I, icon: irrigate.png, label: "Build irrigation" }
+  - { key: I, mods: [SHIFT], icon: cultivate.png, label: "Cultivate" }
+  - { key: M, icon: mine.png, label: "Build mine" }
+  - { key: M, mods: [SHIFT], icon: plant.png, label: "Plant" }
+  - { key: O, icon: transform.png, label: "Transform terrain" }
+  - { key: O, mods: [SHIFT], icon: convert.png, label: "Convert unit" }
+  - { key: P, icon: clean.png, label: "Clean pollution or fallout" }
+  - { key: P, mods: [SHIFT], icon: pillage.png, label: "Pillage" }
+  - { key: F, icon: fortify.png, label: "Fortify" }
+  - { key: F, mods: [SHIFT], icon: fortress.png, label: "Build fortress" }
+  - { key: E, mods: [SHIFT], icon: airbase.png, label: "Build airbase" }
+  - { key: S, icon: sentry.png, label: "Sentry" }
+  - { key: S, mods: [SHIFT], icon: unsentry.png, label: "Unsentry all on tile" }
+  - { key: G, icon: goto.png, label: "Go to", shared: false }
+  - { key: G, mods: [SHIFT], icon: return_city.png, label: "Return to nearest city" }
+  - { key: T, icon: goto_city.png, label: "Go to or airlift to city" }
+  - { key: X, icon: explore.png, label: "Auto explore" }
+  - { key: A, icon: auto_worker.png, label: "Auto worker" }
+  - { key: Q, icon: patrol.png, label: "Patrol" }
+  - { key: W, icon: wait.png, label: "Wait" }
+  - { key: SPACE, icon: done.png, label: "Done" }
+  - { key: L, icon: load.png, label: "Load" }
+  - { key: U, icon: unload.png, label: "Unload" }
+  - { key: T, mods: [SHIFT], icon: unload_all.png, label: "Unload all from transporter" }
+  - { key: H, icon: home_city.png, label: "Set home city" }
+  - { key: U, mods: [SHIFT], icon: upgrade.png, label: "Upgrade" }
+  - { key: D, mods: [SHIFT], icon: disband.png, label: "Disband unit" }
+  - { key: D, icon: do_action.png, label: "Do (choose an action)" }
+  - { key: J, icon: paradrop.png, label: "Paradrop" }
+  - { key: R, mods: [CTRL], icon: connect_road.png, label: "Connect with road" }
+  - { key: L, mods: [CTRL], icon: connect_rail.png, label: "Connect with rail" }
+  - { key: M, mods: [CTRL], icon: connect_maglev.png, label: "Connect with maglev" }
+  - { key: I, mods: [CTRL], icon: connect_irrigation.png, label: "Connect with irrigation" }
+
+  # Select menu, and the map view
+  - { key: Z, icon: select_single.png, label: "Select single unit" }
+  - { key: V, icon: select_tile.png, label: "Select all on tile" }
+  - { key: V, mods: [SHIFT], icon: select_type_tile.png, label: "Select same type on tile" }
+  - { key: C, mods: [SHIFT], icon: select_type_cont.png, label: "Select same type on continent" }
+  - { key: X, mods: [SHIFT], icon: select_type_all.png, label: "Select same type everywhere" }
+  - { key: C, icon: center.png, label: "Center view" }
+  - { key: HOME, mods: [SHIFT], icon: capital.png, label: "Center on capital" }
+  - { key: ENTER, mods: [SHIFT], icon: end_turn.png, label: "End turn" }
+  - { key: "-", icon: zoom_out.png, label: "Zoom out", shared: false }
+  - { key: "'", icon: chat.png, label: "Chat line" }
+
+  # Civilization menu: reports
+  - { key: F1, icon: map_view.png, label: "Map view", region: [34, 40] }
+  - { key: F2, icon: units_report.png, label: "Units", region: [34, 40] }
+  - { key: F3, icon: nations.png, label: "Nations", region: [34, 40] }
+  - { key: F4, icon: cities.png, label: "Cities", region: [30, 40] }
+  - { key: F5, icon: economy.png, label: "Economy", region: [30, 40] }
+  - { key: F6, icon: research.png, label: "Research", region: [30, 40] }
+  - { key: F7, icon: wonders.png, label: "Wonders of the world", region: [30, 40] }
+  - { key: F8, icon: top_cities.png, label: "Top cities", region: [34, 40] }
+  - { key: F9, icon: messages.png, label: "Messages" }
+  - { key: F11, icon: demographics.png, label: "Demographics" }
+  - { key: F12, icon: spaceship.png, label: "Spaceship" }
+
+  # Civilization menu: government
+  - { key: T, mods: [CTRL], icon: tax.png, label: "Tax rates" }
+  - { key: P, mods: [CTRL, SHIFT], icon: policies.png, label: "Policies" }
+  - { key: G, mods: [CTRL, SHIFT], icon: revolution.png, label: "Revolution" }
+
+  # Game and Edit menus
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save game", shared: false }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit", shared: false }
+  - { key: F, mods: [CTRL], icon: find_city.png, label: "Find city", shared: false }
+  - { key: L, mods: [CTRL, SHIFT], icon: worklists.png, label: "Worklists" }
+  - { key: R, mods: [CTRL, SHIFT], icon: rally.png, label: "Rally point dialog" }
+  - { key: F, mods: [CTRL, SHIFT], icon: infra.png, label: "Infrastructure dialog" }
+  - { key: E, mods: [CTRL], icon: editor.png, label: "Editing mode" }
+
+  # View menu: map overlays
+  - { key: Y, mods: [CTRL], icon: outlines.png, label: "City outlines" }
+  - { key: V, mods: [CTRL], icon: city_output.png, label: "City output" }
+  - { key: G, mods: [CTRL], icon: grid.png, label: "Map grid" }
+  - { key: B, mods: [CTRL], icon: borders.png, label: "National borders" }
+  - { key: N, mods: [CTRL, SHIFT], icon: native_tiles.png, label: "Native tiles" }
+  - { key: N, mods: [CTRL], icon: city_names.png, label: "City names" }
+  - { key: O, mods: [CTRL], icon: city_growth.png, label: "City growth" }
+  - { key: P, mods: [CTRL], icon: city_prod.png, label: "City production" }
+  - { key: D, mods: [CTRL], icon: trade_routes.png, label: "City trade routes" }
+
+  # Battle Groups menu: Shift selects, Ctrl assigns, Ctrl+Shift appends
+  - { key: F1, mods: [SHIFT], icon: bg_select1.png, label: "Select battle group 1", region: [34, 40] }
+  - { key: F2, mods: [SHIFT], icon: bg_select2.png, label: "Select battle group 2", region: [34, 40] }
+  - { key: F3, mods: [SHIFT], icon: bg_select3.png, label: "Select battle group 3", region: [34, 40] }
+  - { key: F4, mods: [SHIFT], icon: bg_select4.png, label: "Select battle group 4", region: [30, 40] }
+  - { key: F1, mods: [CTRL], icon: bg_assign1.png, label: "Assign battle group 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL], icon: bg_assign2.png, label: "Assign battle group 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL], icon: bg_assign3.png, label: "Assign battle group 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL], icon: bg_assign4.png, label: "Assign battle group 4", region: [30, 40] }
+  - { key: F1, mods: [CTRL, SHIFT], icon: bg_append1.png, label: "Append to battle group 1", region: [34, 40] }
+  - { key: F2, mods: [CTRL, SHIFT], icon: bg_append2.png, label: "Append to battle group 2", region: [34, 40] }
+  - { key: F3, mods: [CTRL, SHIFT], icon: bg_append3.png, label: "Append to battle group 3", region: [34, 40] }
+  - { key: F4, mods: [CTRL, SHIFT], icon: bg_append4.png, label: "Append to battle group 4", region: [30, 40] }

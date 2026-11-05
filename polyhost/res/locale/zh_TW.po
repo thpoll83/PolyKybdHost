@@ -4183,31 +4183,31 @@ msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執�
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"
-msgstr ""
+msgstr "StarCraft 資料夾"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
-msgstr ""
+msgstr "包含 StarCraft 1.16.1 檔案 StarDat.mpq 以及（用於 Brood War 單位的）BrooDat.mpq 的資料夾。留空：搜尋 Windows、macOS 和 Wine 下的常用安裝資料夾。StarCraft: Remastered 以本應用程式無法讀取的格式儲存檔案；此時使用內建的圖片。"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft Race"
-msgstr ""
+msgstr "StarCraft 種族"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
-msgstr ""
+msgstr "StarCraft II 疊加層從 StarCraft 檔案繪製單位時顯示哪一種族的單位。"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Terran"
-msgstr ""
+msgstr "人類"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Protoss"
-msgstr ""
+msgstr "神族"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
-msgstr ""
+msgstr "蟲族"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II Folder"
