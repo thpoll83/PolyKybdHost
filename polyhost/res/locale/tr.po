@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-04 15:35+0000\n"
+"POT-Creation-Date: 2026-11-05 11:37+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: tr\n"
@@ -3251,50 +3251,58 @@ msgstr "Terminal başlığında komut"
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
-"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards."
+"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards. To change the Codex option, select the shells and press Install again."
 msgstr ""
 "Klavye, bir terminalde çalışan programın (örneğin nano) kısayollarını yalnızca terminalin pencere başlığı programın adını içerdiğinde gösterir. bash, zsh ve PowerShell bunu ayar yapılmadan yapmaz.\n"
 "\n"
-"Yükle, seçilen her kabuğun başlangıç dosyasına iki işaret yorumu arasında bir satır ekler ve önce dosyanın bir kopyasını yanına kaydeder. Kaldır bu satırları siler. Değişiklik, sonradan açılan terminal pencereleri için geçerlidir."
+"Yükle, seçilen her kabuğun başlangıç dosyasına iki işaret yorumu arasında bir satır ekler ve önce dosyanın bir kopyasını yanına kaydeder. Kaldır bu satırları siler. Değişiklik, sonradan açılan terminal pencereleri için geçerlidir. Codex seçeneğini değiştirmek için kabukları seçip Yükle'ye yeniden basın."
 
-#: polyhost/gui/shell_title_dialog.py:97
+#: polyhost/gui/shell_title_dialog.py:100
+msgid "Also show Codex in the title (wraps the codex command)"
+msgstr "Codex'i de başlıkta göster (codex komutunu sarar)"
+
+#: polyhost/gui/shell_title_dialog.py:102
+msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
+msgstr "Codex terminal başlığını iş parçacığı ve proje adıyla değiştirir, bu yüzden klavye onun çalıştığını anlayamaz. Bu seçenekle codex komutu Codex'i \"codex\" ile başlayan bir başlıkla başlatır. Kendi codex takma adınız veya işleviniz ve Codex'in config.toml dosyasında ayarlanmış bir başlık korunur."
+
+#: polyhost/gui/shell_title_dialog.py:111
 msgid "Checking the shells…"
 msgstr "Kabuklar denetleniyor…"
 
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:124
 msgid "Install"
 msgstr "Yükle"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:111
+#: polyhost/gui/shell_title_dialog.py:125
 msgid "Remove"
 msgstr "Kaldır"
 
-#: polyhost/gui/shell_title_dialog.py:152
+#: polyhost/gui/shell_title_dialog.py:166
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Kabuklar denetlenemedi: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:170
+#: polyhost/gui/shell_title_dialog.py:189
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: komutu ayar gerekmeden gösterir."
 
-#: polyhost/gui/shell_title_dialog.py:198
+#: polyhost/gui/shell_title_dialog.py:217
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Bu bilgisayarda bash, zsh veya PowerShell bulunamadı."
 
-#: polyhost/gui/shell_title_dialog.py:222
+#: polyhost/gui/shell_title_dialog.py:244
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Değişiklik başarısız oldu: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:229
+#: polyhost/gui/shell_title_dialog.py:251
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Önceki dosyanın kopyası: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:231
+#: polyhost/gui/shell_title_dialog.py:253
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Değişikliğin etkili olması için yeni bir terminal penceresi açın."
 
@@ -4371,62 +4379,72 @@ msgstr "Komut başlatılamadı: {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "Bu çalışma kopyasındaki kural dosyası reddedildi: {reason}"
 
-#: polyhost/services/shell_title.py:94
+#: polyhost/services/shell_title.py:102
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "Satır {path} dosyasına eklendi."
 
-#: polyhost/services/shell_title.py:95
+#: polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "{path} içindeki satır bu kurulum için olanla değiştirildi."
 
-#: polyhost/services/shell_title.py:96
+#: polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "{path} içinde zaten ayarlı."
 
-#: polyhost/services/shell_title.py:97
+#: polyhost/services/shell_title.py:105
+#, python-brace-format
+msgid "Turned on the Codex title in {path}."
+msgstr "{path} içinde Codex başlığı açıldı."
+
+#: polyhost/services/shell_title.py:106
+#, python-brace-format
+msgid "Turned off the Codex title in {path}."
+msgstr "{path} içinde Codex başlığı kapatıldı."
+
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "Satır {path} dosyasından kaldırıldı."
 
-#: polyhost/services/shell_title.py:98
+#: polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "{path} içinde kaldırılacak bir şey yok."
 
-#: polyhost/services/shell_title.py:99
+#: polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "{shell} bu bilgisayarda bulunamadı."
 
-#: polyhost/services/shell_title.py:100
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} profil yolunu bildirmedi: {error}"
 
-#: polyhost/services/shell_title.py:101
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "PowerShell'in yürütme ilkesi ({policy}) profil betiklerini çalıştırmıyor. Önce PowerShell'de 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' komutunu çalıştırın."
 
-#: polyhost/services/shell_title.py:103
+#: polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} içinde bitiş işareti olmayan bir başlangıç işareti var. Bloğu elle kaldırın."
 
-#: polyhost/services/shell_title.py:104
+#: polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "{path} değiştirilemedi: {error}"
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "Betik yolu {path} dosyasının kodlamasıyla ({encoding}) yazılamıyor."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "Satırın yükleyeceği {path} betiği eksik."

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-04 15:35+0000\n"
+"POT-Creation-Date: 2026-11-05 11:37+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: it\n"
@@ -3268,50 +3268,58 @@ msgstr "Comando nel titolo del terminale"
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
-"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards."
+"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards. To change the Codex option, select the shells and press Install again."
 msgstr ""
 "La tastiera mostra le scorciatoie di un programma in esecuzione in un terminale (nano, per esempio) solo quando il titolo della finestra del terminale nomina il programma. bash, zsh e PowerShell non lo fanno senza configurazione.\n"
 "\n"
-"Installa aggiunge una riga al file di avvio di ogni shell selezionata, tra due commenti di marcatura, e prima salva una copia del file accanto a esso. Rimuovi cancella quelle righe. La modifica vale per le finestre di terminale aperte dopo."
+"Installa aggiunge una riga al file di avvio di ogni shell selezionata, tra due commenti di marcatura, e prima salva una copia del file accanto a esso. Rimuovi cancella quelle righe. La modifica vale per le finestre di terminale aperte dopo. Per cambiare l'opzione Codex, seleziona le shell e premi di nuovo Installa."
 
-#: polyhost/gui/shell_title_dialog.py:97
+#: polyhost/gui/shell_title_dialog.py:100
+msgid "Also show Codex in the title (wraps the codex command)"
+msgstr "Mostra anche Codex nel titolo (avvolge il comando codex)"
+
+#: polyhost/gui/shell_title_dialog.py:102
+msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
+msgstr "Codex sostituisce il titolo del terminale con il nome del thread e del progetto, quindi la tastiera non sa che è in esecuzione. Con questa opzione il comando codex avvia Codex con un titolo che inizia con \"codex\". Un tuo alias o una tua funzione codex, e un titolo impostato nel config.toml di Codex, vengono mantenuti."
+
+#: polyhost/gui/shell_title_dialog.py:111
 msgid "Checking the shells…"
 msgstr "Verifica delle shell…"
 
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:124
 msgid "Install"
 msgstr "Installa"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:111
+#: polyhost/gui/shell_title_dialog.py:125
 msgid "Remove"
 msgstr "Rimuovi"
 
-#: polyhost/gui/shell_title_dialog.py:152
+#: polyhost/gui/shell_title_dialog.py:166
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Impossibile verificare le shell: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:170
+#: polyhost/gui/shell_title_dialog.py:189
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: mostra il comando senza configurazione."
 
-#: polyhost/gui/shell_title_dialog.py:198
+#: polyhost/gui/shell_title_dialog.py:217
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Su questo computer non è stato trovato né bash né zsh né PowerShell."
 
-#: polyhost/gui/shell_title_dialog.py:222
+#: polyhost/gui/shell_title_dialog.py:244
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "La modifica non è riuscita: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:229
+#: polyhost/gui/shell_title_dialog.py:251
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Copia del file precedente: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:231
+#: polyhost/gui/shell_title_dialog.py:253
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Apri una nuova finestra di terminale perché la modifica abbia effetto."
 
@@ -4392,62 +4400,72 @@ msgstr "Il comando non è stato avviato: {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "Il file di regole in questo checkout è stato rifiutato: {reason}"
 
-#: polyhost/services/shell_title.py:94
+#: polyhost/services/shell_title.py:102
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "Riga aggiunta a {path}."
 
-#: polyhost/services/shell_title.py:95
+#: polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "La riga in {path} è stata sostituita con una per questa installazione."
 
-#: polyhost/services/shell_title.py:96
+#: polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Già configurato in {path}."
 
-#: polyhost/services/shell_title.py:97
+#: polyhost/services/shell_title.py:105
+#, python-brace-format
+msgid "Turned on the Codex title in {path}."
+msgstr "Titolo Codex attivato in {path}."
+
+#: polyhost/services/shell_title.py:106
+#, python-brace-format
+msgid "Turned off the Codex title in {path}."
+msgstr "Titolo Codex disattivato in {path}."
+
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "Riga rimossa da {path}."
 
-#: polyhost/services/shell_title.py:98
+#: polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Niente da rimuovere in {path}."
 
-#: polyhost/services/shell_title.py:99
+#: polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "{shell} non è stato trovato su questo computer."
 
-#: polyhost/services/shell_title.py:100
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} non ha indicato il percorso del suo profilo: {error}"
 
-#: polyhost/services/shell_title.py:101
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Il criterio di esecuzione di PowerShell ({policy}) non esegue gli script di profilo. Esegui prima 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell."
 
-#: polyhost/services/shell_title.py:103
+#: polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} ha un marcatore di inizio senza marcatore di fine. Rimuovi il blocco a mano."
 
-#: polyhost/services/shell_title.py:104
+#: polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Impossibile modificare {path}: {error}"
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "Il percorso dello script non può essere scritto nella codifica di {path} ({encoding})."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "Manca lo script {path} che la riga caricherebbe."

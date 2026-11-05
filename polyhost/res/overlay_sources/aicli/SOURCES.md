@@ -51,11 +51,40 @@ from an install:
 What the routes therefore cannot see:
 
 - **Codex with its default title.** Nothing in `<thread> | <project>` names
-  Codex. Add `app-name` first to see it:
-  `[tui] terminal_title = ["app-name", "activity", "thread-name", "project-name"]`.
+  Codex. The shell integration's Codex option fixes this (below), or set
+  `[tui] terminal_title = ["app-name", "activity", "thread-name", "project-name"]`
+  in Codex's `config.toml` by hand.
 - **A named Qwen session that is idle**: only the name is shown.
 - **Aider, and every CLI whose title is switched off, in bash, zsh or
   PowerShell without the shell scripts**: the title then shows only the prompt.
+
+### The Codex option of the shell integration
+
+The tray's Updates → "Show the running command in the terminal title…" has a
+checkbox "Also show Codex in the title", and `polyctl shell-integration
+install --codex` (`--no-codex` turns it off; without either, each shell keeps
+what it has). The installed line then sets a flag before it loads the script
+(`__poly_title_codex=1` in bash and zsh, `$global:PolyKybdTitleCodex` in
+PowerShell), and the script defines a `codex` function that runs
+
+```
+codex -c "tui.terminal_title=['app-name','activity','thread-name','project-name']" <your arguments>
+```
+
+so Codex's title starts with `codex` (`codex | <project>`, `codex ⠋ <thread> |
+<project>`), which the route matches. `-c` overrides one value of
+`~/.codex/config.toml` for that run; Codex 0.166.0 accepts this value and
+refuses a wrong one (`tui.terminal_title=5`: "invalid type: integer `5`,
+expected a sequence"). The TOML array uses single quotes because Windows
+PowerShell 5.1 drops double quotes inside arguments to native programs.
+
+The function is not defined when you have a `codex` alias or function of your
+own, and it passes no `-c` when `config.toml` (in `$CODEX_HOME`, or
+`~/.codex`) sets `terminal_title` itself. Checked with a stand-in `codex` that
+prints its arguments, in bash 5.2 and zsh 5.9 on a pty
+(`tests/services/shell_title_test.py`) and in PowerShell 7.4 by hand; not in
+Windows PowerShell 5.1, and Codex's own title with the option was not looked
+at on a screen.
 
 Qwen Code's glyphs are Claude Code's glyphs, but followed by U+FE0E. A title
 word is compared whole, so `✳︎` (with U+FE0E) never takes the Claude Code key

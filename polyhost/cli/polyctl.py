@@ -206,10 +206,12 @@ def _cmd_shell_integration(_client, args):
                 line += f"  ({st.rc_path})"
             if st.detail:
                 line += f"\n{'':<15}{st.detail}"
+            if st.codex:
+                line += f"\n{'':<15}codex wrapper: on"
             print(line)
         return 0
     if args.si_action == "install":
-        results = shell_title.install(shells)
+        results = shell_title.install(shells, codex=args.codex)
     else:
         results = shell_title.remove(shells)
     if not results:
@@ -1349,6 +1351,13 @@ def build_parser():
                        choices=("bash", "zsh", "pwsh", "powershell"),
                        help="only this shell (repeat for more); pwsh is PowerShell 7, "
                             "powershell is Windows PowerShell 5.1")
+    codex = si_install.add_mutually_exclusive_group()
+    codex.add_argument("--codex", dest="codex", action="store_true", default=None,
+                       help="also wrap the codex command so that Codex's own title "
+                            "starts with 'codex' (its default title does not name it)")
+    codex.add_argument("--no-codex", dest="codex", action="store_false",
+                       help="install without the codex wrapper (default: keep what "
+                            "each shell has)")
     p_si.set_defaults(func=_cmd_shell_integration)
 
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)

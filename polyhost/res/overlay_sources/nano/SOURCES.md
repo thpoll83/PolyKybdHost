@@ -111,6 +111,9 @@ To use one by hand, source it at the end of the startup file.
   wrapper around `prompt` restores it. It replaces a custom Enter key handler.
   Not tested: no PowerShell was available.
 
+With the Codex option the scripts also wrap the `codex` command, so that
+Codex's own title names it (`../aicli/SOURCES.md`).
+
 **fish**, **cmd.exe**: nothing to add (see the table). In Windows Terminal the
 profile setting "Suppress title changes" must stay off (the default).
 

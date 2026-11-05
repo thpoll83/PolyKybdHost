@@ -48,6 +48,9 @@ TITLES = {
         "codex",
         "codex resume --last",
         "codex Fix the parser | PolyKybdHost",
+        # What the shell integration's codex wrapper makes Codex write.
+        "codex | PolyKybdHost",
+        "codex | Fix the parser | PolyKybdHost",
         "codex ⠋ Fix the parser | PolyKybdHost",
         "[ ! ] Action Required | Fix the parser | PolyKybdHost",
         "[ . ] Action Required | PolyKybdHost",

@@ -11,7 +11,7 @@ of the machine it runs on). The status runs on a thread because asking
 PowerShell for ``$PROFILE`` starts a PowerShell process.
 """
 
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
                              QLabel, QPushButton, QVBoxLayout)
 
@@ -87,13 +87,27 @@ class ShellTitleDialog(QDialog):
             "Install adds one line to the startup file of each selected shell, "
             "between two marker comments, and first saves a copy of the file next "
             "to it. Remove deletes those lines. The change applies to terminal "
-            "windows opened afterwards."))
+            "windows opened afterwards. To change the Codex option, select the "
+            "shells and press Install again."))
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         self._grid = QGridLayout()
         self._grid.setColumnStretch(1, 1)
         layout.addLayout(self._grid)
+        # Codex replaces the title with its own, which does not name it; the
+        # option makes the installed line wrap the codex command.
+        self.codex_box = QCheckBox(_("Also show Codex in the title (wraps the codex command)"))
+        self.codex_box.setToolTip(_(
+            "Codex replaces the terminal title with the thread and project name, so "
+            "the keyboard cannot tell that it is running. With this option the codex "
+            "command starts Codex with a title that begins with \"codex\". A codex "
+            "alias or function of your own, and a title set in Codex's config.toml, "
+            "are kept."))
+        self._codex_touched = False
+        # noinspection PyUnresolvedReferences
+        self.codex_box.clicked.connect(self._on_codex_clicked)
+        layout.addWidget(self.codex_box)
         self._checking = QLabel(_("Checking the shells…"))
         layout.addWidget(self._checking)
         self._info = QLabel()
@@ -154,7 +168,12 @@ class ShellTitleDialog(QDialog):
             self._update_buttons()
             return
         self._statuses = list(result)
+        if not self._codex_touched:
+            self.codex_box.setChecked(any(getattr(st, "codex", False) for st in self._statuses))
         self._rebuild_rows()
+
+    def _on_codex_clicked(self):
+        self._codex_touched = True
 
     def _rebuild_rows(self):
         old = {shell: box.isChecked() for shell, box in self._boxes.items()}
@@ -200,6 +219,10 @@ class ShellTitleDialog(QDialog):
         self._info.setVisible(bool(info))
         self._update_buttons()
         self._fit()
+        # The new rows are shown on the next pass of the event loop (Qt shows a
+        # widget added to a visible window later), so the height above left
+        # them out and the intro text overlapped them. Measure again then.
+        QTimer.singleShot(0, self._fit)
 
     def _update_buttons(self):
         any_checked = any(box.isChecked() for box in self._boxes.values())
@@ -215,9 +238,12 @@ class ShellTitleDialog(QDialog):
         shells = self.selected()
         if not shells:
             return
-        fn = self._install_fn if install else self._remove_fn
         try:
-            results = fn(shells, statuses=self._statuses)
+            if install:
+                results = self._install_fn(shells, statuses=self._statuses,
+                                           codex=self.codex_box.isChecked())
+            else:
+                results = self._remove_fn(shells, statuses=self._statuses)
         except Exception as exc:  # noqa: BLE001 - a dialog must not take the tray down
             self._show_results([_f("The change failed: {error}", error=str(exc))])
             self.refresh()

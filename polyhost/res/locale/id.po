@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-04 15:35+0000\n"
+"POT-Creation-Date: 2026-11-05 11:37+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: id\n"
@@ -3268,50 +3268,58 @@ msgstr "Perintah di judul terminal"
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
-"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards."
+"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards. To change the Codex option, select the shells and press Install again."
 msgstr ""
 "Keyboard menampilkan pintasan program yang berjalan di terminal (misalnya nano) hanya jika judul jendela terminal menyebut program itu. bash, zsh, dan PowerShell tidak melakukannya tanpa pengaturan.\n"
 "\n"
-"Instal menambahkan satu baris ke berkas awal setiap shell yang dipilih, di antara dua komentar penanda, dan sebelumnya menyimpan salinan berkas di sebelahnya. Hapus menghapus baris tersebut. Perubahan berlaku untuk jendela terminal yang dibuka sesudahnya."
+"Instal menambahkan satu baris ke berkas awal setiap shell yang dipilih, di antara dua komentar penanda, dan sebelumnya menyimpan salinan berkas di sebelahnya. Hapus menghapus baris tersebut. Perubahan berlaku untuk jendela terminal yang dibuka sesudahnya. Untuk mengubah opsi Codex, pilih shell lalu tekan Instal lagi."
 
-#: polyhost/gui/shell_title_dialog.py:97
+#: polyhost/gui/shell_title_dialog.py:100
+msgid "Also show Codex in the title (wraps the codex command)"
+msgstr "Tampilkan juga Codex di judul (membungkus perintah codex)"
+
+#: polyhost/gui/shell_title_dialog.py:102
+msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
+msgstr "Codex mengganti judul terminal dengan nama thread dan proyek, sehingga keyboard tidak tahu bahwa Codex sedang berjalan. Dengan opsi ini, perintah codex menjalankan Codex dengan judul yang diawali \"codex\". Alias atau fungsi codex milik Anda sendiri, dan judul yang diatur di config.toml Codex, tetap dipertahankan."
+
+#: polyhost/gui/shell_title_dialog.py:111
 msgid "Checking the shells…"
 msgstr "Memeriksa shell…"
 
-#: polyhost/gui/shell_title_dialog.py:110
+#: polyhost/gui/shell_title_dialog.py:124
 msgid "Install"
 msgstr "Instal"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:111
+#: polyhost/gui/shell_title_dialog.py:125
 msgid "Remove"
 msgstr "Hapus"
 
-#: polyhost/gui/shell_title_dialog.py:152
+#: polyhost/gui/shell_title_dialog.py:166
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Shell tidak dapat diperiksa: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:170
+#: polyhost/gui/shell_title_dialog.py:189
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: menampilkan perintah tanpa pengaturan."
 
-#: polyhost/gui/shell_title_dialog.py:198
+#: polyhost/gui/shell_title_dialog.py:217
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Tidak ditemukan bash, zsh, atau PowerShell di komputer ini."
 
-#: polyhost/gui/shell_title_dialog.py:222
+#: polyhost/gui/shell_title_dialog.py:244
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Perubahan gagal: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:229
+#: polyhost/gui/shell_title_dialog.py:251
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Salinan berkas sebelumnya: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:231
+#: polyhost/gui/shell_title_dialog.py:253
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Buka jendela terminal baru agar perubahan berlaku."
 
@@ -4392,62 +4400,72 @@ msgstr "Perintah tidak dapat dimulai: {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "Berkas aturan di checkout ini ditolak: {reason}"
 
-#: polyhost/services/shell_title.py:94
+#: polyhost/services/shell_title.py:102
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "Baris ditambahkan ke {path}."
 
-#: polyhost/services/shell_title.py:95
+#: polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Baris di {path} diganti dengan baris untuk instalasi ini."
 
-#: polyhost/services/shell_title.py:96
+#: polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Sudah diatur di {path}."
 
-#: polyhost/services/shell_title.py:97
+#: polyhost/services/shell_title.py:105
+#, python-brace-format
+msgid "Turned on the Codex title in {path}."
+msgstr "Judul Codex diaktifkan di {path}."
+
+#: polyhost/services/shell_title.py:106
+#, python-brace-format
+msgid "Turned off the Codex title in {path}."
+msgstr "Judul Codex dinonaktifkan di {path}."
+
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "Baris dihapus dari {path}."
 
-#: polyhost/services/shell_title.py:98
+#: polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Tidak ada yang perlu dihapus di {path}."
 
-#: polyhost/services/shell_title.py:99
+#: polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "{shell} tidak ditemukan di komputer ini."
 
-#: polyhost/services/shell_title.py:100
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} tidak melaporkan jalur profilnya: {error}"
 
-#: polyhost/services/shell_title.py:101
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Kebijakan eksekusi PowerShell ({policy}) tidak menjalankan skrip profil. Jalankan dulu 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' di PowerShell."
 
-#: polyhost/services/shell_title.py:103
+#: polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} memiliki penanda awal tanpa penanda akhir. Hapus blok tersebut secara manual."
 
-#: polyhost/services/shell_title.py:104
+#: polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Tidak dapat mengubah {path}: {error}"
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "Jalur skrip tidak dapat ditulis dalam pengodean {path} ({encoding})."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "Skrip {path} yang akan dimuat oleh baris itu tidak ada."

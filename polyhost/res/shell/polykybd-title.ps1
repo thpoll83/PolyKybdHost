@@ -28,3 +28,27 @@ function global:prompt {
     $Host.UI.RawUI.WindowTitle = $global:PolyBaseTitle
     & $global:PolyPrompt
 }
+
+# Codex replaces the console title with its own, and its default title does
+# not name it. With the Codex option the installed line sets
+# $global:PolyKybdTitleCodex, and this wraps the command so that Codex's title
+# starts with "codex". A codex alias or function of your own is kept, and so
+# is a terminal_title you set in Codex's config.toml. The TOML array uses
+# single quotes: Windows PowerShell 5.1 drops double quotes inside arguments
+# to native programs.
+if ($global:PolyKybdTitleCodex -and
+    -not (Get-Command codex -CommandType Function, Alias -ErrorAction SilentlyContinue)) {
+    function global:codex {
+        $exe = Get-Command codex -CommandType Application, ExternalScript -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if (-not $exe) { Write-Error 'codex was not found on PATH'; return }
+        $dir = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' }
+        $cfg = Join-Path $dir 'config.toml'
+        if ((Test-Path -LiteralPath $cfg) -and
+            (Select-String -LiteralPath $cfg -Pattern '^\s*(tui\.)?terminal_title\s*=' -Quiet)) {
+            & $exe.Source @args
+        } else {
+            & $exe.Source -c "tui.terminal_title=['app-name','activity','thread-name','project-name']" @args
+        }
+    }
+}

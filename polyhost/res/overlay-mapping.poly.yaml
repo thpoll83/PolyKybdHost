@@ -1366,7 +1366,9 @@ windowsterminal,wt:
     "(claude": *claude_cli
     # Codex CLI. Its DEFAULT title ("<spinner> <thread> | <project>") never
     # names it. Only the "action required" form and a title configured with
-    # `app-name` first (`[tui] terminal_title = ["app-name", ...]`) do.
+    # `app-name` first do: the shell integration's Codex option starts codex
+    # with that title ("codex | <project>"), or set
+    # `[tui] terminal_title = ["app-name", ...]` in Codex's config.toml.
     codex: &codex_cli
       title: '^(?:● )?(?:\[ [!.] \] Action Required|codex(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:\[ [!.] \] Action Required|codex(?:$|\s|\)))'
       overlay: [codex_cli_template.mods.png, codex_cli_template.combo.mods.png]

@@ -12,6 +12,12 @@ startup file that sources them:
     if [ -r '/path/to/polyhost/res/shell/polykybd-title.bash' ]; then . '...'; fi
     # <<< PolyKybd title integration <<<
 
+With the Codex option the line first sets a flag (``__poly_title_codex=1``,
+``$global:PolyKybdTitleCodex``), and the script then wraps the ``codex``
+command so that Codex's own window title starts with ``codex``: Codex
+replaces the shell's title, and its default title does not name it (see
+``overlay_sources/aicli/SOURCES.md``).
+
 The line names the absolute path of THIS install's script. An update copies
 the new files over the same install directory, so the path stays valid; a
 moved checkout, a new venv or a second install changes it. The line tests the
@@ -72,10 +78,12 @@ STATE_UNKNOWN = "unknown"        # PowerShell did not tell its $PROFILE path
 STATE_BLOCKED = "blocked"        # PowerShell's execution policy runs no profile
 STATE_NO_SETUP = "no-setup"      # fish, cmd.exe, Terminal.app/iTerm2
 
-ShellStatus = namedtuple("ShellStatus", "shell state rc_path detail")
+ShellStatus = namedtuple("ShellStatus", "shell state rc_path detail codex",
+                         defaults=(False,))
 ShellStatus.__doc__ = """One shell's state. ``rc_path`` is the startup file
 (a Path, or None when unknown). ``detail`` is the stale block's script path,
-the execution policy, or the probe's error; "" otherwise."""
+the execution policy, or the probe's error; "" otherwise. ``codex`` is True
+when the installed line turns the Codex wrapper on."""
 
 Result = namedtuple("Result", "shell ok changed message backup")
 Result.__doc__ = """What install()/remove() did for one shell. ``message`` is
@@ -94,6 +102,8 @@ _BLOCKING_POLICIES = ("restricted", "allsigned", "undefined")
 MSG_INSTALLED = M_("Added the line to {path}.")
 MSG_UPDATED = M_("Replaced the line in {path} with one for this installation.")
 MSG_ALREADY = M_("Already set up in {path}.")
+MSG_CODEX_ON = M_("Turned on the Codex title in {path}.")
+MSG_CODEX_OFF = M_("Turned off the Codex title in {path}.")
 MSG_REMOVED = M_("Removed the line from {path}.")
 MSG_NOT_INSTALLED = M_("Nothing to remove in {path}.")
 MSG_NOT_PRESENT = M_("{shell} was not found on this computer.")
@@ -130,13 +140,16 @@ def script_path(shell, system=None):
     return str(path)
 
 
-def source_line(shell, path):
-    """The one line that loads ``path``, quoted for the shell."""
+def source_line(shell, path, codex=False):
+    """The one line that loads ``path``, quoted for the shell. With ``codex``
+    it sets the flag that makes the script wrap the ``codex`` command."""
     if shell in (BASH, ZSH):
         q = shlex.quote(path)
-        return f"if [ -r {q} ]; then . {q}; fi"
+        flag = "__poly_title_codex=1; " if codex else ""
+        return f"if [ -r {q} ]; then {flag}. {q}; fi"
     q = "'" + path.replace("'", "''") + "'"
-    return f"if (Test-Path -LiteralPath {q}) {{ . {q} }}"
+    flag = "$global:PolyKybdTitleCodex = $true; " if codex else ""
+    return f"if (Test-Path -LiteralPath {q}) {{ {flag}. {q} }}"
 
 
 def _path_in_line(shell, line):
@@ -355,27 +368,35 @@ def _write(path, data):
 
 def file_state(shell, rc_path, system=None):
     """``(state, detail)`` of the marked block in one startup file."""
+    return _file_state(shell, rc_path, system)[:2]
+
+
+def _file_state(shell, rc_path, system=None):
+    """``(state, detail, codex)``: file_state() and whether the installed line
+    turns the Codex wrapper on."""
     system = system or platform.system()
     try:
         raw = Path(rc_path).read_bytes()
     except FileNotFoundError:
-        return STATE_NOT_INSTALLED, ""
+        return STATE_NOT_INSTALLED, "", False
     except OSError as exc:
-        return STATE_UNKNOWN, str(exc)
+        return STATE_UNKNOWN, str(exc), False
     try:
         doc = _Text(raw, _default_encoding(shell, True))
     except UnicodeDecodeError as exc:
-        return STATE_UNKNOWN, str(exc)
+        return STATE_UNKNOWN, str(exc), False
     found, _orphan = _blocks(doc.text)
     if not found:
-        return STATE_NOT_INSTALLED, ""
+        return STATE_NOT_INSTALLED, "", False
     want = script_path(shell, system)
     for _s, _e, inner in found:
         line = doc.unpiece(_block_line(inner))
         named = _path_in_line(shell, line)
-        if line == source_line(shell, want) and Path(named).is_file():
-            return STATE_INSTALLED, ""
-    return STATE_STALE, _path_in_line(shell, doc.unpiece(_block_line(found[0][2])))
+        if Path(named).is_file():
+            for codex in (False, True):
+                if line == source_line(shell, want, codex):
+                    return STATE_INSTALLED, "", codex
+    return STATE_STALE, _path_in_line(shell, doc.unpiece(_block_line(found[0][2]))), False
 
 
 # --- the public calls -------------------------------------------------------
@@ -414,22 +435,23 @@ def _status_one(shell, home, env, which, run, system, use_cache):
                 rc = zdot / ".zshrc"
         if not present and not rc.exists():
             return ShellStatus(shell, STATE_NOT_PRESENT, rc, "")
-        state, detail = file_state(shell, rc, system)
-        return ShellStatus(shell, state, rc, detail)
+        state, detail, codex = _file_state(shell, rc, system)
+        return ShellStatus(shell, state, rc, detail, codex)
     exe = which(shell)
     if not exe:
         return ShellStatus(shell, STATE_NOT_PRESENT, None, "")
     profile, policy, error = probe_powershell(exe, run=run, use_cache=use_cache)
     if profile is None:
         return ShellStatus(shell, STATE_UNKNOWN, None, error)
-    state, detail = file_state(shell, profile, system)
+    state, detail, codex = _file_state(shell, profile, system)
     if state == STATE_NOT_INSTALLED and policy.lower() in _BLOCKING_POLICIES and system == "Windows":
         return ShellStatus(shell, STATE_BLOCKED, profile, policy)
-    return ShellStatus(shell, state, profile, detail)
+    return ShellStatus(shell, state, profile, detail, codex)
 
 
-def _change(st, install, system, now=None):
-    """Install or remove the block for one ShellStatus; returns a Result."""
+def _change(st, install, system, now=None, codex=False):
+    """Install or remove the block for one ShellStatus; returns a Result.
+    ``codex``: the installed line turns the Codex wrapper on."""
     shell, rc = st.shell, st.rc_path
     if st.state == STATE_NOT_PRESENT:
         return Result(shell, False, False, MSG_NOT_PRESENT.format(shell=shell), None)
@@ -463,7 +485,7 @@ def _change(st, install, system, now=None):
 
     if install:
         try:
-            block = doc.piece(BEGIN_MARKER + nl + source_line(shell, want_path) + nl
+            block = doc.piece(BEGIN_MARKER + nl + source_line(shell, want_path, codex) + nl
                               + END_MARKER + nl)
         except UnicodeEncodeError:
             return Result(shell, False, False,
@@ -478,6 +500,8 @@ def _change(st, install, system, now=None):
                 prev = e
             new += text[prev:]
             done = MSG_UPDATED
+            if st.state == STATE_INSTALLED and st.codex != codex:
+                done = MSG_CODEX_ON if codex else MSG_CODEX_OFF
         else:
             sep = nl if text and not text.endswith("\n") else ""
             new = text + doc.piece(sep) + block
@@ -521,7 +545,7 @@ def default_selection(st, env=None):
     return True
 
 
-def _apply(install, shells, statuses, home, env, which, run, system):
+def _apply(install, shells, statuses, home, env, which, run, system, codex=None):
     system = system or platform.system()
     if statuses is None:
         statuses = status(shells, home=home, env=env, which=which, run=run, system=system)
@@ -536,16 +560,19 @@ def _apply(install, shells, statuses, home, env, which, run, system):
                 continue
             if not install and st.state not in (STATE_INSTALLED, STATE_STALE):
                 continue
-        results.append(_change(st, install, system))
+        results.append(_change(st, install, system,
+                               codex=st.codex if codex is None else codex))
     return results
 
 
 def install(shells=None, statuses=None, home=None, env=None, which=shutil.which,
-            run=subprocess.run, system=None):
+            run=subprocess.run, system=None, codex=None):
     """Add the block to each shell's startup file (the shells
     default_selection() picks when ``shells`` is None). Pass the ``statuses`` a dialog already
-    shows to skip a second PowerShell probe. Returns a list of Result."""
-    return _apply(True, shells, statuses, home, env, which, run, system)
+    shows to skip a second PowerShell probe. ``codex`` True writes the line
+    that also wraps the ``codex`` command, False the line without it, and None
+    keeps what each shell has. Returns a list of Result."""
+    return _apply(True, shells, statuses, home, env, which, run, system, codex)
 
 
 def remove(shells=None, statuses=None, home=None, env=None, which=shutil.which,

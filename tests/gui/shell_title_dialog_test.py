@@ -35,13 +35,15 @@ class ShellTitleDialogTest(unittest.TestCase):
 
     def make(self, statuses=None, results=None):
         self.calls = []
+        self.codex_calls = []
         statuses = _statuses() if statuses is None else statuses
 
         def status_fn():
             return statuses
 
-        def install_fn(shells, statuses=None):
+        def install_fn(shells, statuses=None, codex=None):
             self.calls.append(("install", shells, statuses))
+            self.codex_calls.append(codex)
             return results or []
 
         def remove_fn(shells, statuses=None):
@@ -87,6 +89,40 @@ class ShellTitleDialogTest(unittest.TestCase):
         self.assertIn("/h/.bashrc", text)
         self.assertIn(str(backup), text)
         self.assertFalse(dlg._results.isHidden())
+
+    def test_codex_box_shows_the_installed_option_and_is_passed(self):
+        dlg = self.make()
+        self.assertFalse(dlg.codex_box.isChecked())
+        dlg.codex_box.click()
+        dlg._boxes[st.BASH].setChecked(True)
+        dlg.install_button.click()
+        self.settle(dlg)
+        self.assertEqual(self.codex_calls, [True])
+        # The refresh after the change does not undo the user's choice.
+        self.assertTrue(dlg.codex_box.isChecked())
+
+        statuses = _statuses()
+        statuses[1] = statuses[1]._replace(codex=True)
+        dlg = self.make(statuses=statuses)
+        self.assertTrue(dlg.codex_box.isChecked())
+
+    def test_window_is_tall_enough_for_the_rows(self):
+        """The tray shows the dialog before the status arrives. The rows are
+        shown one event-loop pass after they are added; a height measured
+        before that left the intro text over them."""
+        statuses = _statuses()
+        dlg = std.ShellTitleDialog(status_fn=lambda: statuses,
+                                   install_fn=lambda *a, **k: [],
+                                   remove_fn=lambda *a, **k: [])
+        self.addCleanup(dlg.deleteLater)
+        dlg.show()
+        self.addCleanup(dlg.hide)
+        self.settle(dlg)
+        for _ in range(20):
+            self.app.processEvents()
+            time.sleep(0.01)
+        need = dlg.layout().totalHeightForWidth(dlg.width())
+        self.assertGreaterEqual(dlg.height(), need)
 
     def test_remove_and_nothing_ticked(self):
         dlg = self.make()
