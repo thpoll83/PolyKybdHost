@@ -1750,11 +1750,20 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
         from polyhost.handler.common import find_matching_entry, mapping_key
         entry = self.handler.mapping[mapping_key("chrome", self.handler.mapping)]
         title = "Keyboard shortcuts for Google Keep - Computer - Google Keep Help"
-        for os_name in ("WINDOWS", "LINUX", "MACOS"):
+        for os_name, suffix in (("WINDOWS", ""), ("LINUX", ""), ("MACOS", "_mac")):
             with self.subTest(os=os_name):
                 got = find_matching_entry(title, entry, None, OsType[os_name], title_known=True)
                 self.assertIsNotNone(got)
                 files = [str(f) for f in got["overlay"]]
+                self.assertIn(f"chrome_template{suffix}.mods.png", files)
+                self.assertFalse(any("googlekeep" in f for f in files), files)
+            # A URL that only mentions the Keep host (a search for it) is not Keep.
+            with self.subTest(os=os_name, url="search"):
+                got = find_matching_entry("keep.google.com - Google Search", entry,
+                                          "https://www.google.com/search?q=keep.google.com",
+                                          OsType[os_name], title_known=True)
+                files = [str(f) for f in got["overlay"]]
+                self.assertIn(f"chrome_template{suffix}.mods.png", files)
                 self.assertFalse(any("googlekeep" in f for f in files), files)
 
     def test_MEDIA_CREATIVE_and_DEV_apps_get_their_platform_set(self):

@@ -40,6 +40,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     # Google Keep (sources: overlay_sources/webapps/googlekeep.yaml).
     keep.google.com:
+      url: '^https?://keep\.google\.com([/?#]|$)'
       overlay: [googlekeep_template.mods.png, googlekeep_template.combo.mods.png]
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
     # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
@@ -293,6 +294,7 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         keep.google.com:
+          url: '^https?://keep\.google\.com([/?#]|$)'
           overlay: [googlekeep_template_mac.mods.png, googlekeep_template_mac.combo.mods.png, googlekeep_template_mac.extra.mods.png]
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
         # JupyterHub. The url gate needs /lab, /notebooks or /tree right after the
