@@ -86,7 +86,7 @@ the second key has other meanings (as in the Todoist set).
 | shortcut icons (see `ICONS` in `fetch_icons.py`) | Microsoft Fluent UI System Icons, <https://github.com/microsoft/fluentui-system-icons> | MIT |
 | the `ms:` names in `ICONS` (`backspace`, `text_select_*`, `keyboard_tab`, `keyboard_tab_rtl`, `keyboard_double_arrow_*`, `account_tree`, `jump_to_element`, `find_in_page`) | Google Material Symbols, <https://github.com/google/material-design-icons> | Apache-2.0 |
 | `killafter.png` | Material Symbols `backspace`, mirrored left to right in `fetch_icons.py` | Apache-2.0 |
-| `logseq.png` (ESC program mark) | Simple Icons `logseq`, <https://github.com/simple-icons/simple-icons> (`../brand_marks.py`) | CC0-1.0 |
+| `logseq.png` (ESC program mark) | Logseq's app icon (logseq.com favicon, 256 px, through Google's favicon service), reduced to 32x32 and cut at luma 128 so the square tile is lit and the three ovals are cut out (`_logseq_mark` in `fetch_icons.py`) | Logseq's mark, used only to name the app |
 
 `fetch_icons.py` prints which source each glyph came from. Labels that name a
 shared concept (Copy, Paste, Undo, Bold, ...) are drawn by the shared renderer
@@ -94,9 +94,11 @@ instead of the PNG in `icons/` (see the skill, "A label that NAMES a concept").
 
 ### The program mark
 
-Logseq's own icon is in its repo under AGPL-3.0. The mark is taken from Simple
-Icons instead, where the same monochrome artwork is CC0-1.0, so no AGPL file is
-in this repo. CC0 grants no trademark rights: the basis is nominative use, the
-mark names the app this overlay is for, unchanged and with no endorsement
-implied (the same basis as the other `brand_marks` logos). `fetch_icons.py`
+The mark is Logseq's square app icon (three ovals on a dark tile), chosen by the
+maintainer over the tile-less Simple Icons mark. `fetch_icons.py` fetches the
+icon from logseq.com's favicon through Google's favicon service and reduces it
+to a 32x32 1-bit mask: pixels at or below luma 128 (the dark tile) are lit, so
+the ovals are cut out. It is drawn at the keycap size, so the generator copies
+it 1:1. No AGPL file from the Logseq repo is copied; the mark is used only to
+name the app this overlay is for, with no endorsement implied. `fetch_icons.py`
 leaves a committed `logseq.png` as it is.

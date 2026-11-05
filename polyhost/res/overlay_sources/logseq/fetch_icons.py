@@ -3,8 +3,9 @@
 
 Shortcut icons: Microsoft Fluent UI System Icons (MIT), with Material Symbols
 (Apache-2.0, `ms:` names) where Fluent has no match. The ESC program mark is
-Logseq's monochrome mark from Simple Icons (artwork CC0-1.0), through
-`../brand_marks.py`. A committed mark is left as it is.
+Logseq's own app icon (three ovals on a square tile) reduced to 1 bit at the
+32x32 keycap size: the tile is lit and the ovals are cut out. A committed mark
+is left as it is.
 
 Run from the repo root with the project venv:
 
@@ -19,7 +20,6 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import brand_marks  # noqa: E402
 import icon_fetch  # noqa: E402
 
 ICONS = {
@@ -97,6 +97,30 @@ ICONS = {
     "fullscreen": "Full Screen Maximize",
 }
 
+# Logseq's app icon (logseq.com's favicon) through Google's favicon service.
+LOGSEQ_ICON_URL = "https://www.google.com/s2/favicons?domain=logseq.com&sz=256"
+LOGSEQ_DARK_LUMA = 128  # pixels at or below this are the dark tile
+
+
+def _logseq_mark(dest: Path, px: int = 32) -> None:
+    """Logseq's square app icon as a px*px 1-bit tile with the ovals cut out.
+
+    Drawn at the keycap size so the generator copies it 1:1.
+    """
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    import io
+    import urllib.request
+    with urllib.request.urlopen(LOGSEQ_ICON_URL, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("RGBA")
+    white = Image.new("RGBA", icon.size, "white")
+    white.alpha_composite(icon)
+    a = white.convert("L").resize((px, px), Image.LANCZOS).point(
+        lambda v: 255 if v <= LOGSEQ_DARK_LUMA else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+    print(f"  {dest.name}  <- Logseq app icon, 1-bit tile with the ovals cut out")
+
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
@@ -105,7 +129,7 @@ def main() -> int:
     Image.open(out / "killafter.png").transpose(Image.Transpose.FLIP_LEFT_RIGHT).save(
         out / "killafter.png")
     print("  killafter.png  <- ms:backspace, mirrored")
-    brand_marks.ensure(out / "logseq.png", "logseq")
+    _logseq_mark(out / "logseq.png")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 
