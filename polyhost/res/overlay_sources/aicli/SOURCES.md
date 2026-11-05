@@ -69,8 +69,9 @@ The tray's Updates → "Show the running command in the terminal title…" has a
 checkbox "Also show Codex in the title", and `polyctl shell-integration
 install --codex` (`--no-codex` turns it off; without either, each shell keeps
 what it has). The installed line then sets a flag before it loads the script
-(`__poly_title_codex=1` in bash and zsh, `$global:PolyKybdTitleCodex` in
-PowerShell), and the script defines a `codex` function that runs
+(`__poly_title_codex=1` in bash and zsh, `set -g __poly_title_codex 1` in
+fish, `$global:PolyKybdTitleCodex` in PowerShell), and the script defines a
+`codex` function that runs
 
 ```
 codex -c "tui.terminal_title=['app-name','activity','thread-name','project-name']" <your arguments>
@@ -86,10 +87,15 @@ PowerShell 5.1 drops double quotes inside arguments to native programs.
 The function is not defined when you have a `codex` alias or function of your
 own, and it passes no `-c` when `config.toml` (in `$CODEX_HOME`, or
 `~/.codex`) sets `terminal_title` itself. Checked with a stand-in `codex` that
-prints its arguments, in bash 5.2 and zsh 5.9 on a pty
+prints its arguments, in bash 5.2, zsh 5.9 and fish 3.7.0 on a pty
 (`tests/services/shell_title_test.py`) and in PowerShell 7.4 by hand; not in
 Windows PowerShell 5.1, and Codex's own title with the option was not looked
 at on a screen.
+
+fish shows the command without setup, so its line (in
+`~/.config/fish/conf.d/polykybd.fish`, or under `$XDG_CONFIG_HOME`) is written
+only for this option: `polyctl shell-integration install --codex` includes
+fish when it is found, and the dialog lists fish as a shell to tick.
 
 Qwen Code's glyphs are Claude Code's glyphs, but followed by U+FE0E. A title
 word is compared whole, so `✳︎` (with U+FE0E) never takes the Claude Code key

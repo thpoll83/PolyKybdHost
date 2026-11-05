@@ -459,9 +459,12 @@ class PowerShellTest(_Home):
 
 class InfoRowsTest(_Home):
     def test_no_setup_rows_per_platform(self):
-        self.present["fish"] = "/usr/bin/fish"
+        self.present.update(fish="/usr/bin/fish", nu="/usr/bin/nu", xonsh="/usr/bin/xonsh")
         linux = self.status()
-        self.assertEqual(linux[st.FISH].state, st.STATE_NO_SETUP)
+        # fish is a row of its own (its file is only for the Codex option).
+        self.assertEqual(linux[st.FISH].state, st.STATE_NOT_INSTALLED)
+        self.assertEqual(linux[st.NUSHELL].state, st.STATE_NO_SETUP)
+        self.assertEqual(linux[st.XONSH].state, st.STATE_NO_SETUP)
         self.assertNotIn(st.CMD, linux)
         self.assertIn(st.CMD, self.status(system="Windows", run=lambda a, **k: _FakeProc(b"", b"", 1)))
         self.assertIn(st.MACOS_TERMINAL, self.status(system="Darwin"))
@@ -549,7 +552,10 @@ class BashOnAPtyTest(_Home):
             fh.write("PROMPT_COMMAND+='; poly_late_hook=1'\n")
         out = _run_in_pty(["bash", "-i"], self.env_for(), [b"echo hi\n", b"\n", b"exit\n"])
         titles = re.findall(rb"\x1b\]2;(.*?)\x07", out)
-        self.assertEqual(titles, [b"echo hi", b"exit"], out)
+        # After each command the prompt writes the neutral title once.
+        self.assertEqual(titles[0], b"echo hi", out)
+        self.assertEqual(titles[-1], b"exit", out)
+        self.assertNotIn(b"poly_late_hook", b"".join(titles), out)
 
     def test_set_u_shell_gets_no_unbound_variable_error(self):
         rc = self.home / ".bashrc"
@@ -606,6 +612,29 @@ class BashOnAPtyTest(_Home):
         self.assertIn(b"ARG<exec>", out, out)
         self.assertNotIn(b"ARG<-c>", out, out)
 
+    def test_prompt_writes_a_neutral_title_after_a_command(self):
+        """A prompt that sets no title of its own: the command's title must not
+        stay (with its overlay) at the next prompt."""
+        (self.home / ".bashrc").write_text("PS1='$ '\n", encoding="utf-8")
+        self.install([st.BASH])
+        env = dict(self.env_for(), USER="me")
+        out = _run_in_pty(["bash", "-i"], env, [b"cd ~\n", b"echo hi\n", b"exit\n"])
+        titles = re.findall(rb"\x1b\]2;(.*?)\x07", out)
+        i = titles.index(b"echo hi")
+        self.assertRegex(titles[i + 1], rb"^me@[^:]+: ~$", titles)
+        # No title at the first prompt, before any command ran.
+        self.assertEqual(titles[0], b"cd ~", titles)
+
+    def test_a_prompt_title_still_takes_priority(self):
+        """Ubuntu's PS1 sets the title itself; it is printed after the reset."""
+        (self.home / ".bashrc").write_text("PS1='\\[\\e]0;base-title\\a\\]$ '\n",
+                                           encoding="utf-8")
+        self.install([st.BASH])
+        out = _run_in_pty(["bash", "-i"], self.env_for(), [b"echo hi\n", b"exit\n"])
+        after = out[out.index(b"\x1b]2;echo hi\x07"):]
+        reset = after.find(b": ", after.find(b"\x1b]2;", 1))
+        self.assertGreater(after.rfind(b"\x1b]0;base-title\x07"), reset, out)
+
     def test_stale_line_starts_quietly(self):
         rc = self.home / ".bashrc"
         rc.write_text(st.BEGIN_MARKER + "\n"
@@ -628,6 +657,31 @@ class ZshOnAPtyTest(_Home):
         out = _run_in_pty(["zsh", "-i"], env, [b"echo hi\n", b"exit\n"])
         self.assertIn(b"\x1b]2;echo hi\x07", out, out)
 
+    def test_prompt_writes_a_neutral_title_after_a_command(self):
+        self.present["zsh"] = shutil.which("zsh")
+        (self.home / ".zshrc").write_text("PS1='%% '\n", encoding="utf-8")
+        self.install([st.ZSH])
+        env = {"HOME": str(self.home), "ZDOTDIR": str(self.home), "TERM": "xterm",
+               "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+        out = _run_in_pty(["zsh", "-i"], env, [b"cd ~\n", b"echo hi\n", b"exit\n"])
+        titles = re.findall(rb"\x1b\]2;(.*?)\x07", out)
+        i = titles.index(b"echo hi")
+        self.assertRegex(titles[i + 1], rb"@[^:]+: ~$", titles)
+
+    def test_a_theme_precmd_title_is_written_after_the_reset(self):
+        self.present["zsh"] = shutil.which("zsh")
+        (self.home / ".zshrc").write_text("PS1='%% '\n", encoding="utf-8")
+        self.install([st.ZSH])
+        with open(self.home / ".zshrc", "a", encoding="utf-8") as fh:
+            fh.write("theme_title() { print -n $'\\e]2;THEME\\a' }\n"
+                     "precmd_functions+=(theme_title)\n")
+        env = {"HOME": str(self.home), "ZDOTDIR": str(self.home), "TERM": "xterm",
+               "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
+        out = _run_in_pty(["zsh", "-i"], env, [b"echo hi\n", b"exit\n"])
+        titles = re.findall(rb"\x1b\]2;(.*?)\x07", out)
+        i = titles.index(b"echo hi")
+        self.assertEqual(titles[i + 2], b"THEME", titles)
+
     def test_codex_wrapper_passes_the_title_items(self):
         self.present["zsh"] = shutil.which("zsh")
         (self.home / ".zshrc").write_text("PS1='%% '\n", encoding="utf-8")
@@ -643,6 +697,105 @@ class ZshOnAPtyTest(_Home):
         self.assertIn(b"ARG<tui.terminal_title=['app-name','activity','thread-name',"
                       b"'project-name']>", out, out)
         self.assertIn(b"ARG<exec>", out, out)
+
+
+class FishFileTest(_Home):
+    def test_line_round_trips_a_quote_and_a_backslash(self):
+        path = "/home/o'neil/my\\apps/polykybd-title.fish"
+        for codex in (False, True):
+            line = st.source_line(st.FISH, path, codex)
+            self.assertTrue(line.startswith("if test -r '"), line)
+            self.assertEqual(st._path_in_line(st.FISH, line), path)
+
+    def test_install_goes_to_conf_d_and_only_with_codex_by_default(self):
+        self.present["fish"] = "/usr/bin/fish"
+        rc = self.home / ".config" / "fish" / "conf.d" / "polykybd.fish"
+        self.assertNotIn(st.FISH, [r.shell for r in self.install()])
+        self.assertFalse(rc.exists())
+        results = {r.shell: r for r in self.install(codex=True)}
+        self.assertTrue(results[st.FISH].changed, results)
+        self.assertIn("set -g __poly_title_codex 1", rc.read_text(encoding="utf-8"))
+        fish = self.status()[st.FISH]
+        self.assertEqual((fish.state, fish.codex), (st.STATE_INSTALLED, True))
+
+    def test_xdg_config_home_is_used(self):
+        self.present["fish"] = "/usr/bin/fish"
+        self.env["XDG_CONFIG_HOME"] = str(self.home / "cfg")
+        self.install([st.FISH], codex=True)
+        self.assertTrue((self.home / "cfg" / "fish" / "conf.d" / "polykybd.fish").is_file())
+
+
+@unittest.skipUnless(pty is not None and os.name == "posix" and shutil.which("fish"),
+                     "needs fish and a pty (POSIX)")
+class FishOnAPtyTest(_Home):
+    """fish needs a controlling terminal, which _run_in_pty does not give."""
+
+    @staticmethod
+    def _run(env, inputs, settle=2.0, step=1.0):
+        pid, fd = pty.fork()
+        if pid == 0:    # pragma: no cover - the child
+            os.execvpe("fish", ["fish", "-i"], env)
+        out = b""
+
+        def pump(t):
+            nonlocal out
+            end = time.monotonic() + t
+            while time.monotonic() < end:
+                if select.select([fd], [], [], 0.1)[0]:
+                    try:
+                        out += os.read(fd, 65536)
+                    except OSError:
+                        return
+        try:
+            pump(settle)
+            for data in inputs:
+                os.write(fd, data)
+                pump(step)
+        finally:
+            try:
+                os.kill(pid, 9)
+            except OSError:
+                pass
+            os.waitpid(pid, 0)
+            os.close(fd)
+        return out
+
+    def _env(self, bindir):
+        return {"HOME": str(self.home), "TERM": "xterm",
+                "PATH": f"{bindir}:" + os.environ.get("PATH", "/usr/bin:/bin")}
+
+    def _fake_codex(self):
+        bindir = self.home / "bin"
+        bindir.mkdir()
+        (bindir / "codex").write_text('#!/bin/sh\nfor a in "$@"; do printf "ARG<%s>\\n" "$a"; done\n',
+                                      encoding="utf-8")
+        (bindir / "codex").chmod(0o755)
+        return bindir
+
+    def test_codex_wrapper_passes_the_title_items(self):
+        self.present["fish"] = shutil.which("fish")
+        self.install([st.FISH], codex=True)
+        out = self._run(self._env(self._fake_codex()), [b"codex exec 'a b'\r"])
+        self.assertIn(b"ARG<tui.terminal_title=['app-name','activity','thread-name',"
+                      b"'project-name']>", out, out)
+        self.assertIn(b"ARG<a b>", out, out)
+
+    def test_codex_wrapper_keeps_a_title_from_codex_config(self):
+        self.present["fish"] = shutil.which("fish")
+        (self.home / ".codex").mkdir()
+        (self.home / ".codex" / "config.toml").write_text(
+            '[tui]\nterminal_title = ["spinner"]\n', encoding="utf-8")
+        self.install([st.FISH], codex=True)
+        out = self._run(self._env(self._fake_codex()), [b"codex exec\r"])
+        self.assertIn(b"ARG<exec>", out, out)
+        self.assertNotIn(b"ARG<-c>", out, out)
+
+    def test_no_wrapper_without_the_option(self):
+        self.present["fish"] = shutil.which("fish")
+        self.install([st.FISH], codex=False)
+        out = self._run(self._env(self._fake_codex()), [b"codex exec\r"])
+        self.assertIn(b"ARG<exec>", out, out)
+        self.assertNotIn(b"ARG<-c>", out, out)
 
 
 if __name__ == "__main__":
