@@ -21,6 +21,7 @@ rebuilt from its geometry (`../geo_marks.py`).
 """
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -464,7 +465,12 @@ DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidr
 # licensed copy of the mark. The substitute is drawn here: a filled disc with an
 # italic serif C knocked out, the shape of Canva's app icon without its artwork.
 CANVA_MARK = "canva.png"
-CANVA_SERIF_BOLD_ITALIC = "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf"
+# Liberation Serif Bold Italic (OFL; Debian/Ubuntu package fonts-liberation).
+# Elsewhere, point POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC at the .ttf. The mark is
+# committed, so the font is read only when canva.png is missing.
+CANVA_SERIF_BOLD_ITALIC = os.environ.get(
+    "POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC",
+    "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf")
 
 
 def _draw_canva_mark(dest: Path, px: int = 32, ss: int = 8) -> None:
@@ -474,7 +480,12 @@ def _draw_canva_mark(dest: Path, px: int = 32, ss: int = 8) -> None:
     img = Image.new("L", (big, big), 0)
     d = ImageDraw.Draw(img)
     d.ellipse([0, 0, big - 1, big - 1], fill=255)
-    font = ImageFont.truetype(CANVA_SERIF_BOLD_ITALIC, int(big * 0.82))
+    try:
+        font = ImageFont.truetype(CANVA_SERIF_BOLD_ITALIC, int(big * 0.82))
+    except OSError as e:
+        raise SystemExit(f"Liberation Serif Bold Italic not found at {CANVA_SERIF_BOLD_ITALIC}: "
+                         "install fonts-liberation or set "
+                         "POLYKYBD_LIBERATION_SERIF_BOLD_ITALIC to its .ttf") from e
     l, t, r, b = d.textbbox((0, 0), "C", font=font)
     d.text(((big - (r - l)) / 2 - l, (big - (b - t)) / 2 - t), "C", fill=0, font=font)
     a = img.resize((px, px), Image.LANCZOS).point(lambda v: 255 if v > 128 else 0)
