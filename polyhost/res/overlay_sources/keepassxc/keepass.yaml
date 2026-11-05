@@ -28,8 +28,8 @@ mode: alpha
 threshold: 128
 
 program_icon: kp2_progmark.png
-program_icon_mode: luma  # frame 64 (32 is different art); swept t110..190, t110 is cleanest
-program_icon_threshold: 110
+program_icon_mode: luma  # frame 64 (32 is different art). t60 keeps the padlock stripes; t110 filled them unevenly and the right edge looked broken
+program_icon_threshold: 60
 program_icon_anchor: right
 program_icon_region: [40, 38]
 program_icon_margin: 0

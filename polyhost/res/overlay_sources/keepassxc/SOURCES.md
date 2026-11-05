@@ -80,6 +80,6 @@ KeePassXC icons where the action is the same, plus the `kp2_*` icons below.
 
 | File | Source | Licence |
 |---|---|---|
-| `kp2_progmark.png` | KeePass 2.x `KeePass/KeePass.ico`, 64 px frame (the 32 px frame is different art) | GPL-2.0-or-later |
+| `kp2_progmark.png` | KeePass 2.x `KeePass/KeePass.ico`, 64 px frame (the 32 px frame is different art), luma threshold 60 | GPL-2.0-or-later |
 | `kp2_openurl`, `kp2_print`, `kp2_sync`, `kp2_syncurl`, `kp2_selectall`, `kp2_copyentries`, `kp2_pasteentries`, `kp2_findgroup`, `kp2_help` | Microsoft Fluent UI System Icons | MIT |
 | `kp2_compare`, `kp2_markcompare`, `kp2_movetop`, `kp2_movebottom` | Google Material Symbols | Apache-2.0 |
