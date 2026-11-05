@@ -2057,6 +2057,18 @@ spotify:
   os:
     macos:
       overlay: [spotify_template_mac.mods.png, spotify_template_mac.combo.mods.png, spotify_template_mac.extra.mods.png]
+# Steam client (sources: overlay_sources/steam/). The client UI windows belong
+# to steamwebhelper on Windows; `steam` is the Linux WM_CLASS and the macOS app
+# name. A game started from Steam reports its own process name, and a Proton
+# game reports steam_app_<id>, so neither matches this entry. Big Picture mode
+# is the same process; its English window title is "Steam Big Picture Mode"
+# (steamui localization, SP_WindowTitle_BigPicture). Names not checked on an
+# install.
+steam,steamwebhelper:
+  overlay: [steam_template.mods.png, steam_template.combo.mods.png]
+  titles-contains:
+    Big Picture Mode:
+      overlay: [steam_bigpicture_template.mods.png, steam_bigpicture_template.combo.mods.png]
 # Adobe Lightroom Classic (sources: overlay_sources/lightroom/). On Windows the
 # cloud Lightroom app also reports `lightroom`, so the title gate keeps the set
 # to Classic's windows.
