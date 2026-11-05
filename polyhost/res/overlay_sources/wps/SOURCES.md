@@ -24,8 +24,12 @@ Three sets for the WPS Office desktop editors on Windows and Linux:
 Limits:
 
 - These names hold in the multi-component window mode. In the all-in-one mode
-  all documents are tabs of one window, and no source documents a window title
-  that names the editor, so no title route is written.
+  all documents are tabs of the `wps` window. The `wps` entry then routes on the
+  file extension in the title (`titles-match`): `.xlsx`, `.et` and the other
+  spreadsheet types get the Sheets set, `.pptx`, `.dps` and the other
+  presentation types get the Presentation set. No source documents the title
+  format, so this assumes the title shows the file name. An unsaved document
+  ("Book1") has no extension and gets the Writer set.
 - WPS Office for Mac is one app for all three editors, so it would need a title
   route too. There is no macOS set.
 - The names have not been checked on a running install. Confirm them in the

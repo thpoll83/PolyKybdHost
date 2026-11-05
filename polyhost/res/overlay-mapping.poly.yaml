@@ -1620,8 +1620,18 @@ soffice,soffice.bin,libreoffice,startcenter:
 # mode (one window, a tab per document) has no title that names the editor, so
 # a tab there gets the set of the program that owns the window. WPS Office for
 # Mac is one app for all three editors and has no set here.
+# In the all-in-one window mode every WPS document is a tab of the `wps` process,
+# so the Writer default would show over a spreadsheet or a presentation too.
+# `titles-match` routes on the file extension in the title. The title format is
+# not documented and not checked on an install; an unsaved document ("Book1")
+# shows no extension and gets the Writer set.
 wps:
   overlay: [wps_writer_template.mods.png, wps_writer_template.combo.mods.png]
+  titles-match:
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xlt|et|ett|csv)\b':
+      overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
+    '(?i)\.(pptx|pptm|ppt|ppsx|pps|potx|pot|dps|dpt)\b':
+      overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
 et:
   overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
 wpp:
