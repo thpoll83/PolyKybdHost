@@ -2048,6 +2048,15 @@ fusion360,autodesk fusion,autodesk fusion 360:
   os:
     macos:
       overlay: [fusion_template_mac.mods.png, fusion_template_mac.combo.mods.png, fusion_template_mac.extra.mods.png]
+# Autodesk AutoCAD (overlay_sources/autocad/). `acad.exe` on Windows; on macOS
+# the app is "AutoCAD <year>", which the year rule turns into `autocad`. AutoCAD
+# for Mac has its own keys. No Linux version. AutoCAD LT (`acadlt`) is not
+# listed: it lacks several of the keys. Names not checked on an install.
+acad,autocad:
+  overlay: [autocad_template.mods.png, autocad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [autocad_template_mac.mods.png, autocad_template_mac.combo.mods.png, autocad_template_mac.extra.mods.png, autocad_template_mac.gui.mods.png]
 # OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
 # AppImage, class OpenSCAD); the nightly's desktop file names the class
 # org.openscad.openscad.
