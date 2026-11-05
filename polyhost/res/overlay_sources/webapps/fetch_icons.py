@@ -4,7 +4,7 @@
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
 `confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
 `bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
-Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `canva.yaml`, `linear.yaml` and
+Gmail, Calendar, Drive), `drawio.yaml`, `excalidraw.yaml`, `canva.yaml`, `linear.yaml` and
 `overleaf.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -205,6 +205,13 @@ FLUENT = {
 # Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
+    # --- Google Drive ---
+    "gdr_movefolder": "Folder Arrow Right",
+    "gdr_shortcut": "Arrow Forward",
+    "gdr_copytitle": "ms:title",
+    "gdr_pasteshortcut": "Clipboard Link",
+    "gdr_create": "Add",
+    "gdr_foldermenu": "ms:folder_managed",
     # --- Google Calendar ---
     "calrefresh": "Arrow Clockwise",
     "calgoto": "Calendar Arrow Right",
@@ -501,7 +508,8 @@ ROTATED = {"narrower.png": ("shorter.png", 90)}
 # silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
 # REAL logo (nominative use; see brand_marks).
 BRAND = {"gh.png": "github", "gl.png": "gitlab",
-         "gmail.png": "gmail", "gcal.png": "googlecalendar"}
+         "gmail.png": "gmail", "gcal.png": "googlecalendar",
+         "gdrive.png": "googledrive"}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS"),
