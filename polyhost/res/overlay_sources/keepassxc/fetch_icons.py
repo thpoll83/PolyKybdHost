@@ -48,7 +48,6 @@ OWN = {
     "kp_save": "actions/document-save",
     "kp_saveas": "actions/document-save-as",
     "kp_newdb": "actions/document-new",
-    "kp_closedb": "actions/document-close",
     "kp_lock": "actions/database-lock",
     "kp_lockall": "actions/database-lock-all",
     "kp_reports": "actions/reports",
@@ -144,6 +143,20 @@ def badge(base: Path, dest: Path, sign: str) -> None:
     print(f"  {dest.name}  <- drawn: terminal icon {sign}")
 
 
+def close_db(base: Path, dest: Path) -> None:
+    """The database cylinder with a bold X inside, for Close database.
+
+    KeePassXC's own `document-close` is a bare X, which reads as any "close" on
+    a keycap. The cylinder ties it to the numbered database tab icons.
+    """
+    im = Image.open(base).convert("RGBA")
+    d = ImageDraw.Draw(im)
+    for a, b in (((36, 46), (60, 72)), ((60, 46), (36, 72))):
+        d.line([a, b], fill=(0, 0, 0, 255), width=7)
+    im.save(dest)
+    print(f"  {dest.name}  <- drawn: database cylinder + X")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -154,7 +167,12 @@ def main() -> int:
     n += 2
     # Ctrl+1..9 selects database tab N (9 is the last tab): the number is the
     # information, so it is drawn inside the database glyph.
-    n += number_badge.numbered(out / "kp_database.png", "123456789", out, "kp_db")
+    # Smaller and lower than the number_badge default, so the digit clears the
+    # cylinder's top rim.
+    n += number_badge.numbered(out / "kp_database.png", "123456789", out, "kp_db",
+                               size=44 / 96, centre=(0.50, 0.64))
+    close_db(out / "kp_database.png", out / "kp_closedb.png")
+    n += 1
 
     mark = out / "progmark.png"
     if mark.exists():

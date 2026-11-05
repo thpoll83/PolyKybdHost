@@ -49,7 +49,8 @@ Left out:
 | `kp_*.png` except those below | KeePassXC 2.8.0, `share/icons/application/scalable/actions/` and `apps/utilities-terminal.svg` | Apache-2.0 (Pictogrammers Material Design Icons, modified by KeePassXC; see KeePassXC `COPYING`) |
 | `kp_agentadd.png`, `kp_agentremove.png` | `kp_terminal.png` with a plus or minus drawn by `fetch_icons.py` | as above |
 | `kp_nexttab`, `kp_prevtab`, `kp_nextgroup`, `kp_prevgroup`, `kp_jumpgroup`, `kp_focusgroups`, `kp_focusentries`, `kp_ontop`, `kp_minimize`, `kp_database` | Microsoft Fluent UI System Icons | MIT |
-| `kp_db1..kp_db9.png` | `kp_database.png` with a digit (Liberation Sans Bold), `number_badge.py` | MIT (glyph), SIL OFL 1.1 (font) |
+| `kp_db1..kp_db9.png` | `kp_database.png` with a digit (Liberation Sans Bold), `number_badge.py`, digit size 44/96 centred at 64% height so it clears the rim | MIT (glyph), SIL OFL 1.1 (font) |
+| `kp_closedb.png` | `kp_database.png` with a bold X drawn by `fetch_icons.py` | MIT |
 | `kp_hidewindow.png` (`select_window_off`), `kp_hideuser.png` (`person_off`) | Google Material Symbols | Apache-2.0 |
 | `progmark.png` | KeePassXC 2.8.0, `share/icons/application/scalable/apps/keepassxc-monochrome-light.svg` (the monochrome tray icon) | GPL-2 or GPL-3 (KeePassXC `COPYING` lists no separate licence for this file, so the repository licence applies) |
 
