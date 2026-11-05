@@ -109,7 +109,10 @@ from Office.
 - **Program marks** (`wps_writer.png`, `wps_sheets.png`, `wps_presentation.png`):
   drawn in `fetch_icons.py` in the shape of the WPS app icons: a filled rounded
   square with a "W" (Writer), a 2x2 grid (Spreadsheets) or a "P" (Presentation)
-  cut out. The letters are Liberation Sans Bold. The WPS logo is a proprietary mark and Simple
+  cut out. The letters are Liberation Sans Bold. The glyph sits 2 keycap pixels
+  up and left of the centre. The marks are drawn at 32x32, the size the keycap
+  shows, so the bands stay exact: the bottom 3 rows of the tile are a
+  checkerboard, and the left 3 columns light one pixel in each 2x2 block. The WPS logo is a proprietary mark and Simple
   Icons does not carry it (`wpsoffice`, `wps` and `kingsoft` all return 404).
   The files are committed, and `fetch_icons.py` does not overwrite them. Delete
   a file to draw it again.

@@ -21,6 +21,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from PIL import Image, ImageFont  # noqa: E402
+
 from polyhost.res.overlay_sources import icon_fetch, program_marks  # noqa: E402
 
 # Icons that WPS shares with the Microsoft Office sets: {file: source app}.
@@ -72,45 +74,84 @@ MARKS = {
     "wps_presentation.png": "P",
 }
 
+# The marks are drawn at the size the keycap shows them (the binding's
+# `program_icon_region` is 37x32, so a square mark is 32x32 keycap pixels).
+# `_fit_stamp` then copies them 1:1, which keeps the dither patterns exact.
+PX = 32
+SS = 32                 # supersample factor for the anti-aliased shapes
+GLYPH_SHIFT = (-2, -2)  # keycap pixels: the glyph sits up and left, as in WPS
+BAND = 3                # keycap pixels: width of the shaded bottom and side bands
+BAND_SIDE = "left"      # which side gets the sparse band
 
-def grid_mark(path: Path) -> None:
-    """Rounded tile with a 2x2 grid cut out: a square frame and a cross.
 
-    White on transparent, like `program_marks.letter_mark`, so the binding uses
-    `program_icon_mode: alpha`.
-    """
+def _shape(glyph: str) -> Image.Image:
+    """The tile with `glyph` cut out, as a bool-able 'L' image of PX x PX."""
     from PIL import Image, ImageDraw
 
-    u = program_marks.SIZE * program_marks.SS
-    pad = int(u * 0.055)
-    img = Image.new("RGBA", (u, u), program_marks.CLEAR)
+    u = PX * SS
+    pad = SS                                    # one keycap pixel
+    img = Image.new("L", (u, u), 0)
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([pad, pad, u - pad, u - pad], radius=int(u * 0.18),
-                        fill=program_marks.WHITE)
-    g0, g1 = int(u * 0.25), u - int(u * 0.25)   # grid square
-    w = int(u * 0.06)                           # line width
-    clear = program_marks.CLEAR
-    d.rectangle([g0, g0, g1, g1], fill=clear)
-    m = (g0 + g1) // 2
-    cells = [(g0 + w, g0 + w, m - w // 2, m - w // 2),
-             (m + w // 2, g0 + w, g1 - w, m - w // 2),
-             (g0 + w, m + w // 2, m - w // 2, g1 - w),
-             (m + w // 2, m + w // 2, g1 - w, g1 - w)]
-    for box in cells:
-        d.rectangle(box, fill=program_marks.WHITE)
-    img.resize((program_marks.SIZE, program_marks.SIZE), Image.LANCZOS).save(path)
+    d.rounded_rectangle([pad, pad, u - pad, u - pad], radius=int(u * 0.18), fill=255)
+    dx, dy = GLYPH_SHIFT[0] * SS, GLYPH_SHIFT[1] * SS
+    if glyph == "grid":
+        g0, g1 = int(u * 0.25), u - int(u * 0.25)
+        w = int(u * 0.06)
+        m = (g0 + g1) // 2
+        d.rectangle([g0 + dx, g0 + dy, g1 + dx, g1 + dy], fill=0)
+        for x0, y0, x1, y1 in ((g0 + w, g0 + w, m - w // 2, m - w // 2),
+                               (m + w // 2, g0 + w, g1 - w, m - w // 2),
+                               (g0 + w, m + w // 2, m - w // 2, g1 - w),
+                               (m + w // 2, m + w // 2, g1 - w, g1 - w)):
+            d.rectangle([x0 + dx, y0 + dy, x1 + dx, y1 + dy], fill=255)
+    else:
+        f = ImageFont.truetype(program_marks.BOLD, int(u * 0.52))
+        box = d.textbbox((0, 0), glyph, font=f)
+        cx = (u - (box[2] - box[0])) // 2 - box[0]
+        cy = (u - (box[3] - box[1])) // 2 - box[1]
+        d.text((cx + dx, cy + dy), glyph, font=f, fill=0)
+    return img.resize((PX, PX), Image.LANCZOS).point(lambda v: 255 if v > 127 else 0)
+
+
+def draw_mark(path: Path, glyph: str) -> None:
+    """Rounded tile with `glyph` cut out and two dithered bands, as in WPS.
+
+    The bottom BAND rows are a checkerboard (every second pixel lit). The
+    BAND columns on BAND_SIDE are sparser: one pixel lit in each 2x2 block.
+    White on transparent, so the binding uses `program_icon_mode: alpha`.
+    """
+    from PIL import Image
+
+    lit = _shape(glyph).load()
+    tile = _shape("").load()   # the tile alone, to find its edges
+    xs = [x for x in range(PX) if any(tile[x, y] for y in range(PX))]
+    ys = [y for y in range(PX) if any(tile[x, y] for x in range(PX))]
+    side = range(xs[0], xs[0] + BAND) if BAND_SIDE == "left" else range(xs[-1] - BAND + 1, xs[-1] + 1)
+    bottom = range(ys[-1] - BAND + 1, ys[-1] + 1)
+    out = Image.new("RGBA", (PX, PX), program_marks.CLEAR)
+    px = out.load()
+    for y in range(PX):
+        for x in range(PX):
+            if not lit[x, y]:
+                continue
+            if x in side:
+                on = x % 2 == xs[0] % 2 and y % 2 == ys[-1] % 2
+            elif y in bottom:
+                on = (x + y) % 2 == 0
+            else:
+                on = True
+            if on:
+                px[x, y] = program_marks.WHITE
+    out.save(path)
 
 
 def mark(path: Path, glyph: str) -> None:
     """Draw one program mark unless the file is already committed."""
     if path.exists():
         print(f"  {path.name}  <- committed asset (left as-is)")
-    elif glyph == "grid":
-        grid_mark(path)
-        print(f"  {path.name}  <- drawn program mark (2x2 grid)")
     else:
-        program_marks.letter_mark(path, glyph)
-        print(f"  {path.name}  <- drawn program mark ('{glyph}')")
+        draw_mark(path, glyph)
+        print(f"  {path.name}  <- drawn program mark ({glyph!r})")
 
 
 def main() -> None:
