@@ -105,6 +105,13 @@ class SourceLineTest(unittest.TestCase):
         self.assertIn("C:\\Users\\O''Neil", line)
         self.assertEqual(st._path_in_line(st.PWSH, line), path)
 
+    def test_codex_line_still_names_the_script(self):
+        path = "/home/o'neil/my apps/polykybd-title.bash"
+        for shell in (st.BASH, st.ZSH, st.PWSH):
+            line = st.source_line(shell, path, codex=True)
+            self.assertNotEqual(line, st.source_line(shell, path))
+            self.assertEqual(st._path_in_line(shell, line), path)
+
     def test_windows_bash_gets_a_forward_slash_path(self):
         self.assertNotIn("\\", st.script_path(st.BASH, system="Windows"))
         self.assertTrue(st.script_path(st.BASH, system="Windows").endswith("polykybd-title.bash"))
@@ -146,6 +153,27 @@ class InstallRemoveTest(_Home):
         self.assertEqual(rc.read_bytes(), after_first)
         self.assertEqual(self.backups(".bashrc"), backups)
         self.assertEqual(after_first.count(st.BEGIN_MARKER.encode()), 1)
+
+    def test_codex_option_is_reported_and_toggled(self):
+        rc = self.home / ".bashrc"
+        [r] = self.install(codex=True)
+        self.assertTrue(r.changed)
+        self.assertIn("__poly_title_codex=1", rc.read_text(encoding="utf-8"))
+        bash = self.status()[st.BASH]
+        self.assertEqual((bash.state, bash.codex), (st.STATE_INSTALLED, True))
+        # Installing with no choice keeps the option.
+        [r] = self.install()
+        self.assertFalse(r.changed, r)
+        self.assertTrue(self.status()[st.BASH].codex)
+        # Turning it off rewrites the one line and says so.
+        [r] = self.install(codex=False)
+        self.assertTrue(r.changed)
+        self.assertEqual(r.message, st.MSG_CODEX_OFF.format(path=rc))
+        self.assertEqual(rc.read_text(encoding="utf-8").count(st.BEGIN_MARKER), 1)
+        bash = self.status()[st.BASH]
+        self.assertEqual((bash.state, bash.codex), (st.STATE_INSTALLED, False))
+        [r] = self.install(codex=True)
+        self.assertEqual(r.message, st.MSG_CODEX_ON.format(path=rc))
 
     def test_remove_restores_the_original_bytes(self):
         original = b"export A=1\n\n# end\n"
@@ -531,6 +559,53 @@ class BashOnAPtyTest(_Home):
         self.assertNotIn(b"unbound variable", out, out)
         self.assertIn(b"\x1b]2;echo hi\x07", out, out)
 
+    def _fake_codex(self):
+        """A `codex` on PATH that prints its arguments, one per line."""
+        bindir = self.home / "bin"
+        bindir.mkdir()
+        exe = bindir / "codex"
+        exe.write_text('#!/bin/sh\nfor a in "$@"; do printf "ARG<%s>\\n" "$a"; done\n',
+                       encoding="utf-8")
+        exe.chmod(0o755)
+        env = self.env_for()
+        env["PATH"] = f"{bindir}:{env['PATH']}"
+        return env
+
+    def test_codex_wrapper_passes_the_title_items(self):
+        (self.home / ".bashrc").write_text("PS1='$ '\n", encoding="utf-8")
+        self.install([st.BASH], codex=True)
+        out = _run_in_pty(["bash", "-i"], self._fake_codex(),
+                          [b"codex exec 'a b'\n", b"exit\n"])
+        self.assertIn(b"ARG<-c>", out, out)
+        self.assertIn(b"ARG<tui.terminal_title=['app-name','activity','thread-name',"
+                      b"'project-name']>", out, out)
+        self.assertIn(b"ARG<a b>", out, out)
+
+    def test_codex_wrapper_keeps_a_title_from_codex_config(self):
+        (self.home / ".bashrc").write_text("PS1='$ '\n", encoding="utf-8")
+        (self.home / ".codex").mkdir()
+        (self.home / ".codex" / "config.toml").write_text(
+            '[tui]\nterminal_title = ["spinner", "project-name"]\n', encoding="utf-8")
+        self.install([st.BASH], codex=True)
+        out = _run_in_pty(["bash", "-i"], self._fake_codex(), [b"codex exec\n", b"exit\n"])
+        self.assertIn(b"ARG<exec>", out, out)
+        self.assertNotIn(b"ARG<-c>", out, out)
+
+    def test_codex_wrapper_keeps_an_alias_of_your_own(self):
+        (self.home / ".bashrc").write_text("PS1='$ '\nalias codex='echo MINE'\n",
+                                           encoding="utf-8")
+        self.install([st.BASH], codex=True)
+        out = _run_in_pty(["bash", "-i"], self._fake_codex(), [b"codex\n", b"exit\n"])
+        self.assertIn(b"MINE", out, out)
+        self.assertNotIn(b"ARG<-c>", out, out)
+
+    def test_no_wrapper_without_the_option(self):
+        (self.home / ".bashrc").write_text("PS1='$ '\n", encoding="utf-8")
+        self.install([st.BASH])
+        out = _run_in_pty(["bash", "-i"], self._fake_codex(), [b"codex exec\n", b"exit\n"])
+        self.assertIn(b"ARG<exec>", out, out)
+        self.assertNotIn(b"ARG<-c>", out, out)
+
     def test_stale_line_starts_quietly(self):
         rc = self.home / ".bashrc"
         rc.write_text(st.BEGIN_MARKER + "\n"
@@ -552,6 +627,22 @@ class ZshOnAPtyTest(_Home):
                "PATH": os.environ.get("PATH", "/usr/bin:/bin")}
         out = _run_in_pty(["zsh", "-i"], env, [b"echo hi\n", b"exit\n"])
         self.assertIn(b"\x1b]2;echo hi\x07", out, out)
+
+    def test_codex_wrapper_passes_the_title_items(self):
+        self.present["zsh"] = shutil.which("zsh")
+        (self.home / ".zshrc").write_text("PS1='%% '\n", encoding="utf-8")
+        self.install([st.ZSH], codex=True)
+        bindir = self.home / "bin"
+        bindir.mkdir()
+        (bindir / "codex").write_text('#!/bin/sh\nfor a in "$@"; do printf "ARG<%s>\\n" "$a"; done\n',
+                                      encoding="utf-8")
+        (bindir / "codex").chmod(0o755)
+        env = {"HOME": str(self.home), "ZDOTDIR": str(self.home), "TERM": "xterm",
+               "PATH": f"{bindir}:" + os.environ.get("PATH", "/usr/bin:/bin")}
+        out = _run_in_pty(["zsh", "-i"], env, [b"codex exec\n", b"exit\n"])
+        self.assertIn(b"ARG<tui.terminal_title=['app-name','activity','thread-name',"
+                      b"'project-name']>", out, out)
+        self.assertIn(b"ARG<exec>", out, out)
 
 
 if __name__ == "__main__":

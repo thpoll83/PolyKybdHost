@@ -101,9 +101,11 @@ class NanoMappingFileTest(unittest.TestCase):
         cls.raw = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
 
     def test_every_title_route_is_the_same_entry(self):
+        # The list also has the AI CLI routes (ai_cli_routing_test).
         routes = self.raw[WT_KEY]["titles-contains"]
-        self.assertEqual(set(routes), {"nano", "(nano)", "(nano"})
-        for key in routes:
+        nano_keys = {k for k in routes if "nano" in str(k)}
+        self.assertEqual(nano_keys, {"nano", "(nano)", "(nano"})
+        for key in nano_keys:
             self.assertIs(routes[key], routes["nano"], key)
 
     def test_every_named_file_exists(self):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-05 11:52+0000\n"
+"POT-Creation-Date: 2026-11-05 13:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr\n"
@@ -372,68 +372,68 @@ msgstr "Relais vers {target}"
 msgid "Cannot reach {target}"
 msgstr "Impossible de joindre {target}"
 
-#: polyhost/forwarder.py:780
+#: polyhost/forwarder.py:783
 msgid "PolyForwarder settings"
 msgstr "Paramètres de PolyForwarder"
 
-#: polyhost/forwarder.py:781
+#: polyhost/forwarder.py:784
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "Les paramètres n'ont pas pu être enregistrés dans le fichier de paramètres et ne seront donc pas appliqués. Un autre programme le garde peut-être ouvert. Réessayez ou consultez le journal."
 
-#: polyhost/forwarder.py:800
+#: polyhost/forwarder.py:803
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC authentifié (port {port})"
 
-#: polyhost/forwarder.py:802
+#: polyhost/forwarder.py:805
 msgid "legacy plaintext TCP relay"
 msgstr "ancien relais TCP en clair"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:808
 msgid "reaching the keyboard machine"
 msgstr "machine du clavier joignable"
 
-#: polyhost/forwarder.py:806
+#: polyhost/forwarder.py:809
 msgid "not reaching the keyboard machine"
 msgstr "machine du clavier injoignable"
 
-#: polyhost/forwarder.py:807
+#: polyhost/forwarder.py:810
 msgid "starting up"
 msgstr "démarrage en cours"
 
-#: polyhost/forwarder.py:809
+#: polyhost/forwarder.py:812
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>Mode :</b> relais — aucun clavier connecté à cette machine"
 
-#: polyhost/forwarder.py:810
+#: polyhost/forwarder.py:813
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>Cible :</b> {target}"
 
-#: polyhost/forwarder.py:812
+#: polyhost/forwarder.py:815
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>Rapports de fenêtre :</b> {transport}"
 
-#: polyhost/forwarder.py:815
+#: polyhost/forwarder.py:818
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>Fichier d'hôte :</b> {path}"
 
-#: polyhost/forwarder.py:836
+#: polyhost/forwarder.py:839
 msgid "About PolyKybdHost (forwarder)"
 msgstr "À propos de PolyKybdHost (relais)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:843
+#: polyhost/forwarder.py:846
 msgid "forwarder"
 msgstr "relais"
 
-#: polyhost/forwarder.py:845
+#: polyhost/forwarder.py:848
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "Mode relais : cette machine n'a pas de clavier. Elle surveille la fenêtre active ici et la transmet au PolyKybdHost qui tourne sur la machine à laquelle le clavier est branché."
 
-#: polyhost/forwarder.py:884
+#: polyhost/forwarder.py:887
 msgid "Download, install, and restart the forwarder now?"
 msgstr "Télécharger, installer et redémarrer le relais maintenant ?"
 
@@ -3286,13 +3286,21 @@ msgstr "Configuration du terminal et des éditeurs"
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
-"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards."
+"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards. To change the Codex option, select the shells and press Install again."
 msgstr ""
 "Le clavier n'affiche les raccourcis d'un programme lancé dans un terminal (nano, par exemple) que si le titre de la fenêtre du terminal nomme ce programme. bash, zsh et PowerShell ne le font pas sans configuration.\n"
 "\n"
-"Installer ajoute une ligne au fichier de démarrage de chaque shell sélectionné, entre deux commentaires de marquage, après avoir enregistré une copie du fichier à côté. Supprimer efface ces lignes. La modification s'applique aux fenêtres de terminal ouvertes ensuite."
+"Installer ajoute une ligne au fichier de démarrage de chaque shell sélectionné, entre deux commentaires de marquage, après avoir enregistré une copie du fichier à côté. Supprimer efface ces lignes. La modification s'applique aux fenêtres de terminal ouvertes ensuite. Pour modifier l'option Codex, sélectionnez les shells et appuyez de nouveau sur Installer."
 
-#: polyhost/gui/shell_title_dialog.py:144
+#: polyhost/gui/shell_title_dialog.py:145
+msgid "Also show Codex in the title (wraps the codex command)"
+msgstr "Afficher aussi Codex dans le titre (enveloppe la commande codex)"
+
+#: polyhost/gui/shell_title_dialog.py:147
+msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
+msgstr "Codex remplace le titre du terminal par le nom du fil et du projet, si bien que le clavier ne sait pas qu'il est lancé. Avec cette option, la commande codex lance Codex avec un titre qui commence par « codex ». Un alias ou une fonction codex à vous, ainsi qu'un titre défini dans le config.toml de Codex, sont conservés."
+
+#: polyhost/gui/shell_title_dialog.py:158
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
 "\n"
@@ -3302,69 +3310,69 @@ msgstr ""
 "\n"
 "Installer copie le plugin de cette installation à l'endroit où l'éditeur le charge. Pour Emacs, il ajoute aussi au fichier d'initialisation des lignes qui chargent le plugin, entre deux commentaires de marquage, après avoir enregistré une copie du fichier. Quand cette application est mise à jour, elle copie les nouveaux fichiers du plugin à son prochain démarrage. Redémarrez l'éditeur pour que la modification prenne effet."
 
-#: polyhost/gui/shell_title_dialog.py:163
+#: polyhost/gui/shell_title_dialog.py:177
 msgid "Checking the shells…"
 msgstr "Vérification des shells…"
 
-#: polyhost/gui/shell_title_dialog.py:176
+#: polyhost/gui/shell_title_dialog.py:190
 msgid "Install"
 msgstr "Installer"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:177
+#: polyhost/gui/shell_title_dialog.py:191
 msgid "Remove"
 msgstr "Supprimer"
 
-#: polyhost/gui/shell_title_dialog.py:228
+#: polyhost/gui/shell_title_dialog.py:242
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Les shells n'ont pas pu être vérifiés : {error}"
 
-#: polyhost/gui/shell_title_dialog.py:251
+#: polyhost/gui/shell_title_dialog.py:270
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell} : affiche la commande sans configuration."
 
-#: polyhost/gui/shell_title_dialog.py:279
+#: polyhost/gui/shell_title_dialog.py:298
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Aucun bash, zsh ou PowerShell n'a été trouvé sur cet ordinateur."
 
-#: polyhost/gui/shell_title_dialog.py:298
+#: polyhost/gui/shell_title_dialog.py:317
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Les éditeurs n'ont pas pu être vérifiés : {error}"
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:340
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Ni Vim, ni Neovim, ni Emacs n'a été trouvé sur cet ordinateur."
 
-#: polyhost/gui/shell_title_dialog.py:327
+#: polyhost/gui/shell_title_dialog.py:346
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Cette application écoute sur le port {port} et exige un jeton. Les plugins utilisent le port 50164 et aucun jeton : définissez g:polykybd_port et g:polykybd_token dans Vim, ou polykybd-port et polykybd-token dans Emacs, sur les mêmes valeurs."
 
-#: polyhost/gui/shell_title_dialog.py:332
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Cette application écoute sur le port {port}. Les plugins utilisent le port 50164 : définissez g:polykybd_port dans Vim, ou polykybd-port dans Emacs, sur la même valeur."
 
-#: polyhost/gui/shell_title_dialog.py:367
-#: polyhost/gui/shell_title_dialog.py:380
+#: polyhost/gui/shell_title_dialog.py:389
+#: polyhost/gui/shell_title_dialog.py:402
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "La modification a échoué : {error}"
 
-#: polyhost/gui/shell_title_dialog.py:371
-#: polyhost/gui/shell_title_dialog.py:384
+#: polyhost/gui/shell_title_dialog.py:393
+#: polyhost/gui/shell_title_dialog.py:406
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Copie du fichier précédent : {path}"
 
-#: polyhost/gui/shell_title_dialog.py:373
+#: polyhost/gui/shell_title_dialog.py:395
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Ouvrez une nouvelle fenêtre de terminal pour que la modification prenne effet."
 
-#: polyhost/gui/shell_title_dialog.py:386
+#: polyhost/gui/shell_title_dialog.py:408
 msgid "Restart the editor for the change to take effect."
 msgstr "Redémarrez l'éditeur pour que la modification prenne effet."
 
@@ -3747,7 +3755,7 @@ msgstr ""
 "Tous les paquets de polices fournis sont déjà sur le clavier.\n"
 "Développeur → Pack de polices → Reflasher TOUS les paquets force un nouvel envoi si les touches s'affichent toujours mal."
 
-#: polyhost/forwarder.py:743 polyhost/host.py:1291
+#: polyhost/forwarder.py:746 polyhost/host.py:1291
 msgid "Config folder"
 msgstr "Dossier de configuration"
 
@@ -3862,7 +3870,7 @@ msgstr "autonome"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:804 polyhost/host.py:2113
+#: polyhost/forwarder.py:807 polyhost/host.py:2113
 msgid "paused"
 msgstr "en pause"
 
@@ -3930,17 +3938,17 @@ msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Affectations de superpositions :</b> {n} application"
 msgstr[1] "<b>Affectations de superpositions :</b> {n} applications"
 
-#: polyhost/forwarder.py:821 polyhost/host.py:2152
+#: polyhost/forwarder.py:824 polyhost/host.py:2152
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Configuration :</b> {path}"
 
-#: polyhost/forwarder.py:822 polyhost/host.py:2153
+#: polyhost/forwarder.py:825 polyhost/host.py:2153
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Journaux :</b> {path}"
 
-#: polyhost/forwarder.py:840 polyhost/host.py:2207
+#: polyhost/forwarder.py:843 polyhost/host.py:2207
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Protocole HID P{protocol}"
@@ -3977,8 +3985,8 @@ msgstr "Mettre à jour le firmware vers la v{version}…"
 msgid "Check for firmware update…"
 msgstr "Rechercher une mise à jour du firmware…"
 
-#: polyhost/forwarder.py:878 polyhost/forwarder.py:889
-#: polyhost/forwarder.py:895 polyhost/host.py:2487 polyhost/host.py:2608
+#: polyhost/forwarder.py:881 polyhost/forwarder.py:892
+#: polyhost/forwarder.py:898 polyhost/host.py:2487 polyhost/host.py:2608
 #: polyhost/host.py:2612
 msgid "Check for updates..."
 msgstr "Rechercher des mises à jour..."
@@ -3988,8 +3996,8 @@ msgstr "Rechercher des mises à jour..."
 msgid "Update to v{version} available"
 msgstr "Mise à jour vers la v{version} disponible"
 
-#: polyhost/forwarder.py:891 polyhost/forwarder.py:897
-#: polyhost/forwarder.py:908 polyhost/host.py:2566 polyhost/host.py:2606
+#: polyhost/forwarder.py:894 polyhost/forwarder.py:900
+#: polyhost/forwarder.py:911 polyhost/host.py:2566 polyhost/host.py:2606
 #: polyhost/host.py:2613 polyhost/host.py:2636
 msgid "PolyKybdHost Update"
 msgstr "Mise à jour de PolyKybdHost"
@@ -3999,7 +4007,7 @@ msgstr "Mise à jour de PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "La version {version} est disponible. Cliquez sur l'icône de la zone de notification pour mettre à jour."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2592
+#: polyhost/forwarder.py:869 polyhost/host.py:2592
 msgid "Checking for updates..."
 msgstr "Recherche de mises à jour..."
 
@@ -4007,12 +4015,12 @@ msgstr "Recherche de mises à jour..."
 msgid "No updates available"
 msgstr "Aucune mise à jour disponible"
 
-#: polyhost/forwarder.py:892 polyhost/host.py:2607
+#: polyhost/forwarder.py:895 polyhost/host.py:2607
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Vous utilisez la dernière version (v{version})."
 
-#: polyhost/forwarder.py:898 polyhost/host.py:2614
+#: polyhost/forwarder.py:901 polyhost/host.py:2614
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4032,12 +4040,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "Publiée le : {date}"
 
-#: polyhost/forwarder.py:879 polyhost/host.py:2620
+#: polyhost/forwarder.py:882 polyhost/host.py:2620
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "La version {version} est disponible."
 
-#: polyhost/forwarder.py:880 polyhost/host.py:2621
+#: polyhost/forwarder.py:883 polyhost/host.py:2621
 msgid "Update PolyKybdHost"
 msgstr "Mettre à jour PolyKybdHost"
 
@@ -4045,20 +4053,20 @@ msgstr "Mettre à jour PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "Télécharger, installer et redémarrer maintenant ?"
 
-#: polyhost/forwarder.py:907 polyhost/host.py:2636
+#: polyhost/forwarder.py:910 polyhost/host.py:2636
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Téléchargement de la v{version}…"
 
-#: polyhost/forwarder.py:948 polyhost/host.py:2761
+#: polyhost/forwarder.py:951 polyhost/host.py:2761
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Impossible de démarrer le relais de mise à jour ; la mise à jour est incomplète. Consultez le journal pour plus de détails."
 
-#: polyhost/forwarder.py:960 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2776
 msgid "Update failed"
 msgstr "Échec de la mise à jour"
 
-#: polyhost/forwarder.py:960 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2776
 msgid "The update did not finish."
 msgstr "La mise à jour ne s’est pas terminée."
 
@@ -4485,62 +4493,72 @@ msgstr "La commande n'a pas pu être lancée : {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "Le fichier de règles de ce dépôt a été refusé : {reason}"
 
-#: polyhost/services/shell_title.py:94
+#: polyhost/services/shell_title.py:102
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "Ligne ajoutée à {path}."
 
-#: polyhost/services/shell_title.py:95
+#: polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "La ligne de {path} a été remplacée par une ligne pour cette installation."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:96
+#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Déjà configuré dans {path}."
 
-#: polyhost/services/shell_title.py:97
+#: polyhost/services/shell_title.py:105
+#, python-brace-format
+msgid "Turned on the Codex title in {path}."
+msgstr "Titre Codex activé dans {path}."
+
+#: polyhost/services/shell_title.py:106
+#, python-brace-format
+msgid "Turned off the Codex title in {path}."
+msgstr "Titre Codex désactivé dans {path}."
+
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "Ligne supprimée de {path}."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:98
+#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Rien à supprimer dans {path}."
 
-#: polyhost/services/shell_title.py:99
+#: polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "{shell} est introuvable sur cet ordinateur."
 
-#: polyhost/services/shell_title.py:100
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} n'a pas indiqué le chemin de son profil : {error}"
 
-#: polyhost/services/shell_title.py:101
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "La stratégie d'exécution de PowerShell ({policy}) n'exécute pas les scripts de profil. Exécutez d'abord 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' dans PowerShell."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:103
+#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} contient un marqueur de début sans marqueur de fin. Supprimez le bloc à la main."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:104
+#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Impossible de modifier {path} : {error}"
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "Le chemin du script ne peut pas être écrit dans l'encodage de {path} ({encoding})."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "Le script {path} que la ligne chargerait est introuvable."

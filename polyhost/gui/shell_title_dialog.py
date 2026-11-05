@@ -132,13 +132,27 @@ class ShellTitleDialog(QDialog):
             "Install adds one line to the startup file of each selected shell, "
             "between two marker comments, and first saves a copy of the file next "
             "to it. Remove deletes those lines. The change applies to terminal "
-            "windows opened afterwards."))
+            "windows opened afterwards. To change the Codex option, select the "
+            "shells and press Install again."))
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         self._grid = QGridLayout()
         self._grid.setColumnStretch(1, 1)
         layout.addLayout(self._grid)
+        # Codex replaces the title with its own, which does not name it; the
+        # option makes the installed line wrap the codex command.
+        self.codex_box = QCheckBox(_("Also show Codex in the title (wraps the codex command)"))
+        self.codex_box.setToolTip(_(
+            "Codex replaces the terminal title with the thread and project name, so "
+            "the keyboard cannot tell that it is running. With this option the codex "
+            "command starts Codex with a title that begins with \"codex\". A codex "
+            "alias or function of your own, and a title set in Codex's config.toml, "
+            "are kept."))
+        self._codex_touched = False
+        # noinspection PyUnresolvedReferences
+        self.codex_box.clicked.connect(self._on_codex_clicked)
+        layout.addWidget(self.codex_box)
 
         editor_intro = QLabel(_(
             "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert "
@@ -233,12 +247,17 @@ class ShellTitleDialog(QDialog):
         self._statuses = list(shells)
         self._editor_error = editors if isinstance(editors, Exception) else None
         self._editor_statuses = [] if self._editor_error else list(editors)
+        if not self._codex_touched:
+            self.codex_box.setChecked(any(getattr(st, "codex", False) for st in self._statuses))
         self._rebuild_rows()
         self._rebuild_editor_rows()
         # The rows just replaced are deleted on the next event loop pass, and
         # until then the layout reports a height too small for the new ones
         # (the window showed 173 of 202 px). Fit again once they are gone.
         QTimer.singleShot(0, self._fit)
+
+    def _on_codex_clicked(self):
+        self._codex_touched = True
 
     def _rebuild_rows(self):
         old = {shell: box.isChecked() for shell, box in self._boxes.items()}
@@ -359,9 +378,12 @@ class ShellTitleDialog(QDialog):
             return
         lines = []
         if shells:
-            fn = self._install_fn if install else self._remove_fn
             try:
-                results = fn(shells, statuses=self._statuses)
+                if install:
+                    results = self._install_fn(shells, statuses=self._statuses,
+                                               codex=self.codex_box.isChecked())
+                else:
+                    results = self._remove_fn(shells, statuses=self._statuses)
             except Exception as exc:  # noqa: BLE001 - a dialog must not take the tray down
                 results = []
                 lines.append(_f("The change failed: {error}", error=str(exc)))

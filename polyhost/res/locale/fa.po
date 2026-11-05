@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-05 11:52+0000\n"
+"POT-Creation-Date: 2026-11-05 13:02+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -372,68 +372,68 @@ msgstr "ارسال به {target}"
 msgid "Cannot reach {target}"
 msgstr "دسترسی به {target} ممکن نیست"
 
-#: polyhost/forwarder.py:780
+#: polyhost/forwarder.py:783
 msgid "PolyForwarder settings"
 msgstr "تنظیمات PolyForwarder"
 
-#: polyhost/forwarder.py:781
+#: polyhost/forwarder.py:784
 msgid "The settings could not be saved to the settings file, so they will not take effect. Another program may be holding it open. Try again, or see the log."
 msgstr "تنظیمات در فایل تنظیمات ذخیره نشد، بنابراین اعمال نخواهد شد. ممکن است برنامهٔ دیگری آن را باز نگه داشته باشد. دوباره تلاش کنید یا لاگ را ببینید."
 
-#: polyhost/forwarder.py:800
+#: polyhost/forwarder.py:803
 #, python-brace-format
 msgid "authenticated RPC (port {port})"
 msgstr "RPC احراز هویت‌شده (درگاه {port})"
 
-#: polyhost/forwarder.py:802
+#: polyhost/forwarder.py:805
 msgid "legacy plaintext TCP relay"
 msgstr "رلهٔ قدیمی TCP متن ساده"
 
-#: polyhost/forwarder.py:805
+#: polyhost/forwarder.py:808
 msgid "reaching the keyboard machine"
 msgstr "در ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:806
+#: polyhost/forwarder.py:809
 msgid "not reaching the keyboard machine"
 msgstr "بدون ارتباط با رایانهٔ صفحه‌کلید"
 
-#: polyhost/forwarder.py:807
+#: polyhost/forwarder.py:810
 msgid "starting up"
 msgstr "در حال راه‌اندازی"
 
-#: polyhost/forwarder.py:809
+#: polyhost/forwarder.py:812
 msgid "<b>Mode:</b> forwarder — no keyboard attached to this machine"
 msgstr "<b>حالت:</b> ارسال‌کننده — هیچ صفحه‌کلیدی به این رایانه وصل نیست"
 
-#: polyhost/forwarder.py:810
+#: polyhost/forwarder.py:813
 #, python-brace-format
 msgid "<b>Target:</b> {target}"
 msgstr "<b>مقصد:</b> {target}"
 
-#: polyhost/forwarder.py:812
+#: polyhost/forwarder.py:815
 #, python-brace-format
 msgid "<b>Window reports:</b> {transport}"
 msgstr "<b>گزارش‌های پنجره:</b> {transport}"
 
-#: polyhost/forwarder.py:815
+#: polyhost/forwarder.py:818
 #, python-brace-format
 msgid "<b>Host file:</b> {path}"
 msgstr "<b>فایل میزبان:</b> {path}"
 
-#: polyhost/forwarder.py:836
+#: polyhost/forwarder.py:839
 msgid "About PolyKybdHost (forwarder)"
 msgstr "دربارهٔ PolyKybdHost (ارسال‌کننده)"
 
 #. TRANSLATORS: the run mode in the About dialog's environment line
-#: polyhost/forwarder.py:843
+#: polyhost/forwarder.py:846
 msgid "forwarder"
 msgstr "ارسال‌کننده"
 
-#: polyhost/forwarder.py:845
+#: polyhost/forwarder.py:848
 msgid "Forwarder mode: this machine has no keyboard. It watches the active window here and relays it to the PolyKybdHost running on the machine the keyboard is plugged into."
 msgstr "حالت ارسال‌کننده: این رایانه صفحه‌کلید ندارد. پنجرهٔ فعال اینجا را دنبال می‌کند و آن را به PolyKybdHost در حال اجرا روی رایانه‌ای که صفحه‌کلید به آن وصل است می‌فرستد."
 
-#: polyhost/forwarder.py:884
+#: polyhost/forwarder.py:887
 msgid "Download, install, and restart the forwarder now?"
 msgstr "ارسال‌کننده اکنون بارگیری، نصب و دوباره راه‌اندازی شود؟"
 
@@ -3269,13 +3269,21 @@ msgstr "تنظیم ترمینال و ویرایشگرها"
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
-"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards."
+"Install adds one line to the startup file of each selected shell, between two marker comments, and first saves a copy of the file next to it. Remove deletes those lines. The change applies to terminal windows opened afterwards. To change the Codex option, select the shells and press Install again."
 msgstr ""
 "صفحه‌کلید میان‌برهای برنامه‌ای را که در ترمینال اجرا می‌شود (برای مثال nano) فقط وقتی نشان می‌دهد که عنوان پنجرهٔ ترمینال نام آن برنامه را داشته باشد. bash، zsh و PowerShell بدون تنظیم این کار را نمی‌کنند.\n"
 "\n"
-"«نصب» یک خط بین دو توضیح نشانه به فایل آغازین هر پوستهٔ انتخاب‌شده اضافه می‌کند و پیش از آن یک نسخه از فایل را کنار آن ذخیره می‌کند. «حذف» این خط‌ها را پاک می‌کند. تغییر برای پنجره‌های ترمینالی اعمال می‌شود که پس از آن باز شوند."
+"«نصب» یک خط بین دو توضیح نشانه به فایل آغازین هر پوستهٔ انتخاب‌شده اضافه می‌کند و پیش از آن یک نسخه از فایل را کنار آن ذخیره می‌کند. «حذف» این خط‌ها را پاک می‌کند. تغییر برای پنجره‌های ترمینالی اعمال می‌شود که پس از آن باز شوند. برای تغییر گزینهٔ Codex، پوسته‌ها را انتخاب کنید و دوباره «نصب» را بزنید."
 
-#: polyhost/gui/shell_title_dialog.py:144
+#: polyhost/gui/shell_title_dialog.py:145
+msgid "Also show Codex in the title (wraps the codex command)"
+msgstr "نمایش Codex در عنوان هم (فرمان codex را می‌پوشاند)"
+
+#: polyhost/gui/shell_title_dialog.py:147
+msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
+msgstr "Codex عنوان ترمینال را با نام رشته و پروژه جایگزین می‌کند، پس صفحه‌کلید نمی‌فهمد که در حال اجراست. با این گزینه فرمان codex برنامهٔ Codex را با عنوانی اجرا می‌کند که با \"codex\" شروع می‌شود. نام مستعار یا تابع codex خودتان و عنوانی که در config.toml مربوط به Codex تنظیم کرده‌اید حفظ می‌شوند."
+
+#: polyhost/gui/shell_title_dialog.py:158
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
 "\n"
@@ -3285,69 +3293,69 @@ msgstr ""
 "\n"
 "«نصب» افزونه را از این نصب به جایی کپی می‌کند که ویرایشگر آن را از آنجا بارگذاری می‌کند. برای Emacs همچنین خط‌هایی را که افزونه را بارگذاری می‌کنند بین دو توضیح نشانه به فایل init اضافه می‌کند و پیش از آن یک نسخه از فایل را ذخیره می‌کند. وقتی این برنامه به‌روزرسانی شود، در اجرای بعدی خود فایل‌های جدید افزونه را کپی می‌کند. برای اعمال تغییر، ویرایشگر را دوباره راه‌اندازی کنید."
 
-#: polyhost/gui/shell_title_dialog.py:163
+#: polyhost/gui/shell_title_dialog.py:177
 msgid "Checking the shells…"
 msgstr "در حال بررسی پوسته‌ها…"
 
-#: polyhost/gui/shell_title_dialog.py:176
+#: polyhost/gui/shell_title_dialog.py:190
 msgid "Install"
 msgstr "نصب"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:177
+#: polyhost/gui/shell_title_dialog.py:191
 msgid "Remove"
 msgstr "حذف"
 
-#: polyhost/gui/shell_title_dialog.py:228
+#: polyhost/gui/shell_title_dialog.py:242
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "پوسته‌ها بررسی نشدند: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:251
+#: polyhost/gui/shell_title_dialog.py:270
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: فرمان را بدون تنظیم نشان می‌دهد."
 
-#: polyhost/gui/shell_title_dialog.py:279
+#: polyhost/gui/shell_title_dialog.py:298
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "bash، zsh یا PowerShell روی این رایانه پیدا نشد."
 
-#: polyhost/gui/shell_title_dialog.py:298
+#: polyhost/gui/shell_title_dialog.py:317
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "ویرایشگرها بررسی نشدند: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:340
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "هیچ Vim، Neovim یا Emacs روی این رایانه پیدا نشد."
 
-#: polyhost/gui/shell_title_dialog.py:327
+#: polyhost/gui/shell_title_dialog.py:346
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "این برنامه روی درگاه {port} گوش می‌دهد و به توکن نیاز دارد. افزونه‌ها از درگاه 50164 و بدون توکن استفاده می‌کنند: g:polykybd_port و g:polykybd_token را در Vim، یا polykybd-port و polykybd-token را در Emacs، روی همین مقدارها تنظیم کنید."
 
-#: polyhost/gui/shell_title_dialog.py:332
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "این برنامه روی درگاه {port} گوش می‌دهد. افزونه‌ها از درگاه 50164 استفاده می‌کنند: g:polykybd_port را در Vim، یا polykybd-port را در Emacs، روی همین مقدار تنظیم کنید."
 
-#: polyhost/gui/shell_title_dialog.py:367
-#: polyhost/gui/shell_title_dialog.py:380
+#: polyhost/gui/shell_title_dialog.py:389
+#: polyhost/gui/shell_title_dialog.py:402
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "تغییر ناموفق بود: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:371
-#: polyhost/gui/shell_title_dialog.py:384
+#: polyhost/gui/shell_title_dialog.py:393
+#: polyhost/gui/shell_title_dialog.py:406
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "نسخهٔ فایل قبلی: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:373
+#: polyhost/gui/shell_title_dialog.py:395
 msgid "Open a new terminal window for the change to take effect."
 msgstr "برای اعمال تغییر، یک پنجرهٔ ترمینال تازه باز کنید."
 
-#: polyhost/gui/shell_title_dialog.py:386
+#: polyhost/gui/shell_title_dialog.py:408
 msgid "Restart the editor for the change to take effect."
 msgstr "برای اعمال تغییر، ویرایشگر را دوباره راه‌اندازی کنید."
 
@@ -3728,7 +3736,7 @@ msgstr ""
 "همهٔ مجموعه‌های فونت همراه برنامه از قبل روی صفحه‌کلید هستند.\n"
 "اگر کلاهک‌ها هنوز نادرست نمایش داده می‌شوند، توسعه‌دهنده ← بستهٔ فونت ← فلش دوبارهٔ همهٔ مجموعه‌ها ارسال دوباره را اجباری می‌کند."
 
-#: polyhost/forwarder.py:743 polyhost/host.py:1291
+#: polyhost/forwarder.py:746 polyhost/host.py:1291
 msgid "Config folder"
 msgstr "پوشهٔ پیکربندی"
 
@@ -3843,7 +3851,7 @@ msgstr "مستقل"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:804 polyhost/host.py:2113
+#: polyhost/forwarder.py:807 polyhost/host.py:2113
 msgid "paused"
 msgstr "مکث‌شده"
 
@@ -3909,17 +3917,17 @@ msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>نگاشت‌های هم‌پوشانی:</b> {n} برنامه"
 
-#: polyhost/forwarder.py:821 polyhost/host.py:2152
+#: polyhost/forwarder.py:824 polyhost/host.py:2152
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>پیکربندی:</b> {path}"
 
-#: polyhost/forwarder.py:822 polyhost/host.py:2153
+#: polyhost/forwarder.py:825 polyhost/host.py:2153
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>لاگ‌ها:</b> {path}"
 
-#: polyhost/forwarder.py:840 polyhost/host.py:2207
+#: polyhost/forwarder.py:843 polyhost/host.py:2207
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "پروتکل HID P{protocol}"
@@ -3956,8 +3964,8 @@ msgstr "به‌روزرسانی میان‌افزار به v{version}…"
 msgid "Check for firmware update…"
 msgstr "بررسی به‌روزرسانی میان‌افزار…"
 
-#: polyhost/forwarder.py:878 polyhost/forwarder.py:889
-#: polyhost/forwarder.py:895 polyhost/host.py:2487 polyhost/host.py:2608
+#: polyhost/forwarder.py:881 polyhost/forwarder.py:892
+#: polyhost/forwarder.py:898 polyhost/host.py:2487 polyhost/host.py:2608
 #: polyhost/host.py:2612
 msgid "Check for updates..."
 msgstr "بررسی به‌روزرسانی‌ها..."
@@ -3967,8 +3975,8 @@ msgstr "بررسی به‌روزرسانی‌ها..."
 msgid "Update to v{version} available"
 msgstr "به‌روزرسانی به v{version} در دسترس است"
 
-#: polyhost/forwarder.py:891 polyhost/forwarder.py:897
-#: polyhost/forwarder.py:908 polyhost/host.py:2566 polyhost/host.py:2606
+#: polyhost/forwarder.py:894 polyhost/forwarder.py:900
+#: polyhost/forwarder.py:911 polyhost/host.py:2566 polyhost/host.py:2606
 #: polyhost/host.py:2613 polyhost/host.py:2636
 msgid "PolyKybdHost Update"
 msgstr "به‌روزرسانی PolyKybdHost"
@@ -3978,7 +3986,7 @@ msgstr "به‌روزرسانی PolyKybdHost"
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "نسخهٔ {version} در دسترس است. برای به‌روزرسانی روی نماد سینی سیستم کلیک کنید."
 
-#: polyhost/forwarder.py:866 polyhost/host.py:2592
+#: polyhost/forwarder.py:869 polyhost/host.py:2592
 msgid "Checking for updates..."
 msgstr "در حال بررسی به‌روزرسانی‌ها..."
 
@@ -3986,12 +3994,12 @@ msgstr "در حال بررسی به‌روزرسانی‌ها..."
 msgid "No updates available"
 msgstr "به‌روزرسانی‌ای در دسترس نیست"
 
-#: polyhost/forwarder.py:892 polyhost/host.py:2607
+#: polyhost/forwarder.py:895 polyhost/host.py:2607
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "شما آخرین نسخه (v{version}) را اجرا می‌کنید."
 
-#: polyhost/forwarder.py:898 polyhost/host.py:2614
+#: polyhost/forwarder.py:901 polyhost/host.py:2614
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4011,12 +4019,12 @@ msgstr ""
 msgid "Released: {date}"
 msgstr "تاریخ انتشار: {date}"
 
-#: polyhost/forwarder.py:879 polyhost/host.py:2620
+#: polyhost/forwarder.py:882 polyhost/host.py:2620
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "نسخهٔ {version} در دسترس است."
 
-#: polyhost/forwarder.py:880 polyhost/host.py:2621
+#: polyhost/forwarder.py:883 polyhost/host.py:2621
 msgid "Update PolyKybdHost"
 msgstr "به‌روزرسانی PolyKybdHost"
 
@@ -4024,20 +4032,20 @@ msgstr "به‌روزرسانی PolyKybdHost"
 msgid "Download, install, and restart now?"
 msgstr "اکنون بارگیری، نصب و راه‌اندازی مجدد شود؟"
 
-#: polyhost/forwarder.py:907 polyhost/host.py:2636
+#: polyhost/forwarder.py:910 polyhost/host.py:2636
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "در حال بارگیری v{version}…"
 
-#: polyhost/forwarder.py:948 polyhost/host.py:2761
+#: polyhost/forwarder.py:951 polyhost/host.py:2761
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "رلهٔ به‌روزرسانی شروع نشد؛ به‌روزرسانی ناقص است. برای جزئیات لاگ را ببینید."
 
-#: polyhost/forwarder.py:960 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2776
 msgid "Update failed"
 msgstr "به‌روزرسانی ناموفق بود"
 
-#: polyhost/forwarder.py:960 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2776
 msgid "The update did not finish."
 msgstr "به‌روزرسانی کامل نشد."
 
@@ -4464,62 +4472,72 @@ msgstr "فرمان آغاز نشد: {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "فایل قوانین در این نسخهٔ کاری رد شد: {reason}"
 
-#: polyhost/services/shell_title.py:94
+#: polyhost/services/shell_title.py:102
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "خط به {path} اضافه شد."
 
-#: polyhost/services/shell_title.py:95
+#: polyhost/services/shell_title.py:103
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "خط در {path} با خطی برای این نصب جایگزین شد."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:96
+#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:104
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "از قبل در {path} تنظیم شده است."
 
-#: polyhost/services/shell_title.py:97
+#: polyhost/services/shell_title.py:105
+#, python-brace-format
+msgid "Turned on the Codex title in {path}."
+msgstr "عنوان Codex در {path} روشن شد."
+
+#: polyhost/services/shell_title.py:106
+#, python-brace-format
+msgid "Turned off the Codex title in {path}."
+msgstr "عنوان Codex در {path} خاموش شد."
+
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "خط از {path} حذف شد."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:98
+#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "چیزی برای حذف در {path} نیست."
 
-#: polyhost/services/shell_title.py:99
+#: polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "{shell} روی این رایانه پیدا نشد."
 
-#: polyhost/services/shell_title.py:100
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} مسیر پروفایل خود را گزارش نکرد: {error}"
 
-#: polyhost/services/shell_title.py:101
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "سیاست اجرای PowerShell ({policy}) اسکریپت‌های پروفایل را اجرا نمی‌کند. ابتدا 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' را در PowerShell اجرا کنید."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:103
+#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} نشانهٔ آغاز بدون نشانهٔ پایان دارد. بلوک را دستی حذف کنید."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:104
+#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "تغییر {path} ممکن نشد: {error}"
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "مسیر اسکریپت را نمی‌توان با رمزگذاری {path} ({encoding}) نوشت."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "اسکریپت {path} که این خط بارگذاری می‌کند وجود ندارد."

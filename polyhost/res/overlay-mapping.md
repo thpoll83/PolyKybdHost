@@ -131,6 +131,24 @@ terminal's set. A mode report still takes priority, because a known URL skips
 `titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
+### Terminal AI coding CLIs
+
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
+Aider have routes in the same `&editor_titles` list. All but Aider replace the
+shell's title with their own, so each route's keys are the first word of the
+CLI's own title (`✳`, `◇`, `OC`, `GitHub Copilot` ...) and its command name,
+and the `title` regex requires that word at the start of the title or after a
+terminal's separator. Codex's default title does not name it; only its
+"action required" title and a `terminal_title` setting with `app-name` first
+do. The formats, and where each was read, are in
+[`overlay_sources/aicli/SOURCES.md`](overlay_sources/aicli/SOURCES.md).
+
+⚠️ **An `os:` branch is tried before the entry's own `title` regex.** A title
+route with per-OS artwork must repeat the regex in every branch (the mapping
+uses a YAML anchor, `*claude_title`), or every title with the route word takes
+the set on that OS. (`tests/handler/ai_cli_routing_test.py`, which checks the
+negative titles on all three OSes.)
+
 ## `os:` — per-platform artwork
 
 An app's shortcuts are a property of the platform it runs on. Sublime Text binds

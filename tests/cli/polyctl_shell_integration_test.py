@@ -54,6 +54,12 @@ class PolyctlShellIntegrationTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("pwsh: pwsh did not report", out)
 
+    def test_codex_choice_is_passed_through(self):
+        for argv, want in ((["--codex"], True), (["--no-codex"], False), ([], None)):
+            with mock.patch.object(shell_title, "install", return_value=[]) as install:
+                self.run_main("shell-integration", "install", "--shell", "bash", *argv)
+            install.assert_called_once_with(["bash"], codex=want)
+
     def test_unknown_shell_is_rejected(self):
         with self.assertRaises(SystemExit):
             self.run_main("shell-integration", "install", "--shell", "fish")
