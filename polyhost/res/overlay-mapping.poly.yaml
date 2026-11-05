@@ -2664,3 +2664,9 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# Dota 2 (overlay_sources/dota2/dota2.yaml). The game binary is dota2.exe on
+# Windows and the native `dota2` on Linux; steam_app_570 covers Proton, which is
+# unlikely because the game has a native Linux build. Valve dropped the macOS
+# build, so there is no macOS name. Names not checked on an install.
+dota2,steam_app_570:
+  overlay: dota2_template.mods.png
