@@ -569,6 +569,29 @@ discord:
   os:
     macos:
       overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
+# Telegram Desktop (sources: overlay_sources/telegram/). Telegram.exe on
+# Windows; on Linux the tarball binary `Telegram` (WM_CLASS TelegramDesktop),
+# the distribution package `telegram-desktop`, or the Flatpak id. No name was
+# checked on an install. This entry has no default overlay on purpose: the Mac
+# App Store's "Telegram" is a different app with other keys, so on macOS the
+# name matches nothing and the window gets generic icons. The Mac App Store
+# build of the Qt app is "Telegram Lite" (tdesktop build.sh, macstore target)
+# and gets the macOS set below, as does a window named "Telegram Desktop".
+telegram,telegramdesktop,telegram-desktop,org.telegram.desktop:
+  os:
+    windows:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+    linux:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+telegram desktop:
+  overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
+telegram lite:
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 # Mathematica, renamed Wolfram in 14.1 (sources: overlay_sources/mathematica/).
@@ -1268,6 +1291,16 @@ slack:
   os:
     macos:
       overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
+# Signal Desktop (sources: overlay_sources/signal/). Signal.exe on Windows,
+# "Signal" on macOS, WM_CLASS signal or the Flatpak id org.signal.Signal on
+# Linux, signal-desktop for the package and Snap. Not checked on an install.
+signal,signal-desktop,org.signal.signal:
+  overlay: [signal_template.mods.png, signal_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [signal_template_mac.mods.png, signal_template_mac.combo.mods.png, signal_template_mac.extra.mods.png]
+    linux:
+      overlay: [signal_template_linux.mods.png, signal_template_linux.combo.mods.png]
 # Cisco Webex (sources: overlay_sources/webex/). The Webex App runs as
 # CiscoCollabHost on Windows and Linux (measured on Linux, 46.10, under Xvfb)
 # and is "Webex" on macOS. The older Webex Meetings desktop app has its own
@@ -2423,3 +2456,9 @@ rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294
 # and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
 openrct2,openrct2.exe,io.openrct2.openrct2:
   overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
+# 0 A.D. (overlay_sources/zeroad/zeroad.yaml). The engine binary is
+# `pyrogenesis` (premake5.lua project, 0.28.0) and the desktop file declares
+# StartupWMClass=pyrogenesis and starts `0ad`. com.play0ad.zeroad is the
+# Flathub app id. Names not checked on an install.
+pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
+  overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]

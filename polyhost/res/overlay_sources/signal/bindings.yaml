@@ -1,0 +1,121 @@
+# Signal Desktop shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# Keys: Signal Desktop's own keyboard shortcut guide
+# (ts/components/ShortcutGuide.dom.tsx) and its menu (app/menu.std.ts).
+# Signal writes three modifier tokens, and they map like this:
+#   commandOrCtrl -> CMDCTRL (Cmd on macOS, Ctrl elsewhere)
+#   optionOrAlt   -> ALT     (Option on macOS)
+#   ctrlOrAlt     -> CTRL on macOS, ALT elsewhere (the call keys)
+# The edit-menu keys are Electron's defaults for the menu roles Signal uses.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/signal/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/signal/bindings.yaml --preview /tmp/signal_preview
+app: signal
+match: [signal, signal-desktop, org.signal.signal]
+output: signal_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: signal.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- navigation ---
+  - { key: T,    mods: [CMDCTRL],        icon: section.png,  label: "Navigate by section" }
+  - { key: F6,   mods: [CMDCTRL],        icon: section.png,  label: "Navigate by section" }
+  - { key: UP,   mods: [ALT],            icon: prevchat.png, label: "Previous chat" }
+  - { key: DOWN, mods: [ALT],            icon: nextchat.png, label: "Next chat" }
+  - { key: TAB,  mods: [CTRL, SHIFT],    icon: prevchat.png, label: "Previous chat" }
+  - { key: TAB,  mods: [CTRL],           icon: nextchat.png, label: "Next chat" }
+  - { key: UP,   mods: [ALT, SHIFT],     icon: unread.png,   label: "Previous unread chat" }
+  - { key: DOWN, mods: [ALT, SHIFT],     icon: unread.png,   label: "Next unread chat" }
+  - { key: "1",  mods: [CMDCTRL],        icon: chat1.png,    label: "Chat 1" }
+  - { key: "2",  mods: [CMDCTRL],        icon: chat2.png,    label: "Chat 2" }
+  - { key: "3",  mods: [CMDCTRL],        icon: chat3.png,    label: "Chat 3" }
+  - { key: "4",  mods: [CMDCTRL],        icon: chat4.png,    label: "Chat 4" }
+  - { key: "5",  mods: [CMDCTRL],        icon: chat5.png,    label: "Chat 5" }
+  - { key: "6",  mods: [CMDCTRL],        icon: chat6.png,    label: "Chat 6" }
+  - { key: "7",  mods: [CMDCTRL],        icon: chat7.png,    label: "Chat 7" }
+  - { key: "8",  mods: [CMDCTRL],        icon: chat8.png,    label: "Chat 8" }
+  - { key: "9",  mods: [CMDCTRL],        icon: chat9.png,    label: "Chat 9" }
+  - { key: J,    mods: [CMDCTRL],        icon: latest.png,   label: "Most recent message" }
+  - { key: ",",  mods: [CMDCTRL],        icon: settings.png, label: "Settings" }
+  - { key: L,    mods: [CMDCTRL, SHIFT], icon: chatmenu.png, label: "Chat menu" }
+  - { key: N,    mods: [CMDCTRL],        icon: newchat.png,  label: "New chat" }
+  - { key: F,    mods: [CMDCTRL],        icon: search.png,   label: "Search" }
+  - { key: F,    mods: [CMDCTRL, SHIFT], icon: searchchat.png, label: "Search in chat" }
+  - { key: T,    mods: [CMDCTRL, SHIFT], icon: composer.png, label: "Focus composer" }
+  - { key: M,    mods: [CMDCTRL, SHIFT], icon: media.png,    label: "All media" }
+  - { key: J,    mods: [CMDCTRL, SHIFT], icon: emoji.png,    label: "Emoji" }
+  - { key: O,    mods: [CMDCTRL, SHIFT], icon: sticker.png,  label: "Stickers" }
+  - { key: G,    mods: [CMDCTRL, SHIFT], icon: gif.png,      label: "GIFs" }
+  - { key: Y,    mods: [CMDCTRL, SHIFT], icon: voicenote.png, label: "Record voice message" }
+  - { key: A,    mods: [CMDCTRL, SHIFT], icon: archive.png,  label: "Archive chat" }
+  - { key: U,    mods: [CMDCTRL, SHIFT], icon: unarchive.png, label: "Unarchive chat" }
+  - { key: UP,   mods: [CMDCTRL],        icon: top.png,      label: "Scroll to top" }
+  - { key: DOWN, mods: [CMDCTRL],        icon: bottom.png,   label: "Scroll to bottom" }
+  - { key: C,    mods: [CMDCTRL, SHIFT], icon: closechat.png, label: "Close chat" }
+
+  # --- selected message ---
+  - { key: D,    mods: [CMDCTRL],        icon: details.png,  label: "Message details" }
+  - { key: R,    mods: [CMDCTRL, SHIFT], icon: reply.png,    label: "Reply" }
+  - { key: E,    mods: [CMDCTRL, SHIFT], icon: react.png,    label: "React" }
+  - { key: S,    mods: [CMDCTRL],        icon: saveattach.png, label: "Save attachment" }
+  - { key: D,    mods: [CMDCTRL, SHIFT], icon: delete.png,   label: "Delete messages" }
+  - { key: S,    mods: [CMDCTRL, SHIFT], icon: forward.png,  label: "Forward messages" }
+  - { key: F10,  mods: [SHIFT], except: [macos], icon: contextmenu.png, label: "Context menu" }
+  - { key: F12,  mods: [GUI],   only: [macos],   icon: contextmenu.png, label: "Context menu" }
+
+  # --- composer ---
+  - { key: K,     mods: [CMDCTRL, SHIFT], icon: expand.png,  label: "Expand composer" }
+  - { key: ENTER, mods: [CMDCTRL],        icon: send.png,    label: "Send (expanded composer)" }
+  - { key: U,     mods: [CMDCTRL],        icon: attach.png,  label: "Attach file" }
+  - { key: P,     mods: [CMDCTRL],        icon: nolinkpreview.png, label: "Remove link preview" }
+  - { key: P,     mods: [CMDCTRL, SHIFT], icon: noattach.png, label: "Remove attachments" }
+  - { key: B,     mods: [CMDCTRL],        icon: bold.png,    label: "Bold" }
+  - { key: I,     mods: [CMDCTRL],        icon: italic.png,  label: "Italic" }
+  - { key: X,     mods: [CMDCTRL, SHIFT], icon: strike.png,  label: "Strikethrough" }
+  - { key: E,     mods: [CMDCTRL],        icon: monospace.png, label: "Monospace" }
+  - { key: B,     mods: [CMDCTRL, SHIFT], icon: spoiler.png, label: "Spoiler" }
+
+  # --- calls: Ctrl+Shift on macOS, Alt+Shift elsewhere ---
+  - { key: V, mods: [ALT, SHIFT],  except: [macos], icon: acceptvideo.png, label: "Accept video call" }
+  - { key: V, mods: [CTRL, SHIFT], only: [macos],   icon: acceptvideo.png, label: "Accept video call" }
+  - { key: A, mods: [ALT, SHIFT],  except: [macos], icon: acceptaudio.png, label: "Accept call without video" }
+  - { key: A, mods: [CTRL, SHIFT], only: [macos],   icon: acceptaudio.png, label: "Accept call without video" }
+  - { key: D, mods: [ALT, SHIFT],  except: [macos], icon: decline.png,     label: "Decline call" }
+  - { key: D, mods: [CTRL, SHIFT], only: [macos],   icon: decline.png,     label: "Decline call" }
+  - { key: C, mods: [ALT, SHIFT],  except: [macos], icon: audiocall.png,   label: "Start voice call" }
+  - { key: C, mods: [CTRL, SHIFT], only: [macos],   icon: audiocall.png,   label: "Start voice call" }
+  - { key: Y, mods: [ALT, SHIFT],  except: [macos], icon: videocall.png,   label: "Start video call" }
+  - { key: Y, mods: [CTRL, SHIFT], only: [macos],   icon: videocall.png,   label: "Start video call" }
+  - { key: E, mods: [ALT, SHIFT],  except: [macos], icon: hangup.png,      label: "Hang up" }
+  - { key: E, mods: [CTRL, SHIFT], only: [macos],   icon: hangup.png,      label: "Hang up" }
+
+  # --- menu ---
+  - { key: "0", mods: [CMDCTRL],       icon: zoomreset.png, label: "Reset zoom" }
+  - { key: "=", mods: [CMDCTRL],       icon: zoomin.png,    label: "Zoom in" }
+  - { key: "-", mods: [CMDCTRL],       icon: zoomout.png,   label: "Zoom out" }
+  - { key: "/", mods: [CMDCTRL],       icon: shortcuts.png, label: "Keyboard shortcuts" }
+  - { key: F11, mods: [], except: [macos], icon: fullscreen.png, label: "Full screen" }
+  - { key: F,   mods: [GUI, CTRL], only: [macos], icon: fullscreen.png, label: "Full screen" }
+  - { key: W,   mods: [GUI],       only: [macos], icon: closewindow.png, label: "Close window" }
+
+  # --- edit menu (Electron role defaults) ---
+  - { key: Z, mods: [CMDCTRL],        icon: undo.png,      label: "Undo" }
+  - { key: Y, mods: [CTRL], only: [windows], icon: redo.png, label: "Redo" }
+  - { key: Z, mods: [CMDCTRL, SHIFT], except: [windows], icon: redo.png, label: "Redo" }
+  - { key: X, mods: [CMDCTRL],        icon: cut.png,       label: "Cut" }
+  - { key: C, mods: [CMDCTRL],        icon: copy.png,      label: "Copy" }
+  - { key: V, mods: [CMDCTRL],        icon: paste.png,     label: "Paste" }
+  - { key: A, mods: [CMDCTRL],        icon: selectall.png, label: "Select all" }
