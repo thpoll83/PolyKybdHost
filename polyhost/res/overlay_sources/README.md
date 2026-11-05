@@ -3,6 +3,10 @@
 Tooling to build PolyKybd overlay PNGs for an application from a small
 **binding file** instead of hand-painting the 10×9 grid in GIMP.
 
+User installs have only the `<app>/*.yaml` files of this folder: the installers
+clone it sparse and the updater skips the rest. Run `git sparse-checkout disable`
+in an installed checkout to get the whole folder.
+
 See `../overlay_specification.md` for the underlying PNG format. In short: one
 720×360 PNG is a 10×9 grid of 72×40 keycap cells, and each **colour channel**
 of the cell carries a different **modifier variant** of that key:

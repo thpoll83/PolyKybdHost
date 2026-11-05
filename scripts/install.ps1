@@ -38,7 +38,25 @@ if ($TargetDir -eq ".") {
     git -C $TargetDir pull --ff-only
 } else {
     Write-Host ">> Cloning into '$TargetDir'."
-    git clone $RepoUrl $TargetDir
+    # Only the latest commit: the full history is 47 MB.
+    # `git pull` still updates it. Run `git fetch --unshallow` for the history.
+    # The sparse checkout leaves out what the app never reads: tests/ and the
+    # overlay build inputs in polyhost/res/overlay_sources/ except the per-app
+    # YAML specs. That is about 10,000 of 12,000 files, and the blobs are not
+    # downloaded either (--filter=blob:none). `git sparse-checkout disable`
+    # brings them back. The patterns are SPARSE_PATTERNS in
+    # polyhost/services/updater.py, which the updater applies too.
+    git clone --depth 1 --filter=blob:none --sparse $RepoUrl $TargetDir
+    if ($LASTEXITCODE -ne 0) { throw "git clone failed." }
+    # Through stdin, so no shell or C runtime expands the * in a pattern.
+    @(
+        '/*'
+        '!/tests/'
+        '!/polyhost/res/overlay_sources/**'
+        '/polyhost/res/overlay_sources/*/*.yaml'
+    ) | git -C $TargetDir sparse-checkout set --no-cone --stdin
+    # Without the patterns a --sparse clone has only the top-level files.
+    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout failed." }
 }
 Set-Location $TargetDir
 
