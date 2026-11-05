@@ -127,7 +127,7 @@ Licence texts for the icon and font licences named in this file:
 | `dig.png` | game-icons.net `lorc/spade` | lorc | CC BY 3.0 |
 | `defaultaction.png` | Font Awesome Free 6.5.2 `circle-play` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `openfocus.png` | Font Awesome Free 6.5.2 `up-right-from-square` (solid) | Fonticons, Inc. | CC BY 4.0 |
-| `viewworld.png` | Font Awesome Free 6.5.2 `map` (solid) | Fonticons, Inc. | CC BY 4.0 |
+| `viewworld.png` | game-icons.net `lorc/treasure-map` | lorc | CC BY 3.0 |
 | `kingdom.png` | Font Awesome Free 6.5.2 `crown` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `puzzle.png` | Font Awesome Free 6.5.2 `puzzle-piece` (solid) | Fonticons, Inc. | CC BY 4.0 |
 | `scenarioinfo.png` | Font Awesome Free 6.5.2 `circle-info` (solid) | Fonticons, Inc. | CC BY 4.0 |

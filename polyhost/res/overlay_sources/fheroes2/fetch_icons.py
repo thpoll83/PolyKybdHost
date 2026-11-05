@@ -31,7 +31,7 @@ ICONS = {
     "defaultaction": "fa:circle-play",
     "openfocus": "fa:up-right-from-square",
     # Adventure map: views and dialogs
-    "viewworld": "fa:map",
+    "viewworld": "gi:lorc/treasure-map",
     "kingdom": "fa:crown",
     "puzzle": "fa:puzzle-piece",
     "scenarioinfo": "fa:circle-info",
