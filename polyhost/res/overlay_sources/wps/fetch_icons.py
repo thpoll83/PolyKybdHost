@@ -81,7 +81,17 @@ PX = 32
 SS = 32                 # supersample factor for the anti-aliased shapes
 GLYPH_SHIFT = (-2, -2)  # keycap pixels: the glyph sits up and left, as in WPS
 BAND = 3                # keycap pixels: width of the shaded bottom and side bands
-BAND_SIDE = "left"      # which side gets the sparse band
+BAND_SIDE = "right"     # which side gets the lighter band
+
+
+def _side_on(x: int, y: int) -> bool:
+    """Side band: a checkerboard, every second pixel lit (50%)."""
+    return (x + y) % 2 == 0
+
+
+def _bottom_on(x: int, y: int) -> bool:
+    """Bottom band: denser, one pixel dark in each 2x2 block (75% lit)."""
+    return not (x % 2 == 1 and y % 2 == 1)
 
 
 def _shape(glyph: str) -> Image.Image:
@@ -116,8 +126,8 @@ def _shape(glyph: str) -> Image.Image:
 def draw_mark(path: Path, glyph: str) -> None:
     """Rounded tile with `glyph` cut out and two dithered bands, as in WPS.
 
-    The bottom BAND rows are a checkerboard (every second pixel lit). The
-    BAND columns on BAND_SIDE are sparser: one pixel lit in each 2x2 block.
+    The BAND columns on BAND_SIDE are a checkerboard (`_side_on`), and the
+    bottom BAND rows are denser (`_bottom_on`). The side band takes the corner.
     White on transparent, so the binding uses `program_icon_mode: alpha`.
     """
     from PIL import Image
@@ -135,9 +145,9 @@ def draw_mark(path: Path, glyph: str) -> None:
             if not lit[x, y]:
                 continue
             if x in side:
-                on = x % 2 == xs[0] % 2 and y % 2 == ys[-1] % 2
+                on = _side_on(x, y)
             elif y in bottom:
-                on = (x + y) % 2 == 0
+                on = _bottom_on(x, y)
             else:
                 on = True
             if on:
