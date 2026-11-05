@@ -150,6 +150,15 @@ def process_dir(pid):
 #:   the path that was executed, not of the file it points to.
 _UNINFORMATIVE_NAMES = frozenset({"main", "AppRun"})
 
+#: The kernel keeps 15 BYTES of a process name (``TASK_COMM_LEN`` 16 with the
+#: terminating NUL), and ``ps -o comm=`` prints that copy. A name of exactly
+#: this length may be cut short: GNOME Terminal's ``gnome-terminal-server`` is
+#: reported as ``gnome-terminal-``, so neither of the terminal entry's keys
+#: matched and no editor overlay (nano, vim) was shown in it (Ubuntu GNOME on
+#: X11 through the forwarder, ``Active App: 'nano' gnome-terminal-``,
+#: 2026-11-05).
+_COMM_LEN = 15
+
 
 def _linux_exe_name(win):
     """Basename of ``/proc/<pid>/exe`` for `win`, or ``""`` when unreadable.
@@ -173,15 +182,26 @@ def app_name_for(win):
     """The owning app's name for `win`, the cheap way on Windows.
 
     Off Windows this is ``win.getAppName()``, except that on Linux a name in
-    ``_UNINFORMATIVE_NAMES`` becomes the executable's name. On Windows a failed
+    ``_UNINFORMATIVE_NAMES`` becomes the executable's name, and so does a name
+    the kernel cut to ``_COMM_LEN`` bytes when the executable's name starts
+    with it. A renamed process (``comm`` set by the program, a different file
+    name) keeps its own name. On Windows a failed
     lookup falls back to the window TITLE, which is what pywinctl's own
     implementation returns when the PID is missing from its process list — so
     the caller's normalisation sees exactly what it saw before.
     """
     if sys.platform != "win32":
         name = win.getAppName()
-        if name in _UNINFORMATIVE_NAMES and sys.platform.startswith("linux"):
+        if not sys.platform.startswith("linux"):
+            return name
+        if name in _UNINFORMATIVE_NAMES:
             return _linux_exe_name(win) or name
+        if isinstance(name, str) and len(os.fsencode(name)) == _COMM_LEN:
+            exe = _linux_exe_name(win)
+            # Bytes, not characters: the kernel limit counts bytes, so a
+            # name with a multi-byte character is cut at fewer than 15.
+            if len(os.fsencode(exe)) > _COMM_LEN and exe.startswith(name):
+                return exe
         return name
     try:
         name = win32_process_name(win.getHandle())
