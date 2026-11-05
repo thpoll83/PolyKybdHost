@@ -4204,31 +4204,31 @@ msgstr "El instalador de WinCompose se ha iniciado. Cuando termine y WinCompose 
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft Folder"
-msgstr ""
+msgstr "Carpeta de StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
-msgstr ""
+msgstr "Una carpeta con los archivos de StarCraft 1.16.1 StarDat.mpq y, para las unidades de Brood War, BrooDat.mpq. Vacío: se busca en las carpetas de instalación habituales de Windows, macOS y Wine. StarCraft: Remastered guarda sus archivos en un formato que esta aplicación no lee; entonces se usan los dibujos incluidos."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft Race"
-msgstr ""
+msgstr "Raza de StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
-msgstr ""
+msgstr "La raza cuyas unidades muestra la superposición de StarCraft II cuando las dibuja a partir de los archivos de StarCraft."
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Terran"
-msgstr ""
+msgstr "Terran"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Protoss"
-msgstr ""
+msgstr "Protoss"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:22
 msgid "Zerg"
-msgstr ""
+msgstr "Zerg"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II Folder"
