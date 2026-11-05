@@ -1617,6 +1617,14 @@ onenote,microsoft onenote:
   os:
     macos:
       overlay: [onenote_template_mac.mods.png, onenote_template_mac.combo.mods.png, onenote_template_mac.extra.mods.png, onenote_template_mac.gui.mods.png]
+# Evernote desktop (sources: overlay_sources/evernote/). Evernote.exe on
+# Windows, Evernote on macOS. Evernote has no Linux app. Not checked on an
+# install.
+evernote:
+  overlay: [evernote_template.mods.png, evernote_template.combo.mods.png, evernote_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [evernote_template_mac.mods.png, evernote_template_mac.combo.mods.png, evernote_template_mac.extra.mods.png, evernote_template_mac.gui.mods.png]
 powerpnt,microsoft powerpoint:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
   os:
