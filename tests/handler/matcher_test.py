@@ -4,7 +4,7 @@ Pulled out of OverlayHandler so the local and remote paths share one matcher,
 and so the recursion is unit-testable without a display (active_window imports
 pywinctl). Entries here are built in the *annotated* shape annotate() produces:
 a `flags` list [overlay, remote, title, starts_with, ends_with, contains, url,
-urls_contains, os] plus the matching sub-maps.
+urls_contains, os, match] plus the matching sub-maps.
 """
 import unittest
 
@@ -14,9 +14,12 @@ from polyhost.handler.common import (
 
 
 def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
-          url=None, urls_contains=None, os_map=None):
+          url=None, urls_contains=None, os_map=None, match=None):
     e = {"flags": [overlay, remote, title is not None, bool(sw), bool(ew),
-                   bool(contains), url is not None, bool(urls_contains), bool(os_map)]}
+                   bool(contains), url is not None, bool(urls_contains), bool(os_map),
+                   bool(match)]}
+    if match:
+        e["titles-match"] = match
     if os_map:
         e["os"] = os_map
     if overlay:
@@ -119,6 +122,35 @@ class TestFindMatchingEntry(unittest.TestCase):
         import re as _re
         with self.assertRaises(_re.error):
             find_matching_entry("x", entry(title="("))
+
+
+class TestTitlesMatch(unittest.TestCase):
+    """`titles-match`: regex keys against the whole title (WPS all-in-one)."""
+
+    def setUp(self):
+        self.sheets = entry()
+        self.slides = entry()
+        self.e = entry(match={r"(?i)\.(xlsx|et)\b": self.sheets,
+                              r"(?i)\.(pptx|dps)\b": self.slides})
+
+    def test_an_extension_inside_a_word_routes_to_its_sub_entry(self):
+        self.assertIs(find_matching_entry("Book1.xlsx - WPS Office", self.e), self.sheets)
+        self.assertIs(find_matching_entry("Deck.PPTX - WPS Office", self.e), self.slides)
+
+    def test_no_key_matching_falls_back_to_the_parent(self):
+        self.assertIs(find_matching_entry("Report.docx - WPS Office", self.e), self.e)
+        self.assertIs(find_matching_entry("Book1 - WPS Office", self.e), self.e)
+        self.assertIs(find_matching_entry("", self.e), self.e)
+
+    def test_the_key_is_searched_not_split_into_words(self):
+        # A word sub-map keyed ".xlsx" could never see "Book1.xlsx".
+        e = entry(contains={".xlsx": self.sheets})
+        self.assertIs(find_matching_entry("Book1.xlsx - WPS Office", e), e)
+
+    def test_an_entry_with_only_a_match_map_routes(self):
+        e = entry(overlay=False, match={r"\.et\b": self.sheets})
+        self.assertIs(find_matching_entry("a.et - WPS", e), self.sheets)
+        self.assertIsNone(find_matching_entry("a.wps - WPS", e))
 
 
 class TestPhraseKeys(unittest.TestCase):

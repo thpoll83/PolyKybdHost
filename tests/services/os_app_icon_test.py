@@ -286,6 +286,66 @@ class AppIdentityTest(unittest.TestCase):
 
 
 
+class DbusActivatedEntryTest(unittest.TestCase):
+    """Rank 5: a D-Bus activated app's process found through its service file.
+
+    The files are the ones the Ubuntu package ships (gnome-terminal
+    3.52.0-1ubuntu2): the window belongs to /usr/libexec/gnome-terminal-server,
+    and the launcher says `Exec=gnome-terminal`, so ranks 1-4 find nothing.
+    Field: the forwarder logged "names=<none>" for gnome-terminal-server and the
+    terminal's ESC mark was gone (2026-11-05)."""
+
+    SERVICE = ("[D-BUS Service]\nName=org.gnome.Terminal\n"
+               "SystemdService=gnome-terminal-server.service\n"
+               "Exec=/usr/libexec/gnome-terminal-server\n")
+    DESKTOP = ("[Desktop Entry]\nName=Terminal\nExec=gnome-terminal\n"
+               "Icon=org.gnome.Terminal\nStartupWMClass=Gnome-terminal\n"
+               "DBusActivatable=true\n\n[Desktop Action new-window]\n"
+               "Name=New Window\nExec=gnome-terminal --window\n")
+    PREFS = ("[Desktop Entry]\nName=Terminal Preferences\n"
+             "Exec=gnome-terminal --preferences\nIcon=org.gnome.Terminal.Preferences\n"
+             "StartupWMClass=Gnome-terminal-preferences\n")
+
+    def setUp(self):
+        import os
+        import shutil
+        import tempfile
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+        for rel, text in (("dbus-1/services/org.gnome.Terminal.service", self.SERVICE),
+                          ("applications/org.gnome.Terminal.Preferences.desktop", self.PREFS),
+                          ("applications/org.gnome.Terminal.desktop", self.DESKTOP)):
+            path = os.path.join(self.root, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        env = {"XDG_DATA_HOME": os.path.join(self.root, "nothing"),
+               "XDG_DATA_DIRS": self.root}
+        patcher = mock.patch.dict(os.environ, env)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_the_server_process_finds_its_launcher(self):
+        for app_name in ("gnome-terminal-server", "gnome-terminal-"):
+            with self.subTest(app_name), mock.patch.object(osi.log, "info") as info:
+                entry = osi._linux_entry("/usr/libexec/gnome-terminal-server", app_name)
+                self.assertEqual(entry.get("Name"), "Terminal")
+                self.assertEqual(entry.get("Icon"), "org.gnome.Terminal")
+                self.assertIn("5/dbus-activation", info.call_args.args[-1])
+
+    def test_without_the_exe_nothing_matches(self):
+        self.assertEqual(osi._linux_entry("", "gnome-terminal-server"), {})
+
+    def test_a_runtime_exe_never_reads_the_service_files(self):
+        # A Python or Java app's exe is the interpreter, which names no app.
+        self.assertEqual(osi._dbus_activated_names("python3"), set())
+
+    def test_the_bus_names_for_an_exe(self):
+        self.assertEqual(osi._dbus_activated_names("gnome-terminal-server"),
+                         {"org.gnome.terminal"})
+        self.assertEqual(osi._dbus_activated_names("gnome-terminal"), set())
+
+
 class MatchRankIsReportedTest(unittest.TestCase):
     """The log line that says WHICH of the four matches fired.
 

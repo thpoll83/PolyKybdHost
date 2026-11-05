@@ -34,6 +34,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [web_outlook_template.mods.png, web_outlook_template.combo.mods.png]
     github.com:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
+    drive.google.com:
+      overlay: [googledrive_template.mods.png, googledrive_template.combo.mods.png]
     gitlab.com:
       overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
     # Jupyter (sources: overlay_sources/jupyter/): a local server or a
@@ -60,6 +62,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     excalidraw.com:
       url: '^https?://([^/?#]+\.)?excalidraw\.com/'
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    # Canva (sources: overlay_sources/webapps/canva.yaml): the design editor
+    # only (/design/<id>/edit). The home page and the help pages are not gated
+    # in, because the bare tool letters would draw over their search fields.
+    # There is no title entry: the help pages also have "Canva" in their
+    # titles, so a title cannot tell the editor apart.
+    canva.com:
+      url: '^https?://([^/?#]+\.)?canva\.com/design/[^/?#]+/edit(?:[/?#]|$)'
+      overlay: [canva_template.mods.png, canva_template.combo.mods.png]
     # Figma (sources: overlay_sources/figma/figma_web.yaml): the design editor
     # and prototypes only. FigJam (/board/) and Figma Slides (/slides/) have
     # other tool keys and keep the browser set.
@@ -173,6 +183,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     onenote:
       url: '(?i)^https?://(([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft)/.*[?&]ithint=onenote|(www\.)?onenote\.com/)'
       overlay: [onenote_web_template.mods.png, onenote_web_template.combo.mods.png]
+    # Todoist (sources: overlay_sources/todoist/): the web app is under
+    # app.todoist.com/app; the marketing and help pages keep the browser keys.
+    todoist.com/app:
+      url: '^https?://(app\.)?todoist\.com/app'
+      overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -196,6 +211,11 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
                 confluence_template.extra.mods.png]
     GitHub:
       overlay: [github_template.mods.png, github_template.combo.mods.png]
+    # A Drive tab is titled "<folder> - Google Drive"; the gate requires that
+    # ending, so a document that names Drive in its title keeps its own set.
+    Google Drive:
+      title: ' - Google Drive( [-—] [^-—]+)?$'
+      overlay: [googledrive_template.mods.png, googledrive_template.combo.mods.png]
     # Logged in, GitHub drops "· GitHub" from its titles ("Workflow runs ·
     # owner/repo"), so the brand word above misses most pages. Every one ends in
     # "· owner/repo" (or "@sha"), which the gate requires. GitLab spaces its
@@ -257,6 +277,12 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
       overlay: [claude_web_template.mods.png, claude_web_template.combo.mods.png]
     ChatGPT:
       overlay: [chatgpt_template.mods.png, chatgpt_template.combo.mods.png]
+    # Todoist (sources: overlay_sources/todoist/): the app's tabs are titled
+    # "<view> - Todoist" or "Todoist"; the gate keeps pages that only mention
+    # Todoist ("Use keyboard shortcuts in Todoist") off the set.
+    Todoist:
+      title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
+      overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
@@ -273,6 +299,8 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [web_outlook_template_mac.mods.png, web_outlook_template_mac.combo.mods.png]
         github.com:
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        drive.google.com:
+          overlay: [googledrive_template_mac.mods.png, googledrive_template_mac.combo.mods.png, googledrive_template_mac.extra.mods.png]
         gitlab.com:
           overlay: [gitlab_template_mac.mods.png, gitlab_template_mac.combo.mods.png, gitlab_template_mac.extra.mods.png]
         # Jupyter (sources: overlay_sources/jupyter/): a local server or a
@@ -299,6 +327,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         excalidraw.com:
           url: '^https?://([^/?#]+\.)?excalidraw\.com/'
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        canva.com:
+          url: '^https?://([^/?#]+\.)?canva\.com/design/[^/?#]+/edit(?:[/?#]|$)'
+          overlay: [canva_template_mac.mods.png, canva_template_mac.combo.mods.png, canva_template_mac.extra.mods.png]
         figma.com:
           url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
           overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
@@ -362,6 +393,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         pptx:
           url: '(?i)^https?://([^/?#@]+\.)?(sharepoint\.com|onedrive\.live\.com|officeapps\.live\.com|cloud\.microsoft|onenote\.com)/.*(\.|%2c)pptx([?&#]|$)'
           overlay: [powerpoint_web_template_mac.mods.png, powerpoint_web_template_mac.combo.mods.png, powerpoint_web_template_mac.extra.mods.png, powerpoint_web_template_mac.gui.mods.png]
+        todoist.com/app:
+          url: '^https?://(app\.)?todoist\.com/app'
+          overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -378,6 +412,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [confluence_template_mac.mods.png, confluence_template_mac.combo.mods.png, confluence_template_mac.extra.mods.png, confluence_template_mac.gui.mods.png]
         GitHub:
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
+        Google Drive:
+          title: ' - Google Drive( [-—] [^-—]+)?$'
+          overlay: [googledrive_template_mac.mods.png, googledrive_template_mac.combo.mods.png, googledrive_template_mac.extra.mods.png]
         "·":
           title: '· [\w.-]+/[\w.-]+(@[0-9a-f]{7,40})?( · GitHub)?( [-—] [^·]+)?$'
           overlay: [github_template_mac.mods.png, github_template_mac.combo.mods.png, github_template_mac.extra.mods.png]
@@ -429,6 +466,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
           overlay: [claude_web_template_mac.mods.png, claude_web_template_mac.combo.mods.png, claude_web_template_mac.extra.mods.png]
         ChatGPT:
           overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
+        Todoist:
+          title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
+          overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
 # Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
 # keymap, so it has its own entry, but the web-app routing is the browser
 # entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
@@ -540,6 +580,29 @@ discord:
   os:
     macos:
       overlay: [discord_template_mac.mods.png, discord_template_mac.combo.mods.png, discord_template_mac.extra.mods.png, discord_template_mac.gui.mods.png]
+# Telegram Desktop (sources: overlay_sources/telegram/). Telegram.exe on
+# Windows; on Linux the tarball binary `Telegram` (WM_CLASS TelegramDesktop),
+# the distribution package `telegram-desktop`, or the Flatpak id. No name was
+# checked on an install. This entry has no default overlay on purpose: the Mac
+# App Store's "Telegram" is a different app with other keys, so on macOS the
+# name matches nothing and the window gets generic icons. The Mac App Store
+# build of the Qt app is "Telegram Lite" (tdesktop build.sh, macstore target)
+# and gets the macOS set below, as does a window named "Telegram Desktop".
+telegram,telegramdesktop,telegram-desktop,org.telegram.desktop:
+  os:
+    windows:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+    linux:
+      overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+telegram desktop:
+  overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
+telegram lite:
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
 inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
 # Mathematica, renamed Wolfram in 14.1 (sources: overlay_sources/mathematica/).
@@ -1239,6 +1302,16 @@ slack:
   os:
     macos:
       overlay: [slack_template_mac.mods.png, slack_template_mac.combo.mods.png, slack_template_mac.extra.mods.png]
+# Signal Desktop (sources: overlay_sources/signal/). Signal.exe on Windows,
+# "Signal" on macOS, WM_CLASS signal or the Flatpak id org.signal.Signal on
+# Linux, signal-desktop for the package and Snap. Not checked on an install.
+signal,signal-desktop,org.signal.signal:
+  overlay: [signal_template.mods.png, signal_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [signal_template_mac.mods.png, signal_template_mac.combo.mods.png, signal_template_mac.extra.mods.png]
+    linux:
+      overlay: [signal_template_linux.mods.png, signal_template_linux.combo.mods.png]
 # Cisco Webex (sources: overlay_sources/webex/). The Webex App runs as
 # CiscoCollabHost on Windows and Linux (measured on Linux, 46.10, under Xvfb)
 # and is "Webex" on macOS. The older Webex Meetings desktop app has its own
@@ -1353,6 +1426,26 @@ taskmgr:
   overlay: sevenzip_template.mods.png
 winscp:
   overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
+# KeePassXC (sources: overlay_sources/keepassxc/). KeePassXC.exe on Windows,
+# keepassxc on Linux and macOS; Wayland and Flatpak report the desktop file
+# name org.keepassxc.KeePassXC (set in src/main.cpp).
+keepassxc,org.keepassxc.keepassxc:
+  overlay: [keepassxc_template.mods.png, keepassxc_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [keepassxc_template_mac.mods.png, keepassxc_template_mac.combo.mods.png, keepassxc_template_mac.extra.mods.png]
+    linux:
+      overlay: [keepassxc_template_linux.mods.png, keepassxc_template_linux.combo.mods.png]
+# KeePass 2.x, the original KeePass (sources: overlay_sources/keepassxc/keepass.yaml,
+# sharing the KeePassXC icons). KeePass.exe on Windows. On Linux it runs under
+# Mono; the Debian/Ubuntu package starts it as `keepass2`. Names not checked on
+# an install. Under Mono the move keys are Ctrl+Shift+F5..F8, so Linux
+# has its own set.
+keepass,keepass2:
+  overlay: [keepass_template.mods.png, keepass_template.combo.mods.png]
+  os:
+    linux:
+      overlay: [keepass_template_linux.mods.png, keepass_template_linux.combo.mods.png]
 putty:
   overlay: putty_template.mods.png
 # Office on macOS reports its display name, `Microsoft Word` and so on.
@@ -1512,6 +1605,15 @@ obsidian:
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+# Todoist desktop app (sources: overlay_sources/todoist/). Todoist.exe on
+# Windows, Todoist on macOS, todoist (AppImage, snap) or the Flatpak app id
+# com.todoist.Todoist on Linux. The web app (todoist.com) is in the browser
+# entries: it has none of the window, back and scroll keys.
+todoist,com.todoist.todoist:
+  overlay: [todoist_template.mods.png, todoist_template.combo.mods.png, todoist_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [todoist_template_mac.mods.png, todoist_template_mac.combo.mods.png, todoist_template_mac.extra.mods.png, todoist_template_mac.gui.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
   os:
@@ -1612,6 +1714,30 @@ soffice,soffice.bin,libreoffice,startcenter:
           overlay: [libreoffice_calc_template_mac.mods.png, libreoffice_calc_template_mac.combo.mods.png, libreoffice_calc_template_mac.extra.mods.png]
         Impress:
           overlay: [libreoffice_impress_template_mac.mods.png, libreoffice_impress_template_mac.combo.mods.png, libreoffice_impress_template_mac.extra.mods.png, libreoffice_impress_template_mac.gui.mods.png]
+
+# WPS Office (sources: overlay_sources/wps/). In the multi-component window
+# mode each editor is its own program: wps.exe Writer, et.exe Spreadsheets,
+# wpp.exe Presentation. On Linux /usr/bin/wps, et and wpp start
+# office6/wps, et and wpp, so the names are the same. The all-in-one window
+# mode (one window, a tab per document) has no title that names the editor, so
+# a tab there gets the set of the program that owns the window. WPS Office for
+# Mac is one app for all three editors and has no set here.
+# In the all-in-one window mode every WPS document is a tab of the `wps` process,
+# so the Writer default would show over a spreadsheet or a presentation too.
+# `titles-match` routes on the file extension in the title. The title format is
+# not documented and not checked on an install; an unsaved document ("Book1")
+# shows no extension and gets the Writer set.
+wps:
+  overlay: [wps_writer_template.mods.png, wps_writer_template.combo.mods.png]
+  titles-match:
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xlt|et|ett|csv)\b':
+      overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
+    '(?i)\.(pptx|pptm|ppt|ppsx|pps|potx|pot|dps|dpt)\b':
+      overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
+et:
+  overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
+wpp:
+  overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
 
 # ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
 # app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
@@ -2231,6 +2357,44 @@ reliccardinal,steam_app_1466860:
 # does not change when they open. Names not checked on an install.
 openttd,openttd.exe,org.openttd.openttd,steam_app_1536610:
   overlay: [openttd_template.mods.png, openttd_template.combo.mods.png]
+# Civilization IV: Beyond the Sword 3.19 (overlay_sources/civ4/civ4_bts.yaml).
+# Civ4BeyondSword.exe on Windows (civ4beyondsword); under Wine the WM_CLASS keeps
+# the `.exe`. steam_app_8800 is Steam under Proton. The executable names are from
+# the GOG Lutris installer; none of the names was checked on an install.
+civ4beyondsword,civ4beyondsword.exe,steam_app_8800:
+  overlay: [civ4_bts_template.mods.png, civ4_bts_template.combo.mods.png]
+# Civilization IV (Civilization4.exe, Steam app 3900) and Warlords
+# (Civ4Warlords.exe, Steam app 3990): the Beyond the Sword keys without the ones
+# Beyond the Sword added (overlay_sources/civ4/civ4_classic.yaml, generated by
+# gen_classic.py). Names not checked on an install. Colonization has other keys
+# and no set.
+civilization4,civ4warlords,civilization4.exe,civ4warlords.exe,steam_app_3900,steam_app_3990:
+  overlay: [civ4_classic_template.mods.png, civ4_classic_template.combo.mods.png]
+# Freeciv 3.2 GTK clients (overlay_sources/freeciv/freeciv.yaml). The
+# executables are freeciv-gtk3.22 and freeciv-gtk4 (meson.build, R3_2_6).
+# Windows cuts the name at the first dot, so freeciv-gtk3.22.exe arrives as
+# freeciv-gtk3; the `.exe` names are for a forwarded Windows window, which is
+# tried by its whole name first. org.freeciv.* are the desktop file ids
+# (Flathub, Wayland). Names not checked on an install.
+freeciv-gtk3.22,freeciv-gtk3,freeciv-gtk4,freeciv-gtk3.22.exe,freeciv-gtk4.exe,org.freeciv.gtk322,org.freeciv.gtk4:
+  overlay: [freeciv_template.mods.png, freeciv_template.combo.mods.png]
+# Freeciv 3.2 Qt client (freeciv/freeciv_qt.yaml, generated from freeciv.yaml).
+freeciv-qt,freeciv-qt.exe,org.freeciv.qt:
+  overlay: [freeciv_qt_template.mods.png, freeciv_qt_template.combo.mods.png]
+# Freeciv 3.2 SDL2 and SDL3 clients (freeciv/freeciv_sdl.yaml): the GTK unit
+# orders and reports, without the Ctrl keys the SDL clients bind otherwise.
+freeciv-sdl2,freeciv-sdl3,freeciv-sdl2.exe,freeciv-sdl3.exe,org.freeciv.sdl2,org.freeciv.sdl3:
+  overlay: [freeciv_sdl_template.mods.png, freeciv_sdl_template.combo.mods.png]
+# Freeciv21 3.1 (freeciv/freeciv21.yaml). The CMake target is freeciv21-client;
+# Linux X11 reports the process name from `ps -o comm=`, which the kernel cuts
+# to 15 characters (freeciv21-clien). net.longturn.freeciv21 is the desktop
+# file id. Names not checked on an install.
+freeciv21-client,freeciv21-clien,freeciv21-client.exe,net.longturn.freeciv21:
+  overlay: [freeciv21_template.mods.png, freeciv21_template.combo.mods.png]
+# Civilization II (freeciv/civ2.yaml). civ2.exe on Windows (civ2), and under
+# Wine the WM_CLASS keeps the `.exe`. The name is not checked on an install.
+civ2,civ2.exe:
+  overlay: civ2_template.mods.png
 # OpenRA (overlay_sources/openra/). The Flatpak reports `openra` for every mod
 # and tells them apart by the window title ("OpenRA - Red Alert", measured
 # 2026-10-28); the Combined Arms Snap reports `openra-ca-1.08.2` (the version is
@@ -2271,9 +2435,10 @@ dunelegacy,dunelegacy.exe:
 opendune,opendune.exe:
   overlay: dune2_template.mods.png
   game_assets: dune2/dune2.yaml
-# DOSBox runs any DOS program, so only a title naming Dune II's executable
-# loads the overlay: "...Program:    DUNE2" (DOSBox 0.74), "DUNE2.EXE - 3000
-# cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 - ..." (DOSBox-X). The
+# DOSBox runs any DOS program, so only a title naming Dune II's or
+# Civilization's executable loads an overlay: "...Program:    DUNE2" (DOSBox
+# 0.74), "DUNE2.EXE - 3000 cycles/ms" (DOSBox Staging), "DOSBox-X ...: DUNE2 -
+# ..." (DOSBox-X). The
 # titles are read off the DOSBox sources, not seen. The game files are found
 # only through the game_dune2_data_dir setting: the executable is DOSBox's.
 # DOSBox Staging's `titlebar = program=path` shows the path as one word
@@ -2286,6 +2451,11 @@ dosbox,dosbox.exe,dosbox-staging,dosbox-staging.exe,dosbox-x,dosbox-x.exe:
     DUNE2.EXE:
       overlay: dune2_template.mods.png
       game_assets: dune2/dune2.yaml
+    # Civilization I (freeciv/civ1.yaml): CIV.EXE, the same title formats.
+    CIV:
+      overlay: civ1_template.mods.png
+    CIV.EXE:
+      overlay: civ1_template.mods.png
 # Wargus, Warcraft II on the Stratagus engine (overlay_sources/wargus/wargus.yaml).
 # The `wargus` launcher starts the engine `stratagus` (execvp on Linux,
 # CreateProcess on Windows; targets in both repositories' CMakeLists.txt, v3.3.2).
@@ -2327,3 +2497,9 @@ openrct2,openrct2.exe,io.openrct2.openrct2:
 # the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
 fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
   overlay: fheroes2_template.mods.png
+# 0 A.D. (overlay_sources/zeroad/zeroad.yaml). The engine binary is
+# `pyrogenesis` (premake5.lua project, 0.28.0) and the desktop file declares
+# StartupWMClass=pyrogenesis and starts `0ad`. com.play0ad.zeroad is the
+# Flathub app id. Names not checked on an install.
+pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
+  overlay: [zeroad_template.mods.png, zeroad_template.combo.mods.png]

@@ -9,7 +9,12 @@ computer the keyboard is plugged into.
 
 These commands clone the repo, create a virtual environment, install the Python
 requirements, and (on Linux/macOS) set up the native hidapi library and HID
-permissions.
+permissions. The clone has only the latest commit and leaves out the files the
+app does not read: `tests/` and the overlay build inputs in
+`polyhost/res/overlay_sources/` (about 10,000 of 12,000 files). It downloads
+13 MB instead of 47 MB. `git pull` still updates it. To work on the code or the
+overlays, run `git sparse-checkout disable` and `git fetch --unshallow` in the
+folder.
 
 By default the app is installed into a `PolyKybdHost/` folder **in the
 directory you run the command from**. The installer prints this location and

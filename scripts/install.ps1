@@ -8,10 +8,14 @@
     repo, so no extra native install is needed on Windows.
 
     Override the clone location with $env:POLYKYBD_DIR = "C:\path\to\dir".
+    $env:POLYKYBD_NO_LAUNCH = "1" skips starting the app at the end.
+    $env:POLYKYBD_REPO_URL and $env:POLYKYBD_REF clone another repository or
+    branch instead of main; .github/workflows/windows-installer.yml uses them
+    to install a pull request's own code.
 #>
 $ErrorActionPreference = "Stop"
 
-$RepoUrl   = "https://github.com/thpoll83/PolyKybdHost.git"
+$RepoUrl   = if ($env:POLYKYBD_REPO_URL) { $env:POLYKYBD_REPO_URL } else { "https://github.com/thpoll83/PolyKybdHost.git" }
 $DefaultDir = Join-Path (Get-Location) "PolyKybdHost"
 $TargetDir = if ($env:POLYKYBD_DIR) { $env:POLYKYBD_DIR } else { $DefaultDir }
 
@@ -36,9 +40,48 @@ if ($TargetDir -eq ".") {
 } elseif (Test-Path "$TargetDir/.git") {
     Write-Host ">> Updating existing checkout in '$TargetDir'."
     git -C $TargetDir pull --ff-only
+    if ($LASTEXITCODE -ne 0) { throw "git pull failed." }
 } else {
     Write-Host ">> Cloning into '$TargetDir'."
-    git clone $RepoUrl $TargetDir
+    # Only the latest commit: the full history is 47 MB.
+    # `git pull` still updates it. Run `git fetch --unshallow` for the history.
+    # The sparse checkout leaves out what the app never reads: tests/ and the
+    # overlay build inputs in polyhost/res/overlay_sources/ except the per-app
+    # YAML specs. That is about 10,000 of 12,000 files, and the blobs are not
+    # downloaded either (--filter=blob:none). `git sparse-checkout disable`
+    # brings them back. The patterns are SPARSE_PATTERNS in
+    # polyhost/services/updater.py, which the updater applies too.
+    $cloneArgs = @("clone", "--depth", "1", "--filter=blob:none", "--sparse")
+    if ($env:POLYKYBD_REF) { $cloneArgs += @("--branch", $env:POLYKYBD_REF) }
+    git @cloneArgs $RepoUrl $TargetDir
+    if ($LASTEXITCODE -ne 0) { throw "git clone failed." }
+    # The patterns are written to the sparse-checkout file directly, with LF
+    # line ends and no BOM. Piping them into `sparse-checkout set --stdin`
+    # works in PowerShell 7 but not in Windows PowerShell 5.1: git received
+    # patterns that matched nothing and emptied the checkout (CI, 2026-11-05).
+    # Passing them as arguments would leave the * to the shell.
+    $patterns = @(
+        '/*'
+        '!/tests/'
+        '!/polyhost/res/overlay_sources/**'
+        '/polyhost/res/overlay_sources/*/*.yaml'
+    )
+    # `init --no-cone` and not `git config core.sparseCheckoutCone false`:
+    # `clone --sparse` stores cone mode in the worktree config, which takes
+    # priority over the repository config.
+    git -C $TargetDir sparse-checkout init --no-cone
+    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout init failed." }
+    # Resolve-Path: [System.IO.File] resolves a relative path against the
+    # process directory, not the PowerShell location.
+    $sparseFile = Join-Path (Resolve-Path $TargetDir).Path ".git\info\sparse-checkout"
+    [System.IO.File]::WriteAllText($sparseFile, (($patterns -join "`n") + "`n"),
+                                   (New-Object System.Text.UTF8Encoding $false))
+    git -C $TargetDir sparse-checkout reapply
+    # Without the patterns a --sparse clone has only the top-level files.
+    if ($LASTEXITCODE -ne 0) { throw "git sparse-checkout reapply failed." }
+    if (-not (Test-Path (Join-Path $TargetDir "requirements.txt"))) {
+        throw "The sparse checkout left out requirements.txt; the patterns did not apply."
+    }
 }
 Set-Location $TargetDir
 
@@ -50,13 +93,20 @@ foreach ($cand in @("python", "py")) {
 if (-not $py) { throw "Python 3 not found on PATH." }
 
 Write-Host ">> Creating virtual environment in .venv"
+# $ErrorActionPreference does not stop on a native command's exit code in
+# Windows PowerShell 5.1, so each step checks $LASTEXITCODE itself. Without
+# the checks a failed pip install still ended with ">> Done.".
 & $py -m venv .venv
+if ($LASTEXITCODE -ne 0) { throw "Creating the virtual environment failed." }
 $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
+if ($LASTEXITCODE -ne 0) { throw "pip install --upgrade pip failed." }
 & $venvPy -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw "pip install -r requirements.txt failed." }
 # Editable install too, so the `polyctl` console script lands in .venv\Scripts
 # (deps are already satisfied above; this just adds the package link + script).
 & $venvPy -m pip install -e .
+if ($LASTEXITCODE -ne 0) { throw "pip install -e . failed." }
 
 function Start-PolyKybd {
     Write-Host ">> Starting PolyKybd..."

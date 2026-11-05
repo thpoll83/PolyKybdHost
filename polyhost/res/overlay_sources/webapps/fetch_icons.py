@@ -4,7 +4,7 @@
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
 `confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
 `bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
-Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `linear.yaml` and
+Gmail, Calendar, Drive), `drawio.yaml`, `excalidraw.yaml`, `canva.yaml`, `linear.yaml` and
 `overleaf.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -204,6 +204,13 @@ FLUENT = {
 # Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
+    # --- Google Drive ---
+    "gdr_movefolder": "Folder Arrow Right",
+    "gdr_shortcut": "Arrow Forward",
+    "gdr_copytitle": "ms:title",
+    "gdr_pasteshortcut": "Clipboard Link",
+    "gdr_create": "Add",
+    "gdr_foldermenu": "ms:folder_managed",
     # --- Google Calendar ---
     "calrefresh": "Arrow Clockwise",
     "calgoto": "Calendar Arrow Right",
@@ -411,6 +418,8 @@ DIAGRAM_ETC = {
     "exc_clear": "ms:delete_sweep",
     "exc_textsize_dn": "ms:text_decrease",
     "exc_textsize_up": "ms:text_increase",
+    # --- Canva (the other Canva keys reuse draw.io and Excalidraw icons) ---
+    "canva_elbow": "ms:subdirectory_arrow_right",
     # --- Linear ---
     "lin_layout": "ms:view_kanban",
     "lin_agent": "Sparkle",
@@ -458,6 +467,27 @@ DIAGRAM_ETC = {
 DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
                      "linear.png": "linear", "overleaf.png": "overleaf"}
 
+# Canva: Simple Icons removed the Canva logo and MDI has none. The mark is
+# Canva's own app icon (a white script C on a square tile), reduced to 1 bit at
+# the 32x32 keycap size: the tile is lit and the C is cut out.
+CANVA_MARK = "canva.png"
+# canva.com answers automated requests with a bot check, so the icon (canva.com's
+# 180x180 apple-touch-icon) comes through Google's favicon service.
+CANVA_ICON_URL = "https://www.google.com/s2/favicons?domain=canva.com&sz=256"
+CANVA_C_LUMA = 200  # pixels brighter than this are the white C
+
+
+def _canva_mark(dest: Path, px: int = 32) -> None:
+    """Canva's square app icon as a px*px 1-bit tile with the C cut out."""
+    import io
+    import urllib.request
+    with urllib.request.urlopen(CANVA_ICON_URL, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("L")
+    a = icon.resize((px, px), Image.LANCZOS).point(
+        lambda v: 255 if v <= CANVA_C_LUMA else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+
+
 # narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
 # "Arrow Minimize" but no horizontal one.
 ROTATED = {"narrower.png": ("shorter.png", 90)}
@@ -467,7 +497,8 @@ ROTATED = {"narrower.png": ("shorter.png", 90)}
 # silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
 # REAL logo (nominative use; see brand_marks).
 BRAND = {"gh.png": "github", "gl.png": "gitlab",
-         "gmail.png": "gmail", "gcal.png": "googlecalendar"}
+         "gmail.png": "gmail", "gcal.png": "googlecalendar",
+         "gdrive.png": "googledrive"}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS"),
@@ -521,7 +552,12 @@ def main() -> int:
         rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
     for fname, draw in GEO.items():
         draw(out / fname)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
+    if (out / CANVA_MARK).exists():
+        print(f"  {CANVA_MARK}  <- committed asset (left as-is)")
+    else:
+        _canva_mark(out / CANVA_MARK)
+        print(f"  {CANVA_MARK}  <- Canva app icon, 1-bit tile with the C cut out")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)+1} program marks) to {out}")
     return 0
 
 
