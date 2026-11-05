@@ -2695,6 +2695,12 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# Counter-Strike 2 (overlay_sources/cs2/cs2.yaml). The game binary is cs2.exe on
+# Windows and the native `cs2` on Linux; steam_app_730 covers Proton, which is
+# unlikely because the game has a native Linux build. The game does not run on
+# macOS. Names not checked on an install.
+cs2,steam_app_730:
+  overlay: cs2_template.mods.png
 # SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
 # executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
 # lowercase to `ssms`. Name not checked on an install.
