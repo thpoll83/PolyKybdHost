@@ -1,0 +1,99 @@
+# ONLYOFFICE Presentation Editor shortcut overlays for PolyKybd.
+#
+# Serves Windows/Linux AND macOS from this one file (`CMDCTRL` is Ctrl on
+# Windows/Linux and Cmd on macOS). Keys: the editor's own "Keyboard Shortcuts"
+# help page (see SOURCES.md). The mapping loads this set for a
+# `DesktopEditors` window whose title has a presentation file extension.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/onlyoffice/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/onlyoffice/presentation.yaml --preview /tmp/oo_pres_preview
+app: onlyoffice-presentation
+match: [desktopeditors]
+output: onlyoffice_presentation_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: onlyoffice.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- file and window ---
+  - { key: O, mods: [CMDCTRL], icon: open.png,  label: Open,  source: "ms-fluent/Folder Open (MIT), from word/" }
+  - { key: S, mods: [CMDCTRL], icon: save.png,  label: Save,  source: "ms-fluent/Save (MIT), from word/" }
+  - { key: S, mods: [CMDCTRL, SHIFT], icon: saveas.png, label: "Save as", source: "ms-fluent/Save Edit (MIT), from word/" }
+  - { key: P, mods: [CMDCTRL], icon: print.png, label: Print, source: "ms-fluent/Print (MIT), from word/" }
+  - { key: W, mods: [CMDCTRL], icon: close.png, label: "Close file", source: "ms-fluent/Document Dismiss (MIT), from word/" }
+  - { key: F4, mods: [CTRL], icon: close.png, label: "Close file", source: "ms-fluent/Document Dismiss (MIT), from word/", except: [macos] }
+  - { key: TAB, mods: [CTRL],        icon: nexttab.png, label: "Next tab",     source: "ms-fluent/Arrow Next (MIT)" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab", source: "ms-fluent/Arrow Previous (MIT)" }
+  - { key: F, mods: [ALT],       icon: filepanel.png, label: "File panel", source: "ms-fluent/Navigation (MIT)", except: [macos] }
+  - { key: F, mods: [CTRL, ALT], icon: filepanel.png, label: "File panel", source: "ms-fluent/Navigation (MIT)", only: [macos] }
+  - { key: F1, mods: [], icon: help.png, label: Help, source: "ms-fluent/Question Circle (MIT)" }
+  - { key: "0", mods: [CMDCTRL], icon: zoomreset.png, label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: EQUAL, mods: [CMDCTRL], icon: zoomin.png,  label: "Zoom in",  source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CMDCTRL], icon: zoomout.png, label: "Zoom out", source: "ms-fluent/Zoom Out (MIT)" }
+
+  # --- slides ---
+  - { key: M, mods: [CMDCTRL], icon: newslide.png,  label: "New slide",       source: "ms-fluent/Slide Add (MIT), from powerpoint/" }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: "Duplicate slide", source: "ms-fluent/Square Multiple (MIT), from powerpoint/" }
+  - { key: UP,   mods: [CMDCTRL],        icon: slideup.png,    label: "Move slide up",     source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: DOWN, mods: [CMDCTRL],        icon: slidedown.png,  label: "Move slide down",   source: "ms-fluent/Arrow Down (MIT)" }
+  - { key: UP,   mods: [CMDCTRL, SHIFT], icon: slidefirst.png, label: "Move slide to start", source: "ms-fluent/Chevron Double Up (MIT)" }
+  - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: slidelast.png,  label: "Move slide to end",   source: "ms-fluent/Chevron Double Down (MIT)" }
+  - { key: F5, mods: [CTRL],           icon: slideshow.png, label: "Start show", source: "ms-fluent/Play (MIT), from powerpoint/", except: [macos] }
+  - { key: ENTER, mods: [GUI, SHIFT],  icon: slideshow.png, label: "Start show", source: "ms-fluent/Play (MIT), from powerpoint/", only: [macos] }
+
+  # --- objects ---
+  - { key: G, mods: [CMDCTRL],        icon: group.png,   label: Group,   source: "ms-fluent/Group (MIT), from powerpoint/" }
+  - { key: G, mods: [CMDCTRL, SHIFT], icon: ungroup.png, label: Ungroup, source: "ms-fluent/Group Dismiss (MIT), from powerpoint/" }
+
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], icon: undo.png,  label: Undo,  source: "ms-fluent/Arrow Undo (MIT), from word/" }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png,  label: Redo,  source: "ms-fluent/Arrow Redo (MIT), from word/" }
+  - { key: X, mods: [CMDCTRL], icon: cut.png,   label: Cut,   source: "ms-fluent/Cut (MIT), from word/" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png,  label: Copy,  source: "ms-fluent/Copy (MIT), from word/" }
+  - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste, source: "ms-fluent/Clipboard Paste (MIT), from word/" }
+  - { key: V, mods: [CMDCTRL, SHIFT], icon: pasteplain.png, label: "Paste as text", source: "ms-fluent/Clipboard Letter (MIT)" }
+  - { key: C, mods: [CMDCTRL, ALT], icon: copyformat.png, label: "Copy style",  source: "ms-fluent/Paint Brush (MIT), from word/" }
+  - { key: V, mods: [CMDCTRL, ALT], icon: applystyle.png, label: "Apply style", source: "ms-fluent/Paint Brush Arrow Down (MIT)" }
+  - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT), from word/" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,    label: Find,             source: "ms-fluent/Search (MIT), from word/" }
+  - { key: H, mods: [CTRL],    icon: replace.png, label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT), from word/" }
+  - { key: K, mods: [CMDCTRL], icon: hyperlink.png, label: Hyperlink, source: "ms-fluent/Link (MIT), from word/" }
+
+  # --- comments ---
+  - { key: H, mods: [CMDCTRL, SHIFT], icon: comments.png, label: Comments, source: "ms-fluent/Comment Multiple (MIT)" }
+  - { key: H, mods: [ALT],       icon: addcomment.png, label: "Add comment", source: "ms-fluent/Comment Add (MIT)", except: [macos] }
+  - { key: A, mods: [GUI, ALT],  icon: addcomment.png, label: "Add comment", source: "ms-fluent/Comment Add (MIT)", only: [macos] }
+
+  # --- text styling ---
+  - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,      source: "ms-fluent/Text Bold (MIT), from word/" }
+  - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,    source: "ms-fluent/Text Italic (MIT), from word/" }
+  - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT), from word/" }
+  - { key: "5", mods: [CMDCTRL], icon: strike.png, label: Strikeout, source: "ms-fluent/Text Strikethrough (MIT), from excel/" }
+  - { key: DOT,   mods: [CMDCTRL], icon: subscript.png,   label: Subscript,   source: "ms-fluent/Text Subscript (MIT), from word/" }
+  - { key: COMMA, mods: [CMDCTRL], icon: superscript.png, label: Superscript, source: "ms-fluent/Text Superscript (MIT), from wps/" }
+  - { key: L, mods: [CMDCTRL, SHIFT], icon: bullets.png, label: "Bullet list", source: "ms-fluent/Text Bullet List (MIT), from word/" }
+  - { key: SPACE, mods: [CMDCTRL], icon: clearfmt.png, label: "Clear format", source: "ms-fluent/Text Clear Formatting (MIT), from word/" }
+  - { key: "]", mods: [CMDCTRL], icon: fontinc.png, label: "Font +", source: "ms-fluent/Font Increase (MIT), from word/" }
+  - { key: "[", mods: [CMDCTRL], icon: fontdec.png, label: "Font -", source: "ms-fluent/Font Decrease (MIT), from word/" }
+  - { key: L, mods: [CMDCTRL], icon: left.png,    label: "Align left",   source: "ms-fluent/Text Align Left (MIT), from word/" }
+  - { key: E, mods: [CMDCTRL], icon: center.png,  label: "Align center", source: "ms-fluent/Text Align Center (MIT), from word/" }
+  - { key: R, mods: [CMDCTRL], icon: right.png,   label: "Align right",  source: "ms-fluent/Text Align Right (MIT), from word/" }
+  - { key: J, mods: [CMDCTRL], icon: justify.png, label: Justify,        source: "ms-fluent/Text Align Justify (MIT), from word/" }
+  - { key: "8", mods: [CMDCTRL, SHIFT], icon: nonprinting.png, label: "Nonprinting chars", source: "material-symbols/format_paragraph (Apache-2.0)" }
+
+  # --- special characters (drawn text, white on transparent) ---
+  - { key: E, mods: [CMDCTRL, ALT], icon: euro.png, label: "Euro sign", mode: alpha, source: "drawn text, DejaVu Sans Bold" }
+  - { key: MINUS, mods: [CTRL, SHIFT], icon: endash.png, label: "En dash", mode: alpha, source: "drawn text, DejaVu Sans Bold", except: [macos] }
+  - { key: SPACE, mods: [CMDCTRL, SHIFT], icon: nbspace.png, label: "Nonbreaking space", mode: alpha, source: "drawn text, DejaVu Sans Bold" }
