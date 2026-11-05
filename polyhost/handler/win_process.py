@@ -150,8 +150,8 @@ def process_dir(pid):
 #:   the path that was executed, not of the file it points to.
 _UNINFORMATIVE_NAMES = frozenset({"main", "AppRun"})
 
-#: The kernel keeps 15 characters of a process name (``TASK_COMM_LEN`` 16 with
-#: the terminating NUL), and ``ps -o comm=`` prints that copy. A name of exactly
+#: The kernel keeps 15 BYTES of a process name (``TASK_COMM_LEN`` 16 with the
+#: terminating NUL), and ``ps -o comm=`` prints that copy. A name of exactly
 #: this length may be cut short: GNOME Terminal's ``gnome-terminal-server`` is
 #: reported as ``gnome-terminal-``, so neither of the terminal entry's keys
 #: matched and no editor overlay (nano, vim) was shown in it (Ubuntu GNOME on
@@ -183,7 +183,7 @@ def app_name_for(win):
 
     Off Windows this is ``win.getAppName()``, except that on Linux a name in
     ``_UNINFORMATIVE_NAMES`` becomes the executable's name, and so does a name
-    the kernel cut to ``_COMM_LEN`` characters when the executable's name starts
+    the kernel cut to ``_COMM_LEN`` bytes when the executable's name starts
     with it. A renamed process (``comm`` set by the program, a different file
     name) keeps its own name. On Windows a failed
     lookup falls back to the window TITLE, which is what pywinctl's own
@@ -196,9 +196,11 @@ def app_name_for(win):
             return name
         if name in _UNINFORMATIVE_NAMES:
             return _linux_exe_name(win) or name
-        if isinstance(name, str) and len(name) == _COMM_LEN:
+        if isinstance(name, str) and len(os.fsencode(name)) == _COMM_LEN:
             exe = _linux_exe_name(win)
-            if len(exe) > _COMM_LEN and exe.startswith(name):
+            # Bytes, not characters: the kernel limit counts bytes, so a
+            # name with a multi-byte character is cut at fewer than 15.
+            if len(os.fsencode(exe)) > _COMM_LEN and exe.startswith(name):
                 return exe
         return name
     try:

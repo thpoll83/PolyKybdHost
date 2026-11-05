@@ -170,6 +170,32 @@ class TestTruncatedProcessNames(unittest.TestCase):
                 mock.patch("os.readlink", return_value="/usr/bin/exactly15chars_"):
             self.assertEqual(win_process.app_name_for(win), "exactly15chars_")
 
+    def test_the_limit_counts_bytes_not_characters(self):
+        # "é" is two bytes in UTF-8, so the kernel cuts this name at 14
+        # characters.
+        win = FakeWindow(app_name="éditeur-de-tex")
+        self.assertEqual(len(os.fsencode(win._app_name)), 15)
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink", return_value="/usr/bin/éditeur-de-texte"):
+            self.assertEqual(win_process.app_name_for(win), "éditeur-de-texte")
+
+    def test_a_reporter_window_without_a_pid_keeps_its_name(self):
+        # The GNOME Wayland and KDE reporters' windows have no getPID(); their
+        # name is a window class, not comm, and must stay as reported.
+        class ReporterWin:
+            title = "nano"
+
+            def getHandle(self):
+                return 7
+
+            def getAppName(self):
+                return "org.gnome.Ptyx"
+
+        with mock.patch("sys.platform", "linux"), \
+                mock.patch("os.readlink") as rl:
+            self.assertEqual(win_process.app_name_for(ReporterWin()), "org.gnome.Ptyx")
+        rl.assert_not_called()
+
     def test_a_shorter_name_never_reads_the_executable(self):
         win = FakeWindow(app_name="gnome-terminal")
         with mock.patch("sys.platform", "linux"), \
