@@ -6,21 +6,23 @@
 | Set | Loads for |
 |---|---|
 | `telegram_template` (2 files) | `Telegram.exe` on Windows; `telegram`, `telegram-desktop`, `telegramdesktop` or `org.telegram.desktop` on Linux |
-| `telegram_template_mac` (3 files) | "Telegram Desktop" on macOS |
+| `telegram_template_mac` (3 files) | "Telegram Lite" and "Telegram Desktop" on macOS |
 
 App names: none was checked on an install. Windows reports the executable
 (`Telegram.exe`). On Linux the official tarball binary is `Telegram` with
 WM_CLASS `TelegramDesktop`, distribution packages install `telegram-desktop`,
 and the Flatpak app id is `org.telegram.desktop`.
 
-⚠️ **macOS gets the set only under the name "Telegram Desktop".** Two different
+⚠️ **macOS gets the set only under the names "Telegram Lite" and "Telegram Desktop".** Two different
 Mac apps call themselves "Telegram": Telegram Desktop downloaded from
 telegram.org (the Qt app these keys come from), and "Telegram" from the Mac App
 Store, which is a separate native client with its own keys. The mapping cannot
 tell them apart, so the `telegram` entry has only `windows` and `linux`
 branches and no default overlay: on macOS a window named "Telegram" matches
 nothing and gets generic icons, not Windows keys. The Mac App Store build of
-the Qt app is named "Telegram Desktop" and gets the macOS set.
+the Qt app is named "Telegram Lite" (`BinaryName` of the `macstore` target in
+tdesktop's `Telegram/build/build.sh`) and gets the macOS set, as does a window
+named "Telegram Desktop".
 
 ## Shortcut reference
 

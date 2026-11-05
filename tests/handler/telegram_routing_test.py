@@ -7,7 +7,8 @@ What it pins:
 
 * Windows and Linux names load the Windows/Linux set;
 * "Telegram" on macOS matches nothing, so it gets generic icons, not Ctrl keys;
-* "Telegram Desktop" on macOS loads the macOS set;
+* "Telegram Lite" (the Mac App Store build of the Qt app) and "Telegram
+  Desktop" on macOS load the macOS set, and only on macOS;
 * every named file exists.
 """
 
@@ -67,6 +68,10 @@ class TelegramRoutingTest(unittest.TestCase):
 
     def test_telegram_desktop_on_macos_loads_the_macos_set(self):
         self.assertEqual(self._route("telegram desktop", "macos"), MAC)
+
+    def test_telegram_lite_loads_the_macos_set_on_macos_only(self):
+        self.assertEqual(self._route("telegram lite", "macos"), MAC)
+        self.assertIsNone(self._route("telegram lite", "windows"))
 
     def test_every_named_file_exists(self):
         missing = [f for f in WIN + MAC if not (RES / "overlays" / f).is_file()]

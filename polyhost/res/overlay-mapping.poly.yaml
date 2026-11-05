@@ -545,8 +545,9 @@ discord:
 # the distribution package `telegram-desktop`, or the Flatpak id. No name was
 # checked on an install. This entry has no default overlay on purpose: the Mac
 # App Store's "Telegram" is a different app with other keys, so on macOS the
-# name matches nothing and the window gets generic icons. The Qt app is
-# "Telegram Desktop" in the Mac App Store and gets the macOS set below.
+# name matches nothing and the window gets generic icons. The Mac App Store
+# build of the Qt app is "Telegram Lite" (tdesktop build.sh, macstore target)
+# and gets the macOS set below, as does a window named "Telegram Desktop".
 telegram,telegramdesktop,telegram-desktop,org.telegram.desktop:
   os:
     windows:
@@ -555,6 +556,10 @@ telegram,telegramdesktop,telegram-desktop,org.telegram.desktop:
       overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
 telegram desktop:
   overlay: [telegram_template.mods.png, telegram_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
+telegram lite:
   os:
     macos:
       overlay: [telegram_template_mac.mods.png, telegram_template_mac.combo.mods.png, telegram_template_mac.extra.mods.png]
