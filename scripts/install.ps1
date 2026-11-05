@@ -8,10 +8,14 @@
     repo, so no extra native install is needed on Windows.
 
     Override the clone location with $env:POLYKYBD_DIR = "C:\path\to\dir".
+    $env:POLYKYBD_NO_LAUNCH = "1" skips starting the app at the end.
+    $env:POLYKYBD_REPO_URL and $env:POLYKYBD_REF clone another repository or
+    branch instead of main; .github/workflows/windows-installer.yml uses them
+    to install a pull request's own code.
 #>
 $ErrorActionPreference = "Stop"
 
-$RepoUrl   = "https://github.com/thpoll83/PolyKybdHost.git"
+$RepoUrl   = if ($env:POLYKYBD_REPO_URL) { $env:POLYKYBD_REPO_URL } else { "https://github.com/thpoll83/PolyKybdHost.git" }
 $DefaultDir = Join-Path (Get-Location) "PolyKybdHost"
 $TargetDir = if ($env:POLYKYBD_DIR) { $env:POLYKYBD_DIR } else { $DefaultDir }
 
@@ -36,6 +40,7 @@ if ($TargetDir -eq ".") {
 } elseif (Test-Path "$TargetDir/.git") {
     Write-Host ">> Updating existing checkout in '$TargetDir'."
     git -C $TargetDir pull --ff-only
+    if ($LASTEXITCODE -ne 0) { throw "git pull failed." }
 } else {
     Write-Host ">> Cloning into '$TargetDir'."
     # Only the latest commit: the full history is 47 MB.
@@ -46,7 +51,9 @@ if ($TargetDir -eq ".") {
     # downloaded either (--filter=blob:none). `git sparse-checkout disable`
     # brings them back. The patterns are SPARSE_PATTERNS in
     # polyhost/services/updater.py, which the updater applies too.
-    git clone --depth 1 --filter=blob:none --sparse $RepoUrl $TargetDir
+    $cloneArgs = @("clone", "--depth", "1", "--filter=blob:none", "--sparse")
+    if ($env:POLYKYBD_REF) { $cloneArgs += @("--branch", $env:POLYKYBD_REF) }
+    git @cloneArgs $RepoUrl $TargetDir
     if ($LASTEXITCODE -ne 0) { throw "git clone failed." }
     # Through stdin, so no shell or C runtime expands the * in a pattern.
     @(
@@ -68,13 +75,20 @@ foreach ($cand in @("python", "py")) {
 if (-not $py) { throw "Python 3 not found on PATH." }
 
 Write-Host ">> Creating virtual environment in .venv"
+# $ErrorActionPreference does not stop on a native command's exit code in
+# Windows PowerShell 5.1, so each step checks $LASTEXITCODE itself. Without
+# the checks a failed pip install still ended with ">> Done.".
 & $py -m venv .venv
+if ($LASTEXITCODE -ne 0) { throw "Creating the virtual environment failed." }
 $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
+if ($LASTEXITCODE -ne 0) { throw "pip install --upgrade pip failed." }
 & $venvPy -m pip install -r requirements.txt
+if ($LASTEXITCODE -ne 0) { throw "pip install -r requirements.txt failed." }
 # Editable install too, so the `polyctl` console script lands in .venv\Scripts
 # (deps are already satisfied above; this just adds the package link + script).
 & $venvPy -m pip install -e .
+if ($LASTEXITCODE -ne 0) { throw "pip install -e . failed." }
 
 function Start-PolyKybd {
     Write-Host ">> Starting PolyKybd..."
