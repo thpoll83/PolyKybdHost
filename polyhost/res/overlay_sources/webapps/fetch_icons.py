@@ -510,12 +510,17 @@ def _keep_winding(dest: Path, shift: int = 23) -> None:
     a = np.array(img.split()[3])
     mid = a.shape[1] // 2
     col = a[:, mid] < 128
-    y1 = max(y for y in range(a.shape[0]) if col[y])   # bottom of the cut band
+    cut = [y for y in range(a.shape[0]) if col[y]]
+    y1 = cut[-1] if cut else 0                          # bottom of the cut band
     y0 = y1
-    while col[y0 - 1]:
+    while y0 > 0 and col[y0 - 1]:
         y0 -= 1
     xs = np.where(a[(y0 + y1) // 2] < 128)[0]
     xs = xs[(xs > a.shape[1] // 4) & (xs < a.shape[1] * 3 // 4)]
+    if not cut or y0 == 0 or y1 + shift >= a.shape[0] - 1 or not len(xs):
+        # The upstream artwork changed shape: keep it unmodified, do not abort.
+        print(f"  WARNING {dest.name}: no thread band found, second band not added")
+        return
     a[y0 + shift:y1 + shift + 1, xs.min():xs.max() + 1] = \
         a[y0:y1 + 1, xs.min():xs.max() + 1]
     white = Image.new("L", img.size, 255)
