@@ -122,12 +122,22 @@ _REPORTER_TOKENS = frozenset(CONTEXT_REPORTERS.values()) | HOSTED_REPORTERS
 TERMINAL_APPS = frozenset({
     # Windows
     "windowsterminal", "wt", "openconsole", "conhost", "alacritty", "wezterm-gui",
+    "mintty",                       # Git Bash, MSYS2, Cygwin
+    "conemu", "conemu64",           # ConEmu, Cmder
     # Linux (WM_CLASS or Flatpak/app id)
     "gnome-terminal", "gnome-terminal-server", "org.gnome.terminal",
     "ptyxis", "org.gnome.ptyxis", "kgx", "org.gnome.console",
     "konsole", "org.kde.konsole", "kitty", "org.wezfurlong.wezterm", "wezterm",
-    "foot", "xterm", "uxterm", "urxvt", "tilix", "com.gexperts.tilix",
+    "foot", "footclient", "xterm", "uxterm", "urxvt", "rxvt", "st",
+    "tilix", "com.gexperts.tilix",
     "terminator", "xfce4-terminal", "ghostty", "com.mitchellh.ghostty",
+    "yakuake", "org.kde.yakuake", "guake", "tilda", "terminology",
+    "deepin-terminal", "qterminal", "lxterminal", "mate-terminal", "sakura",
+    "cool-retro-term", "contour", "org.contourterminal.contour",
+    "com.raggesilver.blackbox", "io.elementary.terminal",
+    "com.system76.cosmicterm", "cosmic-term",
+    # Cross-platform (process name, or the macOS display name lowercased)
+    "warp", "dev.warp.warp", "tabby", "hyper", "wave", "waveterm", "rio",
     # macOS (display names)
     "terminal", "iterm2", "iterm",
 })

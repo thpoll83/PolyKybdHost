@@ -1337,13 +1337,117 @@ windowsterminal,wt:
       overlay: [nano_template.mods.png, nano_template.combo.mods.png]
     "(nano)": *nano_title
     "(nano": *nano_title
+    # Terminal AI coding CLIs (sources: overlay_sources/aicli/; SOURCES.md
+    # there has every title format and where it was read). All but Aider
+    # REPLACE the shell's title with their own, so each route matches the
+    # CLI's own title AND its command name at the command position (the
+    # moment before it writes, or with its title switched off). The keys are
+    # the title's first word; the `title` regex then requires that word at the
+    # start of the title or after a terminal's separator (" - ", " — ",
+    # " : ", "(", "] "), as for nano.
+    #
+    # Claude Code: "✳ <topic>" idle, "◐ <topic>" / "◑ <topic>" working.
+    # Qwen Code uses the same two glyphs with U+FE0E after them, a different
+    # word, so it never takes these keys.
+    "✳": &claude_cli
+      title: &claude_title '^(?:[✳◐◑] |claude(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[✳◐◑] |claude(?:$|\s|\)))'
+      overlay: claude_code_cli_template.mods.png
+      os:
+        macos:
+          title: *claude_title
+          overlay: claude_code_cli_template_mac.mods.png
+        linux:
+          title: *claude_title
+          overlay: claude_code_cli_template_linux.mods.png
+    "◐": *claude_cli
+    "◑": *claude_cli
+    claude: *claude_cli
+    "(claude)": *claude_cli
+    "(claude": *claude_cli
+    # Codex CLI. Its DEFAULT title ("<spinner> <thread> | <project>") never
+    # names it. Only the "action required" form and a title configured with
+    # `app-name` first (`[tui] terminal_title = ["app-name", ...]`) do.
+    codex: &codex_cli
+      title: '^(?:● )?(?:\[ [!.] \] Action Required|codex(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:\[ [!.] \] Action Required|codex(?:$|\s|\)))'
+      overlay: [codex_cli_template.mods.png, codex_cli_template.combo.mods.png]
+    "(codex)": *codex_cli
+    "(codex": *codex_cli
+    Action Required: *codex_cli
+    # OpenCode: "OpenCode" (home, untitled session), "OC | <session>".
+    OpenCode: &opencode_cli
+      title: '^(?:OC \| |OpenCode\s*(?:$|—\s*\S+$)|opencode(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:OC \| |opencode(?:$|\s|\)))'
+      overlay: [opencode_template.mods.png, opencode_template.combo.mods.png, opencode_template.extra.mods.png]
+    OC: *opencode_cli
+    opencode: *opencode_cli
+    "(opencode)": *opencode_cli
+    "(opencode": *opencode_cli
+    # Gemini CLI: "◇  Ready (<dir>)", "✦  <status> (<dir>)", "✋  Action
+    # Required (<dir>)", "⏲  Working… (<dir>)" (two spaces), or "Gemini CLI
+    # (<dir>)" with the dynamic title off.
+    "◇": &gemini_cli
+      title: '^(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s|\)))'
+      overlay: [gemini_cli_template.mods.png, gemini_cli_template.combo.mods.png]
+    "✦": *gemini_cli
+    "✋": *gemini_cli
+    "⏲": *gemini_cli
+    Gemini CLI: *gemini_cli
+    gemini: *gemini_cli
+    "(gemini)": *gemini_cli
+    "(gemini": *gemini_cli
+    # Qwen Code: "Qwen - <dir>", with "✳" or "◐" plus U+FE0E and a space
+    # while it waits or responds. A session it has named shows only the name.
+    Qwen: &qwen_cli
+      title: &qwen_title '^(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s|\)))'
+      overlay: qwen_code_template.mods.png
+      os:
+        macos:
+          title: *qwen_title
+          overlay: qwen_code_template_mac.mods.png
+        linux:
+          title: *qwen_title
+          overlay: qwen_code_template_linux.mods.png
+    "\u2733\uFE0E": *qwen_cli
+    "\u25D0\uFE0E": *qwen_cli
+    qwen: *qwen_cli
+    "(qwen)": *qwen_cli
+    "(qwen": *qwen_cli
+    # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
+    # <topic>" in screen-reader mode).
+    GitHub Copilot: &copilot_cli
+      title: &copilot_title '^(?:GitHub Copilot\s*(?:$|—\s*\S+$)|🤖 |Copilot: |copilot(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:🤖 |Copilot: |copilot(?:$|\s|\)))'
+      overlay: copilot_cli_template.mods.png
+      os:
+        macos:
+          title: *copilot_title
+          overlay: copilot_cli_template_mac.mods.png
+    "🤖": *copilot_cli
+    "Copilot:": *copilot_cli
+    copilot: *copilot_cli
+    "(copilot)": *copilot_cli
+    "(copilot": *copilot_cli
+    # Aider sets no title: only the shell's (the scripts in res/shell/).
+    # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
+    # branch repeats the title regex (`*<cli>_title`); without it any title
+    # with the route word would take the set on macOS and Linux.
+    aider: &aider_cli
+      title: &aider_title '^aider(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)aider(?:$|\s|\))'
+      overlay: aider_template.mods.png
+      os:
+        macos:
+          title: *aider_title
+          overlay: aider_template_mac.mods.png
+        linux:
+          title: *aider_title
+          overlay: aider_template_linux.mods.png
+    "(aider)": *aider_cli
+    "(aider": *aider_cli
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,
 # find_matching_entry).
 # None of the names was checked on an install (docs/architecture.md,
 # "Terminal-hosted editors").
-alacritty,com.gexperts.tilix,com.mitchellh.ghostty,conhost,foot,ghostty,gnome-terminal,gnome-terminal-server,iterm,iterm2,kgx,kitty,konsole,openconsole,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.wezfurlong.wezterm,ptyxis,terminal,terminator,tilix,urxvt,uxterm,wezterm,wezterm-gui,xfce4-terminal,xterm:
+alacritty,com.gexperts.tilix,com.mitchellh.ghostty,com.raggesilver.blackbox,com.system76.cosmicterm,conemu,conemu64,conhost,contour,cool-retro-term,cosmic-term,deepin-terminal,dev.warp.warp,foot,footclient,ghostty,gnome-terminal,gnome-terminal-server,guake,hyper,io.elementary.terminal,iterm,iterm2,kgx,kitty,konsole,lxterminal,mate-terminal,mintty,openconsole,org.contourterminal.contour,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.kde.yakuake,org.wezfurlong.wezterm,ptyxis,qterminal,rio,rxvt,sakura,st,tabby,terminal,terminator,terminology,tilda,tilix,urxvt,uxterm,warp,wave,waveterm,wezterm,wezterm-gui,xfce4-terminal,xterm,yakuake:
   urls-contains: *editor_urls
   titles-contains: *editor_titles
 # GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
