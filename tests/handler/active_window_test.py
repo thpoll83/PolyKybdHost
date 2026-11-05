@@ -2313,6 +2313,36 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                     self.assertIn("aoe4_template.mods.png", got["overlay"])
                     self.assertIn("aoe4_template.combo.mods.png", got["overlay"])
 
+    CIV4_NAMES = {
+        # Windows drops the `.exe`; Wine keeps it in the WM_CLASS; Proton reports
+        # the Steam app id.
+        "bts": {"WINDOWS": ("civ4beyondsword",),
+                "LINUX": ("civ4beyondsword.exe", "steam_app_8800")},
+        "classic": {"WINDOWS": ("civilization4", "civ4warlords"),
+                    "LINUX": ("civilization4.exe", "civ4warlords.exe",
+                              "steam_app_3900", "steam_app_3990")},
+    }
+
+    def test_CIV4_BEYOND_THE_SWORD_gets_the_bts_set(self):
+        files = ["civ4_bts_template.mods.png", "civ4_bts_template.combo.mods.png"]
+        for os_name, apps in self.CIV4_NAMES["bts"].items():
+            for app in apps:
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Civ4: Beyond the Sword", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertEqual([str(f) for f in got["overlay"]], files)
+
+    def test_CIV4_and_WARLORDS_get_the_classic_set(self):
+        files = ["civ4_classic_template.mods.png", "civ4_classic_template.combo.mods.png"]
+        for os_name, apps in self.CIV4_NAMES["classic"].items():
+            for app in apps:
+                with self.subTest(app=app, os=os_name):
+                    got = self._match(app, title="Civilization 4", title_known=True,
+                                      os_name=os_name)
+                    self.assertIsNotNone(got)
+                    self.assertEqual([str(f) for f in got["overlay"]], files)
+
     # The app names as the handler sees them, from the real executable names.
     # Windows cuts the process name at its FIRST dot (`_decide_active_window`),
     # so freeciv-gtk3.22.exe arrives as freeciv-gtk3. Linux X11 reports
