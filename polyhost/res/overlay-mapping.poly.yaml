@@ -2664,3 +2664,8 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# foobar2000 (overlay_sources/foobar2000/). Windows only: the macOS build has
+# no documented default shortcuts. The 2.26.2 x64 installer ships
+# foobar2000.exe. Not checked on a running install.
+foobar2000:
+  overlay: foobar2000_template.mods.png
