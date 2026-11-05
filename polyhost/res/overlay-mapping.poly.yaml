@@ -62,6 +62,14 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     excalidraw.com:
       url: '^https?://([^/?#]+\.)?excalidraw\.com/'
       overlay: [excalidraw_template.mods.png, excalidraw_template.combo.mods.png]
+    # Canva (sources: overlay_sources/webapps/canva.yaml): the design editor
+    # only (/design/<id>/edit). The home page and the help pages are not gated
+    # in, because the bare tool letters would draw over their search fields.
+    # There is no title entry: the help pages also have "Canva" in their
+    # titles, so a title cannot tell the editor apart.
+    canva.com:
+      url: '^https?://([^/?#]+\.)?canva\.com/design/[^/?#]+/edit(?:[/?#]|$)'
+      overlay: [canva_template.mods.png, canva_template.combo.mods.png]
     # Figma (sources: overlay_sources/figma/figma_web.yaml): the design editor
     # and prototypes only. FigJam (/board/) and Figma Slides (/slides/) have
     # other tool keys and keep the browser set.
@@ -319,6 +327,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         excalidraw.com:
           url: '^https?://([^/?#]+\.)?excalidraw\.com/'
           overlay: [excalidraw_template_mac.mods.png, excalidraw_template_mac.combo.mods.png, excalidraw_template_mac.extra.mods.png]
+        canva.com:
+          url: '^https?://([^/?#]+\.)?canva\.com/design/[^/?#]+/edit(?:[/?#]|$)'
+          overlay: [canva_template_mac.mods.png, canva_template_mac.combo.mods.png, canva_template_mac.extra.mods.png]
         figma.com:
           url: '^https?://([^/?#]+\.)?figma\.com/(design|file|proto)/'
           overlay: [figma_web_template_mac.mods.png, figma_web_template_mac.combo.mods.png, figma_web_template_mac.extra.mods.png]
