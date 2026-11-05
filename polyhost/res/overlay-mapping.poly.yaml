@@ -2491,6 +2491,12 @@ rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294
 # and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
 openrct2,openrct2.exe,io.openrct2.openrct2:
   overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
+# DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
+# devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
+# Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title
+# "DevilutionX" (DevilutionX 1.5.5 source). Names not checked on an install.
+devilutionx,devilutionx.exe,org.diasurgical.DevilutionX:
+  overlay: devilutionx_template.mods.png
 # 0 A.D. (overlay_sources/zeroad/zeroad.yaml). The engine binary is
 # `pyrogenesis` (premake5.lua project, 0.28.0) and the desktop file declares
 # StartupWMClass=pyrogenesis and starts `0ad`. com.play0ad.zeroad is the
