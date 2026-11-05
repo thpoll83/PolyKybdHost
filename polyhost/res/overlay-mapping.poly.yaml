@@ -2491,6 +2491,12 @@ rimworldwin64,rimworldwin64.exe,rimworldlinux,rimworld,rimworldmac,steam_app_294
 # and the Flatpak app id is io.openrct2.OpenRCT2. Names not checked on an install.
 openrct2,openrct2.exe,io.openrct2.openrct2:
   overlay: [openrct2_template.mods.png, openrct2_template.combo.mods.png]
+# fheroes2, the free Heroes of Might and Magic II engine
+# (overlay_sources/fheroes2/fheroes2.yaml). `fheroes2` is the executable target
+# in src/fheroes2/CMakeLists.txt (release 1.1.17), `fheroes2.exe` on Windows;
+# the Flatpak id is io.github.ihhub.Fheroes2. Names not checked on an install.
+fheroes2,fheroes2.exe,io.github.ihhub.fheroes2:
+  overlay: fheroes2_template.mods.png
 # DevilutionX, Diablo and Hellfire (overlay_sources/devilutionx/devilutionx.yaml).
 # devilutionx is the CMake binary target (devilutionx.exe on Windows, also under
 # Wine); the Flatpak id is org.diasurgical.DevilutionX and the window title
