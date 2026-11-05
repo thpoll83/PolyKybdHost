@@ -212,7 +212,9 @@ def remove_stale_temp(cache_dir: Path) -> None:
 
 def shown_folder(folder: Path) -> str:
     """`folder` for a log line, with the home folder written as ~ so a shared log
-    carries no user name."""
+    carries no user name. Normalized first: a typed ``~/../me/games`` would
+    otherwise keep the user name."""
+    folder = Path(os.path.normpath(folder))
     try:
         return str(Path("~") / Path(folder).relative_to(Path.home()))
     except ValueError:

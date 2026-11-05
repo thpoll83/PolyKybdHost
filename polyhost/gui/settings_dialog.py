@@ -323,7 +323,8 @@ def create_editor(value, key=None):
 def browse_start(text):
     """The folder a chooser opens at: the folder in `text` when it exists,
     else its nearest existing parent, else the home folder."""
-    path = os.path.expanduser(text.strip()) if text.strip() else ""
+    # A relative value is read from the working folder, so start the walk there.
+    path = os.path.abspath(os.path.expanduser(text.strip())) if text.strip() else ""
     while path and not os.path.isdir(path):
         parent = os.path.dirname(path)
         if parent == path:

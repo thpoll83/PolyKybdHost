@@ -240,6 +240,13 @@ class BuiltDialogTest(unittest.TestCase):
         with mock.patch.object(sd.QFileDialog, "getExistingDirectory", return_value=""):
             button.click()
         self.assertEqual(edit.text(), os.path.normpath("/games/d2k"))
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            edit.setText(folder)
+            with mock.patch.object(sd.QFileDialog, "getExistingDirectory",
+                                   return_value="") as chooser:
+                button.click()
+            self.assertEqual(chooser.call_args.args[2], folder)
 
     def test_the_chooser_opens_at_the_nearest_existing_folder(self):
         import tempfile
@@ -248,6 +255,7 @@ class BuiltDialogTest(unittest.TestCase):
             self.assertEqual(browse_start(d), d)
             self.assertEqual(browse_start(os.path.join(d, "gone", "deeper")), d)
         self.assertEqual(browse_start(""), os.path.expanduser("~"))
+        self.assertEqual(browse_start(os.path.join("no-such-dir-here", "deeper")), os.getcwd())
 
 
 if __name__ == "__main__":
