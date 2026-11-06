@@ -1632,6 +1632,20 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # Mistral Vibe writes "Vibe" while idle and ">> Vibe" while it works
+    # (measured on 3.1.0; it sets an empty title on exit). The own-title part
+    # takes a short symbol prefix for states that were not measured, and one
+    # terminal name after " — " (as OpenCode's), so Terminal.app idle in a
+    # directory named Vibe ("Vibe — -zsh — 80×24") is not taken. "vibe" is
+    # an English word: the command-position part keeps `cd vibe`, a prompt in
+    # ~/vibe and `vim vibe.txt` on the terminal's set.
+    Vibe: &vibe_cli
+      title: '^(?:(?:[^\sA-Za-z0-9]{1,3} )?Vibe\s*(?:$|—\s*\S+$)|vibe(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)vibe(?:$|\s|\))|\s—\s(?:[^\sA-Za-z0-9]{1,3} )?Vibe(?:$|\s—\s\S+$)'
+      overlay: mistral_vibe_template.mods.png
+    vibe: *vibe_cli
+    "(vibe)": *vibe_cli
+    "(vibe": *vibe_cli
+    "^vibe": *vibe_cli
     # lazygit (sources: overlay_sources/lazygit/) sets no window title, so it
     # is routed like nano: the shell or the terminal puts the running command
     # into the title, and the `title` regex requires lazygit at the command
