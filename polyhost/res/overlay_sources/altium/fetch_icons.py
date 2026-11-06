@@ -73,7 +73,7 @@ FLUENT = {
     "selboard": "ms:select",
     "selmemory": "ms:bookmarks",
     "rubberstamp": "ms:approval",
-    "edittext": "ms:text_fields",
+    "edittext": "Rename",                 # text field with an I-beam cursor
     "annotate": "ms:format_list_numbered",
     "simulate": "ms:play_circle",
     # --- routing ---

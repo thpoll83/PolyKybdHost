@@ -161,7 +161,7 @@ action.
 | `selboard.png` | Material Symbols `select` | Apache-2.0 |
 | `selmemory.png` | Material Symbols `bookmarks` | Apache-2.0 |
 | `rubberstamp.png` | Material Symbols `approval` | Apache-2.0 |
-| `edittext.png` | Material Symbols `text_fields` | Apache-2.0 |
+| `edittext.png` | Fluent `Rename` (a text field with an I-beam cursor; `text_fields` broke up at keycap size) | MIT |
 | `annotate.png` | Material Symbols `format_list_numbered` | Apache-2.0 |
 | `simulate.png` | Material Symbols `play_circle` | Apache-2.0 |
 | `bspcroute.png` | Material Symbols `backspace` | Apache-2.0 |
