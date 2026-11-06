@@ -1734,8 +1734,11 @@ windowsterminal,wt:
     "(k9s": *k9s_tui
     "^k9s": *k9s_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
+    # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
+    # prompt, which this route matches, and "gdb ▶ <program>" while the program
+    # runs: this route rejects that one, and the "▶" route below takes it.
     gdb: &gdb_tui
-      title: '^(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s|\)))'
+      title: '^(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?![—:-]\s)(?!▶)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?!▶)|\)))'
       overlay: gdb_template.mods.png
     "(gdb)": *gdb_tui
     "(gdb": *gdb_tui
@@ -1760,6 +1763,11 @@ windowsterminal,wt:
     "(riscv64-unknown-elf-gdb)": *gdb_tui
     "(riscv64-unknown-elf-gdb": *gdb_tui
     "^riscv64-unknown-elf-gdb": *gdb_tui
+    # GDB with the PolyKybd script, while the program runs: only Ctrl+C
+    # reaches GDB, so the set shows Interrupt and the program mark.
+    "▶":
+      title: '(?:^|\s[-—:]\s|\(|\]\s|>\s\^?)gdb ▶(?:$|\s)'
+      overlay: gdb_running_template.mods.png
     # Vim and Neovim with `set title` write "<file> (<dir>) - VIM" and
     # "<file> - NVIM". Without the plugin's mode report that is all that is
     # known, so it loads the Normal-mode set. A report takes priority.

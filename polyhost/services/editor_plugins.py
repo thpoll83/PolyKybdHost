@@ -1,5 +1,5 @@
-"""Editor plugins: copy the Vim/Neovim plugin and the Emacs package shipped
-with this installation to where the editor loads them.
+"""Editor plugins: copy the Vim/Neovim plugin, the Emacs package and the GDB
+script shipped with this installation to where the program loads them.
 
 The plugins (``vim-plugin/``, ``emacs-package/``) tell the host which mode the
 editor is in, so the keycaps follow Normal and Insert mode in Vim or the Org
@@ -11,6 +11,9 @@ terminal's keys. This module does the copy that their READMEs describe:
   (``%LOCALAPPDATA%/nvim-data/site`` on Windows).
 - Emacs: ``polykybd.el`` into ``<emacs dir>/polykybd/``, and a marked block in
   the init file that loads it and turns ``polykybd-mode`` on.
+- GDB: ``polykybd.py`` (``gdb-plugin/``) into ``<config>/gdb/polykybd/``, and
+  a marked block in the GDB init file that sources it. The script writes GDB's
+  state (prompt or running) into the terminal title.
 
 Each copy gets a stamp file with the SHA-256 of every file written.
 :func:`refresh_installed` runs at every start: it copies the shipped files
@@ -45,19 +48,26 @@ log = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 VIM_SOURCE = REPO_ROOT / "vim-plugin"
 EMACS_SOURCE = REPO_ROOT / "emacs-package"
+GDB_SOURCE = REPO_ROOT / "gdb-plugin"
 
 VIM = "vim"
 NEOVIM = "neovim"
 EMACS = "emacs"
-EDITORS = (VIM, NEOVIM, EMACS)
+GDB = "gdb"
+EDITORS = (VIM, NEOVIM, EMACS, GDB)
+# The ones loaded through a marked block in an init file, beside a copy.
+INIT_EDITORS = (EMACS, GDB)
 
 # The plugin folders a Vim package needs. README.md stays behind.
 _VIM_DIRS = ("plugin", "lua", "doc")
 _EMACS_FILES = ("polykybd.el",)
+_GDB_FILES = ("polykybd.py",)
 
 STAMP_NAME = ".polykybd-host.json"
 BEGIN_MARKER = ";; >>> PolyKybd editor integration >>>"
 END_MARKER = ";; <<< PolyKybd editor integration <<<"
+GDB_BEGIN_MARKER = "# >>> PolyKybd editor integration >>>"
+GDB_END_MARKER = "# <<< PolyKybd editor integration <<<"
 
 # The port and token the plugins use when nothing is set. A host with another
 # port or a token needs the same values in the editor's own settings.
@@ -150,9 +160,37 @@ def emacs_lisp_dir(init_file):
     return init_file.parent / "polykybd"
 
 
+def gdb_init_file(home=None, env=None, system=None):
+    """The init file GDB reads from the home folder, in GDB's own order (GDB
+    11 and later): ``$XDG_CONFIG_HOME/gdb/gdbinit``, ``~/.config/gdb/gdbinit``,
+    ``~/.gdbinit``. When none exists, ``~/.gdbinit``, which every version
+    reads."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = _home(home, env, system)
+    candidates = []
+    if env.get("XDG_CONFIG_HOME"):
+        candidates.append(Path(env["XDG_CONFIG_HOME"]) / "gdb" / "gdbinit")
+    candidates += [h / ".config" / "gdb" / "gdbinit", h / ".gdbinit"]
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return h / ".gdbinit"
+
+
+def gdb_plugin_dir(home=None, env=None, system=None):
+    """The folder ``polykybd.py`` is copied to."""
+    env = os.environ if env is None else env
+    system = system or platform.system()
+    h = _home(home, env, system)
+    config = Path(env["XDG_CONFIG_HOME"]) if env.get("XDG_CONFIG_HOME") else h / ".config"
+    return config / "gdb" / "polykybd"
+
+
 def _present(editor, which, system):
     which = which or shutil.which
-    names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs")}[editor]
+    names = {VIM: ("vim", "gvim"), NEOVIM: ("nvim",), EMACS: ("emacs", "runemacs"),
+             GDB: ("gdb", "gdb-multiarch")}[editor]
     return any(which(n) for n in names)
 
 
@@ -176,11 +214,12 @@ def help_tags(doc_name, text):
 def shipped_files(editor, source=None):
     """``{relative path: bytes}`` to write for ``editor``, or None when this
     installation has no plugin files."""
-    if editor == EMACS:
-        source = Path(source or EMACS_SOURCE)
-        if not all((source / name).is_file() for name in _EMACS_FILES):
+    if editor in INIT_EDITORS:
+        names = _EMACS_FILES if editor == EMACS else _GDB_FILES
+        source = Path(source or (EMACS_SOURCE if editor == EMACS else GDB_SOURCE))
+        if not all((source / name).is_file() for name in names):
             return None
-        return {name: (source / name).read_bytes() for name in _EMACS_FILES}
+        return {name: (source / name).read_bytes() for name in names}
     source = Path(source or VIM_SOURCE)
     if not (source / "plugin" / "polykybd.vim").is_file():
         return None
@@ -297,11 +336,17 @@ def _set_aside(folder, now=None):
     return dest
 
 
-# --- the Emacs init block ---------------------------------------------------
+# --- the init blocks (Emacs, GDB) ---------------------------------------------
 
-_BLOCK_RE = re.compile(
-    r"(?m)^" + re.escape(BEGIN_MARKER) + r"[ \t]*\r?\n(.*?)^"
-    + re.escape(END_MARKER) + r"[ \t]*(?:\r?\n|\Z)", re.S)
+def _marker_re(begin, end):
+    return re.compile(
+        r"(?m)^" + re.escape(begin) + r"[ \t]*\r?\n(.*?)^"
+        + re.escape(end) + r"[ \t]*(?:\r?\n|\Z)", re.S)
+
+
+_BLOCK_RE = _marker_re(BEGIN_MARKER, END_MARKER)
+_GDB_BLOCK_RE = _marker_re(GDB_BEGIN_MARKER, GDB_END_MARKER)
+_GDB_FILE_RE = re.compile(r'^_pk_file = ("(?:[^"\\]|\\.)*")[ \t]*$', re.M)
 _LOAD_PATH_RE = re.compile(r"\(add-to-list 'load-path \"((?:[^\"\\]|\\.)*)\"\)")
 
 
@@ -324,6 +369,21 @@ def init_block(lisp_dir, nl="\n"):
     return nl.join(lines) + nl
 
 
+def gdb_init_block(plugin_dir, nl="\n"):
+    """The lines that source the copied GDB script. The Python check keeps
+    GDB starting without an error when the file has gone."""
+    f = json.dumps((Path(plugin_dir) / "polykybd.py").as_posix())
+    lines = [GDB_BEGIN_MARKER,
+             "python",
+             "import os as _pk_os",
+             f"_pk_file = {f}",
+             "if _pk_os.path.isfile(_pk_file):",
+             '    gdb.execute("source " + _pk_file)',
+             "end",
+             GDB_END_MARKER]
+    return nl.join(lines) + nl
+
+
 def _read_init(path):
     try:
         raw = Path(path).read_bytes()
@@ -332,27 +392,50 @@ def _read_init(path):
     return _Text(raw, "utf-8")
 
 
-def _init_blocks(text):
-    found = [(m.start(), m.end(), m.group(1)) for m in _BLOCK_RE.finditer(text)]
-    rest = _BLOCK_RE.sub("", text)
-    orphan = re.search(r"(?m)^" + re.escape(BEGIN_MARKER), rest) is not None
+def _init_blocks(text, editor=EMACS):
+    block_re = _GDB_BLOCK_RE if editor == GDB else _BLOCK_RE
+    begin = GDB_BEGIN_MARKER if editor == GDB else BEGIN_MARKER
+    found = [(m.start(), m.end(), m.group(1)) for m in block_re.finditer(text)]
+    rest = block_re.sub("", text)
+    orphan = re.search(r"(?m)^" + re.escape(begin), rest) is not None
     return found, orphan, rest
 
 
-def _block_dir(inner):
+def _block_dir(inner, editor=EMACS):
+    """The folder a marked block loads the plugin from, as a string."""
+    if editor == GDB:
+        g = _GDB_FILE_RE.search(inner)
+        if not g:
+            return ""
+        try:
+            return str(Path(json.loads(g.group(1))).parent)
+        except ValueError:
+            return ""
     m = _LOAD_PATH_RE.search(inner)
     if not m:
         return ""
     return re.sub(r"\\(.)", r"\1", m.group(1))
 
 
-def _mentions_polykybd(rest):
+def _mentions_polykybd(rest, comment=";"):
     """Whether the init file loads the package outside the marked block."""
     for line in rest.splitlines():
-        code = line.split(";", 1)[0]
+        code = line.split(comment, 1)[0]
         if "polykybd" in code:
             return True
     return False
+
+
+def _init_paths(editor, home, env, system):
+    """(init file, plugin folder) of an INIT_EDITORS editor."""
+    if editor == GDB:
+        return gdb_init_file(home, env, system), gdb_plugin_dir(home, env, system)
+    init = emacs_init_file(home, env, system)
+    return init, emacs_lisp_dir(init)
+
+
+def _block_for(editor, plugin_dir, nl):
+    return gdb_init_block(plugin_dir, nl) if editor == GDB else init_block(plugin_dir, nl)
 
 
 # --- status -----------------------------------------------------------------
@@ -374,36 +457,40 @@ def _other_vim_copies(editor, folder):
     return None
 
 
+def _sources(vim_source, emacs_source, gdb_source):
+    return {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source, GDB: gdb_source}
+
+
 def status(editors=None, home=None, env=None, which=None, system=None,
-           vim_source=None, emacs_source=None):
+           vim_source=None, emacs_source=None, gdb_source=None):
     """An EditorStatus for each editor (``editors`` filters by id)."""
     env = os.environ if env is None else env
     system = system or platform.system()
+    sources = _sources(vim_source, emacs_source, gdb_source)
     out = []
     for editor in EDITORS:
         if editors is not None and editor not in editors:
             continue
-        out.append(_status_one(editor, home, env, which, system,
-                               emacs_source if editor == EMACS else vim_source))
+        out.append(_status_one(editor, home, env, which, system, sources[editor]))
     return out
 
 
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
-    if editor == EMACS:
-        init = emacs_init_file(home, env, system)
+    if editor in INIT_EDITORS:
+        init, want = _init_paths(editor, home, env, system)
         if shipped is None:
-            return EditorStatus(editor, STATE_NO_SOURCE, init, str(source or EMACS_SOURCE))
+            default = EMACS_SOURCE if editor == EMACS else GDB_SOURCE
+            return EditorStatus(editor, STATE_NO_SOURCE, init, str(source or default))
         doc = _read_init(init)
         if not _present(editor, which, system) and doc is None:
             return EditorStatus(editor, STATE_NOT_PRESENT, init, "")
-        found, _orphan, rest = _init_blocks(doc.text) if doc is not None else ([], False, "")
+        found, _orphan, rest = _init_blocks(doc.text, editor) if doc is not None else ([], False, "")
         if not found:
-            if _mentions_polykybd(rest):
+            if _mentions_polykybd(rest, "#" if editor == GDB else ";"):
                 return EditorStatus(editor, STATE_MANUAL, init, str(init))
             return EditorStatus(editor, STATE_NOT_INSTALLED, init, "")
-        want = emacs_lisp_dir(init)
-        named = _block_dir(doc.unpiece(found[0][2]))
+        named = _block_dir(doc.unpiece(found[0][2]), editor)
         if Path(named) != want or len(found) > 1:
             return EditorStatus(editor, STATE_STALE, init, named)
         state = _copy_state(want, shipped)
@@ -457,9 +544,12 @@ def _install_vim(st, shipped, now):
     return Result(st.editor, True, True, msg.format(path=folder), backup)
 
 
-def _install_emacs(st, shipped, now):
+def _install_init(st, shipped, now, home=None, env=None, system=None):
     init = Path(st.target)
-    lisp_dir = emacs_lisp_dir(init)
+    if st.editor == GDB:
+        lisp_dir = gdb_plugin_dir(home, env, system)
+    else:
+        lisp_dir = emacs_lisp_dir(init)
     if st.state == STATE_INSTALLED:
         return Result(st.editor, True, False, MSG_ALREADY.format(path=init), None)
     if st.state == STATE_MODIFIED:
@@ -469,7 +559,7 @@ def _install_emacs(st, shipped, now):
     if doc is None:
         doc = _Text(b"", "utf-8")
     text = doc.text
-    found, orphan, _rest = _init_blocks(text)
+    found, orphan, _rest = _init_blocks(text, st.editor)
     if orphan:
         return Result(st.editor, False, False, MSG_NO_END_MARKER.format(path=init), None)
     nl = "\r\n" if "\r\n" in text else "\n"
@@ -478,7 +568,7 @@ def _install_emacs(st, shipped, now):
             _write_copy(lisp_dir, shipped, read_stamp(lisp_dir))
     except OSError as exc:
         return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=lisp_dir, error=exc), None)
-    block = doc.piece(init_block(lisp_dir, nl))
+    block = doc.piece(_block_for(st.editor, lisp_dir, nl))
     if found:
         new = text[:found[0][0]] + block
         prev = found[0][1]
@@ -497,7 +587,7 @@ def _install_emacs(st, shipped, now):
             _write(init, doc.to_bytes(new))
         except OSError as exc:
             return Result(st.editor, False, False, MSG_WRITE_FAILED.format(path=init, error=exc), backup)
-    log.info("Editor plugin: emacs %s, init %s (backup %s)", lisp_dir, init, backup)
+    log.info("Editor plugin: %s %s, init %s (backup %s)", st.editor, lisp_dir, init, backup)
     msg = MSG_EMACS_INSTALLED.format(path=lisp_dir, init=init)
     return Result(st.editor, True, True, msg, backup)
 
@@ -516,11 +606,14 @@ def _remove_vim(st):
     return Result(st.editor, True, True, MSG_REMOVED.format(path=folder), None)
 
 
-def _remove_emacs(st, now):
+def _remove_init(st, now, home=None, env=None, system=None):
     init = Path(st.target)
     doc = _read_init(init)
-    found, _orphan, _rest = _init_blocks(doc.text) if doc is not None else ([], False, "")
-    lisp_dir = emacs_lisp_dir(init)
+    found, _orphan, _rest = _init_blocks(doc.text, st.editor) if doc is not None else ([], False, "")
+    if st.editor == GDB:
+        lisp_dir = gdb_plugin_dir(home, env, system)
+    else:
+        lisp_dir = emacs_lisp_dir(init)
     if not found:
         return Result(st.editor, True, False, MSG_NOT_INSTALLED.format(path=init), None)
     text, new, prev = doc.text, "", 0
@@ -540,30 +633,33 @@ def _remove_emacs(st, now):
             msg = MSG_EMACS_REMOVED_ALL.format(init=init, path=lisp_dir)
         except OSError as exc:
             log.warning("Editor plugin: could not delete %s: %s", lisp_dir, exc)
-    log.info("Editor plugin: removed emacs block from %s (backup %s)", init, backup)
+    log.info("Editor plugin: removed %s block from %s (backup %s)", st.editor, init, backup)
     return Result(st.editor, True, True, msg, backup)
 
 
-def _change(st, install, sources, now=None):
+def _change(st, install, sources, now=None, home=None, env=None, system=None):
     if st.state == STATE_NOT_PRESENT:
         return Result(st.editor, False, False, MSG_NOT_PRESENT.format(editor=st.editor), None)
     if st.state == STATE_NO_SOURCE:
         return Result(st.editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)
     if not install:
-        return _remove_emacs(st, now) if st.editor == EMACS else _remove_vim(st)
+        if st.editor in INIT_EDITORS:
+            return _remove_init(st, now, home, env, system)
+        return _remove_vim(st)
     shipped = shipped_files(st.editor, sources.get(st.editor))
     if shipped is None:
         return Result(st.editor, False, False, MSG_NO_SOURCE.format(path=st.detail), None)
-    if st.editor == EMACS:
-        return _install_emacs(st, shipped, now)
+    if st.editor in INIT_EDITORS:
+        return _install_init(st, shipped, now, home, env, system)
     return _install_vim(st, shipped, now)
 
 
-def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source):
+def _apply(install, editors, statuses, home, env, which, system, vim_source, emacs_source,
+           gdb_source=None):
     if statuses is None:
         statuses = status(editors, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source)
-    sources = {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source}
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
+    sources = _sources(vim_source, emacs_source, gdb_source)
     results = []
     for st in statuses:
         if editors is not None and st.editor not in editors:
@@ -573,25 +669,27 @@ def _apply(install, editors, statuses, home, env, which, system, vim_source, ema
                 continue
             if not install and st.state not in (STATE_INSTALLED, STATE_OUTDATED, STATE_STALE):
                 continue
-        results.append(_change(st, install, sources))
+        results.append(_change(st, install, sources, home=home, env=env, system=system))
     return results
 
 
 def install(editors=None, statuses=None, home=None, env=None, which=None,
-            system=None, vim_source=None, emacs_source=None):
+            system=None, vim_source=None, emacs_source=None, gdb_source=None):
     """Copy the plugin for each editor (the ones default_selection() picks
     when ``editors`` is None). Returns a list of Result."""
-    return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source)
+    return _apply(True, editors, statuses, home, env, which, system, vim_source, emacs_source,
+                  gdb_source)
 
 
 def remove(editors=None, statuses=None, home=None, env=None, which=None,
-           system=None, vim_source=None, emacs_source=None):
-    """Delete this app's copy and, for Emacs, the marked block."""
-    return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source)
+           system=None, vim_source=None, emacs_source=None, gdb_source=None):
+    """Delete this app's copy and, for Emacs and GDB, the marked block."""
+    return _apply(False, editors, statuses, home, env, which, system, vim_source, emacs_source,
+                  gdb_source)
 
 
 def refresh_installed(home=None, env=None, which=None, system=None,
-                      vim_source=None, emacs_source=None):
+                      vim_source=None, emacs_source=None, gdb_source=None):
     """Copy the shipped files again for each editor whose copy is this app's
     and older than them. Runs at every start, so an update reaches the
     editors without a visit to the dialog. Returns the editors refreshed.
@@ -599,16 +697,16 @@ def refresh_installed(home=None, env=None, which=None, system=None,
     refreshed = []
     try:
         statuses = status(None, home=home, env=env, which=which, system=system,
-                          vim_source=vim_source, emacs_source=emacs_source)
+                          vim_source=vim_source, emacs_source=emacs_source, gdb_source=gdb_source)
     except Exception:  # noqa: BLE001 - a start must not fail for this
         log.warning("Editor plugin refresh: status failed", exc_info=True)
         return refreshed
-    sources = {VIM: vim_source, NEOVIM: vim_source, EMACS: emacs_source}
+    sources = _sources(vim_source, emacs_source, gdb_source)
     for st in statuses:
         if st.state != STATE_OUTDATED:
             continue
         try:
-            r = _change(st, True, sources)
+            r = _change(st, True, sources, home=home, env=env, system=system)
         except Exception:  # noqa: BLE001
             log.warning("Editor plugin refresh failed for %s", st.editor, exc_info=True)
             continue

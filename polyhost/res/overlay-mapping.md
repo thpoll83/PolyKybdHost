@@ -156,7 +156,10 @@ through less), k9s and GDB have routes in the same list, built the same way
 (`overlay_sources/tui/SOURCES.md`). Midnight Commander writes
 `mc [user@host]:<dir>` itself. Vim and Neovim with `set title` write
 `<file> (<dir>) - VIM` and `<file> - NVIM`; those titles load the Normal-mode
-Vim set, and the plugin's mode report takes priority. Without a mode report
+Vim set, and the plugin's mode report takes priority. The PolyKybd GDB script (`gdb-plugin/`) writes
+`gdb ⏸ <program>` at the prompt and `gdb ▶ <program>` while the program runs;
+the `gdb` route rejects the second, and a `▶` route loads the running set
+(Ctrl+C only). Without a mode report
 the earliest key word in the title selects the route, so a file named after
 one of these programs (`htop notes (~/src) - VIM`) loads that program's set.
 The `man` route assumes man pages through less; with another pager in

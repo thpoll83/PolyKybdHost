@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-06 05:54+0000\n"
+"POT-Creation-Date: 2026-11-06 13:19+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -535,7 +535,7 @@ msgstr "Không thể dừng: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Thất bại:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:133 polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/cmd_menu.py:133 polyhost/gui/settings_dialog.py:52
 msgid "Brightness"
 msgstr "Độ sáng"
 
@@ -1041,6 +1041,7 @@ msgid "pick one from Source fonts below, or Browse…"
 msgstr "chọn một phông trong Phông nguồn bên dưới, hoặc Duyệt…"
 
 #: polyhost/gui/fontpack_extend_dialog.py:119
+#: polyhost/gui/settings_dialog.py:433 polyhost/gui/settings_dialog.py:434
 msgid "Browse…"
 msgstr "Duyệt…"
 
@@ -1061,7 +1062,7 @@ msgid "HarfBuzz sequence"
 msgstr "Chuỗi HarfBuzz"
 
 #: polyhost/gui/fontpack_extend_dialog.py:131
-#: polyhost/gui/settings_dialog.py:79 polyhost/gui/settings_dialog.py:88
+#: polyhost/gui/settings_dialog.py:80 polyhost/gui/settings_dialog.py:89
 msgid "Mode"
 msgstr "Chế độ"
 
@@ -1746,7 +1747,7 @@ msgstr "Đang áp dụng — kích hoạt firmware đã lưu tạm…"
 msgid "Cancelling — waiting for current chunk to finish…"
 msgstr "Đang hủy — chờ phần dữ liệu hiện tại hoàn tất…"
 
-#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:78
+#: polyhost/gui/i18n_qt.py:88 polyhost/gui/settings_dialog.py:79
 msgid "Language"
 msgstr "Ngôn ngữ"
 
@@ -2787,428 +2788,428 @@ msgstr "<b>Đính kèm tệp nhật ký</b> (nút bên trái sẽ hiển thị n
 msgid "Press Submit. (No log file was produced — see above.)"
 msgstr "Nhấn Submit. (Không tạo được tệp nhật ký — xem ở trên.)"
 
-#: polyhost/gui/settings_dialog.py:29
+#: polyhost/gui/settings_dialog.py:30
 #, python-brace-format
 msgid "Automatic ({language})"
 msgstr "Tự động ({language})"
 
-#: polyhost/gui/settings_dialog.py:39
+#: polyhost/gui/settings_dialog.py:40
 msgid "Automatic"
 msgstr "Tự động"
 
-#: polyhost/gui/settings_dialog.py:39
+#: polyhost/gui/settings_dialog.py:40
 msgid "Light"
 msgstr "Sáng"
 
-#: polyhost/gui/settings_dialog.py:39
+#: polyhost/gui/settings_dialog.py:40
 msgid "Dark"
 msgstr "Tối"
 
-#: polyhost/gui/settings_dialog.py:41
+#: polyhost/gui/settings_dialog.py:42
 msgid "Errors"
 msgstr "Lỗi"
 
-#: polyhost/gui/settings_dialog.py:42
+#: polyhost/gui/settings_dialog.py:43
 msgid "Errors and warnings"
 msgstr "Lỗi và cảnh báo"
 
-#: polyhost/gui/settings_dialog.py:50
+#: polyhost/gui/settings_dialog.py:51
 msgid "General"
 msgstr "Chung"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:52
 msgid "Browser"
 msgstr "Trình duyệt"
 
-#: polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/settings_dialog.py:52
 msgid "Daemon"
 msgstr "Daemon"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:53
 msgid "Delay"
 msgstr "Độ trễ"
 
-#: polyhost/gui/settings_dialog.py:52
+#: polyhost/gui/settings_dialog.py:53
 msgid "Dev"
 msgstr "Dev"
 
-#: polyhost/gui/settings_dialog.py:52 polyhost/host.py:884
+#: polyhost/gui/settings_dialog.py:53 polyhost/host.py:884
 msgid "Developer"
 msgstr "Nhà phát triển"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Fontpack"
 msgstr "Gói phông chữ"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Game"
 msgstr "Trò chơi"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Generic"
 msgstr "Chung (generic)"
 
-#: polyhost/gui/settings_dialog.py:53
+#: polyhost/gui/settings_dialog.py:54
 msgid "Hid"
 msgstr "HID"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:55
 msgid "Irradiance"
 msgstr "Bức xạ mặt trời"
 
-#: polyhost/gui/settings_dialog.py:54
+#: polyhost/gui/settings_dialog.py:55
 msgid "Problem"
 msgstr "Sự cố"
 
-#: polyhost/gui/settings_dialog.py:54 polyhost/gui/settings_dialog.py:65
+#: polyhost/gui/settings_dialog.py:55 polyhost/gui/settings_dialog.py:66
 msgid "Max"
 msgstr "Tối đa"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:56
 msgid "Shortcut"
 msgstr "Phím tắt"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:56
 msgid "Telemetry"
 msgstr "Đo từ xa"
 
-#: polyhost/gui/settings_dialog.py:55
+#: polyhost/gui/settings_dialog.py:56
 msgid "Ui"
 msgstr "Giao diện"
 
-#: polyhost/gui/settings_dialog.py:56
+#: polyhost/gui/settings_dialog.py:57
 msgid "Unicode"
 msgstr "Unicode"
 
-#: polyhost/gui/settings_dialog.py:56
+#: polyhost/gui/settings_dialog.py:57
 msgid "Window"
 msgstr "Cửa sổ"
 
-#: polyhost/gui/settings_dialog.py:60
+#: polyhost/gui/settings_dialog.py:61
 msgid "Send Composition Mode"
 msgstr "Chế độ gửi tổ hợp ký tự"
 
-#: polyhost/gui/settings_dialog.py:61
+#: polyhost/gui/settings_dialog.py:62
 msgid "Set Daylight Dependent"
 msgstr "Theo ánh sáng ban ngày"
 
-#: polyhost/gui/settings_dialog.py:62
+#: polyhost/gui/settings_dialog.py:63
 msgid "Allow Online Irradiance Request"
 msgstr "Cho phép truy vấn bức xạ trực tuyến"
 
-#: polyhost/gui/settings_dialog.py:63
+#: polyhost/gui/settings_dialog.py:64
 msgid "Allow Online Location Lookup"
 msgstr "Cho phép tra cứu vị trí trực tuyến"
 
-#: polyhost/gui/settings_dialog.py:64
+#: polyhost/gui/settings_dialog.py:65
 msgid "Min"
 msgstr "Tối thiểu"
 
-#: polyhost/gui/settings_dialog.py:66
+#: polyhost/gui/settings_dialog.py:67
 msgid "Prescaler"
 msgstr "Hệ số chia"
 
-#: polyhost/gui/settings_dialog.py:67
+#: polyhost/gui/settings_dialog.py:68
 msgid "Gamma"
 msgstr "Gamma"
 
-#: polyhost/gui/settings_dialog.py:68
+#: polyhost/gui/settings_dialog.py:69
 msgid "Overlays Enabled"
 msgstr "Bật lớp phủ"
 
-#: polyhost/gui/settings_dialog.py:69
+#: polyhost/gui/settings_dialog.py:70
 msgid "Overlays Add Escape Mark"
 msgstr "Thêm dấu ứng dụng trên Esc vào lớp phủ"
 
-#: polyhost/gui/settings_dialog.py:70
+#: polyhost/gui/settings_dialog.py:71
 msgid "Overlays Add Shortcut Icons"
 msgstr "Thêm biểu tượng phím tắt vào lớp phủ"
 
-#: polyhost/gui/settings_dialog.py:71
+#: polyhost/gui/settings_dialog.py:72
 msgid "Icons Enabled"
 msgstr "Bật biểu tượng"
 
-#: polyhost/gui/settings_dialog.py:72
+#: polyhost/gui/settings_dialog.py:73
 msgid "Icon Auto Fetch"
 msgstr "Tự động tải biểu tượng"
 
-#: polyhost/gui/settings_dialog.py:73
+#: polyhost/gui/settings_dialog.py:74
 msgid "Enable Accessibility"
 msgstr "Bật trợ năng"
 
-#: polyhost/gui/settings_dialog.py:74
+#: polyhost/gui/settings_dialog.py:75
 msgid "Hid Message Before Delay"
 msgstr "Số thông điệp HID trước khi trễ"
 
-#: polyhost/gui/settings_dialog.py:75
+#: polyhost/gui/settings_dialog.py:76
 msgid "Time After Max Hid Messages"
 msgstr "Thời gian chờ sau số thông điệp HID tối đa"
 
-#: polyhost/gui/settings_dialog.py:76
+#: polyhost/gui/settings_dialog.py:77
 msgid "Reconnect Retries"
 msgstr "Số lần thử kết nối lại"
 
-#: polyhost/gui/settings_dialog.py:77
+#: polyhost/gui/settings_dialog.py:78
 msgid "Theme"
 msgstr "Giao diện màu"
 
-#: polyhost/gui/settings_dialog.py:80
+#: polyhost/gui/settings_dialog.py:81
 msgid "Mock Enabled"
 msgstr "Bật mô phỏng"
 
-#: polyhost/gui/settings_dialog.py:81
+#: polyhost/gui/settings_dialog.py:82
 msgid "Mock Primary"
 msgstr "Mô phỏng làm thiết bị chính"
 
-#: polyhost/gui/settings_dialog.py:82
+#: polyhost/gui/settings_dialog.py:83
 msgid "Mock Protocol"
 msgstr "Giao thức mô phỏng"
 
-#: polyhost/gui/settings_dialog.py:84
+#: polyhost/gui/settings_dialog.py:85
 msgid "Run Window Detection If Not Connected To Poly Kybd"
 msgstr "Chạy nhận diện cửa sổ khi chưa kết nối PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:85
+#: polyhost/gui/settings_dialog.py:86
 msgid "Win Native Set Language"
 msgstr "Đặt ngôn ngữ kiểu gốc Windows"
 
-#: polyhost/gui/settings_dialog.py:86
+#: polyhost/gui/settings_dialog.py:87
 msgid "Legacy Plaintext Relay"
 msgstr "Chuyển tiếp văn bản thuần kiểu cũ"
 
-#: polyhost/gui/settings_dialog.py:87
+#: polyhost/gui/settings_dialog.py:88
 msgid "Force HID Link"
 msgstr "Buộc dùng liên kết HID"
 
-#: polyhost/gui/settings_dialog.py:89
+#: polyhost/gui/settings_dialog.py:90
 msgid "Report Network Enabled"
 msgstr "Bật báo cáo qua mạng"
 
-#: polyhost/gui/settings_dialog.py:90
+#: polyhost/gui/settings_dialog.py:91
 msgid "Auto Flash"
 msgstr "Tự động nạp"
 
-#: polyhost/gui/settings_dialog.py:91
+#: polyhost/gui/settings_dialog.py:92
 msgid "Path"
 msgstr "Đường dẫn"
 
-#: polyhost/gui/settings_dialog.py:92
+#: polyhost/gui/settings_dialog.py:93
 msgid "Url Detection"
 msgstr "Nhận diện URL"
 
-#: polyhost/gui/settings_dialog.py:93
+#: polyhost/gui/settings_dialog.py:94
 msgid "Report Local Enabled"
 msgstr "Bật báo cáo cục bộ"
 
-#: polyhost/gui/settings_dialog.py:94
+#: polyhost/gui/settings_dialog.py:95
 msgid "Report Port"
 msgstr "Cổng báo cáo"
 
-#: polyhost/gui/settings_dialog.py:95
+#: polyhost/gui/settings_dialog.py:96
 msgid "Report Token"
 msgstr "Token báo cáo"
 
-#: polyhost/gui/settings_dialog.py:96
+#: polyhost/gui/settings_dialog.py:97
 msgid "Enabled"
 msgstr "Bật"
 
-#: polyhost/gui/settings_dialog.py:97
+#: polyhost/gui/settings_dialog.py:98
 msgid "Endpoint"
 msgstr "Điểm cuối"
 
-#: polyhost/gui/settings_dialog.py:98
+#: polyhost/gui/settings_dialog.py:99
 msgid "Install Id"
 msgstr "ID cài đặt"
 
-#: polyhost/gui/settings_dialog.py:99
+#: polyhost/gui/settings_dialog.py:100
 msgid "Scan Keyboard Console"
 msgstr "Quét console bàn phím"
 
-#: polyhost/gui/settings_dialog.py:100
+#: polyhost/gui/settings_dialog.py:101
 msgid "Scan Host Logs"
 msgstr "Quét nhật ký host"
 
-#: polyhost/gui/settings_dialog.py:101
+#: polyhost/gui/settings_dialog.py:102
 msgid "Scan Level"
 msgstr "Mức quét"
 
-#: polyhost/gui/settings_dialog.py:102
+#: polyhost/gui/settings_dialog.py:103
 msgid "Art From Installed Games"
 msgstr "Hình ảnh từ trò chơi đã cài"
 
-#: polyhost/gui/settings_dialog.py:111
+#: polyhost/gui/settings_dialog.py:112
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
 msgstr "Cho bàn phím biết máy tính này nhận nhập Unicode theo cách nào (ví dụ WinCompose), khi kết nối và mỗi khi cách đó thay đổi. Khi tắt: bàn phím giữ chế độ đã lưu."
 
-#: polyhost/gui/settings_dialog.py:115
+#: polyhost/gui/settings_dialog.py:116
 msgid "Sets the keycap brightness from the daylight at your location, every ten minutes."
 msgstr "Đặt độ sáng mặt phím theo ánh sáng ban ngày tại vị trí của bạn, mười phút một lần."
 
-#: polyhost/gui/settings_dialog.py:118
+#: polyhost/gui/settings_dialog.py:119
 msgid "Asks open-meteo.com for this hour's sunlight at your location, including clouds. Off: the host computes a cloudless-sky value from the location and time."
 msgstr "Hỏi open-meteo.com về bức xạ mặt trời trong giờ này tại vị trí của bạn, có tính đến mây. Khi tắt: host tính giá trị cho trời không mây từ vị trí và thời gian."
 
-#: polyhost/gui/settings_dialog.py:122
+#: polyhost/gui/settings_dialog.py:123
 msgid "Looks up your approximate location from your IP address (ip-api.com), once per run. Off: the brightness follows the hour of the day."
 msgstr "Tra cứu vị trí gần đúng của bạn từ địa chỉ IP (ip-api.com), một lần mỗi lần chạy. Khi tắt: độ sáng theo giờ trong ngày."
 
-#: polyhost/gui/settings_dialog.py:124
+#: polyhost/gui/settings_dialog.py:125
 msgid "The sunlight value that gives the dimmest brightness level."
 msgstr "Giá trị bức xạ mặt trời ứng với mức độ sáng tối nhất."
 
-#: polyhost/gui/settings_dialog.py:126
+#: polyhost/gui/settings_dialog.py:127
 msgid "The sunlight value that gives the brightest level. Lower it to reach full brightness on a cloudy day."
 msgstr "Giá trị bức xạ mặt trời ứng với mức sáng nhất. Giảm giá trị này để đạt độ sáng tối đa vào ngày nhiều mây."
 
-#: polyhost/gui/settings_dialog.py:128
+#: polyhost/gui/settings_dialog.py:129
 msgid "Multiplies the sunlight value before Min and Max apply."
 msgstr "Hệ số nhân với giá trị bức xạ mặt trời trước khi áp dụng Tối thiểu và Tối đa."
 
-#: polyhost/gui/settings_dialog.py:130
+#: polyhost/gui/settings_dialog.py:131
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
 msgstr "Định hình đường cong ánh sáng ban ngày. Trên 1 thì giữa ngày tối hơn, dưới 1 thì sáng hơn. Mức tối nhất và sáng nhất không thay đổi."
 
-#: polyhost/gui/settings_dialog.py:133
+#: polyhost/gui/settings_dialog.py:134
 msgid "Icons for apps without their own overlay: the app's mark on Escape and an icon for each of its shortcuts. Off: nothing generic is drawn for any app."
 msgstr "Biểu tượng cho các ứng dụng không có lớp phủ riêng: dấu của ứng dụng trên phím Esc và một biểu tượng cho mỗi phím tắt của ứng dụng. Khi tắt: không vẽ gì chung cho bất kỳ ứng dụng nào."
 
-#: polyhost/gui/settings_dialog.py:136
+#: polyhost/gui/settings_dialog.py:137
 msgid "An app with its own overlay also gets its mark on Escape, when the overlay leaves Escape blank."
 msgstr "Ứng dụng có lớp phủ riêng cũng được hiển thị dấu của nó trên phím Esc, khi lớp phủ để trống phím Esc."
 
-#: polyhost/gui/settings_dialog.py:139
+#: polyhost/gui/settings_dialog.py:140
 msgid "An app with its own overlay is also read for its shortcuts, with icons on the keys the overlay leaves blank. Reading a large app, such as a browser with a long page, can take minutes."
 msgstr "Ứng dụng có lớp phủ riêng cũng được đọc phím tắt, với biểu tượng trên các phím mà lớp phủ để trống. Việc đọc một ứng dụng lớn, chẳng hạn trình duyệt đang mở trang dài, có thể mất vài phút."
 
-#: polyhost/gui/settings_dialog.py:143
+#: polyhost/gui/settings_dialog.py:144
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Overlays Enabled."
 msgstr "Đọc phím tắt của ứng dụng đang được chọn để vẽ biểu tượng cho từng phím tắt. Khi tắt: không đọc ứng dụng nào và không vẽ biểu tượng phím tắt nào. Để bỏ mọi biểu tượng chung, kể cả dấu trên phím Esc, hãy tắt \"Bật lớp phủ\"."
 
-#: polyhost/gui/settings_dialog.py:147
+#: polyhost/gui/settings_dialog.py:148
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
 msgstr "Tải xuống các biểu tượng còn thiếu. Khi tắt: các biểu tượng đã tải vẫn hoạt động, biểu tượng mới bị bỏ qua."
 
-#: polyhost/gui/settings_dialog.py:150
+#: polyhost/gui/settings_dialog.py:151
 msgid "Linux only. Turns on the desktop's accessibility switch so Qt and KDE apps publish their shortcuts. Off: only apps that publish them anyway (GTK) are read."
 msgstr "Chỉ Linux. Bật công tắc trợ năng của môi trường desktop để các ứng dụng Qt và KDE công bố phím tắt. Khi tắt: chỉ đọc các ứng dụng vốn đã công bố phím tắt (GTK)."
 
-#: polyhost/gui/settings_dialog.py:154
+#: polyhost/gui/settings_dialog.py:155
 msgid "USB transport: how many image messages are sent before a short pause, so the keyboard keeps reacting to typing. Change it only when asked to while reporting a problem."
 msgstr "Truyền qua USB: số thông điệp hình ảnh được gửi trước một khoảng dừng ngắn, để bàn phím vẫn phản hồi khi gõ. Chỉ thay đổi khi được yêu cầu trong lúc báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:158
+#: polyhost/gui/settings_dialog.py:159
 msgid "USB transport: the length of that pause, in seconds. Change it only when asked to while reporting a problem."
 msgstr "Truyền qua USB: độ dài của khoảng dừng đó, tính bằng giây. Chỉ thay đổi khi được yêu cầu trong lúc báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:161
+#: polyhost/gui/settings_dialog.py:162
 msgid "How many times the host asks the keyboard for its ID before it reopens the USB connection."
 msgstr "Số lần host hỏi ID của bàn phím trước khi mở lại kết nối USB."
 
-#: polyhost/gui/settings_dialog.py:164
+#: polyhost/gui/settings_dialog.py:165
 msgid "The look of the tray menu and dialogs. Automatic follows the desktop's light or dark setting."
 msgstr "Giao diện của menu khay hệ thống và các hộp thoại. Tự động theo thiết lập sáng hoặc tối của desktop."
 
-#: polyhost/gui/settings_dialog.py:167
+#: polyhost/gui/settings_dialog.py:168
 msgid "The language of the menus and dialogs. Applies when the tray app restarts."
 msgstr "Ngôn ngữ của menu và hộp thoại. Có hiệu lực khi ứng dụng khay hệ thống khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:169
+#: polyhost/gui/settings_dialog.py:170
 msgid "Shows the Developer submenu in the tray menu and the developer settings in this dialog."
 msgstr "Hiển thị menu con Nhà phát triển trong menu khay hệ thống và các cài đặt dành cho nhà phát triển trong hộp thoại này."
 
-#: polyhost/gui/settings_dialog.py:171
+#: polyhost/gui/settings_dialog.py:172
 msgid "Adds a simulated keyboard next to the real one."
 msgstr "Thêm một bàn phím mô phỏng bên cạnh bàn phím thật."
 
-#: polyhost/gui/settings_dialog.py:173
+#: polyhost/gui/settings_dialog.py:174
 msgid "Uses a simulated keyboard instead of a real one, so the app runs without hardware."
 msgstr "Dùng bàn phím mô phỏng thay cho bàn phím thật, để ứng dụng chạy được mà không cần phần cứng."
 
-#: polyhost/gui/settings_dialog.py:176
+#: polyhost/gui/settings_dialog.py:177
 msgid "The protocol version the simulated keyboard reports. 0 uses the newest version this host knows."
 msgstr "Phiên bản giao thức mà bàn phím mô phỏng báo cáo. 0 dùng phiên bản mới nhất mà host này biết."
 
-#: polyhost/gui/settings_dialog.py:179
+#: polyhost/gui/settings_dialog.py:180
 msgid "Tracks the active window even when no keyboard is connected."
 msgstr "Theo dõi cửa sổ đang hoạt động ngay cả khi không có bàn phím nào được kết nối."
 
-#: polyhost/gui/settings_dialog.py:181
+#: polyhost/gui/settings_dialog.py:182
 msgid "Windows only, experimental. Switches the input language with Win32 calls instead of the standard method, and falls back to it on a failure."
 msgstr "Chỉ Windows, thử nghiệm. Chuyển ngôn ngữ nhập bằng lệnh gọi Win32 thay cho phương pháp tiêu chuẩn, và quay lại phương pháp tiêu chuẩn khi thất bại."
 
-#: polyhost/gui/settings_dialog.py:184
+#: polyhost/gui/settings_dialog.py:185
 msgid "Uses the USB HID channel only, as if the keyboard had no fast link: firmware updates go over HID. For testing the HID path by hand."
 msgstr "Chỉ dùng kênh USB HID, như thể bàn phím không có liên kết nhanh: cập nhật firmware đi qua HID. Dùng để kiểm thử đường HID bằng tay."
 
-#: polyhost/gui/settings_dialog.py:187
+#: polyhost/gui/settings_dialog.py:188
 msgid "Accepts window reports from old forwarders over unencrypted, unauthenticated TCP (port 50162) on every network interface. Turn it on only for an old forwarder."
 msgstr "Nhận báo cáo cửa sổ từ các bộ chuyển tiếp cũ qua TCP không mã hóa, không xác thực (cổng 50162) trên mọi giao diện mạng. Chỉ bật khi dùng bộ chuyển tiếp cũ."
 
-#: polyhost/gui/settings_dialog.py:191
+#: polyhost/gui/settings_dialog.py:192
 msgid "Runs the keyboard connection in a background process that the tray app connects to, so the connection stays up when the tray app restarts."
 msgstr "Chạy kết nối bàn phím trong một tiến trình nền mà ứng dụng khay hệ thống kết nối tới, để kết nối vẫn duy trì khi ứng dụng khay hệ thống khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:194
+#: polyhost/gui/settings_dialog.py:195
 msgid "Accepts window reports from a forwarder on another computer. Opens a network port. Applies after a restart."
 msgstr "Nhận báo cáo cửa sổ từ bộ chuyển tiếp trên một máy tính khác. Mở một cổng mạng. Có hiệu lực sau khi khởi động lại."
 
-#: polyhost/gui/settings_dialog.py:197
+#: polyhost/gui/settings_dialog.py:198
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
 msgstr "Nạp các gói con của gói phông chữ còn thiếu hoặc đã cũ khi bàn phím kết nối."
 
-#: polyhost/gui/settings_dialog.py:199
+#: polyhost/gui/settings_dialog.py:200
 msgid "A .plyf file to flash instead of the font pack that ships with the app. Empty uses the shipped pack."
 msgstr "Tệp .plyf để nạp thay cho gói phông chữ đi kèm ứng dụng. Để trống thì dùng gói đi kèm."
 
-#: polyhost/gui/settings_dialog.py:202
+#: polyhost/gui/settings_dialog.py:203
 msgid "Matches overlays to the website in the focused browser tab. Off: browser overlays match on the window title only."
 msgstr "Khớp lớp phủ theo trang web trong thẻ trình duyệt đang được chọn. Khi tắt: lớp phủ trình duyệt chỉ khớp theo tiêu đề cửa sổ."
 
-#: polyhost/gui/settings_dialog.py:205
+#: polyhost/gui/settings_dialog.py:206
 msgid "Runs the receiver the browser extension reports to. It listens on 127.0.0.1 only."
 msgstr "Chạy bộ thu mà tiện ích mở rộng trình duyệt gửi báo cáo tới. Bộ thu chỉ lắng nghe trên 127.0.0.1."
 
-#: polyhost/gui/settings_dialog.py:208
+#: polyhost/gui/settings_dialog.py:209
 msgid "The receiver's port. It must match the Host port in the browser extension."
 msgstr "Cổng của bộ thu. Cổng này phải khớp với Host port trong tiện ích mở rộng trình duyệt."
 
-#: polyhost/gui/settings_dialog.py:210
+#: polyhost/gui/settings_dialog.py:211
 msgid "A shared secret. When set, the browser extension must send the same token."
 msgstr "Một khóa bí mật dùng chung. Khi được đặt, tiện ích mở rộng trình duyệt phải gửi cùng token đó."
 
-#: polyhost/gui/settings_dialog.py:212
+#: polyhost/gui/settings_dialog.py:213
 msgid "Sends one anonymous usage report per day: versions, operating system and a few counters. Never window titles or app names."
 msgstr "Gửi một báo cáo sử dụng ẩn danh mỗi ngày: các phiên bản, hệ điều hành và một vài bộ đếm. Không bao giờ gửi tiêu đề cửa sổ hay tên ứng dụng."
 
-#: polyhost/gui/settings_dialog.py:214
+#: polyhost/gui/settings_dialog.py:215
 msgid "Where the usage report goes. Empty sends nothing."
 msgstr "Nơi nhận báo cáo sử dụng. Để trống thì không gửi gì."
 
-#: polyhost/gui/settings_dialog.py:216
+#: polyhost/gui/settings_dialog.py:217
 msgid "The random ID of this installation, created with the first report. Delete it to count as a new installation."
 msgstr "ID ngẫu nhiên của bản cài đặt này, được tạo cùng báo cáo đầu tiên. Xóa nó để được tính là một bản cài đặt mới."
 
-#: polyhost/gui/settings_dialog.py:219
+#: polyhost/gui/settings_dialog.py:220
 msgid "Watches the keyboard's console for known failure messages and offers to report a problem."
 msgstr "Theo dõi console của bàn phím để tìm các thông báo lỗi đã biết và đề nghị báo cáo sự cố."
 
-#: polyhost/gui/settings_dialog.py:221
+#: polyhost/gui/settings_dialog.py:222
 msgid "Watches this app's own log for known failure messages."
 msgstr "Theo dõi nhật ký của chính ứng dụng này để tìm các thông báo lỗi đã biết."
 
-#: polyhost/gui/settings_dialog.py:222
+#: polyhost/gui/settings_dialog.py:223
 msgid "What counts as a problem: errors only, or errors and warnings."
 msgstr "Điều gì được coi là sự cố: chỉ lỗi, hoặc lỗi và cảnh báo."
 
-#: polyhost/gui/settings_dialog.py:224
+#: polyhost/gui/settings_dialog.py:225
 msgid "Draws some game overlays from the game's own files when the game is installed on this computer. The images stay on this computer. Off: the shipped overlays are used."
 msgstr "Vẽ một số lớp phủ trò chơi từ chính các tệp của trò chơi khi trò chơi được cài trên máy tính này. Hình ảnh ở lại trên máy tính này. Tắt: dùng các lớp phủ đi kèm."
 
-#: polyhost/gui/settings_dialog.py:321
+#: polyhost/gui/settings_dialog.py:339
 msgid "PolyKybd Settings"
 msgstr "Cài đặt PolyKybd"
 
-#: polyhost/gui/settings_dialog.py:346
+#: polyhost/gui/settings_dialog.py:364
 msgid "Some settings might need a restart to take effect."
 msgstr "Một số cài đặt có thể cần khởi động lại để có hiệu lực."
 
@@ -3260,7 +3261,8 @@ msgstr "Đã thiết lập, nhưng sau đó đã bị thay đổi bằng tay. �
 msgid "The plugin is already loaded from {path}."
 msgstr "Plugin đã được nạp từ {path}."
 
-#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/services/editor_plugins.py:101
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Bản cài đặt này không có tệp plugin ({path})."
@@ -3289,77 +3291,77 @@ msgstr "Codex thay tiêu đề terminal bằng tên luồng và tên dự án, n
 
 #: polyhost/gui/shell_title_dialog.py:162
 msgid ""
-"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
-"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+"Install copies the plugin from this installation to where the program loads it. For Emacs and GDB it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the program for the change to take effect."
 msgstr ""
-"Vim, Neovim và Emacs chỉ báo chế độ của chúng (chế độ Normal hoặc Insert, các phím Org hoặc Dired) cho bàn phím khi có plugin PolyKybd.\n"
+"Vim, Neovim và Emacs chỉ báo chế độ của chúng (chế độ Normal hoặc Insert, các phím Org hoặc Dired) cho bàn phím khi có plugin PolyKybd. GDB cũng chỉ cho biết chương trình đang chạy hay đang chờ ở dấu nhắc khi có plugin này.\n"
 "\n"
-"Cài đặt sao chép plugin từ bản cài đặt này vào nơi trình soạn thảo nạp nó. Với Emacs, thao tác này còn thêm các dòng nạp plugin vào tệp init, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp. Khi ứng dụng này được cập nhật, nó sẽ sao chép các tệp plugin mới ở lần khởi động tiếp theo. Hãy khởi động lại trình soạn thảo để thay đổi có hiệu lực."
+"Cài đặt sao chép plugin từ bản cài đặt này vào nơi chương trình nạp nó. Với Emacs và GDB, thao tác này còn thêm các dòng nạp plugin vào tệp init, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp. Khi ứng dụng này được cập nhật, nó sẽ sao chép các tệp plugin mới ở lần khởi động tiếp theo. Hãy khởi động lại chương trình để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_title_dialog.py:181
+#: polyhost/gui/shell_title_dialog.py:182
 msgid "Checking the shells…"
 msgstr "Đang kiểm tra các shell…"
 
-#: polyhost/gui/shell_title_dialog.py:194
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Install"
 msgstr "Cài đặt"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:195
+#: polyhost/gui/shell_title_dialog.py:196
 msgid "Remove"
 msgstr "Xóa"
 
-#: polyhost/gui/shell_title_dialog.py:246
+#: polyhost/gui/shell_title_dialog.py:247
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Không thể kiểm tra các shell: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:274
+#: polyhost/gui/shell_title_dialog.py:275
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: hiển thị lệnh mà không cần thiết lập."
 
-#: polyhost/gui/shell_title_dialog.py:302
+#: polyhost/gui/shell_title_dialog.py:303
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Không tìm thấy bash, zsh hay PowerShell trên máy tính này."
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:322
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Không thể kiểm tra các trình soạn thảo: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:344
+#: polyhost/gui/shell_title_dialog.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Không tìm thấy Vim, Neovim hay Emacs trên máy tính này."
 
-#: polyhost/gui/shell_title_dialog.py:350
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Ứng dụng này lắng nghe trên cổng {port} và yêu cầu token. Các plugin dùng cổng 50164 và không dùng token: hãy đặt g:polykybd_port và g:polykybd_token trong Vim, hoặc polykybd-port và polykybd-token trong Emacs, thành cùng các giá trị đó."
 
-#: polyhost/gui/shell_title_dialog.py:355
+#: polyhost/gui/shell_title_dialog.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Ứng dụng này lắng nghe trên cổng {port}. Các plugin dùng cổng 50164: hãy đặt g:polykybd_port trong Vim, hoặc polykybd-port trong Emacs, thành cùng giá trị đó."
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:394
+#: polyhost/gui/shell_title_dialog.py:407
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Thay đổi không thành công: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:397
-#: polyhost/gui/shell_title_dialog.py:410
+#: polyhost/gui/shell_title_dialog.py:398
+#: polyhost/gui/shell_title_dialog.py:411
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Bản sao của tệp trước đó: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:399
+#: polyhost/gui/shell_title_dialog.py:400
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Hãy mở một cửa sổ terminal mới để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_title_dialog.py:412
+#: polyhost/gui/shell_title_dialog.py:413
 msgid "Restart the editor for the change to take effect."
 msgstr "Hãy khởi động lại trình soạn thảo để thay đổi có hiệu lực."
 
@@ -4250,42 +4252,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Trình cài đặt WinCompose đã khởi chạy. Khi cài xong và WinCompose đang chạy, PolyKybd sẽ tự động chuyển sang dùng nó."
 
-#: polyhost/services/editor_plugins.py:85
+#: polyhost/services/editor_plugins.py:95
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "Đã sao chép plugin vào {path}."
 
-#: polyhost/services/editor_plugins.py:86
+#: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "Đã thay plugin trong {path} bằng plugin từ bản cài đặt này."
 
-#: polyhost/services/editor_plugins.py:88
+#: polyhost/services/editor_plugins.py:98
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "Đã xóa plugin khỏi {path}."
 
-#: polyhost/services/editor_plugins.py:90
+#: polyhost/services/editor_plugins.py:100
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "Không tìm thấy {editor} trên máy tính này."
 
-#: polyhost/services/editor_plugins.py:92
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} đã bị thay đổi bằng tay. Hãy xóa hoặc cập nhật nó bằng tay."
 
-#: polyhost/services/editor_plugins.py:95
+#: polyhost/services/editor_plugins.py:105
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "Đã sao chép plugin vào {path} và thêm các dòng nạp nó vào {init}."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:106
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "Đã xóa các dòng nạp plugin khỏi {init}."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "Đã xóa các dòng nạp plugin khỏi {init}, và xóa plugin khỏi {path}."
@@ -4490,7 +4492,7 @@ msgstr "Đã thêm dòng vào {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Đã thay dòng trong {path} bằng dòng cho bản cài đặt này."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:97 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Đã thiết lập sẵn trong {path}."
@@ -4510,7 +4512,7 @@ msgstr "Đã tắt tiêu đề Codex trong {path}."
 msgid "Removed the line from {path}."
 msgstr "Đã xóa dòng khỏi {path}."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:99 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Không có gì để xóa trong {path}."
@@ -4530,12 +4532,12 @@ msgstr "{shell} không cho biết đường dẫn hồ sơ: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Chính sách thực thi của PowerShell ({policy}) không chạy tập lệnh hồ sơ. Hãy chạy 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' trong PowerShell trước."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:103 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} có dấu bắt đầu mà không có dấu kết thúc. Hãy xóa khối đó bằng tay."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Không thể thay đổi {path}: {error}"
@@ -4550,62 +4552,62 @@ msgstr "Không thể ghi đường dẫn tập lệnh theo mã hóa của {path}
 msgid "The script {path} that the line would load is missing."
 msgstr "Thiếu tập lệnh {path} mà dòng đó sẽ tải."
 
-#: polyhost/services/updater.py:39
+#: polyhost/services/updater.py:40
 #, python-brace-format
 msgid "Preflight failed: {details}"
 msgstr "Kiểm tra trước thất bại: {details}"
 
-#: polyhost/services/updater.py:40
+#: polyhost/services/updater.py:41
 #, python-brace-format
 msgid "Warning — {name}: {detail}"
 msgstr "Cảnh báo — {name}: {detail}"
 
-#: polyhost/services/updater.py:41
+#: polyhost/services/updater.py:42
 #, python-brace-format
 msgid "Install dir not writable: {error}"
 msgstr "Không thể ghi vào thư mục cài đặt: {error}"
 
-#: polyhost/services/updater.py:42
+#: polyhost/services/updater.py:43
 #, python-brace-format
 msgid "Could not create a temp directory for the update: {error}"
 msgstr "Không thể tạo thư mục tạm cho bản cập nhật: {error}"
 
-#: polyhost/services/updater.py:43
+#: polyhost/services/updater.py:44
 msgid "Starting download..."
 msgstr "Đang bắt đầu tải xuống..."
 
-#: polyhost/services/updater.py:44
+#: polyhost/services/updater.py:45
 #, python-brace-format
 msgid "Downloading v{version}..."
 msgstr "Đang tải xuống v{version}..."
 
-#: polyhost/services/updater.py:45
+#: polyhost/services/updater.py:46
 msgid "Applying update..."
 msgstr "Đang áp dụng bản cập nhật..."
 
-#: polyhost/services/updater.py:46
+#: polyhost/services/updater.py:47
 msgid "Connecting…"
 msgstr "Đang kết nối…"
 
-#: polyhost/services/updater.py:47
+#: polyhost/services/updater.py:48
 #, python-brace-format
 msgid "Downloading firmware… {done} / {total} KB"
 msgstr "Đang tải firmware… {done} / {total} KB"
 
-#: polyhost/services/updater.py:48
+#: polyhost/services/updater.py:49
 #, python-brace-format
 msgid "Downloading firmware… {done} KB"
 msgstr "Đang tải firmware… {done} KB"
 
-#: polyhost/services/updater.py:49
+#: polyhost/services/updater.py:50
 msgid "Download cancelled."
 msgstr "Đã hủy tải xuống."
 
-#: polyhost/services/updater.py:50
+#: polyhost/services/updater.py:51
 msgid "Downloading signature…"
 msgstr "Đang tải chữ ký…"
 
-#: polyhost/services/updater.py:52
+#: polyhost/services/updater.py:53
 #, python-brace-format
 msgid ""
 "The image downloaded, but its signature did not ({error}).\n"

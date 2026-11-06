@@ -1419,12 +1419,13 @@ def build_parser():
     # Local only, like shell-integration.
     p_ep = sub.add_parser(
         "editor-plugins",
-        help="copy the Vim/Neovim plugin and the Emacs package that report the "
-             "editor's mode (works with the host stopped)",
+        help="copy the Vim/Neovim plugin, the Emacs package and the GDB script that "
+             "report the program's mode (works with the host stopped)",
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
-                    "site/pack folder, or <emacs dir>/polykybd (Emacs, plus a "
-                    "marked block in the init file, saved first). Copies made "
+                    "site/pack folder, <emacs dir>/polykybd (Emacs) or "
+                    "~/.config/gdb/polykybd (GDB); for Emacs and GDB also a "
+                    "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
     ep_install = ep_sub.add_parser(
@@ -1432,7 +1433,7 @@ def build_parser():
     ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
-        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs"),
+        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs", "gdb"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 

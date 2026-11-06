@@ -1,10 +1,12 @@
-"""editor_plugins: copying the Vim/Neovim plugin and the Emacs package.
+"""editor_plugins: copying the Vim/Neovim plugin, the Emacs package and the GDB script.
 
 Every test works in a temporary home with fake plugin sources, so nothing
 touches the real ~/.vim or init file. One test runs the real Vim when it is
 installed, to check the generated help tags against :helptags.
 """
+import contextlib
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -37,10 +39,13 @@ class Fixture(unittest.TestCase):
         self.emacs_src = self.tmp / "emacs-package"
         self.emacs_src.mkdir()
         (self.emacs_src / "polykybd.el").write_text(";; polykybd v1\n(provide 'polykybd)\n")
+        self.gdb_src = self.tmp / "gdb-plugin"
+        self.gdb_src.mkdir()
+        (self.gdb_src / "polykybd.py").write_text("# polykybd gdb v1\n")
 
     def kw(self, which=None):
         return dict(home=self.home, env={}, which=which or which_of(*ALL), system="Linux",
-                    vim_source=self.vim_src, emacs_source=self.emacs_src)
+                    vim_source=self.vim_src, emacs_source=self.emacs_src, gdb_source=self.gdb_src)
 
     def status(self, editor, which=None):
         return ep.status([editor], **self.kw(which))[0]
@@ -232,6 +237,131 @@ class TestEmacs(Fixture):
         block = ep.init_block('/a "b"/polykybd')
         self.assertIn('"/a \\"b\\"/polykybd"', block)
         self.assertEqual(ep._block_dir(block), '/a "b"/polykybd')
+
+
+class TestGdb(Fixture):
+
+    def kw(self, which=None):
+        return super().kw(which or which_of(*ALL, "gdb"))
+
+    @property
+    def gdbinit(self):
+        return self.home / ".gdbinit"
+
+    @property
+    def gdb_dir(self):
+        return self.home / ".config/gdb/polykybd"
+
+    def test_init_file_order(self):
+        xdg = self.tmp / "xdg"
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={}), self.gdbinit)
+        (self.home / ".config/gdb").mkdir(parents=True)
+        (self.home / ".config/gdb/gdbinit").write_text("")
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={}), self.home / ".config/gdb/gdbinit")
+        (xdg / "gdb").mkdir(parents=True)
+        (xdg / "gdb/gdbinit").write_text("")
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={"XDG_CONFIG_HOME": str(xdg)}),
+                         xdg / "gdb/gdbinit")
+        self.assertEqual(ep.gdb_plugin_dir(home=self.home, env={"XDG_CONFIG_HOME": str(xdg)}),
+                         xdg / "gdb/polykybd")
+
+    def test_not_present_without_gdb_and_without_an_init_file(self):
+        self.assertEqual(self.status(ep.GDB, which=which_of(*ALL)).state, ep.STATE_NOT_PRESENT)
+
+    def test_install_writes_the_copy_and_the_block_and_remove_undoes_both(self):
+        original = b"set history save on\n"
+        self.gdbinit.write_bytes(original)
+        [r] = ep.install([ep.GDB], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertEqual(r.backup.read_bytes(), original)
+        text = self.gdbinit.read_text()
+        self.assertTrue(text.startswith("set history save on\n" + ep.GDB_BEGIN_MARKER), text)
+        self.assertIn(f'_pk_file = "{(self.gdb_dir / "polykybd.py").as_posix()}"', text)
+        self.assertEqual((self.gdb_dir / "polykybd.py").read_text(), "# polykybd gdb v1\n")
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+        [r] = ep.remove([ep.GDB], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertEqual(self.gdbinit.read_bytes(), original)
+        self.assertFalse(self.gdb_dir.exists())
+
+    def test_a_script_sourced_by_hand_reads_manual(self):
+        self.gdbinit.write_text("source ~/tools/polykybd.py\n")
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_MANUAL)
+        self.gdbinit.write_text("# polykybd later\n")
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_NOT_INSTALLED)
+
+    def test_an_emacs_block_is_not_a_gdb_block(self):
+        self.gdbinit.write_text(ep.init_block("/x"))
+        self.assertNotEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+
+    def test_a_changed_script_reads_outdated_and_refresh_copies_it(self):
+        ep.install([ep.GDB], **self.kw())
+        (self.gdb_src / "polykybd.py").write_text("# polykybd gdb v2\n")
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_OUTDATED)
+        self.assertIn(ep.GDB, ep.refresh_installed(**self.kw()))
+        self.assertEqual((self.gdb_dir / "polykybd.py").read_text(), "# polykybd gdb v2\n")
+
+    def test_a_block_for_another_folder_reads_stale(self):
+        self.gdbinit.write_text(ep.gdb_init_block("/old/place"))
+        st = self.status(ep.GDB)
+        self.assertEqual(st.state, ep.STATE_STALE)
+        self.assertEqual(Path(st.detail), Path("/old/place"))
+
+    def test_a_path_with_a_quote_is_escaped_for_python(self):
+        block = ep.gdb_init_block('/a "b"/polykybd')
+        self.assertIn('_pk_file = "/a \\"b\\"/polykybd/polykybd.py"', block)
+        self.assertEqual(Path(ep._block_dir(block, ep.GDB)), Path('/a "b"/polykybd'))
+
+    @unittest.skipUnless(shutil.which("gdb"), "gdb is not installed")
+    def test_the_real_gdb_reads_the_block_and_runs_the_script(self):
+        ep.install([ep.GDB], **self.kw())
+        (self.gdb_dir / "polykybd.py").write_text("print('POLYKYBD-LOADED')\n")
+        out = subprocess.run(["gdb", "-batch", "-x", str(self.gdbinit)],
+                             capture_output=True, text=True, timeout=60,
+                             env={"HOME": str(self.home), "PATH": "/usr/bin:/bin"})
+        self.assertIn("POLYKYBD-LOADED", out.stdout + out.stderr)
+
+
+class TestGdbScript(unittest.TestCase):
+    """The shipped gdb-plugin/polykybd.py in a real GDB on a pseudo-terminal."""
+
+    @unittest.skipUnless(shutil.which("gdb") and hasattr(os, "fork"),
+                         "needs gdb and a pseudo-terminal")
+    def test_the_title_follows_the_prompt_and_the_running_program(self):
+        import pty
+        import re
+        import select
+        import time
+        script = ep.GDB_SOURCE / "polykybd.py"
+        pid, fd = pty.fork()
+        if pid == 0:
+            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", str(script), "/bin/true"])
+        out = b""
+
+        def read_for(seconds):
+            nonlocal out
+            end = time.time() + seconds
+            while time.time() < end:
+                ready, _, _ = select.select([fd], [], [], 0.1)
+                if ready:
+                    try:
+                        out += os.read(fd, 4096)
+                    except OSError:
+                        return
+
+        try:
+            for cmd in (b"run\n", b"quit\n"):
+                read_for(3)
+                os.write(fd, cmd)
+            read_for(3)
+        finally:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, 9)
+            os.waitpid(pid, 0)
+            os.close(fd)
+        titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
+        self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
+        self.assertIn(b"\x1b[22;2t", out)
 
 
 class TestHelpTags(unittest.TestCase):

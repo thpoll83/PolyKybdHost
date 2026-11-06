@@ -14,6 +14,7 @@ have their own sets in `../lazygit/` and `../tui_file_managers/`.
 | `less.yaml` | less (and man) | 590, `less -?` | `less_template.mods.png`, `.combo` |
 | `k9s.yaml` | k9s | v0.32.5, `internal/view/*.go` | `k9s_template.mods.png` |
 | `gdb.yaml` | GDB | 15.1, `gdb.texinfo` and `help <letter>` | `gdb_template.mods.png` |
+| `gdb_running.yaml` | GDB, program running | 15.1, `gdb.texinfo` node "Interrupting" | `gdb_running_template.mods.png` |
 
 Each spec's header names the exact files and functions, and what was left out.
 Each set covers the program's main view only: htop's and btop's process
@@ -77,9 +78,16 @@ program's set.
 The letter keys of the GDB set are the one-letter abbreviations of its prompt
 commands: b break, c continue, d delete, f frame, i info, j jump, k kill,
 l list, n next, p print, q quit, r run, s step, t thread, u until, x examine.
-They are typed at the `(gdb)` prompt, followed by Enter. GDB writes no title,
-so the host cannot tell the prompt from a running program, and the set stays
-the same in both states.
+They are typed at the `(gdb)` prompt, followed by Enter.
+
+GDB itself writes no title. With the PolyKybd GDB script
+([`gdb-plugin/`](../../../../gdb-plugin/README.md), installed from the tray's
+"Set up the terminal and editors…" dialog) the title is `gdb ⏸ <program>` at
+the prompt, which loads this set, and `gdb ▶ <program>` while the program
+runs, which loads `gdb_running.yaml`: Ctrl+C (interrupt) and the GDB mark
+only, because every other key goes to the program. The `gdb` route rejects
+`gdb ▶`, and a `▶` route requires `gdb ▶` at the command position. Without
+the script the plain command-name routes load this set in both states.
 
 The debugger keys use the IDE sets' icons: n is VS Code's step over and s its
 step into (whole 72×40 cells, drawn 1:1 as in the IDE sets), u is JetBrains'
