@@ -45,7 +45,8 @@ requires the command at the command position, optionally after `sudo`:
 Command names per route:
 
 - Helix: `hx` and `helix` (Arch and Fedora install it as `helix`).
-- less: `less` and `man`. man shows its page through less.
+- less: `less` and `man`. man shows its page through less by default. With
+  another pager in `MANPAGER`, `PAGER` or `-P`, the less keycaps are wrong.
 - GDB: `gdb`, `gdb-multiarch`, `gdbtui`, `arm-none-eabi-gdb`,
   `aarch64-linux-gnu-gdb`, `riscv64-unknown-elf-gdb`.
 
@@ -67,6 +68,9 @@ cmd.exe, Konsole, iTerm2, Nushell and xonsh).
 
 The Vim and Neovim titles load the Normal-mode Vim set. With the plugin
 (`vim-plugin/`) installed, its mode report takes priority over the title.
+Without it, the earliest key word in the title selects the route, so a file
+named after one of these programs (`htop notes (~/src) - VIM`) loads that
+program's set.
 
 ### GDB letter keys
 
