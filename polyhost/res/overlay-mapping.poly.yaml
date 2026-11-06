@@ -1586,6 +1586,18 @@ windowsterminal,wt:
     "(copilot)": *copilot_cli
     "(copilot": *copilot_cli
     "^copilot": *copilot_cli
+    # Grok Build (xAI's `grok`): its title joins the parts it shows with
+    # " - " and always ends with the word grok: "grok" when idle, "<session>
+    # - grok", "⠋ - Thinking - <session> - grok", "⚠ Action Required - ... -
+    # grok" (notifications/title.rs in its source). The command-position
+    # regex covers all of them, because grok follows the " - " separator at
+    # the end. The unofficial superagent-ai grok-cli uses the same command.
+    grok: &grok_cli
+      title: '^grok(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)grok(?:$|\s|\))'
+      overlay: grok_build_template.mods.png
+    "(grok)": *grok_cli
+    "(grok": *grok_cli
+    "^grok": *grok_cli
     # Aider sets no title: only the shell's (the scripts in res/shell/).
     # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
     # branch repeats the title regex (`*<cli>_title`); without it any title

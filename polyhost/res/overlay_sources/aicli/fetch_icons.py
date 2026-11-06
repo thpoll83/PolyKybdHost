@@ -17,7 +17,8 @@ byte, so each glyph is stored once in the icon library. Program marks:
 * OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
   "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
   hatched.
-* Aider -- a drawn letter frame (`../rect_mark.py`).
+* Aider, Grok Build -- drawn letter frames (`../rect_mark.py`). Grok has no
+  CC0 mark: Simple Icons has none, and xAI's symbol is not freely licensed.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/aicli/fetch_icons.py
@@ -76,7 +77,7 @@ FLUENT = {
 
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
 BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen"}
-LETTERS = {"aider.png": "Ai"}
+LETTERS = {"aider.png": "Ai", "grok.png": "Gr"}
 
 BORROWED = {
     **{name: "aichat" for name in (
@@ -85,7 +86,11 @@ BORROWED = {
         "expand.png", "fastmode.png", "find.png", "model.png", "next.png",
         "permission.png", "prev.png", "reload.png", "rename.png", "search.png",
         "send.png", "shortcuts.png", "sidechat.png", "terminal.png",
-        "viewmode.png")},
+        "viewmode.png", "newchat.png", "settings.png")},
+    # Grok Build's panes and modals use the icons other sets already draw.
+    **{name: "vscode" for name in ("extensions.png",)},
+    **{name: "dbeaver" for name in ("dashboard.png",)},
+    **{name: "tui_file_managers" for name in ("tasks.png",)},
     **{name: "nano" for name in (
         "complete.png", "exit.png", "file_end.png", "file_start.png",
         "mouse.png", "page_down.png", "page_up.png", "scroll_down.png",

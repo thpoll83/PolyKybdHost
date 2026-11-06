@@ -93,6 +93,18 @@ TITLES = {
         "copilot",
         "copilot --resume",
     ],
+    # Grok Build's title (notifications/title.rs): parts joined with " - ",
+    # always ending with "grok".
+    "grok_build_template": [
+        "grok",
+        "Fix the parser - grok",
+        "\u280b - Thinking - Fix the parser - grok",
+        "\u2834 - Running: cargo build - grok",
+        "\u26a0 Action Required - \u2827 - Waiting - grok",
+        "grok --resume",
+        "Default (grok)",
+        "~/src> grok",
+    ],
     "aider_template": [
         "aider",
         "aider --model sonnet main.py",
@@ -123,6 +135,10 @@ OTHER_TITLES = [
     "OpenCode notes",
     "user@host: ~/OpenCode",
     "GitHub Copilot docs",
+    "grok-notes - vim",                      # a word that starts with grok
+    "user@host: ~/grok",
+    "vim grok.md",
+    "Fix grok parser",
     "bash",
 ]
 

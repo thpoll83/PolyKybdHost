@@ -10,6 +10,7 @@ Seven overlay sets for AI coding agents that run in a terminal:
 | `gemini_cli_template` | `gemini_cli.yaml` | Google Gemini CLI | `gemini` |
 | `qwen_code_template` | `qwen_code.yaml` | Qwen Code | `qwen` |
 | `copilot_cli_template` | `copilot_cli.yaml` | GitHub Copilot CLI | `copilot` |
+| `grok_build_template` | `grok_build.yaml` | Grok Build (xAI) | `grok` |
 | `aider_template` | `aider.yaml` | Aider | `aider` |
 
 The desktop apps and web pages of Claude, Codex and Copilot have their own
@@ -46,6 +47,7 @@ from an install:
 | Gemini CLI | 0.67.0 | `◇  Ready (<dir>)`, `✦  <status> (<dir>)`, `✋  Action Required (<dir>)`, `⏲  Working… (<dir>)`, two spaces after the glyph, padded to 80 characters; with `ui.dynamicWindowTitle: false`, `Gemini CLI (<dir>)` | `ui.hideWindowTitle` | `computeTerminalTitle()`, `packages/cli/src/utils/windowTitle.ts` (bundle `interactiveCli-*.js`) |
 | Qwen Code | 0.26.7 | `Qwen - <dir>` or a session name, with `✳` + U+FE0E + space while waiting for confirmation and `◐` + U+FE0E + space while responding; padded to 80 characters | `CLI_TITLE` replaces it | `computeWindowTitle()`, `titleStatusPrefix()` in `chunks/chunk-6TO5PHBA.js`; `ICON` in `chunks/chunk-XS5MZ6RT.js` |
 | GitHub Copilot CLI | 0.0.399 | `GitHub Copilot`, then `🤖 <topic>` (`Copilot: <topic>` in screen-reader mode), OSC 2 only | `update_terminal_title: false` | `index.js` of 0.0.399, the last JS release; 1.0.105 ships a compressed binary that was not read |
+| Grok Build | 1.0.77 | the parts it shows joined with ` - `, always ending with `grok`: `grok` idle, `<session> - grok`, `<spinner> - Thinking - <session> - grok`, `⚠ Action Required - ...` (blinks while the terminal is unfocused); measured `grok` at the sign-in screen in a pty | `[ui.notifications.title] enabled = false` | `crates/codegen/xai-grok-pager/src/notifications/title.rs` (`write_item()`, `push_separator()`) in xai-org/grok-build at SOURCE_REV 559751fd |
 | Aider | 0.86.2 | none | | no OSC 0/2 and no `set_title` in `aider/` |
 
 What the routes therefore cannot see:
@@ -130,6 +132,7 @@ rules:
 | Gemini CLI | `defaultKeyBindingConfig`, `packages/cli/src/ui/key/keyBindings.ts` (bundle `chunk-5RNHNFYV.js`). |
 | Qwen Code | its own `defaultKeyBindings` (`chunks/chunk-MSIOYFPM.js`). It differs from Gemini's: Ctrl+X external editor, Ctrl+Y retry, Ctrl+Q queue, no Ctrl+Z. |
 | Copilot CLI | the Ink `useInput` handlers and the `/help` shortcut lists in `index.js` (0.0.399). Ctrl+D is left out: `/help` says "shutdown", but the only handler found queues the message. |
+| Grok Build | the user guide in its source, `crates/codegen/xai-grok-pager/docs/user-guide/03-keyboard-shortcuts.md` ("Bindings are built in and cannot currently be remapped"). Default simple input mode, outside the VS Code family of terminals. |
 | Aider | `InputOutput.get_input()` key bindings in `aider/io.py`, Ctrl+C in `aider/coders/base_coder.py`; Ctrl+R and Ctrl+L are prompt_toolkit defaults cited from aider's docs. |
 
 None of the sets was checked on a keyboard yet.
@@ -160,5 +163,10 @@ drawn in pixels from the logo rows in OpenCode's bundled JS
 (`opencode_mark()` in `fetch_icons.py`). The TUI draws "open" in grey and
 "code" in white, each with a darker shade inside the letters. On the 1-bit
 keycap "open" is a checkerboard with its shade left dark, and "code" is solid
-with its shade as a diagonal hatch. `aider.png` (`Ai`) is a drawn letter frame from
-[`../rect_mark.py`](../rect_mark.py).
+with its shade as a diagonal hatch. `aider.png` (`Ai`) and `grok.png` (`Gr`) are drawn letter frames from
+[`../rect_mark.py`](../rect_mark.py). Simple Icons has no Grok or xAI mark
+(`x` is the X social network), and xAI's own symbol is not freely licensed.
+`newchat.png` and `settings.png` come from `../aichat/icons`,
+`extensions.png` from `../vscode/icons`, `dashboard.png` from
+`../dbeaver/icons` and `tasks.png` from `../tui_file_managers/icons`, byte for
+byte.
