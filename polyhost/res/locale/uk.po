@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-05 13:38+0000\n"
+"POT-Creation-Date: 2026-11-06 05:54+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -537,201 +537,201 @@ msgstr "Не вдалося зупинити: {error}"
 msgid "<b>Failed:</b> {reason}"
 msgstr "<b>Помилка:</b> {reason}"
 
-#: polyhost/gui/cmd_menu.py:130 polyhost/gui/settings_dialog.py:51
+#: polyhost/gui/cmd_menu.py:133 polyhost/gui/settings_dialog.py:51
 msgid "Brightness"
 msgstr "Яскравість"
 
-#: polyhost/gui/cmd_menu.py:131
+#: polyhost/gui/cmd_menu.py:134
 msgid "Off"
 msgstr "Вимк."
 
-#: polyhost/gui/cmd_menu.py:141 polyhost/gui/cmd_menu.py:165
+#: polyhost/gui/cmd_menu.py:144 polyhost/gui/cmd_menu.py:168
 msgid "Back to automatic"
 msgstr "Повернути автоматичну"
 
-#: polyhost/gui/cmd_menu.py:162
+#: polyhost/gui/cmd_menu.py:165
 msgid "Re-apply the host's automatic brightness."
 msgstr "Знову застосувати автоматичну яскравість хоста."
 
-#: polyhost/gui/cmd_menu.py:166
+#: polyhost/gui/cmd_menu.py:169
 msgid "Re-engage automatic (daylight) brightness — the manual preset above is dropped."
 msgstr "Знову ввімкнути автоматичну (денну) яскравість — вибраний вище ручний пресет скасовується."
 
-#: polyhost/gui/cmd_menu.py:169
+#: polyhost/gui/cmd_menu.py:172
 msgid "Clear manual override"
 msgstr "Скасувати ручне налаштування"
 
-#: polyhost/gui/cmd_menu.py:170
+#: polyhost/gui/cmd_menu.py:173
 msgid "Daylight-dependent brightness is off in Settings, so this only returns the keyboard to its own stored brightness."
 msgstr "Яскравість залежно від денного світла вимкнено в параметрах, тому це лише повертає клавіатурі її власну збережену яскравість."
 
-#: polyhost/gui/cmd_menu.py:185
+#: polyhost/gui/cmd_menu.py:188
 msgid "Maintenance"
 msgstr "Обслуговування"
 
-#: polyhost/gui/cmd_menu.py:188 polyhost/gui/cmd_menu.py:322
-#: polyhost/gui/cmd_menu.py:354
+#: polyhost/gui/cmd_menu.py:191 polyhost/gui/cmd_menu.py:340
+#: polyhost/gui/cmd_menu.py:372
 msgid "Fix Left/Right Side"
 msgstr "Виправити ліву/праву сторону"
 
-#: polyhost/gui/cmd_menu.py:190
+#: polyhost/gui/cmd_menu.py:193
 msgid "Connected half is LEFT (other is RIGHT)"
 msgstr "Під’єднана половина — ЛІВА (інша — ПРАВА)"
 
-#: polyhost/gui/cmd_menu.py:193
+#: polyhost/gui/cmd_menu.py:196
 msgid "Connected half is RIGHT (other is LEFT)"
 msgstr "Під’єднана половина — ПРАВА (інша — ЛІВА)"
 
-#: polyhost/gui/cmd_menu.py:197
+#: polyhost/gui/cmd_menu.py:200
 msgid "Mark connected half as a Rev.2 board (2023)…"
 msgstr "Позначити під’єднану половину як плату Rev.2 (2023)…"
 
-#: polyhost/gui/cmd_menu.py:199
+#: polyhost/gui/cmd_menu.py:202
 msgid "Remove the Rev.2 mark from the connected half…"
 msgstr "Зняти позначку Rev.2 з під’єднаної половини…"
 
-#: polyhost/gui/cmd_menu.py:206
+#: polyhost/gui/cmd_menu.py:209
 msgid "Reset overlays"
 msgstr "Скинути накладки"
 
-#: polyhost/gui/cmd_menu.py:208
+#: polyhost/gui/cmd_menu.py:211
 msgid "Reset keymap to default…"
 msgstr "Скинути карту клавіш до стандартної…"
 
-#: polyhost/gui/cmd_menu.py:214
+#: polyhost/gui/cmd_menu.py:217
 msgid "Flash firmware file (.bin)…"
 msgstr "Прошити файл мікропрограми (.bin)…"
 
-#: polyhost/gui/cmd_menu.py:217
+#: polyhost/gui/cmd_menu.py:220
 msgid "Activate bootloader…"
 msgstr "Активувати завантажувач…"
 
-#: polyhost/gui/cmd_menu.py:223
+#: polyhost/gui/cmd_menu.py:240
 msgid "Overlays"
 msgstr "Накладки"
 
-#: polyhost/gui/cmd_menu.py:224
+#: polyhost/gui/cmd_menu.py:241
 msgid "Enable shortcut overlays"
 msgstr "Увімкнути накладки скорочень"
 
-#: polyhost/gui/cmd_menu.py:226
+#: polyhost/gui/cmd_menu.py:243
 msgid "Disable shortcut overlays"
 msgstr "Вимкнути накладки скорочень"
 
-#: polyhost/gui/cmd_menu.py:229
+#: polyhost/gui/cmd_menu.py:246
 msgid "Reset overlay buffers"
 msgstr "Скинути буфери накладок"
 
-#: polyhost/gui/cmd_menu.py:231
+#: polyhost/gui/cmd_menu.py:248
 msgid "Reset overlay mapping"
 msgstr "Скинути призначення накладок"
 
-#: polyhost/gui/cmd_menu.py:233
+#: polyhost/gui/cmd_menu.py:250
 msgid "Clear overlay usage"
 msgstr "Очистити статистику використання накладок"
 
-#: polyhost/gui/cmd_menu.py:235
+#: polyhost/gui/cmd_menu.py:252
 msgid "Set all overlay mapping"
 msgstr "Призначити всі накладки"
 
-#: polyhost/gui/cmd_menu.py:239
+#: polyhost/gui/cmd_menu.py:256
 msgid "Idle"
 msgstr "Простій"
 
-#: polyhost/gui/cmd_menu.py:240
+#: polyhost/gui/cmd_menu.py:257
 msgid "Start idle now"
 msgstr "Увімкнути простій зараз"
 
-#: polyhost/gui/cmd_menu.py:242
+#: polyhost/gui/cmd_menu.py:259
 msgid "Stop idle"
 msgstr "Зупинити простій"
 
-#: polyhost/gui/cmd_menu.py:246 polyhost/gui/cmd_menu.py:476
-#: polyhost/gui/cmd_menu.py:481 polyhost/gui/cmd_menu.py:489
-#: polyhost/gui/cmd_menu.py:493
+#: polyhost/gui/cmd_menu.py:263 polyhost/gui/cmd_menu.py:494
+#: polyhost/gui/cmd_menu.py:499 polyhost/gui/cmd_menu.py:507
+#: polyhost/gui/cmd_menu.py:511
 msgid "Keymap"
 msgstr "Карта клавіш"
 
-#: polyhost/gui/cmd_menu.py:247
+#: polyhost/gui/cmd_menu.py:264
 msgid "Layer count"
 msgstr "Кількість шарів"
 
-#: polyhost/gui/cmd_menu.py:249
+#: polyhost/gui/cmd_menu.py:266
 msgid "Default layer"
 msgstr "Стандартний шар"
 
-#: polyhost/gui/cmd_menu.py:251
+#: polyhost/gui/cmd_menu.py:268
 msgid "Dump keymap buffer to the log"
 msgstr "Записати буфер карти клавіш у журнал"
 
-#: polyhost/gui/cmd_menu.py:255 polyhost/gui/cmd_menu.py:500
-#: polyhost/gui/cmd_menu.py:503 polyhost/gui/cmd_menu.py:514
+#: polyhost/gui/cmd_menu.py:272 polyhost/gui/cmd_menu.py:518
+#: polyhost/gui/cmd_menu.py:521 polyhost/gui/cmd_menu.py:532
 msgid "Font Pack"
 msgstr "Пакет шрифтів"
 
-#: polyhost/gui/cmd_menu.py:256
+#: polyhost/gui/cmd_menu.py:273
 msgid "Per-bundle status…"
 msgstr "Стан кожного набору…"
 
-#: polyhost/gui/cmd_menu.py:258
+#: polyhost/gui/cmd_menu.py:275
 msgid "Sync (flash missing/updated bundles)"
 msgstr "Синхронізувати (прошити відсутні/оновлені набори)"
 
-#: polyhost/gui/cmd_menu.py:260
+#: polyhost/gui/cmd_menu.py:277
 msgid "Re-flash ALL bundles (force)…"
 msgstr "Перепрошити ВСІ набори (примусово)…"
 
-#: polyhost/gui/cmd_menu.py:262
+#: polyhost/gui/cmd_menu.py:279
 msgid "Wipe (empty all bundles)"
 msgstr "Стерти (спорожнити всі набори)"
 
-#: polyhost/gui/cmd_menu.py:268
+#: polyhost/gui/cmd_menu.py:285
 msgid "Firmware"
 msgstr "Мікропрограма"
 
-#: polyhost/gui/cmd_menu.py:269
+#: polyhost/gui/cmd_menu.py:286
 msgid "Flash only (.bin, stage)…"
 msgstr "Лише прошити (.bin, підготувати)…"
 
-#: polyhost/gui/cmd_menu.py:272
+#: polyhost/gui/cmd_menu.py:289
 msgid "Apply staged firmware…"
 msgstr "Застосувати підготовлену мікропрограму…"
 
-#: polyhost/gui/cmd_menu.py:277
+#: polyhost/gui/cmd_menu.py:294
 msgid "Boot-loop test…"
 msgstr "Тест циклу перезавантажень…"
 
-#: polyhost/gui/cmd_menu.py:283
+#: polyhost/gui/cmd_menu.py:300
 msgid "Run command file (.poly.cmd)…"
 msgstr "Виконати файл команд (.poly.cmd)…"
 
-#: polyhost/gui/cmd_menu.py:309
+#: polyhost/gui/cmd_menu.py:327
 msgid "<b>Set the half the USB cable is plugged into as the LEFT side?</b><br><br>The other half becomes the RIGHT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>LEFT</b> side, then continue."
 msgstr "<b>Зробити половину, до якої під’єднано USB-кабель, ЛІВОЮ стороною?</b><br><br>Інша половина стане ПРАВОЮ стороною. Обидві половини збережуть нову орієнтацію й перезавантажаться з нею (близько 10 с, повторно під’єднувати не потрібно).<br><br>Переконайтеся, що USB-кабель під’єднано до половини, яка має стати <b>ЛІВОЮ</b> стороною, і продовжте."
 
-#: polyhost/gui/cmd_menu.py:316
+#: polyhost/gui/cmd_menu.py:334
 msgid "<b>Set the half the USB cable is plugged into as the RIGHT side?</b><br><br>The other half becomes the LEFT side. Both halves save the new handedness and reboot onto it (about 10 s, no replug needed).<br><br>Make sure the USB cable is plugged into the half you want to be the <b>RIGHT</b> side, then continue."
 msgstr "<b>Зробити половину, до якої під’єднано USB-кабель, ПРАВОЮ стороною?</b><br><br>Інша половина стане ЛІВОЮ стороною. Обидві половини збережуть нову орієнтацію й перезавантажаться з нею (близько 10 с, повторно під’єднувати не потрібно).<br><br>Переконайтеся, що USB-кабель під’єднано до половини, яка має стати <b>ПРАВОЮ</b> стороною, і продовжте."
 
-#: polyhost/gui/cmd_menu.py:341
+#: polyhost/gui/cmd_menu.py:359
 msgid "<b>Mark the half the USB cable is plugged into as a Rev.2 board?</b><br><br>Rev.2 boards (left \"Rev 2 04/2023\", right \"Rev.2 03/2023\") pass USB power over the split cable, so both halves start as the main half and do not connect. With the mark, the half connected to the computer becomes the main half.<br><br>Plug in only this half, without the split cable, and mark each half on its own. The half saves the mark and its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>Позначити половину, до якої під’єднано USB-кабель, як плату Rev.2?</b><br><br>Плати Rev.2 (ліва \"Rev 2 04/2023\", права \"Rev.2 03/2023\") передають живлення USB сполучним кабелем, тому обидві половини запускаються як основна й не з’єднуються. З позначкою основною стає половина, під’єднана до комп’ютера.<br><br>Під’єднайте лише цю половину, без сполучного кабелю, і позначте кожну половину окремо. Половина збереже позначку й свою сторону, а потім перезавантажиться.<br><br>Яка це сторона?"
 
-#: polyhost/gui/cmd_menu.py:351
+#: polyhost/gui/cmd_menu.py:369
 msgid "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b><br><br>The half saves its side, then restarts.<br><br>Which side is this half?"
 msgstr "<b>Зняти позначку Rev.2 з половини, до якої під’єднано USB-кабель?</b><br><br>Половина збереже свою сторону, а потім перезавантажиться.<br><br>Яка це сторона?"
 
-#: polyhost/gui/cmd_menu.py:355
+#: polyhost/gui/cmd_menu.py:373
 #: polyhost/gui/layout_dialog/keycode_composer.py:89
 msgid "Left"
 msgstr "Лівий"
 
-#: polyhost/gui/cmd_menu.py:356
+#: polyhost/gui/cmd_menu.py:374
 #: polyhost/gui/layout_dialog/keycode_composer.py:90
 msgid "Right"
 msgstr "Правий"
 
-#: polyhost/gui/cmd_menu.py:357 polyhost/gui/fontpack_extend_dialog.py:241
+#: polyhost/gui/cmd_menu.py:375 polyhost/gui/fontpack_extend_dialog.py:241
 #: polyhost/gui/fontpack_extend_dialog.py:814
 #: polyhost/gui/hid_fw_up_dialog.py:207
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:92
@@ -739,123 +739,123 @@ msgstr "Правий"
 msgid "Cancel"
 msgstr "Скасувати"
 
-#: polyhost/gui/cmd_menu.py:382
+#: polyhost/gui/cmd_menu.py:400
 msgid "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>Every key you remapped goes back to the layout the firmware ships with. This cannot be undone.<br><br><b>All your macros are deleted too.</b><br><br>Continue?"
 msgstr "<b>Скинути карту клавіш клавіатури до стандартної з мікропрограми?</b><br><br>Усі перепризначені клавіші повернуться до розкладки, з якою постачається мікропрограма. Цю дію не можна скасувати.<br><br><b>Усі макроси також буде видалено.</b><br><br>Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:388
+#: polyhost/gui/cmd_menu.py:406
 msgid "Reset Keymap"
 msgstr "Скинути карту клавіш"
 
-#: polyhost/gui/cmd_menu.py:442
+#: polyhost/gui/cmd_menu.py:460
 msgid "Re-flash Font Pack"
 msgstr "Перепрошити пакет шрифтів"
 
-#: polyhost/gui/cmd_menu.py:443
+#: polyhost/gui/cmd_menu.py:461
 msgid "<b>Re-flash every font-pack bundle?</b><br><br>Every shipped bundle is sent again even if the keyboard already reports it as up to date — use this when a glyph renders wrong or a previous flash was reported as failed. Takes about a minute; typing keeps working throughout.<br><br>Continue?"
 msgstr "<b>Перепрошити всі набори пакета шрифтів?</b><br><br>Кожен набір із комплекту буде надіслано знову, навіть якщо клавіатура повідомляє, що він актуальний, — скористайтеся цим, коли гліф відображається неправильно або попереднє прошивання завершилося помилкою. Триває близько хвилини; друкувати можна весь цей час.<br><br>Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:459
+#: polyhost/gui/cmd_menu.py:477
 msgid "<b>Wipe the external-flash font pack?</b><br><br>Every font-pack bundle slot is emptied — the keyboard renders only its built-in (resident) fonts until the pack is flashed again. The bundles shipped with this host are re-flashed automatically on the next connect (or via Font Pack → Sync).<br><br>Continue?"
 msgstr "<b>Стерти пакет шрифтів у зовнішній флеш-пам’яті?</b><br><br>Усі слоти наборів пакета шрифтів буде спорожнено — клавіатура відображатиме лише вбудовані (резидентні) шрифти, доки пакет не буде прошито знову. Набори, що постачаються з цим хостом, буде автоматично перепрошито під час наступного під’єднання (або через «Пакет шрифтів → Синхронізувати»).<br><br>Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:466
+#: polyhost/gui/cmd_menu.py:484
 msgid "Wipe Font Pack"
 msgstr "Стерти пакет шрифтів"
 
-#: polyhost/gui/cmd_menu.py:476
+#: polyhost/gui/cmd_menu.py:494
 #, python-brace-format
 msgid "Layers: {count}"
 msgstr "Шарів: {count}"
 
-#: polyhost/gui/cmd_menu.py:477
+#: polyhost/gui/cmd_menu.py:495
 #, python-brace-format
 msgid "Could not read the layer count: {error}"
 msgstr "Не вдалося прочитати кількість шарів: {error}"
 
-#: polyhost/gui/cmd_menu.py:481
+#: polyhost/gui/cmd_menu.py:499
 #, python-brace-format
 msgid "Default layer: {layer}"
 msgstr "Стандартний шар: {layer}"
 
-#: polyhost/gui/cmd_menu.py:482
+#: polyhost/gui/cmd_menu.py:500
 #, python-brace-format
 msgid "Could not read the default layer: {error}"
 msgstr "Не вдалося прочитати стандартний шар: {error}"
 
-#: polyhost/gui/cmd_menu.py:489
+#: polyhost/gui/cmd_menu.py:507
 #, python-brace-format
 msgid "Could not read the keymap buffer: {error}"
 msgstr "Не вдалося прочитати буфер карти клавіш: {error}"
 
-#: polyhost/gui/cmd_menu.py:493
+#: polyhost/gui/cmd_menu.py:511
 #, python-brace-format
 msgid "Keymap buffer ({size} bytes) written to the log."
 msgstr "Буфер карти клавіш ({size} байтів) записано в журнал."
 
-#: polyhost/gui/cmd_menu.py:500
+#: polyhost/gui/cmd_menu.py:518
 #, python-brace-format
 msgid "Could not read the font-pack status: {error}"
 msgstr "Не вдалося прочитати стан пакета шрифтів: {error}"
 
-#: polyhost/gui/cmd_menu.py:503
+#: polyhost/gui/cmd_menu.py:521
 msgid "This host ships no font-pack bundles."
 msgstr "Цей хост не постачає наборів пакета шрифтів."
 
 #. TRANSLATORS: font-pack bundle state in a status table
-#: polyhost/gui/cmd_menu.py:512
+#: polyhost/gui/cmd_menu.py:530
 msgid "stale"
 msgstr "застарілий"
 
 #. TRANSLATORS: CRC check result in the bundle header ("crc ok")
 #. TRANSLATORS: CRC check result ("crc ok")
-#: polyhost/gui/cmd_menu.py:512 polyhost/gui/fontpack_inspector_dialog.py:200
+#: polyhost/gui/cmd_menu.py:530 polyhost/gui/fontpack_inspector_dialog.py:200
 #: polyhost/gui/fontpack_inspector_dialog.py:784
 msgid "ok"
 msgstr "ok"
 
-#: polyhost/gui/cmd_menu.py:515
+#: polyhost/gui/cmd_menu.py:533
 msgid "bundle"
 msgstr "набір"
 
-#: polyhost/gui/cmd_menu.py:516
+#: polyhost/gui/cmd_menu.py:534
 msgid "device"
 msgstr "пристрій"
 
-#: polyhost/gui/cmd_menu.py:517
+#: polyhost/gui/cmd_menu.py:535
 msgid "shipped"
 msgstr "у комплекті"
 
-#: polyhost/gui/cmd_menu.py:523
+#: polyhost/gui/cmd_menu.py:541
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Команди PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:523 polyhost/host.py:2380
+#: polyhost/gui/cmd_menu.py:541 polyhost/host.py:2386
 msgid "Open file"
 msgstr "Відкрити файл"
 
-#: polyhost/gui/cmd_menu.py:553 polyhost/gui/cmd_menu.py:678
+#: polyhost/gui/cmd_menu.py:571 polyhost/gui/cmd_menu.py:696
 #: polyhost/gui/layout_dialog/kb_layout_dialog.py:218
 msgid "Not Connected"
 msgstr "Не під’єднано"
 
-#: polyhost/gui/cmd_menu.py:554 polyhost/gui/cmd_menu.py:679
+#: polyhost/gui/cmd_menu.py:572 polyhost/gui/cmd_menu.py:697
 msgid "PolyKybd is not connected. Please connect the keyboard and try again."
 msgstr "PolyKybd не під’єднано. Під’єднайте клавіатуру та спробуйте ще раз."
 
-#: polyhost/gui/cmd_menu.py:557
+#: polyhost/gui/cmd_menu.py:575
 msgid "Select Firmware Binary"
 msgstr "Виберіть двійковий файл мікропрограми"
 
-#: polyhost/gui/cmd_menu.py:557
+#: polyhost/gui/cmd_menu.py:575
 msgid "Firmware binary (*.bin)"
 msgstr "Двійковий файл мікропрограми (*.bin)"
 
-#: polyhost/gui/cmd_menu.py:568
+#: polyhost/gui/cmd_menu.py:586
 msgid "File Error"
 msgstr "Помилка файлу"
 
-#: polyhost/gui/cmd_menu.py:569
+#: polyhost/gui/cmd_menu.py:587
 #, python-brace-format
 msgid ""
 "Could not read firmware file:\n"
@@ -864,65 +864,65 @@ msgstr ""
 "Не вдалося прочитати файл мікропрограми:\n"
 "{error}"
 
-#: polyhost/gui/cmd_menu.py:574
+#: polyhost/gui/cmd_menu.py:592
 msgid "Invalid Firmware File"
 msgstr "Недійсний файл мікропрограми"
 
-#: polyhost/gui/cmd_menu.py:579
+#: polyhost/gui/cmd_menu.py:597
 msgid "Wrong Keyboard"
 msgstr "Не та клавіатура"
 
-#: polyhost/gui/cmd_menu.py:589
+#: polyhost/gui/cmd_menu.py:607
 msgid "Unsigned Firmware"
 msgstr "Непідписана мікропрограма"
 
-#: polyhost/gui/cmd_menu.py:595
+#: polyhost/gui/cmd_menu.py:613
 msgid "Flash + Apply Firmware"
 msgstr "Прошити й застосувати мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:597
+#: polyhost/gui/cmd_menu.py:615
 msgid "This will transfer the new firmware to the keyboard, verify it (CRC32), then <b>activate it</b> — both halves reboot onto the new firmware automatically (no replug needed)."
 msgstr "Нову мікропрограму буде передано на клавіатуру, перевірено (CRC32), а потім <b>активовано</b> — обидві половини автоматично перезавантажаться з новою мікропрограмою (повторно під’єднувати не потрібно)."
 
-#: polyhost/gui/cmd_menu.py:602
+#: polyhost/gui/cmd_menu.py:620
 msgid "Flash Firmware"
 msgstr "Прошити мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:604
+#: polyhost/gui/cmd_menu.py:622
 msgid "This will transfer and stage the new firmware on the keyboard, then verify it (CRC32). The image is stored but <b>not activated yet</b> — the keyboard keeps running its current firmware until you apply it separately."
 msgstr "Нову мікропрограму буде передано й підготовлено на клавіатурі, а потім перевірено (CRC32). Образ зберігається, але <b>ще не активується</b> — клавіатура працюватиме з поточною мікропрограмою, доки ви окремо не застосуєте новий образ."
 
-#: polyhost/gui/cmd_menu.py:622
+#: polyhost/gui/cmd_menu.py:640
 #, python-brace-format
 msgid "Current keyboard firmware: <b>{version}</b> ({size_kb} KB)"
 msgstr "Поточна мікропрограма клавіатури: <b>{version}</b> ({size_kb} KB)"
 
-#: polyhost/gui/cmd_menu.py:625
+#: polyhost/gui/cmd_menu.py:643
 msgid "Could not query current firmware version."
 msgstr "Не вдалося запитати версію поточної мікропрограми."
 
-#: polyhost/gui/cmd_menu.py:626
+#: polyhost/gui/cmd_menu.py:644
 #, python-brace-format
 msgid "Selected file:<br>{path}"
 msgstr "Вибраний файл:<br>{path}"
 
-#: polyhost/gui/cmd_menu.py:627
+#: polyhost/gui/cmd_menu.py:645
 msgid "Continue?"
 msgstr "Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:656
+#: polyhost/gui/cmd_menu.py:674
 msgid "<b>Apply the staged firmware?</b><br><br>Both keyboard halves will install the previously-staged image and reboot onto the new firmware automatically (no replug needed).<br><br>If this firmware was not built with in-app apply enabled, the keyboard safely reports apply unavailable and leaves the staged image untouched.<br><br>Continue?"
 msgstr "<b>Застосувати підготовлену мікропрограму?</b><br><br>Обидві половини клавіатури інсталюють раніше підготовлений образ і автоматично перезавантажаться з новою мікропрограмою (повторно під’єднувати не потрібно).<br><br>Якщо цю мікропрограму зібрано без підтримки застосування з програми, клавіатура безпечно повідомить, що застосування недоступне, і залишить підготовлений образ без змін.<br><br>Продовжити?"
 
-#: polyhost/gui/cmd_menu.py:665
+#: polyhost/gui/cmd_menu.py:683
 msgid "Apply Staged Firmware"
 msgstr "Застосувати підготовлену мікропрограму"
 
-#: polyhost/gui/cmd_menu.py:690
+#: polyhost/gui/cmd_menu.py:708
 msgid "Firmware Applied"
 msgstr "Мікропрограму застосовано"
 
-#: polyhost/gui/cmd_menu.py:692
+#: polyhost/gui/cmd_menu.py:710
 msgid "Apply Failed"
 msgstr "Не вдалося застосувати"
 
@@ -1724,8 +1724,8 @@ msgstr "Прошивання почалося — стежте за значко
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Відкинути всі незбережені зміни в '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2974
-#: polyhost/host.py:3015 polyhost/host.py:3042
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:2980
+#: polyhost/host.py:3021 polyhost/host.py:3048
 msgid "Firmware Update"
 msgstr "Оновлення мікропрограми"
 
@@ -1890,7 +1890,7 @@ msgstr "немає даних для попереднього перегляду
 msgid "the shipped language table is missing"
 msgstr "таблиця мов із комплекту відсутня"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2990
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:2996
 msgid "unknown"
 msgstr "невідомо"
 
@@ -2571,7 +2571,7 @@ msgstr "Немає збігів"
 msgid "{index} of {total}"
 msgstr "{index} з {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2015
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2021
 msgid "Mock keyboard"
 msgstr "Імітована клавіатура"
 
@@ -3586,11 +3586,11 @@ msgstr "Пакет рушія клавіатури актуальний."
 msgid "Engine pack update failed: {error}"
 msgstr "Помилка оновлення пакета рушія: {error}"
 
-#: polyhost/host.py:500 polyhost/host.py:1569
+#: polyhost/host.py:500 polyhost/host.py:1575
 msgid "Waiting for PolyKybd..."
 msgstr "Очікування PolyKybd..."
 
-#: polyhost/host.py:501 polyhost/host.py:1416
+#: polyhost/host.py:501 polyhost/host.py:1422
 msgid "Press to pause connection"
 msgstr "Натисніть, щоб призупинити з’єднання"
 
@@ -3636,7 +3636,7 @@ msgstr "Переглянути пакети шрифтів..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:248 polyhost/forwarder.py:388 polyhost/host.py:584
-#: polyhost/host.py:1418
+#: polyhost/host.py:1424
 msgid "Pause"
 msgstr "Призупинити"
 
@@ -3736,11 +3736,15 @@ msgstr "Довідка && про програму"
 msgid "Open config folder"
 msgstr "Відкрити теку конфігурації"
 
-#: polyhost/host.py:1046
+#: polyhost/host.py:942
+msgid "Only quit GUI"
+msgstr "Вийти лише з інтерфейсу"
+
+#: polyhost/host.py:1052
 msgid "System language query not supported for this platform."
 msgstr "Запит мови системи не підтримується на цій платформі."
 
-#: polyhost/host.py:1245
+#: polyhost/host.py:1251
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
@@ -3748,12 +3752,12 @@ msgstr[0] "Повторити прошивання шрифтів клавіат
 msgstr[1] "Повторити прошивання шрифтів клавіатури ({n} помилки)…"
 msgstr[2] "Повторити прошивання шрифтів клавіатури ({n} помилок)…"
 
-#: polyhost/host.py:1247
+#: polyhost/host.py:1253
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Перепрошити набори шрифтів, остання спроба яких не вдалася: {bundles}"
 
-#: polyhost/host.py:1253
+#: polyhost/host.py:1259
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
@@ -3761,16 +3765,16 @@ msgstr[0] "Оновити шрифти клавіатури ({n})…"
 msgstr[1] "Оновити шрифти клавіатури ({n})…"
 msgstr[2] "Оновити шрифти клавіатури ({n})…"
 
-#: polyhost/host.py:1255
+#: polyhost/host.py:1261
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Прошити набори шрифтів, яких бракує на клавіатурі, які застаріли або не прийнялися: {bundles}"
 
-#: polyhost/host.py:1260
+#: polyhost/host.py:1266
 msgid "Keyboard fonts: up to date"
 msgstr "Шрифти клавіатури: актуальні"
 
-#: polyhost/host.py:1261
+#: polyhost/host.py:1267
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3778,84 +3782,84 @@ msgstr ""
 "Усі набори шрифтів із комплекту вже є на клавіатурі.\n"
 "Розробник → Пакет шрифтів → Перепрошити ВСІ набори примусово надсилає їх знову, якщо ковпачки досі відображаються неправильно."
 
-#: polyhost/forwarder.py:746 polyhost/host.py:1291
+#: polyhost/forwarder.py:746 polyhost/host.py:1297
 msgid "Config folder"
 msgstr "Тека конфігурації"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1389
+#: polyhost/host.py:1395
 #, python-brace-format
 msgid "{rate} link"
 msgstr "канал {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1391
+#: polyhost/host.py:1397
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "канал HID, до {kbps} КБ/с"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1398
+#: polyhost/host.py:1404
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Під’єднано: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1410
+#: polyhost/host.py:1416
 msgid "Reconnect"
 msgstr "Під’єднатися знову"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:388 polyhost/host.py:1413
+#: polyhost/forwarder.py:388 polyhost/host.py:1419
 msgid "Resume"
 msgstr "Відновити"
 
-#: polyhost/host.py:1496 polyhost/host.py:1561
+#: polyhost/host.py:1502 polyhost/host.py:1567
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Не вдалося змінити мову ОС {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1585
+#: polyhost/host.py:1591
 msgid "Firmware image (*.bin)"
 msgstr "Образ мікропрограми (*.bin)"
 
-#: polyhost/host.py:1586
+#: polyhost/host.py:1592
 msgid "Select firmware .bin"
 msgstr "Виберіть файл мікропрограми .bin"
 
-#: polyhost/host.py:1637
+#: polyhost/host.py:1643
 msgid "Firmware apply failed"
 msgstr "Не вдалося застосувати мікропрограму"
 
-#: polyhost/host.py:1638
+#: polyhost/host.py:1644
 msgid "Firmware flash failed"
 msgstr "Не вдалося прошити мікропрограму"
 
-#: polyhost/host.py:1686 polyhost/host.py:1739
+#: polyhost/host.py:1692 polyhost/host.py:1745
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Вибрана мова: {language} {country}"
 
-#: polyhost/host.py:1790
+#: polyhost/host.py:1796
 msgid "PolyHost settings"
 msgstr "Параметри PolyHost"
 
-#: polyhost/host.py:1791
+#: polyhost/host.py:1797
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Параметри застосовано, але не вдалося зберегти їх у файл параметрів. Можливо, файл тримає відкритим інша програма. Змініть параметр пізніше, щоб повторити спробу, або перегляньте журнал."
 
-#: polyhost/host.py:1893
+#: polyhost/host.py:1899
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: нечитабельний запис {record}"
 
-#: polyhost/host.py:1896
+#: polyhost/host.py:1902
 msgid "Neither keyboard half holds a crash record."
 msgstr "Жодна половина клавіатури не має запису про збій."
 
-#: polyhost/host.py:1898
+#: polyhost/host.py:1904
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3866,58 +3870,58 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1900
+#: polyhost/host.py:1906
 msgid "Keyboard crash record"
 msgstr "Запис про збій клавіатури"
 
-#: polyhost/host.py:1909
+#: polyhost/host.py:1915
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Скопійовано в буфер обміну. Не прочитано: {errors}"
 
-#: polyhost/host.py:2006
+#: polyhost/host.py:2012
 msgid "MRU Cache"
 msgstr "Кеш MRU"
 
-#: polyhost/host.py:2006
+#: polyhost/host.py:2012
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "Кеш MRU неактивний (пристрій не під’єднано або режим MRU вимкнено)."
 
-#: polyhost/host.py:2055
+#: polyhost/host.py:2061
 msgid "daemon client"
 msgstr "клієнт фонової служби"
 
-#: polyhost/host.py:2055
+#: polyhost/host.py:2061
 msgid "standalone"
 msgstr "автономно"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:807 polyhost/host.py:2113
+#: polyhost/forwarder.py:807 polyhost/host.py:2119
 msgid "paused"
 msgstr "призупинено"
 
-#: polyhost/host.py:2115
+#: polyhost/host.py:2121
 msgid "connected"
 msgstr "під’єднано"
 
-#: polyhost/host.py:2116
+#: polyhost/host.py:2122
 msgid "present — not connected (protocol/version)"
 msgstr "наявна — не під’єднано (протокол/версія)"
 
-#: polyhost/host.py:2123
+#: polyhost/host.py:2129
 msgid "Keyboard"
 msgstr "Клавіатура"
 
-#: polyhost/host.py:2124
+#: polyhost/host.py:2130
 msgid "No keyboard connected."
 msgstr "Клавіатуру не під’єднано."
 
-#: polyhost/host.py:2128
+#: polyhost/host.py:2134
 msgid "⚠ mismatch"
 msgstr "⚠ невідповідність"
 
-#: polyhost/host.py:2130
+#: polyhost/host.py:2136
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
@@ -3925,37 +3929,37 @@ msgstr[0] "Завантажено {n} мову"
 msgstr[1] "Завантажено {n} мови"
 msgstr[2] "Завантажено {n} мов"
 
-#: polyhost/host.py:2133
+#: polyhost/host.py:2139
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Під’єднана клавіатура:</b> {name} {state}"
 
-#: polyhost/host.py:2135
+#: polyhost/host.py:2141
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Мікропрограма:</b> {firmware} &nbsp;·&nbsp; протокол {protocol}"
 
-#: polyhost/host.py:2137
+#: polyhost/host.py:2143
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Апаратне забезпечення:</b> {hardware}"
 
-#: polyhost/host.py:2138
+#: polyhost/host.py:2144
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Мова:</b> {language}"
 
-#: polyhost/host.py:2141
+#: polyhost/host.py:2147
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Канал:</b> {link}"
 
-#: polyhost/host.py:2148
+#: polyhost/host.py:2154
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Час роботи:</b> {uptime}"
 
-#: polyhost/host.py:2150
+#: polyhost/host.py:2156
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
@@ -3963,26 +3967,26 @@ msgstr[0] "<b>Призначення накладок:</b> {n} програма"
 msgstr[1] "<b>Призначення накладок:</b> {n} програми"
 msgstr[2] "<b>Призначення накладок:</b> {n} програм"
 
-#: polyhost/forwarder.py:824 polyhost/host.py:2152
+#: polyhost/forwarder.py:824 polyhost/host.py:2158
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Конфігурація:</b> {path}"
 
-#: polyhost/forwarder.py:825 polyhost/host.py:2153
+#: polyhost/forwarder.py:825 polyhost/host.py:2159
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Журнали:</b> {path}"
 
-#: polyhost/forwarder.py:843 polyhost/host.py:2207
+#: polyhost/forwarder.py:843 polyhost/host.py:2213
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Протокол HID P{protocol}"
 
-#: polyhost/host.py:2212
+#: polyhost/host.py:2218
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Програма-хост для розділеної клавіатури PolyKybd з OLED-дисплеєм на кожному ковпачку — стежить за активним вікном і надсилає на клавіатуру накладки, мову та оновлення карти клавіш."
 
-#: polyhost/host.py:2238
+#: polyhost/host.py:2244
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3991,61 +3995,61 @@ msgstr ""
 "Не вдалося змінити мову введення на '{language}', помилка:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2258 polyhost/host.py:2273
+#: polyhost/host.py:2264 polyhost/host.py:2279
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Не вдалося встановити {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2379
+#: polyhost/host.py:2385
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Призначення накладок PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2467 polyhost/host.py:2946 polyhost/host.py:3089
+#: polyhost/host.py:2473 polyhost/host.py:2952 polyhost/host.py:3095
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Оновити мікропрограму до v{version}…"
 
-#: polyhost/host.py:2469 polyhost/host.py:2987 polyhost/host.py:3160
+#: polyhost/host.py:2475 polyhost/host.py:2993 polyhost/host.py:3166
 msgid "Check for firmware update…"
 msgstr "Перевірити оновлення мікропрограми…"
 
 #: polyhost/forwarder.py:881 polyhost/forwarder.py:892
-#: polyhost/forwarder.py:898 polyhost/host.py:2487 polyhost/host.py:2608
-#: polyhost/host.py:2612
+#: polyhost/forwarder.py:898 polyhost/host.py:2493 polyhost/host.py:2614
+#: polyhost/host.py:2618
 msgid "Check for updates..."
 msgstr "Перевірити оновлення..."
 
-#: polyhost/host.py:2555
+#: polyhost/host.py:2561
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Доступне оновлення до v{version}"
 
 #: polyhost/forwarder.py:894 polyhost/forwarder.py:900
-#: polyhost/forwarder.py:911 polyhost/host.py:2566 polyhost/host.py:2606
-#: polyhost/host.py:2613 polyhost/host.py:2636
+#: polyhost/forwarder.py:911 polyhost/host.py:2572 polyhost/host.py:2612
+#: polyhost/host.py:2619 polyhost/host.py:2642
 msgid "PolyKybdHost Update"
 msgstr "Оновлення PolyKybdHost"
 
-#: polyhost/host.py:2567
+#: polyhost/host.py:2573
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Доступна версія {version}. Клацніть значок в області сповіщень, щоб оновити."
 
-#: polyhost/forwarder.py:869 polyhost/host.py:2592
+#: polyhost/forwarder.py:869 polyhost/host.py:2598
 msgid "Checking for updates..."
 msgstr "Перевірка оновлень..."
 
-#: polyhost/host.py:2605
+#: polyhost/host.py:2611
 msgid "No updates available"
 msgstr "Оновлень немає"
 
-#: polyhost/forwarder.py:895 polyhost/host.py:2607
+#: polyhost/forwarder.py:895 polyhost/host.py:2613
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "У вас найновіша версія (v{version})."
 
-#: polyhost/forwarder.py:901 polyhost/host.py:2614
+#: polyhost/forwarder.py:901 polyhost/host.py:2620
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4060,63 +4064,63 @@ msgstr ""
 "\n"
 "Запустіть із --dev 1, щоб отримати подробиці."
 
-#: polyhost/host.py:2619 polyhost/host.py:3019
+#: polyhost/host.py:2625 polyhost/host.py:3025
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Випущено: {date}"
 
-#: polyhost/forwarder.py:882 polyhost/host.py:2620
+#: polyhost/forwarder.py:882 polyhost/host.py:2626
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Доступна версія {version}."
 
-#: polyhost/forwarder.py:883 polyhost/host.py:2621
+#: polyhost/forwarder.py:883 polyhost/host.py:2627
 msgid "Update PolyKybdHost"
 msgstr "Оновити PolyKybdHost"
 
-#: polyhost/host.py:2625
+#: polyhost/host.py:2631
 msgid "Download, install, and restart now?"
 msgstr "Завантажити, інсталювати й перезапустити зараз?"
 
-#: polyhost/forwarder.py:910 polyhost/host.py:2636
+#: polyhost/forwarder.py:910 polyhost/host.py:2642
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Завантаження v{version}…"
 
-#: polyhost/forwarder.py:951 polyhost/host.py:2761
+#: polyhost/forwarder.py:951 polyhost/host.py:2767
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Не вдалося запустити ретранслятор оновлення; оновлення не завершено. Подробиці див. у журналі."
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2782
 msgid "Update failed"
 msgstr "Не вдалося оновити"
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2776
+#: polyhost/forwarder.py:963 polyhost/host.py:2782
 msgid "The update did not finish."
 msgstr "Оновлення не завершено."
 
-#: polyhost/host.py:2957
+#: polyhost/host.py:2963
 msgid "PolyKybd Firmware Update"
 msgstr "Оновлення мікропрограми PolyKybd"
 
-#: polyhost/host.py:2958
+#: polyhost/host.py:2964
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Доступна нова мікропрограма v{version}. Клацніть значок в області сповіщень, щоб оновити."
 
-#: polyhost/host.py:2975 polyhost/host.py:3016
+#: polyhost/host.py:2981 polyhost/host.py:3022
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Щоб оновити мікропрограму, клавіатуру має бути під’єднано."
 
-#: polyhost/host.py:2981
+#: polyhost/host.py:2987
 msgid "Checking for firmware update…"
 msgstr "Перевірка оновлень мікропрограми…"
 
-#: polyhost/host.py:2995 polyhost/host.py:3005 polyhost/host.py:3008
+#: polyhost/host.py:3001 polyhost/host.py:3011 polyhost/host.py:3014
 msgid "PolyKybd Firmware"
 msgstr "Мікропрограма PolyKybd"
 
-#: polyhost/host.py:2996
+#: polyhost/host.py:3002
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4127,55 +4131,55 @@ msgstr ""
 "\n"
 "На вашій клавіатурі v{current}. Зазвичай це означає, що збирання випуску не вдалося, — мікропрограма з’явиться на сторінці випуску, щойно це виправлять."
 
-#: polyhost/host.py:3006
+#: polyhost/host.py:3012
 msgid "No firmware release could be found."
 msgstr "Випуск мікропрограми не знайдено."
 
-#: polyhost/host.py:3009
+#: polyhost/host.py:3015
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "У вас найновіша мікропрограма (v{version})."
 
-#: polyhost/host.py:3021
+#: polyhost/host.py:3027
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Встановлено: v{version}"
 
-#: polyhost/host.py:3022
+#: polyhost/host.py:3028
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Встановлено: невідомо (клавіатура не повідомила свою версію)"
 
-#: polyhost/host.py:3023
+#: polyhost/host.py:3029
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Доступна мікропрограма {version}."
 
-#: polyhost/host.py:3025
+#: polyhost/host.py:3031
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Обидві половини оновлюються через HID і автоматично перезавантажуються."
 
-#: polyhost/host.py:3026
+#: polyhost/host.py:3032
 msgid "Update PolyKybd Firmware"
 msgstr "Оновити мікропрограму PolyKybd"
 
-#: polyhost/host.py:3030
+#: polyhost/host.py:3036
 msgid "Download and flash now?"
 msgstr "Завантажити й прошити зараз?"
 
-#: polyhost/host.py:3041
+#: polyhost/host.py:3047
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Завантаження мікропрограми v{version}…"
 
-#: polyhost/host.py:3063 polyhost/host.py:3364
+#: polyhost/host.py:3069 polyhost/host.py:3370
 msgid "Cancelling…"
 msgstr "Скасування…"
 
-#: polyhost/host.py:3100
+#: polyhost/host.py:3106
 msgid "Firmware Update Failed"
 msgstr "Не вдалося оновити мікропрограму"
 
-#: polyhost/host.py:3101
+#: polyhost/host.py:3107
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4186,11 +4190,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3207 polyhost/host.py:3249 polyhost/host.py:3257
+#: polyhost/host.py:3213 polyhost/host.py:3255 polyhost/host.py:3263
 msgid "Allow access to the keyboard"
 msgstr "Дозволити доступ до клавіатури"
 
-#: polyhost/host.py:3208
+#: polyhost/host.py:3214
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4200,7 +4204,7 @@ msgstr ""
 "\n"
 "Система запитає ваш пароль (PolicyKit). Після цього від’єднайте клавіатуру та під’єднайте її знову."
 
-#: polyhost/host.py:3250
+#: polyhost/host.py:3256
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4210,11 +4214,11 @@ msgstr ""
 "\n"
 "Від’єднайте клавіатуру та під’єднайте її знову, щоб нові дозволи набули чинності."
 
-#: polyhost/host.py:3258
+#: polyhost/host.py:3264
 msgid "The udev rule was not installed."
 msgstr "Правило udev не було встановлено."
 
-#: polyhost/host.py:3259
+#: polyhost/host.py:3265
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4227,12 +4231,12 @@ msgstr ""
 "Ви також можете виконати ці команди в терміналі:\n"
 "{commands}"
 
-#: polyhost/host.py:3328 polyhost/host.py:3342 polyhost/host.py:3388
-#: polyhost/host.py:3397 polyhost/host.py:3403
+#: polyhost/host.py:3334 polyhost/host.py:3348 polyhost/host.py:3394
+#: polyhost/host.py:3403 polyhost/host.py:3409
 msgid "Install WinCompose"
 msgstr "Інсталювати WinCompose"
 
-#: polyhost/host.py:3329
+#: polyhost/host.py:3335
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4242,11 +4246,11 @@ msgstr ""
 "\n"
 "Збірку WinCompose від PolyKybd буде завантажено з GitHub і запущено її інсталятор (Windows попросить підтвердження)."
 
-#: polyhost/host.py:3342
+#: polyhost/host.py:3348
 msgid "Looking for the latest WinCompose release…"
 msgstr "Пошук останнього випуску WinCompose…"
 
-#: polyhost/host.py:3389
+#: polyhost/host.py:3395
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4256,7 +4260,7 @@ msgstr ""
 "\n"
 "У браузері відкриється сторінка випусків — завантажте й запустіть інсталятор звідти."
 
-#: polyhost/host.py:3398
+#: polyhost/host.py:3404
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4267,7 +4271,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3404
+#: polyhost/host.py:3410
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4284,7 +4288,7 @@ msgstr ""
 "Його збережено в:\n"
 "{path}"
 
-#: polyhost/host.py:3412
+#: polyhost/host.py:3418
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
 

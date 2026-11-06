@@ -935,9 +935,15 @@ class PolyHost(QApplication):
         self.open_config_action.triggered.connect(self._open_config_folder)
         self.help_menu.addAction(self.open_config_action)
 
-        self.menu.addAction(self.exit)
         if self.exit_with_daemon is not None:
+            # Client mode has two quit rows. The GUI-only one was misclicked for
+            # the one that also stops the daemon, so it goes under Maintenance
+            # with a name that says what it does, and the top level keeps one.
+            self.exit.setText(_("Only quit GUI"))
+            self.cmdMenu.add_always_enabled_maintenance_action(self.exit)
             self.menu.addAction(self.exit_with_daemon)
+        else:
+            self.menu.addAction(self.exit)
 
         self.log.debug("Create OS dependent input helper...")
         self.helper = None

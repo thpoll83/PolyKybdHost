@@ -1079,6 +1079,51 @@ forwarder).
 have not run on Windows yet. The pipe protocol, cancel, stop, the per-title
 cache and the root selection are tested with stand-ins.
 
+### E16 — labels in other languages (2026-11-06)
+
+Until now only an English label got an icon: a German "Speichern" was read as
+Ctrl+S and drawn as nothing, because no spelling fold or similarity score
+bridges a translation (B.1). `res/shortcut_lexicon/<lang>.yaml` now lists, for
+the 19 languages the tray app is translated into, the menu labels that mean
+each `LEXICON` concept. `shortcut_icons._localized_rules()` reads them.
+
+- ⚠️ **They run only after every English rule has failed**, so no English label
+  changes its icon. `tests/services/shortcut_lexicon_test.py` pins it.
+- ⚠️ **Every language is tried for every label**, not only the OS language: an
+  English IDE on a German desktop is common, and the harvest does not say which
+  language a label is in. The price is that a word shared by two languages could
+  name two concepts, so the test fails when one normalized phrase names two
+  concepts in any two files, the English lexicon included.
+- ⚠️ **No keyword match on a Latin-script word shorter than 5 letters.**
+  Vietnamese "in" (print) is an English word, and "Log In", which the English
+  rules do not match, would otherwise get a print icon. The whole label "In"
+  still matches.
+- **Chinese and Japanese are matched by substring** ("compact" rule), because
+  they put no spaces between words. Longest phrase first, so 名前を付けて保存
+  (save as) is tried before 保存 (save); a test checks that ordering for every
+  pair in the data.
+- **The phrases were drafted from each platform's standard localized menu
+  terms, then checked against real translation catalogs.** 4,219 `.mo` files
+  (KDE's standard actions, GTK3, and the GNOME apps in Ubuntu 24.04's language
+  packs) confirm 2,044 of the phrases for the same concept, and none for a
+  different one except Czech "vrátit zpět", which some apps use for Revert.
+  About 780 phrases are not in those catalogs: mostly Windows, Office and macOS
+  terms, which Linux catalogs do not have. No native speaker has checked them.
+  A wrong phrase is a data fix in one YAML file.
+- **304 phrases were added from the catalogs** by
+  `tools/shortcut_lexicon_fill_gaps.py`. It takes only translations of
+  specific English commands (Save As, Find Next, Zoom In), never of generic
+  words: "Left", "Window", "About" or "Select" translate to words such as
+  Chinese 左 or Japanese 次, which would match unrelated labels. It skips a
+  translation that any catalog also uses for another concept, and the words the
+  drafting kept out on purpose (Arabic بعد, "after"; Vietnamese "cập nhật",
+  "update"). `tools/shortcut_lexicon_verify.py` writes the per-language report;
+  both docstrings say how to get the catalogs.
+- ⚠️ **`normalize()` drops combining marks after NFC composition.** Before, a
+  mark with no precomposed letter became a space inside its word: a Turkish
+  capital İ ("İptal" -> "i ptal"), an Arabic shadda, and catalogs stored in
+  decomposed form ("atra s").
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is
