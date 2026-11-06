@@ -26,7 +26,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 
 # No `program_icon:` -- `photos: mdi:image-multiple` in app_icons.yaml already
 # resolves (the process really is Photos.exe), and a baked mark would WIN over it
@@ -49,7 +49,7 @@ bindings:
   # bound to the CHARACTER + and -, so it lands wherever the layout puts them.
   - { key: EQUAL, mods: [CTRL], icon: zoomin.png,  label: "Zoom in" }
   - { key: MINUS, mods: [CTRL], icon: zoomout.png, label: "Zoom out" }
-  - { key: "0",   mods: [CTRL], icon: zoomrst.png, label: "Reset the zoom" }
+  - { key: "0",   mods: [CTRL], icon: zoomrst.png, label: "Reset the zoom", concept: find }
 
   # --- Ctrl+arrows: move the crop / selective-focus area -------------------
   - { key: LEFT,  mods: [CTRL], icon: cropmove.png, label: "Move the crop area" }

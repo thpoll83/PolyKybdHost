@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gl.png
@@ -28,8 +28,8 @@ program_icon_margin: 0
 
 bindings:
   # --- single keys (no modifier) ---
-  - { key: S, mods: [], icon: search.png,     label: "Focus search",  source: "ms-fluent/Search (MIT)" }
-  - { key: "/", mods: [], icon: search.png,   label: "Focus search",  source: "ms-fluent/Search (MIT)" }
+  - { key: S, mods: [], icon: search.png,     label: "Focus search", concept: find,  source: "ms-fluent/Search (MIT)" }
+  - { key: "/", mods: [], icon: search.png,   label: "Focus search", concept: find,  source: "ms-fluent/Search (MIT)" }
   - { key: T, mods: [], icon: filefinder.png, label: "Project file search", source: "ms-fluent/Document Search (MIT)" }
   - { key: ".", mods: [], icon: webide.png,   label: "Open Web IDE",  source: "ms-fluent/Code (MIT)" }
   - { key: E, mods: [], icon: edit.png,       label: "Edit description", source: "ms-fluent/Document Edit (MIT)" }

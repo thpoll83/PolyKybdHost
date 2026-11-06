@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Own app icon, 64px ICO frame. Sweep (64/128/256 x luma 60..180 x bright 150..230):

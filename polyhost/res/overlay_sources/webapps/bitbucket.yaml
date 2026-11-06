@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: bitbucket_mark.png
@@ -53,6 +53,6 @@ bindings:
   - { key: D, mods: [SHIFT], icon: sidebyside.png, label: "Side-by-side diff", source: "ms-fluent/Split Vertical (MIT)" }
 
   # --- global ---
-  - { key: "/", mods: [], icon: search.png,     label: "Search",               source: "ms-fluent/Search (MIT)" }
+  - { key: "/", mods: [], icon: search.png,     label: "Search", concept: find,               source: "ms-fluent/Search (MIT)" }
   - { key: "/", mods: [SHIFT], icon: shortcuts.png, label: "Keyboard shortcuts", source: "ms-fluent/Keyboard (MIT)" }
   - { key: "[", mods: [], icon: sidebar.png,    label: "Toggle sidebar",       source: "ms-fluent/Panel Left (MIT)" }

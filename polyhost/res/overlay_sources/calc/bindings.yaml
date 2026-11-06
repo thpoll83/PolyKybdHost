@@ -39,13 +39,14 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 source: "microsoft/calculator src/Calculator/Resources/en-US/Resources.resw (MIT)"
 
 # Baked rather than taken from the curated generic — see the note beside
 # `progmark` in fetch_icons.py. Right-aligned and a little under the full cell so
 # the firmware's own ESC legend stays clear.
 program_icon: progmark.png
+program_icon_mode: alpha
 program_icon_region: [38, 34]
 program_icon_anchor: right
 

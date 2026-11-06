@@ -20,7 +20,7 @@ match: [openra]
 output: openra_cnc_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 # As for C&C: the icon uses the full height on the right; the firmware clears
 # 3 px around it, so a letter legend stays whole.

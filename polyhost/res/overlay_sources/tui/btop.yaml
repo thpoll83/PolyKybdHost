@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: btop.png
@@ -79,4 +79,4 @@ bindings:
   - { key: N, icon: net_next.png, label: "Next net device" }
   - { key: Z, icon: reset.png, label: "Reset net totals" }
   - { key: A, icon: autoscale.png, label: "Auto scale graph" }
-  - { key: Y, icon: sync.png, label: "Sync graph scale" }
+  - { key: Y, icon: sync.png, label: "Sync graph scale", concept: reload }

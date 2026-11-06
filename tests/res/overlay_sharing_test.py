@@ -146,6 +146,17 @@ class WhichBindingsShareTest(unittest.TestCase):
             self.assertEqual(self.gen.concept_to_share({"label": label}), "",
                              "%r must keep its own artwork" % label)
 
+    def test_an_explicit_concept_shares_whatever_the_label_says(self):
+        self.assertEqual(self.gen.concept_to_share({"label": "Close tab", "concept": "close"}),
+                         "close")
+
+    def test_an_explicit_concept_refuses_contradictions(self):
+        for extra in ({"shared": False}, {"region": [40, 32]}, {"mode": "luma"},
+                      {"concept": "no-such-concept"}):
+            binding = {"label": "Close tab", "concept": "close", **extra}
+            with self.assertRaises(ValueError, msg=extra):
+                self.gen.concept_to_share(binding)
+
     def test_shared_false_opts_out(self):
         self.assertEqual(
             self.gen.concept_to_share({"label": "Copy", "shared": False}), "")

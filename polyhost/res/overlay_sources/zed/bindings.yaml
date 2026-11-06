@@ -43,7 +43,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Zed's OWN app icon (GPL-3.0-or-later, crates/zed), cropped to its mark by
@@ -186,8 +186,8 @@ bindings:
   - { key: "0", mods: [CTRL, ALT], only: [linux, macos], icon: dockreset.png, label: "Reset dock size", source: "workspace::ResetActiveDockSize @ l685 m741" }
   - { key: "=", mods: [CTRL, ALT, SHIFT], only: [linux, macos], icon: docksgrow.png, label: "Grow all docks", source: "workspace::IncreaseOpenDocksSize @ l691 m746" }
   - { key: "-", mods: [CTRL, ALT, SHIFT], only: [macos], icon: docksshrink.png, label: "Shrink all docks", source: "workspace::DecreaseOpenDocksSize @ m745" }
-  - { key: "0", mods: [CTRL, ALT, SHIFT], only: [linux, macos], icon: docksreset.png, label: "Reset all dock sizes", source: "workspace::ResetOpenDocksSize @ l689 m744" }
-  - { key: "0", mods: [ALT, SHIFT], only: [windows], icon: docksreset.png, label: "Reset all dock sizes", source: "workspace::ResetOpenDocksSize @ w682" }
+  - { key: "0", mods: [CTRL, ALT, SHIFT], only: [linux, macos], icon: docksreset.png, label: "Reset all dock sizes", concept: reload, source: "workspace::ResetOpenDocksSize @ l689 m744" }
+  - { key: "0", mods: [ALT, SHIFT], only: [windows], icon: docksreset.png, label: "Reset all dock sizes", concept: reload, source: "workspace::ResetOpenDocksSize @ w682" }
   - { key: E, mods: [CMDCTRL, SHIFT], icon: explorer.png, label: "Project panel", source: "project_panel::ToggleFocus @ w699 l709 m761" }
   - { key: B, mods: [CMDCTRL, SHIFT], icon: outlinepanel.png, label: "Outline panel", source: "outline_panel::ToggleFocus @ w700 l710 m762" }
   - { key: G, mods: [CTRL, SHIFT], icon: win_git.png, label: "Git panel", source: "git_panel::ToggleFocus @ w701 l711 m763" }
@@ -230,7 +230,7 @@ bindings:
   - { key: L, mods: [CTRL, ALT, SHIFT], only: [linux], icon: findinselection.png, label: "Find in selection", source: "search::ToggleSelection @ l522" }
   - { key: F, mods: [GUI, SHIFT], only: [macos], icon: findinfiles.png, label: "Find in project", source: "pane::DeploySearch @ m692" }
   - { key: F, mods: [CTRL, SHIFT], only: [windows, linux], icon: findinfiles.png, label: "Find in project", source: "project_search::ToggleFocus @ w524 l520" }
-  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinfiles.png, label: "Replace in project", source: "pane::DeploySearch @ w684 l694" }
+  - { key: H, mods: [CTRL, SHIFT], only: [windows, linux], icon: replaceinfiles.png, label: "Replace in project", concept: replace, source: "pane::DeploySearch @ w684 l694" }
   - { key: F, mods: [ALT], only: [windows], icon: filters.png, label: "Search filters", source: "project_search::ToggleFilters @ w530" }
   - { key: F, mods: [CMDCTRL, ALT], icon: textfinder.png, label: "Text finder", source: "text_finder::Toggle @ w144 l148 m169" }
 

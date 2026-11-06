@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: micro.png
@@ -42,9 +42,9 @@ bindings:
   - { key: F, mods: [CTRL], icon: find.png, label: "Find" }
   - { key: F3, icon: find.png, label: "Find" }
   - { key: F7, icon: find.png, label: "Find" }
-  - { key: F, mods: [ALT, SHIFT], icon: search.png, label: "Find literal" }
+  - { key: F, mods: [ALT, SHIFT], icon: search.png, label: "Find literal", concept: find }
   - { key: N, mods: [CTRL], icon: find_next.png, label: "Find next" }
-  - { key: P, mods: [CTRL], icon: find_prev.png, label: "Find previous" }
+  - { key: P, mods: [CTRL], icon: find_prev.png, region: [40, 32], label: "Find previous" }
   # --- Edit: "Ctrl-z":"Undo", "Ctrl-y":"Redo", "Ctrl-c":"CopyLine|Copy", "Ctrl-x":"Cut", "Ctrl-k":"CutLine",
   # "Ctrl-d":"DuplicateLine", "Ctrl-v":"Paste", "Ctrl-a":"SelectAll", "Insert":"ToggleOverwriteMode".
   - { key: Z, mods: [CTRL], icon: undo.png, label: "Undo" }
@@ -79,7 +79,7 @@ bindings:
   - { key: G, mods: [CTRL], icon: shortcuts.png, label: "Help" }
   - { key: G, mods: [ALT], icon: helplines.png, label: "Key menu" }
   - { key: R, mods: [CTRL], icon: linenumbers.png, label: "Line numbers" }
-  - { key: L, mods: [CTRL], icon: goto_line.png, label: "Go to line" }
+  - { key: L, mods: [CTRL], icon: goto_line.png, region: [40, 32], label: "Go to line" }
   - { key: B, mods: [CTRL], icon: terminal.png, label: "Shell command" }
   - { key: E, mods: [CTRL], icon: commandpalette.png, label: "Command bar" }
   - { key: W, mods: [CTRL], icon: focusnext.png, label: "Next split" }

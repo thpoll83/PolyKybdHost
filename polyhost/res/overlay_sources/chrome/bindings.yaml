@@ -25,7 +25,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # No program_icon. This template is shared by every Chromium browser, so ESC is
@@ -69,10 +69,10 @@ bindings:
   - { key: Y,     mods: [GUI],  only: [macos],          icon: history.png,   <<: *r, label: History }
   - { key: J,     mods: [CTRL], only: [windows, linux], icon: downloads.png, <<: *r, label: Downloads }
   - { key: L,     mods: [GUI, ALT], only: [macos],      icon: downloads.png, <<: *r, label: Downloads }
-  - { key: LEFT,  mods: [ALT],  only: [windows, linux], icon: back.png,      <<: *r, label: Back }
-  - { key: "[",   mods: [GUI],  only: [macos],          icon: back.png,      <<: *r, label: Back }
-  - { key: RIGHT, mods: [ALT],  only: [windows, linux], icon: forward.png,   <<: *r, label: Forward }
-  - { key: "]",   mods: [GUI],  only: [macos],          icon: forward.png,   <<: *r, label: Forward }
+  - { key: LEFT,  mods: [ALT],  only: [windows, linux], icon: ../../eclipse/icons/back.png,      <<: *r, label: Back }
+  - { key: "[",   mods: [GUI],  only: [macos],          icon: ../../eclipse/icons/back.png,      <<: *r, label: Back }
+  - { key: RIGHT, mods: [ALT],  only: [windows, linux], icon: ../../eclipse/icons/forward.png,   <<: *r, label: Forward }
+  - { key: "]",   mods: [GUI],  only: [macos],          icon: ../../eclipse/icons/forward.png,   <<: *r, label: Forward }
   - { key: F11,   mods: [],     only: [windows, linux], icon: fullscreen.png, <<: *r, label: "Full screen" }
   - { key: F,     mods: [GUI, CTRL], only: [macos],     icon: fullscreen.png, <<: *r, label: "Full screen" }
   - { key: I,     mods: [CTRL, SHIFT], only: [windows, linux], icon: devtools.png, <<: *r, label: "Developer tools" }
@@ -82,7 +82,7 @@ bindings:
   - { key: F4,  mods: [CTRL],  only: [windows, linux], icon: closetab_f4.png,    <<: *r, label: "Close tab" }
   - { key: F3,  mods: [],      only: [windows, linux], icon: findnext_f3.png,    <<: *r, label: "Find next" }
   - { key: F5,  mods: [],      only: [windows, linux], icon: reload_f5.png,      <<: *r, label: Reload }
-  - { key: F6,  mods: [],      only: [windows, linux], icon: addressbar_f6.png,  <<: *r, label: "Address bar" }
+  - { key: F6,  mods: [],      only: [windows, linux], icon: ../../firefox/icons/addressbar.png,  <<: *r, label: "Address bar" }
   - { key: F10, mods: [SHIFT], only: [windows, linux], icon: contextmenu.png,    <<: *r, label: "Context menu" }
 
   # --- standard editing (shared Fluent concepts) ---

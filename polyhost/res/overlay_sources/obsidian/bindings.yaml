@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: obsidian.png
@@ -39,13 +39,13 @@ bindings:
   - { key: P, mods: [CMDCTRL], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
   - { key: G, mods: [CMDCTRL], icon: graph.png,         label: "Graph view",      source: "ms-fluent/Branch Fork (MIT)" }
   - { key: E, mods: [CMDCTRL], icon: editpreview.png,   label: "Toggle edit / reading view", source: "ms-fluent/Eye (MIT)" }
-  - { key: F, mods: [CMDCTRL], icon: find.png,          label: "Find in file",    source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], only: [windows, linux], icon: findreplace.png,   label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)" }
-  - { key: F, mods: [GUI, ALT], only: [macos], icon: findreplace.png,   label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,          label: "Find in file", concept: find,    source: "ms-fluent/Search (MIT)" }
+  - { key: H, mods: [CTRL], only: [windows, linux], icon: findreplace.png,   label: "Find and replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: F, mods: [GUI, ALT], only: [macos], icon: findreplace.png,   label: "Find and replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: B, mods: [CMDCTRL], icon: bold.png,          label: Bold,              source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,        label: Italic,            source: "ms-fluent/Text Italic (MIT)" }
   - { key: K, mods: [CMDCTRL], icon: link.png,          label: "Insert link",     source: "ms-fluent/Link (MIT)" }
-  - { key: W, mods: [CMDCTRL], icon: closetab.png,      label: "Close tab",       source: "ms-fluent/Dismiss (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: closetab.png,      label: "Close tab", concept: close,       source: "ms-fluent/Dismiss (MIT)" }
   - { key: ",", mods: [CMDCTRL], icon: settings.png,    label: Settings,          source: "ms-fluent/Settings (MIT)" }
 
   # --- Ctrl+Shift ---

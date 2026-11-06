@@ -34,7 +34,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Own icon, 48px ICO frame. Sweep (frames 32..256 x luma/bright x t60..210, through
@@ -101,7 +101,7 @@ bindings:
   - { key: LEFT,  mods: [], icon: nudge_left.png,  label: "Nudge left 1px" }
   - { key: RIGHT, mods: [], icon: nudge_right.png, label: "Nudge right 1px" }
   # window
-  - { key: "\\", mods: [], icon: swappanel.png, label: "Comp / timeline" }
+  - { key: "\\", mods: [], icon: swappanel.png, label: "Comp / timeline", concept: replace }
   - { key: "`",  mods: [], icon: maxpanel.png,  label: "Maximize panel" }
   # F-keys
   - { key: F1,  mods: [], icon: help.png,           label: Help }
@@ -204,7 +204,7 @@ bindings:
   - { key: E, mods: [CMDCTRL], icon: editoriginal.png, label: "Edit original" }
   - { key: F, mods: [CMDCTRL], icon: find.png,         label: Find }
   - { key: G, mods: [CMDCTRL], icon: group.png,        label: "Group shapes" }
-  - { key: H, mods: [CMDCTRL], icon: replacefootage.png, label: "Replace footage", except: [macos] }
+  - { key: H, mods: [CMDCTRL], icon: replacefootage.png, label: "Replace footage", concept: reload, except: [macos] }
   - { key: I, mods: [CMDCTRL], icon: import.png,       label: Import }
   - { key: J, mods: [CMDCTRL], icon: res_full.png,     label: "Full resolution" }
   - { key: K, mods: [CMDCTRL], icon: compsettings.png, label: "Composition settings" }
