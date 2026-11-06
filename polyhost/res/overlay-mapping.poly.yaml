@@ -2827,3 +2827,9 @@ foobar2000:
   os:
     windows:
       overlay: foobar2000_template.mods.png
+# Winamp 5.x (overlay_sources/winamp/). Windows only: Winamp 5.x has no macOS or
+# Linux build. The process is winamp.exe. Not checked on a running install.
+winamp:
+  os:
+    windows:
+      overlay: [winamp_template.mods.png, winamp_template.combo.mods.png]
