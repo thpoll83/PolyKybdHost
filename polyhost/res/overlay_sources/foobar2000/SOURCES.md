@@ -42,6 +42,18 @@ which is what is drawn.
 | Alt+Enter | [context] Properties |
 | Alt+A | View / Always on Top |
 
+**Checked against the program (2026-11-06).** The default table is stored in
+`foobar2000.exe` of the 2.26.2 x64 installer
+(<https://www.foobar2000.org/downloads/foobar2000-x64_v2.26.2.exe>, unpacked
+with 7-Zip) at file offset 0x439490: 40-byte entries of a key (virtual-key code
+plus the Windows HOTKEYF modifier byte) and a command GUID. The GUIDs were named
+with `standard_commands` in `SDK/guids.cpp` of the foobar2000 SDK 2026-10-01.
+The table has exactly nine entries: Ctrl+P preferences, Ctrl+F playlist search,
+Alt+A always on top, Ctrl+N create playlist, Ctrl+W remove playlist, Ctrl+O
+open, Ctrl+S save playlist, Ctrl+U add location, and Alt+Enter on a context-menu
+command (Properties). No other entry of that layout exists in the executable or
+in the bundled components.
+
 The playlist view also reacts to keys such as `Delete` and `Ctrl+A`. They are
 not drawn, because no documentation found lists them as defaults.
 
