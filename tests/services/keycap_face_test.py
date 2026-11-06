@@ -203,6 +203,19 @@ class TrackKeycapFaceTest(unittest.TestCase):
         self.assertEqual(core.applied, [((C64KEYS, None), "the keyboard"),
                                         (None, "the keyboard")])
 
+    def test_an_unknown_placement_is_refused_and_not_remembered(self):
+        from polyhost.core import poly_core
+        noted, calls = [], []
+        core = types.SimpleNamespace(
+            _keycap_face=types.SimpleNamespace(note_user_choice=lambda **kw: noted.append(kw)),
+            _device_call=lambda name, fn: calls.append(name) or (True, None))
+        ok, msg = poly_core.PolyCore.set_glyph_placement(core, 99)
+        self.assertFalse(ok)
+        self.assertEqual((noted, calls), ([], []))
+        ok, _ = poly_core.PolyCore.set_glyph_placement(core, TOP_LEFT)
+        self.assertTrue(ok)
+        self.assertEqual((noted, calls), ([{"place": TOP_LEFT}], ["glyph_placement_set"]))
+
     def test_a_forwarded_window_uses_the_forwarded_match(self):
         core = self._core()
         wrapper = {"remote": True}

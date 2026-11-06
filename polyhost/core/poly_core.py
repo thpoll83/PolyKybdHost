@@ -2436,6 +2436,11 @@ class PolyCore(Observable):
             v = int(value)
         except (TypeError, ValueError):
             return False, f"Invalid glyph-script placement: {value!r}"
+        # A closed range: an unknown value would be NACKed by the keyboard, and
+        # remembered below as the face to restore, failing every later restore.
+        from polyhost.device.command_ids import GlyphPlacement
+        if v not in {p.value for p in GlyphPlacement}:
+            return False, f"Invalid glyph-script placement: {value!r}"
         if getattr(self, "_keycap_face", None) is not None:
             self._keycap_face.note_user_choice(place=v)
         return self._device_call(
