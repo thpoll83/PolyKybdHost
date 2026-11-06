@@ -1863,12 +1863,15 @@ class TestFwUpDownloader(unittest.TestCase):
         def fake_get(url, **kw):
             calls.append(url)
             if url.endswith(".sig"):
-                if isinstance(sig_response, Exception):
-                    raise sig_response
-                return sig_response
+                resp = (sig_response.pop(0) if isinstance(sig_response, list)
+                        else sig_response)
+                if isinstance(resp, Exception):
+                    raise resp
+                return resp
             return bin_ctx
 
         with mock.patch.object(updater.requests, "get", side_effect=fake_get), \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS", (0.0, 0.0)), \
              mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
             mock_ntf.return_value.__enter__.return_value = fh
             try:
@@ -1907,6 +1910,54 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertEqual(path, "")
             self.assertIn("nope", err)
             self.assertFalse(bin_path.exists(), "the .bin must go with the failed .sig")
+
+    def test_signature_timeout_is_retried(self):
+        # Field 2026-11-05: one read timeout on the .sig threw away a good
+        # image; the user's manual retry then worked. Retry it here instead.
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, [requests.ReadTimeout("Read timed out."),
+                     self._sig_response(b"\x5a" * 64)])
+            self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+            self.assertEqual(Path(str(bin_path) + ".sig").read_bytes(), b"\x5a" * 64)
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 2)
+
+    def test_signature_gives_up_after_three_attempts(self):
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, requests.ReadTimeout("Read timed out."))
+            ok, err, _path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertIn("Read timed out", err)
+            self.assertFalse(bin_path.exists())
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 3)
+
+    def test_signature_404_is_not_retried(self):
+        resp = mock.MagicMock(status_code=404)
+        with tempfile.TemporaryDirectory() as td:
+            rec, _bin, calls = self._run_with_sig(
+                td, requests.HTTPError("404 Not Found", response=resp))
+            self.assertFalse(rec.args_for("finished")[0][0])
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 1)
+
+    def test_cancel_during_signature_retry_wait(self):
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "",
+                                      "", "", "https://example.com/fw.bin.sig")
+        cancel = [False]
+        dl = updater.FwUpDownloader(rel, on_finished=rec.make("finished"),
+                                    cancel_flag=cancel)
+
+        def failing_fetch(_url, _path):
+            cancel[0] = True          # the user presses Cancel during the wait
+            raise requests.ReadTimeout("slow")
+
+        with mock.patch.object(dl, "_fetch_signature", side_effect=failing_fetch) as fetch, \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS", (5.0, 5.0)):
+            with self.assertRaises(updater._DownloadCancelled):
+                dl._fetch_signature_with_retry("u", "p")
+        self.assertEqual(fetch.call_count, 1)
 
     def test_wrong_length_signature_rejected(self):
         # A 404 page or truncated read must not be written out as a "signature".
