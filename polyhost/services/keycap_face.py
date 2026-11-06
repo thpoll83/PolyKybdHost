@@ -79,6 +79,7 @@ class KeycapFace:
         self.log = log or logging.getLogger("PolyHost")
         self._lock = threading.Lock()
         self._active = None      # the (script, place) on the keyboard for an app, or None
+        self._closed = False     # set at shutdown: later apply() calls do nothing
         self._user = self._load()  # the user's own (script, place), while an override is on
 
     # --- the remembered face ---------------------------------------------------
@@ -141,17 +142,19 @@ class KeycapFace:
                 self.log.warning("Keycap face: could not set glyph script %s: %s", script, msg)
                 return False
         if place is not None:
+            # Only written where the placement read worked (protocol 26+), so a
+            # failure here is a real one: report it, and a restore keeps its record.
             ok, msg = dev.set_glyph_placement(place)
             if not ok:
-                # Firmware below protocol 26: the script still applies.
-                self.log.info("Keycap face: placement %s not set: %s", place, msg)
+                self.log.warning("Keycap face: could not set placement %s: %s", place, msg)
+                return False
         return True
 
     def apply(self, wanted, dev) -> None:
         """Make the keyboard show `wanted` (from ``wanted_face``), or the user's own
         face when `wanted` is None. A no-op when nothing changes, so it is cheap to
         call on every window tick."""
-        if wanted == self._active:
+        if self._closed or wanted == self._active:
             return
         if wanted is None:
             self._restore(dev)
@@ -165,13 +168,17 @@ class KeycapFace:
                               "leaving it as it is.")
                 self._active = wanted        # do not retry on every tick
                 return
+            # Saved under the lock, so a hand-picked face (note_user_choice)
+            # saved in between is not overwritten by this older one.
             with self._lock:
                 self._user = user
-            self._save(user)
+                self._save(user)
         # A part the entry leaves alone is the user's own, not whatever the
-        # previous application asked for.
+        # previous application asked for. A placement whose original could not
+        # be read (firmware below protocol 26, or a failed read) is never
+        # written, because the restore could not put it back.
         script = user[0] if wanted[0] is None else wanted[0]
-        place = user[1] if wanted[1] is None else wanted[1]
+        place = None if user[1] is None else (user[1] if wanted[1] is None else wanted[1])
         if self._write(dev, script, place):
             self.log.info("Keycap face for this application: script %s, placement %s "
                           "(the user's own %s/%s is restored when it leaves).",
@@ -194,6 +201,11 @@ class KeycapFace:
         face left over from a host that stopped mid-override)."""
         self._restore(dev)
 
+    def close(self) -> None:
+        """Shutdown: every later ``apply`` does nothing, so a face job still in
+        the worker queue cannot run after the final restore."""
+        self._closed = True
+
     def note_disconnected(self) -> None:
         """The keyboard is gone: what it shows is no longer known, so the next
         tick that wants a face sends it again. The remembered face stays."""
@@ -208,4 +220,4 @@ class KeycapFace:
             user = (self._user[0] if script is None else int(script),
                     self._user[1] if place is None else int(place))
             self._user = user
-        self._save(user)
+            self._save(user)

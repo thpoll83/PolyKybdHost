@@ -502,7 +502,13 @@ class PolyCore(Observable):
         if wincompose_thread is not None:
             wincompose_thread.join(timeout=1)
         face = getattr(self, "_keycap_face", None)
-        if face is not None and face.remembered is not None and self.connected:
+        if face is not None:
+            # run_sync jumps the queue, so a face job already queued would run
+            # after this restore: close() turns it into a no-op first. The
+            # restore runs even with nothing remembered yet, in case an apply
+            # was running while we looked; with nothing remembered it returns.
+            face.close()
+        if face is not None and self.connected:
             try:
                 self.worker.run_sync("keycap_face_restore",
                                      lambda c: face.restore(self.keeb), timeout=2)
@@ -812,6 +818,11 @@ class PolyCore(Observable):
             return          # a core built without __init__ (tests)
         from polyhost.services.keycap_face import wanted_face
         entry = getattr(handler, "current_entry", None)
+        # A forwarded window: the local entry is the `remote:` wrapper, and the
+        # forwarded application's own match is on the remote handler.
+        is_remote = getattr(handler, "is_remote_mapping_entry", None)
+        if entry is not None and is_remote is not None and is_remote():
+            entry = getattr(getattr(handler, "remote_handler", None), "current_entry", None)
         wanted = wanted_face(entry, self.log) if entry is not self._keycap_face_entry_seen else \
             self._keycap_face_wanted
         self._keycap_face_entry_seen, self._keycap_face_wanted = entry, wanted
@@ -1911,10 +1922,12 @@ class PolyCore(Observable):
                 # A face left from a host that stopped while an application's
                 # face was on goes back first; the next tick then applies the
                 # focused application's face again, if it has one.
+                # The restore is queued BEFORE the marker is reset, so a tick in
+                # between cannot queue the application's face ahead of it.
                 if getattr(self, "_keycap_face", None) is not None:
-                    self._keycap_face_sent = _NOT_SENT
                     self.worker.submit("keycap_face_restore",
                                        lambda c: self._keycap_face.restore(self.keeb))
+                    self._keycap_face_sent = _NOT_SENT
                 # Re-assert the host's brightness mode on the freshly-connected
                 # keyboard (its auto mode is RAM-only and defaults off on boot):
                 # engage daylight-auto + push the current value, or send AUTO_OFF

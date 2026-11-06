@@ -15,9 +15,11 @@ TOP_LEFT = GlyphPlacement.TOP_LEFT.value
 class _Keyboard:
     """The four PolyKybd calls, on a keyboard that starts on Tengwar, centred."""
 
-    def __init__(self, script=1, place=0, protocol26=True, readable=True):
+    def __init__(self, script=1, place=0, protocol26=True, readable=True,
+                 place_readable=True, place_writable=True):
         self.script, self.place = script, place
         self.protocol26, self.readable = protocol26, readable
+        self.place_readable, self.place_writable = place_readable, place_writable
         self.writes = []
 
     def get_glyph_script(self):
@@ -29,11 +31,13 @@ class _Keyboard:
         return True, ""
 
     def get_glyph_placement(self):
-        return (True, self.place) if self.protocol26 else (False, 0)
+        return (True, self.place) if self.protocol26 and self.place_readable else (False, 0)
 
     def set_glyph_placement(self, v):
         if not self.protocol26:
             return False, "too old"
+        if not self.place_writable:
+            return False, "no reply"
         self.writes.append(("place", v))
         self.place = v
         return True, ""
@@ -125,6 +129,34 @@ class KeycapFaceTest(unittest.TestCase):
         face.apply(None, kb)
         self.assertEqual(kb.script, 1)
 
+    def test_a_placement_that_could_not_be_read_is_never_written(self):
+        kb, face = _Keyboard(place_readable=False), KeycapFace(self.path)
+        face.apply((C64KEYS, TOP_LEFT), kb)
+        self.assertEqual(kb.writes, [("script", C64KEYS)])   # the restore could not undo it
+        face.apply(None, kb)
+        self.assertEqual((kb.script, kb.place), (1, 0))
+
+    def test_a_failed_placement_restore_keeps_the_record(self):
+        kb, face = _Keyboard(), KeycapFace(self.path)
+        face.apply((C64KEYS, TOP_LEFT), kb)
+        kb.place_writable = False
+        face.apply(None, kb)
+        self.assertEqual(face.remembered, (1, 0))     # kept for the next connect
+        self.assertTrue(os.path.exists(self.path))
+        kb.place_writable = True
+        KeycapFace(self.path).restore(kb)
+        self.assertEqual((kb.script, kb.place), (1, 0))
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_after_close_a_queued_face_does_nothing(self):
+        kb, face = _Keyboard(), KeycapFace(self.path)
+        face.apply((C64KEYS, TOP_LEFT), kb)
+        face.close()
+        face.restore(kb)                               # shutdown's restore jumps the queue
+        face.apply((GlyphScript.AMIGA.value, None), kb)  # a job queued before it
+        self.assertEqual((kb.script, kb.place), (1, 0))
+        self.assertFalse(os.path.exists(self.path))
+
     def test_an_unreadable_keyboard_is_left_alone(self):
         kb, face = _Keyboard(readable=False), KeycapFace(self.path)
         face.apply((C64KEYS, TOP_LEFT), kb)
@@ -147,14 +179,39 @@ class TrackKeycapFaceTest(unittest.TestCase):
 
     def _core(self):
         from polyhost.core import poly_core
+        applied = []
         core = types.SimpleNamespace(
-            log=None, submitted=[], _keycap_face=object(),
+            log=None, submitted=[], jobs=[], applied=applied, keeb="the keyboard",
+            _keycap_face=types.SimpleNamespace(apply=lambda w, dev: applied.append((w, dev))),
             _keycap_face_sent=poly_core._NOT_SENT,
             _keycap_face_entry_seen=None, _keycap_face_wanted=None)
-        core.worker = types.SimpleNamespace(
-            submit=lambda name, fn, coalesce_key=None: core.submitted.append(name))
+
+        def submit(name, fn, coalesce_key=None):
+            core.submitted.append(name)
+            core.jobs.append((fn, coalesce_key))
+        core.worker = types.SimpleNamespace(submit=submit)
         core.track = lambda handler: poly_core.PolyCore._track_keycap_face(core, handler)
         return core
+
+    def test_the_job_applies_the_face_to_the_keyboard(self):
+        core = self._core()
+        core.track(types.SimpleNamespace(current_entry={"glyph_script": "c64keys"}))
+        core.track(types.SimpleNamespace(current_entry={"overlay": "o.png"}))
+        self.assertEqual([k for _, k in core.jobs], ["keycap_face", "keycap_face"])
+        for fn, _ in core.jobs:
+            fn(None)
+        self.assertEqual(core.applied, [((C64KEYS, None), "the keyboard"),
+                                        (None, "the keyboard")])
+
+    def test_a_forwarded_window_uses_the_forwarded_match(self):
+        core = self._core()
+        wrapper = {"remote": True}
+        handler = types.SimpleNamespace(
+            current_entry=wrapper, is_remote_mapping_entry=lambda: True,
+            remote_handler=types.SimpleNamespace(current_entry={"glyph_script": "amiga"}))
+        core.track(handler)
+        core.jobs[0][0](None)
+        self.assertEqual(core.applied, [((GlyphScript.AMIGA.value, None), "the keyboard")])
 
     def test_one_submit_per_change(self):
         core = self._core()
