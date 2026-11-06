@@ -171,8 +171,9 @@ class NanoRoutingTest(unittest.TestCase):
                                  [NANO, "nano_template.combo.mods.png"], (app, fmt))
 
     def test_other_titles_leave_the_other_terminals_unmatched(self):
-        # No match, so the generic shortcut harvest runs, as before.
-        for app in ("kitty", "konsole", "terminal", "iterm2", "conhost"):
+        # No match, so the generic shortcut harvest runs, as before. (kitty and
+        # WezTerm have a set of their own: terminal_set_routing_test.)
+        for app in ("alacritty", "konsole", "terminal", "iterm2", "conhost"):
             for fmt, title in OTHER_TITLES.items():
                 self.assertIsNone(self._route(app, title, os_name="linux"), (app, fmt))
             self.assertIsNone(self._route(app, "", os_name="linux"), app)

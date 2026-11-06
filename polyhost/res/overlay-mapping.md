@@ -131,13 +131,19 @@ terminal's set. A mode report still takes priority, because a known URL skips
 `titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
+tmux has a route in the same list (`tests/handler/tmux_routing_test.py`). tmux
+does not write the outer title by default (`set-titles` off), so the title keeps
+the command the shell wrote when tmux started, and the tmux set stays loaded for
+the whole session, also while nano runs in a pane
+(`overlay_sources/tmux/SOURCES.md`).
+
 ### Terminal file managers (yazi, ranger, lf)
 
 yazi, ranger and lf have routes in the same `&editor_titles` list, with a
 `title` regex that requires the program at the command position, as for nano.
 yazi writes `Yazi: <directory>` itself, so `Yazi:` is a key too. ranger writes
 `ranger:<path>` only with `set update_title true`; that is one word, so the
-terminal entry for the other terminals has a `titles-match` regex for it. ranger
+shared `&multiplexer_titles` map (the terminals' `titles-match`) has a regex for it. ranger
 has no Windows set: its route has only `macos` and `linux` branches. lf writes
 no title. The formats are in
 [`overlay_sources/tui_file_managers/SOURCES.md`](overlay_sources/tui_file_managers/SOURCES.md).
@@ -151,8 +157,13 @@ the routes in `&editor_titles` or `&editor_urls` matches, the terminal's
 shortcuts stay on the keycaps, drawn dimmed, and the program's take full
 strength on every key they draw, as a browser's do under a website:
 
-- Windows Terminal has a set of its own; its entry layers (no `layer: false`),
-  so `_layered` puts that set underneath as an `Underlay`.
+- Windows Terminal, WezTerm and kitty have a set of their own; their entries
+  layer (no `layer: false`), so `_layered` puts that set underneath as an
+  `Underlay`. WezTerm and kitty have an `os: macos` branch for their Cmd set,
+  and that branch repeats `urls-contains` and `titles-contains`, because a
+  matching `os:` branch replaces the entry (`tests/handler/terminal_set_routing_test.py`).
+  `hosted_in_terminal()` counts the entry and its `os:` branches as the
+  terminal's own set.
 - The other terminals have no set; the gap fill draws their harvested shortcuts
   around the program's template, and `OverlayHandler.template_is_hosted()`
   makes those dimmed too. A forwarded terminal's relayed shortcuts are dimmed
@@ -178,6 +189,22 @@ route with per-OS artwork must repeat the regex in every branch (the mapping
 uses a YAML anchor, `*claude_title`), or every title with the route word takes
 the set on that OS. (`tests/handler/ai_cli_routing_test.py`, which checks the
 negative titles on all three OSes.)
+
+### Zellij
+
+Zellij writes the terminal title itself. Up to 0.42 the title is
+`Zellij (<session>) - <pane title>`, found by the `Zellij` key in
+`&editor_titles`. Since 0.43.1 it is `<session> | <pane title>` and does not
+name Zellij, so the terminal entries also have `titles-match:
+&multiplexer_titles`, whose regex matches a session name that Zellij generated
+(`<adjective>-<noun>` from two fixed lists, printed by
+`overlay_sources/zellij/gen_session_regex.py`). A named session is found only
+where the terminal shows the process name (Konsole, iTerm2, Terminal.app).
+`titles-match` is tried before `titles-contains`, so Zellij is chosen over a
+program in its pane; a vim or emacs report is still chosen over Zellij. The
+formats are in
+[`overlay_sources/zellij/SOURCES.md`](overlay_sources/zellij/SOURCES.md).
+(`tests/handler/zellij_routing_test.py`.)
 
 ## `os:` — per-platform artwork
 

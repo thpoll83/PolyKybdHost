@@ -131,7 +131,11 @@ class VimRoutingTest(unittest.TestCase):
 
     def test_other_terminals_without_a_report_match_nothing(self):
         # No match -> the generic shortcut harvest runs, as before the entry.
-        for app in sorted(TERMINAL_APPS - {"windowsterminal", "wt"}):
+        # Windows Terminal, WezTerm and kitty have a set of their own
+        # (terminal_set_routing_test).
+        own_set = {"windowsterminal", "wt", "wezterm", "wezterm-gui",
+                   "org.wezfurlong.wezterm", "kitty"}
+        for app in sorted(TERMINAL_APPS - own_set):
             self.assertIsNone(self._route(app, None), app)
             # A URL no route names (emacs:// is routed since the Emacs sets).
             self.assertIsNone(self._route(app, "other://unknown"), app)

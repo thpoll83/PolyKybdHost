@@ -64,8 +64,9 @@ defaults and were not checked on an install. On macOS 12.3 and later
 ### Inside tmux
 
 tmux does not pass the title of the program in a pane on to the terminal
-unless it is told to, so the terminal shows tmux's own title and no set loads.
-Add to `~/.tmux.conf`:
+unless it is told to, so the terminal keeps the title written when tmux
+started, and the tmux set loads instead of nano's (`../tmux/SOURCES.md`).
+For nano's set inside tmux, add to `~/.tmux.conf`:
 
 ```
 set -g set-titles on
@@ -75,8 +76,9 @@ set -g set-titles-string '#T'
 `#T` is the pane's title, which the program or the shell scripts below set.
 Checked with tmux 3.4 on a pty: without the two lines, a pane that wrote
 `ESC ]2;✳ Claude Code BEL` sent no title to the outer terminal; with them the
-terminal received `ESC ]2;✳ Claude Code BEL`. GNU screen and Zellij were not
-checked.
+terminal received `ESC ]2;✳ Claude Code BEL`. GNU screen was not checked.
+Zellij writes its own title and has an overlay set of its own; inside Zellij
+that set is chosen over nano (`overlay_sources/zellij/SOURCES.md`).
 
 ### Titles that do not load the set
 

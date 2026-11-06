@@ -222,7 +222,7 @@ class AiCliRoutingTest(unittest.TestCase):
             for os_name in ("windows", "linux", "macos"):
                 self.assertEqual(self._route("windowsterminal", title, os_name=os_name)[0],
                                  WT, (os_name, title))
-                self.assertIsNone(self._route("kitty", title, os_name=os_name),
+                self.assertIsNone(self._route("alacritty", title, os_name=os_name),
                                   (os_name, title))
 
     def test_windows_terminal_dims_its_own_set_under_a_cli(self):
