@@ -84,7 +84,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          EVENT: ${{ github.event_name }}
           RELEASE_ID: ${{ github.event.release.id }}
           TAG_NAME: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
@@ -112,7 +111,7 @@ jobs:
             # notes somebody wrote, keeps the tag where it is, and leaves the human
             # decision (move the tag, or cut the next patch) exactly where it was.
             #
-            # ⚠️ ASK whether a release holds this tag; do not infer it from the EVENT.
+            # ⚠️ ASK whether a release holds this tag; do not infer it from the event.
             # A force-push that MOVES a tag fires `push`, and that tag can already carry
             # a release -- which is exactly the recovery docs/releases.md sends an
             # operator into (move the tag, then publish), aimed at the wrong commit.
