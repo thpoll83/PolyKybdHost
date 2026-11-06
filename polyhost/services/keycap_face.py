@@ -7,8 +7,8 @@ script and its placement while that application is in front.
       glyph_script_position: top-left  # centre or top-left (firmware protocol 26+)
 
 Either key may be given alone. A key goes on the entry that matches, so on a
-``titles-contains`` sub-entry when the overlay is there: the matcher hands back
-the sub-entry, not its parent.
+``titles-contains`` sub-entry or an ``os:`` branch when the overlay is there:
+the matcher hands back the sub-entry, not its parent.
 
 The keyboard stores the face it was last given and saves it at suspend, so an
 override that is never undone would outlive the application, a host crash and a

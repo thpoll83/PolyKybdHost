@@ -71,7 +71,8 @@ own. The host remembers the user's face before the first switch (in memory and i
 entry asks for a face, at shutdown, and on the next connect if the host stopped while a
 face was on. A face picked by hand in the tray or with `polyctl` while an entry's face
 is on becomes the one restored. Put the keys on the entry that matches: for a
-`titles-contains` route that is the sub-entry, not its parent.
+`titles-contains` route or an `os:` branch that is the sub-entry, not its parent. An
+entry with an `os: macos:` branch therefore repeats the two keys inside the branch.
 `polyhost/services/keycap_face.py`.
 
 ## Matching order
