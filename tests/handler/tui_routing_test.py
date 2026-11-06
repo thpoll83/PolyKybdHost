@@ -66,6 +66,7 @@ TITLES = {
         "less",
         "less aider.log",
         "less nano.txt",
+        "man nano",
         "man gemini",
         "man 3 printf",
         "Default (man)",
@@ -91,6 +92,13 @@ TITLES = {
         "notes.txt - NVIM",
         "init.lua (~/.config/nvim) - NVIM",
     ],
+}
+
+# The program's complete set (underlays left out), keyed like TITLES.
+SETS = {
+    stem: [f"{stem}.mods.png"] + ([f"{stem}.combo.mods.png"] if stem in (
+        "mc_template", "micro_template", "helix_template", "less_template") else [])
+    for stem in TITLES
 }
 
 # Titles that mention a program, or look like one, but are not it running.
@@ -181,18 +189,17 @@ class TuiRoutingTest(unittest.TestCase):
     def test_each_title_loads_its_set_in_windows_terminal(self):
         for stem, titles in TITLES.items():
             for title in titles:
-                files = self._route("windowsterminal", title)
-                self.assertTrue(files and files[0].startswith(stem),
-                                (stem, title, files))
+                self.assertEqual(self._route("windowsterminal", title), SETS[stem],
+                                 (stem, title))
 
     def test_each_title_loads_its_set_in_the_other_terminals(self):
         for os_name in ("linux", "macos"):
-            for app in ("kitty", "konsole", "iterm2", "ghostty", "gnome-terminal-server"):
+            for app in ("kitty", "konsole", "iterm2", "ghostty", "gnome-terminal-server",
+                        "terminal", "conhost"):
                 for stem, titles in TITLES.items():
                     for title in titles:
-                        files = self._route(app, title, os_name=os_name)
-                        self.assertTrue(files and files[0].startswith(stem),
-                                        (os_name, app, stem, title, files))
+                        self.assertEqual(self._route(app, title, os_name=os_name),
+                                         SETS[stem], (os_name, app, stem, title))
 
     def test_other_titles_keep_the_terminal_set(self):
         for title in OTHER_TITLES:
