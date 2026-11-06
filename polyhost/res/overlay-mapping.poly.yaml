@@ -197,6 +197,19 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     todoist.com/app:
       url: '^https?://(app\.)?todoist\.com/app'
       overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
+    # Monkeytype (sources: overlay_sources/typingtests/monkeytype.yaml). The
+    # typing test is the bare host; the gate keeps /settings, /account and the
+    # other pages, where Tab does not restart a test, on the browser set.
+    # Firefox replaces this entry with its own set (see the firefox entry).
+    monkeytype.com:
+      url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+      overlay: [monkeytype_template.mods.png, monkeytype_template.combo.mods.png]
+    # keybr (sources: overlay_sources/typingtests/keybr.yaml). The practice
+    # page is "/" or "/<locale>" (/de, /pt-br); the gate keeps /typing-test,
+    # /multiplayer and the other pages, which bind other keys, on the browser set.
+    keybr.com:
+      url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
+      overlay: keybr_template.mods.png
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -302,6 +315,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     Todoist:
       title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
       overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
+    # Monkeytype: the test page is titled "Monkeytype | A minimalistic,
+    # customizable typing test"; the other pages are "<Page> | Monkeytype" and
+    # stay off the set. keybr's titles ("Practice") name no brand, so keybr
+    # has no title entry.
+    Monkeytype:
+      title: '^Monkeytype \| A minimalistic'
+      overlay: [monkeytype_template.mods.png, monkeytype_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
@@ -421,6 +441,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         todoist.com/app:
           url: '^https?://(app\.)?todoist\.com/app'
           overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: [monkeytype_template_mac.mods.png, monkeytype_template_mac.extra.mods.png]
+        # keybr's Ctrl+Left/Right switch desktops on macOS, so the Mac set has Enter only.
+        keybr.com:
+          url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
+          overlay: keybr_template_mac.mods.png
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -500,6 +527,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Todoist:
           title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
           overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: [monkeytype_template_mac.mods.png, monkeytype_template_mac.extra.mods.png]
 # Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
 # keymap, so it has its own entry, but the web-app routing is the browser
 # entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
@@ -516,7 +546,17 @@ firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.fire
     <<: *web_urls
     chatgpt.com/codex:
       overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
-  titles-contains: *web_titles
+    # Firefox reserves Ctrl/Cmd+Shift+P (private window), so Monkeytype's
+    # command-line key never reaches the page. This set leaves it out; its keys
+    # are the same on macOS.
+    monkeytype.com:
+      url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+      overlay: monkeytype_firefox_template.mods.png
+  titles-contains:
+    <<: *web_titles
+    Monkeytype:
+      title: '^Monkeytype \| A minimalistic'
+      overlay: monkeytype_firefox_template.mods.png
   os:
     macos:
       overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
@@ -524,14 +564,28 @@ firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.fire
         <<: *web_urls_mac
         chatgpt.com/codex:
           overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
-      titles-contains: *web_titles_mac
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: monkeytype_firefox_template.mods.png
+      titles-contains:
+        <<: *web_titles_mac
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: monkeytype_firefox_template.mods.png
     linux:
       overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
       urls-contains:
         <<: *web_urls
         chatgpt.com/codex:
           overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
-      titles-contains: *web_titles
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: monkeytype_firefox_template.mods.png
+      titles-contains:
+        <<: *web_titles
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: monkeytype_firefox_template.mods.png
 # Safari (sources: overlay_sources/safari/), macOS only. The host reads the
 # active tab's URL over AppleScript (services/browser_url_macos.py), so the web
 # apps route as in the other browsers, through the shared macOS maps. The
