@@ -2820,3 +2820,10 @@ dota2,steam_app_570:
 # on a running install.
 totalcmd,totalcmd64:
   overlay: [totalcmd_template.mods.png, totalcmd_template.combo.mods.png]
+# foobar2000 (overlay_sources/foobar2000/). Windows only: the macOS build has
+# no documented default shortcuts. The 2.26.2 x64 installer ships
+# foobar2000.exe. Not checked on a running install.
+foobar2000:
+  os:
+    windows:
+      overlay: foobar2000_template.mods.png
