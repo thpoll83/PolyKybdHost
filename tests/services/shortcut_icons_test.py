@@ -102,11 +102,18 @@ class MatchTest(unittest.TestCase):
         self.assertEqual(si.fold_spelling("news"), "news")
         self.assertIsNone(si.match("News"))
 
-    def test_translation_is_not_reachable_by_any_rule(self):
-        # A wrong icon is worse than none: the caller would draw it INSTEAD of
-        # the label text, which is the correct fallback on a non-English UI.
-        for foreign in ("Speichern", "Enregistrer", "Guardar", "Salva"):
-            self.assertIsNone(si.match(foreign), f"{foreign} should not match")
+    def test_translation_is_not_reachable_by_any_english_rule(self):
+        # No spelling fold or similarity score bridges a translation. Only the
+        # localized phrase files do (shortcut_lexicon_test.py); with them empty
+        # these must stay unmatched rather than take a fuzzy guess.
+        saved = si._LEXICON_CACHE
+        si._LEXICON_CACHE = []
+        try:
+            for foreign in ("Speichern", "Enregistrer", "Guardar", "Salva"):
+                self.assertIsNone(si.match(foreign, allow_fuzzy=True),
+                                  f"{foreign} should not match")
+        finally:
+            si._LEXICON_CACHE = saved
 
     def test_unknown_label_returns_none(self):
         # "To Opposite Case" used to live here; the change-case concept closed it.
