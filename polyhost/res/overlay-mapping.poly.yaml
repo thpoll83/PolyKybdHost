@@ -1569,6 +1569,26 @@ snippingtool:
   overlay: snippingtool_template.mods.png
 taskmgr:
   overlay: [taskmgr_template.mods.png, taskmgr_template.combo.mods.png]
+# PowerToys (sources: overlay_sources/powertoys/). Only the two launcher windows
+# get keycaps; the other PowerToys features are global shortcuts.
+# Windows cuts a process name at its FIRST dot, so Microsoft.CmdPal.UI.exe arrives
+# as `microsoft` and every PowerToys.*.exe (Settings, the editors, Run) as
+# `powertoys`. Only the title tells the windows apart, so both entries route
+# through `titles-match` and have no overlay of their own: a window whose title
+# matches no key gets nothing. ⚠️ Not a parent `title:` gate: that gate is skipped
+# for an EMPTY title, and PowerToys' full-screen tools (Color Picker, Text
+# Extractor, Screen Ruler) and other Microsoft.* windows can have one.
+# ⚠️ "Command Palette" is the English window title (resource `AppName`); the
+# title is translated, so a localized Windows gets no Command Palette keycaps.
+# "PowerToys Run" is not translated (MainWindow.xaml).
+microsoft:
+  titles-match:
+    "^Command Palette( Dev)?$":
+      overlay: [powertoys_cmdpal_template.mods.png, powertoys_cmdpal_template.combo.mods.png]
+powertoys:
+  titles-match:
+    "^PowerToys Run$":
+      overlay: [powertoys_run_template.mods.png, powertoys_run_template.combo.mods.png]
 7zfm,7zg:
   overlay: sevenzip_template.mods.png
 winscp:
