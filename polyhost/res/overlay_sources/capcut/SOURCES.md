@@ -113,12 +113,14 @@ one panel shared by both platforms with per-platform key art.
 | `deleteleft, deleteright, splitall` | drawn in `fetch_icons.py` in the `nle_glyphs` style | GPL-3.0-or-later |
 | `maintrack` | `snap.png` over a track bar, drawn in `fetch_icons.py` | GPL-3.0-or-later |
 | `prevmarker, nextmarker` | Fluent `Flag` with an arrow, drawn in `fetch_icons.py` | MIT (base) |
-| `capcut.png` (ESC mark) | drawn letter tile, `../program_marks.py` (`"C"`, sprocket motif) | GPL-3.0-or-later |
+| `capcut.png` (ESC mark) | the CapCut logo (capcut.com favicon, through Google's favicon service), fitted into 32x32 and cut at luma 128, dark pixels lit (`_capcut_mark` in `fetch_icons.py`) | ByteDance's mark, used only to name the app |
 
-**The ESC mark is not the CapCut logo.** The logo is a ByteDance trademark,
-and Simple Icons has no `capcut` mark (checked `icons/capcut.svg` and
-`data/simple-icons.json` on its `develop` branch, 2026-11-05), so a drawn
-letter tile with film sprocket holes is used.
+**The ESC mark is the CapCut logo**, a black outline glyph of two rounded
+bars joined by an X, like an opened film clapper. Simple Icons has no `capcut`
+mark (checked `icons/capcut.svg` and `data/simple-icons.json` on its `develop`
+branch, 2026-11-05), so the mark is traced from the capcut.com favicon. The
+logo is a ByteDance trademark; it is used only to name the app on its own key,
+as the other program marks are.
 
 PolyKybdHost is GPL-3.0-or-later; MIT and Apache-2.0 are GPL-3.0-compatible.
 

@@ -7,8 +7,8 @@ Glyphs are Microsoft Fluent UI System Icons (MIT), with Material Symbols
 in the same style: delete left / delete right of the playhead, split all
 tracks, the main track magnet, and the previous / next marker composites.
 
-The ESC mark is a drawn letter tile (`../program_marks.py`), not the CapCut
-logo: the logo is a ByteDance trademark and Simple Icons has no `capcut` mark.
+The ESC mark is the CapCut logo (the capcut.com favicon) reduced to a 32x32
+1-bit trace, dark pixels lit. See SOURCES.md.
 
     pip install cairosvg Pillow
     PYTHONPATH=. python polyhost/res/overlay_sources/capcut/fetch_icons.py
@@ -25,7 +25,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 import nle_glyphs  # noqa: E402
-import program_marks  # noqa: E402
 from nle_glyphs import WHITE, _block, _canvas, _save  # noqa: E402
 
 FLUENT = {
@@ -167,6 +166,32 @@ def _guarded(path: Path, draw) -> None:
         print(f"  {path.name}  <- custom (drawn in capcut/fetch_icons.py)")
 
 
+# capcut.com's favicon is the CapCut logo. Google's favicon service serves it.
+CAPCUT_ICON_URL = "https://www.google.com/s2/favicons?domain=capcut.com&sz=256"
+CAPCUT_DARK_LUMA = 128
+
+
+def _capcut_mark(dest: Path, px: int = 32) -> None:
+    """The CapCut logo as a px*px 1-bit trace: fitted into the square, pixels at
+    luma 128 or darker lit. Drawn at the keycap size so the generator copies it
+    1:1."""
+    import io
+    import urllib.request
+    req = urllib.request.Request(CAPCUT_ICON_URL, headers={"User-Agent": "PolyKybdHost"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("RGBA")
+    white = Image.new("RGBA", icon.size, "white")
+    white.alpha_composite(icon)
+    src = white.convert("L")
+    scale = px / max(src.size)
+    fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
+                        Image.LANCZOS)
+    square = Image.new("L", (px, px), 255)
+    square.paste(fitted, ((px - fitted.width) // 2, (px - fitted.height) // 2))
+    a = square.point(lambda v: 255 if v <= CAPCUT_DARK_LUMA else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -178,7 +203,7 @@ def main() -> int:
     _guarded(out / "maintrack.png", lambda p: _main_magnet(p, out / "snap.png"))
     _guarded(out / "prevmarker.png", lambda p: _marker_step(p, out / "marker.png", forward=False))
     _guarded(out / "nextmarker.png", lambda p: _marker_step(p, out / "marker.png", forward=True))
-    program_marks.ensure(out / "capcut.png", "C", motif="sprockets")
+    _guarded(out / "capcut.png", _capcut_mark)
     print(f"Wrote icons to {out}")
     return 0
 
