@@ -1,7 +1,7 @@
 """The SHIPPED routing of terminal AI coding CLIs: a terminal's WINDOW TITLE.
 
-Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code and GitHub Copilot CLI
-replace the shell's title with their own; Aider sets none. Each route in
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
+Kimi Code CLI replace the shell's title with their own; Aider sets none. Each route in
 `&editor_titles` matches the CLI's own title format and its command name at
 the command position. Drives `polyhost/res/overlay-mapping.poly.yaml` itself.
 The formats are in `polyhost/res/overlay_sources/aicli/SOURCES.md`. What it
@@ -93,6 +93,16 @@ TITLES = {
         "copilot",
         "copilot --resume",
     ],
+    "kimi_cli_template": [
+        "Kimi Code",
+        "Kimi Code — Konsole",
+        "Documents — Kimi Code — 80×24",
+        "kimi",
+        "kimi --resume ses-1",
+        "~/src> kimi",                         # Nushell
+        "Default (kimi)",
+        "C:\\WINDOWS\\system32\\cmd.exe - kimi",
+    ],
     "aider_template": [
         "aider",
         "aider --model sonnet main.py",
@@ -123,6 +133,9 @@ OTHER_TITLES = [
     "OpenCode notes",
     "user@host: ~/OpenCode",
     "GitHub Copilot docs",
+    "Kimi Code notes",
+    "vim kimi.md",
+    "user@host: ~/kimi",
     "bash",
 ]
 

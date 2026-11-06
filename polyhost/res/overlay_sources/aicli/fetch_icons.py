@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the terminal AI CLI overlays.
 
-One icon folder serves seven sets: `claude_code_cli.yaml`, `codex_cli.yaml`,
-`opencode.yaml`, `gemini_cli.yaml`, `qwen_code.yaml`, `copilot_cli.yaml` and
-`aider.yaml`. They share most of their vocabulary (interrupt, new line,
+One icon folder serves eight sets: `claude_code_cli.yaml`, `codex_cli.yaml`,
+`opencode.yaml`, `gemini_cli.yaml`, `qwen_code.yaml`, `copilot_cli.yaml`,
+`kimi_cli.yaml` and `aider.yaml`. They share most of their vocabulary (interrupt, new line,
 external editor, paste image), so the icons are in one place.
 
 Style route: Microsoft Fluent UI System Icons (MIT), with Material Symbols
@@ -12,8 +12,8 @@ apps (`../aichat/`). Icons those apps or nano already draw are copied byte for
 byte, so each glyph is stored once in the icon library. Program marks:
 
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
-* Gemini CLI, Qwen Code -- the CLIs' own marks from Simple Icons
-  (`googlegemini`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* Gemini CLI, Qwen Code, Kimi Code CLI -- the CLIs' own marks from Simple
+  Icons (`googlegemini`, `qwen`, `kimi`; CC0 artwork, `../brand_marks.py`).
 * OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
   "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
   hatched.
@@ -72,10 +72,12 @@ FLUENT = {
     # --- Copilot CLI ---
     "history": "History",
     "plan": "ms:assignment",
+    # --- Kimi Code CLI ---
+    "notify": "Alert",
 }
 
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
-BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen"}
+BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen", "kimi.png": "kimi"}
 LETTERS = {"aider.png": "Ai"}
 
 BORROWED = {
@@ -145,10 +147,58 @@ def opencode_mark(dest: Path) -> None:
     Image.merge("RGBA", (mark,) * 4).save(dest)
 
 
+# Two Fluent icons carry a solid round badge with a symbol cut out of it.
+# Scaled to the 40x36 key area, the cut-out came out lopsided (one arm of the
+# plus wider, single stray pixels). crisp_badge() scales the icon once to its
+# final 36x36 size and redraws the badge there in whole pixels: a symmetric
+# disc, a 2 px gap around it, and a 2 px plus or up arrow. The specs place a
+# 36x36 icon in their 40x36 area unscaled.
+_BADGES = {
+    "pasteimage.png": (10, 10, 10, "plus"),      # centre x, centre y, radius
+    "background.png": (26, 26, 10, "arrow_up"),
+}
+_BADGE_SIZE = 36
+
+
+def crisp_badge(path: Path, cx: int, cy: int, r: int, symbol: str) -> None:
+    from PIL import Image
+    src = Image.open(path).convert("RGBA").getchannel("A")
+    if src.size == (_BADGE_SIZE, _BADGE_SIZE):
+        return                                   # already redrawn
+    src = src.crop(src.getbbox())
+    k = min(_BADGE_SIZE / src.width, _BADGE_SIZE / src.height)
+    src = src.resize((round(src.width * k), round(src.height * k)), Image.LANCZOS)
+    img = Image.new("L", (_BADGE_SIZE, _BADGE_SIZE), 0)
+    img.paste(src.point(lambda v: 255 if v >= 150 else 0), (0, 0))
+
+    def inside(x, y, rad):
+        return (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= rad * rad
+
+    for y in range(_BADGE_SIZE):
+        for x in range(_BADGE_SIZE):
+            if inside(x, y, r + 2):
+                img.putpixel((x, y), 255 if inside(x, y, r) else 0)
+    cut = []
+    if symbol == "plus":
+        for i in range(cx - 6, cx + 6):
+            cut += [(cx - 1, i), (cx, i), (i, cy - 1), (i, cy)]
+    else:                                        # arrow_up: solid head, 2 px shaft
+        tip = cy - 7
+        for d in range(5):                       # head row d spans 2 + 2d pixels
+            cut += [(x, tip + d) for x in range(cx - 1 - d, cx + 1 + d)]
+        for y in range(tip + 5, cy + 6):
+            cut += [(cx - 1, y), (cx, y)]
+    for x, y in cut:
+        img.putpixel((x, y), 0)
+    Image.merge("RGBA", (img,) * 4).save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    for fname, (cx, cy, r, symbol) in _BADGES.items():
+        crisp_badge(out / fname, cx, cy, r, symbol)
     opencode_mark(out / "opencode.png")
     for fname, slug in BRAND.items():
         brand_marks.ensure(out / fname, slug)
