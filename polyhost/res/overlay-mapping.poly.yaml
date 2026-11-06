@@ -1571,6 +1571,23 @@ windowsterminal,wt:
     "(qwen)": *qwen_cli
     "(qwen": *qwen_cli
     "^qwen": *qwen_cli
+    # Kimi Code CLI: "Kimi Code" once a session exists, then the session's
+    # title alone (at most 32 characters), which does not name it. Before the
+    # first message it writes no title, so the shell's "kimi" stays.
+    Kimi Code: &kimi_cli
+      title: &kimi_title '^(?:Kimi Code\s*(?:$|—\s*\S+$)|kimi(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Kimi Code(?:$|\s)|kimi(?:$|\s|\)))'
+      overlay: kimi_cli_template.mods.png
+      os:
+        macos:
+          title: *kimi_title
+          overlay: kimi_cli_template_mac.mods.png
+        linux:
+          title: *kimi_title
+          overlay: kimi_cli_template_linux.mods.png
+    kimi: *kimi_cli
+    "(kimi)": *kimi_cli
+    "(kimi": *kimi_cli
+    "^kimi": *kimi_cli
     # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
     # <topic>" in screen-reader mode).
     GitHub Copilot: &copilot_cli
@@ -1586,6 +1603,18 @@ windowsterminal,wt:
     "(copilot)": *copilot_cli
     "(copilot": *copilot_cli
     "^copilot": *copilot_cli
+    # Grok Build (xAI's `grok`): its title joins the parts it shows with
+    # " - " and always ends with the word grok: "grok" when idle, "<session>
+    # - grok", "⠋ - Thinking - <session> - grok", "⚠ Action Required - ... -
+    # grok" (notifications/title.rs in its source). The command-position
+    # regex covers all of them, because grok follows the " - " separator at
+    # the end. The unofficial superagent-ai grok-cli uses the same command.
+    grok: &grok_cli
+      title: '^grok(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)grok(?:$|\s|\))'
+      overlay: grok_build_template.mods.png
+    "(grok)": *grok_cli
+    "(grok": *grok_cli
+    "^grok": *grok_cli
     # Aider sets no title: only the shell's (the scripts in res/shell/).
     # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
     # branch repeats the title regex (`*<cli>_title`); without it any title
@@ -1603,6 +1632,20 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # Mistral Vibe writes "Vibe" while idle and ">> Vibe" while it works
+    # (measured on 3.1.0; it sets an empty title on exit). The own-title part
+    # takes a short symbol prefix for states that were not measured, and one
+    # terminal name after " — " (as OpenCode's), so Terminal.app idle in a
+    # directory named Vibe ("Vibe — -zsh — 80×24") is not taken. "vibe" is
+    # an English word: the command-position part keeps `cd vibe`, a prompt in
+    # ~/vibe and `vim vibe.txt` on the terminal's set.
+    Vibe: &vibe_cli
+      title: '^(?:(?:[^\sA-Za-z0-9]{1,3} )?Vibe\s*(?:$|—\s*\S+$)|vibe(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)vibe(?:$|\s|\))|\s—\s(?:[^\sA-Za-z0-9]{1,3} )?Vibe(?:$|\s—\s\S+$)'
+      overlay: mistral_vibe_template.mods.png
+    vibe: *vibe_cli
+    "(vibe)": *vibe_cli
+    "(vibe": *vibe_cli
+    "^vibe": *vibe_cli
     # lazygit (sources: overlay_sources/lazygit/) sets no window title, so it
     # is routed like nano: the shell or the terminal puts the running command
     # into the title, and the `title` regex requires lazygit at the command
@@ -2458,6 +2501,22 @@ acad,autocad:
   os:
     macos:
       overlay: [autocad_template_mac.mods.png, autocad_template_mac.combo.mods.png, autocad_template_mac.extra.mods.png, autocad_template_mac.gui.mods.png]
+# Autodesk Inventor (overlay_sources/inventor/). `Inventor.exe`; Windows only.
+# Name not checked on an install.
+inventor:
+  overlay: [inventor_template.mods.png, inventor_template.combo.mods.png]
+# SketchUp Pro (overlay_sources/sketchup/). `SketchUp.exe` on Windows; on macOS
+# the app is "SketchUp <year>", which the year rule turns into `sketchup`.
+# Names not checked on an install. No Linux version.
+sketchup:
+  overlay: sketchup_template.mods.png
+  os:
+    macos:
+      overlay: [sketchup_template_mac.mods.png, sketchup_template_mac.combo.mods.png]
+# Tekla Structures (overlay_sources/tekla/), modeling keys. `TeklaStructures.exe`;
+# Windows only. Name not checked on an install.
+teklastructures,tekla structures:
+  overlay: [tekla_template.mods.png, tekla_template.combo.mods.png]
 # OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
 # AppImage, class OpenSCAD); the nightly's desktop file names the class
 # org.openscad.openscad.

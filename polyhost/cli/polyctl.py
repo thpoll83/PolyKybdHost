@@ -20,7 +20,7 @@ import json
 import sys
 import time
 
-from polyhost.device.command_ids import GlyphScript, GlyphSize, IdleStyle, IdleTimeout  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -490,14 +490,29 @@ _GLYPH_SCRIPT_VALUES = {s.name.lower(): s.value for s in GlyphScript}
 _GLYPH_SCRIPT_NAMES = {v: k for k, v in _GLYPH_SCRIPT_VALUES.items()}
 
 
+# A CLOSED set the firmware validates (cmd 30's placement byte, firmware v26+).
+_GLYPH_PLACEMENT_VALUES = {s.name.lower().replace("_", "-"): s.value for s in GlyphPlacement}
+_GLYPH_PLACEMENT_NAMES = {v: k for k, v in _GLYPH_PLACEMENT_VALUES.items()}
+
+
 def _cmd_glyph_script(client, args):
-    if args.script is None:
+    if args.script is None and args.placement is None:
         value = client.call(protocol.M_GLYPH_SCRIPT_GET, {})
         print(f"glyph script: {_GLYPH_SCRIPT_NAMES.get(value, value)} ({value})")
-    else:
+        try:
+            place = client.call(protocol.M_GLYPH_PLACEMENT_GET, {})
+            print(f"placement: {_GLYPH_PLACEMENT_NAMES.get(place, place)} ({place})")
+        except RpcError as e:
+            print(f"placement: not available ({e})")
+        return 0
+    if args.script is not None:
         value = _GLYPH_SCRIPT_VALUES[args.script]
         client.call(protocol.M_GLYPH_SCRIPT_SET, {"value": value})
         print(f"glyph script set to {args.script} ({value})")
+    if args.placement is not None:
+        place = _GLYPH_PLACEMENT_VALUES[args.placement]
+        client.call(protocol.M_GLYPH_PLACEMENT_SET, {"value": place})
+        print(f"placement set to {args.placement} ({place})")
     return 0
 
 
@@ -1136,6 +1151,11 @@ def build_parser():
         "script", nargs="?", choices=sorted(_GLYPH_SCRIPT_VALUES), default=None,
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
+    p_glyph_script.add_argument(
+        "--placement", choices=sorted(_GLYPH_PLACEMENT_VALUES), default=None,
+        help="where the script's letters and digits sit on the keycap: 'centre' "
+             "(the default) or 'top-left', which leaves room for an overlay icon "
+             "on the right (firmware v26+)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
 
     p_glyph_size = sub.add_parser(
