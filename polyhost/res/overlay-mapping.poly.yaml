@@ -2517,6 +2517,15 @@ gitkraken:
   os:
     macos:
       overlay: [gitkraken_template_mac.mods.png, gitkraken_template_mac.combo.mods.png, gitkraken_template_mac.extra.mods.png]
+# Sourcetree (sources: overlay_sources/sourcetree/). The Windows and Mac programs
+# have different keys, so the macOS set is not the Windows set with Cmd.
+# SourceTree.exe on Windows (3.4.33 installer) and the bundle executable
+# `Sourcetree` on macOS (4.2.20); neither checked on an install. No Linux build.
+sourcetree:
+  overlay: [sourcetree_template.mods.png, sourcetree_template.combo.mods.png, sourcetree_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [sourcetree_template_mac.mods.png, sourcetree_template_mac.combo.mods.png, sourcetree_template_mac.extra.mods.png, sourcetree_template_mac.gui.mods.png]
 # PDF readers. Adobe Acrobat (sources: overlay_sources/acrobat/): Reader and Pro
 # share one keymap; Acrobat.exe for both today, AcroRd32.exe for the old
 # Reader. SumatraPDF (overlay_sources/sumatrapdf/), Windows only. Okular
