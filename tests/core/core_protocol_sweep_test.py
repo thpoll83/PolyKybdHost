@@ -33,6 +33,7 @@ CORE_CALLS = {
     "apply_staged_firmware": (),
     "get_glyph_script": (), "set_glyph_script": (0,),
     "get_glyph_size": (), "set_glyph_size": (0,),
+    "get_glyph_placement": (), "set_glyph_placement": (1,),
     "get_idle_style": (), "set_idle_style": (0,),
     "get_idle_timeout": (), "set_idle_timeout": (IdleTimeout.MIN_2.value,),
     "set_idle": (True,),

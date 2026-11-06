@@ -13,7 +13,8 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
+from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement,
+                                         GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
@@ -134,6 +135,12 @@ MAPPING_NO_LEGEND_MIN_PROTOCOL = 25
 # the master by USB enumeration instead of GP24. v23 and older ignore the byte and
 # set only the side, so below the gate the host refuses to send the flag.
 SPLIT_VBUS_FLAG_MIN_PROTOCOL = 24
+
+# Minimum firmware PROTOCOL_VERSION for cmd 30's placement byte (data[3]): centre or
+# top-left glyph-script letters and digits. 0 keeps the stored placement, so the
+# plain script set below stays unchanged and ungated by this. v25 and older ignore
+# the byte and always centre, so below the gate the host refuses to send it.
+GLYPH_PLACEMENT_MIN_PROTOCOL = 26
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
 BOARD_OP_SET_SPLIT_VBUS = 2
@@ -166,6 +173,7 @@ FEATURE_MIN_PROTOCOL = {
     "mapping_dim": MAPPING_DIM_MIN_PROTOCOL,
     "mapping_no_legend": MAPPING_NO_LEGEND_MIN_PROTOCOL,
     "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+    "glyph_placement": GLYPH_PLACEMENT_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -842,6 +850,40 @@ class PolyKybd:
                 compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    def set_glyph_placement(self, placement: GlyphPlacement | int) -> tuple[bool, Any]:
+        """Centre or top-left glyph-script letters and digits (cmd 30's placement
+        byte, protocol v26+). Sends script 0xFF, which keeps the script, and the
+        placement as an op of ``value + 1`` (0 would mean "keep"). Persisted by the
+        firmware at the next suspend/store, like the script.
+
+        ⚠️ A closed range: the firmware NACKs an op past TOP_LEFT, so pass a
+        GlyphPlacement, not an arbitrary int."""
+        value = placement.value if isinstance(placement, GlyphPlacement) else int(placement)
+        if not self.supports("glyph_placement"):
+            return False, (
+                f"Firmware protocol too old for glyph-script placement "
+                f"(need v{GLYPH_PLACEMENT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting glyph-script placement to %d...", value)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF, value + 1), 100, expect(Cmd.GLYPH_SCRIPT))
+        # expect() also matches a NACK, so read the verdict byte.
+        if result and isinstance(reply, (bytes, bytearray)) and reply[2:3] != b'.':
+            return False, f"The keyboard refused glyph-script placement {value}."
+        return result, reply
+
+    def get_glyph_placement(self) -> tuple[bool, int]:
+        """Read the glyph-script placement (raw enum value, 0=centre, 1=top-left)."""
+        if not self.supports("glyph_placement"):
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
+            if result and len(reply) > 4 and reply[2:3] == b'.':
+                return True, reply[4]
         except Exception:
             pass
         return False, 0
