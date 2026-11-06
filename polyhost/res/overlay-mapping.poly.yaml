@@ -1633,6 +1633,49 @@ windowsterminal,wt:
     "(zellij)": *zellij_route
     "(zellij": *zellij_route
     "^zellij": *zellij_route
+    # Terminal file managers (sources: overlay_sources/tui_file_managers/;
+    # SOURCES.md there has every title format and where it was read). The
+    # keys select the route; the `title` regex then requires the program at
+    # the command position, as for nano, so `vim lf`, `man ranger`, a prompt
+    # in ~/yazi or a word such as "golf" or "self-test" does not load a set.
+    # None of the three was checked on an install.
+    #
+    # yazi (Windows, macOS, Linux) writes "Yazi: <directory>" itself on every
+    # directory change (yazi 26.x; earlier releases wrote "Yazi: <path>" with
+    # the default `title_format`, and before that no title). Before its first
+    # write the shell's title shows the command.
+    "Yazi:": &yazi_tui
+      title: '^(?:Yazi: |(?:sudo\s+)?yazi(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Yazi: |(?:sudo\s+)?yazi(?:$|\s|\)))'
+      overlay: yazi_template.mods.png
+    yazi: *yazi_tui
+    "(yazi)": *yazi_tui
+    "(yazi": *yazi_tui
+    "^yazi": *yazi_tui
+    # ranger (macOS, Linux) writes no title by default (`update_title` is
+    # false); the shell's title shows the command. With `set update_title
+    # true` it writes "ranger:<path>", one word, which the `titles-match`
+    # entry on the terminals below routes. It has no Windows set, so the
+    # entry has no overlay of its own and only the two OS branches match;
+    # each repeats the title regex (an `os:` branch is tried first).
+    ranger: &ranger_tui
+      os:
+        macos:
+          title: &ranger_title '^(?:sudo\s+)?ranger(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?ranger(?:$|\s|\))'
+          overlay: ranger_template.mods.png
+        linux:
+          title: *ranger_title
+          overlay: ranger_template.mods.png
+    "(ranger)": *ranger_tui
+    "(ranger": *ranger_tui
+    "^ranger": *ranger_tui
+    # lf (Windows, macOS, Linux) writes no title; only the shell's title
+    # shows it. The word is two letters, so the regex is as strict as nano's.
+    lf: &lf_tui
+      title: '^(?:sudo\s+)?lf(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?lf(?:$|\s|\))'
+      overlay: lf_template.mods.png
+    "(lf)": *lf_tui
+    "(lf": *lf_tui
+    "^lf": *lf_tui
   # Zellij 0.43.1 and later: "<session>" or "<session> | <pane title>", with a
   # session name that Zellij generated ("<adjective>-<noun>" from two fixed
   # lists; the regex is printed by overlay_sources/zellij/gen_session_regex.py).
@@ -1640,9 +1683,20 @@ windowsterminal,wt:
   # recognised by its title. tests/handler/zellij_routing_test.py.
   # The key is longer than the 1024 characters YAML allows for a plain key,
   # so it is written as an explicit key ("? ").
+  # Title programs matched by a regex over the whole title: Zellij's generated
+  # session names and ranger's own "ranger:<path>".
   titles-match: &multiplexer_titles
     ? '^(?:adamant|adept|adventurous|arcadian|auspicious|awesome|blossoming|brave|charming|chatty|circular|considerate|cubic|curious|delighted|didactic|diligent|effulgent|erudite|excellent|exquisite|fabulous|fascinating|friendly|glowing|gracious|gregarious|hopeful|implacable|inventive|joyous|judicious|jumping|kind|likable|loyal|lucky|marvellous|mellifluous|nautical|oblong|outstanding|polished|polite|profound|quadratic|quiet|rectangular|remarkable|rusty|sensible|sincere|sparkling|splendid|stellar|tenacious|tremendous|triangular|undulating|unflappable|unique|verdant|vitreous|wise|zippy)-(?:aardvark|accordion|apple|apricot|bee|brachiosaur|cactus|capsicum|clarinet|cowbell|crab|cuckoo|cymbal|diplodocus|donkey|drum|duck|echidna|elephant|foxglove|galaxy|glockenspiel|goose|hill|horse|iguanadon|iguanodon|jellyfish|kangaroo|lake|lemon|lemur|magpie|megalodon|mountain|mouse|muskrat|newt|oboe|ocelot|orange|panda|peach|pepper|petunia|pheasant|piano|pigeon|platypus|quasar|rhinoceros|river|rustacean|salamander|sitar|stegosaurus|tambourine|tiger|tomato|triceratops|ukulele|viola|weasel|xylophone|yak|zebra)(?:$| \| )'
     : overlay: *zellij_overlay
+    # ranger's own title, "ranger:<path>" (with `set update_title true`), is
+    # one word, so no `titles-contains` key can name it. macOS and Linux only,
+    # as its route in &editor_titles; on Windows nothing matches.
+    '(?:^|\s[-—:]\s|\(|\]\s)ranger:\S':
+      os:
+        macos:
+          overlay: ranger_template.mods.png
+        linux:
+          overlay: ranger_template.mods.png
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,

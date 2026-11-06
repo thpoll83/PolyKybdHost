@@ -137,6 +137,18 @@ the command the shell wrote when tmux started, and the tmux set stays loaded for
 the whole session, also while nano runs in a pane
 (`overlay_sources/tmux/SOURCES.md`).
 
+### Terminal file managers (yazi, ranger, lf)
+
+yazi, ranger and lf have routes in the same `&editor_titles` list, with a
+`title` regex that requires the program at the command position, as for nano.
+yazi writes `Yazi: <directory>` itself, so `Yazi:` is a key too. ranger writes
+`ranger:<path>` only with `set update_title true`; that is one word, so the
+shared `&multiplexer_titles` map (the terminals' `titles-match`) has a regex for it. ranger
+has no Windows set: its route has only `macos` and `linux` branches. lf writes
+no title. The formats are in
+[`overlay_sources/tui_file_managers/SOURCES.md`](overlay_sources/tui_file_managers/SOURCES.md).
+(`tests/handler/tui_file_manager_routing_test.py`.)
+
 ### A program in a terminal dims the terminal's shortcuts
 
 nano, Vim, Emacs and the AI CLIs run inside the terminal, and the terminal reads
