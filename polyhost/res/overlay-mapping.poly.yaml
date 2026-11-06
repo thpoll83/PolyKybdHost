@@ -1571,6 +1571,23 @@ windowsterminal,wt:
     "(qwen)": *qwen_cli
     "(qwen": *qwen_cli
     "^qwen": *qwen_cli
+    # Kimi Code CLI: "Kimi Code" once a session exists, then the session's
+    # title alone (at most 32 characters), which does not name it. Before the
+    # first message it writes no title, so the shell's "kimi" stays.
+    Kimi Code: &kimi_cli
+      title: &kimi_title '^(?:Kimi Code\s*(?:$|—\s*\S+$)|kimi(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Kimi Code(?:$|\s)|kimi(?:$|\s|\)))'
+      overlay: kimi_cli_template.mods.png
+      os:
+        macos:
+          title: *kimi_title
+          overlay: kimi_cli_template_mac.mods.png
+        linux:
+          title: *kimi_title
+          overlay: kimi_cli_template_linux.mods.png
+    kimi: *kimi_cli
+    "(kimi)": *kimi_cli
+    "(kimi": *kimi_cli
+    "^kimi": *kimi_cli
     # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
     # <topic>" in screen-reader mode).
     GitHub Copilot: &copilot_cli
@@ -1586,6 +1603,18 @@ windowsterminal,wt:
     "(copilot)": *copilot_cli
     "(copilot": *copilot_cli
     "^copilot": *copilot_cli
+    # Grok Build (xAI's `grok`): its title joins the parts it shows with
+    # " - " and always ends with the word grok: "grok" when idle, "<session>
+    # - grok", "⠋ - Thinking - <session> - grok", "⚠ Action Required - ... -
+    # grok" (notifications/title.rs in its source). The command-position
+    # regex covers all of them, because grok follows the " - " separator at
+    # the end. The unofficial superagent-ai grok-cli uses the same command.
+    grok: &grok_cli
+      title: '^grok(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)grok(?:$|\s|\))'
+      overlay: grok_build_template.mods.png
+    "(grok)": *grok_cli
+    "(grok": *grok_cli
+    "^grok": *grok_cli
     # Aider sets no title: only the shell's (the scripts in res/shell/).
     # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
     # branch repeats the title regex (`*<cli>_title`); without it any title
