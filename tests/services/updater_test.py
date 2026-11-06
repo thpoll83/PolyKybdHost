@@ -1238,6 +1238,8 @@ class TestRestartApp(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 updater.restart_app()
         popen.assert_called_once()
+        # Detached: the fallback child must not die with this process's group.
+        self.assertTrue(popen.call_args.kwargs.get("start_new_session"))
         sys_exit.assert_called_once_with(0)
 
     def test_windows_uses_subprocess(self):
@@ -1355,13 +1357,14 @@ class TestRestartApp(unittest.TestCase):
             ) % (os.getcwd(), child)
             # The spawner leads its own group, like a launchd job does.
             parent = subprocess.Popen([sys.executable, "-c", spawner], start_new_session=True)
-            deadline = time.monotonic() + 20
-            while not os.path.exists(pidfile) and time.monotonic() < deadline:
-                time.sleep(0.05)
-            time.sleep(0.2)
-            with open(pidfile, encoding="utf-8") as fh:
-                child_pid = int(fh.read())
+            child_pid = None
             try:
+                deadline = time.monotonic() + 20
+                while not os.path.exists(pidfile) and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                time.sleep(0.2)
+                with open(pidfile, encoding="utf-8") as fh:
+                    child_pid = int(fh.read())
                 os.killpg(parent.pid, signal.SIGKILL)
                 parent.wait(timeout=5)
                 open(go, "w", encoding="utf-8").close()
@@ -1371,10 +1374,19 @@ class TestRestartApp(unittest.TestCase):
                 self.assertTrue(os.path.exists(alive),
                                 "the relaunched child died with its parent's process group")
             finally:
-                try:
-                    os.kill(child_pid, signal.SIGKILL)
-                except OSError:
-                    pass  # already gone: the child exits by itself after writing `alive`
+                # Also runs when the child never wrote its pid file: the spawner
+                # would otherwise sleep on for 30 s after the failure.
+                if parent.poll() is None:
+                    try:
+                        os.killpg(parent.pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # the group is already gone
+                    parent.wait(timeout=5)
+                if child_pid is not None:
+                    try:
+                        os.kill(child_pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # already gone: the child exits by itself after writing `alive`
 
 
 class TestPreflight(unittest.TestCase):

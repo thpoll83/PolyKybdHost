@@ -1358,7 +1358,10 @@ def restart_app(new_process: bool = False) -> None:
         # `args` is built above from our own resolved interpreter, the literal
         # "-m polyhost" and this process's own argv, and is passed as a list with
         # no shell — there is no shell for anything to be injected into.
-        subprocess.Popen(args, close_fds=False)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        # Detached like every other relaunch: this process exits next, and a
+        # child left in its process group dies with a launchd job or a closing
+        # terminal (see detached_popen_kwargs).
+        spawn_detached(args)
         sys.exit(0)
 
 
