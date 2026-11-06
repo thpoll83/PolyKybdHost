@@ -23,6 +23,13 @@ and relative links were adjusted to suit a standalone file.
   Three rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
   entry (only while `safe_mode`), Install WinCompose (only while it isn't running) and,
   on Linux, the udev rule install (only while the installed rule is missing or stale).
+  ⚠️ **In client mode the top level has ONE quit row, "Quit && stop background
+  daemon".** The GUI-only quit (`self.exit`) is renamed "Only quit GUI" and is the
+  last row of Maintenance (`add_always_enabled_maintenance_action`), because the
+  maintainer misclicked it for the daemon quit several times. That call also keeps
+  the Maintenance parent enabled with no keyboard, so the row stays reachable. The
+  other Maintenance rows are gated by their own lists. In-process mode keeps plain
+  Quit at the top level.
   The language menu is built lazily and inserts itself at `self._lang_anchor`
   (Brightness), not at index 1.
 

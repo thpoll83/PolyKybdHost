@@ -229,6 +229,11 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
+        top = _grab(proc.stdout, "CLIENT_TOPLEVEL").split("|")
+        self.assertEqual(top[-1], "Quit && stop background daemon")
+        self.assertNotIn("Quit", top)
+        self.assertIn("CLIENT_MAINT_LAST Only quit GUI", proc.stdout)
+        self.assertIn("CLIENT_QUIT_GUI_REACHABLE_OFFLINE True", proc.stdout)
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
@@ -660,6 +665,22 @@ def _smoke_client():
             app.layout_dialog.close()
             # Client mode offers an explicit "stop the daemon too" entry.
             print("DAEMON_QUIT_ACTION", "present" if app.exit_with_daemon is not None else "absent")
+            # Two quit rows: only the daemon one stays at the top level; the
+            # GUI-only one is the last row under Maintenance.
+            print("CLIENT_TOPLEVEL", _toplevel(app))
+            maint = next(a for a in app.menu.actions() if a.text() == "Maintenance")
+            print("CLIENT_MAINT_LAST", [a for a in maint.menu().actions()
+                                        if not a.isSeparator()][-1].text())
+            # With no keyboard (unplugged: not connected, not present) the row
+            # must stay reachable: parent and row enabled.
+            app.connected = False
+            app.device_present = False
+            app.managed_connection_status()
+            print("CLIENT_QUIT_GUI_REACHABLE_OFFLINE",
+                  maint.isEnabled() and app.exit.isEnabled())
+            app.connected = True
+            app.device_present = True
+            app.managed_connection_status()
             # A self-update in client mode must be driven through the daemon over
             # RPC (so the daemon re-execs onto the new protocol), NOT via a local
             # in-GUI UpdateInstaller thread. Drive _run_update_installer directly
