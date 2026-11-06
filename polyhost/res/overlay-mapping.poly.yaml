@@ -2820,3 +2820,9 @@ dota2,steam_app_570:
 # on a running install.
 totalcmd,totalcmd64:
   overlay: [totalcmd_template.mods.png, totalcmd_template.combo.mods.png]
+# Winamp 5.x (overlay_sources/winamp/). Windows only: Winamp 5.x has no macOS or
+# Linux build. The process is winamp.exe. Not checked on a running install.
+winamp:
+  os:
+    windows:
+      overlay: [winamp_template.mods.png, winamp_template.combo.mods.png]
