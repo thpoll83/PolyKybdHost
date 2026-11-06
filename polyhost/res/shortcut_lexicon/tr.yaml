@@ -6,7 +6,7 @@
 concepts:
   save: [kaydet, dosyayı kaydet]
   save as: [farklı kaydet, bir kopya kaydet, kopyasını kaydet, tümünü kaydet]
-  open: [aç, dosya aç, dosyayı aç, son kullanılanı aç]
+  open: [dosya aç, dosyayı aç, son kullanılanı aç]
   new: [yeni, yeni dosya, yeni belge]
   print: [yazdır, baskı önizleme, yazdırma önizlemesi]
   reload: [yenile, yeniden yükle, geri yükle]
