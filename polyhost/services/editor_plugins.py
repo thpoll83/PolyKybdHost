@@ -34,6 +34,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 import tempfile
 import threading
 import time
@@ -160,14 +161,49 @@ def emacs_lisp_dir(init_file):
     return init_file.parent / "polykybd"
 
 
-def gdb_init_file(home=None, env=None, system=None):
-    """The init file GDB reads from the home folder, in GDB's own order (GDB
-    11 and later): ``$XDG_CONFIG_HOME/gdb/gdbinit``, ``~/.config/gdb/gdbinit``,
-    ``~/.gdbinit``. When none exists, ``~/.gdbinit``, which every version
-    reads."""
+GDB_VERSION_TIMEOUT_S = 5
+_GDB_VERSION_RE = re.compile(r"^GNU gdb .*?(\d+)\.\d+", re.M)
+_gdb_major_cache = {}
+
+
+def _gdb_major(exe):
+    """The major version of the GDB at `exe`, or None when it does not answer.
+    Asked once per executable. Never raises."""
+    if not exe:
+        return None
+    if exe not in _gdb_major_cache:
+        kwargs = {}
+        if platform.system() == "Windows":
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        major = None
+        try:
+            # Audit (Sourcery dangerous-subprocess-use): argv is a fixed list; exe
+            # is what shutil.which found for "gdb". No shell parses it.
+            # nosemgrep
+            proc = subprocess.run([exe, "--nx", "--version"], capture_output=True,
+                                  timeout=GDB_VERSION_TIMEOUT_S, **kwargs)
+            m = _GDB_VERSION_RE.search(proc.stdout.decode("utf-8", "replace"))
+            major = int(m.group(1)) if m else None
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            log.info("gdb did not report its version: %s", exc)
+        _gdb_major_cache[exe] = major
+    return _gdb_major_cache[exe]
+
+
+def gdb_init_file(home=None, env=None, system=None, gdb_major=None):
+    """The init file GDB reads from the home folder.
+
+    GDB 11 and later read the first of ``$XDG_CONFIG_HOME/gdb/gdbinit``,
+    ``~/.config/gdb/gdbinit`` and ``~/.gdbinit`` that exists. GDB 10 and
+    earlier read only ``~/.gdbinit``, so `gdb_major` below 11 selects it even
+    when a config-folder file exists. When none exists, ``~/.gdbinit``, which
+    every version reads. `gdb_major` None (version unknown) uses the GDB 11
+    order."""
     env = os.environ if env is None else env
     system = system or platform.system()
     h = _home(home, env, system)
+    if gdb_major is not None and gdb_major < 11:
+        return h / ".gdbinit"
     candidates = []
     if env.get("XDG_CONFIG_HOME"):
         candidates.append(Path(env["XDG_CONFIG_HOME"]) / "gdb" / "gdbinit")
@@ -346,7 +382,7 @@ def _marker_re(begin, end):
 
 _BLOCK_RE = _marker_re(BEGIN_MARKER, END_MARKER)
 _GDB_BLOCK_RE = _marker_re(GDB_BEGIN_MARKER, GDB_END_MARKER)
-_GDB_FILE_RE = re.compile(r'^_pk_file = ("(?:[^"\\]|\\.)*")[ \t]*$', re.M)
+_GDB_FILE_RE = re.compile(r'^_pk_file = ("(?:[^"\\]|\\.)*")[ \t]*\r?$', re.M)
 _LOAD_PATH_RE = re.compile(r"\(add-to-list 'load-path \"((?:[^\"\\]|\\.)*)\"\)")
 
 
@@ -417,19 +453,29 @@ def _block_dir(inner, editor=EMACS):
     return re.sub(r"\\(.)", r"\1", m.group(1))
 
 
+_GDB_LOADS_RE = re.compile(r"polykybd\.py\b")
+
+
 def _mentions_polykybd(rest, comment=";"):
-    """Whether the init file loads the package outside the marked block."""
+    """Whether the init file loads the package outside the marked block.
+    For GDB that is a line naming ``polykybd.py`` (``source …/polykybd.py``),
+    so a setting that merely contains the word is not taken for a load."""
     for line in rest.splitlines():
         code = line.split(comment, 1)[0]
-        if "polykybd" in code:
+        if comment == "#":
+            if _GDB_LOADS_RE.search(code):
+                return True
+        elif "polykybd" in code:
             return True
     return False
 
 
-def _init_paths(editor, home, env, system):
+def _init_paths(editor, home, env, system, which=None):
     """(init file, plugin folder) of an INIT_EDITORS editor."""
     if editor == GDB:
-        return gdb_init_file(home, env, system), gdb_plugin_dir(home, env, system)
+        major = _gdb_major((which or shutil.which)("gdb"))
+        return (gdb_init_file(home, env, system, major),
+                gdb_plugin_dir(home, env, system))
     init = emacs_init_file(home, env, system)
     return init, emacs_lisp_dir(init)
 
@@ -478,7 +524,7 @@ def status(editors=None, home=None, env=None, which=None, system=None,
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
     if editor in INIT_EDITORS:
-        init, want = _init_paths(editor, home, env, system)
+        init, want = _init_paths(editor, home, env, system, which)
         if shipped is None:
             default = EMACS_SOURCE if editor == EMACS else GDB_SOURCE
             return EditorStatus(editor, STATE_NO_SOURCE, init, str(source or default))

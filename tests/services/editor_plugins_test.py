@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 
 from polyhost.services import editor_plugins as ep
@@ -265,6 +266,34 @@ class TestGdb(Fixture):
         self.assertEqual(ep.gdb_plugin_dir(home=self.home, env={"XDG_CONFIG_HOME": str(xdg)}),
                          xdg / "gdb/polykybd")
 
+    def test_gdb_10_and_earlier_read_only_the_home_gdbinit(self):
+        (self.home / ".config/gdb").mkdir(parents=True)
+        (self.home / ".config/gdb/gdbinit").write_text("")
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={}, gdb_major=10), self.gdbinit)
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={}, gdb_major=11),
+                         self.home / ".config/gdb/gdbinit")
+        with mock.patch.object(ep, "_gdb_major", return_value=10):
+            [r] = ep.install([ep.GDB], **self.kw())
+            self.assertTrue(r.ok and r.changed, r)
+            self.assertIn(ep.GDB_BEGIN_MARKER, self.gdbinit.read_text())
+            self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+        self.assertEqual((self.home / ".config/gdb/gdbinit").read_text(), "")
+
+    def test_the_version_probe_reads_gnu_gdb_and_tolerates_a_missing_program(self):
+        ep._gdb_major_cache.clear()
+        self.addCleanup(ep._gdb_major_cache.clear)
+        done = subprocess.CompletedProcess([], 0, stdout=b"GNU gdb (Debian 10.1-1.7) 10.1.90.20210103-git\n")
+        with mock.patch.object(ep.subprocess, "run", return_value=done):
+            self.assertEqual(ep._gdb_major("/usr/bin/gdb-10"), 10)
+        with mock.patch.object(ep.subprocess, "run", side_effect=OSError("gone")):
+            self.assertIsNone(ep._gdb_major("/nowhere/gdb"))
+        self.assertIsNone(ep._gdb_major(None))
+
+    def test_a_block_with_crlf_line_ends_reads_installed(self):
+        ep.install([ep.GDB], **self.kw())
+        self.gdbinit.write_bytes(self.gdbinit.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+
     def test_not_present_without_gdb_and_without_an_init_file(self):
         self.assertEqual(self.status(ep.GDB, which=which_of(*ALL)).state, ep.STATE_NOT_PRESENT)
 
@@ -288,6 +317,8 @@ class TestGdb(Fixture):
         self.gdbinit.write_text("source ~/tools/polykybd.py\n")
         self.assertEqual(self.status(ep.GDB).state, ep.STATE_MANUAL)
         self.gdbinit.write_text("# polykybd later\n")
+        self.assertEqual(self.status(ep.GDB).state, ep.STATE_NOT_INSTALLED)
+        self.gdbinit.write_text("set prompt polykybd> \n")
         self.assertEqual(self.status(ep.GDB).state, ep.STATE_NOT_INSTALLED)
 
     def test_an_emacs_block_is_not_a_gdb_block(self):
@@ -322,11 +353,24 @@ class TestGdb(Fixture):
         self.assertIn("POLYKYBD-LOADED", out.stdout + out.stderr)
 
 
+def _gdb_has_python():
+    """Whether the installed GDB was built with Python (the script needs it)."""
+    gdb = shutil.which("gdb")
+    if not gdb:
+        return False
+    try:
+        out = subprocess.run([gdb, "-nx", "-batch", "-ex", "python print('PK-PY')"],
+                             capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return "PK-PY" in out.stdout
+
+
 class TestGdbScript(unittest.TestCase):
     """The shipped gdb-plugin/polykybd.py in a real GDB on a pseudo-terminal."""
 
-    @unittest.skipUnless(shutil.which("gdb") and hasattr(os, "fork"),
-                         "needs gdb and a pseudo-terminal")
+    @unittest.skipUnless(hasattr(os, "fork") and _gdb_has_python(),
+                         "needs gdb with Python and a pseudo-terminal")
     def test_the_title_follows_the_prompt_and_the_running_program(self):
         import pty
         import re
@@ -362,6 +406,44 @@ class TestGdbScript(unittest.TestCase):
         titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
         self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
         self.assertIn(b"\x1b[22;2t", out)
+
+    @unittest.skipUnless(hasattr(os, "fork") and _gdb_has_python(),
+                         "needs gdb with Python and a pseudo-terminal")
+    def test_sourcing_the_script_twice_writes_each_title_once(self):
+        import pty
+        import re
+        import select
+        import time
+        script = str(ep.GDB_SOURCE / "polykybd.py")
+        pid, fd = pty.fork()
+        if pid == 0:
+            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, "-x", script, "/bin/true"])
+        out = b""
+        try:
+            for cmd in (b"run\n", b"quit\n"):
+                end = time.time() + 3
+                while time.time() < end:
+                    if select.select([fd], [], [], 0.1)[0]:
+                        try:
+                            out += os.read(fd, 4096)
+                        except OSError:
+                            break
+                os.write(fd, cmd)
+            end = time.time() + 3
+            while time.time() < end:
+                if select.select([fd], [], [], 0.1)[0]:
+                    try:
+                        out += os.read(fd, 4096)
+                    except OSError:
+                        break
+        finally:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, 9)
+            os.waitpid(pid, 0)
+            os.close(fd)
+        titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
+        self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
+        self.assertEqual(out.count(b"\x1b[22;2t"), 1, out)
 
 
 class TestHelpTags(unittest.TestCase):
