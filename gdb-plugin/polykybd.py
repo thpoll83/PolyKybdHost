@@ -12,6 +12,7 @@
 #
 # PolyKybdHost: polyhost/res/overlay_sources/tui/SOURCES.md, gdb-plugin/README.md.
 
+import contextlib
 import os
 import sys
 
@@ -49,11 +50,11 @@ def _write(seq):
     out = _out()
     if out is None:
         return
-    try:
+    # A closed or vanished terminal (GDB exiting, a detached session) must not
+    # turn a title update into a Python error in the middle of a GDB command.
+    with contextlib.suppress(OSError, ValueError):
         out.write(seq)
         out.flush()
-    except (OSError, ValueError):
-        pass
 
 
 def set_title(state):
