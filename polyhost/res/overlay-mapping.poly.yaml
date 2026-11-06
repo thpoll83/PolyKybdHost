@@ -2724,3 +2724,8 @@ cs2,steam_app_730:
 # lowercase to `ssms`. Name not checked on an install.
 ssms:
   overlay: [ssms_template.mods.png, ssms_template.combo.mods.png]
+# Everything, the voidtools file search (overlay_sources/everything/). Windows
+# only. Both the 1.4.1.1032 and the 1.5.0.1424b downloads ship the program as
+# `Everything.exe`. Not checked on a running install.
+everything:
+  overlay: [everything_template.mods.png, everything_template.combo.mods.png]
