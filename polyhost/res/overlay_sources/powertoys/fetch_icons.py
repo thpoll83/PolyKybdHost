@@ -14,11 +14,13 @@ apps' OWN icons from microsoft/PowerToys (MIT, no trademark terms in LICENSE,
 README or NOTICE.md):
 
 * Command Palette: `src/modules/cmdpal/Microsoft.CmdPal.UI/Assets/Stable/icon.ico`
-* PowerToys Run:   `src/runner/svgs/icon.ico` (the PowerToys logo). Run's own
-  `RunAsset.ico` was rendered too and loses its magnifier at 1 bit.
+* PowerToys Run:   the PowerToys logo (`src/runner/svgs/icon.ico`) redrawn here
+  as a 32x32 1-bit mark: a square frame, the four colour stripes as four lit
+  bars, and the three keys. The icon itself fuses the stripes into one blob at
+  1 bit, and Run's own `RunAsset.ico` loses its magnifier.
 
-Both marks are guarded by `program_marks.own_icon`, so a re-run never
-overwrites a committed asset.
+Neither mark is redrawn once its PNG exists, so a re-run never overwrites a
+committed asset.
 
     pip install cairosvg Pillow
     PYTHONPATH=. python polyhost/res/overlay_sources/powertoys/fetch_icons.py
@@ -52,7 +54,26 @@ FLUENT = {
 
 REPO = "https://raw.githubusercontent.com/microsoft/PowerToys/main/"
 CMDPAL_ICO = REPO + "src/modules/cmdpal/Microsoft.CmdPal.UI/Assets/Stable/icon.ico"
-POWERTOYS_ICO = REPO + "src/runner/svgs/icon.ico"
+# The PowerToys logo the Run mark is drawn after: REPO + "src/runner/svgs/icon.ico".
+
+
+def _powertoys_mark(dest: Path) -> None:
+    """The PowerToys logo as a 32x32 1-bit mark, drawn at the keycap size so
+    the generator copies it 1:1."""
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    from PIL import Image, ImageDraw
+    a = Image.new("L", (32, 32), 0)
+    d = ImageDraw.Draw(a)
+    d.rectangle((0, 0, 31, 31), fill=255)           # square frame, 2 px
+    d.rectangle((2, 2, 29, 29), fill=0)
+    for i in range(4):                               # the four colour stripes
+        d.rectangle((5 + i * 6, 5, 9 + i * 6, 17), fill=255)
+    for i in range(3):                               # the three keys
+        d.rectangle((5 + i * 8, 21, 10 + i * 8, 26), fill=255)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+    print(f"  {dest.name}  <- PowerToys logo, drawn 1-bit mark")
 
 
 def main() -> int:
@@ -61,8 +82,7 @@ def main() -> int:
     n = icon_fetch.fluent(FLUENT, out)
     program_marks.own_icon(out / "cmdpal_progmark.png", CMDPAL_ICO, 64,
                            credit="microsoft/PowerToys Microsoft.CmdPal.UI icon.ico")
-    program_marks.own_icon(out / "powertoys_progmark.png", POWERTOYS_ICO, 64,
-                           credit="microsoft/PowerToys src/runner/svgs/icon.ico")
+    _powertoys_mark(out / "powertoys_progmark.png")
     print(f"Wrote {n} icons to {out}")
     return 0
 

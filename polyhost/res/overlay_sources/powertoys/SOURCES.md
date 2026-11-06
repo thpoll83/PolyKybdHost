@@ -97,12 +97,12 @@ PolyKybdHost is GPL-3.0-or-later.
   | file | source | frame | conversion |
   |---|---|---|---|
   | cmdpal_progmark.png | `src/modules/cmdpal/Microsoft.CmdPal.UI/Assets/Stable/icon.ico` | 64 | luma, threshold 150 (alpha and t180 fill the bolt into one shape) |
-  | powertoys_progmark.png | `src/runner/svgs/icon.ico` (the PowerToys logo) | 64 | luma, threshold 150 (t180 fills the plug shape) |
+  | powertoys_progmark.png | drawn in `fetch_icons.py` (`_powertoys_mark`) after the PowerToys logo, `src/runner/svgs/icon.ico` | 32 | alpha; a square frame, four bars for the colour stripes, three keys. The icon converted at 1 bit fuses the stripes into one blob |
 
   Run's own `src/modules/launcher/PowerLauncher/Assets/PowerLauncher/RunAsset.ico`
   was rendered too; its magnifier does not survive the 1-bit conversion, so Run
-  uses the PowerToys logo. Both marks are guarded by `program_marks.own_icon`:
-  a re-run of `fetch_icons.py` keeps the committed files.
+  uses the PowerToys logo. Neither mark is redrawn once its PNG exists: a re-run
+  of `fetch_icons.py` keeps the committed files. Delete a PNG to redraw it.
 
 ## Global shortcuts that suit firmware OS hints
 

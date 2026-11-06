@@ -31,13 +31,13 @@ margin: 0
 mode: luma
 threshold: 150
 
-# Frame 64 of icon.ico (40 and 48 render the same). luma t150 keeps the plug
-# shape and the three dots apart inside the frame; t180 fills the plug.
+# The PowerToys logo redrawn as a 32x32 1-bit mark (`_powertoys_mark` in
+# fetch_icons.py). A 32 px region copies it 1:1.
 program_icon: powertoys_progmark.png
-program_icon_mode: luma
-program_icon_threshold: 150
+program_icon_mode: alpha
 program_icon_anchor: right
-program_icon_region: [42, 34]
+program_icon_region: [37, 32]
+program_icon_margin: 0
 
 bindings:
   - { key: C,     mods: [CTRL],        icon: copypath.png,  label: "Copy path",                 source: "ms-fluent/Document Copy (MIT)" }
