@@ -12,8 +12,9 @@ apps (`../aichat/`). Icons those apps or nano already draw are copied byte for
 byte, so each glyph is stored once in the icon library. Program marks:
 
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
-* OpenCode, Gemini CLI, Qwen Code, Aider -- drawn letter frames
-  (`../rect_mark.py`).
+* Gemini CLI, OpenCode, Qwen Code -- the CLIs' own marks from Simple Icons
+  (`googlegemini`, `opencode`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* Aider -- a drawn letter frame (`../rect_mark.py`).
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/aicli/fetch_icons.py
@@ -25,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import icon_fetch, rect_mark  # noqa: E402
+import brand_marks, icon_fetch, rect_mark  # noqa: E402
 
 FLUENT = {
     # --- shared by several CLIs ---
@@ -70,8 +71,9 @@ FLUENT = {
     "plan": "ms:assignment",
 }
 
-LETTERS = {"opencode.png": "OC", "gemini.png": "Gm", "qwen.png": "Qw",
-           "aider.png": "Ai"}
+# The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
+BRAND = {"gemini.png": "googlegemini", "opencode.png": "opencode", "qwen.png": "qwen"}
+LETTERS = {"aider.png": "Ai"}
 
 BORROWED = {
     **{name: "aichat" for name in (
@@ -92,10 +94,12 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    for fname, slug in BRAND.items():
+        brand_marks.ensure(out / fname, slug)
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
     n += icon_fetch.borrow(BORROWED, out)
-    print(f"Wrote {n} icons (+ {len(LETTERS)} program marks) to {out}")
+    print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
     return 0
 
 

@@ -152,5 +152,8 @@ and licences as listed there): `claude.png`, `codex.png`, `copilot.png` and
 the shared action icons; from [`../nano/icons`](../nano/icons): `complete.png`,
 `exit.png`, the page, scroll and first/last icons, `mouse.png`.
 
-`opencode.png` (`OC`), `gemini.png` (`Gm`), `qwen.png` (`Qw`) and `aider.png`
-(`Ai`) are drawn letter frames from [`../rect_mark.py`](../rect_mark.py).
+`gemini.png`, `opencode.png` and `qwen.png` are the CLIs' own marks from
+Simple Icons (`googlegemini`, `opencode`, `qwen`; artwork CC0-1.0, through
+[`../brand_marks.py`](../brand_marks.py); used to name the program the set is
+for). `aider.png` (`Ai`) is a drawn letter frame from
+[`../rect_mark.py`](../rect_mark.py).
