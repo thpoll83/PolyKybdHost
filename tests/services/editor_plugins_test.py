@@ -409,7 +409,7 @@ class TestGdbScript(unittest.TestCase):
 
     @unittest.skipUnless(hasattr(os, "fork") and _gdb_has_python(),
                          "needs gdb with Python and a pseudo-terminal")
-    def test_sourcing_the_script_twice_writes_each_title_once(self):
+    def test_sourcing_the_script_again_at_the_prompt_pushes_the_title_once(self):
         import pty
         import re
         import select
@@ -417,25 +417,24 @@ class TestGdbScript(unittest.TestCase):
         script = str(ep.GDB_SOURCE / "polykybd.py")
         pid, fd = pty.fork()
         if pid == 0:
-            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, "-x", script, "/bin/true"])
+            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, "/bin/true"])
         out = b""
-        try:
-            for cmd in (b"run\n", b"quit\n"):
-                end = time.time() + 3
-                while time.time() < end:
-                    if select.select([fd], [], [], 0.1)[0]:
-                        try:
-                            out += os.read(fd, 4096)
-                        except OSError:
-                            break
-                os.write(fd, cmd)
-            end = time.time() + 3
+
+        def read_for(seconds):
+            nonlocal out
+            end = time.time() + seconds
             while time.time() < end:
                 if select.select([fd], [], [], 0.1)[0]:
                     try:
                         out += os.read(fd, 4096)
                     except OSError:
-                        break
+                        return
+
+        try:
+            for cmd in (f"source {script}\n".encode(), b"run\n", b"quit\n"):
+                read_for(3)
+                os.write(fd, cmd)
+            read_for(3)
         finally:
             with contextlib.suppress(ProcessLookupError):
                 os.kill(pid, 9)
@@ -444,6 +443,7 @@ class TestGdbScript(unittest.TestCase):
         titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
         self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
         self.assertEqual(out.count(b"\x1b[22;2t"), 1, out)
+        self.assertLessEqual(out.count(b"\x1b[23;2t"), 1, out)
 
 
 class TestHelpTags(unittest.TestCase):
