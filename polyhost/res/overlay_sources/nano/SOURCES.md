@@ -75,8 +75,9 @@ set -g set-titles-string '#T'
 `#T` is the pane's title, which the program or the shell scripts below set.
 Checked with tmux 3.4 on a pty: without the two lines, a pane that wrote
 `ESC ]2;✳ Claude Code BEL` sent no title to the outer terminal; with them the
-terminal received `ESC ]2;✳ Claude Code BEL`. GNU screen and Zellij were not
-checked.
+terminal received `ESC ]2;✳ Claude Code BEL`. GNU screen was not checked.
+Zellij writes its own title and has an overlay set of its own; inside Zellij
+that set is chosen over nano (`overlay_sources/zellij/SOURCES.md`).
 
 ### Titles that do not load the set
 

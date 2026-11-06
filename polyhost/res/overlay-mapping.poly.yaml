@@ -1531,6 +1531,35 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # Zellij (sources: overlay_sources/zellij/; SOURCES.md there has every
+    # title format and where it was read). Zellij writes the terminal title
+    # itself. Up to 0.42 the title is "Zellij (<session>) - <pane title>";
+    # the key `Zellij` and `^Zellij \(` find it. Since 0.43.1 it is
+    # "<session> | <pane title>" and does not name Zellij: `titles-match`
+    # below finds a generated session name. The other keys find `zellij` at
+    # the command position, as for nano: the shell integration's title in the
+    # moment before Zellij writes its own, and terminals that show the
+    # process name (Konsole "~ : zellij", iTerm2 "(zellij)", Terminal.app
+    # "dir — zellij — 80×24"). Zellij's title is matched before the program in
+    # its pane, because Zellij reads its Normal-mode keys first; a vim or
+    # emacs report still takes priority. Not checked on an install.
+    Zellij: &zellij_route
+      title: '^(?:Zellij \(|zellij(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)zellij(?:$|\s|\))'
+      overlay: &zellij_overlay [zellij_template.mods.png, zellij_template.combo.mods.png]
+    zellij: *zellij_route
+    "(zellij)": *zellij_route
+    "(zellij": *zellij_route
+    "^zellij": *zellij_route
+  # Zellij 0.43.1 and later: "<session>" or "<session> | <pane title>", with a
+  # session name that Zellij generated ("<adjective>-<noun>" from two fixed
+  # lists; the regex is printed by overlay_sources/zellij/gen_session_regex.py).
+  # A session started with a name of its own (`zellij -s work`) is not
+  # recognised by its title. tests/handler/zellij_routing_test.py.
+  # The key is longer than the 1024 characters YAML allows for a plain key,
+  # so it is written as an explicit key ("? ").
+  titles-match: &multiplexer_titles
+    ? '^(?:adamant|adept|adventurous|arcadian|auspicious|awesome|blossoming|brave|charming|chatty|circular|considerate|cubic|curious|delighted|didactic|diligent|effulgent|erudite|excellent|exquisite|fabulous|fascinating|friendly|glowing|gracious|gregarious|hopeful|implacable|inventive|joyous|judicious|jumping|kind|likable|loyal|lucky|marvellous|mellifluous|nautical|oblong|outstanding|polished|polite|profound|quadratic|quiet|rectangular|remarkable|rusty|sensible|sincere|sparkling|splendid|stellar|tenacious|tremendous|triangular|undulating|unflappable|unique|verdant|vitreous|wise|zippy)-(?:aardvark|accordion|apple|apricot|bee|brachiosaur|cactus|capsicum|clarinet|cowbell|crab|cuckoo|cymbal|diplodocus|donkey|drum|duck|echidna|elephant|foxglove|galaxy|glockenspiel|goose|hill|horse|iguanadon|iguanodon|jellyfish|kangaroo|lake|lemon|lemur|magpie|megalodon|mountain|mouse|muskrat|newt|oboe|ocelot|orange|panda|peach|pepper|petunia|pheasant|piano|pigeon|platypus|quasar|rhinoceros|river|rustacean|salamander|sitar|stegosaurus|tambourine|tiger|tomato|triceratops|ukulele|viola|weasel|xylophone|yak|zebra)(?:$| \| )'
+    : overlay: *zellij_overlay
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,
@@ -1540,6 +1569,7 @@ windowsterminal,wt:
 alacritty,aterm,com.gexperts.tilix,com.mitchellh.ghostty,com.raggesilver.blackbox,com.system76.cosmicterm,conemu,conemu64,conhost,contour,cool-retro-term,cosmic-term,deepin-terminal,dev.warp.warp,eterm,extraterm,extratermqt,fluentterminal.app,foot,footclient,ghostty,gnome-terminal,gnome-terminal-server,guake,hyper,io.elementary.terminal,iterm,iterm2,kgx,kitty,konsole,lxterminal,mate-terminal,mintty,mlterm,mobaxterm,openconsole,org.contourterminal.contour,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.kde.yakuake,org.wezfurlong.wezterm,ptyxis,qterminal,rio,roxterm,rxvt,sakura,st,tabby,terminal,terminator,terminology,tilda,tilix,urxvt,uxterm,warp,wave,waveterm,wezterm,wezterm-gui,xfce4-terminal,xterm,yakuake,zutty:
   urls-contains: *editor_urls
   titles-contains: *editor_titles
+  titles-match: *multiplexer_titles
 # GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
 # gvim on Linux, MacVim's display name, Neovide. The plugin reports the mode
 # as in a terminal; without a report Vim's Normal mode set applies. The names
