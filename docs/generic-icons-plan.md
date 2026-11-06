@@ -1103,8 +1103,26 @@ each `LEXICON` concept. `shortcut_icons._localized_rules()` reads them.
   (save as) is tried before 保存 (save); a test checks that ordering for every
   pair in the data.
 - **The phrases were drafted from each platform's standard localized menu
-  terms and have not been checked by native speakers.** A wrong phrase is a
-  data fix in one YAML file.
+  terms, then checked against real translation catalogs.** 4,219 `.mo` files
+  (KDE's standard actions, GTK3, and the GNOME apps in Ubuntu 24.04's language
+  packs) confirm 2,044 of the phrases for the same concept, and none for a
+  different one except Czech "vrátit zpět", which some apps use for Revert.
+  About 780 phrases are not in those catalogs: mostly Windows, Office and macOS
+  terms, which Linux catalogs do not have. No native speaker has checked them.
+  A wrong phrase is a data fix in one YAML file.
+- **304 phrases were added from the catalogs** by
+  `tools/shortcut_lexicon_fill_gaps.py`. It takes only translations of
+  specific English commands (Save As, Find Next, Zoom In), never of generic
+  words: "Left", "Window", "About" or "Select" translate to words such as
+  Chinese 左 or Japanese 次, which would match unrelated labels. It skips a
+  translation that any catalog also uses for another concept, and the words the
+  drafting kept out on purpose (Arabic بعد, "after"; Vietnamese "cập nhật",
+  "update"). `tools/shortcut_lexicon_verify.py` writes the per-language report;
+  both docstrings say how to get the catalogs.
+- ⚠️ **`normalize()` drops combining marks after NFC composition.** Before, a
+  mark with no precomposed letter became a space inside its word: a Turkish
+  capital İ ("İptal" -> "i ptal"), an Arabic shadda, and catalogs stored in
+  decomposed form ("atra s").
 
 ## Part F — what could still fail
 

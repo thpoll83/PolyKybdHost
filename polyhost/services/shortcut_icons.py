@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import difflib
 import re
+import unicodedata
 from dataclasses import dataclass
 
 # Resident PolyKybd icons (gfx_icons.h, plane-16 PUA since firmware 1.0.0; they sat
@@ -329,11 +330,17 @@ def normalize(label: str) -> str:
     GTK, '&' in Qt and Win32), a trailing ellipsis, a parenthetical, and the
     alignment padding mousepad emits ('New      ').
     """
-    # ⚠️ Lower-case FIRST. Turkish "İ" lower-cases to "i" plus a combining dot
-    # (U+0307); removing punctuation afterwards turns that dot into a space, and
-    # "İptal" became "i ptal" while the phrase "iptal" stayed whole. The dot is
-    # dropped outright: no language here spells a meaningful "i" + U+0307.
-    s = label.lower().replace("i\u0307", "i")
+    # ⚠️ Compose, lower-case, then DROP the combining marks that are left, all
+    # before punctuation is removed. `_NON_WORD` treats a combining mark as
+    # punctuation, so without this a mark became a space inside its word:
+    #   * Turkish "İ" lower-cases to "i" + U+0307: "İptal" became "i ptal";
+    #   * an Arabic shadda or vowel sign: "حدّث" became "حد ث";
+    #   * a catalog stored in decomposed form: "atrás" became "atra s".
+    # NFC first, so an accent that has a precomposed letter (é, ẩ, ö) keeps it;
+    # only marks with no precomposed form are dropped, the same way for a label
+    # and for a lexicon phrase.
+    s = unicodedata.normalize("NFC", label).lower()
+    s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
     s = s.replace("_", "").replace("&", "")
     s = _STRIP_TRAILING.sub("", s)
     s = _PARENTHETICAL.sub("", s)

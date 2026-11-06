@@ -150,6 +150,12 @@ class LocalizedRulesTest(unittest.TestCase):
     def test_compact_rule_needs_a_compact_label(self):
         self.assertIsNone(self.rule("Nothing to see"))
 
+    def test_combining_marks_do_not_split_a_word(self):
+        """A mark with no precomposed letter was turned into a space."""
+        self.assertEqual(si.normalize("\u062d\u062f\u0651\u062b"), "\u062d\u062f\u062b")  # shadda
+        self.assertEqual(si.normalize("atra\u0301s"), "atrás")    # decomposed accent
+        self.assertEqual(si.normalize("Ẩn"), "ẩn")                 # precomposed stays
+
     def test_full_width_parentheses_are_stripped(self):
         self.assertEqual(si.normalize("保存（S）"), "保存")
         self.assertEqual(si.normalize("保存(S)"), "保存")
