@@ -135,7 +135,7 @@ Fluent glyph is used.
 | `prevtab.png` | `Arrow Previous` | MIT |
 | `shortcuts.png` | `Link` | MIT |
 | `driveleft.png`, `driveright.png` | drawn in `fetch_icons.py` (Liberation Sans Bold, SIL OFL 1.1) | this repo |
-| `progmark.png` | drawn "TC" tile, `program_marks.letter_mark` | this repo |
+| `progmark.png` (ESC program mark) | floppy disk drawn in `fetch_icons.py` (`_floppy_mark`) after the Total Commander icon | Christian Ghisler's mark, used only to name the app |
 
 Material Symbols: <https://fonts.google.com/icons> (Apache-2.0). MIT and
 Apache-2.0 are compatible with this repository's GPL-3.0-or-later.
@@ -145,11 +145,14 @@ renderer (no file in `icons/`).
 
 ## ESC mark
 
-The Total Commander logo is Christian Ghisler's artwork, distributed only
-inside the shareware program, with no licence that allows redistributing it.
-It is not in Simple Icons. The mark is therefore a drawn letter tile with
-"TC". It is a committed asset; `fetch_icons.py` does not redraw it once it
-exists.
+The Total Commander icon is a blue floppy disk with a white label and red
+lines (the ghisler.com favicon). The mark is that floppy drawn by hand at
+32x32, 1 bit: a 1 px outline with the cut top-right corner, a solid shutter
+with its slot, and a solid label with four lines cut out for the red lines.
+`_floppy_mark` in `fetch_icons.py` draws it. The icon is Christian Ghisler's
+artwork; the mark is used only to name the app on its own key, as the other
+program marks are. It is a committed asset; `fetch_icons.py` does not redraw
+it once it exists, so delete `icons/progmark.png` to redraw it.
 
 ## Process names
 

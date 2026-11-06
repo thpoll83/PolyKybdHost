@@ -5,8 +5,8 @@ Icons are Microsoft Fluent UI System Icons (MIT) and one Material Symbol
 (Apache-2.0), both through `icon_fetch`. Where an action is the same as in the
 7-Zip File Manager set (view, edit, move, new folder, sort keys), the same
 Fluent glyph is used, so both sets draw the same cell. The two drive badges
-are drawn here. The ESC mark is a drawn letter tile, because the Total
-Commander logo is proprietary shareware art. See SOURCES.md.
+are drawn here. The ESC mark is a floppy disk drawn after the Total Commander
+icon (a blue floppy with a white label and red lines). See SOURCES.md.
 
     PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/totalcmd/fetch_icons.py
 """
@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import icon_fetch, program_marks  # noqa: E402
+from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 
 BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 
@@ -135,13 +135,33 @@ def _badge(path: Path, text: str) -> None:
     img.resize((W, H), Image.LANCZOS).save(path)
 
 
+def _floppy_mark(dest: Path) -> None:
+    """The ESC mark: a 32x32 1-bit floppy disk, drawn at the keycap size so the
+    generator copies it 1:1. A 1 px outline with the cut top-right corner, a
+    solid shutter with its slot, and a solid label with four lines cut out."""
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    a = Image.new("L", (32, 32), 0)
+    d = ImageDraw.Draw(a)
+    d.polygon([(0, 0), (27, 0), (31, 4), (31, 31), (0, 31)], fill=255)  # body
+    d.polygon([(1, 1), (27, 1), (30, 4), (30, 30), (1, 30)], fill=0)
+    d.rectangle((7, 0, 24, 10), fill=255)                  # shutter
+    d.rectangle((18, 2, 21, 8), fill=0)                    # shutter slot
+    d.rectangle((4, 15, 27, 30), fill=255)                 # label
+    for y in (18, 21, 25, 28):                             # label lines
+        d.line((7, y, 24, y), fill=0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+    print(f"  {dest.name}  <- drawn floppy disk")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
     for name, text in BADGES.items():
         _badge(out / f"{name}.png", text)
-    program_marks.ensure(out / "progmark.png", "TC")
+    _floppy_mark(out / "progmark.png")
     print(f"Wrote icons to {out}")
     return 0
 
