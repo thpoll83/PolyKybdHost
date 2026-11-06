@@ -3190,8 +3190,7 @@ winamp:
 qutebrowser,org.qutebrowser.qutebrowser:
   overlay: [qutebrowser_template.mods.png, qutebrowser_template.combo.mods.png]
 # RetroArch (overlay_sources/retroarch/). The default desktop binds from
-# input/input_defaults.h (keybinds.h): the hotkeys and the RetroPad keys of
-# player 1. Process names: retroarch.exe on Windows, retroarch on Linux and
+# config.def.keybinds.h: the hotkeys and the RetroPad keys of player 1. Process names: retroarch.exe on Windows, retroarch on Linux and
 # macOS. Not checked on a running install.
 retroarch:
   overlay: retroarch_template.mods.png
