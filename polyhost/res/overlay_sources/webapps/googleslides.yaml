@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gsl.png
@@ -47,8 +47,8 @@ bindings:
   - { key: ENTER, mods: [ALT], icon: openlink.png, label: "Open link", only: [macos] }
   - { key: A, mods: [CMDCTRL], label: "Select all" }
   - { key: F, mods: [CMDCTRL], icon: find.png, label: "Find" }
-  - { key: H, mods: [CTRL], icon: findreplace.png, label: "Find and replace", except: [macos] }
-  - { key: H, mods: [GUI, SHIFT], icon: findreplace.png, label: "Find and replace", only: [macos] }
+  - { key: H, mods: [CTRL], icon: findreplace.png, label: "Find and replace", concept: replace, except: [macos] }
+  - { key: H, mods: [GUI, SHIFT], icon: findreplace.png, label: "Find and replace", concept: replace, only: [macos] }
   - { key: G, mods: [CMDCTRL], icon: findnext.png, label: "Find next", shared: false }
   - { key: G, mods: [CMDCTRL, SHIFT], icon: findprev.png, label: "Find previous", shared: false }
   - { key: O, mods: [CMDCTRL], icon: open.png, label: "Open" }
@@ -67,8 +67,8 @@ bindings:
   - { key: "0", mods: [CMDCTRL], icon: zoomreset.png, label: "Zoom 100%" }
   - { key: F, mods: [CTRL, ALT, SHIFT], icon: filmstrip.png, label: "Filmstrip", except: [macos] }
   - { key: F, mods: [ALT, GUI, SHIFT], icon: filmstrip.png, label: "Filmstrip", only: [macos] }
-  - { key: C, mods: [CTRL, ALT, SHIFT], icon: canvas.png, label: "Canvas", except: [macos] }
-  - { key: C, mods: [ALT, GUI, SHIFT], icon: canvas.png, label: "Canvas", only: [macos] }
+  - { key: C, mods: [CTRL, ALT, SHIFT], icon: dio_rect.png, label: "Canvas", except: [macos] }
+  - { key: C, mods: [ALT, GUI, SHIFT], icon: dio_rect.png, label: "Canvas", only: [macos] }
   - { key: S, mods: [CTRL, ALT, SHIFT], icon: notes.png, label: "Speaker notes", except: [macos] }
   - { key: S, mods: [ALT, GUI, SHIFT], icon: notes.png, label: "Speaker notes", only: [macos] }
   - { key: P, mods: [CTRL, ALT, SHIFT], icon: htmlview.png, label: "HTML view", except: [macos] }

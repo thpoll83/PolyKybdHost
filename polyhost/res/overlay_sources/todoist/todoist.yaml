@@ -18,7 +18,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: todoist.png
@@ -32,8 +32,8 @@ bindings:
   - { key: Q, icon: quickadd.png, label: "Quick Add" }
   - { key: P, mods: [ALT], icon: newproject.png, label: "New project", except: [macos] }
   - { key: P, mods: [ALT], icon: newproject.png, label: "New project", only: [macos] }
-  - { key: SLASH, icon: search.png, label: "Search" }
-  - { key: F, icon: search.png, label: "Search" }
+  - { key: SLASH, icon: search.png, label: "Search", concept: find }
+  - { key: F, icon: search.png, label: "Search", concept: find }
   - { key: Z, mods: [CMDCTRL], icon: undo.png, label: "Undo" }
   - { key: M, icon: sidebar.png, label: "Toggle sidebar" }
   - { key: SLASH, mods: [SHIFT], icon: shortcuts.png, label: "Keyboard shortcuts" }

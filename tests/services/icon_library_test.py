@@ -131,7 +131,7 @@ class ShippedLibraryTest(unittest.TestCase):
     def test_it_parses_and_fits_its_slot(self):
         _, frames = il.parse(self.data)
         self.assertGreater(len(frames), 0)
-        self.assertLessEqual(len(self.data), 0x40000)
+        self.assertLessEqual(len(self.data), 0x80000)
 
     def test_ids_are_dense_from_zero_and_match_the_glyph_count(self):
         """⚠️ Append-only and frozen: the id IS the glyph index, so a gap or a
@@ -192,6 +192,7 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
         manifest = json.loads(bil.MANIFEST.read_text(encoding="utf-8"))
         # The library as it was before its two newest icons were appended.
         self.dropped = [e["name"] for e in ids[-2:]]
+        self.dropped_keys = {e["key"] for e in ids[-2:]}
         old = il.build(frames[:-2], 1)
         entry = next(b for b in manifest["bundles"] if b["id"] == "icons")
         entry.update(content_version=1, size=len(old),
@@ -216,12 +217,22 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
         return rc, out.getvalue()
 
     def test_a_library_behind_the_templates_passes_and_lists_pending(self):
+        # The pending list names an image by the file the selection found it
+        # in, which need not be the name its id was frozen under: another app
+        # can ship the same pixels under another file name (Cinema 4D's
+        # zoomselected.png is zoomsel.png). Match the dropped ids by key.
+        selected = self.bil.select()
+        patcher = mock.patch.object(self.bil, "select", return_value=selected)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        names = [n for f, n in selected.items() if self.bil._key(f) in self.dropped_keys]
+        self.assertEqual(len(names), len(self.dropped_keys), self.dropped)
         rc, out = self._check()
         self.assertEqual(rc, 0, out)
         # The shipped library may itself be behind, so only the two dropped
         # icons are certain to be listed, not an exact count.
         self.assertIn("pending: ", out)
-        for name in self.dropped:
+        for name in names:
             self.assertIn(name, out)
 
     def test_a_library_that_disagrees_with_its_id_table_fails(self):

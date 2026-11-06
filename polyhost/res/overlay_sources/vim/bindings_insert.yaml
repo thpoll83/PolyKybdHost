@@ -10,7 +10,7 @@ region:
 - 40
 - 40
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 program_icon_mode: alpha
 program_icon_anchor: right
 program_icon_region:

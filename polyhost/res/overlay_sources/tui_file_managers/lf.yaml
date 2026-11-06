@@ -30,9 +30,9 @@ icon_dir: icons
 fit: contain
 anchor: bottom-right
 # The drawn composites are 40x32 and placed 1:1 in this region.
-region: [40, 32]
+region: [36, 32]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: lf.png
@@ -48,8 +48,8 @@ bindings:
   - { key: J, mods: [], icon: down.png, label: "Next file" }
   - { key: H, mods: [], icon: parent.png, label: "Parent directory" }       # updir
   - { key: L, mods: [], icon: enter.png, label: "Enter or open" }           # open
-  - { key: "[", mods: [], icon: jump_back.png, label: "Jump back" }         # jump-prev
-  - { key: "]", mods: [], icon: jump_fwd.png, label: "Jump forward" }       # jump-next
+  - { key: "[", mods: [], icon: jump_back.png, region: [40, 32], label: "Jump back" }         # jump-prev
+  - { key: "]", mods: [], icon: jump_fwd.png, region: [40, 32], label: "Jump forward" }       # jump-next
   - { key: SPACE, mods: [], icon: toggle_select.png, label: "Toggle selection" }
   - { key: V, mods: [], icon: invert_select.png, label: "Invert selection" }
   - { key: U, mods: [], icon: visual_unset.png, label: "Unselect all" }
@@ -62,11 +62,11 @@ bindings:
   - { key: E, mods: [], icon: edit.png, label: "Edit" }                     # $EDITOR
   - { key: I, mods: [], icon: view.png, label: "View in pager" }            # $PAGER
   - { key: W, mods: [], icon: subshell.png, label: "Open shell" }           # $SHELL
-  - { key: F, mods: [], icon: find_char_fwd.png, label: "Find by first letters" }
-  - { key: ";", mods: [], icon: find_char_next.png, label: "Find next" , shared: false }
-  - { key: ",", mods: [], icon: find_char_prev.png, label: "Find previous", shared: false }
-  - { key: "/", mods: [], icon: search_fwd.png, label: "Search", shared: false }
-  - { key: N, mods: [], icon: find_next.png, label: "Next match", shared: false }
+  - { key: F, mods: [], icon: find_char_fwd.png, region: [40, 32], label: "Find by first letters" }
+  - { key: ";", mods: [], icon: find_char_next.png, region: [40, 32], label: "Find next" , shared: false }
+  - { key: ",", mods: [], icon: find_char_prev.png, region: [40, 32], label: "Find previous", shared: false }
+  - { key: "/", mods: [], icon: search_fwd.png, region: [40, 32], label: "Search", shared: false }
+  - { key: N, mods: [], icon: find_next.png, region: [40, 32], label: "Next match", shared: false }
   - { key: M, mods: [], icon: bookmark_add.png, label: "Save mark" }
   - { key: "'", mods: [], icon: bookmark.png, label: "Go to mark" }
   - { key: F1, mods: [], label: "Help" }
@@ -76,29 +76,29 @@ bindings:
   - { key: Z, mods: [], icon: options.png, label: "View option..." }       # zh zr zn zs zt za
 
   # --- Shift ------------------------------------------------------------------
-  - { key: G, mods: [SHIFT], icon: last.png, label: "Last file" }
+  - { key: G, mods: [SHIFT], icon: last.png, region: [40, 32], label: "Last file" }
   - { key: H, mods: [SHIFT], icon: screen_top.png, label: "Top of screen" }
   - { key: M, mods: [SHIFT], icon: screen_mid.png, label: "Middle of screen" }
   - { key: L, mods: [SHIFT], icon: screen_low.png, label: "Bottom of screen" }
   - { key: V, mods: [SHIFT], icon: visual.png, label: "Visual mode" }
-  - { key: F, mods: [SHIFT], icon: find_char_back.png, label: "Find back by first letters" }
-  - { key: "/", mods: [SHIFT], icon: search_back.png, label: "Search back" }        # ?
-  - { key: N, mods: [SHIFT], icon: find_prev.png, label: "Previous match" }
+  - { key: F, mods: [SHIFT], icon: find_char_back.png, region: [40, 32], label: "Find back by first letters" }
+  - { key: "/", mods: [SHIFT], icon: search_back.png, region: [40, 32], label: "Search back" }        # ?
+  - { key: N, mods: [SHIFT], icon: find_prev.png, region: [40, 32], label: "Previous match" }
   - { key: "'", mods: [SHIFT], icon: bookmark_off.png, label: "Remove mark" }       # "
   - { key: ";", mods: [SHIFT], icon: console.png, label: "Command line" }           # : read
   - { key: "4", mods: [SHIFT], icon: shell.png, label: "Shell command" }            # $
-  - { key: "5", mods: [SHIFT], icon: shell_pipe.png, label: "Shell, pipe" }         # %
-  - { key: "1", mods: [SHIFT], icon: shell_wait.png, label: "Shell, wait" }         # !
-  - { key: "7", mods: [SHIFT], icon: shell_bg.png, label: "Shell, background" }     # &
+  - { key: "5", mods: [SHIFT], icon: shell_pipe.png, region: [40, 32], label: "Shell, pipe" }         # %
+  - { key: "1", mods: [SHIFT], icon: shell_wait.png, region: [40, 32], label: "Shell, wait" }         # !
+  - { key: "7", mods: [SHIFT], icon: shell_bg.png, region: [40, 32], label: "Shell, background" }     # &
 
   # --- Ctrl -------------------------------------------------------------------
-  - { key: U, mods: [CTRL], icon: half_up.png, label: "Half page up" }
-  - { key: D, mods: [CTRL], icon: half_down.png, label: "Half page down" }
-  - { key: B, mods: [CTRL], icon: page_up.png, label: "Page up" }
-  - { key: F, mods: [CTRL], icon: page_down.png, label: "Page down" }
-  - { key: Y, mods: [CTRL], icon: scroll_up.png, label: "Scroll up" }
-  - { key: E, mods: [CTRL], icon: scroll_down.png, label: "Scroll down" }
+  - { key: U, mods: [CTRL], icon: half_up.png, region: [40, 32], label: "Half page up" }
+  - { key: D, mods: [CTRL], icon: half_down.png, region: [40, 32], label: "Half page down" }
+  - { key: B, mods: [CTRL], icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: F, mods: [CTRL], icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: Y, mods: [CTRL], icon: scroll_up.png, region: [40, 32], label: "Scroll up" }
+  - { key: E, mods: [CTRL], icon: scroll_down.png, region: [40, 32], label: "Scroll down" }
   - { key: L, mods: [CTRL], icon: redraw.png, label: "Redraw" }
   - { key: R, mods: [CTRL], icon: reload.png, label: "Reload" }
-  - { key: N, mods: [CTRL], icon: cmd_next.png, label: "Next command" }             # cmd-history-next
-  - { key: P, mods: [CTRL], icon: cmd_prev.png, label: "Previous command" }         # cmd-history-prev
+  - { key: N, mods: [CTRL], icon: cmd_next.png, region: [40, 32], label: "Next command" }             # cmd-history-next
+  - { key: P, mods: [CTRL], icon: cmd_prev.png, region: [40, 32], label: "Previous command" }         # cmd-history-prev

@@ -22,7 +22,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # A drawn substitute (fetch_icons.py: _draw_canva_mark), placed 1:1.
@@ -76,7 +76,7 @@ bindings:
   - { key: COMMA, mods: [CMDCTRL, SHIFT], icon: exc_textsize_dn.png, label: "Smaller font" }
   - { key: C, mods: [CMDCTRL, ALT], icon: dio_copystyle.png, label: "Copy text style" }
   - { key: V, mods: [CMDCTRL, ALT], icon: dio_pastestyle.png, label: "Paste text style" }
-  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find and replace" }
+  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find and replace", concept: replace }
   # --- view ---
   - { key: EQUAL, mods: [CMDCTRL], label: "Zoom in" }
   - { key: MINUS, mods: [CMDCTRL], label: "Zoom out" }

@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gd.png
@@ -32,8 +32,8 @@ bindings:
   - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: Z, mods: [CMDCTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
   - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find,        source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], icon: findreplace.png, label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
-  - { key: H, mods: [GUI, SHIFT], icon: findreplace.png, label: "Find and replace", source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
+  - { key: H, mods: [CTRL], icon: findreplace.png, label: "Find and replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
+  - { key: H, mods: [GUI, SHIFT], icon: findreplace.png, label: "Find and replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
   - { key: K, mods: [CMDCTRL], icon: link.png,      label: "Insert link", source: "ms-fluent/Link (MIT)" }
   - { key: O, mods: [CMDCTRL], icon: open.png,      label: Open,        source: "ms-fluent/Folder Open (MIT)" }
   - { key: P, mods: [CMDCTRL], icon: print.png,     label: Print,       source: "ms-fluent/Print (MIT)" }

@@ -21,7 +21,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gmail.png
@@ -42,7 +42,7 @@ bindings:
   - { key: A, mods: [SHIFT], icon: gm_newwindow.png, label: "Reply all in new window" }
   - { key: F, icon: gm_forward.png, label: "Forward" }
   - { key: F, mods: [SHIFT], icon: gm_newwindow.png, label: "Forward in new window" }
-  - { key: N, mods: [SHIFT], icon: gm_update.png, label: "Update conversation" }
+  - { key: N, mods: [SHIFT], icon: gm_update.png, label: "Update conversation", concept: reload }
   - { key: LBRACKET, icon: gm_archprev.png, label: "Archive, previous" }
   - { key: RBRACKET, icon: gm_archnext.png, label: "Archive, next" }
   - { key: Z, label: "Undo" }
@@ -61,7 +61,7 @@ bindings:
   - { key: N, icon: gm_nextmsg.png, label: "Next message" }
   - { key: C, icon: mailnew.png, label: "Compose" }
   - { key: D, icon: newtab.png, label: "Compose in new tab" }
-  - { key: SLASH, icon: search.png, label: "Search mail" }
+  - { key: SLASH, icon: search.png, label: "Search mail", concept: find }
   - { key: DOT, icon: gm_more.png, label: "More actions" }
   - { key: V, icon: gm_move.png, label: "Move to" }
   - { key: L, icon: gm_label.png, label: "Label as" }

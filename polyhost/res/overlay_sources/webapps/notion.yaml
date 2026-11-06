@@ -21,7 +21,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: nt.png
@@ -33,9 +33,9 @@ program_icon_margin: 0
 bindings:
   # --- Ctrl ---
   - { key: N, mods: [CMDCTRL], icon: newpage.png,  label: "New page",       source: "ms-fluent/Document Add (MIT)" }
-  - { key: P, mods: [CMDCTRL], icon: search.png,   label: "Search / jump to", source: "ms-fluent/Search (MIT)" }
+  - { key: P, mods: [CMDCTRL], icon: search.png,   label: "Search / jump to", concept: find, source: "ms-fluent/Search (MIT)" }
   - { key: K, mods: [CMDCTRL], icon: link.png,     label: "Add link",       source: "ms-fluent/Link (MIT)" }
-  - { key: F, mods: [CMDCTRL], icon: find.png,     label: "Search in page", source: "ms-fluent/Search (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: find.png,     label: "Search in page", concept: find, source: "ms-fluent/Search (MIT)" }
   - { key: L, mods: [CMDCTRL], icon: canonical.png, label: "Copy page URL", source: "ms-fluent/Link (MIT)" }
   - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: Duplicate,       source: "ms-fluent/Square Multiple (MIT)" }
   - { key: B, mods: [CMDCTRL], icon: bold.png,     label: Bold,             source: "ms-fluent/Text Bold (MIT)" }

@@ -26,7 +26,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gemini.png
@@ -66,19 +66,19 @@ bindings:
   - { key: Z, mods: [ALT, SHIFT], icon: redo.png, label: "Redo" }
 
   # --- history.* ---
-  - { key: R, mods: [CTRL], icon: search.png, label: "Search history" }
+  - { key: R, mods: [CTRL], icon: search.png, label: "Search history", concept: find }
   - { key: P, mods: [CTRL], icon: prev.png, label: "Previous prompt" }
   - { key: N, mods: [CTRL], icon: next.png, label: "Next prompt" }
 
   # --- scroll.* ---
-  - { key: UP, mods: [SHIFT], icon: scroll_up.png, label: "Scroll up" }
-  - { key: DOWN, mods: [SHIFT], icon: scroll_down.png, label: "Scroll down" }
-  - { key: PAGE_UP, icon: page_up.png, label: "Page up" }
-  - { key: PAGE_DOWN, icon: page_down.png, label: "Page down" }
-  - { key: HOME, mods: [CTRL], icon: file_start.png, label: "Scroll to top" }
-  - { key: HOME, mods: [SHIFT], icon: file_start.png, label: "Scroll to top" }
-  - { key: END, mods: [CTRL], icon: file_end.png, label: "Scroll to bottom" }
-  - { key: END, mods: [SHIFT], icon: file_end.png, label: "Scroll to bottom" }
+  - { key: UP, mods: [SHIFT], icon: scroll_up.png, region: [40, 32], label: "Scroll up" }
+  - { key: DOWN, mods: [SHIFT], icon: scroll_down.png, region: [40, 32], label: "Scroll down" }
+  - { key: PAGE_UP, icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: PAGE_DOWN, icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: HOME, mods: [CTRL], icon: file_start.png, region: [40, 32], label: "Scroll to top" }
+  - { key: HOME, mods: [SHIFT], icon: file_start.png, region: [40, 32], label: "Scroll to top" }
+  - { key: END, mods: [CTRL], icon: file_end.png, region: [40, 32], label: "Scroll to bottom" }
+  - { key: END, mods: [SHIFT], icon: file_end.png, region: [40, 32], label: "Scroll to bottom" }
 
   # --- app.* ---
   # app.cycleApprovalMode

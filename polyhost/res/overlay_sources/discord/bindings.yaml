@@ -33,7 +33,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: discord.png
@@ -60,7 +60,7 @@ bindings:
 
   # ============================ ADDED from Discord's hotkey reference =========
   # -- navigation --
-  - { key: K,    mods: [CMDCTRL],              icon: quickswitcher.png, label: "Quick switcher" }
+  - { key: K,    mods: [CMDCTRL],              icon: quickswitcher.png, label: "Quick switcher", concept: replace }
   - { key: I,    mods: [CMDCTRL],              icon: inbox.png,         label: Inbox }
   - { key: UP,   mods: [CMDCTRL, ALT],         icon: server.png,  label: "Previous server" }
   - { key: DOWN, mods: [CMDCTRL, ALT],         icon: server.png,  label: "Next server" }

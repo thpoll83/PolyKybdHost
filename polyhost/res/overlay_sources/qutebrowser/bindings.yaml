@@ -32,7 +32,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: qutebrowser.png
@@ -61,8 +61,8 @@ bindings:
   - { key: Z,   mods: [SHIFT], icon: quit.png,       label: "Quit (ZQ, ZZ saves session)" }
 
   # ------------------------------------------------ no modifier: page navigation
-  - { key: H,   mods: [SHIFT], icon: back.png,       <<: *r, label: Back }
-  - { key: L,   mods: [SHIFT], icon: forward.png,    <<: *r, label: Forward }
+  - { key: H,   mods: [SHIFT], icon: ../../eclipse/icons/back.png,       <<: *r, label: Back }
+  - { key: L,   mods: [SHIFT], icon: ../../eclipse/icons/forward.png,    <<: *r, label: Forward }
   - { key: R,   mods: [],      icon: reload.png,     <<: *r, label: Reload }
   - { key: R,   mods: [SHIFT], icon: hardreload.png, label: "Reload (skip cache)", shared: false }
   - { key: F5,  mods: [],      icon: reload_f5.png,  <<: *r, label: Reload }
@@ -122,7 +122,7 @@ bindings:
   - { key: T,    mods: [CTRL, SHIFT], icon: reopentab.png,  <<: *r, label: "Reopen closed tab" }
   - { key: PGDN, mods: [CTRL],        icon: nexttab.png,    <<: *r, label: "Next tab" }
   - { key: PGUP, mods: [CTRL],        icon: prevtab.png,    <<: *r, label: "Previous tab" }
-  - { key: TAB,  mods: [CTRL],        icon: lasttabswap.png, label: "Last used tab" }
+  - { key: TAB,  mods: [CTRL],        icon: lasttabswap.png, label: "Last used tab", concept: replace }
   - { key: P,    mods: [CTRL],        icon: pin.png,        label: "Pin tab" }
   - { key: Q,    mods: [CTRL],        icon: quit.png,       label: "Quit" }
   - { key: H,    mods: [CTRL],        icon: home.png,       label: "Home page" }

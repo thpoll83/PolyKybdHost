@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 
 # No `program_icon:` -- the mark is named by the mapping entry's `icon:`
 # (mdi:microphone). The app is packaged, so its process is ApplicationFrameHost

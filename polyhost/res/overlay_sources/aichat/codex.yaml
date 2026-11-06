@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: codex.png
@@ -44,7 +44,7 @@ bindings:
   - { key: "`", mods: [CTRL],           icon: terminal.png,       label: "Toggle terminal" }
   - { key: ",", mods: [CMDCTRL],        icon: settings.png,       label: Settings }
   - { key: O,   mods: [CMDCTRL],        icon: openfolder.png,     label: "Open folder" }
-  - { key: F,   mods: [CMDCTRL],        icon: find.png,           label: "Find in thread" }
+  - { key: F,   mods: [CMDCTRL],        icon: find.png,           label: "Find in thread", concept: find }
   - { key: A,   mods: [CMDCTRL, SHIFT], icon: archive.png,        label: "Archive thread" }
   - { key: "[", mods: [CMDCTRL, SHIFT], icon: prev.png,           label: "Previous thread" }
   - { key: "]", mods: [CMDCTRL, SHIFT], icon: next.png,           label: "Next thread" }

@@ -14,12 +14,11 @@ table. Rebuild when the pending list is worth a re-flash, for example before a
 release.
 
 SELECTION (OVERLAY_ICON_LIBRARY_DESIGN.md §2.1). An icon is in the library when
-its rendered 72x40 cell is:
-- a Fluent or Material Symbols icon, or drawn by the shared concept renderer
-  (``concept:``), in any spec under res/overlay_sources; or
-- a custom drawing whose PIXELS appear in two or more apps (sublime and
-  sublime_mac count as one).
-App-only drawings, text labels and the ESC program marks stay bitmap uploads.
+its rendered 72x40 cell appears in two or more apps (sublime and sublime_mac
+count as one) and is a Fluent or Material Symbols icon, a cell drawn by the
+shared concept renderer (``concept:``), or a custom drawing. An icon only one app
+draws gains nothing from the library: that app uploads it either way. Text labels
+and the ESC program marks stay bitmap uploads.
 
 Only cells whose exact bytes also occur in a SHIPPED template are kept: the send
 path fills an image only on an exact pixel match (services/icon_library.py), so a
@@ -55,7 +54,7 @@ FONTPACK = RES / "fontpack"
 IDS_FILE = FONTPACK / "icon_ids.yaml"
 PLYI_FILE = FONTPACK / "icons.plyi"
 MANIFEST = FONTPACK / "bundles.json"
-SLOT_OFFSET, SLOT_SIZE = 0x1C0000, 0x40000      # fontpack_layout.h, layout v2
+SLOT_OFFSET, SLOT_SIZE = 0x180000, 0x80000      # fontpack_layout.h, layout v3 (protocol 27)
 LIB_KINDS = {"fluent", "material", "lexicon"}
 
 
@@ -179,7 +178,7 @@ def select() -> dict[bytes, str]:
     for frame, ks in kinds.items():
         if frame not in shipped:
             continue
-        if ks & LIB_KINDS or ("custom" in ks and len(apps[frame]) >= 2):
+        if (ks & LIB_KINDS or "custom" in ks) and len(apps[frame]) >= 2:
             out[frame] = names[frame]
     return out
 

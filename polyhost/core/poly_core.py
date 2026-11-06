@@ -34,6 +34,7 @@ from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device import bulk_pipe
 from polyhost.device.poly_kybd import (MIN_SUPPORTED_PROTOCOL, SPLIT_VBUS_FLAG_MIN_PROTOCOL,
+                                       LEGACY_ICON_SLOT_SIZE,
                                      protocol_supports)
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
@@ -3250,7 +3251,22 @@ class PolyCore(Observable):
         if b is None:
             ids = ", ".join(str(x["id"]) for x in manifest["bundles"])
             return False, f"Unknown bundle {bundle!r}. Available: {ids}."
+        if not self._bundle_fits_device(b):
+            return False, (f"The {b['id']} bundle ({b['size']:,} B) needs firmware with "
+                           f"protocol 27 or later; this keyboard's slot holds 256 KB. "
+                           f"Update the firmware first.")
         return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    def _bundle_fits_device(self, b) -> bool:
+        """False for an icon library larger than the 256 KB icon slot of firmware
+        below protocol 27 (font-pack layout v2): that firmware refuses it at BEGIN,
+        on every connect. The keyboard keeps its old library until it is updated.
+        Reads the CACHED protocol only (no device I/O), because the status
+        snapshot calls it; an unread protocol counts as too old."""
+        if b.get("kind") != "icons" or b.get("size", 0) <= LEGACY_ICON_SLOT_SIZE:
+            return True
+        return protocol_supports(getattr(self.keeb, "protocol_version", None),
+                                 "icon_slot_512k")
 
     @staticmethod
     def _find_bundle(manifest, bundle):
@@ -3351,7 +3367,8 @@ class PolyCore(Observable):
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
                     "stale": (b["content_version"] > dev.get(b["index"], 0)
-                              and hid_fontpack.device_has_slot(dev, b)),
+                              and hid_fontpack.device_has_slot(dev, b)
+                              and self._bundle_fits_device(b)),
                     "retry": b["index"] in self._fontpack_failed,
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
@@ -3415,16 +3432,20 @@ class PolyCore(Observable):
         device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
         if force_all:
             targets = [b for b in manifest["bundles"]
-                       if hid_fontpack.device_has_slot(device_versions, b)]
+                       if hid_fontpack.device_has_slot(device_versions, b)
+                       and self._bundle_fits_device(b)]
         else:
-            stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
+            stale = [b for b in hid_fontpack.decide_stale_bundles(device_versions,
+                                                                  manifest["bundles"])
+                     if self._bundle_fits_device(b)]
             stale_idx = {b["index"] for b in stale}
             # Re-add anything a previous pass failed on even though its version now
             # reads current — see the docstring above. The slot check applies
             # here too: a keyboard flashed back below protocol 20 has no slot 8.
             retry = [b for b in manifest["bundles"]
                      if b["index"] in self._fontpack_failed and b["index"] not in stale_idx
-                     and hid_fontpack.device_has_slot(device_versions, b)]
+                     and hid_fontpack.device_has_slot(device_versions, b)
+                     and self._bundle_fits_device(b)]
             targets = sorted(stale + retry, key=lambda b: b["index"])
         if not targets:
             self.log.info("Font pack auto-check: all %d bundle(s) up to date.",

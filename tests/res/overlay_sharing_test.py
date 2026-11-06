@@ -33,7 +33,10 @@ import glob
 import hashlib
 import importlib.util
 import os
+import tempfile
 import unittest
+import unittest.mock as mock
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -145,6 +148,30 @@ class WhichBindingsShareTest(unittest.TestCase):
                       "New folder", "Clear screen", "Close HTML tag"):
             self.assertEqual(self.gen.concept_to_share({"label": label}), "",
                              "%r must keep its own artwork" % label)
+
+    def test_an_explicit_concept_shares_whatever_the_label_says(self):
+        self.assertEqual(self.gen.concept_to_share({"label": "Close tab", "concept": "close"}),
+                         "close")
+
+    def test_an_explicit_concept_refuses_contradictions(self):
+        for extra in ({"shared": False}, {"region": [40, 32]}, {"mode": "luma"},
+                      {"concept": "no-such-concept"}):
+            binding = {"label": "Close tab", "concept": "close", **extra}
+            with self.assertRaises(ValueError, msg=extra):
+                self.gen.concept_to_share(binding)
+
+    def test_an_explicit_concept_with_no_glyph_fails_instead_of_falling_back(self):
+        """A named concept that cannot draw must not quietly keep the file icon:
+        the binding would then take its own pool slot, which `concept:` exists
+        to prevent."""
+        spec = {"bindings": [{"key": "W", "mods": ["CTRL"], "label": "Close tab",
+                              "concept": "close", "icon": "missing.png"}]}
+        with tempfile.TemporaryDirectory() as tmp:
+            self.gen.generate(spec, Path(tmp))      # positive control: it draws
+            with mock.patch.object(self.gen, "shared_concept_mask",
+                                   return_value=(None, "")):
+                with self.assertRaises(ValueError):
+                    self.gen.generate(spec, Path(tmp))
 
     def test_shared_false_opts_out(self):
         self.assertEqual(
