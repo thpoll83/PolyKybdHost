@@ -1316,6 +1316,26 @@ ghidra-ghidra,ghidra:
     macos:
       overlay: *ghidra_mac
       title: '^CodeBrowser(\(\d+\))?: '
+# IDA Pro (overlay_sources/ida/). Windows reports the executable: `ida` (IDA 9,
+# ida.exe) or `ida64` (IDA 8 and older; `idaq`/`idaq64` before IDA 7). Linux
+# reports the same names (the binary, or the WM_CLASS Qt derives from it).
+# macOS reports the bundle name, e.g. "IDA Professional 9.1" or "IDA Pro 9.0";
+# the matcher drops the trailing version. One set serves every edition (Pro,
+# Home, Free, Classroom). None of these names were checked on an install.
+ida,ida64,idaq,idaq64,ida pro,ida professional,ida home,ida free,ida classroom:
+  overlay: [ida_template.mods.png, ida_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [ida_template_mac.mods.png, ida_template_mac.combo.mods.png, ida_template_mac.extra.mods.png]
+# Binary Ninja (overlay_sources/binaryninja/). Windows `binaryninja.exe` and the
+# Linux binary `binaryninja` (unverified on an install); macOS "Binary Ninja"
+# (the app bundle name).
+binaryninja,binary ninja:
+  overlay: [binaryninja_template.mods.png, binaryninja_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [binaryninja_template_mac.mods.png, binaryninja_template_mac.combo.mods.png,
+                binaryninja_template_mac.extra.mods.png]
 # Minecraft: Bedrock Edition (overlay_sources/minecraft/minecraft_bedrock.yaml).
 # Windows reports `Minecraft.Windows.exe`, cut at the first dot to `minecraft`;
 # the window title is "Minecraft" ("Minecraft Preview" for the preview build).
