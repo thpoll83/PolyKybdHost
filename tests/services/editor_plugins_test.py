@@ -415,26 +415,34 @@ class TestGdbScript(unittest.TestCase):
         import select
         import time
         script = str(ep.GDB_SOURCE / "polykybd.py")
+        major = ep._gdb_major(shutil.which("gdb"))
         pid, fd = pty.fork()
         if pid == 0:
             os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, "/bin/true"])
         out = b""
 
-        def read_for(seconds):
+        def read_until_prompt(seconds=10):
+            """Read until a new "(gdb) " prompt arrives; False on timeout or EOF."""
             nonlocal out
+            seen = out.count(b"(gdb) ")
             end = time.time() + seconds
             while time.time() < end:
                 if select.select([fd], [], [], 0.1)[0]:
                     try:
                         out += os.read(fd, 4096)
                     except OSError:
-                        return
+                        return False
+                    if out.count(b"(gdb) ") > seen:
+                        return True
+            return False
 
         try:
-            for cmd in (f"source {script}\n".encode(), b"run\n", b"quit\n"):
-                read_for(3)
+            for cmd in (f"source {script}\n".encode(), b"run\n"):
+                self.assertTrue(read_until_prompt(), out)
                 os.write(fd, cmd)
-            read_for(3)
+            self.assertTrue(read_until_prompt(), out)
+            os.write(fd, b"quit\n")
+            read_until_prompt(3)                       # reads to EOF
         finally:
             with contextlib.suppress(ProcessLookupError):
                 os.kill(pid, 9)
@@ -443,7 +451,8 @@ class TestGdbScript(unittest.TestCase):
         titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
         self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
         self.assertEqual(out.count(b"\x1b[22;2t"), 1, out)
-        self.assertLessEqual(out.count(b"\x1b[23;2t"), 1, out)
+        if major is not None and major >= 12:      # gdb_exiting restores the title
+            self.assertEqual(out.count(b"\x1b[23;2t"), 1, out)
 
 
 class TestHelpTags(unittest.TestCase):
