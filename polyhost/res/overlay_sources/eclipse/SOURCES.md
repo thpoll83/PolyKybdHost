@@ -8,6 +8,9 @@
 | `eclipse_template` (2 files) | Windows |
 | `eclipse_template_linux` (2 files) | Linux |
 | `eclipse_template_mac` (3 files) | macOS |
+| `eclipse_cdt_template` (3 files) | STM32CubeIDE, Windows (`cdt.yaml`) |
+| `eclipse_cdt_template_linux` (3 files) | STM32CubeIDE, Linux |
+| `eclipse_cdt_template_mac` (4 files) | STM32CubeIDE, macOS |
 
 The Linux set differs from the Windows set in two cells: the GTK port binds
 Redo to Ctrl+Shift+Z instead of Ctrl+Y, and Occurrences in File to Ctrl+Alt+U
@@ -397,3 +400,67 @@ drawn composites and are not bound directly.
 - ESC: the Eclipse IDE mark from Simple Icons (CC0-1.0 artwork,
   <https://simpleicons.org>, slug `eclipseide`), used to name the application
   (`../brand_marks.py`). The mark is a trademark of the Eclipse Foundation.
+
+## STM32CubeIDE (`cdt.yaml`)
+
+STM32CubeIDE is Eclipse with the C/C++ Development Tooling (CDT), so it gets
+the Eclipse set adapted to a C editor rather than a set of its own. `cdt.yaml`
+is `bindings.yaml` with these changes:
+
+- **Removed, Java only** (eclipse.jdt.ui, eclipse.jdt.debug, m2e; none of them
+  is bound in a C editor): Execute (Ctrl+U), Open structure (Ctrl+F3), Open
+  attached Javadoc (Shift+F2), Update Maven project (Alt+F5), Display
+  (Ctrl+Shift+D), Inspect (Ctrl+Shift+I), Add import (Ctrl+Shift+M), Occurrences
+  in file (Ctrl+Shift+U, Ctrl+Alt+U on Linux), Open from clipboard
+  (Ctrl+Shift+V), Add text block (Ctrl+Shift+'), Show in breadcrumb
+  (Alt+Shift+B), Change method signature (Alt+Shift+C), Force return
+  (Alt+Shift+F), Inline (Alt+Shift+I), Add Javadoc comment (Alt+Shift+J), Make
+  static (Alt+Shift+K), Open Maven POM (Alt+Shift+P), Remove occurrence
+  annotations (Alt+Shift+U), Move (Alt+Shift+V), with their macOS forms.
+- **Replaced by the CDT binding of the same key**: Ctrl+Shift+N Add include
+  (was All instances), Ctrl+Shift+O Organize includes, Ctrl+Shift+T Open
+  element, Alt+Shift+M Extract function, Alt+Shift+T Toggle function
+  definition (was the Refactor menu), Ctrl+= and Ctrl+# (Ctrl+Shift+3) Quick
+  macro explorer (were Zoom in and EGit's Commit). On macOS Cmd+Shift+3 is not
+  drawn, because Cmd+Shift+3 is the system screenshot key.
+- **Added**: Ctrl+Tab Toggle source/header (Control+Tab on macOS), Ctrl+Alt+I
+  Include browser, Ctrl+Alt+S Sort lines (Control+Cmd+S on macOS), Alt+C
+  Extract constant, Ctrl+Shift+A Align const qualifiers, Ctrl+Alt+Shift+C Copy
+  qualified name.
+
+Every other key is the same in CDT (F3, F4, Ctrl+G, Ctrl+Shift+G, Ctrl+O,
+Ctrl+T, Ctrl+Alt+H, Ctrl+Shift+F, the comment keys, the debug keys and the
+platform keys).
+
+Source: the `org.eclipse.ui.bindings` extension of
+<https://github.com/eclipse-cdt/cdt/blob/main/core/org.eclipse.cdt.ui/plugin.xml>
+and `debug/org.eclipse.cdt.debug.ui/plugin.xml`, `main`, read 2026-11-06,
+compared with the JDT and m2e `plugin.xml` files listed above. STM32CubeIDE
+ships an older CDT release than `main`; the keys were not checked on an
+STM32CubeIDE install.
+
+Not drawn: CDT's reverse debugging keys (Shift+F5 to Shift+F8), which share
+their keys with the platform's Use step filters and Resume other threads in
+the same debugging context and work only while reverse debugging is on; the
+set keeps the platform meaning.
+
+Process names (none checked on an install): `stm32cubeide.exe` on Windows,
+reported as `stm32cubeide`; the `stm32cubeide` launcher on Linux; the
+application name `STM32CubeIDE` on macOS, lowercased to `stm32cubeide`.
+
+The ESC mark stays the Eclipse logo: STM32CubeIDE is an Eclipse product, and
+ST's logo was not traced.
+
+New icons for `cdt.yaml` (in `fetch_icons.py`, `FLUENT`):
+
+| File | Source | Licence |
+|---|---|---|
+| `addinclude.png` | Material Symbols `add_link` | Apache-2.0 |
+| `togglehdr.png` | Material Symbols `swap_horiz` (the same glyph as IAR's Toggle header/source) | Apache-2.0 |
+| `includebrowser.png` | Material Symbols `attach_file` | Apache-2.0 |
+| `macroexplorer.png` | Material Symbols `expand_content` | Apache-2.0 |
+| `sortlines.png` | Material Symbols `sort_by_alpha` | Apache-2.0 |
+| `extractconst.png` | Material Symbols `keep` | Apache-2.0 |
+| `togglefunc.png` | Material Symbols `swap_vert` | Apache-2.0 |
+| `alignconst.png` | Material Symbols `format_align_left` | Apache-2.0 |
+| `copyqualified.png` | Material Symbols `label` | Apache-2.0 |
