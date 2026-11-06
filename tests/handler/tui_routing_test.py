@@ -1,8 +1,8 @@
-"""The SHIPPED routing of terminal programs: lazygit, htop, btop, Midnight
-Commander, Yazi, micro, Helix, less (and man), k9s, GDB, and Vim/Neovim with
-`set title`.
+"""The SHIPPED routing of terminal programs: htop, btop, Midnight Commander,
+micro, Helix, less (and man), k9s, GDB, and Vim/Neovim with `set title`.
+(lazygit and Yazi: lazygit_routing_test, tui_file_manager_routing_test.)
 
-Only Midnight Commander and Yazi write a title of their own; the others are
+Only Midnight Commander writes a title of its own; the others are
 seen through the shell's title (`polyhost/res/shell/`). Each route in
 `&editor_titles` requires the command at the command position, optionally
 after `sudo`. Drives `polyhost/res/overlay-mapping.poly.yaml` itself. The title
@@ -30,15 +30,6 @@ VIM_INSERT = "vim_insert_template.mods.png"
 
 # The first overlay file of each program's set, and the titles that must load it.
 TITLES = {
-    "lazygit_template": [
-        "lazygit",
-        "lazygit -p ~/src/app",
-        "Administrator: Command Prompt - lazygit",
-        "~/src : lazygit — Konsole",
-        "Default (lazygit)",
-        "~/src> lazygit",                     # Nushell
-        "lazygit | me@pc: ~/src | xonsh",     # xonsh
-    ],
     "htop_template": [
         "htop",
         "sudo htop",
@@ -52,12 +43,6 @@ TITLES = {
         "mc",
         "sudo mc",
         "mc [root@pc]:/etc — Konsole",
-    ],
-    "yazi_template": [
-        "Yazi: ~/src",                        # Yazi's own title
-        "Yazi: /",
-        "yazi",
-        "yazi ~/Downloads",
     ],
     "micro_template": ["micro", "micro main.go", "sudo micro /etc/hosts"],
     "helix_template": ["hx", "hx src/main.rs", "helix README.md", "sudo hx /etc/fstab",
@@ -160,7 +145,7 @@ class TuiMappingFileTest(unittest.TestCase):
     def test_every_named_file_exists(self):
         for stem in TITLES:
             entries = [e for e in self.routes.values()
-                       if _files(e)[0].startswith(stem)]
+                       if "overlay" in e and _files(e)[0].startswith(stem)]
             self.assertTrue(entries, stem)
             for entry in entries:
                 missing = [f for f in _files(entry)
@@ -168,7 +153,7 @@ class TuiMappingFileTest(unittest.TestCase):
                 self.assertEqual(missing, [], stem)
 
     def test_each_program_has_its_parenthesised_and_caret_keys(self):
-        for cmd in ("lazygit", "htop", "btop", "mc", "yazi", "micro", "hx", "helix",
+        for cmd in ("htop", "btop", "mc", "micro", "hx", "helix",
                     "less", "man", "k9s", "gdb", "gdb-multiarch", "arm-none-eabi-gdb"):
             for key in (cmd, f"({cmd})", f"({cmd}", f"^{cmd}"):
                 self.assertIs(self.routes[key], self.routes[cmd], key)
@@ -206,7 +191,8 @@ class TuiRoutingTest(unittest.TestCase):
             for os_name in ("windows", "linux", "macos"):
                 self.assertEqual(self._route("windowsterminal", title, os_name=os_name)[0],
                                  WT, (os_name, title))
-                self.assertIsNone(self._route("kitty", title, os_name=os_name),
+                # konsole has no set of its own (kitty and WezTerm do).
+                self.assertIsNone(self._route("konsole", title, os_name=os_name),
                                   (os_name, title))
 
     def test_windows_terminal_dims_its_own_set_under_a_program(self):

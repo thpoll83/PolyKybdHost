@@ -1,15 +1,14 @@
 # Terminal program overlays: sources
 
-Ten overlay sets for programs that run inside a terminal. One icon folder
-(`icons/`, written by `fetch_icons.py`) serves all of them.
+Eight overlay sets for programs that run inside a terminal. One icon folder
+(`icons/`, written by `fetch_icons.py`) serves all of them. lazygit and Yazi
+have their own sets in `../lazygit/` and `../tui_file_managers/`.
 
 | spec | program | version the keys were read from | files |
 |---|---|---|---|
-| `lazygit.yaml` | lazygit | v0.44.1, `pkg/config/user_config.go` | `lazygit_template.mods.png` |
 | `htop.yaml` | htop | 3.3.0, `Action.c` | `htop_template.mods.png` |
 | `btop.yaml` | btop | 1.3.0, `src/btop_input.cpp` | `btop_template.mods.png` |
 | `mc.yaml` | Midnight Commander | 4.8.30, `mc.default.keymap` | `mc_template.mods.png`, `.combo` |
-| `yazi.yaml` | Yazi | 0.3.3, `yazi-config/preset/keymap.toml` | `yazi_template.mods.png` |
 | `micro.yaml` | micro | 2.0.13, `internal/action/defaults_other.go` | `micro_template.mods.png`, `.combo` |
 | `helix.yaml` | Helix | 24.07, `helix-term/src/keymap/default.rs` | `helix_template.mods.png`, `.combo` |
 | `less.yaml` | less (and man) | 590, `less -?` | `less_template.mods.png`, `.combo` |
@@ -17,8 +16,8 @@ Ten overlay sets for programs that run inside a terminal. One icon folder
 | `gdb.yaml` | GDB | 15.1, `gdb.texinfo` and `help <letter>` | `gdb_template.mods.png` |
 
 Each spec's header names the exact files and functions, and what was left out.
-Each set covers the program's main view only: lazygit's Files panel, htop's
-and btop's process list, Midnight Commander's panels, Yazi's file list,
+Each set covers the program's main view only: htop's and btop's process
+list, Midnight Commander's panels,
 Helix's Normal mode, k9s's resource list, GDB's prompt.
 
 Regenerate:
@@ -58,10 +57,9 @@ escape it wrote (TERM=xterm-256color).
 | program | title written |
 |---|---|
 | Midnight Commander 4.8.30 | `mc [user@host]:<dir>` |
-| Yazi 0.3.3 | `Yazi: <dir>` |
 | Vim 9.1 with `set title` | `<file> (<dir>) - VIM`, `<file> + (<dir>) - VIM` when modified |
 | Neovim 0.9 with `set title` | `<file> - NVIM` |
-| lazygit, htop, btop, micro, Helix, less, man, k9s, GDB (plain and `-tui`) | none |
+| htop, btop, micro, Helix, less, man, k9s, GDB (plain and `-tui`) | none |
 
 A program that writes none leaves the shell's title in place, so the shell has
 to put the command there (`polyhost/res/shell/`, or the shell's own default on

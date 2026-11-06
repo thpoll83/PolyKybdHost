@@ -157,8 +157,10 @@ def _underlays(entry):
 
 
 def _all_files(entry):
-    """Every overlay file an entry names, its `os:` branches included."""
-    out = list(_files(entry))
+    """Every overlay file an entry names, its `os:` branches included. A route
+    with no overlay of its own (ranger: only macOS and Linux branches) names
+    files only in its branches."""
+    out = list(_files(entry)) if "overlay" in entry else []
     for sub in (entry.get("os") or {}).values():
         out += _all_files(sub)
     return out
@@ -220,7 +222,7 @@ class AiCliRoutingTest(unittest.TestCase):
             for os_name in ("windows", "linux", "macos"):
                 self.assertEqual(self._route("windowsterminal", title, os_name=os_name)[0],
                                  WT, (os_name, title))
-                self.assertIsNone(self._route("kitty", title, os_name=os_name),
+                self.assertIsNone(self._route("alacritty", title, os_name=os_name),
                                   (os_name, title))
 
     def test_windows_terminal_dims_its_own_set_under_a_cli(self):

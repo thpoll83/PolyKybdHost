@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the terminal program overlays.
 
-One icon folder serves ten sets of programs that run inside a terminal:
-lazygit, k9s, htop, btop, Midnight Commander, Yazi, micro, Helix, less and
+One icon folder serves eight sets of programs that run inside a terminal:
+k9s, htop, btop, Midnight Commander, micro, Helix, less and
 GDB. Style route as for the other app folders: Microsoft Fluent UI System
 Icons (MIT), with Material Symbols (Apache-2.0) through `ms:` where Fluent has
 no match. Icons the AI CLI, AI desktop app, nano and IDE sets already draw are
@@ -37,13 +37,10 @@ FLUENT = {
     "filter": "Filter",
     "sort": "Arrow Sort",
     "menu": "Navigation",
-    "open": "Open",
     "openfile": "Folder Open",
     "newfile": "Document Add",
     "newtab": "Tab Add",
-    "tab_new": "Tab Add",
     "selectall": "Select All On",
-    "cancel": "Dismiss Circle",
     "swap": "Arrow Swap",
     "merge": "Merge",
     "pause": "ms:pause_circle",
@@ -64,7 +61,6 @@ FLUENT = {
     "shrink": "Arrow Minimize Vertical",
     "expand_all": "Arrow Expand",
     "jump": "Flash",
-    "visual": "Cursor Hover",
     "insert": "Text Edit Style",
     "pipe": "Arrow Export",
     "pipe_to": "Arrow Export Up",
@@ -108,7 +104,7 @@ FLUENT = {
     "net_prev": "Arrow Previous",
     "net_next": "Arrow Next",
     "autoscale": "Arrow Maximize",
-    # --- Midnight Commander / Yazi ---
+    # --- Midnight Commander ---
     "move": "Folder Arrow Right",
     "hotlist": "Star",
     "dirsize": "Data Pie",
@@ -129,7 +125,6 @@ FLUENT = {
     "pathcurrent": "ms:content_paste_go",
     "pathother": "ms:content_paste_search",
     "pathfile": "ms:content_paste",
-    "tab_swap": "ms:swap_horiz",
     # --- micro / Helix ---
     "cutline": "ms:content_cut",
     "duplicate": "ms:control_point_duplicate",
@@ -218,26 +213,6 @@ FLUENT = {
     "gdb_run": "ms:play_arrow",
     "gdb_thread": "ms:alt_route",
     "_tui": "Layout Row Two",          # top glyph of gdb_tui.png only
-    # --- lazygit ---
-    "push": "Arrow Upload",
-    "pull": "Arrow Download",
-    "fetch": "Cloud Arrow Down",
-    "commit": "Checkmark Circle",
-    "amend": "ms:edit_note",
-    "stage": "ms:add_box",
-    "stageall": "ms:library_add",
-    "stagelines": "Text Line Spacing",
-    "discard": "ms:undo",
-    "resettree": "History Dismiss",
-    "ignore": "Eye Off",
-    "findbase": "ms:frame_inspect",
-    "rebaseoptions": "Branch Fork",
-    "mergetool": "ms:call_merge",
-    "difftool": "ms:difference",
-    "patch": "Document Edit",
-    "commandlog": "ms:terminal",
-    "contextmore": "Add Square",
-    "contextless": "Subtract Square",
     # --- k9s ---
     "aliases": "ms:label",
     "header": "ms:web_asset",
@@ -255,23 +230,21 @@ FLUENT = {
 }
 
 BRAND = {"htop.png": "htop", "helix.png": "helix", "micro.png": "microeditor"}
-LETTERS = {"btop.png": "bt", "mc.png": "MC", "yazi.png": "YZ", "lazygit.png": "LG",
+LETTERS = {"btop.png": "bt", "mc.png": "MC",
            "k9s.png": "K9", "less.png": "LS"}
 
 BORROWED = {
     **{name: "aicli" for name in (
-        "activity.png", "checklist.png", "clear.png", "commandpalette.png",
+        "checklist.png", "clear.png", "commandpalette.png",
         "deleteline.png", "editor.png", "exit.png", "expand.png", "file_end.png",
         "file_start.png", "find.png", "history.png", "leader.png", "next.png",
         "page_down.png", "page_up.png", "prev.png", "rawoutput.png", "redo.png",
-        "reload.png", "rename.png", "scroll_down.png", "scroll_up.png",
-        "search.png", "shortcuts.png", "stash.png", "stop.png", "suspend.png",
+        "reload.png", "scroll_down.png", "scroll_up.png",
+        "search.png", "shortcuts.png", "stop.png", "suspend.png",
         "terminal.png", "undo.png", "viewmode.png", "warnings.png")},
     **{name: "aichat" for name in (
-        "back.png", "close.png", "diff.png", "filelist.png", "focusnext.png",
-        "link.png", "newfolder.png", "openfolder.png", "recents.png",
-        "settings.png", "splitright.png",
-        *(f"tab{d}.png" for d in "123456789"))},
+        "focusnext.png",
+        "link.png", "newfolder.png", "openfolder.png", "settings.png", "splitright.png")},
     # GDB's stepping and breakpoint keys use the IDE sets' debugger icons.
     **{name: "vscode" for name in ("stepover.png", "stepinto.png")},
     **{name: "jetbrains" for name in ("runtocursor.png",)},
@@ -281,7 +254,7 @@ BORROWED = {
         "goto_line.png", "helplines.png", "indent.png", "linenumbers.png",
         "macro_record.png", "macro_run.png", "mark.png", "recenter.png",
         "row_bottom.png", "row_top.png", "scroll_left.png", "scroll_right.png",
-        "search_back.png", "search_fwd.png", "unindent.png", "whitespace.png")},
+        "search_back.png", "unindent.png")},
 }
 
 
