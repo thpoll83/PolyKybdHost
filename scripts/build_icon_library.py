@@ -55,7 +55,7 @@ FONTPACK = RES / "fontpack"
 IDS_FILE = FONTPACK / "icon_ids.yaml"
 PLYI_FILE = FONTPACK / "icons.plyi"
 MANIFEST = FONTPACK / "bundles.json"
-SLOT_OFFSET, SLOT_SIZE = 0x1C0000, 0x40000      # fontpack_layout.h, layout v2
+SLOT_OFFSET, SLOT_SIZE = 0x180000, 0x80000      # fontpack_layout.h, layout v3 (protocol 27)
 LIB_KINDS = {"fluent", "material", "lexicon"}
 
 

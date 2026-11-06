@@ -131,7 +131,7 @@ class ShippedLibraryTest(unittest.TestCase):
     def test_it_parses_and_fits_its_slot(self):
         _, frames = il.parse(self.data)
         self.assertGreater(len(frames), 0)
-        self.assertLessEqual(len(self.data), 0x40000)
+        self.assertLessEqual(len(self.data), 0x80000)
 
     def test_ids_are_dense_from_zero_and_match_the_glyph_count(self):
         """⚠️ Append-only and frozen: the id IS the glyph index, so a gap or a

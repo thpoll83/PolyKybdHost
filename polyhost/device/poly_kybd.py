@@ -141,6 +141,11 @@ SPLIT_VBUS_FLAG_MIN_PROTOCOL = 24
 # plain script set below stays unchanged and ungated by this. v25 and older ignore
 # the byte and always centre, so below the gate the host refuses to send it.
 GLYPH_PLACEMENT_MIN_PROTOCOL = 26
+# v27: font-pack layout v3 gives the icon library (slot 8) 512 KB instead of 256 KB.
+# No command changes; older firmware refuses a library over 256 KB at BEGIN, so the
+# host flashes such a library only at v27 (PolyCore._bundle_fits_device).
+ICON_SLOT_512K_MIN_PROTOCOL = 27
+LEGACY_ICON_SLOT_SIZE = 0x40000
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
 BOARD_OP_SET_SPLIT_VBUS = 2
@@ -174,6 +179,7 @@ FEATURE_MIN_PROTOCOL = {
     "mapping_no_legend": MAPPING_NO_LEGEND_MIN_PROTOCOL,
     "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
     "glyph_placement": GLYPH_PLACEMENT_MIN_PROTOCOL,
+    "icon_slot_512k": ICON_SLOT_512K_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot

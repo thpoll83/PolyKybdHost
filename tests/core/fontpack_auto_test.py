@@ -18,7 +18,7 @@ except Exception:   # noqa: BLE001 — heavy optional deps (numpy/PIL/pvlib/…)
 
 
 def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
-               pipe_port=None):
+               pipe_port=None, protocol=27):
     """Minimal stand-in exposing exactly what the two methods touch. ``pipe_port``
     is what pipe_port_for_update() answers: the bundle pass hands it to every
     flash, None meaning HID (no pipe, or dev_force_hid_link on)."""
@@ -28,7 +28,8 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
     core = types.SimpleNamespace(
         poly_settings=types.SimpleNamespace(get=lambda k: settings[k]),
         worker=types.SimpleNamespace(submit=lambda name, fn: submitted.append((name, fn))),
-        keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {}),
+        keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {},
+                                   supports=lambda f: protocol >= {"icon_slot_512k": 27}[f]),
         log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
         emit=lambda name, payload: emitted.append((name, payload)),
         _fontpack_flash_in_progress=in_progress,
@@ -42,6 +43,7 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
     core._verify_flashed_bundle = lambda b, st, m: PolyCore._verify_flashed_bundle(core, b, st, m)
     core._emit_fontpack_summary = lambda *a, **kw: PolyCore._emit_fontpack_summary(core, *a, **kw)
     core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
+    core._bundle_fits_device = lambda b: PolyCore._bundle_fits_device(core, b)
     core._fontpack_autocheck_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
     return core
@@ -52,6 +54,34 @@ _MANIFEST = {"layout_version": 1, "bundles": [
     {"id": "symbol", "index": 0, "content_version": 2, "file": "symbol.plyf", "path": "/x/symbol.plyf"},
     {"id": "emoji",  "index": 5, "content_version": 3, "file": "emoji.plyf",  "path": "/x/emoji.plyf"},
 ]}
+
+
+_BIG_ICONS = {"id": "icons", "index": 8, "kind": "icons", "content_version": 5,
+              "size": 416008, "file": "icons.plyi", "path": "/x/icons.plyi"}
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestIconSlotGate(unittest.TestCase):
+    """A library over 256 KB goes only to firmware with the 512 KB slot (v27)."""
+
+    def _flashed(self, protocol):
+        core = _fake_core(device_versions={8: 4}, protocol=protocol)
+        manifest = {"layout_version": 3, "bundles": [dict(_BIG_ICONS)]}
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=manifest), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack",
+                   return_value=(True, "ok", "ok")) as ff:
+            PolyCore._fontpack_flash_bundles_job(core, types.SimpleNamespace(is_set=lambda: False))
+        return ff.call_count
+
+    def test_a_large_library_waits_for_protocol_27(self):
+        self.assertEqual(self._flashed(26), 0)
+        self.assertEqual(self._flashed(27), 1)
+
+    def test_a_library_that_fits_256_kb_is_not_gated(self):
+        core = _fake_core(protocol=20)
+        self.assertTrue(PolyCore._bundle_fits_device(core, dict(_BIG_ICONS, size=0x40000)))
+        self.assertTrue(PolyCore._bundle_fits_device(core, {"id": "emoji", "size": 10**6}))
+        self.assertFalse(PolyCore._bundle_fits_device(core, _BIG_ICONS))
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
