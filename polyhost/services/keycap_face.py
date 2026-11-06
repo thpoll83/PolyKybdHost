@@ -113,7 +113,7 @@ class KeycapFace:
             try:
                 os.remove(self._path)
             except FileNotFoundError:
-                pass
+                pass  # nothing was stored (no path, or a save that failed): nothing to remove
             except OSError as e:
                 self.log.warning("Could not remove %s: %s", RESTORE_FILENAME, e)
 
