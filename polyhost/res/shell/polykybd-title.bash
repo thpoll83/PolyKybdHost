@@ -1,7 +1,9 @@
 # PolyKybd title integration for bash: put the running command line into the
 # terminal window title, so that PolyKybdHost can select the overlay for the
-# program running in the terminal (nano, for example). The prompt's own title
-# comes back when the command ends.
+# program running in the terminal (nano, for example). When the command ends,
+# the next prompt writes "user@host: ~/dir", so the program's title (and its
+# overlay) does not stay at the prompt; a prompt that sets its own title
+# (Ubuntu's PS1 does) is printed after that and takes priority.
 #
 # Installed by PolyKybdHost ("Updates > Show the running command in the
 # terminal title" in the tray, or `polyctl shell-integration install`), which
@@ -35,12 +37,26 @@ if [ -n "${__poly_title_codex-}" ]; then
 fi
 
 __poly_title_armed=
+__poly_title_set=
 __poly_title_ready=
 __poly_title_prev=
 
 # With bash-preexec: its preexec hook gets the command line.
 __poly_title_preexec() {
   printf '\033]2;%s\007' "${1//[[:cntrl:]]/}"
+  __poly_title_set=1
+}
+
+# At the prompt, after a command whose title this file wrote: a neutral title.
+# Keeps $? for whatever runs after it in PROMPT_COMMAND.
+__poly_title_reset() {
+  local s=$?
+  if [ -n "${__poly_title_set-}" ]; then
+    __poly_title_set=
+    local d=${PWD/#$HOME/\~}
+    printf '\033]2;%s\007' "${USER:+$USER@}${HOSTNAME%%.*}: ${d//[[:cntrl:]]/}"
+  fi
+  return $s
 }
 
 # Without it: a DEBUG trap writes the first command run after the command
@@ -53,6 +69,7 @@ __poly_title_cmd() {
   [ -n "$__poly_title_armed" ] || return 0
   __poly_title_armed=
   printf '\033]2;%s\007' "${BASH_COMMAND//[[:cntrl:]]/}"
+  __poly_title_set=1
 }
 
 # Runs once, at the first prompt. A sourced file does not see a DEBUG trap set
@@ -82,7 +99,7 @@ __poly_title_has_ps0() {
   (( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) ))
 }
 
-__poly_title_pc='[ -n "$__poly_title_ready" ] || { __poly_title_prev=$(trap -p DEBUG); __poly_title_setup; }'
+__poly_title_pc='__poly_title_reset; [ -n "$__poly_title_ready" ] || { __poly_title_prev=$(trap -p DEBUG); __poly_title_setup; }'
 __poly_title_has_ps0 || __poly_title_pc+='; __poly_title_armed=1'
 if [[ "$(declare -p PROMPT_COMMAND 2>/dev/null)" == "declare -a"* ]]; then
   PROMPT_COMMAND+=("$__poly_title_pc")
