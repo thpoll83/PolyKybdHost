@@ -157,5 +157,8 @@ the shared action icons; from [`../nano/icons`](../nano/icons): `complete.png`,
 [`../brand_marks.py`](../brand_marks.py); used to name the program the set is
 for). `opencode.png` is OpenCode's start-screen logo ("open" over "code"),
 drawn in pixels from the logo rows in OpenCode's bundled JS
-(`opencode_mark()` in `fetch_icons.py`). `aider.png` (`Ai`) is a drawn letter frame from
+(`opencode_mark()` in `fetch_icons.py`). The TUI draws "open" in grey and
+"code" in white, each with a darker shade inside the letters. On the 1-bit
+keycap "open" is a checkerboard with its shade left dark, and "code" is solid
+with its shade as a diagonal hatch. `aider.png` (`Ai`) is a drawn letter frame from
 [`../rect_mark.py`](../rect_mark.py).

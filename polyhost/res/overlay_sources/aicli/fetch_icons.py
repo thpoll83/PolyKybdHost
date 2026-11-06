@@ -14,7 +14,9 @@ byte, so each glyph is stored once in the icon library. Program marks:
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
 * Gemini CLI, Qwen Code -- the CLIs' own marks from Simple Icons
   (`googlegemini`, `qwen`; CC0 artwork, `../brand_marks.py`).
-* OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`).
+* OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
+  "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
+  hatched.
 * Aider -- a drawn letter frame (`../rect_mark.py`).
 
     pip install cairosvg Pillow
@@ -93,9 +95,10 @@ BORROWED = {
 
 # OpenCode's start-screen logo, as the TUI draws it: the `left` ("open") and
 # `right` ("code") rows of its logo object (opencode-linux-x64 1.19.5 on npm,
-# the bundled JS). `_`, `^` and `~` are cells it draws in the dim shade; `^`
-# carries the crossbar of each "e", so it counts as an upper half-block here,
-# and the other two stay dark.
+# the bundled JS). The renderer there draws "open" in grey (SGR 90) and "code"
+# in the default foreground; `_` is a cell in the word's dark shade
+# (colour 235 / 238), `^` a foreground upper half over the shade, `~` a
+# shade upper half.
 _OC_LOGO = (
     ["█▀▀█ █▀▀█ █▀▀█ █▀▀▄",
      "█__█ █__█ █^^^ █__█",
@@ -105,27 +108,40 @@ _OC_LOGO = (
      "█___ █__█ █__█ █^^^",
      "▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀"],
 )
+# (upper half, lower half) of each character: "fg", "shade" or None.
+_OC_HALVES = {"█": ("fg", "fg"), "▀": ("fg", None), "▄": (None, "fg"),
+              "_": ("shade", "shade"), "^": ("fg", "shade"), "~": ("shade", None)}
+# 1-bit stand-ins for the grey levels, on the mark's pixel grid: "open" (grey)
+# is a checkerboard with its shade left dark; "code" (white) is solid, with
+# its shade as every third diagonal.
+_OC_FILL = (
+    {"fg": lambda x, y: (x + y) % 2 == 0, "shade": lambda x, y: False},
+    {"fg": lambda x, y: True, "shade": lambda x, y: (x + y) % 3 == 0},
+)
 
 
 def opencode_mark(dest: Path) -> None:
     """`opencode.png`: the logo's two words stacked, each terminal cell drawn
-    as two 2x2-pixel half-blocks (38x28 px), white on transparent."""
+    as two 2x2-pixel half-blocks (38x30 px), white on transparent."""
     from PIL import Image
-    words = []
-    for rows in _OC_LOGO:
-        w = max(len(r) for r in rows)
-        im = Image.new("L", (w * 2, len(rows) * 4), 0)
+    gap = 4
+    width = 2 * max(len(r) for rows in _OC_LOGO for r in rows)
+    height = sum(4 * len(rows) for rows in _OC_LOGO) + gap
+    mark = Image.new("L", (width, height), 0)
+    top = 0
+    for rows, fill in zip(_OC_LOGO, _OC_FILL):
         for y, row in enumerate(rows):
             for x, ch in enumerate(row):
-                for half, on in ((0, ch in "█▀^"), (1, ch in "█▄")):
-                    if on:
-                        im.paste(255, (x * 2, (2 * y + half) * 2, x * 2 + 2, (2 * y + half) * 2 + 2))
-        words.append(im.crop(im.getbbox()))
-    gap = 4
-    width = max(im.width for im in words)
-    mark = Image.new("L", (width, sum(im.height for im in words) + gap), 0)
-    mark.paste(words[0], (width - words[0].width, 0))
-    mark.paste(words[1], (width - words[1].width, words[0].height + gap))
+                for half, kind in enumerate(_OC_HALVES.get(ch, (None, None))):
+                    if kind is None:
+                        continue
+                    for dy in range(2):
+                        for dx in range(2):
+                            px, py = 2 * x + dx, top + (2 * y + half) * 2 + dy
+                            if fill[kind](px, py):
+                                mark.putpixel((px, py), 255)
+        top += 4 * len(rows) + gap
+    mark = mark.crop(mark.getbbox())
     Image.merge("RGBA", (mark,) * 4).save(dest)
 
 
