@@ -1571,6 +1571,23 @@ windowsterminal,wt:
     "(qwen)": *qwen_cli
     "(qwen": *qwen_cli
     "^qwen": *qwen_cli
+    # Kimi Code CLI: "Kimi Code" once a session exists, then the session's
+    # title alone (at most 32 characters), which does not name it. Before the
+    # first message it writes no title, so the shell's "kimi" stays.
+    Kimi Code: &kimi_cli
+      title: &kimi_title '^(?:Kimi Code\s*(?:$|—\s*\S+$)|kimi(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Kimi Code(?:$|\s)|kimi(?:$|\s|\)))'
+      overlay: kimi_cli_template.mods.png
+      os:
+        macos:
+          title: *kimi_title
+          overlay: kimi_cli_template_mac.mods.png
+        linux:
+          title: *kimi_title
+          overlay: kimi_cli_template_linux.mods.png
+    kimi: *kimi_cli
+    "(kimi)": *kimi_cli
+    "(kimi": *kimi_cli
+    "^kimi": *kimi_cli
     # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
     # <topic>" in screen-reader mode).
     GitHub Copilot: &copilot_cli

@@ -33,7 +33,7 @@ threshold: 150
 program_icon: grok.png
 program_icon_mode: alpha
 program_icon_anchor: right
-program_icon_region: [37, 32]
+program_icon_region: [26, 32]   # the 26x24 logo, 1:1
 program_icon_margin: 0
 
 bindings:
@@ -41,7 +41,7 @@ bindings:
   # Ctrl+Q and Ctrl+N ask for a second press within 1000 ms.
   - { key: Q, mods: [CTRL], icon: exit.png, label: "Quit (twice)" }
   - { key: N, mods: [CTRL], icon: newchat.png, label: "New session (twice)" }
-  - { key: BACKSLASH, mods: [CTRL], icon: dashboard.png, label: "Agent dashboard" }
+  - { key: BACKSLASH, mods: [CTRL], icon: agentdash.png, label: "Agent dashboard" }
 
   # --- Agent-Level ---
   # Ctrl+C cancels the running turn; with a draft it clears the draft first.
@@ -75,7 +75,7 @@ bindings:
   - { key: PAGE_DOWN, icon: page_down.png, label: "Scroll page" }
   - { key: K, mods: [CTRL], icon: scroll_up.png, label: "Scroll line up" }
   - { key: J, mods: [CTRL], icon: scroll_down.png, label: "Scroll line down" }
-  - { key: U, mods: [CTRL], icon: scroll_up.png, label: "Half page up" }
+  - { key: U, mods: [CTRL], icon: half_up.png, label: "Half page up" }
   - { key: LEFT, mods: [SHIFT], icon: prev.png, label: "Previous turn" }
   - { key: RIGHT, mods: [SHIFT], icon: next.png, label: "Next turn" }
   - { key: E, mods: [CTRL], icon: thinking.png, label: "Thinking blocks" }
