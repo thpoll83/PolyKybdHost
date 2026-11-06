@@ -1531,6 +1531,111 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # Terminal programs (sources: overlay_sources/tui/; SOURCES.md there has
+    # the title each one writes). Only Midnight Commander and Yazi write a
+    # title; the others are seen through the shell's title, as nano and
+    # Aider. Same command-position regex, optionally after `sudo`.
+    lazygit: &lazygit_tui
+      title: '^(?:(?:sudo\s+)?(?:lazygit)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:lazygit)(?:$|\s|\)))'
+      overlay: lazygit_template.mods.png
+    "(lazygit)": *lazygit_tui
+    "(lazygit": *lazygit_tui
+    "^lazygit": *lazygit_tui
+    htop: &htop_tui
+      title: '^(?:(?:sudo\s+)?(?:htop)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:htop)(?:$|\s|\)))'
+      overlay: htop_template.mods.png
+    "(htop)": *htop_tui
+    "(htop": *htop_tui
+    "^htop": *htop_tui
+    btop: &btop_tui
+      title: '^(?:(?:sudo\s+)?(?:btop)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:btop)(?:$|\s|\)))'
+      overlay: btop_template.mods.png
+    "(btop)": *btop_tui
+    "(btop": *btop_tui
+    "^btop": *btop_tui
+    # Midnight Commander writes "mc [user@host]:<dir>" itself.
+    mc: &mc_tui
+      title: '^(?:(?:sudo\s+)?(?:mc)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:mc)(?:$|\s|\)))'
+      overlay: [mc_template.mods.png, mc_template.combo.mods.png]
+    "(mc)": *mc_tui
+    "(mc": *mc_tui
+    "^mc": *mc_tui
+    # Yazi writes "Yazi: <dir>" itself.
+    yazi: &yazi_tui
+      title: '^(?:Yazi: |(?:sudo\s+)?(?:yazi)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Yazi: |(?:sudo\s+)?(?:yazi)(?:$|\s|\)))'
+      overlay: yazi_template.mods.png
+    "(yazi)": *yazi_tui
+    "(yazi": *yazi_tui
+    "^yazi": *yazi_tui
+    "Yazi:": *yazi_tui
+    micro: &micro_tui
+      title: '^(?:(?:sudo\s+)?(?:micro)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:micro)(?:$|\s|\)))'
+      overlay: [micro_template.mods.png, micro_template.combo.mods.png]
+    "(micro)": *micro_tui
+    "(micro": *micro_tui
+    "^micro": *micro_tui
+    # Helix (`hx`; `helix` on Arch and Fedora).
+    hx: &helix_tui
+      title: '^(?:(?:sudo\s+)?(?:hx|helix)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:hx|helix)(?:$|\s|\)))'
+      overlay: [helix_template.mods.png, helix_template.combo.mods.png]
+    "(hx)": *helix_tui
+    "(hx": *helix_tui
+    "^hx": *helix_tui
+    helix: *helix_tui
+    "(helix)": *helix_tui
+    "(helix": *helix_tui
+    "^helix": *helix_tui
+    # less, and man, which pages through less.
+    less: &less_tui
+      title: '^(?:(?:sudo\s+)?(?:less|man)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:less|man)(?:$|\s|\)))'
+      overlay: [less_template.mods.png, less_template.combo.mods.png]
+    "(less)": *less_tui
+    "(less": *less_tui
+    "^less": *less_tui
+    man: *less_tui
+    "(man)": *less_tui
+    "(man": *less_tui
+    "^man": *less_tui
+    k9s: &k9s_tui
+      title: '^(?:(?:sudo\s+)?(?:k9s)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:k9s)(?:$|\s|\)))'
+      overlay: k9s_template.mods.png
+    "(k9s)": *k9s_tui
+    "(k9s": *k9s_tui
+    "^k9s": *k9s_tui
+    # GDB and the common cross builds; the set is the prompt's one-letter commands.
+    gdb: &gdb_tui
+      title: '^(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s|\)))'
+      overlay: gdb_template.mods.png
+    "(gdb)": *gdb_tui
+    "(gdb": *gdb_tui
+    "^gdb": *gdb_tui
+    gdb-multiarch: *gdb_tui
+    "(gdb-multiarch)": *gdb_tui
+    "(gdb-multiarch": *gdb_tui
+    "^gdb-multiarch": *gdb_tui
+    gdbtui: *gdb_tui
+    "(gdbtui)": *gdb_tui
+    "(gdbtui": *gdb_tui
+    "^gdbtui": *gdb_tui
+    arm-none-eabi-gdb: *gdb_tui
+    "(arm-none-eabi-gdb)": *gdb_tui
+    "(arm-none-eabi-gdb": *gdb_tui
+    "^arm-none-eabi-gdb": *gdb_tui
+    aarch64-linux-gnu-gdb: *gdb_tui
+    "(aarch64-linux-gnu-gdb)": *gdb_tui
+    "(aarch64-linux-gnu-gdb": *gdb_tui
+    "^aarch64-linux-gnu-gdb": *gdb_tui
+    riscv64-unknown-elf-gdb: *gdb_tui
+    "(riscv64-unknown-elf-gdb)": *gdb_tui
+    "(riscv64-unknown-elf-gdb": *gdb_tui
+    "^riscv64-unknown-elf-gdb": *gdb_tui
+    # Vim and Neovim with `set title` write "<file> (<dir>) - VIM" and
+    # "<file> - NVIM". Without the plugin's mode report that is all that is
+    # known, so it loads the Normal-mode set. A report takes priority.
+    VIM: &vim_set_title
+      title: '\s-\sN?VIM(?:$|\s)'
+      overlay: vim_normal_template.mods.png
+    NVIM: *vim_set_title
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,

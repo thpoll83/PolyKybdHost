@@ -60,15 +60,16 @@ NANO_TITLES = {
 }
 
 # Titles that contain the word nano, or something like it, NOT as the command.
+# (`man nano` and `less nano.txt` load the less set: tui_routing_test.)
 OTHER_TITLES = {
     "bash prompt": "user@host: ~/nano-docs",
     "bash prompt in ~/nano": "user@host: ~/nano",
     "bash prompt, base name only": "user@host: nano",
     "vim, file name": "vim nanotech.txt",
     "vim, file named nano": "vim nano",
-    "man page": "man nano",
+    "info page": "info nano",
     "cd": "cd nano",
-    "less": "less nano.txt",
+    "cat": "cat nano.txt",
     "Terminal.app in ~/nano, running vim": "nano — vim notes.txt — 80×24",
     "Terminal.app in ~/nano, idle": "nano — -zsh — 80×24",
     "Konsole in ~/nano, idle": "nano : bash — Konsole",

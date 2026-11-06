@@ -1,0 +1,162 @@
+#
+# Keys: Helix 24.07, default Normal mode keymap in helix-term/src/keymap/default.rs (`default()`,
+# the `normal` keymap! block, tag 24.07; binary checked: helix 24.7 (079f5442)). Insert mode, Select
+# mode extras, the second key of g/m/[/]/space/z/Z/C-w menus, arrow-key aliases, Home/End
+# and PageUp/PageDown are left out. Shift+key is the capital letter.
+# Terminal program: no Cmd keys. Esc shows the program mark.
+#
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/tui/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/tui/helix.yaml --preview /tmp/helix_preview
+app: Helix
+match: [hx, helix]
+output: helix_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: helix.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- Motion (single keys): "h"/"j"/"k"/"l":move_char_left, move_visual_line_down, move_visual_line_up,
+  # move_char_right; "w"/"b"/"e", "W"/"B"/"E": word and WORD motions; "f"/"t"/"F"/"T": find/till char;
+  # "A-.":repeat_last_motion; "G":goto_line; "C-b"/"C-f":page_up/page_down; "C-u"/"C-d":half page.
+  - { key: H, icon: arrowleft.png, label: "Move left" }
+  - { key: J, icon: arrowdown.png, label: "Move down" }
+  - { key: K, icon: arrowup.png, label: "Move up" }
+  - { key: L, icon: arrowright.png, label: "Move right" }
+  - { key: W, icon: wordnext.png, label: "Next word" }
+  - { key: B, icon: wordprev.png, label: "Previous word" }
+  - { key: E, icon: wordend.png, label: "Word end" }
+  - { key: W, mods: [SHIFT], icon: wordnext.png, label: "Next WORD" }
+  - { key: B, mods: [SHIFT], icon: wordprev.png, label: "Previous WORD" }
+  - { key: E, mods: [SHIFT], icon: wordend.png, label: "WORD end" }
+  - { key: F, icon: findchar.png, label: "Find char" }
+  - { key: T, icon: tillchar.png, label: "Till char" }
+  - { key: F, mods: [SHIFT], icon: findchar_back.png, label: "Find char back" }
+  - { key: T, mods: [SHIFT], icon: tillchar_back.png, label: "Till char back" }
+  - { key: ".", mods: [ALT], icon: repeatmotion.png, label: "Repeat motion" }
+  - { key: G, mods: [SHIFT], icon: goto_line.png, label: "Go to line" }
+  - { key: B, mods: [CTRL], icon: page_up.png, label: "Page up" }
+  - { key: F, mods: [CTRL], icon: page_down.png, label: "Page down" }
+  - { key: U, mods: [CTRL], icon: scroll_up.png, label: "Half page up" }
+  - { key: D, mods: [CTRL], icon: scroll_down.png, label: "Half page down" }
+  # --- Prefix menus (the first key only; second keys are listed in the report): "g":Goto, "m":Match, "[":Left bracket,
+  # "]":Right bracket, "space":Space, "z" and "Z":View, "C-w":Window.
+  - { key: G, icon: leader.png, label: "Goto menu" }
+  - { key: M, icon: bracket.png, label: "Match menu" }
+  - { key: "[", icon: prevchange.png, label: "Prev bracket menu" }
+  - { key: "]", icon: nextchange.png, label: "Next bracket menu" }
+  - { key: SPACE, icon: leader.png, label: "Space menu" }
+  - { key: Z, icon: viewmode.png, label: "View menu" }
+  - { key: Z, mods: [SHIFT], icon: viewmode.png, label: "View menu (sticky)" }
+  - { key: W, mods: [CTRL], icon: splitright.png, label: "Window menu" }
+  # --- Modes and commands: "v":select_mode, ":":command_mode, "i"/"I"/"a"/"A"/"o"/"O": enter insert mode.
+  - { key: V, icon: mark.png, label: "Select mode" }
+  - { key: ";", mods: [SHIFT], icon: commandpalette.png, label: "Command mode" }
+  - { key: I, icon: insert.png, label: "Insert" }
+  - { key: I, mods: [SHIFT], icon: insert_start.png, label: "Insert at line start" }
+  - { key: A, icon: append.png, label: "Append" }
+  - { key: A, mods: [SHIFT], icon: insert_end.png, label: "Append at line end" }
+  - { key: O, icon: openbelow.png, label: "Open line below" }
+  - { key: O, mods: [SHIFT], icon: openabove.png, label: "Open line above" }
+  # --- Edit: "d":delete_selection, "A-d":delete_selection_noyank, "c":change_selection, "A-c":change_selection_noyank,
+  # "r":replace, "R":replace_with_yanked, "~":switch_case, "`":switch_to_lowercase, "A-`":switch_to_uppercase,
+  # "J":join_selections, "A-J":join_selections_space, ">":indent, "<":unindent, "=":format_selections,
+  # "C-a":increment, "C-x":decrement, "C-c":toggle_comments.
+  - { key: D, icon: deleteline.png, label: "Delete selection" }
+  - { key: D, mods: [ALT], icon: delete_noyank.png, label: "Delete, no yank" }
+  - { key: C, icon: change.png, label: "Change selection" }
+  - { key: C, mods: [ALT], icon: change_noyank.png, label: "Change, no yank" }
+  - { key: R, icon: replace.png, label: "Replace char" }
+  - { key: R, mods: [SHIFT], icon: replace_yank.png, label: "Replace with yank" }
+  - { key: "`", icon: lowercase.png, label: "Lowercase" }
+  - { key: "`", mods: [ALT], icon: uppercase.png, label: "Uppercase" }
+  - { key: "`", mods: [SHIFT], icon: switchcase.png, label: "Switch case" }
+  - { key: J, mods: [SHIFT], icon: join.png, label: "Join lines" }
+  - { key: J, mods: [ALT, SHIFT], icon: join.png, label: "Join with space" }
+  - { key: ".", mods: [SHIFT], icon: indent.png, label: "Indent" }
+  - { key: ",", mods: [SHIFT], icon: unindent.png, label: "Unindent" }
+  - { key: "=", icon: format.png, label: "Format selection" }
+  - { key: A, mods: [CTRL], icon: increment.png, label: "Increment number" }
+  - { key: X, mods: [CTRL], icon: decrement.png, label: "Decrement number" }
+  - { key: C, mods: [CTRL], icon: comment.png, label: "Toggle comment" }
+  # --- Yank, paste, undo, macros: "y":yank, "p":paste_after, "P":paste_before, "u":undo, "U":redo, "A-u":earlier,
+  # "A-U":later, "Q":record_macro, "q":replay_macro, "\"":select_register, "C-z":suspend.
+  - { key: Y, icon: copy.png, label: "Yank" }
+  - { key: P, icon: paste.png, label: "Paste after" }
+  - { key: P, mods: [SHIFT], icon: paste.png, label: "Paste before" }
+  - { key: U, icon: undo.png, label: "Undo" }
+  - { key: U, mods: [SHIFT], icon: redo.png, label: "Redo" }
+  - { key: U, mods: [ALT], icon: history.png, label: "Earlier state" }
+  - { key: U, mods: [ALT, SHIFT], icon: history.png, label: "Later state" }
+  - { key: Q, mods: [SHIFT], icon: macro_record.png, label: "Record macro" }
+  - { key: Q, icon: macro_run.png, label: "Replay macro" }
+  - { key: "'", mods: [SHIFT], icon: register.png, label: "Select register" }
+  - { key: Z, mods: [CTRL], icon: suspend.png, label: "Suspend" }
+  # --- Search: "/":search, "?":rsearch, "n":search_next, "N":search_prev, "*":search_selection.
+  - { key: "/", icon: search.png, label: "Search" }
+  - { key: "/", mods: [SHIFT], icon: search_back.png, label: "Search backwards" }
+  - { key: N, icon: find_next.png, label: "Next match" }
+  - { key: N, mods: [SHIFT], icon: find_prev.png, label: "Previous match" }
+  - { key: 8, mods: [SHIFT], icon: search_selection.png, label: "Search selection" }
+  # --- Selections: "x":extend_line_below, "X":extend_to_line_bounds, "A-x":shrink_to_line_bounds, "%":select_all,
+  # "s":select_regex, "S":split_selection, "A-s":split_selection_on_newline, ";":collapse_selection,
+  # "A-;":flip_selections, "A-:":ensure_selections_forward, ",":keep_primary_selection, "A-,":remove_primary_selection,
+  # "C":copy_selection_on_next_line, "A-C":copy_selection_on_prev_line, "K":keep_selections, "A-K":remove_selections,
+  # "A-minus":merge_selections, "A-_":merge_consecutive_selections, "_":trim_selections, "&":align_selections,
+  # "("/")":rotate_selections, "A-("/"A-)":rotate_selection_contents, "C-s":save_selection.
+  - { key: X, icon: selectline.png, label: "Select line" }
+  - { key: X, mods: [SHIFT], icon: linebounds.png, label: "Extend to line" }
+  - { key: X, mods: [ALT], icon: shrinkline.png, label: "Shrink to line" }
+  - { key: 5, mods: [SHIFT], icon: selectall.png, label: "Select all" }
+  - { key: S, icon: selectregex.png, label: "Select regex" }
+  - { key: S, mods: [SHIFT], icon: splitsel.png, label: "Split selection" }
+  - { key: S, mods: [ALT], icon: splitnewline.png, label: "Split on newlines" }
+  - { key: ";", icon: collapse.png, label: "Collapse selection" }
+  - { key: ";", mods: [ALT], icon: flip.png, label: "Flip selection" }
+  - { key: ";", mods: [ALT, SHIFT], icon: forward.png, label: "Selections forward" }
+  - { key: ",", icon: keepprimary.png, label: "Keep primary" }
+  - { key: ",", mods: [ALT], icon: removeprimary.png, label: "Remove primary" }
+  - { key: C, mods: [SHIFT], icon: cursorbelow.png, label: "Cursor on next line" }
+  - { key: C, mods: [ALT, SHIFT], icon: cursorabove.png, label: "Cursor on prev line" }
+  - { key: K, mods: [SHIFT], icon: keepsel.png, label: "Keep matching" }
+  - { key: K, mods: [ALT, SHIFT], icon: removesel.png, label: "Remove matching" }
+  - { key: "-", mods: [ALT], icon: mergesel.png, label: "Merge selections" }
+  - { key: "-", mods: [ALT, SHIFT], icon: mergeconsec.png, label: "Merge consecutive" }
+  - { key: "-", mods: [SHIFT], icon: trim.png, label: "Trim selections" }
+  - { key: 7, mods: [SHIFT], icon: align.png, label: "Align selections" }
+  - { key: 9, mods: [SHIFT], icon: rotate_back.png, label: "Rotate back" }
+  - { key: 0, mods: [SHIFT], icon: rotate_fwd.png, label: "Rotate forward" }
+  - { key: 9, mods: [ALT, SHIFT], icon: rotate_back.png, label: "Rotate contents back" }
+  - { key: 0, mods: [ALT, SHIFT], icon: rotate_fwd.png, label: "Rotate contents fwd" }
+  - { key: S, mods: [CTRL], icon: save.png, label: "Save selection" }
+  # --- Syntax tree: "A-o":expand_selection, "A-i":shrink_selection, "A-I":select_all_children, "A-p":select_prev_sibling,
+  # "A-n":select_next_sibling, "A-a":select_all_siblings, "A-e":move_parent_node_end, "A-b":move_parent_node_start.
+  - { key: O, mods: [ALT], icon: expand.png, label: "Expand selection" }
+  - { key: I, mods: [ALT], icon: shrink.png, label: "Shrink selection" }
+  - { key: I, mods: [ALT, SHIFT], icon: children.png, label: "Select children" }
+  - { key: P, mods: [ALT], icon: prevsibling.png, label: "Previous sibling" }
+  - { key: N, mods: [ALT], icon: nextsibling.png, label: "Next sibling" }
+  - { key: A, mods: [ALT], icon: siblings.png, label: "Select siblings" }
+  - { key: E, mods: [ALT], icon: parentend.png, label: "Parent node end" }
+  - { key: B, mods: [ALT], icon: parentstart.png, label: "Parent node start" }
+  # --- Jumplist and shell: "C-i"/"tab":jump_forward, "C-o":jump_backward, "|":shell_pipe, "A-|":shell_pipe_to,
+  # "!":shell_insert_output, "A-!":shell_append_output, "$":shell_keep_pipe.
+  - { key: TAB, icon: next.png, label: "Jump forward" }
+  - { key: O, mods: [CTRL], icon: prev.png, label: "Jump back" }
+  - { key: "\\", mods: [SHIFT], icon: pipe.png, label: "Pipe to shell" }
+  - { key: "\\", mods: [ALT, SHIFT], icon: pipe_to.png, label: "Pipe, discard output" }
+  - { key: 1, mods: [SHIFT], icon: shell_insert.png, label: "Insert shell output" }
+  - { key: 1, mods: [ALT, SHIFT], icon: shell_append.png, label: "Append shell output" }
+  - { key: 4, mods: [SHIFT], icon: shell_keep.png, label: "Keep by shell" }

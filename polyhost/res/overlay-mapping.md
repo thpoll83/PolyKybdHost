@@ -131,9 +131,17 @@ terminal's set. A mode report still takes priority, because a known URL skips
 `titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
+The AI CLIs (`overlay_sources/aicli/`) and ten terminal programs
+(`overlay_sources/tui/`: lazygit, htop, btop, Midnight Commander, Yazi, micro,
+Helix, less and man, k9s, GDB) use the same kind of route. Midnight Commander
+(`mc [user@host]:<dir>`) and Yazi (`Yazi: <dir>`) write a title of their own,
+and Vim and Neovim with `set title` (`<file> - VIM`, `<file> - NVIM`) load the
+Normal-mode Vim set. (`tests/handler/ai_cli_routing_test.py`,
+`tests/handler/tui_routing_test.py`.)
+
 ### A program in a terminal dims the terminal's shortcuts
 
-nano, Vim, Emacs and the AI CLIs run inside the terminal, and the terminal reads
+nano, Vim, Emacs, the AI CLIs and the terminal programs run inside the terminal, and the terminal reads
 its own shortcuts (new tab, copy, paste) before the program does. So when one of
 the routes in `&editor_titles` or `&editor_urls` matches, the terminal's
 shortcuts stay on the keycaps, drawn dimmed, and the program's take full
