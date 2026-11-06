@@ -397,6 +397,23 @@ class PolyKybdMock:
             return False, 0
         return True, getattr(self, "_glyph_script", 0)
 
+    def set_glyph_placement(self, placement) -> tuple[bool, str]:
+        value = placement.value if hasattr(placement, "value") else int(placement)
+        self._log_call("set_glyph_placement", value)
+        if (refusal := self._too_old("glyph_placement")):
+            return False, refusal
+        if value not in (0, 1):
+            return False, f"The keyboard refused glyph-script placement {value}."
+        self._forward("set_glyph_placement", int(value))
+        self._glyph_placement = int(value)
+        return True, "ok"
+
+    def get_glyph_placement(self) -> tuple[bool, int]:
+        self._log_call("get_glyph_placement")
+        if self._too_old("glyph_placement"):
+            return False, 0
+        return True, getattr(self, "_glyph_placement", 0)
+
     def set_glyph_size(self, size) -> tuple[bool, str]:
         value = size.value if hasattr(size, "value") else int(size)
         self._log_call("set_glyph_size", value)

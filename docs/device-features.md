@@ -5,6 +5,17 @@ and relative links were adjusted to suit a standalone file.
 
 ## Device features over HID
 
+- **Glyph-script placement (protocol 26+)**: cmd 30's second byte centres the
+  script's letters and digits (the original) or puts them in the top-left corner, so
+  an overlay icon on the right of the keycap leaves them whole. On the wire it is an
+  OP, `0` keep, `1` centre, `2` top-left: the reports are zero-padded, so a plain
+  script set (data[3] = 0) keeps the placement, and `set_glyph_placement` sends
+  script `0xFF` (keep) with the op. The reply adds the placement in data[4]. A closed
+  range (`GlyphPlacement`, NACKed past 2). `PolyKybd.get/set_glyph_placement` behind
+  `GLYPH_PLACEMENT_MIN_PROTOCOL=26`, `PolyCore`, `M_GLYPH_PLACEMENT_GET/SET`,
+  `RemoteCore`, `polyctl glyph-script [script] --placement centre|top-left`, and the
+  two radio entries at the bottom of the tray's "Keycap Script" submenu, greyed out
+  when the keyboard does not answer the read (older firmware).
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
