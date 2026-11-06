@@ -265,6 +265,23 @@ DEFAULT_REGION_W, DEFAULT_REGION_H = 36, 30
 DEFAULT_ANCHOR = "bottom-right"
 DEFAULT_MARGIN = 2
 
+# How `mode: auto` renders a TRANSPARENT icon. It depends on the file alone, so
+# the same PNG draws the same pixels in every app, whatever the spec's mode or
+# threshold say:
+#  * dark art (the opaque pixels average below DARK_ART_LUMA): luma at
+#    HOUSE_LUMA_THRESHOLD. That is what the `mode: luma` specs always drew, so
+#    their cells -- and the icon library glyphs taken from them -- stay the same.
+#    The `mode: alpha` specs drew the same glyphs at alpha > 127, which broke
+#    antialiased strokes into gaps and stray pixels at 32-36 px.
+#  * light art (white drawings, badges): alpha above ALPHA_CUT. Nearly all of
+#    it has hard 0/255 alpha, so the cut changes nothing visible.
+# An opaque icon still uses luma at the spec's own threshold. Program marks keep
+# the old alpha cut (PROGRAM_ALPHA_CUT), so the reviewed ESC marks do not move.
+HOUSE_LUMA_THRESHOLD = 150
+DARK_ART_LUMA = 128
+ALPHA_CUT = 105
+PROGRAM_ALPHA_CUT = 127
+
 
 # A per-binding placement decision. Any of these opts the binding out of the
 # shared renderer, which owns the geometry and so cannot honour them.
@@ -278,6 +295,9 @@ def concept_to_share(binding: dict) -> str:
     ask the same question of the same data. Two copies of this rule would drift
     the moment either moved, and nothing would go red -- the test would simply
     survey a different set than the generator writes.
+
+    `concept: <name>` on the binding shares that concept whatever the label
+    says; see the code below for the contradictions it refuses.
 
     Three ways a binding declines to share:
 
@@ -299,6 +319,25 @@ def concept_to_share(binding: dict) -> str:
       252 cells over 29 concepts with no collision at all.
     """
     from polyhost.services import shortcut_icons
+
+    # `concept: <name>` names the concept outright, for a label that does not
+    # BE the concept ("Close tab", "Toggle line comment") but whose own art is
+    # the same picture a few pixels off. Contradictions fail loudly rather than
+    # silently keeping one side.
+    explicit = binding.get("concept")
+    if explicit:
+        explicit = str(explicit)
+        if not binding.get("shared", True):
+            raise ValueError(f"binding {binding.get('label')!r}: `concept` and "
+                             f"`shared: false` contradict each other")
+        geometry = [k for k in GEOMETRY_KEYS if k in binding]
+        if geometry:
+            raise ValueError(f"binding {binding.get('label')!r}: `concept` draws with "
+                             f"the shared renderer, which cannot honour {geometry}")
+        if not shortcut_icons.icon_for(explicit):
+            raise ValueError(f"binding {binding.get('label')!r}: unknown concept "
+                             f"{explicit!r} (polyhost/services/shortcut_icons.LEXICON)")
+        return explicit
 
     label = str(binding.get("label") or "")
     if not label or not binding.get("shared", True):
@@ -388,27 +427,37 @@ def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) ->
 
 
 def render_icon(path: Path, fit: str, threshold: int, invert: bool | None,
-                region: tuple[int, int, int, int], mode: str = "auto") -> np.ndarray:
+                region: tuple[int, int, int, int], mode: str = "auto",
+                alpha_cut: int = ALPHA_CUT) -> np.ndarray:
     """Load an icon and reduce it to a bool (40,72) lit-pixel mask, placed inside
     `region` (defaults bottom-right, see DEFAULT_ANCHOR).
 
     `mode`:
-      * "alpha" - opaque pixels lit. Good for a glyph on transparent (alpha = shape).
+      * "alpha" - pixels with alpha above `alpha_cut` lit (ALPHA_CUT; `threshold`
+        is not used). Good for a glyph on transparent (alpha = shape).
       * "luma"  - light the *dark* pixels (composite over white, threshold). Good
         for duotone/filled icons on a light/transparent background.
       * "bright" - light the *bright* pixels (composite over black, threshold).
         Good for white-on-black / OLED-native art; padding stays unlit.
-      * "auto" (default) - alpha when the source has transparency, else luma.
+      * "auto" (default) - for a transparent icon, luma at HOUSE_LUMA_THRESHOLD
+        when the art is dark and alpha above ALPHA_CUT when it is light (see
+        HOUSE_LUMA_THRESHOLD); for an opaque icon, luma at `threshold`.
     `invert` flips the result.
     """
     img = Image.open(path).convert("RGBA")
-    has_transparency = np.asarray(img.split()[3]).min() < 250
+    alpha = np.asarray(img.split()[3])
+    has_transparency = alpha.min() < 250
     if mode == "auto":
-        mode = "alpha" if has_transparency else "luma"
+        if not has_transparency:
+            mode = "luma"
+        else:
+            ink = np.asarray(img.convert("RGB"), dtype=float)[alpha > 127]
+            dark = ink.size and float((ink @ [0.2989, 0.5870, 0.1140]).mean()) < DARK_ART_LUMA
+            mode, threshold = ("luma", HOUSE_LUMA_THRESHOLD) if dark else ("alpha", threshold)
 
     fitted = _fit_stamp(img, fit, region)
     if mode == "alpha":
-        mask = np.asarray(fitted.split()[3], dtype=np.uint8) > 127
+        mask = np.asarray(fitted.split()[3], dtype=np.uint8) > alpha_cut
     else:
         arr = np.asarray(fitted, dtype=float)
         a = arr[:, :, 3:4] / 255.0
@@ -684,7 +733,8 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
                 pmask = render_icon(src, spec.get("program_icon_fit", fit),
                                     int(spec.get("program_icon_threshold", threshold)),
                                     spec.get("program_icon_invert"),
-                                    preg, spec.get("program_icon_mode", mode))
+                                    preg, spec.get("program_icon_mode", mode),
+                                    alpha_cut=PROGRAM_ALPHA_CUT)
                 row, col = cell_for(pkc)
                 y0, x0 = row * SLOT_H, col * SLOT_W
                 for arr in (primary, combo, extra, gui):

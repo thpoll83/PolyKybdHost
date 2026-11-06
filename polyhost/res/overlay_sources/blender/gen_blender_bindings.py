@@ -383,7 +383,7 @@ def write_spec(ctx, desc, stack, bindings, tag, commit) -> str:
         "anchor": "bottom-right",
         "region": [36, 32],
         "margin": 0,
-        "mode": "luma",
+        "mode": "auto",
         "threshold": 150,
         # Simple Icons' Blender logo (marks/si_blender.svg), the same mark the
         # host's runtime ESC path would fetch as si:blender, baked so it shows
