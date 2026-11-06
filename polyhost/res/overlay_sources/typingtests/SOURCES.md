@@ -107,7 +107,7 @@ titles ("Practice") do not name the site, so there is no title route.
 
 ### ESC marks
 
-Both marks are traced in `fetch_icons.py` (`trace_mark`): the logo is
+Both marks are traced in `fetch_icons.py` (`trace_mark`, `trace_two_shade`): the logo is
 contain-fitted into 32x32 with LANCZOS, then thresholded on luma. The
 specs place them with `program_icon_mode: alpha`, `program_icon_anchor:
 right`, `program_icon_region: [37, 32]` and `program_icon_margin: 0`, so
@@ -119,9 +119,9 @@ the generator copies the 32x32 trace 1:1.
   corner arcs, and reads less like the logo.
 - **keybr:** the favicon is a tilted photo of keycaps. At luma 128 neither
   polarity shows a key (light-lit is one blob, dark-lit only the gaps).
-  Luma 215, light pixels lit, keeps only the white keycaps, so the mark reads
-  as a group of tilted keys. Luma 185 also lit the grey keys and their printed
-  labels, which became noise at 32 px.
+  Pixels above luma 215 are lit (the white keycaps). Pixels in (170, 215],
+  the grey keys (Backspace, Enter, Shift, Ctrl), are lit on a checkerboard,
+  so they read as a second shade (`trace_two_shade`).
 
 Both are guarded: `fetch_icons.py` leaves an existing PNG as it is. Delete a
 mark to trace it again.

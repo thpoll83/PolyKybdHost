@@ -44,14 +44,14 @@ MONKEYTYPE_DARK_LIT = True
 
 # keybr's favicon (AGPL-3.0, aradzie/keybr.com): a tilted photo of keycaps.
 # At luma 128 neither polarity shows a key (one polarity is a blob, the other
-# the gaps). Light pixels above 215 lit keeps only the white keycaps, so the
-# mark reads as a row of tilted keys; 185 also lit the grey keys and their
-# printed labels, which became noise at 32 px.
+# the gaps). Light pixels above 215 are lit (the white keycaps); pixels in
+# (170, 215] are the grey keys (Backspace, Enter, Shift, Ctrl) and get a
+# checkerboard, so they read as a second shade.
 KEYBR_LOGO_URL = ("https://raw.githubusercontent.com/aradzie/keybr.com/"
                   "05a37bc5265f65ff538c59c613db29442f345d51/"
                   "packages/keybr-pages-server/assets/favicon-96x96.png")
 KEYBR_LUMA = 215
-KEYBR_DARK_LIT = False
+KEYBR_GREY_LUMA = 170
 
 
 def _download(url: str) -> bytes:
@@ -90,6 +90,28 @@ def trace_mark(icon: Image.Image, dest: Path, luma: int, dark_lit: bool,
     Image.merge("RGBA", (a, a, a, a)).save(dest)
 
 
+def trace_two_shade(icon: Image.Image, dest: Path, luma: int, grey_luma: int,
+                    px: int = 32) -> None:
+    """Like `trace_mark` with light pixels lit (above `luma`), plus a second
+    shade: pixels in (`grey_luma`, `luma`] are lit on a checkerboard
+    ((x + y) even)."""
+    flat = Image.new("RGBA", icon.size, "black")
+    flat.alpha_composite(icon)
+    src = flat.convert("L")
+    scale = px / max(src.size)
+    fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
+                        Image.LANCZOS)
+    square = Image.new("L", (px, px), 0)
+    square.paste(fitted, ((px - fitted.width) // 2, (px - fitted.height) // 2))
+    a = Image.new("L", (px, px), 0)
+    for y in range(px):
+        for x in range(px):
+            v = square.getpixel((x, y))
+            if v > luma or (v > grey_luma and (x + y) % 2 == 0):
+                a.putpixel((x, y), 255)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+
+
 def _guarded(path: Path, draw) -> None:
     """Draw a mark only when its PNG is missing; the committed PNG is the source
     of truth after that."""
@@ -106,8 +128,8 @@ def main() -> int:
     icon_fetch.fluent(FLUENT, out)
     _guarded(out / "monkeytype.png", lambda p: trace_mark(
         _load(MONKEYTYPE_LOGO_URL), p, MONKEYTYPE_LUMA, MONKEYTYPE_DARK_LIT))
-    _guarded(out / "keybr.png", lambda p: trace_mark(
-        _load(KEYBR_LOGO_URL), p, KEYBR_LUMA, KEYBR_DARK_LIT))
+    _guarded(out / "keybr.png", lambda p: trace_two_shade(
+        _load(KEYBR_LOGO_URL), p, KEYBR_LUMA, KEYBR_GREY_LUMA))
     print(f"Wrote icons to {out}")
     return 0
 
