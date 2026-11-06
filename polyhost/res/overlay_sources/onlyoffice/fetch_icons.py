@@ -134,6 +134,65 @@ def draw_text(path: Path, text: str) -> None:
     img.resize((TEXT_PX, TEXT_PX), Image.LANCZOS).save(path)
 
 
+def _components(m):
+    """The 4-connected lit regions of a bool array, each as a bool mask."""
+    import numpy as np
+    seen = np.zeros_like(m)
+    out = []
+    for y, x in zip(*np.nonzero(m)):
+        if seen[y, x]:
+            continue
+        comp = np.zeros_like(m)
+        stack = [(y, x)]
+        seen[y, x] = True
+        while stack:
+            cy, cx = stack.pop()
+            comp[cy, cx] = True
+            for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
+                if (0 <= ny < m.shape[0] and 0 <= nx < m.shape[1]
+                        and m[ny, nx] and not seen[ny, nx]):
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        out.append(comp)
+    return out
+
+
+def _textured_mark(brand: Path, dest: Path, px: int = 32) -> None:
+    """The ESC mark: the three-layer logo at px*px, 1 bit, with the logo's
+    colours as textures. Top layer (blue): checkered; middle layer (green):
+    diagonal hatch, 2 of 3 pixels lit; both keep a solid 1 px outline. Bottom
+    layer (orange): solid. The reduction (LANCZOS, alpha >= 128) is the one the
+    overlay generator applies to the brand mark, so the outline is unchanged.
+    """
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    import numpy as np
+    alpha = Image.open(brand).convert("RGBA").getchannel("A")
+    m = np.array(alpha.resize((px, px), Image.LANCZOS)) >= 128
+    layers = sorted(_components(m), key=lambda c: np.nonzero(c)[0].mean())
+    if len(layers) != 3:
+        raise SystemExit(f"{brand.name}: expected 3 layers, found {len(layers)}")
+    top, mid, bot = layers
+    # The phase the maintainer chose from the preview: the patterns counted
+    # from the keycap's corner, where the mark sits at x 37, y 4.
+    yy, xx = np.mgrid[:px, :px]
+    yy, xx = yy + 4, xx + 37
+
+    def outline(c):
+        # A pixel is outline when one of its 4 neighbours is off (or off-canvas).
+        p = np.pad(c, 1)
+        inner = p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:]
+        return c & ~inner
+
+    out = (bot
+           | outline(top) | (top & ((xx + yy) % 2 == 0))
+           | outline(mid) | (mid & ((xx + yy) % 3 != 0)))
+    a = Image.fromarray((out * 255).astype("uint8"))
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+    print(f"  {dest.name}  <- {brand.name}, textured layers")
+
+
 def main() -> None:
     out = HERE / "icons"
     out.mkdir(exist_ok=True)
@@ -145,7 +204,8 @@ def main() -> None:
         else:
             draw_text(out / name, text)
             print(f"  {name}  <- drawn text {text!r}")
-    brand_marks.ensure(out / "onlyoffice.png", "onlyoffice")
+    brand_marks.ensure(out / "onlyoffice_brand.png", "onlyoffice")
+    _textured_mark(out / "onlyoffice_brand.png", out / "onlyoffice.png")
 
 
 if __name__ == "__main__":

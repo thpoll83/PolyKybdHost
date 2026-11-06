@@ -140,7 +140,11 @@ shell itself (`CMainWindow::onKeyDown` in `cmainwindow.cpp`) for every tab.
   free licence (Bitstream Vera derivative); the PNGs contain no font data.
 - **Program mark** (`onlyoffice.png`, all three sets): the ONLYOFFICE logo from
   Simple Icons, https://github.com/simple-icons/simple-icons (`onlyoffice.svg`),
-  rendered by `../brand_marks.py`. The Simple Icons artwork is CC0-1.0; the use
+  rendered by `../brand_marks.py` to `onlyoffice_brand.png` (256 px).
+  `_textured_mark` in `fetch_icons.py` reduces it to 32x32 and gives the logo's
+  colours as textures: the top (blue) layer checkered, the middle (green) layer
+  hatched diagonally, both with a solid outline, and the bottom (orange) layer
+  solid. The Simple Icons artwork is CC0-1.0; the use
   of the mark is nominative (it names the app the overlay is for, unmodified).
   ONLYOFFICE's own icon files in `desktop-apps` are AGPL-3.0 with additional
   terms under section 7 (retain the logo, no trademark rights). GPL-3.0
@@ -148,4 +152,5 @@ shell itself (`CMainWindow::onKeyDown` in `cmainwindow.cpp`) for every tab.
   stay under AGPL-3.0 and its additional terms inside this GPL-3.0-or-later
   repo. The CC0 drawing gives the same mark without that, so it is used
   instead. The same mark is on all three sets; the editor is not shown on ESC.
-  The file is committed, and `fetch_icons.py` does not overwrite it.
+  Both files are committed, and `fetch_icons.py` does not overwrite them.
+  Delete `onlyoffice.png` to redraw the textured mark.
