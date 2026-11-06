@@ -1,0 +1,78 @@
+# Counter-Strike 2 overlay for PolyKybd.
+#
+# Keys: the default bindings Valve ships in game/csgo/cfg/user_keys_default.vcfg
+# (SteamDatabase/GameTracking-CS2). See SOURCES.md.
+#
+# W A S D (move), Ctrl (crouch) and Shift (walk) stay blank: the letter legend
+# is enough for movement, and the modifier keys have no overlay cell. A user
+# who rebinds a key in the game still sees the default here.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/cs2/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/cs2/cs2.yaml --preview /tmp/cs2_preview
+app: counter-strike 2
+match: [cs2, steam_app_730]
+output: cs2_template
+icon_dir: icons
+fit: contain
+mode: alpha
+threshold: 150
+# As for League of Legends: the icon uses the full height on the right; the
+# firmware clears 3 px around it, so a letter legend stays whole.
+anchor: right
+region: [40, 40]
+margin: 0
+
+# CS2 drawn over the whole cell, without the ESC legend (protocol v25).
+program_icon: program.png
+program_icon_mode: alpha
+program_icon_region: [72, 40]
+program_icon_margin: 0
+program_icon_legend: false
+
+bindings:
+
+  # Weapon slots
+  - { key: "1", icon: primary.png, label: "Primary weapon" }
+  - { key: "2", icon: secondary.png, label: "Pistol" }
+  - { key: "3", icon: knife.png, label: "Knife" }
+  - { key: "4", icon: grenade.png, label: "Grenades" }
+  - { key: "5", icon: bomb.png, label: "Bomb" }
+  - { key: "6", icon: hegrenade.png, label: "HE grenade" }
+  - { key: "7", icon: flashbang.png, label: "Flashbang" }
+  - { key: "8", icon: smoke.png, label: "Smoke grenade" }
+  - { key: "9", icon: decoy.png, label: "Decoy grenade" }
+  - { key: "0", icon: molotov.png, label: "Molotov / incendiary" }
+  - { key: X, icon: healthshot.png, label: "Healthshot" }
+  - { key: Q, icon: lastweapon.png, label: "Last weapon" }
+
+  # Actions
+  - { key: SPACE, icon: jump.png, label: "Jump" }
+  - { key: E, icon: use.png, label: "Use" }
+  - { key: R, icon: reload.png, label: "Reload", shared: false }
+  - { key: F, icon: inspect.png, label: "Inspect weapon" }
+  - { key: G, icon: drop.png, label: "Drop weapon" }
+  - { key: H, icon: switchhands.png, label: "Switch hands" }
+
+  # Buying
+  - { key: B, icon: buymenu.png, label: "Buy menu" }
+  - { key: F3, icon: autobuy.png, label: "Autobuy", region: [34, 40] }
+  - { key: F4, icon: rebuy.png, label: "Rebuy", region: [34, 40] }
+  - { key: DELETE, icon: sellback.png, label: "Sell back all" }
+
+  # Communication
+  - { key: C, icon: radio1.png, label: "Radio wheel" }
+  - { key: V, icon: radio2.png, label: "Radio wheel 2" }
+  - { key: Z, icon: radiomenu.png, label: "Radio commands" }
+  - { key: T, icon: spray.png, label: "Graffiti" }
+  - { key: U, icon: teamchat.png, label: "Team chat" }
+  - { key: Y, icon: allchat.png, label: "All chat" }
+
+  # Menus
+  - { key: TAB, icon: scoreboard.png, label: "Scoreboard" }
+  - { key: I, icon: loadout.png, label: "Loadout" }
+  - { key: M, icon: teammenu.png, label: "Choose team" }
+  - { key: GRAVE, icon: console.png, label: "Console" }
+  - { key: F5, icon: screenshot.png, label: "Screenshot", region: [34, 40] }
+  - { key: F10, icon: quit.png, label: "Quit", region: [30, 40] }
