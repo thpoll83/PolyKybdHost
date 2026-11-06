@@ -42,8 +42,8 @@ added.
 
 The rendering keys 1 to 4 and the "only selected" key 5 repeat in the Ctrl
 (parts), Shift (components), Ctrl+Shift (references) and Ctrl+Alt (building
-hierarchy) layers. Each icon has a letter in its bottom-right corner for the
-objects the key acts on: P, C, R or B.
+hierarchy) layers. Each icon has a word under the glyph for the objects the key
+acts on: PART, COMP, REF or BLDG.
 
 ## Icons
 
@@ -57,7 +57,7 @@ objects the key acts on: P, C, R or B.
 | `orbit` | Byte-identical copy of `../effectcraft/icons/` | Apache-2.0 |
 | `hand` | Byte-identical copy of `../photoshop/icons/` | MIT |
 | `wireframe`, `shadedwire`, `grayscale`, `rendered` | Drawn in `fetch_icons.py`: one isometric cube, faces empty, light, dithered and solid | GPL-3.0-or-later |
-| `<mode>_p/_c/_r/_b` | Drawn in `fetch_icons.py` (`_badged`): the mode cube or the `onlyselected` checkbox, with the letter P, C, R or B (Liberation Sans Bold 13 px) in the bottom-right corner | GPL-3.0-or-later; Liberation fonts SIL OFL |
+| `<mode>_p/_c/_r/_b` | Drawn in `fetch_icons.py` (`_badged`): a 19 px mode cube drawn at its final size (or the `onlyselected` checkbox fitted to 19 px) above the word PART, COMP, REF or BLDG (Liberation Sans Bold 12 px) | GPL-3.0-or-later; Liberation fonts SIL OFL |
 | `lockx`, `locky`, `lockz` | Drawn in `fetch_icons.py`: the axis letter (DejaVu Sans Bold) beside a padlock | GPL-3.0-or-later (drawing), DejaVu font licence (font) |
 | `tekla.png` (ESC mark) | The Tekla logo from tekla.com's favicon (<https://www.google.com/s2/favicons?domain=tekla.com&sz=256>), cropped to its ink, contain-fitted into 32x32 with LANCZOS and reduced to 1 bit, pixels with luma below 170 lit | The Tekla logo is a trademark of Trimble; it is used only to name the app on its own key |
 

@@ -12,10 +12,9 @@ lights the black pixels and the generator places them 1:1):
 * the four rendering modes (wireframe, shaded wireframe, grayscale, rendered)
   as one isometric cube with the faces empty, light, dithered and solid;
 * the coordinate locks: the letter X, Y or Z beside a padlock;
-* the view-mode keys: each mode cube (and the "only selected" checkbox) with
-  a corner letter for the objects the key acts on: P parts (Ctrl), C
-  components (Shift), R references (Ctrl+Shift), B building hierarchy
-  (Ctrl+Alt).
+* the view-mode keys: a small mode cube (or the "only selected" checkbox)
+  above a word for the objects the key acts on: PART (Ctrl), COMP (Shift),
+  REF (Ctrl+Shift), BLDG (Ctrl+Alt).
 
 The ESC mark is the Tekla logo from tekla.com's favicon, fitted into 32x32 and
 reduced to 1 bit (dark pixels lit), white on transparent for
@@ -239,32 +238,84 @@ def _mark(path: Path) -> None:
 
 # The view-mode keys repeat the same five modes for parts (Ctrl), components
 # (Shift), references (Ctrl+Shift) and the building hierarchy (Ctrl+Alt). The
-# letter in the bottom-right corner says which objects the key acts on.
-BADGES = {"p": "P", "c": "C", "r": "R", "b": "B"}
+# word under the glyph says which objects the key acts on.
+WORDS = {"p": "PART", "c": "COMP", "r": "REF", "b": "BLDG"}
 BADGED = ("wireframe", "shadedwire", "grayscale", "rendered", "onlyselected")
+
+# A 19 px cube for the glyph band of a 40x32 composite, drawn at its final size
+# so the 1-bit face patterns stay exact (a downscaled 32 px cube loses them).
+_CX = 20
+_S_TOP = [(_CX, 0), (_CX + 9, 4), (_CX, 8), (_CX - 9, 4)]
+_S_LEFT = [(_CX - 9, 4), (_CX, 8), (_CX, 18), (_CX - 9, 14)]
+_S_RIGHT = [(_CX, 8), (_CX + 9, 4), (_CX + 9, 14), (_CX, 18)]
+_S_EDGES = [((_CX, 0), (_CX + 9, 4)), ((_CX + 9, 4), (_CX + 9, 14)),
+            ((_CX + 9, 14), (_CX, 18)), ((_CX, 18), (_CX - 9, 14)),
+            ((_CX - 9, 14), (_CX - 9, 4)), ((_CX - 9, 4), (_CX, 0)),
+            ((_CX - 9, 4), (_CX, 8)), ((_CX + 9, 4), (_CX, 8)), ((_CX, 8), (_CX, 18))]
+_PAT = {
+    "none": None,
+    "full": lambda x, y: True,
+    "diag3": lambda x, y: (x + y) % 3 == 0,
+    "anti3": lambda x, y: (x - y) % 3 == 0,
+    "check": lambda x, y: (x + y) % 2 == 0,
+}
+# mode -> (top, left, right face pattern, solid with cut edges)
+_SMALL = {
+    "wireframe": (("none", "none", "none"), False),
+    "shadedwire": (("diag3", "diag3", "diag3"), False),
+    "grayscale": (("diag3", "anti3", "check"), False),
+    "rendered": (("full", "full", "full"), True),
+}
+
+
+def _small_cube(mode: str) -> Image.Image:
+    faces, solid = _SMALL[mode]
+    img = Image.new("L", (40, 32), 0)
+    px = img.load()
+    for poly, pat in zip((_S_TOP, _S_LEFT, _S_RIGHT), faces):
+        f = _PAT[pat]
+        if f is None:
+            continue
+        m = Image.new("1", (40, 32), 0)
+        ImageDraw.Draw(m).polygon(poly, fill=1)
+        for y in range(32):
+            for x in range(40):
+                if m.getpixel((x, y)) and f(x, y):
+                    px[x, y] = 255
+    d = ImageDraw.Draw(img)
+    for a, b in (_S_EDGES[6:] if solid else _S_EDGES):
+        d.line([a, b], fill=0 if solid else 255, width=1)
+    return img
+
+
+def _small_check(out: Path) -> Image.Image:
+    """The `onlyselected` checkbox fitted into the 19 px glyph band."""
+    src = Image.open(out / "onlyselected.png").convert("RGBA").getchannel("A")
+    src = src.crop(src.getbbox())
+    k = 19 / max(src.size)
+    g = src.resize((round(src.width * k), round(src.height * k)), Image.LANCZOS)
+    img = Image.new("L", (40, 32), 0)
+    img.paste(g.point(lambda v: 255 if v >= 80 else 0), ((40 - g.width) // 2, 0))
+    return img
 
 
 def _badged(out: Path, base: str, key: str) -> None:
-    """`base` (fitted into 32x32 on the left) with the letter BADGES[key] in
-    the bottom-right corner of a 40x32 cell, black on transparent."""
+    """`base` (a mode cube or the checkbox) above the word WORDS[key], in a
+    40x32 cell, black on transparent."""
     path = out / f"{base}_{key}.png"
     if path.exists():
         print(f"  {path.name}  <- committed asset (left as-is)")
         return
-    src = Image.open(out / f"{base}.png").convert("RGBA")
-    if src.size != (32, 32):
-        src = src.resize((32, 32), Image.LANCZOS)
-    mask = Image.new("L", (40, 32), 0)
-    mask.paste(src.getchannel("A").point(lambda v: 255 if v > 100 else 0), (0, 0))
+    mask = _small_check(out) if base == "onlyselected" else _small_cube(base)
     d = ImageDraw.Draw(mask)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 13)
-    letter = BADGES[key]
-    d.text((40 - d.textlength(letter, font=font), 32), letter, font=font, fill=255, anchor="ls")
+    font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 12)
+    word = WORDS[key]
+    d.text(((40 - d.textlength(word, font=font)) / 2, 31), word, font=font, fill=255, anchor="ls")
     mask = mask.point(lambda v: 255 if v >= 128 else 0)
     img = Image.new("RGBA", (40, 32), CLEAR)
     img.paste(Image.new("RGBA", (40, 32), LIT), (0, 0), mask)
     img.save(path)
-    print(f"  {path.name}  <- drawn: {base} + '{letter}'")
+    print(f"  {path.name}  <- drawn: {base} + '{word}'")
 
 
 def main() -> int:
@@ -278,7 +329,7 @@ def main() -> int:
     _cube(out / "grayscale.png", (4, 3, 2), False)
     _cube(out / "rendered.png", (1, 1, 1), True)
     for base in BADGED:
-        for key in BADGES:
+        for key in WORDS:
             # Tekla has only wireframe and shaded wireframe for the hierarchy.
             if key != "b" or base in ("wireframe", "shadedwire"):
                 _badged(out, base, key)
