@@ -34,11 +34,16 @@ def data_files(d: Path) -> dict | None:
     return {"sprites": d / names[sprites], PALETTE: d / names[PALETTE]}
 
 
+def searched(hint=None) -> list[Path]:
+    """The folders find() reads when no folder is set, in order."""
+    return openra.content_dirs("d2k/v3", hint) + openra.content_dirs("d2k", hint)
+
+
 def find(folder: str = "", hint=None) -> dict | None:
     """From `folder` when set; else from OpenRA's Dune 2000 content folder."""
     if folder:
         return data_files(Path(folder).expanduser())
-    for d in openra.content_dirs("d2k/v3", hint) + openra.content_dirs("d2k", hint):
+    for d in searched(hint):
         files = data_files(d)
         if files:
             return files

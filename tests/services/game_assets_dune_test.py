@@ -235,6 +235,42 @@ class FindTest(unittest.TestCase):
         make_d2k_files(v3, frames=3)
         self.assertEqual(d2k.find("")["sprites"].name, "DATA.R16")
 
+    def test_the_log_names_each_folder_searched_and_whether_it_exists(self):
+        from polyhost.services.game_assets.build import searched_text
+        flatpak = self.home / ".var" / "app" / "net.openra.OpenRA" / "config" / "openra"
+        (flatpak / "Content" / "d2k").mkdir(parents=True)
+        text = searched_text(d2k, "")
+        self.assertIn(str(Path("~") / ".config" / "openra" / "Content" / "d2k" / "v3")
+                      + " (missing)", text)
+        self.assertIn(str(Path("~") / "Library" / "Application Support" / "OpenRA"
+                          / "Content" / "d2k" / "v3") + " (missing)", text)
+        shown = str(Path("~") / ".var" / "app" / "net.openra.OpenRA" / "config" / "openra"
+                    / "Content" / "d2k")
+        self.assertIn(shown + ",", text + ",")
+        self.assertNotIn(shown + " (missing)", text)
+        self.assertNotIn(str(self.home), text)
+
+    def test_the_log_names_a_folder_set_in_settings(self):
+        from polyhost.services.game_assets.build import searched_text
+        self.assertEqual(searched_text(d2k, str(self.home / "D2K")),
+                         "the folder set in Settings, " + str(Path("~") / "D2K") + " (missing)")
+
+    def test_a_folder_with_dot_dot_is_still_written_with_a_tilde(self):
+        from polyhost.services.game_assets.build import shown_folder
+        typed = self.home / ".." / self.home.name / "D2K"
+        self.assertEqual(shown_folder(typed), str(Path("~") / "D2K"))
+
+    def test_build_logs_the_portable_support_folder_of_the_hint(self):
+        game = self.home / "OpenRA"
+        game.mkdir()
+        with self.assertLogs("PolyHost", level="INFO") as logs:
+            self.assertIsNone(build.build("openra_d2k_template.mods.png",
+                                          SOURCES / "openra" / "openra_d2k.yaml",
+                                          {"game_d2k_house": "atreides"}.get,
+                                          self.home / "cache", hint=game))
+        shown = str(Path("~") / "OpenRA" / "Support" / "Content" / "d2k" / "v3") + " (missing)"
+        self.assertTrue(any(shown in line for line in logs.output), logs.output)
+
 
 class BuildTest(unittest.TestCase):
 
