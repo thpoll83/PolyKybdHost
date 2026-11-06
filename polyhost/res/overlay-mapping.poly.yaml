@@ -197,6 +197,19 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     todoist.com/app:
       url: '^https?://(app\.)?todoist\.com/app'
       overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
+    # Monkeytype (sources: overlay_sources/typingtests/monkeytype.yaml). The
+    # typing test is the bare host; the gate keeps /settings, /account and the
+    # other pages, where Tab does not restart a test, on the browser set.
+    # Firefox replaces this entry with its own set (see the firefox entry).
+    monkeytype.com:
+      url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+      overlay: [monkeytype_template.mods.png, monkeytype_template.combo.mods.png]
+    # keybr (sources: overlay_sources/typingtests/keybr.yaml). The practice
+    # page is "/" or "/<locale>" (/de, /pt-br); the gate keeps /typing-test,
+    # /multiplayer and the other pages, which bind other keys, on the browser set.
+    keybr.com:
+      url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
+      overlay: keybr_template.mods.png
   # Only sites whose page titles carry a stable brand name are listed. Codex
   # cannot be told apart from ChatGPT by title, so without a URL it gets the
   # ChatGPT set. Never key on "Google" alone: every Chrome window title on
@@ -302,6 +315,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
     Todoist:
       title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
       overlay: [todoist_web_template.mods.png, todoist_web_template.combo.mods.png]
+    # Monkeytype: the test page is titled "Monkeytype | A minimalistic,
+    # customizable typing test"; the other pages are "<Page> | Monkeytype" and
+    # stay off the set. keybr's titles ("Practice") name no brand, so keybr
+    # has no title entry.
+    Monkeytype:
+      title: '^Monkeytype \| A minimalistic'
+      overlay: [monkeytype_template.mods.png, monkeytype_template.combo.mods.png]
   # macOS: Chromium's Mac keymap (Cmd, plus remaps such as History Cmd+Y and
   # Back Cmd+[). ⚠️ The `os:` branch is matched BEFORE urls-contains and
   # REPLACES the entry, so the whole URL and title routing is repeated inside it,
@@ -421,6 +441,13 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         todoist.com/app:
           url: '^https?://(app\.)?todoist\.com/app'
           overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: [monkeytype_template_mac.mods.png, monkeytype_template_mac.extra.mods.png]
+        # keybr's Ctrl+Left/Right switch desktops on macOS, so the Mac set has Enter only.
+        keybr.com:
+          url: '^https?://(www\.)?keybr\.com/([a-z]{2}(-[a-z]{2})?/?)?([?#].*)?$'
+          overlay: keybr_template_mac.mods.png
       titles-contains: &web_titles_mac
         Miro:
           overlay: [miro_template_mac.mods.png, miro_template_mac.combo.mods.png]
@@ -500,6 +527,9 @@ chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,ms
         Todoist:
           title: '(^|[-–—:|] ?)Todoist( [-—] [^-—]+)?$'
           overlay: [todoist_web_template_mac.mods.png, todoist_web_template_mac.combo.mods.png, todoist_web_template_mac.extra.mods.png]
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: [monkeytype_template_mac.mods.png, monkeytype_template_mac.extra.mods.png]
 # Mozilla Firefox (sources: overlay_sources/firefox/). Firefox has its own
 # keymap, so it has its own entry, but the web-app routing is the browser
 # entry's above, shared by YAML alias (&web_urls ...): one list to maintain.
@@ -516,7 +546,17 @@ firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.fire
     <<: *web_urls
     chatgpt.com/codex:
       overlay: [firefox_template.mods.png, firefox_template.combo.mods.png, firefox_template.extra.mods.png]
-  titles-contains: *web_titles
+    # Firefox reserves Ctrl/Cmd+Shift+P (private window), so Monkeytype's
+    # command-line key never reaches the page. This set leaves it out; its keys
+    # are the same on macOS.
+    monkeytype.com:
+      url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+      overlay: monkeytype_firefox_template.mods.png
+  titles-contains:
+    <<: *web_titles
+    Monkeytype:
+      title: '^Monkeytype \| A minimalistic'
+      overlay: monkeytype_firefox_template.mods.png
   os:
     macos:
       overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
@@ -524,14 +564,28 @@ firefox,firefox-esr,firefox-dev,firefox-nightly,firefox_firefox,org.mozilla.fire
         <<: *web_urls_mac
         chatgpt.com/codex:
           overlay: [firefox_template_mac.mods.png, firefox_template_mac.combo.mods.png, firefox_template_mac.extra.mods.png, firefox_template_mac.gui.mods.png]
-      titles-contains: *web_titles_mac
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: monkeytype_firefox_template.mods.png
+      titles-contains:
+        <<: *web_titles_mac
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: monkeytype_firefox_template.mods.png
     linux:
       overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
       urls-contains:
         <<: *web_urls
         chatgpt.com/codex:
           overlay: [firefox_template_linux.mods.png, firefox_template_linux.combo.mods.png, firefox_template_linux.extra.mods.png]
-      titles-contains: *web_titles
+        monkeytype.com:
+          url: '^https?://(www\.)?monkeytype\.com/([?#].*)?$'
+          overlay: monkeytype_firefox_template.mods.png
+      titles-contains:
+        <<: *web_titles
+        Monkeytype:
+          title: '^Monkeytype \| A minimalistic'
+          overlay: monkeytype_firefox_template.mods.png
 # Safari (sources: overlay_sources/safari/), macOS only. The host reads the
 # active tab's URL over AppleScript (services/browser_url_macos.py), so the web
 # apps route as in the other browsers, through the shared macOS maps. The
@@ -1418,6 +1472,24 @@ windowsterminal,wt:
     "(nano)": *nano_title
     "(nano": *nano_title
     "^nano": *nano_title
+    # tmux (sources: overlay_sources/tmux/) is matched by the WINDOW TITLE, as
+    # nano is. tmux's `set-titles` option is off by default, so tmux never
+    # writes the outer terminal's title and the title keeps what the shell or
+    # the terminal wrote when tmux started ("tmux", "tmux new -s work",
+    # iTerm2's "Default (tmux)", Terminal.app's "~ — tmux — 80×24"). The same
+    # `title` regex as nano requires tmux at the command position, so
+    # `man tmux`, `vim .tmux.conf` and a prompt in ~/tmux keep the terminal's
+    # set. While tmux runs the title does not change, so a program inside it
+    # (nano, an AI CLI) does not load its own set; a vim or emacs mode report
+    # still takes priority. One set for every OS: tmux reads Control, not Cmd.
+    # Checked on a pty with tmux 3.4 and the bash script in res/shell/; not
+    # checked on an install of any terminal (tests/handler/tmux_routing_test.py).
+    tmux: &tmux_title
+      title: '^(?:sudo\s+)?tmux(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?tmux(?:$|\s|\))'
+      overlay: tmux_template.mods.png
+    "(tmux)": *tmux_title
+    "(tmux": *tmux_title
+    "^tmux": *tmux_title
     # Terminal AI coding CLIs (sources: overlay_sources/aicli/; SOURCES.md
     # there has every title format and where it was read). All but Aider
     # REPLACE the shell's title with their own, so each route matches the
@@ -1531,6 +1603,46 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # lazygit (sources: overlay_sources/lazygit/) sets no window title, so it
+    # is routed like nano: the shell or the terminal puts the running command
+    # into the title, and the `title` regex requires lazygit at the command
+    # position. One set for Windows, macOS and Linux (Ctrl is Control in a
+    # terminal). The title formats were not checked on an install.
+    lazygit: &lazygit_title
+      title: '^(?:sudo\s+)?lazygit(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?lazygit(?:$|\s|\))'
+      overlay: [lazygit_template.mods.png, lazygit_template.combo.mods.png]
+    "(lazygit)": *lazygit_title
+    "(lazygit": *lazygit_title
+    "^lazygit": *lazygit_title
+    # Zellij (sources: overlay_sources/zellij/; SOURCES.md there has every
+    # title format and where it was read). Zellij writes the terminal title
+    # itself. Up to 0.42 the title is "Zellij (<session>) - <pane title>";
+    # the key `Zellij` and `^Zellij \(` find it. Since 0.43.1 it is
+    # "<session> | <pane title>" and does not name Zellij: `titles-match`
+    # below finds a generated session name. The other keys find `zellij` at
+    # the command position, as for nano: the shell integration's title in the
+    # moment before Zellij writes its own, and terminals that show the
+    # process name (Konsole "~ : zellij", iTerm2 "(zellij)", Terminal.app
+    # "dir — zellij — 80×24"). Zellij's title is matched before the program in
+    # its pane, because Zellij reads its Normal-mode keys first; a vim or
+    # emacs report still takes priority. Not checked on an install.
+    Zellij: &zellij_route
+      title: '^(?:Zellij \(|zellij(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)zellij(?:$|\s|\))'
+      overlay: &zellij_overlay [zellij_template.mods.png, zellij_template.combo.mods.png]
+    zellij: *zellij_route
+    "(zellij)": *zellij_route
+    "(zellij": *zellij_route
+    "^zellij": *zellij_route
+  # Zellij 0.43.1 and later: "<session>" or "<session> | <pane title>", with a
+  # session name that Zellij generated ("<adjective>-<noun>" from two fixed
+  # lists; the regex is printed by overlay_sources/zellij/gen_session_regex.py).
+  # A session started with a name of its own (`zellij -s work`) is not
+  # recognised by its title. tests/handler/zellij_routing_test.py.
+  # The key is longer than the 1024 characters YAML allows for a plain key,
+  # so it is written as an explicit key ("? ").
+  titles-match: &multiplexer_titles
+    ? '^(?:adamant|adept|adventurous|arcadian|auspicious|awesome|blossoming|brave|charming|chatty|circular|considerate|cubic|curious|delighted|didactic|diligent|effulgent|erudite|excellent|exquisite|fabulous|fascinating|friendly|glowing|gracious|gregarious|hopeful|implacable|inventive|joyous|judicious|jumping|kind|likable|loyal|lucky|marvellous|mellifluous|nautical|oblong|outstanding|polished|polite|profound|quadratic|quiet|rectangular|remarkable|rusty|sensible|sincere|sparkling|splendid|stellar|tenacious|tremendous|triangular|undulating|unflappable|unique|verdant|vitreous|wise|zippy)-(?:aardvark|accordion|apple|apricot|bee|brachiosaur|cactus|capsicum|clarinet|cowbell|crab|cuckoo|cymbal|diplodocus|donkey|drum|duck|echidna|elephant|foxglove|galaxy|glockenspiel|goose|hill|horse|iguanadon|iguanodon|jellyfish|kangaroo|lake|lemon|lemur|magpie|megalodon|mountain|mouse|muskrat|newt|oboe|ocelot|orange|panda|peach|pepper|petunia|pheasant|piano|pigeon|platypus|quasar|rhinoceros|river|rustacean|salamander|sitar|stegosaurus|tambourine|tiger|tomato|triceratops|ukulele|viola|weasel|xylophone|yak|zebra)(?:$| \| )'
+    : overlay: *zellij_overlay
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,
@@ -1540,6 +1652,7 @@ windowsterminal,wt:
 alacritty,aterm,com.gexperts.tilix,com.mitchellh.ghostty,com.raggesilver.blackbox,com.system76.cosmicterm,conemu,conemu64,conhost,contour,cool-retro-term,cosmic-term,deepin-terminal,dev.warp.warp,eterm,extraterm,extratermqt,fluentterminal.app,foot,footclient,ghostty,gnome-terminal,gnome-terminal-server,guake,hyper,io.elementary.terminal,iterm,iterm2,kgx,konsole,lxterminal,mate-terminal,mintty,mlterm,mobaxterm,openconsole,org.contourterminal.contour,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.kde.yakuake,ptyxis,qterminal,rio,roxterm,rxvt,sakura,st,tabby,terminal,terminator,terminology,tilda,tilix,urxvt,uxterm,warp,wave,waveterm,xfce4-terminal,xterm,yakuake,zutty:
   urls-contains: *editor_urls
   titles-contains: *editor_titles
+  titles-match: *multiplexer_titles
 # WezTerm (sources: overlay_sources/wezterm/) and kitty (overlay_sources/kitty/)
 # have sets of their own, so they route the editors and title programs as
 # Windows Terminal does: a matched route layers over the terminal's set, and a
@@ -1551,20 +1664,24 @@ wezterm,wezterm-gui,org.wezfurlong.wezterm:
   overlay: [wezterm_template.mods.png, wezterm_template.combo.mods.png, wezterm_template.extra.mods.png]
   urls-contains: *editor_urls
   titles-contains: *editor_titles
+  titles-match: *multiplexer_titles
   os:
     macos:
       overlay: [wezterm_template_mac.mods.png, wezterm_template_mac.combo.mods.png, wezterm_template_mac.extra.mods.png]
       urls-contains: *editor_urls
       titles-contains: *editor_titles
+      titles-match: *multiplexer_titles
 kitty:
   overlay: [kitty_template.mods.png, kitty_template.combo.mods.png, kitty_template.extra.mods.png]
   urls-contains: *editor_urls
   titles-contains: *editor_titles
+  titles-match: *multiplexer_titles
   os:
     macos:
       overlay: [kitty_template_mac.mods.png, kitty_template_mac.combo.mods.png, kitty_template_mac.extra.mods.png]
       urls-contains: *editor_urls
       titles-contains: *editor_titles
+      titles-match: *multiplexer_titles
 # GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
 # gvim on Linux, MacVim's display name, Neovide. The plugin reports the mode
 # as in a terminal; without a report Vim's Normal mode set applies. The names
@@ -2869,3 +2986,18 @@ winamp:
   os:
     windows:
       overlay: [winamp_template.mods.png, winamp_template.combo.mods.png]
+# qutebrowser (overlay_sources/qutebrowser/). One set for Windows, macOS and
+# Linux: qutebrowser binds the Control key on macOS too. Process names, read
+# from the v3.7.0 source and packaging, not checked on an install:
+#   Windows: qutebrowser.exe (the PyInstaller build, misc/qutebrowser.spec).
+#   macOS:   the bundle's display name, qutebrowser.
+#   Linux:   `qutebrowser` (the launcher script's process name, WM_CLASS and the
+#            desktop file's StartupWMClass), or org.qutebrowser.qutebrowser (the
+#            Wayland app id from --desktop-file-name, and the Flathub id).
+# Started as `python3 -m qutebrowser` (a source checkout) it reports python3,
+# which cannot be mapped without catching every Python program.
+# No urls-contains / titles-contains web-app routing: the URL-reporting browser
+# extension does not run in qutebrowser, and in normal mode qutebrowser takes
+# the single keys the web-app sets draw.
+qutebrowser,org.qutebrowser.qutebrowser:
+  overlay: [qutebrowser_template.mods.png, qutebrowser_template.combo.mods.png]

@@ -1,0 +1,65 @@
+# Zellij shortcut overlay for PolyKybd (Linux and macOS). See SOURCES.md.
+#
+# The keys are Zellij's default keybindings, read from its default config,
+# zellij-utils/assets/config/default.kdl at tag v0.45.1. Zellij is modal: this
+# set draws the keys that work in Normal mode (the `shared_except "locked"`
+# block and the mode switches). The keys of the other modes (Pane, Tab,
+# Resize, Scroll, Session, Move, Tmux) are not drawn, because the host cannot
+# know which mode is active (SOURCES.md).
+#
+# Zellij reads Alt from the terminal. On macOS the terminal must send Option as
+# Meta (Terminal.app: "Use Option as Meta key"; iTerm2: Option key "Esc+"), so
+# the same set serves Linux and macOS.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/zellij/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/zellij/zellij.yaml --preview /tmp/zellij_preview
+app: zellij
+match: [zellij]
+output: zellij_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: zellij.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- Ctrl: mode switches, lock and quit ---
+  - { key: G, mods: [CTRL], icon: lock.png, label: "Lock mode" }
+  - { key: Q, mods: [CTRL], icon: quit.png, label: "Quit Zellij" }
+  - { key: P, mods: [CTRL], icon: pane.png, label: "Pane mode" }
+  - { key: T, mods: [CTRL], icon: tab.png, label: "Tab mode" }
+  - { key: N, mods: [CTRL], icon: resize.png, label: "Resize mode" }
+  - { key: S, mods: [CTRL], icon: scroll.png, label: "Scroll mode" }
+  - { key: O, mods: [CTRL], icon: session.png, label: "Session mode" }
+  - { key: H, mods: [CTRL], icon: move.png, label: "Move mode" }
+  - { key: B, mods: [CTRL], icon: tmux.png, label: "Tmux mode", region: [36, 32] }
+
+  # --- Alt: panes and tabs in Normal mode ---
+  - { key: N, mods: [ALT], icon: newpane.png, label: "New pane" }
+  - { key: F, mods: [ALT], icon: floating.png, label: "Toggle floating panes" }
+  - { key: H, mods: [ALT], icon: left.png, label: "Focus left or previous tab" }
+  - { key: LEFT, mods: [ALT], icon: left.png, label: "Focus left or previous tab" }
+  - { key: L, mods: [ALT], icon: right.png, label: "Focus right or next tab" }
+  - { key: RIGHT, mods: [ALT], icon: right.png, label: "Focus right or next tab" }
+  - { key: J, mods: [ALT], icon: down.png, label: "Focus down" }
+  - { key: DOWN, mods: [ALT], icon: down.png, label: "Focus down" }
+  - { key: K, mods: [ALT], icon: up.png, label: "Focus up" }
+  - { key: UP, mods: [ALT], icon: up.png, label: "Focus up" }
+  - { key: I, mods: [ALT], icon: tableft.png, label: "Move tab left" }
+  - { key: O, mods: [ALT], icon: tabright.png, label: "Move tab right" }
+  - { key: "=", mods: [ALT], icon: grow.png, label: "Increase pane size" }
+  - { key: "-", mods: [ALT], icon: shrink.png, label: "Decrease pane size" }
+  - { key: "[", mods: [ALT], icon: layoutprev.png, label: "Previous swap layout" }
+  - { key: "]", mods: [ALT], icon: layoutnext.png, label: "Next swap layout" }
+  - { key: P, mods: [ALT], icon: group.png, label: "Toggle pane in group" }
+  - { key: P, mods: [ALT, SHIFT], icon: groupmark.png, label: "Toggle group marking" }
