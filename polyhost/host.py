@@ -33,7 +33,7 @@ from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
 from polyhost.core.window_timing import NEW_WINDOW_ACCEPT_TIME_MSEC
 from polyhost.device import bulk_pipe
-from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
+from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphPlacement, GlyphScript, GlyphSize
 from polyhost.device.split_link import is_split_link_failure
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
@@ -699,6 +699,23 @@ class PolyHost(QApplication):
             self.glyph_actions[script.value] = act
             if script is GlyphScript.STANDARD:
                 self.glyph_script_menu.addSeparator()
+        # Where the script's letters and digits sit (firmware v26+): centred, the
+        # original, or in the top-left corner, which leaves the right of the keycap
+        # to an overlay icon. Enabled on each show from the keyboard's answer, so
+        # older firmware greys the pair out instead of failing on a click.
+        self.glyph_script_menu.addSeparator()
+        place_group = QActionGroup(self)
+        place_group.setExclusive(True)
+        self.glyph_place_actions = {}
+        for place, label in ((GlyphPlacement.CENTRE, _("Centred on the keycap")),
+                             (GlyphPlacement.TOP_LEFT, _("In the top-left corner"))):
+            act = QAction(label, parent=self, checkable=True)
+            act.setData(place.value)
+            place_group.addAction(act)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self.change_glyph_placement)
+            self.glyph_script_menu.addAction(act)
+            self.glyph_place_actions[place.value] = act
         # Each entry previews its own script (icon + a bigger sample on hover),
         # drawn from the shipped fantasy bundle — built on the first show, not
         # here, so a user who never opens the submenu pays nothing at startup.
@@ -2349,6 +2366,24 @@ class PolyHost(QApplication):
         ok, value = self.core.get_glyph_script()
         for sval, act in self.glyph_actions.items():
             act.setChecked(bool(ok) and value == sval)
+        self.refresh_glyph_placement_actions()
+
+    def refresh_glyph_placement_actions(self):
+        # A keyboard below v26 answers False: grey the pair out rather than offer a
+        # choice the firmware would ignore.
+        ok, value = self.core.get_glyph_placement()
+        for pval, act in self.glyph_place_actions.items():
+            act.setEnabled(bool(ok))
+            act.setChecked(bool(ok) and value == pval)
+
+    def change_glyph_placement(self):
+        value = self.sender().data()
+        ok, msg = self.core.set_glyph_placement(value)
+        if ok:
+            self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
+        else:
+            self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
+            self.refresh_glyph_placement_actions()
 
     def change_glyph_script(self):
         value = self.sender().data()

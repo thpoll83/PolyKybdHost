@@ -2363,6 +2363,18 @@ class PolyCore(Observable):
         return self._device_call(
             "glyph_script_get", lambda c: self.keeb.get_glyph_script())
 
+    def set_glyph_placement(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid glyph-script placement: {value!r}"
+        return self._device_call(
+            "glyph_placement_set", lambda c, v=v: self.keeb.set_glyph_placement(v))
+
+    def get_glyph_placement(self):
+        return self._device_call(
+            "glyph_placement_get", lambda c: self.keeb.get_glyph_placement())
+
     def set_glyph_size(self, value):
         try:
             v = int(value)
