@@ -269,7 +269,8 @@ def main() -> int:
     icon_fetch.borrow(BORROWED, out)
     for stem, (glyph, word) in COMPOSITES.items():
         emacs.composite(out / f"{stem}.png", glyph, word, out)
-    number_badge.numbered(out / "tab.png", "123456789", out, "tab")
+    number_badge.numbered(out / "tab.png", "123456789", out, "tab",
+                          centre=(0.50, 0.53))  # 1 px higher on the keycap than the default
     _guarded(out / "yazi.png", lambda p: _logo_mark(p, YAZI_LOGO_URL))
     _guarded(out / "ranger.png", lambda p: _logo_mark(p, RANGER_LOGO_URL))
     _guarded(out / "lf.png", _lf_mark)
