@@ -2791,3 +2791,8 @@ everything:
 # build, so there is no macOS name. Names not checked on an install.
 dota2,steam_app_570:
   overlay: dota2_template.mods.png
+# Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
+# installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
+# on a running install.
+totalcmd,totalcmd64:
+  overlay: [totalcmd_template.mods.png, totalcmd_template.combo.mods.png]
