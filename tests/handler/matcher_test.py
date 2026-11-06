@@ -594,6 +594,20 @@ class TestMappingKey(unittest.TestCase):
         self.assertEqual(mapping_key("age2_x1", m), "age2_x1")
         self.assertIsNone(mapping_key("openra-ca-108", m))
 
+    def test_a_dotted_version_glued_to_the_name_is_dropped(self):
+        # Foundry names Nuke's process `Nuke17.1` (Linux) and its macOS app
+        # after the install folder, `Nuke17.1v3`.
+        m = {"nuke": 1, "nukex": 1, "age2_x1": 1, "foobar2000": 1}
+        self.assertEqual(mapping_key("nuke17.1", m), "nuke")
+        self.assertEqual(mapping_key("nuke17.1v3", m), "nuke")
+        self.assertEqual(mapping_key("nukex16.0v8", m), "nukex")
+        # Digits without a dot are part of the name.
+        self.assertIsNone(mapping_key("nuke17", m))
+        self.assertEqual(mapping_key("age2_x1", m), "age2_x1")
+        self.assertEqual(mapping_key("foobar2000", m), "foobar2000")
+        # Only the version is dropped, never a letter of the name.
+        self.assertIsNone(mapping_key("nuke1.2", {"nuk": 1}))
+
     def test_unknown_and_empty_names_resolve_to_none(self):
         self.assertIsNone(mapping_key("notepad", self.M))
         self.assertIsNone(mapping_key("", self.M))
