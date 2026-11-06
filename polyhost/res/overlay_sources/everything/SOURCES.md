@@ -92,7 +92,7 @@ Left out:
 | `size512.png`, `size640.png`, `size768.png` | drawn in `fetch_icons.py` (Liberation Sans Bold, SIL OFL 1.1) | this repo |
 | `thumbxl.png`, `thumbl.png`, `thumbm.png` | drawn in `fetch_icons.py` | this repo |
 | `diacritics.png` | drawn in `fetch_icons.py` | this repo |
-| `progmark.png` | drawn "E" tile, `program_marks.letter_mark` | this repo |
+| `progmark.png` (ESC program mark) | Everything's app icon (voidtools.com favicon, 256 px, through Google's favicon service), reduced to 32x32 and cut at luma 128 so the dark outline of the magnifying glass is lit (`_everything_mark` in `fetch_icons.py`) | voidtools' mark, used only to name the app |
 
 Fluent: Microsoft Fluent UI System Icons,
 <https://github.com/microsoft/fluentui-system-icons> (MIT). Material Symbols:
@@ -104,11 +104,13 @@ concept renderer (no file in `icons/`).
 
 ## ESC mark
 
-The Everything logo (a magnifying glass) is voidtools' artwork, distributed
-only inside the freeware program, with no licence that allows redistributing
-it. It is not in Simple Icons. The mark is therefore a drawn letter tile with
-"E". It is a committed asset; `fetch_icons.py` does not redraw it once it
-exists.
+The mark is the Everything app icon, an orange magnifying glass with the handle
+at the lower left. `_everything_mark` fetches voidtools.com's favicon, reduces it
+to 32x32 and lights the pixels at luma 128 or darker, which keeps the glass's
+outline and drops its orange fill. The icon is voidtools' artwork. It is used
+only to name the app on its own key, as the other program marks are. It is a
+committed asset; `fetch_icons.py` does not redraw it once it exists, so delete
+`icons/progmark.png` to redraw it.
 
 ## Process name
 

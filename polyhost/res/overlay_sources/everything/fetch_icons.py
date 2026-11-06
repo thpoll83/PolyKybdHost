@@ -4,8 +4,8 @@
 Icons are Microsoft Fluent UI System Icons (MIT) and, for the three search
 options Fluent has no glyph for, Google Material Symbols (Apache-2.0), both
 through `icon_fetch`. The text badges (window sizes, thumbnail sizes, the
-diacritics letter) are drawn here. The ESC mark is a drawn letter tile,
-because the Everything logo is proprietary freeware art. See SOURCES.md.
+diacritics letter) are drawn here. The ESC mark is the Everything app icon
+(a magnifying glass) reduced to a 1-bit outline. See SOURCES.md.
 
     PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/everything/fetch_icons.py
 """
@@ -18,9 +18,16 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from polyhost.res.overlay_sources import icon_fetch, program_marks  # noqa: E402
+from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 
 BOLD = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+
+# voidtools.com's favicon is the app icon (an orange magnifying glass).
+# Google's favicon service returns it at 256 px.
+EVERYTHING_ICON_URL = "https://www.google.com/s2/favicons?domain=voidtools.com&sz=256"
+# Pixels this dark or darker are lit: the glass's dark outline, not its
+# orange fill, so the mark is an outline with the handle at the lower left.
+EVERYTHING_DARK_LUMA = 128
 
 FLUENT = {
     # file operations in the result list
@@ -114,6 +121,26 @@ def _letter(path: Path, text: str) -> None:
     img.resize((W, H), Image.LANCZOS).save(path)
 
 
+def _everything_mark(dest: Path, px: int = 32) -> None:
+    """The Everything app icon as a px*px 1-bit outline.
+
+    Drawn at the keycap size so the generator copies it 1:1.
+    """
+    if dest.exists():
+        print(f"  {dest.name}  <- committed asset (left as-is)")
+        return
+    import io
+    import urllib.request
+    with urllib.request.urlopen(EVERYTHING_ICON_URL, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("RGBA")
+    white = Image.new("RGBA", icon.size, "white")
+    white.alpha_composite(icon)
+    a = white.convert("L").resize((px, px), Image.LANCZOS).point(
+        lambda v: 255 if v <= EVERYTHING_DARK_LUMA else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+    print(f"  {dest.name}  <- Everything app icon, 1-bit outline")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -121,7 +148,7 @@ def main() -> int:
     for name, text in BADGES.items():
         _badge(out / f"{name}.png", text)
     _letter(out / "diacritics.png", "é")
-    program_marks.ensure(out / "progmark.png", "E")
+    _everything_mark(out / "progmark.png")
     print(f"Wrote icons to {out}")
     return 0
 
