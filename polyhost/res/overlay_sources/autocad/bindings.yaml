@@ -1,0 +1,239 @@
+# Autodesk AutoCAD shortcut overlays for PolyKybd (Windows and AutoCAD for Mac;
+# AutoCAD has no Linux version). See SOURCES.md.
+#
+# Keys: the default shortcut keys of the AutoCAD CUIx file, from Autodesk's own
+# help pages (URLs in SOURCES.md):
+#   Windows  AutoCAD 2026 Customization Guide, "Shortcut Keys Reference"
+#   macOS    AutoCAD for Mac 2026 Customization Guide, "About Creating and
+#            Customizing of Shortcut Keys", and the F1..F12 table of the AutoCAD
+#            for Mac 2025 Getting Started guide.
+# Command aliases (L for LINE, typed and confirmed with Enter) are not keyboard
+# shortcuts and are not drawn.
+#
+# AutoCAD for Mac binds most commands twice, to Cmd+key and to Ctrl+key, and
+# several keys differ from Windows (Ctrl+E is Toggle Grid, Cmd+3 the command
+# line). So the Windows keys are `except: [macos]` and the Mac keys
+# `only: [macos]`. The function keys and Shift+F1..F5 are the same on both.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/autocad/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/autocad/bindings.yaml --preview /tmp/autocad_preview
+app: autocad
+match: [acad, autocad]
+output: autocad_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+# Drawn substitute mark (the AutoCAD logo is an Autodesk trademark): a tile with
+# the letter A knocked out and the drawing crosshair. White on transparent.
+program_icon: autocad.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # ===== Function keys (both platforms) =====
+  - { key: F1, mods: [], label: Help }
+  - { key: F2, mods: [], icon: history.png, label: "Command history" }
+  - { key: F3, mods: [], icon: osnap.png, label: "Object snap" }
+  - { key: F4, mods: [], icon: osnap3d.png, label: "3D object snap" }
+  - { key: F5, mods: [], icon: isoplane.png, label: Isoplane }
+  - { key: F6, mods: [], icon: dynucs.png, label: "Dynamic UCS" }
+  - { key: F7, mods: [], icon: grid.png, label: Grid }
+  - { key: F8, mods: [], icon: ortho.png, label: Ortho }
+  - { key: F9, mods: [], icon: snap.png, mode: alpha, label: Snap }
+  - { key: F10, mods: [], icon: polar.png, label: "Polar tracking" }
+  - { key: F11, mods: [], icon: otrack.png, label: "Object snap tracking" }
+  - { key: F12, mods: [], icon: dynmode.png, label: "Dynamic input" }
+  - { key: F1, mods: [SHIFT], icon: subnone.png, label: "Subobject: no filter" }
+  - { key: F2, mods: [SHIFT], icon: subvertex.png, label: "Subobject: vertices" }
+  - { key: F3, mods: [SHIFT], icon: subedge.png, label: "Subobject: edges" }
+  - { key: F4, mods: [SHIFT], icon: subface.png, label: "Subobject: faces" }
+  - { key: F5, mods: [SHIFT], icon: subhistory.png, label: "Subobject: solid history" }
+
+  # ===== Windows =====
+  # --- Alt and Ctrl with function keys ---
+  - { key: F4, mods: [ALT], label: Quit, except: [macos] }
+  - { key: F8, mods: [ALT], icon: macros.png, label: Macros, except: [macos] }
+  - { key: F11, mods: [ALT], icon: vba.png, label: "Visual Basic editor", except: [macos] }
+  - { key: F2, mods: [CTRL], icon: history.png, label: "Text window", except: [macos] }
+  - { key: F4, mods: [CTRL], icon: closedwg.png, label: "Close drawing", except: [macos] }
+  - { key: F6, mods: [CTRL], icon: nexttab.png, label: "Next file tab", except: [macos] }
+  # --- palettes (Ctrl+digit) ---
+  - { key: "0", mods: [CTRL], icon: cleanscreen.png, label: "Clean screen", except: [macos] }
+  - { key: "1", mods: [CTRL], icon: properties.png, label: Properties, except: [macos] }
+  - { key: "2", mods: [CTRL], icon: designcenter.png, label: DesignCenter, except: [macos] }
+  - { key: "3", mods: [CTRL], icon: toolsets.png, label: "Tool palettes", except: [macos] }
+  - { key: "4", mods: [CTRL], icon: sheetset.png, label: "Sheet Set Manager", except: [macos] }
+  - { key: "6", mods: [CTRL], icon: dbconnect.png, label: "dbConnect Manager", except: [macos] }
+  - { key: "7", mods: [CTRL], icon: markup.png, label: "Markup Set Manager", except: [macos] }
+  - { key: "8", mods: [CTRL], icon: quickcalc.png, label: QuickCalc, except: [macos] }
+  - { key: "9", mods: [CTRL], icon: cmdline.png, label: "Command line", except: [macos] }
+  # --- Ctrl+letter ---
+  - { key: A, mods: [CTRL], label: "Select all", except: [macos] }
+  - { key: B, mods: [CTRL], icon: snap.png, mode: alpha, label: Snap, except: [macos] }
+  - { key: C, mods: [CTRL], label: Copy, except: [macos] }
+  - { key: D, mods: [CTRL], icon: dynucs.png, label: "Dynamic UCS", except: [macos] }
+  - { key: E, mods: [CTRL], icon: isoplane.png, label: Isoplane, except: [macos] }
+  - { key: F, mods: [CTRL], icon: osnap.png, label: "Object snap", except: [macos] }
+  - { key: G, mods: [CTRL], icon: grid.png, label: Grid, except: [macos] }
+  - { key: H, mods: [CTRL], icon: pickstyle.png, label: "Group selection", except: [macos] }
+  - { key: I, mods: [CTRL], icon: coords.png, label: Coordinates, except: [macos] }
+  - { key: J, mods: [CTRL], icon: repeatcmd.png, label: "Repeat last command", except: [macos] }
+  - { key: K, mods: [CTRL], icon: hyperlink.png, label: Hyperlink, except: [macos] }
+  - { key: L, mods: [CTRL], icon: ortho.png, label: Ortho, except: [macos] }
+  - { key: M, mods: [CTRL], icon: repeatcmd.png, label: "Repeat last command", except: [macos] }
+  - { key: N, mods: [CTRL], label: New, except: [macos] }
+  - { key: O, mods: [CTRL], label: Open, except: [macos] }
+  - { key: P, mods: [CTRL], icon: print.png, label: Plot, except: [macos] }
+  - { key: Q, mods: [CTRL], label: Quit, except: [macos] }
+  - { key: R, mods: [CTRL], icon: cycleviewport.png, label: "Next viewport", except: [macos] }
+  - { key: S, mods: [CTRL], label: Save, except: [macos] }
+  - { key: U, mods: [CTRL], icon: polar.png, label: "Polar tracking", except: [macos] }
+  - { key: V, mods: [CTRL], label: Paste, except: [macos] }
+  - { key: W, mods: [CTRL], icon: selcycle.png, label: "Selection cycling", except: [macos] }
+  - { key: X, mods: [CTRL], label: Cut, except: [macos] }
+  - { key: Y, mods: [CTRL], label: Redo, except: [macos] }
+  - { key: Z, mods: [CTRL], label: Undo, except: [macos] }
+  - { key: LBRACKET, mods: [CTRL], icon: cancel.png, label: "Cancel command", except: [macos] }
+  - { key: "\\", mods: [CTRL], icon: cancel.png, label: "Cancel command", except: [macos] }
+  # --- Ctrl+Shift ---
+  - { key: A, mods: [CTRL, SHIFT], icon: pickstyle.png, label: "Group selection", shared: false, except: [macos] }
+  - { key: C, mods: [CTRL, SHIFT], icon: copybase.png, label: "Copy with base point", shared: false, except: [macos] }
+  - { key: E, mods: [CTRL, SHIFT], icon: implied.png, label: "Extrude implied face", except: [macos] }
+  - { key: H, mods: [CTRL, SHIFT], icon: hidepalettes.png, label: "Hide/show palettes", except: [macos] }
+  - { key: I, mods: [CTRL, SHIFT], icon: infer.png, label: "Infer constraints", except: [macos] }
+  - { key: L, mods: [CTRL, SHIFT], icon: selprev.png, label: "Select previous", except: [macos] }
+  - { key: P, mods: [CTRL, SHIFT], icon: qprops.png, label: "Quick properties", except: [macos] }
+  - { key: S, mods: [CTRL, SHIFT], label: "Save as", except: [macos] }
+  - { key: V, mods: [CTRL, SHIFT], icon: pasteblock.png, label: "Paste as block", shared: false, except: [macos] }
+  - { key: Y, mods: [CTRL, SHIFT], icon: osnap3d.png, label: "3D object snap", except: [macos] }
+  # --- tabs and layouts ---
+  - { key: HOME, mods: [CTRL], icon: starttab.png, label: "Start tab", except: [macos] }
+  - { key: PGUP, mods: [CTRL], icon: prevlayout.png, label: "Previous layout", except: [macos] }
+  - { key: PGDN, mods: [CTRL], icon: nextlayout.png, label: "Next layout", except: [macos] }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next file tab", except: [macos] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous file tab", except: [macos] }
+
+  # ===== macOS (AutoCAD for Mac) =====
+  # --- Cmd ---
+  - { key: "1", mods: [CMD], icon: toolsets.png, label: "Tool sets", only: [macos] }
+  - { key: "2", mods: [CMD], icon: blocks.png, label: "Blocks palette", only: [macos] }
+  - { key: "3", mods: [CMD], icon: cmdline.png, label: "Command line", only: [macos] }
+  - { key: "4", mods: [CMD], icon: layers.png, label: "Layer properties", only: [macos] }
+  - { key: "5", mods: [CMD], icon: properties.png, label: Properties, only: [macos] }
+  - { key: "6", mods: [CMD], icon: statusbar.png, label: "Status bar", only: [macos] }
+  - { key: "7", mods: [CMD], icon: xref.png, label: "External references", only: [macos] }
+  - { key: "8", mods: [CMD], icon: projectmgr.png, label: "Project manager", only: [macos] }
+  - { key: "9", mods: [CMD], icon: materials.png, label: Materials, only: [macos] }
+  - { key: "0", mods: [CMD], icon: cleanscreen.png, label: "Full screen", only: [macos] }
+  - { key: A, mods: [CMD], label: "Select all", only: [macos] }
+  - { key: B, mods: [CMD], icon: snap.png, mode: alpha, label: Snap, only: [macos] }
+  - { key: C, mods: [CMD], label: Copy, only: [macos] }
+  - { key: D, mods: [CMD], icon: dynucs.png, label: "Dynamic UCS", only: [macos] }
+  - { key: E, mods: [CMD], icon: export.png, label: Export, only: [macos] }
+  - { key: F, mods: [CMD], label: Find, only: [macos] }
+  - { key: G, mods: [CMD], icon: group.png, label: Group, only: [macos] }
+  - { key: I, mods: [CMD], icon: properties.png, label: Properties, only: [macos] }
+  - { key: L, mods: [CMD], icon: ortho.png, label: Ortho, only: [macos] }
+  - { key: N, mods: [CMD], label: New, only: [macos] }
+  - { key: O, mods: [CMD], label: Open, only: [macos] }
+  - { key: P, mods: [CMD], icon: print.png, label: Plot, only: [macos] }
+  - { key: Q, mods: [CMD], label: Quit, only: [macos] }
+  - { key: R, mods: [CMD], icon: regen.png, label: Regen, only: [macos] }
+  - { key: S, mods: [CMD], label: Save, only: [macos] }
+  - { key: T, mods: [CMD], icon: qnew.png, label: "New from template", only: [macos] }
+  - { key: U, mods: [CMD], icon: polar.png, label: "Polar tracking", only: [macos] }
+  - { key: V, mods: [CMD], label: Paste, only: [macos] }
+  - { key: W, mods: [CMD], icon: closedwg.png, label: "Close drawing", only: [macos] }
+  - { key: X, mods: [CMD], label: Cut, only: [macos] }
+  - { key: Y, mods: [CMD], label: Redo, only: [macos] }
+  - { key: Z, mods: [CMD], label: Undo, only: [macos] }
+  - { key: COMMA, mods: [CMD], icon: prefs.png, label: Preferences, only: [macos] }
+  - { key: DOT, mods: [CMD], icon: docslayouts.png, label: "Documents and layouts", only: [macos] }
+  - { key: "/", mods: [CMD], label: Help, only: [macos] }
+  - { key: LBRACKET, mods: [CMD], icon: prevlayout.png, label: "Previous layout", only: [macos] }
+  - { key: RBRACKET, mods: [CMD], icon: nextlayout.png, label: "Next layout", only: [macos] }
+  - { key: EQUAL, mods: [CMD], label: "Zoom in", only: [macos] }
+  - { key: MINUS, mods: [CMD], label: "Zoom out", only: [macos] }
+  # --- Shift+Cmd ---
+  - { key: A, mods: [CMD, SHIFT], icon: pickstyle.png, label: "Group selection", shared: false, only: [macos] }
+  - { key: C, mods: [CMD, SHIFT], icon: copybase.png, label: "Copy with base point", shared: false, only: [macos] }
+  - { key: D, mods: [CMD, SHIFT], icon: dynmode.png, label: "Dynamic input", only: [macos] }
+  - { key: G, mods: [CMD, SHIFT], icon: ungroup.png, label: Ungroup, only: [macos] }
+  - { key: H, mods: [CMD, SHIFT], icon: hidepalettes.png, label: "Hide/show palettes", only: [macos] }
+  - { key: I, mods: [CMD, SHIFT], icon: infer.png, label: "Infer constraints", only: [macos] }
+  - { key: L, mods: [CMD, SHIFT], icon: selprev.png, label: "Select previous", only: [macos] }
+  - { key: O, mods: [CMD, SHIFT], icon: ortho.png, label: Ortho, only: [macos] }
+  - { key: P, mods: [CMD, SHIFT], icon: pagesetup.png, label: "Page setup manager", only: [macos] }
+  - { key: R, mods: [CMD, SHIFT], icon: regenall.png, label: "Regen all", only: [macos] }
+  - { key: S, mods: [CMD, SHIFT], label: "Save as", only: [macos] }
+  - { key: T, mods: [CMD, SHIFT], icon: otrack.png, label: "Object snap tracking", only: [macos] }
+  - { key: V, mods: [CMD, SHIFT], icon: pasteblock.png, label: "Paste as block", shared: false, only: [macos] }
+  - { key: Z, mods: [CMD, SHIFT], label: Redo, only: [macos] }
+  - { key: DOT, mods: [CMD, SHIFT], icon: docslayouts.png, label: "Documents and layouts", only: [macos] }
+  - { key: LBRACKET, mods: [CMD, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }
+  - { key: RBRACKET, mods: [CMD, SHIFT], icon: nexttab.png, label: "Next tab", only: [macos] }
+  - { key: ";", mods: [CMD, SHIFT], icon: spell.png, label: "Spell check", only: [macos] }
+  # --- Option+Cmd ---
+  - { key: W, mods: [CMD, ALT], icon: closeall.png, label: "Close all", only: [macos] }
+  - { key: N, mods: [CMD, ALT], icon: newproject.png, label: "New project", only: [macos] }
+  - { key: O, mods: [CMD, ALT], icon: openproject.png, label: "Open project", only: [macos] }
+  - { key: I, mods: [CMD, ALT], icon: properties.png, label: Properties, only: [macos] }
+  - { key: F, mods: [CMD, ALT], icon: quickselect.png, label: "Quick select", only: [macos] }
+  - { key: T, mods: [CMD, ALT], icon: toolsets.png, label: "Tool sets", only: [macos] }
+  - { key: LBRACKET, mods: [CMD, ALT], icon: firsttab.png, label: "First tab", only: [macos] }
+  - { key: RBRACKET, mods: [CMD, ALT], icon: lasttab.png, label: "Last tab", only: [macos] }
+  - { key: W, mods: [CMD, ALT, SHIFT], icon: selcycle.png, label: "Selection cycling", only: [macos] }
+  # --- Ctrl+Cmd ---
+  - { key: F, mods: [CMD, CTRL], icon: cleanscreen.png, label: "Full screen", only: [macos] }
+  # --- Control ---
+  - { key: "1", mods: [CTRL], icon: properties.png, label: Properties, only: [macos] }
+  - { key: "2", mods: [CTRL], icon: blocks.png, label: "Blocks palette", only: [macos] }
+  - { key: "3", mods: [CTRL], icon: toolsets.png, label: "Tool sets", only: [macos] }
+  - { key: "4", mods: [CTRL], icon: projectmgr.png, label: "Project manager", only: [macos] }
+  - { key: "9", mods: [CTRL], icon: cmdline.png, label: "Command line", only: [macos] }
+  - { key: A, mods: [CTRL], label: "Select all", only: [macos] }
+  - { key: B, mods: [CTRL], icon: snap.png, mode: alpha, label: Snap, only: [macos] }
+  - { key: C, mods: [CTRL], label: Copy, only: [macos] }
+  - { key: D, mods: [CTRL], icon: dynucs.png, label: "Dynamic UCS", only: [macos] }
+  - { key: E, mods: [CTRL], icon: grid.png, label: Grid, only: [macos] }
+  - { key: F, mods: [CTRL], icon: osnap.png, label: "Object snap", only: [macos] }
+  - { key: G, mods: [CTRL], icon: grid.png, label: Grid, only: [macos] }
+  - { key: H, mods: [CTRL], icon: pickstyle.png, label: "Group selection", only: [macos] }
+  - { key: I, mods: [CTRL], icon: coords.png, label: Coordinates, only: [macos] }
+  - { key: L, mods: [CTRL], icon: ortho.png, label: Ortho, only: [macos] }
+  - { key: N, mods: [CTRL], label: New, only: [macos] }
+  - { key: O, mods: [CTRL], label: Open, only: [macos] }
+  - { key: P, mods: [CTRL], icon: print.png, label: Plot, only: [macos] }
+  - { key: Q, mods: [CTRL], label: Quit, only: [macos] }
+  - { key: R, mods: [CTRL], icon: cycleviewport.png, label: "Next viewport", only: [macos] }
+  - { key: S, mods: [CTRL], label: Save, only: [macos] }
+  - { key: U, mods: [CTRL], icon: polar.png, label: "Polar tracking", only: [macos] }
+  - { key: V, mods: [CTRL], label: Paste, only: [macos] }
+  - { key: W, mods: [CTRL], icon: selcycle.png, label: "Selection cycling", only: [macos] }
+  - { key: X, mods: [CTRL], label: Cut, only: [macos] }
+  - { key: Y, mods: [CTRL], label: Redo, only: [macos] }
+  - { key: Z, mods: [CTRL], label: Undo, only: [macos] }
+  - { key: LBRACKET, mods: [CTRL], icon: cancel.png, label: "Cancel command", only: [macos] }
+  - { key: "\\", mods: [CTRL], icon: cancel.png, label: "Cancel command", only: [macos] }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab", only: [macos] }
+  # --- Ctrl+Shift ---
+  - { key: B, mods: [CTRL, SHIFT], icon: snap.png, mode: alpha, label: Snap, only: [macos] }
+  - { key: C, mods: [CTRL, SHIFT], icon: copybase.png, label: "Copy with base point", shared: false, only: [macos] }
+  - { key: D, mods: [CTRL, SHIFT], icon: dynucs.png, label: "Dynamic UCS", only: [macos] }
+  - { key: F, mods: [CTRL, SHIFT], icon: osnap.png, label: "Object snap", only: [macos] }
+  - { key: G, mods: [CTRL, SHIFT], icon: grid.png, label: Grid, only: [macos] }
+  - { key: I, mods: [CTRL, SHIFT], icon: infer.png, label: "Infer constraints", only: [macos] }
+  - { key: O, mods: [CTRL, SHIFT], icon: ortho.png, label: Ortho, only: [macos] }
+  - { key: S, mods: [CTRL, SHIFT], label: "Save as", only: [macos] }
+  - { key: V, mods: [CTRL, SHIFT], icon: pasteblock.png, label: "Paste as block", shared: false, only: [macos] }
+  - { key: W, mods: [CTRL, SHIFT], icon: selcycle.png, label: "Selection cycling", only: [macos] }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-05 13:02+0000\n"
+"POT-Creation-Date: 2026-11-05 13:38+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -3229,60 +3229,64 @@ msgstr "Configuración de PolyKybd"
 msgid "Some settings might need a restart to take effect."
 msgstr "Algunos ajustes pueden requerir un reinicio para aplicarse."
 
-#: polyhost/gui/shell_title_dialog.py:40 polyhost/gui/shell_title_dialog.py:70
+#: polyhost/gui/shell_title_dialog.py:42 polyhost/gui/shell_title_dialog.py:74
 msgid "Set up"
 msgstr "Configurado"
 
-#: polyhost/gui/shell_title_dialog.py:42 polyhost/gui/shell_title_dialog.py:72
+#: polyhost/gui/shell_title_dialog.py:44
+msgid "Shows the command without setup. Install adds only the Codex option."
+msgstr "Muestra el comando sin configuración. Instalar solo añade la opción de Codex."
+
+#: polyhost/gui/shell_title_dialog.py:46 polyhost/gui/shell_title_dialog.py:76
 msgid "Not set up"
 msgstr "Sin configurar"
 
-#: polyhost/gui/shell_title_dialog.py:44 polyhost/gui/shell_title_dialog.py:78
+#: polyhost/gui/shell_title_dialog.py:48 polyhost/gui/shell_title_dialog.py:82
 #, python-brace-format
 msgid "Set up for another copy of the app: {path}"
 msgstr "Configurado para otra copia de la aplicación: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:46 polyhost/gui/shell_title_dialog.py:83
+#: polyhost/gui/shell_title_dialog.py:50 polyhost/gui/shell_title_dialog.py:87
 msgid "Not found"
 msgstr "No encontrado"
 
-#: polyhost/gui/shell_title_dialog.py:48
+#: polyhost/gui/shell_title_dialog.py:52
 #, python-brace-format
 msgid "The profile path is unknown: {error}"
 msgstr "La ruta del perfil es desconocida: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:50
+#: polyhost/gui/shell_title_dialog.py:54
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts."
 msgstr "La directiva de ejecución de PowerShell ({policy}) no ejecuta scripts de perfil."
 
-#: polyhost/gui/shell_title_dialog.py:52
+#: polyhost/gui/shell_title_dialog.py:56
 msgid "Shows the command without setup"
 msgstr "Muestra el comando sin configuración"
 
-#: polyhost/gui/shell_title_dialog.py:74
+#: polyhost/gui/shell_title_dialog.py:78
 msgid "Set up with older plugin files. Install copies the current ones."
 msgstr "Configurado con archivos de plugin antiguos. Instalar copia los actuales."
 
-#: polyhost/gui/shell_title_dialog.py:76
+#: polyhost/gui/shell_title_dialog.py:80
 msgid "Set up, and changed by hand since. This app leaves it alone."
 msgstr "Configurado y modificado a mano desde entonces. Esta aplicación no lo modifica."
 
-#: polyhost/gui/shell_title_dialog.py:80
+#: polyhost/gui/shell_title_dialog.py:84
 #, python-brace-format
 msgid "The plugin is already loaded from {path}."
 msgstr "El plugin ya se carga desde {path}."
 
-#: polyhost/gui/shell_title_dialog.py:82 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Esta instalación no tiene archivos de plugin ({path})."
 
-#: polyhost/gui/shell_title_dialog.py:125
+#: polyhost/gui/shell_title_dialog.py:129
 msgid "Terminal and editor setup"
 msgstr "Configuración del terminal y los editores"
 
-#: polyhost/gui/shell_title_dialog.py:129
+#: polyhost/gui/shell_title_dialog.py:133
 msgid ""
 "The keyboard shows the shortcuts of a program running in a terminal (nano, for example) only when the terminal's window title names the program. bash, zsh and PowerShell do not do this without setup.\n"
 "\n"
@@ -3292,15 +3296,15 @@ msgstr ""
 "\n"
 "Instalar añade una línea al archivo de inicio de cada shell seleccionado, entre dos comentarios de marca, y antes guarda una copia del archivo junto a él. Quitar borra esas líneas. El cambio se aplica a las ventanas de terminal que se abran después. Para cambiar la opción de Codex, selecciona los shells y vuelve a pulsar Instalar."
 
-#: polyhost/gui/shell_title_dialog.py:145
+#: polyhost/gui/shell_title_dialog.py:149
 msgid "Also show Codex in the title (wraps the codex command)"
 msgstr "Mostrar también Codex en el título (envuelve el comando codex)"
 
-#: polyhost/gui/shell_title_dialog.py:147
+#: polyhost/gui/shell_title_dialog.py:151
 msgid "Codex replaces the terminal title with the thread and project name, so the keyboard cannot tell that it is running. With this option the codex command starts Codex with a title that begins with \"codex\". A codex alias or function of your own, and a title set in Codex's config.toml, are kept."
 msgstr "Codex sustituye el título del terminal por el nombre del hilo y del proyecto, así que el teclado no sabe que se está ejecutando. Con esta opción, el comando codex inicia Codex con un título que empieza por \"codex\". Se conservan un alias o una función codex propios y un título definido en el config.toml de Codex."
 
-#: polyhost/gui/shell_title_dialog.py:158
+#: polyhost/gui/shell_title_dialog.py:162
 msgid ""
 "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
 "\n"
@@ -3310,69 +3314,69 @@ msgstr ""
 "\n"
 "Instalar copia el plugin de esta instalación al lugar desde el que el editor lo carga. Para Emacs también añade al archivo de inicialización unas líneas que cargan el plugin, entre dos comentarios de marca, y antes guarda una copia del archivo. Cuando esta aplicación se actualiza, copia los nuevos archivos del plugin en su próximo inicio. Reinicie el editor para que el cambio surta efecto."
 
-#: polyhost/gui/shell_title_dialog.py:177
+#: polyhost/gui/shell_title_dialog.py:181
 msgid "Checking the shells…"
 msgstr "Comprobando los shells…"
 
-#: polyhost/gui/shell_title_dialog.py:190
+#: polyhost/gui/shell_title_dialog.py:194
 msgid "Install"
 msgstr "Instalar"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:191
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Remove"
 msgstr "Quitar"
 
-#: polyhost/gui/shell_title_dialog.py:242
+#: polyhost/gui/shell_title_dialog.py:246
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "No se pudieron comprobar los shells: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:270
+#: polyhost/gui/shell_title_dialog.py:274
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: muestra el comando sin configuración."
 
-#: polyhost/gui/shell_title_dialog.py:298
+#: polyhost/gui/shell_title_dialog.py:302
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "No se encontró bash, zsh ni PowerShell en este equipo."
 
-#: polyhost/gui/shell_title_dialog.py:317
+#: polyhost/gui/shell_title_dialog.py:321
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "No se pudieron comprobar los editores: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:340
+#: polyhost/gui/shell_title_dialog.py:344
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "No se encontró Vim, Neovim ni Emacs en este equipo."
 
-#: polyhost/gui/shell_title_dialog.py:346
+#: polyhost/gui/shell_title_dialog.py:350
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Esta aplicación escucha en el puerto {port} y requiere un token. Los plugins usan el puerto 50164 y ningún token: establezca g:polykybd_port y g:polykybd_token en Vim, o polykybd-port y polykybd-token en Emacs, con los mismos valores."
 
-#: polyhost/gui/shell_title_dialog.py:351
+#: polyhost/gui/shell_title_dialog.py:355
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Esta aplicación escucha en el puerto {port}. Los plugins usan el puerto 50164: establezca g:polykybd_port en Vim, o polykybd-port en Emacs, con el mismo valor."
 
-#: polyhost/gui/shell_title_dialog.py:389
-#: polyhost/gui/shell_title_dialog.py:402
+#: polyhost/gui/shell_title_dialog.py:393
+#: polyhost/gui/shell_title_dialog.py:406
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "El cambio falló: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:397
+#: polyhost/gui/shell_title_dialog.py:410
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Copia del archivo anterior: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:395
+#: polyhost/gui/shell_title_dialog.py:399
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Abra una nueva ventana de terminal para que el cambio surta efecto."
 
-#: polyhost/gui/shell_title_dialog.py:408
+#: polyhost/gui/shell_title_dialog.py:412
 msgid "Restart the editor for the change to take effect."
 msgstr "Reinicie el editor para que el cambio surta efecto."
 
@@ -4493,72 +4497,72 @@ msgstr "El comando no se pudo iniciar: {error}"
 msgid "The rule file in this checkout was refused: {reason}"
 msgstr "El archivo de reglas de esta copia se rechazó: {reason}"
 
-#: polyhost/services/shell_title.py:102
+#: polyhost/services/shell_title.py:107
 #, python-brace-format
 msgid "Added the line to {path}."
 msgstr "Se añadió la línea a {path}."
 
-#: polyhost/services/shell_title.py:103
+#: polyhost/services/shell_title.py:108
 #, python-brace-format
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Se sustituyó la línea de {path} por una para esta instalación."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:104
+#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Ya está configurado en {path}."
 
-#: polyhost/services/shell_title.py:105
+#: polyhost/services/shell_title.py:110
 #, python-brace-format
 msgid "Turned on the Codex title in {path}."
 msgstr "Se activó el título de Codex en {path}."
 
-#: polyhost/services/shell_title.py:106
+#: polyhost/services/shell_title.py:111
 #, python-brace-format
 msgid "Turned off the Codex title in {path}."
 msgstr "Se desactivó el título de Codex en {path}."
 
-#: polyhost/services/shell_title.py:107
+#: polyhost/services/shell_title.py:112
 #, python-brace-format
 msgid "Removed the line from {path}."
 msgstr "Se quitó la línea de {path}."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:108
+#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "No hay nada que quitar en {path}."
 
-#: polyhost/services/shell_title.py:109
+#: polyhost/services/shell_title.py:114
 #, python-brace-format
 msgid "{shell} was not found on this computer."
 msgstr "No se encontró {shell} en este equipo."
 
-#: polyhost/services/shell_title.py:110
+#: polyhost/services/shell_title.py:115
 #, python-brace-format
 msgid "{shell} did not report its profile path: {error}"
 msgstr "{shell} no indicó la ruta de su perfil: {error}"
 
-#: polyhost/services/shell_title.py:111
+#: polyhost/services/shell_title.py:116
 #, python-brace-format
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "La directiva de ejecución de PowerShell ({policy}) no ejecuta scripts de perfil. Ejecute primero 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' en PowerShell."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} tiene una marca de inicio sin marca de fin. Quite el bloque a mano."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:114
+#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "No se pudo cambiar {path}: {error}"
 
-#: polyhost/services/shell_title.py:115
+#: polyhost/services/shell_title.py:120
 #, python-brace-format
 msgid "The script path cannot be written in the encoding of {path} ({encoding})."
 msgstr "La ruta del script no se puede escribir en la codificación de {path} ({encoding})."
 
-#: polyhost/services/shell_title.py:116
+#: polyhost/services/shell_title.py:121
 #, python-brace-format
 msgid "The script {path} that the line would load is missing."
 msgstr "Falta el script {path} que cargaría la línea."
