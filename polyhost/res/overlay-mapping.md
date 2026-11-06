@@ -139,8 +139,13 @@ the routes in `&editor_titles` or `&editor_urls` matches, the terminal's
 shortcuts stay on the keycaps, drawn dimmed, and the program's take full
 strength on every key they draw, as a browser's do under a website:
 
-- Windows Terminal has a set of its own; its entry layers (no `layer: false`),
-  so `_layered` puts that set underneath as an `Underlay`.
+- Windows Terminal, WezTerm and kitty have a set of their own; their entries
+  layer (no `layer: false`), so `_layered` puts that set underneath as an
+  `Underlay`. WezTerm and kitty have an `os: macos` branch for their Cmd set,
+  and that branch repeats `urls-contains` and `titles-contains`, because a
+  matching `os:` branch replaces the entry (`tests/handler/terminal_set_routing_test.py`).
+  `hosted_in_terminal()` counts the entry and its `os:` branches as the
+  terminal's own set.
 - The other terminals have no set; the gap fill draws their harvested shortcuts
   around the program's template, and `OverlayHandler.template_is_hosted()`
   makes those dimmed too. A forwarded terminal's relayed shortcuts are dimmed

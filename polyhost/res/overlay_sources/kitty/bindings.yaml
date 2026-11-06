@@ -1,0 +1,167 @@
+# kitty shortcut overlays for PolyKybd (Linux and macOS). See SOURCES.md.
+#
+# The keys are kitty's default shortcuts, read from its source at commit
+# da8cac32: kitty/options/definition.py, every `map(...)` entry that is added
+# to the defaults (`add_to_default=False` marks an example, and the one such
+# map, Ctrl+Shift+Alt+H "send text", is not drawn). `kitty_mod` is Ctrl+Shift
+# by default. Entries marked `only='macos'` are kitty's macOS Cmd keys.
+#
+# kitty has no Windows build, so the default artwork set is the Linux one.
+#
+# In kitty a "window" is a pane inside a tab, and an "OS window" is a desktop
+# window. The labels keep kitty's words.
+#
+# On macOS kitty keeps every Ctrl+Shift key and adds Cmd keys. The macOS set
+# draws the Cmd key where kitty has one for the same action and leaves out the
+# Ctrl+Shift copy; the Ctrl+Shift keys with no Cmd form are drawn on both
+# platforms.
+#
+# Not drawn: Ctrl+Shift+Esc (kitty shell), because the ESC key shows the
+# program mark on every layer. Ctrl+Shift+keypad +/- have no overlay cell.
+# Ctrl+Shift+P and Ctrl+Shift+A start two-key sequences; only the first key
+# is drawn (SOURCES.md lists the second keys).
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/kitty/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/kitty/bindings.yaml --preview /tmp/kitty_preview
+app: kitty
+match: [kitty]
+output: kitty_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+# kitty's own logo (GPL-3.0), traced to 32x32 in fetch_icons.py.
+program_icon: kitty.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- Ctrl / Shift ---
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next tab" }
+  - { key: INSERT, mods: [SHIFT], icon: pastesel.png, label: "Paste from selection" }
+
+  # --- Ctrl+Shift (kitty_mod) with a Cmd form on macOS: not on macOS ---
+  - { key: C, mods: [CTRL, SHIFT], icon: copy.png, label: "Copy", except: [macos] }
+  - { key: V, mods: [CTRL, SHIFT], icon: paste.png, label: "Paste", except: [macos] }
+  - { key: UP, mods: [CTRL, SHIFT], icon: lineup.png, label: "Scroll line up", except: [macos] }
+  - { key: DOWN, mods: [CTRL, SHIFT], icon: linedown.png, label: "Scroll line down", except: [macos] }
+  - { key: PGUP, mods: [CTRL, SHIFT], icon: pageup.png, label: "Scroll page up", except: [macos] }
+  - { key: PGDN, mods: [CTRL, SHIFT], icon: pagedown.png, label: "Scroll page down", except: [macos] }
+  - { key: HOME, mods: [CTRL, SHIFT], icon: totop.png, label: "Scroll to top", except: [macos] }
+  - { key: END, mods: [CTRL, SHIFT], icon: tobottom.png, label: "Scroll to bottom", except: [macos] }
+  - { key: ENTER, mods: [CTRL, SHIFT], icon: newwin.png, label: "New window (pane)", except: [macos] }
+  - { key: N, mods: [CTRL, SHIFT], icon: newoswin.png, label: "New OS window", except: [macos] }
+  - { key: W, mods: [CTRL, SHIFT], icon: closewin.png, label: "Close window (pane)", except: [macos] }
+  - { key: R, mods: [CTRL, SHIFT], icon: resizewin.png, label: "Resize window (pane)", except: [macos] }
+  - { key: "1", mods: [CTRL, SHIFT], icon: win1.png, label: "Window 1", except: [macos] }
+  - { key: "2", mods: [CTRL, SHIFT], icon: win2.png, label: "Window 2", except: [macos] }
+  - { key: "3", mods: [CTRL, SHIFT], icon: win3.png, label: "Window 3", except: [macos] }
+  - { key: "4", mods: [CTRL, SHIFT], icon: win4.png, label: "Window 4", except: [macos] }
+  - { key: "5", mods: [CTRL, SHIFT], icon: win5.png, label: "Window 5", except: [macos] }
+  - { key: "6", mods: [CTRL, SHIFT], icon: win6.png, label: "Window 6", except: [macos] }
+  - { key: "7", mods: [CTRL, SHIFT], icon: win7.png, label: "Window 7", except: [macos] }
+  - { key: "8", mods: [CTRL, SHIFT], icon: win8.png, label: "Window 8", except: [macos] }
+  - { key: "9", mods: [CTRL, SHIFT], icon: win9.png, label: "Window 9", except: [macos] }
+  - { key: RIGHT, mods: [CTRL, SHIFT], icon: nexttab.png, label: "Next tab", except: [macos] }
+  - { key: LEFT, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab", except: [macos] }
+  - { key: T, mods: [CTRL, SHIFT], icon: newtab.png, label: "New tab", except: [macos] }
+  - { key: Q, mods: [CTRL, SHIFT], icon: closetab.png, label: "Close tab", except: [macos] }
+  - { key: "=", mods: [CTRL, SHIFT], icon: fontbig.png, label: "Increase font size", except: [macos] }
+  - { key: "-", mods: [CTRL, SHIFT], icon: fontsmall.png, label: "Decrease font size", except: [macos] }
+  - { key: BACKSPACE, mods: [CTRL, SHIFT], icon: fontreset.png, label: "Reset font size", except: [macos] }
+  - { key: F11, mods: [CTRL, SHIFT], icon: fullscreen.png, label: "Full screen", except: [macos] }
+  - { key: U, mods: [CTRL, SHIFT], icon: unicode.png, label: "Unicode input", except: [macos] }
+  - { key: F2, mods: [CTRL, SHIFT], icon: config.png, label: "Edit config file", except: [macos] }
+  - { key: DELETE, mods: [CTRL, SHIFT], icon: reset.png, label: "Reset terminal", except: [macos] }
+  - { key: T, mods: [CTRL, ALT, SHIFT], icon: tabtitle.png, label: "Set tab title", except: [macos] }
+
+  # --- Ctrl+Shift (kitty_mod) with no Cmd form: both platforms ---
+  - { key: S, mods: [CTRL, SHIFT], icon: pastesel.png, label: "Paste from selection" }
+  - { key: O, mods: [CTRL, SHIFT], icon: passsel.png, label: "Pass selection to program" }
+  - { key: K, mods: [CTRL, SHIFT], icon: lineup.png, label: "Scroll line up" }
+  - { key: J, mods: [CTRL, SHIFT], icon: linedown.png, label: "Scroll line down" }
+  - { key: Z, mods: [CTRL, SHIFT], icon: prevprompt.png, label: "Previous shell prompt" }
+  - { key: H, mods: [CTRL, SHIFT], icon: pager.png, label: "Scrollback in pager" }
+  - { key: G, mods: [CTRL, SHIFT], icon: lastoutput.png, label: "Last command output" }
+  - { key: "/", mods: [CTRL, SHIFT], icon: find.png, label: "Search scrollback" }
+  - { key: "]", mods: [CTRL, SHIFT], icon: nextwin.png, label: "Next window (pane)" }
+  - { key: "[", mods: [CTRL, SHIFT], icon: prevwin.png, label: "Previous window (pane)" }
+  - { key: F, mods: [CTRL, SHIFT], icon: movewinfwd.png, label: "Move window forward" }
+  - { key: B, mods: [CTRL, SHIFT], icon: movewinback.png, label: "Move window backward" }
+  - { key: "`", mods: [CTRL, SHIFT], icon: movewintop.png, label: "Move window to top" }
+  - { key: "0", mods: [CTRL, SHIFT], icon: win0.png, label: "Window 10" }
+  - { key: F7, mods: [CTRL, SHIFT], icon: focuswin.png, label: "Select window to focus" }
+  - { key: F8, mods: [CTRL, SHIFT], icon: swapwin.png, label: "Swap window" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous tab" }
+  - { key: ".", mods: [CTRL, SHIFT], icon: movetabfwd.png, label: "Move tab forward" }
+  - { key: ",", mods: [CTRL, SHIFT], icon: movetabback.png, label: "Move tab backward" }
+  - { key: L, mods: [CTRL, SHIFT], icon: layout.png, label: "Next layout" }
+  - { key: E, mods: [CTRL, SHIFT], icon: openurl.png, label: "Open URL" }
+  - { key: P, mods: [CTRL, SHIFT], icon: hints.png, label: "Hints (then a key)" }
+  - { key: A, mods: [CTRL, SHIFT], icon: opacity.png, label: "Opacity (then a key)" }
+  - { key: F10, mods: [CTRL, SHIFT], icon: maximize.png, label: "Maximize" }
+  - { key: F5, mods: [CTRL, SHIFT], icon: reload.png, label: "Reload kitty.conf" }
+  - { key: F6, mods: [CTRL, SHIFT], icon: debug.png, label: "Debug configuration" }
+
+  # --- Cmd (macOS only) ---
+  - { key: C, mods: [GUI], icon: copy.png, label: "Copy", only: [macos] }
+  - { key: V, mods: [GUI], icon: paste.png, label: "Paste", only: [macos] }
+  - { key: UP, mods: [GUI], icon: lineup.png, label: "Scroll line up", only: [macos] }
+  - { key: DOWN, mods: [GUI], icon: linedown.png, label: "Scroll line down", only: [macos] }
+  - { key: PGUP, mods: [GUI], icon: pageup.png, label: "Scroll page up", only: [macos] }
+  - { key: PGDN, mods: [GUI], icon: pagedown.png, label: "Scroll page down", only: [macos] }
+  - { key: HOME, mods: [GUI], icon: totop.png, label: "Scroll to top", only: [macos] }
+  - { key: END, mods: [GUI], icon: tobottom.png, label: "Scroll to bottom", only: [macos] }
+  - { key: ENTER, mods: [GUI], icon: newwin.png, label: "New window (pane)", only: [macos] }
+  - { key: N, mods: [GUI], icon: newoswin.png, label: "New OS window", only: [macos] }
+  - { key: R, mods: [GUI], icon: resizewin.png, label: "Resize window (pane)", only: [macos] }
+  - { key: "1", mods: [GUI], icon: win1.png, label: "Window 1", only: [macos] }
+  - { key: "2", mods: [GUI], icon: win2.png, label: "Window 2", only: [macos] }
+  - { key: "3", mods: [GUI], icon: win3.png, label: "Window 3", only: [macos] }
+  - { key: "4", mods: [GUI], icon: win4.png, label: "Window 4", only: [macos] }
+  - { key: "5", mods: [GUI], icon: win5.png, label: "Window 5", only: [macos] }
+  - { key: "6", mods: [GUI], icon: win6.png, label: "Window 6", only: [macos] }
+  - { key: "7", mods: [GUI], icon: win7.png, label: "Window 7", only: [macos] }
+  - { key: "8", mods: [GUI], icon: win8.png, label: "Window 8", only: [macos] }
+  - { key: "9", mods: [GUI], icon: win9.png, label: "Window 9", only: [macos] }
+  - { key: T, mods: [GUI], icon: newtab.png, label: "New tab", only: [macos] }
+  - { key: W, mods: [GUI], icon: closetab.png, label: "Close tab", only: [macos] }
+  - { key: "=", mods: [GUI], icon: fontbig.png, label: "Increase font size", only: [macos] }
+  - { key: "-", mods: [GUI], icon: fontsmall.png, label: "Decrease font size", only: [macos] }
+  - { key: "0", mods: [GUI], icon: fontreset.png, label: "Reset font size", only: [macos] }
+  - { key: ",", mods: [GUI], icon: config.png, label: "Edit config file", only: [macos] }
+  - { key: K, mods: [GUI], icon: cleartostart.png, label: "Clear to start", only: [macos] }
+  - { key: L, mods: [GUI], icon: clearlast.png, label: "Clear last command", only: [macos] }
+  - { key: H, mods: [GUI], icon: hideapp.png, label: "Hide kitty", only: [macos] }
+  - { key: M, mods: [GUI], icon: minimize.png, label: "Minimize window", only: [macos] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Quit kitty", only: [macos] }
+
+  # --- Cmd+Shift (macOS only) ---
+  - { key: D, mods: [GUI, SHIFT], icon: closewin.png, label: "Close window (pane)", only: [macos] }
+  - { key: W, mods: [GUI, SHIFT], icon: closeoswin.png, label: "Close OS window", only: [macos] }
+  - { key: "]", mods: [GUI, SHIFT], icon: nexttab.png, label: "Next tab", only: [macos] }
+  - { key: "[", mods: [GUI, SHIFT], icon: prevtab.png, label: "Previous tab", only: [macos] }
+  - { key: I, mods: [GUI, SHIFT], icon: tabtitle.png, label: "Set tab title", only: [macos] }
+  - { key: "=", mods: [GUI, SHIFT], icon: fontbig.png, label: "Increase font size", only: [macos] }
+  - { key: "-", mods: [GUI, SHIFT], icon: fontsmall.png, label: "Decrease font size", only: [macos] }
+
+  # --- Cmd+Option (macOS only) ---
+  - { key: PGUP, mods: [GUI, ALT], icon: lineup.png, label: "Scroll line up", only: [macos] }
+  - { key: PGDN, mods: [GUI, ALT], icon: linedown.png, label: "Scroll line down", only: [macos] }
+  - { key: S, mods: [GUI, ALT], icon: secure.png, label: "Secure keyboard entry", only: [macos] }
+  - { key: R, mods: [GUI, ALT], icon: reset.png, label: "Reset terminal", only: [macos] }
+  - { key: K, mods: [GUI, ALT], icon: clear.png, label: "Clear scrollback", only: [macos] }
+  - { key: H, mods: [GUI, ALT], icon: hideothers.png, label: "Hide other apps", only: [macos] }
+
+  # --- Cmd+Ctrl (macOS only) ---
+  - { key: F, mods: [GUI, CTRL], icon: fullscreen.png, label: "Full screen", only: [macos] }
+  - { key: SPACE, mods: [GUI, CTRL], icon: unicode.png, label: "Unicode input", only: [macos] }
+  - { key: L, mods: [GUI, CTRL], icon: clearscreen.png, label: "Clear screen", only: [macos] }

@@ -1537,9 +1537,34 @@ windowsterminal,wt:
 # find_matching_entry).
 # None of the names was checked on an install (docs/architecture.md,
 # "Terminal-hosted editors").
-alacritty,aterm,com.gexperts.tilix,com.mitchellh.ghostty,com.raggesilver.blackbox,com.system76.cosmicterm,conemu,conemu64,conhost,contour,cool-retro-term,cosmic-term,deepin-terminal,dev.warp.warp,eterm,extraterm,extratermqt,fluentterminal.app,foot,footclient,ghostty,gnome-terminal,gnome-terminal-server,guake,hyper,io.elementary.terminal,iterm,iterm2,kgx,kitty,konsole,lxterminal,mate-terminal,mintty,mlterm,mobaxterm,openconsole,org.contourterminal.contour,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.kde.yakuake,org.wezfurlong.wezterm,ptyxis,qterminal,rio,roxterm,rxvt,sakura,st,tabby,terminal,terminator,terminology,tilda,tilix,urxvt,uxterm,warp,wave,waveterm,wezterm,wezterm-gui,xfce4-terminal,xterm,yakuake,zutty:
+alacritty,aterm,com.gexperts.tilix,com.mitchellh.ghostty,com.raggesilver.blackbox,com.system76.cosmicterm,conemu,conemu64,conhost,contour,cool-retro-term,cosmic-term,deepin-terminal,dev.warp.warp,eterm,extraterm,extratermqt,fluentterminal.app,foot,footclient,ghostty,gnome-terminal,gnome-terminal-server,guake,hyper,io.elementary.terminal,iterm,iterm2,kgx,konsole,lxterminal,mate-terminal,mintty,mlterm,mobaxterm,openconsole,org.contourterminal.contour,org.gnome.console,org.gnome.ptyxis,org.gnome.terminal,org.kde.konsole,org.kde.yakuake,ptyxis,qterminal,rio,roxterm,rxvt,sakura,st,tabby,terminal,terminator,terminology,tilda,tilix,urxvt,uxterm,warp,wave,waveterm,xfce4-terminal,xterm,yakuake,zutty:
   urls-contains: *editor_urls
   titles-contains: *editor_titles
+# WezTerm (sources: overlay_sources/wezterm/) and kitty (overlay_sources/kitty/)
+# have sets of their own, so they route the editors and title programs as
+# Windows Terminal does: a matched route layers over the terminal's set, and a
+# plain shell shows the set. ⚠️ An `os:` branch is matched BEFORE the routes and
+# REPLACES the entry, so the macOS branch repeats both routes
+# (tests/handler/terminal_set_routing_test.py). The names are TERMINAL_APPS'
+# (handler/browser_url.py); none was checked on an install.
+wezterm,wezterm-gui,org.wezfurlong.wezterm:
+  overlay: [wezterm_template.mods.png, wezterm_template.combo.mods.png, wezterm_template.extra.mods.png]
+  urls-contains: *editor_urls
+  titles-contains: *editor_titles
+  os:
+    macos:
+      overlay: [wezterm_template_mac.mods.png, wezterm_template_mac.combo.mods.png, wezterm_template_mac.extra.mods.png]
+      urls-contains: *editor_urls
+      titles-contains: *editor_titles
+kitty:
+  overlay: [kitty_template.mods.png, kitty_template.combo.mods.png, kitty_template.extra.mods.png]
+  urls-contains: *editor_urls
+  titles-contains: *editor_titles
+  os:
+    macos:
+      overlay: [kitty_template_mac.mods.png, kitty_template_mac.combo.mods.png, kitty_template_mac.extra.mods.png]
+      urls-contains: *editor_urls
+      titles-contains: *editor_titles
 # GUI Vim (sources: overlay_sources/vim/): gvim.exe on Windows, the WM_CLASS
 # gvim on Linux, MacVim's display name, Neovide. The plugin reports the mode
 # as in a terminal; without a report Vim's Normal mode set applies. The names
