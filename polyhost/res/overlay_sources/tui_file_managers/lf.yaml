@@ -1,0 +1,104 @@
+# lf file manager for PolyKybd. See SOURCES.md.
+#
+# Keys: lf's default key map at the r42 tag of gokcehan/lf (commit 5b6c393d):
+# the Normal mode keys of `init()` in opts.go (`gOpts.nkeys`), the `e`, `i`,
+# `w` and F1 keys of `setDefaults()` in os.go and os_windows.go, and the
+# command list of doc.md. lf has no delete key and no tabs by default.
+#
+# lf writes the key as typed: `G` is Shift+G, `$` is Shift+4, `?` is Shift+/.
+# A sequence of two keys (`gg`, `zh`, `sn`) shows only its first key, and
+# only where every sequence that starts with it does one kind of thing
+# (SOURCES.md has the list). Esc does nothing in Normal mode and shows the
+# program mark. The arrow keys, Home, End, Page Up and Page Down do what their
+# legends say and are left blank.
+#
+# The keys are the same on Windows, macOS and Linux (lf runs in a terminal,
+# where Cmd never reaches it), so there is one set.
+#
+# Routed by the terminal's WINDOW TITLE (overlay-mapping.poly.yaml,
+# `&editor_titles`): lf writes no title, so only a shell or terminal that puts
+# the running command into the title shows it.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/tui_file_managers/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/tui_file_managers/lf.yaml --preview /tmp/lf_preview
+app: lf
+match: [lf]
+output: lf_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+# The drawn composites are 40x32 and placed 1:1 in this region.
+region: [40, 32]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: lf.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier ------------------------------------------------------------
+  - { key: Q, mods: [], label: "Quit" }
+  - { key: K, mods: [], icon: up.png, label: "Previous file" }
+  - { key: J, mods: [], icon: down.png, label: "Next file" }
+  - { key: H, mods: [], icon: parent.png, label: "Parent directory" }       # updir
+  - { key: L, mods: [], icon: enter.png, label: "Enter or open" }           # open
+  - { key: "[", mods: [], icon: jump_back.png, label: "Jump back" }         # jump-prev
+  - { key: "]", mods: [], icon: jump_fwd.png, label: "Jump forward" }       # jump-next
+  - { key: SPACE, mods: [], icon: toggle_select.png, label: "Toggle selection" }
+  - { key: V, mods: [], icon: invert_select.png, label: "Invert selection" }
+  - { key: U, mods: [], icon: visual_unset.png, label: "Unselect all" }
+  - { key: T, mods: [], icon: tag.png, label: "Tag" }
+  - { key: Y, mods: [], icon: copy.png, label: "Copy" }
+  - { key: D, mods: [], icon: cut.png, label: "Cut" }
+  - { key: P, mods: [], icon: paste.png, label: "Paste" }
+  - { key: C, mods: [], icon: unyank.png, label: "Clear copy and cut" }
+  - { key: R, mods: [], icon: rename.png, label: "Rename" }
+  - { key: E, mods: [], icon: edit.png, label: "Edit" }                     # $EDITOR
+  - { key: I, mods: [], icon: view.png, label: "View in pager" }            # $PAGER
+  - { key: W, mods: [], icon: subshell.png, label: "Open shell" }           # $SHELL
+  - { key: F, mods: [], icon: find_char_fwd.png, label: "Find by first letters" }
+  - { key: ";", mods: [], icon: find_char_next.png, label: "Find next" , shared: false }
+  - { key: ",", mods: [], icon: find_char_prev.png, label: "Find previous", shared: false }
+  - { key: "/", mods: [], icon: search_fwd.png, label: "Search", shared: false }
+  - { key: N, mods: [], icon: find_next.png, label: "Next match", shared: false }
+  - { key: M, mods: [], icon: bookmark_add.png, label: "Save mark" }
+  - { key: "'", mods: [], icon: bookmark.png, label: "Go to mark" }
+  - { key: F1, mods: [], label: "Help" }
+  # The first key of a two-key sequence (SOURCES.md).
+  - { key: G, mods: [], icon: goto.png, label: "Go to..." }                # gg gh
+  - { key: S, mods: [], icon: sort.png, label: "Sort..." }                 # sn ss st sa sb sc se
+  - { key: Z, mods: [], icon: options.png, label: "View option..." }       # zh zr zn zs zt za
+
+  # --- Shift ------------------------------------------------------------------
+  - { key: G, mods: [SHIFT], icon: last.png, label: "Last file" }
+  - { key: H, mods: [SHIFT], icon: screen_top.png, label: "Top of screen" }
+  - { key: M, mods: [SHIFT], icon: screen_mid.png, label: "Middle of screen" }
+  - { key: L, mods: [SHIFT], icon: screen_low.png, label: "Bottom of screen" }
+  - { key: V, mods: [SHIFT], icon: visual.png, label: "Visual mode" }
+  - { key: F, mods: [SHIFT], icon: find_char_back.png, label: "Find back by first letters" }
+  - { key: "/", mods: [SHIFT], icon: search_back.png, label: "Search back" }        # ?
+  - { key: N, mods: [SHIFT], icon: find_prev.png, label: "Previous match" }
+  - { key: "'", mods: [SHIFT], icon: bookmark_off.png, label: "Remove mark" }       # "
+  - { key: ";", mods: [SHIFT], icon: console.png, label: "Command line" }           # : read
+  - { key: "4", mods: [SHIFT], icon: shell.png, label: "Shell command" }            # $
+  - { key: "5", mods: [SHIFT], icon: shell_pipe.png, label: "Shell, pipe" }         # %
+  - { key: "1", mods: [SHIFT], icon: shell_wait.png, label: "Shell, wait" }         # !
+  - { key: "7", mods: [SHIFT], icon: shell_bg.png, label: "Shell, background" }     # &
+
+  # --- Ctrl -------------------------------------------------------------------
+  - { key: U, mods: [CTRL], icon: half_up.png, label: "Half page up" }
+  - { key: D, mods: [CTRL], icon: half_down.png, label: "Half page down" }
+  - { key: B, mods: [CTRL], icon: page_up.png, label: "Page up" }
+  - { key: F, mods: [CTRL], icon: page_down.png, label: "Page down" }
+  - { key: Y, mods: [CTRL], icon: scroll_up.png, label: "Scroll up" }
+  - { key: E, mods: [CTRL], icon: scroll_down.png, label: "Scroll down" }
+  - { key: L, mods: [CTRL], icon: redraw.png, label: "Redraw" }
+  - { key: R, mods: [CTRL], icon: reload.png, label: "Reload" }
+  - { key: N, mods: [CTRL], icon: cmd_next.png, label: "Next command" }             # cmd-history-next
+  - { key: P, mods: [CTRL], icon: cmd_prev.png, label: "Previous command" }         # cmd-history-prev

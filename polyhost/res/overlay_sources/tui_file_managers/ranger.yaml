@@ -1,0 +1,145 @@
+# ranger file manager for PolyKybd. See SOURCES.md.
+#
+# Keys: ranger's default key map, ranger/config/rc.conf at the v1.9.4 tag of
+# ranger/ranger (commit 55fc2839): the `map` and `copymap` lines for the main
+# browser view. The pager, task view and console have their own maps
+# (`pmap`, `tmap`, `cmap`) and are not drawn.
+#
+# rc.conf writes the key as typed: `Q` is Shift+Q, `?` is Shift+/, `~` is
+# Shift+`, `<A-j>` is Alt+J. A sequence of two keys (`yy`, `dd`, `gh`, `cw`)
+# shows only its first key, and only where every sequence that starts with it
+# does one kind of thing (SOURCES.md has the list). Esc shows the program
+# mark. The plain arrow keys, Home, End, Page Up and Page Down do what their
+# legends say and are left blank.
+#
+# ranger runs on macOS and Linux, and its keys are the same on both (it runs
+# in a terminal, where Cmd never reaches it). On macOS the Alt keys reach
+# ranger only when the terminal sends Option as Meta.
+#
+# Routed by the terminal's WINDOW TITLE (overlay-mapping.poly.yaml,
+# `&editor_titles` and `titles-match`): ranger writes "ranger:<path>" only
+# with `set update_title true`; the shell integration writes the command.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/tui_file_managers/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/tui_file_managers/ranger.yaml --preview /tmp/ranger_preview
+app: ranger
+match: [ranger]
+output: ranger_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+# The drawn composites are 40x32 and placed 1:1 in this region.
+region: [40, 32]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: ranger.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier ------------------------------------------------------------
+  - { key: Q, mods: [], label: "Quit" }                                     # closes the tab, or quits
+  - { key: K, mods: [], icon: up.png, label: "Previous file" }
+  - { key: J, mods: [], icon: down.png, label: "Next file" }
+  - { key: H, mods: [], icon: parent.png, label: "Parent directory" }
+  - { key: L, mods: [], icon: enter.png, label: "Enter or open" }           # move right=1
+  - { key: ENTER, mods: [], icon: enter.png, label: "Enter or open" }
+  - { key: I, mods: [], icon: view.png, label: "View file" }
+  - { key: R, mods: [], icon: open_with.png, label: "Open with" }
+  - { key: F, mods: [], icon: find_file.png, label: "Find file" }           # type to find, opens on one match
+  - { key: "/", mods: [], icon: search_fwd.png, label: "Search", shared: false }
+  - { key: N, mods: [], icon: find_next.png, label: "Next match", shared: false }
+  - { key: SPACE, mods: [], icon: toggle_select.png, label: "Toggle mark" }
+  - { key: V, mods: [], icon: select_all.png, label: "Toggle all marks", shared: false }
+  - { key: T, mods: [], icon: tag.png, label: "Tag" }
+  - { key: A, mods: [], icon: rename.png, label: "Rename at end" }          # rename_append
+  - { key: "=", mods: [], icon: chmod.png, label: "Change mode" }           # chmod
+  - { key: S, mods: [], icon: shell.png, label: "Shell command" }
+  - { key: ";", mods: [], icon: console.png, label: "Console" }
+  - { key: W, mods: [], icon: tasks.png, label: "Task view" }
+  - { key: INSERT, mods: [], icon: newfile.png, label: "New file" }         # touch
+  - { key: BACKSPACE, mods: [], icon: hidden.png, label: "Toggle hidden" }
+  - { key: TAB, mods: [], icon: tab_next.png, label: "Next tab" }
+  - { key: "]", mods: [], icon: dir_next.png, label: "Next directory" }     # move_parent 1
+  - { key: "[", mods: [], icon: dir_prev.png, label: "Previous directory" } # move_parent -1
+  - { key: "`", mods: [], icon: bookmark.png, label: "Go to bookmark" }
+  - { key: "'", mods: [], icon: bookmark.png, label: "Go to bookmark" }
+  - { key: M, mods: [], icon: bookmark_add.png, label: "Set bookmark" }
+  - { key: F1, mods: [], label: "Help" }
+  - { key: F2, mods: [], icon: rename.png, label: "Rename at end" }
+  - { key: F3, mods: [], icon: view.png, label: "View file" }
+  - { key: F4, mods: [], icon: edit.png, label: "Edit" }
+  - { key: F5, mods: [], icon: copy.png, label: "Copy" }
+  - { key: F6, mods: [], icon: cut.png, label: "Cut" }
+  - { key: F7, mods: [], icon: newfolder.png, label: "New folder" }
+  - { key: F8, mods: [], label: "Delete" }
+  - { key: F10, mods: [], label: "Quit" }
+  # The first key of a two-key sequence (SOURCES.md).
+  - { key: Y, mods: [], icon: copy.png, label: "Copy..." }                 # yy yp yd yn ya yr yt
+  - { key: P, mods: [], icon: paste.png, label: "Paste..." }               # pp po pP pO pl pL phl pd
+  - { key: U, mods: [], icon: undo.png, label: "Undo..." }                 # ud uy uv uV ut uq um
+  - { key: O, mods: [], icon: sort.png, label: "Sort..." }                 # os ob on om oc oa ot oe or oz
+  - { key: ".", mods: [], icon: filter.png, label: "Filter stack..." }     # .d .f .n .m .c .p ...
+
+  # --- Shift ------------------------------------------------------------------
+  - { key: Q, mods: [SHIFT], icon: quit.png, label: "Quit all" }
+  - { key: G, mods: [SHIFT], icon: last.png, label: "Last file" }
+  - { key: J, mods: [SHIFT], icon: half_down.png, label: "Half page down" }
+  - { key: K, mods: [SHIFT], icon: half_up.png, label: "Half page up" }
+  - { key: H, mods: [SHIFT], icon: back.png, label: "Back" }
+  - { key: L, mods: [SHIFT], icon: forward.png, label: "Forward" }
+  - { key: R, mods: [SHIFT], icon: reload.png, label: "Reload directory" }
+  - { key: F, mods: [SHIFT], icon: freeze.png, label: "Freeze files" }
+  - { key: E, mods: [SHIFT], icon: edit.png, label: "Edit" }
+  - { key: A, mods: [SHIFT], icon: rename_all.png, label: "Rename whole name" }
+  - { key: I, mods: [SHIFT], icon: rename_start.png, label: "Rename at start" }
+  - { key: V, mods: [SHIFT], icon: visual.png, label: "Visual mode" }
+  - { key: N, mods: [SHIFT], icon: find_prev.png, label: "Previous match" }
+  - { key: S, mods: [SHIFT], icon: subshell.png, label: "Open shell" }
+  - { key: W, mods: [SHIFT], icon: log.png, label: "Message log" }
+  - { key: M, mods: [SHIFT], icon: linemode.png, label: "Linemode..." }     # Mf Mi Mm Mh Mp Ms MH Mt
+  - { key: TAB, mods: [SHIFT], icon: tab_prev.png, label: "Previous tab" }
+  - { key: "]", mods: [SHIFT], icon: traverse_fwd.png, label: "Traverse" }  # }
+  - { key: "[", mods: [SHIFT], icon: traverse_back.png, label: "Traverse back" }   # {
+  - { key: "0", mods: [SHIFT], icon: jump_files.png, label: "Jump to files" }       # ) jump_non
+  - { key: "1", mods: [SHIFT], icon: shell.png, label: "Shell command" }            # !
+  - { key: ";", mods: [SHIFT], icon: console.png, label: "Console" }                # :
+  - { key: "/", mods: [SHIFT], label: "Help" }                                      # ?
+  - { key: "`", mods: [SHIFT], icon: viewmode.png, label: "Toggle view mode" }      # ~
+  - { key: "'", mods: [SHIFT], icon: tag_with.png, label: "Tag with..." }           # "<char>
+
+  # --- Ctrl -------------------------------------------------------------------
+  - { key: F, mods: [CTRL], icon: page_down.png, label: "Page down" }
+  - { key: B, mods: [CTRL], icon: page_up.png, label: "Page up" }
+  - { key: D, mods: [CTRL], icon: half_down.png, label: "Half page down" }
+  - { key: U, mods: [CTRL], icon: half_up.png, label: "Half page up" }
+  - { key: N, mods: [CTRL], icon: newtab.png, label: "New tab" }
+  - { key: W, mods: [CTRL], icon: closetab.png, label: "Close tab" }
+  - { key: H, mods: [CTRL], icon: hidden.png, label: "Toggle hidden" }
+  - { key: R, mods: [CTRL], icon: reset.png, label: "Reset" }
+  - { key: L, mods: [CTRL], icon: redraw.png, label: "Redraw" }
+  - { key: C, mods: [CTRL], icon: abort.png, label: "Abort" }
+  - { key: P, mods: [CTRL], icon: history.png, label: "Console history" }
+
+  # --- Alt --------------------------------------------------------------------
+  - { key: J, mods: [ALT], icon: preview_down.png, label: "Preview down" }
+  - { key: K, mods: [ALT], icon: preview_up.png, label: "Preview up" }
+  - { key: RIGHT, mods: [ALT], icon: tab_next.png, label: "Next tab" }
+  - { key: LEFT, mods: [ALT], icon: tab_prev.png, label: "Previous tab" }
+  - { key: R, mods: [ALT], icon: tab_swap_right.png, label: "Move tab right" }      # tab_shift 1
+  - { key: L, mods: [ALT], icon: tab_swap_left.png, label: "Move tab left" }
+  - { key: "1", mods: [ALT], icon: tab.png, label: "Tab 1" }
+  - { key: "2", mods: [ALT], icon: tab.png, label: "Tab 2" }
+  - { key: "3", mods: [ALT], icon: tab.png, label: "Tab 3" }
+  - { key: "4", mods: [ALT], icon: tab.png, label: "Tab 4" }
+  - { key: "5", mods: [ALT], icon: tab.png, label: "Tab 5" }
+  - { key: "6", mods: [ALT], icon: tab.png, label: "Tab 6" }
+  - { key: "7", mods: [ALT], icon: tab.png, label: "Tab 7" }
+  - { key: "8", mods: [ALT], icon: tab.png, label: "Tab 8" }
+  - { key: "9", mods: [ALT], icon: tab.png, label: "Tab 9" }
