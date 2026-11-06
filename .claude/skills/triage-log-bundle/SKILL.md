@@ -132,6 +132,24 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- **"Eden / idle keeps turning off"**: for each `Stop idle.` in
+  `keyboard-console.txt`, look in `daemon.txt` at the same second for
+  `Setting idle state to False...` (DEBUG, so the daemon must log at `--dev 1`
+  or higher). That line is the host waking the keyboard. Every overlay send
+  ends in it, even a resend of the same app from cache and a send that failed
+  (`Failed to send …` warning). So does `idle_set` from `polyctl` or the
+  developer menu. Then find what started the send. The 2026-11-04 case was
+  `No active window` and the same app again ~270 ms later, about every 10 s,
+  on KDE Wayland (fixed in 1.17.86, #531: a lost window now waits for the
+  accept timer). A forwarder got the same delay later (#534), so before that
+  release a forwarded app can still cause it: look for `Remote window
+  changed` at those seconds. ⚠️ `Overlay flags 0x1 cleared` before a `Stop idle.` is a hint, not
+  proof: a DISABLE on its own does not call `set_idle`. A `Stop idle.` with no
+  host line at that second is a keypress, or `Wake by keypress` after the
+  display turned off. Two lines that are not faults: `Turning off` is the
+  firmware's display-off at `TURN_OFF_TIME` (20 min after the last activity,
+  so ~19 min of `Eden idle` lines), and `Eden start … welcome said` followed
+  by `Tutorial …` is a manual Eden run, not the idle path.
 - ⚠️ **`Firmware restart detected` is usually the KEYBOARD rebooting, and an empty
   crash record does not make it harmless.** The host logs that line when GET_ID
   carries the fresh-boot marker `*`. A boot sets it, and so does leaving DOOM (the
@@ -148,6 +166,15 @@ These are the ones that have produced wrong diagnoses:
   `fw=` (2026-10-22: a `fw=0.26.0` HardFault, "archived (older)", beside a master
   reset on 1.9.9). The `boot: spans … 2=65535` on firmware built before 2026-10-22
   is a timing bug, not a slow boot.
+- ⚠️ **A second boot banner in the console is not a reboot.** The firmware
+  prints the banner again on the first GET_ID after 5 s without a GET_ID
+  (`boot_banner_on_host_probe()`, qmk `boot_diag.c`, `BANNER_HOST_GAP_MS`): a
+  restarted host, a woken PC, a reconnect. So a banner in the middle of a log
+  marks a new host session. To tell the two apart, compare a counter that a boot
+  resets across the two banners: the split-link `tx` count or the `oled_i2c #N`
+  number. A count that kept rising means no reboot, and so does a host log with no
+  `Firmware restart detected` at that second. On 2026-11-05 a console log with
+  several banners was first read as reboots; the `tx` count rose across all of them.
 - **Dating a dump.** A faulthandler dump carries no timestamp. From 1.2.5 each
   process appends `=== fault dump(s) above were written before this time | … ===`
   after a dump once the file has been steady for ~60 s, so a dump is dated to

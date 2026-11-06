@@ -41,15 +41,20 @@ def td_hash(name: str) -> int:
 
 class Mix:
     """An unencrypted Tiberian Dawn MIX archive (the freeware and Remastered
-    `.MIX` files): a count, a body size, then (hash, offset, size) entries."""
+    `.MIX` files): a count, a body size, then (hash, offset, size) entries.
 
-    def __init__(self, data: bytes):
+    `header` is the header when it is not at the start of `data` (Red Alert
+    keeps it after a flags word, and encrypted), and `body` the offset of the
+    files in `data`; see ``westwood_ra/mix.py``."""
+
+    def __init__(self, data: bytes, header: bytes | None = None, body: int | None = None):
+        head = data if header is None else header
+        count, _size = struct.unpack_from("<HI", head, 0)
         self.data = data
-        count, _size = struct.unpack_from("<HI", data, 0)
-        self.body = 6 + 12 * count
+        self.body = 6 + 12 * count if body is None else body
         self.entries = {}
         for i in range(count):
-            h, off, sz = struct.unpack_from("<III", data, 6 + 12 * i)
+            h, off, sz = struct.unpack_from("<III", head, 6 + 12 * i)
             self.entries[h] = (off, sz)
 
     @classmethod
@@ -190,12 +195,17 @@ def _rle_zeros(src: bytes, size: int) -> bytes:
 
 def shp_d2_frames(data: bytes, count: int | None = None) -> list[np.ndarray]:
     """The first `count` frames (all when None) of a Dune-2-style shape file, the
-    format of TD's MOUSE.SHP: a frame count, 2- or 4-byte offsets, then per frame
+    format of TD's MOUSE.SHP and of Dune II's shapes (1.0 and 1.07): a frame count, 2- or 4-byte offsets, then per frame
     a small header, an optional colour table, LCW and a zero-run encoding."""
     n, = struct.unpack_from("<H", data, 0)
     two_byte = (struct.unpack_from("<I", data, 2)[0] & 0xFF0000) > 0
     fmt, step = ("<H", 2) if two_byte else ("<I", 4)
-    offs = [struct.unpack_from(fmt, data, 2 + step * i)[0] + 2 for i in range(n + 1)]
+    offs = [struct.unpack_from(fmt, data, 2 + step * i)[0] for i in range(n + 1)]
+    # The first frame starts where the offset table ends. Dune II 1.07 and
+    # C&C count the offsets from after the frame count; Dune II 1.0 from the
+    # start of the file.
+    base = 0 if offs[0] == 2 + step * (n + 1) else 2
+    offs = [o + base for o in offs]
     frames = []
     for i in range(n if count is None else min(n, count)):
         p = offs[i]

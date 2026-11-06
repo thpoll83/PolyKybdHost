@@ -96,8 +96,8 @@ def _xdg_data_dirs() -> list:
     return out
 
 
-def _parse_desktop(path: str) -> dict:
-    """The `[Desktop Entry]` group as a dict, or {}.
+def _parse_desktop(path: str, group: str = "[Desktop Entry]") -> dict:
+    """The `[Desktop Entry]` group (or `group`) as a dict, or {}.
 
     Hand-parsed rather than via configparser: a .desktop file legitimately
     carries duplicate localised keys (`Name[de]`) and `%`-escapes that
@@ -110,7 +110,7 @@ def _parse_desktop(path: str) -> dict:
             for line in handle:
                 line = line.strip()
                 if line.startswith("["):
-                    in_entry = line == "[Desktop Entry]"
+                    in_entry = line == group
                     continue
                 if not in_entry or "=" not in line or line.startswith("#"):
                     continue
@@ -163,6 +163,36 @@ def _is_runtime(stem: str) -> bool:
     return base in _RUNTIMES
 
 
+def _dbus_activated_names(exe_stem: str) -> set:
+    """Bus names whose D-Bus activation file starts the program `exe_stem`.
+
+    The freedesktop link between a D-Bus activated application's process and
+    its launcher: `dbus-1/services/<bus name>.service` names the program in
+    `Exec=`, and the application's desktop file is `<bus name>.desktop`.
+    GNOME Terminal runs as `/usr/libexec/gnome-terminal-server`, started by
+    `org.gnome.Terminal.service`; its launcher `org.gnome.Terminal.desktop`
+    says `Exec=gnome-terminal`, so no other rank reaches it (Ubuntu package
+    gnome-terminal 3.52.0-1ubuntu2, checked 2026-11-05).
+    """
+    names = set()
+    if not exe_stem or _is_runtime(exe_stem):
+        return names
+    for root in _xdg_data_dirs():
+        folder = os.path.join(root, "dbus-1", "services")
+        try:
+            files = sorted(os.listdir(folder))
+        except OSError:
+            continue
+        for name in files:
+            if not name.endswith(".service"):
+                continue
+            service = _parse_desktop(os.path.join(folder, name), "[D-BUS Service]")
+            bus = service.get("Name", "").strip()
+            if bus and _exec_stem(service.get("Exec", "")) == exe_stem:
+                names.add(bus.lower())
+    return names
+
+
 def _linux_entry(exe: str, app_name: str) -> dict:
     """The desktop entry for this process, or {}.
 
@@ -170,7 +200,7 @@ def _linux_entry(exe: str, app_name: str) -> dict:
     and the display name coming from two different applications. They are read
     from the same dict by construction; two separate walks could not promise it.
 
-    Four exact matches, in confidence order:
+    Five exact matches, in confidence order:
 
     1. `StartupWMClass` equal to the app name -- the key exists precisely to tie
        a window back to its launcher, which is the question being asked here;
@@ -178,7 +208,11 @@ def _linux_entry(exe: str, app_name: str) -> dict:
     3. the stem's LAST reverse-DNS component equal to the app name, so
        `org.gnome.gedit.desktop` is found for a window calling itself `gedit`
        (the same reduction `app_icons.normalise` applies to an application id);
-    4. the `Exec=` program equal to `/proc/<pid>/exe`.
+    4. the `Exec=` program equal to `/proc/<pid>/exe`;
+    5. the stem equal to the bus name of a D-Bus activation file that starts
+       `/proc/<pid>/exe` (`_dbus_activated_names`): GNOME Terminal's
+       `gnome-terminal-server` and its `org.gnome.Terminal.desktop`. Last, so
+       no application that resolved before this rank existed moves.
 
     ⚠️ Rank 3 exists because rank 4 TIES and the tie is broken by readdir order.
     Measured on a stock Xfce install: `org.xfce.mousepad.desktop` and
@@ -196,6 +230,7 @@ def _linux_entry(exe: str, app_name: str) -> dict:
     """
     exe_stem = os.path.basename(exe).lower() if exe else ""
     wanted = (app_name or "").strip().lower()
+    bus_names = None    # read on first need: only an app no other rank finds
 
     def _pick(require_icon: bool):
         """(entry, which rank matched). The rank is for the log only.
@@ -206,10 +241,13 @@ def _linux_entry(exe: str, app_name: str) -> dict:
         file and hands back fresh dicts, so ranks 2 and 3 were both logged as
         "4/Exec-vs-exe". A diagnostic that lies is worse than none.
         """
+        nonlocal bus_names
         by_stem = {}
         by_dns = {}
         by_exec = {}
-        for path, entry in _desktop_entries():
+        by_dbus = {}
+        entries = list(_desktop_entries())
+        for path, entry in entries:
             if require_icon and not entry.get("Icon", ""):
                 continue
             if wanted and entry.get("StartupWMClass", "").strip().lower() == wanted:
@@ -228,6 +266,17 @@ def _linux_entry(exe: str, app_name: str) -> dict:
             return by_dns, "3/reverse-dns"
         if by_exec:
             return by_exec, "4/Exec-vs-exe"
+        if bus_names is None:
+            bus_names = _dbus_activated_names(exe_stem)
+        if bus_names:
+            for path, entry in entries:
+                if require_icon and not entry.get("Icon", ""):
+                    continue
+                if os.path.basename(path)[:-len(".desktop")].lower() in bus_names:
+                    by_dbus = entry
+                    break
+        if by_dbus:
+            return by_dbus, "5/dbus-activation"
         return {}, "none"
 
     # ⚠️ The icon-bearing pass runs FIRST and unchanged, so this refactor cannot

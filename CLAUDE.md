@@ -262,6 +262,11 @@ per-application ESC mark has a rule of **no per-application configuration**:
 
 [`docs/autostart.md`](docs/autostart.md).
 
+- ⚠️ **User installs do not have `tests/` or `res/overlay_sources/`, except its
+  `<app>/*.yaml` specs.** The installers clone sparse and the updater skips the same
+  paths (`updater.SPARSE_PATTERNS` / `is_build_only()`, kept equal by
+  `tests/services/updater_build_only_test.py`). A runtime read of any other file there
+  works in a checkout and fails on every install: move the file to `res/` instead.
 - ⚠️ **Three locks, three files**: `claim_instance()` guards the control endpoint
   (daemon), `claim_gui()` the tray icon, `claim_forwarder()` the forwarder. The last
   two wait ~3 s because the post-update relaunch starts the replacement before this

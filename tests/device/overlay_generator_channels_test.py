@@ -34,6 +34,7 @@ from PIL import Image, ImageDraw
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.res import overlay_layout
 # Installs logging.Logger.debug_detailed used by ImageConverter.
 from polyhost.util import log_util  # noqa: F401
 
@@ -148,7 +149,7 @@ class TestResolveKey(unittest.TestCase):
         self.assertEqual(self.gen.resolve_key("KC_PRINT_SCREEN"), KeyCode.KC_PRINT_SCREEN)
 
     def test_alias_still_wins(self):
-        self.assertEqual(self.gen.resolve_key("DELETE"), self.gen.KEY_ALIASES["DELETE"])
+        self.assertEqual(self.gen.resolve_key("DELETE"), overlay_layout.KEY_ALIASES["DELETE"])
 
     def test_key_outside_the_grid_reports_no_cell(self):
         # KC_KP_1 is a real keycode with no overlay cell (keypad is skipped).

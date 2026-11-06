@@ -32,6 +32,9 @@ catch must be listed:
 - **A trailing release year is dropped** when the exact name is not a key, so
   `adobe photoshop` also matches macOS's `Adobe Photoshop 2025` and every later
   release. Only a final four-digit `19xx`/`20xx` token is dropped.
+- **A trailing dotted version is dropped** the same way, so `openra-ca` also
+  matches the Snap's `openra-ca-1.08.2`. It needs at least one dot and a space,
+  `-` or `_` before it, so `age2_x1` and `photoshop 2` keep their digits.
 
 Because it is an exact lookup, **one app name can appear in only one entry**. Two
 entries keyed on `soffice` do not both apply; the later simply wins. Split by
@@ -47,6 +50,7 @@ window title (or OS) instead — see below.
 | `titles-startswith` | sub-map | Keyed on the title's **first word(s)**. |
 | `titles-endswith` | sub-map | Keyed on the title's **last word(s)**. |
 | `titles-contains` | sub-map | Keyed on **one word or an adjacent run of words** anywhere in the title. |
+| `titles-match` | sub-map | Keyed on a **regex**, `re.search` against the whole title, tried in file order. For a signal inside a word, such as a file extension. |
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
@@ -61,7 +65,7 @@ Most specific first; the first branch that yields a match wins:
 
 1. **`os`** — the platform decides which keymap the app even has.
 2. **`urls-contains`** — a tab's URL identifies a web app far better than its title.
-3. `titles-startswith`, then `titles-endswith`, then `titles-contains` (the last
+3. `titles-startswith`, then `titles-endswith`, then `titles-match`, then `titles-contains` (the last
    only when no URL is known, if the entry declares `urls-contains` — see below).
 4. The entry's own `title` / `url` gates, then its own `overlay`.
 
@@ -95,8 +99,55 @@ sub-entry **replace** the parent instead.
 
 `urls-contains` matches only a URL the host attributes to the **focused** app: a
 browser's active tab, or a context report from an app on the allow-list in
-`handler/browser_url.py` (`CONTEXT_REPORTERS`; Blender today). The entry's names
-and that list must agree; the routing test checks it.
+`handler/browser_url.py` (`CONTEXT_REPORTERS`: Blender, and GUI Vim and Emacs).
+The entry's names and that list must agree; the routing test checks it. A
+terminal on `TERMINAL_APPS` takes the report of a vim or emacs running in it
+(`HOSTED_REPORTERS`), so a terminal entry can route `vim://` and `emacs://` the
+same way.
+
+### An entry with no overlay of its own
+
+An entry may have `urls-contains` or a title sub-map and no `overlay`. It
+then matches only through those sub-maps and never by itself: when no URL
+needle and no title key routes, the matcher returns nothing, exactly as for an
+app with no entry, and the app keeps the generic shortcut harvest. The
+terminals without an overlay set use this to route the editors' mode reports
+(`&editor_urls`) and GNU nano's title (`&editor_titles`).
+(`tests/handler/matcher_test.py::TestRoutesOnlyEntry`,
+`tests/handler/vim_routing_test.py`.)
+
+### An editor seen only in the window title (GNU nano)
+
+GNU nano sends no report and sets no title, so it is visible only when the
+shell or the terminal puts the running command into the window title (cmd.exe,
+macOS Terminal and iTerm2, Konsole, fish, Nushell, xonsh and oh-my-zsh do by default; bash,
+PowerShell and plain zsh need the scripts in [`shell/`](shell/), which the
+tray's Updates → "Set up the terminal and editors…" or
+`polyctl shell-integration install` adds to their startup files). The
+terminal entries carry `titles-contains: &editor_titles`: the word
+`nano` selects the route and the sub-entry's `title` regex requires nano at
+the command position, so `vim nano` or a prompt in `~/nano-docs` keeps the
+terminal's set. A mode report still takes priority, because a known URL skips
+`titles-contains`.
+(`tests/handler/nano_routing_test.py`.)
+
+### Terminal AI coding CLIs
+
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
+Aider have routes in the same `&editor_titles` list. All but Aider replace the
+shell's title with their own, so each route's keys are the first word of the
+CLI's own title (`✳`, `◇`, `OC`, `GitHub Copilot` ...) and its command name,
+and the `title` regex requires that word at the start of the title or after a
+terminal's separator. Codex's default title does not name it; only its
+"action required" title and a `terminal_title` setting with `app-name` first
+do. The formats, and where each was read, are in
+[`overlay_sources/aicli/SOURCES.md`](overlay_sources/aicli/SOURCES.md).
+
+⚠️ **An `os:` branch is tried before the entry's own `title` regex.** A title
+route with per-OS artwork must repeat the regex in every branch (the mapping
+uses a YAML anchor, `*claude_title`), or every title with the route word takes
+the set on that OS. (`tests/handler/ai_cli_routing_test.py`, which checks the
+negative titles on all three OSes.)
 
 ## `os:` — per-platform artwork
 

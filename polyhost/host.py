@@ -852,6 +852,24 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_udev_action)
 
+        # Every OS: the line that makes bash, zsh and PowerShell put the
+        # running command into the terminal title, which is how the host sees a
+        # program inside a terminal (the nano overlay matches the title). Local
+        # files only, no device, so it works in client mode and with no keyboard
+        # (services/shell_title.py, gui/shell_title_dialog.py).
+        # The same dialog copies the Vim/Neovim/Emacs mode plugins
+        # (services/editor_plugins.py); the copies made earlier are refreshed
+        # from this installation on a thread at every start.
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
+        self.shell_title_dialog = None
+        self.shell_title_action = QAction(get_icon("terminal.svg"),
+                                          _("Set up the terminal and editors\u2026"),
+                                          parent=self)
+        # noinspection PyUnresolvedReferences
+        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
+        self.updates_menu.addAction(self.shell_title_action)
+
         # The OS theme can change while the tray sits there for weeks, so
         # re-follow it whenever the menu opens — that is when a mismatch is on
         # screen, and the check is a registry read (a cached one elsewhere).
@@ -1961,6 +1979,18 @@ class PolyHost(QApplication):
                 diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
+
+    def open_shell_title_dialog(self):
+        """The shell title integration dialog. Modeless and retained, like
+        open_log_bundle: its status QThread is parented to it, so a rebuild
+        while PowerShell is being asked would destroy a running thread."""
+        from polyhost.gui.shell_title_dialog import ShellTitleDialog
+        if self.shell_title_dialog is None:
+            self.shell_title_dialog = ShellTitleDialog(parent=None)
+        elif not self.shell_title_dialog.isVisible():
+            self.shell_title_dialog.reopen()
+        self.shell_title_dialog.show()
+        bring_to_front(self.shell_title_dialog)
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog

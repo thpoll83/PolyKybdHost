@@ -67,7 +67,10 @@ class WindowReportClient:
         round."""
         req_id = self._next_id
         self._next_id += 1
-        params = {"handle": str(handle), "name": str(name), "title": str(title)}
+        # A window without a title is None in pywinctl; str() would send the
+        # text "None", which the matcher then tests a `title:` regex against.
+        params = {"handle": str(handle), "name": str(name),
+                  "title": "" if title is None else str(title)}
         if os is not None:
             params["os"] = int(os)
         # Optional in both directions: an older daemon ignores unknown params,

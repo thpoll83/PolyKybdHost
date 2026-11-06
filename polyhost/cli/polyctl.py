@@ -179,6 +179,106 @@ def _format_size(num_bytes: int) -> str:
     return f"{num_bytes // 1024} KB"
 
 
+_SHELL_STATE_TEXT = {
+    "installed": "installed",
+    "not-installed": "not installed",
+    "stale": "stale: the line loads another copy",
+    "not-present": "not found",
+    "unknown": "profile path unknown",
+    "blocked": "blocked by the execution policy",
+    "no-setup": "shows the command without setup",
+}
+
+
+def _cmd_shell_integration(_client, args):
+    """Add, remove or show the line that makes a shell put the running
+    command into the terminal title (services/shell_title.py).
+
+    Purely local: it edits the user's own shell startup files, so it never
+    connects to the host (see _is_local_command)."""
+    from polyhost.services import shell_title
+
+    shells = args.shell or None
+    if args.si_action == "status":
+        for st in shell_title.status(shells):
+            line = f"{st.shell:<15}{_SHELL_STATE_TEXT.get(st.state, st.state)}"
+            if st.rc_path is not None:
+                line += f"  ({st.rc_path})"
+            if st.detail:
+                line += f"\n{'':<15}{st.detail}"
+            if st.codex:
+                line += f"\n{'':<15}codex wrapper: on"
+            print(line)
+        return 0
+    if args.si_action == "install":
+        results = shell_title.install(shells, codex=args.codex)
+    else:
+        results = shell_title.remove(shells)
+    if not results:
+        print("nothing to do" if args.si_action == "remove"
+              else "no shell to set up was found (name one with --shell)")
+        return 0
+    for r in results:
+        print(f"{r.shell}: {r.message}")
+        if r.backup is not None:
+            print(f"{'':<{len(r.shell) + 2}}backup: {r.backup}")
+    if args.si_action == "install" and any(r.changed for r in results):
+        print("Open a new terminal window for the change to take effect.")
+    return 0 if all(r.ok for r in results) else 1
+
+
+_EDITOR_STATE_TEXT = {
+    "installed": "set up",
+    "not-installed": "not set up",
+    "outdated": "set up with older plugin files (install copies the current ones)",
+    "modified": "set up, then changed by hand (left alone)",
+    "stale": "the init file loads another copy",
+    "manual": "the plugin is loaded from somewhere else",
+    "not-present": "not found",
+    "no-source": "this installation has no plugin files",
+}
+
+
+def _cmd_editor_plugins(_client, args):
+    """Copy, remove or show the editor mode plugins (services/editor_plugins.py).
+
+    Purely local, like shell-integration (see _is_local_command)."""
+    from polyhost.services import editor_plugins
+    from polyhost.settings import read_setting
+
+    editors = args.editor or None
+    if args.ep_action == "status":
+        for st in editor_plugins.status(editors):
+            line = f"{st.editor:<8}{_EDITOR_STATE_TEXT.get(st.state, st.state)}"
+            if st.target is not None:
+                line += f"  ({st.target})"
+            if st.detail:
+                line += f"\n{'':<8}{st.detail}"
+            print(line)
+        port = read_setting("browser_report_port", 50164)
+        token = read_setting("browser_report_token", "")
+        if editor_plugins.needs_settings(port, token):
+            print(f"note: the host listens on port {port}{' with a token' if token else ''}; "
+                  "set g:polykybd_port/g:polykybd_token (Vim) or polykybd-port/"
+                  "polykybd-token (Emacs) to match.")
+        return 0
+    if args.ep_action == "install":
+        results = editor_plugins.install(editors)
+    else:
+        results = editor_plugins.remove(editors)
+    if not results:
+        print("nothing to do" if args.ep_action == "remove"
+              else "no editor to set up was found (name one with --editor)")
+        return 0
+    for r in results:
+        print(f"{r.editor}: {r.message}")
+        if r.backup is not None:
+            print(f"{'':<{len(r.editor) + 2}}backup: {r.backup}")
+    if args.ep_action == "install" and any(r.changed for r in results):
+        print("Restart the editor for the change to take effect.")
+    return 0 if all(r.ok for r in results) else 1
+
+
 def _cmd_logs(client, args):
     """Collect log files — the one command that must work with no daemon.
 
@@ -1280,6 +1380,62 @@ def build_parser():
         p.add_argument("--log-dir", help="where the logs are (default: auto-detect)")
     p_logs.set_defaults(func=_cmd_logs)
 
+    # --- shell-integration -----------------------------------------------
+    # Local only (see _is_local_command): it edits the user's shell startup
+    # files and needs neither the host nor the keyboard.
+    p_si = sub.add_parser(
+        "shell-integration",
+        help="make bash, zsh and PowerShell show the running command in the "
+             "terminal title (works with the host stopped)",
+        description="The host recognises a program running in a terminal (nano, "
+                    "for example) by the terminal's window title. This adds one "
+                    "line, between marker comments, to ~/.bashrc, ~/.zshrc or "
+                    "the PowerShell $PROFILE that loads a script shipped with "
+                    "this installation; a copy of the file is saved next to it "
+                    "first. fish, Nushell, xonsh, cmd.exe, Terminal.app and iTerm2 need no "
+                    "setup; for fish the line (in conf.d/polykybd.fish) only adds "
+                    "the --codex wrapper.")
+    si_sub = p_si.add_subparsers(dest="si_action", required=True)
+    si_install = si_sub.add_parser(
+        "install", help="add the line (default: the shells with a startup file, and the login shell)")
+    si_remove = si_sub.add_parser("remove", help="delete the marked lines")
+    si_status = si_sub.add_parser("status", help="show what is set up, per shell")
+    for p in (si_install, si_remove, si_status):
+        p.add_argument("--shell", action="append",
+                       choices=("bash", "zsh", "fish", "pwsh", "powershell"),
+                       help="only this shell (repeat for more); pwsh is PowerShell 7, "
+                            "powershell is Windows PowerShell 5.1; fish takes only "
+                            "the --codex wrapper")
+    codex = si_install.add_mutually_exclusive_group()
+    codex.add_argument("--codex", dest="codex", action="store_true", default=None,
+                       help="also wrap the codex command so that Codex's own title "
+                            "starts with 'codex' (its default title does not name it)")
+    codex.add_argument("--no-codex", dest="codex", action="store_false",
+                       help="install without the codex wrapper (default: keep what "
+                            "each shell has)")
+    p_si.set_defaults(func=_cmd_shell_integration)
+
+    # --- editor-plugins --------------------------------------------------
+    # Local only, like shell-integration.
+    p_ep = sub.add_parser(
+        "editor-plugins",
+        help="copy the Vim/Neovim plugin and the Emacs package that report the "
+             "editor's mode (works with the host stopped)",
+        description="Copies the plugin shipped with this installation to "
+                    "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
+                    "site/pack folder, or <emacs dir>/polykybd (Emacs, plus a "
+                    "marked block in the init file, saved first). Copies made "
+                    "this way are refreshed when the app starts after an update.")
+    ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
+    ep_install = ep_sub.add_parser(
+        "install", help="copy the plugin (default: every editor found that is not set up)")
+    ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
+    ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
+    for p in (ep_install, ep_remove, ep_status):
+        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs"),
+                       help="only this editor (repeat for more)")
+    p_ep.set_defaults(func=_cmd_editor_plugins)
+
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)
     sub.add_parser("shutdown", help="ask the host to shut down").set_defaults(func=_cmd_shutdown)
 
@@ -1320,9 +1476,22 @@ def _is_offline_command(args) -> bool:
     return getattr(args, "command", None) == "logs"
 
 
+def _is_local_command(args) -> bool:
+    """True for commands that never talk to the host: ``shell-integration``
+    and ``editor-plugins`` edit the user's own files and have nothing to ask it."""
+    return getattr(args, "command", None) in ("shell-integration", "editor-plugins")
+
+
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if _is_local_command(args):
+        try:
+            return args.func(None, args)
+        except OSError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
 
     if _is_offline_command(args):
         # Still try to attach, so a bundle picks up live daemon status — but a

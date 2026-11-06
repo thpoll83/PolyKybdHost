@@ -42,10 +42,21 @@ _changed = threading.Event()
 def register_mapping(mapping: dict) -> None:
     """Remember which templates the overlay mapping opts in, and their specs."""
     specs = {}
-    for entry in (mapping or {}).values():
-        if isinstance(entry, dict) and entry.get("game_assets") and entry.get("overlay"):
+
+    def walk(entry):
+        # A sub-entry (a title, URL or OS sub-map) may opt in on its own.
+        if not isinstance(entry, dict):
+            return
+        if entry.get("game_assets") and entry.get("overlay"):
             for template in entry["overlay"] if isinstance(entry["overlay"], list) else [entry["overlay"]]:
                 specs[str(template)] = _SOURCES / str(entry["game_assets"])
+        for value in entry.values():
+            if isinstance(value, dict):
+                for sub in value.values():
+                    walk(sub)
+
+    for entry in (mapping or {}).values():
+        walk(entry)
     with _lock:
         _specs.clear()
         _specs.update(specs)

@@ -4,7 +4,7 @@
 One icon folder serves the browser sets — `github.yaml`, `gitlab.yaml`,
 `confluence.yaml`, `confluence_whiteboard.yaml`, `googledocs.yaml`, `notion.yaml`, `jira.yaml`, `web_outlook.yaml`,
 `bitbucket.yaml` and the Google sets of `gen_google_specs.py` (Sheets, Slides,
-Gmail, Calendar), `drawio.yaml`, `excalidraw.yaml`, `linear.yaml` and
+Gmail, Calendar, Drive), `drawio.yaml`, `excalidraw.yaml`, `canva.yaml`, `linear.yaml` and
 `overleaf.yaml`. They are grouped
 because they share a large command vocabulary (search, edit, comment, submit,
 and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
@@ -201,9 +201,16 @@ FLUENT = {
     "calnext": "Arrow Next",
 }
 
-# Google Sheets, Slides, Gmail and Calendar (gen_google_specs.py). `ms:` names are
+# Google Sheets, Slides, Gmail, Calendar and Keep (gen_google_specs.py). `ms:` names are
 # Material Symbols (Apache-2.0) where Fluent has no glyph.
 GOOGLE = {
+    # --- Google Drive ---
+    "gdr_movefolder": "Folder Arrow Right",
+    "gdr_shortcut": "Arrow Forward",
+    "gdr_copytitle": "ms:title",
+    "gdr_pasteshortcut": "Clipboard Link",
+    "gdr_create": "Add",
+    "gdr_foldermenu": "ms:folder_managed",
     # --- Google Calendar ---
     "calrefresh": "Arrow Clockwise",
     "calgoto": "Calendar Arrow Right",
@@ -335,6 +342,24 @@ GOOGLE = {
     "gm_more": "ms:more_vert",
     "gm_move": "ms:drive_file_move",
     "gm_label": "ms:label",
+    # --- Google Keep ---
+    "keep_nextnote": "Arrow Down",
+    "keep_prevnote": "Arrow Up",
+    "keep_movenote_down": "ms:move_down",
+    "keep_movenote_up": "ms:move_up",
+    "keep_nextitem": "ms:keyboard_arrow_down",
+    "keep_previtem": "ms:keyboard_arrow_up",
+    "keep_moveitem_down": "ms:keyboard_double_arrow_down",
+    "keep_moveitem_up": "ms:keyboard_double_arrow_up",
+    "keep_newnote": "Note Add",
+    "keep_newlist": "ms:checklist",
+    "keep_archive": "Archive",
+    "keep_pin": "Pin",
+    "keep_select": "ms:check_circle",
+    "keep_open": "Open",
+    "keep_view": "ms:grid_view",
+    "keep_done": "Checkmark",
+    "keep_checkboxes": "ms:check_box",
 }
 # draw.io, Excalidraw, Linear and Overleaf (diagram, whiteboard, project and
 # LaTeX web apps). Prefixed by app where the same action has another meaning
@@ -411,6 +436,8 @@ DIAGRAM_ETC = {
     "exc_clear": "ms:delete_sweep",
     "exc_textsize_dn": "ms:text_decrease",
     "exc_textsize_up": "ms:text_increase",
+    # --- Canva (the other Canva keys reuse draw.io and Excalidraw icons) ---
+    "canva_elbow": "ms:subdirectory_arrow_right",
     # --- Linear ---
     "lin_layout": "ms:view_kanban",
     "lin_agent": "Sparkle",
@@ -454,9 +481,47 @@ DIAGRAM_ETC = {
     "ol_first": "ms:vertical_align_top",
     "ol_last": "ms:vertical_align_bottom",
 }
+# Photopea (photopea.yaml) takes most of its art from the Photoshop set
+# (../photoshop/icons), because its tools and menus copy Photoshop's. These are
+# the menu commands that set has no icon for.
+PHOTOPEA = {
+    "pp_trim": "ms:close_fullscreen",
+    "pp_forward": "ms:move_up",
+    "pp_backward": "ms:move_down",
+    "pp_canvassize": "ms:aspect_ratio",
+    "pp_imagesize": "ms:photo_size_select_large",
+    "pp_clipmask": "ms:subdirectory_arrow_right",
+    "pp_lastfilter": "ms:filter",
+    "pp_fade": "ms:opacity",
+    "pp_cameraraw": "Camera",
+    "pp_storage": "ms:cloud_download",
+    "pp_guides": "ms:border_inner",
+}
 # Their ESC marks: each app's own logo from Simple Icons (CC0 artwork).
 DIAGRAM_ETC_BRAND = {"drawio.png": "diagramsdotnet", "excalidraw.png": "excalidraw",
-                     "linear.png": "linear", "overleaf.png": "overleaf"}
+                     "linear.png": "linear", "overleaf.png": "overleaf",
+                     "photopea.png": "photopea"}
+
+# Canva: Simple Icons removed the Canva logo and MDI has none. The mark is
+# Canva's own app icon (a white script C on a square tile), reduced to 1 bit at
+# the 32x32 keycap size: the tile is lit and the C is cut out.
+CANVA_MARK = "canva.png"
+# canva.com answers automated requests with a bot check, so the icon (canva.com's
+# 180x180 apple-touch-icon) comes through Google's favicon service.
+CANVA_ICON_URL = "https://www.google.com/s2/favicons?domain=canva.com&sz=256"
+CANVA_C_LUMA = 200  # pixels brighter than this are the white C
+
+
+def _canva_mark(dest: Path, px: int = 32) -> None:
+    """Canva's square app icon as a px*px 1-bit tile with the C cut out."""
+    import io
+    import urllib.request
+    with urllib.request.urlopen(CANVA_ICON_URL, timeout=60) as r:
+        icon = Image.open(io.BytesIO(r.read())).convert("L")
+    a = icon.resize((px, px), Image.LANCZOS).point(
+        lambda v: 255 if v <= CANVA_C_LUMA else 0)
+    Image.merge("RGBA", (a, a, a, a)).save(dest)
+
 
 # narrower.png is shorter.png turned 90 degrees: Fluent has a vertical
 # "Arrow Minimize" but no horizontal one.
@@ -467,7 +532,43 @@ ROTATED = {"narrower.png": ("shorter.png", 90)}
 # silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
 # REAL logo (nominative use; see brand_marks).
 BRAND = {"gh.png": "github", "gl.png": "gitlab",
-         "gmail.png": "gmail", "gcal.png": "googlecalendar"}
+         "gmail.png": "gmail", "gcal.png": "googlecalendar",
+         "gkeep.png": "googlekeep", "gdrive.png": "googledrive"}
+
+
+def _keep_winding(dest: Path, shift: int = 23) -> None:
+    """Give the Keep bulb's base a second thread: copy its one cut band lower.
+
+    At 32 px the Simple Icons bulb has a single thread band, which reads as a
+    plain stub. The band is found from the alpha (the lowest transparent run in
+    the middle column) and repeated `shift` px further down. 23 was picked by rendering 22..27: it
+    is the shift at which the second band shows the same keycap pixels as the
+    first (24, the nominal 3 px, rounds differently near the bottom edge).
+    """
+    import numpy as np
+    img = Image.open(dest).convert("RGBA")
+    a = np.array(img.split()[3])
+    mid = a.shape[1] // 2
+    col = a[:, mid] < 128
+    cut = [y for y in range(a.shape[0]) if col[y]]
+    y1 = cut[-1] if cut else 0                          # bottom of the cut band
+    y0 = y1
+    while y0 > 0 and col[y0 - 1]:
+        y0 -= 1
+    xs = np.where(a[(y0 + y1) // 2] < 128)[0]
+    xs = xs[(xs > a.shape[1] // 4) & (xs < a.shape[1] * 3 // 4)]
+    if not cut or y0 == 0 or y1 + shift >= a.shape[0] - 1 or not len(xs):
+        # The upstream artwork changed shape: keep it unmodified, do not abort.
+        print(f"  WARNING {dest.name}: no thread band found, second band not added")
+        return
+    a[y0 + shift:y1 + shift + 1, xs.min():xs.max() + 1] = \
+        a[y0:y1 + 1, xs.min():xs.max() + 1]
+    white = Image.new("L", img.size, 255)
+    Image.merge("RGBA", (white, white, white, Image.fromarray(a))).save(dest)
+
+
+# Post-processing applied when a BRAND mark is rendered fresh.
+BRAND_TWEAKS = {"gkeep.png": _keep_winding}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS"),
@@ -497,6 +598,7 @@ def main() -> int:
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.fluent(GOOGLE, out)
     n += icon_fetch.fluent(DIAGRAM_ETC, out)
+    n += icon_fetch.fluent(PHOTOPEA, out)
     for fname, (src, angle) in ROTATED.items():
         Image.open(out / src).rotate(angle).save(out / fname)
         print(f"  {fname}  <- {src} turned {angle} degrees")
@@ -506,7 +608,11 @@ def main() -> int:
         print(f"  {stem}.png  <- material-symbols/{name}")
     n += len(MATERIAL)
     for fname, slug in {**BRAND, **DIAGRAM_ETC_BRAND}.items():
+        fresh = not (out / fname).exists()
         brand_marks.ensure(out / fname, slug)
+        if fresh and fname in BRAND_TWEAKS:
+            BRAND_TWEAKS[fname](out / fname)
+            print(f"  {fname}  <- {BRAND_TWEAKS[fname].__name__}")
     for fname, (app, label) in DOC.items():
         dest = out / fname
         if dest.exists():
@@ -521,7 +627,12 @@ def main() -> int:
         rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
     for fname, draw in GEO.items():
         draw(out / fname)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
+    if (out / CANVA_MARK).exists():
+        print(f"  {CANVA_MARK}  <- committed asset (left as-is)")
+    else:
+        _canva_mark(out / CANVA_MARK)
+        print(f"  {CANVA_MARK}  <- Canva app icon, 1-bit tile with the C cut out")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DIAGRAM_ETC_BRAND)+len(DOC)+len(SHADED)+len(GEO)+1} program marks) to {out}")
     return 0
 
 

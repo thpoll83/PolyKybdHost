@@ -306,10 +306,10 @@ Two deliberate choices, both of which have been queried:
 - **Two adjacent edges only.** Drawing all four offset edges reads as a second
   box rather than as a shadow.
 
-## Google Sheets, Slides, Gmail and Calendar
+## Google Sheets, Slides, Gmail, Calendar, Keep and Drive
 
 `gen_google_specs.py` writes `googlesheets.yaml`, `googleslides.yaml`,
-`gmail.yaml` and `googlecalendar.yaml` from one table per app. Each row has a
+`gmail.yaml`, `googlecalendar.yaml`, `googlekeep.yaml` and `googledrive.yaml` from one table per app. Each row has a
 Windows/Linux key and a macOS key. A row whose Mac key is the Windows key with
 Ctrl replaced by Cmd becomes one `CMDCTRL` binding; every other row is written
 twice, under `except: [macos]` and `only: [macos]`.
@@ -320,6 +320,8 @@ twice, under `except: [macos]` and `only: [macos]`.
 | Google Slides | <https://support.google.com/docs/answer/1696717>, PC and Mac tables | 83, 80 |
 | Gmail | <https://support.google.com/mail/answer/6594> (one table, "⌘/Ctrl") | 60, 60 |
 | Google Calendar | <https://support.google.com/calendar/answer/37034> | 27, 27 |
+| Google Keep | <https://support.google.com/keep/answer/12862970>, PC and Mac tables (read 2026-11-05) | 21, 21 |
+| Google Drive | <https://support.google.com/drive/answer/2563044>, read 2026-11-05 | 27, 27 |
 
 Linux gets the PC keys. The ChromeOS tables are not used.
 
@@ -338,7 +340,22 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `m`, `x`, `a`, and `c`, `e`, Backspace, Delete and `z`. Calendar's `+` (add a
   calendar) is left out, because the key that types `+` depends on the layout,
   and Esc (back to the grid) shows the program mark.
-- Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`):
+- Google Keep's single keys are on by default and act whenever no text field
+  has focus, so its set has them: `j`/`k`, `n`/`p` and their Shift forms, `c`,
+  `l`, `/`, `e`, `f`, `x` and Enter. `?` (shortcut help), `#` (trash) and `@`
+  (feedback) are left out because they need Shift on a US layout, and Esc
+  (finish editing) shows the program mark. Ctrl+Enter, the other key for finish
+  editing, is drawn.
+- Google Drive: its single keys are drawn (`/` search, F2 rename, Delete
+  remove). `#` (remove) needs Shift on a US layout and is left out, as are the
+  arrow-key selection keys and the preview-only keys (Space, `=`, `-`). Copy
+  (Ctrl+C) and Paste (Ctrl+V) are not in Google's table; Drive added them in
+  May 2022 and they are drawn. Google's table lists Ctrl+Shift+V twice (paste,
+  and paste as a shortcut); the set labels it "Paste as shortcut". Its Mac
+  column gives Create shortcut as both ⌘⌥R and ⌘⌃R; the set uses ⌘⌥R, the
+  form every other row of that group has.
+- Two-key sequences ("holding Ctrl+Alt, press n then c", Gmail's `g` then `i`,
+  Drive's Alt+G then N and Alt+C then T):
   an overlay cell shows what one key press does.
 - The menu keys (Alt+F, Alt+E, ...): Chrome and other browsers use different
   modifiers for them (Alt in Chrome, Alt+Shift elsewhere).
@@ -363,9 +380,16 @@ Linux gets the PC keys. The ChromeOS tables are not used.
   `calday.png`, `calweek.png` and `calmonth.png`.
 - `gs.png` and `gsl.png` are labelled document frames from `../doc_mark.py`,
   like Google Docs' `gd.png`, with the calc and impress motifs.
-- `gmail.png` and `gcal.png` are the Gmail and Google Calendar marks from
-  Simple Icons (CC0-1.0 artwork), used to name the application
+- Google Drive's own icons are Fluent (`gdr_movefolder` Folder Arrow Right,
+  `gdr_shortcut` Arrow Forward, `gdr_pasteshortcut` Clipboard Link,
+  `gdr_create` Add) and Material (`gdr_copytitle` title, `gdr_foldermenu`
+  folder_managed). Star, Share, Sort, More actions and the rest reuse icons
+  already in the folder.
+- `gmail.png`, `gcal.png`, `gkeep.png` and `gdrive.png` are the Gmail, Google Calendar,
+  Google Keep and Google Drive marks from Simple Icons (CC0-1.0 artwork), used to name the application
   (`../brand_marks.py`), as the Google Meet set does.
+  `gkeep.png` gets a second thread band on the bulb's base (`_keep_winding` in
+  `fetch_icons.py`), because at 32 px the single band reads as a plain stub.
 
 ## draw.io, Excalidraw, Linear and Overleaf
 
@@ -442,3 +466,93 @@ Choices and keys left out:
 - **Overleaf:** Tab and Shift+Tab (indent), the multi-cursor keys
   (Ctrl+Alt+arrows) and the cursor movement keys are left out. Ctrl+U,
   Ctrl+Shift+U and Ctrl+Space use Ctrl on macOS as well, as the source binds them.
+
+## Canva
+
+One spec, written by hand: `canva.yaml`. It uses `CMDCTRL`, so it gives a
+Windows/Linux set (46 keys) and a macOS set (45 keys). Most icons are reused
+from the draw.io and Excalidraw sets. The one new key icon is `canva_elbow.png`
+(Material Symbols `subdirectory_arrow_right`, Apache-2.0), listed in
+`fetch_icons.py` → `DIAGRAM_ETC`.
+
+Shortcuts: Canva Help Center, "Canva keyboard shortcuts",
+<https://www.canva.com/help/canva-keyboard-shortcuts/>, with "Group, layer, and
+align elements" (`/help/layer-group-align/`) and "Lock and unlock pages or
+elements" (`/help/lock-and-unlock-elements/`). canva.com refuses automated
+fetches, so the keys were read from search-engine extracts of these pages on
+2026-11-05, not from the pages themselves. Check them against the live page in
+a browser.
+
+ESC mark: Simple Icons no longer has a Canva icon (`canva.svg` returns 404 on
+`develop`) and Material Design Icons has none. `canva.png` is Canva's own app
+icon (a white script C on a square tile), made by `_canva_mark` in
+`fetch_icons.py`: the 180×180 icon from canva.com (fetched through Google's
+favicon service, because canva.com answers automated requests with a bot
+check), reduced to 32×32 and cut at luma 200, so the tile is lit and the C is
+cut out. It is placed 1:1. The Canva logo is Canva's trademark; it is used here
+only to name the app the overlay belongs to.
+
+Routing: a `urls-contains` entry with a `url` gate on `canva.com/design/`, so
+only the editor gets the set. The home page and the help pages do not, because
+the bare tool letters would draw over their search fields. There is no title
+fallback: the help pages also have "Canva" in their titles.
+
+Choices and keys left out:
+
+- **Tool letters.** T, R, C, L and S (text, rectangle, circle, line, sticky note)
+  and Shift+\ (elbow line) are drawn as bare keys, as in the Miro and Excalidraw
+  sets.
+- **Redo** is drawn on Ctrl+Shift+Z everywhere and on Ctrl+Y on Windows and Linux
+  only.
+- **Bring to front and send to back** are Ctrl+Alt+] and Ctrl+Alt+[ (Cmd+Option
+  on macOS). The help page names Bring to front; Send to back is its pair.
+- **Left out:** the video keys (Space play or pause, M mute), which act only on a
+  selected video; the heading and body text styles, which only Canva Docs has;
+  Ctrl+Backspace (delete empty page), which only third-party lists name.
+
+## Photopea
+
+`photopea.yaml`, written by hand. It uses `CMDCTRL`: Photopea's key handler
+takes Cmd for Ctrl on macOS.
+
+Keys were read from Photopea itself (www.photopea.com, 2026-11-05) in headless
+Chromium. The menu chords are the shortcut labels of every File, Edit, Image,
+Layer, Select, Filter and View entry, submenus included, with a new document
+open. The tool letters are the letters in each toolbar group's tool list. S
+(clone stamp) and Z (zoom) have no group menu and were checked by pressing the
+key. X and D are from `photopea.com/learn/workspace`.
+
+Photopea moves the chords a browser keeps for itself: New is Ctrl+Alt+N, Free
+Transform is Ctrl+Alt+T and Open from storage is Ctrl+Alt+O. Ctrl+Z is Step
+Backward and Ctrl+Shift+Z is Step Forward.
+
+Left out:
+
+- **Ctrl+Shift+N** (Layer > New > Layer). Chrome and Firefox open a private
+  window, and the page never sees the key.
+- **macOS only:** Cmd+H (Extras) and Cmd+M (Curves), which macOS takes to hide
+  and minimize the browser, and Cmd+Shift+[ and ] (Bring to front, Send to
+  back), which switch tabs in Chrome and Safari.
+- Delete (Clear), the Export as entries (they show file extensions, not keys),
+  the Blur/Sharpen/Smudge group (no letter), and the group-cycling Shift+letter.
+
+Icons: the Photoshop set (`../photoshop/icons`, the spec's `icon_dir`) wherever
+the action is the same, because Photopea's tools and menus copy Photoshop's.
+The commands that set has no icon for are `pp_*.png` in this folder
+(`fetch_icons.py` → `PHOTOPEA`, Material Symbols Apache-2.0 and Fluent MIT).
+Rotate view, Preferences, Bring to front, Send to back and Grid reuse
+`rotateccw.png`, `settings.png`, `bringfront.png`, `sendback.png` and
+`dio_grid.png` from this folder.
+
+ESC mark: Photopea's logo from Simple Icons (`photopea`, artwork CC0-1.0,
+nominative use, see `../brand_marks.py`), as for Linear and Overleaf.
+
+Routing: a `urls-contains` entry `photopea.com` with a `url` gate on the bare
+host, because the editor runs at `https://www.photopea.com/` and the learn,
+blog and tutorial pages are under the same host. The title fallback is
+"Photopea | Online Photo Editor", the editor's tab title; the learn pages are
+titled "Photopea - <topic>".
+
+| Set | Keys (Windows/Linux, macOS) |
+|---|---|
+| `photopea_template` | 69, 65 |

@@ -130,9 +130,10 @@ CALLER_GATED = {
 # No device I/O at all: nothing to sweep.
 # The bulk-pipe accessors talk to a serial port, not to the HID mock: the probe
 # is covered by tests/device/bulk_pipe_test.py with a fake port.
+# flush_console only empties the host's own console buffer.
 NO_DEVICE_IO = {"supports", "capabilities",
                 "probe_bulk_pipe", "get_transport", "get_pipe_info", "get_link_rate_mbps",
-                "forget_bulk_pipe", "use_hid_only"}
+                "forget_bulk_pipe", "use_hid_only", "flush_console"}
 
 
 def _keyboard(protocol):

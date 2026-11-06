@@ -202,6 +202,61 @@ and relative links were adjusted to suit a standalone file.
   applies the mode on the next add event. `scripts/install.sh` writes the same file with
   `sudo`; its old inline copy lacked the tty lines (1.17.28 and 1.17.29).
 
+- **Shell title integration (every OS)**: the host sees a program inside a terminal
+  (GNU nano) only through the window title, and plain bash, zsh and PowerShell show the
+  prompt's title, not the command. **"Set up the terminal and editors…"**
+  is always visible under Updates, after the udev row, in the tray app and in the
+  forwarder (the forwarder reports its own machine's titles). It opens
+  `gui/shell_title_dialog.py`: one row per shell found (bash, zsh, PowerShell 7 `pwsh`,
+  Windows PowerShell 5.1) with its startup file and state, a checkbox, and Install /
+  Remove; fish, cmd.exe and Terminal.app/iTerm2 are listed as needing no setup. The
+  status runs on a `QThread`, because the PowerShell `$PROFILE` path and execution
+  policy come from running `pwsh -NoProfile -NonInteractive -Command …` (20 s timeout,
+  cached per process, except an answer with a blocking policy, so a
+  `Set-ExecutionPolicy` shows on the next refresh). zsh's startup directory comes from
+  `zsh -c 'print -r -- ${ZDOTDIR:-$HOME}'` (10 s timeout), which reads `.zshenv`, so a
+  `ZDOTDIR` set only there is found; without an answer `$ZDOTDIR` or the home is used. Modeless and retained like the log-bundle dialog.
+  `services/shell_title.py` (Qt-free, also `polyctl shell-integration install|remove|status
+  [--shell …]`, which never connects to the host) adds one line between
+  `# >>> PolyKybd title integration >>>` / `# <<< … <<<` that sources
+  `polyhost/res/shell/polykybd-title.{bash,zsh,ps1}` by this install's absolute path:
+  - **The file is the user's.** It is changed as bytes: everything outside the block
+    keeps its bytes, encoding and line ends (CRLF stays CRLF; a UTF-16 or UTF-8 BOM is
+    kept). The new line is encoded in the platform default, UTF-8 for a BOM-less `pwsh`
+    profile, and a NEW Windows PowerShell 5.1 profile is UTF-8 with a BOM. Each change
+    first copies the file to `<name>.polykybd-<YYYYmmdd-HHMMSS>.bak` beside it; a
+    symlinked dotfile is written through the link. A second install changes nothing.
+  - **The path is the install's.** An update copies over the same directory, so it
+    stays valid. A moved checkout or a new venv leaves a block that names a script
+    that is gone or another copy: the line tests the file first (`[ -r … ]`,
+    `Test-Path`), so the shell starts silently without the title, and the status
+    reports `stale` until Install replaces the block.
+  - **Defaults**: without `--shell`, install covers the shells whose startup file exists
+    or that are `$SHELL` (no new `~/.zshrc` for an unused zsh). A PowerShell whose
+    effective execution policy is Restricted, AllSigned or Undefined on Windows is
+    refused with the `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` hint: a
+    profile it cannot run prints an error at every start. On Windows a `bash` in
+    System32 is the WSL launcher and is not counted.
+  - **Editor plugins, in the same dialog** (`services/editor_plugins.py`, also
+    `polyctl editor-plugins install|remove|status [--editor …]`): a second list with
+    Vim, Neovim and Emacs, each found on `PATH` or by its folder. Install copies
+    `vim-plugin/` (`plugin/`, `lua/`, `doc/` and a generated `doc/tags`, byte-identical
+    to `:helptags`) to `~/.vim/pack/polykybd/start/polykybd` (`~/vimfiles` on Windows)
+    or the Neovim `site/pack` folder, and `emacs-package/polykybd.el` to
+    `<emacs dir>/polykybd/`, plus a block between `;; >>> PolyKybd editor integration >>>`
+    markers in the init file Emacs reads (`~/.emacs`, `~/.emacs.el`,
+    `~/.emacs.d/init.el`, `$XDG_CONFIG_HOME/emacs/init.el`, the first that exists),
+    changed like a shell startup file. Each copy has a `.polykybd-host.json` stamp with
+    the SHA-256 of every file. At every start the tray app, the forwarder and the daemon
+    copy the shipped files again where the copy matches its stamp and the shipped files
+    differ (an update); a copy changed by hand reads `modified` and is left alone. A
+    folder with the plugin and no stamp (a copy made by hand from the README) reads
+    `manual`; Install moves it to `pack/polykybd/polykybd-backup-<time>`, where Vim does
+    not load it. A plugin manager's copy (`plugged/`, another `pack/`, lazy.nvim) or an
+    init file that loads `polykybd` outside the block also reads `manual` and is not
+    ticked. A host port other than 50164 or a token shows a note: the plugins read
+    those from the editor's own settings.
+
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`
   `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
@@ -297,15 +352,15 @@ and relative links were adjusted to suit a standalone file.
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 
   - **Its menu follows the tray app's SHAPE, minus the device group** (2026-09-14):
-    status · Pause · — · Check for host update… · Settings… · Help & About · Quit,
-    against the tray app's status · Pause · *device rows* · — · Updates ·
-    Maintenance · Settings… · Help & About · Quit. It had been seven flat rows in
-    no particular order, so the four support entries the two apps share sat in
-    different places depending on which one you opened. The one deliberate
-    departure is **Updates**: the tray app's is a submenu because it holds the
-    firmware and font-pack rows too, and a forwarder owns no keyboard — so the row
-    keeps the label it has *inside* that submenu and sits in the submenu's slot,
-    rather than nesting one entry.
+    status · Pause · — · Updates · Settings… · Help & About · Quit, against the
+    tray app's status · Pause · *device rows* · — · Updates · Maintenance ·
+    Settings… · Help & About · Quit. It had been seven flat rows in no particular
+    order, so the four support entries the two apps share sat in different places
+    depending on which one you opened. The forwarder's **Updates** submenu holds
+    "Check for host update…" and "Show the running command in the terminal
+    title…"; it has no firmware, font-pack or udev rows because it owns no
+    keyboard. Until 2026-11-04 those two were top-level rows, so the shell title
+    entry sat at a different depth in each app.
     - **The status row and the tray mark now track whether reports are LANDING.**
       `send_to_host` is a wrapper that records the verdict in `relay_ok` and
       repaints; the transport is `_send_to_host`, so every exit path of it runs

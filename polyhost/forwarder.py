@@ -254,15 +254,34 @@ class PolyForwarder(QApplication):
 
         self.menu.addSeparator()
 
-        # The tray app groups this under "Updates" alongside the firmware and
-        # font-pack rows. The forwarder owns no keyboard, so a submenu of one
-        # would be a level of nesting over a single entry — it keeps the label
-        # the tray app uses inside that submenu, in the slot the submenu holds.
+        # --- Updates: same submenu, icon and labels as the tray app's ---------
+        # It used to be a single top-level row, because a forwarder owns no
+        # keyboard and so has no firmware or font-pack rows. Once the shell
+        # title row joined it, the two flat rows no longer matched the tray
+        # app: the same entries sat at a different depth in each app.
+        self.updates_menu = self.menu.addMenu(get_icon("update.svg"), _("Updates"))
+
         self.update_action = QAction(get_icon("browser_updated.svg"),
                                      _("Check for host update\u2026"), parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
-        self.menu.addAction(self.update_action)
+        self.updates_menu.addAction(self.update_action)
+
+        # The forwarder reports THIS machine's window title, so a terminal here
+        # needs the same shell setup as one on the keyboard's machine. Same
+        # label and dialog as the tray app's entry (services/shell_title.py).
+        # The same dialog copies the Vim/Neovim/Emacs mode plugins
+        # (services/editor_plugins.py); the copies made earlier are refreshed
+        # from this installation on a thread at every start.
+        from polyhost.services import editor_plugins
+        editor_plugins.start_refresh_thread()
+        self.shell_title_dialog = None
+        self.shell_title_action = QAction(get_icon("terminal.svg"),
+                                          _("Set up the terminal and editors\u2026"),
+                                          parent=self)
+        # noinspection PyUnresolvedReferences
+        self.shell_title_action.triggered.connect(self.open_shell_title_dialog)
+        self.updates_menu.addAction(self.shell_title_action)
 
         self.settings_action = QAction(get_icon("settings.svg"), _("Settings..."), parent=self)
         # noinspection PyUnresolvedReferences
@@ -644,7 +663,10 @@ class PolyForwarder(QApplication):
             s.connect((str(ip), TCP_PORT))
             # 4th field = this machine's OS (an OsType value int); older daemons
             # split on ';' and read the first three fields, ignoring the extra one.
-            s.send(f"{handle};{name};{title};{self._os_value}".encode("utf-8"))
+            # pywinctl gives None for a window without a title; it must arrive
+            # as an empty title, not as the text "None" (field log, 2026-11-05).
+            title_text = "" if title is None else title
+            s.send(f"{handle};{name};{title_text};{self._os_value}".encode("utf-8"))
             s.close()
             return True
         except socket.timeout as err:
@@ -687,6 +709,16 @@ class PolyForwarder(QApplication):
                 parent=None, diagnostics_cb=self._diagnostics_text)
         self.log_bundle_dialog.show()
         bring_to_front(self.log_bundle_dialog)
+
+    def open_shell_title_dialog(self):
+        """Shell title integration (retained instance, see PolyHost.open_shell_title_dialog)."""
+        from polyhost.gui.shell_title_dialog import ShellTitleDialog
+        if self.shell_title_dialog is None:
+            self.shell_title_dialog = ShellTitleDialog(parent=None)
+        elif not self.shell_title_dialog.isVisible():
+            self.shell_title_dialog.reopen()
+        self.shell_title_dialog.show()
+        bring_to_front(self.shell_title_dialog)
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
@@ -1029,11 +1061,22 @@ class PolyForwarder(QApplication):
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)
         elif self.win:
-            self.log.info("No active window")
-            self.win = None
-            self.title = None
-            self.heartbeat_msec = 0
-            self.send_to_host(0, "", "")
+            # ⚠️ A lost window waits for the same accept delay as a new one,
+            # as `OverlayHandler._decide_active_window` does since #531. On
+            # KDE Wayland the backend reports no window for ONE tick and then
+            # the same window again, about every 10 s. Sent at once, the empty
+            # report and the window that follows are two remote changes on the
+            # keyboard machine: a DISABLE, then the whole overlay set again,
+            # whose `set_idle(False)` takes the keyboard out of Eden.
+            if self.prev_win is not None:
+                self.prev_win = None
+                self.last_update_msec = 0
+            if self.last_update_msec >= NEW_WINDOW_ACCEPT_TIME_MSEC:
+                self.log.info("No active window")
+                self.win = None
+                self.title = None
+                self.heartbeat_msec = 0
+                self.send_to_host(0, "", "")
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)

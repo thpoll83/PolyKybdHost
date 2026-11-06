@@ -4,7 +4,7 @@ Pulled out of OverlayHandler so the local and remote paths share one matcher,
 and so the recursion is unit-testable without a display (active_window imports
 pywinctl). Entries here are built in the *annotated* shape annotate() produces:
 a `flags` list [overlay, remote, title, starts_with, ends_with, contains, url,
-urls_contains, os] plus the matching sub-maps.
+urls_contains, os, match] plus the matching sub-maps.
 """
 import unittest
 
@@ -14,9 +14,12 @@ from polyhost.handler.common import (
 
 
 def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
-          url=None, urls_contains=None, os_map=None):
+          url=None, urls_contains=None, os_map=None, match=None):
     e = {"flags": [overlay, remote, title is not None, bool(sw), bool(ew),
-                   bool(contains), url is not None, bool(urls_contains), bool(os_map)]}
+                   bool(contains), url is not None, bool(urls_contains), bool(os_map),
+                   bool(match)]}
+    if match:
+        e["titles-match"] = match
     if os_map:
         e["os"] = os_map
     if overlay:
@@ -46,6 +49,15 @@ class TestFindMatchingEntry(unittest.TestCase):
 
     def test_no_overlay_or_remote_never_matches(self):
         self.assertIsNone(find_matching_entry("x", entry(overlay=False)))
+
+    def test_an_entry_without_an_overlay_routes_by_its_title_sub_map(self):
+        """DOSBox: only a title naming the game's executable gives an overlay;
+        any other title matches nothing, as an entry without an overlay did."""
+        leaf = entry()
+        e = entry(overlay=False, contains={"DUNE2": leaf})
+        self.assertIs(find_matching_entry("DOSBox 0.74-3, Program:    DUNE2", e), leaf)
+        self.assertIsNone(find_matching_entry("DOSBox 0.74-3, Program:    DOOM", e))
+        self.assertIsNone(find_matching_entry("", e))
 
     def test_remote_only_matches(self):
         e = entry(overlay=False, remote=True)
@@ -110,6 +122,35 @@ class TestFindMatchingEntry(unittest.TestCase):
         import re as _re
         with self.assertRaises(_re.error):
             find_matching_entry("x", entry(title="("))
+
+
+class TestTitlesMatch(unittest.TestCase):
+    """`titles-match`: regex keys against the whole title (WPS all-in-one)."""
+
+    def setUp(self):
+        self.sheets = entry()
+        self.slides = entry()
+        self.e = entry(match={r"(?i)\.(xlsx|et)\b": self.sheets,
+                              r"(?i)\.(pptx|dps)\b": self.slides})
+
+    def test_an_extension_inside_a_word_routes_to_its_sub_entry(self):
+        self.assertIs(find_matching_entry("Book1.xlsx - WPS Office", self.e), self.sheets)
+        self.assertIs(find_matching_entry("Deck.PPTX - WPS Office", self.e), self.slides)
+
+    def test_no_key_matching_falls_back_to_the_parent(self):
+        self.assertIs(find_matching_entry("Report.docx - WPS Office", self.e), self.e)
+        self.assertIs(find_matching_entry("Book1 - WPS Office", self.e), self.e)
+        self.assertIs(find_matching_entry("", self.e), self.e)
+
+    def test_the_key_is_searched_not_split_into_words(self):
+        # A word sub-map keyed ".xlsx" could never see "Book1.xlsx".
+        e = entry(contains={".xlsx": self.sheets})
+        self.assertIs(find_matching_entry("Book1.xlsx - WPS Office", e), e)
+
+    def test_an_entry_with_only_a_match_map_routes(self):
+        e = entry(overlay=False, match={r"\.et\b": self.sheets})
+        self.assertIs(find_matching_entry("a.et - WPS", e), self.sheets)
+        self.assertIsNone(find_matching_entry("a.wps - WPS", e))
 
 
 class TestPhraseKeys(unittest.TestCase):
@@ -269,6 +310,52 @@ class TestLayerOptOut(unittest.TestCase):
                         contains={"Titled": ctx}), "base")
         e["layer"] = False
         self.assertIs(find_matching_entry("A Titled page", e, url=None), ctx)
+
+
+class TestRoutesOnlyEntry(unittest.TestCase):
+    """An entry with no overlay of its own (the terminals that route a vim://
+    mode report or a nano title) matches only through its sub-maps."""
+
+    def setUp(self):
+        self.mode = named(entry(), "vim_normal.mods.png")
+        self.e = entry(overlay=False, urls_contains={"vim://normal": self.mode})
+
+    def test_a_matching_url_routes_to_the_sub_entry(self):
+        self.assertIs(find_matching_entry("bash", self.e, url="vim://normal"), self.mode)
+
+    def test_no_url_matches_nothing(self):
+        # None, as for an app with no entry: the generic harvest stays.
+        self.assertIsNone(find_matching_entry("bash", self.e, url=None))
+        self.assertIsNone(find_matching_entry("", self.e, url=None, title_known=False))
+
+    def test_an_unmatched_url_matches_nothing(self):
+        self.assertIsNone(find_matching_entry("bash", self.e, url="emacs://org-mode"))
+
+    def test_a_title_sub_map_routes_too(self):
+        # The terminals route GNU nano by the window title.
+        nano = named(entry(), "nano.mods.png")
+        e = entry(overlay=False, urls_contains={"vim://normal": self.mode},
+                  contains={"nano": nano})
+        self.assertIs(find_matching_entry("nano x.txt", e, url=None), nano)
+        # A title no key names, or no title: still nothing.
+        self.assertIsNone(find_matching_entry("bash", e, url=None))
+        self.assertIsNone(find_matching_entry("", e, url=None))
+        self.assertIsNone(find_matching_entry("", e, url=None, title_known=False))
+        # A known URL decides: the report wins, and an unmatched one skips
+        # titles-contains as on a browser entry.
+        self.assertIs(find_matching_entry("nano x.txt", e, url="vim://normal"), self.mode)
+        self.assertIsNone(find_matching_entry("nano x.txt", e, url="other://x"))
+
+    def test_a_title_route_whose_gate_fails_matches_nothing(self):
+        gated = named(entry(title=r"^nano"), "nano.mods.png")
+        e = entry(overlay=False, contains={"nano": gated})
+        self.assertIs(find_matching_entry("nano x.txt", e), gated)
+        self.assertIsNone(find_matching_entry("vim nano", e))
+
+    def test_a_title_sub_map_alone_routes_but_never_matches_by_itself(self):
+        e = entry(overlay=False, contains={"bash": named(entry(), "x")})
+        self.assertIsNone(find_matching_entry("zsh", e, url="vim://normal"))
+        self.assertEqual(find_matching_entry("bash", e)["overlay"], "x")
 
 
 class TestBrowserLayering(unittest.TestCase):
@@ -496,6 +583,16 @@ class TestMappingKey(unittest.TestCase):
         self.assertIsNone(mapping_key("adobe photoshop 25", self.M))
         self.assertIsNone(mapping_key("adobe 2025 photoshop", self.M))
         self.assertEqual(mapping_key("photoshop 2", self.M), "photoshop 2")
+
+    def test_a_trailing_dotted_version_is_dropped(self):
+        # The OpenRA Combined Arms Snap reports `openra-ca-1.08.2`.
+        m = {"openra-ca": 1, "age2_x1": 1}
+        self.assertEqual(mapping_key("openra-ca-1.08.2", m), "openra-ca")
+        self.assertEqual(mapping_key("openra-ca 1.9", m), "openra-ca")
+        self.assertEqual(mapping_key("openra-ca_v2.0.1", m), "openra-ca")
+        # Digits without a dot are part of the name.
+        self.assertEqual(mapping_key("age2_x1", m), "age2_x1")
+        self.assertIsNone(mapping_key("openra-ca-108", m))
 
     def test_unknown_and_empty_names_resolve_to_none(self):
         self.assertIsNone(mapping_key("notepad", self.M))

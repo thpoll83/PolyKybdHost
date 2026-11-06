@@ -139,6 +139,35 @@ class OwnAppNameTest(unittest.TestCase):
         win.getPID.return_value = 42
         self.assertEqual(op.window_pid(win), 42)
 
+    def test_window_pid_reads_the_ewmh_window_of_pywinctl_0_3(self):
+        # PyWinCtl 0.3's Linux window has no getPID(); its ewmhlib window has.
+        class Ewmh:
+            def getPid(self):
+                return 4321
+
+        class Win03:
+            _win = Ewmh()
+
+        self.assertEqual(op.window_pid(Win03()), 4321)
+
+    def test_window_pid_treats_a_zero_ewmh_pid_as_none(self):
+        class Ewmh:
+            def getPid(self):
+                return 0
+
+        class Win03:
+            _win = Ewmh()
+
+        self.assertIsNone(op.window_pid(Win03()))
+
+    def test_window_pid_does_not_fall_back_when_getpid_fails(self):
+        # Only a MISSING getPID() means an older pywinctl; one that raises is a
+        # window that went away, and its ewmh pid is no better.
+        win = mock.Mock()
+        win.getPID.side_effect = RuntimeError("gone")
+        self.assertIsNone(op.window_pid(win))
+        win._win.getPid.assert_not_called()
+
 
 class OwnFrontAppTest(unittest.TestCase):
     """macOS: pywinctl's System Events query cannot see our window, so the

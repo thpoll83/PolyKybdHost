@@ -162,6 +162,46 @@ EXCLUDES = (
     ".pytest_cache", ".idea", ".vscode", "*.log",
 )
 
+# Paths of the release tree the running app never reads, relative to the
+# tarball's top folder. The updater does not extract or copy them, and the
+# installers leave them out of the checkout with the same patterns
+# (`git sparse-checkout`, scripts/install.sh and install.ps1;
+# tests/services/updater_build_only_test.py keeps the three the same).
+# overlay_sources/ holds 10,075 of the repo's 12,184 files, the inputs of
+# scripts/generate_app_overlays.py. The app reads only the per-app spec YAMLs
+# from it (services/game_assets), so `<app>/<file>.yaml` stays.
+BUILD_ONLY_DIRS = ("tests/", "polyhost/res/overlay_sources/")
+KEPT_IN_BUILD_ONLY = re.compile(r"polyhost/res/overlay_sources/[^/]+/[^/]+\.yaml")
+# The same rule as `git sparse-checkout set --no-cone` patterns, in the order
+# the installers pass them.
+SPARSE_PATTERNS = (
+    "/*",
+    "!/tests/",
+    "!/polyhost/res/overlay_sources/**",
+    "/polyhost/res/overlay_sources/*/*.yaml",
+)
+
+
+def is_build_only(rel: str, is_dir: bool = False) -> bool:
+    """True for a file or folder of the release tree the app does not need.
+
+    `rel` is a posix path relative to the tree's top folder. The folders that
+    lead to a kept file (``overlay_sources`` and each ``overlay_sources/<app>``)
+    are not build-only, so the walk reaches the kept files."""
+    rel = rel.strip("/")
+    for prefix in BUILD_ONLY_DIRS:
+        top = prefix.rstrip("/")
+        if rel != top and not rel.startswith(prefix):
+            continue
+        if prefix == "polyhost/res/overlay_sources/":
+            depth = rel.count("/") - top.count("/")
+            if depth == 0 or (depth == 1 and is_dir):
+                return False
+            if KEPT_IN_BUILD_ONLY.fullmatch(rel):
+                return False
+        return True
+    return False
+
 
 # ``name`` (GitHub release title) and ``notes`` (the release-notes markdown, i.e.
 # the API ``body``) carry the human-readable "what's in this update" text through
@@ -264,6 +304,45 @@ def _latest_tag_via_web(repo: str) -> Optional[str]:
     return unquote(match.group(1))
 
 
+_NOTES_URL = "https://raw.githubusercontent.com/{repo}/release-notes/{tag}.md"
+
+
+def _release_text_via_web(repo: str, tag: str, cached: Optional[dict] = None) -> dict:
+    """Title, notes and date of release ``tag`` WITHOUT the rate-limited API.
+
+    The web fallback learns only the tag from the redirect, so without this the
+    confirm dialog had no notes and no date, only its Yes/No question. Returns
+    ``{"name", "notes", "published_at"}`` with empty strings for what is unknown:
+
+    - from ``cached`` (the ETag cache entry) when it is for the same tag, which
+      also gives the date;
+    - otherwise from the release's notes file on the ``release-notes`` branch,
+      served by raw.githubusercontent.com, which the API limit does not cover.
+      ``scripts/publish_release.py`` publishes that file as the release: its
+      first line ``# <title>`` is the name and the rest is the body.
+    """
+    out = {"name": "", "notes": "", "published_at": ""}
+    if cached and cached.get("tag") == tag and cached.get("notes"):
+        out.update(name=cached.get("name", "") or "", notes=cached.get("notes", "") or "",
+                   published_at=cached.get("published_at", "") or "")
+        return out
+    try:
+        resp = requests.get(_NOTES_URL.format(repo=repo, tag=tag), timeout=HTTP_TIMEOUT,
+                            headers={"User-Agent": USER_AGENT})
+    except requests.RequestException as e:
+        log.debug("Release notes lookup failed for %s %s: %s", repo, tag, e)
+        return out
+    if resp.status_code != 200:
+        log.debug("Release notes lookup for %s %s: HTTP %s", repo, tag, resp.status_code)
+        return out
+    lines = (resp.text or "").splitlines()
+    if lines and lines[0].startswith("# "):
+        out["name"] = lines[0][2:].strip()
+        lines = lines[1:]
+    out["notes"] = "\n".join(lines).strip("\n")
+    return out
+
+
 def parse_asset_urls(html: str) -> list:
     """Every release-asset download URL in an expanded_assets HTML fragment.
 
@@ -329,7 +408,7 @@ def _release_assets_via_web(repo: str, tag: str) -> dict:
     return assets
 
 
-def _check_latest_via_web() -> Optional[ReleaseInfo]:
+def _check_latest_via_web(cached: Optional[dict] = None) -> Optional[ReleaseInfo]:
     """Host-update check using only github.com (no rate-limited API).
 
     Returns ReleaseInfo when a newer release exists, None when up to date, and
@@ -347,14 +426,16 @@ def _check_latest_via_web() -> Optional[ReleaseInfo]:
         log.debug("Update check (web): current %s is up-to-date (latest %s)", __version__, latest)
         return None
     log.info("Update check (web fallback): new version available: %s -> %s", __version__, latest)
+    text = _release_text_via_web(HOST_REPO, tag, cached)
     return ReleaseInfo(
         tag=tag, version=str(latest),
         tarball_url=f"https://github.com/{HOST_REPO}/archive/refs/tags/{tag}.tar.gz",
         html_url=f"https://github.com/{HOST_REPO}/releases/tag/{tag}",
-        published_at="")
+        published_at=text["published_at"], name=text["name"], notes=text["notes"])
 
 
-def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
+def _check_fw_latest_via_web(current: Version,
+                             cached: Optional[dict] = None) -> Optional[FwUpCheckResult]:
     """Firmware-update check using only github.com (no rate-limited API).
 
     Gets the tag via the redirect, then the .bin/.uf2 URLs from the
@@ -379,9 +460,11 @@ def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
                            reason="no_bin_asset")
     log.info("Firmware update check (web fallback): new version available: %s -> %s",
              current, latest)
+    text = _release_text_via_web(FW_REPO, tag, cached)
     return FwUpReleaseInfo(
         tag=tag, version=str(latest), bin_url=bin_url, uf2_url=assets.get("uf2", ""),
-        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="",
+        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}",
+        published_at=text["published_at"], name=text["name"], notes=text["notes"],
         sig_url=assets.get("sig", ""))
 
 
@@ -434,7 +517,7 @@ def check_latest() -> Optional[ReleaseInfo]:
         # API rate-limited — fall back to the github.com web redirect, which is
         # not subject to the API limit, so a (manual) check still works.
         log.info("Host update API rate-limited; trying the web fallback.")
-        return _check_latest_via_web()
+        return _check_latest_via_web(host)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -555,7 +638,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
 
     if resp.status_code == 403:
         log.info("Firmware update API rate-limited; trying the web fallback.")
-        return _check_fw_latest_via_web(current)
+        return _check_fw_latest_via_web(current, fw)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -613,25 +696,36 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                            name=rel_name, notes=notes, sig_url=sig_url or "")
 
 
+def _tree_rel(member_name: str) -> str:
+    """A tar member's path below the tarball's single top folder ("" for it)."""
+    parts = member_name.strip("/").split("/", 1)
+    return parts[1] if len(parts) > 1 else ""
+
+
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
     """Extract `tar` into `dest`, refusing any path-traversal or link members.
+
+    Members :func:`is_build_only` names are not extracted: about 10,000 small
+    files, which on Windows cost more time to create and scan than to download.
 
     On Python >=3.12, delegates to the stdlib `filter="data"` extractor which
     enforces these constraints itself. On older Pythons, symlink and hardlink
     members are rejected outright (otherwise a tarball could plant a link
     under `dest` and have a later entry write through it to escape `dest`).
     """
+    members = [m for m in tar.getmembers()
+               if not is_build_only(_tree_rel(m.name), m.isdir())]
     if sys.version_info >= (3, 12):
-        tar.extractall(path=dest, filter="data")
+        tar.extractall(path=dest, members=members, filter="data")
         return
     dest_resolved = dest.resolve()
-    for member in tar.getmembers():
+    for member in members:
         if member.issym() or member.islnk():
             raise RuntimeError(f"Refusing link tar member: {member.name}")
         target = (dest / member.name).resolve()
         if dest_resolved != target and dest_resolved not in target.parents:
             raise RuntimeError(f"Refusing unsafe tar member: {member.name}")
-    tar.extractall(path=dest)
+    tar.extractall(path=dest, members=members)
 
 
 def download_and_extract(tarball_url: str, tmpdir: Path,
@@ -1080,11 +1174,25 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None,
             else:
                 raise
 
+    excluded = shutil.ignore_patterns(*EXCLUDES)
+    src_root = Path(extracted_dir)
+
+    def _ignore(directory, names):
+        # The extraction already left the build-only paths out; this keeps a
+        # tree extracted some other way from copying them.
+        skip = set(excluded(directory, names))
+        rel_dir = Path(directory).relative_to(src_root).as_posix()
+        for name in names:
+            rel = name if rel_dir == "." else f"{rel_dir}/{name}"
+            if is_build_only(rel, os.path.isdir(os.path.join(directory, name))):
+                skip.add(name)
+        return skip
+
     shutil.copytree(
         extracted_dir,
         install_root,
         dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns(*EXCLUDES),
+        ignore=_ignore,
         copy_function=_copy2,
     )
     fix_cmds = pip_fix_commands(install_root)
