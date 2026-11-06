@@ -56,8 +56,10 @@ Where the two disagree, the set follows the menu:
   `resetzoom`, `editor` and `devtools` are copied from `../githubdesktop/icons`
   (same sources and licences), so both git clients show the same picture for
   the same action.
-- `tab1..tab9` (Fluent `Tab`) and `fav1..fav9` (Fluent `Bookmark`) have a digit
-  added by `../number_badge.py` (Liberation Sans Bold, SIL OFL 1.1).
+- `tab1..tab9` (Fluent `Tab`) have a digit added by `../number_badge.py`.
+  `fav1..fav9` are Fluent `Star`, filled solid by `_star_digits` in
+  `fetch_icons.py`, with the digit cut out. Both use Liberation Sans Bold
+  (SIL OFL 1.1).
 - Settings, Zoom in, Zoom out, Undo and Redo are drawn by the shared concept
   renderer.
 - ESC: the GitKraken mark from Simple Icons (CC0-1.0 artwork,
