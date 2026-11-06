@@ -131,6 +131,12 @@ terminal's set. A mode report still takes priority, because a known URL skips
 `titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
+tmux has a route in the same list (`tests/handler/tmux_routing_test.py`). tmux
+does not write the outer title by default (`set-titles` off), so the title keeps
+the command the shell wrote when tmux started, and the tmux set stays loaded for
+the whole session, also while nano runs in a pane
+(`overlay_sources/tmux/SOURCES.md`).
+
 ### A program in a terminal dims the terminal's shortcuts
 
 nano, Vim, Emacs and the AI CLIs run inside the terminal, and the terminal reads

@@ -64,8 +64,9 @@ defaults and were not checked on an install. On macOS 12.3 and later
 ### Inside tmux
 
 tmux does not pass the title of the program in a pane on to the terminal
-unless it is told to, so the terminal shows tmux's own title and no set loads.
-Add to `~/.tmux.conf`:
+unless it is told to, so the terminal keeps the title written when tmux
+started, and the tmux set loads instead of nano's (`../tmux/SOURCES.md`).
+For nano's set inside tmux, add to `~/.tmux.conf`:
 
 ```
 set -g set-titles on
