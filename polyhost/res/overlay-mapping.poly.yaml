@@ -2898,3 +2898,18 @@ winamp:
   os:
     windows:
       overlay: [winamp_template.mods.png, winamp_template.combo.mods.png]
+# qutebrowser (overlay_sources/qutebrowser/). One set for Windows, macOS and
+# Linux: qutebrowser binds the Control key on macOS too. Process names, read
+# from the v3.7.0 source and packaging, not checked on an install:
+#   Windows: qutebrowser.exe (the PyInstaller build, misc/qutebrowser.spec).
+#   macOS:   the bundle's display name, qutebrowser.
+#   Linux:   `qutebrowser` (the launcher script's process name, WM_CLASS and the
+#            desktop file's StartupWMClass), or org.qutebrowser.qutebrowser (the
+#            Wayland app id from --desktop-file-name, and the Flathub id).
+# Started as `python3 -m qutebrowser` (a source checkout) it reports python3,
+# which cannot be mapped without catching every Python program.
+# No urls-contains / titles-contains web-app routing: the URL-reporting browser
+# extension does not run in qutebrowser, and in normal mode qutebrowser takes
+# the single keys the web-app sets draw.
+qutebrowser,org.qutebrowser.qutebrowser:
+  overlay: [qutebrowser_template.mods.png, qutebrowser_template.combo.mods.png]
