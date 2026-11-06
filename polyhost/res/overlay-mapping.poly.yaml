@@ -1402,30 +1402,33 @@ windowsterminal,wt:
   # route; the `title` regex then requires nano at the COMMAND position: at the
   # start (and not followed by " — ", Terminal.app's directory separator, or
   # " : ", Konsole's), after " - " (cmd.exe), " — " (Terminal.app), " : "
-  # (Konsole), "(" (iTerm2) or "] " (fish over SSH), optionally after `sudo`.
+  # (Konsole), "(" (iTerm2), "] " (fish over SSH) or "> " (Nushell, which
+  # writes "~/dir> nano", or "> ^nano" for an explicit external command),
+  # optionally after `sudo`.
   # So `vim nano`, `man nano` and a prompt in ~/nano-docs do not load it. A
   # mode report (urls-contains above) takes priority: with a URL known the
   # matcher skips titles-contains (tests/handler/nano_routing_test.py).
   titles-contains: &editor_titles
     nano: &nano_title
-      title: '^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)(?:sudo\s+)?nano(?:$|\s|\))'
+      title: '^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?nano(?:$|\s|\))'
       overlay: [nano_template.mods.png, nano_template.combo.mods.png]
     "(nano)": *nano_title
     "(nano": *nano_title
+    "^nano": *nano_title
     # Terminal AI coding CLIs (sources: overlay_sources/aicli/; SOURCES.md
     # there has every title format and where it was read). All but Aider
     # REPLACE the shell's title with their own, so each route matches the
     # CLI's own title AND its command name at the command position (the
     # moment before it writes, or with its title switched off). The keys are
     # the title's first word; the `title` regex then requires that word at the
-    # start of the title or after a terminal's separator (" - ", " — ",
-    # " : ", "(", "] "), as for nano.
+    # start of the title or after a terminal's or shell's separator (" - ",
+    # " — ", " : ", "(", "] ", "> "), as for nano.
     #
     # Claude Code: "✳ <topic>" idle, "◐ <topic>" / "◑ <topic>" working.
     # Qwen Code uses the same two glyphs with U+FE0E after them, a different
     # word, so it never takes these keys.
     "✳": &claude_cli
-      title: &claude_title '^(?:[✳◐◑] |claude(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[✳◐◑] |claude(?:$|\s|\)))'
+      title: &claude_title '^(?:[✳◐◑] |claude(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:[✳◐◑] |claude(?:$|\s|\)))'
       overlay: claude_code_cli_template.mods.png
       os:
         macos:
@@ -1439,30 +1442,33 @@ windowsterminal,wt:
     claude: *claude_cli
     "(claude)": *claude_cli
     "(claude": *claude_cli
+    "^claude": *claude_cli
     # Codex CLI. Its DEFAULT title ("<spinner> <thread> | <project>") never
     # names it. Only the "action required" form and a title configured with
     # `app-name` first do: the shell integration's Codex option starts codex
     # with that title ("codex | <project>"), or set
     # `[tui] terminal_title = ["app-name", ...]` in Codex's config.toml.
     codex: &codex_cli
-      title: '^(?:● )?(?:\[ [!.] \] Action Required|codex(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:\[ [!.] \] Action Required|codex(?:$|\s|\)))'
+      title: '^(?:● )?(?:\[ [!.] \] Action Required|codex(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:\[ [!.] \] Action Required|codex(?:$|\s|\)))'
       overlay: [codex_cli_template.mods.png, codex_cli_template.combo.mods.png]
     "(codex)": *codex_cli
     "(codex": *codex_cli
+    "^codex": *codex_cli
     Action Required: *codex_cli
     # OpenCode: "OpenCode" (home, untitled session), "OC | <session>".
     OpenCode: &opencode_cli
-      title: '^(?:OC \| |OpenCode\s*(?:$|—\s*\S+$)|opencode(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:OC \| |opencode(?:$|\s|\)))'
+      title: '^(?:OC \| |OpenCode\s*(?:$|—\s*\S+$)|opencode(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:OC \| |opencode(?:$|\s|\)))'
       overlay: [opencode_template.mods.png, opencode_template.combo.mods.png, opencode_template.extra.mods.png]
     OC: *opencode_cli
     opencode: *opencode_cli
     "(opencode)": *opencode_cli
     "(opencode": *opencode_cli
+    "^opencode": *opencode_cli
     # Gemini CLI: "◇  Ready (<dir>)", "✦  <status> (<dir>)", "✋  Action
     # Required (<dir>)", "⏲  Working… (<dir>)" (two spaces), or "Gemini CLI
     # (<dir>)" with the dynamic title off.
     "◇": &gemini_cli
-      title: '^(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s|\)))'
+      title: '^(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:[◇✦✋⏲]  \S|Gemini CLI \(|gemini(?:$|\s|\)))'
       overlay: [gemini_cli_template.mods.png, gemini_cli_template.combo.mods.png]
     "✦": *gemini_cli
     "✋": *gemini_cli
@@ -1471,10 +1477,11 @@ windowsterminal,wt:
     gemini: *gemini_cli
     "(gemini)": *gemini_cli
     "(gemini": *gemini_cli
+    "^gemini": *gemini_cli
     # Qwen Code: "Qwen - <dir>", with "✳" or "◐" plus U+FE0E and a space
     # while it waits or responds. A session it has named shows only the name.
     Qwen: &qwen_cli
-      title: &qwen_title '^(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s|\)))'
+      title: &qwen_title '^(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:[✳◐]\uFE0E |Qwen - |qwen(?:$|\s|\)))'
       overlay: qwen_code_template.mods.png
       os:
         macos:
@@ -1488,10 +1495,11 @@ windowsterminal,wt:
     qwen: *qwen_cli
     "(qwen)": *qwen_cli
     "(qwen": *qwen_cli
+    "^qwen": *qwen_cli
     # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
     # <topic>" in screen-reader mode).
     GitHub Copilot: &copilot_cli
-      title: &copilot_title '^(?:GitHub Copilot\s*(?:$|—\s*\S+$)|🤖 |Copilot: |copilot(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s)(?:🤖 |Copilot: |copilot(?:$|\s|\)))'
+      title: &copilot_title '^(?:GitHub Copilot\s*(?:$|—\s*\S+$)|🤖 |Copilot: |copilot(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:🤖 |Copilot: |copilot(?:$|\s|\)))'
       overlay: copilot_cli_template.mods.png
       os:
         macos:
@@ -1502,12 +1510,13 @@ windowsterminal,wt:
     copilot: *copilot_cli
     "(copilot)": *copilot_cli
     "(copilot": *copilot_cli
+    "^copilot": *copilot_cli
     # Aider sets no title: only the shell's (the scripts in res/shell/).
     # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
     # branch repeats the title regex (`*<cli>_title`); without it any title
     # with the route word would take the set on macOS and Linux.
     aider: &aider_cli
-      title: &aider_title '^aider(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)aider(?:$|\s|\))'
+      title: &aider_title '^aider(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)aider(?:$|\s|\))'
       overlay: aider_template.mods.png
       os:
         macos:
@@ -1518,6 +1527,7 @@ windowsterminal,wt:
           overlay: aider_template_linux.mods.png
     "(aider)": *aider_cli
     "(aider": *aider_cli
+    "^aider": *aider_cli
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,
@@ -1559,6 +1569,26 @@ snippingtool:
   overlay: snippingtool_template.mods.png
 taskmgr:
   overlay: [taskmgr_template.mods.png, taskmgr_template.combo.mods.png]
+# PowerToys (sources: overlay_sources/powertoys/). Only the two launcher windows
+# get keycaps; the other PowerToys features are global shortcuts.
+# Windows cuts a process name at its FIRST dot, so Microsoft.CmdPal.UI.exe arrives
+# as `microsoft` and every PowerToys.*.exe (Settings, the editors, Run) as
+# `powertoys`. Only the title tells the windows apart, so both entries route
+# through `titles-match` and have no overlay of their own: a window whose title
+# matches no key gets nothing. ⚠️ Not a parent `title:` gate: that gate is skipped
+# for an EMPTY title, and PowerToys' full-screen tools (Color Picker, Text
+# Extractor, Screen Ruler) and other Microsoft.* windows can have one.
+# ⚠️ "Command Palette" is the English window title (resource `AppName`); the
+# title is translated, so a localized Windows gets no Command Palette keycaps.
+# "PowerToys Run" is not translated (MainWindow.xaml).
+microsoft:
+  titles-match:
+    "^Command Palette( Dev)?$":
+      overlay: [powertoys_cmdpal_template.mods.png, powertoys_cmdpal_template.combo.mods.png]
+powertoys:
+  titles-match:
+    "^PowerToys Run$":
+      overlay: [powertoys_run_template.mods.png, powertoys_run_template.combo.mods.png]
 7zfm,7zg:
   overlay: sevenzip_template.mods.png
 winscp:
@@ -1652,6 +1682,13 @@ krita:
   os:
     macos:
       overlay: [krita_template_mac.mods.png, krita_template_mac.combo.mods.png, krita_template_mac.extra.mods.png]
+# Clip Studio Paint (sources: overlay_sources/clipstudio/). Windows reports the
+# process `CLIPStudioPaint.exe`; the macOS app is `CLIP STUDIO PAINT.app`.
+clipstudiopaint,clip studio paint:
+  overlay: [clipstudio_template.mods.png, clipstudio_template.combo.mods.png, clipstudio_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [clipstudio_template_mac.mods.png, clipstudio_template_mac.combo.mods.png, clipstudio_template_mac.extra.mods.png, clipstudio_template_mac.gui.mods.png]
 # Blender: one overlay per mode / editor, routed on the `blender://<mode>/<editor>`
 # pseudo-URL the Blender add-on (blender-addon/) reports. GENERATED: copy of
 # overlay_sources/blender/mapping_stanza.yaml (gen_blender_bindings.py). `layer: false`
@@ -1737,11 +1774,34 @@ sublime_text,sublime text:
       overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png, sublime_mac_template.extra.mods.png]
     linux:
       overlay: [sublime_linux_template.mods.png, sublime_linux_template.combo.mods.png]
+# OBS Studio (sources: overlay_sources/obs/). The executable is obs64.exe on
+# Windows and `obs` on Linux (OUTPUT_NAME in obs-studio frontend/CMakeLists.txt;
+# the .desktop file sets StartupWMClass=obs); the Flatpak id is
+# com.obsproject.Studio. The macOS bundle is OBS.app (PRODUCT_NAME OBS,
+# CFBundleDisplayName "OBS Studio"), so both names are keys. No name was
+# checked on an install. Linux has its own set because only Linux binds Exit to
+# Ctrl+Q.
+obs,obs64,obs studio,com.obsproject.studio:
+  overlay: [obs_template.mods.png, obs_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [obs_template_mac.mods.png, obs_template_mac.combo.mods.png, obs_template_mac.extra.mods.png]
+    linux:
+      overlay: [obs_template_linux.mods.png, obs_template_linux.combo.mods.png]
 obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
   os:
     macos:
       overlay: [obsidian_template_mac.mods.png, obsidian_template_mac.combo.mods.png, obsidian_template_mac.extra.mods.png]
+# Joplin desktop (sources: overlay_sources/joplin/). Joplin.exe on Windows,
+# Joplin on macOS (electron-builder productName), joplin (AppImage and .deb
+# executableName) or the Flatpak app id net.cozic.joplin_desktop on Linux.
+# Read from the packaging, not checked on an install.
+joplin,net.cozic.joplin_desktop:
+  overlay: [joplin_template.mods.png, joplin_template.combo.mods.png, joplin_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [joplin_template_mac.mods.png, joplin_template_mac.combo.mods.png, joplin_template_mac.extra.mods.png, joplin_template_mac.gui.mods.png]
 # Todoist desktop app (sources: overlay_sources/todoist/). Todoist.exe on
 # Windows, Todoist on macOS, todoist (AppImage, snap) or the Flatpak app id
 # com.todoist.Todoist on Linux. The web app (todoist.com) is in the browser
@@ -1756,6 +1816,15 @@ notion:
   os:
     macos:
       overlay: [notion_template_mac.mods.png, notion_template_mac.combo.mods.png, notion_template_mac.extra.mods.png]
+# Logseq desktop (sources: overlay_sources/logseq/). Logseq.exe on Windows,
+# Logseq on macOS and the Linux AppImage, all from electron-builder's
+# productName, or the Flatpak app id com.logseq.Logseq. Read from the
+# packaging, not checked on an install.
+logseq,com.logseq.logseq:
+  overlay: [logseq_template.mods.png, logseq_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [logseq_template_mac.mods.png, logseq_template_mac.combo.mods.png, logseq_template_mac.extra.mods.png]
 # Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
 # why it is one mode and not both).
 #
@@ -1875,6 +1944,33 @@ et:
   overlay: [wps_sheets_template.mods.png, wps_sheets_template.combo.mods.png]
 wpp:
   overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
+
+# ONLYOFFICE Desktop Editors (sources: overlay_sources/onlyoffice/). One process
+# hosts the Document, Spreadsheet and Presentation editors as tabs:
+# DesktopEditors.exe on Windows, /opt/onlyoffice/desktopeditors/DesktopEditors
+# on Linux (WM_CLASS class "ONLYOFFICE", Flatpak id org.onlyoffice.desktopeditors),
+# and the app "ONLYOFFICE" on macOS. On Windows and Linux the window title is
+# the active tab's file name ("Book1.xlsx", "*Report.docx"), so `titles-match`
+# routes on its extension. Any other title (the start page, a .docx, a PDF)
+# gets the Document set. On macOS the tabbed main window is always titled
+# "ONLYOFFICE"; only a detached editor window shows the file name, so the main
+# window gets the Document set there. Not checked on an install.
+desktopeditors,onlyoffice,onlyoffice-desktopeditors,org.onlyoffice.desktopeditors:
+  overlay: [onlyoffice_document_template.mods.png, onlyoffice_document_template.combo.mods.png]
+  titles-match:
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
+      overlay: [onlyoffice_spreadsheet_template.mods.png, onlyoffice_spreadsheet_template.combo.mods.png]
+    '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
+      overlay: [onlyoffice_presentation_template.mods.png, onlyoffice_presentation_template.combo.mods.png]
+  # A matched `os:` branch replaces the entry, so the title sub-map is repeated.
+  os:
+    macos:
+      overlay: [onlyoffice_document_template_mac.mods.png, onlyoffice_document_template_mac.combo.mods.png, onlyoffice_document_template_mac.extra.mods.png]
+      titles-match:
+        '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
+          overlay: [onlyoffice_spreadsheet_template_mac.mods.png, onlyoffice_spreadsheet_template_mac.combo.mods.png, onlyoffice_spreadsheet_template_mac.extra.mods.png]
+        '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
+          overlay: [onlyoffice_presentation_template_mac.mods.png, onlyoffice_presentation_template_mac.combo.mods.png, onlyoffice_presentation_template_mac.extra.mods.png]
 
 # ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
 # app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
@@ -2048,6 +2144,15 @@ fusion360,autodesk fusion,autodesk fusion 360:
   os:
     macos:
       overlay: [fusion_template_mac.mods.png, fusion_template_mac.combo.mods.png, fusion_template_mac.extra.mods.png]
+# Autodesk AutoCAD (overlay_sources/autocad/). `acad.exe` on Windows; on macOS
+# the app is "AutoCAD <year>", which the year rule turns into `autocad`. AutoCAD
+# for Mac has its own keys. No Linux version. AutoCAD LT (`acadlt`) is not
+# listed: it lacks several of the keys. Names not checked on an install.
+acad,autocad:
+  overlay: [autocad_template.mods.png, autocad_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [autocad_template_mac.mods.png, autocad_template_mac.combo.mods.png, autocad_template_mac.extra.mods.png, autocad_template_mac.gui.mods.png]
 # OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
 # AppImage, class OpenSCAD); the nightly's desktop file names the class
 # org.openscad.openscad.
@@ -2404,6 +2509,14 @@ githubdesktop,github desktop:
   os:
     macos:
       overlay: [githubdesktop_template_mac.mods.png, githubdesktop_template_mac.combo.mods.png, githubdesktop_template_mac.extra.mods.png, githubdesktop_template_mac.gui.mods.png]
+# GitKraken Desktop (sources: overlay_sources/gitkraken/). Executable `gitkraken`
+# on Linux and `GitKraken` on macOS (read from the 12.6.2 packages); the
+# Windows name was not checked on an install.
+gitkraken:
+  overlay: [gitkraken_template.mods.png, gitkraken_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [gitkraken_template_mac.mods.png, gitkraken_template_mac.combo.mods.png, gitkraken_template_mac.extra.mods.png]
 # Sourcetree (sources: overlay_sources/sourcetree/). The Windows and Mac programs
 # have different keys, so the macOS set is not the Windows set with Cmd.
 # SourceTree.exe on Windows (3.4.33 installer) and the bundle executable
@@ -2673,3 +2786,30 @@ pyrogenesis,pyrogenesis.exe,0ad,com.play0ad.zeroad:
 # and gets no overlay. Names not checked on an install.
 league of legends,league of legends.exe,leagueoflegends:
   overlay: lol_template.mods.png
+# Counter-Strike 2 (overlay_sources/cs2/cs2.yaml). The game binary is cs2.exe on
+# Windows and the native `cs2` on Linux; steam_app_730 covers Proton, which is
+# unlikely because the game has a native Linux build. The game does not run on
+# macOS. Names not checked on an install.
+cs2,steam_app_730:
+  overlay: cs2_template.mods.png
+# SQL Server Management Studio (overlay_sources/ssms/), Windows only. The
+# executable is Ssms.exe (SSMS 18 to 20) or SSMS.exe (SSMS 21 and later); both
+# lowercase to `ssms`. Name not checked on an install.
+ssms:
+  overlay: [ssms_template.mods.png, ssms_template.combo.mods.png]
+# Everything, the voidtools file search (overlay_sources/everything/). Windows
+# only. Both the 1.4.1.1032 and the 1.5.0.1424b downloads ship the program as
+# `Everything.exe`. Not checked on a running install.
+everything:
+  overlay: [everything_template.mods.png, everything_template.combo.mods.png]
+# Dota 2 (overlay_sources/dota2/dota2.yaml). The game binary is dota2.exe on
+# Windows and the native `dota2` on Linux; steam_app_570 covers Proton, which is
+# unlikely because the game has a native Linux build. Valve dropped the macOS
+# build, so there is no macOS name. Names not checked on an install.
+dota2,steam_app_570:
+  overlay: dota2_template.mods.png
+# Total Commander (overlay_sources/totalcmd/). Windows only. The 11.58.1
+# installers ship TOTALCMD64.EXE (64-bit) and TOTALCMD.EXE (32-bit). Not checked
+# on a running install.
+totalcmd,totalcmd64:
+  overlay: [totalcmd_template.mods.png, totalcmd_template.combo.mods.png]
