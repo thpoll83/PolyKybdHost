@@ -61,7 +61,7 @@ list, and a 2025 forum reply says it has no default playback keys either.
 | `preferences.png` | Fluent `Settings` | MIT |
 | `properties.png` | Fluent `Info` (as VLC "Media information") | MIT |
 | `ontop.png` | Fluent `Pin` | MIT |
-| `foobar2000.png` | Simple Icons `foobar2000` | CC0-1.0 (artwork) |
+| `foobar2000.png` | foobar2000.org favicon, 1-bit trace (`_foobar_mark` in `fetch_icons.py`) | the foobar2000 mark, used only to name the app |
 
 Fluent: <https://github.com/microsoft/fluentui-system-icons> (MIT). Material
 Symbols: <https://fonts.google.com/icons> (Apache-2.0). Both are compatible
@@ -69,13 +69,12 @@ with this repository's GPL-3.0-or-later.
 
 ## ESC mark
 
-The foobar2000 logo, rendered from Simple Icons
-(<https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/foobar2000.svg>,
-whose own source is <https://hydrogenaud.io/index.php?topic=55604.0>). The SVG
-artwork is CC0-1.0. CC0 grants no trademark rights; the mark is used only to
-name the application this overlay is for (nominative use), as with the other
-Simple Icons marks in `../brand_marks.py`. It is a committed asset;
-`fetch_icons.py` does not fetch it again once it exists.
+The foobar2000 logo (a fox head), traced from the foobar2000.org favicon
+through Google's favicon service: fitted into 32x32 and cut at luma 128, so the
+dark outline, eyes and mouth are lit. `_foobar_mark` in `fetch_icons.py` draws
+it. The mark is used only to name the application this overlay is for, as the
+other program marks are. It is a committed asset; `fetch_icons.py` does not
+redraw it once it exists, so delete `icons/foobar2000.png` to redraw it.
 
 ## Process name
 
