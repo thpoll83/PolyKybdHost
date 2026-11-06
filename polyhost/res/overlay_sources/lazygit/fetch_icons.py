@@ -135,15 +135,45 @@ def _commit_badge(dest: Path, commit: Path, badge: Path) -> None:
 LAZYGIT_LOGO_URL = ("https://user-images.githubusercontent.com/8456633/"
                     "174470852-339b5011-5800-4bb9-a628-ff230aa8cd4e.png")
 LAZYGIT_DARK_LUMA = 128
-# Rows of the 1072x1090 logo above the "Lazygit" word; the mark is the figure.
-LAZYGIT_FIGURE_ROWS = 820
+
+
+# The 6-row micro font for the word under the figure: row 0 ascender, rows 1-4
+# x-height, row 5 descender. "#" is lit.
+_MICRO_FONT = {
+    "l": ["#.", "#.", "#.", "#.", "##", ".."],
+    "a": ["...", ".##", "#.#", "#.#", ".##", "..."],
+    "z": ["...", "###", "..#", ".#.", "###", "..."],
+    "y": ["...", "#.#", "#.#", ".##", "..#", "##."],
+    "g": ["...", ".##", "#.#", ".##", "..#", "##."],
+    "i": ["#", ".", "#", "#", "#", "."],
+    "t": ["#.", "##", "#.", "#.", ".#", ".."],
+}
+# The figure (with the cap and the moon) occupies rows 85..800 of the logo.
+LAZYGIT_FIGURE_BOX = (0, 85, 1072, 800)
+LAZYGIT_FIGURE_HEIGHT = 22   # rows of the 32x32 mark for the figure
+LAZYGIT_COLOUR_COVER = 0.3   # cap/moon pixels at least this covered get the checker
+
+
+def _micro_text(word: str):
+    import numpy as np
+    cols = []
+    for i, ch in enumerate(word):
+        glyph = _MICRO_FONT[ch]
+        if i:
+            cols.append(np.zeros(6, bool))
+        for x in range(len(glyph[0])):
+            cols.append(np.array([glyph[y][x] == "#" for y in range(6)]))
+    return np.stack(cols, 1)
 
 
 def _lazygit_mark(dest: Path, px: int = 32) -> None:
-    """The lazygit figure as a px*px 1-bit trace: cropped to its dark pixels
-    above the word, fitted into the square, pixels at luma 128 or darker lit.
-    The coloured circles, the cap and the grey quotes are lighter than 128 and
-    stay unlit. Drawn at the keycap size so the generator copies it 1:1."""
+    """The lazygit figure as a px*px 1-bit mark with the word under it.
+
+    The figure (the dark graph, luma 128 or darker) is lit where a pixel is at
+    least 45% covered. The green cap and the blue moon are lit on a
+    checkerboard where a pixel is at least 30% covered, so they read as a
+    second shade. Under the figure, one blank row, then "lazygit" in a 6-row
+    micro font. Drawn at the keycap size so the generator copies it 1:1."""
     import io
     import urllib.request
 
@@ -154,16 +184,30 @@ def _lazygit_mark(dest: Path, px: int = 32) -> None:
         icon = Image.open(io.BytesIO(r.read())).convert("RGBA")
     white = Image.new("RGBA", icon.size, "white")
     white.alpha_composite(icon)
-    src = white.convert("L")
-    dark = np.array(src)[:LAZYGIT_FIGURE_ROWS] <= LAZYGIT_DARK_LUMA
-    ys, xs = np.where(dark)
-    src = src.crop((int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1))
-    scale = px / max(src.size)
-    fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
-                        Image.LANCZOS)
-    square = Image.new("L", (px, px), 255)
-    square.paste(fitted, ((px - fitted.width) // 2, (px - fitted.height) // 2))
-    a = square.point(lambda v: 255 if v <= LAZYGIT_DARK_LUMA else 0)
+    rgb = np.array(white.convert("RGB")).astype(int)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    sat = rgb.max(-1) - rgb.min(-1)
+    dark = np.array(white.convert("L")) <= LAZYGIT_DARK_LUMA
+    cap = (g > r + 40) & (g > b) & (sat > 60)
+    moon = (b > r + 30) & (b >= g) & (sat > 40) & (r > 100)
+    size = (px, LAZYGIT_FIGURE_HEIGHT)
+
+    def cover(mask):
+        img = Image.fromarray((mask * 255).astype("uint8")).crop(LAZYGIT_FIGURE_BOX)
+        return np.array(img.resize(size, Image.BOX)) / 255.0
+
+    yy, xx = np.mgrid[0:LAZYGIT_FIGURE_HEIGHT, 0:px]
+    figure = cover(dark) >= 0.45
+    for mask in (cap, moon):
+        figure |= (cover(mask) >= LAZYGIT_COLOUR_COVER) & ((xx + yy) % 2 == 0)
+    word = _micro_text("lazygit")
+    out = np.zeros((px, px), bool)
+    top = (px - (LAZYGIT_FIGURE_HEIGHT + 1 + word.shape[0])) // 2
+    out[top:top + LAZYGIT_FIGURE_HEIGHT] = figure
+    x0 = (px - word.shape[1]) // 2
+    y0 = top + LAZYGIT_FIGURE_HEIGHT + 1
+    out[y0:y0 + word.shape[0], x0:x0 + word.shape[1]] = word
+    a = Image.fromarray((out * 255).astype("uint8"))
     Image.merge("RGBA", (a, a, a, a)).save(dest)
 
 

@@ -115,13 +115,14 @@ Duffield); the image is part of the project's own README but is not a file in
 the repository, so the licence does not name it. It is used here to identify
 the program, as the other program marks are.
 
-`_lazygit_mark()` composites the image over white, crops it to the pixels of
-luma 128 or darker above row 820 (the figure, without the word), contain-fits
-it into 32x32 with LANCZOS and lights the pixels of luma 128 or darker (**dark
-lit**). The coloured circles, the green cap and the grey quotes are lighter
-than 128 and stay unlit, so the figure shows as the dark graph with hollow end
-circles. With the word included the figure shrank to about half the height
-and the word did not read. The 32x32 mark is placed 1:1 (`program_icon_region:
+`_lazygit_mark()` composites the image over white and fits the figure (rows
+85..800 of the logo, with the cap and the moon, without the word) into the
+top 22 rows of the 32x32 mark. The dark graph (luma 128 or darker) is lit
+where a pixel is at least 45% covered (**dark lit**). The green cap and the
+blue moon are lit on a checkerboard where a pixel is at least 30% covered, so
+they read as a second shade. The coloured end circles and the grey quotes
+stay unlit, so the circles show hollow. Under the figure, after one blank row,
+"lazygit" is written in a hand-drawn 6-row micro font (`_MICRO_FONT`). The 32x32 mark is placed 1:1 (`program_icon_region:
 [37, 32]`, anchor right, margin 0, mode alpha). The file is guarded: a re-run
 leaves a committed `lazygit.png` as it is.
 
