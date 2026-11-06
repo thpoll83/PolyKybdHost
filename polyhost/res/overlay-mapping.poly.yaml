@@ -1585,6 +1585,17 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # lazygit (sources: overlay_sources/lazygit/) sets no window title, so it
+    # is routed like nano: the shell or the terminal puts the running command
+    # into the title, and the `title` regex requires lazygit at the command
+    # position. One set for Windows, macOS and Linux (Ctrl is Control in a
+    # terminal). The title formats were not checked on an install.
+    lazygit: &lazygit_title
+      title: '^(?:sudo\s+)?lazygit(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?lazygit(?:$|\s|\))'
+      overlay: [lazygit_template.mods.png, lazygit_template.combo.mods.png]
+    "(lazygit)": *lazygit_title
+    "(lazygit": *lazygit_title
+    "^lazygit": *lazygit_title
 # The other terminals of TERMINAL_APPS. This entry has NO overlay of its own:
 # with no editor report and no nano title it matches nothing, and the terminal
 # keeps the generic shortcut harvest it had before (handler/common.py,
