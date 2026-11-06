@@ -1374,7 +1374,7 @@ class TestRestartApp(unittest.TestCase):
                 try:
                     os.kill(child_pid, signal.SIGKILL)
                 except OSError:
-                    pass
+                    pass  # already gone: the child exits by itself after writing `alive`
 
 
 class TestPreflight(unittest.TestCase):
