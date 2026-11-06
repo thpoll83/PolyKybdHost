@@ -68,6 +68,8 @@ M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
 # above: 0=small (the original face), 1=medium, 2=large — the firmware NACKs
 # anything else. Affects a key's MAIN legend only, not the shift/AltGr previews.
+M_GLYPH_PLACEMENT_SET = "glyph.placement.set"  # {"value": 0|1} -> (ok, payload)  (0=centre, 1=top-left)
+M_GLYPH_PLACEMENT_GET = "glyph.placement.get"  # {} -> (ok, value)
 M_GLYPH_SIZE_SET = "glyph.size.set"      # {"value": 0|1|2} -> (ok, payload)
 M_GLYPH_SIZE_GET = "glyph.size.get"      # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation

@@ -21,7 +21,8 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd import (PolyKybd, PRC_OVERLAY_MIN_PROTOCOL, MAPPING_FLAGS_MIN_PROTOCOL,
-                                     SPLIT_VBUS_FLAG_MIN_PROTOCOL)
+                                     SPLIT_VBUS_FLAG_MIN_PROTOCOL, GLYPH_PLACEMENT_MIN_PROTOCOL)
+from polyhost.device.command_ids import GlyphPlacement, GlyphScript
 from polyhost.util import prc_codec
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
@@ -1162,6 +1163,70 @@ class TestConsoleOutput(unittest.TestCase):
         self.assertIsNone(keeb.get_console_output(flush_and_return=False))
         console.replies.extend([pad(b'part2\n'), b''])
         self.assertEqual(keeb.get_console_output(), 'part1part2\n')
+
+
+
+class TestGlyphPlacement(unittest.TestCase):
+    """cmd 30's v26 placement byte: data[3] is an OP (0 keep, 1 centre, 2 top-left)."""
+
+    def test_set_sends_script_0xff_and_the_op(self):
+        keeb, device = make_keeb(replies=[ack(30, bytes([0, 1]))])
+        ok, _ = keeb.set_glyph_placement(GlyphPlacement.TOP_LEFT)
+        self.assertTrue(ok)
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 30, 0xFF, 2]))
+
+    def test_centre_is_op_one_not_zero(self):
+        """0 is KEEP on the wire, so centre must be sent as 1."""
+        keeb, device = make_keeb(replies=[ack(30, bytes([0, 0]))])
+        keeb.set_glyph_placement(GlyphPlacement.CENTRE)
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 30, 0xFF, 1]))
+
+    def test_plain_script_set_sends_keep(self):
+        """A script set leaves data[3] as the zero pad: the placement is kept."""
+        keeb, device = make_keeb(replies=[ack(30, bytes([6]))])
+        keeb.set_glyph_script(GlyphScript.IBMVGA)
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 30, 6, 0]))
+
+    def test_get_reads_data4(self):
+        keeb, device = make_keeb(replies=[ack(30, bytes([7, 1]))])
+        self.assertEqual(keeb.get_glyph_placement(), (True, 1))
+        self.assertEqual(device.payloads()[0][:4], bytes([POLY, 30, 0xFF, 0]))
+
+    def test_a_nack_is_not_success(self):
+        keeb, _ = make_keeb(replies=[nack(30)])
+        ok, msg = keeb.set_glyph_placement(GlyphPlacement.TOP_LEFT)
+        self.assertFalse(ok)
+        self.assertIn("refused", msg)
+
+    def test_refused_below_protocol_26_without_io(self):
+        """v25 firmware ignores data[3] and always centres."""
+        keeb, device = make_keeb()
+        keeb.protocol_version = GLYPH_PLACEMENT_MIN_PROTOCOL - 1
+        ok, msg = keeb.set_glyph_placement(GlyphPlacement.TOP_LEFT)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        self.assertEqual(keeb.get_glyph_placement(), (False, 0))
+        self.assertEqual(device.payloads(), [])
+
+    def test_plain_script_still_works_below_protocol_26(self):
+        keeb, device = make_keeb(replies=[ack(30, bytes([6]))])
+        keeb.protocol_version = GLYPH_PLACEMENT_MIN_PROTOCOL - 1
+        self.assertTrue(keeb.set_glyph_script(GlyphScript.IBMVGA)[0])
+        self.assertEqual(device.payloads()[0][:3], bytes([POLY, 30, 6]))
+
+    def test_mock_firmware_matches_the_firmware(self):
+        from polyhost.device.mock_firmware import MockFirmware
+        old = MockFirmware(GLYPH_PLACEMENT_MIN_PROTOCOL - 1)
+        old._dispatch(bytes([POLY, 30, 0xFF, 2]) + bytes(60))
+        self.assertEqual(old.glyph_placement, 0)          # v25 ignores the op
+        fw = MockFirmware(GLYPH_PLACEMENT_MIN_PROTOCOL)
+        fw._dispatch(bytes([POLY, 30, 0xFF, 2]) + bytes(60))
+        self.assertEqual(fw.glyph_placement, 1)
+        fw._dispatch(bytes([POLY, 30, 6, 0]) + bytes(60))  # a script set keeps it
+        self.assertEqual(fw.glyph_placement, 1)
+        reply = fw._dispatch(bytes([POLY, 30, 0xFF, 3]) + bytes(60))
+        self.assertEqual(reply[2:3], b"!")                 # a closed range
+        self.assertEqual(fw.glyph_placement, 1)
 
 
 if __name__ == '__main__':

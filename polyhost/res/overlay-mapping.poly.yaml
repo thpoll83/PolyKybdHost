@@ -1591,6 +1591,23 @@ windowsterminal,wt:
     "(qwen)": *qwen_cli
     "(qwen": *qwen_cli
     "^qwen": *qwen_cli
+    # Kimi Code CLI: "Kimi Code" once a session exists, then the session's
+    # title alone (at most 32 characters), which does not name it. Before the
+    # first message it writes no title, so the shell's "kimi" stays.
+    Kimi Code: &kimi_cli
+      title: &kimi_title '^(?:Kimi Code\s*(?:$|—\s*\S+$)|kimi(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:Kimi Code(?:$|\s)|kimi(?:$|\s|\)))'
+      overlay: kimi_cli_template.mods.png
+      os:
+        macos:
+          title: *kimi_title
+          overlay: kimi_cli_template_mac.mods.png
+        linux:
+          title: *kimi_title
+          overlay: kimi_cli_template_linux.mods.png
+    kimi: *kimi_cli
+    "(kimi)": *kimi_cli
+    "(kimi": *kimi_cli
+    "^kimi": *kimi_cli
     # GitHub Copilot CLI: "GitHub Copilot", then "🤖 <topic>" ("Copilot:
     # <topic>" in screen-reader mode).
     GitHub Copilot: &copilot_cli
@@ -1606,6 +1623,18 @@ windowsterminal,wt:
     "(copilot)": *copilot_cli
     "(copilot": *copilot_cli
     "^copilot": *copilot_cli
+    # Grok Build (xAI's `grok`): its title joins the parts it shows with
+    # " - " and always ends with the word grok: "grok" when idle, "<session>
+    # - grok", "⠋ - Thinking - <session> - grok", "⚠ Action Required - ... -
+    # grok" (notifications/title.rs in its source). The command-position
+    # regex covers all of them, because grok follows the " - " separator at
+    # the end. The unofficial superagent-ai grok-cli uses the same command.
+    grok: &grok_cli
+      title: '^grok(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)grok(?:$|\s|\))'
+      overlay: grok_build_template.mods.png
+    "(grok)": *grok_cli
+    "(grok": *grok_cli
+    "^grok": *grok_cli
     # Aider sets no title: only the shell's (the scripts in res/shell/).
     # ⚠️ An `os:` branch is tried BEFORE the entry's own `title`, so every
     # branch repeats the title regex (`*<cli>_title`); without it any title
@@ -1623,6 +1652,20 @@ windowsterminal,wt:
     "(aider)": *aider_cli
     "(aider": *aider_cli
     "^aider": *aider_cli
+    # Mistral Vibe writes "Vibe" while idle and ">> Vibe" while it works
+    # (measured on 3.1.0; it sets an empty title on exit). The own-title part
+    # takes a short symbol prefix for states that were not measured, and one
+    # terminal name after " — " (as OpenCode's), so Terminal.app idle in a
+    # directory named Vibe ("Vibe — -zsh — 80×24") is not taken. "vibe" is
+    # an English word: the command-position part keeps `cd vibe`, a prompt in
+    # ~/vibe and `vim vibe.txt` on the terminal's set.
+    Vibe: &vibe_cli
+      title: '^(?:(?:[^\sA-Za-z0-9]{1,3} )?Vibe\s*(?:$|—\s*\S+$)|vibe(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)vibe(?:$|\s|\))|\s—\s(?:[^\sA-Za-z0-9]{1,3} )?Vibe(?:$|\s—\s\S+$)'
+      overlay: mistral_vibe_template.mods.png
+    vibe: *vibe_cli
+    "(vibe)": *vibe_cli
+    "(vibe": *vibe_cli
+    "^vibe": *vibe_cli
     # lazygit (sources: overlay_sources/lazygit/) sets no window title, so it
     # is routed like nano: the shell or the terminal puts the running command
     # into the title, and the `title` regex requires lazygit at the command
@@ -2478,6 +2521,22 @@ acad,autocad:
   os:
     macos:
       overlay: [autocad_template_mac.mods.png, autocad_template_mac.combo.mods.png, autocad_template_mac.extra.mods.png, autocad_template_mac.gui.mods.png]
+# Autodesk Inventor (overlay_sources/inventor/). `Inventor.exe`; Windows only.
+# Name not checked on an install.
+inventor:
+  overlay: [inventor_template.mods.png, inventor_template.combo.mods.png]
+# SketchUp Pro (overlay_sources/sketchup/). `SketchUp.exe` on Windows; on macOS
+# the app is "SketchUp <year>", which the year rule turns into `sketchup`.
+# Names not checked on an install. No Linux version.
+sketchup:
+  overlay: sketchup_template.mods.png
+  os:
+    macos:
+      overlay: [sketchup_template_mac.mods.png, sketchup_template_mac.combo.mods.png]
+# Tekla Structures (overlay_sources/tekla/), modeling keys. `TeklaStructures.exe`;
+# Windows only. Name not checked on an install.
+teklastructures,tekla structures:
+  overlay: [tekla_template.mods.png, tekla_template.combo.mods.png]
 # OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
 # AppImage, class OpenSCAD); the nightly's desktop file names the class
 # org.openscad.openscad.
@@ -2882,11 +2941,21 @@ rstudio:
 # MATLAB (sources: overlay_sources/matlab/). The macOS bundle is named per release
 # (MATLAB_R2026b.app), and mapping_key() drops only a trailing year, so the
 # releases are listed. Names not checked on an install.
+# Simulink (sources: overlay_sources/simulink/) runs in the MATLAB process, so
+# its set is chosen by the Simulink Editor's title, "<model> - Simulink", with
+# "*" after an unsaved model and a licence note after "Simulink" on some
+# licences ("- Simulink academic use"). Every other MATLAB window keeps the
+# MATLAB set. The `os: macos` branch is tried first, so it repeats the title
+# route. Title format not checked on an install.
 matlab,matlab_r2025a,matlab_r2025b,matlab_r2026a,matlab_r2026b:
   overlay: [matlab_template.mods.png, matlab_template.combo.mods.png]
+  titles-match:
+    ' - Simulink(?: [a-z ]+)?$': {overlay: [simulink_template.mods.png, simulink_template.combo.mods.png]}
   os:
     macos:
       overlay: [matlab_template_mac.mods.png, matlab_template_mac.combo.mods.png, matlab_template_mac.extra.mods.png]
+      titles-match:
+        ' - Simulink(?: [a-z ]+)?$': {overlay: [simulink_template_mac.mods.png, simulink_template_mac.combo.mods.png, simulink_template_mac.extra.mods.png]}
 # draw.io desktop (sources: overlay_sources/webapps/drawio.yaml). Process `drawio`,
 # WM_CLASS `draw-io` on Linux (measured, 32.5.5). On Windows the host keeps the
 # process name up to its first dot, so draw.io.exe arrives as `draw`.
@@ -3166,3 +3235,31 @@ winamp:
 # the single keys the web-app sets draw.
 qutebrowser,org.qutebrowser.qutebrowser:
   overlay: [qutebrowser_template.mods.png, qutebrowser_template.combo.mods.png]
+# NI LabVIEW (sources: overlay_sources/labview/). LabVIEW.exe on Windows,
+# `labview` on Linux, "LabVIEW 2026" on macOS (the trailing year is dropped);
+# a "Q1"/"Q3" release suffix on macOS is listed. The Front Panel and Block
+# Diagram windows share the keys, so there is no title route. Ctrl on Windows
+# is Cmd on macOS and Alt on Linux. Names not checked on an install.
+labview,labview 2024 q3,labview 2025 q1,labview 2025 q3,labview 2026 q1,labview 2026 q3:
+  overlay: [labview_template.mods.png, labview_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [labview_template_mac.mods.png, labview_template_mac.combo.mods.png, labview_template_mac.extra.mods.png]
+    linux:
+      overlay: [labview_template_linux.mods.png, labview_template_linux.combo.mods.png]
+# COMSOL Multiphysics (sources: overlay_sources/comsol/). comsol.exe on Windows,
+# "COMSOL Multiphysics 6.4" on macOS (the trailing dotted version is dropped).
+# The Linux set lacks the Windows-only Application Builder debug keys. Names
+# not checked on an install.
+comsol,comsol multiphysics:
+  overlay: [comsol_template.mods.png, comsol_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [comsol_template_mac.mods.png, comsol_template_mac.combo.mods.png, comsol_template_mac.extra.mods.png]
+    linux:
+      overlay: [comsol_template_linux.mods.png, comsol_template_linux.combo.mods.png]
+# OriginPro / Origin (sources: overlay_sources/origin/). Windows only:
+# Origin64.exe. `origin` is not listed, because Origin.exe is also EA's game
+# launcher. Name not checked on an install.
+origin64:
+  overlay: [origin_template.mods.png, origin_template.combo.mods.png]
