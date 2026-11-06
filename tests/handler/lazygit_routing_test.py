@@ -59,7 +59,8 @@ OTHER_TITLES = {
     "a plain shell": "bash",
 }
 
-OTHER_TERMINALS = ("kitty", "konsole", "terminal", "iterm2", "conhost", "alacritty")
+# Terminals with no overlay set of their own (kitty and WezTerm have one).
+OTHER_TERMINALS = ("konsole", "terminal", "iterm2", "conhost", "alacritty")
 
 
 def _overlay_handler_class():
