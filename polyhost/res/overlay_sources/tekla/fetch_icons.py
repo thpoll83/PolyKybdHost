@@ -11,7 +11,11 @@ lights the black pixels and the generator places them 1:1):
 
 * the four rendering modes (wireframe, shaded wireframe, grayscale, rendered)
   as one isometric cube with the faces empty, light, dithered and solid;
-* the coordinate locks: the letter X, Y or Z beside a padlock.
+* the coordinate locks: the letter X, Y or Z beside a padlock;
+* the view-mode keys: each mode cube (and the "only selected" checkbox) with
+  a corner letter for the objects the key acts on: P parts (Ctrl), C
+  components (Shift), R references (Ctrl+Shift), B building hierarchy
+  (Ctrl+Alt).
 
 The ESC mark is the Tekla logo from tekla.com's favicon, fitted into 32x32 and
 reduced to 1 bit (dark pixels lit), white on transparent for
@@ -233,6 +237,36 @@ def _mark(path: Path) -> None:
     print(f"  {path.name}  <- Tekla favicon, 1-bit, dark pixels lit")
 
 
+# The view-mode keys repeat the same five modes for parts (Ctrl), components
+# (Shift), references (Ctrl+Shift) and the building hierarchy (Ctrl+Alt). The
+# letter in the bottom-right corner says which objects the key acts on.
+BADGES = {"p": "P", "c": "C", "r": "R", "b": "B"}
+BADGED = ("wireframe", "shadedwire", "grayscale", "rendered", "onlyselected")
+
+
+def _badged(out: Path, base: str, key: str) -> None:
+    """`base` (fitted into 32x32 on the left) with the letter BADGES[key] in
+    the bottom-right corner of a 40x32 cell, black on transparent."""
+    path = out / f"{base}_{key}.png"
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    src = Image.open(out / f"{base}.png").convert("RGBA")
+    if src.size != (32, 32):
+        src = src.resize((32, 32), Image.LANCZOS)
+    mask = Image.new("L", (40, 32), 0)
+    mask.paste(src.getchannel("A").point(lambda v: 255 if v > 100 else 0), (0, 0))
+    d = ImageDraw.Draw(mask)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 13)
+    letter = BADGES[key]
+    d.text((40 - d.textlength(letter, font=font), 32), letter, font=font, fill=255, anchor="ls")
+    mask = mask.point(lambda v: 255 if v >= 128 else 0)
+    img = Image.new("RGBA", (40, 32), CLEAR)
+    img.paste(Image.new("RGBA", (40, 32), LIT), (0, 0), mask)
+    img.save(path)
+    print(f"  {path.name}  <- drawn: {base} + '{letter}'")
+
+
 def main() -> int:
     out = HERE / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -243,6 +277,11 @@ def main() -> int:
     _cube(out / "shadedwire.png", (4, 4, 4), False)
     _cube(out / "grayscale.png", (4, 3, 2), False)
     _cube(out / "rendered.png", (1, 1, 1), True)
+    for base in BADGED:
+        for key in BADGES:
+            # Tekla has only wireframe and shaded wireframe for the hierarchy.
+            if key != "b" or base in ("wireframe", "shadedwire"):
+                _badged(out, base, key)
     for axis in "XYZ":
         _lock(out / f"lock{axis.lower()}.png", axis)
     _mark(out / "tekla.png")

@@ -48,23 +48,23 @@ bindings:
   - { key: C, mods: [CTRL, SHIFT], icon: shortcutsdlg.png, label: "Keyboard shortcuts" }
 
   # --- rendering: Ctrl = parts, Shift = components, Ctrl+Shift = references ---
-  - { key: "1", mods: [CTRL], icon: wireframe.png, label: "Parts wireframe" }
-  - { key: "2", mods: [CTRL], icon: shadedwire.png, label: "Parts shaded wireframe" }
-  - { key: "3", mods: [CTRL], icon: grayscale.png, label: "Parts grayscale" }
-  - { key: "4", mods: [CTRL], icon: rendered.png, label: "Parts rendered" }
-  - { key: "5", mods: [CTRL], icon: onlyselected.png, label: "Only selected part" }
-  - { key: "1", mods: [SHIFT], icon: wireframe.png, label: "Components wireframe" }
-  - { key: "2", mods: [SHIFT], icon: shadedwire.png, label: "Components shaded wireframe" }
-  - { key: "3", mods: [SHIFT], icon: grayscale.png, label: "Components grayscale" }
-  - { key: "4", mods: [SHIFT], icon: rendered.png, label: "Components rendered" }
-  - { key: "5", mods: [SHIFT], icon: onlyselected.png, label: "Only selected component" }
-  - { key: "1", mods: [CTRL, SHIFT], icon: wireframe.png, label: "References wireframe" }
-  - { key: "2", mods: [CTRL, SHIFT], icon: shadedwire.png, label: "References shaded wireframe" }
-  - { key: "3", mods: [CTRL, SHIFT], icon: grayscale.png, label: "References grayscale" }
-  - { key: "4", mods: [CTRL, SHIFT], icon: rendered.png, label: "References rendered" }
-  - { key: "5", mods: [CTRL, SHIFT], icon: onlyselected.png, label: "Only selected reference" }
-  - { key: "1", mods: [CTRL, ALT], icon: wireframe.png, label: "Building hierarchy wireframe" }
-  - { key: "2", mods: [CTRL, ALT], icon: shadedwire.png, label: "Building hierarchy shaded wireframe" }
+  - { key: "1", mods: [CTRL], icon: wireframe_p.png, label: "Parts wireframe" }
+  - { key: "2", mods: [CTRL], icon: shadedwire_p.png, label: "Parts shaded wireframe" }
+  - { key: "3", mods: [CTRL], icon: grayscale_p.png, label: "Parts grayscale" }
+  - { key: "4", mods: [CTRL], icon: rendered_p.png, label: "Parts rendered" }
+  - { key: "5", mods: [CTRL], icon: onlyselected_p.png, label: "Only selected part" }
+  - { key: "1", mods: [SHIFT], icon: wireframe_c.png, label: "Components wireframe" }
+  - { key: "2", mods: [SHIFT], icon: shadedwire_c.png, label: "Components shaded wireframe" }
+  - { key: "3", mods: [SHIFT], icon: grayscale_c.png, label: "Components grayscale" }
+  - { key: "4", mods: [SHIFT], icon: rendered_c.png, label: "Components rendered" }
+  - { key: "5", mods: [SHIFT], icon: onlyselected_c.png, label: "Only selected component" }
+  - { key: "1", mods: [CTRL, SHIFT], icon: wireframe_r.png, label: "References wireframe" }
+  - { key: "2", mods: [CTRL, SHIFT], icon: shadedwire_r.png, label: "References shaded wireframe" }
+  - { key: "3", mods: [CTRL, SHIFT], icon: grayscale_r.png, label: "References grayscale" }
+  - { key: "4", mods: [CTRL, SHIFT], icon: rendered_r.png, label: "References rendered" }
+  - { key: "5", mods: [CTRL, SHIFT], icon: onlyselected_r.png, label: "Only selected reference" }
+  - { key: "1", mods: [CTRL, ALT], icon: wireframe_b.png, label: "Building hierarchy wireframe" }
+  - { key: "2", mods: [CTRL, ALT], icon: shadedwire_b.png, label: "Building hierarchy shaded wireframe" }
 
   # --- selecting ---
   - { key: H, mods: [], icon: rollover.png, label: "Rollover highlight" }
