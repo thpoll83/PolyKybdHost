@@ -131,6 +131,24 @@ terminal's set. A mode report still takes priority, because a known URL skips
 `titles-contains`.
 (`tests/handler/nano_routing_test.py`.)
 
+### A program in a terminal dims the terminal's shortcuts
+
+nano, Vim, Emacs and the AI CLIs run inside the terminal, and the terminal reads
+its own shortcuts (new tab, copy, paste) before the program does. So when one of
+the routes in `&editor_titles` or `&editor_urls` matches, the terminal's
+shortcuts stay on the keycaps, drawn dimmed, and the program's take full
+strength on every key they draw, as a browser's do under a website:
+
+- Windows Terminal has a set of its own; its entry layers (no `layer: false`),
+  so `_layered` puts that set underneath as an `Underlay`.
+- The other terminals have no set; the gap fill draws their harvested shortcuts
+  around the program's template, and `OverlayHandler.template_is_hosted()`
+  makes those dimmed too. A forwarded terminal's relayed shortcuts are dimmed
+  the same way (`RemoteHandler.template_is_hosted()`).
+
+(`tests/handler/ai_cli_routing_test.py`, `tests/core/generic_overlays_test.py`
+→ `HostedTerminalFillTest`.)
+
 ### Terminal AI coding CLIs
 
 Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and

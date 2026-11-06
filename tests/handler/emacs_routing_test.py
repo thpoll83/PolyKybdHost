@@ -52,8 +52,17 @@ def _overlay_handler_class():
 
 
 def _files(entry):
+    """The program's own files: a terminal's set layered underneath (an
+    `Underlay`, drawn dimmed) is left out; `test_*_dims_the_terminal_set` checks it."""
     ov = entry["overlay"]
-    return [str(f) for f in (ov if isinstance(ov, list) else [ov])]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if not getattr(f, "underlay", False)]
+
+
+def _underlays(entry):
+    ov = entry["overlay"]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if getattr(f, "underlay", False)]
 
 
 def _emacs_routes(entry):
@@ -81,10 +90,9 @@ class EmacsMappingFileTest(unittest.TestCase):
                 continue
             self.assertEqual(_emacs_routes(e), _emacs_routes(self.raw[GUI_KEY]), key)
             covered |= names & terminals
-            # An editor's mode replaces a terminal's own overlay; an entry
-            # with no overlay of its own has nothing to layer.
-            if "overlay" in e:
-                self.assertIs(e.get("layer"), False, key)
+            # An editor's mode layers over a terminal's own set (drawn
+            # dimmed underneath), so no terminal entry turns layering off.
+            self.assertNotIn("layer", e, key)
         self.assertEqual(covered, terminals)
 
     def test_specific_modes_come_before_the_catch_all(self):
