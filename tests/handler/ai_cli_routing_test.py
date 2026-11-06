@@ -1,7 +1,7 @@
 """The SHIPPED routing of terminal AI coding CLIs: a terminal's WINDOW TITLE.
 
-Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
-Mistral Vibe replace the shell's title with their own; Aider sets none. Each route in
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI,
+Kimi Code CLI, Grok Build and Mistral Vibe replace the shell's title with their own; Aider sets none. Each route in
 `&editor_titles` matches the CLI's own title format and its command name at
 the command position. Drives `polyhost/res/overlay-mapping.poly.yaml` itself.
 The formats are in `polyhost/res/overlay_sources/aicli/SOURCES.md`. What it
@@ -93,6 +93,28 @@ TITLES = {
         "copilot",
         "copilot --resume",
     ],
+    # Grok Build's title (notifications/title.rs): parts joined with " - ",
+    # always ending with "grok".
+    "grok_build_template": [
+        "grok",
+        "Fix the parser - grok",
+        "\u280b - Thinking - Fix the parser - grok",
+        "\u2834 - Running: cargo build - grok",
+        "\u26a0 Action Required - \u2827 - Waiting - grok",
+        "grok --resume",
+        "Default (grok)",
+        "~/src> grok",
+    ],
+    "kimi_cli_template": [
+        "Kimi Code",
+        "Kimi Code — Konsole",
+        "Documents — Kimi Code — 80×24",
+        "kimi",
+        "kimi --resume ses-1",
+        "~/src> kimi",                         # Nushell
+        "Default (kimi)",
+        "C:\\WINDOWS\\system32\\cmd.exe - kimi",
+    ],
     "aider_template": [
         "aider",
         "aider --model sonnet main.py",
@@ -134,6 +156,13 @@ OTHER_TITLES = [
     "OpenCode notes",
     "user@host: ~/OpenCode",
     "GitHub Copilot docs",
+    "grok-notes - vim",                      # a word that starts with grok
+    "user@host: ~/grok",
+    "vim grok.md",
+    "Fix grok parser",
+    "Kimi Code notes",
+    "vim kimi.md",
+    "user@host: ~/kimi",
     "bash",
     # Mistral Vibe: "vibe" is an English word and a likely directory name.
     "vim vibe.txt",
