@@ -1472,6 +1472,24 @@ windowsterminal,wt:
     "(nano)": *nano_title
     "(nano": *nano_title
     "^nano": *nano_title
+    # tmux (sources: overlay_sources/tmux/) is matched by the WINDOW TITLE, as
+    # nano is. tmux's `set-titles` option is off by default, so tmux never
+    # writes the outer terminal's title and the title keeps what the shell or
+    # the terminal wrote when tmux started ("tmux", "tmux new -s work",
+    # iTerm2's "Default (tmux)", Terminal.app's "~ — tmux — 80×24"). The same
+    # `title` regex as nano requires tmux at the command position, so
+    # `man tmux`, `vim .tmux.conf` and a prompt in ~/tmux keep the terminal's
+    # set. While tmux runs the title does not change, so a program inside it
+    # (nano, an AI CLI) does not load its own set; a vim or emacs mode report
+    # still takes priority. One set for every OS: tmux reads Control, not Cmd.
+    # Checked on a pty with tmux 3.4 and the bash script in res/shell/; not
+    # checked on an install of any terminal (tests/handler/tmux_routing_test.py).
+    tmux: &tmux_title
+      title: '^(?:sudo\s+)?tmux(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?tmux(?:$|\s|\))'
+      overlay: tmux_template.mods.png
+    "(tmux)": *tmux_title
+    "(tmux": *tmux_title
+    "^tmux": *tmux_title
     # Terminal AI coding CLIs (sources: overlay_sources/aicli/; SOURCES.md
     # there has every title format and where it was read). All but Aider
     # REPLACE the shell's title with their own, so each route matches the
