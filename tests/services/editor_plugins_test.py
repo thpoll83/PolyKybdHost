@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 import unittest.mock as mock
@@ -279,15 +280,46 @@ class TestGdb(Fixture):
             self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
         self.assertEqual((self.home / ".config/gdb/gdbinit").read_text(), "")
 
-    def test_the_version_probe_reads_gnu_gdb_and_tolerates_a_missing_program(self):
-        ep._gdb_major_cache.clear()
-        self.addCleanup(ep._gdb_major_cache.clear)
-        done = subprocess.CompletedProcess([], 0, stdout=b"GNU gdb (Debian 10.1-1.7) 10.1.90.20210103-git\n")
-        with mock.patch.object(ep.subprocess, "run", return_value=done):
-            self.assertEqual(ep._gdb_major("/usr/bin/gdb-10"), 10)
+    def test_the_probe_reads_version_and_python_and_tolerates_a_missing_program(self):
+        ep._gdb_probe_cache.clear()
+        self.addCleanup(ep._gdb_probe_cache.clear)
+        banners = {
+            "GNU gdb (Debian 10.1-1.7) 10.1.90.20210103-git": 10,
+            "GNU gdb (GDB; openSUSE Leap 15.4) 11.1": 11,
+            "GNU gdb (GDB; SUSE Linux Enterprise 15) 9.2": 9,
+            "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1": 15,
+            "GNU gdb 8.3": 8,
+        }
+        for i, (banner, major) in enumerate(banners.items()):
+            out = f"{ep._GDB_PY_MARK}\n{banner}\nCopyright\n".encode()
+            with mock.patch.object(ep.subprocess, "run",
+                                   return_value=subprocess.CompletedProcess([], 0, stdout=out)):
+                self.assertEqual(ep._gdb_probe(f"/x/gdb{i}"), (major, True), banner)
+        no_py = b"GNU gdb (GDB; SUSE Linux Enterprise 15) 9.2\n"
+        with mock.patch.object(ep.subprocess, "run",
+                               return_value=subprocess.CompletedProcess([], 0, stdout=no_py)):
+            self.assertEqual(ep._gdb_probe("/x/nopy"), (9, False))
         with mock.patch.object(ep.subprocess, "run", side_effect=OSError("gone")):
-            self.assertIsNone(ep._gdb_major("/nowhere/gdb"))
-        self.assertIsNone(ep._gdb_major(None))
+            self.assertEqual(ep._gdb_probe("/nowhere/gdb"), (None, None))
+        self.assertEqual(ep._gdb_probe(None), (None, None))
+
+    def test_a_suse_gdb_9_banner_selects_the_home_gdbinit(self):
+        (self.home / ".config/gdb").mkdir(parents=True)
+        (self.home / ".config/gdb/gdbinit").write_text("")
+        with mock.patch.object(ep, "_gdb_probe", return_value=(9, True)):
+            self.assertEqual(self.status(ep.GDB).target, self.gdbinit)
+
+    def test_only_gdb_multiarch_is_probed_when_gdb_is_missing(self):
+        seen = []
+        with mock.patch.object(ep, "_gdb_probe", side_effect=lambda exe: seen.append(exe) or (10, True)):
+            self.status(ep.GDB, which=which_of(*ALL, "gdb-multiarch"))
+        self.assertIn("/usr/bin/gdb-multiarch", seen)
+
+    def test_a_gdb_without_python_reads_not_present(self):
+        with mock.patch.object(ep, "_gdb_probe", return_value=(15, False)):
+            st = self.status(ep.GDB)
+        self.assertEqual(st.state, ep.STATE_NOT_PRESENT)
+        self.assertEqual(st.detail, "GDB without Python")
 
     def test_a_block_with_crlf_line_ends_reads_installed(self):
         ep.install([ep.GDB], **self.kw())
@@ -369,8 +401,15 @@ def _gdb_has_python():
 class TestGdbScript(unittest.TestCase):
     """The shipped gdb-plugin/polykybd.py in a real GDB on a pseudo-terminal."""
 
-    @unittest.skipUnless(hasattr(os, "fork") and _gdb_has_python(),
-                         "needs gdb with Python and a pseudo-terminal")
+    @classmethod
+    def setUpClass(cls):
+        if not (hasattr(os, "fork") and _gdb_has_python()):
+            raise unittest.SkipTest("needs gdb with Python and a pseudo-terminal")
+        # Any program will do; its base name is the one in the title.
+        cls.program = shutil.which("true") or sys.executable
+        cls.name = Path(cls.program).name
+        cls.titles = [f"gdb \u23f8 {cls.name}", f"gdb \u25b6 {cls.name}", f"gdb \u23f8 {cls.name}"]
+
     def test_the_title_follows_the_prompt_and_the_running_program(self):
         import pty
         import re
@@ -379,7 +418,7 @@ class TestGdbScript(unittest.TestCase):
         script = ep.GDB_SOURCE / "polykybd.py"
         pid, fd = pty.fork()
         if pid == 0:
-            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", str(script), "/bin/true"])
+            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", str(script), self.program])
         out = b""
 
         def read_for(seconds):
@@ -404,11 +443,9 @@ class TestGdbScript(unittest.TestCase):
             os.waitpid(pid, 0)
             os.close(fd)
         titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
-        self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
+        self.assertEqual(titles, self.titles, out)
         self.assertIn(b"\x1b[22;2t", out)
 
-    @unittest.skipUnless(hasattr(os, "fork") and _gdb_has_python(),
-                         "needs gdb with Python and a pseudo-terminal")
     def test_sourcing_the_script_again_at_the_prompt_pushes_the_title_once(self):
         import pty
         import re
@@ -418,7 +455,7 @@ class TestGdbScript(unittest.TestCase):
         major = ep._gdb_major(shutil.which("gdb"))
         pid, fd = pty.fork()
         if pid == 0:
-            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, "/bin/true"])
+            os.execvp("gdb", ["gdb", "-q", "-nx", "-x", script, self.program])
         out = b""
 
         def read_until_prompt(seconds=10):
@@ -449,7 +486,7 @@ class TestGdbScript(unittest.TestCase):
             os.waitpid(pid, 0)
             os.close(fd)
         titles = [m.decode() for m in re.findall(rb"\x1b\]2;([^\x07]*)\x07", out)]
-        self.assertEqual(titles, ["gdb \u23f8 true", "gdb \u25b6 true", "gdb \u23f8 true"], out)
+        self.assertEqual(titles, self.titles, out)
         self.assertEqual(out.count(b"\x1b[22;2t"), 1, out)
         if major is not None and major >= 12:      # gdb_exiting restores the title
             self.assertEqual(out.count(b"\x1b[23;2t"), 1, out)

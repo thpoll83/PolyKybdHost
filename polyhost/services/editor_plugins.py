@@ -161,33 +161,57 @@ def emacs_lisp_dir(init_file):
     return init_file.parent / "polykybd"
 
 
-GDB_VERSION_TIMEOUT_S = 5
-_GDB_VERSION_RE = re.compile(r"^GNU gdb .*?(\d+)\.\d+", re.M)
-_gdb_major_cache = {}
+GDB_PROBE_TIMEOUT_S = 10
+# The version follows any parenthesised vendor text: "GNU gdb (GDB; openSUSE
+# Leap 15.4) 11.1", "GNU gdb (Debian 10.1-1.7) 10.1.90.20210103-git".
+_GDB_VERSION_RE = re.compile(r"^GNU gdb(?: \([^)]*\))* (\d+)\.\d+", re.M)
+_GDB_PY_MARK = "PK-GDB-PYTHON"
+_gdb_probe_cache = {}
 
 
-def _gdb_major(exe):
-    """The major version of the GDB at `exe`, or None when it does not answer.
+def _gdb_exe(which=None):
+    """The GDB the plugin would run under: ``gdb``, else ``gdb-multiarch``."""
+    which = which or shutil.which
+    return which("gdb") or which("gdb-multiarch")
+
+
+def _gdb_probe(exe):
+    """(major version or None, Python support True/False/None) of the GDB at
+    `exe`, from one ``gdb --nx --batch`` run. None means it did not answer.
     Asked once per executable. Never raises."""
     if not exe:
-        return None
-    if exe not in _gdb_major_cache:
+        return None, None
+    if exe not in _gdb_probe_cache:
         kwargs = {}
         if platform.system() == "Windows":
             kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        major = None
+        result = (None, None)
         try:
             # Audit (Sourcery dangerous-subprocess-use): argv is a fixed list; exe
-            # is what shutil.which found for "gdb". No shell parses it.
+            # is what shutil.which found for "gdb" or "gdb-multiarch". No shell
+            # parses it, and --nx keeps GDB from reading any init file.
             # nosemgrep
-            proc = subprocess.run([exe, "--nx", "--version"], capture_output=True,
-                                  timeout=GDB_VERSION_TIMEOUT_S, **kwargs)
-            m = _GDB_VERSION_RE.search(proc.stdout.decode("utf-8", "replace"))
-            major = int(m.group(1)) if m else None
+            proc = subprocess.run([exe, "--nx", "--batch", "-ex", f"python print('{_GDB_PY_MARK}')",
+                                   "-ex", "show version"], capture_output=True,
+                                  timeout=GDB_PROBE_TIMEOUT_S, **kwargs)
+            out = proc.stdout.decode("utf-8", "replace")
+            m = _GDB_VERSION_RE.search(out)
+            if m:
+                result = (int(m.group(1)), _GDB_PY_MARK in out)
         except (subprocess.TimeoutExpired, OSError) as exc:
-            log.info("gdb did not report its version: %s", exc)
-        _gdb_major_cache[exe] = major
-    return _gdb_major_cache[exe]
+            log.info("gdb did not answer the probe: %s", exc)
+        _gdb_probe_cache[exe] = result
+    return _gdb_probe_cache[exe]
+
+
+def _gdb_major(exe):
+    """The major version of the GDB at `exe`, or None."""
+    return _gdb_probe(exe)[0]
+
+
+def _gdb_has_python(exe):
+    """Whether the GDB at `exe` runs Python: True, False, or None (unknown)."""
+    return _gdb_probe(exe)[1]
 
 
 def gdb_init_file(home=None, env=None, system=None, gdb_major=None):
@@ -473,7 +497,7 @@ def _mentions_polykybd(rest, comment=";"):
 def _init_paths(editor, home, env, system, which=None):
     """(init file, plugin folder) of an INIT_EDITORS editor."""
     if editor == GDB:
-        major = _gdb_major((which or shutil.which)("gdb"))
+        major = _gdb_major(_gdb_exe(which))
         return (gdb_init_file(home, env, system, major),
                 gdb_plugin_dir(home, env, system))
     init = emacs_init_file(home, env, system)
@@ -531,6 +555,10 @@ def _status_one(editor, home, env, which, system, source):
         doc = _read_init(init)
         if not _present(editor, which, system) and doc is None:
             return EditorStatus(editor, STATE_NOT_PRESENT, init, "")
+        if editor == GDB and _gdb_has_python(_gdb_exe(which)) is False:
+            # The script needs Python, and in a GDB built without it the
+            # block's `python` line stops the init file with an error.
+            return EditorStatus(editor, STATE_NOT_PRESENT, init, "GDB without Python")
         found, _orphan, rest = _init_blocks(doc.text, editor) if doc is not None else ([], False, "")
         if not found:
             if _mentions_polykybd(rest, "#" if editor == GDB else ";"):
