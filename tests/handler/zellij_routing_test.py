@@ -164,7 +164,11 @@ class ZellijRoutingTest(unittest.TestCase):
     def test_other_titles_do_not_load_the_set(self):
         for app in TERMINALS:
             for fmt, title in OTHER_TITLES.items():
-                self.assertIsNone(self._route(app, title), (app, fmt))
+                route = self._route(app, title)
+                if app in ("kitty", "wezterm"):  # their own set, no Zellij
+                    self.assertTrue(route and str(route[0]).startswith(app), (app, fmt))
+                else:
+                    self.assertIsNone(route, (app, fmt))
         for fmt, title in OTHER_TITLES.items():
             self.assertEqual(self._route("windowsterminal", title, os_name="windows")[0],
                              WT, fmt)

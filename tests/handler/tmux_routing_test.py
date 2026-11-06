@@ -158,7 +158,8 @@ class TmuxRoutingTest(unittest.TestCase):
     def test_other_titles_keep_the_terminal_set(self):
         for fmt, title in OTHER_TITLES.items():
             self.assertEqual(self._route("windowsterminal", title)[0], WT, fmt)
-            for app in ("kitty", "konsole", "terminal", "iterm2"):
+            # Terminals with no overlay set of their own (not kitty or WezTerm).
+            for app in ("alacritty", "konsole", "terminal", "iterm2"):
                 self.assertIsNone(self._route(app, title, os_name="linux"), (app, fmt))
 
     def test_nano_still_loads_the_nano_set(self):

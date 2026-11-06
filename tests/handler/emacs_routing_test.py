@@ -163,7 +163,8 @@ class EmacsRoutingTest(unittest.TestCase):
 
     def test_terminal_without_a_report_is_unchanged(self):
         # No entry of its own: matches nothing, so the generic path runs.
-        for app in ("kitty", "konsole", "xterm", "terminal", "iterm2", "conhost"):
+        # (kitty and WezTerm have a set: terminal_set_routing_test.)
+        for app in ("alacritty", "konsole", "xterm", "terminal", "iterm2", "conhost"):
             self.assertIsNone(self._route(app, None, title="bash"), app)
             # A URL no route names (the vim routes are not this test's concern).
             self.assertIsNone(self._route(app, "other://x", title="x"), app)
@@ -176,7 +177,7 @@ class EmacsRoutingTest(unittest.TestCase):
         h.current_entry = None
         h.last_entry = None
         h.title, h.current_url = "bash", None
-        found, _ = h.try_to_match_window("kitty", self.mapping["kitty"])
+        found, _ = h.try_to_match_window("alacritty", self.mapping["alacritty"])
         self.assertFalse(found)
         self.assertFalse(h.covered_by_template())
 
@@ -190,7 +191,8 @@ class EmacsRoutingTest(unittest.TestCase):
         self.assertIsNone(p.current_url("code"))
         # Focus-out (the terminal's focus event): the shell gets nothing.
         p.update(app="emacs", url=None, focused=False, pid=42)
-        self.assertIsNone(self._route("kitty", p.current_url("kitty")))
+        self.assertIsNone(p.current_url("kitty"))
+        self.assertIsNone(self._route("alacritty", p.current_url("alacritty")))
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ matching degrades to app-name + title exactly as before this feature existed.
 import threading
 import time
 
-from polyhost.handler.common import mapping_key
+from polyhost.handler.common import OS, mapping_key
 from polyhost.services import browser_url_macos
 
 # Focused-app gate. `getAppName()` normalises differently per OS (Windows
@@ -174,11 +174,17 @@ def hosted_in_terminal(app_name, matched, mapping) -> bool:
     a route of the terminal's entry (nano's title, a vim:// report, an AI CLI's
     title) rather than the terminal's own entry. The entry is compared by
     identity: a route returns its sub-entry (or a `_layered` view of it), the
-    terminal's own match returns the entry itself."""
+    terminal's own match returns the entry itself, or one of its `os:` branches
+    when the terminal has per-platform artwork (WezTerm and kitty on macOS)."""
     if matched is None or not is_terminal_app(app_name):
         return False
     key = mapping_key(_app_key(app_name), mapping)
-    return key is not None and matched is not mapping[key]
+    if key is None:
+        return False
+    entry = mapping[key]
+    branches = entry.get(OS) if isinstance(entry, dict) else None
+    own = [entry, *(branches.values() if isinstance(branches, dict) else ())]
+    return all(matched is not e for e in own)
 
 
 def is_browser_app(app_name) -> bool:
