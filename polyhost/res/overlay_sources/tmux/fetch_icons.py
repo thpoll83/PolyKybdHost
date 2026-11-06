@@ -217,19 +217,21 @@ TMUX_DARK_LUMA = 100
 
 
 def _tmux_mark(dest: Path, px: int = 32) -> None:
-    """The tmux logo as a px*px 1-bit trace: cropped to its opaque pixels,
-    fitted into the square (LANCZOS), pixels at luma 100 or darker lit: the
-    dark screen is lit, the pane split lines and the background are not. At
-    luma 128 the split lines, which become grey at this size, broke up into
-    single pixels, and the green status bar (luma about 120) merged with the
-    screen; at 100 the lines are whole and the bar is left out. Drawn at the keycap size so the
-    generator copies it 1:1."""
+    """The tmux logo as a px*px 1-bit mark: the dark screen (luma 100 or
+    darker) is lit where a pixel is at least half covered; the pane split lines
+    and the background stay unlit. The green status bar under the screen is
+    lit on a diagonal hatch ((x + y) % 3 == 0). Two fixes after the trace: the
+    horizontal split runs straight to the right edge (the trace rounded its
+    end off), and the screen's last row is full width, so the bar follows it
+    with no notch. The logo is stretched to the square, as the committed mark
+    always was. Drawn at the keycap size so the generator copies it 1:1."""
     if dest.exists():
         print(f"  {dest.name}  <- committed asset (left as-is)")
         return
     import io
     import urllib.request
 
+    import numpy as np
     from PIL import Image
     req = urllib.request.Request(TMUX_ICON_URL, headers={"User-Agent": "PolyKybdHost"})
     with urllib.request.urlopen(req, timeout=60) as r:
@@ -237,15 +239,30 @@ def _tmux_mark(dest: Path, px: int = 32) -> None:
     icon = icon.crop(icon.getchannel("A").getbbox())
     white = Image.new("RGBA", icon.size, "white")
     white.alpha_composite(icon)
-    src = white.convert("L")
-    scale = px / max(src.size)
-    fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
-                        Image.LANCZOS)
-    square = Image.new("L", (px, px), 255)
-    square.paste(fitted, ((px - fitted.width) // 2, (px - fitted.height) // 2))
-    a = square.point(lambda v: 255 if v <= TMUX_DARK_LUMA else 0)
+    rgb = np.array(white.convert("RGB")).astype(int)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    green = (g > r + 50) & (g > b + 50)
+    dark = (np.array(white.convert("L")) <= TMUX_DARK_LUMA) & ~green
+
+    def cover(mask):
+        img = Image.fromarray((mask * 255).astype("uint8"))
+        return np.array(img.resize((px, px), Image.BOX)) / 255.0
+
+    yy, xx = np.mgrid[0:px, 0:px]
+    screen = cover(dark) >= 0.5
+    bar = (cover(green) >= 0.5) & ~screen
+    out = screen | (bar & ((xx + yy) % 3 == 0))
+    # The horizontal split: the row of the right half that is unlit across.
+    right = slice(px // 2 + 1, px - 1)
+    for y in range(2, px - 2):
+        if not out[y, right].any() and out[y - 1, right].all():
+            out[y - 1, px - 1] = out[y + 1, px - 1] = True
+    # The screen's last row (the row above the first bar row) is full width.
+    last = max(y for y in range(px) if screen[y].sum() > px // 2)
+    out[last, 0] = out[last, px - 1] = True
+    a = Image.fromarray((out * 255).astype("uint8"))
     Image.merge("RGBA", (a, a, a, a)).save(dest)
-    print(f"  {dest.name}  <- tmux logo, 1-bit trace")
+    print(f"  {dest.name}  <- tmux logo, 1-bit trace with a hatched status bar")
 
 
 def main() -> int:

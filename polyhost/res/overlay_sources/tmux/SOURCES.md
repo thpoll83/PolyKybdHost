@@ -179,13 +179,13 @@ None of the terminal app names was checked on an install.
 **Esc (program mark)**: the tmux logomark, `logo/icons/128x128/tmux.png` from
 the tmux repository at the 3.8 tag
 (https://raw.githubusercontent.com/tmux/tmux/7f2a35ad3321f9ba57a1062ca73b1f3ff26aca53/logo/icons/128x128/tmux.png).
-`fetch_icons.py` (`_tmux_mark()`) crops it to its opaque pixels, fits it into
-32x32 with LANCZOS and lights the pixels with luma 100 or less (dark lit).
-That lights the dark screen and leaves the pane split lines unlit. At luma
-128 the split lines, which become grey at this size, broke up into single
-pixels, and the green status bar (luma about 120) merged into the screen; at
-100 the lines are whole and the bar is left out. The light-lit column of
-`compare_mark.py` lights the background around the logo, so it was not used.
+`fetch_icons.py` (`_tmux_mark()`) crops it to its opaque pixels and scales
+it to 32x32. The dark screen (luma 100 or less) is lit where a pixel is at
+least half covered, so the pane split lines stay unlit. The green status bar
+is lit on a diagonal hatch ((x + y) % 3 == 0) directly under the screen. Two
+pixel fixes follow the trace: the horizontal split runs straight to the right
+edge, and the screen's last row is full width, so the bar follows it with no
+notch. The rounded corners of the logo stay.
 
 The logo's licence (`logo/LICENSE` in the tmux repository):
 
