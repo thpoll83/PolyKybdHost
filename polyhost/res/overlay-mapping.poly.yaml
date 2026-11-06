@@ -2501,6 +2501,22 @@ acad,autocad:
   os:
     macos:
       overlay: [autocad_template_mac.mods.png, autocad_template_mac.combo.mods.png, autocad_template_mac.extra.mods.png, autocad_template_mac.gui.mods.png]
+# Autodesk Inventor (overlay_sources/inventor/). `Inventor.exe`; Windows only.
+# Name not checked on an install.
+inventor:
+  overlay: [inventor_template.mods.png, inventor_template.combo.mods.png]
+# SketchUp Pro (overlay_sources/sketchup/). `SketchUp.exe` on Windows; on macOS
+# the app is "SketchUp <year>", which the year rule turns into `sketchup`.
+# Names not checked on an install. No Linux version.
+sketchup:
+  overlay: sketchup_template.mods.png
+  os:
+    macos:
+      overlay: [sketchup_template_mac.mods.png, sketchup_template_mac.combo.mods.png]
+# Tekla Structures (overlay_sources/tekla/), modeling keys. `TeklaStructures.exe`;
+# Windows only. Name not checked on an install.
+teklastructures,tekla structures:
+  overlay: [tekla_template.mods.png, tekla_template.combo.mods.png]
 # OpenSCAD: `openscad` (measured, 2021.01 package and the 2026.10.18 nightly
 # AppImage, class OpenSCAD); the nightly's desktop file names the class
 # org.openscad.openscad.
