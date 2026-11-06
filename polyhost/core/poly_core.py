@@ -41,7 +41,8 @@ from polyhost.device import hid_fw_up
 from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.handler.common import OverlayCommand, as_underlay_path, os_match_keys
+from polyhost.handler.common import (
+    OverlayCommand, Underlay, as_underlay_path, os_match_keys)
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -926,7 +927,17 @@ class PolyCore(Observable):
                 name, pid=handler.focused_pid(),
                 title=title_of() if callable(title_of) else None,
                 hwnd=handle_of() if callable(handle_of) else None)
+        # ⚠️ A PROGRAM INSIDE A TERMINAL (nano, Vim, an AI CLI) covers the keys
+        # with its template, and the fill is the TERMINAL's harvested shortcuts,
+        # which still work because the terminal reads them first. They are drawn
+        # dimmed then, as a browser's own set is under a website, so the keycaps
+        # show which program a shortcut belongs to. The same for a forwarded
+        # terminal, whose shortcuts were relayed above.
+        hosted = getattr(handler, "template_is_hosted", None)
+        dim = bool(template_files) and callable(hosted) and hosted() is True
         signature = self._generic_signature(slug, shortcuts, template_files)
+        if signature is not None and dim:
+            signature = (signature, "dim")
         if signature is None:
             if mask is not None and not shortcuts:
                 # ⚠️ The ONE case the detailed line below is not enough for: a
@@ -955,7 +966,7 @@ class PolyCore(Observable):
         if signature == self._generic_on_device:
             return True
         return self._send_generic_overlays(name, signature, slug, mask,
-                                           shortcuts, template_files)
+                                           shortcuts, template_files, dim=dim)
 
     def _note_overlay_state(self, enabled):
         """Tell the window handler what the DEVICE is showing, if there is one.
@@ -1140,7 +1151,7 @@ class PolyCore(Observable):
             tuple(template_files))
 
     def _send_generic_overlays(self, app, signature, slug, mask, shortcuts,
-                               template_files=()):
+                               template_files=(), dim=False):
         """Queue the mark and the shortcut icons for every attached device.
 
         ⚠️ The converters are built HERE, on the caller's thread, and one PER
@@ -1178,7 +1189,10 @@ class PolyCore(Observable):
             for source, keys in sorted(shortcuts.items()):
                 converter = shortcut_converter(entry.device.device_settings, keys)
                 if converter is not None:
-                    sources.append((source, converter))
+                    # `dim`: the terminal's own shortcuts under a program's
+                    # template (see `_maybe_send_generic_overlays`). The mark
+                    # stays full strength, and ESC is never dimmed anyway.
+                    sources.append((Underlay(source) if dim else source, converter))
             if sources:
                 built.append((entry, sources))
         if not built:
@@ -1194,7 +1208,8 @@ class PolyCore(Observable):
             "(%s).",
             app, f"mark '{slug}' on ESC" if slug else "no mark",
             len(shortcuts), drawn,
-            f"filling the gaps in {len(template_files)} template file(s), "
+            f"filling the gaps in {len(template_files)} template file(s)"
+            + (", the terminal's shortcuts dimmed under the program's, " if dim else ", ")
             + ("shortcut filling on" if self.poly_settings.get(
                 "generic_overlays_fill_shortcuts") else
                "shortcuts not read: generic_overlays_fill_shortcuts is off")

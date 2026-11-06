@@ -97,8 +97,17 @@ def _overlay_handler_class():
 
 
 def _files(entry):
+    """The program's own files: a terminal's set layered underneath (an
+    `Underlay`, drawn dimmed) is left out; `test_*_dims_the_terminal_set` checks it."""
     ov = entry["overlay"]
-    return [str(f) for f in (ov if isinstance(ov, list) else [ov])]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if not getattr(f, "underlay", False)]
+
+
+def _underlays(entry):
+    ov = entry["overlay"]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if getattr(f, "underlay", False)]
 
 
 class NanoMappingFileTest(unittest.TestCase):

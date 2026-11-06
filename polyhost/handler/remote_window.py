@@ -4,6 +4,7 @@ import re
 import socket
 import threading
 
+from polyhost.handler.browser_url import hosted_in_terminal
 from polyhost.handler.common import Flags, find_matching_entry, mapping_key
 
 TCP_PORT = 50162
@@ -402,6 +403,12 @@ class RemoteHandler:
             self.forwarded_os,
         )
         return False
+
+    def template_is_hosted(self) -> bool:
+        """The forwarded window's answer to `OverlayHandler.template_is_hosted`."""
+        return hosted_in_terminal(self.full_name or self.name, self.current_entry,
+                                  self.mapping) or hosted_in_terminal(
+            self.name, self.current_entry, self.mapping)
 
     def has_overlay(self):
         return (

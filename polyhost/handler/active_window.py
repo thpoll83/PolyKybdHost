@@ -11,7 +11,8 @@ from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry, mapping_key, OS,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, TITLE_RE, URL, URL_HAS, FLAGS,
 )
-from polyhost.handler.browser_url import context_reporter_for, is_terminal_app
+from polyhost.handler.browser_url import (
+    context_reporter_for, hosted_in_terminal, is_terminal_app)
 from polyhost.handler.remote_window import RemoteHandler
 from polyhost.handler.own_process import (
     own_app_name, own_front_app, window_pid,
@@ -1032,6 +1033,20 @@ class OverlayHandler:
         has no overlay, are both "not covered".
         """
         return self.get_overlay_data() is not None
+
+    def template_is_hosted(self) -> bool:
+        """Is the covering template a PROGRAM INSIDE a terminal (nano, Vim, an AI
+        CLI) rather than the terminal's own set?
+
+        Then the terminal's own shortcuts still work (it reads them before the
+        program does), so they stay on the keycaps dimmed, as a browser's do
+        under a website: Windows Terminal's set through `_layered`, and every
+        other terminal's harvested shortcuts through the gap fill
+        (`PolyCore._send_generic_overlays`). Answered for the forwarded window
+        when a `remote:` entry shows it, as `get_overlay_data` does."""
+        if self.is_remote_mapping_entry() and self.remote_handler.has_overlay():
+            return self.remote_handler.template_is_hosted()
+        return hosted_in_terminal(self.app_name, self.current_entry, self.mapping)
 
     def _recheck_context_url(self):
         """Re-match when the URL a mode reporter gave this window has changed.

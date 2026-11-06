@@ -143,8 +143,17 @@ def _overlay_handler_class():
 
 
 def _files(entry):
+    """The program's own files: a terminal's set layered underneath (an
+    `Underlay`, drawn dimmed) is left out; `test_*_dims_the_terminal_set` checks it."""
     ov = entry["overlay"]
-    return [str(f) for f in (ov if isinstance(ov, list) else [ov])]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if not getattr(f, "underlay", False)]
+
+
+def _underlays(entry):
+    ov = entry["overlay"]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if getattr(f, "underlay", False)]
 
 
 def _all_files(entry):
@@ -213,6 +222,41 @@ class AiCliRoutingTest(unittest.TestCase):
                                  WT, (os_name, title))
                 self.assertIsNone(self._route("kitty", title, os_name=os_name),
                                   (os_name, title))
+
+    def test_windows_terminal_dims_its_own_set_under_a_cli(self):
+        for stem, titles in TITLES.items():
+            m = find_matching_entry(titles[0], self.mapping["windowsterminal"], None, "windows")
+            self.assertEqual(_underlays(m), ["windowsterminal_template.mods.png", "windowsterminal_template.combo.mods.png"], stem)
+            # The CLI's files come last, so they win every key they draw.
+            self.assertTrue(str(m["overlay"][-1]).startswith(stem), m["overlay"])
+
+    def test_a_cli_in_a_terminal_is_hosted(self):
+        from polyhost.handler.browser_url import hosted_in_terminal
+        for app, os_name in (("gnome-terminal-server", "linux"), ("kitty", "linux"),
+                             ("windowsterminal", "windows"), ("WindowsTerminal.exe", "windows")):
+            entry = self.mapping[app.lower().removesuffix(".exe")]
+            m = find_matching_entry("✳ Fix the parser", entry, None, os_name)
+            self.assertTrue(hosted_in_terminal(app, m, self.mapping), app)
+        # Windows Terminal's own set is not hosted, and neither is a non-terminal.
+        own = find_matching_entry("PowerShell", self.mapping["windowsterminal"], None, "windows")
+        self.assertFalse(hosted_in_terminal("windowsterminal", own, self.mapping))
+        code = find_matching_entry("main.py - Visual Studio Code", self.mapping["code"], None, "linux")
+        self.assertFalse(hosted_in_terminal("code", code, self.mapping))
+        self.assertFalse(hosted_in_terminal("kitty", None, self.mapping))
+
+    def test_a_forwarded_cli_in_a_terminal_is_hosted(self):
+        from unittest import mock
+        from polyhost.device.command_ids import OsType
+        from polyhost.handler.remote_window import RemoteHandler
+        with mock.patch.object(RemoteHandler, "listen_to_forwarder", lambda self: None):
+            rh = RemoteHandler(self.mapping)
+        rh.report_window(1, "gnome-terminal-server", "✳ Fix the parser", os=OsType.LINUX)
+        rh.remote_changed({})
+        self.assertTrue(rh.has_overlay())
+        self.assertTrue(rh.template_is_hosted())
+        rh.report_window(2, "code", "main.py - Visual Studio Code", os=OsType.LINUX)
+        rh.remote_changed({})
+        self.assertFalse(rh.template_is_hosted())
 
     def test_a_mode_report_takes_priority_over_a_cli_title(self):
         for titles in TITLES.values():

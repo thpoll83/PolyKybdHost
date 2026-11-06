@@ -53,6 +53,7 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
     # No hand-made overlay set covers this window unless a test says so; a bare
     # MagicMock would answer TRUTHY and silently stand the generic half down.
     core.overlay_handler.covered_by_template.return_value = False
+    core.overlay_handler.template_is_hosted.return_value = False
     core.poly_settings = MagicMock()
     # ⚠️ The SHIPPED defaults, not a blanket False. This stub answered False to
     # every key, which silently stood down every feature whose default is True
@@ -798,6 +799,76 @@ class TemplateGapFillTest(unittest.TestCase):
         sig_a = PolyCore._generic_signature("si:gimp", _sc(), ("a.mods.png",))
         sig_b = PolyCore._generic_signature("si:gimp", _sc(), ("b.mods.png",))
         self.assertNotEqual(sig_a, sig_b)
+
+
+class HostedTerminalFillTest(unittest.TestCase):
+    """A program INSIDE a terminal (nano, Vim, an AI CLI) covers the keys with its
+    template, and the gap fill is the TERMINAL's harvested shortcuts. Those still
+    work (the terminal reads them first), so they ride the send as Underlays,
+    drawn dimmed, as a browser's own set does under a website. The forwarded
+    terminal's relayed shortcuts get the same treatment."""
+
+    def _sent(self, core):
+        entry = core.device_mgr.all_entries[0]
+        core.worker.submit.call_args.args[1](threading.Event())
+        sent = entry.device.send_overlays_mru.call_args
+        return sent.args[0], sent.kwargs["synthetic"]
+
+    def _covered(self, core, hosted):
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "claude_code_cli_template.mods.png"
+        core.overlay_handler.template_is_hosted.return_value = hosted
+        return core
+
+    def test_a_program_in_a_terminal_dims_the_terminals_shortcuts(self):
+        core = self._covered(make_core(app=("gnome-terminal-server", None),
+                                       mask=_mask(), shortcuts=_sc()), hosted=True)
+        _tick(core)
+        filenames, synthetic = self._sent(core)
+        shortcut_sources = [f for f in filenames if str(f).startswith("@sc:")]
+        self.assertEqual(len(shortcut_sources), 1)
+        self.assertTrue(all(getattr(f, "underlay", False) for f in shortcut_sources))
+        # The synthetic converters are still found under the Underlay names.
+        self.assertTrue(all(f in synthetic for f in shortcut_sources))
+        # The template itself stays full strength.
+        self.assertFalse(getattr(filenames[0], "underlay", False))
+
+    def test_an_apps_own_template_keeps_its_fill_full_strength(self):
+        core = self._covered(make_core(mask=_mask(), shortcuts=_sc()), hosted=False)
+        _tick(core)
+        filenames, _ = self._sent(core)
+        self.assertFalse(any(getattr(f, "underlay", False) for f in filenames))
+
+    def test_a_forwarded_terminal_dims_the_relayed_shortcuts(self):
+        core = self._covered(make_core(app=("gnome-terminal-server", None),
+                                       mask=_mask(), shortcuts=_sc()), hosted=True)
+        core.overlay_handler.is_remote_mapping_entry.return_value = True
+        core.overlay_handler.remote_handler.forwarded_shortcuts.return_value = (
+            {"label": "New Tab"},)
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once_with(
+            "gnome-terminal-server", harvested=({"label": "New Tab"},))
+        filenames, _ = self._sent(core)
+        self.assertTrue(all(getattr(f, "underlay", False)
+                            for f in filenames if str(f).startswith("@sc:")))
+
+    def test_a_mock_answer_is_not_taken_as_hosted(self):
+        """Only a real True dims: an object that is merely truthy does not."""
+        core = self._covered(make_core(mask=_mask(), shortcuts=_sc()), hosted=MagicMock())
+        _tick(core)
+        filenames, _ = self._sent(core)
+        self.assertFalse(any(getattr(f, "underlay", False) for f in filenames))
+
+    def test_starting_a_program_re_sends_the_same_fill_dimmed(self):
+        """Same template files, same shortcuts, only the hosted answer changed:
+        the signature differs, so the dimmed set is sent."""
+        core = self._covered(make_core(mask=_mask(), shortcuts=_sc()), hosted=False)
+        _tick(core)
+        first = core._generic_on_device
+        core.overlay_handler.template_is_hosted.return_value = True
+        _tick(core)
+        self.assertNotEqual(core._generic_on_device, first)
+        self.assertEqual(core.worker.submit.call_count, 2)
 
 
 class GenericOverlayMasterSwitchTest(unittest.TestCase):

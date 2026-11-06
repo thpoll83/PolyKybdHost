@@ -1370,12 +1370,15 @@ nautilus,org.gnome.Nautilus:
 # (handler/browser_url.py: TERMINAL_APPS, HOSTED_REPORTERS): the Vim plugin
 # (vim-plugin/) sends vim://<mode>, the Emacs package (emacs-package/)
 # emacs://<major-mode>. `&editor_urls` is the one list of those routes, used by
-# every terminal entry and by GUI Vim and GUI Emacs. `layer: false`: an
-# editor's mode REPLACES the terminal's own overlay. Without a report (a plain
-# shell, or an editor with no plugin) the terminal keeps its own overlay.
+# every terminal entry and by GUI Vim and GUI Emacs. A matched editor mode or
+# program (the routes below) LAYERS over the terminal's own set: the terminal
+# reads its own shortcuts first, so they still work and stay on the keycaps,
+# dimmed (`Underlay`), as a browser's do under a website. Without a report or a
+# title route (a plain shell) the terminal shows its own set. The terminals with
+# no set of their own dim their harvested shortcuts the same way
+# (`OverlayHandler.template_is_hosted`, `PolyCore._send_generic_overlays`).
 windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
-  layer: false
   urls-contains: &editor_urls
     "vim://normal": { overlay: vim_normal_template.mods.png }
     "vim://visual": { overlay: vim_visual_template.mods.png }

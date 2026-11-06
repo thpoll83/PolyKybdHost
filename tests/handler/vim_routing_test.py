@@ -44,8 +44,17 @@ def _overlay_handler_class():
 
 
 def _files(entry):
+    """The program's own files: a terminal's set layered underneath (an
+    `Underlay`, drawn dimmed) is left out; `test_*_dims_the_terminal_set` checks it."""
     ov = entry["overlay"]
-    return [str(f) for f in (ov if isinstance(ov, list) else [ov])]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if not getattr(f, "underlay", False)]
+
+
+def _underlays(entry):
+    ov = entry["overlay"]
+    return [str(f) for f in (ov if isinstance(ov, list) else [ov])
+            if getattr(f, "underlay", False)]
 
 
 class VimMappingFileTest(unittest.TestCase):
@@ -103,9 +112,17 @@ class VimRoutingTest(unittest.TestCase):
                 self.assertEqual(self._route(app, f"vim://{mode}"),
                                  [f"vim_{mode}_template.mods.png"], f"{app} {mode}")
 
-    def test_the_mode_replaces_the_terminal_overlay(self):
+    def test_the_mode_layers_over_the_terminal_overlay(self):
         got = self._route("windowsterminal", "vim://insert", "windows")
         self.assertEqual(got, ["vim_insert_template.mods.png"])
+
+    def test_the_mode_dims_the_terminal_set(self):
+        """Windows Terminal's own shortcuts still work under Vim (the terminal
+        reads them first), so they stay on the keycaps, dimmed."""
+        m = find_matching_entry("~/src - bash", self.mapping["windowsterminal"],
+                                "vim://insert", "windows")
+        self.assertEqual(_underlays(m), ["windowsterminal_template.mods.png", "windowsterminal_template.combo.mods.png"])
+        self.assertEqual([str(f) for f in m["overlay"]][-1], "vim_insert_template.mods.png")
 
     def test_windows_terminal_without_a_report_keeps_its_own_overlay(self):
         self.assertEqual(self._route("windowsterminal", None, "windows"),
