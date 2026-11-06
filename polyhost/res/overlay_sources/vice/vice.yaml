@@ -1,0 +1,129 @@
+# VICE shortcut overlay for PolyKybd. See SOURCES.md.
+#
+# Keys are VICE's default hotkeys, from data/hotkeys/*.vhk of the 3.10.0
+# release (identical on trunk, read 2026-11-06). VICE binds every hotkey to Alt
+# on Windows and Linux and to Command on macOS, so each binding below is written
+# twice: Alt with `except: [macos]` and Cmd with `only: [macos]`. Two exceptions:
+# Copy and Paste are Alt+Delete / Alt+Insert on every platform, and the monitor
+# is Cmd+Esc on macOS, which is not drawn because Esc carries the program mark.
+# Pause saves a screenshot without a modifier. Every hotkey can be changed in
+# Settings > Hotkeys.
+#
+# One spec serves every VICE emulator (x64sc, x128, xvic, xplus4, xpet, ...).
+# A few keys do nothing on some machines (the cartridge keys on xpet, the tape
+# keys on x64dtv; SOURCES.md lists them): those entries draw them all the same.
+#
+# Regenerate:
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/vice/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/vice/vice.yaml --preview /tmp/vice_preview
+app: vice
+match: [x64sc, x64, x128, xvic, xplus4, xpet, xcbm2, xcbm5x0, xscpu64, x64dtv]
+output: vice_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: alpha
+threshold: 128
+
+program_icon: vice.png
+program_icon_mode: alpha
+program_icon_region: [37, 32]
+program_icon_anchor: right
+program_icon_margin: 0
+
+bindings:
+  - { key: A, mods: [ALT], icon: smartattach.png, label: "Smart attach", except: [macos], source: hotkeys.vhk }
+  - { key: A, mods: [GUI], icon: smartattach.png, label: "Smart attach", only: [macos], source: hotkeys.vhk }
+  - { key: H, mods: [ALT], icon: monitor.png, label: "Monitor", except: [macos], source: hotkeys.vhk }
+  - { key: F9, mods: [ALT], icon: resetcpu.png, label: "Reset", except: [macos], source: hotkeys.vhk }
+  - { key: F9, mods: [GUI], icon: resetcpu.png, label: "Reset", only: [macos], source: hotkeys.vhk }
+  - { key: F12, mods: [ALT], icon: powercycle.png, label: "Power cycle", except: [macos], source: hotkeys.vhk }
+  - { key: F12, mods: [GUI], icon: powercycle.png, label: "Power cycle", only: [macos], source: hotkeys.vhk }
+  - { key: Q, mods: [ALT], icon: quit.png, label: "Quit", except: [macos], source: hotkeys.vhk }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Quit", only: [macos], source: hotkeys.vhk }
+  - { key: "8", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 8", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 8", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 9", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 9", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 10", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 10", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 11", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 11", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 8", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 8", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 9", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 9", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 10", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 10", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 11", except: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 11", only: [macos], source: hotkeys-drive.vhk }
+  - { key: I, mods: [ALT], icon: flipadd.png, label: "Add disk to fliplist", except: [macos], source: hotkeys-fliplist.vhk }
+  - { key: I, mods: [GUI], icon: flipadd.png, label: "Add disk to fliplist", only: [macos], source: hotkeys-fliplist.vhk }
+  - { key: K, mods: [ALT], icon: flipremove.png, label: "Remove disk from fliplist", except: [macos], source: hotkeys-fliplist.vhk }
+  - { key: K, mods: [GUI], icon: flipremove.png, label: "Remove disk from fliplist", only: [macos], source: hotkeys-fliplist.vhk }
+  - { key: N, mods: [ALT], icon: flipnext.png, label: "Next disk in fliplist", except: [macos], source: hotkeys-fliplist.vhk }
+  - { key: N, mods: [GUI], icon: flipnext.png, label: "Next disk in fliplist", only: [macos], source: hotkeys-fliplist.vhk }
+  - { key: N, mods: [SHIFT, ALT], icon: flipprev.png, label: "Previous disk in fliplist", except: [macos], source: hotkeys-fliplist.vhk }
+  - { key: N, mods: [SHIFT, GUI], icon: flipprev.png, label: "Previous disk in fliplist", only: [macos], source: hotkeys-fliplist.vhk }
+  - { key: T, mods: [ALT], icon: tape.png, label: "Attach tape", except: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [GUI], icon: tape.png, label: "Attach tape", only: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [SHIFT, ALT], icon: eject.png, label: "Detach tape", except: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [SHIFT, GUI], icon: eject.png, label: "Detach tape", only: [macos], source: hotkeys-datasette.vhk }
+  - { key: C, mods: [ALT], icon: cartattach.png, label: "Attach cartridge", except: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [GUI], icon: cartattach.png, label: "Attach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [SHIFT, ALT], icon: eject.png, label: "Detach cartridge", except: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [SHIFT, GUI], icon: eject.png, label: "Detach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
+  - { key: Z, mods: [ALT], icon: freeze.png, label: "Cartridge freeze", except: [macos], source: hotkeys-cartridge.vhk }
+  - { key: Z, mods: [GUI], icon: freeze.png, label: "Cartridge freeze", only: [macos], source: hotkeys-cartridge.vhk }
+  - { key: "3", mods: [ALT], icon: formfeed.png, label: "Form feed, userport printer", except: [macos], source: hotkeys.vhk }
+  - { key: "3", mods: [GUI], icon: formfeed.png, label: "Form feed, userport printer", only: [macos], source: hotkeys.vhk }
+  - { key: "4", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 4", except: [macos], source: hotkeys.vhk }
+  - { key: "4", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 4", only: [macos], source: hotkeys.vhk }
+  - { key: "5", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 5", except: [macos], source: hotkeys.vhk }
+  - { key: "5", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 5", only: [macos], source: hotkeys.vhk }
+  - { key: "6", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 6", except: [macos], source: hotkeys.vhk }
+  - { key: "6", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 6", only: [macos], source: hotkeys.vhk }
+  - { key: DELETE, mods: [ALT], icon: copy.png, label: "Copy", source: hotkeys.vhk }
+  - { key: INSERT, mods: [ALT], icon: paste.png, label: "Paste", source: hotkeys.vhk }
+  - { key: L, mods: [ALT], icon: snapload.png, label: "Load snapshot", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: L, mods: [GUI], icon: snapload.png, label: "Load snapshot", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: S, mods: [ALT], icon: snapsave.png, label: "Save snapshot", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: S, mods: [GUI], icon: snapsave.png, label: "Save snapshot", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: F10, mods: [ALT], icon: quickload.png, label: "Quickload snapshot", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: F10, mods: [GUI], icon: quickload.png, label: "Quickload snapshot", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: F11, mods: [ALT], icon: quicksave.png, label: "Quicksave snapshot", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: F11, mods: [GUI], icon: quicksave.png, label: "Quicksave snapshot", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: E, mods: [ALT], icon: milestone.png, label: "Set history milestone", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: E, mods: [GUI], icon: milestone.png, label: "Set history milestone", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: U, mods: [ALT], icon: milestoneback.png, label: "Return to history milestone", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: U, mods: [GUI], icon: milestoneback.png, label: "Return to history milestone", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: R, mods: [SHIFT, ALT], icon: record.png, label: "Record media", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: R, mods: [SHIFT, GUI], icon: record.png, label: "Record media", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: S, mods: [SHIFT, ALT], icon: stop.png, label: "Stop media recording", except: [macos], source: hotkeys-snapshot.vhk }
+  - { key: S, mods: [SHIFT, GUI], icon: stop.png, label: "Stop media recording", only: [macos], source: hotkeys-snapshot.vhk }
+  - { key: D, mods: [ALT], icon: fullscreen.png, label: "Full screen", except: [macos], source: hotkeys.vhk }
+  - { key: D, mods: [GUI], icon: fullscreen.png, label: "Full screen", only: [macos], source: hotkeys.vhk }
+  - { key: R, mods: [ALT], icon: restoredisp.png, label: "Restore display size", except: [macos], source: hotkeys.vhk }
+  - { key: R, mods: [GUI], icon: restoredisp.png, label: "Restore display size", only: [macos], source: hotkeys.vhk }
+  - { key: B, mods: [ALT], icon: decorations.png, label: "Full screen decorations", except: [macos], source: hotkeys.vhk }
+  - { key: B, mods: [GUI], icon: decorations.png, label: "Full screen decorations", only: [macos], source: hotkeys.vhk }
+  - { key: W, mods: [ALT], icon: warp.png, label: "Warp mode", except: [macos], source: hotkeys.vhk }
+  - { key: W, mods: [GUI], icon: warp.png, label: "Warp mode", only: [macos], source: hotkeys.vhk }
+  - { key: P, mods: [ALT], icon: pause.png, label: "Pause", except: [macos], source: hotkeys.vhk }
+  - { key: P, mods: [GUI], icon: pause.png, label: "Pause", only: [macos], source: hotkeys.vhk }
+  - { key: P, mods: [SHIFT, ALT], icon: frameadv.png, label: "Advance frame", except: [macos], source: hotkeys.vhk }
+  - { key: P, mods: [SHIFT, GUI], icon: frameadv.png, label: "Advance frame", only: [macos], source: hotkeys.vhk }
+  - { key: M, mods: [ALT], icon: mousegrab.png, label: "Grab mouse", except: [macos], source: hotkeys.vhk }
+  - { key: M, mods: [GUI], icon: mousegrab.png, label: "Grab mouse", only: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [ALT], icon: swapports.png, label: "Swap joystick ports", except: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [GUI], icon: swapports.png, label: "Swap joystick ports", only: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [SHIFT, ALT], icon: keysetjoy.png, label: "Keyset joystick", except: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [SHIFT, GUI], icon: keysetjoy.png, label: "Keyset joystick", only: [macos], source: hotkeys.vhk }
+  - { key: O, mods: [ALT], icon: settings.png, label: "Settings", except: [macos], source: hotkeys-settings.vhk }
+  - { key: O, mods: [GUI], icon: settings.png, label: "Settings", only: [macos], source: hotkeys-settings.vhk }
+  - { key: O, mods: [SHIFT, ALT], icon: settingsreset.png, label: "Restore default settings", except: [macos], source: hotkeys-settings.vhk }
+  - { key: O, mods: [SHIFT, GUI], icon: settingsreset.png, label: "Restore default settings", only: [macos], source: hotkeys-settings.vhk }
+  - { key: PAUSE, mods: [], icon: screenshot.png, label: "Quick screenshot", source: hotkeys-snapshot.vhk }
