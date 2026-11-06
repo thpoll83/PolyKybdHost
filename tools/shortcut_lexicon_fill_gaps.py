@@ -168,7 +168,6 @@ def main():
                     # concept absent: insert in LEXICON order
                     order = list(si.LEXICON)
                     after = [c for c in order[:order.index(concept)] if c in ours]
-                    idx = len(lines)
                     if after:
                         prev = f"  {after[-1]}: ["
                         idx = next(i for i, l in enumerate(lines) if l.startswith(prev)) + 1
