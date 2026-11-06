@@ -29,6 +29,8 @@ def shell_label(shell):
         shell_title.PWSH: "PowerShell 7 (pwsh)",
         shell_title.POWERSHELL: "Windows PowerShell 5.1",
         shell_title.FISH: "fish",
+        shell_title.NUSHELL: "Nushell",
+        shell_title.XONSH: "xonsh",
         shell_title.CMD: "cmd.exe",
         shell_title.MACOS_TERMINAL: "Terminal.app, iTerm2",
     }.get(shell, shell)
@@ -38,6 +40,8 @@ def state_text(st):
     """One shell's state, translated."""
     if st.state == shell_title.STATE_INSTALLED:
         return _("Set up")
+    if st.state == shell_title.STATE_NOT_INSTALLED and st.shell == shell_title.FISH:
+        return _("Shows the command without setup. Install adds only the Codex option.")
     if st.state == shell_title.STATE_NOT_INSTALLED:
         return _("Not set up")
     if st.state == shell_title.STATE_STALE:

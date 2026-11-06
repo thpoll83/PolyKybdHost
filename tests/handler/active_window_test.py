@@ -2016,6 +2016,8 @@ class TheShippedMappingResolvesWindowlessAppsTest(unittest.TestCase):
                 ("fusion360", "WINDOWS", "fusion_template"),
                 ("autodesk fusion", "MACOS", "fusion_template_mac"),
                 ("autodesk fusion 360", "MACOS", "fusion_template_mac"),
+                ("acad", "WINDOWS", "autocad_template"),
+                ("autocad", "MACOS", "autocad_template_mac"),
                 ("openscad", "WINDOWS", "openscad_template"),
                 ("openscad", "LINUX", "openscad_template_linux"),
                 ("org.openscad.openscad", "LINUX", "openscad_template_linux"),
