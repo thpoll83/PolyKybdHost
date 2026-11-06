@@ -61,12 +61,23 @@ class LexiconDataTest(unittest.TestCase):
         self.assertEqual(clashes, [])
 
     def test_no_phrase_is_too_short_to_trust(self):
-        latin = re.compile(r"^[a-zÀ-ɏḀ-ỿ̀-ͯ ]+$")
+        """No one-character phrase, and no two-letter ASCII phrase: two ASCII
+        letters may be an English word ("in", "on", "go"). Two letters with an
+        accent cannot be ("aç", "mở"), so those stay."""
+        ascii_word = re.compile(r"^[a-z]+$")
         short = []
         for phrase, concept, lang in si.load_localized_lexicon(LEXICON_DIR):
-            if len(phrase) < 2 or (latin.match(phrase) and len(phrase) < 3):
+            if len(phrase) < 2 or (ascii_word.match(phrase) and len(phrase) < 3):
                 short.append(f"{lang}: {phrase!r} ({concept})")
         self.assertEqual(short, [])
+
+    def test_a_capital_turkish_i_matches(self):
+        """"İptal" must normalize to "iptal", not "i ptal"."""
+        self.assertEqual(si.normalize("İptal"), "iptal")
+        si._LEXICON_CACHE = None
+        hit = si.match("İptal")
+        self.assertIsNotNone(hit)
+        self.assertEqual(hit.concept, "close")
 
     def test_a_compact_phrase_never_hides_a_longer_one(self):
         """A Chinese/Japanese phrase inside a longer phrase of ANOTHER concept is

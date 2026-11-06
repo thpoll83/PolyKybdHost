@@ -329,11 +329,16 @@ def normalize(label: str) -> str:
     GTK, '&' in Qt and Win32), a trailing ellipsis, a parenthetical, and the
     alignment padding mousepad emits ('New      ').
     """
-    s = label.replace("_", "").replace("&", "")
+    # ⚠️ Lower-case FIRST. Turkish "İ" lower-cases to "i" plus a combining dot
+    # (U+0307); removing punctuation afterwards turns that dot into a space, and
+    # "İptal" became "i ptal" while the phrase "iptal" stayed whole. The dot is
+    # dropped outright: no language here spells a meaningful "i" + U+0307.
+    s = label.lower().replace("i\u0307", "i")
+    s = s.replace("_", "").replace("&", "")
     s = _STRIP_TRAILING.sub("", s)
     s = _PARENTHETICAL.sub("", s)
     s = _NON_WORD.sub(" ", s)
-    return _SPACES.sub(" ", s).strip().lower()
+    return _SPACES.sub(" ", s).strip()
 
 
 # The lexicon folded the same way a label is, so the comparison is symmetric.
