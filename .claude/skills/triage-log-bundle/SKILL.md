@@ -132,6 +132,21 @@ These are the ones that have produced wrong diagnoses:
   is being closed`, then `RPC reconnect failed: [WinError 2]` (the endpoint is
   gone). `daemon.txt` may be empty for the whole timeframe, and `diagnostics.txt`
   then says `Keyboard: not connected` while the keyboard itself works fine.
+- ⚠️ **"It did not start again after the update": a relaunch that died before
+  its first log line.** `host.txt` ends the old process with
+  `Update applied, restarting...` and `Restarting: [...]`, `crash.txt` has its
+  `clean exit`, and then nothing: no `launching` line in `startup.txt` and no
+  `session start` in `crash.txt` until the user starts the app by hand. The
+  replacement was killed with the old process's process group. On macOS the
+  usual cause is a login launch: the LaunchAgent runs `start_polyhost.sh`, which
+  runs python as its child, and launchd kills every process left in the job's
+  group when the job ends. A low pid and a slow `pre-logging imports` on the old
+  process (6.4 s against 0.25 s on the manual start) point at a launch right
+  after boot. Fixed in `spawn_detached()` by PolyKybdHost#623
+  (`start_new_session`; `docs/autostart.md`), so on a host that has it, this
+  signature means something else killed the group. The relaunch always runs the
+  OLD version's code, so an update that starts in a host without the fix can
+  still fail this way (2026-11-06, macOS 13, 1.17.48 -> 1.19.11).
 - **"Eden / idle keeps turning off"**: for each `Stop idle.` in
   `keyboard-console.txt`, look in `daemon.txt` at the same second for
   `Setting idle state to False...` (DEBUG, so the daemon must log at `--dev 1`
