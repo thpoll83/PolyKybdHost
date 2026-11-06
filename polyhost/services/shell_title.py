@@ -2,9 +2,9 @@
 command line into the terminal window title.
 
 The host sees a program that runs inside a terminal (nano, for example) only
-through the terminal's window title. fish, cmd.exe, macOS Terminal.app,
-iTerm2 and oh-my-zsh put the command there without setup; plain bash, zsh and
-PowerShell show only the prompt's title. The scripts in ``polyhost/res/shell/``
+through the terminal's window title. fish, Nushell, xonsh, cmd.exe, macOS
+Terminal.app, iTerm2 and oh-my-zsh put the command there without setup; plain
+bash, zsh and PowerShell show only the prompt's title. The scripts in ``polyhost/res/shell/``
 change that, and this module adds or removes the ONE line in each shell's
 startup file that sources them:
 
@@ -16,7 +16,8 @@ With the Codex option the line first sets a flag (``__poly_title_codex=1``,
 ``$global:PolyKybdTitleCodex``), and the script then wraps the ``codex``
 command so that Codex's own window title starts with ``codex``: Codex
 replaces the shell's title, and its default title does not name it (see
-``overlay_sources/aicli/SOURCES.md``).
+``overlay_sources/aicli/SOURCES.md``). fish needs no title setup, so its file
+(``conf.d/polykybd.fish``) is only for the Codex option.
 
 The line names the absolute path of THIS install's script. An update copies
 the new files over the same install directory, so the path stays valid; a
@@ -54,19 +55,23 @@ SCRIPT_DIR = Path(__file__).resolve().parent.parent / "res" / "shell"
 BEGIN_MARKER = "# >>> PolyKybd title integration >>>"
 END_MARKER = "# <<< PolyKybd title integration <<<"
 
-# The shells this module can set up, in display order.
+# The shells this module can set up, in display order. fish shows the command
+# itself; its file only adds the Codex option.
 BASH = "bash"
 ZSH = "zsh"
+FISH = "fish"
 PWSH = "pwsh"               # PowerShell 7
 POWERSHELL = "powershell"   # Windows PowerShell 5.1
-SHELLS = (BASH, ZSH, PWSH, POWERSHELL)
+SHELLS = (BASH, ZSH, FISH, PWSH, POWERSHELL)
 
 # Shown for information only: they put the command in the title themselves.
-FISH = "fish"
+NUSHELL = "nu"              # "~/dir> nano" (shell_integration.osc2, on by default)
+XONSH = "xonsh"             # "nano | user@host: ~/dir | xonsh" ($TITLE)
 CMD = "cmd"
 MACOS_TERMINAL = "macos-terminal"   # Terminal.app and iTerm2
 
 SCRIPT_NAMES = {BASH: "polykybd-title.bash", ZSH: "polykybd-title.zsh",
+                FISH: "polykybd-title.fish",
                 PWSH: "polykybd-title.ps1", POWERSHELL: "polykybd-title.ps1"}
 
 # What status() reports per shell.
@@ -119,6 +124,7 @@ _BLOCK_RE = re.compile(
     r"(?m)^" + re.escape(BEGIN_MARKER) + r"[ \t]*\r?\n(.*?)^"
     + re.escape(END_MARKER) + r"[ \t]*(?:\r?\n|\Z)", re.S)
 _PS_PATH_RE = re.compile(r"-LiteralPath\s+'((?:[^']|'')*)'")
+_FISH_PATH_RE = re.compile(r"^if test -r '((?:[^'\\]|\\.)*)'")
 
 # The probe answers are cached per executable for the life of the process:
 # the profile path does not change while the app runs, and asking costs a
@@ -147,6 +153,11 @@ def source_line(shell, path, codex=False):
         q = shlex.quote(path)
         flag = "__poly_title_codex=1; " if codex else ""
         return f"if [ -r {q} ]; then {flag}. {q}; fi"
+    if shell == FISH:
+        # In fish single quotes only \' and \\ are escapes.
+        q = "'" + path.replace("\\", "\\\\").replace("'", "\\'") + "'"
+        flag = "set -g __poly_title_codex 1; " if codex else ""
+        return f"if test -r {q}; {flag}source {q}; end"
     q = "'" + path.replace("'", "''") + "'"
     flag = "$global:PolyKybdTitleCodex = $true; " if codex else ""
     return f"if (Test-Path -LiteralPath {q}) {{ {flag}. {q} }}"
@@ -160,6 +171,9 @@ def _path_in_line(shell, line):
         except ValueError:
             return ""
         return words[3] if len(words) > 3 and words[:3] == ["if", "[", "-r"] else ""
+    if shell == FISH:
+        m = _FISH_PATH_RE.match(line)
+        return re.sub(r"\\(.)", r"\1", m.group(1)) if m else ""
     m = _PS_PATH_RE.search(line)
     return m.group(1).replace("''", "'") if m else ""
 
@@ -184,10 +198,15 @@ def _bash_present(which, system):
 
 
 def rc_file(shell, home=None, env=None):
-    """The startup file for bash or zsh (``$ZDOTDIR`` for zsh)."""
+    """The startup file for bash or zsh (``$ZDOTDIR`` for zsh), or the file
+    fish loads from ``conf.d`` (``$XDG_CONFIG_HOME``, else ``~/.config``)."""
     env = os.environ if env is None else env
     if shell == BASH:
         return _home(home) / ".bashrc"
+    if shell == FISH:
+        xdg = env.get("XDG_CONFIG_HOME")
+        base = Path(xdg) if xdg else _home(home) / ".config"
+        return base / "fish" / "conf.d" / "polykybd.fish"
     zdotdir = env.get("ZDOTDIR")
     return (Path(zdotdir) if zdotdir else _home(home)) / ".zshrc"
 
@@ -314,7 +333,7 @@ def _default_encoding(shell, exists):
     7 reads a BOM-less script as UTF-8; Windows PowerShell 5.1 reads it in
     the ANSI code page, which is the platform default. A NEW 5.1 profile is
     written as UTF-8 with a BOM, which both read."""
-    if shell == PWSH or (shell == POWERSHELL and not exists):
+    if shell in (PWSH, FISH) or (shell == POWERSHELL and not exists):
         return "utf-8"
     return locale.getpreferredencoding(False)
 
@@ -413,8 +432,9 @@ def status(shells=None, home=None, env=None, which=shutil.which, run=subprocess.
             continue
         out.append(_status_one(shell, home, env, which, run, system, use_cache))
     if shells is None:
-        if which("fish"):
-            out.append(ShellStatus(FISH, STATE_NO_SETUP, None, ""))
+        for shell in (NUSHELL, XONSH):
+            if which(shell):
+                out.append(ShellStatus(shell, STATE_NO_SETUP, None, ""))
         if system == "Windows":
             out.append(ShellStatus(CMD, STATE_NO_SETUP, None, ""))
         if system == "Darwin":
@@ -423,6 +443,12 @@ def status(shells=None, home=None, env=None, which=shutil.which, run=subprocess.
 
 
 def _status_one(shell, home, env, which, run, system, use_cache):
+    if shell == FISH:
+        rc = rc_file(shell, home, env)
+        if not which("fish") and not rc.exists():
+            return ShellStatus(shell, STATE_NOT_PRESENT, rc, "")
+        state, detail, codex = _file_state(shell, rc, system)
+        return ShellStatus(shell, state, rc, detail, codex)
     if shell in (BASH, ZSH):
         rc = rc_file(shell, home, env)
         if shell == BASH:
@@ -531,14 +557,17 @@ def _change(st, install, system, now=None, codex=False):
     return Result(shell, True, True, done.format(path=rc), backup)
 
 
-def default_selection(st, env=None):
+def default_selection(st, env=None, codex=False):
     """Whether "all shells" includes ``st``: a shell found on this computer
     that has its startup file already, or is the login shell (``$SHELL``).
     A zsh that is installed but never used gets no new ~/.zshrc, which would
-    also skip zsh's first-start setup wizard."""
+    also skip zsh's first-start setup wizard. fish needs its file only for
+    the Codex option, so it is included only with ``codex``."""
     env = os.environ if env is None else env
     if st.shell not in SHELLS or st.state in (STATE_NOT_PRESENT, STATE_NO_SETUP):
         return False
+    if st.shell == FISH and st.state == STATE_NOT_INSTALLED:
+        return bool(codex)
     if st.shell in (BASH, ZSH) and st.state == STATE_NOT_INSTALLED:
         login = os.path.basename(env.get("SHELL", ""))
         return st.rc_path is not None and (Path(st.rc_path).exists() or login == st.shell)
@@ -556,7 +585,7 @@ def _apply(install, shells, statuses, home, env, which, run, system, codex=None)
         if shells is None:
             # "All shells": install where default_selection() says so, remove
             # wherever a block is.
-            if install and not default_selection(st, env):
+            if install and not default_selection(st, env, codex=bool(codex)):
                 continue
             if not install and st.state not in (STATE_INSTALLED, STATE_STALE):
                 continue

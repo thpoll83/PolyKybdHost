@@ -16,6 +16,7 @@ import sys
 import tarfile
 import tempfile
 import threading
+import time
 from collections import namedtuple
 from pathlib import Path
 from typing import Optional, Union
@@ -62,6 +63,10 @@ GITHUB_API    = f"https://api.github.com/repos/{HOST_REPO}/releases/latest"
 GITHUB_FW_API = f"https://api.github.com/repos/{FW_REPO}/releases/latest"
 USER_AGENT = f"PolyKybdHost/{__version__}"
 HTTP_TIMEOUT = 5
+# Waits between signature-fetch attempts. The image is already on disk when the
+# 64-byte .sig is fetched, so one slow GitHub read (field 2026-11-05: "Read timed
+# out. (read timeout=10)", a manual retry then worked) must not throw it away.
+SIG_RETRY_DELAYS = (1.0, 3.0)
 
 # Persists ETag values across restarts so conditional requests (If-None-Match)
 # return 304 Not Modified without counting against GitHub's rate limit.
@@ -1615,6 +1620,39 @@ class FwUpDownloader(threading.Thread):
         with open(sig_path, "wb") as f:
             f.write(data)
 
+    @staticmethod
+    def _is_transient(exc: Exception) -> bool:
+        """A timeout, a dropped connection or a 5xx may pass on a second try.
+
+        A 4xx or a wrong-length body will not, so those fail at once."""
+        if isinstance(exc, (requests.Timeout, requests.ConnectionError)):
+            return True
+        if isinstance(exc, requests.HTTPError):
+            resp = exc.response
+            return resp is not None and resp.status_code >= 500
+        return False
+
+    def _fetch_signature_with_retry(self, sig_url: str, sig_path: str):
+        """``_fetch_signature`` with up to ``len(SIG_RETRY_DELAYS)`` retries."""
+        for attempt in range(len(SIG_RETRY_DELAYS) + 1):
+            try:
+                self._fetch_signature(sig_url, sig_path)
+                return
+            except Exception as e:  # noqa: BLE001
+                if attempt >= len(SIG_RETRY_DELAYS) or not self._is_transient(e):
+                    raise
+                delay = SIG_RETRY_DELAYS[attempt]
+                log.warning("Firmware signature download attempt %d failed (%s); "
+                            "retrying in %.0f s", attempt + 1, e, delay)
+            # Sleep in slices so Cancel still answers within ~0.1 s.
+            deadline = time.monotonic() + delay
+            while time.monotonic() < deadline:
+                if self._cancelled():
+                    raise _DownloadCancelled()
+                time.sleep(min(0.1, max(0.0, deadline - time.monotonic())))
+            if self._cancelled():
+                raise _DownloadCancelled()
+
     def run(self):
         tmp_path = None
         try:
@@ -1670,7 +1708,12 @@ class FwUpDownloader(threading.Thread):
         if sig_url:
             _fire(self._on_progress, 100, MSG_DOWNLOADING_SIG)
             try:
-                self._fetch_signature(sig_url, tmp_path + ".sig")
+                self._fetch_signature_with_retry(sig_url, tmp_path + ".sig")
+            except _DownloadCancelled:
+                discard_fw_download(tmp_path)
+                log.info("Firmware download cancelled by user.")
+                _fire(self._on_finished, False, MSG_DOWNLOAD_CANCELLED, "")
+                return
             except Exception as e:  # noqa: BLE001
                 log.exception("Firmware signature download failed")
                 discard_fw_download(tmp_path)
