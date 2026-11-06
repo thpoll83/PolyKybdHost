@@ -19,16 +19,17 @@ no OSC 0 or OSC 2 escape anywhere in its `src/*.c`). The host therefore sees
 nano only in the terminal's **window title**, when the shell or the terminal
 puts the running command there. The mapping (`overlay-mapping.poly.yaml`,
 `&editor_titles` on every terminal entry) selects the route on the
-word `nano` (or `(nano)` / `(nano` for iTerm2) and then requires nano at the
-command position with a `title` regex:
+word `nano` (or `(nano)` / `(nano` for iTerm2, `^nano` for Nushell) and then
+requires nano at the command position with a `title` regex:
 
 ```
-^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s)(?:sudo\s+)?nano(?:$|\s|\))
+^(?:sudo\s+)?nano(?:$|\s(?![—:-]\s))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:sudo\s+)?nano(?:$|\s|\))
 ```
 
 That is: nano at the start of the title (not followed by ` — `, ` : ` or
 ` - `, which there mean the word was a directory name), or after ` - `, ` — `,
-` : `, `(` or `] `, each optionally with `sudo ` before it.
+` : `, `(`, `] ` or `> ` (Nushell, also `> ^`), each optionally with `sudo `
+before it.
 
 The entry for the terminals without an overlay set has no overlay of its own,
 so it still matches nothing when the title does not show nano, and the
@@ -44,10 +45,17 @@ terminal keeps the generic shortcut harvest.
 | Konsole | `~/src : nano — Konsole` (tab title format `%d : %n`) | yes |
 | fish | `nano notes.txt ~/s/docs` (`fish_title`; `[host] ` before it over SSH) | yes |
 | zsh with oh-my-zsh | `nano notes.txt` (`omz_termsupport_preexec`) | yes |
+| Nushell | `~/docs> nano` (`shell_integration.osc2`, on by default; only the first word, `> ^nano` for an explicit external command); the folder alone at the prompt | yes |
+| xonsh | `nano \| me@pc: ~/docs \| xonsh` (the default `$TITLE`, `{current_job:{} \| }{user}@{hostname}: {cwd} \| xonsh`) | yes |
 | bash, PowerShell, plain zsh | the prompt's title (`user@host: ~/dir`, the executable path) | no: use a script below |
 
 The fish title was read on a pty from fish 3.7.0 (`fish -i -N`, then
-`nano --version`: `nano --version /t/c/-/4/s/bashtitle`). The cmd.exe,
+`nano --version`: `nano --version /t/c/-/4/s/bashtitle`). The Nushell title
+was read on a pty from Nushell 0.108.0 (`^sleep 1` wrote
+`ESC ]2;/home/user/PolyKybdHost> ^sleep BEL`, then the folder alone at the
+prompt; the source is `run_shell_integration_osc2()` in
+`crates/nu-cli/src/repl.rs`). The xonsh title was read from xonsh 0.14.4
+(`sleep 2` wrote `sleep | <user>@vm: /home/user/PolyKybdHost | xonsh`). The cmd.exe,
 Terminal.app, iTerm2, Konsole and oh-my-zsh formats are from their documented
 defaults and were not checked on an install. On macOS 12.3 and later
 `/usr/bin/nano` starts `pico`, which has other keys; this set is for GNU nano
@@ -124,6 +132,15 @@ To use one by hand, source it at the end of the startup file.
 - **zsh**: a `preexec` hook. Tested on zsh 5.9 on a pty: `nano --version`
   wrote `ESC ]2;nano --version BEL`. oh-my-zsh, prezto and similar frameworks
   already do this.
+- **At the next prompt** (bash and zsh): after a command whose title the script
+  wrote, it writes `user@host: ~/dir`. Without that, a prompt that sets no
+  title of its own (`PS1='$ '`, the macOS zsh default) left the command's
+  title, and with it the program's overlay, at the empty prompt until the next
+  command. The bash reset is the first part of the script's `PROMPT_COMMAND`
+  entry and keeps `$?`; a title in `PS1` (Ubuntu's) is printed after it. The
+  zsh reset is the first `precmd` hook, so a theme's own title (oh-my-zsh
+  sets one in `precmd`) is written after it. Both checked on a pty
+  (`tests/services/shell_title_test.py`).
 - **PowerShell** (5.1 and 7): a PSReadLine Enter handler sets the title and a
   wrapper around `prompt` restores it. It replaces a custom Enter key handler.
   Not tested: no PowerShell was available.
@@ -131,7 +148,10 @@ To use one by hand, source it at the end of the startup file.
 With the Codex option the scripts also wrap the `codex` command, so that
 Codex's own title names it (`../aicli/SOURCES.md`).
 
-**fish**, **cmd.exe**: nothing to add (see the table). In Windows Terminal the
+**fish**, **Nushell**, **xonsh**, **cmd.exe**: nothing to add (see the table).
+For fish, the Codex option writes one line to
+`~/.config/fish/conf.d/polykybd.fish` (`$XDG_CONFIG_HOME` when set) that
+loads `polykybd-title.fish`, which only defines the `codex` wrapper. In Windows Terminal the
 profile setting "Suppress title changes" must stay off (the default).
 
 ## Shortcut reference

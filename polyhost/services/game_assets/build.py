@@ -212,11 +212,29 @@ def remove_stale_temp(cache_dir: Path) -> None:
 
 def shown_folder(folder: Path) -> str:
     """`folder` for a log line, with the home folder written as ~ so a shared log
-    carries no user name."""
+    carries no user name. Normalized first: a typed ``~/../me/games`` would
+    otherwise keep the user name."""
+    folder = Path(os.path.normpath(folder))
     try:
         return str(Path("~") / Path(folder).relative_to(Path.home()))
     except ValueError:
         return str(folder)
+
+
+def searched_text(reader, folder: str, hint=None) -> str:
+    """Where `reader` looked, for the log line of a search that found nothing.
+    A reader that lists its folders (``searched(hint)``) gets each one, marked
+    "(missing)" when it does not exist."""
+    if folder:
+        shown = shown_folder(Path(folder).expanduser())
+        return f"the folder set in Settings, {shown}" + (
+            "" if Path(folder).expanduser().is_dir() else " (missing)")
+    listed = getattr(reader, "searched", None)
+    if listed is None:
+        return "the usual install folders"
+    dirs = listed(hint)
+    return ", ".join(shown_folder(d) + ("" if d.is_dir() else " (missing)") for d in dirs) \
+        or "no folder"
 
 
 def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=None) -> Path | None:
@@ -231,8 +249,11 @@ def build(template: str, spec_path: Path, settings_get, cache_dir: Path, hint=No
     if choices and variant not in choices:
         log.warning("Game art: unknown %s %r, using %s.", decl.variant, variant, choices[0])
         variant = choices[0]
-    files = reader.find(str(settings_get(decl.folder) or "") if decl.folder else "", hint)
+    folder = str(settings_get(decl.folder) or "") if decl.folder else ""
+    files = reader.find(folder, hint)
     if not files:
+        log.info("Game art: %s found no files for %s in %s.", name, template,
+                 searched_text(reader, folder, hint))
         return None
     remove_stale_temp(cache_dir)
     shipped = RES / "overlays" / template

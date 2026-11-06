@@ -43,6 +43,8 @@ TITLES = {
         "Administrator: Command Prompt - claude",
         "Default (claude)",
         "~/src : claude — Konsole",
+        "~/src> claude",                       # Nushell
+        "claude | me@pc: ~/src | xonsh",       # xonsh
     ],
     "codex_cli_template": [
         "codex",
@@ -56,6 +58,7 @@ TITLES = {
         "[ . ] Action Required | PolyKybdHost",
         "● [ ! ] Action Required | PolyKybdHost",
         "Default (codex)",
+        "/home/me/src> ^codex",                # Nushell, explicit external
     ],
     "opencode_template": [
         "OpenCode",
@@ -93,6 +96,8 @@ TITLES = {
     "aider_template": [
         "aider",
         "aider --model sonnet main.py",
+        "~/src> aider",                        # Nushell
+        "aider | me@pc: ~/src | xonsh",        # xonsh
         "C:\\WINDOWS\\system32\\cmd.exe - aider",
         "Default (aider)",
     ],
@@ -108,6 +113,9 @@ OTHER_TITLES = [
     "less aider.log",
     "man gemini",
     "git log --grep codex",
+    "~/src> cd",                              # Nushell in a folder, then cd codex
+    "/home/me/codex",                         # Nushell, idle in ~/codex
+    "me@pc: ~/claude | xonsh",                # xonsh, idle in ~/claude
     "Fix the parser | PolyKybdHost",          # Codex's default title
     "⠋ Fix the parser | PolyKybdHost",        # ... while it works
     "Qwen",

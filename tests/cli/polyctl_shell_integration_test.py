@@ -62,7 +62,7 @@ class PolyctlShellIntegrationTest(unittest.TestCase):
 
     def test_unknown_shell_is_rejected(self):
         with self.assertRaises(SystemExit):
-            self.run_main("shell-integration", "install", "--shell", "fish")
+            self.run_main("shell-integration", "install", "--shell", "tcsh")
 
     @unittest.skipUnless(shutil.which("bash") and os.name == "posix", "needs bash on POSIX")
     def test_real_install_and_remove_in_a_temp_home(self):
