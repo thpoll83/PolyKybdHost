@@ -129,3 +129,8 @@ PYTHONPATH=. python polyhost/res/overlay_sources/capcut/fetch_icons.py
 python scripts/generate_app_overlays.py \
     polyhost/res/overlay_sources/capcut/bindings.yaml --preview /tmp/capcut_preview
 ```
+
+`fetch_icons.py` does not redraw a custom glyph whose PNG already exists in
+`icons/` (`deleteleft`, `deleteright`, `splitall`, `maintrack`, `prevmarker`,
+`nextmarker`). After you change one of those drawings, delete its PNG first,
+then run both commands.

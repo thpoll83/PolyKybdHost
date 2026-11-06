@@ -158,6 +158,8 @@ def _marker_step(path: Path, flag: Path, forward: bool) -> None:
 
 
 def _guarded(path: Path, draw) -> None:
+    """Draw a custom glyph only when its PNG is missing. To redraw one after
+    changing its drawing, delete the PNG first (see SOURCES.md)."""
     if path.exists():
         print(f"  {path.name}  <- committed asset (left as-is)")
     else:
