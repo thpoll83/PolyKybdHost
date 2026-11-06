@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fetch + render icons for the terminal AI CLI overlays.
 
-One icon folder serves seven sets: `claude_code_cli.yaml`, `codex_cli.yaml`,
-`opencode.yaml`, `gemini_cli.yaml`, `qwen_code.yaml`, `copilot_cli.yaml` and
-`aider.yaml`. They share most of their vocabulary (interrupt, new line,
+One icon folder serves eight sets: `claude_code_cli.yaml`, `codex_cli.yaml`,
+`opencode.yaml`, `gemini_cli.yaml`, `qwen_code.yaml`, `copilot_cli.yaml`,
+`kimi_cli.yaml` and `aider.yaml`. They share most of their vocabulary (interrupt, new line,
 external editor, paste image), so the icons are in one place.
 
 Style route: Microsoft Fluent UI System Icons (MIT), with Material Symbols
@@ -12,8 +12,8 @@ apps (`../aichat/`). Icons those apps or nano already draw are copied byte for
 byte, so each glyph is stored once in the icon library. Program marks:
 
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
-* Gemini CLI, Qwen Code -- the CLIs' own marks from Simple Icons
-  (`googlegemini`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* Gemini CLI, Qwen Code, Kimi Code CLI -- the CLIs' own marks from Simple
+  Icons (`googlegemini`, `qwen`, `kimi`; CC0 artwork, `../brand_marks.py`).
 * OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
   "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
   hatched.
@@ -72,10 +72,12 @@ FLUENT = {
     # --- Copilot CLI ---
     "history": "History",
     "plan": "ms:assignment",
+    # --- Kimi Code CLI ---
+    "notify": "Alert",
 }
 
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
-BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen"}
+BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen", "kimi.png": "kimi"}
 LETTERS = {"aider.png": "Ai"}
 
 BORROWED = {
