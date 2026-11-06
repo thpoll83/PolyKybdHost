@@ -8,7 +8,9 @@ PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/foobar2000/fetch_icon
     polyhost/res/overlay_sources/foobar2000/foobar2000.yaml --preview /tmp/foobar2000_preview
 ```
 
-Both steps are deterministic. A second run leaves every PNG byte-identical.
+Both steps are deterministic. A second run leaves every PNG byte-identical
+as long as the upstream SVGs are unchanged. The icon sources are fetched from
+unpinned branches, so a change there changes the PNG bytes.
 
 ## Shortcuts
 

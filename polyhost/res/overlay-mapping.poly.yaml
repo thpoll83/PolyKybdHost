@@ -2668,4 +2668,6 @@ league of legends,league of legends.exe,leagueoflegends:
 # no documented default shortcuts. The 2.26.2 x64 installer ships
 # foobar2000.exe. Not checked on a running install.
 foobar2000:
-  overlay: foobar2000_template.mods.png
+  os:
+    windows:
+      overlay: foobar2000_template.mods.png
