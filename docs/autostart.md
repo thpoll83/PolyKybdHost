@@ -62,6 +62,14 @@ brand-new console window it then dies with. Use
     (WinError 5), so it falls back to the plain detached spawn — never "no relaunch
     at all". Outside a job the flag is ignored, so the ordinary autostart/tray path
     is unaffected.
+  - ⚠️ **On macOS and Linux the relaunch gets its own session (`start_new_session`,
+    in `detached_popen_kwargs()`).** This is the POSIX form of the job object. A
+    macOS login launch runs the app inside the LaunchAgent job, and launchd kills
+    every process left in the job's process group when the job ends. Without
+    `setsid` the relaunch was killed as soon as the old process exited, before it
+    wrote a log line: no `launching` line in `startup.txt` and no `session start`
+    in `crash.txt` after `Restarting: [...]` (macOS 13, 1.17.48 -> 1.19.11,
+    2026-11-06). A closing terminal (SIGHUP) kills the group the same way.
   - **A relaunch inherits `sys.executable` forever, so it must be normalised to
     `pythonw.exe`** (`updater.relaunch_executable()`): one session started from a
     terminal (`python -m polyhost`) used to make *every* subsequent post-update

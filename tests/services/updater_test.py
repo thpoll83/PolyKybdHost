@@ -1308,6 +1308,74 @@ class TestRestartApp(unittest.TestCase):
             self.assertEqual(updater.detached_creationflags(), 0)
             self.assertNotIn("creationflags", updater.detached_popen_kwargs())
 
+    def test_posix_relaunch_leaves_the_process_group(self):
+        """The relaunch must not stay in this process's process group.
+
+        launchd kills the whole process group of a LaunchAgent job when the
+        job ends, so a relaunch left in it died with the old process (macOS
+        login launch, 2026-11-06). setsid moves it out.
+        """
+        for plat in ("darwin", "linux"):
+            with self.subTest(plat=plat), mock.patch.object(updater.sys, "platform", plat):
+                self.assertTrue(updater.detached_popen_kwargs().get("start_new_session"))
+
+    def test_windows_relaunch_does_not_pass_start_new_session(self):
+        """Windows detaches with creationflags; start_new_session is POSIX only."""
+        with mock.patch.object(updater.sys, "platform", "win32"):
+            self.assertNotIn("start_new_session", updater.detached_popen_kwargs())
+
+    def test_posix_relaunch_survives_its_process_group_being_killed(self):
+        """Real processes: spawn through spawn_detached, kill the spawner's
+        process group the way launchd does, and the relaunched child lives."""
+        if sys.platform == "win32":
+            self.skipTest("process groups are POSIX")
+        import os
+        import signal
+        import subprocess
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            pidfile = os.path.join(tmp, "child.pid")
+            go = os.path.join(tmp, "go")
+            alive = os.path.join(tmp, "alive")
+            # The child writes `alive` only after the test has killed the
+            # group and created `go`. kill(pid, 0) cannot tell: it succeeds
+            # on a killed child that nobody has reaped yet.
+            child = (
+                "import os,time\n"
+                "open(%r,'w').write(str(os.getpid()))\n"
+                "t=time.monotonic()+20\n"
+                "while not os.path.exists(%r) and time.monotonic()<t: time.sleep(0.05)\n"
+                "open(%r,'w').write('1')\n"
+            ) % (pidfile, go, alive)
+            spawner = (
+                "import sys; sys.path.insert(0, %r)\n"
+                "from polyhost.services import updater\n"
+                "updater.spawn_detached([sys.executable, '-c', %r])\n"
+                "import time; time.sleep(30)\n"
+            ) % (os.getcwd(), child)
+            # The spawner leads its own group, like a launchd job does.
+            parent = subprocess.Popen([sys.executable, "-c", spawner], start_new_session=True)
+            deadline = time.monotonic() + 20
+            while not os.path.exists(pidfile) and time.monotonic() < deadline:
+                time.sleep(0.05)
+            time.sleep(0.2)
+            with open(pidfile, encoding="utf-8") as fh:
+                child_pid = int(fh.read())
+            try:
+                os.killpg(parent.pid, signal.SIGKILL)
+                parent.wait(timeout=5)
+                open(go, "w", encoding="utf-8").close()
+                deadline = time.monotonic() + 5
+                while not os.path.exists(alive) and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                self.assertTrue(os.path.exists(alive),
+                                "the relaunched child died with its parent's process group")
+            finally:
+                try:
+                    os.kill(child_pid, signal.SIGKILL)
+                except OSError:
+                    pass
+
 
 class TestPreflight(unittest.TestCase):
     """What must hold BEFORE an update is applied.

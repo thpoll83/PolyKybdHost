@@ -1043,6 +1043,17 @@ def detached_popen_kwargs() -> dict:
     stdio goes to DEVNULL: a DETACHED_PROCESS child has no console, so inheriting
     the parent's (soon-invalid) handles buys nothing. The app logs to its own
     files either way.
+
+    ⚠️ On POSIX the child gets its own session (``setsid``). Without it the
+    child stays in this process's process group. A macOS login launch runs
+    the app as a launchd job (the LaunchAgent starts ``start_polyhost.sh``,
+    which runs python as a child), and launchd kills every process left in
+    the job's process group when the job ends. So the relaunch was killed
+    within milliseconds of this process exiting, before it wrote one log
+    line: "it did not start again after the update" (macOS 13, 1.17.48 ->
+    1.19.11, 2026-11-06). The same group kill comes from a closing terminal
+    (SIGHUP) or an IDE that ends the run. ``daemon_launch`` does the same for
+    the spawned daemon.
     """
     kwargs = {
         "close_fds": False,
@@ -1053,6 +1064,8 @@ def detached_popen_kwargs() -> dict:
     flags = detached_creationflags()
     if flags:
         kwargs["creationflags"] = flags
+    if sys.platform != "win32":
+        kwargs["start_new_session"] = True
     return kwargs
 
 
