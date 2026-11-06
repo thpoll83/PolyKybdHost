@@ -29,7 +29,7 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
         poly_settings=types.SimpleNamespace(get=lambda k: settings[k]),
         worker=types.SimpleNamespace(submit=lambda name, fn: submitted.append((name, fn))),
         keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {},
-                                   supports=lambda f: protocol >= {"icon_slot_512k": 27}[f]),
+                                   protocol_version=protocol),
         log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
         emit=lambda name, payload: emitted.append((name, payload)),
         _fontpack_flash_in_progress=in_progress,
@@ -81,6 +81,13 @@ class TestIconSlotGate(unittest.TestCase):
         core = _fake_core(protocol=20)
         self.assertTrue(PolyCore._bundle_fits_device(core, dict(_BIG_ICONS, size=0x40000)))
         self.assertTrue(PolyCore._bundle_fits_device(core, {"id": "emoji", "size": 10**6}))
+        self.assertFalse(PolyCore._bundle_fits_device(core, _BIG_ICONS))
+
+    def test_an_unread_protocol_holds_a_large_library_without_device_io(self):
+        """The status snapshot calls the gate, so it reads the cached protocol
+        and never asks the keyboard; unread means too old."""
+        core = _fake_core(protocol=None)
+        core.keeb.supports = lambda f: self.fail("the gate must not query the device")
         self.assertFalse(PolyCore._bundle_fits_device(core, _BIG_ICONS))
 
 

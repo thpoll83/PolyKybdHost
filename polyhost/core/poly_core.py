@@ -3260,11 +3260,13 @@ class PolyCore(Observable):
     def _bundle_fits_device(self, b) -> bool:
         """False for an icon library larger than the 256 KB icon slot of firmware
         below protocol 27 (font-pack layout v2): that firmware refuses it at BEGIN,
-        on every connect. The keyboard keeps its old library until it is updated."""
+        on every connect. The keyboard keeps its old library until it is updated.
+        Reads the CACHED protocol only (no device I/O), because the status
+        snapshot calls it; an unread protocol counts as too old."""
         if b.get("kind") != "icons" or b.get("size", 0) <= LEGACY_ICON_SLOT_SIZE:
             return True
-        supports = getattr(self.keeb, "supports", None)
-        return bool(supports and supports("icon_slot_512k"))
+        return protocol_supports(getattr(self.keeb, "protocol_version", None),
+                                 "icon_slot_512k")
 
     @staticmethod
     def _find_bundle(manifest, bundle):

@@ -694,6 +694,9 @@ def generate(spec: dict, base_dir: Path, macos: bool | None = None,
         concept = concept_to_share(b)
         if concept:
             shared, qualified = shared_concept_mask(concept)
+            if shared is None and b.get("concept"):
+                raise ValueError(f"binding {b.get('label')!r}: concept {concept!r} "
+                                 f"has no shared glyph to draw")
         if shared is not None:
             mask, source = shared, f"concept:{qualified}"
         elif src and src.exists():
