@@ -143,6 +143,7 @@ and the priority of a mode report.
 | the plain glyphs listed in `FLUENT` in `fetch_icons.py` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons), `main` branch, through `icon_fetch.fluent` | MIT |
 | the `ms:` entries of `FLUENT` | [Google Material Symbols](https://github.com/google/material-design-icons), weight 300, through `icon_fetch` | Apache-2.0 |
 | the composites in `COMPOSITES` (half page, page, scroll, last file, tabs, jumps, find by letters, preview, shell variants, command history) | drawn with `composite()` of `../emacs/fetch_icons.py`; the shell and history composites draw the Fluent `Window Console` and `History` glyphs (`_shell.png`, `_history.png`) small above the word | MIT (Fluent) and this project |
+| `tab1.png` .. `tab9.png` (yazi 1..9, ranger Alt+1..9) | Fluent `Tab` with the digit drawn inside by `number_badge.numbered`, as in the WezTerm set | MIT (Fluent) and this project |
 | `search_fwd.png`, `search_back.png`, `find_next.png`, `find_prev.png` | copied byte for byte from `../nano/icons/` (drawn there with the same `composite()`) | this project |
 | `yazi.png` | yazi mark, see below | MIT |
 | `ranger.png` | ranger mark, see below | no licence stated |

@@ -33,7 +33,8 @@ LF = "lf_template.mods.png"
 WT = "windowsterminal_template.mods.png"
 VIM_INSERT = "vim_insert_template.mods.png"
 
-OTHER_TERMINALS = ("kitty", "konsole", "terminal", "iterm2", "gnome-terminal")
+# Terminals with no overlay set of their own (kitty and WezTerm have one).
+OTHER_TERMINALS = ("alacritty", "konsole", "terminal", "iterm2", "gnome-terminal")
 
 
 def _titles(cmd):
@@ -214,7 +215,7 @@ class TuiFileManagerRoutingTest(unittest.TestCase):
     def test_lf_does_not_match_inside_another_word(self):
         # The case the short name makes likely: the letters inside a word.
         for title in ("golf", "self-test", "make self-test", "git lfs pull"):
-            self.assertIsNone(self._route("kitty", title, "linux"), title)
+            self.assertIsNone(self._route("alacritty", title, "linux"), title)
             self.assertEqual(self._route("windowsterminal", title, "windows")[0], WT, title)
 
     # --- priority ------------------------------------------------------------

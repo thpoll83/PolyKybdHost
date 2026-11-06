@@ -124,7 +124,9 @@ class ZellijMappingFileTest(unittest.TestCase):
             self.assertIs(routes[key], routes["Zellij"], key)
 
     def test_the_session_name_route_names_the_same_files(self):
-        (route,) = self.raw[WT_KEY]["titles-match"].values()
+        # The shared map also holds ranger's "ranger:<path>" route.
+        (route,) = [v for k, v in self.raw[WT_KEY]["titles-match"].items()
+                    if str(k).startswith("^(?:adamant")]
         self.assertEqual(route["overlay"], ZELLIJ)
         self.assertEqual(self.raw[WT_KEY]["titles-contains"]["Zellij"]["overlay"], ZELLIJ)
 

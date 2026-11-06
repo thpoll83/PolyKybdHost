@@ -64,15 +64,15 @@ bindings:
   - { key: F, mods: [], icon: filter.png, label: "Filter" }
   - { key: "/", mods: [], icon: search_fwd.png, label: "Find next", shared: false }
   - { key: N, mods: [], icon: find_next.png, label: "Next match", shared: false }
-  - { key: "1", mods: [], icon: tab.png, label: "Tab 1" }
-  - { key: "2", mods: [], icon: tab.png, label: "Tab 2" }
-  - { key: "3", mods: [], icon: tab.png, label: "Tab 3" }
-  - { key: "4", mods: [], icon: tab.png, label: "Tab 4" }
-  - { key: "5", mods: [], icon: tab.png, label: "Tab 5" }
-  - { key: "6", mods: [], icon: tab.png, label: "Tab 6" }
-  - { key: "7", mods: [], icon: tab.png, label: "Tab 7" }
-  - { key: "8", mods: [], icon: tab.png, label: "Tab 8" }
-  - { key: "9", mods: [], icon: tab.png, label: "Tab 9" }
+  - { key: "1", mods: [], icon: tab1.png, label: "Tab 1" }
+  - { key: "2", mods: [], icon: tab2.png, label: "Tab 2" }
+  - { key: "3", mods: [], icon: tab3.png, label: "Tab 3" }
+  - { key: "4", mods: [], icon: tab4.png, label: "Tab 4" }
+  - { key: "5", mods: [], icon: tab5.png, label: "Tab 5" }
+  - { key: "6", mods: [], icon: tab6.png, label: "Tab 6" }
+  - { key: "7", mods: [], icon: tab7.png, label: "Tab 7" }
+  - { key: "8", mods: [], icon: tab8.png, label: "Tab 8" }
+  - { key: "9", mods: [], icon: tab9.png, label: "Tab 9" }
   - { key: "[", mods: [], icon: tab_prev.png, label: "Previous tab" }
   - { key: "]", mods: [], icon: tab_next.png, label: "Next tab" }
   - { key: W, mods: [], icon: tasks.png, label: "Task manager" }

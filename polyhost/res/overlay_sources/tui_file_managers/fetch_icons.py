@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
 from polyhost.res.overlay_sources.emacs import fetch_icons as emacs  # noqa: E402
+from polyhost.res.overlay_sources import number_badge  # noqa: E402
 
 FLUENT = {
     # --- movement and navigation ---
@@ -104,7 +105,7 @@ FLUENT = {
     "bookmark_add": "Bookmark Add",
     "bookmark_off": "Bookmark Off",
     # --- tabs ---
-    "tab": "Tab Desktop",
+    "tab": "Tab",                         # base of tab1..tab9 (number_badge), as WezTerm's
     "tab_group": "Tab Desktop Multiple",
     "newtab": "Tab Add",                  # totalcmd newtab
     "closetab": "Dismiss",                # totalcmd closetab
@@ -268,6 +269,7 @@ def main() -> int:
     icon_fetch.borrow(BORROWED, out)
     for stem, (glyph, word) in COMPOSITES.items():
         emacs.composite(out / f"{stem}.png", glyph, word, out)
+    number_badge.numbered(out / "tab.png", "123456789", out, "tab")
     _guarded(out / "yazi.png", lambda p: _logo_mark(p, YAZI_LOGO_URL))
     _guarded(out / "ranger.png", lambda p: _logo_mark(p, RANGER_LOGO_URL))
     _guarded(out / "lf.png", _lf_mark)
