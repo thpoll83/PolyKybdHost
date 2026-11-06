@@ -1945,6 +1945,33 @@ et:
 wpp:
   overlay: [wps_presentation_template.mods.png, wps_presentation_template.combo.mods.png]
 
+# ONLYOFFICE Desktop Editors (sources: overlay_sources/onlyoffice/). One process
+# hosts the Document, Spreadsheet and Presentation editors as tabs:
+# DesktopEditors.exe on Windows, /opt/onlyoffice/desktopeditors/DesktopEditors
+# on Linux (WM_CLASS class "ONLYOFFICE", Flatpak id org.onlyoffice.desktopeditors),
+# and the app "ONLYOFFICE" on macOS. On Windows and Linux the window title is
+# the active tab's file name ("Book1.xlsx", "*Report.docx"), so `titles-match`
+# routes on its extension. Any other title (the start page, a .docx, a PDF)
+# gets the Document set. On macOS the tabbed main window is always titled
+# "ONLYOFFICE"; only a detached editor window shows the file name, so the main
+# window gets the Document set there. Not checked on an install.
+desktopeditors,onlyoffice,onlyoffice-desktopeditors,org.onlyoffice.desktopeditors:
+  overlay: [onlyoffice_document_template.mods.png, onlyoffice_document_template.combo.mods.png]
+  titles-match:
+    '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
+      overlay: [onlyoffice_spreadsheet_template.mods.png, onlyoffice_spreadsheet_template.combo.mods.png]
+    '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
+      overlay: [onlyoffice_presentation_template.mods.png, onlyoffice_presentation_template.combo.mods.png]
+  # A matched `os:` branch replaces the entry, so the title sub-map is repeated.
+  os:
+    macos:
+      overlay: [onlyoffice_document_template_mac.mods.png, onlyoffice_document_template_mac.combo.mods.png, onlyoffice_document_template_mac.extra.mods.png]
+      titles-match:
+        '(?i)\.(xlsx|xlsm|xlsb|xls|xltx|xltm|xlt|ods|ots|fods|csv|et|ett|numbers)(?=(\s+\([^()]*\))?$)':
+          overlay: [onlyoffice_spreadsheet_template_mac.mods.png, onlyoffice_spreadsheet_template_mac.combo.mods.png, onlyoffice_spreadsheet_template_mac.extra.mods.png]
+        '(?i)\.(pptx|pptm|ppt|ppsx|ppsm|pps|potx|potm|pot|odp|otp|fodp|dps|dpt|key)(?=(\s+\([^()]*\))?$)':
+          overlay: [onlyoffice_presentation_template_mac.mods.png, onlyoffice_presentation_template_mac.combo.mods.png, onlyoffice_presentation_template_mac.extra.mods.png]
+
 # ArtCraft Crafting Apps (getartcraft.com/apps; overlay_sources/<app>craft/). Each
 # app is matched on its exe / macOS bundle name (`photocraft.exe`, "PhotoCraft")
 # and on its Linux app id, which is also its X11 WM_CLASS and Wayland app id.
