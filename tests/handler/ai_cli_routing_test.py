@@ -110,8 +110,8 @@ OTHER_TITLES = [
     "vim claude.md",
     "vim CLAUDE.md",
     "cd opencode",
-    "less aider.log",
-    "man gemini",
+    "cat aider.log",
+    "info gemini",
     "git log --grep codex",
     "~/src> cd",                              # Nushell in a folder, then cd codex
     "/home/me/codex",                         # Nushell, idle in ~/codex

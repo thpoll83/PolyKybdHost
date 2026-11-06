@@ -79,7 +79,7 @@ def _others(word):
         "bash prompt, base name only": f"user@host: {word}",
         "vim on a file of that name": f"vim {word}",
         "vim on a file starting with it": f"vim {word}.txt",
-        "man page": f"man {word}",
+        "info page": f"info {word}",  # `man <word>` loads the less set (tui_routing_test)
         "Terminal.app in a directory of that name": f"{word} — vim notes.txt — 80×24",
         "Konsole in a directory of that name": f"{word} : bash — Konsole",
         "Nushell in the directory": f"/home/me/{word}",

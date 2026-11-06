@@ -30,7 +30,7 @@ threshold: 150
 program_icon: opencode.png
 program_icon_mode: alpha
 program_icon_anchor: right
-program_icon_region: [37, 32]
+program_icon_region: [38, 32]   # the 38 px wide logo, 1:1
 program_icon_margin: 0
 
 bindings:

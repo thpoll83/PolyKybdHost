@@ -52,7 +52,7 @@ OTHER_TITLES = {
     "bash prompt in ~/lazygit": "user@host: ~/lazygit",
     "vim on the config": "vim lazygit.yml",
     "vim, file named lazygit": "vim lazygit",
-    "man page": "man lazygit",
+    "info page": "info lazygit",  # `man lazygit` loads the less set (tui_routing_test)
     "cd": "cd lazygit",
     "Terminal.app in ~/lazygit, running vim": "lazygit — vim notes.txt — 80×24",
     "Konsole in ~/lazygit, idle": "lazygit : bash — Konsole",

@@ -152,32 +152,37 @@ def _font(px: int) -> ImageFont.FreeTypeFont:
 def _arrow(d, x0, y0, x1, y1, w=3.0, head=7.0):
     """A thick arrow from (x0, y0) to its tip (x1, y1), in output pixels.
 
-    The shaft is a polygon, not `line(width=...)`, which leaves a tick at the
-    tail and a notch under the head at keycap size.
-
-    Every arrow is horizontal or vertical. Its centre line runs through pixel
-    centres (+0.5), the shaft is 3 px and the head's half-width ends on a pixel
-    edge, so no edge row is half covered: a half-covered row came out patchy
-    after the downscale and threshold (a pixel missing in many arrows)."""
-    s = SS
-    if y0 == y1:
-        y0 = y1 = y0 + 0.5
-    elif x0 == x1:
-        x0 = x1 = x0 + 0.5
-    w = 3.0
-    dx, dy = x1 - x0, y1 - y0
-    n = max(abs(dx), abs(dy))
-    ux, uy = dx / n, dy / n
-    px, py = -uy, ux
-    bx, by = x1 - ux * head, y1 - uy * head
-    hw = w / 2
-    d.polygon([((x0 + px * hw) * s, (y0 + py * hw) * s), ((bx + px * hw) * s, (by + py * hw) * s),
-               ((bx - px * hw) * s, (by - py * hw) * s), ((x0 - px * hw) * s, (y0 - py * hw) * s)],
-              fill=255)
-    hh = int(head * 0.8) + 0.5
-    d.polygon([(x1 * s, y1 * s),
-               ((bx + px * hh) * s, (by + py * hh) * s),
-               ((bx - px * hh) * s, (by - py * hh) * s)], fill=255)
+    Every arrow is horizontal or vertical."""
+    # Drawn in whole output pixels: a 3 px shaft on the centre pixel, and a
+    # head whose row k (from the tip) spans the centre +-k, up to `hh`. Any
+    # sub-pixel edge, even a symmetric one, came out one pixel wider on one
+    # side after the downscale and threshold. Coordinates are pixel EDGES
+    # along the arrow (the tip pixel is x1, or x1 - 1 when pointing to +x)
+    # and the pixel the centre line runs through across it.
+    del w                               # every arrow has the same 3 px shaft
+    hh = int(head * 0.8)
+    if y0 == y1:                        # horizontal
+        step = 1 if x1 > x0 else -1
+        tip = x1 - 1 if step > 0 else x1
+        tail = x0 if step > 0 else x0 - 1
+        c = int(y0)
+        for k in range(hh + 1):
+            x = tip - step * k
+            _bar(d, x, c - k, x + 1, c + k + 1)
+        a, b = sorted((tip - step * (hh + 1), tail))
+        _bar(d, a, c - 1, b + 1, c + 2)
+    elif x0 == x1:                      # vertical
+        step = 1 if y1 > y0 else -1
+        tip = y1 - 1 if step > 0 else y1
+        tail = y0 if step > 0 else y0 - 1
+        c = int(x0)
+        for k in range(hh + 1):
+            y = tip - step * k
+            _bar(d, c - k, y, c + k + 1, y + 1)
+        a, b = sorted((tip - step * (hh + 1), tail))
+        _bar(d, c - 1, a, c + 2, b + 1)
+    else:
+        raise ValueError("arrows are horizontal or vertical")
 
 
 def _bar(d, x0, y0, x1, y1):

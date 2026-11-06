@@ -61,7 +61,7 @@ TMUX_TITLES = {
 OTHER_TITLES = {
     "bash prompt in ~/tmux": "user@host: ~/tmux",
     "bash prompt, base name only": "user@host: tmux",
-    "man page": "man tmux",
+    "info page": "info tmux",  # `man tmux` loads the less set (tui_routing_test)
     "tmux.conf": "vim .tmux.conf",
     "vim on a file named tmux": "vim tmux",
     "cd": "cd tmux",

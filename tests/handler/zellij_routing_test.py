@@ -76,7 +76,7 @@ OTHER_TITLES = {
     "prompt in ~/zellij": "user@host: ~/zellij",
     "vim on the config": "vim zellij.kdl",
     "vim on a file named zellij": "vim zellij",
-    "man page": "man zellij",
+    "info page": "info zellij",  # `man zellij` loads the less set (tui_routing_test)
     "cd": "cd zellij",
     "word in a sentence": "Notes about Zellij",
     "a plain shell": "bash",
