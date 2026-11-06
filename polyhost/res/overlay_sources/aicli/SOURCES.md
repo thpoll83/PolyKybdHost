@@ -152,8 +152,10 @@ and licences as listed there): `claude.png`, `codex.png`, `copilot.png` and
 the shared action icons; from [`../nano/icons`](../nano/icons): `complete.png`,
 `exit.png`, the page, scroll and first/last icons, `mouse.png`.
 
-`gemini.png`, `opencode.png` and `qwen.png` are the CLIs' own marks from
-Simple Icons (`googlegemini`, `opencode`, `qwen`; artwork CC0-1.0, through
+`gemini.png` and `qwen.png` are the CLIs' own marks from Simple Icons
+(`googlegemini`, `qwen`; artwork CC0-1.0, through
 [`../brand_marks.py`](../brand_marks.py); used to name the program the set is
-for). `aider.png` (`Ai`) is a drawn letter frame from
+for). `opencode.png` is OpenCode's start-screen logo ("open" over "code"),
+drawn in pixels from the logo rows in OpenCode's bundled JS
+(`opencode_mark()` in `fetch_icons.py`). `aider.png` (`Ai`) is a drawn letter frame from
 [`../rect_mark.py`](../rect_mark.py).

@@ -12,8 +12,9 @@ apps (`../aichat/`). Icons those apps or nano already draw are copied byte for
 byte, so each glyph is stored once in the icon library. Program marks:
 
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
-* Gemini CLI, OpenCode, Qwen Code -- the CLIs' own marks from Simple Icons
-  (`googlegemini`, `opencode`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* Gemini CLI, Qwen Code -- the CLIs' own marks from Simple Icons
+  (`googlegemini`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`).
 * Aider -- a drawn letter frame (`../rect_mark.py`).
 
     pip install cairosvg Pillow
@@ -72,7 +73,7 @@ FLUENT = {
 }
 
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
-BRAND = {"gemini.png": "googlegemini", "opencode.png": "opencode", "qwen.png": "qwen"}
+BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen"}
 LETTERS = {"aider.png": "Ai"}
 
 BORROWED = {
@@ -90,16 +91,55 @@ BORROWED = {
 }
 
 
+# OpenCode's start-screen logo, as the TUI draws it: the `left` ("open") and
+# `right` ("code") rows of its logo object (opencode-linux-x64 1.19.5 on npm,
+# the bundled JS). `_`, `^` and `~` are cells it draws in the dim shade; `^`
+# carries the crossbar of each "e", so it counts as an upper half-block here,
+# and the other two stay dark.
+_OC_LOGO = (
+    ["█▀▀█ █▀▀█ █▀▀█ █▀▀▄",
+     "█__█ █__█ █^^^ █__█",
+     "▀▀▀▀ █▀▀▀ ▀▀▀▀ ▀~~▀"],
+    ["             ▄     ",
+     "█▀▀▀ █▀▀█ █▀▀█ █▀▀█",
+     "█___ █__█ █__█ █^^^",
+     "▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀"],
+)
+
+
+def opencode_mark(dest: Path) -> None:
+    """`opencode.png`: the logo's two words stacked, each terminal cell drawn
+    as two 2x2-pixel half-blocks (38x28 px), white on transparent."""
+    from PIL import Image
+    words = []
+    for rows in _OC_LOGO:
+        w = max(len(r) for r in rows)
+        im = Image.new("L", (w * 2, len(rows) * 4), 0)
+        for y, row in enumerate(rows):
+            for x, ch in enumerate(row):
+                for half, on in ((0, ch in "█▀^"), (1, ch in "█▄")):
+                    if on:
+                        im.paste(255, (x * 2, (2 * y + half) * 2, x * 2 + 2, (2 * y + half) * 2 + 2))
+        words.append(im.crop(im.getbbox()))
+    gap = 4
+    width = max(im.width for im in words)
+    mark = Image.new("L", (width, sum(im.height for im in words) + gap), 0)
+    mark.paste(words[0], (width - words[0].width, 0))
+    mark.paste(words[1], (width - words[1].width, words[0].height + gap))
+    Image.merge("RGBA", (mark,) * 4).save(dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    opencode_mark(out / "opencode.png")
     for fname, slug in BRAND.items():
         brand_marks.ensure(out / fname, slug)
     for fname, letters in LETTERS.items():
         rect_mark.ensure(out / fname, letters)
     n += icon_fetch.borrow(BORROWED, out)
-    print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
+    print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS) + 1} program marks) to {out}")
     return 0
 
 
