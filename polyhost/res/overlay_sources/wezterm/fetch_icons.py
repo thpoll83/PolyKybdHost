@@ -33,7 +33,7 @@ WEZTERM_COMMIT = "e68a8ec27727fbbda15e07f0a0737cd5e16481f6"
 WEZTERM_ICON_URL = ("https://raw.githubusercontent.com/wez/wezterm/"
                     f"{WEZTERM_COMMIT}/assets/icon/terminal.png")
 MARK_PX = 32
-MARK_LIGHT_LUMA = 72     # lit when luma > 72 (tile <= 55, glyph >= 88)
+MARK_DARK_LUMA = 72      # lit when luma <= 72 (tile <= 55, glyph >= 88)
 
 # file stem -> Fluent folder name (every name probed against the repository).
 FLUENT = {
@@ -79,20 +79,21 @@ FLUENT = {
 
 
 def _wezterm_mark(dest: Path, px: int = MARK_PX) -> None:
-    """WezTerm's icon as a px*px 1-bit trace: composited over black, fitted
-    into the square, pixels brighter than MARK_LIGHT_LUMA lit."""
+    """WezTerm's icon as a px*px 1-bit trace: composited over white, fitted
+    into the square, pixels at MARK_DARK_LUMA or darker lit. The dark tile is
+    lit with its rounded corners, and the "$W" is cut out of it."""
     req = urllib.request.Request(WEZTERM_ICON_URL, headers={"User-Agent": "PolyKybdHost"})
     with urllib.request.urlopen(req, timeout=60) as r:
         icon = Image.open(io.BytesIO(r.read())).convert("RGBA")
-    black = Image.new("RGBA", icon.size, "black")
-    black.alpha_composite(icon)
-    src = black.convert("L")
+    white = Image.new("RGBA", icon.size, "white")
+    white.alpha_composite(icon)
+    src = white.convert("L")
     scale = px / max(src.size)
     fitted = src.resize((max(1, round(src.width * scale)), max(1, round(src.height * scale))),
                         Image.LANCZOS)
-    square = Image.new("L", (px, px), 0)
+    square = Image.new("L", (px, px), 255)
     square.paste(fitted, ((px - fitted.width) // 2, (px - fitted.height) // 2))
-    a = square.point(lambda v: 255 if v > MARK_LIGHT_LUMA else 0)
+    a = square.point(lambda v: 255 if v <= MARK_DARK_LUMA else 0)
     Image.merge("RGBA", (a, a, a, a)).save(dest)
 
 

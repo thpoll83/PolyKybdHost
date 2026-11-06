@@ -68,9 +68,10 @@ Fluent `Tab` with the digit drawn in by `../number_badge.py`.
 `e68a8ec2` of wez/wezterm. WezTerm is MIT licensed (`LICENSE.md`, Copyright
 2018-Present Wez Furlong), which is compatible with this GPL-3.0-or-later host.
 
-The icon is a dark tile with a blue "$W". Composited over black, the tile has
-luma 24..55 and the glyph 88..95, with no pixels between 56 and 87, so the mark
-lights luma above 72. `fetch_icons.py` contain-fits it to 32x32 with LANCZOS and
+The icon is a dark tile with a blue "$W". The tile has luma 24..55 and the
+glyph 88..95, with no pixels between 56 and 87. Composited over white, the mark
+lights luma 72 or darker: the tile is lit with its rounded corners and the "$W"
+is cut out of it. `fetch_icons.py` contain-fits it to 32x32 with LANCZOS and
 thresholds it; with `program_icon_region: [37, 32]` the generator places it 1:1.
 The script writes the mark only when `wezterm.png` is missing; delete it to
 rebuild it.
