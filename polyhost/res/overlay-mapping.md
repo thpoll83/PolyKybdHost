@@ -55,9 +55,24 @@ window title (or OS) instead — see below.
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
 | `layer` | bool | `false` turns off browser layering for a `urls-contains` entry (see below). |
+| `glyph_script` | name | The [keycap face](#keycap-face-per-application) while this entry matches: a `GlyphScript` name (`c64keys`, `amiga`, `ibmvga`, …). |
+| `glyph_script_position` | `centre` / `top-left` | The face's placement while this entry matches (firmware protocol 26+). |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
+
+## Keycap face per application
+
+`glyph_script` and `glyph_script_position` switch the keyboard's letter and digit legends
+to a retro or fantasy face while the entry matches, for example the C64 keycap lettering
+for VICE. Either key may be given alone; the part an entry leaves out stays the user's
+own. The host remembers the user's face before the first switch (in memory and in
+`keycap_face_restore.json` beside `settings.yaml`) and sends it back when no matching
+entry asks for a face, at shutdown, and on the next connect if the host stopped while a
+face was on. A face picked by hand in the tray or with `polyctl` while an entry's face
+is on becomes the one restored. Put the keys on the entry that matches: for a
+`titles-contains` route that is the sub-entry, not its parent.
+`polyhost/services/keycap_face.py`.
 
 ## Matching order
 
