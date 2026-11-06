@@ -1,0 +1,119 @@
+# Adobe Substance 3D Painter shortcut overlays for PolyKybd. See SOURCES.md.
+#
+# The keys are Painter's defaults from Adobe's shortcut reference (Shortcuts
+# page of the Substance 3D Painter user guide, updated 2026-10-08), which lists
+# a Windows and a macOS key for every action. Both lists are drawn: every Ctrl
+# chord that the page gives as Cmd on macOS is CMDCTRL, and the four actions
+# whose macOS key is a different chord are split with `only:`.
+# Linux (Painter has a Linux build) uses the Windows set.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/substancepainter/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/substancepainter/bindings.yaml --preview /tmp/painter_preview
+app: substancepainter
+match: [adobe substance 3d painter]
+output: substancepainter_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: painter.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: modes and interface ---
+  - { key: TAB, mods: [], icon: hideui.png, label: "Hide UI" }
+  - { key: F8, mods: [], icon: mode_bake.png, label: "Baking mode" }
+  - { key: F9, mods: [], icon: mode_paint.png, label: "Painting mode" }
+  - { key: F10, mods: [], icon: render.png, label: "Rendering (Iray)" }
+
+  # --- no modifier: manipulator ---
+  - { key: Q, mods: [], icon: gizmo.png, label: "Show/hide manipulator" }
+  - { key: T, mods: [], icon: orientation.png, label: "Cycle manipulation spaces" }
+  - { key: W, mods: [], icon: move.png, label: "Translate tool" }
+  - { key: E, mods: [], icon: rotate.png, label: "Rotate tool" }
+  - { key: R, mods: [], icon: scale.png, label: "Scale tool" }
+  - { key: L, mods: [], icon: mirror.png, label: "Symmetry" }
+
+  # --- no modifier: painting tools ---
+  - { key: "1", mods: [], icon: tool_paint.png, label: "Paint tool" }
+  - { key: "2", mods: [], icon: tool_eraser.png, label: "Eraser tool" }
+  - { key: "3", mods: [], icon: tool_projection.png, label: "Projection tool" }
+  - { key: "4", mods: [], icon: fill.png, label: "Polygon fill" }
+  - { key: "5", mods: [], icon: tool_smudge.png, label: "Smudge tool" }
+  - { key: "6", mods: [], icon: tool_clone.png, label: "Clone tool (relative)" }
+  - { key: "]", mods: [], icon: brushinc.png, label: "Increase tool size", mode: alpha }
+  - { key: "[", mods: [], icon: brushdec.png, label: "Decrease tool size", mode: alpha }
+  - { key: X, mods: [], icon: invertgray.png, label: "Invert grayscale" }
+  - { key: P, mods: [], icon: eyedropper.png, label: "Pick stroke material" }
+  - { key: D, mods: [], icon: smooth_stroke.png, label: "Lazy mouse" }
+  - { key: N, mods: [], icon: ignorestencil.png, label: "Ignore stencil mask" }
+  - { key: A, mods: [], icon: stroke.png, label: "Resume previous stroke" }
+
+  # --- no modifier: camera and viewport display ---
+  - { key: F5, mods: [], icon: cam_persp.png, label: "Camera perspective" }
+  - { key: F6, mods: [], icon: cam_ortho.png, label: "Camera orthographic" }
+  - { key: C, mods: [], icon: channel_next.png, label: "Next channel" }
+  - { key: B, mods: [], icon: meshmap_next.png, label: "Next mesh map" }
+  - { key: M, mods: [], icon: material.png, label: "Display material" }
+  - { key: SPACE, mods: [], icon: animation.png, label: "Toggle animation" }
+  - { key: F, mods: [], icon: frame_all.png, label: "Center the whole mesh" }
+  - { key: F1, mods: [], icon: layout_3d2d.png, label: "Viewport 3D/2D" }
+  - { key: F2, mods: [], icon: layout_3d.png, label: "Viewport 3D only" }
+  - { key: F3, mods: [], icon: layout_2d.png, label: "Viewport 2D only" }
+  - { key: F4, mods: [], icon: swap.png, label: "Swap 2D / 3D view" }
+
+  # --- no modifier: quick mask and layers ---
+  - { key: U, mods: [], icon: br_mask.png, label: "Quick mask edition" }
+  - { key: Y, mods: [], icon: mask_clear.png, label: "Clear quick mask" }
+  - { key: I, mods: [], icon: mask_invert.png, label: "Invert quick mask" }
+  - { key: DELETE, mods: [], icon: delete.png, label: "Delete layer" }
+
+  # --- Shift ---
+  - { key: V, mods: [SHIFT], icon: warp.png, label: "Toggle warp edition" }
+  - { key: W, mods: [SHIFT], icon: snap.png, label: "Surface tool" }
+  - { key: C, mods: [SHIFT], icon: channel_prev.png, label: "Previous channel" }
+  - { key: B, mods: [SHIFT], icon: meshmap_prev.png, label: "Previous mesh map" }
+
+  # --- Alt (Option on macOS) ---
+  - { key: H, mods: [ALT], icon: hideexcluded.png, label: "Hide excluded geometry" }
+  - { key: Q, mods: [ALT], icon: faceset_isolate.png, label: "Texture set isolate" }
+
+  # --- Ctrl (Cmd on macOS) ---
+  - { key: Z, mods: [CMDCTRL], icon: undo.png, label: Undo }
+  - { key: Y, mods: [CMDCTRL], icon: redo.png, label: Redo }
+  - { key: O, mods: [CMDCTRL], icon: open.png, label: "Open project" }
+  - { key: S, mods: [CMDCTRL], icon: save.png, label: "Save project" }
+  - { key: N, mods: [CMDCTRL], icon: new.png, label: "New project" }
+  - { key: C, mods: [CMDCTRL], icon: copy.png, label: Copy }
+  - { key: X, mods: [CMDCTRL], icon: cut.png, label: Cut }
+  - { key: V, mods: [CMDCTRL], icon: paste.png, label: Paste }
+  - { key: D, mods: [CMDCTRL], icon: duplicate.png, label: "Duplicate layer" }
+  - { key: G, mods: [CMDCTRL], icon: group.png, label: "Group layers" }
+  - { key: "1", mods: [CMDCTRL], icon: tool_paint_particles.png, label: "Paint + particles" }
+  - { key: "2", mods: [CMDCTRL], icon: tool_eraser_particles.png, label: "Eraser + particles" }
+  - { key: "3", mods: [CMDCTRL], icon: tool_projection_particles.png, label: "Projection + particles" }
+  - { key: "6", mods: [CMDCTRL], icon: tool_clone_absolute.png, label: "Clone tool (absolute)" }
+  # Close project is Ctrl+F4 on Windows and Cmd+W on macOS.
+  - { key: F4, mods: [CTRL], icon: close.png, label: "Close project", only: [windows, linux] }
+  - { key: W, mods: [GUI], icon: close.png, label: "Close project", only: [macos] }
+  # Quit is Alt+F4 on Windows and Cmd+Q on macOS.
+  - { key: F4, mods: [ALT], icon: quit.png, label: "Quit", only: [windows, linux] }
+  - { key: Q, mods: [GUI], icon: quit.png, label: "Quit", only: [macos] }
+
+  # --- Ctrl+Shift (Cmd+Shift on macOS) ---
+  - { key: B, mods: [CMDCTRL, SHIFT], icon: bakemaps.png, label: "Bake mesh maps" }
+  - { key: E, mods: [CMDCTRL, SHIFT], icon: export.png, label: "Export textures" }
+  # Copy / paste layer content: Ctrl+Shift on Windows, Option+Cmd on macOS.
+  - { key: C, mods: [CTRL, SHIFT], icon: copycontent.png, label: "Copy layer content", only: [windows, linux] }
+  - { key: V, mods: [CTRL, SHIFT], icon: pastecontent.png, label: "Paste layer content", only: [windows, linux] }
+  - { key: C, mods: [GUI, ALT], icon: copycontent.png, label: "Copy layer content", only: [macos] }
+  - { key: V, mods: [GUI, ALT], icon: pastecontent.png, label: "Paste layer content", only: [macos] }

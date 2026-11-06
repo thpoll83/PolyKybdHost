@@ -3296,3 +3296,35 @@ comsol,comsol multiphysics:
 # launcher. Name not checked on an install.
 origin64:
   overlay: [origin_template.mods.png, origin_template.combo.mods.png]
+# Adobe Substance 3D Painter (overlay_sources/substancepainter/). Windows
+# "Adobe Substance 3D Painter.exe", the macOS app and the Linux executable all
+# report "Adobe Substance 3D Painter". Linux uses the Windows set. Not checked
+# on an install.
+adobe substance 3d painter:
+  overlay: [substancepainter_template.mods.png, substancepainter_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [substancepainter_template_mac.mods.png, substancepainter_template_mac.combo.mods.png, substancepainter_template_mac.extra.mods.png]
+# Foundry Nuke, Node Graph keys (overlay_sources/nuke/). The process name has the
+# version in it. Linux "Nuke17.1" and macOS "Nuke17.1v3" reach `nuke` through
+# the glued-version rule (overlay-mapping.md). Windows cuts "Nuke17.1.exe" at its
+# first dot to "nuke17", so the major versions 11 to 20 are listed. NukeX and Nuke
+# Studio run the same executable on Windows and Linux; macOS has a NukeX app.
+# Not checked on an install.
+nuke,nukex,nuke11,nuke12,nuke13,nuke14,nuke15,nuke16,nuke17,nuke18,nuke19,nuke20:
+  overlay: [nuke_template.mods.png, nuke_template.combo.mods.png, nuke_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [nuke_template_mac.mods.png, nuke_template_mac.combo.mods.png, nuke_template_mac.extra.mods.png, nuke_template_mac.gui.mods.png]
+# Autodesk 3ds Max (overlay_sources/3dsmax/). Windows only: 3dsmax.exe. Not
+# checked on an install.
+3dsmax:
+  overlay: [3dsmax_template.mods.png, 3dsmax_template.combo.mods.png, 3dsmax_template.extra.mods.png]
+# Maxon Cinema 4D, viewport and modeling keys (overlay_sources/cinema4d/).
+# Windows "Cinema 4D.exe" and the macOS app "Cinema 4D" (a trailing release year
+# such as "Cinema 4D 2026" is dropped by the matcher). Not checked on an install.
+cinema 4d:
+  overlay: [cinema4d_template.mods.png, cinema4d_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
