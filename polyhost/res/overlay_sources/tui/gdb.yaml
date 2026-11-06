@@ -43,7 +43,7 @@ bindings:
   # in a pty it shows "(reverse-i-search)". Ctrl+L: in the CLI it clears the screen (pty test);
   # in the TUI, "C-L: Refresh the screen".
   - { key: R, mods: [CTRL], icon: history.png, label: "History search" }
-  - { key: L, mods: [CTRL], icon: clear.png, label: "Refresh screen" }
+  - { key: L, mods: [CTRL], icon: reload.png, label: "Refresh screen" }
   # --- TUI "following key bindings only work in the TUI mode": scroll the ACTIVE window.
   # In the command window (or in CLI mode) the arrows keep their readline meaning (history,
   # cursor); the label is for the TUI.
@@ -55,7 +55,7 @@ bindings:
   - { key: RIGHT, icon: scroll_right.png, label: "Scroll window right" }
   # --- Ctrl+X is the leader of the TUI keys: C-x a / A / C-x C-a toggle TUI mode, C-x 1 one
   # window, C-x 2 next two-window layout, C-x o next window (active window), C-x s single-key mode.
-  - { key: X, mods: [CTRL], icon: leader.png, label: "TUI keys" }
+  - { key: X, mods: [CTRL], icon: gdb_tui.png, label: "TUI keys" }
 
   # --- One-letter command abbreviations (gdb.texinfo "Command Syntax": a
   # command name may be abbreviated when unambiguous, and these one-letter

@@ -84,7 +84,9 @@ step into (whole 72×40 cells, drawn 1:1 as in the IDE sets), u is JetBrains'
 run to cursor and p is Visual Studio's QuickWatch. d (delete breakpoints) is
 the b icon with an X cut out of its dot (`stamp_delete_breakpoint()` in
 `fetch_icons.py`). No IDE set has a thread icon, so t is Material Symbols'
-`alt_route`.
+`alt_route`. f (frame) is Material Symbols' `view_day`: one frame between its
+neighbours in the stack. Ctrl+L (refresh) is the shared `reload` arrow. Ctrl+X, the leader of the TUI window keys, is a two-pane
+window (Fluent `Layout Row Two`) over the word TUI (`tui_key()`).
 
 ## Icons
 
@@ -93,6 +95,7 @@ the b icon with an X cut out of its dot (`stamp_delete_breakpoint()` in
 - Icons the AI CLI, AI desktop app, nano, VS Code, JetBrains and Visual
   Studio sets already draw are copied byte for byte from their folders, so the icon library stores each one once.
 - Program marks: htop, Helix and micro from Simple Icons (CC0), through
-  `../brand_marks.py`. The others are drawn letter frames (`../rect_mark.py`):
-  bt, MC, YZ, LG, K9, LS, GDB. Simple Icons' `less` is the CSS preprocessor,
+  `../brand_marks.py`. GDB's is a page with a folded corner and a "GDB" band
+  across it (`gdb_mark()` in `fetch_icons.py`). The others are drawn letter
+  frames (`../rect_mark.py`): bt, MC, YZ, LG, K9, LS. Simple Icons' `less` is the CSS preprocessor,
   not the pager, so less uses a letter frame.

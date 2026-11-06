@@ -9,7 +9,8 @@ no match. Icons the AI CLI, AI desktop app, nano and IDE sets already draw are
 copied byte for byte, so each glyph is stored once in the icon library.
 
 Program marks: htop, Helix and micro from Simple Icons (`../brand_marks.py`,
-artwork CC0); the others are drawn letter frames (`../rect_mark.py`).
+artwork CC0); GDB's is a page with a "GDB" band (`gdb_mark()`); the others
+are drawn letter frames (`../rect_mark.py`).
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/tui/fetch_icons.py
@@ -20,9 +21,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 import brand_marks, icon_fetch, rect_mark  # noqa: E402
-from PIL import Image, ImageDraw  # noqa: E402
+from PIL import Image, ImageDraw, ImageFont  # noqa: E402
+from polyhost.res.overlay_sources.emacs import fetch_icons as emacs  # noqa: E402
 
 FLUENT = {
     # --- shared ---
@@ -211,9 +214,10 @@ FLUENT = {
     # --- GDB one-letter commands ---
     "gdb_break": "ms:radio_button_checked",
     "gdb_continue": "ms:play_circle",
-    "gdb_frame": "ms:layers",
+    "gdb_frame": "ms:view_day",
     "gdb_run": "ms:play_arrow",
     "gdb_thread": "ms:alt_route",
+    "_tui": "Layout Row Two",          # top glyph of gdb_tui.png only
     # --- lazygit ---
     "push": "Arrow Upload",
     "pull": "Arrow Download",
@@ -252,7 +256,7 @@ FLUENT = {
 
 BRAND = {"htop.png": "htop", "helix.png": "helix", "micro.png": "microeditor"}
 LETTERS = {"btop.png": "bt", "mc.png": "MC", "yazi.png": "YZ", "lazygit.png": "LG",
-           "k9s.png": "K9", "less.png": "LS", "gdb.png": "GDB"}
+           "k9s.png": "K9", "less.png": "LS"}
 
 BORROWED = {
     **{name: "aicli" for name in (
@@ -296,6 +300,72 @@ def stamp_delete_breakpoint(out: Path) -> None:
     im.save(out / "gdb_delete.png")
 
 
+def gdb_mark(dest: Path) -> None:
+    """GDB's ESC mark: a page with a folded corner and three text lines, and a
+    framed band with "GDB" across its lower half. Drawn 1:1 at the program
+    mark region (37x32, `program_icon_region` in gdb.yaml)."""
+    w, h, px0, px1, fold = 37, 32, 8, 28, 7
+    bx0, by0, bx1, by1 = 0, 16, 36, 30
+    img = Image.new("L", (w, h), 0)
+    d = ImageDraw.Draw(img)
+    c = px1 - fold
+    d.rectangle([px0, 0, c, 1], fill=255)                  # top edge
+    d.rectangle([px0, 0, px0 + 1, h - 1], fill=255)        # left edge
+    d.rectangle([px1 - 1, fold, px1, h - 1], fill=255)     # right edge
+    d.rectangle([px0, h - 2, px1, h - 1], fill=255)        # bottom edge
+    for k in range(2):                                     # fold diagonal, 2 px
+        d.line([(c + k, 0), (px1, fold - k)], fill=255)
+        d.line([(c, k), (px1 - k, fold)], fill=255)
+    d.rectangle([c - 1, 0, c, fold], fill=255)             # fold flap
+    d.rectangle([c - 1, fold - 1, px1, fold], fill=255)
+    d.line([(px0 + 4, 5), (c - 3, 5)], fill=255)           # text lines
+    d.line([(px0 + 4, 9), (px1 - 4, 9)], fill=255)
+    d.line([(px0 + 4, 13), (px1 - 4, 13)], fill=255)
+    d.rectangle([bx0, by0, bx1, by1], fill=0)              # the band
+    d.rectangle([bx0, by0, bx1, by1], outline=255, width=2)
+    f = ImageFont.truetype(rect_mark._FONTS[0], 11)
+    left, top, right, bottom = d.textbbox((0, 0), "GDB", font=f)
+    tw, th = right - left, bottom - top
+    assert tw <= bx1 - bx0 - 5 and th <= by1 - by0 - 5, (tw, th)
+    d.text((bx0 + (bx1 - bx0 + 1 - tw) // 2 - left, by0 + (by1 - by0 + 1 - th) // 2 - top),
+           "GDB", fill=255, font=f)
+    a = img.point(lambda v: 255 if v > 110 else 0)
+    Image.merge("RGBA", (a,) * 3 + (a,)).save(dest)
+
+
+# "TUI" in whole pixels, 2 px strokes, 9 rows: at 12 px the font drew the U
+# with a 1 px left stem and a 2 px right one.
+_TUI = [
+    "######..##..##..##",
+    "######..##..##..##",
+    "..##....##..##..##",
+    "..##....##..##..##",
+    "..##....##..##..##",
+    "..##....##..##..##",
+    "..##....##..##..##",
+    "..##....######..##",
+    "..##.....####...##",
+]
+
+
+def tui_key(out: Path) -> None:
+    """`gdb_tui.png`: the two-pane window glyph over the word TUI, laid out
+    as the composites (`../emacs/fetch_icons.py`, `composite()`)."""
+    dest = out / "gdb_tui.png"
+    dest.unlink(missing_ok=True)
+    emacs.composite(dest, "png:_tui", "", out)
+    im = Image.open(dest).convert("RGBA")
+    a = im.getchannel("A")
+    x0 = (im.width - len(_TUI[0])) // 2
+    y0 = im.height - 1 - len(_TUI)
+    for y, row in enumerate(_TUI):
+        for x, ch in enumerate(row):
+            if ch == "#":
+                a.putpixel((x0 + x, y0 + y), 255)
+    im.putalpha(a)
+    im.save(dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
@@ -306,7 +376,10 @@ def main() -> int:
         rect_mark.ensure(out / fname, letters)
     n += icon_fetch.borrow(BORROWED, out)
     stamp_delete_breakpoint(out)
-    print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS)} program marks) to {out}")
+    gdb_mark(out / "gdb.png")
+    # GDB's Ctrl+X leader of the TUI window keys: a two-pane window over "TUI".
+    tui_key(out)
+    print(f"Wrote {n} icons (+ {len(BRAND) + len(LETTERS) + 1} program marks) to {out}")
     return 0
 
 
