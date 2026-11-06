@@ -173,6 +173,22 @@ uses a YAML anchor, `*claude_title`), or every title with the route word takes
 the set on that OS. (`tests/handler/ai_cli_routing_test.py`, which checks the
 negative titles on all three OSes.)
 
+### Zellij
+
+Zellij writes the terminal title itself. Up to 0.42 the title is
+`Zellij (<session>) - <pane title>`, found by the `Zellij` key in
+`&editor_titles`. Since 0.43.1 it is `<session> | <pane title>` and does not
+name Zellij, so the terminal entries also have `titles-match:
+&multiplexer_titles`, whose regex matches a session name that Zellij generated
+(`<adjective>-<noun>` from two fixed lists, printed by
+`overlay_sources/zellij/gen_session_regex.py`). A named session is found only
+where the terminal shows the process name (Konsole, iTerm2, Terminal.app).
+`titles-match` is tried before `titles-contains`, so Zellij is chosen over a
+program in its pane; a vim or emacs report is still chosen over Zellij. The
+formats are in
+[`overlay_sources/zellij/SOURCES.md`](overlay_sources/zellij/SOURCES.md).
+(`tests/handler/zellij_routing_test.py`.)
+
 ## `os:` — per-platform artwork
 
 An app's shortcuts are a property of the platform it runs on. Sublime Text binds
