@@ -357,6 +357,12 @@ class RemoteCore(Observable):
     def get_glyph_script(self):
         return self._device(p.M_GLYPH_SCRIPT_GET)
 
+    def set_glyph_placement(self, value):
+        return self._device(p.M_GLYPH_PLACEMENT_SET, {"value": value})
+
+    def get_glyph_placement(self):
+        return self._device(p.M_GLYPH_PLACEMENT_GET)
+
     def set_glyph_size(self, value):
         return self._device(p.M_GLYPH_SIZE_SET, {"value": value})
 

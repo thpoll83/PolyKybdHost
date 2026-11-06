@@ -213,6 +213,8 @@ class ControlServer(MpcListenerServer):
             p.M_IDLE_TIMEOUT_GET: lambda conn, params: _unwrap(c.get_idle_timeout()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
+            p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),
+            p.M_GLYPH_PLACEMENT_GET: lambda conn, params: _unwrap(c.get_glyph_placement()),
             p.M_GLYPH_SIZE_SET: lambda conn, params: _unwrap(c.set_glyph_size(params["value"])),
             p.M_GLYPH_SIZE_GET: lambda conn, params: _unwrap(c.get_glyph_size()),
             p.M_REPLAY_ANIM: lambda conn, params: _unwrap(c.replay_startup_anim()),

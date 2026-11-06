@@ -100,6 +100,9 @@ class _FakeCore:
     def get_glyph_script(self):
         return (True, 0)          # Standard
 
+    def get_glyph_placement(self):
+        return (True, 0)          # Centred
+
     def keymap_layer_count(self):
         return (True, 9)
 
@@ -206,6 +209,7 @@ def _render(developer, out_dir, log):
         app.cmdMenu._refresh_auto_brightness_action()
         # Same reason: the Keycap Script previews are built on first show.
         app._build_glyph_script_previews()
+        app.refresh_glyph_placement_actions()
 
         suffix = "-developer" if developer else ""
         path = os.path.join(out_dir, f"tray-menu{suffix}.png")
