@@ -131,6 +131,16 @@ FLUENT = {
     "_function": "ms:function",
     "_arrownext": "Arrow Next",
     "_arrowprev": "Arrow Previous",
+    # --- C/C++ editor (cdt.yaml, the STM32CubeIDE set) ---
+    "addinclude": "ms:add_link",
+    "togglehdr": "ms:swap_horiz",
+    "includebrowser": "ms:attach_file",
+    "macroexplorer": "ms:expand_content",
+    "sortlines": "ms:sort_by_alpha",
+    "extractconst": "ms:keep",
+    "togglefunc": "ms:swap_vert",
+    "alignconst": "ms:format_align_left",
+    "copyqualified": "ms:label",
 }
 
 # composite -> (base file, badge)
