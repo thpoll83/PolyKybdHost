@@ -17,7 +17,8 @@ byte, so each glyph is stored once in the icon library. Program marks:
 * OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
   "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
   hatched.
-* Aider -- a drawn letter frame (`../rect_mark.py`).
+* Aider, Grok Build -- drawn letter frames (`../rect_mark.py`). Grok has no
+  CC0 mark: Simple Icons has none, and xAI's symbol is not freely licensed.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/aicli/fetch_icons.py
@@ -28,10 +29,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
 import brand_marks, icon_fetch, rect_mark  # noqa: E402
+from polyhost.res.overlay_sources.emacs import fetch_icons as emacs  # noqa: E402
 
 FLUENT = {
+    "agentdash": "ms:dashboard",
     # --- shared by several CLIs ---
     "stop": "Stop",
     "newline": "Arrow Enter Left",
@@ -87,7 +91,10 @@ BORROWED = {
         "expand.png", "fastmode.png", "find.png", "model.png", "next.png",
         "permission.png", "prev.png", "reload.png", "rename.png", "search.png",
         "send.png", "shortcuts.png", "sidechat.png", "terminal.png",
-        "viewmode.png")},
+        "viewmode.png", "newchat.png", "settings.png")},
+    # Grok Build's panes and modals use the icons other sets already draw.
+    **{name: "vscode" for name in ("extensions.png",)},
+    **{name: "tui_file_managers" for name in ("tasks.png",)},
     **{name: "nano" for name in (
         "complete.png", "exit.png", "file_end.png", "file_start.png",
         "mouse.png", "page_down.png", "page_up.png", "scroll_down.png",
@@ -193,10 +200,43 @@ def crisp_badge(path: Path, cx: int, cy: int, r: int, symbol: str) -> None:
     Image.merge("RGBA", (img,) * 4).save(path)
 
 
+# Grok Build's own logo, as its sign-in screen draws it in braille dots: the
+# 7 lines of 14 braille characters in the grok 1.0.77 binary. Each character
+# is a 2x4 dot cell, so the mark is drawn 1:1 from the dots (26x24 px).
+_GROK_LOGO = (
+    "\u2800\u2800\u2800\u2800\u2800\u2800\u28c0\u28c0\u2840\u2800\u2800\u2800\u2880\u2804",
+    "\u2800\u2800\u2800\u28e0\u28fe\u283f\u281b\u281b\u281b\u281b\u2880\u2874\u2801\u2800",
+    "\u2800\u2800\u28fc\u285f\u2801\u2800\u2800\u2800\u2880\u2874\u283b\u28ff\u2840\u2800",
+    "\u2800\u2800\u28ff\u2847\u2800\u2800\u2800\u2814\u2801\u2800\u2800\u28ff\u2847\u2800",
+    "\u2800\u2800\u28b9\u28f7\u2800\u2800\u2800\u2800\u2800\u2880\u28f4\u287f\u2800\u2800",
+    "\u2800\u2880\u281e\u2801\u2820\u28b6\u28f6\u28f6\u28f6\u283f\u280b\u2800\u2800\u2800",
+    "\u2810\u2801\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800",
+)
+# Unicode braille dot -> (x, y) in the 2x4 cell.
+_BRAILLE_DOTS = ((0x01, 0, 0), (0x02, 0, 1), (0x04, 0, 2), (0x08, 1, 0),
+                 (0x10, 1, 1), (0x20, 1, 2), (0x40, 0, 3), (0x80, 1, 3))
+
+
+def grok_mark(dest: Path) -> None:
+    from PIL import Image
+    img = Image.new("L", (2 * len(_GROK_LOGO[0]), 4 * len(_GROK_LOGO)), 0)
+    for row, line in enumerate(_GROK_LOGO):
+        for col, ch in enumerate(line):
+            bits = ord(ch) - 0x2800
+            for bit, dx, dy in _BRAILLE_DOTS:
+                if bits & bit:
+                    img.putpixel((2 * col + dx, 4 * row + dy), 255)
+    img = img.crop(img.getbbox())
+    Image.merge("RGBA", (img,) * 4).save(dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    grok_mark(out / "grok.png")
+    # Grok Build's Ctrl+U: half a page up, beside Ctrl+K (one line up, SCRL).
+    emacs.composite(out / "half_up.png", "up", "HALF", out)
     for fname, (cx, cy, r, symbol) in _BADGES.items():
         crisp_badge(out / fname, cx, cy, r, symbol)
     opencode_mark(out / "opencode.png")
