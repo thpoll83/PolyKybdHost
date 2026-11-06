@@ -12,8 +12,8 @@ apps (`../aichat/`). Icons those apps or nano already draw are copied byte for
 byte, so each glyph is stored once in the icon library. Program marks:
 
 * Claude, Codex, Copilot -- copied from `../aichat/icons`.
-* Gemini CLI, Qwen Code -- the CLIs' own marks from Simple Icons
-  (`googlegemini`, `qwen`; CC0 artwork, `../brand_marks.py`).
+* Gemini CLI, Qwen Code, Mistral Vibe -- the marks from Simple Icons
+  (`googlegemini`, `qwen`, `mistralai`; CC0 artwork, `../brand_marks.py`).
 * OpenCode -- its start-screen logo, drawn in pixels (`opencode_mark()`):
   "open" (grey in the TUI) as a checkerboard, "code" solid with its shade
   hatched.
@@ -75,7 +75,7 @@ FLUENT = {
 }
 
 # The CLIs' own marks from Simple Icons (CC0 artwork, `../brand_marks.py`).
-BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen"}
+BRAND = {"gemini.png": "googlegemini", "qwen.png": "qwen", "mistral.png": "mistralai"}
 LETTERS = {"aider.png": "Ai"}
 
 BORROWED = {

@@ -1,6 +1,6 @@
 # Terminal AI coding CLIs: sources
 
-Seven overlay sets for AI coding agents that run in a terminal:
+Eight overlay sets for AI coding agents that run in a terminal:
 
 | set | spec | program | command |
 |---|---|---|---|
@@ -11,6 +11,7 @@ Seven overlay sets for AI coding agents that run in a terminal:
 | `qwen_code_template` | `qwen_code.yaml` | Qwen Code | `qwen` |
 | `copilot_cli_template` | `copilot_cli.yaml` | GitHub Copilot CLI | `copilot` |
 | `aider_template` | `aider.yaml` | Aider | `aider` |
+| `mistral_vibe_template` | `mistral_vibe.yaml` | Mistral Vibe | `vibe` |
 
 The desktop apps and web pages of Claude, Codex and Copilot have their own
 sets in [`../aichat/`](../aichat/). Those are different programs with
@@ -47,6 +48,7 @@ from an install:
 | Qwen Code | 0.26.7 | `Qwen - <dir>` or a session name, with `✳` + U+FE0E + space while waiting for confirmation and `◐` + U+FE0E + space while responding; padded to 80 characters | `CLI_TITLE` replaces it | `computeWindowTitle()`, `titleStatusPrefix()` in `chunks/chunk-6TO5PHBA.js`; `ICON` in `chunks/chunk-XS5MZ6RT.js` |
 | GitHub Copilot CLI | 0.0.399 | `GitHub Copilot`, then `🤖 <topic>` (`Copilot: <topic>` in screen-reader mode), OSC 2 only | `update_terminal_title: false` | `index.js` of 0.0.399, the last JS release; 1.0.105 ships a compressed binary that was not read |
 | Aider | 0.86.2 | none | | no OSC 0/2 and no `set_title` in `aider/` |
+| Mistral Vibe | 3.1.0 | `Vibe` idle, `>> Vibe` while it generates, an empty title on exit (OSC 0). MEASURED: run in a pty with a dummy API key, 2026-11-06. The title is built from a format string in the Rust TUI, so a state that was not reached (waiting for a tool approval) may use another prefix; the route accepts up to three symbol characters before `Vibe`. | none found | `vibe/_bin/vibe-rs` (crossterm `SetTitle`) |
 
 What the routes therefore cannot see:
 
@@ -130,6 +132,7 @@ rules:
 | Gemini CLI | `defaultKeyBindingConfig`, `packages/cli/src/ui/key/keyBindings.ts` (bundle `chunk-5RNHNFYV.js`). |
 | Qwen Code | its own `defaultKeyBindings` (`chunks/chunk-MSIOYFPM.js`). It differs from Gemini's: Ctrl+X external editor, Ctrl+Y retry, Ctrl+Q queue, no Ctrl+Z. |
 | Copilot CLI | the Ink `useInput` handlers and the `/help` shortcut lists in `index.js` (0.0.399). Ctrl+D is left out: `/help` says "shutdown", but the only handler found queues the message. |
+| Mistral Vibe | the Keyboard Shortcuts list of its own `/help` screen, read by running the TUI in a pty (3.1.0). |
 | Aider | `InputOutput.get_input()` key bindings in `aider/io.py`, Ctrl+C in `aider/coders/base_coder.py`; Ctrl+R and Ctrl+L are prompt_toolkit defaults cited from aider's docs. |
 
 None of the sets was checked on a keyboard yet.
@@ -152,8 +155,8 @@ and licences as listed there): `claude.png`, `codex.png`, `copilot.png` and
 the shared action icons; from [`../nano/icons`](../nano/icons): `complete.png`,
 `exit.png`, the page, scroll and first/last icons, `mouse.png`.
 
-`gemini.png` and `qwen.png` are the CLIs' own marks from Simple Icons
-(`googlegemini`, `qwen`; artwork CC0-1.0, through
+`gemini.png`, `qwen.png` and `mistral.png` are marks from Simple Icons
+(`googlegemini`, `qwen`, `mistralai`; artwork CC0-1.0, through
 [`../brand_marks.py`](../brand_marks.py); used to name the program the set is
 for). `opencode.png` is OpenCode's start-screen logo ("open" over "code"),
 drawn in pixels from the logo rows in OpenCode's bundled JS

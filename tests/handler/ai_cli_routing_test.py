@@ -1,7 +1,7 @@
 """The SHIPPED routing of terminal AI coding CLIs: a terminal's WINDOW TITLE.
 
-Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code and GitHub Copilot CLI
-replace the shell's title with their own; Aider sets none. Each route in
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
+Mistral Vibe replace the shell's title with their own; Aider sets none. Each route in
 `&editor_titles` matches the CLI's own title format and its command name at
 the command position. Drives `polyhost/res/overlay-mapping.poly.yaml` itself.
 The formats are in `polyhost/res/overlay_sources/aicli/SOURCES.md`. What it
@@ -101,6 +101,17 @@ TITLES = {
         "C:\\WINDOWS\\system32\\cmd.exe - aider",
         "Default (aider)",
     ],
+    "mistral_vibe_template": [
+        "Vibe",                                # idle
+        ">> Vibe",                             # working
+        "Vibe — Konsole",
+        "vibe",
+        "vibe --continue",
+        "Default (vibe)",
+        "~/src> vibe",                         # Nushell
+        "vibe | me@pc: ~/src | xonsh",         # xonsh
+        "Administrator: Command Prompt - vibe",
+    ],
 }
 
 # Titles that mention a CLI, or look like one, but are not that CLI running.
@@ -124,6 +135,14 @@ OTHER_TITLES = [
     "user@host: ~/OpenCode",
     "GitHub Copilot docs",
     "bash",
+    # Mistral Vibe: "vibe" is an English word and a likely directory name.
+    "vim vibe.txt",
+    "cd vibe",
+    "user@host: ~/vibe",
+    "Vibe — -zsh — 80×24",                    # Terminal.app idle in ~/Vibe
+    "vibe : bash — Konsole",                  # Konsole idle in ~/vibe
+    "good vibe",
+    "Vibe notes",
 ]
 
 

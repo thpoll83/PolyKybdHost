@@ -188,10 +188,10 @@ strength on every key they draw, as a browser's do under a website:
 
 ### Terminal AI coding CLIs
 
-Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI and
-Aider have routes in the same `&editor_titles` list. All but Aider replace the
+Claude Code, Codex, OpenCode, Gemini CLI, Qwen Code, GitHub Copilot CLI,
+Mistral Vibe and Aider have routes in the same `&editor_titles` list. All but Aider replace the
 shell's title with their own, so each route's keys are the first word of the
-CLI's own title (`✳`, `◇`, `OC`, `GitHub Copilot` ...) and its command name,
+CLI's own title (`✳`, `◇`, `OC`, `GitHub Copilot`, `Vibe` ...) and its command name,
 and the `title` regex requires that word at the start of the title or after a
 terminal's separator. Codex's default title does not name it; only its
 "action required" title and a `terminal_title` setting with `app-name` first
