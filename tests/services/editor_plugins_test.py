@@ -287,7 +287,7 @@ class TestGdb(Fixture):
         self.assertEqual(ep.gdb_init_file(home=self.home, env={}, gdb_major=10), self.gdbinit)
         self.assertEqual(ep.gdb_init_file(home=self.home, env={}, gdb_major=11),
                          self.home / ".config/gdb/gdbinit")
-        with mock.patch.object(ep, "_gdb_major", return_value=10):
+        with mock.patch.object(ep, "_gdb_probe", return_value=(10, True)):
             [r] = ep.install([ep.GDB], **self.kw())
             self.assertTrue(r.ok and r.changed, r)
             self.assertIn(ep.GDB_BEGIN_MARKER, self.gdbinit.read_text())
@@ -325,6 +325,11 @@ class TestGdb(Fixture):
             self.assertEqual(REAL_GDB_PROBE("/x/flaky"), (10, True))
             self.assertEqual(REAL_GDB_PROBE("/x/flaky"), (10, True))     # now cached
         self.assertEqual(run.call_count, 2)
+
+    def test_one_status_call_probes_gdb_once(self):
+        with mock.patch.object(ep, "_gdb_probe", return_value=(15, True)) as probe:
+            self.status(ep.GDB)
+        self.assertEqual(probe.call_count, 1)
 
     def test_a_block_stays_removable_when_gdb_has_no_python(self):
         ep.install([ep.GDB], **self.kw())

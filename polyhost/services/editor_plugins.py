@@ -213,10 +213,6 @@ def _gdb_major(exe):
     return _gdb_probe(exe)[0]
 
 
-def _gdb_has_python(exe):
-    """Whether the GDB at `exe` runs Python: True, False, or None (unknown)."""
-    return _gdb_probe(exe)[1]
-
 
 def gdb_init_file(home=None, env=None, system=None, gdb_major=None):
     """The init file GDB reads from the home folder.
@@ -498,11 +494,11 @@ def _mentions_polykybd(rest, comment=";"):
     return False
 
 
-def _init_paths(editor, home, env, system, which=None):
-    """(init file, plugin folder) of an INIT_EDITORS editor."""
+def _init_paths(editor, home, env, system, gdb_probe=(None, None)):
+    """(init file, plugin folder) of an INIT_EDITORS editor. `gdb_probe` is the
+    (major, python) answer of `_gdb_probe` for this status call."""
     if editor == GDB:
-        major = _gdb_major(_gdb_exe(which))
-        return (gdb_init_file(home, env, system, major),
+        return (gdb_init_file(home, env, system, gdb_probe[0]),
                 gdb_plugin_dir(home, env, system))
     init = emacs_init_file(home, env, system)
     return init, emacs_lisp_dir(init)
@@ -552,7 +548,10 @@ def status(editors=None, home=None, env=None, which=None, system=None,
 def _status_one(editor, home, env, which, system, source):
     shipped = shipped_files(editor, source)
     if editor in INIT_EDITORS:
-        init, want = _init_paths(editor, home, env, system, which)
+        # One probe per status call, so the init file and the Python check
+        # never rest on two different answers.
+        probe = _gdb_probe(_gdb_exe(which)) if editor == GDB else (None, None)
+        init, want = _init_paths(editor, home, env, system, probe)
         if shipped is None:
             default = EMACS_SOURCE if editor == EMACS else GDB_SOURCE
             return EditorStatus(editor, STATE_NO_SOURCE, init, str(source or default))
@@ -560,7 +559,7 @@ def _status_one(editor, home, env, which, system, source):
         if not _present(editor, which, system) and doc is None:
             return EditorStatus(editor, STATE_NOT_PRESENT, init, "")
         found, _orphan, rest = _init_blocks(doc.text, editor) if doc is not None else ([], False, "")
-        if not found and editor == GDB and _gdb_has_python(_gdb_exe(which)) is False:
+        if not found and editor == GDB and probe[1] is False:
             # The script needs Python, and in a GDB built without it the
             # block's `python` line stops the init file with an error. Only
             # when there is no block: an existing one must stay removable.
