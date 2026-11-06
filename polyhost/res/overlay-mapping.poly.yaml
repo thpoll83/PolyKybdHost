@@ -2862,11 +2862,21 @@ rstudio:
 # MATLAB (sources: overlay_sources/matlab/). The macOS bundle is named per release
 # (MATLAB_R2026b.app), and mapping_key() drops only a trailing year, so the
 # releases are listed. Names not checked on an install.
+# Simulink (sources: overlay_sources/simulink/) runs in the MATLAB process, so
+# its set is chosen by the Simulink Editor's title, "<model> - Simulink", with
+# "*" after an unsaved model and a licence note after "Simulink" on some
+# licences ("- Simulink academic use"). Every other MATLAB window keeps the
+# MATLAB set. The `os: macos` branch is tried first, so it repeats the title
+# route. Title format not checked on an install.
 matlab,matlab_r2025a,matlab_r2025b,matlab_r2026a,matlab_r2026b:
   overlay: [matlab_template.mods.png, matlab_template.combo.mods.png]
+  titles-match:
+    ' - Simulink(?: [a-z ]+)?$': {overlay: [simulink_template.mods.png, simulink_template.combo.mods.png]}
   os:
     macos:
       overlay: [matlab_template_mac.mods.png, matlab_template_mac.combo.mods.png, matlab_template_mac.extra.mods.png]
+      titles-match:
+        ' - Simulink(?: [a-z ]+)?$': {overlay: [simulink_template_mac.mods.png, simulink_template_mac.combo.mods.png, simulink_template_mac.extra.mods.png]}
 # draw.io desktop (sources: overlay_sources/webapps/drawio.yaml). Process `drawio`,
 # WM_CLASS `draw-io` on Linux (measured, 32.5.5). On Windows the host keeps the
 # process name up to its first dot, so draw.io.exe arrives as `draw`.
@@ -3146,3 +3156,31 @@ winamp:
 # the single keys the web-app sets draw.
 qutebrowser,org.qutebrowser.qutebrowser:
   overlay: [qutebrowser_template.mods.png, qutebrowser_template.combo.mods.png]
+# NI LabVIEW (sources: overlay_sources/labview/). LabVIEW.exe on Windows,
+# `labview` on Linux, "LabVIEW 2026" on macOS (the trailing year is dropped);
+# a "Q1"/"Q3" release suffix on macOS is listed. The Front Panel and Block
+# Diagram windows share the keys, so there is no title route. Ctrl on Windows
+# is Cmd on macOS and Alt on Linux. Names not checked on an install.
+labview,labview 2024 q3,labview 2025 q1,labview 2025 q3,labview 2026 q1,labview 2026 q3:
+  overlay: [labview_template.mods.png, labview_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [labview_template_mac.mods.png, labview_template_mac.combo.mods.png, labview_template_mac.extra.mods.png]
+    linux:
+      overlay: [labview_template_linux.mods.png, labview_template_linux.combo.mods.png]
+# COMSOL Multiphysics (sources: overlay_sources/comsol/). comsol.exe on Windows,
+# "COMSOL Multiphysics 6.4" on macOS (the trailing dotted version is dropped).
+# The Linux set lacks the Windows-only Application Builder debug keys. Names
+# not checked on an install.
+comsol,comsol multiphysics:
+  overlay: [comsol_template.mods.png, comsol_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [comsol_template_mac.mods.png, comsol_template_mac.combo.mods.png, comsol_template_mac.extra.mods.png]
+    linux:
+      overlay: [comsol_template_linux.mods.png, comsol_template_linux.combo.mods.png]
+# OriginPro / Origin (sources: overlay_sources/origin/). Windows only:
+# Origin64.exe. `origin` is not listed, because Origin.exe is also EA's game
+# launcher. Name not checked on an install.
+origin64:
+  overlay: [origin_template.mods.png, origin_template.combo.mods.png]
