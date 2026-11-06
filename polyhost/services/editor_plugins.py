@@ -162,9 +162,10 @@ def emacs_lisp_dir(init_file):
 
 
 GDB_PROBE_TIMEOUT_S = 10
-# The version follows any parenthesised vendor text: "GNU gdb (GDB; openSUSE
-# Leap 15.4) 11.1", "GNU gdb (Debian 10.1-1.7) 10.1.90.20210103-git".
-_GDB_VERSION_RE = re.compile(r"^GNU gdb(?: \([^)]*\))* (\d+)\.\d+", re.M)
+# The version is the first number.number after any parenthesised vendor text and
+# any vendor words: "GNU gdb (GDB; openSUSE Leap 15.4) 11.1", "GNU gdb (Debian
+# 10.1-1.7) 10.1.90.20210103-git", "GNU gdb (GDB) Red Hat Enterprise Linux 8.2-2.el7".
+_GDB_VERSION_RE = re.compile(r"^GNU gdb(?: \([^)]*\))*[^\d\n]*?(\d+)\.\d+", re.M)
 _GDB_PY_MARK = "PK-GDB-PYTHON"
 _gdb_probe_cache = {}
 
@@ -178,7 +179,8 @@ def _gdb_exe(which=None):
 def _gdb_probe(exe):
     """(major version or None, Python support True/False/None) of the GDB at
     `exe`, from one ``gdb --nx --batch`` run. None means it did not answer.
-    Asked once per executable. Never raises."""
+    An answer is kept per executable; no answer is asked again next time.
+    Never raises."""
     if not exe:
         return None, None
     if exe not in _gdb_probe_cache:
@@ -200,6 +202,8 @@ def _gdb_probe(exe):
                 result = (int(m.group(1)), _GDB_PY_MARK in out)
         except (subprocess.TimeoutExpired, OSError) as exc:
             log.info("gdb did not answer the probe: %s", exc)
+        if result == (None, None):
+            return result       # not cached: a later status check asks again
         _gdb_probe_cache[exe] = result
     return _gdb_probe_cache[exe]
 
@@ -555,11 +559,12 @@ def _status_one(editor, home, env, which, system, source):
         doc = _read_init(init)
         if not _present(editor, which, system) and doc is None:
             return EditorStatus(editor, STATE_NOT_PRESENT, init, "")
-        if editor == GDB and _gdb_has_python(_gdb_exe(which)) is False:
-            # The script needs Python, and in a GDB built without it the
-            # block's `python` line stops the init file with an error.
-            return EditorStatus(editor, STATE_NOT_PRESENT, init, "GDB without Python")
         found, _orphan, rest = _init_blocks(doc.text, editor) if doc is not None else ([], False, "")
+        if not found and editor == GDB and _gdb_has_python(_gdb_exe(which)) is False:
+            # The script needs Python, and in a GDB built without it the
+            # block's `python` line stops the init file with an error. Only
+            # when there is no block: an existing one must stay removable.
+            return EditorStatus(editor, STATE_NOT_PRESENT, init, "GDB without Python")
         if not found:
             if _mentions_polykybd(rest, "#" if editor == GDB else ";"):
                 return EditorStatus(editor, STATE_MANUAL, init, str(init))

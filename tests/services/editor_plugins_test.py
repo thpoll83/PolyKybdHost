@@ -9,13 +9,16 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
 import unittest.mock as mock
 from pathlib import Path
 
 from polyhost.services import editor_plugins as ep
+
+# The real probe, kept before TestGdb replaces it, so the probe's own tests can
+# call it with a mocked subprocess.
+REAL_GDB_PROBE = ep._gdb_probe
 
 ALL = ("vim", "gvim", "nvim", "emacs")
 
@@ -242,6 +245,17 @@ class TestEmacs(Fixture):
 
 
 class TestGdb(Fixture):
+    """The installer's GDB logic. The probe is replaced by GDB 15 with Python, so
+    these tests never run the GDB installed on the machine; a test that needs
+    another answer patches `_gdb_probe` itself."""
+
+    def setUp(self):
+        super().setUp()
+        ep._gdb_probe_cache.clear()
+        self.addCleanup(ep._gdb_probe_cache.clear)
+        probe = mock.patch.object(ep, "_gdb_probe", return_value=(15, True))
+        probe.start()
+        self.addCleanup(probe.stop)
 
     def kw(self, which=None):
         return super().kw(which or which_of(*ALL, "gdb"))
@@ -289,19 +303,36 @@ class TestGdb(Fixture):
             "GNU gdb (GDB; SUSE Linux Enterprise 15) 9.2": 9,
             "GNU gdb (Ubuntu 15.1-1ubuntu1~24.04.1) 15.1": 15,
             "GNU gdb 8.3": 8,
+            "GNU gdb (GDB) Red Hat Enterprise Linux 8.2-2.el7": 8,
         }
         for i, (banner, major) in enumerate(banners.items()):
             out = f"{ep._GDB_PY_MARK}\n{banner}\nCopyright\n".encode()
             with mock.patch.object(ep.subprocess, "run",
                                    return_value=subprocess.CompletedProcess([], 0, stdout=out)):
-                self.assertEqual(ep._gdb_probe(f"/x/gdb{i}"), (major, True), banner)
+                self.assertEqual(REAL_GDB_PROBE(f"/x/gdb{i}"), (major, True), banner)
         no_py = b"GNU gdb (GDB; SUSE Linux Enterprise 15) 9.2\n"
         with mock.patch.object(ep.subprocess, "run",
                                return_value=subprocess.CompletedProcess([], 0, stdout=no_py)):
-            self.assertEqual(ep._gdb_probe("/x/nopy"), (9, False))
+            self.assertEqual(REAL_GDB_PROBE("/x/nopy"), (9, False))
         with mock.patch.object(ep.subprocess, "run", side_effect=OSError("gone")):
-            self.assertEqual(ep._gdb_probe("/nowhere/gdb"), (None, None))
-        self.assertEqual(ep._gdb_probe(None), (None, None))
+            self.assertEqual(REAL_GDB_PROBE("/nowhere/gdb"), (None, None))
+        self.assertEqual(REAL_GDB_PROBE(None), (None, None))
+
+    def test_a_probe_that_got_no_answer_is_asked_again(self):
+        ok = subprocess.CompletedProcess([], 0, stdout=f"{ep._GDB_PY_MARK}\nGNU gdb 10.2\n".encode())
+        with mock.patch.object(ep.subprocess, "run", side_effect=[OSError("busy"), ok]) as run:
+            self.assertEqual(REAL_GDB_PROBE("/x/flaky"), (None, None))
+            self.assertEqual(REAL_GDB_PROBE("/x/flaky"), (10, True))
+            self.assertEqual(REAL_GDB_PROBE("/x/flaky"), (10, True))     # now cached
+        self.assertEqual(run.call_count, 2)
+
+    def test_a_block_stays_removable_when_gdb_has_no_python(self):
+        ep.install([ep.GDB], **self.kw())
+        with mock.patch.object(ep, "_gdb_probe", return_value=(15, False)):
+            self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+            [r] = ep.remove([ep.GDB], **self.kw())
+        self.assertTrue(r.ok and r.changed, r)
+        self.assertNotIn(ep.GDB_BEGIN_MARKER, self.gdbinit.read_text())
 
     def test_a_suse_gdb_9_banner_selects_the_home_gdbinit(self):
         (self.home / ".config/gdb").mkdir(parents=True)
@@ -405,8 +436,11 @@ class TestGdbScript(unittest.TestCase):
     def setUpClass(cls):
         if not (hasattr(os, "fork") and _gdb_has_python()):
             raise unittest.SkipTest("needs gdb with Python and a pseudo-terminal")
-        # Any program will do; its base name is the one in the title.
-        cls.program = shutil.which("true") or sys.executable
+        # Any program that exits at once will do; its base name is the one in
+        # the title. (A Python fallback would start an interactive session.)
+        cls.program = shutil.which("true")
+        if not cls.program:
+            raise unittest.SkipTest("needs a `true` program on PATH")
         cls.name = Path(cls.program).name
         cls.titles = [f"gdb \u23f8 {cls.name}", f"gdb \u25b6 {cls.name}", f"gdb \u23f8 {cls.name}"]
 
