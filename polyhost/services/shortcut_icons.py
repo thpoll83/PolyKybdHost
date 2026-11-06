@@ -315,7 +315,9 @@ def fold_spelling(text: str) -> str:
 
 
 _STRIP_TRAILING = re.compile(r"(\.\.\.|…)\s*$")
-_PARENTHETICAL = re.compile(r"\s*\([^)]*\)")
+# Full-width parentheses too: Chinese and Japanese menus write the mnemonic as
+# "保存（S）" as often as "保存(S)".
+_PARENTHETICAL = re.compile(r"\s*[(\uff08][^)\uff09]*[)\uff09]")
 _NON_WORD = re.compile(r"[^\w\s]")
 _SPACES = re.compile(r"\s+")
 
@@ -384,6 +386,131 @@ def load_hints(path: str | None = None) -> dict[str, str]:
     # would silently disable the memo.
     _HINTS_CACHE = out
     return _HINTS_CACHE
+
+
+# ---------------------------------------------------------------------------
+# Labels in other languages
+# ---------------------------------------------------------------------------
+#
+# The English rules above cannot match "Speichern" or "保存": no spelling fold or
+# similarity score bridges a translation. `res/shortcut_lexicon/<lang>.yaml`
+# lists, per language, the menu words that mean each LEXICON concept. They are
+# tried only AFTER every English rule has failed, so no English label changes
+# its icon.
+#
+# Every language is tried, not only the OS language: the app's language and the
+# OS language differ often (an English IDE on a German desktop), and nothing in
+# the harvest says which language a label is in. That makes a phrase shared by
+# two languages a risk, so `tests/services/shortcut_lexicon_test.py` fails when
+# one normalized phrase names two different concepts, in any two files.
+#
+# Four rules, weaker than their English counterparts:
+#   exact    the whole label is a phrase                         0.95
+#   phrase   a multi-word phrase appears as consecutive words    0.85
+#   compact  a phrase in a script written without spaces (Chinese,
+#            Japanese) appears as a SUBSTRING of the label       0.85
+#   keyword  a one-word phrase is a word of the label            0.7
+# The keyword rule skips a Latin-script word shorter than
+# _MIN_LATIN_KEYWORD: Vietnamese "in" (print) and Indonesian "buka" are ordinary
+# English or near-English words, and an English label that failed the English
+# rules ("Log In") must not take a foreign icon from one of them.
+
+_LEXICON_CACHE: list[tuple[str, str, str]] | None = None
+_MIN_LATIN_KEYWORD = 5
+
+# Han and kana: scripts written without spaces between words.
+_COMPACT_SCRIPT = re.compile(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+_LATIN = re.compile(r"^[a-z\u00c0-\u024f\u1e00-\u1eff\u0300-\u036f]+$")
+
+
+def default_lexicon_dir() -> str:
+    import os
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(here, "res", "shortcut_lexicon")
+
+
+def load_localized_lexicon(directory: str | None = None) -> list[tuple[str, str, str]]:
+    """Every localized phrase as (normalized phrase, concept, language).
+
+    Sorted longest first, like _PHRASES, so "speichern unter" is tried before
+    "speichern". A file that is missing or does not parse is skipped: the English
+    rules must work with none. A concept name LEXICON does not know is skipped
+    too (the test catches it).
+    """
+    global _LEXICON_CACHE
+    explicit = directory is not None
+    if not explicit and _LEXICON_CACHE is not None:
+        return _LEXICON_CACHE
+    import os
+    out: list[tuple[str, str, str]] = []
+    folder = directory or default_lexicon_dir()
+    try:
+        names = sorted(f for f in os.listdir(folder) if f.endswith(".yaml"))
+    except OSError:
+        names = []
+    try:
+        import yaml
+    except ImportError:
+        names = []
+    for name in names:
+        lang = name[:-len(".yaml")]
+        try:
+            with open(os.path.join(folder, name), encoding="utf-8") as fh:
+                raw = yaml.safe_load(fh) or {}
+        except Exception:
+            continue
+        for concept, phrases in (raw.get("concepts") or {}).items():
+            if concept not in LEXICON or not isinstance(phrases, list):
+                continue
+            for phrase in phrases:
+                text = normalize(str(phrase))
+                if text:
+                    out.append((text, concept, lang))
+    out.sort(key=lambda pcl: (-len(pcl[0].split()), -len(pcl[0]), pcl[0], pcl[2]))
+    if explicit:
+        return out
+    _LEXICON_CACHE = out
+    return _LEXICON_CACHE
+
+
+def _is_compact(phrase: str) -> bool:
+    return " " not in phrase and bool(_COMPACT_SCRIPT.search(phrase))
+
+
+def _keyword_allowed(word: str) -> bool:
+    return not _LATIN.match(word) or len(word) >= _MIN_LATIN_KEYWORD
+
+
+def _localized_rules(text: str, table=None) -> IconMatch | None:
+    """The four localized rules described above, in that order."""
+    table = load_localized_lexicon() if table is None else table
+    if not table:
+        return None
+    for phrase, concept, _lang in table:
+        if text == phrase:
+            return _for(concept, 0.95, "localized exact")
+    words = text.split()
+    for phrase, concept, _lang in table:
+        parts = phrase.split()
+        if len(parts) > 1 and _contains_sequence(words, parts):
+            return _for(concept, 0.85, "localized phrase")
+    if _COMPACT_SCRIPT.search(text):
+        for phrase, concept, _lang in table:
+            if _is_compact(phrase) and len(phrase) >= 2 and phrase in text:
+                return _for(concept, 0.85, "localized compact")
+    positions: dict[str, int] = {}
+    for index, word in enumerate(words):
+        positions.setdefault(word, index)
+    best_at, best_concept = None, None
+    for phrase, concept, _lang in table:
+        if " " in phrase or not _keyword_allowed(phrase):
+            continue
+        at = positions.get(phrase)
+        if at is not None and (best_at is None or at < best_at):
+            best_at, best_concept = at, concept
+    if best_concept is not None:
+        return _for(best_concept, 0.7, "localized keyword")
+    return None
 
 
 def resolve_hint(value: str) -> int | None:
@@ -495,9 +622,15 @@ def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
                          0.95 if hit.rule == "exact" else 0.85, "spelling",
                          hit.icon)
 
+    # 5. Labels in other languages, only once every English rule has failed --
+    #    see the "Labels in other languages" section.
+    hit = _localized_rules(text)
+    if hit is not None:
+        return hit
+
     words = set(text.split())
 
-    # 4. Fuzzy, for MORPHOLOGY only -- "preference" vs "preferences", "maximise"
+    # 6. Fuzzy, for MORPHOLOGY only -- "preference" vs "preferences", "maximise"
     #    vs "maximize". Restricted to single-word labels against single-word
     #    phrases, because character similarity across multi-word labels produces
     #    confident nonsense: measured, "Autosave Document" matched "close
