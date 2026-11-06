@@ -147,10 +147,58 @@ def opencode_mark(dest: Path) -> None:
     Image.merge("RGBA", (mark,) * 4).save(dest)
 
 
+# Two Fluent icons carry a solid round badge with a symbol cut out of it.
+# Scaled to the 40x36 key area, the cut-out came out lopsided (one arm of the
+# plus wider, single stray pixels). crisp_badge() scales the icon once to its
+# final 36x36 size and redraws the badge there in whole pixels: a symmetric
+# disc, a 2 px gap around it, and a 2 px plus or up arrow. The specs place a
+# 36x36 icon in their 40x36 area unscaled.
+_BADGES = {
+    "pasteimage.png": (10, 10, 10, "plus"),      # centre x, centre y, radius
+    "background.png": (26, 26, 10, "arrow_up"),
+}
+_BADGE_SIZE = 36
+
+
+def crisp_badge(path: Path, cx: int, cy: int, r: int, symbol: str) -> None:
+    from PIL import Image
+    src = Image.open(path).convert("RGBA").getchannel("A")
+    if src.size == (_BADGE_SIZE, _BADGE_SIZE):
+        return                                   # already redrawn
+    src = src.crop(src.getbbox())
+    k = min(_BADGE_SIZE / src.width, _BADGE_SIZE / src.height)
+    src = src.resize((round(src.width * k), round(src.height * k)), Image.LANCZOS)
+    img = Image.new("L", (_BADGE_SIZE, _BADGE_SIZE), 0)
+    img.paste(src.point(lambda v: 255 if v >= 150 else 0), (0, 0))
+
+    def inside(x, y, rad):
+        return (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= rad * rad
+
+    for y in range(_BADGE_SIZE):
+        for x in range(_BADGE_SIZE):
+            if inside(x, y, r + 2):
+                img.putpixel((x, y), 255 if inside(x, y, r) else 0)
+    cut = []
+    if symbol == "plus":
+        for i in range(cx - 6, cx + 6):
+            cut += [(cx - 1, i), (cx, i), (i, cy - 1), (i, cy)]
+    else:                                        # arrow_up: solid head, 2 px shaft
+        tip = cy - 7
+        for d in range(5):                       # head row d spans 2 + 2d pixels
+            cut += [(x, tip + d) for x in range(cx - 1 - d, cx + 1 + d)]
+        for y in range(tip + 5, cy + 6):
+            cut += [(cx - 1, y), (cx, y)]
+    for x, y in cut:
+        img.putpixel((x, y), 0)
+    Image.merge("RGBA", (img,) * 4).save(path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
+    for fname, (cx, cy, r, symbol) in _BADGES.items():
+        crisp_badge(out / fname, cx, cy, r, symbol)
     opencode_mark(out / "opencode.png")
     for fname, slug in BRAND.items():
         brand_marks.ensure(out / fname, slug)

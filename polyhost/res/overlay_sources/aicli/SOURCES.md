@@ -170,3 +170,9 @@ drawn in pixels from the logo rows in OpenCode's bundled JS
 keycap "open" is a checkerboard with its shade left dark, and "code" is solid
 with its shade as a diagonal hatch. `aider.png` (`Ai`) is a drawn letter frame from
 [`../rect_mark.py`](../rect_mark.py).
+
+
+`pasteimage.png` (Fluent `Image Add`) and `background.png` (Fluent `Window Arrow
+Up`) are stored at their keycap size, 36x36, with the round badge redrawn in
+whole pixels (`crisp_badge()` in `fetch_icons.py`): scaled from the Fluent
+artwork, the cut-out plus and arrow came out lopsided.
