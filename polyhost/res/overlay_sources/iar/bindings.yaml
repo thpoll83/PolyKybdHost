@@ -1,0 +1,106 @@
+# IAR Embedded Workbench for Arm shortcut overlays for PolyKybd (Windows, Linux).
+#
+# The default shortcuts listed in the menu reference of the IDE Project
+# Management and Building Guide for version 10.10.x (File, Edit, Project and
+# Debug menus; SOURCES.md). The View, Tools, Window and Help menus have no
+# shortcuts.
+#
+# The guide names one platform difference: Stop Build is Ctrl+Break on
+# Windows and Pause on Linux. Ctrl+Break is the Pause key with Ctrl, so the
+# Windows set draws it on Ctrl+Pause and the Linux set on Pause.
+#
+# Placement follows the Eclipse set, so an icon copied from there (debugging,
+# completion, find selection) draws the same keycap cell in both sets.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/iar/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/iar/bindings.yaml --preview /tmp/iar_preview
+app: iar
+match: [iaridepm]
+output: iar_ewarm_template
+output_linux: iar_ewarm_template_linux
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+threshold: 150
+
+program_icon: iar.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+# Eclipse's whole-cell drawings (borrowed) render 1:1, as they do there.
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
+# Eclipse's word composites are drawn 1-bit at 40x40 and placed 1:1.
+_worded: &worded { region: [40, 40], mode: alpha }
+# KiCad's placement, for the icons copied from there.
+_kicad: &kicad { region: [36, 32], mode: luma }
+
+bindings:
+  # ===================================================== no modifier =========
+  - { key: F2, icon: bookmarknext.png, label: "Next bookmark" }
+  - { key: F3, label: "Find next" }
+  - { key: F4, icon: errornext.png, label: "Next error/tag" }
+  - { key: F5, icon: resume.png, <<: *reclaimed, label: "Go" }
+  - { key: F7, icon: build.png, label: "Make" }
+  - { key: F8, icon: batchbuild.png, label: "Batch build" }
+  - { key: F9, icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint" }
+  - { key: F10, icon: stepover.png, <<: *reclaimed, label: "Step over" }
+  - { key: F11, icon: stepinto.png, <<: *reclaimed, label: "Step into" }
+  - { key: F12, icon: gotodeclaration.png, <<: *reclaimed, label: "Go to definition" }
+  - { key: PAUSE, only: [linux], icon: stopbuild.png, label: "Stop build" }
+
+  # ============================================================ Ctrl =========
+  - { key: A, mods: [CTRL], label: "Select all" }
+  - { key: C, mods: [CTRL], label: "Copy" }
+  - { key: D, mods: [CTRL], icon: debug.png, <<: *reclaimed, label: "Download and debug" }
+  - { key: E, mods: [CTRL], icon: openencoding.png, label: "Open file with encoding" }
+  - { key: F, mods: [CTRL], label: "Find" }
+  - { key: G, mods: [CTRL], icon: gotoline.png, label: "Go to line" }
+  - { key: H, mods: [CTRL], icon: findreplace.png, <<: *kicad, label: "Replace" }
+  - { key: I, mods: [CTRL], icon: incfind.png, <<: *worded, label: "Incremental search" }
+  - { key: K, mods: [CTRL], icon: blockcommentadd.png, label: "Block comment" }
+  - { key: M, mods: [CTRL], icon: intentions.png, label: "Apply syntax fix" }
+  - { key: N, mods: [CTRL], icon: newfile.png, label: "New file" }
+  - { key: O, mods: [CTRL], label: "Open" }
+  - { key: P, mods: [CTRL], label: "Print" }
+  - { key: S, mods: [CTRL], label: "Save" }
+  - { key: T, mods: [CTRL], icon: indent.png, label: "Auto indent" }
+  - { key: V, mods: [CTRL], label: "Paste" }
+  - { key: X, mods: [CTRL], label: "Cut" }
+  - { key: Y, mods: [CTRL], label: "Redo" }
+  - { key: Z, mods: [CTRL], label: "Undo" }
+  - { key: SPACE, mods: [CTRL], icon: completion.png, label: "Complete code" }
+  - { key: F2, mods: [CTRL], icon: togglebookmark.png, label: "Toggle bookmark" }
+  - { key: F3, mods: [CTRL], icon: findnext.png, label: "Find next (selected)", shared: false }
+  - { key: F7, mods: [CTRL], icon: compile.png, label: "Compile" }
+  - { key: F9, mods: [CTRL], icon: bpenable.png, label: "Enable/disable breakpoint" }
+  - { key: PAUSE, mods: [CTRL], except: [linux], icon: stopbuild.png, label: "Stop build" }
+
+  # =========================================================== Shift =========
+  - { key: F2, mods: [SHIFT], icon: bookmarkprev.png, label: "Previous bookmark" }
+  - { key: F3, mods: [SHIFT], icon: searchprev.png, <<: *kicad, label: "Find previous" }
+  - { key: F4, mods: [SHIFT], icon: errorprev.png, label: "Previous error/tag" }
+  - { key: F11, mods: [SHIFT], icon: stepout.png, <<: *reclaimed, label: "Step out" }
+
+  # ============================================================= Alt =========
+  - { key: F7, mods: [ALT], icon: options.png, label: "Project options" }
+  - { key: LEFT, mods: [ALT], icon: navback.png, <<: *kicad, label: "Navigate backward" }
+  - { key: RIGHT, mods: [ALT], icon: navforward.png, <<: *kicad, label: "Navigate forward" }
+
+  # ====================================================== Ctrl+Shift =========
+  - { key: D, mods: [CTRL, SHIFT], icon: stop.png, <<: *reclaimed, label: "Stop debugging" }
+  - { key: H, mods: [CTRL, SHIFT], icon: togglehdr.png, label: "Toggle header/source" }
+  - { key: K, mods: [CTRL, SHIFT], icon: blockcommentdel.png, label: "Block uncomment" }
+  - { key: SPACE, mods: [CTRL, SHIFT], icon: paraminfo.png, label: "Parameter hint" }
+  - { key: F3, mods: [CTRL, SHIFT], icon: findprev.png, label: "Find previous (selected)" }
+
+  # ======================================================== Ctrl+Alt =========
+  - { key: F, mods: [CTRL, ALT], icon: folds.png, label: "Toggle all folds" }
+  - { key: V, mods: [CTRL, ALT], icon: template.png, label: "Insert template" }
+  - { key: SPACE, mods: [CTRL, ALT], icon: autocomplete.png, label: "Complete word" }
