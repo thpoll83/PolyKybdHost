@@ -316,6 +316,21 @@ the ESC mark with its `Mods+Key: label`, and prints the key count from the spec:
 Write a caption's key count from the script's output: two captions written by
 eye said 87 and 37 keys for sets with 74 and 36 (2026-11-03).
 
+When the maintainer asks to compare the ESC mark with the app's own icon, run
+`compare_mark.py` (next to this file). It shows the icon, the icon reduced to
+the mark's size at 1 bit (light pixels lit, and dark pixels lit) and the
+committed ESC cell in one row:
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/compare_mark.py \
+    polyhost/res/overlay_sources/<app>/<spec>.yaml --domain <site> --out /tmp/<app>_mark.png
+#   --icon <file>   a local copy of the icon instead of the favicon service
+#   --luma 200      the light/dark split (Canva's white C needed 200)
+```
+
+The maintainer chose from this sheet four times in the 2026-11-05 batch: WPS
+(redrawn), Canva (switched to the "dark lit" column), Photopea and Steam (kept).
+
 ### 5. Wire the mapping + verify
 
 - Paste the printed stanza into `polyhost/res/overlay-mapping.poly.yaml` (confirm
@@ -410,6 +425,27 @@ out (negative space) + a rounded rect on the right whose interior varies per app
 (Word = text lines, Excel = dashed lines + "X", Outlook = envelope flap,
 PowerPoint = "P"). White-on-transparent → `program_icon_mode: alpha`. Owners
 typically hand-tune these afterwards (hence the guard above).
+
+**A mark with single-pixel detail (a dither band, a 1 px line) must be drawn at
+the size the keycap shows it.** With `program_icon_region: [37, 32]` and
+`fit: contain`, a square mark ends up 32x32, and `_fit_stamp` resizes a 32x32
+source to the same size, which copies it 1:1. A 256 px source goes through
+LANCZOS and a threshold, which moves or removes 1 px features. The WPS marks
+(rounded tile, glyph cut out, a checkerboard band on the right and a diagonal
+hatch at the bottom) are drawn at 32x32 for this reason (`wps/fetch_icons.py`).
+
+⚠️ **N keycap pixels is not 8N source pixels.** When you edit a 256 px source to
+move or repeat a feature by whole keycap pixels, the LANCZOS + threshold rounding
+depends on the neighbourhood. The Keep bulb's second thread band, copied 24 px
+(3 keycap px) below the first, rendered with a different shape; 23 px gave the
+same pixels as the first band. Sweep a few offsets and read the ESC cell back
+from the generated overlay instead of computing the offset.
+
+**Fetching the app's icon when its site refuses automated requests:** Google's
+favicon service, `https://www.google.com/s2/favicons?domain=<site>&sz=256`,
+returns the site's apple-touch icon (Canva 180 px, Photopea and Steam 256 px).
+canva.com answered with a bot check, and the Wikimedia Commons API rate-limited
+the container after two requests (2026-11-05).
 
 **Composite icons** (a value + a shared glyph), e.g. Word line-spacing 1 / 1½ / 2
 which all share the line-spacing glyph: compose `<number on top> + <glyph below>`
@@ -531,6 +567,16 @@ conflicted again as soon as the DevilutionX PR (#499) merged.
   just built (hit while adding the jetbrains `.extra.mods.` layer, 2026-08-01).
   When a generated layer looks empty, **count lit pixels per cell** before
   re-sourcing the icons — it is nearly always the mode, not the artwork.
+
+- ⚠️ **Every new webapp set appends a section to the end of
+  `webapps/SOURCES.md`, so two open webapp PRs always conflict there.** It is an
+  addition beside an addition: keep both sections, then regenerate the specs of
+  both sets and check the overlay PNGs come out unchanged (Keep against Drive,
+  and Photopea against Canva, 2026-11-05).
+- ⚠️ **A full `webapps/fetch_icons.py` run rewrites `code.png`, `copy.png` and
+  `webide.png`**, because their upstream Fluent SVGs changed. The drift is older
+  than any one set. Restore them with `git checkout -- <files>` before you commit
+  an unrelated change, and say so in the PR body (four runs on 2026-11-05).
 
 ## Done when
 

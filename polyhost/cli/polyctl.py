@@ -1392,7 +1392,9 @@ def build_parser():
                     "line, between marker comments, to ~/.bashrc, ~/.zshrc or "
                     "the PowerShell $PROFILE that loads a script shipped with "
                     "this installation; a copy of the file is saved next to it "
-                    "first. fish, cmd.exe, Terminal.app and iTerm2 need no setup.")
+                    "first. fish, Nushell, xonsh, cmd.exe, Terminal.app and iTerm2 need no "
+                    "setup; for fish the line (in conf.d/polykybd.fish) only adds "
+                    "the --codex wrapper.")
     si_sub = p_si.add_subparsers(dest="si_action", required=True)
     si_install = si_sub.add_parser(
         "install", help="add the line (default: the shells with a startup file, and the login shell)")
@@ -1400,9 +1402,10 @@ def build_parser():
     si_status = si_sub.add_parser("status", help="show what is set up, per shell")
     for p in (si_install, si_remove, si_status):
         p.add_argument("--shell", action="append",
-                       choices=("bash", "zsh", "pwsh", "powershell"),
+                       choices=("bash", "zsh", "fish", "pwsh", "powershell"),
                        help="only this shell (repeat for more); pwsh is PowerShell 7, "
-                            "powershell is Windows PowerShell 5.1")
+                            "powershell is Windows PowerShell 5.1; fish takes only "
+                            "the --codex wrapper")
     codex = si_install.add_mutually_exclusive_group()
     codex.add_argument("--codex", dest="codex", action="store_true", default=None,
                        help="also wrap the codex command so that Codex's own title "

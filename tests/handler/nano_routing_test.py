@@ -52,6 +52,11 @@ NANO_TITLES = {
     "bash snippet": "nano --version",
     "nano alone": "nano",
     "nano with an option": "nano -w notes.txt",
+    # Nushell (shell_integration.osc2): "<dir>> <first word>", checked on 0.108.0.
+    "Nushell": "~/docs> nano",
+    "Nushell, explicit external": "/home/me/docs> ^nano",
+    # xonsh's default $TITLE: "{current_job:{} | }{user}@{hostname}: {cwd} | xonsh".
+    "xonsh": "nano | me@pc: ~/docs | xonsh",
 }
 
 # Titles that contain the word nano, or something like it, NOT as the command.
@@ -70,6 +75,9 @@ OTHER_TITLES = {
     "iTerm2, idle": "Default (-zsh)",
     "nanorc": "vim .nanorc",
     "a plain shell": "bash",
+    "Nushell, idle in ~/nano": "/home/me/nano",
+    "Nushell, vim on a file named nano": "~/src> vim",
+    "xonsh, idle in ~/nano": "me@pc: ~/nano | xonsh",
 }
 
 
@@ -104,7 +112,7 @@ class NanoMappingFileTest(unittest.TestCase):
         # The list also has the AI CLI routes (ai_cli_routing_test).
         routes = self.raw[WT_KEY]["titles-contains"]
         nano_keys = {k for k in routes if "nano" in str(k)}
-        self.assertEqual(nano_keys, {"nano", "(nano)", "(nano"})
+        self.assertEqual(nano_keys, {"nano", "(nano)", "(nano", "^nano"})
         for key in nano_keys:
             self.assertIs(routes[key], routes["nano"], key)
 
