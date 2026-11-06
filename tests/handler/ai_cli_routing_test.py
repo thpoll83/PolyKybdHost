@@ -126,6 +126,8 @@ TITLES = {
     "mistral_vibe_template": [
         "Vibe",                                # idle
         ">> Vibe",                             # working
+        "Documents — Vibe — 80×24",            # Terminal.app
+        "Documents — >> Vibe — 80×24",
         "Vibe — Konsole",
         "vibe",
         "vibe --continue",
