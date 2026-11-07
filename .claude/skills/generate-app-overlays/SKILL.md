@@ -549,6 +549,24 @@ are needed. To land them:
 On 2026-11-05 the fheroes2 PR (#500) had been merged with `main` once and
 conflicted again as soon as the DevilutionX PR (#499) merged.
 
+⚠️ **A generator change on `main` makes the overlay PNGs conflict too**, and git
+cannot merge a binary. When `main` changed `scripts/generate_app_overlays.py` (or an
+icon source) and regenerated the sets, don't pick either side of a PNG conflict.
+Regenerate the PR's spec with the MERGED generator, then check that the PNG differs
+from `main` only where the PR changed something:
+
+```bash
+.venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/<app>/<spec>.yaml
+git show origin/main:polyhost/res/overlays/<name>.png > /tmp/main.png
+.venv/bin/python -c "from PIL import Image, ImageChops as C; \
+print(C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
+Image.open('polyhost/res/overlays/<name>.png').convert('RGBA')).getbbox())"
+```
+
+The box must cover only the keys the PR changed. On 2026-11-07 the MAME wordmark PR
+(#708) conflicted with the box-filter change (#710). After regenerating, both MAME
+PNGs differed from `main` only in x 539–576, y 126–154, the ESC mark area.
+
 ## Environment & gotchas
 
 - `pip install "Pillow>=10" numpy PyYAML cairosvg` (PyQt5 is NOT needed).
