@@ -57,10 +57,10 @@ bindings:
   - { key: GRAVE, mods: [], icon: osd.png, label: "On-screen display" }
   - { key: T, mods: [], icon: tilt.png, label: Tilt }
   # Coin and start; drawn 1:1 at their own size
-  - { key: "1", mods: [], icon: start1.png, label: "1 player start", region: [34, 14] }
-  - { key: "2", mods: [], icon: start2.png, label: "2 players start", region: [34, 14] }
-  - { key: "5", mods: [], icon: coin1.png, label: "Coin 1", region: [42, 14] }
-  - { key: "6", mods: [], icon: coin2.png, label: "Coin 2", region: [50, 14] }
+  - { key: "1", mods: [], icon: start1.png, label: "1 player start", region: [32, 15] }
+  - { key: "2", mods: [], icon: start2.png, label: "2 players start", region: [33, 15] }
+  - { key: "5", mods: [], icon: coin1.png, label: "Coin 1", region: [41, 15] }
+  - { key: "6", mods: [], icon: coin2.png, label: "Coin 2", region: [49, 15] }
   # Player 1 buttons 1-6
   - { key: KC_LEFT_CTRL, mods: [], icon: button1.png, label: "P1 button 1", region: [32, 32] }
   - { key: KC_LEFT_ALT, mods: [], icon: button2.png, label: "P1 button 2", region: [32, 32] }

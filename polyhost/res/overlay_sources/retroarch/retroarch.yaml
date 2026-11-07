@@ -63,5 +63,5 @@ bindings:
   - { key: S, mods: [], icon: padx.png, label: "RetroPad X", region: [32, 32] }
   - { key: Q, mods: [], icon: padl.png, label: "RetroPad L", region: [32, 32] }
   - { key: W, mods: [], icon: padr.png, label: "RetroPad R", region: [32, 32] }
-  - { key: ENTER, mods: [], icon: padstart.png, label: "RetroPad Start", region: [50, 14] }
-  - { key: KC_RIGHT_SHIFT, mods: [], icon: padselect.png, label: "RetroPad Select", region: [58, 14] }
+  - { key: ENTER, mods: [], icon: padstart.png, label: "RetroPad Start", region: [49, 15] }
+  - { key: KC_RIGHT_SHIFT, mods: [], icon: padselect.png, label: "RetroPad Select", region: [57, 15] }

@@ -51,7 +51,7 @@ FONT_URL = ("https://raw.githubusercontent.com/google/fonts/"
             "e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/pressstart2p/PressStart2P-Regular.ttf")
 
 RING_PX = 32      # a face button: a 2 px ring, its letter at 16 px
-PILL_H = 14       # START / SELECT: a 2 px rounded outline around 8 px text
+PILL_H = 15       # START / SELECT: a 2 px rounded outline around 8 px text (7 px caps, centred)
 
 
 def _text_mask(text: str, px: int):
@@ -61,7 +61,12 @@ def _text_mask(text: str, px: int):
     l, t, r, b = f.getbbox(text)
     im = Image.new("L", (r - l, b - t), 0)
     ImageDraw.Draw(im).text((-l, -t), text, font=f, fill=255)
-    return np.array(im) > 127
+    m = np.array(im) > 127
+    # The font's box includes the 8 x 8 grid's empty right and bottom columns
+    # (2 px at 16 px), so crop to the ink: centring the box put every letter
+    # 1 px up and left of the ring's centre.
+    ys, xs = np.nonzero(m)
+    return m[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 
 
 def ring(letter: str, dest: Path) -> None:
