@@ -256,7 +256,8 @@ def main(argv=None) -> int:
                  "slot_offset": SLOT_OFFSET, "slot_size": SLOT_SIZE,
                  "sha256": hashlib.sha256(data).hexdigest()[:16]}
     bundles = [b for b in manifest["bundles"] if b["id"] != "icons"] + [new_entry]
-    manifest = {**manifest, "layout_version": 2, "bundle_count": len(bundles), "bundles": bundles}
+    # The layout version belongs to the firmware's fonts.yaml; keep what the file says.
+    manifest = {**manifest, "bundle_count": len(bundles), "bundles": bundles}
     manifest_text = json.dumps(manifest, indent=2) + "\n"
 
     if args.check:
