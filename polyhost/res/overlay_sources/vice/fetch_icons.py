@@ -77,14 +77,15 @@ def vice_mark(dest: Path, width: int = LOGO_W) -> None:
     cnc._save_mask(m[ys.min():ys.max() + 1, xs.min():xs.max() + 1], dest)
 
 
-def numbered(src: Path, label: str, dest: Path, w: int = 36, h: int = 32, gap: int = 2) -> None:
-    """`src`'s symbol under `label` (Press Start 2P, 8 px), drawn 1 bit at `w` x `h`.
+def numbered(src: Path, label: str, dest: Path, w: int = 36, h: int = 32, gap: int = 2,
+             px: int = 16) -> None:
+    """`src`'s symbol under `label` (Press Start 2P, `px`), drawn 1 bit at `w` x `h`.
     The drive keys draw 0 and 1 for drives 10 and 11, so the icon names the drive."""
     import numpy as np
     from PIL import Image
 
     from polyhost.res.overlay_sources.retroarch import fetch_icons as ra
-    text = ra._text_mask(label, 8)
+    text = ra._text_mask(label, px)
     a = Image.open(src).convert("RGBA").getchannel("A")
     a = a.crop(a.getbbox())
     k = min(w / a.width, (h - text.shape[0] - gap) / a.height)

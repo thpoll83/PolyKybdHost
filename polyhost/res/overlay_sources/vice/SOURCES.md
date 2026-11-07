@@ -62,7 +62,7 @@ Apache-2.0); `fetch_icons.py` lists the name for each file. Both licences are
 compatible with this repository's GPL-3.0-or-later.
 
 `drive8.png` … `drive11.png` and `eject8.png` … `eject11.png` are drawn by
-`numbered()`: the drive number in Press Start 2P at 8 px (SIL OFL 1.1, the
+`numbered()`: the drive number in Press Start 2P at 16 px (SIL OFL 1.1, the
 pinned copy `retroarch/fetch_icons.py` uses) above the `driveattach` or
 `eject` symbol, 36 x 32 at 1 bit, placed 1:1. The keys for drives 10 and 11
 are 0 and 1, so the number says which drive the key acts on.
