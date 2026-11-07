@@ -21,6 +21,10 @@ from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # no
 LOGO_URL = ("https://raw.githubusercontent.com/VICE-Team/svn-mirror/3.10.0/"
             "vice/data/common/vice-logo-black.svg")
 DRIVES = ("8", "9", "10", "11")   # drive-attach / drive-detach keys 8, 9, 0, 1
+# Form-feed keys 3..6: file name, label, size. VICE's printers are CBM devices 4, 5
+# and 6 (printerdrv/printer.h); the userport printer has no device number (its
+# internal index is 3), so its key says USER, at 8 px to fit 36 px.
+PRINTERS = (("3", "USER", 8), ("4", "4", 16), ("5", "5", 16), ("6", "6", 16))
 LOGO_W = 40      # px wide: 40 x 11, still reads "VICE" and clears the Esc legend (x 2..27)
 
 FLUENT = {
@@ -80,7 +84,7 @@ def vice_mark(dest: Path, width: int = LOGO_W) -> None:
 def numbered(src: Path, label: str, dest: Path, w: int = 36, h: int = 32, gap: int = 2,
              px: int = 16) -> None:
     """`src`'s symbol under `label` (Press Start 2P, `px`), drawn 1 bit at `w` x `h`.
-    The drive keys draw 0 and 1 for drives 10 and 11, so the icon names the drive."""
+    The drive keys draw 0 and 1 for drives 10 and 11, so the icon names the device."""
     import numpy as np
     from PIL import Image
 
@@ -106,6 +110,8 @@ def main() -> int:
     for d in DRIVES:
         numbered(out / "driveattach.png", d, out / f"drive{d}.png")
         numbered(out / "eject.png", d, out / f"eject{d}.png")
+    for name, label, px in PRINTERS:
+        numbered(out / "formfeed.png", label, out / f"printer{name}.png", px=px)
     vice_mark(out / "vice.png")
     print(f"Wrote icons to {out}")
     return 0

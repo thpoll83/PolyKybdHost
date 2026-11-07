@@ -61,11 +61,15 @@ other icon is a Material Symbol (<https://fonts.google.com/icons>,
 Apache-2.0); `fetch_icons.py` lists the name for each file. Both licences are
 compatible with this repository's GPL-3.0-or-later.
 
-`drive8.png` … `drive11.png` and `eject8.png` … `eject11.png` are drawn by
+`drive8.png` … `drive11.png`, `eject8.png` … `eject11.png` and `printer3.png` …
+`printer6.png` are drawn by
 `numbered()`: the drive number in Press Start 2P at 16 px (SIL OFL 1.1, the
 pinned copy `retroarch/fetch_icons.py` uses) above the `driveattach` or
-`eject` symbol, 36 x 32 at 1 bit, placed 1:1. The keys for drives 10 and 11
-are 0 and 1, so the number says which drive the key acts on.
+`eject` or `formfeed` symbol, 36 x 32 at 1 bit, placed 1:1. The keys for
+drives 10 and 11 are 0 and 1, so the number says which device the key acts on.
+Printers are CBM devices 4, 5 and 6 (`src/printerdrv/printer.h`); the userport
+printer on key 3 has no device number, so its icon says USER (8 px, to fit).
+VICE has no device 7 printer and no hotkey for it.
 
 ## ESC mark
 

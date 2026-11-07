@@ -78,14 +78,14 @@ bindings:
   - { key: C, mods: [SHIFT, GUI], icon: eject.png, label: "Detach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
   - { key: Z, mods: [ALT], icon: freeze.png, label: "Cartridge freeze", except: [macos], source: hotkeys-cartridge.vhk }
   - { key: Z, mods: [GUI], icon: freeze.png, label: "Cartridge freeze", only: [macos], source: hotkeys-cartridge.vhk }
-  - { key: "3", mods: [ALT], icon: formfeed.png, label: "Form feed, userport printer", except: [macos], source: hotkeys.vhk }
-  - { key: "3", mods: [GUI], icon: formfeed.png, label: "Form feed, userport printer", only: [macos], source: hotkeys.vhk }
-  - { key: "4", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 4", except: [macos], source: hotkeys.vhk }
-  - { key: "4", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 4", only: [macos], source: hotkeys.vhk }
-  - { key: "5", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 5", except: [macos], source: hotkeys.vhk }
-  - { key: "5", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 5", only: [macos], source: hotkeys.vhk }
-  - { key: "6", mods: [ALT], icon: formfeed.png, label: "Form feed, printer 6", except: [macos], source: hotkeys.vhk }
-  - { key: "6", mods: [GUI], icon: formfeed.png, label: "Form feed, printer 6", only: [macos], source: hotkeys.vhk }
+  - { key: "3", mods: [ALT], icon: printer3.png, label: "Form feed, userport printer", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: "3", mods: [GUI], icon: printer3.png, label: "Form feed, userport printer", region: [36, 32], only: [macos], source: hotkeys.vhk }
+  - { key: "4", mods: [ALT], icon: printer4.png, label: "Form feed, printer 4", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: "4", mods: [GUI], icon: printer4.png, label: "Form feed, printer 4", region: [36, 32], only: [macos], source: hotkeys.vhk }
+  - { key: "5", mods: [ALT], icon: printer5.png, label: "Form feed, printer 5", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: "5", mods: [GUI], icon: printer5.png, label: "Form feed, printer 5", region: [36, 32], only: [macos], source: hotkeys.vhk }
+  - { key: "6", mods: [ALT], icon: printer6.png, label: "Form feed, printer 6", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: "6", mods: [GUI], icon: printer6.png, label: "Form feed, printer 6", region: [36, 32], only: [macos], source: hotkeys.vhk }
   - { key: DELETE, mods: [ALT], icon: copy.png, label: "Copy", source: hotkeys.vhk }
   - { key: INSERT, mods: [ALT], icon: paste.png, label: "Paste", source: hotkeys.vhk }
   - { key: L, mods: [ALT], icon: snapload.png, label: "Load snapshot", except: [macos], source: hotkeys-snapshot.vhk }
