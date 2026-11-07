@@ -288,6 +288,35 @@ PROGRAM_ALPHA_CUT = 127
 GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
 
 
+# Per-process memo for the two lookups every binding makes. `match()` walks the
+# whole localized lexicon per label and `load_codepoints()` reads and parses the
+# catalog's JSON per call. The icon-library build asks for the same few hundred
+# labels and two faces tens of thousands of times. Both inputs are fixed for the
+# run.
+_LABEL_MATCH: dict = {}
+_CODEPOINTS: dict = {}
+
+
+def _match_label(label: str):
+    from polyhost.services import shortcut_icons
+    if label not in _LABEL_MATCH:
+        _LABEL_MATCH[label] = shortcut_icons.match(label, allow_fuzzy=False)
+    return _LABEL_MATCH[label]
+
+
+def _codepoints(cache_dir, face):
+    """`icon_catalog.load_codepoints`, memoized once it returns a table. An
+    empty answer (no cache, no network yet) is not kept."""
+    from polyhost.services import icon_catalog
+    key = (cache_dir, face)
+    if key not in _CODEPOINTS:
+        table = icon_catalog.load_codepoints(cache_dir, face=face)
+        if not table:
+            return table
+        _CODEPOINTS[key] = table
+    return _CODEPOINTS[key]
+
+
 def concept_to_share(binding: dict) -> str:
     """The concept this binding draws from the SHARED renderer, or "".
 
@@ -352,7 +381,7 @@ def concept_to_share(binding: dict) -> str:
     # change of default and the second a codepoint-only concept, which would
     # otherwise have the generator draw the committed icon while this function
     # claimed the cell was shared -- the one divergence the survey cannot see.
-    hit = shortcut_icons.match(label, allow_fuzzy=False)
+    hit = _match_label(label)
     if hit is None or not hit.icon:
         return ""
     text = shortcut_icons.normalize(label)
@@ -394,7 +423,7 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     if not qualified:
         return None, ""
     face, bare = icon_catalog.split_face(qualified)
-    table = icon_catalog.load_codepoints(cache_dir, face=face)
+    table = _codepoints(cache_dir, face)
     font = icon_catalog.fetch_subset([bare], cache_dir, face=face)
     if not font or not table:
         raise RuntimeError(

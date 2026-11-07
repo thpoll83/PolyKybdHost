@@ -62,9 +62,14 @@ def _family(name: str) -> str:
     return "sublime" if name.startswith("sublime") else name
 
 
+# libyaml's loader when PyYAML was built with it: the same documents, parsed
+# several times faster.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
 def _specs():
     for y in sorted(list(SOURCES.glob("*/bindings.yaml")) + list(SOURCES.glob("*/*.yaml"))):
-        spec = yaml.safe_load(y.read_text(encoding="utf-8"))
+        spec = yaml.load(y.read_text(encoding="utf-8"), Loader=_YAML_LOADER)
         if isinstance(spec, dict) and "bindings" in spec:
             name = str(y.relative_to(SOURCES)).replace("/bindings.yaml", "").replace(".yaml", "")
             yield name, y, spec
