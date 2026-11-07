@@ -174,20 +174,6 @@ def decorated_window(w: int, h: int, bar: int = 5):
     return np.array(im, bool)
 
 
-def window_in_frame(out: Path, dest: Path) -> None:
-    """Full-screen corners around a decorated window: full screen WITH the
-    window decorations."""
-    import numpy as np
-    corners = symbol(out / "fullscreen.png", 36, 32)
-    win = decorated_window(22, 18)
-    m = np.zeros((32, 36), bool)
-    y, x = (32 - corners.shape[0]) // 2, (36 - corners.shape[1]) // 2
-    m[y:y + corners.shape[0], x:x + corners.shape[1]] = corners
-    y, x = (32 - win.shape[0]) // 2, (36 - win.shape[1]) // 2
-    m[y:y + win.shape[0], x:x + win.shape[1]] |= win
-    cnc._save_mask(m, dest)
-
-
 def composites(out: Path) -> None:
     """Every icon this set draws from other icons (no network)."""
     for d in DRIVES:
@@ -202,7 +188,7 @@ def composites(out: Path) -> None:
     stacked(cartridge(18, 14), symbol(out / "add.png", 36, 14), out / "cartattach.png")
     stacked(cartridge(18, 14), symbol(out / "eject.png", 36, 16), out / "cartdetach.png")
     stacked(joystick(), symbol(out / "swapports.png", 36, 15), out / "swapjoy.png")
-    window_in_frame(out, out / "decorframe.png")
+    centred(decorated_window(32, 26), out / "decorframe.png")
     centred(symbol(out / "monitor.png", 36, 32), out / "monlens.png")
 
 
