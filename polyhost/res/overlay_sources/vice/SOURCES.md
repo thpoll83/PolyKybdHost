@@ -81,7 +81,7 @@ VICE has no device 7 printer and no hotkey for it.
 | `tapedetach.png` | the `tape` symbol (14 px high) above `eject` (16 px) |
 | `cartdetach.png` | an 18 x 14 `cartridge()` above `eject` (16 px) |
 | `swapjoy.png` | a 16 x 15 joystick drawn pixel by pixel in `joystick()`, above `swapports` (15 px) |
-| `decorframe.png` | the corners of `fullscreen` around a 20 px tiled `window` |
+| `decorframe.png` | the corners of `fullscreen` around a 22 x 18 window drawn in `decorated_window()`: a title bar with minimise, maximise and close |
 
 ## ESC mark
 

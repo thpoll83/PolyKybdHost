@@ -57,7 +57,6 @@ FLUENT = {
     "monitor":       "ms:troubleshoot",
     "fullscreen":    "ms:fullscreen",
     "restoredisp":   "ms:fit_screen",
-    "window":        "ms:window",
     "warp":          "ms:fast_forward",
     "pause":         "ms:pause",
     "frameadv":      "ms:skip_next",
@@ -158,12 +157,29 @@ def centred(mask, dest: Path, w: int = 36, h: int = 32) -> None:
     cnc._save_mask(m, dest)
 
 
-def window_in_frame(out: Path, dest: Path, size: int = 20) -> None:
-    """Full-screen corners around a tiled window: full screen
-    WITH the window decorations."""
+def decorated_window(w: int, h: int, bar: int = 5):
+    """A `w` x `h` window drawn pixel by pixel: a 2 px frame and a filled title bar
+    with minimise, maximise and close cut out of it, which are the decorations."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    im = Image.new("1", (w, h), 0)
+    d = ImageDraw.Draw(im)
+    d.rectangle((0, 0, w - 1, h - 1), outline=1, width=2)
+    d.rectangle((0, 0, w - 1, bar), fill=1)                  # title bar
+    bx = w - 4
+    d.line((bx - 1, 2, bx + 1, 4), fill=0)                   # close
+    d.line((bx - 1, 4, bx + 1, 2), fill=0)
+    d.rectangle((bx - 7, 2, bx - 5, 4), outline=0)           # maximise
+    d.line((bx - 12, 4, bx - 10, 4), fill=0)                 # minimise
+    return np.array(im, bool)
+
+
+def window_in_frame(out: Path, dest: Path) -> None:
+    """Full-screen corners around a decorated window: full screen WITH the
+    window decorations."""
     import numpy as np
     corners = symbol(out / "fullscreen.png", 36, 32)
-    win = symbol(out / "window.png", size, size)
+    win = decorated_window(22, 18)
     m = np.zeros((32, 36), bool)
     y, x = (32 - corners.shape[0]) // 2, (36 - corners.shape[1]) // 2
     m[y:y + corners.shape[0], x:x + corners.shape[1]] = corners
