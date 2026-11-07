@@ -35,6 +35,12 @@ catch must be listed:
 - **A trailing dotted version is dropped** the same way, so `openra-ca` also
   matches the Snap's `openra-ca-1.08.2`. It needs at least one dot and a space,
   `-` or `_` before it, so `age2_x1` and `photoshop 2` keep their digits.
+- **A dotted version glued to the name is dropped** last, so `nuke` also
+  matches `nuke17.1` (Linux) and `nuke17.1v3` (macOS). It needs a letter
+  directly before the digits and at least one dot, so `fl64` and `foobar2000`
+  keep theirs. ⚠️ On Windows the name is cut at its FIRST dot before any of
+  this, so `Nuke17.1.exe` arrives as `nuke17`, and the entry lists those
+  major-version names itself.
 
 Because it is an exact lookup, **one app name can appear in only one entry**. Two
 entries keyed on `soffice` do not both apply; the later simply wins. Split by

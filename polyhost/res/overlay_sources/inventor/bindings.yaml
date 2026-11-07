@@ -1,0 +1,85 @@
+# Autodesk Inventor shortcut overlays for PolyKybd (Windows only; Inventor has
+# no macOS or Linux version). See SOURCES.md.
+#
+# Keys: Inventor 2026 help, "Keyboard Shortcut Reference" (a subset of the
+# predefined keys; URL in SOURCES.md). Every environment (part, sketch,
+# assembly, drawing, presentation) runs in one window of one process, so the
+# host cannot tell them apart. Where a letter means different things in
+# different environments the part/sketch meaning is drawn (C Circle, not
+# assembly Constraint; T Text, not presentation Tweak; D sketch Dimension, not
+# part Face Draft; F2 Pan, not browser Rename). The multi-letter command
+# aliases (CH, RP, TR, ...) are not drawn; SOURCES.md lists them and why.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/inventor/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/inventor/bindings.yaml --preview /tmp/inventor_preview
+app: inventor
+match: [inventor]
+output: inventor_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# Drawn substitute mark (the Inventor logo is an Autodesk trademark): a tile
+# with the letter I knocked out and a cube outline. White on transparent.
+program_icon: inventor.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- global and view ---
+  - { key: F1, mods: [], label: Help }
+  - { key: F2, mods: [], icon: hand.png, label: Pan }
+  - { key: F3, mods: [], icon: zoom.png, label: Zoom }
+  - { key: F4, mods: [], icon: orbit.png, label: Orbit }
+  - { key: F5, mods: [], icon: prevview.png, label: "Previous view" }
+  - { key: F6, mods: [], icon: isometric.png, label: "Isometric view" }
+  - { key: DEL, mods: [], label: Delete }
+  - { key: Z, mods: [CTRL], label: Undo }
+  - { key: Y, mods: [CTRL], label: Redo }
+  - { key: A, mods: [CTRL], icon: selcycle.png, label: "Select other" }
+  - { key: A, mods: [ALT], icon: prevws.png, label: "Browser pane back" }
+  - { key: S, mods: [ALT], icon: nextws.png, label: "Browser pane forward" }
+  - { key: V, mods: [ALT], icon: visibility.png, label: "Visibility of solids and work features" }
+
+  # --- sketch ---
+  - { key: F7, mods: [], icon: slice.png, label: "Slice graphics" }
+  - { key: F8, mods: [], icon: showconstraints.png, label: "Show all constraints" }
+  - { key: F9, mods: [], icon: hideconstraints.png, label: "Hide all constraints" }
+  - { key: S, mods: [], icon: sketch2d.png, label: "2D sketch" }
+  - { key: L, mods: [], icon: line.png, label: Line }
+  - { key: C, mods: [], icon: circle.png, label: "Center point circle" }
+  - { key: D, mods: [], icon: dimension.png, label: Dimension }
+  - { key: T, mods: [], icon: text.png, label: Text }
+  - { key: MINUS, mods: [], icon: horizontal.png, label: "Horizontal constraint" }
+
+  # --- 3D sketch ---
+  - { key: D, mods: [CTRL], icon: dimhud.png, label: "Dimension input" }
+  - { key: R, mods: [CTRL], icon: ortho.png, label: Ortho }
+  - { key: I, mods: [CTRL], icon: infer.png, label: "Infer constraints" }
+  - { key: P, mods: [CTRL, SHIFT], icon: osnap.png, label: "Object snap" }
+  - { key: SPACE, mods: [SHIFT], icon: sketchplane.png, label: "Switch sketch plane" }
+
+  # --- part ---
+  - { key: E, mods: [], icon: extrude.png, label: Extrude }
+  - { key: R, mods: [], icon: revolve.png, label: Revolve }
+  - { key: F, mods: [], icon: fillet.png, label: Fillet }
+  - { key: H, mods: [], icon: hole.png, label: Hole }
+  - { key: Q, mods: [], icon: imate.png, label: "Create iMate" }
+  - { key: RBRACKET, mods: [], icon: workplane.png, label: "Work plane" }
+  - { key: SLASH, mods: [], icon: workaxis.png, label: "Work axis" }
+  - { key: DOT, mods: [], icon: workpoint.png, label: "Work point" }
+  - { key: SEMICOLON, mods: [], icon: workgrounded.png, label: "Grounded work point" }
+
+  # --- assembly and drawing (no other meaning for these letters) ---
+  - { key: M, mods: [], icon: move.png, label: "Move component" }
+  - { key: N, mods: [], icon: createcomp.png, label: "Create component" }
+  - { key: P, mods: [], icon: placecomp.png, label: "Place component" }
+  - { key: B, mods: [], icon: balloon.png, label: Balloon }

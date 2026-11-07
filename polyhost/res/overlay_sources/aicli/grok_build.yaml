@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: grok.png
@@ -71,11 +71,11 @@ bindings:
   - { key: ENTER, mods: [CTRL], icon: send.png, label: "Send now" }
 
   # --- Scrollback ---
-  - { key: PAGE_UP, icon: page_up.png, label: "Scroll page" }
-  - { key: PAGE_DOWN, icon: page_down.png, label: "Scroll page" }
-  - { key: K, mods: [CTRL], icon: scroll_up.png, label: "Scroll line up" }
-  - { key: J, mods: [CTRL], icon: scroll_down.png, label: "Scroll line down" }
-  - { key: U, mods: [CTRL], icon: half_up.png, label: "Half page up" }
+  - { key: PAGE_UP, icon: page_up.png, region: [40, 32], label: "Scroll page" }
+  - { key: PAGE_DOWN, icon: page_down.png, region: [40, 32], label: "Scroll page" }
+  - { key: K, mods: [CTRL], icon: scroll_up.png, region: [40, 32], label: "Scroll line up" }
+  - { key: J, mods: [CTRL], icon: scroll_down.png, region: [40, 32], label: "Scroll line down" }
+  - { key: U, mods: [CTRL], icon: half_up.png, region: [40, 32], label: "Half page up" }
   - { key: LEFT, mods: [SHIFT], icon: prev.png, label: "Previous turn" }
   - { key: RIGHT, mods: [SHIFT], icon: next.png, label: "Next turn" }
   - { key: E, mods: [CTRL], icon: thinking.png, label: "Thinking blocks" }

@@ -35,7 +35,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: vectorcraft.png
@@ -76,7 +76,7 @@ bindings:
   - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "illustrator/default.png (drawn)" }
   - { key: X, mods: [], icon: fillstrokefocus.png, label: "Fill/stroke focus", source: "ms:flip_to_front (Apache-2.0)" }
   - { key: F, mods: [], icon: screenmode.png,    label: "Screen mode",      source: "vectorcraft dc-screen-mode.svg (MIT OR Apache-2.0)" }
-  - { key: SLASH, mods: [], icon: paintnone.png, label: "None",             source: "vectorcraft dc-fill-none.svg (MIT OR Apache-2.0)" }
+  - { key: SLASH, mods: [], icon: paintnone.png, label: "None", mode: luma, threshold: 150,             source: "vectorcraft dc-fill-none.svg (MIT OR Apache-2.0)" }
   - { key: COMMA, mods: [], icon: lastcolor.png, label: "Last color",       source: "ms:format_color_fill (Apache-2.0)" }
   - { key: DOT, mods: [], icon: lastgradient.png, label: "Last gradient",   source: "vectorcraft dc-grad-linear.svg (MIT OR Apache-2.0)" }
   - { key: DELETE, mods: [], icon: clear.png,    label: Clear,              source: "ms-fluent/Delete (MIT)" }

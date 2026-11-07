@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: less.png
@@ -32,24 +32,24 @@ bindings:
   # --- Moving (help screen "MOVING"). Letter keys with their Ctrl aliases.
   # "e ^E j ^N CR" forward one line; "y ^Y k ^K ^P" backward one line;
   # "f ^F ^V SPACE" forward one window; "b ^B ESC-v" backward one window.
-  - { key: E, icon: scroll_down.png, label: "Line down" }
-  - { key: J, icon: scroll_down.png, label: "Line down" }
-  - { key: ENTER, icon: scroll_down.png, label: "Line down" }
-  - { key: E, mods: [CTRL], icon: scroll_down.png, label: "Line down" }
-  - { key: N, mods: [CTRL], icon: scroll_down.png, label: "Line down" }
-  - { key: Y, icon: scroll_up.png, label: "Line up" }
-  - { key: K, icon: scroll_up.png, label: "Line up" }
-  - { key: Y, mods: [CTRL], icon: scroll_up.png, label: "Line up" }
-  - { key: K, mods: [CTRL], icon: scroll_up.png, label: "Line up" }
-  - { key: P, mods: [CTRL], icon: scroll_up.png, label: "Line up" }
-  - { key: F, icon: page_down.png, label: "Page down" }
-  - { key: F, mods: [CTRL], icon: page_down.png, label: "Page down" }
-  - { key: V, mods: [CTRL], icon: page_down.png, label: "Page down" }
-  - { key: SPACE, icon: page_down.png, label: "Page down" }
-  - { key: B, icon: page_up.png, label: "Page up" }
-  - { key: B, mods: [CTRL], icon: page_up.png, label: "Page up" }
-  - { key: V, mods: [ALT], icon: page_up.png, label: "Page up" }
-  - { key: SPACE, mods: [ALT], icon: page_down.png, label: "Page down to the end" }
+  - { key: E, icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: J, icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: ENTER, icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: E, mods: [CTRL], icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: N, mods: [CTRL], icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: Y, icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: K, icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: Y, mods: [CTRL], icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: K, mods: [CTRL], icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: P, mods: [CTRL], icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: F, icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: F, mods: [CTRL], icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: V, mods: [CTRL], icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: SPACE, icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: B, icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: B, mods: [CTRL], icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: V, mods: [ALT], icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: SPACE, mods: [ALT], icon: page_down.png, region: [40, 32], label: "Page down to the end" }
   - { key: D, icon: halfdown.png, label: "Half page down" }
   - { key: D, mods: [CTRL], icon: halfdown.png, label: "Half page down" }
   - { key: U, icon: halfup.png, label: "Half page up" }
@@ -57,16 +57,16 @@ bindings:
   # Arrow and paging keys: pty test with the xterm terminfo codes. Down/Up scroll one line,
   # PageDown/PageUp one window, Home/End go to first/last line, Right/Left scroll half a screen
   # width ("ESC-) RightArrow", "ESC-( LeftArrow").
-  - { key: DOWN, icon: scroll_down.png, label: "Line down" }
-  - { key: UP, icon: scroll_up.png, label: "Line up" }
-  - { key: PAGE_DOWN, icon: page_down.png, label: "Page down" }
-  - { key: PAGE_UP, icon: page_up.png, label: "Page up" }
-  - { key: HOME, icon: file_start.png, label: "First line" }
-  - { key: END, icon: file_end.png, label: "Last line" }
-  - { key: RIGHT, icon: scroll_right.png, label: "Scroll right" }
-  - { key: LEFT, icon: scroll_left.png, label: "Scroll left" }
-  - { key: RIGHT, mods: [ALT], icon: scroll_right.png, label: "Scroll right" }
-  - { key: LEFT, mods: [ALT], icon: scroll_left.png, label: "Scroll left" }
+  - { key: DOWN, icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: UP, icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: PAGE_DOWN, icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: PAGE_UP, icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: HOME, icon: file_start.png, region: [40, 32], label: "First line" }
+  - { key: END, icon: file_end.png, region: [40, 32], label: "Last line" }
+  - { key: RIGHT, icon: scroll_right.png, region: [40, 32], label: "Scroll right" }
+  - { key: LEFT, icon: scroll_left.png, region: [40, 32], label: "Scroll left" }
+  - { key: RIGHT, mods: [ALT], icon: scroll_right.png, region: [40, 32], label: "Scroll right" }
+  - { key: LEFT, mods: [ALT], icon: scroll_left.png, region: [40, 32], label: "Scroll left" }
   # "F" forward forever like tail -f; "ESC-F" the same but stop when the search pattern is found.
   - { key: F, mods: [SHIFT], icon: follow.png, label: "Follow (tail -f)" }
   - { key: F, mods: [ALT, SHIFT], icon: follow.png, label: "Follow until match" }
@@ -80,12 +80,12 @@ bindings:
   # "/pattern" forward, "?pattern" backward, "n" repeat, "N" repeat reversed,
   # "ESC-n" / "ESC-N" the same across files, "ESC-u" toggle highlight, "ESC-U" clear it,
   # "&pattern" show only matching lines.
-  - { key: "/", icon: search.png, label: "Search forward" }
-  - { key: "/", mods: [SHIFT], icon: search_back.png, label: "Search backward" }
-  - { key: N, icon: find_next.png, label: "Next match" }
-  - { key: N, mods: [SHIFT], icon: find_prev.png, label: "Previous match" }
-  - { key: N, mods: [ALT], icon: find_next.png, label: "Next match, any file" }
-  - { key: N, mods: [ALT, SHIFT], icon: find_prev.png, label: "Previous, any file" }
+  - { key: "/", icon: search.png, label: "Search forward", concept: find }
+  - { key: "/", mods: [SHIFT], icon: search_back.png, region: [40, 32], label: "Search backward" }
+  - { key: N, icon: find_next.png, region: [40, 32], label: "Next match" }
+  - { key: N, mods: [SHIFT], icon: find_prev.png, region: [40, 32], label: "Previous match" }
+  - { key: N, mods: [ALT], icon: find_next.png, region: [40, 32], label: "Next match, any file" }
+  - { key: N, mods: [ALT, SHIFT], icon: find_prev.png, region: [40, 32], label: "Previous, any file" }
   - { key: U, mods: [ALT], icon: highlight.png, label: "Toggle highlight" }
   - { key: U, mods: [ALT, SHIFT], icon: clearhighlight.png, label: "Clear highlight" }
   - { key: "7", mods: [SHIFT], icon: filter.png, label: "Show matching lines" }
@@ -93,22 +93,22 @@ bindings:
   # --- Jumping (help screen "JUMPING").
   # "g < ESC-<" first line (or line N); "G > ESC->" last line; "p %" N percent into the file;
   # "t" / "T" next / previous tag; "{ ( [" find close bracket; "} ) ]" find open bracket.
-  - { key: G, icon: file_start.png, label: "First line" }
-  - { key: ",", mods: [SHIFT], icon: file_start.png, label: "First line" }
-  - { key: ",", mods: [ALT, SHIFT], icon: file_start.png, label: "First line" }
-  - { key: G, mods: [SHIFT], icon: file_end.png, label: "Last line" }
-  - { key: ".", mods: [SHIFT], icon: file_end.png, label: "Last line" }
-  - { key: ".", mods: [ALT, SHIFT], icon: file_end.png, label: "Last line" }
-  - { key: P, icon: goto_line.png, label: "Go to percent" }
-  - { key: "5", mods: [SHIFT], icon: goto_line.png, label: "Go to percent" }
+  - { key: G, icon: file_start.png, region: [40, 32], label: "First line" }
+  - { key: ",", mods: [SHIFT], icon: file_start.png, region: [40, 32], label: "First line" }
+  - { key: ",", mods: [ALT, SHIFT], icon: file_start.png, region: [40, 32], label: "First line" }
+  - { key: G, mods: [SHIFT], icon: file_end.png, region: [40, 32], label: "Last line" }
+  - { key: ".", mods: [SHIFT], icon: file_end.png, region: [40, 32], label: "Last line" }
+  - { key: ".", mods: [ALT, SHIFT], icon: file_end.png, region: [40, 32], label: "Last line" }
+  - { key: P, icon: goto_line.png, region: [40, 32], label: "Go to percent" }
+  - { key: "5", mods: [SHIFT], icon: goto_line.png, region: [40, 32], label: "Go to percent" }
   - { key: T, icon: next.png, label: "Next tag" }
   - { key: T, mods: [SHIFT], icon: prev.png, label: "Previous tag" }
-  - { key: "[", icon: bracket.png, label: "Find close bracket" }
-  - { key: "]", icon: bracket.png, label: "Find open bracket" }
+  - { key: "[", icon: bracket.png, region: [40, 32], label: "Find close bracket" }
+  - { key: "]", icon: bracket.png, region: [40, 32], label: "Find open bracket" }
   # "m<letter>" mark top line, "M<letter>" mark bottom line, "'<letter>" go to mark,
   # "''" previous position, "ESC-M<letter>" clear a mark.
-  - { key: M, icon: mark.png, label: "Set mark (top)" }
-  - { key: M, mods: [SHIFT], icon: mark.png, label: "Set mark (bottom)" }
+  - { key: M, icon: mark.png, region: [40, 32], label: "Set mark (top)" }
+  - { key: M, mods: [SHIFT], icon: mark.png, region: [40, 32], label: "Set mark (bottom)" }
   - { key: "'", icon: gotomark.png, label: "Go to mark" }
   - { key: M, mods: [ALT, SHIFT], icon: clearmark.png, label: "Clear a mark" }
 

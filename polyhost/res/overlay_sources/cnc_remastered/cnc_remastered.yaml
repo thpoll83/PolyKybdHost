@@ -16,7 +16,7 @@ match: [clientg, clientg.exe, steam_app_1213210]
 output: cnc_remastered_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 # As for AoE2: the icon uses the full height on the right; the firmware clears
 # 3 px around it, so a letter legend stays whole.
@@ -71,7 +71,7 @@ bindings:
 
   # Camera
   - { key: H, icon: conyard.png, label: "Go to Construction Yard" }
-  - { key: TAB, icon: lastevent.png, label: "Go to last event", region: [36, 40] }
+  - { key: TAB, icon: ../../openra/icons/lastevent.png, label: "Go to last event", region: [36, 40] }
   - { key: F1, icon: bookmark1.png, label: "Go to bookmark 1", region: [30, 40] }
   - { key: F2, icon: bookmark2.png, label: "Go to bookmark 2", region: [30, 40] }
   - { key: F3, icon: bookmark3.png, label: "Go to bookmark 3", region: [30, 40] }

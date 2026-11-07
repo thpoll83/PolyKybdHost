@@ -1,0 +1,60 @@
+# SketchUp Pro shortcut overlays for PolyKybd (Windows and macOS; SketchUp has
+# no Linux version). See SOURCES.md.
+#
+# Keys: SketchUp help, "Default Keyboard Shortcuts" (one table, no Windows/macOS
+# split, so the tool keys are the same on both), and "Erasing and Undoing" for
+# Undo: Alt+Backspace is the default, and Ctrl+Z (Windows) / Command+Z (macOS)
+# also work. SketchUp's help documents no other edit keys, so Copy, Paste and
+# Redo are not drawn.
+#   CMDCTRL   Ctrl on Windows, Cmd on macOS.
+#
+# Regenerate:
+#   PYTHONPATH=. python polyhost/res/overlay_sources/sketchup/fetch_icons.py
+#   PYTHONPATH=. python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/sketchup/bindings.yaml --preview /tmp/sketchup_preview
+app: sketchup
+match: [sketchup]
+output: sketchup_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+# The SketchUp logo (forums.sketchup.com favicon), 32x32 at 1 bit.
+program_icon: sketchup.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- tools ---
+  - { key: SPACE, mods: [], icon: select.png, label: Select }
+  - { key: SPACE, mods: [SHIFT], icon: lasso.png, label: "Lasso select" }
+  - { key: B, mods: [], icon: bucket.png, label: "Paint bucket" }
+  - { key: E, mods: [], icon: eraser.png, label: Eraser }
+  - { key: L, mods: [], icon: line.png, label: Line }
+  - { key: R, mods: [], icon: rectangle.png, label: Rectangle }
+  - { key: C, mods: [], icon: circle.png, label: Circle }
+  - { key: A, mods: [], icon: arc.png, label: "2 point arc" }
+  - { key: M, mods: [], icon: move.png, label: Move }
+  - { key: P, mods: [], icon: presspull.png, label: "Push/Pull" }
+  - { key: Q, mods: [], icon: rotate.png, label: Rotate }
+  - { key: S, mods: [], icon: scale.png, label: Scale }
+  - { key: F, mods: [], icon: offset.png, label: Offset }
+  - { key: T, mods: [], icon: measure.png, label: "Tape measure" }
+  - { key: O, mods: [], icon: orbit.png, label: Orbit }
+  - { key: H, mods: [], icon: hand.png, label: Pan }
+  - { key: Z, mods: [], icon: zoom.png, label: Zoom }
+  - { key: Z, mods: [SHIFT], icon: zoomextents.png, label: "Zoom extents" }
+  - { key: G, mods: [], icon: component.png, label: "Make component" }
+  - { key: I, mods: [], icon: photomatch.png, label: "Image igloo" }
+  - { key: K, mods: [], icon: backedges.png, label: "Back edges" }
+  - { key: S, mods: [SHIFT], icon: search.png, label: Search }
+
+  # --- edit ---
+  - { key: Z, mods: [CMDCTRL], label: Undo }
+  - { key: BACKSPACE, mods: [ALT], label: Undo, except: [macos] }

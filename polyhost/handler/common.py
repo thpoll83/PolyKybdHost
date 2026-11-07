@@ -115,6 +115,11 @@ _TRAILING_YEAR = re.compile(r"\s+(?:19|20)\d\d$")
 # A trailing dotted version, as a Snap reports OpenRA mods: `openra-ca-1.08.2`.
 # At least one dot, so `age2_x1` and `photoshop 2` keep their digits.
 _TRAILING_VERSION = re.compile(r"[\s_-]+v?\d+(?:\.\d+)+$")
+# A dotted version written directly after the name, as Foundry names Nuke:
+# `Nuke17.1` on Linux, `Nuke17.1v3` (the install folder) on macOS. At least one
+# dot and a letter before the digits, so `age2_x1`, `fl64` and `foobar2000` keep
+# their digits.
+_GLUED_VERSION = re.compile(r"(?<=[a-z])\d+(?:\.\d+)+(?:v\d+)?$")
 
 
 def mapping_key(app_name, mapping):
@@ -122,7 +127,8 @@ def mapping_key(app_name, mapping):
 
     An exact match wins. Failing that, a trailing release year is dropped, so one
     `adobe photoshop` key covers `adobe photoshop 2025` and every later release,
-    and then a trailing dotted version, so `openra-ca` covers `openra-ca-1.08.2`.
+    and then a trailing dotted version, so `openra-ca` covers `openra-ca-1.08.2`,
+    and then a dotted version glued to the name, so `nuke` covers `nuke17.1v3`.
     ⚠️ Without it the key would have to be re-added every release, and a missed
     one fails silently: the app simply loads no overlay.
     """
@@ -130,7 +136,7 @@ def mapping_key(app_name, mapping):
         return None
     if app_name in mapping:
         return app_name
-    for pattern in (_TRAILING_YEAR, _TRAILING_VERSION):
+    for pattern in (_TRAILING_YEAR, _TRAILING_VERSION, _GLUED_VERSION):
         stripped = pattern.sub("", app_name)
         if stripped != app_name and stripped in mapping:
             return stripped

@@ -22,7 +22,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: k9s.png
@@ -46,7 +46,7 @@ bindings:
   # --- Resource list (view/table.go bindKeys): "/" Filter Mode, Ctrl-S Save
   # (table to file), Space Mark, Ctrl-Space Mark Range, Ctrl-\ Marks Clear,
   # Ctrl-Z Toggle Faults, Ctrl-W Toggle Wide.
-  - { key: "/", icon: search.png, label: "Filter" }
+  - { key: "/", icon: search.png, label: "Filter", concept: find }
   - { key: S, mods: [CTRL], icon: save.png, label: "Save table to file" }
   - { key: SPACE, icon: checklist.png, label: "Mark row" }
   - { key: SPACE, mods: [CTRL], icon: checklist.png, label: "Mark range" }

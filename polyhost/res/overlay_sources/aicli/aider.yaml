@@ -24,7 +24,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: aider.png
@@ -50,7 +50,7 @@ bindings:
   - { key: C, mods: [CTRL], icon: stop.png, label: "Interrupt / exit" }
 
   # --- prompt_toolkit emacs mode, listed in docs/usage/commands.md ---
-  - { key: R, mods: [CTRL], icon: search.png, label: "History search" }
+  - { key: R, mods: [CTRL], icon: search.png, label: "History search", concept: find }
   - { key: L, mods: [CTRL], icon: clear.png, label: "Clear screen" }
   # Ctrl+D: deletes the character under the cursor; on an empty line it raises
   # EOFError, which base_coder.py run() catches and returns (exit).

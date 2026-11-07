@@ -24,7 +24,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: opencode.png
@@ -75,16 +75,16 @@ bindings:
   # "messages_page_up": "pageup,ctrl+alt+b"; "messages_page_down": "pagedown,ctrl+alt+f";
   # "messages_line_up": "ctrl+alt+y"; "messages_line_down": "ctrl+alt+e";
   # "messages_half_page_up": "ctrl+alt+u"; "messages_half_page_down": "ctrl+alt+d".
-  - { key: G, mods: [CTRL], icon: file_start.png, label: "First message" }
-  - { key: G, mods: [CTRL, ALT], icon: file_end.png, label: "Last message" }
-  - { key: PAGE_UP, icon: page_up.png, label: "Page up" }
-  - { key: PAGE_DOWN, icon: page_down.png, label: "Page down" }
-  - { key: B, mods: [CTRL, ALT], icon: page_up.png, label: "Page up" }
-  - { key: F, mods: [CTRL, ALT], icon: page_down.png, label: "Page down" }
-  - { key: Y, mods: [CTRL, ALT], icon: scroll_up.png, label: "Line up" }
-  - { key: E, mods: [CTRL, ALT], icon: scroll_down.png, label: "Line down" }
-  - { key: U, mods: [CTRL, ALT], icon: page_up.png, label: "Half page up" }
-  - { key: D, mods: [CTRL, ALT], icon: page_down.png, label: "Half page down" }
+  - { key: G, mods: [CTRL], icon: file_start.png, region: [40, 32], label: "First message" }
+  - { key: G, mods: [CTRL, ALT], icon: file_end.png, region: [40, 32], label: "Last message" }
+  - { key: PAGE_UP, icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: PAGE_DOWN, icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: B, mods: [CTRL, ALT], icon: page_up.png, region: [40, 32], label: "Page up" }
+  - { key: F, mods: [CTRL, ALT], icon: page_down.png, region: [40, 32], label: "Page down" }
+  - { key: Y, mods: [CTRL, ALT], icon: scroll_up.png, region: [40, 32], label: "Line up" }
+  - { key: E, mods: [CTRL, ALT], icon: scroll_down.png, region: [40, 32], label: "Line down" }
+  - { key: U, mods: [CTRL, ALT], icon: page_up.png, region: [40, 32], label: "Half page up" }
+  - { key: D, mods: [CTRL, ALT], icon: page_down.png, region: [40, 32], label: "Half page down" }
 
   # --- Which-key panel. "which_key_toggle": "ctrl+alt+k";
   # "which_key_layout_toggle": "ctrl+alt+shift+k".

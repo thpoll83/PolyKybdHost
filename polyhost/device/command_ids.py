@@ -237,6 +237,20 @@ class GlyphScript(Enum):
     C64KEYS = 11  # C64 printed keycap lettering (the C64 above is the screen ROM font)
 
 
+class GlyphPlacement(Enum):
+    """Where glyph-script letters and digits sit on the keycap — mirrors the
+    firmware's poly_glyph_place (cmd 30's placement byte, protocol v26+).
+
+    CENTRE is what every keyboard drew before v26 and stays the default. TOP_LEFT
+    puts the glyph's ink at x 1, y 1, so an overlay icon on the right of the keycap
+    leaves it whole. A CLOSED set like GlyphSize: the firmware NACKs an unknown
+    value. On the wire the host sends ``value + 1`` (0 means "keep"), see
+    PolyKybd.set_glyph_placement. Values are append-only — never reorder.
+    """
+    CENTRE = 0
+    TOP_LEFT = 1
+
+
 class GlyphSize(Enum):
     """Keycap legend size — mirrors the firmware's poly_glyph_size.
 

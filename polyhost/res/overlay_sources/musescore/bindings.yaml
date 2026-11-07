@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 bindings:
@@ -143,7 +143,7 @@ bindings:
   - { key: COMMA, mods: [SHIFT], icon: cresc.png, label: "Crescendo" }
   - { key: DOT, mods: [SHIFT], icon: dim.png, label: "Diminuendo" }
   - { key: S, mods: [SHIFT], icon: staccato.png, label: "Staccato" }
-  - { key: N, mods: [SHIFT], icon: tenuto.png, label: "Tenuto" }
+  - { key: N, mods: [SHIFT], icon: ../../freecad/icons/horizontal.png, label: "Tenuto" }
   - { key: O, mods: [SHIFT], icon: marcato.png, label: "Marcato" }
   - { key: V, mods: [SHIFT], icon: accent.png, label: "Accent" }
   - { key: H, mods: [ALT], icon: hammer.png, label: "Hammer-on/pull-off" }
@@ -210,7 +210,7 @@ bindings:
   - { key: DOWN, mods: [], icon: pitchdown.png, label: "Pitch down" }
   - { key: UP, mods: [CMDCTRL], icon: octup.png, label: "Octave up" }
   - { key: DOWN, mods: [CMDCTRL], icon: octdown.png, label: "Octave down" }
-  - { key: UP, mods: [ALT, SHIFT], icon: diaup.png, label: "Diatonic up" }
+  - { key: UP, mods: [ALT, SHIFT], icon: marcato.png, label: "Diatonic up" }
   - { key: DOWN, mods: [ALT, SHIFT], icon: diadown.png, label: "Diatonic down" }
   - { key: UP, mods: [CMDCTRL, SHIFT], icon: staffup.png, label: "Move to staff above" }
   - { key: DOWN, mods: [CMDCTRL, SHIFT], icon: staffdown.png, label: "Move to staff below" }

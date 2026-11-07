@@ -1,0 +1,124 @@
+# Altium Designer Schematic Editor shortcut overlays for PolyKybd (Windows).
+#
+# The default shortcuts of the Schematic Editor and Schematic Symbol Editor,
+# plus the general Altium environment shortcuts, from Altium's documentation
+# pages (SOURCES.md). Altium Designer runs on Windows only.
+#
+# Keys that act only inside a running interactive command (placing, moving,
+# wiring) are left out; SOURCES.md lists them. A bare letter that opens a
+# pop-up menu is drawn only when every command in that menu is the same kind
+# of action.
+#
+# The mapping loads this set when the Altium window title names a .SchDoc or
+# .SchLib document; every other Altium window gets pcb.yaml.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/altium/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/altium/schematic.yaml --preview /tmp/altium_sch_preview
+app: altium
+match: [x2, dxp]
+output: altium_sch_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: altium.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # ===================================================== no modifier =========
+  - { key: F1, label: "Help" }
+  - { key: F2, icon: edittext.png, label: "Edit text in place" }
+  - { key: F3, label: "Find next" }
+  - { key: F4, icon: togglepanels.png, label: "Toggle floating panels" }
+  - { key: F5, icon: netcolor.png, label: "Net color override" }
+  - { key: F9, icon: simulate.png, label: "Run simulation" }
+  - { key: F11, icon: properties.png, label: "Properties panel" }
+  - { key: F12, icon: filterpanel.png, label: "SCH Filter panel" }
+  - { key: G, icon: gridnext.png, label: "Next snap grid" }
+  - { key: PGUP, label: "Zoom in" }
+  - { key: PGDN, label: "Zoom out" }
+  - { key: HOME, icon: center.png, label: "Center on cursor" }
+  - { key: END, icon: refresh.png, label: "Redraw" }
+  - { key: DEL, label: "Delete" }
+  - { key: SPACE, icon: rotccw.png, label: "Rotate counterclockwise" }
+  # Pop-up menus whose commands are all one kind of action.
+  - { key: A, icon: menualign.png, label: "Align..." }
+  - { key: B, icon: menutoolbars.png, label: "Toolbars..." }
+  - { key: J, icon: menujump.png, label: "Jump..." }
+  - { key: K, icon: menupanels.png, label: "Panels..." }
+  - { key: M, icon: move.png, label: "Move..." }
+  - { key: O, icon: menuoptions.png, label: "Options..." }
+  - { key: P, icon: menuplace.png, label: "Place..." }
+  - { key: S, icon: menuselect.png, label: "Select..." }
+  - { key: X, icon: unselectall.png, label: "Deselect..." }
+  - { key: Y, icon: menufilter.png, label: "Filter..." }
+  - { key: Z, icon: menuzoom.png, label: "Zoom..." }
+
+  # ============================================================ Ctrl =========
+  - { key: A, mods: [CTRL], label: "Select all" }
+  - { key: C, mods: [CTRL], label: "Copy" }
+  - { key: F, mods: [CTRL], label: "Find" }
+  - { key: H, mods: [CTRL], icon: findreplace.png, label: "Find and replace" }
+  - { key: L, mods: [CTRL], icon: annotate.png, label: "Board level annotation" }
+  - { key: M, mods: [CTRL], icon: measure.png, label: "Measure distance" }
+  - { key: O, mods: [CTRL], label: "Open" }
+  - { key: P, mods: [CTRL], label: "Print" }
+  - { key: Q, mods: [CTRL], icon: selmemory.png, label: "Selection memory" }
+  - { key: R, mods: [CTRL], icon: rubberstamp.png, label: "Rubber stamp" }
+  - { key: S, mods: [CTRL], label: "Save" }
+  - { key: V, mods: [CTRL], label: "Paste" }
+  - { key: W, mods: [CTRL], icon: wire.png, label: "Place wire" }
+  - { key: X, mods: [CTRL], label: "Cut" }
+  - { key: Y, mods: [CTRL], label: "Redo" }
+  - { key: Z, mods: [CTRL], label: "Undo" }
+  - { key: F4, mods: [CTRL], label: "Close" }
+  - { key: TAB, mods: [CTRL], icon: nexttab.png, label: "Next document" }
+  - { key: PGDN, mods: [CTRL], icon: zoomfit.png, label: "Fit all objects" }
+  - { key: HOME, mods: [CTRL], icon: absorigin.png, label: "Cursor to absolute origin" }
+  - { key: LEFT, mods: [CTRL], icon: nudgeleft.png, label: "Move selection left" }
+  - { key: RIGHT, mods: [CTRL], icon: nudgeright.png, label: "Move selection right" }
+  - { key: UP, mods: [CTRL], icon: nudgeup.png, label: "Move selection up" }
+  - { key: DOWN, mods: [CTRL], icon: nudgedown.png, label: "Move selection down" }
+
+  # =========================================================== Shift =========
+  - { key: C, mods: [SHIFT], icon: clearfilter.png, label: "Clear filter" }
+  - { key: E, mods: [SHIFT], icon: elecgrid.png, label: "Electrical grid" }
+  - { key: F, mods: [SHIFT], icon: similar.png, label: "Find similar objects" }
+  - { key: G, mods: [SHIFT], icon: gridprev.png, label: "Previous snap grid" }
+  - { key: SPACE, mods: [SHIFT], icon: rotcw.png, label: "Rotate clockwise" }
+  - { key: F4, mods: [SHIFT], icon: tiledocs.png, label: "Tile documents" }
+  - { key: F5, mods: [SHIFT], icon: focuspanel.png, label: "Focus panel or document" }
+  - { key: F12, mods: [SHIFT], icon: listpanel.png, label: "SCH List panel" }
+
+  # ============================================================= Alt =========
+  - { key: F5, mods: [ALT], icon: maximize.png, label: "Maximize editor" }
+  - { key: END, mods: [ALT], icon: redrawlayer.png, label: "Redraw current layer" }
+  - { key: LEFT, mods: [ALT], icon: navback.png, label: "Previous document" }
+  - { key: RIGHT, mods: [ALT], icon: navforward.png, label: "Next document" }
+
+  # ====================================================== Ctrl+Shift =========
+  - { key: L, mods: [CTRL, SHIFT], icon: alignleft.png, label: "Align left" }
+  - { key: R, mods: [CTRL, SHIFT], icon: alignright.png, label: "Align right" }
+  - { key: T, mods: [CTRL, SHIFT], icon: aligntop.png, label: "Align top" }
+  - { key: B, mods: [CTRL, SHIFT], icon: alignbottom.png, label: "Align bottom" }
+  - { key: H, mods: [CTRL, SHIFT], icon: spaceh.png, label: "Equal horizontal spacing" }
+  - { key: D, mods: [CTRL, SHIFT], icon: aligngrid.png, label: "Align to grid" }
+  - { key: G, mods: [CTRL, SHIFT], icon: visiblegrid.png, label: "Toggle visible grid" }
+  - { key: X, mods: [CTRL, SHIFT], icon: crosssel.png, label: "Cross select mode" }
+  - { key: Y, mods: [CTRL, SHIFT], icon: crossrepos.png, label: "Cross select: reposition" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: prevtab.png, label: "Previous document" }
+  - { key: F3, mods: [CTRL, SHIFT], icon: msgnext.png, label: "Next message" }
+  - { key: F4, mods: [CTRL, SHIFT], icon: msgprev.png, label: "Previous message" }
+
+  # ======================================================== Ctrl+Alt =========
+  - { key: C, mods: [CTRL, ALT], icon: comment.png, label: "Add comment" }
+  - { key: S, mods: [CTRL, ALT], icon: savews.png, label: "Save to Workspace" }

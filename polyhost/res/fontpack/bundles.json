@@ -59,7 +59,7 @@
       "content_version": 3,
       "size": 220628,
       "slot_offset": 561152,
-      "slot_size": 786432,
+      "slot_size": 524288,
       "sha256": "a1e5b08121798484"
     },
     {
@@ -68,7 +68,7 @@
       "file": "fantasy.plyf",
       "content_version": 7,
       "size": 32564,
-      "slot_offset": 1347584,
+      "slot_offset": 1085440,
       "slot_size": 131072,
       "sha256": "961377788254124e"
     },
@@ -78,8 +78,8 @@
       "file": "latinbig.plyf",
       "content_version": 1,
       "size": 162528,
-      "slot_offset": 1478656,
-      "slot_size": 618496,
+      "slot_offset": 1216512,
+      "slot_size": 356352,
       "sha256": "59f9e85ad666b842"
     },
     {
@@ -87,11 +87,11 @@
       "index": 8,
       "file": "icons.plyi",
       "kind": "icons",
-      "content_version": 4,
-      "size": 66776,
-      "slot_offset": 1835008,
-      "slot_size": 262144,
-      "sha256": "865a1059d4eadfec"
+      "content_version": 6,
+      "size": 262068,
+      "slot_offset": 1572864,
+      "slot_size": 524288,
+      "sha256": "0a07bb1092881d99"
     }
   ]
 }

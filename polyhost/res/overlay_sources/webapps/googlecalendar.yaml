@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gcal.png
@@ -36,7 +36,7 @@ bindings:
   - { key: P, icon: calprev.png, label: "Previous date range" }
   - { key: R, icon: calrefresh.png, label: "Refresh" }
   - { key: T, icon: caltoday.png, label: "Today" }
-  - { key: SLASH, icon: search.png, label: "Search" }
+  - { key: SLASH, icon: search.png, label: "Search", concept: find }
   - { key: S, icon: settings.png, label: "Settings" }
   - { key: G, icon: calgoto.png, label: "Go to date" }
   - { key: "1", icon: calday.png, label: "Day view" }

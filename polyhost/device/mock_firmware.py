@@ -155,6 +155,7 @@ MAPPING_DIM_MIN = 23
 MAPPING_NO_LEGEND_MIN = 25
 # cmd 25's board-flag byte (v24). Older firmware ignores it and sets only the side.
 SPLIT_VBUS_FLAG_MIN = 24
+GLYPH_PLACEMENT_MIN = 26
 ICON_BUNDLE_MIN = 20
 
 _IMAGE_CMDS = {Cmd.SEND_OVERLAY.value, Cmd.START_COMPRESSED_OVERLAY.value,
@@ -346,6 +347,7 @@ class MockFirmware:
         self.bootloader_requested = False
         self.handedness_left: bool | None = None
         self.settings_bytes: dict[int, int] = {}   # cmd -> stored value byte
+        self.glyph_placement = 0                   # cmd 30 v26: 0 centre, 1 top-left
         self.layer_names = ["Qwerty", "Stag!", "ColemkDH", "Neo", "Workman", "Fn", "Numpad", "Utility"]
 
         # Font-pack slots: {bundle id: content_version}; data only once flashed.
@@ -587,6 +589,25 @@ class MockFirmware:
         present = which == 0 and self.crash_record is not None
         flags = (1 if present else 0) | (2 if present and self.crash_fresh else 0)
         return _reply(p[1], body=bytes([flags]) + (self.crash_record if present else bytes(48)))
+
+    def _glyph_script(self, p):
+        """cmd 30: the script byte as _get_or_set, plus the v26 placement op in p[3]
+        (0 keep, 1 centre, 2 top-left; script 0xFF with an op sets the placement
+        only). v25 and older ignore the op and reply with the script alone."""
+        cmd, op = p[1], p[3]
+        if self.protocol < GLYPH_PLACEMENT_MIN:
+            if op:
+                self._refuse(cmd, f"placement op {op} needs protocol {GLYPH_PLACEMENT_MIN}")
+            return self._get_or_set(p)
+        if op > 2:
+            return _reply(cmd, ok=False)
+        if p[2] != 0xFF:
+            self.settings_bytes[cmd] = p[2]
+            self.state_generation += 1
+        if op and op - 1 != self.glyph_placement:
+            self.glyph_placement = op - 1
+            self.state_generation += 1
+        return _reply(cmd, body=bytes([self.settings_bytes.get(cmd, 0), self.glyph_placement]))
 
     def _handedness(self, p):
         if p[3] and self.protocol < SPLIT_VBUS_FLAG_MIN:
@@ -1011,7 +1032,7 @@ class MockFirmware:
         Cmd.SET_UNICODE_MODE.value: _unicode_mode,
         Cmd.IDLE_STYLE.value: _get_or_set,
         Cmd.SET_OS.value: _get_or_set,
-        Cmd.GLYPH_SCRIPT.value: _get_or_set,
+        Cmd.GLYPH_SCRIPT.value: _glyph_script,
         Cmd.GLYPH_SIZE.value: _get_or_set,
         Cmd.IDLE_TIMEOUT.value: _get_or_set,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,

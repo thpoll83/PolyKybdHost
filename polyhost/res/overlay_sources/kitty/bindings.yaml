@@ -33,7 +33,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # kitty's own logo (GPL-3.0), traced to 32x32 in fetch_icons.py.

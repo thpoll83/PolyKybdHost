@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gkeep.png
@@ -40,7 +40,7 @@ bindings:
   - { key: P, mods: [SHIFT], icon: keep_moveitem_up.png, label: "Move list item up" }
   - { key: C, icon: keep_newnote.png, label: "New note" }
   - { key: L, icon: keep_newlist.png, label: "New list" }
-  - { key: SLASH, icon: search.png, label: "Search notes" }
+  - { key: SLASH, icon: search.png, label: "Search notes", concept: find }
   - { key: A, mods: [CMDCTRL], label: "Select all" }
   - { key: E, icon: keep_archive.png, label: "Archive note" }
   - { key: F, icon: keep_pin.png, label: "Pin or unpin" }

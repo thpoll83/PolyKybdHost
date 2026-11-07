@@ -22,9 +22,9 @@ output: emacs_dired_template
 icon_dir: icons
 fit: contain
 anchor: bottom-right
-region: [40, 32]
+region: [36, 32]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: esc_dired.png        # the set's word beside the logo (fetch_icons.py)
@@ -42,10 +42,10 @@ bindings:
   - { key: A, icon: findalternate.png, label: "Open in this buffer" }
   - { key: O, icon: openother.png, label: "Open in other window" }
   - { key: V, icon: view.png, label: "View file" }
-  - { key: N, icon: line_next.png, label: "Next line" }
-  - { key: P, icon: line_prev.png, label: "Previous line" }
-  - { key: SPACE, icon: line_next.png, label: "Next line" }
-  - { key: SPACE, mods: [SHIFT], icon: line_prev.png, label: "Previous line" }
+  - { key: N, icon: line_next.png, region: [40, 32], label: "Next line" }
+  - { key: P, icon: line_prev.png, region: [40, 32], label: "Previous line" }
+  - { key: SPACE, icon: line_next.png, region: [40, 32], label: "Next line" }
+  - { key: SPACE, mods: [SHIFT], icon: line_prev.png, region: [40, 32], label: "Previous line" }
   - { key: M, icon: mark.png, label: "Mark" }
   - { key: U, icon: unmark.png, label: "Unmark" }
   - { key: BACKSPACE, icon: unmarkback.png, label: "Unmark backward" }
@@ -59,7 +59,7 @@ bindings:
   - { key: J, icon: gotofile.png, label: "Go to file" }
   - { key: K, icon: hide.png, label: "Remove lines" }
   - { key: S, icon: sort.png, label: "Sort name / date" }
-  - { key: W, icon: dired_copyname.png, label: "Copy file name" }
+  - { key: W, icon: dired_copyname.png, region: [40, 32], label: "Copy file name" }
   - { key: Y, icon: filetype.png, label: "Show file type" }
   - { key: Q, icon: quitwin.png, label: "Quit window" }
   - { key: H, label: "Help" }                                   # describe-mode
@@ -79,9 +79,9 @@ bindings:
   - { key: O, mods: [SHIFT], icon: chown.png, label: "Change owner" }
   - { key: M, mods: [SHIFT], icon: chmod.png, label: "Change mode" }
   - { key: T, mods: [SHIFT], icon: touch.png, label: "Touch (timestamp)" }
-  - { key: H, mods: [SHIFT], icon: dired_hardlink.png, label: "Hard link" }
-  - { key: S, mods: [SHIFT], icon: dired_symlink.png, label: "Symbolic link" }
-  - { key: Y, mods: [SHIFT], icon: dired_relsymlink.png, label: "Relative symbolic link" }
+  - { key: H, mods: [SHIFT], icon: dired_hardlink.png, region: [40, 32], label: "Hard link" }
+  - { key: S, mods: [SHIFT], icon: dired_symlink.png, region: [40, 32], label: "Symbolic link" }
+  - { key: Y, mods: [SHIFT], icon: dired_relsymlink.png, region: [40, 32], label: "Relative symbolic link" }
   - { key: I, mods: [SHIFT], icon: info.png, label: "Open in Info" }
   - { key: N, mods: [SHIFT], icon: man.png, label: "Open as man page" }
   - { key: P, mods: [SHIFT], label: "Print" }
@@ -89,37 +89,37 @@ bindings:
   - { key: W, mods: [SHIFT], icon: browse.png, label: "Open in browser" }
   - { key: X, mods: [SHIFT], icon: shell.png, label: "Shell command" }
   - { key: "1", mods: [SHIFT], icon: shell.png, label: "Shell command" }               # !
-  - { key: "7", mods: [SHIFT], icon: shell_async.png, label: "Async shell command" }   # &
-  - { key: ",", mods: [SHIFT], icon: dired_dir_prev.png, label: "Previous directory line" }  # <
-  - { key: ".", mods: [SHIFT], icon: dired_dir_next.png, label: "Next directory line" }      # >
+  - { key: "7", mods: [SHIFT], icon: shell_async.png, region: [40, 32], label: "Async shell command" }   # &
+  - { key: ",", mods: [SHIFT], icon: dired_dir_prev.png, region: [40, 32], label: "Previous directory line" }  # <
+  - { key: ".", mods: [SHIFT], icon: dired_dir_next.png, region: [40, 32], label: "Next directory line" }      # >
   - { key: "6", mods: [SHIFT], icon: updir.png, label: "Parent directory" }            # ^
   - { key: "=", mods: [SHIFT], icon: mkdir.png, label: "New directory" }               # +
   - { key: "9", mods: [SHIFT], icon: details.png, label: "Hide / show details" }       # (
-  - { key: "3", mods: [SHIFT], icon: dired_flag_autosave.png, label: "Flag auto-save files" }  # #
-  - { key: "`", mods: [SHIFT], icon: dired_flag_backup.png, label: "Flag backup files" }       # ~
+  - { key: "3", mods: [SHIFT], icon: dired_flag_autosave.png, region: [40, 32], label: "Flag auto-save files" }  # #
+  - { key: "`", mods: [SHIFT], icon: dired_flag_backup.png, region: [40, 32], label: "Flag backup files" }       # ~
   - { key: "4", mods: [SHIFT], icon: hidesubdir.png, label: "Hide subdirectory" }      # $
   - { key: "/", mods: [SHIFT], icon: summary.png, label: "Summary" }                   # ?
 
   # --- Dired's own modified keys ---
   - { key: O, mods: [CTRL], icon: display.png, label: "Display in other window" }
-  - { key: "[", mods: [ALT, SHIFT], icon: dired_marked_prev.png, label: "Previous marked file" }  # M-{
-  - { key: "]", mods: [ALT, SHIFT], icon: dired_marked_next.png, label: "Next marked file" }      # M-}
+  - { key: "[", mods: [ALT, SHIFT], icon: dired_marked_prev.png, region: [40, 32], label: "Previous marked file" }  # M-{
+  - { key: "]", mods: [ALT, SHIFT], icon: dired_marked_next.png, region: [40, 32], label: "Next marked file" }      # M-}
   - { key: "4", mods: [ALT, SHIFT], icon: hideall.png, label: "Hide all subdirectories" }        # M-$
   - { key: BACKSPACE, mods: [ALT], icon: unmarkall.png, label: "Unmark all" }
-  - { key: N, mods: [CTRL, ALT], icon: dired_subdir_next.png, label: "Next subdirectory" }
-  - { key: P, mods: [CTRL, ALT], icon: dired_subdir_prev.png, label: "Previous subdirectory" }
-  - { key: U, mods: [CTRL, ALT], icon: dired_tree_up.png, label: "Up directory tree" }
-  - { key: D, mods: [CTRL, ALT], icon: dired_tree_down.png, label: "Down directory tree" }
+  - { key: N, mods: [CTRL, ALT], icon: dired_subdir_next.png, region: [40, 32], label: "Next subdirectory" }
+  - { key: P, mods: [CTRL, ALT], icon: dired_subdir_prev.png, region: [40, 32], label: "Previous subdirectory" }
+  - { key: U, mods: [CTRL, ALT], icon: dired_tree_up.png, region: [40, 32], label: "Up directory tree" }
+  - { key: D, mods: [CTRL, ALT], icon: dired_tree_down.png, region: [40, 32], label: "Down directory tree" }
 
   # --- global keys that apply in Dired (same icons as global.yaml) ---
-  - { key: N, mods: [CTRL], icon: line_next.png, label: "Next line" }
-  - { key: P, mods: [CTRL], icon: line_prev.png, label: "Previous line" }
-  - { key: V, mods: [CTRL], icon: page_down.png, label: "Next screen" }
-  - { key: V, mods: [ALT], icon: page_up.png, label: "Previous screen" }
-  - { key: ",", mods: [ALT, SHIFT], icon: buf_start.png, label: "Buffer start" }       # M-<
-  - { key: ".", mods: [ALT, SHIFT], icon: buf_end.png, label: "Buffer end" }           # M->
-  - { key: S, mods: [CTRL], icon: isearch_fwd.png, label: "Search forward" }
-  - { key: R, mods: [CTRL], icon: isearch_back.png, label: "Search backward" }
+  - { key: N, mods: [CTRL], icon: line_next.png, region: [40, 32], label: "Next line" }
+  - { key: P, mods: [CTRL], icon: line_prev.png, region: [40, 32], label: "Previous line" }
+  - { key: V, mods: [CTRL], icon: page_down.png, region: [40, 32], label: "Next screen" }
+  - { key: V, mods: [ALT], icon: page_up.png, region: [40, 32], label: "Previous screen" }
+  - { key: ",", mods: [ALT, SHIFT], icon: buf_start.png, region: [40, 32], label: "Buffer start" }       # M-<
+  - { key: ".", mods: [ALT, SHIFT], icon: buf_end.png, region: [40, 32], label: "Buffer end" }           # M->
+  - { key: S, mods: [CTRL], icon: isearch_fwd.png, region: [40, 32], label: "Search forward" }
+  - { key: R, mods: [CTRL], icon: isearch_back.png, region: [40, 32], label: "Search backward" }
   - { key: L, mods: [CTRL], icon: recenter.png, label: "Recenter" }
   - { key: G, mods: [CTRL], icon: abort.png, label: "Abort command" }
   - { key: X, mods: [ALT], icon: command.png, label: "Run command (M-x)" }

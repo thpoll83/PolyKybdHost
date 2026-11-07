@@ -1,0 +1,95 @@
+# Cadence OrCAD X Capture shortcut overlays for PolyKybd (Windows).
+#
+# The default shortcut keys of the schematic page editor, from chapter 21
+# "Shortcut Keys" of the OrCAD X Capture User Guide (SOURCES.md). OrCAD X
+# Capture runs on Windows only.
+#
+# Keys that work only in another Capture window (the property editor, the
+# session log, text boxes, the part editor, the Place Part dialog) are left
+# out, as are keys that only finish a wire, bus or polyline that is being
+# drawn. SOURCES.md lists them.
+#
+# Regenerate (from the repo root, with the project venv):
+#   PYTHONPATH=. .venv/bin/python polyhost/res/overlay_sources/orcad/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/orcad/bindings.yaml --preview /tmp/orcad_preview
+app: orcad
+match: [capture]
+output: orcad_capture_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
+threshold: 150
+
+program_icon: orcad.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # ===================================================== no modifier =========
+  # Place menu
+  - { key: B, icon: bus.png, label: "Place bus" }
+  - { key: E, icon: busentry.png, label: "Place bus entry" }
+  - { key: F, icon: power.png, label: "Place power" }
+  - { key: G, icon: ground.png, label: "Place ground" }
+  - { key: J, icon: junction.png, label: "Place junction" }
+  - { key: N, icon: netlabel.png, label: "Place net alias" }
+  - { key: P, icon: symbol.png, label: "Place part" }
+  - { key: T, icon: text.png, label: "Place text" }
+  - { key: W, icon: wire.png, label: "Place wire" }
+  - { key: X, icon: noconnect.png, label: "Place no connect" }
+  - { key: Y, icon: lines.png, label: "Place polyline" }
+  - { key: Z, icon: database.png, label: "Place database part" }
+  # View and edit
+  - { key: C, icon: center.png, label: "Center on pointer" }
+  - { key: H, icon: mirrorh.png, label: "Mirror horizontally" }
+  - { key: V, icon: mirrorv.png, label: "Mirror vertically" }
+  - { key: R, icon: rotccw.png, label: "Rotate" }
+  - { key: I, label: "Zoom in" }
+  - { key: O, label: "Zoom out" }
+  - { key: Q, icon: fisheyedyn.png, label: "Fisheye dynamic focus" }
+  - { key: F1, label: "Help" }
+  - { key: F4, icon: repeat.png, label: "Repeat last command" }
+  - { key: F5, icon: refresh.png, label: "Redraw" }
+  - { key: F11, icon: simulate.png, label: "Run simulation" }
+  - { key: F12, icon: simresults.png, label: "View simulation results" }
+  - { key: DEL, label: "Delete" }
+  - { key: PGUP, icon: panup.png, label: "Pan up" }
+  - { key: PGDN, icon: pandown.png, label: "Pan down" }
+
+  # ============================================================ Ctrl =========
+  - { key: A, mods: [CTRL], label: "Select all" }
+  - { key: C, mods: [CTRL], label: "Copy" }
+  - { key: E, mods: [CTRL], icon: properties.png, label: "Edit properties" }
+  - { key: F, mods: [CTRL], label: "Find" }
+  - { key: G, mods: [CTRL], label: "Go to" }
+  - { key: I, mods: [CTRL], icon: selfilter.png, label: "Selection filter" }
+  - { key: P, mods: [CTRL], label: "Print" }
+  - { key: S, mods: [CTRL], label: "Save" }
+  - { key: T, mods: [CTRL], icon: snaptoggle.png, label: "Toggle snap to grid" }
+  - { key: U, mods: [CTRL], icon: ungroup.png, label: "Ungroup" }
+  - { key: V, mods: [CTRL], label: "Paste" }
+  - { key: X, mods: [CTRL], label: "Cut" }
+  - { key: Y, mods: [CTRL], label: "Redo" }
+  - { key: Z, mods: [CTRL], label: "Undo" }
+  - { key: PGUP, mods: [CTRL], icon: panleft.png, label: "Pan left" }
+  - { key: PGDN, mods: [CTRL], icon: panright.png, label: "Pan right" }
+
+  # =========================================================== Shift =========
+  - { key: A, mods: [SHIFT], icon: leavesheet.png, label: "Ascend hierarchy" }
+  - { key: D, mods: [SHIFT], icon: descend.png, label: "Descend hierarchy" }
+  - { key: B, mods: [SHIFT], icon: testbench.png, label: "Create test bench" }
+  - { key: R, mods: [SHIFT], icon: rectangle.png, label: "Place rectangle" }
+  - { key: S, mods: [SHIFT], icon: sendpcb.png, label: "Send part to PCB" }
+  - { key: F11, mods: [SHIFT], icon: fisheyeset.png, label: "Set fisheye focus" }
+
+  # ====================================================== Ctrl+Shift =========
+  - { key: A, mods: [CTRL, SHIFT], icon: groupadd.png, label: "Add to group" }
+  - { key: R, mods: [CTRL, SHIFT], icon: groupremove.png, label: "Remove from group" }
+  - { key: W, mods: [CTRL, SHIFT], icon: expandconn.png, label: "Select entire net" }
+  - { key: F11, mods: [CTRL, SHIFT], icon: fisheyereset.png, label: "Reset fisheye focus" }

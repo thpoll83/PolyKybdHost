@@ -24,7 +24,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 128
 
 program_icon: kp2_progmark.png
@@ -42,7 +42,7 @@ bindings:
   - { key: W, mods: [CTRL], icon: kp_closedb.png, label: "Close database" }
   - { key: S, mods: [CTRL], icon: kp_save.png, label: "Save database" }
   - { key: P, mods: [CTRL], icon: kp2_print.png, label: "Print database" }
-  - { key: R, mods: [CTRL], icon: kp2_sync.png, label: "Synchronize with file" }
+  - { key: R, mods: [CTRL], icon: kp2_sync.png, label: "Synchronize with file", concept: reload }
   - { key: R, mods: [CTRL, SHIFT], icon: kp2_syncurl.png, label: "Synchronize with URL" }
   - { key: L, mods: [CTRL], icon: kp_lock.png, label: "Lock workspace" }
   - { key: Q, mods: [CTRL], icon: kp_quit.png, label: "Exit KeePass" }
@@ -69,12 +69,12 @@ bindings:
   - { key: P, mods: [CTRL, SHIFT], icon: kp2_print.png, label: "Print group" }
   # --- move the selected entry or group ---
   - { key: HOME, mods: [ALT], icon: kp2_movetop.png, label: "Move to top", except: [linux] }
-  - { key: UP, mods: [ALT], icon: kp_moveup.png, label: "Move one up", except: [linux] }
-  - { key: DOWN, mods: [ALT], icon: kp_movedown.png, label: "Move one down", except: [linux] }
+  - { key: UP, mods: [ALT], icon: ../../effectcraft/icons/nudge10_up.png, label: "Move one up", except: [linux] }
+  - { key: DOWN, mods: [ALT], icon: ../../effectcraft/icons/nudge10_down.png, label: "Move one down", except: [linux] }
   - { key: END, mods: [ALT], icon: kp2_movebottom.png, label: "Move to bottom", except: [linux] }
   - { key: F5, mods: [CTRL, SHIFT], icon: kp2_movetop.png, label: "Move to top", only: [linux] }
-  - { key: F6, mods: [CTRL, SHIFT], icon: kp_moveup.png, label: "Move one up", only: [linux] }
-  - { key: F7, mods: [CTRL, SHIFT], icon: kp_movedown.png, label: "Move one down", only: [linux] }
+  - { key: F6, mods: [CTRL, SHIFT], icon: ../../effectcraft/icons/nudge10_up.png, label: "Move one up", only: [linux] }
+  - { key: F7, mods: [CTRL, SHIFT], icon: ../../effectcraft/icons/nudge10_down.png, label: "Move one down", only: [linux] }
   - { key: F8, mods: [CTRL, SHIFT], icon: kp2_movebottom.png, label: "Move to bottom", only: [linux] }
   # --- find and view ---
   - { key: F, mods: [CTRL], icon: kp_search.png, label: "Find" }
@@ -85,4 +85,4 @@ bindings:
   - { key: J, mods: [CTRL], icon: kp_hideuser.png, label: "Hide user names" }
   - { key: TAB, mods: [CTRL], icon: kp_nexttab.png, label: "Next database tab" }
   - { key: TAB, mods: [CTRL, SHIFT], icon: kp_prevtab.png, label: "Previous database tab" }
-  - { key: F1, mods: [], icon: kp2_help.png, label: "Help contents" }
+  - { key: F1, mods: [], icon: kp2_help.png, label: "Help contents", concept: help }

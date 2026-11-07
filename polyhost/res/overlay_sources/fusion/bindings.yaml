@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 bindings:
@@ -78,7 +78,7 @@ bindings:
 
   # --- sketch ---
   - { key: L, mods: [], icon: line.png, label: Line }
-  - { key: R, mods: [], icon: rectangle.png, label: Rectangle }
+  - { key: R, mods: [], icon: ../../blender/icons/render_region.png, label: Rectangle }
   - { key: C, mods: [], icon: circle.png, label: Circle }
   - { key: T, mods: [], icon: trim.png, label: Trim }
   - { key: O, mods: [], icon: offset.png, label: Offset }

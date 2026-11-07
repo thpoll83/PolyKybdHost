@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # No program_icon: ESC is left to the generic program mark, as for the other
@@ -49,8 +49,8 @@ bindings:
   - { key: BACKSLASH, mods: [GUI, SHIFT], icon: taboverview.png, label: "Tab overview", <<: *m }
   # --- page and history ---
   - { key: L, mods: [GUI], icon: addressbar.png, <<: [*r, *m], label: "Address bar" }
-  - { key: LBRACKET, mods: [GUI], icon: back.png, <<: [*r, *m], label: "Back" }
-  - { key: RBRACKET, mods: [GUI], icon: forward.png, <<: [*r, *m], label: "Forward" }
+  - { key: LBRACKET, mods: [GUI], icon: ../../eclipse/icons/back.png, <<: [*r, *m], label: "Back" }
+  - { key: RBRACKET, mods: [GUI], icon: ../../eclipse/icons/forward.png, <<: [*r, *m], label: "Forward" }
   - { key: H, mods: [GUI, SHIFT], icon: home.png, label: "Home page", <<: *m }
   - { key: UP, mods: [GUI], icon: pagetop.png, label: "Top of page", <<: *m }
   - { key: DOWN, mods: [GUI], icon: pagebottom.png, label: "Bottom of page", <<: *m }

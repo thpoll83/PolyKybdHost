@@ -16,7 +16,7 @@ match: [opendune]
 output: dune2_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 anchor: right
 region: [40, 40]

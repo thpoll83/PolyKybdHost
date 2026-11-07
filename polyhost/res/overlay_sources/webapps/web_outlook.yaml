@@ -28,7 +28,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: owa_mark.png
@@ -62,7 +62,7 @@ bindings:
   # Ctrl+U is "Mark unread" in the message list and "Underline" in the editor.
   # Bare U already shows Mark unread, so Ctrl+U shows Underline (below).
   - { key: S, mods: [ALT],     icon: submit.png,       label: "Send",         source: "ms-fluent/Send (MIT)", except: [macos] }
-  - { key: Q, mods: [ALT],     icon: search.png,       label: "Search",       source: "ms-fluent/Search (MIT)", except: [macos] }
+  - { key: Q, mods: [ALT],     icon: search.png,       label: "Search", concept: find,       source: "ms-fluent/Search (MIT)", except: [macos] }
 
   # --- switch module (Ctrl+Shift+number) ---
   - { key: "1", mods: [CTRL, SHIFT], icon: mailview.png,   label: "Mail",     source: "ms-fluent/Mail Inbox (MIT)", except: [macos] }

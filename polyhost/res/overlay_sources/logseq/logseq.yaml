@@ -18,7 +18,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: logseq.png
@@ -84,7 +84,7 @@ bindings:
   - { key: E, mods: [GUI], icon: quickadd.png, label: "Quick capture", only: [macos] }
   - { key: F, mods: [CMDCTRL, SHIFT], icon: favorite.png, label: "Add to favorites" }
   - { key: J, mods: [CMDCTRL], icon: jump.png, label: "Jump to block" }
-  - { key: K, mods: [CMDCTRL], icon: search.png, label: "Search" }
+  - { key: K, mods: [CMDCTRL], icon: search.png, label: "Search", concept: find }
   - { key: K, mods: [CMDCTRL, SHIFT], icon: searchpage.png, label: "Search in page" }
   - { key: F, mods: [CMDCTRL], icon: find.png, label: "Find in page" }
   - { key: G, mods: [CMDCTRL], icon: findnext.png, label: "Find next" }

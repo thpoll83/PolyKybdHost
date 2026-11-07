@@ -21,7 +21,7 @@ import numpy as np
 
 from polyhost._version import __protocol__
 from polyhost.device import synthetic_overlay as syn
-from polyhost.device.command_ids import Cmd, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, OsType
+from polyhost.device.command_ids import Cmd, GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, OsType
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.mock_firmware import (CMD_MIN_PROTOCOL, RETIRED_CMDS, MockFirmware,
@@ -92,6 +92,8 @@ CALLS = {
     "set_idle_timeout": [(IdleTimeout.MIN_2,)], "get_idle_timeout": [()],
     "set_glyph_script": [(list(GlyphScript)[0],)], "get_glyph_script": [()],
     "set_glyph_size": [(list(GlyphSize)[0],)], "get_glyph_size": [()],
+    "set_glyph_placement": [(GlyphPlacement.CENTRE,), (GlyphPlacement.TOP_LEFT,)],
+    "get_glyph_placement": [()],
     "get_crash_record": [(0,), (1,)], "clear_crash_record": [()],
     "get_layer_names": [()],
     "get_macro_info": [()], "read_macro_buffer": [(64,)],

@@ -29,7 +29,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Jan's own icon (a waving hand). Swept alpha/luma/bright x 150..225 at 37x32
@@ -48,7 +48,7 @@ bindings:
       source: "const.ts TOGGLE_SIDEBAR" }
   - { key: P,   mods: [CMDCTRL], icon: newfolder.png, label: "New project",
       source: "const.ts NEW_PROJECT; jan.ai/docs/desktop/projects" }
-  - { key: K,   mods: [CMDCTRL], icon: search.png,    label: "Search chats",
+  - { key: K,   mods: [CMDCTRL], icon: search.png,    label: "Search chats", concept: find,
       source: "const.ts SEARCH" }
   - { key: J,   mods: [CMDCTRL], icon: assistant.png, label: "Switch assistant",
       source: "const.ts SWITCH_ASSISTANT" }

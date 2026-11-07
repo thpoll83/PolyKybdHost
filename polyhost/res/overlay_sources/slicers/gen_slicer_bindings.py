@@ -46,7 +46,7 @@ SPEC = {
     "anchor": "bottom-right",
     "region": [36, 32],
     "margin": 0,
-    "mode": "alpha",
+    "mode": "auto",
     "threshold": 128,
     "program_icon_mode": "alpha",
     "program_icon_anchor": "right",

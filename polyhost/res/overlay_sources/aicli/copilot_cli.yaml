@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: copilot.png
@@ -61,7 +61,7 @@ bindings:
   # --- Input component ---
   # Footer hint `shortcut:"shift+tab",description:"cycle mode"`: interactive <-> plan.
   - { key: TAB, mods: [SHIFT], icon: permission.png, label: "Cycle mode" }
-  - { key: TAB, icon: complete.png, label: "Complete" }
+  - { key: TAB, icon: complete.png, region: [40, 32], label: "Complete" }
   # `(key.shift||key.meta)&&key.return` inserts a newline.
   - { key: ENTER, mods: [SHIFT], icon: newline.png, label: "New line" }
   - { key: ENTER, mods: [ALT], icon: newline.png, label: "New line" }
