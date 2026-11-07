@@ -37,7 +37,7 @@ read 2026-11-06). Several UI inputs use the same key with and without Shift
 | 1, 2 | `START1`, `START2` | 1UP, 2UP |
 | 5, 6 | `COIN1`, `COIN2` | COIN, COIN2 |
 | left Ctrl, left Alt, Space, left Shift, Z, X | `P1_BUTTON1` … `P1_BUTTON6` | rings 1 to 6 |
-| Esc | `UI_CANCEL` (quit) | the M mark |
+| Esc | `UI_CANCEL` (quit) | the MAME wordmark |
 
 Not drawn: the debugger (`` ` `` also breaks into it when the debugger is on), the
 UI keys that act only inside menus, `UI_TOGGLE_UI` (Scroll Lock, no keycap cell),
@@ -50,4 +50,4 @@ and players 2 to 4.
 | `menu.png`, `pause.png`, `step.png`, `rewindstep.png`, `gfx.png`, `quicksave.png`, `quickload.png`, `softreset.png`, `hardreset.png`, `skipminus.png`, `skipplus.png`, `cheat.png`, `throttle.png`, `fastfwd.png`, `recordmng.png`, `recordavi.png`, `service.png`, `tilt.png`, `osd.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | Apache-2.0 |
 | `savestate.png` (Save), `loadstate.png` (Folder Open), `snapshot.png` (Camera) | Microsoft Fluent UI System Icons | MIT |
 | `button1.png` … `button6.png`, `start1.png`, `start2.png`, `coin1.png`, `coin2.png`, `fps.png` | drawn by `retroarch/fetch_icons.py`; text in Press Start 2P (SIL OFL 1.1) | the drawing is this repo's |
-| `mame.png` | drawn "M" tile (`program_marks.letter_mark`) | this repo's. MAME's own icon is GPL-2.0 and "MAME" a registered trademark of Gregory Ember, so neither is copied |
+| `mame.png` | "MAME" wordmark drawn in pixels by `wordmark()` in `fetch_icons.py` (37 × 13, bold italic, one slit) | this repo's. MAME's own icon is GPL-2.0 and "MAME" a registered trademark of Gregory Ember, so neither is copied |
