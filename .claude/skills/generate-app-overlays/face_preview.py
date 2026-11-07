@@ -32,10 +32,9 @@ a.repo = REPO
 sys.path.insert(0, str(a.repo)); sys.path.insert(0, str(a.repo / ".claude/skills/generate-app-overlays"))
 import yaml
 import preview_black as pb
-from preview_black import g
 from polyhost.device.command_ids import GlyphScript
 from polyhost.services import glyph_script_preview as gsp
-import os
+g = pb.g
 sys.path.insert(0, str(a.repo / "tools"))
 import lang_demo as LD
 import oled_preview as op

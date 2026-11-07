@@ -29,7 +29,8 @@ specs = []
 for y in sorted(set(glob.glob("polyhost/res/overlay_sources/*/bindings.yaml")
                     + glob.glob("polyhost/res/overlay_sources/*/*.yaml"))):
     try:
-        d = yaml.load(open(y, encoding="utf-8"), Loader=LOADER)
+        with open(y, encoding="utf-8") as fh:
+            d = yaml.load(fh, Loader=LOADER)
     except Exception:
         continue
     if isinstance(d, dict) and "bindings" in d:
