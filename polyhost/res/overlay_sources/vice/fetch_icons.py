@@ -20,6 +20,7 @@ from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # no
 
 LOGO_URL = ("https://raw.githubusercontent.com/VICE-Team/svn-mirror/3.10.0/"
             "vice/data/common/vice-logo-black.svg")
+DRIVES = ("8", "9", "10", "11")   # drive-attach / drive-detach keys 8, 9, 0, 1
 LOGO_W = 40      # px wide: 40 x 11, still reads "VICE" and clears the Esc legend (x 2..27)
 
 FLUENT = {
@@ -76,10 +77,34 @@ def vice_mark(dest: Path, width: int = LOGO_W) -> None:
     cnc._save_mask(m[ys.min():ys.max() + 1, xs.min():xs.max() + 1], dest)
 
 
+def numbered(src: Path, label: str, dest: Path, w: int = 36, h: int = 32, gap: int = 2) -> None:
+    """`src`'s symbol under `label` (Press Start 2P, 8 px), drawn 1 bit at `w` x `h`.
+    The drive keys draw 0 and 1 for drives 10 and 11, so the icon names the drive."""
+    import numpy as np
+    from PIL import Image
+
+    from polyhost.res.overlay_sources.retroarch import fetch_icons as ra
+    text = ra._text_mask(label, 8)
+    a = Image.open(src).convert("RGBA").getchannel("A")
+    a = a.crop(a.getbbox())
+    k = min(w / a.width, (h - text.shape[0] - gap) / a.height)
+    sym = np.asarray(a.resize((max(1, round(a.width * k)), max(1, round(a.height * k))),
+                              Image.LANCZOS)) > 127
+    m = np.zeros((h, w), bool)
+    x = (w - text.shape[1]) // 2
+    m[:text.shape[0], x:x + text.shape[1]] = text
+    y, x = text.shape[0] + gap, (w - sym.shape[1]) // 2
+    m[y:y + sym.shape[0], x:x + sym.shape[1]] = sym
+    cnc._save_mask(m, dest)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(FLUENT, out)
+    for d in DRIVES:
+        numbered(out / "driveattach.png", d, out / f"drive{d}.png")
+        numbered(out / "eject.png", d, out / f"eject{d}.png")
     vice_mark(out / "vice.png")
     print(f"Wrote icons to {out}")
     return 0

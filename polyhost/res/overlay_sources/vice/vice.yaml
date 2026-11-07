@@ -44,22 +44,22 @@ bindings:
   - { key: F12, mods: [GUI], icon: powercycle.png, label: "Power cycle", only: [macos], source: hotkeys.vhk }
   - { key: Q, mods: [ALT], icon: quit.png, label: "Quit", except: [macos], source: hotkeys.vhk }
   - { key: Q, mods: [GUI], icon: quit.png, label: "Quit", only: [macos], source: hotkeys.vhk }
-  - { key: "8", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 8", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "8", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 8", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "9", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 9", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "9", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 9", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "0", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 10", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "0", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 10", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "1", mods: [ALT], icon: driveattach.png, label: "Attach disk to drive 11", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "1", mods: [GUI], icon: driveattach.png, label: "Attach disk to drive 11", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "8", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 8", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "8", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 8", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "9", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 9", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "9", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 9", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "0", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 10", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "0", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 10", only: [macos], source: hotkeys-drive.vhk }
-  - { key: "1", mods: [CTRL, ALT], icon: eject.png, label: "Detach disk from drive 11", except: [macos], source: hotkeys-drive.vhk }
-  - { key: "1", mods: [CTRL, GUI], icon: eject.png, label: "Detach disk from drive 11", only: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [ALT], icon: drive8.png, label: "Attach disk to drive 8", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [GUI], icon: drive8.png, label: "Attach disk to drive 8", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [ALT], icon: drive9.png, label: "Attach disk to drive 9", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [GUI], icon: drive9.png, label: "Attach disk to drive 9", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [ALT], icon: drive10.png, label: "Attach disk to drive 10", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [GUI], icon: drive10.png, label: "Attach disk to drive 10", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [ALT], icon: drive11.png, label: "Attach disk to drive 11", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [GUI], icon: drive11.png, label: "Attach disk to drive 11", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [CTRL, ALT], icon: eject8.png, label: "Detach disk from drive 8", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "8", mods: [CTRL, GUI], icon: eject8.png, label: "Detach disk from drive 8", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [CTRL, ALT], icon: eject9.png, label: "Detach disk from drive 9", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "9", mods: [CTRL, GUI], icon: eject9.png, label: "Detach disk from drive 9", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [CTRL, ALT], icon: eject10.png, label: "Detach disk from drive 10", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "0", mods: [CTRL, GUI], icon: eject10.png, label: "Detach disk from drive 10", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [CTRL, ALT], icon: eject11.png, label: "Detach disk from drive 11", region: [36, 32], except: [macos], source: hotkeys-drive.vhk }
+  - { key: "1", mods: [CTRL, GUI], icon: eject11.png, label: "Detach disk from drive 11", region: [36, 32], only: [macos], source: hotkeys-drive.vhk }
   - { key: I, mods: [ALT], icon: flipadd.png, label: "Add disk to fliplist", except: [macos], source: hotkeys-fliplist.vhk }
   - { key: I, mods: [GUI], icon: flipadd.png, label: "Add disk to fliplist", only: [macos], source: hotkeys-fliplist.vhk }
   - { key: K, mods: [ALT], icon: flipremove.png, label: "Remove disk from fliplist", except: [macos], source: hotkeys-fliplist.vhk }
