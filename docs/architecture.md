@@ -407,6 +407,11 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `unicode_cache.py` — pre-computed unicode character mappings
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
+- `keycap_face.py` — the per-application keycap face: an overlay-mapping entry's
+  `glyph_script` / `glyph_script_position`. `PolyCore._track_keycap_face` queues it on
+  the worker when the matched entry changes; the user's own face is restored when no
+  entry asks for one, at shutdown, and on connect from `keycap_face_restore.json`
+  (`polyhost/res/overlay-mapping.md` → *Keycap face per application*).
 - `game_assets/` — overlay art read from games installed on this machine.
   An overlay-mapping entry opts in with `game_assets: <spec>` (a path under
   `res/overlay_sources`); the spec's `game_assets:` block names a reader and the

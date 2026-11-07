@@ -131,6 +131,11 @@ def flash_progress_relay(emit, cancel, kind):
     return _progress, cancel_flag
 
 
+# Nothing submitted yet for the per-application keycap face (None is a valid
+# 'restore the user's face' request, so it cannot be the marker).
+_NOT_SENT = object()
+
+
 class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
@@ -194,6 +199,14 @@ class PolyCore(Observable):
         self._app_icons = None
         self._shortcut_icons = None
         self._generic_on_device = None
+        # Per-application keycap face (overlay-mapping `glyph_script` keys). The
+        # user's own face is remembered in a file so a host that stops mid-override
+        # can still give it back on the next connect.
+        from polyhost.services.keycap_face import KeycapFace, restore_path
+        self._keycap_face = KeycapFace(restore_path(), log)
+        self._keycap_face_sent = _NOT_SENT
+        self._keycap_face_entry_seen = None
+        self._keycap_face_wanted = None
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
@@ -489,6 +502,19 @@ class PolyCore(Observable):
             self._wincompose_thread = None
         if wincompose_thread is not None:
             wincompose_thread.join(timeout=1)
+        face = getattr(self, "_keycap_face", None)
+        if face is not None:
+            # run_sync jumps the queue, so a face job already queued would run
+            # after this restore: close() turns it into a no-op first. The
+            # restore runs even with nothing remembered yet, in case an apply
+            # was running while we looked; with nothing remembered it returns.
+            face.close()
+        if face is not None and self.connected:
+            try:
+                self.worker.run_sync("keycap_face_restore",
+                                     lambda c: face.restore(self.keeb), timeout=2)
+            except Exception as e:  # never let it break shutdown; the next connect retries
+                self.log.debug("Keycap face restore failed: %s: %s", type(e).__name__, e)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -779,8 +805,34 @@ class PolyCore(Observable):
                 # mask up. No completion callback has to race the focus.
                 self._maybe_send_generic_overlays(handler)
             self._track_active_os(handler)
+            self._track_keycap_face(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+
+    def _track_keycap_face(self, handler):
+        """Queue the focused entry's keycap face (or the user's own) when it changes.
+
+        Only on a change, so a still window costs a dict lookup per tick. The
+        worker applies it, and `KeycapFace.apply` is itself a no-op when the
+        keyboard already shows that face."""
+        if getattr(self, "_keycap_face", None) is None:
+            return          # a core built without __init__ (tests)
+        from polyhost.services.keycap_face import wanted_face
+        entry = getattr(handler, "current_entry", None)
+        # A forwarded window: the local entry is the `remote:` wrapper, and the
+        # forwarded application's own match is on the remote handler.
+        is_remote = getattr(handler, "is_remote_mapping_entry", None)
+        if entry is not None and is_remote is not None and is_remote():
+            entry = getattr(getattr(handler, "remote_handler", None), "current_entry", None)
+        wanted = wanted_face(entry, self.log) if entry is not self._keycap_face_entry_seen else \
+            self._keycap_face_wanted
+        self._keycap_face_entry_seen, self._keycap_face_wanted = entry, wanted
+        if wanted == self._keycap_face_sent:
+            return
+        self._keycap_face_sent = wanted
+        self.worker.submit("keycap_face",
+                           lambda c, w=wanted: self._keycap_face.apply(w, self.keeb),
+                           coalesce_key="keycap_face")
 
     def _send_template_with_fill(self, handler):
         """Send the focused window's templates WITH the generic gap fill.
@@ -1799,6 +1851,10 @@ class PolyCore(Observable):
                     and snapshot.get("kb_proto") != self._newer_fw_policy_proto):
                 self._newer_fw_policy = None
                 self._newer_fw_policy_proto = None
+            if not connected_now and getattr(self, "_keycap_face", None) is not None:
+                # What the keyboard shows is unknown from here on.
+                self._keycap_face.note_disconnected()
+                self._keycap_face_sent = _NOT_SENT
             decision = decide_reconnect_apply(
                 snapshot, __protocol__, __version__, self.ignore_version,
                 min_supported=MIN_SUPPORTED_PROTOCOL,
@@ -1864,6 +1920,15 @@ class PolyCore(Observable):
                     self.overlay_handler.force_resend()
                 self.needs_overlay_reset = True
                 self.log.info("Connected: active window resend queued.")
+                # A face left from a host that stopped while an application's
+                # face was on goes back first; the next tick then applies the
+                # focused application's face again, if it has one.
+                # The restore is queued BEFORE the marker is reset, so a tick in
+                # between cannot queue the application's face ahead of it.
+                if getattr(self, "_keycap_face", None) is not None:
+                    self.worker.submit("keycap_face_restore",
+                                       lambda c: self._keycap_face.restore(self.keeb))
+                    self._keycap_face_sent = _NOT_SENT
                 # Re-assert the host's brightness mode on the freshly-connected
                 # keyboard (its auto mode is RAM-only and defaults off on boot):
                 # engage daylight-auto + push the current value, or send AUTO_OFF
@@ -2357,6 +2422,9 @@ class PolyCore(Observable):
             v = int(value)
         except (TypeError, ValueError):
             return False, f"Invalid glyph script: {value!r}"
+        # Chosen by hand while an application's face is on: restore THIS one later.
+        if getattr(self, "_keycap_face", None) is not None:
+            self._keycap_face.note_user_choice(script=v)
         return self._device_call(
             "glyph_script_set", lambda c, v=v: self.keeb.set_glyph_script(v))
 
@@ -2369,6 +2437,13 @@ class PolyCore(Observable):
             v = int(value)
         except (TypeError, ValueError):
             return False, f"Invalid glyph-script placement: {value!r}"
+        # A closed range: an unknown value would be NACKed by the keyboard, and
+        # remembered below as the face to restore, failing every later restore.
+        from polyhost.device.command_ids import GlyphPlacement
+        if v not in {p.value for p in GlyphPlacement}:
+            return False, f"Invalid glyph-script placement: {value!r}"
+        if getattr(self, "_keycap_face", None) is not None:
+            self._keycap_face.note_user_choice(place=v)
         return self._device_call(
             "glyph_placement_set", lambda c, v=v: self.keeb.set_glyph_placement(v))
 
