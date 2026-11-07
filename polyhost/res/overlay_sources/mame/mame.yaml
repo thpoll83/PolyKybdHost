@@ -49,7 +49,7 @@ bindings:
   - { key: F8, mods: [SHIFT], icon: cheat.png, label: "Cheats on/off" }
   - { key: F9, mods: [], icon: skipplus.png, label: "Frameskip up" }
   - { key: F10, mods: [], icon: throttle.png, label: Throttle }
-  - { key: F11, mods: [], icon: fps.png, label: "Show FPS" }
+  - { key: F11, mods: [], icon: fps.png, label: "Show FPS", region: [46, 14] }
   - { key: F12, mods: [], icon: snapshot.png, label: Snapshot }
   - { key: F12, mods: [SHIFT], icon: recordmng.png, label: "Record MNG" }
   - { key: F12, mods: [CTRL, SHIFT], icon: recordavi.png, label: "Record AVI" }

@@ -37,7 +37,6 @@ FLUENT = {
     "skipplus":   "ms:exposure_plus_1",
     "cheat":      "ms:key",
     "throttle":   "ms:speed",
-    "fps":        "ms:analytics",
     "fastfwd":    "ms:fast_forward",
     "snapshot":   "Camera",
     "recordmng":  "ms:videocam",
@@ -59,6 +58,7 @@ def main() -> int:
         ra.ring(text, out / f"{name}.png")
     for name, text in PILLS.items():
         ra.pill(text, out / f"{name}.png")
+    ra.word("FPS", out / "fps.png")
     program_marks.ensure(out / "mame.png", "M")
     print(f"Wrote icons to {out}")
     return 0

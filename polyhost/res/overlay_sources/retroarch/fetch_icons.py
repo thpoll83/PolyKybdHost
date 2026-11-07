@@ -42,7 +42,6 @@ FLUENT = {
     "screenshot":  "Camera",
     "grabmouse":   "ms:mouse",
     "fullscreen":  "ms:fullscreen",
-    "fps":         "ms:speed",
     "desktopmenu": "ms:desktop_windows",
 }
 
@@ -97,6 +96,14 @@ def pill(text: str, dest: Path) -> None:
     cnc._save_mask(m, dest)
 
 
+def word(text: str, dest: Path, px: int = 16) -> None:
+    """`text` alone at `px` (16: 7 px-wide cells doubled), cropped to its ink.
+    Used where the word reads better than any icon, like Dune Legacy's FPS."""
+    cnc._save_mask(_text_mask(text, px), dest)
+
+
+WORDS = {"fps": "FPS"}
+
 PAD = {"padb": "B", "pada": "A", "pady": "Y", "padx": "X", "padl": "L", "padr": "R"}
 PILLS = {"padstart": "START", "padselect": "SELECT"}
 
@@ -109,6 +116,8 @@ def main() -> int:
         ring(letter, out / f"{name}.png")
     for name, text in PILLS.items():
         pill(text, out / f"{name}.png")
+    for name, text in WORDS.items():
+        word(text, out / f"{name}.png")
     brand_marks.ensure(out / "retroarch.png", "retroarch")
     print(f"Wrote icons to {out}")
     return 0

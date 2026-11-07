@@ -36,7 +36,7 @@ bindings:
   # Hotkeys
   - { key: F1, mods: [], icon: menu.png, label: Menu }
   - { key: F2, mods: [], icon: savestate.png, label: "Save state" }
-  - { key: F3, mods: [], icon: fps.png, label: "Show FPS" }
+  - { key: F3, mods: [], icon: fps.png, label: "Show FPS", region: [46, 14] }
   - { key: F4, mods: [], icon: loadstate.png, label: "Load state" }
   - { key: F5, mods: [], icon: desktopmenu.png, label: "Desktop menu" }
   - { key: F6, mods: [], icon: slotminus.png, label: "Previous state slot" }
