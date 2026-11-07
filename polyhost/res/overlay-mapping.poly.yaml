@@ -3328,3 +3328,12 @@ cinema 4d:
   os:
     macos:
       overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
+# Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
+# and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
+# dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
+# with Cmd copies of the File and Edit keys. Not checked on an install.
+maya,maya.bin:
+  overlay: [maya_template.mods.png, maya_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [maya_template_mac.mods.png, maya_template_mac.combo.mods.png, maya_template_mac.extra.mods.png]
