@@ -92,9 +92,12 @@ def numbered(src: Path, label: str, dest: Path, w: int = 36, h: int = 32, gap: i
     text = ra._text_mask(label, px)
     a = Image.open(src).convert("RGBA").getchannel("A")
     a = a.crop(a.getbbox())
+    # BOX (area average), not LANCZOS: Lanczos rings at each edge, and after the
+    # 1-bit cut a straight edge then wobbles by a pixel. An area average gives
+    # every pixel along a straight edge the same coverage, so it cuts the same.
     k = min(w / a.width, (h - text.shape[0] - gap) / a.height)
     sym = np.asarray(a.resize((max(1, round(a.width * k)), max(1, round(a.height * k))),
-                              Image.LANCZOS)) > 127
+                              Image.BOX)) > 127
     m = np.zeros((h, w), bool)
     x = (w - text.shape[1]) // 2
     m[:text.shape[0], x:x + text.shape[1]] = text
