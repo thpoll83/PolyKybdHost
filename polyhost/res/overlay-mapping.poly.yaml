@@ -3328,3 +3328,12 @@ cinema 4d:
   os:
     macos:
       overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
+# Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
+# "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
+# the Commands Keyboard Focus keys, which act only while that focus is on (the
+# host cannot detect it). Not checked on an install.
+protools,pro tools:
+  overlay: [protools_template.mods.png, protools_template.combo.mods.png, protools_template.extra.mods.png, protools_template.gui.mods.png]
+  os:
+    macos:
+      overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]
