@@ -3328,3 +3328,15 @@ cinema 4d:
   os:
     macos:
       overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
+# SideFX Houdini, Scene View and global keys (overlay_sources/houdini/).
+# Windows houdini.exe (houdinifx.exe, houdinicore.exe, happrentice.exe,
+# hindie.exe, hescape.exe launch the same program for one licence each), Linux
+# the same names or the houdini-bin binary the launcher script runs, and the
+# macOS apps "Houdini FX <version>", "Houdini Core ...", "Houdini Apprentice
+# ...", "Houdini Indie ..." (the trailing dotted version is dropped by the
+# matcher). Not checked on an install.
+houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,houdini core,houdini apprentice,houdini indie:
+  overlay: [houdini_template.mods.png, houdini_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
