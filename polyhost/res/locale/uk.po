@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-06 13:44+0000\n"
+"POT-Creation-Date: 2026-11-07 09:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -3295,7 +3295,8 @@ msgstr "Налаштовано й відтоді змінено вручну. Ц
 msgid "The plugin is already loaded from {path}."
 msgstr "Плагін уже завантажується з {path}."
 
-#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "У цій інсталяції немає файлів плагіна ({path})."
@@ -3324,77 +3325,77 @@ msgstr "Codex замінює заголовок термінала назвою 
 
 #: polyhost/gui/shell_title_dialog.py:162
 msgid ""
-"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
-"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+"Install copies the plugin from this installation to where the program loads it. For Emacs and GDB it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the program for the change to take effect."
 msgstr ""
-"Vim, Neovim і Emacs повідомляють клавіатурі свій режим (режим Normal або Insert, клавіші Org або Dired) лише з плагіном PolyKybd.\n"
+"Vim, Neovim і Emacs повідомляють клавіатурі свій режим (режим Normal або Insert, клавіші Org або Dired) лише з плагіном PolyKybd. GDB лише з ним показує, чи програма працює, чи чекає в запрошенні.\n"
 "\n"
-"Інсталювати копіює плагін із цієї інсталяції туди, звідки редактор його завантажує. Для Emacs також додає до файлу ініціалізації рядки, що завантажують плагін, між двома коментарями-маркерами і спершу зберігає копію файлу. Коли цей застосунок оновлюється, він копіює нові файли плагіна під час наступного запуску. Перезапустіть редактор, щоб зміна набула чинності."
+"Інсталювати копіює плагін із цієї інсталяції туди, звідки програма його завантажує. Для Emacs і GDB також додає до файлу ініціалізації рядки, що завантажують плагін, між двома коментарями-маркерами і спершу зберігає копію файлу. Коли цей застосунок оновлюється, він копіює нові файли плагіна під час наступного запуску. Перезапустіть програму, щоб зміна набула чинності."
 
-#: polyhost/gui/shell_title_dialog.py:181
+#: polyhost/gui/shell_title_dialog.py:182
 msgid "Checking the shells…"
 msgstr "Перевірка оболонок…"
 
-#: polyhost/gui/shell_title_dialog.py:194
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Install"
 msgstr "Інсталювати"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:195
+#: polyhost/gui/shell_title_dialog.py:196
 msgid "Remove"
 msgstr "Вилучити"
 
-#: polyhost/gui/shell_title_dialog.py:246
+#: polyhost/gui/shell_title_dialog.py:247
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Не вдалося перевірити оболонки: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:274
+#: polyhost/gui/shell_title_dialog.py:275
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: показує команду без налаштування."
 
-#: polyhost/gui/shell_title_dialog.py:302
+#: polyhost/gui/shell_title_dialog.py:303
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "На цьому комп’ютері не знайдено ні bash, ні zsh, ні PowerShell."
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:322
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Не вдалося перевірити редактори: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:344
+#: polyhost/gui/shell_title_dialog.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "На цьому комп’ютері не знайдено ні Vim, ні Neovim, ні Emacs."
 
-#: polyhost/gui/shell_title_dialog.py:350
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Цей застосунок приймає з’єднання на порту {port} і вимагає токен. Плагіни використовують порт 50164 без токена: задайте ті самі значення для g:polykybd_port і g:polykybd_token у Vim або для polykybd-port і polykybd-token в Emacs."
 
-#: polyhost/gui/shell_title_dialog.py:355
+#: polyhost/gui/shell_title_dialog.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Цей застосунок приймає з’єднання на порту {port}. Плагіни використовують порт 50164: задайте те саме значення для g:polykybd_port у Vim або для polykybd-port в Emacs."
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:394
+#: polyhost/gui/shell_title_dialog.py:407
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Зміна не вдалася: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:397
-#: polyhost/gui/shell_title_dialog.py:410
+#: polyhost/gui/shell_title_dialog.py:398
+#: polyhost/gui/shell_title_dialog.py:411
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Копія попереднього файлу: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:399
+#: polyhost/gui/shell_title_dialog.py:400
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Відкрийте нове вікно термінала, щоб зміна набула чинності."
 
-#: polyhost/gui/shell_title_dialog.py:412
+#: polyhost/gui/shell_title_dialog.py:413
 msgid "Restart the editor for the change to take effect."
 msgstr "Перезапустіть редактор, щоб зміна набула чинності."
 
@@ -4301,42 +4302,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Інсталятор WinCompose запущено. Щойно він завершить роботу і WinCompose запрацює, PolyKybd автоматично перемкнеться на нього."
 
-#: polyhost/services/editor_plugins.py:85
+#: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "Плагін скопійовано до {path}."
 
-#: polyhost/services/editor_plugins.py:86
+#: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "Плагін у {path} замінено плагіном із цієї інсталяції."
 
-#: polyhost/services/editor_plugins.py:88
+#: polyhost/services/editor_plugins.py:99
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "Плагін вилучено з {path}."
 
-#: polyhost/services/editor_plugins.py:90
+#: polyhost/services/editor_plugins.py:101
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "{editor} не знайдено на цьому комп’ютері."
 
-#: polyhost/services/editor_plugins.py:92
+#: polyhost/services/editor_plugins.py:103
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} змінено вручну. Вилучіть або оновіть його вручну."
 
-#: polyhost/services/editor_plugins.py:95
+#: polyhost/services/editor_plugins.py:106
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "Плагін скопійовано до {path}, а рядки, що його завантажують, додано до {init}."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "Рядки, що завантажують плагін, вилучено з {init}."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:108
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "Рядки, що завантажують плагін, вилучено з {init}, а плагін — з {path}."
@@ -4541,7 +4542,7 @@ msgstr "Рядок додано до {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Рядок у {path} замінено рядком для цієї інсталяції."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Уже налаштовано в {path}."
@@ -4561,7 +4562,7 @@ msgstr "Заголовок Codex вимкнено в {path}."
 msgid "Removed the line from {path}."
 msgstr "Рядок вилучено з {path}."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "У {path} нічого вилучати."
@@ -4581,12 +4582,12 @@ msgstr "{shell} не повідомив шлях до свого профілю:
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Політика виконання PowerShell ({policy}) не запускає скрипти профілю. Спершу виконайте в PowerShell 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "У {path} є початковий маркер без кінцевого. Вилучіть блок вручну."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Не вдалося змінити {path}: {error}"

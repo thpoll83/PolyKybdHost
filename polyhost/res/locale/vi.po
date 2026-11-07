@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-06 13:44+0000\n"
+"POT-Creation-Date: 2026-11-07 09:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -3261,7 +3261,8 @@ msgstr "Đã thiết lập, nhưng sau đó đã bị thay đổi bằng tay. �
 msgid "The plugin is already loaded from {path}."
 msgstr "Plugin đã được nạp từ {path}."
 
-#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "Bản cài đặt này không có tệp plugin ({path})."
@@ -3290,77 +3291,77 @@ msgstr "Codex thay tiêu đề terminal bằng tên luồng và tên dự án, n
 
 #: polyhost/gui/shell_title_dialog.py:162
 msgid ""
-"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
-"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+"Install copies the plugin from this installation to where the program loads it. For Emacs and GDB it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the program for the change to take effect."
 msgstr ""
-"Vim, Neovim và Emacs chỉ báo chế độ của chúng (chế độ Normal hoặc Insert, các phím Org hoặc Dired) cho bàn phím khi có plugin PolyKybd.\n"
+"Vim, Neovim và Emacs chỉ báo chế độ của chúng (chế độ Normal hoặc Insert, các phím Org hoặc Dired) cho bàn phím khi có plugin PolyKybd. GDB cũng chỉ cho biết chương trình đang chạy hay đang chờ ở dấu nhắc khi có plugin này.\n"
 "\n"
-"Cài đặt sao chép plugin từ bản cài đặt này vào nơi trình soạn thảo nạp nó. Với Emacs, thao tác này còn thêm các dòng nạp plugin vào tệp init, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp. Khi ứng dụng này được cập nhật, nó sẽ sao chép các tệp plugin mới ở lần khởi động tiếp theo. Hãy khởi động lại trình soạn thảo để thay đổi có hiệu lực."
+"Cài đặt sao chép plugin từ bản cài đặt này vào nơi chương trình nạp nó. Với Emacs và GDB, thao tác này còn thêm các dòng nạp plugin vào tệp init, giữa hai chú thích đánh dấu, và trước đó lưu một bản sao của tệp. Khi ứng dụng này được cập nhật, nó sẽ sao chép các tệp plugin mới ở lần khởi động tiếp theo. Hãy khởi động lại chương trình để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_title_dialog.py:181
+#: polyhost/gui/shell_title_dialog.py:182
 msgid "Checking the shells…"
 msgstr "Đang kiểm tra các shell…"
 
-#: polyhost/gui/shell_title_dialog.py:194
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Install"
 msgstr "Cài đặt"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:195
+#: polyhost/gui/shell_title_dialog.py:196
 msgid "Remove"
 msgstr "Xóa"
 
-#: polyhost/gui/shell_title_dialog.py:246
+#: polyhost/gui/shell_title_dialog.py:247
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "Không thể kiểm tra các shell: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:274
+#: polyhost/gui/shell_title_dialog.py:275
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: hiển thị lệnh mà không cần thiết lập."
 
-#: polyhost/gui/shell_title_dialog.py:302
+#: polyhost/gui/shell_title_dialog.py:303
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "Không tìm thấy bash, zsh hay PowerShell trên máy tính này."
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:322
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "Không thể kiểm tra các trình soạn thảo: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:344
+#: polyhost/gui/shell_title_dialog.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "Không tìm thấy Vim, Neovim hay Emacs trên máy tính này."
 
-#: polyhost/gui/shell_title_dialog.py:350
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "Ứng dụng này lắng nghe trên cổng {port} và yêu cầu token. Các plugin dùng cổng 50164 và không dùng token: hãy đặt g:polykybd_port và g:polykybd_token trong Vim, hoặc polykybd-port và polykybd-token trong Emacs, thành cùng các giá trị đó."
 
-#: polyhost/gui/shell_title_dialog.py:355
+#: polyhost/gui/shell_title_dialog.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "Ứng dụng này lắng nghe trên cổng {port}. Các plugin dùng cổng 50164: hãy đặt g:polykybd_port trong Vim, hoặc polykybd-port trong Emacs, thành cùng giá trị đó."
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:394
+#: polyhost/gui/shell_title_dialog.py:407
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "Thay đổi không thành công: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:397
-#: polyhost/gui/shell_title_dialog.py:410
+#: polyhost/gui/shell_title_dialog.py:398
+#: polyhost/gui/shell_title_dialog.py:411
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "Bản sao của tệp trước đó: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:399
+#: polyhost/gui/shell_title_dialog.py:400
 msgid "Open a new terminal window for the change to take effect."
 msgstr "Hãy mở một cửa sổ terminal mới để thay đổi có hiệu lực."
 
-#: polyhost/gui/shell_title_dialog.py:412
+#: polyhost/gui/shell_title_dialog.py:413
 msgid "Restart the editor for the change to take effect."
 msgstr "Hãy khởi động lại trình soạn thảo để thay đổi có hiệu lực."
 
@@ -4259,42 +4260,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Trình cài đặt WinCompose đã khởi chạy. Khi cài xong và WinCompose đang chạy, PolyKybd sẽ tự động chuyển sang dùng nó."
 
-#: polyhost/services/editor_plugins.py:85
+#: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "Đã sao chép plugin vào {path}."
 
-#: polyhost/services/editor_plugins.py:86
+#: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "Đã thay plugin trong {path} bằng plugin từ bản cài đặt này."
 
-#: polyhost/services/editor_plugins.py:88
+#: polyhost/services/editor_plugins.py:99
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "Đã xóa plugin khỏi {path}."
 
-#: polyhost/services/editor_plugins.py:90
+#: polyhost/services/editor_plugins.py:101
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "Không tìm thấy {editor} trên máy tính này."
 
-#: polyhost/services/editor_plugins.py:92
+#: polyhost/services/editor_plugins.py:103
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} đã bị thay đổi bằng tay. Hãy xóa hoặc cập nhật nó bằng tay."
 
-#: polyhost/services/editor_plugins.py:95
+#: polyhost/services/editor_plugins.py:106
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "Đã sao chép plugin vào {path} và thêm các dòng nạp nó vào {init}."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "Đã xóa các dòng nạp plugin khỏi {init}."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:108
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "Đã xóa các dòng nạp plugin khỏi {init}, và xóa plugin khỏi {path}."
@@ -4499,7 +4500,7 @@ msgstr "Đã thêm dòng vào {path}."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "Đã thay dòng trong {path} bằng dòng cho bản cài đặt này."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "Đã thiết lập sẵn trong {path}."
@@ -4519,7 +4520,7 @@ msgstr "Đã tắt tiêu đề Codex trong {path}."
 msgid "Removed the line from {path}."
 msgstr "Đã xóa dòng khỏi {path}."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "Không có gì để xóa trong {path}."
@@ -4539,12 +4540,12 @@ msgstr "{shell} không cho biết đường dẫn hồ sơ: {error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "Chính sách thực thi của PowerShell ({policy}) không chạy tập lệnh hồ sơ. Hãy chạy 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' trong PowerShell trước."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} có dấu bắt đầu mà không có dấu kết thúc. Hãy xóa khối đó bằng tay."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "Không thể thay đổi {path}: {error}"

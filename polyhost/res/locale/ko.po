@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-06 13:44+0000\n"
+"POT-Creation-Date: 2026-11-07 09:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -3261,7 +3261,8 @@ msgstr "설정되었지만 그 후 직접 변경되었습니다. 이 앱은 그�
 msgid "The plugin is already loaded from {path}."
 msgstr "플러그인이 이미 {path}에서 로드되어 있습니다."
 
-#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "이 설치에는 플러그인 파일이 없습니다({path})."
@@ -3290,77 +3291,77 @@ msgstr "Codex는 터미널 제목을 스레드와 프로젝트 이름으로 바�
 
 #: polyhost/gui/shell_title_dialog.py:162
 msgid ""
-"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
-"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+"Install copies the plugin from this installation to where the program loads it. For Emacs and GDB it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the program for the change to take effect."
 msgstr ""
-"Vim, Neovim, Emacs는 PolyKybd 플러그인이 있을 때만 키보드에 모드(Normal 또는 Insert 모드, Org 또는 Dired 키)를 알립니다.\n"
+"Vim, Neovim, Emacs는 PolyKybd 플러그인이 있을 때만 키보드에 모드(Normal 또는 Insert 모드, Org 또는 Dired 키)를 알립니다. GDB도 이 플러그인이 있을 때만 프로그램이 실행 중인지 프롬프트에서 대기 중인지 표시합니다.\n"
 "\n"
-"설치는 이 설치의 플러그인을 편집기가 로드하는 위치로 복사합니다. Emacs의 경우 플러그인을 로드하는 줄도 init 파일의 두 개의 표시 주석 사이에 추가하며, 그 전에 파일의 사본을 저장합니다. 이 앱이 업데이트되면 다음 시작 시 새 플러그인 파일을 복사합니다. 변경 사항을 적용하려면 편집기를 다시 시작하십시오."
+"설치는 이 설치의 플러그인을 프로그램이 로드하는 위치로 복사합니다. Emacs와 GDB의 경우 플러그인을 로드하는 줄도 init 파일의 두 개의 표시 주석 사이에 추가하며, 그 전에 파일의 사본을 저장합니다. 이 앱이 업데이트되면 다음 시작 시 새 플러그인 파일을 복사합니다. 변경 사항을 적용하려면 프로그램을 다시 시작하십시오."
 
-#: polyhost/gui/shell_title_dialog.py:181
+#: polyhost/gui/shell_title_dialog.py:182
 msgid "Checking the shells…"
 msgstr "셸을 확인하는 중…"
 
-#: polyhost/gui/shell_title_dialog.py:194
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Install"
 msgstr "설치"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:195
+#: polyhost/gui/shell_title_dialog.py:196
 msgid "Remove"
 msgstr "제거"
 
-#: polyhost/gui/shell_title_dialog.py:246
+#: polyhost/gui/shell_title_dialog.py:247
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "셸을 확인할 수 없습니다: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:274
+#: polyhost/gui/shell_title_dialog.py:275
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}: 설정 없이 명령을 표시합니다."
 
-#: polyhost/gui/shell_title_dialog.py:302
+#: polyhost/gui/shell_title_dialog.py:303
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "이 컴퓨터에서 bash, zsh, PowerShell을 찾지 못했습니다."
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:322
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "편집기를 확인할 수 없습니다: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:344
+#: polyhost/gui/shell_title_dialog.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "이 컴퓨터에서 Vim, Neovim, Emacs를 찾지 못했습니다."
 
-#: polyhost/gui/shell_title_dialog.py:350
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "이 앱은 포트 {port}에서 수신 대기하며 토큰이 필요합니다. 플러그인은 포트 50164를 사용하고 토큰을 사용하지 않습니다. Vim에서는 g:polykybd_port와 g:polykybd_token을, Emacs에서는 polykybd-port와 polykybd-token을 같은 값으로 설정하십시오."
 
-#: polyhost/gui/shell_title_dialog.py:355
+#: polyhost/gui/shell_title_dialog.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "이 앱은 포트 {port}에서 수신 대기합니다. 플러그인은 포트 50164를 사용합니다. Vim에서는 g:polykybd_port를, Emacs에서는 polykybd-port를 같은 값으로 설정하십시오."
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:394
+#: polyhost/gui/shell_title_dialog.py:407
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "변경하지 못했습니다: {error}"
 
-#: polyhost/gui/shell_title_dialog.py:397
-#: polyhost/gui/shell_title_dialog.py:410
+#: polyhost/gui/shell_title_dialog.py:398
+#: polyhost/gui/shell_title_dialog.py:411
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "이전 파일의 사본: {path}"
 
-#: polyhost/gui/shell_title_dialog.py:399
+#: polyhost/gui/shell_title_dialog.py:400
 msgid "Open a new terminal window for the change to take effect."
 msgstr "변경 사항을 적용하려면 새 터미널 창을 여십시오."
 
-#: polyhost/gui/shell_title_dialog.py:412
+#: polyhost/gui/shell_title_dialog.py:413
 msgid "Restart the editor for the change to take effect."
 msgstr "변경 사항을 적용하려면 편집기를 다시 시작하십시오."
 
@@ -4259,42 +4260,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 설치 프로그램이 시작되었습니다. 설치가 끝나고 WinCompose가 실행되면 PolyKybd가 자동으로 WinCompose로 전환합니다."
 
-#: polyhost/services/editor_plugins.py:85
+#: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "플러그인을 {path}에 복사했습니다."
 
-#: polyhost/services/editor_plugins.py:86
+#: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "{path}의 플러그인을 이 설치의 플러그인으로 교체했습니다."
 
-#: polyhost/services/editor_plugins.py:88
+#: polyhost/services/editor_plugins.py:99
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "{path}에서 플러그인을 제거했습니다."
 
-#: polyhost/services/editor_plugins.py:90
+#: polyhost/services/editor_plugins.py:101
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "이 컴퓨터에서 {editor}을(를) 찾지 못했습니다."
 
-#: polyhost/services/editor_plugins.py:92
+#: polyhost/services/editor_plugins.py:103
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path}이(가) 직접 변경되었습니다. 직접 제거하거나 업데이트하십시오."
 
-#: polyhost/services/editor_plugins.py:95
+#: polyhost/services/editor_plugins.py:106
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "플러그인을 {path}에 복사하고, 이를 로드하는 줄을 {init}에 추가했습니다."
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "{init}에서 플러그인을 로드하는 줄을 제거했습니다."
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:108
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "{init}에서 플러그인을 로드하는 줄을 제거하고, {path}에서 플러그인을 제거했습니다."
@@ -4499,7 +4500,7 @@ msgstr "{path}에 줄을 추가했습니다."
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "{path}의 줄을 이 설치용 줄로 바꿨습니다."
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "{path}에 이미 설정되어 있습니다."
@@ -4519,7 +4520,7 @@ msgstr "{path}에서 Codex 제목을 껐습니다."
 msgid "Removed the line from {path}."
 msgstr "{path}에서 줄을 제거했습니다."
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "{path}에 제거할 것이 없습니다."
@@ -4539,12 +4540,12 @@ msgstr "{shell}이(가) 프로필 경로를 알려 주지 않았습니다: {erro
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "PowerShell 실행 정책({policy})에서는 프로필 스크립트가 실행되지 않습니다. 먼저 PowerShell에서 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'를 실행하십시오."
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path}에 시작 표시는 있지만 끝 표시가 없습니다. 블록을 직접 제거하십시오."
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "{path}을(를) 변경할 수 없습니다: {error}"

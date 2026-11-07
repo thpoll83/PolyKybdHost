@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-06 13:44+0000\n"
+"POT-Creation-Date: 2026-11-07 09:05+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -3261,7 +3261,8 @@ msgstr "已設定，但之後曾被手動變更。本應用程式不會變動它
 msgid "The plugin is already loaded from {path}."
 msgstr "外掛程式已從 {path} 載入。"
 
-#: polyhost/gui/shell_title_dialog.py:86 polyhost/services/editor_plugins.py:91
+#: polyhost/gui/shell_title_dialog.py:86
+#: polyhost/services/editor_plugins.py:102
 #, python-brace-format
 msgid "This installation has no plugin files ({path})."
 msgstr "此安裝中沒有外掛程式檔案（{path}）。"
@@ -3290,77 +3291,77 @@ msgstr "Codex 會以對話與專案名稱取代終端機標題，因此鍵盤無
 
 #: polyhost/gui/shell_title_dialog.py:162
 msgid ""
-"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin.\n"
+"Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows whether the program runs or waits at the prompt only with it.\n"
 "\n"
-"Install copies the plugin from this installation to where the editor loads it. For Emacs it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the editor for the change to take effect."
+"Install copies the plugin from this installation to where the program loads it. For Emacs and GDB it also adds lines that load the plugin to the init file, between two marker comments, and first saves a copy of the file. When this app is updated, it copies the new plugin files at its next start. Restart the program for the change to take effect."
 msgstr ""
-"只有安裝了 PolyKybd 外掛程式，Vim、Neovim 和 Emacs 才會將其模式（Normal 或 Insert 模式、Org 或 Dired 按鍵）告知鍵盤。\n"
+"只有安裝了 PolyKybd 外掛程式，Vim、Neovim 和 Emacs 才會將其模式（Normal 或 Insert 模式、Org 或 Dired 按鍵）告知鍵盤。GDB 也只有安裝了它，才會顯示程式是在執行還是在提示字元處等待。\n"
 "\n"
-"「安裝」會將此安裝中的外掛程式複製到編輯器載入外掛程式的位置。對於 Emacs，它還會在 init 檔案中，於兩行標記註解之間加入載入該外掛程式的行，並先儲存該檔案的副本。本應用程式更新後，會在下次啟動時複製新的外掛程式檔案。請重新啟動編輯器，讓變更生效。"
+"「安裝」會將此安裝中的外掛程式複製到程式載入外掛程式的位置。對於 Emacs 和 GDB，它還會在 init 檔案中，於兩行標記註解之間加入載入該外掛程式的行，並先儲存該檔案的副本。本應用程式更新後，會在下次啟動時複製新的外掛程式檔案。請重新啟動程式，讓變更生效。"
 
-#: polyhost/gui/shell_title_dialog.py:181
+#: polyhost/gui/shell_title_dialog.py:182
 msgid "Checking the shells…"
 msgstr "正在檢查 shell…"
 
-#: polyhost/gui/shell_title_dialog.py:194
+#: polyhost/gui/shell_title_dialog.py:195
 msgid "Install"
 msgstr "安裝"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:147
-#: polyhost/gui/shell_title_dialog.py:195
+#: polyhost/gui/shell_title_dialog.py:196
 msgid "Remove"
 msgstr "移除"
 
-#: polyhost/gui/shell_title_dialog.py:246
+#: polyhost/gui/shell_title_dialog.py:247
 #, python-brace-format
 msgid "The shells could not be checked: {error}"
 msgstr "無法檢查 shell：{error}"
 
-#: polyhost/gui/shell_title_dialog.py:274
+#: polyhost/gui/shell_title_dialog.py:275
 #, python-brace-format
 msgid "{shell}: shows the command without setup."
 msgstr "{shell}：不需設定即可顯示命令。"
 
-#: polyhost/gui/shell_title_dialog.py:302
+#: polyhost/gui/shell_title_dialog.py:303
 msgid "No bash, zsh or PowerShell was found on this computer."
 msgstr "在這台電腦上找不到 bash、zsh 或 PowerShell。"
 
-#: polyhost/gui/shell_title_dialog.py:321
+#: polyhost/gui/shell_title_dialog.py:322
 #, python-brace-format
 msgid "The editors could not be checked: {error}"
 msgstr "無法檢查編輯器：{error}"
 
-#: polyhost/gui/shell_title_dialog.py:344
+#: polyhost/gui/shell_title_dialog.py:345
 msgid "No Vim, Neovim or Emacs was found on this computer."
 msgstr "在這台電腦上找不到 Vim、Neovim 或 Emacs。"
 
-#: polyhost/gui/shell_title_dialog.py:350
+#: polyhost/gui/shell_title_dialog.py:351
 #, python-brace-format
 msgid "This app listens on port {port} and requires a token. The plugins use port 50164 and no token: set g:polykybd_port and g:polykybd_token in Vim, or polykybd-port and polykybd-token in Emacs, to the same values."
 msgstr "本應用程式在連接埠 {port} 上監聽，並且需要權杖。外掛程式使用連接埠 50164，且不使用權杖：請將 Vim 中的 g:polykybd_port 和 g:polykybd_token，或 Emacs 中的 polykybd-port 和 polykybd-token 設定為相同的值。"
 
-#: polyhost/gui/shell_title_dialog.py:355
+#: polyhost/gui/shell_title_dialog.py:356
 #, python-brace-format
 msgid "This app listens on port {port}. The plugins use port 50164: set g:polykybd_port in Vim, or polykybd-port in Emacs, to the same value."
 msgstr "本應用程式在連接埠 {port} 上監聽。外掛程式使用連接埠 50164：請將 Vim 中的 g:polykybd_port，或 Emacs 中的 polykybd-port 設定為相同的值。"
 
-#: polyhost/gui/shell_title_dialog.py:393
-#: polyhost/gui/shell_title_dialog.py:406
+#: polyhost/gui/shell_title_dialog.py:394
+#: polyhost/gui/shell_title_dialog.py:407
 #, python-brace-format
 msgid "The change failed: {error}"
 msgstr "變更失敗：{error}"
 
-#: polyhost/gui/shell_title_dialog.py:397
-#: polyhost/gui/shell_title_dialog.py:410
+#: polyhost/gui/shell_title_dialog.py:398
+#: polyhost/gui/shell_title_dialog.py:411
 #, python-brace-format
 msgid "Copy of the previous file: {path}"
 msgstr "原檔案的副本：{path}"
 
-#: polyhost/gui/shell_title_dialog.py:399
+#: polyhost/gui/shell_title_dialog.py:400
 msgid "Open a new terminal window for the change to take effect."
 msgstr "請開啟新的終端機視窗，讓變更生效。"
 
-#: polyhost/gui/shell_title_dialog.py:412
+#: polyhost/gui/shell_title_dialog.py:413
 msgid "Restart the editor for the change to take effect."
 msgstr "請重新啟動編輯器，讓變更生效。"
 
@@ -4259,42 +4260,42 @@ msgstr ""
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執行後，PolyKybd 會自動切換使用它。"
 
-#: polyhost/services/editor_plugins.py:85
+#: polyhost/services/editor_plugins.py:96
 #, python-brace-format
 msgid "Copied the plugin to {path}."
 msgstr "已將外掛程式複製到 {path}。"
 
-#: polyhost/services/editor_plugins.py:86
+#: polyhost/services/editor_plugins.py:97
 #, python-brace-format
 msgid "Replaced the plugin in {path} with the one from this installation."
 msgstr "已將 {path} 中的外掛程式替換為此安裝中的外掛程式。"
 
-#: polyhost/services/editor_plugins.py:88
+#: polyhost/services/editor_plugins.py:99
 #, python-brace-format
 msgid "Removed the plugin from {path}."
 msgstr "已從 {path} 移除外掛程式。"
 
-#: polyhost/services/editor_plugins.py:90
+#: polyhost/services/editor_plugins.py:101
 #, python-brace-format
 msgid "{editor} was not found on this computer."
 msgstr "在這台電腦上找不到 {editor}。"
 
-#: polyhost/services/editor_plugins.py:92
+#: polyhost/services/editor_plugins.py:103
 #, python-brace-format
 msgid "{path} was changed by hand. Remove or update it by hand."
 msgstr "{path} 已被手動變更。請手動移除或更新它。"
 
-#: polyhost/services/editor_plugins.py:95
+#: polyhost/services/editor_plugins.py:106
 #, python-brace-format
 msgid "Copied the plugin to {path} and added the lines that load it to {init}."
 msgstr "已將外掛程式複製到 {path}，並將載入它的行加入 {init}。"
 
-#: polyhost/services/editor_plugins.py:96
+#: polyhost/services/editor_plugins.py:107
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}."
 msgstr "已從 {init} 移除載入外掛程式的行。"
 
-#: polyhost/services/editor_plugins.py:97
+#: polyhost/services/editor_plugins.py:108
 #, python-brace-format
 msgid "Removed the lines that load the plugin from {init}, and the plugin from {path}."
 msgstr "已從 {init} 移除載入外掛程式的行，並從 {path} 移除外掛程式。"
@@ -4499,7 +4500,7 @@ msgstr "已將該行加入 {path}。"
 msgid "Replaced the line in {path} with one for this installation."
 msgstr "已將 {path} 中的行替換為本安裝的行。"
 
-#: polyhost/services/editor_plugins.py:87 polyhost/services/shell_title.py:109
+#: polyhost/services/editor_plugins.py:98 polyhost/services/shell_title.py:109
 #, python-brace-format
 msgid "Already set up in {path}."
 msgstr "{path} 中已設定。"
@@ -4519,7 +4520,7 @@ msgstr "已在 {path} 中關閉 Codex 標題。"
 msgid "Removed the line from {path}."
 msgstr "已從 {path} 移除該行。"
 
-#: polyhost/services/editor_plugins.py:89 polyhost/services/shell_title.py:113
+#: polyhost/services/editor_plugins.py:100 polyhost/services/shell_title.py:113
 #, python-brace-format
 msgid "Nothing to remove in {path}."
 msgstr "{path} 中沒有可移除的內容。"
@@ -4539,12 +4540,12 @@ msgstr "{shell} 未回報其設定檔路徑：{error}"
 msgid "PowerShell's execution policy ({policy}) does not run profile scripts. Run 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned' in PowerShell first."
 msgstr "PowerShell 的執行原則（{policy}）不會執行設定檔指令碼。請先在 PowerShell 中執行 'Set-ExecutionPolicy -Scope CurrentUser RemoteSigned'。"
 
-#: polyhost/services/editor_plugins.py:93 polyhost/services/shell_title.py:118
+#: polyhost/services/editor_plugins.py:104 polyhost/services/shell_title.py:118
 #, python-brace-format
 msgid "{path} has a start marker without an end marker. Remove the block by hand."
 msgstr "{path} 中有開始標記但沒有結束標記。請手動刪除該區塊。"
 
-#: polyhost/services/editor_plugins.py:94 polyhost/services/shell_title.py:119
+#: polyhost/services/editor_plugins.py:105 polyhost/services/shell_title.py:119
 #, python-brace-format
 msgid "Could not change {path}: {error}"
 msgstr "無法變更 {path}：{error}"

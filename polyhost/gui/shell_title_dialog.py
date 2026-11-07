@@ -3,7 +3,7 @@
 
 Lists each shell this computer has (bash, zsh, PowerShell 7, Windows
 PowerShell 5.1) with its startup file and whether the title line is in it,
-then each editor (Vim, Neovim, Emacs) with the folder or init file its plugin
+then each editor (Vim, Neovim, Emacs, GDB) with the folder or init file its plugin
 goes to. Install and Remove act on the ticked rows of both lists. The rows ARE
 the confirmation: each names the file or folder that changes.
 
@@ -65,7 +65,7 @@ def _read_report_settings():
 def editor_label(editor):
     """The editor's name as the dialog shows it (product names, not translated)."""
     return {editor_plugins.VIM: "Vim", editor_plugins.NEOVIM: "Neovim",
-            editor_plugins.EMACS: "Emacs"}.get(editor, editor)
+            editor_plugins.EMACS: "Emacs", editor_plugins.GDB: "GDB"}.get(editor, editor)
 
 
 def editor_state_text(st):
@@ -160,12 +160,13 @@ class ShellTitleDialog(QDialog):
 
         editor_intro = QLabel(_(
             "Vim, Neovim and Emacs tell the keyboard their mode (Normal or Insert "
-            "mode, the Org or Dired keys) only with the PolyKybd plugin.\n\n"
-            "Install copies the plugin from this installation to where the editor "
-            "loads it. For Emacs it also adds lines that load the plugin to the init "
-            "file, between two marker comments, and first saves a copy of the file. "
+            "mode, the Org or Dired keys) only with the PolyKybd plugin. GDB shows "
+            "whether the program runs or waits at the prompt only with it.\n\n"
+            "Install copies the plugin from this installation to where the program "
+            "loads it. For Emacs and GDB it also adds lines that load the plugin to the "
+            "init file, between two marker comments, and first saves a copy of the file. "
             "When this app is updated, it copies the new plugin files at its next "
-            "start. Restart the editor for the change to take effect."))
+            "start. Restart the program for the change to take effect."))
         editor_intro.setWordWrap(True)
         layout.addSpacing(10)
         layout.addWidget(editor_intro)
