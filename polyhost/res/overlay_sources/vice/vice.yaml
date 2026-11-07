@@ -37,7 +37,7 @@ program_icon_margin: 0
 bindings:
   - { key: A, mods: [ALT], icon: smartattach.png, label: "Smart attach", except: [macos], source: hotkeys.vhk }
   - { key: A, mods: [GUI], icon: smartattach.png, label: "Smart attach", only: [macos], source: hotkeys.vhk }
-  - { key: H, mods: [ALT], icon: monterm.png, label: "Monitor", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: H, mods: [ALT], icon: monlens.png, label: "Monitor", region: [36, 32], except: [macos], source: hotkeys.vhk }
   - { key: F9, mods: [ALT], icon: resetcpu.png, label: "Reset", except: [macos], source: hotkeys.vhk }
   - { key: F9, mods: [GUI], icon: resetcpu.png, label: "Reset", only: [macos], source: hotkeys.vhk }
   - { key: F12, mods: [ALT], icon: powercycle.png, label: "Power cycle", except: [macos], source: hotkeys.vhk }
@@ -72,8 +72,8 @@ bindings:
   - { key: T, mods: [GUI], icon: tape.png, label: "Attach tape", only: [macos], source: hotkeys-datasette.vhk }
   - { key: T, mods: [SHIFT, ALT], icon: tapedetach.png, label: "Detach tape", region: [36, 32], except: [macos], source: hotkeys-datasette.vhk }
   - { key: T, mods: [SHIFT, GUI], icon: tapedetach.png, label: "Detach tape", region: [36, 32], only: [macos], source: hotkeys-datasette.vhk }
-  - { key: C, mods: [ALT], icon: cartattach.png, label: "Attach cartridge", except: [macos], source: hotkeys-cartridge.vhk }
-  - { key: C, mods: [GUI], icon: cartattach.png, label: "Attach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [ALT], icon: cartattach.png, label: "Attach cartridge", region: [36, 32], except: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [GUI], icon: cartattach.png, label: "Attach cartridge", region: [36, 32], only: [macos], source: hotkeys-cartridge.vhk }
   - { key: C, mods: [SHIFT, ALT], icon: cartdetach.png, label: "Detach cartridge", region: [36, 32], except: [macos], source: hotkeys-cartridge.vhk }
   - { key: C, mods: [SHIFT, GUI], icon: cartdetach.png, label: "Detach cartridge", region: [36, 32], only: [macos], source: hotkeys-cartridge.vhk }
   - { key: Z, mods: [ALT], icon: freeze.png, label: "Cartridge freeze", except: [macos], source: hotkeys-cartridge.vhk }

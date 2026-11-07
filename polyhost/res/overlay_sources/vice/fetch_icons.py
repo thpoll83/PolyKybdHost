@@ -40,7 +40,6 @@ FLUENT = {
     "flipnext":      "ms:arrow_forward",
     "flipprev":      "ms:arrow_back",
     "tape":          "ms:voicemail",
-    "cartattach":    "ms:memory",
     "freeze":        "ms:ac_unit",
     "formfeed":      "ms:print",
     "copy":          "Copy",
@@ -54,10 +53,10 @@ FLUENT = {
     "record":        "ms:fiber_manual_record",
     "stop":          "ms:stop",
     "screenshot":    "Camera",
-    "monitor":       "ms:terminal",
+    "monitor":       "ms:troubleshoot",
     "fullscreen":    "ms:fullscreen",
     "restoredisp":   "ms:fit_screen",
-    "toolbar":       "ms:toolbar",
+    "window":        "ms:window",
     "warp":          "ms:fast_forward",
     "pause":         "ms:pause",
     "frameadv":      "ms:skip_next",
@@ -130,12 +129,40 @@ def joystick():
     return np.array(im, bool)
 
 
+def cartridge(w: int, h: int):
+    """A `w` x `h` cartridge drawn pixel by pixel: a box with a label and an edge
+    connector with contacts below it. Material's `memory` chip does not read as a
+    cartridge."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    im = Image.new("1", (w, h), 0)
+    d = ImageDraw.Draw(im)
+    body = h - max(3, h // 4)
+    d.rounded_rectangle((0, 0, w - 1, body - 1), radius=2, outline=1,
+                        width=2 if w > 20 else 1)                       # shell
+    d.rectangle((w // 5, body // 4, w - 1 - w // 5, body - 1 - body // 4), outline=1)  # label
+    x0, x1 = w // 6, w - 1 - w // 6
+    d.rectangle((x0, body, x1, h - 1), fill=1)                          # connector
+    for x in range(x0 + 2, x1 - 1, 2):
+        d.line((x, body + 1, x, h - 1), fill=0)                         # contacts
+    return np.array(im, bool)
+
+
+def centred(mask, dest: Path, w: int = 36, h: int = 32) -> None:
+    """`mask` centred on a `w` x `h` canvas, so the spec can place it 1:1."""
+    import numpy as np
+    m = np.zeros((h, w), bool)
+    y, x = (h - mask.shape[0]) // 2, (w - mask.shape[1]) // 2
+    m[y:y + mask.shape[0], x:x + mask.shape[1]] = mask
+    cnc._save_mask(m, dest)
+
+
 def window_in_frame(out: Path, dest: Path, size: int = 20) -> None:
-    """Full-screen corners around a small window with a title bar: full screen
+    """Full-screen corners around a tiled window: full screen
     WITH the window decorations."""
     import numpy as np
     corners = symbol(out / "fullscreen.png", 36, 32)
-    win = symbol(out / "toolbar.png", size, size)
+    win = symbol(out / "window.png", size, size)
     m = np.zeros((32, 36), bool)
     y, x = (32 - corners.shape[0]) // 2, (36 - corners.shape[1]) // 2
     m[y:y + corners.shape[0], x:x + corners.shape[1]] = corners
@@ -153,11 +180,11 @@ def composites(out: Path) -> None:
         numbered(out / "formfeed.png", label, out / f"printer{name}.png", px=px)
     stacked(symbol(out / "tape.png", 36, 14), symbol(out / "eject.png", 36, 16),
             out / "tapedetach.png")
-    stacked(symbol(out / "cartattach.png", 36, 14), symbol(out / "eject.png", 36, 16),
-            out / "cartdetach.png")
+    centred(cartridge(28, 26), out / "cartattach.png")
+    stacked(cartridge(18, 14), symbol(out / "eject.png", 36, 16), out / "cartdetach.png")
     stacked(joystick(), symbol(out / "swapports.png", 36, 15), out / "swapjoy.png")
     window_in_frame(out, out / "decorframe.png")
-    numbered(out / "monitor.png", "MON", out / "monterm.png", px=8)
+    centred(symbol(out / "monitor.png", 36, 32), out / "monlens.png")
 
 
 def main() -> int:
