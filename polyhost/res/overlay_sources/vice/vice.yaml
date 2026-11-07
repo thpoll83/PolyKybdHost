@@ -30,8 +30,8 @@ threshold: 128
 
 program_icon: vice.png
 program_icon_mode: alpha
-program_icon_region: [37, 32]
-program_icon_anchor: right
+program_icon_region: [52, 15]
+program_icon_anchor: bottom-right
 program_icon_margin: 0
 
 bindings:

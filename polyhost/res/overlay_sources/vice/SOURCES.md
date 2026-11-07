@@ -63,9 +63,15 @@ compatible with this repository's GPL-3.0-or-later.
 
 ## ESC mark
 
-A drawn "V" tile (`program_marks.ensure`). VICE's machine icons are in
-`vice/data/common/icon_sources/`, whose README says they should not be included
-in a source or binary distribution, and they carry no licence of their own.
+The VICE logo: `vice/data/common/vice-logo-black.svg` of the 3.10.0 release
+(<https://github.com/VICE-Team/svn-mirror/blob/3.10.0/vice/data/common/vice-logo-black.svg>),
+which VICE installs with every build. It carries no licence of its own, so VICE's
+licence covers it: GPL-2.0-or-later (`vice/README`: "either version 2 of the
+License, or (at your option) any later version"), compatible with this
+repository's GPL-3.0-or-later. `vice_mark()` in `fetch_icons.py` renders the
+wordmark 52 px wide (52 x 15 at 1 bit, where it still reads "VICE") and the
+spec places it 1:1 at the bottom right of Esc. The machine icons in
+`vice/data/common/icon_sources/` are not used: their README says not to ship them.
 
 ## Process names
 
