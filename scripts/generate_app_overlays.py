@@ -409,17 +409,38 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     return mask, qualified
 
 
+def _resample_for(src: Image.Image, nw: int, nh: int):
+    """The filter that shrinks `src` to `nw` x `nh` with the fewest broken lines.
+
+    A source with anti-aliased edges (any pixel partly transparent) is a vector
+    render: Fluent, Material, game-icons.net, Simple Icons. BOX averages each
+    output pixel over exactly its own area, so a straight stroke lands on the
+    same rows along its length and survives the 1-bit cut as a straight line.
+    LANCZOS rings at the edges, and after the cut that ringing shows as
+    one-pixel steps and dents in lines that should be straight.
+
+    A source with hard alpha (or none) is pixel art: dithered game sprites and
+    the 1-bit drawings the specs place 1:1. It keeps LANCZOS, the filter its
+    thresholds were tuned with. Enlarging always uses LANCZOS: BOX is an area
+    filter and only shrinks.
+    """
+    if nw > src.width or nh > src.height or src.mode != "RGBA":
+        return Image.LANCZOS
+    alpha = np.asarray(src.getchannel("A"))
+    anti_aliased = bool(((alpha > 0) & (alpha < 255)).any())
+    return Image.BOX if anti_aliased else Image.LANCZOS
+
+
 def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) -> Image.Image:
     """Scale `src` into `region` and paste onto a full 72x40 canvas (same mode)."""
     x0, y0, bw, bh = region
     if fit == "stretch":
-        scaled = src.resize((bw, bh), Image.LANCZOS)
         nw, nh = bw, bh
     else:  # contain: preserve aspect inside the region
         sw, sh = src.size
         scale = min(bw / sw, bh / sh)
         nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
-        scaled = src.resize((nw, nh), Image.LANCZOS)
+    scaled = src.resize((nw, nh), _resample_for(src, nw, nh))
     canvas = Image.new(src.mode, (SLOT_W, SLOT_H), 0 if src.mode == "L" else (0, 0, 0, 0))
     # centre within the region
     canvas.paste(scaled, (x0 + (bw - nw) // 2, y0 + (bh - nh) // 2))
