@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: codex.png
@@ -57,7 +57,7 @@ bindings:
   - { key: R, mods: [ALT], icon: rawoutput.png, label: "Raw output" }
   - { key: "/", mods: [CTRL], icon: sidechat.png, label: "Side conversation" }
   - { key: F2, icon: warnings.png, label: "Warnings" }
-  - { key: F3, icon: find.png, label: "Find in transcript" }
+  - { key: F3, icon: find.png, label: "Find in transcript", concept: find }
   - { key: F4, icon: activity.png, label: "Activity" }
 
   # --- chat: ChatKeymap defaults ---
@@ -73,7 +73,7 @@ bindings:
   - { key: "]", mods: [CTRL], icon: skip.png, label: "Skip question" }
 
   # --- composer: ComposerKeymap defaults ---
-  - { key: R, mods: [CTRL], icon: search.png, label: "History search" }
+  - { key: R, mods: [CTRL], icon: search.png, label: "History search", concept: find }
   - { key: S, mods: [CTRL], icon: next.png, label: "Next history match" }
   - { key: TAB, icon: queue.png, label: "Queue message" }
   # toggle_shortcuts: "?" is Shift+/

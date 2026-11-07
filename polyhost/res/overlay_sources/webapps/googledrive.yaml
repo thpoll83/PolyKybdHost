@@ -21,7 +21,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gdrive.png
@@ -33,7 +33,7 @@ program_icon_margin: 0
 bindings:
 
   - { key: SLASH, mods: [CMDCTRL], icon: shortcuts.png, label: "Keyboard shortcuts" }
-  - { key: SLASH, icon: search.png, label: "Search Drive" }
+  - { key: SLASH, icon: search.png, label: "Search Drive", concept: find }
   - { key: F, mods: [CMDCTRL], icon: find.png, label: "Find" }
   - { key: P, mods: [CMDCTRL], icon: print.png, label: "Print" }
   - { key: Z, mods: [CMDCTRL], label: "Undo" }
@@ -59,8 +59,8 @@ bindings:
   - { key: V, mods: [CMDCTRL, SHIFT], icon: gdr_pasteshortcut.png, label: "Paste as shortcut" }
   - { key: P, mods: [CTRL, ALT], icon: preview.png, label: "Preview", except: [macos] }
   - { key: P, mods: [ALT, GUI], icon: preview.png, label: "Preview", only: [macos] }
-  - { key: N, mods: [ALT], icon: gdr_create.png, label: "Create menu", except: [macos] }
-  - { key: N, mods: [CTRL], icon: gdr_create.png, label: "Create menu", only: [macos] }
+  - { key: N, mods: [ALT], icon: gdr_create.png, label: "Create menu", concept: insert, except: [macos] }
+  - { key: N, mods: [CTRL], icon: gdr_create.png, label: "Create menu", concept: insert, only: [macos] }
   - { key: A, mods: [ALT], icon: actions.png, label: "More actions", except: [macos] }
   - { key: A, mods: [CTRL], icon: actions.png, label: "More actions", only: [macos] }
   - { key: F10, mods: [SHIFT], icon: actions.png, label: "More actions" }

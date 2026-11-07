@@ -8,7 +8,7 @@ match: [civ2, civ2.exe]
 output: civ2_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto
 threshold: 150
 anchor: right
 region: [40, 40]

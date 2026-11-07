@@ -28,7 +28,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 
 # No `program_icon:` -- the mark comes from the mapping entry's `icon:`
 # (mdi:sticker-text), because a process-name lookup would resolve to OneNote.
@@ -48,7 +48,7 @@ bindings:
   - { key: V, mods: [CTRL], icon: paste.png,     label: "Paste" }
   - { key: Z, mods: [CTRL], icon: undo.png,      label: "Undo" }
   - { key: Y, mods: [CTRL], icon: redo.png,      label: "Redo" }
-  - { key: F, mods: [CTRL], icon: find.png,      label: "Search in any sticky note" }
+  - { key: F, mods: [CTRL], icon: find.png,      label: "Search in any sticky note", concept: find }
 
   # --- Ctrl: caret motion ------------------------------------------------
   # Home/End with no modifier are deliberately absent: the keycap already shows

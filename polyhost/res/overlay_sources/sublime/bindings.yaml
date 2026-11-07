@@ -24,7 +24,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: sublime.png
@@ -48,7 +48,7 @@ bindings:
   - { key: F, mods: [CTRL], icon: find.png,         label: Find,             source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [CTRL], icon: replace.png,      label: Replace,          source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: B, mods: [CTRL], icon: build.png,        label: Build,            source: "ms-fluent/Play (MIT)" }
-  - { key: W, mods: [CTRL], icon: closetab.png,     label: "Close tab",      source: "ms-fluent/Dismiss (MIT)" }
+  - { key: W, mods: [CTRL], icon: closetab.png,     label: "Close tab", concept: close,      source: "ms-fluent/Dismiss (MIT)" }
   - { key: X, mods: [CTRL], icon: cutline.png,      label: "Cut line",       source: "ms-fluent/Cut (MIT)" }
   - { key: Y, mods: [CTRL], icon: redo.png,         label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
   - { key: U, mods: [CTRL], icon: softundo.png,     label: "Soft undo",      source: "ms-fluent/Arrow Undo (MIT)" }

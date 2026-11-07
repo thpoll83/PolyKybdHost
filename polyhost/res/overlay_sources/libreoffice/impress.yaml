@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: lo_impress.png
@@ -46,8 +46,8 @@ bindings:
   - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,      source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
   - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find,       source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], icon: replace.png,   label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
-  - { key: F, mods: [GUI, ALT], icon: replace.png,   label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
+  - { key: H, mods: [CTRL], icon: replace.png,   label: "Find & replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
+  - { key: F, mods: [GUI, ALT], icon: replace.png,   label: "Find & replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
   - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,       source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,     source: "ms-fluent/Text Italic (MIT)" }
   - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline,  source: "ms-fluent/Text Underline (MIT)" }

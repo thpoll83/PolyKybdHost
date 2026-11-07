@@ -33,7 +33,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # The mark shipped with the old hand-drawn set, lifted pixel-for-pixel.
@@ -111,7 +111,7 @@ bindings:
   - { key: HOME, mods: [],     icon: toplayer.png,          label: "Select top layer",       source: "material-symbols/vertical_align_top (Apache-2.0)" }
   - { key: END,  mods: [],     icon: bottomlayer.png,       label: "Select bottom layer",    source: "material-symbols/vertical_align_bottom (Apache-2.0)" }
   - { key: ENTER, mods: [ALT], icon: imageproperties.png,   label: "Image properties",       source: "ms-fluent/Info (MIT)" }
-  - { key: F1,  mods: [SHIFT], icon: contexthelp.png,       label: "Context help",           source: "ms-fluent/Question Circle (MIT)" }
+  - { key: F1,  mods: [SHIFT], icon: contexthelp.png,       label: "Context help", concept: help,           source: "ms-fluent/Question Circle (MIT)" }
   - { key: F11, mods: [],      label: Fullscreen }
 
   # ============================ <primary> = CMDCTRL ===========================
@@ -138,7 +138,7 @@ bindings:
   # -- select --
   - { key: A, mods: [CMDCTRL],        label: "Select all" }
   - { key: A, mods: [CMDCTRL, SHIFT], icon: selectnone.png,      label: "Select none",      source: "ms-fluent/Select All Off (MIT)" }
-  - { key: I, mods: [CMDCTRL],        icon: invertselection.png, label: "Invert selection", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: I, mods: [CMDCTRL],        icon: invertselection.png, label: "Invert selection", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   # -- image / layer --
   - { key: D, mods: [CMDCTRL],        icon: duplicateimage.png,  label: "Duplicate image",      source: "ms-fluent/Image Multiple (MIT)" }
   - { key: M, mods: [CMDCTRL],        icon: mergevisible.png,    label: "Merge visible layers", source: "ms-fluent/Layer Diagonal (MIT)" }

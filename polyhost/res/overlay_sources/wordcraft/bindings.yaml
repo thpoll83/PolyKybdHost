@@ -31,7 +31,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: wordcraft.png      # own app icon, page + lines + pencil (see SOURCES.md)
@@ -73,7 +73,7 @@ bindings:
   - { key: EQUAL, mods: [CMDCTRL], icon: subscript.png, label: Subscript }
   - { key: "]", mods: [CMDCTRL], icon: font1inc.png, label: "Grow font 1pt" }
   - { key: "[", mods: [CMDCTRL], icon: font1dec.png, label: "Shrink font 1pt" }
-  - { key: MINUS, mods: [CMDCTRL], icon: hyphen.png, label: "Opt hyphen" }
+  - { key: MINUS, mods: [CMDCTRL], icon: ../../freecad/icons/horizontal.png, label: "Opt hyphen" }
   # --- paragraph (para.rs, view.rs) ---
   - { key: L, mods: [CMDCTRL], icon: left.png,    label: "Align left" }
   - { key: E, mods: [CMDCTRL], icon: center.png,  label: "Align center" }
@@ -148,10 +148,10 @@ bindings:
   - { key: M, mods: [CMDCTRL, ALT], icon: comment.png,     label: "New comment" }
   - { key: MINUS, mods: [CMDCTRL, ALT], icon: emdash.png, mode: alpha, label: "Em dash" }
   # non_mac: Option+letter types the character on macOS
-  - { key: C,   mods: [CMDCTRL, ALT], icon: copyright.png,  mode: alpha, label: Copyright,  except: [macos] }
-  - { key: R,   mods: [CMDCTRL, ALT], icon: registered.png, mode: alpha, label: Registered, except: [macos] }
+  - { key: C,   mods: [CMDCTRL, ALT], icon: ../../onlyoffice/icons/copyright.png,  mode: alpha, label: Copyright,  except: [macos] }
+  - { key: R,   mods: [CMDCTRL, ALT], icon: ../../onlyoffice/icons/registered.png, mode: alpha, label: Registered, except: [macos] }
   - { key: T,   mods: [CMDCTRL, ALT], icon: trademark.png,  mode: alpha, label: Trademark,  except: [macos] }
-  - { key: DOT, mods: [CMDCTRL, ALT], icon: ellipsis.png,   mode: alpha, label: Ellipsis,   except: [macos] }
+  - { key: DOT, mods: [CMDCTRL, ALT], icon: ../../onlyoffice/icons/ellipsis.png,   mode: alpha, label: Ellipsis,   except: [macos] }
   - { key: H,   mods: [CMDCTRL, ALT], icon: highlight.png,  label: Highlight, except: [macos] }
 
   # ======================= Mod+Alt+Shift =======================

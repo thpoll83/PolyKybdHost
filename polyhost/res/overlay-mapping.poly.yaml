@@ -3328,6 +3328,18 @@ cinema 4d:
   os:
     macos:
       overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
+# RetroArch (overlay_sources/retroarch/). The default desktop binds from
+# config.def.keybinds.h: the hotkeys and the RetroPad keys of player 1.
+# Process names: retroarch.exe on Windows, retroarch on Linux and macOS. Not
+# checked on a running install.
+retroarch:
+  overlay: retroarch_template.mods.png
+# MAME (overlay_sources/mame/). The default UI keys and the player 1 inputs from
+# src/emu/inpttype.ipp. Process names: mame.exe on Windows (mame64.exe in
+# releases before 0.237), mame on Linux and macOS. Not checked on a running
+# install.
+mame,mame64:
+  overlay: [mame_template.mods.png, mame_template.combo.mods.png]
 # VICE (overlay_sources/vice/). VICE binds its hotkeys to Alt on Windows and
 # Linux and to Command on macOS, hence the macOS branch. Process names: the
 # emulator binaries (x64sc.exe and so on on Windows). Not checked on a running

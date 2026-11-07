@@ -18,7 +18,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: evernote.png
@@ -39,7 +39,7 @@ bindings:
   - { key: T, mods: [CTRL, SHIFT], icon: newtag.png, label: "New tag", except: [macos] }
   - { key: T, mods: [GUI, CTRL], icon: newtag.png, label: "New tag", only: [macos] }
   - { key: E, mods: [CMDCTRL], icon: newevent.png, label: "New event" }
-  - { key: K, mods: [CMDCTRL], icon: search.png, label: "Search" }
+  - { key: K, mods: [CMDCTRL], icon: search.png, label: "Search", concept: find }
   - { key: N, mods: [CTRL, SHIFT], icon: scratchpad.png, label: "Convert Scratch Pad to note", except: [macos] }
   - { key: N, mods: [GUI, ALT], icon: scratchpad.png, label: "Convert Scratch Pad to note", only: [macos] }
   - { key: DELETE, icon: trash.png, label: "Move to Trash", shared: false, except: [macos] }
@@ -76,7 +76,7 @@ bindings:
   - { key: F7, mods: [SHIFT], icon: toplist.png, label: "Top list view", only: [macos] }
   - { key: F8, mods: [CTRL], icon: sidelist.png, label: "Side list view", except: [macos] }
   - { key: F8, mods: [SHIFT], icon: sidelist.png, label: "Side list view", only: [macos] }
-  - { key: F5, icon: listview.png, label: "Switch note list view" }
+  - { key: F5, icon: listview.png, label: "Switch note list view", concept: reload }
   - { key: F2, mods: [ALT], icon: tagfilter.png, label: "Open tag filter", except: [macos] }
   - { key: J, mods: [GUI, SHIFT], icon: tagfilter.png, label: "Open tag filter", only: [macos] }
   - { key: LEFT, mods: [ALT], icon: back.png, label: "Back", except: [macos] }

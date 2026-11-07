@@ -7,7 +7,7 @@ match: [freeciv-sdl2, freeciv-sdl3, freeciv-sdl2.exe, freeciv-sdl3.exe, org.free
 output: freeciv_sdl_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto
 threshold: 150
 anchor: right
 region: [40, 40]

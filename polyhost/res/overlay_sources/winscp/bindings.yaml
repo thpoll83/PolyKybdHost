@@ -27,7 +27,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # The ESC mark is WinSCP's OWN LOGO -- `source/resource/Application.ico` out of
@@ -76,7 +76,7 @@ bindings:
   - { key: F8,  mods: [], icon: delete.png,    label: Delete,          source: "ms-fluent/Delete (MIT)" }
   - { key: F9,  mods: [], icon: props.png,     label: Properties,      source: "ms-fluent/Info (MIT)" }
   - { key: F10, mods: [], icon: quit.png,      label: Quit,            source: "ms-fluent/Power (MIT)" }
-  - { key: TAB, mods: [], icon: switchpanel.png, label: "Switch panel", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: TAB, mods: [], icon: switchpanel.png, label: "Switch panel", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: BACKSPACE, mods: [], icon: parent.png, label: "Parent folder", source: "ms-fluent/Folder Arrow Up (MIT)" }
 
   # --- Shift (primary B channel) ----------------------------------------
@@ -98,7 +98,7 @@ bindings:
   - { key: TAB, mods: [CTRL], icon: nexttab.png,    label: "Next tab",          source: "ms-fluent/Arrow Right (MIT)" }
 
   # --- Ctrl: navigation & selection -------------------------------------
-  - { key: R, mods: [CTRL], icon: reread.png,    label: "Re-read panel",   source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: R, mods: [CTRL], icon: reread.png,    label: "Re-read panel", concept: reload,   source: "ms-fluent/Arrow Sync (MIT)" }
   - { key: H, mods: [CTRL], icon: homedir.png,   label: "Home directory",  source: "ms-fluent/Home (MIT)" }
   - { key: B, mods: [CTRL], icon: bookmark.png,  label: "Bookmark folder", source: "ms-fluent/Star (MIT)" }
   - { key: O, mods: [CTRL], icon: bookmarks.png, label: Bookmarks,         source: "ms-fluent/Bookmark Multiple (MIT)" }
@@ -106,7 +106,7 @@ bindings:
   - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all",      source: "ms-fluent/Select All On (MIT)" }
   - { key: C, mods: [CTRL], icon: copynames.png, label: "Copy to clipboard", source: "ms-fluent/Clipboard Letter (MIT)" }
   - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,             source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: F, mods: [CTRL], icon: incsearch.png, label: "Incremental search", source: "ms-fluent/Search (MIT)" }
+  - { key: F, mods: [CTRL], icon: incsearch.png, label: "Incremental search", concept: find, source: "ms-fluent/Search (MIT)" }
   - { key: BACKSLASH,    mods: [CTRL], icon: root.png,       label: "Root directory",    source: "ms-fluent/Home (MIT)" }
   - { key: LEFT_BRACKET, mods: [CTRL], icon: copylocal.png,  label: "Copy local path",   source: "ms-fluent/Panel Left (MIT)" }
   - { key: RIGHT_BRACKET, mods: [CTRL], icon: copyremote.png, label: "Copy remote path", source: "ms-fluent/Panel Right (MIT)" }
@@ -155,7 +155,7 @@ bindings:
 
   # --- Ctrl+Alt (combo G channel) ---------------------------------------
   - { key: T, mods: [CTRL, ALT], icon: tree.png,        label: "Tree panel",           source: "ms-fluent/Organization (MIT)" }
-  - { key: B, mods: [CTRL, ALT], icon: syncbrowse.png,  label: "Synchronised browsing", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: B, mods: [CTRL, ALT], icon: syncbrowse.png,  label: "Synchronised browsing", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: P, mods: [CTRL, ALT], icon: prefs.png,       label: Preferences,            source: "ms-fluent/Settings (MIT)" }
   - { key: R, mods: [CTRL, ALT], icon: autorefresh.png, label: "Auto refresh",         source: "ms-fluent/Arrow Repeat All (MIT)" }
   - { key: C, mods: [CTRL, ALT], icon: copypaths.png,   label: "Copy names + paths",   source: "ms-fluent/Clipboard Link (MIT)" }

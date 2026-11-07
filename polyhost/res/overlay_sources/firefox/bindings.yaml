@@ -30,7 +30,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # No program_icon: ESC is left to the generic program mark (the OS icon of the
@@ -91,13 +91,13 @@ bindings:
   # ---------------------------------------------------------------- navigation
   - { key: L,     mods: [CMDCTRL], icon: addressbar.png, <<: *r, label: "Address bar" }
   - { key: D,     mods: [ALT], only: [windows, linux], icon: addressbar.png, <<: *r, label: "Address bar" }
-  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: back.png,    <<: *r, label: Back }
-  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: forward.png, <<: *r, label: Forward }
-  - { key: LEFT,  mods: [GUI], only: [macos],          icon: back.png,    <<: *r, label: Back }
-  - { key: RIGHT, mods: [GUI], only: [macos],          icon: forward.png, <<: *r, label: Forward }
+  - { key: LEFT,  mods: [ALT], only: [windows, linux], icon: ../../eclipse/icons/back.png,    <<: *r, label: Back }
+  - { key: RIGHT, mods: [ALT], only: [windows, linux], icon: ../../eclipse/icons/forward.png, <<: *r, label: Forward }
+  - { key: LEFT,  mods: [GUI], only: [macos],          icon: ../../eclipse/icons/back.png,    <<: *r, label: Back }
+  - { key: RIGHT, mods: [GUI], only: [macos],          icon: ../../eclipse/icons/forward.png, <<: *r, label: Forward }
   # goBackKb2 / goForwardKb2 are XP_UNIX: Ctrl+[ ] on Linux, Cmd+[ ] on macOS.
-  - { key: "[",   mods: [CMDCTRL], except: [windows], icon: back.png,    <<: *r, label: Back }
-  - { key: "]",   mods: [CMDCTRL], except: [windows], icon: forward.png, <<: *r, label: Forward }
+  - { key: "[",   mods: [CMDCTRL], except: [windows], icon: ../../eclipse/icons/back.png,    <<: *r, label: Back }
+  - { key: "]",   mods: [CMDCTRL], except: [windows], icon: ../../eclipse/icons/forward.png, <<: *r, label: Forward }
   - { key: HOME,  mods: [ALT], icon: home.png, label: "Home page" }
   - { key: R,     mods: [CMDCTRL],        icon: reload.png,    <<: *r, label: Reload }
   - { key: F5,    mods: [],               icon: reload_f5.png, <<: *r, label: Reload }

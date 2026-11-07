@@ -19,7 +19,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 128
 
 # A floppy disk drawn after the Total Commander icon (`_floppy_mark` in
@@ -57,7 +57,7 @@ bindings:
   - { key: F7, mods: [SHIFT], icon: mkdirtarget.png, label: "New folder in target" }
   - { key: F8, mods: [SHIFT], icon: deleteperm.png, label: "Delete directly", shared: false }
   - { key: DELETE, mods: [SHIFT], icon: deleteperm.png, label: "Delete directly", shared: false }
-  - { key: F10, mods: [SHIFT], icon: contextmenu.png, label: "Context menu" }
+  - { key: F10, mods: [SHIFT], icon: ../../signal/icons/chatmenu.png, label: "Context menu" }
 
   # --- Alt ---------------------------------------------------------------------
   - { key: F1, mods: [ALT], icon: driveleft.png, label: "Left drive" }

@@ -24,7 +24,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # The ESC mark is the app's OWN LOGO -- `CPP/7zip/UI/FileManager/FM.ico` from the
@@ -74,7 +74,7 @@ bindings:
   - { key: F6, mods: [], icon: moveto.png,    label: "Move to…",    source: "ms-fluent/Arrow Forward (MIT)" }
   - { key: F7, mods: [], icon: newfolder.png, label: "New folder",  source: "ms-fluent/Folder Add (MIT)" }
   - { key: F9, mods: [], icon: twopanel.png,  label: "Second panel", source: "ms-fluent/Split Vertical (MIT)" }
-  - { key: TAB, mods: [], icon: switchpanel.png, label: "Switch panel", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: TAB, mods: [], icon: switchpanel.png, label: "Switch panel", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: BACKSPACE, mods: [], icon: parent.png, label: "Up one folder", source: "ms-fluent/Folder Arrow Up (MIT)" }
   - { key: BACKSLASH, mods: [], icon: root.png,   label: "Root folder",   source: "ms-fluent/Home (MIT)" }
 
@@ -86,7 +86,7 @@ bindings:
   # (not undo), and Ctrl+C copies the file NAME to the clipboard (not the file).
   - { key: Z, mods: [CTRL], icon: comment.png,  label: "Set comment",         source: "ms-fluent/Comment Note (MIT)" }
   - { key: C, mods: [CTRL], icon: copyname.png, label: "Copy file name",      source: "ms-fluent/Clipboard Letter (MIT)" }
-  - { key: R, mods: [CTRL], icon: refresh.png,  label: Refresh,               source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: R, mods: [CTRL], icon: refresh.png,  label: Refresh, concept: reload,               source: "ms-fluent/Arrow Sync (MIT)" }
   # view modes
   - { key: "1", mods: [CTRL], icon: largeicons.png, label: "Large icons", source: "ms-fluent/Grid (MIT)" }
   - { key: "2", mods: [CTRL], icon: smallicons.png, label: "Small icons", source: "ms-fluent/Apps List (MIT)" }

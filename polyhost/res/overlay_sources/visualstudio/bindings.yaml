@@ -28,7 +28,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # The mark shipped with the old hand-drawn set, lifted pixel-for-pixel.
@@ -48,7 +48,7 @@ bindings:
   - { key: F9,  mods: [],                   icon: togglebreakpoint.png,       <<: *r, label: "Toggle breakpoint" }
   - { key: F10, mods: [],                   icon: stepover.png,               <<: *r, label: "Step over" }
   - { key: F11, mods: [],                   icon: stepinto.png,               <<: *r, label: "Step into" }
-  - { key: F11, mods: [SHIFT],              icon: stepout.png,                <<: *r, label: "Step out" }
+  - { key: F11, mods: [SHIFT],              icon: ../../cursor/icons/stepout.png,                <<: *r, label: "Step out" }
   - { key: F7,  mods: [CTRL],               icon: compile.png,                <<: *r, label: Compile }
   - { key: B,   mods: [CTRL, SHIFT],        icon: buildsolution.png,          <<: *r, label: "Build solution" }
   - { key: F10, mods: [CTRL, ALT],          icon: stepovercurrentprocess.png, <<: *r, label: "Step over current process" }

@@ -17,7 +17,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: lo_calc.png
@@ -31,7 +31,7 @@ bindings:
   - { key: F4,  mods: [], icon: absref.png,    label: "Absolute / relative reference", source: "ms-fluent/Money (MIT)" }
   - { key: F5,  mods: [], icon: navigator.png, label: Navigator,    source: "ms-fluent/Compass Northwest (MIT)" }
   - { key: F7,  mods: [], icon: spelling.png,  label: Spelling,     source: "ms-fluent/Text Grammar Wand (MIT)", except: [macos] }
-  - { key: F9,  mods: [], icon: recalc.png,    label: Recalculate,  source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: F9,  mods: [], icon: recalc.png,    label: Recalculate, concept: reload,  source: "ms-fluent/Arrow Sync (MIT)" }
   - { key: F11, mods: [], icon: styles.png,    label: Styles,       source: "ms-fluent/Text Effects (MIT)", only: [windows, linux] }
   - { key: T, mods: [GUI], icon: styles.png,    label: Styles,       source: "ms-fluent/Text Effects (MIT)", only: [macos] }
   - { key: F12, mods: [], icon: groupdata.png, label: "Group data range", source: "ms-fluent/Group (MIT)" }
@@ -48,8 +48,8 @@ bindings:
   - { key: V, mods: [CMDCTRL], icon: paste.png,     label: Paste,      source: "ms-fluent/Clipboard Paste (MIT)" }
   - { key: A, mods: [CMDCTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
   - { key: F, mods: [CMDCTRL], icon: find.png,      label: Find,       source: "ms-fluent/Search (MIT)" }
-  - { key: H, mods: [CTRL], icon: replace.png,   label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
-  - { key: F, mods: [GUI, ALT], icon: replace.png,   label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
+  - { key: H, mods: [CTRL], icon: replace.png,   label: "Find & replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [windows, linux] }
+  - { key: F, mods: [GUI, ALT], icon: replace.png,   label: "Find & replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)", only: [macos] }
   - { key: B, mods: [CMDCTRL], icon: bold.png,      label: Bold,       source: "ms-fluent/Text Bold (MIT)" }
   - { key: I, mods: [CMDCTRL], icon: italic.png,    label: Italic,     source: "ms-fluent/Text Italic (MIT)" }
   - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline,  source: "ms-fluent/Text Underline (MIT)" }

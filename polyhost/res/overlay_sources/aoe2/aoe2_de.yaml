@@ -21,7 +21,7 @@ match: [aoe2de_s, steam_app_813780]
 output: aoe2_de_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 # The firmware draws the icon over the legend and clears 3 px around it, so the
 # icon uses the full height on the right. On `,` and `.` it erases the shifted

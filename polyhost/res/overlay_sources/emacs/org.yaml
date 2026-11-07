@@ -21,9 +21,9 @@ output: emacs_org_template
 icon_dir: icons
 fit: contain
 anchor: bottom-right
-region: [40, 32]
+region: [36, 32]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: esc_org.png        # the set's word beside the logo (fetch_icons.py)
@@ -39,35 +39,35 @@ bindings:
   - { key: TAB, mods: [SHIFT], icon: cycle_all.png, label: "Cycle whole buffer" }
 
   # new headings and items
-  - { key: ENTER, mods: [ALT], icon: org_heading.png, label: "New heading / item" }
-  - { key: ENTER, mods: [CTRL], icon: org_heading_after.png, label: "New heading after subtree" }
-  - { key: ENTER, mods: [ALT, SHIFT], icon: org_todo_new.png, label: "New TODO / checkbox" }
-  - { key: ENTER, mods: [CTRL, SHIFT], icon: org_todo_after.png, label: "New TODO after subtree" }
-  - { key: ENTER, mods: [SHIFT], icon: org_copy_down.png, label: "Copy field down (table)" }
+  - { key: ENTER, mods: [ALT], icon: org_heading.png, region: [40, 32], label: "New heading / item" }
+  - { key: ENTER, mods: [CTRL], icon: org_heading_after.png, region: [40, 32], label: "New heading after subtree" }
+  - { key: ENTER, mods: [ALT, SHIFT], icon: org_todo_new.png, region: [40, 32], label: "New TODO / checkbox" }
+  - { key: ENTER, mods: [CTRL, SHIFT], icon: org_todo_after.png, region: [40, 32], label: "New TODO after subtree" }
+  - { key: ENTER, mods: [SHIFT], icon: org_copy_down.png, region: [40, 32], label: "Copy field down (table)" }
 
   # structure editing
   - { key: LEFT, mods: [ALT], icon: promote.png, label: "Promote heading" }
   - { key: RIGHT, mods: [ALT], icon: demote.png, label: "Demote heading" }
-  - { key: LEFT, mods: [ALT, SHIFT], icon: org_promote_tree.png, label: "Promote subtree" }
-  - { key: RIGHT, mods: [ALT, SHIFT], icon: org_demote_tree.png, label: "Demote subtree" }
-  - { key: UP, mods: [ALT], icon: org_tree_up.png, label: "Move subtree up" }
-  - { key: DOWN, mods: [ALT], icon: org_tree_down.png, label: "Move subtree down" }
-  - { key: UP, mods: [ALT, SHIFT], icon: org_line_up.png, label: "Move line up" }
-  - { key: DOWN, mods: [ALT, SHIFT], icon: org_line_down.png, label: "Move line down" }
+  - { key: LEFT, mods: [ALT, SHIFT], icon: org_promote_tree.png, region: [40, 32], label: "Promote subtree" }
+  - { key: RIGHT, mods: [ALT, SHIFT], icon: org_demote_tree.png, region: [40, 32], label: "Demote subtree" }
+  - { key: UP, mods: [ALT], icon: org_tree_up.png, region: [40, 32], label: "Move subtree up" }
+  - { key: DOWN, mods: [ALT], icon: org_tree_down.png, region: [40, 32], label: "Move subtree down" }
+  - { key: UP, mods: [ALT, SHIFT], icon: org_line_up.png, region: [40, 32], label: "Move line up" }
+  - { key: DOWN, mods: [ALT, SHIFT], icon: org_line_down.png, region: [40, 32], label: "Move line down" }
 
   # TODO state and priority
-  - { key: LEFT, mods: [SHIFT], icon: org_todo_prev.png, label: "Previous TODO state" }
-  - { key: RIGHT, mods: [SHIFT], icon: org_todo_next.png, label: "Next TODO state" }
-  - { key: UP, mods: [SHIFT], icon: org_prio_up.png, label: "Raise priority" }
-  - { key: DOWN, mods: [SHIFT], icon: org_prio_down.png, label: "Lower priority" }
-  - { key: LEFT, mods: [CTRL, SHIFT], icon: org_set_prev.png, label: "Previous TODO keyword set" }
-  - { key: RIGHT, mods: [CTRL, SHIFT], icon: org_set_next.png, label: "Next TODO keyword set" }
+  - { key: LEFT, mods: [SHIFT], icon: org_todo_prev.png, region: [40, 32], label: "Previous TODO state" }
+  - { key: RIGHT, mods: [SHIFT], icon: org_todo_next.png, region: [40, 32], label: "Next TODO state" }
+  - { key: UP, mods: [SHIFT], icon: org_prio_up.png, region: [40, 32], label: "Raise priority" }
+  - { key: DOWN, mods: [SHIFT], icon: org_prio_down.png, region: [40, 32], label: "Lower priority" }
+  - { key: LEFT, mods: [CTRL, SHIFT], icon: org_set_prev.png, region: [40, 32], label: "Previous TODO keyword set" }
+  - { key: RIGHT, mods: [CTRL, SHIFT], icon: org_set_next.png, region: [40, 32], label: "Next TODO keyword set" }
 
   # global keys with an org meaning
-  - { key: H, mods: [ALT], icon: org_mark_elem.png, label: "Mark element" }
-  - { key: "[", mods: [ALT, SHIFT], icon: org_elem_back.png, label: "Backward element" }   # M-{
-  - { key: "]", mods: [ALT, SHIFT], icon: org_elem_fwd.png, label: "Forward element" }     # M-}
-  - { key: T, mods: [CTRL, ALT], icon: org_tr_elem.png, label: "Transpose elements" }
+  - { key: H, mods: [ALT], icon: org_mark_elem.png, region: [40, 32], label: "Mark element" }
+  - { key: "[", mods: [ALT, SHIFT], icon: org_elem_back.png, region: [40, 32], label: "Backward element" }   # M-{
+  - { key: "]", mods: [ALT, SHIFT], icon: org_elem_fwd.png, region: [40, 32], label: "Forward element" }     # M-}
+  - { key: T, mods: [CTRL, ALT], icon: org_tr_elem.png, region: [40, 32], label: "Transpose elements" }
 
   # agenda files (C-' and C-, reach Emacs only in a GUI frame)
   - { key: "'", mods: [CTRL], icon: agenda_cycle.png, label: "Cycle agenda files" }

@@ -29,7 +29,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: cf.png
@@ -50,7 +50,7 @@ bindings:
   - { key: U, mods: [CMDCTRL], icon: underline.png, label: Underline, source: "ms-fluent/Text Underline (MIT)" }
   - { key: K, mods: [CMDCTRL], icon: link.png,      label: Link,      source: "ms-fluent/Link (MIT)" }
   - { key: M, mods: [CMDCTRL], icon: insertimage.png, label: "Files and images", source: "ms-fluent/Image Add (MIT)" }
-  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find & replace", source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: F, mods: [CMDCTRL], icon: findreplace.png, label: "Find & replace", concept: replace, source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: ENTER, mods: [CMDCTRL], icon: publish.png, label: Publish, source: "ms-fluent/Rocket (MIT)" }
   - { key: "[", mods: [CTRL], icon: sidebar.png,      label: "Toggle sidebar",   source: "ms-fluent/Panel Left (MIT)" }
   - { key: "]", mods: [CTRL], icon: diffcomments.png, label: "Comments panel",   source: "ms-fluent/Comment Multiple (MIT)" }
@@ -100,6 +100,6 @@ bindings:
 
   # --- Quick search: the dialog lists Alt+Shift+Z and Ctrl+Alt+Q; the Mac
   # binds Ctrl+Option+Z (not seen in a Mac dialog yet) ---
-  - { key: Z, mods: [ALT, SHIFT], only: [windows, linux], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
-  - { key: Q, mods: [CTRL, ALT],  only: [windows, linux], icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
-  - { key: Z, mods: [CTRL, ALT],  only: [macos],          icon: search.png, label: "Quick search", source: "ms-fluent/Search (MIT)" }
+  - { key: Z, mods: [ALT, SHIFT], only: [windows, linux], icon: search.png, label: "Quick search", concept: find, source: "ms-fluent/Search (MIT)" }
+  - { key: Q, mods: [CTRL, ALT],  only: [windows, linux], icon: search.png, label: "Quick search", concept: find, source: "ms-fluent/Search (MIT)" }
+  - { key: Z, mods: [CTRL, ALT],  only: [macos],          icon: search.png, label: "Quick search", concept: find, source: "ms-fluent/Search (MIT)" }

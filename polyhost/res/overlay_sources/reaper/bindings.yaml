@@ -25,7 +25,7 @@ fit: contain
 anchor: bottom-right
 region: [36, 32]
 margin: 0
-mode: luma
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 bindings:
@@ -112,7 +112,7 @@ bindings:
   - { key: N, mods: [SHIFT], icon: normalizeall.png, label: "Normalize to loudest" }
   - { key: "0", mods: [SHIFT], icon: pitchup.png, label: "Pitch up 1 semitone" }
   - { key: "9", mods: [SHIFT], icon: pitchdown.png, label: "Pitch down 1 semitone" }
-  - { key: "8", mods: [SHIFT], icon: centup.png, label: "Pitch up 1 cent" }
+  - { key: "8", mods: [SHIFT], icon: ../../musescore/icons/marcato.png, label: "Pitch up 1 cent" }
   - { key: "7", mods: [SHIFT], icon: centdown.png, label: "Pitch down 1 cent" }
   - { key: "6", mods: [SHIFT], icon: rateup.png, label: "Rate up 1 semitone" }
   - { key: "5", mods: [SHIFT], icon: ratedown.png, label: "Rate down 1 semitone" }
@@ -235,6 +235,6 @@ bindings:
   - { key: G, mods: [ALT, SHIFT], icon: itemgrouping.png, label: "Item grouping on/off" }
   - { key: X, mods: [ALT], icon: autofade.png, label: "Auto-crossfade" }
   - { key: L, mods: [], icon: lock.png, label: "Toggle locking" }
-  - { key: L, mods: [SHIFT], icon: locksettings.png, label: "Lock settings" }
+  - { key: L, mods: [SHIFT], icon: ../../blender/icons/lock_channel.png, label: "Lock settings" }
   - { key: L, mods: [CMDCTRL], icon: alltakes.png, label: "Show all takes" }
 

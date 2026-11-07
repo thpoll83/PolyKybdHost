@@ -18,7 +18,7 @@ match: [age2_x1, empires2, aok hd, age2_x1.exe, empires2.exe, aok hd.exe]
 output: aoe2_hd_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 # The firmware draws the icon over the legend and clears 3 px around it, so the
 # icon uses the full height on the right. On `,` and `.` it erases the shifted

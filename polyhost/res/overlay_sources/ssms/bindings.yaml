@@ -23,7 +23,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 # Drawn substitute mark (database cylinder), see fetch_icons.draw_mark().
@@ -47,7 +47,7 @@ bindings:
   - { key: M,   mods: [CTRL, SHIFT],        icon: templateparams.png,  label: "Template parameters",        source: "ms-fluent/Braces Variable (MIT)" }
   - { key: C,   mods: [CTRL, SHIFT],        icon: copywithheaders.png, label: "Copy with headers",          source: "ms-fluent/Table Copy (MIT)" }
   - { key: Q,   mods: [CTRL, SHIFT],        icon: querydesigner.png,   label: "Query Designer",             source: "ms-fluent/Table Edit (MIT)" }
-  - { key: R,   mods: [CTRL, SHIFT],        icon: refreshcache.png,    label: "Refresh IntelliSense cache", source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: R,   mods: [CTRL, SHIFT],        icon: refreshcache.png,    label: "Refresh IntelliSense cache", concept: reload, source: "ms-fluent/Arrow Sync (MIT)" }
   - { key: N,   mods: [CTRL],               icon: newquery.png,        label: "New query",                  source: "ms-fluent/Window New (MIT)" }
   - { key: F12, mods: [CTRL, SHIFT],        icon: nexterror.png,       label: "Next error",                 source: "ms-fluent/Error Circle (MIT)" }
   # Default Query Shortcuts (Tools > Options > Environment > Keyboard > Query Shortcuts).

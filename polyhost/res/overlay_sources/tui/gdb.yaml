@@ -21,7 +21,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: gdb.png
@@ -47,15 +47,15 @@ bindings:
   # --- TUI "following key bindings only work in the TUI mode": scroll the ACTIVE window.
   # In the command window (or in CLI mode) the arrows keep their readline meaning (history,
   # cursor); the label is for the TUI.
-  - { key: PAGE_UP, icon: page_up.png, label: "Scroll window page" }
-  - { key: PAGE_DOWN, icon: page_down.png, label: "Scroll window page" }
-  - { key: UP, icon: scroll_up.png, label: "Scroll window up" }
-  - { key: DOWN, icon: scroll_down.png, label: "Scroll window down" }
-  - { key: LEFT, icon: scroll_left.png, label: "Scroll window left" }
-  - { key: RIGHT, icon: scroll_right.png, label: "Scroll window right" }
+  - { key: PAGE_UP, icon: page_up.png, region: [40, 32], label: "Scroll window page" }
+  - { key: PAGE_DOWN, icon: page_down.png, region: [40, 32], label: "Scroll window page" }
+  - { key: UP, icon: scroll_up.png, region: [40, 32], label: "Scroll window up" }
+  - { key: DOWN, icon: scroll_down.png, region: [40, 32], label: "Scroll window down" }
+  - { key: LEFT, icon: scroll_left.png, region: [40, 32], label: "Scroll window left" }
+  - { key: RIGHT, icon: scroll_right.png, region: [40, 32], label: "Scroll window right" }
   # --- Ctrl+X is the leader of the TUI keys: C-x a / A / C-x C-a toggle TUI mode, C-x 1 one
   # window, C-x 2 next two-window layout, C-x o next window (active window), C-x s single-key mode.
-  - { key: X, mods: [CTRL], icon: gdb_tui.png, label: "TUI keys" }
+  - { key: X, mods: [CTRL], icon: gdb_tui.png, region: [40, 32], label: "TUI keys" }
 
   # --- One-letter command abbreviations (gdb.texinfo "Command Syntax": a
   # command name may be abbreviated when unambiguous, and these one-letter

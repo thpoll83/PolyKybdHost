@@ -6,7 +6,7 @@ match: [freeciv21-client, freeciv21-clien, freeciv21-client.exe, net.longturn.fr
 output: freeciv21_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto
 threshold: 150
 anchor: right
 region: [40, 40]

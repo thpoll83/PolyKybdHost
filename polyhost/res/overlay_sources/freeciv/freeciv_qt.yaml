@@ -7,7 +7,7 @@ match: [freeciv-qt, freeciv-qt.exe, org.freeciv.qt]
 output: freeciv_qt_template
 icon_dir: icons
 fit: contain
-mode: alpha
+mode: auto
 threshold: 150
 anchor: right
 region: [40, 40]

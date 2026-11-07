@@ -20,7 +20,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: mc.png
@@ -57,16 +57,16 @@ bindings:
   # --- [filemanager]: "Reread = ctrl-r", "Swap = ctrl-u", "Shell = ctrl-o",
   # "Suspend = ctrl-z", "HotList = ctrl-backslash", "DirSize = ctrl-space"
   - { key: R, mods: [CTRL], icon: reload.png, label: "Reread panel" }
-  - { key: U, mods: [CTRL], icon: swap.png, label: "Swap panels" }
+  - { key: U, mods: [CTRL], icon: swap.png, label: "Swap panels", concept: replace }
   - { key: O, mods: [CTRL], icon: terminal.png, label: "Show shell" }
   - { key: Z, mods: [CTRL], icon: suspend.png, label: "Suspend" }
   - { key: "\\", mods: [CTRL], icon: hotlist.png, label: "Directory hotlist" }
   - { key: SPACE, mods: [CTRL], icon: dirsize.png, label: "Directory size" }
   # --- [panel]: "Search = ctrl-s; alt-s", "Mark = insert; ctrl-t"
-  - { key: S, mods: [CTRL], icon: search.png, label: "Quick search" }
-  - { key: S, mods: [ALT], icon: search.png, label: "Quick search" }
-  - { key: INSERT, icon: mark.png, label: "Mark file" }
-  - { key: T, mods: [CTRL], icon: mark.png, label: "Mark file" }
+  - { key: S, mods: [CTRL], icon: search.png, label: "Quick search", concept: find }
+  - { key: S, mods: [ALT], icon: search.png, label: "Quick search", concept: find }
+  - { key: INSERT, icon: mark.png, region: [40, 32], label: "Mark file" }
+  - { key: T, mods: [CTRL], icon: mark.png, region: [40, 32], label: "Mark file" }
   # --- [panel]: "MarkUp = shift-up", "MarkDown = shift-down"
   - { key: UP, mods: [SHIFT], icon: selectup.png, label: "Mark and up" }
   - { key: DOWN, mods: [SHIFT], icon: selectdown.png, label: "Mark and down" }
@@ -88,16 +88,16 @@ bindings:
   - { key: H, mods: [ALT], icon: history.png, label: "Command history" }
   - { key: E, mods: [ALT, SHIFT], icon: history.png, label: "Edit/view history" }
   # --- [panel]: "TopOnScreen = alt-g", "MiddleOnScreen = alt-r", "BottomOnScreen = alt-j"
-  - { key: G, mods: [ALT], icon: row_top.png, label: "Top of screen" }
+  - { key: G, mods: [ALT], icon: row_top.png, region: [40, 32], label: "Top of screen" }
   - { key: R, mods: [ALT], icon: recenter.png, label: "Middle of screen" }
-  - { key: J, mods: [ALT], icon: row_bottom.png, label: "Bottom of screen" }
+  - { key: J, mods: [ALT], icon: row_bottom.png, region: [40, 32], label: "Bottom of screen" }
   # --- [panel]: "Select = alt-plus", "Unselect = alt-minus", "SelectInvert = alt-asterisk"
   - { key: "=", mods: [ALT, SHIFT], icon: selectgroup.png, label: "Select group" }
   - { key: "-", mods: [ALT], icon: unselectgroup.png, label: "Unselect group" }
   - { key: "8", mods: [ALT, SHIFT], icon: invert.png, label: "Invert selection" }
   # --- [filemanager]: "Find = alt-question", "CdQuick = alt-c", "ShowHidden = alt-dot",
   # "ViewFiltered = alt-exclamation", "ScreenList = alt-prime"
-  - { key: "/", mods: [ALT, SHIFT], icon: find.png, label: "Find file" }
+  - { key: "/", mods: [ALT, SHIFT], icon: find.png, label: "Find file", concept: find }
   - { key: C, mods: [ALT], icon: openfolder.png, label: "Quick change dir" }
   - { key: ".", mods: [ALT], icon: hidden.png, label: "Show hidden files" }
   - { key: "1", mods: [ALT, SHIFT], icon: filter.png, label: "View filtered output" }

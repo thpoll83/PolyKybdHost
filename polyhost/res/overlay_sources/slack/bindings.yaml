@@ -29,7 +29,7 @@ fit: contain
 anchor: bottom-right
 region: [40, 36]
 margin: 0
-mode: alpha
+mode: auto     # one rule per icon file: see HOUSE_LUMA_THRESHOLD in scripts/generate_app_overlays.py
 threshold: 150
 
 program_icon: slack.png
@@ -57,7 +57,7 @@ bindings:
 
   # ============================ ADDED from Slack's shortcut reference =========
   # -- navigation --
-  - { key: K,     mods: [CMDCTRL],        icon: quickswitcher.png, label: "Quick switcher" }
+  - { key: K,     mods: [CMDCTRL],        icon: quickswitcher.png, label: "Quick switcher", concept: replace }
   - { key: N,     mods: [CMDCTRL],        icon: newmessage.png,    label: "New message" }
   - { key: K,     mods: [CMDCTRL, SHIFT], icon: dms.png,      <<: *r, label: "Direct messages" }
   - { key: M,     mods: [CMDCTRL, SHIFT], icon: activity.png, <<: *r, label: "Mentions & reactions" }
