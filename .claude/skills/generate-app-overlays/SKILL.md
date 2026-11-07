@@ -609,20 +609,31 @@ icon-library bullet).
 ⚠️ **When the PR changed the same PNGs, the generator change makes them conflict**, and git
 cannot merge a binary. When `main` changed `scripts/generate_app_overlays.py` (or an
 icon source) and regenerated the sets, don't pick either side of a PNG conflict.
-Regenerate the PR's spec with the MERGED generator, then check that the PNG differs
-from `main` only where the PR changed something:
+Regenerate the PR's spec with the MERGED generator, then check that EVERY PNG the
+spec writes (the primary set and each combo tier) differs from `main` only where the
+PR changed something:
 
 ```bash
 .venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/<app>/<spec>.yaml
-git show origin/main:polyhost/res/overlays/<name>.png > /tmp/main.png
-.venv/bin/python -c "from PIL import Image, ImageChops as C; \
-print(C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
-Image.open('polyhost/res/overlays/<name>.png').convert('RGBA')).getbbox())"
+for f in $(git diff --name-only --diff-filter=U -- 'polyhost/res/overlays/*.png'); do
+  git show origin/main:"$f" > /tmp/main.png 2>/dev/null || { echo "$f: new"; continue; }
+  .venv/bin/python -c "import sys; from PIL import Image, ImageChops as C; \
+print(sys.argv[1], C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
+Image.open(sys.argv[1]).convert('RGBA')).getbbox(alpha_only=False))" "$f"
+done
 ```
 
-The box must cover only the keys the PR changed. On 2026-11-07 the MAME wordmark PR
-(#708) conflicted with the box-filter change (#710). After regenerating, both MAME
-PNGs differed from `main` only in x 539–576, y 126–154, the ESC mark area.
+`alpha_only=False` is required: by default `getbbox()` reads only the alpha channel,
+and a change of colour alone prints `None`. Each box must cover only the keys the PR
+changed. A box that spans two changed keys far apart also covers the keys between
+them, so in that case crop each key's cell and check the others print `None`. A
+`None` for a PNG the PR meant to change means the regeneration lost the PR's change:
+look at the merged spec before you continue. Then `git add` each checked PNG,
+resolve and stage any other conflicts, and run `git merge --continue`.
+
+On 2026-11-07 the MAME wordmark PR (#708) conflicted with the box-filter change
+(#710). After regenerating, both MAME PNGs differed from `main` only in x 539–576,
+y 126–154, the ESC mark area.
 
 ## Environment & gotchas
 
