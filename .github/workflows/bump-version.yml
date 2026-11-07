@@ -81,14 +81,36 @@ jobs:
           shas = subprocess.run(["git", "rev-list", "--first-parent", "HEAD"],
                                 check=True, capture_output=True,
                                 text=True).stdout.split()
-          pending, seen, anchored = [], set(), False
+          def is_bump(pr):
+              return pr["head"]["ref"].startswith("bump/host-")
+
+          def cut_from(pr):
+              """The main commit the bump PR's branch was cut from."""
+              commits = api(f"repos/{repo}/pulls/{pr['number']}/commits")
+              parents = commits[0]["parents"] if commits else []
+              return parents[0]["sha"] if parents else None
+
+          # The newest bump PR is the anchor, but its run counted only the PRs
+          # in the main it checked out. A PR merged after that checkout and
+          # before the bump PR sits below the anchor, so the walk goes on past
+          # the anchor down to the commit the bump branch was cut from.
+          pending, seen, anchored, boundary = [], set(), False, None
           for sha in shas:
+              if anchored and (boundary is None or sha == boundary):
+                  break
               pr = merged_pr(sha)
               if pr is None:
                   continue
-              if pr["head"]["ref"].startswith("bump/host-"):
-                  anchored = True
-                  break
+              if is_bump(pr):
+                  if not anchored:
+                      anchored = True
+                      boundary = cut_from(pr)
+                      if boundary not in shas:
+                          print(f"Bump PR #{pr['number']} was cut from "
+                                f"{boundary}, which is not in the walked "
+                                f"history; counting from the bump PR only.")
+                          boundary = None
+                  continue
               if pr["number"] not in seen:
                   seen.add(pr["number"])
                   pending.append(pr)
