@@ -54,7 +54,7 @@ the keypad (no cell).
 
 | file | source | licence |
 |---|---|---|
-| `menu.png`, `reset.png`, `fastforward.png`, `ffhold.png`, `slowmo.png`, `rewind.png`, `pause.png`, `frameadv.png`, `mute.png`, `slotminus.png`, `slotplus.png`, `shader.png`, `shadernext.png`, `shaderprev.png`, `cheat.png`, `grabmouse.png`, `fullscreen.png`, `desktopmenu.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | Apache-2.0 |
-| `savestate.png` (Save), `loadstate.png` (Folder Open), `screenshot.png` (Camera) | Microsoft Fluent UI System Icons | MIT |
+| `menu.png`, `reset.png`, `fastforward.png`, `ffhold.png`, `slowmo.png`, `rewind.png`, `pause.png`, `frameadv.png`, `slotminus.png`, `slotplus.png`, `shader.png`, `shadernext.png`, `shaderprev.png`, `cheat.png`, `grabmouse.png`, `fullscreen.png`, `desktopmenu.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | Apache-2.0 |
+| `savestate.png` (Save), `loadstate.png` (Folder Open), `screenshot.png` (Camera), `mute.png` (Speaker Mute) | Microsoft Fluent UI System Icons | MIT |
 | `pada.png` … `padr.png`, `padstart.png`, `padselect.png`, `fps.png` | drawn in `fetch_icons.py` (`ring()`, `pill()`, `word()`); text in Press Start 2P by CodeMan38 (`google/fonts`, `ofl/pressstart2p`, pinned commit) | the drawing is this repo's; the font is SIL OFL 1.1 |
 | `retroarch.png` | Simple Icons `retroarch` (`simple-icons/simple-icons`) | CC0-1.0 artwork; used to identify RetroArch, no endorsement implied |
