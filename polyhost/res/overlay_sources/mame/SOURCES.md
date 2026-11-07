@@ -50,4 +50,4 @@ and players 2 to 4.
 | `menu.png`, `pause.png`, `step.png`, `rewindstep.png`, `gfx.png`, `quicksave.png`, `quickload.png`, `softreset.png`, `hardreset.png`, `skipminus.png`, `skipplus.png`, `cheat.png`, `throttle.png`, `fastfwd.png`, `recordmng.png`, `recordavi.png`, `service.png`, `tilt.png`, `osd.png` | Material Symbols (`google/material-design-icons`), names in `fetch_icons.py` | Apache-2.0 |
 | `savestate.png` (Save), `loadstate.png` (Folder Open), `snapshot.png` (Camera) | Microsoft Fluent UI System Icons | MIT |
 | `button1.png` … `button6.png`, `start1.png`, `start2.png`, `coin1.png`, `coin2.png`, `fps.png` | drawn by `retroarch/fetch_icons.py`; text in Press Start 2P (SIL OFL 1.1) | the drawing is this repo's |
-| `mame.png` | drawn "M" tile (`program_marks.letter_mark`) | this repo's. MAME's own icon is GPL-2.0 and "MAME" a registered trademark of Gregory Ember, so neither is copied |
+| `mame.png` | "MAME" wordmark drawn in pixels by `wordmark()` in `fetch_icons.py` (37 × 13, bold italic, one slit) | this repo's. MAME's own icon is GPL-2.0 and "MAME" a registered trademark of Gregory Ember, so neither is copied |
