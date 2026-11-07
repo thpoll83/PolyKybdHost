@@ -36,7 +36,7 @@ FLUENT = {
     "object": "ms:widgets",
     "table": "Table",
     "textblock": "ms:subject",
-    "textbox": "ms:text_fields",
+    "textbox": "Rename",                  # text field with an I-beam cursor (as Altium)
     "recalcpage": "ms:refresh",
     "calcsheet": "ms:calculate",
     "separateh": "ms:horizontal_distribute",
@@ -105,14 +105,14 @@ TEXT = {
     "kw_break": ("break", 10),
     "kw_return": ("return", 10),
     "kw_try": ("try", 16),
+    # The longest keywords on one line, at the largest size that fits 36 px.
+    "kw_elseif": ("else if", 10),
+    "kw_alsoif": ("also if", 10),
+    "kw_continue": ("continue", 7),
 }
 
 # name -> (top line, bottom line, font px): two lines.
-TWO_LINE = {
-    "kw_elseif": ("else", "if", 11),
-    "kw_alsoif": ("also", "if", 11),
-    "kw_continue": ("con", "tinue", 11),
-}
+TWO_LINE: dict[str, tuple[str, str, int]] = {}
 
 
 def _canvas():

@@ -64,13 +64,15 @@ Shift+] `}` (if), Shift+; `:` (definition) and Shift+6 `^` (exponent).
   <https://github.com/google/material-design-icons> (`ms:` entries), and
   Microsoft Fluent UI System Icons, MIT,
   <https://github.com/microsoft/fluentui-system-icons> (Table, Table Insert
-  Column), through `icon_fetch.fluent`.
+  Column, and Rename for the text box: a field with an I-beam cursor, as in
+  the Altium set), through `icon_fetch.fluent`.
 - Operator icons (√x, ∫, Σ, ∏, d/dx, ∂/∂x, ∇, f′, ∞, α, ≥, ≤, ∈, ⊕, ∧, ∨, ¬,
   ≡, :=, ←, →, ×, ‖x‖, Mᵀ, |x|, xⁿ, ∠, lim, f∗g, ⊛, f(x), the equation break
   marks and the programming keywords) are text in DejaVu Sans Bold
   (`/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`, Bitstream Vera
   licence with DejaVu changes in the public domain), drawn 1 bit at 36x32 with
-  anti-aliasing off. The matrix, program, contour plot, complex conjugate,
+  anti-aliasing off. Every keyword is on one line; "else if" and "also if"
+  are 10 px and "continue" 7 px, the largest sizes that fit 36 px. The matrix, program, contour plot, complex conjugate,
   vectorize and spreadsheet icons are drawn with lines in `fetch_icons.py`.
 - Labels that name a shared concept (New, Open, Save, Print, Close, Help,
   Bold, Italic, Underline, Subscript) are drawn by the shared renderer and
