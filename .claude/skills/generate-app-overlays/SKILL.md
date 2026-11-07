@@ -610,12 +610,12 @@ icon-library bullet).
 cannot merge a binary. When `main` changed `scripts/generate_app_overlays.py` (or an
 icon source) and regenerated the sets, don't pick either side of a PNG conflict.
 Regenerate the PR's spec with the MERGED generator, then check that EVERY PNG the
-spec writes (the primary set and each combo tier) differs from `main` only where the
-PR changed something:
+spec writes (the primary set and each combo tier, conflicted or not) differs from
+`main` only where the PR changed something:
 
 ```bash
 .venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/<app>/<spec>.yaml
-for f in $(git diff --name-only --diff-filter=U -- 'polyhost/res/overlays/*.png'); do
+for f in $(git diff --name-only origin/main -- 'polyhost/res/overlays/*.png'); do
   git show origin/main:"$f" > /tmp/main.png 2>/dev/null || { echo "$f: new"; continue; }
   .venv/bin/python -c "import sys; from PIL import Image, ImageChops as C; \
 print(sys.argv[1], C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
