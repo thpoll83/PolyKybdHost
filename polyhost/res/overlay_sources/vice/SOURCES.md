@@ -69,7 +69,18 @@ pinned copy `retroarch/fetch_icons.py` uses) above the `driveattach` or
 drives 10 and 11 are 0 and 1, so the number says which device the key acts on.
 Printers are CBM devices 4, 5 and 6 (`src/printerdrv/printer.h`); the userport
 printer on key 3 has no device number, so its icon says USER (8 px, to fit).
-VICE has no device 7 printer and no hotkey for it.
+VICE has no device 7 printer and no hotkey for it. `monterm.png` is the same
+layout: MON (8 px) above the `terminal` symbol, for the monitor on Alt+H.
+
+`composites()` draws four more 36 x 32 icons from the fetched ones, each placed
+1:1:
+
+| file | drawing |
+|---|---|
+| `tapedetach.png` | the `tape` symbol (14 px high) above `eject` (16 px) |
+| `cartdetach.png` | the `cartattach` symbol (14 px) above `eject` (16 px) |
+| `swapjoy.png` | a 16 x 15 joystick drawn pixel by pixel in `joystick()`, above `swapports` (15 px) |
+| `decorframe.png` | the corners of `fullscreen` around a 20 px `toolbar` window |
 
 ## ESC mark
 

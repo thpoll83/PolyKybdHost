@@ -37,7 +37,7 @@ program_icon_margin: 0
 bindings:
   - { key: A, mods: [ALT], icon: smartattach.png, label: "Smart attach", except: [macos], source: hotkeys.vhk }
   - { key: A, mods: [GUI], icon: smartattach.png, label: "Smart attach", only: [macos], source: hotkeys.vhk }
-  - { key: H, mods: [ALT], icon: monitor.png, label: "Monitor", except: [macos], source: hotkeys.vhk }
+  - { key: H, mods: [ALT], icon: monterm.png, label: "Monitor", region: [36, 32], except: [macos], source: hotkeys.vhk }
   - { key: F9, mods: [ALT], icon: resetcpu.png, label: "Reset", except: [macos], source: hotkeys.vhk }
   - { key: F9, mods: [GUI], icon: resetcpu.png, label: "Reset", only: [macos], source: hotkeys.vhk }
   - { key: F12, mods: [ALT], icon: powercycle.png, label: "Power cycle", except: [macos], source: hotkeys.vhk }
@@ -70,12 +70,12 @@ bindings:
   - { key: N, mods: [SHIFT, GUI], icon: flipprev.png, label: "Previous disk in fliplist", only: [macos], source: hotkeys-fliplist.vhk }
   - { key: T, mods: [ALT], icon: tape.png, label: "Attach tape", except: [macos], source: hotkeys-datasette.vhk }
   - { key: T, mods: [GUI], icon: tape.png, label: "Attach tape", only: [macos], source: hotkeys-datasette.vhk }
-  - { key: T, mods: [SHIFT, ALT], icon: eject.png, label: "Detach tape", except: [macos], source: hotkeys-datasette.vhk }
-  - { key: T, mods: [SHIFT, GUI], icon: eject.png, label: "Detach tape", only: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [SHIFT, ALT], icon: tapedetach.png, label: "Detach tape", region: [36, 32], except: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [SHIFT, GUI], icon: tapedetach.png, label: "Detach tape", region: [36, 32], only: [macos], source: hotkeys-datasette.vhk }
   - { key: C, mods: [ALT], icon: cartattach.png, label: "Attach cartridge", except: [macos], source: hotkeys-cartridge.vhk }
   - { key: C, mods: [GUI], icon: cartattach.png, label: "Attach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
-  - { key: C, mods: [SHIFT, ALT], icon: eject.png, label: "Detach cartridge", except: [macos], source: hotkeys-cartridge.vhk }
-  - { key: C, mods: [SHIFT, GUI], icon: eject.png, label: "Detach cartridge", only: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [SHIFT, ALT], icon: cartdetach.png, label: "Detach cartridge", region: [36, 32], except: [macos], source: hotkeys-cartridge.vhk }
+  - { key: C, mods: [SHIFT, GUI], icon: cartdetach.png, label: "Detach cartridge", region: [36, 32], only: [macos], source: hotkeys-cartridge.vhk }
   - { key: Z, mods: [ALT], icon: freeze.png, label: "Cartridge freeze", except: [macos], source: hotkeys-cartridge.vhk }
   - { key: Z, mods: [GUI], icon: freeze.png, label: "Cartridge freeze", only: [macos], source: hotkeys-cartridge.vhk }
   - { key: "3", mods: [ALT], icon: printer3.png, label: "Form feed, userport printer", region: [36, 32], except: [macos], source: hotkeys.vhk }
@@ -108,8 +108,8 @@ bindings:
   - { key: D, mods: [GUI], icon: fullscreen.png, label: "Full screen", only: [macos], source: hotkeys.vhk }
   - { key: R, mods: [ALT], icon: restoredisp.png, label: "Restore display size", except: [macos], source: hotkeys.vhk }
   - { key: R, mods: [GUI], icon: restoredisp.png, label: "Restore display size", only: [macos], source: hotkeys.vhk }
-  - { key: B, mods: [ALT], icon: decorations.png, label: "Full screen decorations", except: [macos], source: hotkeys.vhk }
-  - { key: B, mods: [GUI], icon: decorations.png, label: "Full screen decorations", only: [macos], source: hotkeys.vhk }
+  - { key: B, mods: [ALT], icon: decorframe.png, label: "Full screen decorations", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: B, mods: [GUI], icon: decorframe.png, label: "Full screen decorations", region: [36, 32], only: [macos], source: hotkeys.vhk }
   - { key: W, mods: [ALT], icon: warp.png, label: "Warp mode", except: [macos], source: hotkeys.vhk }
   - { key: W, mods: [GUI], icon: warp.png, label: "Warp mode", only: [macos], source: hotkeys.vhk }
   - { key: P, mods: [ALT], icon: pause.png, label: "Pause", except: [macos], source: hotkeys.vhk }
@@ -118,8 +118,8 @@ bindings:
   - { key: P, mods: [SHIFT, GUI], icon: frameadv.png, label: "Advance frame", only: [macos], source: hotkeys.vhk }
   - { key: M, mods: [ALT], icon: mousegrab.png, label: "Grab mouse", except: [macos], source: hotkeys.vhk }
   - { key: M, mods: [GUI], icon: mousegrab.png, label: "Grab mouse", only: [macos], source: hotkeys.vhk }
-  - { key: J, mods: [ALT], icon: swapports.png, label: "Swap joystick ports", except: [macos], source: hotkeys.vhk }
-  - { key: J, mods: [GUI], icon: swapports.png, label: "Swap joystick ports", only: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [ALT], icon: swapjoy.png, label: "Swap joystick ports", region: [36, 32], except: [macos], source: hotkeys.vhk }
+  - { key: J, mods: [GUI], icon: swapjoy.png, label: "Swap joystick ports", region: [36, 32], only: [macos], source: hotkeys.vhk }
   - { key: J, mods: [SHIFT, ALT], icon: keysetjoy.png, label: "Keyset joystick", except: [macos], source: hotkeys.vhk }
   - { key: J, mods: [SHIFT, GUI], icon: keysetjoy.png, label: "Keyset joystick", only: [macos], source: hotkeys.vhk }
   - { key: O, mods: [ALT], icon: settings.png, label: "Settings", except: [macos], source: hotkeys-settings.vhk }
