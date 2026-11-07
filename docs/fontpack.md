@@ -171,6 +171,14 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   so `--check` lists new eligible icons as **pending** and fails only when the
   shipped files disagree with `icon_ids.yaml`. Rebuild when the pending list is
   worth a re-flash, for example before a release.
+  ⚠️ **A generator change that redraws many templates needs a rebuild of its own,
+  and the library only grows.** #710 (box filter for vector icons) changed 1068
+  templates. 1165 of the 2520 library icons then matched no shipped template, and
+  1007 new frames were pending. The rebuild (#713) appended the 1007 as new ids,
+  because a retired id keeps its glyph, so the bundle grew from 262,068 to
+  356,896 B. Over 256 KB, firmware below protocol 27 (before 1.10.2) refuses the
+  bundle at BEGIN and keeps its old library (`PolyCore._bundle_fits_device`).
+  Check the new size against both slot sizes before you rebuild.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic
