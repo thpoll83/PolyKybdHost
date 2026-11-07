@@ -20,7 +20,7 @@ from polyhost.res.overlay_sources.cnc_remastered import fetch_icons as cnc  # no
 
 LOGO_URL = ("https://raw.githubusercontent.com/VICE-Team/svn-mirror/3.10.0/"
             "vice/data/common/vice-logo-black.svg")
-LOGO_W = 52      # px wide; the wordmark is 3.6:1, so 15 px high, and reads "VICE"
+LOGO_W = 40      # px wide: 40 x 11, still reads "VICE" and clears the Esc legend (x 2..27)
 
 FLUENT = {
     "smartattach":   "ms:attach_file",

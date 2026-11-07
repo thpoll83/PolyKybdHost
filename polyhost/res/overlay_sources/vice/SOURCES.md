@@ -69,8 +69,9 @@ which VICE installs with every build. It carries no licence of its own, so VICE'
 licence covers it: GPL-2.0-or-later (`vice/README`: "either version 2 of the
 License, or (at your option) any later version"), compatible with this
 repository's GPL-3.0-or-later. `vice_mark()` in `fetch_icons.py` renders the
-wordmark 52 px wide (52 x 15 at 1 bit, where it still reads "VICE") and the
-spec places it 1:1 at the bottom right of Esc. The machine icons in
+wordmark 40 px wide (40 x 11 at 1 bit, where it still reads "VICE") and the
+spec places it 1:1 at the bottom right of Esc. At 40 px its 3 px clearance
+misses the Esc legend (ink x 2..27); 44 px would cut 4 of its pixels, 52 px 46. The machine icons in
 `vice/data/common/icon_sources/` are not used: their README says not to ship them.
 
 ## Process names
