@@ -47,20 +47,29 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          TRIGGER_PR: ${{ github.event.pull_request.number }}
         run: |
           python3 - <<'PYEOF'
           import json
           import os
           import re
           import subprocess
+          import sys
+          import time
 
           repo = os.environ["REPO"]
 
-          def api(path):
-              out = subprocess.run(["gh", "api", path], check=True,
-                                   capture_output=True, text=True).stdout
-              return json.loads(out)
+          def api(path, attempts=3):
+              """GET through gh, retrying a transient failure with backoff."""
+              for i in range(attempts):
+                  res = subprocess.run(["gh", "api", path],
+                                       capture_output=True, text=True)
+                  if res.returncode == 0:
+                      return json.loads(res.stdout)
+                  print(f"gh api {path} failed (attempt {i + 1}/{attempts}): "
+                        f"{res.stderr.strip()}")
+                  if i + 1 < attempts:
+                      time.sleep(5 * 2 ** i)
+              sys.exit(f"gh api {path} kept failing; re-run this job.")
 
           def merged_pr(sha):
               """The PR merged into main that produced this main commit, or None."""
@@ -84,9 +93,12 @@ jobs:
                   seen.add(pr["number"])
                   pending.append(pr)
           if not anchored:
-              print(f"No bump PR in the last {len(shas)} first-parent commits; "
-                    "bumping for the triggering PR only.")
-              pending = [api(f"repos/{repo}/pulls/{os.environ['TRIGGER_PR']}")]
+              # Bumping for only some of these PRs would make the new bump PR
+              # the anchor, and the rest could never be counted. Stop instead.
+              sys.exit(f"No bump PR in the last {len(shas)} first-parent commits "
+                       f"of main, so the PRs to count are unknown. Set the "
+                       f"version by hand in a PR whose branch starts with "
+                       f"'bump/host-', then re-run this job.")
           pending.reverse()  # merge order
 
           path = "polyhost/_version.py"
