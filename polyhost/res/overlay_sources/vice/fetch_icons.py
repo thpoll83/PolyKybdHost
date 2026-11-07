@@ -40,6 +40,7 @@ FLUENT = {
     "flipnext":      "ms:arrow_forward",
     "flipprev":      "ms:arrow_back",
     "tape":          "ms:voicemail",
+    "add":           "ms:add",
     "freeze":        "ms:ac_unit",
     "formfeed":      "ms:print",
     "copy":          "Copy",
@@ -180,7 +181,9 @@ def composites(out: Path) -> None:
         numbered(out / "formfeed.png", label, out / f"printer{name}.png", px=px)
     stacked(symbol(out / "tape.png", 36, 14), symbol(out / "eject.png", 36, 16),
             out / "tapedetach.png")
-    centred(cartridge(28, 26), out / "cartattach.png")
+    stacked(symbol(out / "tape.png", 36, 14), symbol(out / "add.png", 36, 14),
+            out / "tapeattach.png")
+    stacked(cartridge(18, 14), symbol(out / "add.png", 36, 14), out / "cartattach.png")
     stacked(cartridge(18, 14), symbol(out / "eject.png", 36, 16), out / "cartdetach.png")
     stacked(joystick(), symbol(out / "swapports.png", 36, 15), out / "swapjoy.png")
     window_in_frame(out, out / "decorframe.png")

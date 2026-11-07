@@ -68,8 +68,8 @@ bindings:
   - { key: N, mods: [GUI], icon: flipnext.png, label: "Next disk in fliplist", only: [macos], source: hotkeys-fliplist.vhk }
   - { key: N, mods: [SHIFT, ALT], icon: flipprev.png, label: "Previous disk in fliplist", except: [macos], source: hotkeys-fliplist.vhk }
   - { key: N, mods: [SHIFT, GUI], icon: flipprev.png, label: "Previous disk in fliplist", only: [macos], source: hotkeys-fliplist.vhk }
-  - { key: T, mods: [ALT], icon: tape.png, label: "Attach tape", except: [macos], source: hotkeys-datasette.vhk }
-  - { key: T, mods: [GUI], icon: tape.png, label: "Attach tape", only: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [ALT], icon: tapeattach.png, label: "Attach tape", region: [36, 32], except: [macos], source: hotkeys-datasette.vhk }
+  - { key: T, mods: [GUI], icon: tapeattach.png, label: "Attach tape", region: [36, 32], only: [macos], source: hotkeys-datasette.vhk }
   - { key: T, mods: [SHIFT, ALT], icon: tapedetach.png, label: "Detach tape", region: [36, 32], except: [macos], source: hotkeys-datasette.vhk }
   - { key: T, mods: [SHIFT, GUI], icon: tapedetach.png, label: "Detach tape", region: [36, 32], only: [macos], source: hotkeys-datasette.vhk }
   - { key: C, mods: [ALT], icon: cartattach.png, label: "Attach cartridge", region: [36, 32], except: [macos], source: hotkeys-cartridge.vhk }

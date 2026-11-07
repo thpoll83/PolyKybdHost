@@ -71,12 +71,13 @@ Printers are CBM devices 4, 5 and 6 (`src/printerdrv/printer.h`); the userport
 printer on key 3 has no device number, so its icon says USER (8 px, to fit).
 VICE has no device 7 printer and no hotkey for it.
 
-`composites()` draws six more 36 x 32 icons, each placed 1:1:
+`composites()` draws seven more 36 x 32 icons, each placed 1:1:
 
 | file | drawing |
 |---|---|
 | `monlens.png` | the `troubleshoot` symbol (a magnifier with a pulse line), for the monitor |
-| `cartattach.png` | a 28 x 26 cartridge drawn pixel by pixel in `cartridge()`: a box with a label above an edge connector |
+| `tapeattach.png` | the `tape` symbol (14 px high) above `add`, a plus (14 px) |
+| `cartattach.png` | an 18 x 14 cartridge drawn pixel by pixel in `cartridge()` (a box with a label above an edge connector), above `add` (14 px) |
 | `tapedetach.png` | the `tape` symbol (14 px high) above `eject` (16 px) |
 | `cartdetach.png` | an 18 x 14 `cartridge()` above `eject` (16 px) |
 | `swapjoy.png` | a 16 x 15 joystick drawn pixel by pixel in `joystick()`, above `swapports` (15 px) |
