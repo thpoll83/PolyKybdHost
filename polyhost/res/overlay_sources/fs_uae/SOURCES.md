@@ -56,8 +56,14 @@ Both licences are compatible with this repository's GPL-3.0-or-later.
 
 ## ESC mark
 
-A drawn "FS" tile (`program_marks.ensure`). FS-UAE's icon files
-(`share/icons/hicolor/`) carry no licence statement of their own.
+Two check marks side by side with "FS" (Press Start 2P, 8 px, SIL OFL 1.1, the
+pinned copy `retroarch/fetch_icons.py` uses) at the bottom right: the motif of
+FS-UAE's own icon (`.attic/share/icons/hicolor/*/apps/net.fs_uae.FS-UAE.png`
+in <https://github.com/FrodeSolheim/fs-uae>). `fs_uae_mark()` in
+`fetch_icons.py` draws it 37 x 32 at 1 bit, and the spec places it 1:1 at the
+right of Esc. The icon file is not used: it carries no licence of its own, and
+FS-UAE's `COPYING` is GPL-2.0 with no "or later" in its own sources, which is
+not compatible with this repository's GPL-3.0-or-later.
 
 ## Process name
 
