@@ -3348,3 +3348,47 @@ retroarch:
 # install.
 mame,mame64:
   overlay: [mame_template.mods.png, mame_template.combo.mods.png]
+# VICE (overlay_sources/vice/). VICE binds its hotkeys to Alt on Windows and
+# Linux and to Command on macOS, hence the macOS branch. Process names: the
+# emulator binaries (x64sc.exe and so on on Windows). Not checked on a running
+# install. While the C64 family or the VIC-20 is in front, the keycaps also show
+# the Commodore keycap lettering in the top-left corner (see overlay-mapping.md,
+# "Keycap face per application"). The face is repeated in the macOS branch,
+# because the matcher returns the branch, not its parent.
+x64sc,x64,x128,xscpu64,x64dtv,xvic:
+  overlay: [vice_template.mods.png, vice_template.combo.mods.png]
+  glyph_script: c64keys
+  glyph_script_position: top-left
+  os:
+    macos:
+      overlay: [vice_template_mac.mods.png, vice_template_mac.combo.mods.png, vice_template_mac.extra.mods.png]
+      glyph_script: c64keys
+      glyph_script_position: top-left
+# The other VICE machines have different keyboards, so they keep the user's face.
+xplus4,xpet,xcbm2,xcbm5x0:
+  overlay: [vice_template.mods.png, vice_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [vice_template_mac.mods.png, vice_template_mac.combo.mods.png, vice_template_mac.extra.mods.png]
+# Amiga emulators: FS-UAE (overlay_sources/fs_uae/), WinUAE (winuae/) and
+# Amiberry (amiberry/). Each shows the Amiga Topaz lettering in the top-left
+# corner while it is in front. FS-UAE's Mod key is Command on macOS, hence its
+# macOS branch, which repeats the face. Process names: fs-uae, winuae.exe /
+# winuae64.exe, amiberry and amiberry-lite. Not checked on a running install.
+fs-uae:
+  overlay: fs_uae_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
+  os:
+    macos:
+      overlay: [fs_uae_template_mac.mods.png, fs_uae_template_mac.combo.mods.png]
+      glyph_script: amiga
+      glyph_script_position: top-left
+winuae,winuae64:
+  overlay: winuae_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
+amiberry,amiberry-lite:
+  overlay: amiberry_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
