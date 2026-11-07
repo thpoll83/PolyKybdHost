@@ -30,7 +30,7 @@ FLUENT = {
     "rewind":      "ms:fast_rewind",
     "pause":       "ms:pause",
     "frameadv":    "ms:skip_next",
-    "mute":        "ms:volume_off",
+    "mute":        "Speaker Mute",
     "savestate":   "Save",
     "loadstate":   "Folder Open",
     "slotminus":   "ms:exposure_neg_1",
