@@ -288,6 +288,35 @@ PROGRAM_ALPHA_CUT = 127
 GEOMETRY_KEYS = ("region", "anchor", "margin", "fit", "threshold", "mode")
 
 
+# Per-process memo for the two lookups every binding makes. `match()` walks the
+# whole localized lexicon per label and `load_codepoints()` reads and parses the
+# catalog's JSON per call. The icon-library build asks for the same few hundred
+# labels and two faces tens of thousands of times. Both inputs are fixed for the
+# run.
+_LABEL_MATCH: dict = {}
+_CODEPOINTS: dict = {}
+
+
+def _match_label(label: str):
+    from polyhost.services import shortcut_icons
+    if label not in _LABEL_MATCH:
+        _LABEL_MATCH[label] = shortcut_icons.match(label, allow_fuzzy=False)
+    return _LABEL_MATCH[label]
+
+
+def _codepoints(cache_dir, face):
+    """`icon_catalog.load_codepoints`, memoized once it returns a table. An
+    empty answer (no cache, no network yet) is not kept."""
+    from polyhost.services import icon_catalog
+    key = (cache_dir, face)
+    if key not in _CODEPOINTS:
+        table = icon_catalog.load_codepoints(cache_dir, face=face)
+        if not table:
+            return table
+        _CODEPOINTS[key] = table
+    return _CODEPOINTS[key]
+
+
 def concept_to_share(binding: dict) -> str:
     """The concept this binding draws from the SHARED renderer, or "".
 
@@ -352,7 +381,7 @@ def concept_to_share(binding: dict) -> str:
     # change of default and the second a codepoint-only concept, which would
     # otherwise have the generator draw the committed icon while this function
     # claimed the cell was shared -- the one divergence the survey cannot see.
-    hit = shortcut_icons.match(label, allow_fuzzy=False)
+    hit = _match_label(label)
     if hit is None or not hit.icon:
         return ""
     text = shortcut_icons.normalize(label)
@@ -394,7 +423,7 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     if not qualified:
         return None, ""
     face, bare = icon_catalog.split_face(qualified)
-    table = icon_catalog.load_codepoints(cache_dir, face=face)
+    table = _codepoints(cache_dir, face)
     font = icon_catalog.fetch_subset([bare], cache_dir, face=face)
     if not font or not table:
         raise RuntimeError(
@@ -409,17 +438,38 @@ def shared_concept_mask(concept: str, cache_dir: str | None = None):
     return mask, qualified
 
 
+def _resample_for(src: Image.Image, nw: int, nh: int):
+    """The filter that shrinks `src` to `nw` x `nh` with the fewest broken lines.
+
+    A source with anti-aliased edges (any pixel partly transparent) is a vector
+    render: Fluent, Material, game-icons.net, Simple Icons. BOX averages each
+    output pixel over exactly its own area, so a straight stroke lands on the
+    same rows along its length and survives the 1-bit cut as a straight line.
+    LANCZOS rings at the edges, and after the cut that ringing shows as
+    one-pixel steps and dents in lines that should be straight.
+
+    A source with hard alpha (or none) is pixel art: dithered game sprites and
+    the 1-bit drawings the specs place 1:1. It keeps LANCZOS, the filter its
+    thresholds were tuned with. Enlarging always uses LANCZOS: BOX is an area
+    filter and only shrinks.
+    """
+    if nw > src.width or nh > src.height or src.mode != "RGBA":
+        return Image.LANCZOS
+    alpha = np.asarray(src.getchannel("A"))
+    anti_aliased = bool(((alpha > 0) & (alpha < 255)).any())
+    return Image.BOX if anti_aliased else Image.LANCZOS
+
+
 def _fit_stamp(src: Image.Image, fit: str, region: tuple[int, int, int, int]) -> Image.Image:
     """Scale `src` into `region` and paste onto a full 72x40 canvas (same mode)."""
     x0, y0, bw, bh = region
     if fit == "stretch":
-        scaled = src.resize((bw, bh), Image.LANCZOS)
         nw, nh = bw, bh
     else:  # contain: preserve aspect inside the region
         sw, sh = src.size
         scale = min(bw / sw, bh / sh)
         nw, nh = max(1, round(sw * scale)), max(1, round(sh * scale))
-        scaled = src.resize((nw, nh), Image.LANCZOS)
+    scaled = src.resize((nw, nh), _resample_for(src, nw, nh))
     canvas = Image.new(src.mode, (SLOT_W, SLOT_H), 0 if src.mode == "L" else (0, 0, 0, 0))
     # centre within the region
     canvas.paste(scaled, (x0 + (bw - nw) // 2, y0 + (bh - nh) // 2))
