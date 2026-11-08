@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-07 09:05+0000\n"
+"POT-Creation-Date: 2026-11-08 10:40+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: vi\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:148
+#: polyhost/device/command_ids.py:153
 #, python-brace-format
 msgid "preset {value}"
 msgstr "mức đặt sẵn {value}"
 
-#: polyhost/device/command_ids.py:150
+#: polyhost/device/command_ids.py:155
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} phút"
 
-#: polyhost/device/command_ids.py:151
+#: polyhost/device/command_ids.py:156
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} giây"
@@ -539,7 +539,8 @@ msgstr "<b>Thất bại:</b> {reason}"
 msgid "Brightness"
 msgstr "Độ sáng"
 
-#: polyhost/gui/cmd_menu.py:134
+#. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
+#: polyhost/gui/cmd_menu.py:134 polyhost/gui/tap_terms_dialog.py:45
 msgid "Off"
 msgstr "Tắt"
 
@@ -828,7 +829,7 @@ msgstr "đi kèm"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "Lệnh PolyKybd (*.poly.cmd)"
 
-#: polyhost/gui/cmd_menu.py:541 polyhost/host.py:2421
+#: polyhost/gui/cmd_menu.py:541 polyhost/host.py:2451
 msgid "Open file"
 msgstr "Mở tệp"
 
@@ -1711,8 +1712,8 @@ msgstr "Đã bắt đầu nạp — theo dõi khay hệ thống/nhật ký."
 msgid "Discard all pending edits to '{label}'?"
 msgstr "Bỏ mọi thay đổi đang chờ của '{label}'?"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:3015
-#: polyhost/host.py:3056 polyhost/host.py:3083
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:3045
+#: polyhost/host.py:3086 polyhost/host.py:3113
 msgid "Firmware Update"
 msgstr "Cập nhật firmware"
 
@@ -1877,7 +1878,7 @@ msgstr "không có dữ liệu xem trước (đi kèm hoặc bản checkout)"
 msgid "the shipped language table is missing"
 msgstr "thiếu bảng ngôn ngữ đi kèm"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3031
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3061
 msgid "unknown"
 msgstr "không xác định"
 
@@ -2116,11 +2117,6 @@ msgstr ""
 #, python-brace-format
 msgid "{error}  — fix it or switch back."
 msgstr "{error}  — hãy sửa hoặc chuyển lại."
-
-#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
-msgid " ms"
-msgstr " ms"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:382
 #, python-brace-format
@@ -2542,7 +2538,7 @@ msgstr "Không có kết quả khớp"
 msgid "{index} of {total}"
 msgstr "{index} / {total}"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2038
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2068
 msgid "Mock keyboard"
 msgstr "Bàn phím mô phỏng"
 
@@ -2833,7 +2829,7 @@ msgstr "Độ trễ"
 msgid "Dev"
 msgstr "Dev"
 
-#: polyhost/gui/settings_dialog.py:53 polyhost/host.py:901
+#: polyhost/gui/settings_dialog.py:53 polyhost/host.py:908
 msgid "Developer"
 msgstr "Nhà phát triển"
 
@@ -3403,6 +3399,34 @@ msgstr "Tải lại lần nữa"
 msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
 msgstr "Tải xuống thất bại ({error}). Bạn có thể lấy tệp .uf2 từ <a href=\"{url}\">trang phát hành</a>."
 
+#: polyhost/gui/tap_terms_dialog.py:16
+msgid "A key with a tap and a hold action types its tap action when you release it before the tapping term, and acts as its hold action when you hold it longer.<br><br>A tap-hold key pressed within the Flow Tap term after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off.<br><br>The keyboard stores both values."
+msgstr "Phím có thao tác chạm và thao tác giữ sẽ gửi thao tác chạm khi bạn nhả phím trước thời gian chạm, và hoạt động như thao tác giữ khi bạn giữ lâu hơn.<br><br>Phím chạm-giữ được nhấn trong thời gian Flow Tap sau phím trước đó luôn gửi thao tác chạm, để gõ nhanh không kích hoạt phím bổ trợ. 0 tắt Flow Tap.<br><br>Bàn phím lưu cả hai giá trị."
+
+#: polyhost/gui/tap_terms_dialog.py:28 polyhost/host.py:2031
+#: polyhost/host.py:2045
+msgid "Tap-Hold Timing"
+msgstr "Thời gian chạm-giữ"
+
+#. TRANSLATORS: unit after a number of milliseconds in a spin box.
+#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
+#: polyhost/gui/tap_terms_dialog.py:37 polyhost/gui/tap_terms_dialog.py:43
+msgid " ms"
+msgstr " ms"
+
+#: polyhost/gui/tap_terms_dialog.py:49
+msgid "This keyboard's firmware has no Flow Tap."
+msgstr "Firmware của bàn phím này không có Flow Tap."
+
+#: polyhost/gui/tap_terms_dialog.py:52
+msgid "Tapping term:"
+msgstr "Thời gian chạm:"
+
+#: polyhost/gui/tap_terms_dialog.py:53
+msgid "Flow Tap term:"
+msgstr "Thời gian Flow Tap:"
+
 #: polyhost/gui/tray_notify.py:62
 #, python-brace-format
 msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
@@ -3419,7 +3443,7 @@ msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — có firmware v{fw_version}"
 
 #: polyhost/forwarder.py:262 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:757
+#: polyhost/host.py:764
 msgid "Updates"
 msgstr "Cập nhật"
 
@@ -3554,11 +3578,11 @@ msgstr "Gói engine của bàn phím đã được cập nhật."
 msgid "Engine pack update failed: {error}"
 msgstr "Cập nhật gói engine thất bại: {error}"
 
-#: polyhost/host.py:500 polyhost/host.py:1592
+#: polyhost/host.py:500 polyhost/host.py:1600
 msgid "Waiting for PolyKybd..."
 msgstr "Đang chờ PolyKybd..."
 
-#: polyhost/host.py:501 polyhost/host.py:1439
+#: polyhost/host.py:501 polyhost/host.py:1447
 msgid "Press to pause connection"
 msgstr "Nhấn để tạm dừng kết nối"
 
@@ -3604,7 +3628,7 @@ msgstr "Kiểm tra gói phông chữ..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
 #: polyhost/forwarder.py:248 polyhost/forwarder.py:388 polyhost/host.py:584
-#: polyhost/host.py:1441
+#: polyhost/host.py:1449
 msgid "Pause"
 msgstr "Tạm dừng"
 
@@ -3656,97 +3680,101 @@ msgstr "Ở góc trên bên trái"
 msgid "Keycap Size"
 msgstr "Cỡ chữ mặt phím"
 
-#: polyhost/host.py:749
+#: polyhost/host.py:748
+msgid "Tap-Hold Timing…"
+msgstr "Thời gian chạm-giữ…"
+
+#: polyhost/host.py:756
 msgid "Configure Keymap"
 msgstr "Cấu hình sơ đồ phím"
 
-#: polyhost/host.py:759
+#: polyhost/host.py:766
 msgid "Check for host update..."
 msgstr "Kiểm tra cập nhật ứng dụng host..."
 
-#: polyhost/host.py:798
+#: polyhost/host.py:805
 msgid "Check for keyboard firmware update…"
 msgstr "Kiểm tra cập nhật firmware bàn phím…"
 
-#: polyhost/host.py:807
+#: polyhost/host.py:814
 msgid "Keyboard fonts"
 msgstr "Phông chữ bàn phím"
 
-#: polyhost/host.py:841
+#: polyhost/host.py:848
 msgid "Install WinCompose…"
 msgstr "Cài đặt WinCompose…"
 
-#: polyhost/host.py:863
+#: polyhost/host.py:870
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "Cho phép truy cập bàn phím (quy tắc udev)…"
 
-#: polyhost/forwarder.py:280 polyhost/host.py:884
+#: polyhost/forwarder.py:280 polyhost/host.py:891
 msgid "Set up the terminal and editors…"
 msgstr "Thiết lập terminal và trình soạn thảo…"
 
-#: polyhost/host.py:903
+#: polyhost/host.py:910
 msgid "Change System Input Language"
 msgstr "Đổi ngôn ngữ nhập của hệ thống"
 
-#: polyhost/host.py:909
+#: polyhost/host.py:916
 msgid "Inspect MRU Cache..."
 msgstr "Kiểm tra bộ đệm MRU..."
 
-#: polyhost/host.py:915
+#: polyhost/host.py:922
 msgid "Mock Keyboard..."
 msgstr "Bàn phím mô phỏng..."
 
-#: polyhost/host.py:923
+#: polyhost/host.py:930
 msgid "Refresh unicode input mode"
 msgstr "Làm mới chế độ nhập unicode"
 
-#: polyhost/host.py:927
+#: polyhost/host.py:934
 msgid "Save MRU cache now"
 msgstr "Lưu bộ đệm MRU ngay"
 
-#: polyhost/forwarder.py:323 polyhost/host.py:941
+#: polyhost/forwarder.py:323 polyhost/host.py:948
 msgid "Help && About"
 msgstr "Trợ giúp && Giới thiệu"
 
-#: polyhost/forwarder.py:319 polyhost/host.py:950
+#: polyhost/forwarder.py:319 polyhost/host.py:957
 msgid "Open config folder"
 msgstr "Mở thư mục cấu hình"
 
-#: polyhost/host.py:959
+#: polyhost/host.py:966
 msgid "Only quit GUI"
 msgstr "Chỉ thoát giao diện"
 
-#: polyhost/host.py:1069
+#: polyhost/host.py:1076
 msgid "System language query not supported for this platform."
 msgstr "Không hỗ trợ truy vấn ngôn ngữ hệ thống trên nền tảng này."
 
-#: polyhost/host.py:1268
+#: polyhost/host.py:1275
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "Thử lại phông chữ bàn phím ({n} thất bại)…"
 
-#: polyhost/host.py:1270
+#: polyhost/host.py:1277
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "Nạp lại các gói con phông chữ có lần thử gần nhất thất bại: {bundles}"
 
-#: polyhost/host.py:1276
+#: polyhost/host.py:1283
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "Cập nhật phông chữ bàn phím ({n})…"
 
-#: polyhost/host.py:1278
+#: polyhost/host.py:1285
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "Nạp các gói con phông chữ mà bàn phím còn thiếu, đã cũ hoặc nạp không thành công: {bundles}"
 
-#: polyhost/host.py:1283
+#: polyhost/host.py:1290
 msgid "Keyboard fonts: up to date"
 msgstr "Phông chữ bàn phím: đã cập nhật"
 
-#: polyhost/host.py:1284
+#: polyhost/host.py:1291
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3754,84 +3782,84 @@ msgstr ""
 "Mọi gói con phông chữ đi kèm đã có trên bàn phím.\n"
 "Nhà phát triển → Gói phông chữ → Nạp lại tất cả gói con để buộc gửi lại nếu mặt phím vẫn hiển thị sai."
 
-#: polyhost/forwarder.py:746 polyhost/host.py:1314
+#: polyhost/forwarder.py:746 polyhost/host.py:1321
 msgid "Config folder"
 msgstr "Thư mục cấu hình"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1412
+#: polyhost/host.py:1420
 #, python-brace-format
 msgid "{rate} link"
 msgstr "liên kết {rate}"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1414
+#: polyhost/host.py:1422
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "liên kết HID, tối đa {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1421
+#: polyhost/host.py:1429
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "Đã kết nối: {link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1433
+#: polyhost/host.py:1441
 msgid "Reconnect"
 msgstr "Kết nối lại"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:388 polyhost/host.py:1436
+#: polyhost/forwarder.py:388 polyhost/host.py:1444
 msgid "Resume"
 msgstr "Tiếp tục"
 
-#: polyhost/host.py:1519 polyhost/host.py:1584
+#: polyhost/host.py:1527 polyhost/host.py:1592
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "Không thể đổi ngôn ngữ hệ điều hành {language}."
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1608
+#: polyhost/host.py:1616
 msgid "Firmware image (*.bin)"
 msgstr "Ảnh firmware (*.bin)"
 
-#: polyhost/host.py:1609
+#: polyhost/host.py:1617
 msgid "Select firmware .bin"
 msgstr "Chọn tệp firmware .bin"
 
-#: polyhost/host.py:1660
+#: polyhost/host.py:1668
 msgid "Firmware apply failed"
 msgstr "Áp dụng firmware thất bại"
 
-#: polyhost/host.py:1661
+#: polyhost/host.py:1669
 msgid "Firmware flash failed"
 msgstr "Nạp firmware thất bại"
 
-#: polyhost/host.py:1709 polyhost/host.py:1762
+#: polyhost/host.py:1717 polyhost/host.py:1770
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "Ngôn ngữ đã chọn: {language} {country}"
 
-#: polyhost/host.py:1813
+#: polyhost/host.py:1821
 msgid "PolyHost settings"
 msgstr "Cài đặt PolyHost"
 
-#: polyhost/host.py:1814
+#: polyhost/host.py:1822
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "Cài đặt đã được áp dụng nhưng không thể lưu vào tệp cài đặt. Có thể một chương trình khác đang mở tệp này. Hãy thay đổi một cài đặt sau để thử lại, hoặc xem nhật ký."
 
-#: polyhost/host.py:1916
+#: polyhost/host.py:1924
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}: bản ghi không đọc được {record}"
 
-#: polyhost/host.py:1919
+#: polyhost/host.py:1927
 msgid "Neither keyboard half holds a crash record."
 msgstr "Không nửa bàn phím nào có bản ghi sự cố."
 
-#: polyhost/host.py:1921
+#: polyhost/host.py:1929
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3842,119 +3870,127 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1923
+#: polyhost/host.py:1931
 msgid "Keyboard crash record"
 msgstr "Bản ghi sự cố bàn phím"
 
-#: polyhost/host.py:1932
+#: polyhost/host.py:1940
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "Đã sao chép vào bộ nhớ tạm. Không đọc được: {errors}"
 
-#: polyhost/host.py:2029
+#: polyhost/host.py:2032
+msgid "Could not read the tap-hold timing from the keyboard."
+msgstr "Không thể đọc thời gian chạm-giữ từ bàn phím."
+
+#: polyhost/host.py:2046
+msgid "The keyboard did not accept the tap-hold timing."
+msgstr "Bàn phím không chấp nhận thời gian chạm-giữ."
+
+#: polyhost/host.py:2059
 msgid "MRU Cache"
 msgstr "Bộ đệm MRU"
 
-#: polyhost/host.py:2029
+#: polyhost/host.py:2059
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "Bộ đệm MRU không hoạt động (thiết bị chưa kết nối hoặc chế độ MRU bị tắt)."
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2108
 msgid "daemon client"
 msgstr "máy khách daemon"
 
-#: polyhost/host.py:2078
+#: polyhost/host.py:2108
 msgid "standalone"
 msgstr "độc lập"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:807 polyhost/host.py:2136
+#: polyhost/forwarder.py:807 polyhost/host.py:2166
 msgid "paused"
 msgstr "đã tạm dừng"
 
-#: polyhost/host.py:2138
+#: polyhost/host.py:2168
 msgid "connected"
 msgstr "đã kết nối"
 
-#: polyhost/host.py:2139
+#: polyhost/host.py:2169
 msgid "present — not connected (protocol/version)"
 msgstr "có mặt — chưa kết nối (giao thức/phiên bản)"
 
-#: polyhost/host.py:2146
+#: polyhost/host.py:2176
 msgid "Keyboard"
 msgstr "Bàn phím"
 
-#: polyhost/host.py:2147
+#: polyhost/host.py:2177
 msgid "No keyboard connected."
 msgstr "Không có bàn phím nào được kết nối."
 
-#: polyhost/host.py:2151
+#: polyhost/host.py:2181
 msgid "⚠ mismatch"
 msgstr "⚠ không khớp"
 
-#: polyhost/host.py:2153
+#: polyhost/host.py:2183
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "Đã tải {n} ngôn ngữ"
 
-#: polyhost/host.py:2156
+#: polyhost/host.py:2186
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>Bàn phím đã kết nối:</b> {name} {state}"
 
-#: polyhost/host.py:2158
+#: polyhost/host.py:2188
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; giao thức {protocol}"
 
-#: polyhost/host.py:2160
+#: polyhost/host.py:2190
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>Phần cứng:</b> {hardware}"
 
-#: polyhost/host.py:2161
+#: polyhost/host.py:2191
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>Ngôn ngữ:</b> {language}"
 
-#: polyhost/host.py:2164
+#: polyhost/host.py:2194
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>Liên kết:</b> {link}"
 
-#: polyhost/host.py:2171
+#: polyhost/host.py:2201
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>Thời gian hoạt động:</b> {uptime}"
 
-#: polyhost/host.py:2173
+#: polyhost/host.py:2203
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>Ánh xạ lớp phủ:</b> {n} ứng dụng"
 
-#: polyhost/forwarder.py:824 polyhost/host.py:2175
+#: polyhost/forwarder.py:824 polyhost/host.py:2205
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>Cấu hình:</b> {path}"
 
-#: polyhost/forwarder.py:825 polyhost/host.py:2176
+#: polyhost/forwarder.py:825 polyhost/host.py:2206
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>Nhật ký:</b> {path}"
 
-#: polyhost/forwarder.py:843 polyhost/host.py:2230
+#: polyhost/forwarder.py:843 polyhost/host.py:2260
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "Giao thức HID P{protocol}"
 
-#: polyhost/host.py:2235
+#: polyhost/host.py:2265
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "Phần mềm host cho bàn phím tách đôi PolyKybd với màn hình OLED trên từng mặt phím — theo dõi cửa sổ đang hoạt động và gửi lớp phủ, ngôn ngữ và cập nhật sơ đồ phím tới bàn phím."
 
-#: polyhost/host.py:2261
+#: polyhost/host.py:2291
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3963,61 +3999,61 @@ msgstr ""
 "Đổi ngôn ngữ nhập sang '{language}' thất bại với lỗi:\n"
 "\"{error}\""
 
-#: polyhost/host.py:2281 polyhost/host.py:2296
+#: polyhost/host.py:2311 polyhost/host.py:2326
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "Không thể đặt {language}: {error}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2420
+#: polyhost/host.py:2450
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "Ánh xạ lớp phủ PolyKybd (*.poly.yaml)"
 
-#: polyhost/host.py:2508 polyhost/host.py:2987 polyhost/host.py:3130
+#: polyhost/host.py:2538 polyhost/host.py:3017 polyhost/host.py:3160
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "Cập nhật firmware lên v{version}…"
 
-#: polyhost/host.py:2510 polyhost/host.py:3028 polyhost/host.py:3201
+#: polyhost/host.py:2540 polyhost/host.py:3058 polyhost/host.py:3231
 msgid "Check for firmware update…"
 msgstr "Kiểm tra cập nhật firmware…"
 
 #: polyhost/forwarder.py:881 polyhost/forwarder.py:892
-#: polyhost/forwarder.py:898 polyhost/host.py:2528 polyhost/host.py:2649
-#: polyhost/host.py:2653
+#: polyhost/forwarder.py:898 polyhost/host.py:2558 polyhost/host.py:2679
+#: polyhost/host.py:2683
 msgid "Check for updates..."
 msgstr "Kiểm tra cập nhật..."
 
-#: polyhost/host.py:2596
+#: polyhost/host.py:2626
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "Có bản cập nhật v{version}"
 
 #: polyhost/forwarder.py:894 polyhost/forwarder.py:900
-#: polyhost/forwarder.py:911 polyhost/host.py:2607 polyhost/host.py:2647
-#: polyhost/host.py:2654 polyhost/host.py:2677
+#: polyhost/forwarder.py:911 polyhost/host.py:2637 polyhost/host.py:2677
+#: polyhost/host.py:2684 polyhost/host.py:2707
 msgid "PolyKybdHost Update"
 msgstr "Cập nhật PolyKybdHost"
 
-#: polyhost/host.py:2608
+#: polyhost/host.py:2638
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "Đã có phiên bản {version}. Nhấp vào biểu tượng trên khay hệ thống để cập nhật."
 
-#: polyhost/forwarder.py:869 polyhost/host.py:2633
+#: polyhost/forwarder.py:869 polyhost/host.py:2663
 msgid "Checking for updates..."
 msgstr "Đang kiểm tra cập nhật..."
 
-#: polyhost/host.py:2646
+#: polyhost/host.py:2676
 msgid "No updates available"
 msgstr "Không có bản cập nhật"
 
-#: polyhost/forwarder.py:895 polyhost/host.py:2648
+#: polyhost/forwarder.py:895 polyhost/host.py:2678
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "Bạn đang dùng phiên bản mới nhất (v{version})."
 
-#: polyhost/forwarder.py:901 polyhost/host.py:2655
+#: polyhost/forwarder.py:901 polyhost/host.py:2685
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4032,63 +4068,63 @@ msgstr ""
 "\n"
 "Chạy với --dev 1 để xem chi tiết."
 
-#: polyhost/host.py:2660 polyhost/host.py:3060
+#: polyhost/host.py:2690 polyhost/host.py:3090
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "Phát hành: {date}"
 
-#: polyhost/forwarder.py:882 polyhost/host.py:2661
+#: polyhost/forwarder.py:882 polyhost/host.py:2691
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "Đã có phiên bản {version}."
 
-#: polyhost/forwarder.py:883 polyhost/host.py:2662
+#: polyhost/forwarder.py:883 polyhost/host.py:2692
 msgid "Update PolyKybdHost"
 msgstr "Cập nhật PolyKybdHost"
 
-#: polyhost/host.py:2666
+#: polyhost/host.py:2696
 msgid "Download, install, and restart now?"
 msgstr "Tải xuống, cài đặt và khởi động lại ngay?"
 
-#: polyhost/forwarder.py:910 polyhost/host.py:2677
+#: polyhost/forwarder.py:910 polyhost/host.py:2707
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "Đang tải v{version}…"
 
-#: polyhost/forwarder.py:951 polyhost/host.py:2802
+#: polyhost/forwarder.py:951 polyhost/host.py:2832
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "Không thể khởi động tiến trình chuyển tiếp cập nhật; bản cập nhật chưa hoàn tất. Xem nhật ký để biết chi tiết."
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2817
+#: polyhost/forwarder.py:963 polyhost/host.py:2847
 msgid "Update failed"
 msgstr "Cập nhật thất bại"
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2817
+#: polyhost/forwarder.py:963 polyhost/host.py:2847
 msgid "The update did not finish."
 msgstr "Bản cập nhật chưa hoàn tất."
 
-#: polyhost/host.py:2998
+#: polyhost/host.py:3028
 msgid "PolyKybd Firmware Update"
 msgstr "Cập nhật firmware PolyKybd"
 
-#: polyhost/host.py:2999
+#: polyhost/host.py:3029
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "Đã có firmware mới v{version}. Nhấp vào biểu tượng trên khay hệ thống để cập nhật."
 
-#: polyhost/host.py:3016 polyhost/host.py:3057
+#: polyhost/host.py:3046 polyhost/host.py:3087
 msgid "The keyboard must be connected to update the firmware."
 msgstr "Bàn phím phải được kết nối để cập nhật firmware."
 
-#: polyhost/host.py:3022
+#: polyhost/host.py:3052
 msgid "Checking for firmware update…"
 msgstr "Đang kiểm tra cập nhật firmware…"
 
-#: polyhost/host.py:3036 polyhost/host.py:3046 polyhost/host.py:3049
+#: polyhost/host.py:3066 polyhost/host.py:3076 polyhost/host.py:3079
 msgid "PolyKybd Firmware"
 msgstr "Firmware PolyKybd"
 
-#: polyhost/host.py:3037
+#: polyhost/host.py:3067
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4099,55 +4135,55 @@ msgstr ""
 "\n"
 "Bàn phím của bạn đang ở v{current}. Điều này thường có nghĩa là quá trình biên dịch bản phát hành thất bại — trang phát hành sẽ có firmware khi lỗi được khắc phục."
 
-#: polyhost/host.py:3047
+#: polyhost/host.py:3077
 msgid "No firmware release could be found."
 msgstr "Không tìm thấy bản phát hành firmware nào."
 
-#: polyhost/host.py:3050
+#: polyhost/host.py:3080
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "Bạn đang dùng firmware mới nhất (v{version})."
 
-#: polyhost/host.py:3062
+#: polyhost/host.py:3092
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "Đã cài đặt: v{version}"
 
-#: polyhost/host.py:3063
+#: polyhost/host.py:3093
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "Đã cài đặt: không rõ (bàn phím không báo phiên bản của nó)"
 
-#: polyhost/host.py:3064
+#: polyhost/host.py:3094
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "Đã có firmware {version}."
 
-#: polyhost/host.py:3066
+#: polyhost/host.py:3096
 msgid "Both halves update over HID and reboot automatically."
 msgstr "Cả hai nửa được cập nhật qua HID và tự động khởi động lại."
 
-#: polyhost/host.py:3067
+#: polyhost/host.py:3097
 msgid "Update PolyKybd Firmware"
 msgstr "Cập nhật firmware PolyKybd"
 
-#: polyhost/host.py:3071
+#: polyhost/host.py:3101
 msgid "Download and flash now?"
 msgstr "Tải xuống và nạp ngay?"
 
-#: polyhost/host.py:3082
+#: polyhost/host.py:3112
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "Đang tải firmware v{version}…"
 
-#: polyhost/host.py:3104 polyhost/host.py:3405
+#: polyhost/host.py:3134 polyhost/host.py:3435
 msgid "Cancelling…"
 msgstr "Đang hủy…"
 
-#: polyhost/host.py:3141
+#: polyhost/host.py:3171
 msgid "Firmware Update Failed"
 msgstr "Cập nhật firmware thất bại"
 
-#: polyhost/host.py:3142
+#: polyhost/host.py:3172
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4158,11 +4194,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3248 polyhost/host.py:3290 polyhost/host.py:3298
+#: polyhost/host.py:3278 polyhost/host.py:3320 polyhost/host.py:3328
 msgid "Allow access to the keyboard"
 msgstr "Cho phép truy cập bàn phím"
 
-#: polyhost/host.py:3249
+#: polyhost/host.py:3279
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4172,7 +4208,7 @@ msgstr ""
 "\n"
 "Hệ thống sẽ hỏi mật khẩu của bạn (PolicyKit). Sau đó, hãy rút bàn phím ra và cắm lại."
 
-#: polyhost/host.py:3291
+#: polyhost/host.py:3321
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4182,11 +4218,11 @@ msgstr ""
 "\n"
 "Hãy rút bàn phím ra và cắm lại để quyền mới có hiệu lực."
 
-#: polyhost/host.py:3299
+#: polyhost/host.py:3329
 msgid "The udev rule was not installed."
 msgstr "Không cài đặt được quy tắc udev."
 
-#: polyhost/host.py:3300
+#: polyhost/host.py:3330
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4199,12 +4235,12 @@ msgstr ""
 "Bạn cũng có thể chạy các lệnh sau trong terminal:\n"
 "{commands}"
 
-#: polyhost/host.py:3369 polyhost/host.py:3383 polyhost/host.py:3429
-#: polyhost/host.py:3438 polyhost/host.py:3444
+#: polyhost/host.py:3399 polyhost/host.py:3413 polyhost/host.py:3459
+#: polyhost/host.py:3468 polyhost/host.py:3474
 msgid "Install WinCompose"
 msgstr "Cài đặt WinCompose"
 
-#: polyhost/host.py:3370
+#: polyhost/host.py:3400
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4214,11 +4250,11 @@ msgstr ""
 "\n"
 "Bản WinCompose của PolyKybd sẽ được tải từ GitHub và trình cài đặt sẽ được khởi chạy (Windows sẽ yêu cầu bạn xác nhận)."
 
-#: polyhost/host.py:3383
+#: polyhost/host.py:3413
 msgid "Looking for the latest WinCompose release…"
 msgstr "Đang tìm bản phát hành WinCompose mới nhất…"
 
-#: polyhost/host.py:3430
+#: polyhost/host.py:3460
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4228,7 +4264,7 @@ msgstr ""
 "\n"
 "Trang phát hành sẽ mở trong trình duyệt — hãy tải và chạy trình cài đặt từ đó."
 
-#: polyhost/host.py:3439
+#: polyhost/host.py:3469
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4239,7 +4275,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3445
+#: polyhost/host.py:3475
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4256,7 +4292,7 @@ msgstr ""
 "Tệp đã được lưu tại:\n"
 "{path}"
 
-#: polyhost/host.py:3453
+#: polyhost/host.py:3483
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "Trình cài đặt WinCompose đã khởi chạy. Khi cài xong và WinCompose đang chạy, PolyKybd sẽ tự động chuyển sang dùng nó."
 

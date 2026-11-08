@@ -124,6 +124,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.SEND_PRC_OVERLAY.value: 19,
     Cmd.FILL_POOL_FROM_ICON.value: 20,
     Cmd.REBOOT.value: 22,
+    Cmd.TAP_TERMS.value: 28,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -554,6 +555,27 @@ class MockFirmware:
                 seconds = 0
             return _reply(cmd, body=bytes([value]) + struct.pack("<H", seconds))
         return _reply(cmd, body=bytes([value]))
+
+    def _tap_terms(self, p):
+        """cmd 44: op p[2] (0 query, 1 set), terms in p[3..6], 0xFFFF keeps one.
+        Validates both before applying either, as the firmware does."""
+        from polyhost.device.command_ids import TapTerms
+        tap = getattr(self, "tapping_term", TapTerms.DEFAULT_TAPPING_MS)
+        flow = getattr(self, "flow_tap_term", TapTerms.DEFAULT_FLOW_TAP_MS)
+        op = p[2]
+        new_tap = p[3] | (p[4] << 8)
+        new_flow = p[5] | (p[6] << 8)
+        ok = op == 0
+        if op == 1:
+            ok = ((new_tap == TapTerms.KEEP or TapTerms.tapping_valid(new_tap))
+                  and (new_flow == TapTerms.KEEP or TapTerms.flow_tap_valid(new_flow)))
+            if ok:
+                if new_tap != TapTerms.KEEP:
+                    tap = self.tapping_term = new_tap
+                if new_flow != TapTerms.KEEP:
+                    flow = self.flow_tap_term = new_flow
+        body = struct.pack("<HHB", tap, flow, TapTerms.FLAG_FLOW_TAP)
+        return _reply(p[1], ok, body=body)
 
     def _default_layer(self, p):
         return _reply(p[1], body=b"\x00")
@@ -1035,6 +1057,7 @@ class MockFirmware:
         Cmd.GLYPH_SCRIPT.value: _glyph_script,
         Cmd.GLYPH_SIZE.value: _get_or_set,
         Cmd.IDLE_TIMEOUT.value: _get_or_set,
+        Cmd.TAP_TERMS.value: _tap_terms,
         Cmd.GET_DEFAULT_LAYER.value: _default_layer,
         Cmd.ENTER_BOOTLOADER.value: _bootloader,
         Cmd.REBOOT.value: _reboot,

@@ -65,7 +65,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(
             top.split("|"),
             ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
-             "Keycap Script", "Keycap Size", "Configure Keymap", "Updates", "Maintenance",
+             "Keycap Script", "Keycap Size", "Tap-Hold Timing…", "Configure Keymap",
+             "Updates", "Maintenance",
              "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
         self.assertNotIn("All PolyKybd Commands", top)

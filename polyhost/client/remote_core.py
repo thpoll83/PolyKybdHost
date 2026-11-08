@@ -338,6 +338,13 @@ class RemoteCore(Observable):
         Callers index it, so both shapes work; don't compare it to a tuple."""
         return self._device(p.M_IDLE_TIMEOUT_GET)
 
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None):
+        return self._device(p.M_TAP_TERMS_SET, {"tapping_term": tapping_term,
+                                                "flow_tap_term": flow_tap_term})
+
+    def get_tap_terms(self):
+        return self._device(p.M_TAP_TERMS_GET)
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 

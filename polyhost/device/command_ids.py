@@ -92,6 +92,11 @@ class Cmd(Enum):
     # Reboot both halves, nothing persisted (protocol v22+). ACKed before the
     # reset; used by the boot-loop diagnostic (PolyCore.start_boot_loop).
     REBOOT = 43
+    # Tap-hold timing (protocol v28+): data[2] op (0 query, 1 set), data[3..4]
+    # tapping term ms, data[5..6] Flow Tap term ms, little-endian, 0xFFFF = keep.
+    # The reply carries both terms and a flags byte (bit 0: Flow Tap compiled in).
+    # Ranges: TapTerms below.
+    TAP_TERMS = 44
 
 
 
@@ -149,6 +154,37 @@ class IdleTimeout(Enum):
         if seconds % 60 == 0 and seconds >= 60:
             return tr(N_("{minutes} min")).format(minutes=seconds // 60)
         return tr(N_("{seconds} sec")).format(seconds=seconds)
+
+
+class TapTerms:
+    """The ranges of the tap-hold terms (HID cmd 44, protocol v28+). Mirrors the
+    firmware's base/tap_terms.h.
+
+    Both ranges are CLOSED, like IdleTimeout: the firmware NACKs a value outside
+    them, so the host refuses it before sending."""
+
+    STEP_MS = 10
+    TAPPING_MIN_MS = 100
+    TAPPING_MAX_MS = 500
+    FLOW_TAP_MIN_MS = 0     # 0 turns Flow Tap off
+    FLOW_TAP_MAX_MS = 300
+    DEFAULT_TAPPING_MS = 200
+    DEFAULT_FLOW_TAP_MS = 150
+    KEEP = 0xFFFF           # wire value: leave this term unchanged
+    FLAG_FLOW_TAP = 0x01    # reply flag: this firmware build has Flow Tap
+
+    @classmethod
+    def tapping_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.TAPPING_MIN_MS, cls.TAPPING_MAX_MS)
+
+    @classmethod
+    def flow_tap_valid(cls, ms) -> bool:
+        return cls._valid(ms, cls.FLOW_TAP_MIN_MS, cls.FLOW_TAP_MAX_MS)
+
+    @classmethod
+    def _valid(cls, ms, lo, hi) -> bool:
+        return (isinstance(ms, int) and not isinstance(ms, bool)
+                and lo <= ms <= hi and ms % cls.STEP_MS == 0)
 
 
 class MacroStyle(Enum):

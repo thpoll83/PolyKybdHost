@@ -13,7 +13,7 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement,
+from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
                                          GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
@@ -145,6 +145,11 @@ GLYPH_PLACEMENT_MIN_PROTOCOL = 26
 # No command changes; older firmware refuses a library over 256 KB at BEGIN, so the
 # host flashes such a library only at v27 (PolyCore._bundle_fits_device).
 ICON_SLOT_512K_MIN_PROTOCOL = 27
+# Minimum firmware PROTOCOL_VERSION for the tap-hold terms (cmd 44): the tapping
+# term and the Flow Tap term become settings. Below this they are the firmware's
+# compile-time 200 / 150 ms and there is nothing to read or set, so the tray entry
+# greys out rather than NACKing at runtime.
+TAP_TERMS_MIN_PROTOCOL = 28
 LEGACY_ICON_SLOT_SIZE = 0x40000
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
@@ -180,6 +185,7 @@ FEATURE_MIN_PROTOCOL = {
     "split_vbus_flag": SPLIT_VBUS_FLAG_MIN_PROTOCOL,
     "glyph_placement": GLYPH_PLACEMENT_MIN_PROTOCOL,
     "icon_slot_512k": ICON_SLOT_512K_MIN_PROTOCOL,
+    "tap_terms": TAP_TERMS_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -803,6 +809,73 @@ class PolyKybd:
         if result and not (len(reply) > 2 and reply[2:3] == b'.'):
             return False, "The keyboard refused that idle-timeout preset"
         return result, reply
+
+    @staticmethod
+    def _tap_terms_payload(op: int, tapping_ms: int, flow_tap_ms: int) -> tuple[int, ...]:
+        return (op, tapping_ms & 0xFF, tapping_ms >> 8, flow_tap_ms & 0xFF, flow_tap_ms >> 8)
+
+    @staticmethod
+    def _parse_tap_terms(reply) -> dict:
+        return {
+            "tapping_term": reply[3] | (reply[4] << 8),
+            "flow_tap_term": reply[5] | (reply[6] << 8),
+            "flow_tap_available": bool(reply[7] & TapTerms.FLAG_FLOW_TAP),
+        }
+
+    def get_tap_terms(self) -> tuple[bool, dict | str]:
+        """Read the tap-hold terms (cmd 44, v28+) as
+        {"tapping_term": ms, "flow_tap_term": ms, "flow_tap_available": bool}.
+        flow_tap_available is False on a build without Flow Tap (split42)."""
+        if not self.supports("tap_terms"):
+            return False, (
+                f"Firmware protocol too old for tap-hold timing "
+                f"(need v{TAP_TERMS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(0, 0, 0)),
+                100, expect(Cmd.TAP_TERMS))
+            if result and len(reply) > 7 and reply[2:3] == b'.':
+                return True, self._parse_tap_terms(reply)
+        except Exception as e:
+            # Every caller is a UI refresh or polyctl, which report (False, ...) as
+            # "could not read"; the device can be mid-flash or unplugged here.
+            self.log.debug("Could not read the tap terms (%s: %s)", type(e).__name__, e)
+        return False, "Could not read the tap-hold timing from the keyboard"
+
+    def set_tap_terms(self, tapping_term: int | None = None,
+                      flow_tap_term: int | None = None) -> tuple[bool, dict | str]:
+        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v28+).
+        None leaves a term unchanged. Both ranges are CLOSED (TapTerms), so a value
+        outside them is refused here rather than sent. On success the payload is
+        the keyboard's terms after the change, as get_tap_terms() returns them.
+
+        ⚠️ The ACK marker is checked: expect() also matches a NACK."""
+        if tapping_term is None and flow_tap_term is None:
+            return False, "Nothing to set"
+        if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
+            return False, (f"{tapping_term!r} ms is not a valid tapping term "
+                           f"({TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
+        if flow_tap_term is not None and not TapTerms.flow_tap_valid(flow_tap_term):
+            return False, (f"{flow_tap_term!r} ms is not a valid Flow Tap term "
+                           f"({TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
+        if not self.supports("tap_terms"):
+            return False, (
+                f"Firmware protocol too old for tap-hold timing "
+                f"(need v{TAP_TERMS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        tap = TapTerms.KEEP if tapping_term is None else tapping_term
+        flow = TapTerms.KEEP if flow_tap_term is None else flow_tap_term
+        self.log.info("Setting tap terms: tapping %s ms, flow tap %s ms...",
+                      tapping_term, flow_tap_term)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(1, tap, flow)),
+            100, expect(Cmd.TAP_TERMS))
+        if not result:
+            return False, "The keyboard did not answer the tap-hold timing command"
+        if not (len(reply) > 7 and reply[2:3] == b'.'):
+            return False, "The keyboard refused that tap-hold timing"
+        return True, self._parse_tap_terms(reply)
 
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
         """Read the current idle timeout as (preset index, seconds).

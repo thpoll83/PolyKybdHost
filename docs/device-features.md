@@ -199,6 +199,15 @@ full wiring, the preview rendering and the label-measurement rules are in
   6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
   local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
   this one follows GlyphSize).
+- **The tap-hold terms (cmd 44, v28+) are the same wiring again**, gated on
+  `"tap_terms"`, except the tray entry is a dialog (`gui/tap_terms_dialog.py`), not a
+  submenu: tapping term 100..500 ms and Flow Tap term 0..300 ms (0 = off) in 10 ms
+  steps, both CLOSED ranges (`TapTerms` in `command_ids.py`, mirror of firmware
+  `base/tap_terms.h`). One report carries both terms; `None` in
+  `set_tap_terms()` is sent as `0xFFFF` (keep). The reply has both terms and a flags
+  byte; bit 0 clear means the build has no Flow Tap (split42), and the dialog then
+  disables that field. The dialog snaps a typed value onto the 10 ms grid, because
+  the firmware NACKs anything off it.
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a

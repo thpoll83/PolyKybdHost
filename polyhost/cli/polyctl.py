@@ -20,7 +20,7 @@ import json
 import sys
 import time
 
-from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphPlacement, GlyphScript, GlyphSize, IdleStyle, IdleTimeout, TapTerms  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -434,6 +434,32 @@ def _cmd_idle_timeout(client, args):
         value = _IDLE_TIMEOUT_VALUES[args.preset]
         client.call(protocol.M_IDLE_TIMEOUT_SET, {"value": value})
         print(f"idle timeout set to {args.preset} (preset {value})")
+    return 0
+
+
+def _print_tap_terms(prefix, terms):
+    flow = terms["flow_tap_term"]
+    flow_text = "off" if flow == 0 else f"{flow} ms"
+    if not terms.get("flow_tap_available", True):
+        flow_text += " (this firmware has no Flow Tap)"
+    print(f"{prefix}tapping term {terms['tapping_term']} ms, flow tap term {flow_text}")
+
+
+def _cmd_tap_terms(client, args):
+    if args.tapping is None and args.flow_tap is None:
+        _print_tap_terms("", client.call(protocol.M_TAP_TERMS_GET, {}))
+        return 0
+    for name, value, valid in (("--tapping", args.tapping, TapTerms.tapping_valid),
+                               ("--flow-tap", args.flow_tap, TapTerms.flow_tap_valid)):
+        if value is not None and not valid(value):
+            print(f"polyctl: {name} {value} is outside the allowed range "
+                  f"(tapping {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms, "
+                  f"flow tap {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms, "
+                  f"{TapTerms.STEP_MS} ms steps)", file=sys.stderr)
+            return 2
+    terms = client.call(protocol.M_TAP_TERMS_SET,
+                        {"tapping_term": args.tapping, "flow_tap_term": args.flow_tap})
+    _print_tap_terms("set: ", terms)
     return 0
 
 
@@ -1144,6 +1170,19 @@ def build_parser():
              "This is the delay before the idle STYLE engages, not the 20-minute "
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
+
+    p_tap_terms = sub.add_parser(
+        "tap-terms",
+        help="get or set the tap-hold timing: tapping term and Flow Tap term (firmware v28+)")
+    p_tap_terms.add_argument(
+        "--tapping", type=int, default=None, metavar="MS",
+        help=f"tapping term, {TapTerms.TAPPING_MIN_MS}..{TapTerms.TAPPING_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps (default {TapTerms.DEFAULT_TAPPING_MS})")
+    p_tap_terms.add_argument(
+        "--flow-tap", type=int, default=None, metavar="MS",
+        help=f"Flow Tap term, {TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
+             f"in {TapTerms.STEP_MS} ms steps, 0 = off (default {TapTerms.DEFAULT_FLOW_TAP_MS})")
+    p_tap_terms.set_defaults(func=_cmd_tap_terms)
 
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")

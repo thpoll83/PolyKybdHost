@@ -90,6 +90,8 @@ CALLS = {
     "set_idle": [(True,), (False,)],
     "set_idle_style": [(list(IdleStyle)[0],)], "get_idle_style": [()],
     "set_idle_timeout": [(IdleTimeout.MIN_2,)], "get_idle_timeout": [()],
+    "get_tap_terms": [()],
+    "set_tap_terms": [(250, None), (None, 0), (250, 120)],
     "set_glyph_script": [(list(GlyphScript)[0],)], "get_glyph_script": [()],
     "set_glyph_size": [(list(GlyphSize)[0],)], "get_glyph_size": [()],
     "set_glyph_placement": [(GlyphPlacement.CENTRE,), (GlyphPlacement.TOP_LEFT,)],

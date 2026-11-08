@@ -743,6 +743,13 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
 
+        # Tapping term and Flow Tap term (firmware v28+), stored on the keyboard.
+        # Goes through core.get/set_tap_terms, so it works in client mode too.
+        self.tap_terms_action = QAction(get_icon("timer.svg"), _("Tap-Hold Timing…"), parent=self)
+        # noinspection PyUnresolvedReferences
+        self.tap_terms_action.triggered.connect(self.open_tap_terms_dialog)
+        self.menu.addAction(self.tap_terms_action)
+
         # The layout editor is device-independent of the in-process worker — it
         # drives the device through core.keymap_* (RPC in client mode), so it
         # works in either mode (H4a-2).
@@ -1334,6 +1341,7 @@ class PolyHost(QApplication):
         self.idle_timeout_menu.menuAction().setEnabled(enabled and self.supports("idle_timeout"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
         self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
+        self.tap_terms_action.setEnabled(enabled and self.supports("tap_terms"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
         # bundles with no device at all, the mock-bitmap dump writes files), and a
@@ -2014,6 +2022,28 @@ class PolyHost(QApplication):
             self.shell_title_dialog.reopen()
         self.shell_title_dialog.show()
         bring_to_front(self.shell_title_dialog)
+
+    def open_tap_terms_dialog(self):
+        from polyhost.gui.tap_terms_dialog import TapTermsDialog
+        ok, terms = self.core.get_tap_terms()
+        if not ok:
+            self.report_device_result("Error", f"Could not read the tap-hold timing: {terms}")
+            QMessageBox.warning(None, _("Tap-Hold Timing"),
+                                _("Could not read the tap-hold timing from the keyboard."))
+            return
+        dlg = TapTermsDialog(terms)
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        tapping, flow_tap = dlg.values()
+        if tapping == terms.get("tapping_term") and flow_tap in (None, terms.get("flow_tap_term")):
+            return
+        ok, msg = self.core.set_tap_terms(tapping, flow_tap)
+        if ok:
+            self.log.info("Tap terms set: tapping %s ms, flow tap %s ms.", tapping, flow_tap)
+        else:
+            self.report_device_result("Error", f"Could not set the tap-hold timing: {msg}")
+            QMessageBox.warning(None, _("Tap-Hold Timing"),
+                                _("The keyboard did not accept the tap-hold timing."))
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
