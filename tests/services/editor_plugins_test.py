@@ -319,6 +319,17 @@ class TestGdb(Fixture):
         self.assertFalse(self.gdbinit.exists())
         self.assertEqual(ep.status([ep.GDB], **kw)[0].state, ep.STATE_INSTALLED)
 
+    def test_gdb_is_installed_only_when_named(self):
+        with mock.patch.object(ep, "_gdb_probe", return_value=(15, True)):
+            st = self.status(ep.GDB)
+            self.assertEqual(st.state, ep.STATE_NOT_INSTALLED)
+            self.assertFalse(ep.default_selection(st))
+            self.assertNotIn(ep.GDB, [r.editor for r in ep.install(None, **self.kw())])
+            self.assertFalse(self.gdbinit.exists())
+            [r] = ep.install([ep.GDB], **self.kw())
+            self.assertTrue(r.ok and r.changed, r)
+            self.assertEqual(self.status(ep.GDB).state, ep.STATE_INSTALLED)
+
     def test_gdb_10_and_earlier_read_only_the_home_gdbinit(self):
         (self.home / ".config/gdb").mkdir(parents=True)
         (self.home / ".config/gdb/gdbinit").write_text("")

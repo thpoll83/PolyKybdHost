@@ -599,7 +599,13 @@ def _status_one(editor, home, env, which, system, source):
 
 def default_selection(st):
     """Whether "all editors" includes ``st``: an editor found on this computer
-    that this app can set up and has not yet, or set up with older files."""
+    that this app can set up and has not yet, or set up with older files.
+
+    GDB is never included: its script changes the terminal title in every GDB
+    session, also one an IDE or a script starts. It is installed only when
+    named (``--editor gdb``, or its box ticked in the dialog)."""
+    if st.editor == GDB:
+        return False
     return st.state in (STATE_NOT_INSTALLED, STATE_OUTDATED, STATE_STALE)
 
 
