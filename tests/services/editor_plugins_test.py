@@ -281,6 +281,44 @@ class TestGdb(Fixture):
         self.assertEqual(ep.gdb_plugin_dir(home=self.home, env={"XDG_CONFIG_HOME": str(xdg)}),
                          xdg / "gdb/polykybd")
 
+    def test_with_xdg_set_gdb_never_reads_the_dot_config_file(self):
+        # get_standard_config_dir() returns $XDG_CONFIG_HOME/gdb when the
+        # variable is set, so ~/.config/gdb/gdbinit is not read at all.
+        xdg = self.tmp / "xdg"
+        (self.home / ".config/gdb").mkdir(parents=True)
+        (self.home / ".config/gdb/gdbinit").write_text("")
+        self.assertEqual(ep.gdb_init_file(home=self.home, env={"XDG_CONFIG_HOME": str(xdg)},
+                                          system="Linux"), self.gdbinit)
+
+    def test_on_macos_gdb_reads_library_preferences_and_ignores_xdg(self):
+        xdg = self.tmp / "xdg"
+        (xdg / "gdb").mkdir(parents=True)
+        (xdg / "gdb/gdbinit").write_text("")
+        (self.home / ".config/gdb").mkdir(parents=True)
+        (self.home / ".config/gdb/gdbinit").write_text("")
+        env = {"XDG_CONFIG_HOME": str(xdg)}
+        self.assertEqual(ep.gdb_init_file(home=self.home, env=env, system="Darwin"), self.gdbinit)
+        lib = self.home / "Library/Preferences/gdb/gdbinit"
+        lib.parent.mkdir(parents=True)
+        lib.write_text("")
+        self.assertEqual(ep.gdb_init_file(home=self.home, env=env, system="Darwin"), lib)
+        self.assertEqual(ep.gdb_init_file(home=self.home, env=env, system="Darwin", gdb_major=10),
+                         self.gdbinit)
+
+    def test_on_macos_install_writes_the_library_preferences_file(self):
+        lib = self.home / "Library/Preferences/gdb/gdbinit"
+        lib.parent.mkdir(parents=True)
+        lib.write_text("set pagination off\n")
+        kw = dict(self.kw(), system="Darwin")
+        self.assertEqual(ep.status([ep.GDB], **kw)[0].target, lib)
+        [r] = ep.install([ep.GDB], **kw)
+        self.assertTrue(r.ok and r.changed, r)
+        text = lib.read_text()
+        self.assertIn(ep.GDB_BEGIN_MARKER, text)
+        self.assertIn("set pagination off", text)
+        self.assertFalse(self.gdbinit.exists())
+        self.assertEqual(ep.status([ep.GDB], **kw)[0].state, ep.STATE_INSTALLED)
+
     def test_gdb_10_and_earlier_read_only_the_home_gdbinit(self):
         (self.home / ".config/gdb").mkdir(parents=True)
         (self.home / ".config/gdb/gdbinit").write_text("")
