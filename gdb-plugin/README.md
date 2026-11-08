@@ -22,10 +22,17 @@ pseudo-terminal; macOS and Windows builds are untested.
 PolyKybdHost does it: tray → Updates → "Set up the terminal and editors…",
 tick GDB, Install. Or `polyctl editor-plugins install --editor gdb`. That copies
 `polykybd.py` to `~/.config/gdb/polykybd/` (`$XDG_CONFIG_HOME/gdb/polykybd/`
-when that is set) and adds this block to the GDB init file
-(`$XDG_CONFIG_HOME/gdb/gdbinit`, `~/.config/gdb/gdbinit` or `~/.gdbinit`,
-whichever exists first; `~/.gdbinit` when none does), after saving a copy of
-the file:
+when that is set) and adds this block to the init file GDB reads, after saving
+a copy of the file. GDB 11 and later read one config-folder file if it exists,
+else `~/.gdbinit`:
+
+- macOS: `~/Library/Preferences/gdb/gdbinit` (GDB ignores `XDG_CONFIG_HOME` and
+  `~/.config` there);
+- elsewhere: `$XDG_CONFIG_HOME/gdb/gdbinit` when that variable is set, else
+  `~/.config/gdb/gdbinit`.
+
+GDB 10 and earlier read only `~/.gdbinit`. When none of these exists, the block
+goes into `~/.gdbinit`.
 
 ```
 # >>> PolyKybd editor integration >>>
