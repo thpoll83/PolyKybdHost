@@ -1488,7 +1488,8 @@ def build_parser():
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
     ep_install = ep_sub.add_parser(
-        "install", help="copy the plugin (default: every editor found that is not set up)")
+        "install", help="copy the plugin (default: every editor found that is not set up, "
+                        "except GDB, which needs --editor gdb)")
     ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
