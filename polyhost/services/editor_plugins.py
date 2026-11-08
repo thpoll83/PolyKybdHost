@@ -217,25 +217,32 @@ def _gdb_major(exe):
 def gdb_init_file(home=None, env=None, system=None, gdb_major=None):
     """The init file GDB reads from the home folder.
 
-    GDB 11 and later read the first of ``$XDG_CONFIG_HOME/gdb/gdbinit``,
-    ``~/.config/gdb/gdbinit`` and ``~/.gdbinit`` that exists. GDB 10 and
-    earlier read only ``~/.gdbinit``, so `gdb_major` below 11 selects it even
-    when a config-folder file exists. When none exists, ``~/.gdbinit``, which
-    every version reads. `gdb_major` None (version unknown) uses the GDB 11
-    order."""
+    GDB 11 and later read ONE config-folder file and then ``~/.gdbinit``, the
+    first that exists (``find_gdb_home_config_file()`` and
+    ``get_standard_config_dir()`` in ``gdbsupport/pathstuff.cc``):
+
+    - macOS: ``~/Library/Preferences/gdb/gdbinit``. ``XDG_CONFIG_HOME`` and
+      ``~/.config`` are not read there.
+    - elsewhere: ``$XDG_CONFIG_HOME/gdb/gdbinit`` when that variable is set,
+      else ``~/.config/gdb/gdbinit``. With the variable set, ``~/.config`` is
+      not read.
+
+    GDB 10 and earlier read only ``~/.gdbinit``, so `gdb_major` below 11 selects
+    it even when a config-folder file exists. When none exists, ``~/.gdbinit``,
+    which every version reads. `gdb_major` None (version unknown) uses the GDB
+    11 order."""
     env = os.environ if env is None else env
     system = system or platform.system()
     h = _home(home, env, system)
     if gdb_major is not None and gdb_major < 11:
         return h / ".gdbinit"
-    candidates = []
-    if env.get("XDG_CONFIG_HOME"):
-        candidates.append(Path(env["XDG_CONFIG_HOME"]) / "gdb" / "gdbinit")
-    candidates += [h / ".config" / "gdb" / "gdbinit", h / ".gdbinit"]
-    for candidate in candidates:
-        if candidate.is_file():
-            return candidate
-    return h / ".gdbinit"
+    if system == "Darwin":
+        config = h / "Library" / "Preferences" / "gdb" / "gdbinit"
+    elif env.get("XDG_CONFIG_HOME"):
+        config = Path(env["XDG_CONFIG_HOME"]) / "gdb" / "gdbinit"
+    else:
+        config = h / ".config" / "gdb" / "gdbinit"
+    return config if config.is_file() else h / ".gdbinit"
 
 
 def gdb_plugin_dir(home=None, env=None, system=None):
