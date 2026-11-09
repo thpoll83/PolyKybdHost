@@ -51,6 +51,9 @@ bindings:
   - { key: M, mods: [], icon: movesel.png,    label: "Move selected",    source: "ms-fluent/Drag (MIT)" }
   - { key: Z, mods: [], icon: zoomtool.png,   label: "Zoom tool", concept: find,        source: "ms-fluent/Search (MIT)" }
   - { key: H, mods: [], icon: pan.png,        label: "Pan tool",         source: "ms-fluent/Hand Right (MIT)" }
+  # hold Space + arrow keys or a drag pans (paint.net KeyboardMouseCommands). Drawn on
+  # the whole keycap beside the centred Space legend (../space_hint.py).
+  - { key: SPACE, mods: [], icon: space_pan.png, mode: alpha, region: [72, 40], label: "Pan (hold Space)", source: "drawn (pan.png + four arrows, space_hint.py)" }
   - { key: B, mods: [], icon: brush.png,      label: Paintbrush,         source: "ms-fluent/Paint Brush (MIT)" }
   - { key: P, mods: [], icon: pencil.png,     label: Pencil,             source: "ms-fluent/Pen (MIT)" }
   - { key: E, mods: [], icon: eraser.png,     label: Eraser,             source: "ms-fluent/Eraser (MIT)" }

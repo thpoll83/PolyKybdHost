@@ -1951,7 +1951,8 @@ class TestFwUpDownloader(unittest.TestCase):
             return bin_ctx
 
         with mock.patch.object(updater.requests, "get", side_effect=fake_get), \
-             mock.patch.object(updater, "SIG_RETRY_DELAYS", (0.0, 0.0)), \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS",
+                               (0.0,) * len(updater.SIG_RETRY_DELAYS)), \
              mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
             mock_ntf.return_value.__enter__.return_value = fh
             try:
@@ -2002,7 +2003,33 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertEqual(Path(str(bin_path) + ".sig").read_bytes(), b"\x5a" * 64)
         self.assertEqual(sum(u.endswith(".sig") for u in calls), 2)
 
-    def test_signature_gives_up_after_three_attempts(self):
+    def test_the_field_outage_of_2026_11_09_is_ridden_out(self):
+        """A read timeout, then two 504s within 4 s: the old (1 s, 3 s) delays
+        gave up, and a manual retry 1.5 min later worked."""
+        def gateway_timeout():
+            return requests.HTTPError("504 Server Error: Gateway Time-out",
+                                      response=mock.MagicMock(status_code=504))
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, [requests.ReadTimeout("Read timed out."), gateway_timeout(),
+                     gateway_timeout(), self._sig_response(b"\x5a" * 64)])
+            self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+        self.assertEqual(sum(u.endswith(".sig") for u in calls), 4)
+        msgs = [str(msg) for _pct, msg in rec.args_for("progress")]
+        total = len(updater.SIG_RETRY_DELAYS) + 1
+        retries = [m for m in msgs if "trying again" in m]
+        self.assertEqual(len(retries), 3, "the dialog says each retry")
+        self.assertIn(f"(attempt 2 of {total})", retries[0])
+        # After each wait the countdown is replaced before the next request.
+        attempts = [m for m in msgs if m.startswith("Downloading signature (attempt")]
+        self.assertEqual(attempts, [f"Downloading signature (attempt {n} of {total})…"
+                                    for n in (2, 3, 4)])
+        self.assertNotIn("GitHub", " ".join(retries), "a timeout may be the local network")
+
+    def test_the_retries_wait_about_a_minute(self):
+        self.assertGreaterEqual(sum(updater.SIG_RETRY_DELAYS), 60)
+
+    def test_signature_gives_up_after_the_last_retry(self):
         with tempfile.TemporaryDirectory() as td:
             rec, bin_path, calls = self._run_with_sig(
                 td, requests.ReadTimeout("Read timed out."))
@@ -2010,7 +2037,8 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertFalse(ok)
             self.assertIn("Read timed out", err)
             self.assertFalse(bin_path.exists())
-        self.assertEqual(sum(u.endswith(".sig") for u in calls), 3)
+        self.assertEqual(sum(u.endswith(".sig") for u in calls),
+                         len(updater.SIG_RETRY_DELAYS) + 1)
 
     def test_signature_404_is_not_retried(self):
         resp = mock.MagicMock(status_code=404)
@@ -2035,6 +2063,23 @@ class TestFwUpDownloader(unittest.TestCase):
 
         with mock.patch.object(dl, "_fetch_signature", side_effect=failing_fetch) as fetch, \
              mock.patch.object(updater, "SIG_RETRY_DELAYS", (5.0, 5.0)):
+            with self.assertRaises(updater._DownloadCancelled):
+                dl._fetch_signature_with_retry("u", "p")
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_cancel_during_the_attempt_message_starts_no_request(self):
+        cancel = [False]
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "",
+                                      "", "", "https://example.com/fw.bin.sig")
+
+        def on_progress(_pct, msg):
+            if str(msg).startswith("Downloading signature (attempt"):
+                cancel[0] = True          # Cancel pressed as the next attempt is announced
+        dl = updater.FwUpDownloader(rel, on_progress=on_progress, cancel_flag=cancel)
+        with mock.patch.object(dl, "_fetch_signature",
+                               side_effect=requests.ReadTimeout("slow")) as fetch, \
+             mock.patch.object(updater, "SIG_RETRY_DELAYS", (0.0, 0.0)):
             with self.assertRaises(updater._DownloadCancelled):
                 dl._fetch_signature_with_retry("u", "p")
         self.assertEqual(fetch.call_count, 1)
