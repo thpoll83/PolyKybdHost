@@ -257,6 +257,11 @@ DEFAULT_SETTINGS = {
         # never downgrades, so it's self-terminating — see PolyCore). Set
         # False to manage the pack only manually (polyctl fontpack flash).
         "fontpack_auto_flash": True,
+        # Emoji search dictionary flashed to font-pack slot 9 (services/emojidict.py):
+        # the id of one of the shipped polyhost/res/emojidict dictionaries, e.g. "de",
+        # "zh-HK@cangjie". Changing it flashes the new one (note_settings_changed).
+        "emoji_search_dict": "en",
+        "emoji_search_dict_file": "",
         # Game art from installed games (polyhost/services/game_assets): when a
         # game's own files are on this machine, overlays for it are redrawn
         # from them into the cache directory, in place of the shipped

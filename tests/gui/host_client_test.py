@@ -227,6 +227,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("STATUS_TEXT PolyKybd Split72", proc.stdout)
         self.assertIn("FW 0.8.0", proc.stdout)
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
+        self.assertIn("EMOJI_IN_LANG_MENU True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
         top = _grab(proc.stdout, "CLIENT_TOPLEVEL").split("|")
@@ -658,6 +659,9 @@ def _smoke_client():
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
             print("LANG_MENU_BUILT", app.keeb_lang_menu is not None)
+            # The emoji search language is the last entry of the language menu.
+            print("EMOJI_IN_LANG_MENU", app.keeb_lang_menu is not None and
+                  app.keeb_lang_menu.actions()[-1].menu() is app.emoji_dict_menu)
             # Layout editor over RPC (keymap_* via the daemon) — must construct.
             app.open_layout_editor()
             app.processEvents()
@@ -716,16 +720,19 @@ def _smoke_client():
             # The Updates menu labels the font row from the daemon's per-bundle
             # comparison (over the RPC mirror) instead of hiding it in a dialog.
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW", app.fontpack_update_action.text())
             # A bundle whose last flash FAILED reads as up to date by version, so the
             # row must offer a retry instead of claiming everything is fine — the
             # state that left a failed bundle unreachable from the UI (2026-08-17).
             core.fontpack_state = "retry"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_RETRY", app.fontpack_update_action.text(),
                   "| enabled", app.fontpack_update_action.isEnabled())
             core.fontpack_state = "current"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
             app.quit_app()
         print("SERVER_RUNNING", srv._running)

@@ -528,6 +528,19 @@ class RemoteCore(Observable):
         manifest), so this is cheap enough for a menu's aboutToShow."""
         return self._device(p.M_FONTPACK_BUNDLES)
 
+    def emoji_search_status(self):
+        """The emoji search dictionaries (selected, on the keyboard, shipped).
+        No device I/O on the daemon side: it reads the cached GET_ID block."""
+        return self._device(p.M_EMOJIDICT_STATUS)
+
+    def emoji_search_choose(self, dict_id=None, path=None, source="gui"):
+        params = {"source": source}
+        if dict_id is not None:
+            params["id"] = dict_id
+        if path is not None:
+            params["path"] = path
+        return self._device(p.M_EMOJIDICT_CHOOSE, params)
+
     # -- lifecycle / settings ----------------------------------------------
     def set_paused(self, paused):
         try:

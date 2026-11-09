@@ -137,6 +137,10 @@ M_FONTPACK_SYNC = "fontpack.sync"      # {"force": bool=False} -> {"queued","for
 M_FONTPACK_WIPE = "fontpack.wipe"      # {} -> {"queued": bool}; empties all bundle slots
 M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{id,index,device_version,
                                          #        shipped_version,stale}]} (per-bundle device vs shipped)
+M_EMOJIDICT_STATUS = "emojidict.status"  # {} -> {"shipped","supported","selected","device",
+                                         #   "dictionaries": [{id,label,name,native,revision,size}]}
+M_EMOJIDICT_CHOOSE = "emojidict.choose"  # {"id": str} | {"path": str} -> chosen id or path;
+                                         #   "path": "" stops using a dictionary file
 M_DOOM_INSTALL = "doom.install"        # {"path": str} -> {"queued": bool}; installs the easter egg's
                                        #   WHX game data (streams fontpack_flash_* events)
 M_DOOM_INSTALL_PACK = "doom.install_pack"  # {"path": str} -> {"queued": bool}; installs the easter

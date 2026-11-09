@@ -22,7 +22,17 @@ _app = QApplication.instance() or QApplication(["cmd_menu_test", "-platform", "o
 
 
 class _StubHost(QObject):
-    """QObject so it can parent the menu's QActions; no host behavior needed."""
+    """QObject so it can parent the menu's QActions. Carries the MenuFetcher the
+    menu's actions send their core calls through, as PolyHost does."""
+
+    def __init__(self):
+        super().__init__()
+        from polyhost.gui.menu_fetch import MenuFetcher
+        self._menu_fetch = MenuFetcher(self)
+        self.reported = []
+
+    def report_device_result(self, title, msg, result=False):
+        self.reported.append((title, msg, result))
 
 
 def _build(developer=True):
@@ -141,6 +151,7 @@ class TestSplitVbusMark(unittest.TestCase):
         with mock.patch("polyhost.gui.cmd_menu.QMessageBox", _Box), \
                 mock.patch.object(CommandsSubMenu, "_report") as report:
             cm.set_split_vbus()
+            cm.parent._menu_fetch.wait_idle()
         return cm.parent.core.set_handedness, report
 
     def test_mark_on_the_left_half(self):
@@ -178,6 +189,7 @@ class TestFontpackStatusTable(unittest.TestCase):
         cm.parent.core = mock.Mock(**{"fontpack_bundle_status.return_value": payload})
         with mock.patch.object(CommandsSubMenu, "_info") as info:
             cm.show_fontpack_status()
+            cm.parent._menu_fetch.wait_idle()
         info.assert_called_once()
         return info.call_args[0][1]
 
