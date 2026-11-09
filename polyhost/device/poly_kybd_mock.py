@@ -388,6 +388,39 @@ class PolyKybdMock:
             seconds = 0
         return True, (value, seconds)
 
+    def get_tap_terms(self) -> tuple[bool, dict | str]:
+        self._log_call("get_tap_terms")
+        if (refusal := self._too_old("tap_terms")):
+            return False, refusal
+        return True, self._tap_terms_now()
+
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None) -> tuple[bool, dict | str]:
+        # Refuses what the firmware refuses: both ranges are CLOSED.
+        from polyhost.device.command_ids import TapTerms
+        self._log_call("set_tap_terms", tapping_term, flow_tap_term)
+        if tapping_term is None and flow_tap_term is None:
+            return False, "Nothing to set"
+        if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
+            return False, f"{tapping_term!r} ms is not a valid tapping term"
+        if flow_tap_term is not None and not TapTerms.flow_tap_valid(flow_tap_term):
+            return False, f"{flow_tap_term!r} ms is not a valid Flow Tap term"
+        if (refusal := self._too_old("tap_terms")):
+            return False, refusal
+        self._forward("set_tap_terms", tapping_term, flow_tap_term)
+        if tapping_term is not None:
+            self._tapping_term = tapping_term
+        if flow_tap_term is not None:
+            self._flow_tap_term = flow_tap_term
+        return True, self._tap_terms_now()
+
+    def _tap_terms_now(self) -> dict:
+        from polyhost.device.command_ids import TapTerms
+        return {
+            "tapping_term": getattr(self, "_tapping_term", TapTerms.DEFAULT_TAPPING_MS),
+            "flow_tap_term": getattr(self, "_flow_tap_term", TapTerms.DEFAULT_FLOW_TAP_MS),
+            "flow_tap_available": True,
+        }
+
     def set_glyph_script(self, script) -> tuple[bool, str]:
         value = getattr(script, "value", script)
         self._log_call("set_glyph_script", value)

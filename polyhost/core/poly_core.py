@@ -2390,6 +2390,22 @@ class PolyCore(Observable):
         return self._device_call(
             "idle_timeout_get", lambda c: self.keeb.get_idle_timeout())
 
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None):
+        """Set the tapping term and/or the Flow Tap term in ms (None keeps one).
+        (ok, terms after the change) or (False, reason)."""
+        try:
+            tap = None if tapping_term is None else int(tapping_term)
+            flow = None if flow_tap_term is None else int(flow_tap_term)
+        except (TypeError, ValueError):
+            return False, f"Invalid tap terms: {tapping_term!r}, {flow_tap_term!r}"
+        return self._device_call(
+            "tap_terms_set",
+            lambda c, t=tap, f=flow: self.keeb.set_tap_terms(tapping_term=t, flow_tap_term=f))
+
+    def get_tap_terms(self):
+        """(ok, {"tapping_term", "flow_tap_term", "flow_tap_available"})."""
+        return self._device_call("tap_terms_get", lambda c: self.keeb.get_tap_terms())
+
     def refresh_unicode_mode(self):
         """Re-detect the host's unicode input method and push it to the keyboard.
 

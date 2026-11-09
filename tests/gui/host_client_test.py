@@ -65,7 +65,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(
             top.split("|"),
             ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
-             "Keycap Script", "Keycap Size", "Configure Keymap", "Updates", "Maintenance",
+             "Keycap Script", "Keycap Size", "Tap-Hold Timing…", "Configure Keymap",
+             "Updates", "Maintenance",
              "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
         self.assertNotIn("All PolyKybd Commands", top)
@@ -246,6 +247,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("| enabled True", proc.stdout)
         # Genuinely current: the row answers the question and disables itself.
         self.assertIn("FONT_ROW_CURRENT Keyboard fonts: up to date", proc.stdout)
+        self.assertIn("TAP_DIALOG True (200, 150)", proc.stdout)
+        self.assertIn("TAP_SET (260, 150)", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -616,6 +619,16 @@ def _smoke_client():
         # three states through the real RPC mirror.
         fontpack_state = "stale"
 
+        tap_terms = {"tapping_term": 200, "flow_tap_term": 150, "flow_tap_available": True}
+        tap_set = None
+
+        def get_tap_terms(self):
+            return (True, dict(self.tap_terms))
+
+        def set_tap_terms(self, tapping_term=None, flow_tap_term=None):
+            self.tap_set = (tapping_term, flow_tap_term)
+            return (True, dict(self.tap_terms, tapping_term=tapping_term))
+
         def fontpack_bundle_status(self):
             stale = self.fontpack_state == "stale"
             retry = self.fontpack_state == "retry"
@@ -734,6 +747,17 @@ def _smoke_client():
             app._refresh_fontpack_action()
             app._menu_fetch.wait_idle()
             print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
+            # Tap-Hold Timing: the read and the write both cross the RPC off the
+            # GUI thread (MenuFetcher); the dialog opens when the read returns.
+            app.open_tap_terms_dialog()
+            app._menu_fetch.wait_idle()
+            dlg = app.tap_terms_dialog
+            print("TAP_DIALOG", dlg is not None and dlg.isVisible(),
+                  dlg.values() if dlg is not None else None)
+            dlg.tapping.setValue(260)
+            dlg.accept()
+            app._menu_fetch.wait_idle()
+            print("TAP_SET", core.tap_set)
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:

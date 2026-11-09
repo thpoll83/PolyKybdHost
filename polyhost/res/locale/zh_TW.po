@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-09 12:51+0000\n"
+"POT-Creation-Date: 2026-11-09 13:03+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hant_TW\n"
@@ -18,17 +18,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: polyhost/device/command_ids.py:148
+#: polyhost/device/command_ids.py:153
 #, python-brace-format
 msgid "preset {value}"
 msgstr "預設值 {value}"
 
-#: polyhost/device/command_ids.py:150
+#: polyhost/device/command_ids.py:155
 #, python-brace-format
 msgid "{minutes} min"
 msgstr "{minutes} 分鐘"
 
-#: polyhost/device/command_ids.py:151
+#: polyhost/device/command_ids.py:156
 #, python-brace-format
 msgid "{seconds} sec"
 msgstr "{seconds} 秒"
@@ -539,7 +539,8 @@ msgstr "<b>失敗：</b>{reason}"
 msgid "Brightness"
 msgstr "亮度"
 
-#: polyhost/gui/cmd_menu.py:143
+#. TRANSLATORS: shown in the Flow Tap spin box when its value is 0.
+#: polyhost/gui/cmd_menu.py:143 polyhost/gui/tap_terms_dialog.py:45
 msgid "Off"
 msgstr "關閉"
 
@@ -828,7 +829,7 @@ msgstr "隨附"
 msgid "PolyKybd commands (*.poly.cmd)"
 msgstr "PolyKybd 指令（*.poly.cmd）"
 
-#: polyhost/gui/cmd_menu.py:558 polyhost/host.py:2587
+#: polyhost/gui/cmd_menu.py:558 polyhost/host.py:2640
 msgid "Open file"
 msgstr "開啟檔案"
 
@@ -1711,8 +1712,8 @@ msgstr "已開始燒錄 — 請留意系統匣／記錄檔。"
 msgid "Discard all pending edits to '{label}'?"
 msgstr "要捨棄「{label}」的所有待處理編輯嗎？"
 
-#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:3198
-#: polyhost/host.py:3239 polyhost/host.py:3266
+#: polyhost/gui/hid_fw_up_dialog.py:166 polyhost/host.py:3251
+#: polyhost/host.py:3292 polyhost/host.py:3319
 msgid "Firmware Update"
 msgstr "韌體更新"
 
@@ -1877,7 +1878,7 @@ msgstr "沒有預覽資料（隨附或簽出版本皆無）"
 msgid "the shipped language table is missing"
 msgstr "缺少隨附的語言表"
 
-#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3214
+#: polyhost/gui/layout_dialog/keycap_preview.py:566 polyhost/host.py:3267
 msgid "unknown"
 msgstr "未知"
 
@@ -2116,11 +2117,6 @@ msgstr ""
 #, python-brace-format
 msgid "{error}  — fix it or switch back."
 msgstr "{error} — 請修正，或切換回去。"
-
-#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
-#: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
-msgid " ms"
-msgstr " ms"
 
 #: polyhost/gui/layout_dialog/macro_steps_dialog.py:382
 #, python-brace-format
@@ -2542,7 +2538,7 @@ msgstr "沒有相符項目"
 msgid "{index} of {total}"
 msgstr "第 {index} 個，共 {total} 個"
 
-#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2080
+#: polyhost/gui/mock_board_dialog.py:90 polyhost/host.py:2133
 msgid "Mock keyboard"
 msgstr "模擬鍵盤"
 
@@ -2833,7 +2829,7 @@ msgstr "延遲"
 msgid "Dev"
 msgstr "開發"
 
-#: polyhost/gui/settings_dialog.py:61 polyhost/host.py:923
+#: polyhost/gui/settings_dialog.py:61 polyhost/host.py:930
 msgid "Developer"
 msgstr "開發人員"
 
@@ -3423,6 +3419,33 @@ msgstr "重新下載"
 msgid "The download failed ({error}). You can get the .uf2 from <a href=\"{url}\">the release page</a> instead."
 msgstr "下載失敗（{error}）。您可以改從<a href=\"{url}\">發行頁面</a>取得 .uf2。"
 
+#: polyhost/gui/tap_terms_dialog.py:16
+msgid "A key with a tap and a hold action types its tap action when you release it before the tapping term, and acts as its hold action when you hold it longer.<br><br>A tap-hold key pressed within the Flow Tap term after the previous key always types its tap action, so fast typing does not trigger a modifier. 0 turns Flow Tap off.<br><br>The keyboard stores both values."
+msgstr "具有點按與按住兩種動作的按鍵，在點按時間內放開時送出點按動作，按住更久時作為按住動作。<br><br>在上一個按鍵之後的 Flow Tap 時間內按下的點按/按住鍵一律送出點按動作，因此快速輸入不會觸發修飾鍵。0 表示關閉 Flow Tap。<br><br>鍵盤會儲存這兩個值。"
+
+#: polyhost/gui/tap_terms_dialog.py:28 polyhost/host.py:2107
+msgid "Tap-Hold Timing"
+msgstr "點按/按住時間"
+
+#. TRANSLATORS: unit after a number of milliseconds in a spin box.
+#. TRANSLATORS: unit suffix of a duration spin box (milliseconds).
+#: polyhost/gui/layout_dialog/macro_steps_dialog.py:355
+#: polyhost/gui/tap_terms_dialog.py:37 polyhost/gui/tap_terms_dialog.py:43
+msgid " ms"
+msgstr " ms"
+
+#: polyhost/gui/tap_terms_dialog.py:49
+msgid "This keyboard's firmware has no Flow Tap."
+msgstr "此鍵盤的韌體沒有 Flow Tap。"
+
+#: polyhost/gui/tap_terms_dialog.py:52
+msgid "Tapping term:"
+msgstr "點按時間："
+
+#: polyhost/gui/tap_terms_dialog.py:53
+msgid "Flow Tap term:"
+msgstr "Flow Tap 時間："
+
 #: polyhost/gui/tray_notify.py:62
 #, python-brace-format
 msgid "{prefix} — host v{host_version}, firmware v{fw_version} available"
@@ -3439,7 +3462,7 @@ msgid "{prefix} — firmware v{fw_version} available"
 msgstr "{prefix} — 韌體 v{fw_version} 可供更新"
 
 #: polyhost/forwarder.py:262 polyhost/gui/tray_notify.py:81
-#: polyhost/host.py:778
+#: polyhost/host.py:785
 msgid "Updates"
 msgstr "更新"
 
@@ -3574,11 +3597,11 @@ msgstr "鍵盤引擎包已是最新版本。"
 msgid "Engine pack update failed: {error}"
 msgstr "引擎包更新失敗：{error}"
 
-#: polyhost/host.py:501 polyhost/host.py:1626
+#: polyhost/host.py:501 polyhost/host.py:1634
 msgid "Waiting for PolyKybd..."
 msgstr "正在等待 PolyKybd..."
 
-#: polyhost/host.py:502 polyhost/host.py:1473
+#: polyhost/host.py:502 polyhost/host.py:1481
 msgid "Press to pause connection"
 msgstr "按下以暫停連線"
 
@@ -3606,171 +3629,175 @@ msgstr "記錄檔..."
 msgid "Report a Problem..."
 msgstr "回報問題..."
 
-#: polyhost/forwarder.py:313 polyhost/host.py:555
+#: polyhost/forwarder.py:313 polyhost/host.py:556
 msgid "Collect logs..."
 msgstr "收集記錄檔..."
 
-#: polyhost/host.py:564
+#: polyhost/host.py:565
 msgid "Read keyboard crash record"
 msgstr "讀取鍵盤當機記錄"
 
-#: polyhost/host.py:566
+#: polyhost/host.py:567
 msgid "Read the keyboard's last crash record from both halves and copy it to the clipboard."
 msgstr "從兩個半邊讀取鍵盤最近一次的當機記錄，並複製到剪貼簿。"
 
-#: polyhost/host.py:571
+#: polyhost/host.py:572
 msgid "Inspect Font Packs..."
 msgstr "檢視字型包..."
 
 #. TRANSLATORS: menu action (verb): pause the keyboard connection.
-#: polyhost/forwarder.py:248 polyhost/forwarder.py:388 polyhost/host.py:585
-#: polyhost/host.py:1475
+#: polyhost/forwarder.py:248 polyhost/forwarder.py:388 polyhost/host.py:586
+#: polyhost/host.py:1483
 msgid "Pause"
 msgstr "暫停"
 
-#: polyhost/host.py:595
+#: polyhost/host.py:596
 msgid "Firmware newer than this app — safe mode…"
 msgstr "韌體比此程式新 — 安全模式…"
 
-#: polyhost/host.py:597
+#: polyhost/host.py:598
 msgid "Choose how to handle a keyboard whose firmware is newer than this host app."
 msgstr "選擇當鍵盤韌體比此主機程式新時的處理方式。"
 
-#: polyhost/host.py:637
+#: polyhost/host.py:638
 msgid "Idle Display"
 msgstr "閒置顯示"
 
-#: polyhost/host.py:640
+#: polyhost/host.py:641
 msgid "Pulse (legacy)"
 msgstr "脈動（舊版）"
 
-#: polyhost/host.py:642
+#: polyhost/host.py:643
 msgid "Jitter (move legend)"
 msgstr "抖動（移動字樣）"
 
-#: polyhost/host.py:646
+#: polyhost/host.py:647
 msgid "IDDQD (attract demo)"
 msgstr "IDDQD（展示動畫）"
 
-#: polyhost/host.py:650
+#: polyhost/host.py:651
 msgid "Eden"
 msgstr "Eden"
 
-#: polyhost/host.py:670
+#: polyhost/host.py:671
 msgid "Idle After"
 msgstr "閒置時間"
 
-#: polyhost/host.py:691
+#: polyhost/host.py:692
 msgid "Keycap Script"
 msgstr "鍵帽文字"
 
-#: polyhost/host.py:715
+#: polyhost/host.py:716
 msgid "Centred on the keycap"
 msgstr "鍵帽置中"
 
-#: polyhost/host.py:716
+#: polyhost/host.py:717
 msgid "In the top-left corner"
 msgstr "左上角"
 
-#: polyhost/host.py:736
+#: polyhost/host.py:737
 msgid "Keycap Size"
 msgstr "鍵帽字樣大小"
 
-#: polyhost/host.py:757
+#: polyhost/host.py:758
 msgid "Emoji Search Language"
 msgstr "表情符號搜尋語言"
 
-#: polyhost/host.py:770
+#: polyhost/host.py:769
+msgid "Tap-Hold Timing…"
+msgstr "點按/按住時間…"
+
+#: polyhost/host.py:777
 msgid "Configure Keymap"
 msgstr "設定按鍵配置"
 
-#: polyhost/host.py:780
+#: polyhost/host.py:787
 msgid "Check for host update..."
 msgstr "檢查主機程式更新..."
 
-#: polyhost/host.py:819
+#: polyhost/host.py:826
 msgid "Check for keyboard firmware update…"
 msgstr "檢查鍵盤韌體更新…"
 
-#: polyhost/host.py:828
+#: polyhost/host.py:835
 msgid "Keyboard fonts"
 msgstr "鍵盤字型"
 
-#: polyhost/host.py:863
+#: polyhost/host.py:870
 msgid "Install WinCompose…"
 msgstr "安裝 WinCompose…"
 
-#: polyhost/host.py:885
+#: polyhost/host.py:892
 msgid "Allow access to the keyboard (udev rule)…"
 msgstr "允許存取鍵盤（udev 規則）…"
 
-#: polyhost/forwarder.py:280 polyhost/host.py:906
+#: polyhost/forwarder.py:280 polyhost/host.py:913
 msgid "Set up the terminal and editors…"
 msgstr "設定終端機和編輯器…"
 
-#: polyhost/host.py:925
+#: polyhost/host.py:932
 msgid "Change System Input Language"
 msgstr "變更系統輸入語言"
 
-#: polyhost/host.py:931
+#: polyhost/host.py:938
 msgid "Inspect MRU Cache..."
 msgstr "檢視 MRU 快取..."
 
-#: polyhost/host.py:937
+#: polyhost/host.py:944
 msgid "Mock Keyboard..."
 msgstr "模擬鍵盤..."
 
-#: polyhost/host.py:945
+#: polyhost/host.py:952
 msgid "Refresh unicode input mode"
 msgstr "重新整理 Unicode 輸入模式"
 
-#: polyhost/host.py:949
+#: polyhost/host.py:956
 msgid "Save MRU cache now"
 msgstr "立即儲存 MRU 快取"
 
-#: polyhost/forwarder.py:323 polyhost/host.py:963
+#: polyhost/forwarder.py:323 polyhost/host.py:970
 msgid "Help && About"
 msgstr "說明 && 關於"
 
-#: polyhost/forwarder.py:319 polyhost/host.py:972
+#: polyhost/forwarder.py:319 polyhost/host.py:979
 msgid "Open config folder"
 msgstr "開啟設定資料夾"
 
-#: polyhost/host.py:981
+#: polyhost/host.py:988
 msgid "Only quit GUI"
 msgstr "僅結束介面"
 
-#: polyhost/host.py:1091
+#: polyhost/host.py:1098
 msgid "System language query not supported for this platform."
 msgstr "此平台不支援查詢系統語言。"
 
-#: polyhost/host.py:1289
+#: polyhost/host.py:1296
 #, python-brace-format
 msgid "Retry keyboard fonts ({n} failed)…"
 msgid_plural "Retry keyboard fonts ({n} failed)…"
 msgstr[0] "重試鍵盤字型（{n} 個失敗）…"
 
-#: polyhost/host.py:1291
+#: polyhost/host.py:1298
 #, python-brace-format
 msgid "Re-flash the font bundles whose last attempt failed: {bundles}"
 msgstr "重新燒錄上次嘗試失敗的字型套件：{bundles}"
 
-#: polyhost/host.py:1297
+#: polyhost/host.py:1304
 #, python-brace-format
 msgid "Update keyboard fonts ({n})…"
 msgid_plural "Update keyboard fonts ({n})…"
 msgstr[0] "更新鍵盤字型（{n}）…"
 
-#: polyhost/host.py:1299
+#: polyhost/host.py:1306
 #, python-brace-format
 msgid "Flash the font bundles the keyboard is missing, behind on, or failed to take: {bundles}"
 msgstr "燒錄鍵盤缺少、版本較舊或未成功寫入的字型套件：{bundles}"
 
-#: polyhost/host.py:1304
+#: polyhost/host.py:1311
 msgid "Keyboard fonts: up to date"
 msgstr "鍵盤字型：已是最新版本"
 
-#: polyhost/host.py:1305
+#: polyhost/host.py:1312
 msgid ""
 "Every shipped font bundle is already on the keyboard.\n"
 "Developer → Font Pack → Re-flash all bundles forces a re-send if the keycaps still render wrong."
@@ -3778,84 +3805,84 @@ msgstr ""
 "所有隨附的字型套件都已在鍵盤上。\n"
 "若鍵帽仍顯示錯誤，可使用「開發人員 → 字型包 → 重新燒錄所有套件」強制重新傳送。"
 
-#: polyhost/forwarder.py:746 polyhost/host.py:1341
+#: polyhost/forwarder.py:746 polyhost/host.py:1348
 msgid "Config folder"
 msgstr "設定資料夾"
 
 #. TRANSLATORS: {rate} is like "0.6 MB/s"; the fast USB link's measured speed.
-#: polyhost/host.py:1442
+#: polyhost/host.py:1450
 #, python-brace-format
 msgid "{rate} link"
 msgstr "{rate} 連線"
 
 #. TRANSLATORS: {kbps} is the HID channel's ceiling in KB/s (64).
-#: polyhost/host.py:1444
+#: polyhost/host.py:1452
 #, python-brace-format
 msgid "HID link, up to {kbps} KB/s"
 msgstr "HID 連線，最高 {kbps} KB/s"
 
 #. TRANSLATORS: tray tooltip line; {link} is "0.6 MB/s link" or "HID link, up
 #. to 64 KB/s".
-#: polyhost/host.py:1451
+#: polyhost/host.py:1459
 #, python-brace-format
 msgid "Connected: {link}"
 msgstr "已連線：{link}"
 
 #. TRANSLATORS: status row while paused; clicking it reconnects (verb).
-#: polyhost/host.py:1467
+#: polyhost/host.py:1475
 msgid "Reconnect"
 msgstr "重新連線"
 
 #. TRANSLATORS: menu action (verb): resume the keyboard connection.
-#: polyhost/forwarder.py:388 polyhost/host.py:1470
+#: polyhost/forwarder.py:388 polyhost/host.py:1478
 msgid "Resume"
 msgstr "繼續"
 
-#: polyhost/host.py:1553 polyhost/host.py:1618
+#: polyhost/host.py:1561 polyhost/host.py:1626
 #, python-brace-format
 msgid "Could not change OS language {language}."
 msgstr "無法變更作業系統語言 {language}。"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.bin)" unchanged.
-#: polyhost/host.py:1642
+#: polyhost/host.py:1650
 msgid "Firmware image (*.bin)"
 msgstr "韌體映像檔（*.bin）"
 
-#: polyhost/host.py:1643
+#: polyhost/host.py:1651
 msgid "Select firmware .bin"
 msgstr "選取韌體 .bin"
 
-#: polyhost/host.py:1694
+#: polyhost/host.py:1702
 msgid "Firmware apply failed"
 msgstr "套用韌體失敗"
 
-#: polyhost/host.py:1695
+#: polyhost/host.py:1703
 msgid "Firmware flash failed"
 msgstr "燒錄韌體失敗"
 
-#: polyhost/host.py:1743 polyhost/host.py:1800
+#: polyhost/host.py:1751 polyhost/host.py:1808
 #, python-brace-format
 msgid "Selected Language: {language} {country}"
 msgstr "選取的語言：{language} {country}"
 
-#: polyhost/host.py:1854
+#: polyhost/host.py:1862
 msgid "PolyHost settings"
 msgstr "PolyHost 設定"
 
-#: polyhost/host.py:1855
+#: polyhost/host.py:1863
 msgid "The settings are applied, but they could not be saved to the settings file. Another program may be holding it open. Change a setting again later to retry, or see the log."
 msgstr "設定已套用，但無法儲存到設定檔。可能有其他程式正開啟該檔案。請稍後再次變更設定以重試，或查看記錄檔。"
 
-#: polyhost/host.py:1957
+#: polyhost/host.py:1965
 #, python-brace-format
 msgid "{side}: unreadable record {record}"
 msgstr "{side}：無法讀取的記錄 {record}"
 
-#: polyhost/host.py:1960
+#: polyhost/host.py:1968
 msgid "Neither keyboard half holds a crash record."
 msgstr "兩個鍵盤半邊都沒有當機記錄。"
 
-#: polyhost/host.py:1962
+#: polyhost/host.py:1970
 #, python-brace-format
 msgid ""
 "Could not read the crash record.\n"
@@ -3866,119 +3893,127 @@ msgstr ""
 "\n"
 "{errors}"
 
-#: polyhost/host.py:1964
+#: polyhost/host.py:1972
 msgid "Keyboard crash record"
 msgstr "鍵盤當機記錄"
 
-#: polyhost/host.py:1973
+#: polyhost/host.py:1981
 #, python-brace-format
 msgid "Copied to the clipboard. Not read: {errors}"
 msgstr "已複製到剪貼簿。未讀取：{errors}"
 
-#: polyhost/host.py:2070
+#: polyhost/host.py:2078
+msgid "Could not read the tap-hold timing from the keyboard."
+msgstr "無法從鍵盤讀取點按/按住時間。"
+
+#: polyhost/host.py:2101
+msgid "The keyboard did not accept the tap-hold timing."
+msgstr "鍵盤未接受點按/按住時間。"
+
+#: polyhost/host.py:2123
 msgid "MRU Cache"
 msgstr "MRU 快取"
 
-#: polyhost/host.py:2070
+#: polyhost/host.py:2123
 msgid "MRU cache is not active (device not connected or MRU mode disabled)."
 msgstr "MRU 快取未啟用（裝置未連線或 MRU 模式已停用）。"
 
-#: polyhost/host.py:2122
+#: polyhost/host.py:2175
 msgid "daemon client"
 msgstr "常駐程式用戶端"
 
-#: polyhost/host.py:2122
+#: polyhost/host.py:2175
 msgid "standalone"
 msgstr "獨立執行"
 
 #. TRANSLATORS: keyboard connection state (adjective).
 #. TRANSLATORS: the forwarder's relay state, shown in brackets after its target
-#: polyhost/forwarder.py:807 polyhost/host.py:2180
+#: polyhost/forwarder.py:807 polyhost/host.py:2233
 msgid "paused"
 msgstr "已暫停"
 
-#: polyhost/host.py:2182
+#: polyhost/host.py:2235
 msgid "connected"
 msgstr "已連線"
 
-#: polyhost/host.py:2183
+#: polyhost/host.py:2236
 msgid "present — not connected (protocol/version)"
 msgstr "已偵測到 — 未連線（協定／版本）"
 
-#: polyhost/host.py:2190
+#: polyhost/host.py:2243
 msgid "Keyboard"
 msgstr "鍵盤"
 
-#: polyhost/host.py:2191
+#: polyhost/host.py:2244
 msgid "No keyboard connected."
 msgstr "未連接鍵盤。"
 
-#: polyhost/host.py:2195
+#: polyhost/host.py:2248
 msgid "⚠ mismatch"
 msgstr "⚠ 不符"
 
-#: polyhost/host.py:2197
+#: polyhost/host.py:2250
 #, python-brace-format
 msgid "{n} languages loaded"
 msgid_plural "{n} languages loaded"
 msgstr[0] "已載入 {n} 種語言"
 
-#: polyhost/host.py:2200
+#: polyhost/host.py:2253
 #, python-brace-format
 msgid "<b>Connected keyboard:</b> {name} {state}"
 msgstr "<b>已連接的鍵盤：</b>{name} {state}"
 
-#: polyhost/host.py:2202
+#: polyhost/host.py:2255
 #, python-brace-format
 msgid "<b>Firmware:</b> {firmware} &nbsp;·&nbsp; protocol {protocol}"
 msgstr "<b>韌體：</b>{firmware} &nbsp;·&nbsp; 協定 {protocol}"
 
-#: polyhost/host.py:2204
+#: polyhost/host.py:2257
 #, python-brace-format
 msgid "<b>Hardware:</b> {hardware}"
 msgstr "<b>硬體：</b>{hardware}"
 
-#: polyhost/host.py:2205
+#: polyhost/host.py:2258
 #, python-brace-format
 msgid "<b>Language:</b> {language}"
 msgstr "<b>語言：</b>{language}"
 
-#: polyhost/host.py:2208
+#: polyhost/host.py:2261
 #, python-brace-format
 msgid "<b>Link:</b> {link}"
 msgstr "<b>連線：</b>{link}"
 
-#: polyhost/host.py:2215
+#: polyhost/host.py:2268
 #, python-brace-format
 msgid "<b>Uptime:</b> {uptime}"
 msgstr "<b>執行時間：</b>{uptime}"
 
-#: polyhost/host.py:2217
+#: polyhost/host.py:2270
 #, python-brace-format
 msgid "<b>Overlay mappings:</b> {n} apps"
 msgid_plural "<b>Overlay mappings:</b> {n} apps"
 msgstr[0] "<b>覆蓋圖對應：</b>{n} 個應用程式"
 
-#: polyhost/forwarder.py:824 polyhost/host.py:2219
+#: polyhost/forwarder.py:824 polyhost/host.py:2272
 #, python-brace-format
 msgid "<b>Config:</b> {path}"
 msgstr "<b>設定：</b>{path}"
 
-#: polyhost/forwarder.py:825 polyhost/host.py:2220
+#: polyhost/forwarder.py:825 polyhost/host.py:2273
 #, python-brace-format
 msgid "<b>Logs:</b> {path}"
 msgstr "<b>記錄檔：</b>{path}"
 
-#: polyhost/forwarder.py:843 polyhost/host.py:2274
+#: polyhost/forwarder.py:843 polyhost/host.py:2327
 #, python-brace-format
 msgid "HID protocol P{protocol}"
 msgstr "HID 協定 P{protocol}"
 
-#: polyhost/host.py:2279
+#: polyhost/host.py:2332
 msgid "Host software for the PolyKybd split keyboard with per-keycap OLED displays — tracks the active window and pushes overlays, language and keymap updates to the keyboard."
 msgstr "PolyKybd 分離式鍵盤的主機軟體，每個鍵帽都有 OLED 顯示器 — 追蹤作用中視窗，並將覆蓋圖、語言與按鍵配置更新推送到鍵盤。"
 
-#: polyhost/host.py:2305
+#: polyhost/host.py:2358
 #, python-brace-format
 msgid ""
 "Changing input language to '{language}' failed with:\n"
@@ -3987,100 +4022,100 @@ msgstr ""
 "將輸入語言變更為「{language}」失敗：\n"
 "「{error}」"
 
-#: polyhost/host.py:2325 polyhost/host.py:2342
+#: polyhost/host.py:2378 polyhost/host.py:2395
 #, python-brace-format
 msgid "Could not set {language}: {error}"
 msgstr "無法設定 {language}：{error}"
 
-#: polyhost/host.py:2484
+#: polyhost/host.py:2537
 msgid "No emoji search dictionaries shipped"
 msgstr "未隨附表情符號搜尋字典"
 
-#: polyhost/host.py:2490
+#: polyhost/host.py:2543
 msgid "Needs newer keyboard firmware"
 msgstr "需要較新的鍵盤韌體"
 
-#: polyhost/host.py:2518
+#: polyhost/host.py:2571
 msgid "Own dictionary file..."
 msgstr "自訂字典檔..."
 
-#: polyhost/host.py:2520
+#: polyhost/host.py:2573
 #, python-brace-format
 msgid "Own dictionary (cannot be used): {name}"
 msgstr "自訂字典（無法使用）：{name}"
 
-#: polyhost/host.py:2522
+#: polyhost/host.py:2575
 #, python-brace-format
 msgid "Own dictionary: {name}"
 msgstr "自訂字典：{name}"
 
-#: polyhost/host.py:2539
+#: polyhost/host.py:2592
 msgid "Choose an emoji search dictionary"
 msgstr "選擇表情符號搜尋字典"
 
-#: polyhost/host.py:2540
+#: polyhost/host.py:2593
 msgid "Emoji search dictionary (*.plyd)"
 msgstr "表情符號搜尋字典 (*.plyd)"
 
-#: polyhost/host.py:2553
+#: polyhost/host.py:2606
 msgid "Emoji search dictionary"
 msgstr "表情符號搜尋字典"
 
-#: polyhost/host.py:2554
+#: polyhost/host.py:2607
 #, python-brace-format
 msgid "This file cannot be used: {reason}"
 msgstr "無法使用此檔案：{reason}"
 
 #. TRANSLATORS: file-dialog filter; keep "(*.poly.yaml)" unchanged.
-#: polyhost/host.py:2586
+#: polyhost/host.py:2639
 msgid "PolyKybd overlay mapping (*.poly.yaml)"
 msgstr "PolyKybd 覆蓋圖對應（*.poly.yaml）"
 
-#: polyhost/host.py:2674 polyhost/host.py:3170 polyhost/host.py:3313
+#: polyhost/host.py:2727 polyhost/host.py:3223 polyhost/host.py:3366
 #, python-brace-format
 msgid "Update firmware to v{version}…"
 msgstr "將韌體更新至 v{version}…"
 
-#: polyhost/host.py:2676 polyhost/host.py:3211 polyhost/host.py:3384
+#: polyhost/host.py:2729 polyhost/host.py:3264 polyhost/host.py:3437
 msgid "Check for firmware update…"
 msgstr "檢查韌體更新…"
 
 #: polyhost/forwarder.py:881 polyhost/forwarder.py:892
-#: polyhost/forwarder.py:898 polyhost/host.py:2694 polyhost/host.py:2815
-#: polyhost/host.py:2819
+#: polyhost/forwarder.py:898 polyhost/host.py:2747 polyhost/host.py:2868
+#: polyhost/host.py:2872
 msgid "Check for updates..."
 msgstr "檢查更新..."
 
-#: polyhost/host.py:2762
+#: polyhost/host.py:2815
 #, python-brace-format
 msgid "Update to v{version} available"
 msgstr "有可用的更新 v{version}"
 
 #: polyhost/forwarder.py:894 polyhost/forwarder.py:900
-#: polyhost/forwarder.py:911 polyhost/host.py:2773 polyhost/host.py:2813
-#: polyhost/host.py:2820 polyhost/host.py:2843
+#: polyhost/forwarder.py:911 polyhost/host.py:2826 polyhost/host.py:2866
+#: polyhost/host.py:2873 polyhost/host.py:2896
 msgid "PolyKybdHost Update"
 msgstr "PolyKybdHost 更新"
 
-#: polyhost/host.py:2774
+#: polyhost/host.py:2827
 #, python-brace-format
 msgid "Version {version} is available. Click the tray icon to update."
 msgstr "版本 {version} 已推出。按一下系統匣圖示即可更新。"
 
-#: polyhost/forwarder.py:869 polyhost/host.py:2799
+#: polyhost/forwarder.py:869 polyhost/host.py:2852
 msgid "Checking for updates..."
 msgstr "正在檢查更新..."
 
-#: polyhost/host.py:2812
+#: polyhost/host.py:2865
 msgid "No updates available"
 msgstr "沒有可用的更新"
 
-#: polyhost/forwarder.py:895 polyhost/host.py:2814
+#: polyhost/forwarder.py:895 polyhost/host.py:2867
 #, python-brace-format
 msgid "You are running the latest version (v{version})."
 msgstr "您正在執行最新版本（v{version}）。"
 
-#: polyhost/forwarder.py:901 polyhost/host.py:2821
+#: polyhost/forwarder.py:901 polyhost/host.py:2874
 #, python-brace-format
 msgid ""
 "Could not check for updates:\n"
@@ -4095,69 +4130,69 @@ msgstr ""
 "\n"
 "請使用 --dev 1 執行以查看詳細資訊。"
 
-#: polyhost/host.py:2826 polyhost/host.py:3243
+#: polyhost/host.py:2879 polyhost/host.py:3296
 #, python-brace-format
 msgid "Released: {date}"
 msgstr "發行日期：{date}"
 
-#: polyhost/forwarder.py:882 polyhost/host.py:2827
+#: polyhost/forwarder.py:882 polyhost/host.py:2880
 #, python-brace-format
 msgid "Version {version} is available."
 msgstr "版本 {version} 已推出。"
 
-#: polyhost/forwarder.py:883 polyhost/host.py:2828
+#: polyhost/forwarder.py:883 polyhost/host.py:2881
 msgid "Update PolyKybdHost"
 msgstr "更新 PolyKybdHost"
 
-#: polyhost/host.py:2832
+#: polyhost/host.py:2885
 msgid "Download, install, and restart now?"
 msgstr "要立即下載、安裝並重新啟動嗎？"
 
-#: polyhost/forwarder.py:910 polyhost/host.py:2843
+#: polyhost/forwarder.py:910 polyhost/host.py:2896
 #, python-brace-format
 msgid "Downloading v{version}…"
 msgstr "正在下載 v{version}…"
 
-#: polyhost/forwarder.py:951 polyhost/host.py:2968
+#: polyhost/forwarder.py:951 polyhost/host.py:3021
 msgid "Could not start the update relay; the update is incomplete. See the log for details."
 msgstr "無法啟動更新轉接程序；更新未完成。詳細資訊請查看記錄檔。"
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2983
+#: polyhost/forwarder.py:963 polyhost/host.py:3036
 msgid "Update failed"
 msgstr "更新失敗"
 
-#: polyhost/forwarder.py:963 polyhost/host.py:2983
+#: polyhost/forwarder.py:963 polyhost/host.py:3036
 msgid "The update did not finish."
 msgstr "更新未完成。"
 
-#: polyhost/host.py:3130
+#: polyhost/host.py:3183
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgstr[0] "{n} 個鍵盤字型套件已過期，且自動燒錄已關閉。請使用 更新 → 更新鍵盤字型。"
 
-#: polyhost/host.py:3181
+#: polyhost/host.py:3234
 msgid "PolyKybd Firmware Update"
 msgstr "PolyKybd 韌體更新"
 
-#: polyhost/host.py:3182
+#: polyhost/host.py:3235
 #, python-brace-format
 msgid "New firmware v{version} is available. Click the tray icon to update."
 msgstr "新韌體 v{version} 已推出。按一下系統匣圖示即可更新。"
 
-#: polyhost/host.py:3199 polyhost/host.py:3240
+#: polyhost/host.py:3252 polyhost/host.py:3293
 msgid "The keyboard must be connected to update the firmware."
 msgstr "必須連接鍵盤才能更新韌體。"
 
-#: polyhost/host.py:3205
+#: polyhost/host.py:3258
 msgid "Checking for firmware update…"
 msgstr "正在檢查韌體更新…"
 
-#: polyhost/host.py:3219 polyhost/host.py:3229 polyhost/host.py:3232
+#: polyhost/host.py:3272 polyhost/host.py:3282 polyhost/host.py:3285
 msgid "PolyKybd Firmware"
 msgstr "PolyKybd 韌體"
 
-#: polyhost/host.py:3220
+#: polyhost/host.py:3273
 #, python-brace-format
 msgid ""
 "Firmware v{version} has been released, but it does not include a downloadable firmware file, so it cannot be installed yet.\n"
@@ -4168,55 +4203,55 @@ msgstr ""
 "\n"
 "您的鍵盤目前為 v{current}。這通常表示發行版本的建置失敗 — 修正後發行頁面就會提供韌體。"
 
-#: polyhost/host.py:3230
+#: polyhost/host.py:3283
 msgid "No firmware release could be found."
 msgstr "找不到韌體發行版本。"
 
-#: polyhost/host.py:3233
+#: polyhost/host.py:3286
 #, python-brace-format
 msgid "You are running the latest firmware (v{version})."
 msgstr "您正在執行最新的韌體（v{version}）。"
 
-#: polyhost/host.py:3245
+#: polyhost/host.py:3298
 #, python-brace-format
 msgid "Installed: v{version}"
 msgstr "已安裝：v{version}"
 
-#: polyhost/host.py:3246
+#: polyhost/host.py:3299
 msgid "Installed: unknown (the keyboard did not report its version)"
 msgstr "已安裝：未知（鍵盤未回報其版本）"
 
-#: polyhost/host.py:3247
+#: polyhost/host.py:3300
 #, python-brace-format
 msgid "Firmware {version} is available."
 msgstr "韌體 {version} 已推出。"
 
-#: polyhost/host.py:3249
+#: polyhost/host.py:3302
 msgid "Both halves update over HID and reboot automatically."
 msgstr "兩個半邊都會透過 HID 更新並自動重新啟動。"
 
-#: polyhost/host.py:3250
+#: polyhost/host.py:3303
 msgid "Update PolyKybd Firmware"
 msgstr "更新 PolyKybd 韌體"
 
-#: polyhost/host.py:3254
+#: polyhost/host.py:3307
 msgid "Download and flash now?"
 msgstr "要立即下載並燒錄嗎？"
 
-#: polyhost/host.py:3265
+#: polyhost/host.py:3318
 #, python-brace-format
 msgid "Downloading firmware v{version}…"
 msgstr "正在下載韌體 v{version}…"
 
-#: polyhost/host.py:3287 polyhost/host.py:3588
+#: polyhost/host.py:3340 polyhost/host.py:3641
 msgid "Cancelling…"
 msgstr "正在取消…"
 
-#: polyhost/host.py:3324
+#: polyhost/host.py:3377
 msgid "Firmware Update Failed"
 msgstr "韌體更新失敗"
 
-#: polyhost/host.py:3325
+#: polyhost/host.py:3378
 #, python-brace-format
 msgid ""
 "Could not download the firmware:\n"
@@ -4227,11 +4262,11 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3431 polyhost/host.py:3473 polyhost/host.py:3481
+#: polyhost/host.py:3484 polyhost/host.py:3526 polyhost/host.py:3534
 msgid "Allow access to the keyboard"
 msgstr "允許存取鍵盤"
 
-#: polyhost/host.py:3432
+#: polyhost/host.py:3485
 msgid ""
 "On Linux a udev rule lets this app open the keyboard without root: its HID interface, and its serial port for faster firmware and font-pack updates. The rule file is /etc/udev/rules.d/99-hid.rules.\n"
 "\n"
@@ -4241,7 +4276,7 @@ msgstr ""
 "\n"
 "系統會要求您輸入密碼（PolicyKit）。之後，請拔下鍵盤再重新插上。"
 
-#: polyhost/host.py:3474
+#: polyhost/host.py:3527
 msgid ""
 "The udev rule is installed.\n"
 "\n"
@@ -4251,11 +4286,11 @@ msgstr ""
 "\n"
 "請拔下鍵盤再重新插上，新的權限才會生效。"
 
-#: polyhost/host.py:3482
+#: polyhost/host.py:3535
 msgid "The udev rule was not installed."
 msgstr "udev 規則未能安裝。"
 
-#: polyhost/host.py:3483
+#: polyhost/host.py:3536
 #, python-brace-format
 msgid ""
 "{error}\n"
@@ -4268,12 +4303,12 @@ msgstr ""
 "您也可以在終端機中執行下列命令：\n"
 "{commands}"
 
-#: polyhost/host.py:3552 polyhost/host.py:3566 polyhost/host.py:3612
-#: polyhost/host.py:3621 polyhost/host.py:3627
+#: polyhost/host.py:3605 polyhost/host.py:3619 polyhost/host.py:3665
+#: polyhost/host.py:3674 polyhost/host.py:3680
 msgid "Install WinCompose"
 msgstr "安裝 WinCompose"
 
-#: polyhost/host.py:3553
+#: polyhost/host.py:3606
 msgid ""
 "WinCompose lets your PolyKybd type any unicode character on Windows — emoji, accents and the language layers all go through it. Without it the keyboard falls back to the far more limited native Windows input.\n"
 "\n"
@@ -4283,11 +4318,11 @@ msgstr ""
 "\n"
 "將從 GitHub 下載 PolyKybd 版的 WinCompose 並啟動其安裝程式（Windows 會要求您確認）。"
 
-#: polyhost/host.py:3566
+#: polyhost/host.py:3619
 msgid "Looking for the latest WinCompose release…"
 msgstr "正在尋找最新的 WinCompose 版本…"
 
-#: polyhost/host.py:3613
+#: polyhost/host.py:3666
 msgid ""
 "No ready-made installer was found for download.\n"
 "\n"
@@ -4297,7 +4332,7 @@ msgstr ""
 "\n"
 "將在瀏覽器中開啟發行頁面 — 請從該處下載並執行安裝程式。"
 
-#: polyhost/host.py:3622
+#: polyhost/host.py:3675
 #, python-brace-format
 msgid ""
 "The download failed:\n"
@@ -4308,7 +4343,7 @@ msgstr ""
 "\n"
 "{error}"
 
-#: polyhost/host.py:3628
+#: polyhost/host.py:3681
 #, python-brace-format
 msgid ""
 "The installer could not be started:\n"
@@ -4325,7 +4360,7 @@ msgstr ""
 "已儲存至：\n"
 "{path}"
 
-#: polyhost/host.py:3636
+#: polyhost/host.py:3689
 msgid "The WinCompose installer has started. Once it finishes and WinCompose is running, PolyKybd will switch to it automatically."
 msgstr "WinCompose 安裝程式已啟動。安裝完成且 WinCompose 開始執行後，PolyKybd 會自動切換使用它。"
 
