@@ -9,10 +9,8 @@ import contextlib
 import hashlib
 import io
 import json
-import os
 import shutil
 import struct
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -25,6 +23,43 @@ from polyhost.services import icon_library as il
 
 ROOT = Path(__file__).resolve().parents[2]
 FONTPACK = ROOT / "polyhost" / "res" / "fontpack"
+
+
+# What `build_icon_library.select()` picks from today's templates. It decodes
+# every shipped template for every modifier and takes about a minute, and three
+# tests below need it, so it is computed once per run and shared. Each of them
+# re-ran it before, together over the test runner's two-minute limit per test.
+_SELECTED = None
+
+
+def _builder():
+    """`scripts/build_icon_library.py` as a module, or a SkipTest when the image
+    stack it needs is missing."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    try:
+        import build_icon_library as bil
+    except Exception as exc:         # the builder needs the image stack
+        raise unittest.SkipTest(f"icon library builder unavailable: {exc}") from exc
+    return bil
+
+
+def _selected(bil):
+    global _SELECTED
+    if _SELECTED is None:
+        _SELECTED = bil.select()
+    return _SELECTED
+
+
+def _run_check(case, bil):
+    """`build_icon_library.py --check` in this process, on the shared selection.
+    Returns (exit code, stdout)."""
+    patcher = mock.patch.object(bil, "select", return_value=_selected(bil))
+    patcher.start()
+    case.addCleanup(patcher.stop)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        rc = bil.main(["--check"])
+    return rc, out.getvalue()
 
 
 def frame(pixels):
@@ -166,10 +201,8 @@ class ShippedLibraryTest(unittest.TestCase):
                 import generate_app_overlays  # noqa: F401
             except Exception as exc:     # the generator needs the image stack
                 self.skipTest(f"overlay generator unavailable: {exc}")
-        out = subprocess.run([sys.executable, str(ROOT / "scripts" / "build_icon_library.py"),
-                              "--check"], capture_output=True, text=True, cwd=ROOT,
-                             env={**os.environ, "PYTHONPATH": str(ROOT)})
-        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        rc, out = _run_check(self, _builder())
+        self.assertEqual(rc, 0, out)
 
 
 class CheckToleratesPendingIconsTest(unittest.TestCase):
@@ -179,12 +212,7 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
     its own frozen id table still fails."""
 
     def setUp(self):
-        sys.path.insert(0, str(ROOT / "scripts"))
-        try:
-            import build_icon_library as bil
-        except Exception as exc:         # the builder needs the image stack
-            raise unittest.SkipTest(f"icon library builder unavailable: {exc}") from exc
-        self.bil = bil
+        self.bil = bil = _builder()
         tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
         ids = yaml.safe_load(bil.IDS_FILE.read_text(encoding="utf-8"))
@@ -211,20 +239,14 @@ class CheckToleratesPendingIconsTest(unittest.TestCase):
             self.addCleanup(patcher.stop)
 
     def _check(self):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            rc = self.bil.main(["--check"])
-        return rc, out.getvalue()
+        return _run_check(self, self.bil)
 
     def test_a_library_behind_the_templates_passes_and_lists_pending(self):
         # The pending list names an image by the file the selection found it
         # in, which need not be the name its id was frozen under: another app
         # can ship the same pixels under another file name (Cinema 4D's
         # zoomselected.png is zoomsel.png). Match the dropped ids by key.
-        selected = self.bil.select()
-        patcher = mock.patch.object(self.bil, "select", return_value=selected)
-        patcher.start()
-        self.addCleanup(patcher.stop)
+        selected = _selected(self.bil)
         names = [n for f, n in selected.items() if self.bil._key(f) in self.dropped_keys]
         self.assertEqual(len(names), len(self.dropped_keys), self.dropped)
         rc, out = self._check()

@@ -770,7 +770,7 @@ class PolyForwarder(QApplication):
                 # set_all over the FULL dict: the dialog only saw a slice, so
                 # writing `updated` alone would drop every key it was not shown.
                 current.update(changed)
-                saved = settings.set_all(current)
+                saved = settings.set_all(current, source="forwarder Settings dialog")
                 if saved:
                     self.log.info("Forwarder settings changed: %s",
                                   ", ".join(sorted(changed)))

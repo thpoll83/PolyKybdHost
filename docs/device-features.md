@@ -40,6 +40,13 @@ and relative links were adjusted to suit a standalone file.
   range-connect note in [`protocol-gate.md`](protocol-gate.md)), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+  - **Per-application face** (`services/keycap_face.py`): an overlay-mapping entry may set
+    `glyph_script:` and `glyph_script_position:`. `PolyCore._track_keycap_face` submits a
+    `keycap_face` job only when the wanted face changes. Before the first override the
+    user's own script and placement are written to `keycap_face_restore.json` beside
+    `settings.yaml`, and given back on switch-away, at shutdown and on the next connect.
+    A choice made in the tray or `polyctl` while an override is on replaces the face to
+    restore (`note_user_choice`).
   - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
     sample and the tooltip a longer one, drawn offline from the shipped
     `fantasy.plyf` by `services/glyph_script_preview.py` (Qt-free) and turned into
