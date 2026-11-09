@@ -224,6 +224,20 @@ class RenumberByUsageTest(unittest.TestCase):
         self.assertEqual(frames, [b, c, a, gone])
         self.assertEqual(table[3]["key"], bil._key(gone))
 
+    def test_a_retired_frame_that_does_not_match_its_key_stops_the_build(self):
+        """icon_ids.yaml out of step with icons.plyi must not write another
+        icon's pixels under a retired id, in either assignment path."""
+        bil = _builder()
+        a, gone, other = box(0, 0, 4, 4), box(30, 0, 4, 4), box(40, 0, 4, 4)
+        ids_doc = [{"id": 0, "key": bil._key(a), "name": "a.png"},
+                   {"id": 1, "key": bil._key(gone), "name": "gone.png"}]
+        previous = [a, other]                       # id 1 holds the wrong pixels
+        for assign in (lambda: bil.assign_ids({a: "a.png"}, ids_doc, previous),
+                       lambda: bil.renumber_by_usage({a: "a.png"}, {a: 1}, ids_doc, previous)):
+            with self.assertRaises(SystemExit) as cm:
+                assign()
+            self.assertIn("gone.png", str(cm.exception))
+
     def test_it_cannot_run_with_check(self):
         bil = _builder()
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):

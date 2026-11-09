@@ -184,10 +184,16 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   more (slot, id) pairs per report: 27 at 9 bits against 20 at 12. Measured on the
   shipped templates (2026-11-09): 6,868 fill reports over 2,861 overlay entries with
   the append-only ids, 5,666 ranked (-17.5 %, about 0.4 report per switch). It breaks
-  the append-only rule once, safely: the host fills only when the keyboard reports
-  exactly the shipped `content_version`, so no keyboard pairs new ids with old glyphs.
-  Retired icons follow the live ones with their own pixels. Run it once, then rebuild
-  without it again.
+  the append-only rule once. Retired icons follow the live ones with their own pixels,
+  and the builder stops if a shipped frame does not match its key in `icon_ids.yaml`.
+  Run it once, then rebuild without it again.
+  ⚠️ **Do not run it before the slave can refuse a fill from another library.** The
+  host fills only when the keyboard reports exactly the shipped `content_version`, but
+  until the master has read the slave's versions that number is the master's alone,
+  and each half draws a cmd 42 fill from its OWN library. With append-only ids a slave
+  on the old library only misses a new id and NACKs; with renumbered ids it draws the
+  WRONG icon for an old one. The firmware has to carry the master's icon-library
+  version in the fill sync and the slave refuse a mismatch first.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic

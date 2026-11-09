@@ -198,6 +198,20 @@ def _key(frame: bytes) -> str:
     return hashlib.sha256(frame).hexdigest()[:20]
 
 
+def _retired_frame(entry: dict, previous: list[bytes]) -> bytes:
+    """The shipped pixels of a retired icon, checked against its frozen key.
+
+    An icon_ids.yaml out of step with icons.plyi would otherwise give the entry
+    another icon's pixels and write that into the library."""
+    if entry["id"] >= len(previous):
+        sys.exit(f"icon id {entry['id']} is retired but not in the shipped icons.plyi")
+    frame = previous[entry["id"]]
+    if _key(frame) != entry["key"]:
+        sys.exit(f"icon id {entry['id']} ({entry['name']}): the shipped icons.plyi frame "
+                 f"does not match its key in icon_ids.yaml; the two files are out of step")
+    return frame
+
+
 def assign_ids(selected: dict[bytes, str], ids_doc: list,
                previous: list[bytes]) -> tuple[list, list[bytes]]:
     """Append new icons to the frozen id table. Returns (table, frames by id).
@@ -216,9 +230,7 @@ def assign_ids(selected: dict[bytes, str], ids_doc: list,
         if f is None:
             # Retired: the template no longer carries it, but the id and glyph
             # stay, so the bundle must still carry the pixels.
-            if e["id"] >= len(previous):
-                sys.exit(f"icon id {e['id']} is retired but not in the shipped icons.plyi")
-            f = previous[e["id"]]
+            f = _retired_frame(e, previous)
         frames.append(f)
     return table, frames
 
@@ -233,10 +245,13 @@ def renumber_by_usage(selected: dict[bytes, str], usage: dict[bytes, int],
     (2026-11-09): 6,868 fill reports over 2,861 overlay entries with the
     append-only ids, 5,666 with ranked ids (-17.5 %).
 
-    Safe only as part of a library rebuild: the host fills from the library
+    Run it only as part of a library rebuild: the host fills from the library
     only when the keyboard reports exactly the shipped content_version
-    (PolyKybd._icon_fill_index), so no keyboard ever pairs the new ids with the
-    old glyphs. Live icons get ids 0..n-1 by (-apps, name, key); retired icons
+    (PolyKybd._icon_fill_index). ⚠️ That version is the master's alone until
+    the master has read the slave's (after boot, after a link drop), and the
+    slave draws a fill from its OWN library. A slave still holding the old
+    library then draws the wrong icon for a renumbered id, where append-only
+    ids only ever miss. docs/fontpack.md names the precondition. Live icons get ids 0..n-1 by (-apps, name, key); retired icons
     keep their entries and follow, in their old order. After this, new icons
     are appended as before."""
     frames_by_key = {_key(f): f for f in selected}
@@ -246,10 +261,9 @@ def renumber_by_usage(selected: dict[bytes, str], usage: dict[bytes, int],
     for e in ids_doc:
         if e["key"] in frames_by_key:
             continue
-        if e["id"] >= len(previous):
-            sys.exit(f"icon id {e['id']} is retired but not in the shipped icons.plyi")
+        frame = _retired_frame(e, previous)
         table.append({"id": len(table), "key": e["key"], "name": e["name"]})
-        frames.append(previous[e["id"]])
+        frames.append(frame)
     return table, frames
 
 
