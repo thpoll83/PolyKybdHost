@@ -267,7 +267,18 @@ def device_has_slot(device_versions: dict, bundle: dict) -> bool:
     font bundles; the icon bundle is never assumed."""
     if bundle["index"] in device_versions:
         return True
-    return not device_versions and bundle.get("kind", "fonts") != "icons"
+    return not device_versions and bundle.get("kind", "fonts") not in ("icons", "emojidict")
+
+
+def bundle_is_stale(bundle: dict, device_version: int) -> bool:
+    """Should ``bundle`` be (re)flashed over ``device_version``? A font or icon
+    bundle when the keyboard is behind. The emoji search dictionary on any
+    MISMATCH: its version names WHICH dictionary is flashed ((number << 8) |
+    revision, services/emojidict.py), and switching to one with a lower number
+    must flash too."""
+    if bundle.get("kind") == "emojidict":
+        return bundle["content_version"] != device_version
+    return bundle["content_version"] > device_version
 
 
 def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
@@ -276,13 +287,12 @@ def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     device_versions: {bundle_index: content_version} from parse_id_version_block
                      (a missing index == version 0, i.e. absent on the device).
     shipped:         list of {index, content_version, ...} (res/fontpack/bundles.json).
-    Returns the subset of `shipped` whose content_version > the device's, in order."""
+    Returns the subset of `shipped` that bundle_is_stale() picks, in order."""
     out = []
     for b in shipped:
         if not device_has_slot(device_versions, b):
             continue
-        dev = device_versions.get(b["index"], 0)
-        if b["content_version"] > dev:
+        if bundle_is_stale(b, device_versions.get(b["index"], 0)):
             out.append(b)
     return out
 

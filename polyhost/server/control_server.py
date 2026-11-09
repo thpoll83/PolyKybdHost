@@ -269,6 +269,7 @@ class ControlServer(MpcListenerServer):
                 c.sync_fontpack(force=bool(params.get("force", False)))),
             p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
+            p.M_EMOJIDICT_STATUS: lambda conn, params: _unwrap(c.emoji_search_status()),
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),
             p.M_DOOM_INSTALL_PACK: lambda conn, params: _unwrap(c.install_doompack(params["path"])),
             p.M_PAUSE_SET: self._cmd_pause_set,

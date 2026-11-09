@@ -2962,6 +2962,12 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        if keys is not None and "emoji_search_dict" in keys and self._fw_actions_allowed():
+            # Flash the newly chosen dictionary now. The shared bundle pass picks it
+            # because slot 9 no longer matches; it is a deliberate choice, so it
+            # runs even with fontpack_auto_flash off. Not on keys None (the
+            # in-process dialog), which does not show this setting.
+            self.sync_fontpack()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes
@@ -3319,8 +3325,7 @@ class PolyCore(Observable):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
         its slot — forced, even if the keyboard is already up to date. Resolves the
         bundle to its res/fontpack/<id>.plyf and delegates to :meth:`flash_fontpack`."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return False, "No font-pack bundles shipped with this host."
         b = self._find_bundle(manifest, bundle)
@@ -3332,6 +3337,48 @@ class PolyCore(Observable):
                            f"protocol 27 or later; this keyboard's slot holds 256 KB. "
                            f"Update the firmware first.")
         return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    def _bundle_manifest(self):
+        """The shipped font-pack bundles plus the selected emoji search dictionary
+        (slot 9, services/emojidict.py) as one more bundle, so every bundle pass
+        (connect-time flash, status, forced re-flash, wipe) covers it too. None
+        when nothing is shipped."""
+        from polyhost.services import emojidict, fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        try:
+            entry = emojidict.bundle_entry(emojidict.load_manifest(),
+                                           self.poly_settings.get("emoji_search_dict")
+                                           or emojidict.DEFAULT_DICT)
+        except OSError as e:
+            self.log.warning("Emoji search dictionary not available: %s", e)
+            entry = None
+        if entry is None:
+            return manifest
+        manifest = dict(manifest or {"bundles": []})
+        manifest["bundles"] = [b for b in manifest["bundles"] if b["index"] != entry["index"]] + [entry]
+        return manifest
+
+    def emoji_search_status(self):
+        """The emoji search dictionaries: which one is selected, which one the
+        keyboard holds (read from the cached GET_ID version block, no device I/O),
+        whether the keyboard has the slot at all, and the shipped list."""
+        from polyhost.services import emojidict
+        manifest = emojidict.load_manifest()
+        if manifest is None:
+            return True, {"shipped": False, "dictionaries": []}
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        held, revision = emojidict.identify(manifest, dev.get(emojidict.BUNDLE_ID, 0))
+        selected = self.poly_settings.get("emoji_search_dict") or emojidict.DEFAULT_DICT
+        return True, {
+            "shipped": True,
+            "supported": emojidict.BUNDLE_ID in dev,
+            "selected": selected,
+            "device": ({"id": held["id"], "revision": revision} if held
+                       else ({"id": None, "version": dev.get(emojidict.BUNDLE_ID, 0)}
+                             if dev.get(emojidict.BUNDLE_ID) else None)),
+            "dictionaries": [{"id": e["id"], "label": emojidict.label(e), "name": e["name"],
+                              "native": e["native"], "revision": e["revision"], "size": e["size"]}
+                             for e in manifest["dictionaries"]]}
 
     def _bundle_fits_device(self, b) -> bool:
         """False for an icon library larger than the 256 KB icon slot of firmware
@@ -3383,8 +3430,7 @@ class PolyCore(Observable):
         clearing the external-flash font pack. Mirrors `_fontpack_autocheck_job`'s
         progress/guard handling."""
         import os, tempfile
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         # With no shipped manifest, fall back to wiping the current 6 fixed slots.
         slots = (manifest["bundles"] if manifest
                  else [{"id": str(i), "index": i} for i in range(6)])
@@ -3431,8 +3477,7 @@ class PolyCore(Observable):
     def fontpack_bundle_status(self):
         """Per-bundle status: device version (from the GET_ID block) vs the shipped
         version, and whether each is stale. ``shipped`` is False with no bundles."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return True, {"shipped": False, "bundles": []}
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
@@ -3442,7 +3487,7 @@ class PolyCore(Observable):
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": (b["content_version"] > dev.get(b["index"], 0)
+                    "stale": (hid_fontpack.bundle_is_stale(b, dev.get(b["index"], 0))
                               and hid_fontpack.device_has_slot(dev, b)
                               and self._bundle_fits_device(b)),
                     "retry": b["index"] in self._fontpack_failed,
@@ -3521,8 +3566,7 @@ class PolyCore(Observable):
 
         Targets are the stale bundles ∪ the ones a previous pass failed on, or every
         shipped bundle when ``force_all``."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return   # no bundles shipped with this host — feature inert
         if self._fontpack_flash_in_progress:

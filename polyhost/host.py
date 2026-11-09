@@ -743,6 +743,17 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
 
+        # Emoji search dictionary (font-pack slot 9, services/emojidict.py): which
+        # language the emoji layer's keyword search uses. A plain settings write;
+        # PolyCore.note_settings_changed() flashes the choice. The entries come
+        # from the daemon's emoji_search_status() and are built on the first show.
+        self.emoji_dict_menu = self.menu.addMenu(get_icon("translate.svg"), _("Emoji Search Language"))
+        self.emoji_dict_group = QActionGroup(self)
+        self.emoji_dict_group.setExclusive(True)
+        self.emoji_dict_actions = {}
+        # noinspection PyUnresolvedReferences
+        self.emoji_dict_menu.aboutToShow.connect(self.refresh_emoji_dict_menu)
+
         # The layout editor is device-independent of the in-process worker — it
         # drives the device through core.keymap_* (RPC in client mode), so it
         # works in either mode (H4a-2).
@@ -1335,6 +1346,9 @@ class PolyHost(QApplication):
         self.idle_timeout_menu.menuAction().setEnabled(enabled and self.supports("idle_timeout"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
         self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
+        # No protocol gate: whether the keyboard has the dictionary slot is read
+        # from its version block when the submenu opens (refresh_emoji_dict_menu).
+        self.emoji_dict_menu.menuAction().setEnabled(enabled)
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
         # bundles with no device at all, the mock-bitmap dump writes files), and a
@@ -2397,6 +2411,45 @@ class PolyHost(QApplication):
             # checkmark to the device's actual script so the menu doesn't lie.
             self.report_device_result("Error", f"Could not set glyph script: {msg}")
             self.refresh_glyph_script_menu()
+
+    def refresh_emoji_dict_menu(self):
+        """Build the dictionary entries once, then tick the selected one. On a
+        keyboard without the dictionary slot (firmware before font-pack layout v4)
+        the entries are shown but greyed out, with the reason as the first row."""
+        ok, st = self.core.emoji_search_status()
+        if not ok or not isinstance(st, dict) or not st.get("shipped"):
+            self.emoji_dict_menu.clear()
+            self.emoji_dict_actions = {}
+            info = self.emoji_dict_menu.addAction(_("No emoji search dictionaries shipped"))
+            info.setEnabled(False)
+            return
+        if not self.emoji_dict_actions:
+            self.emoji_dict_menu.clear()
+            self.emoji_dict_info = self.emoji_dict_menu.addAction(
+                _("Needs newer keyboard firmware"))
+            self.emoji_dict_info.setEnabled(False)
+            for d in st["dictionaries"]:
+                act = QAction(d["label"], parent=self, checkable=True)
+                act.setData(d["id"])
+                self.emoji_dict_group.addAction(act)
+                # noinspection PyUnresolvedReferences
+                act.triggered.connect(self.change_emoji_dict)
+                self.emoji_dict_menu.addAction(act)
+                self.emoji_dict_actions[d["id"]] = act
+        supported = bool(st.get("supported"))
+        self.emoji_dict_info.setVisible(not supported)
+        for did, act in self.emoji_dict_actions.items():
+            act.setEnabled(supported)
+            act.setChecked(did == st.get("selected"))
+
+    def change_emoji_dict(self):
+        dict_id = self.sender().data()
+        ok, msg = self.core.settings_set("emoji_search_dict", dict_id)
+        if ok:
+            self.log.info("Emoji search dictionary set to %s; flashing it.", dict_id)
+        else:
+            self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
+            self.refresh_emoji_dict_menu()
 
     def refresh_glyph_size_menu(self):
         # Read the active legend size from the device and tick the matching entry;

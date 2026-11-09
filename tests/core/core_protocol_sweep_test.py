@@ -28,7 +28,7 @@ from polyhost.settings import PolySettings
 CORE_CALLS = {
     "activate_bootloader": (), "set_handedness": (True, True),
     "clear_crash_record": (), "get_crash_record": (0,),
-    "fontpack_bundle_status": (),
+    "fontpack_bundle_status": (), "emoji_search_status": (),
     "get_fw_version": (),
     "apply_staged_firmware": (),
     "get_glyph_script": (), "set_glyph_script": (0,),

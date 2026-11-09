@@ -46,6 +46,11 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
     core._emit_fontpack_summary = lambda *a, **kw: PolyCore._emit_fontpack_summary(core, *a, **kw)
     core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
     core._bundle_fits_device = lambda b: PolyCore._bundle_fits_device(core, b)
+    # The bundle list without the emoji search dictionary: these tests patch
+    # load_bundle_manifest and count bundles. TestEmojiSearchDictionary below
+    # covers the real _bundle_manifest().
+    core._bundle_manifest = lambda: __import__(
+        "polyhost.services.fontpack_bundle", fromlist=["x"]).load_bundle_manifest()
     core._fontpack_autocheck_job = lambda cancel: None
     core._fontpack_stale_notice_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
@@ -348,6 +353,65 @@ class TestManualBundleOps(unittest.TestCase):
         ok, payload = PolyCore.sync_fontpack(core)
         self.assertTrue(ok and payload["queued"])
         self.assertEqual(core._submitted[0][0], "fontpack_sync")
+
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestEmojiSearchDictionary(unittest.TestCase):
+    """The selected emoji search dictionary rides the bundle passes as slot 9."""
+
+    def _core(self, selected="de", device_versions=None):
+        core = _fake_core(device_versions=device_versions)
+        settings = {"fontpack_auto_flash": True, "fontpack_path": "", "emoji_search_dict": selected}
+        core.poly_settings = types.SimpleNamespace(get=lambda k: settings.get(k))
+        core._bundle_manifest = lambda: PolyCore._bundle_manifest(core)
+        return core
+
+    def test_selected_dictionary_is_slot_9(self):
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            m = PolyCore._bundle_manifest(self._core("de"))
+        d = [b for b in m["bundles"] if b["index"] == 9]
+        self.assertEqual(len(d), 1)
+        self.assertEqual((d[0]["kind"], d[0]["dict_id"]), ("emojidict", "de"))
+        self.assertEqual(d[0]["content_version"], (1 << 8) | 1)      # de is dictionary 1
+        self.assertEqual(len(m["bundles"]), len(_MANIFEST["bundles"]) + 1)
+
+    def test_switching_to_a_lower_number_is_stale(self):
+        # The keyboard holds de (number 1); English is number 0, so ">" would miss it.
+        core = self._core("en", device_versions={0: 2, 5: 3, 9: (1 << 8) | 1})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack",
+                   return_value=(True, "ok", "ok")) as ff:
+            PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+
+    def test_no_slot_9_flashes_no_dictionary(self):
+        core = self._core("de", device_versions={0: 2, 5: 3})      # firmware before layout v4
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+            PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertFalse(ff.called)
+
+    def test_status_names_the_dictionary_on_the_keyboard(self):
+        core = self._core("ru", device_versions={9: (1 << 8) | 1})
+        ok, st = PolyCore.emoji_search_status(core)
+        self.assertTrue(ok and st["shipped"] and st["supported"])
+        self.assertEqual(st["selected"], "ru")
+        self.assertEqual(st["device"], {"id": "de", "revision": 1})
+        self.assertEqual(st["dictionaries"][0]["id"], "en")
+
+    def test_choosing_a_dictionary_flashes_it(self):
+        calls = []
+        core = types.SimpleNamespace(
+            _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
+            _fw_actions_allowed=lambda: True,
+            sync_fontpack=lambda force=False: calls.append(force),
+            poly_settings=types.SimpleNamespace(get=lambda k: None))
+        PolyCore.note_settings_changed(core, ["emoji_search_dict"])
+        self.assertEqual(calls, [False])
+        PolyCore.note_settings_changed(core, ["fontpack_auto_flash"])
+        self.assertEqual(calls, [False], "other settings must not flash it")
 
 
 if __name__ == "__main__":

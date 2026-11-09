@@ -889,6 +889,40 @@ def _cmd_doom(client, args):
     return 2
 
 
+def _cmd_emoji_dict(client, args):
+    """The emoji search dictionary in font-pack slot 9: show, list, choose."""
+    info = client.call(protocol.M_EMOJIDICT_STATUS)
+    if not info.get("shipped"):
+        print("emoji search: no dictionaries shipped with this host.")
+        return 1
+    dicts = {d["id"]: d for d in info["dictionaries"]}
+    action = getattr(args, "emoji_dict_action", None) or "status"
+    if action == "list":
+        for d in info["dictionaries"]:
+            mark = "*" if d["id"] == info["selected"] else " "
+            print(f"{mark} {d['id']:16} {d['label']}")
+        return 0
+    if action == "set":
+        if args.dict_id not in dicts:
+            print(f"error: unknown dictionary {args.dict_id!r}; `polyctl emoji-dict list` shows them",
+                  file=sys.stderr)
+            return 2
+        # A plain settings write: note_settings_changed() flashes it (RpcError on failure).
+        client.call(protocol.M_SETTINGS_SET, {"key": "emoji_search_dict", "value": args.dict_id,
+                                              "source": "polyctl"})
+        print(f"emoji search dictionary: {args.dict_id} ({dicts[args.dict_id]['label']}); "
+              "flashing it to the keyboard.")
+        return 0
+    dev = info.get("device")
+    held = (dev["id"] + f" (revision {dev['revision']})" if dev and dev.get("id")
+            else ("an unknown dictionary" if dev else "none"))
+    print(f"selected:    {info['selected']} ({dicts.get(info['selected'], {}).get('label', '?')})")
+    print(f"on keyboard: {held}" if info.get("supported")
+          else "on keyboard: this firmware has no dictionary slot (font-pack layout v4 needed)")
+    print(f"shipped:     {len(dicts)} dictionaries (polyctl emoji-dict list)")
+    return 0
+
+
 def _cmd_fontpack(client, args):
     action = getattr(args, "fontpack_action", None)
 
@@ -1313,6 +1347,14 @@ def build_parser():
     p_fp_wipe.add_argument("bundle", nargs="?",
                            help="bundle id/index to wipe; omit to wipe every slot")
     p_fp.set_defaults(func=_cmd_fontpack)
+
+    p_ed = sub.add_parser("emoji-dict", help="emoji search dictionary (font-pack slot 9): status, list, set")
+    ed_sub = p_ed.add_subparsers(dest="emoji_dict_action")
+    ed_sub.add_parser("status", help="selected dictionary and the one on the keyboard (default)")
+    ed_sub.add_parser("list", help="the shipped dictionaries")
+    p_ed_set = ed_sub.add_parser("set", help="choose a dictionary and flash it")
+    p_ed_set.add_argument("dict_id", help="dictionary id, e.g. de, ru, zh-HK@cangjie")
+    p_ed.set_defaults(func=_cmd_emoji_dict)
 
     p_doom = sub.add_parser("doom", help="doom easter egg operations")
     doom_sub = p_doom.add_subparsers(dest="doom_action", required=True)
