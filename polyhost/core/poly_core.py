@@ -2969,7 +2969,12 @@ class PolyCore(Observable):
             # runs even with fontpack_auto_flash off. Not on keys None: every
             # writer names the keys it changed (the in-process dialog too). Not on
             # firmware without slot 9: the pass would flash only the OTHER stale
-            # bundles.
+            # bundles. A newly set dictionary file goes on the retry list first,
+            # whichever writer set it, so the pass writes it even when its
+            # version equals what slot 9 reports (two user builds share one).
+            if "emoji_search_dict_file" in keys and self.poly_settings.get("emoji_search_dict_file"):
+                from polyhost.services import emojidict
+                self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
             self.sync_fontpack()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
@@ -3429,11 +3434,12 @@ class PolyCore(Observable):
                 if entry is None:
                     return False, err
                 path = os.path.realpath(entry["path"])
-                if self._has_emojidict_slot():
-                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
                 if path == alls.get("emoji_search_dict_file"):
+                    # No settings change, so note_settings_changed() would not run:
+                    # queue the write here, the same way it does.
                     if not self._has_emojidict_slot():
                         return False, "This keyboard's firmware has no emoji search dictionary slot"
+                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
                     ok, msg = self.sync_fontpack()
                     return (True, path) if ok else (False, msg)
             alls["emoji_search_dict_file"] = path

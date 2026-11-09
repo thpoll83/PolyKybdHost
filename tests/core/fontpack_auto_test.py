@@ -456,10 +456,6 @@ class TestEmojiSearchDictionary(unittest.TestCase):
             self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
             self.assertEqual(store["emoji_search_dict_file"], path)
             self.assertEqual(calls[-1][0], "changed")
-            # On the retry list, so the pass writes it even at an equal version,
-            # and keeps it there if the write fails.
-            self.assertIn(9, core._fontpack_failed)
-            core._fontpack_failed.clear()
             # Same file again: no settings change, so the pass is started here.
             self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
             self.assertEqual(calls[-1], ("sync", False))
@@ -479,6 +475,25 @@ class TestEmojiSearchDictionary(unittest.TestCase):
                 PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
         self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
         self.assertNotIn(9, core._fontpack_failed)
+
+    def test_any_writer_of_the_file_setting_queues_the_write(self):
+        # The settings dialog and `polyctl settings set` reach the device only
+        # through note_settings_changed(); a file set there must also be written
+        # at an equal version.
+        values = {"emoji_search_dict_file": "/x/mine.plyd"}
+        calls = []
+        core = types.SimpleNamespace(
+            _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
+            _fw_actions_allowed=lambda: True,
+            sync_fontpack=lambda force=False: calls.append(force),
+            keeb=types.SimpleNamespace(fontpack_bundle_versions={9: 0}),
+            _fontpack_failed={},
+            poly_settings=types.SimpleNamespace(get=lambda k: values.get(k)))
+        core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+        PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+        self.assertIn(9, core._fontpack_failed)
+        self.assertEqual(calls, [False])
 
     def test_post_flash_check_needs_the_exact_dictionary(self):
         # A failed COMMIT while slot 9 still holds German (v257) must not read as
@@ -516,6 +531,7 @@ class TestEmojiSearchDictionary(unittest.TestCase):
             _fw_actions_allowed=lambda: True,
             sync_fontpack=lambda force=False: calls.append(force),
             keeb=types.SimpleNamespace(fontpack_bundle_versions={0: 2}),
+            _fontpack_failed={},
             poly_settings=types.SimpleNamespace(get=lambda k: None))
         core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
         PolyCore.note_settings_changed(core, ["emoji_search_dict"])
@@ -525,6 +541,7 @@ class TestEmojiSearchDictionary(unittest.TestCase):
         self.assertEqual(calls, [False])
         PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
         self.assertEqual(calls, [False, False])
+        self.assertNotIn(9, core._fontpack_failed, "clearing the file queues no forced write")
         PolyCore.note_settings_changed(core, ["fontpack_auto_flash"])
         self.assertEqual(calls, [False, False], "other settings must not flash it")
 
