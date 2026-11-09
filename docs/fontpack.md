@@ -179,6 +179,15 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   356,896 B. Over 256 KB, firmware below protocol 27 (before 1.10.2) refuses the
   bundle at BEGIN and keeps its old library (`PolyCore._bundle_fits_device`).
   Check the new size against both slot sizes before you rebuild.
+  **`--renumber-by-usage` is a ONE-TIME renumbering, still to be run with the next
+  planned rebuild.** It gives the icons most apps draw the lowest ids, so cmd 42 fits
+  more (slot, id) pairs per report: 27 at 9 bits against 20 at 12. Measured on the
+  shipped templates (2026-11-09): 6,868 fill reports over 2,861 overlay entries with
+  the append-only ids, 5,666 ranked (-17.5 %, about 0.4 report per switch). It breaks
+  the append-only rule once, safely: the host fills only when the keyboard reports
+  exactly the shipped `content_version`, so no keyboard pairs new ids with old glyphs.
+  Retired icons follow the live ones with their own pixels. Run it once, then rebuild
+  without it again.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic
