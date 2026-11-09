@@ -51,6 +51,8 @@ FW_APPLY_DONE = "fw_apply_done"          # {"ok": bool, "msg": str}
 # or a .plyx install reads as "updating fonts" (field 2026-08).
 FONTPACK_FLASH_PROGRESS = "fontpack_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str, "kind": str}
 FONTPACK_FLASH_DONE = "fontpack_flash_done"          # {"ok": bool, "msg": str, "kind": str}
+# Emitted on connect only while fontpack_auto_flash is off and bundles are stale.
+FONTPACK_STALE = "fontpack_stale"                    # {"bundles": [bundle id, ...]}
 
 FLASH_KIND_FONTPACK = "fontpack"    # a .plyf font-pack bundle
 FLASH_KIND_DOOMWAD = "doomwad"      # the easter egg's .whx game data

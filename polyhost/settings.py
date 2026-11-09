@@ -320,6 +320,12 @@ DEFAULT_SETTINGS.update(reader_defaults())
 #: Marks a settings file that holds only CHOSEN values (format 2). A file
 #: without it is the old format, which wrote every default out on every save.
 SETTINGS_FORMAT_KEY = "settings_format"
+
+
+def _is_private_setting(key):
+    """A key whose value must not reach a log line: tokens and the install id."""
+    return "token" in key or key == "telemetry_install_id"
+
 SETTINGS_FORMAT = 2
 
 
@@ -402,10 +408,13 @@ class PolySettings:
     def get_all(self):
         return self.collection
 
-    def set_all(self, new_settings):
-        """Replace the settings and persist them. Returns whether they reached disk."""
+    def set_all(self, new_settings, source=None):
+        """Replace the settings and persist them. Returns whether they reached disk.
+
+        ``source`` names the writer (``"Settings dialog"``, ``"polyctl"``) in the
+        log line each changed key gets (``_log_changes``)."""
         self.collection = new_settings
-        return self.save()
+        return self.save(source=source)
 
     def load(self):
         # At load there is no prior state to protect, so an unreadable file
@@ -567,6 +576,22 @@ class PolySettings:
             data.setdefault(key, value)
         return {k: v for k, v in data.items() if k in self.defaults}
 
+    def _log_changes(self, mine, source):
+        """One INFO line per key this save changes: old value, new value, writer.
+
+        A setting that changed with nobody remembering it (Auto Flash off on two
+        computers, 2026-11-08) left no trace, because the file holds no dates.
+        Secret or identifying values are not written to the log."""
+        for key in sorted(mine):
+            if key not in self.defaults:
+                continue
+            old = self._baseline.get(key, self.defaults[key])
+            new = mine[key]
+            if _is_private_setting(key):
+                old = new = "<redacted>"
+            self.log.info("Settings: %s changed from %r to %r (by %s).",
+                          key, old, new, source or "this process")
+
     def restore_defaults(self):
         # A COPY: `self.defaults` is seeded from the module constant, so
         # aliasing it here would let the next ordinary settings write mutate the
@@ -580,7 +605,7 @@ class PolySettings:
         self._reset_pending = True
         self.save()
 
-    def save(self):
+    def save(self, source=None):
         """Persist this process's changes without discarding anyone else's.
 
         Two processes hold settings at once under daemon-by-default — the
@@ -612,7 +637,7 @@ class PolySettings:
             if not locked:
                 self.log.debug("Settings lock busy; saving unsynchronised.")
             try:
-                return self._save_merged()
+                return self._save_merged(source)
             except OSError as e:
                 # ⚠️ Never let a save that did not land take the process with
                 # it. The constructor saves on every start, so a raise here
@@ -632,10 +657,11 @@ class PolySettings:
                 # file (CodeRabbit, #278).
                 return False
 
-    def _save_merged(self):
+    def _save_merged(self, source=None):
         """Merge against the file and replace it. Call under the settings lock."""
         mine = {k: v for k, v in self.collection.items()
                 if k not in self._baseline or self._baseline[k] != v}
+        self._log_changes(mine, source)
         on_disk, state = self._read_file_ex()
         if self._reset_pending:
             # restore_defaults(): nothing stays chosen, in any process's file,

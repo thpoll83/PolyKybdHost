@@ -2923,13 +2923,14 @@ class PolyCore(Observable):
         """All settings as a plain dict (for the client's settings dialog)."""
         return dict(self.poly_settings.get_all())
 
-    def settings_set(self, key, value):
-        """Set one known setting and persist. Returns (ok, msg)."""
+    def settings_set(self, key, value, source="core"):
+        """Set one known setting and persist. Returns (ok, msg). ``source`` names
+        the writer in the settings log line (``PolySettings.save``)."""
         alls = self.poly_settings.get_all()
         if key not in alls:
             return False, f"Unknown setting '{key}'"
         alls[key] = value
-        saved = self.poly_settings.set_all(alls)
+        saved = self.poly_settings.set_all(alls, source=source)
         self.note_settings_changed([key])
         if not saved:
             # Applied in this process, but anything reading the FILE (the
@@ -3078,7 +3079,7 @@ class PolyCore(Observable):
         if not install_id:
             install_id = telemetry_svc.new_install_id()
             try:
-                self.settings_set("telemetry_install_id", install_id)
+                self.settings_set("telemetry_install_id", install_id, source="telemetry")
             except Exception:  # a read-only config must not break startup
                 self.log.debug("Could not persist telemetry install id",
                                exc_info=True)
@@ -3448,7 +3449,8 @@ class PolyCore(Observable):
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
         return True, {"shipped": True, "bundles": bundles,
-                      "failed": [b["id"] for b in bundles if b["retry"]]}
+                      "failed": [b["id"] for b in bundles if b["retry"]],
+                      "auto_flash": bool(self.poly_settings.get("fontpack_auto_flash"))}
 
     def get_fontpack_status(self):
         """Query the keyboard's currently-loaded font pack (present / abi /
@@ -3475,8 +3477,29 @@ class PolyCore(Observable):
         flash run on the worker (`_fontpack_autocheck_job`) so they don't block
         the caller (apply_reconnect may be on the Qt thread)."""
         if not self.poly_settings.get("fontpack_auto_flash"):
+            # Off: flash nothing, but say when the keyboard is behind. Without
+            # this a keyboard fell behind by four bundles on two computers and
+            # nothing told the user (2026-11-08).
+            self.worker.submit("fontpack_stale_notice", self._fontpack_stale_notice_job)
             return
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _fontpack_stale_notice_job(self, cancel):
+        """With Auto Flash off: log and emit FONTPACK_STALE when bundles are stale.
+
+        Reads the cached GET_ID version block (``fontpack_bundle_status``), so it
+        does no device I/O. Flashes nothing."""
+        ok, info = self.fontpack_bundle_status()
+        if not ok or not info.get("shipped"):
+            return
+        stale = [b["id"] for b in info["bundles"] if b["stale"]]
+        if not stale:
+            return
+        self.log.warning("Font pack: %d bundle(s) out of date (%s), and Auto Flash "
+                         "(fontpack_auto_flash) is off, so nothing is flashed. "
+                         "Updates -> Update keyboard fonts, or `polyctl fontpack sync`.",
+                         len(stale), ", ".join(stale))
+        self.emit(events.FONTPACK_STALE, {"bundles": stale})
 
     def _fontpack_autocheck_job(self, cancel):
         """Flash any font-pack bundles the keyboard is missing, behind on, or that

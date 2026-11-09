@@ -796,6 +796,46 @@ class SaveReportsFailureTest(_TempConfigDirCase):
         self.assertTrue(mk.called, "the directory was never created")
 
 
+class ChangeLogTest(_TempConfigDirCase):
+    """Every saved change is logged with its old value, new value and writer, so
+    a setting nobody remembers changing can be traced (2026-11-08)."""
+
+    def _lines(self, cm):
+        return [r.getMessage() for r in cm.records if r.getMessage().startswith("Settings: ")]
+
+    def test_a_changed_key_is_logged_with_old_new_and_source(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, fontpack_auto_flash=False), source="Settings dialog")
+        self.assertEqual(self._lines(cm), [
+            "Settings: fontpack_auto_flash changed from True to False (by Settings dialog)."])
+
+    def test_an_unchanged_save_logs_no_change(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            a.set_all(dict(a.collection), source="Settings dialog")
+        self.assertEqual(self._lines(cm), [])
+
+    def test_a_change_is_logged_once_not_on_every_later_save(self):
+        a = settings.PolySettings()
+        a.set_all(dict(a.collection, hid_reconnect_retries=9), source="polyctl")
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            a.save()
+        self.assertEqual(self._lines(cm), [])
+
+    def test_tokens_and_the_install_id_are_not_logged(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, browser_report_token="s3cret",
+                           telemetry_install_id="abc-123"), source="polyctl")
+        text = "\n".join(self._lines(cm))
+        self.assertNotIn("s3cret", text)
+        self.assertNotIn("abc-123", text)
+        self.assertIn("browser_report_token changed from '<redacted>' to '<redacted>'", text)
+
+
 class FilelockDirectoryTest(unittest.TestCase):
     def test_an_uncreatable_directory_yields_false_instead_of_raising(self):
         from polyhost.util import filelock

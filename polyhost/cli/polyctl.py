@@ -966,6 +966,9 @@ def _cmd_fontpack(client, args):
     todo = stale + retry
     if todo:
         print(f"\n{len(todo)} to flash: {', '.join(todo)} — run `fontpack sync`")
+        if info.get("auto_flash") is False:
+            print("Auto Flash is off (fontpack_auto_flash), so a connect does not flash "
+                  "them. Turn it on: `settings set fontpack_auto_flash true`")
     else:
         print("\n0 stale — all up to date")
     if retry:
@@ -1041,7 +1044,8 @@ def _cmd_settings(client, args):
             value = json.loads(args.value)
         except (ValueError, TypeError):
             value = args.value
-        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value})
+        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value,
+                                              "source": "polyctl"})
         print(f"{args.key} = {value!r}")
     return 0
 
