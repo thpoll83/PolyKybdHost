@@ -1310,16 +1310,22 @@ class PolyHost(QApplication):
     def _on_sync_fontpack_clicked(self):
         self.cmdMenu.sync_fontpack()
 
+    def _core_click(self, fn, done):
+        """A menu click's core call: ``fn`` runs off the GUI thread, in click
+        order (gui/menu_fetch.py), then ``done(ok, msg)`` runs on the GUI thread."""
+        self._menu_fetch.call(fn, lambda result: done(*ok_value(result)))
+
     def _refresh_unicode_mode_clicked(self):
-        ok, msg = self.core.refresh_unicode_mode()
-        if ok:
-            self.log.info("Unicode input mode refreshed: %s", msg)
-        else:
-            self.report_device_result("Error", f"Could not refresh the unicode mode: {msg}")
+        def done(ok, msg):
+            if ok:
+                self.log.info("Unicode input mode refreshed: %s", msg)
+            else:
+                self.report_device_result("Error", f"Could not refresh the unicode mode: {msg}")
+
+        self._core_click(lambda: self.core.refresh_unicode_mode(), done)
 
     def _save_mru_clicked(self):
-        self.core.save_mru()
-        self.log.info("MRU cache saved.")
+        self._menu_fetch.call(self.core.save_mru, lambda _r: self.log.info("MRU cache saved."))
 
     def _open_config_folder(self):
         """Open the config directory (settings.yaml + overlay-mapping.poly.yaml)
@@ -1451,7 +1457,11 @@ class PolyHost(QApplication):
             self.log.log(level, "%s: %s", title, msg)
 
     def pause(self):
-        self.core.set_paused(not self.paused)
+        target = not self.paused
+        self._menu_fetch.call(lambda: self.core.set_paused(target),
+                              lambda _r: self._after_pause())
+
+    def _after_pause(self):
         if self.paused:
             # TRANSLATORS: status row while paused; clicking it reconnects (verb).
             self.status.setText(_("Reconnect"))
@@ -2064,13 +2074,16 @@ class PolyHost(QApplication):
 
     def open_mock_board(self):
         from polyhost.gui.mock_board_dialog import MockBoardDialog
-        ok, payload = self.core.mock_keycaps(0)
-        if not ok:
-            QMessageBox.information(None, _("Mock keyboard"), str(payload))
-            return
-        self._mock_board = MockBoardDialog(self.core)
-        self._mock_board.show()
-        bring_to_front(self._mock_board)
+
+        def done(ok, payload):
+            if not ok:
+                QMessageBox.information(None, _("Mock keyboard"), str(payload))
+                return
+            self._mock_board = MockBoardDialog(self.core)
+            self._mock_board.show()
+            bring_to_front(self._mock_board)
+
+        self._core_click(lambda: self.core.mock_keycaps(0), done)
 
     def _format_uptime(self) -> str:
         """Human-readable time since this process started (for the About dialog)."""
@@ -2305,12 +2318,14 @@ class PolyHost(QApplication):
             # No local worker/keeb — change via the daemon over RPC. The menu
             # checkmark also follows the daemon's next status_changed, but
             # update it now for immediate feedback.
-            ok, msg = self.core.set_language(lang)
-            if ok:
-                self.update_ui_on_lang_change(lang)
-            elif self.keeb_lang_menu is not None:
-                self.keeb_lang_menu.setTitle(_f("Could not set {language}: {error}",
-                                                language=lang, error=msg))
+            def done(ok, msg):
+                if ok:
+                    self.update_ui_on_lang_change(lang)
+                elif self.keeb_lang_menu is not None:
+                    self.keeb_lang_menu.setTitle(_f("Could not set {language}: {error}",
+                                                    language=lang, error=msg))
+
+            self._core_click(lambda: self.core.set_language(lang), done)
             return
 
         def _job(cancel):
@@ -2343,14 +2358,17 @@ class PolyHost(QApplication):
 
     def change_idle_style(self):
         value = self.sender().data()
-        ok, msg = self.core.set_idle_style(value)
-        if ok:
-            self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
-        else:
-            # Firmware too old (needs v4+) or device busy — log and re-sync the
-            # checkmark to the device's actual style so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set idle style: {msg}")
-            self.refresh_idle_style_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
+            else:
+                # Firmware too old (needs v4+) or device busy — log and re-sync the
+                # checkmark to the device's actual style so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set idle style: {msg}")
+                self.refresh_idle_style_menu()
+
+        self._core_click(lambda: self.core.set_idle_style(value), done)
 
     def refresh_idle_timeout_menu(self):
         # Same shape as refresh_idle_style_menu: read the device, tick the match,
@@ -2367,14 +2385,17 @@ class PolyHost(QApplication):
 
     def change_idle_timeout(self):
         value = self.sender().data()
-        ok, msg = self.core.set_idle_timeout(value)
-        if ok:
-            self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
-        else:
-            # Firmware too old (needs v18+) or device busy — log and re-sync the
-            # checkmark to the device's actual value so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set idle timeout: {msg}")
-            self.refresh_idle_timeout_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
+            else:
+                # Firmware too old (needs v18+) or device busy — log and re-sync the
+                # checkmark to the device's actual value so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set idle timeout: {msg}")
+                self.refresh_idle_timeout_menu()
+
+        self._core_click(lambda: self.core.set_idle_timeout(value), done)
 
     def _build_glyph_script_previews(self):
         # Give each entry a preview of its own script, rendered from the shipped
@@ -2424,23 +2445,29 @@ class PolyHost(QApplication):
 
     def change_glyph_placement(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_placement(value)
-        if ok:
-            self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
-        else:
-            self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
-            self.refresh_glyph_placement_actions()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
+            else:
+                self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
+                self.refresh_glyph_placement_actions()
+
+        self._core_click(lambda: self.core.set_glyph_placement(value), done)
 
     def change_glyph_script(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_script(value)
-        if ok:
-            self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
-        else:
-            # Firmware too old (needs v9+) or device busy — log and re-sync the
-            # checkmark to the device's actual script so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set glyph script: {msg}")
-            self.refresh_glyph_script_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
+            else:
+                # Firmware too old (needs v9+) or device busy — log and re-sync the
+                # checkmark to the device's actual script so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set glyph script: {msg}")
+                self.refresh_glyph_script_menu()
+
+        self._core_click(lambda: self.core.set_glyph_script(value), done)
 
     def refresh_emoji_dict_menu(self):
         """Build the dictionary entries once, then tick the selected one. On a
@@ -2497,18 +2524,25 @@ class PolyHost(QApplication):
 
     def change_emoji_dict(self):
         dict_id = self.sender().data()
-        ok, msg = self.core.emoji_search_choose(dict_id=dict_id)
-        if ok:
-            self.log.info("Emoji search dictionary set to %s; flashing it.", dict_id)
-        else:
-            self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
-            self.refresh_emoji_dict_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Emoji search dictionary set to %s; flashing it.", dict_id)
+            else:
+                self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
+                self.refresh_emoji_dict_menu()
+
+        self._core_click(lambda: self.core.emoji_search_choose(dict_id=dict_id), done)
 
     def choose_emoji_dict_file(self):
         path = _get_open_file_explicit(_("Choose an emoji search dictionary"),
                                        _("Emoji search dictionary (*.plyd)"))
-        if path:
-            ok, msg = self.core.emoji_search_choose(path=path)
+        if not path:
+            # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
+            self.refresh_emoji_dict_menu()
+            return
+
+        def done(ok, msg):
             if ok:
                 self.log.info("Emoji search dictionary file %s; flashing it.", path)
             else:
@@ -2517,8 +2551,9 @@ class PolyHost(QApplication):
                 # core's reason is English, like every core message).
                 _msgbox(QMessageBox.Warning, _("Emoji search dictionary"),
                         _f("This file cannot be used: {reason}", reason=msg))
-        # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
-        self.refresh_emoji_dict_menu()
+            self.refresh_emoji_dict_menu()
+
+        self._core_click(lambda: self.core.emoji_search_choose(path=path), done)
 
     def refresh_glyph_size_menu(self):
         # Read the active legend size from the device and tick the matching entry;
@@ -2532,14 +2567,17 @@ class PolyHost(QApplication):
 
     def change_glyph_size(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_size(value)
-        if ok:
-            self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
-        else:
-            # Firmware too old (needs v13+) or device busy — log and re-sync the
-            # checkmark to the device's actual size so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set keycap size: {msg}")
-            self.refresh_glyph_size_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
+            else:
+                # Firmware too old (needs v13+) or device busy — log and re-sync the
+                # checkmark to the device's actual size so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set keycap size: {msg}")
+                self.refresh_glyph_size_menu()
+
+        self._core_click(lambda: self.core.set_glyph_size(value), done)
 
     def read_overlay_mapping_file(self, file):
         if not file:
@@ -3626,7 +3664,7 @@ class PolyHost(QApplication):
 
     def save_keeb_mru(self):
         """Best-effort MRU persist — delegated to the core (worker job)."""
-        self.core.save_mru()
+        self._menu_fetch.call(self.core.save_mru)
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):

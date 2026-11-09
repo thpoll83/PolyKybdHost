@@ -63,8 +63,36 @@ class MenuFetcherTest(unittest.TestCase):
         fetcher.fetch("j", lambda: (True, 1), lambda r: 1 / 0)
         self.assertTrue(fetcher.wait_idle())
         self.assertIsInstance(got[0], RuntimeError)
-        self.assertEqual(ok_value(got[0]), (False, None))
+        self.assertEqual(ok_value(got[0]), (False, "daemon gone"))
         self.assertFalse(fetcher.busy())
+
+    def test_clicks_run_in_order_one_at_a_time(self):
+        fetcher = MenuFetcher()
+        order, running, overlap = [], [0], []
+
+        def make(i):
+            def fn():
+                running[0] += 1
+                overlap.append(running[0])
+                order.append(i)
+                running[0] -= 1
+                return True, i
+            return fn
+
+        applied = []
+        for i in range(20):
+            fetcher.call(make(i), applied.append)
+        self.assertTrue(fetcher.wait_idle())
+        self.assertEqual(order, list(range(20)))
+        self.assertEqual(max(overlap), 1)
+        self.assertEqual([v for _ok, v in applied], list(range(20)))
+
+    def test_a_click_without_apply_is_still_run(self):
+        fetcher = MenuFetcher()
+        ran = threading.Event()
+        fetcher.call(ran.set)
+        self.assertTrue(fetcher.wait_idle())
+        self.assertTrue(ran.is_set())
 
     def test_ok_value(self):
         self.assertEqual(ok_value((True, 5)), (True, 5))
@@ -96,6 +124,23 @@ class TrayRefreshDoesNotWaitTest(unittest.TestCase):
         host.glyph_size_actions = {1: act}
         host._apply_glyph_size = lambda r: PolyHost._apply_glyph_size(host, r)
         return host, act, PolyHost
+
+    def test_a_click_returns_while_the_core_is_stalled(self):
+        from polyhost.device.command_ids import GlyphSize
+        release = threading.Event()
+        host, act, PolyHost = self._host(release)
+        reported = []
+        host.core.set_glyph_size = lambda v: release.wait(10) and (False, "busy")
+        host.sender = lambda: type("A", (), {"data": lambda self: GlyphSize.LARGE.value})()
+        host.report_device_result = lambda *a: reported.append(a)
+        host.refresh_glyph_size_menu = lambda: reported.append("refresh")
+        host.log = __import__("logging").getLogger("test")
+        host._core_click = lambda fn, done: PolyHost._core_click(host, fn, done)
+        PolyHost.change_glyph_size(host)            # returns although the core is stalled
+        self.assertEqual(reported, [])
+        release.set()
+        self.assertTrue(host._menu_fetch.wait_idle())
+        self.assertEqual(reported[-1], "refresh")   # the failure re-syncs the menu
 
     def test_glyph_size_menu_ticks_after_the_answer(self):
         release = threading.Event()

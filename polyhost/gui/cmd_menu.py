@@ -10,6 +10,7 @@ from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        check_signature_file)
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.menu_fetch import ok_value
 from polyhost.i18n import _, _f, translate_message
 
 
@@ -102,13 +103,21 @@ class CommandsSubMenu:
         return self.parent.core
 
     def _report(self, result, err_msg_fn):
-        """Report a core command's (ok, payload) outcome. The core methods run
-        synchronously (a worker run_sync in-process, an RPC in client mode) and
-        normalize failures to (False, msg), so a brief main-thread block on a
-        deliberate menu click is fine. ``err_msg_fn(msg)`` builds the per-command
-        failure wording (only logged on failure)."""
-        ok, msg = result
+        """Report a core command's (ok, payload) outcome. ``err_msg_fn(msg)``
+        builds the per-command failure wording (only logged on failure)."""
+        ok, msg = ok_value(result)
         self.parent.report_device_result("Error", err_msg_fn(msg), ok)
+
+    def _report_async(self, fn, err_msg_fn):
+        """Run a click's core call off the GUI thread, in click order, then report
+        it (gui/menu_fetch.py). In client mode the call is an RPC with no timeout,
+        so a stalled daemon must not freeze the tray."""
+        self.parent._menu_fetch.call(fn, lambda result: self._report(result, err_msg_fn))
+
+    def _read_async(self, fn, done):
+        """A read-only action's core call off the GUI thread; ``done(ok, value)``
+        then runs on the GUI thread."""
+        self.parent._menu_fetch.call(fn, lambda result: done(*ok_value(result)))
 
     def _act(self, icon, text, slot, data=None, device=False, firmware=False):
         """Create an action, wire it, and register it for enable-gating."""
@@ -178,7 +187,7 @@ class CommandsSubMenu:
                                 "only returns the keyboard to its own stored brightness."))
 
     def back_to_automatic_brightness(self):
-        self._report(self._core.refresh_daylight_brightness(),
+        self._report_async(lambda: self._core.refresh_daylight_brightness(),
                      lambda m: f"Failed to re-apply automatic brightness: '{m}'")
 
     def build_maintenance_menu(self, parent_menu):
@@ -321,7 +330,7 @@ class CommandsSubMenu:
                 connected or fw_enabled or self._maintenance_always_enabled)
 
     def activate_bootloader(self):
-        self._report(self._core.activate_bootloader(),
+        self._report_async(lambda: self._core.activate_bootloader(),
                      lambda m: f"Failed to activate bootloader: '{m}'")
 
     def set_handedness(self):
@@ -346,7 +355,7 @@ class CommandsSubMenu:
         if reply != QMessageBox.Yes:
             self.log.info("Set handedness: user cancelled at confirmation.")
             return
-        self._report(self._core.set_handedness(master_is_left),
+        self._report_async(lambda: self._core.set_handedness(master_is_left),
                      lambda m: f"Failed to set handedness: '{m}'")
 
     def set_split_vbus(self):
@@ -382,11 +391,11 @@ class CommandsSubMenu:
         if clicked not in (left, right):
             self.log.info("Rev.2 mark: user cancelled at confirmation.")
             return
-        self._report(self._core.set_handedness(clicked is left, split_vbus),
+        self._report_async(lambda: self._core.set_handedness(clicked is left, split_vbus),
                      lambda m: f"Failed to set the Rev.2 mark: '{m}'")
 
     def reset_dynamic_keymap(self):
-        self._report(self._core.reset_dynamic_keymap(),
+        self._report_async(lambda: self._core.reset_dynamic_keymap(),
                      lambda m: f"Failed resetting dynamic keymap: {m}")
 
     def reset_dynamic_keymap_confirmed(self):
@@ -415,43 +424,43 @@ class CommandsSubMenu:
         self.reset_dynamic_keymap()
 
     def reset_overlay_mapping(self):
-        self._report(self._core.reset_overlay_mapping(),
+        self._report_async(lambda: self._core.reset_overlay_mapping(),
                      lambda m: f"Failed clearing overlays: '{m}'")
 
     def set_all_overlay_usage(self):
-        self._report(self._core.set_all_overlay_usage(),
+        self._report_async(lambda: self._core.set_all_overlay_usage(),
                      lambda m: f"Failed setting all overlay usage: '{m}'")
 
     def reset_overlay_usage(self):
-        self._report(self._core.reset_overlay_usage(),
+        self._report_async(lambda: self._core.reset_overlay_usage(),
                      lambda m: f"Failed clearing overlay usage: '{m}'")
 
     def reset_overlays(self):
-        self._report(self._core.reset_overlay_buffers(),
+        self._report_async(lambda: self._core.reset_overlay_buffers(),
                      lambda m: f"Failed clearing overlays: '{m}'")
 
     def enable_overlays(self):
-        self._report(self._core.enable_overlays(),
+        self._report_async(lambda: self._core.enable_overlays(),
                      lambda m: f"Failed enabling overlays: '{m}'")
 
     def disable_overlays(self):
-        self._report(self._core.disable_overlays(),
+        self._report_async(lambda: self._core.disable_overlays(),
                      lambda m: f"Failed disabling overlays: '{m}'")
 
     def set_brightness(self):
         value = self.parent.sender().data()
-        self._report(self._core.set_brightness(value),
+        self._report_async(lambda: self._core.set_brightness(value),
                      lambda m: f"Failed setting brightness: '{m}'")
 
     def change_idle(self):
         idle = self.parent.sender().data()
-        self._report(self._core.set_idle(idle),
+        self._report_async(lambda: self._core.set_idle(idle),
                      lambda m: f"Failed to change idle mode: '{m}'")
 
     def sync_fontpack(self):
         """Flash any font-pack bundles the keyboard is missing/behind on (the same
         comparison as the on-connect auto-flash). Progress shows in the tray."""
-        self._report(self._core.sync_fontpack(),
+        self._report_async(lambda: self._core.sync_fontpack(),
                      lambda m: f"Failed to sync font pack: '{m}'")
 
     def force_sync_fontpack(self):
@@ -471,7 +480,7 @@ class CommandsSubMenu:
         if reply != QMessageBox.Yes:
             self.log.info("Font pack force re-flash: user cancelled at confirmation.")
             return
-        self._report(self._core.sync_fontpack(force=True),
+        self._report_async(lambda: self._core.sync_fontpack(force=True),
                      lambda m: f"Failed to re-flash the font pack: '{m}'")
 
     def wipe_fontpack(self):
@@ -490,23 +499,25 @@ class CommandsSubMenu:
         if reply != QMessageBox.Yes:
             self.log.info("Font pack wipe: user cancelled at confirmation.")
             return
-        self._report(self._core.wipe_fontpack(),
+        self._report_async(lambda: self._core.wipe_fontpack(),
                      lambda m: f"Failed to wipe font pack: '{m}'")
 
     def show_layer_count(self):
-        ok, value = self._core.keymap_layer_count()
-        self._info(_("Keymap"), _f("Layers: {count}", count=value) if ok
-                   else _f("Could not read the layer count: {error}", error=value))
+        self._read_async(lambda: self._core.keymap_layer_count(), lambda ok, value: self._info(
+            _("Keymap"), _f("Layers: {count}", count=value) if ok
+            else _f("Could not read the layer count: {error}", error=value)))
 
     def show_default_layer(self):
-        ok, value = self._core.keymap_default_layer()
-        self._info(_("Keymap"), _f("Default layer: {layer}", layer=value) if ok
-                   else _f("Could not read the default layer: {error}", error=value))
+        self._read_async(lambda: self._core.keymap_default_layer(), lambda ok, value: self._info(
+            _("Keymap"), _f("Default layer: {layer}", layer=value) if ok
+            else _f("Could not read the default layer: {error}", error=value)))
 
     def dump_keymap_buffer(self):
         """Write the raw keymap buffer to the host log — it is far too big for a
         dialog, and the log is what gets attached to a bug report anyway."""
-        ok, buf = self._core.keymap_buffer()
+        self._read_async(lambda: self._core.keymap_buffer(), self._show_keymap_buffer)
+
+    def _show_keymap_buffer(self, ok, buf):
         if not ok:
             self._info(_("Keymap"), _f("Could not read the keymap buffer: {error}", error=buf))
             return
@@ -517,7 +528,9 @@ class CommandsSubMenu:
 
     def show_fontpack_status(self):
         """Per-bundle device-vs-shipped versions (what Sync would actually do)."""
-        ok, info = self._core.fontpack_bundle_status()
+        self._read_async(lambda: self._core.fontpack_bundle_status(), self._show_fontpack_status)
+
+    def _show_fontpack_status(self, ok, info):
         if not ok:
             self._info(_("Font Pack"), _f("Could not read the font-pack status: {error}", error=info))
             return
@@ -548,7 +561,7 @@ class CommandsSubMenu:
                 lines = [ln.strip() for ln in f if ln.strip()]
             # Queued on the worker (in-process) / RPC (client) — runs async so a
             # long script with `wait`s never blocks the GUI.
-            self._core.execute_commands(lines)
+            self.parent._menu_fetch.call(lambda: self._core.execute_commands(lines))
         else:
             self.log.info("No file selected. Operation canceled.")
 
