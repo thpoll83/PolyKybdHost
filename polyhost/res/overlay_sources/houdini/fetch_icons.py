@@ -5,7 +5,8 @@ Glyphs are Google Material Symbols (Apache-2.0, ``ms:`` names) and Microsoft
 Fluent UI System Icons (MIT), rendered through ``../icon_fetch.py``. Glyphs that
 mean the same as in a sibling set are copied byte-identical from it
 (``BORROW``). The keyframe composites ("key translations", "key handle") and
-the vertex selection glyph are drawn here with ``../dcc_glyphs.py``.
+the vertex selection glyph, the F8 object/component toggle and the Alt+7
+material palette are drawn here with ``../dcc_glyphs.py``.
 
 The ESC mark is the Houdini logo from Simple Icons (``houdini``, artwork
 CC0-1.0) reduced to a 32x32 1-bit trace. See SOURCES.md.
@@ -54,7 +55,6 @@ BORROW = {
     "scale.png": "blender",           # E: scale tool
     "gizmo.png": "blender",           # Enter: show the node's handles
     "shading.png": "3dsmax",          # W: shaded / wireframe
-    "edit_mode.png": "3dsmax",        # F8: object / component selection
     "sel_vert.png": "blender",        # 2: points
     "sel_edge.png": "blender",        # 3: edges
     "sel_face.png": "blender",        # 4: primitives (faces)
@@ -81,7 +81,6 @@ BORROW = {
     "nodeeditor.png": "cinema4d",     # Alt+2: Network Editor
     "attributes.png": "cinema4d",     # Alt+3: Parameters
     "objectmanager.png": "cinema4d",  # Alt+4: Tree View
-    "materialmanager.png": "cinema4d",  # Alt+7: Material Palette
     "ed_console.png": "blender",      # Alt+5: Textport
     "ed_graph.png": "blender",        # Alt+6: Animation Editor
     "new.png": "cinema4d",
@@ -134,12 +133,70 @@ def _badge_pin(path: Path) -> None:
     g._save_mask(m, path)
 
 
+# The two drawn 36x32 icons fill the [36, 32] region pixel for pixel.
+_W, _H = 36, 32
+
+
+def _save_white(m: "Image.Image", path: Path) -> None:
+    img = Image.new("RGBA", (_W, _H), (255, 255, 255, 0))
+    img.putalpha(m)
+    img.save(path)
+
+
+def _obj_comp_toggle(path: Path) -> None:
+    """F8, object / component selection: a cube outline (object) beside the
+    same cube as dots on its corners (components), with a double arrow."""
+    from PIL import ImageDraw
+    s = 8
+    m = Image.new("L", (_W, _H), 0)
+    d = ImageDraw.Draw(m)
+
+    def corners(ox, oy):
+        top = [(ox + s, oy), (ox + 2 * s, oy + s // 2), (ox + s, oy + s), (ox, oy + s // 2)]
+        return top, [(x, y + s) for x, y in top]
+
+    top, bot = corners(1, 1)
+    d.polygon(top, outline=255)
+    d.line([top[3], bot[3], bot[2], bot[1], top[1]], fill=255)
+    d.line([top[2], bot[2]], fill=255)
+    top2, bot2 = corners(_W - 2 - 2 * s, 1)
+    for x, y in top2 + bot2[1:]:
+        d.rectangle([x - 1, y - 1, x + 1, y + 1], fill=255)
+    y1, y2 = 24, 29
+    d.line([(6, y1), (29, y1)], fill=255)
+    d.line([(26, y1 - 3), (29, y1), (26, y1 + 3)], fill=255)
+    d.line([(6, y2), (29, y2)], fill=255)
+    d.line([(9, y2 - 3), (6, y2), (9, y2 + 3)], fill=255)
+    _save_white(m, path)
+
+
+def _material_palette(path: Path) -> None:
+    """Alt+7, Material Palette: four outlined swatches with four textures
+    (solid, checker, diagonal hatch, dots)."""
+    import numpy as np
+    from PIL import ImageDraw
+    yy, xx = np.mgrid[0:_H, 0:_W]
+    pats = [np.ones((_H, _W), bool), (xx + yy) % 2 == 0, (xx + yy) % 3 == 0,
+            (xx % 3 == 0) & (yy % 3 == 0)]
+    boxes = [(0, 0, 16, 14), (19, 0, 35, 14), (0, 17, 16, 31), (19, 17, 35, 31)]
+    m = np.zeros((_H, _W), bool)
+    for box, pat in zip(boxes, pats):
+        fill = Image.new("1", (_W, _H), 0)
+        ImageDraw.Draw(fill).rectangle(box, fill=1)
+        edge = Image.new("1", (_W, _H), 0)
+        ImageDraw.Draw(edge).rectangle(box, outline=1)
+        m |= (np.array(fill) & pat) | np.array(edge)
+    _save_white(Image.fromarray((m * 255).astype("uint8")), path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
     icon_fetch.fluent(ICONS, out)
     icon_fetch.borrow(BORROW, out)
     g.guarded(out / "sel_vertex.png", _sel_vertex, "drawn vertex selection glyph")
+    g.guarded(out / "obj_comp_toggle.png", _obj_comp_toggle, "drawn object/component toggle (F8)")
+    g.guarded(out / "material_palette.png", _material_palette, "drawn material swatches (Alt+7)")
     g.guarded(out / "badge_key.png", _badge_key, "drawn keyframe diamond (badge)")
     g.guarded(out / "badge_pin.png", _badge_pin, "drawn push pin (badge)")
     # Keyframe composites: the transform glyph with a keyframe diamond badge.

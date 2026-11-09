@@ -108,11 +108,11 @@ install.
 | `selectall` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `move, rotate, scale, gizmo, sel_vert, sel_edge, sel_face, deselect, play_reverse, frame_prev, key_next, key_prev, frame_all, view_pie, ed_console, ed_graph` | byte copies of `../blender/icons/` (same action; Material Symbols) | Apache-2.0 |
 | `snap` | byte copy of `../blender/icons/` (drawn there) | GPL-3.0-or-later |
-| `shading, edit_mode, key_insert, autokey, play, frame_next, jump_start, walk, pivot` | byte copies of `../3dsmax/icons/` (same action; Material Symbols) | Apache-2.0 |
+| `shading, key_insert, autokey, play, frame_next, jump_start, walk, pivot` | byte copies of `../3dsmax/icons/` (same action; Material Symbols) | Apache-2.0 |
 | `nodesearch, tab_next, tab_prev` | byte copies of `../nuke/icons/` (Material Symbols) | Apache-2.0 |
-| `closeall, view_persp, nodeeditor, attributes, objectmanager, materialmanager` | byte copies of `../cinema4d/icons/` (Material Symbols) | Apache-2.0 |
+| `closeall, view_persp, nodeeditor, attributes, objectmanager` | byte copies of `../cinema4d/icons/` (Material Symbols) | Apache-2.0 |
 | `new, open, save, undo` | byte copies of `../cinema4d/icons/` (Fluent) | MIT |
-| `sel_vertex, badge_key, badge_pin` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
+| `sel_vertex, obj_comp_toggle, material_palette, badge_key, badge_pin` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
 | `key_move, key_rotate, key_scale, key_handle, pin_camera` | composites, `../dcc_glyphs.py` `with_badge` (move / rotate / scale / gizmo + `badge_key`, `camera` + `badge_pin`) | as their parts |
 | `houdini.png` (ESC mark) | Simple Icons `houdini`, see below | artwork CC0-1.0; SideFX's mark |
 

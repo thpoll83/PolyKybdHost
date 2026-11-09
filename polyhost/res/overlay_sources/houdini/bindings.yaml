@@ -56,7 +56,7 @@ bindings:
   - { key: V, mods: [], icon: view_pie.png, label: "View radial menu" }
 
   # --- no modifier: selection ---
-  - { key: F8, mods: [], icon: edit_mode.png, label: "Object / component selection" }
+  - { key: F8, mods: [], icon: obj_comp_toggle.png, label: "Object / component selection" }
   - { key: "1", mods: [], icon: sel_object.png, label: "Select objects" }
   - { key: "2", mods: [], icon: sel_vert.png, label: "Select points" }
   - { key: "3", mods: [], icon: sel_edge.png, label: "Select edges" }
@@ -107,7 +107,7 @@ bindings:
   - { key: "4", mods: [ALT], icon: objectmanager.png, label: "Tree View" }
   - { key: "5", mods: [ALT], icon: ed_console.png, label: "Textport" }
   - { key: "6", mods: [ALT], icon: ed_graph.png, label: "Animation Editor" }
-  - { key: "7", mods: [ALT], icon: materialmanager.png, label: "Material Palette" }
+  - { key: "7", mods: [ALT], icon: material_palette.png, label: "Material Palette" }
   - { key: "8", mods: [ALT], icon: details_view.png, label: "Details View" }
   - { key: "9", mods: [ALT], icon: view_persp.png, label: "Scene View" }
   - { key: "/", mods: [ALT], icon: closeall.png, label: "Close all tabs" }
