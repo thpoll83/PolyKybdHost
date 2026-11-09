@@ -3409,3 +3409,16 @@ houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,
   os:
     macos:
       overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
+# QGIS Desktop (overlay_sources/qgis/). Windows (OSGeo4W and the standalone
+# installer): qgis-bin.exe, qgis-ltr-bin.exe, qgis-dev-bin.exe, qgis-qt6-bin.exe.
+# Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
+# KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
+# id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
+# QGIS-LTR.app. Not checked on an install.
+qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
+  overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+    linux:
+      overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
