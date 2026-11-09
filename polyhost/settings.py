@@ -322,6 +322,12 @@ DEFAULT_SETTINGS.update(reader_defaults())
 SETTINGS_FORMAT_KEY = "settings_format"
 
 
+def _printable(text):
+    """`text` with control characters escaped, so a caller-supplied writer name
+    (the control socket's ``source``) cannot add lines to the log."""
+    return "".join(c if c.isprintable() else repr(c)[1:-1] for c in str(text))
+
+
 def _is_private_setting(key):
     """A key whose value must not reach a log line: tokens and the install id."""
     return "token" in key or key == "telemetry_install_id"
@@ -590,7 +596,7 @@ class PolySettings:
             if _is_private_setting(key):
                 old = new = "<redacted>"
             self.log.info("Settings: %s changed from %r to %r (by %s).",
-                          key, old, new, source or "this process")
+                          key, old, new, _printable(source or "this process"))
 
     def restore_defaults(self):
         # A COPY: `self.defaults` is seeded from the module constant, so
@@ -661,7 +667,6 @@ class PolySettings:
         """Merge against the file and replace it. Call under the settings lock."""
         mine = {k: v for k, v in self.collection.items()
                 if k not in self._baseline or self._baseline[k] != v}
-        self._log_changes(mine, source)
         on_disk, state = self._read_file_ex()
         if self._reset_pending:
             # restore_defaults(): nothing stays chosen, in any process's file,
@@ -737,6 +742,9 @@ class PolySettings:
                 # than this cleanup's.
                 pass
             raise
+        # After the replace, before the baseline moves: a save that did not
+        # land logs nothing, and the next save, which retries it, logs it once.
+        self._log_changes(mine, source)
         self.collection = merged
         self._baseline = dict(merged)
         self._chosen = set(chosen)

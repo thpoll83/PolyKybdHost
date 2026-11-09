@@ -825,6 +825,26 @@ class ChangeLogTest(_TempConfigDirCase):
             a.save()
         self.assertEqual(self._lines(cm), [])
 
+    def test_a_save_that_does_not_land_logs_nothing_and_the_retry_logs_once(self):
+        a = settings.PolySettings()
+        with self._replace_refused(), self.assertLogs("PolyHost", level="INFO") as cm:
+            a.log.info("marker")
+            self.assertFalse(a.set_all(dict(a.collection, hid_reconnect_retries=9),
+                                       source="polyctl"))
+        self.assertEqual(self._lines(cm), [])
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            self.assertTrue(a.save())
+        self.assertEqual(len(self._lines(cm)), 1)
+
+    def test_control_characters_in_the_source_cannot_add_log_lines(self):
+        a = settings.PolySettings()
+        with self.assertLogs("PolyHost", level="INFO") as cm:
+            a.set_all(dict(a.collection, hid_reconnect_retries=9),
+                      source="polyctl\n[2026-01-01] INFO forged")
+        [line] = self._lines(cm)
+        self.assertNotIn("\n", line)
+        self.assertIn("polyctl\\n[2026-01-01] INFO forged", line)
+
     def test_tokens_and_the_install_id_are_not_logged(self):
         a = settings.PolySettings()
         with self.assertLogs("PolyHost", level="INFO") as cm:
