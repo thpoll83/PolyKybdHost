@@ -157,14 +157,18 @@ class CommandsSubMenu:
         just restores its stored manual level — still the way to clear a preset,
         but not "automatic", so don't claim it is.
         """
+        # Off the GUI thread like every menu's device state (gui/menu_fetch.py).
+        self.parent._menu_fetch.fetch(
+            "auto_brightness",
+            lambda: self._core.settings_get("brightness_set_daylight_dependent"),
+            self._apply_auto_brightness_action)
+
+    def _apply_auto_brightness_action(self, result):
         action = self._auto_brightness_action
-        try:
-            daylight = bool(self._core.settings_get("brightness_set_daylight_dependent"))
-        except Exception as exc:   # noqa: BLE001 — a tooltip must never break the menu
-            self.log.debug("Could not read the daylight setting: %s", exc)
+        if isinstance(result, Exception):   # a tooltip must never break the menu
             action.setToolTip(_("Re-apply the host's automatic brightness."))
             return
-        if daylight:
+        if bool(result):
             action.setText(_("Back to automatic"))
             action.setToolTip(_("Re-engage automatic (daylight) brightness — the manual "
                                 "preset above is dropped."))

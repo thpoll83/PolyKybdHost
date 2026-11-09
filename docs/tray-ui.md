@@ -5,6 +5,15 @@ and relative links were adjusted to suit a standalone file.
 
 ## The tray, its menus, and the OS around them
 
+- **A submenu that shows device state asks the core OFF the GUI thread**
+  (`gui/menu_fetch.py`, `MenuFetcher`). Split the refresh into the core call, passed
+  to `self._menu_fetch.fetch(key, fn, apply)`, and an `apply(result)` that touches
+  the Qt objects. In client mode the call is an RPC with no timeout, so a stalled
+  daemon used to freeze the whole tray when Idle Display, Keycap Script, Keycap
+  Size, Emoji Search Language, Updates or Brightness opened. The menu keeps its last
+  state until the answer arrives; one call per key is in flight at a time. Tests
+  that read the result call `self._menu_fetch.wait_idle()` first
+  (`tests/gui/menu_fetch_test.py`).
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal

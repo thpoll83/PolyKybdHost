@@ -720,16 +720,19 @@ def _smoke_client():
             # The Updates menu labels the font row from the daemon's per-bundle
             # comparison (over the RPC mirror) instead of hiding it in a dialog.
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW", app.fontpack_update_action.text())
             # A bundle whose last flash FAILED reads as up to date by version, so the
             # row must offer a retry instead of claiming everything is fine — the
             # state that left a failed bundle unreachable from the UI (2026-08-17).
             core.fontpack_state = "retry"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_RETRY", app.fontpack_update_action.text(),
                   "| enabled", app.fontpack_update_action.isEnabled())
             core.fontpack_state = "current"
             app._refresh_fontpack_action()
+            app._menu_fetch.wait_idle()
             print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
             app.quit_app()
         print("SERVER_RUNNING", srv._running)

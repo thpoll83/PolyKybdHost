@@ -83,6 +83,7 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu, _get_open_file_explicit
+from polyhost.gui.menu_fetch import MenuFetcher, ok_value
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
@@ -615,6 +616,10 @@ class PolyHost(QApplication):
         # Both are built by CommandsSubMenu, which routes every action through the
         # core (worker job in-process, RPC in client mode) so they work in both
         # modes (H4a-2c).
+        # Every submenu that shows device state asks the core when it opens. The
+        # call runs off the GUI thread (gui/menu_fetch.py), so a stalled daemon
+        # cannot freeze the tray while a menu waits for its answer.
+        self._menu_fetch = MenuFetcher(self, self.log)
         self.cmdMenu = CommandsSubMenu(self)
 
         # Brightness: promoted out of the old "All PolyKybd Commands" list — it is
@@ -1264,12 +1269,11 @@ class PolyHost(QApplication):
         if getter is None or not self.device_present:
             action.setVisible(False)
             return
-        try:
-            ok, info = getter()
-        except Exception as exc:  # noqa: BLE001
-            self.log.debug("Font-pack status unavailable: %s", exc)
-            action.setVisible(False)
-            return
+        self._menu_fetch.fetch("fontpack", getter, self._apply_fontpack_action)
+
+    def _apply_fontpack_action(self, result):
+        action = self.fontpack_update_action
+        ok, info = ok_value(result)
         if not ok or not isinstance(info, dict) or not info.get("shipped"):
             action.setVisible(False)
             return
@@ -2328,7 +2332,10 @@ class PolyHost(QApplication):
         # round-trip onto the worker in-process, or over RPC in client mode) and
         # tick the matching item. On failure (old firmware / disconnected) leave
         # both unchecked rather than guessing.
-        ok, value = self.core.get_idle_style()
+        self._menu_fetch.fetch("idle_style", self.core.get_idle_style, self._apply_idle_style)
+
+    def _apply_idle_style(self, result):
+        ok, value = ok_value(result)
         self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
         self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
         self.idle_iddqd_action.setChecked(bool(ok) and value == IdleStyle.IDDQD.value)
@@ -2348,7 +2355,11 @@ class PolyHost(QApplication):
     def refresh_idle_timeout_menu(self):
         # Same shape as refresh_idle_style_menu: read the device, tick the match,
         # and on failure leave everything unchecked rather than guessing.
-        ok, value = self.core.get_idle_timeout()
+        self._menu_fetch.fetch("idle_timeout", self.core.get_idle_timeout,
+                               self._apply_idle_timeout)
+
+    def _apply_idle_timeout(self, result):
+        ok, value = ok_value(result)
         # (preset, seconds) in-process; JSON turns it into a list over RPC.
         preset = value[0] if ok and value else None
         for act in self.idle_timeout_actions:
@@ -2390,15 +2401,23 @@ class PolyHost(QApplication):
         self._build_glyph_script_previews()
         # Read the active glyph script from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
-        ok, value = self.core.get_glyph_script()
+        self._menu_fetch.fetch("glyph_script", self.core.get_glyph_script,
+                               self._apply_glyph_script)
+        self.refresh_glyph_placement_actions()
+
+    def _apply_glyph_script(self, result):
+        ok, value = ok_value(result)
         for sval, act in self.glyph_actions.items():
             act.setChecked(bool(ok) and value == sval)
-        self.refresh_glyph_placement_actions()
 
     def refresh_glyph_placement_actions(self):
         # A keyboard below v26 answers False: grey the pair out rather than offer a
         # choice the firmware would ignore.
-        ok, value = self.core.get_glyph_placement()
+        self._menu_fetch.fetch("glyph_placement", self.core.get_glyph_placement,
+                               self._apply_glyph_placement)
+
+    def _apply_glyph_placement(self, result):
+        ok, value = ok_value(result)
         for pval, act in self.glyph_place_actions.items():
             act.setEnabled(bool(ok))
             act.setChecked(bool(ok) and value == pval)
@@ -2427,7 +2446,11 @@ class PolyHost(QApplication):
         """Build the dictionary entries once, then tick the selected one. On a
         keyboard without the dictionary slot (firmware before font-pack layout v4)
         the entries are shown but greyed out, with the reason as the first row."""
-        ok, st = self.core.emoji_search_status()
+        self._menu_fetch.fetch("emoji_dict", self.core.emoji_search_status,
+                               self._apply_emoji_dict)
+
+    def _apply_emoji_dict(self, result):
+        ok, st = ok_value(result)
         if not ok or not isinstance(st, dict) or not st.get("shipped"):
             self.emoji_dict_menu.clear()
             self.emoji_dict_actions = {}
@@ -2500,7 +2523,10 @@ class PolyHost(QApplication):
     def refresh_glyph_size_menu(self):
         # Read the active legend size from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
-        ok, value = self.core.get_glyph_size()
+        self._menu_fetch.fetch("glyph_size", self.core.get_glyph_size, self._apply_glyph_size)
+
+    def _apply_glyph_size(self, result):
+        ok, value = ok_value(result)
         for sval, act in self.glyph_size_actions.items():
             act.setChecked(bool(ok) and value == sval)
 
