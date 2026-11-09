@@ -49,8 +49,9 @@ MSG_DOWNLOADING_FW_OF = M_("Downloading firmware… {done} / {total} KB")
 MSG_DOWNLOADING_FW = M_("Downloading firmware… {done} KB")
 MSG_DOWNLOAD_CANCELLED = M_("Download cancelled.")
 MSG_DOWNLOADING_SIG = M_("Downloading signature…")
-MSG_SIG_RETRYING = M_("GitHub did not deliver the signature; trying again in {seconds} s "
+MSG_SIG_RETRYING = M_("The signature download failed; trying again in {seconds} s "
                       "(attempt {attempt} of {total})…")
+MSG_SIG_ATTEMPT = M_("Downloading signature (attempt {attempt} of {total})…")
 MSG_SIG_DOWNLOAD_FAILED = M_(
     "The image downloaded, but its signature did not ({error}).\n\n"
     "Flashing without it would make the keyboard treat this release as an "
@@ -1676,6 +1677,9 @@ class FwUpDownloader(threading.Thread):
                 time.sleep(min(0.1, max(0.0, deadline - time.monotonic())))
             if self._cancelled():
                 raise _DownloadCancelled()
+            # The wait is over: replace the countdown before the request starts.
+            _fire(self._on_progress, 100, MSG_SIG_ATTEMPT.format(
+                attempt=attempt + 2, total=len(SIG_RETRY_DELAYS) + 1))
 
     def run(self):
         tmp_path = None

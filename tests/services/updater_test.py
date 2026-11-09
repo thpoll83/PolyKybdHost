@@ -2015,8 +2015,16 @@ class TestFwUpDownloader(unittest.TestCase):
                      gateway_timeout(), self._sig_response(b"\x5a" * 64)])
             self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
         self.assertEqual(sum(u.endswith(".sig") for u in calls), 4)
-        retries = [msg for _pct, msg in rec.args_for("progress") if "trying again" in str(msg)]
+        msgs = [str(msg) for _pct, msg in rec.args_for("progress")]
+        total = len(updater.SIG_RETRY_DELAYS) + 1
+        retries = [m for m in msgs if "trying again" in m]
         self.assertEqual(len(retries), 3, "the dialog says each retry")
+        self.assertIn(f"(attempt 2 of {total})", retries[0])
+        # After each wait the countdown is replaced before the next request.
+        attempts = [m for m in msgs if m.startswith("Downloading signature (attempt")]
+        self.assertEqual(attempts, [f"Downloading signature (attempt {n} of {total})…"
+                                    for n in (2, 3, 4)])
+        self.assertNotIn("GitHub", " ".join(retries), "a timeout may be the local network")
 
     def test_the_retries_wait_about_a_minute(self):
         self.assertGreaterEqual(sum(updater.SIG_RETRY_DELAYS), 60)
