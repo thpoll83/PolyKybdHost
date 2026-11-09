@@ -137,8 +137,19 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `invertalpha.png` | Fluent `Scan Type` | MIT |
 | `toplayer.png` | Fluent `Arrow Upload` | MIT |
 | `bottomlayer.png` | Fluent `Arrow Download` | MIT |
+| `space_pan.png` | `pan.png` with four arrows, drawn by `../space_hint.py` on the whole 72x40 keycap | MIT (Fluent) + ours |
 
-69 of 75 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+69 of 76 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+
+### The Space key
+
+Holding Space pans: Space + arrow keys pans the canvas, Space + Ctrl + arrow
+keys pans 10 times as far, and Space + drag pans with the mouse
+(<https://paint.net/doc/latest/KeyboardMouseCommands.html>). The keyboard has
+no Space modifier layer, so the Space key shows a hint instead: the hand with an
+arrow on each side. Space is on the thumb row, where the firmware centres the
+legend, so the hint is drawn at the right edge of the whole keycap and keeps
+3 px clear of the legend (`../space_hint.py` checks this).
 
 ## Verifying
 

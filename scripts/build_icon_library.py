@@ -3,6 +3,7 @@
 
     python scripts/build_icon_library.py            # rebuild, bump content_version if bytes change
     python scripts/build_icon_library.py --check    # fail if the shipped files disagree with the id table
+    python scripts/build_icon_library.py --renumber-by-usage   # ONE-TIME, see renumber_by_usage()
 
 REBUILD IN BATCHES, not per overlay change. Every rebuild bumps content_version,
 and every keyboard re-flashes the 256 KiB slot on its next connect. A new icon
@@ -170,6 +171,11 @@ def _shipped_frames() -> set[bytes]:
 
 def select() -> dict[bytes, str]:
     """{packed frame: name} of every icon the rule puts in the library."""
+    return select_with_usage()[0]
+
+
+def select_with_usage() -> tuple[dict[bytes, str], dict[bytes, int]]:
+    """``select()`` plus {packed frame: number of app families that draw it}."""
     kinds = collections.defaultdict(set)
     apps = collections.defaultdict(set)
     names = {}
@@ -185,11 +191,25 @@ def select() -> dict[bytes, str]:
             continue
         if (ks & LIB_KINDS or "custom" in ks) and len(apps[frame]) >= 2:
             out[frame] = names[frame]
-    return out
+    return out, {f: len(apps[f]) for f in out}
 
 
 def _key(frame: bytes) -> str:
     return hashlib.sha256(frame).hexdigest()[:20]
+
+
+def _retired_frame(entry: dict, previous: list[bytes]) -> bytes:
+    """The shipped pixels of a retired icon, checked against its frozen key.
+
+    An icon_ids.yaml out of step with icons.plyi would otherwise give the entry
+    another icon's pixels and write that into the library."""
+    if entry["id"] >= len(previous):
+        sys.exit(f"icon id {entry['id']} is retired but not in the shipped icons.plyi")
+    frame = previous[entry["id"]]
+    if _key(frame) != entry["key"]:
+        sys.exit(f"icon id {entry['id']} ({entry['name']}): the shipped icons.plyi frame "
+                 f"does not match its key in icon_ids.yaml; the two files are out of step")
+    return frame
 
 
 def assign_ids(selected: dict[bytes, str], ids_doc: list,
@@ -210,10 +230,40 @@ def assign_ids(selected: dict[bytes, str], ids_doc: list,
         if f is None:
             # Retired: the template no longer carries it, but the id and glyph
             # stay, so the bundle must still carry the pixels.
-            if e["id"] >= len(previous):
-                sys.exit(f"icon id {e['id']} is retired but not in the shipped icons.plyi")
-            f = previous[e["id"]]
+            f = _retired_frame(e, previous)
         frames.append(f)
+    return table, frames
+
+
+def renumber_by_usage(selected: dict[bytes, str], usage: dict[bytes, int],
+                      ids_doc: list, previous: list[bytes]) -> tuple[list, list[bytes]]:
+    """A ONE-TIME renumbering: ids in order of how many apps draw the icon.
+
+    A cmd 42 report packs every (pool slot, icon id) pair at the width its
+    largest value needs, so low ids for the common icons fit more pairs in a
+    report (27 at 9 bits, 20 at 12). Measured on the shipped templates
+    (2026-11-09): 6,868 fill reports over 2,861 overlay entries with the
+    append-only ids, 5,666 with ranked ids (-17.5 %).
+
+    Run it only as part of a library rebuild: the host fills from the library
+    only when the keyboard reports exactly the shipped content_version
+    (PolyKybd._icon_fill_index). ⚠️ That version is the master's alone until
+    the master has read the slave's (after boot, after a link drop), and the
+    slave draws a fill from its OWN library. A slave still holding the old
+    library then draws the wrong icon for a renumbered id, where append-only
+    ids only ever miss. docs/fontpack.md names the precondition. Live icons get ids 0..n-1 by (-apps, name, key); retired icons
+    keep their entries and follow, in their old order. After this, new icons
+    are appended as before."""
+    frames_by_key = {_key(f): f for f in selected}
+    live = sorted(selected, key=lambda f: (-usage.get(f, 0), selected[f], _key(f)))
+    table = [{"id": i, "key": _key(f), "name": selected[f]} for i, f in enumerate(live)]
+    frames = list(live)
+    for e in ids_doc:
+        if e["key"] in frames_by_key:
+            continue
+        frame = _retired_frame(e, previous)
+        table.append({"id": len(table), "key": e["key"], "name": e["name"]})
+        frames.append(frame)
     return table, frames
 
 
@@ -222,12 +272,21 @@ def main(argv=None) -> int:
     ap.add_argument("--check", action="store_true",
                     help="fail if the shipped files disagree with the frozen id table; "
                          "new eligible icons are only reported as pending")
+    ap.add_argument("--renumber-by-usage", action="store_true",
+                    help="ONE-TIME: renumber every id by how many apps use the icon "
+                         "(renumber_by_usage); only with a planned library rebuild")
     args = ap.parse_args(argv)
+    if args.check and args.renumber_by_usage:
+        ap.error("--renumber-by-usage rebuilds the library; it cannot run with --check")
 
     ids_doc = []
     if IDS_FILE.exists():
         ids_doc = yaml.safe_load(IDS_FILE.read_text(encoding="utf-8")) or []
-    selected = select()
+    usage = {}
+    if args.renumber_by_usage:
+        selected, usage = select_with_usage()
+    else:
+        selected = select()
     known = {e["key"] for e in ids_doc}
     pending = sorted(n for f, n in selected.items() if _key(f) not in known)
     if args.check:
@@ -235,7 +294,10 @@ def main(argv=None) -> int:
         # but a new icon waits for the next deliberate rebuild.
         selected = {f: n for f, n in selected.items() if _key(f) in known}
     previous = icon_library.parse(PLYI_FILE.read_bytes())[1] if PLYI_FILE.exists() else []
-    table, frames = assign_ids(selected, ids_doc, previous)
+    if args.renumber_by_usage:
+        table, frames = renumber_by_usage(selected, usage, ids_doc, previous)
+    else:
+        table, frames = assign_ids(selected, ids_doc, previous)
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     entry = next((b for b in manifest["bundles"] if b["id"] == "icons"), None)
