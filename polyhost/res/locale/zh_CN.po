@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-09 06:31+0000\n"
+"POT-Creation-Date: 2026-11-09 08:23+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_Hans_CN\n"
@@ -4623,10 +4623,15 @@ msgstr "正在下载签名…"
 
 #: polyhost/services/updater.py:52
 #, python-brace-format
-msgid "GitHub did not deliver the signature; trying again in {seconds} s (attempt {attempt} of {total})…"
-msgstr "GitHub 未返回签名；{seconds} 秒后重试（第 {attempt}/{total} 次）…"
+msgid "The signature download failed; trying again in {seconds} s (attempt {attempt} of {total})…"
+msgstr "签名下载失败；{seconds} 秒后重试（第 {attempt}/{total} 次）…"
 
-#: polyhost/services/updater.py:55
+#: polyhost/services/updater.py:54
+#, python-brace-format
+msgid "Downloading signature (attempt {attempt} of {total})…"
+msgstr "正在下载签名（第 {attempt}/{total} 次）…"
+
+#: polyhost/services/updater.py:56
 #, python-brace-format
 msgid ""
 "The image downloaded, but its signature did not ({error}).\n"
