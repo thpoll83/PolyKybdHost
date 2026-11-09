@@ -331,6 +331,12 @@ committed ESC cell in one row:
 The maintainer chose from this sheet four times in the 2026-11-05 batch: WPS
 (redrawn), Canva (switched to the "dark lit" column), Photopea and Steam (kept).
 
+⚠️ **`--domain` returns the company's icon, not the product's, for a vendor
+with many products.** `autodesk.com` gave the Autodesk logo for Maya and
+`avid.com` the Avid logo for Pro Tools, so the sheet compared nothing
+(2026-11-09). For those, pass `--icon` with the product's own file (the Simple
+Icons SVG or PNG the mark was made from).
+
 **For an entry with `glyph_script:` in the mapping, show the keys with that
 face.** `preview_black.py` draws the icons alone; on the keyboard they share the
 keycap with the script's letters. `face_preview.py` (next to this file) draws
@@ -350,6 +356,19 @@ Use it before choosing an icon's size or corner on such a set. On 2026-11-07 a
 46 px "MON" label in the top-right corner of Alt+H cut the H on the C64 face,
 and the same label at the bottom right erased a PETSCII cell. Only a 36 x 32
 icon at the bottom right left both whole.
+
+⚠️ **A key on the bottom (thumb) row has its legend CENTRED, so the default
+bottom-right region covers it.** The firmware draws every bottom-row legend with
+`draw_legend_cx_cy` (qmk `poly_keymap.c`): on Space the ␣ is at x 23..48,
+y 23..26. It then clears the legend within 3 px of any overlay ink. With
+`region: [36, 32]` at the bottom right, a Space icon erased 10 to 44 legend
+pixels; on 2026-11-09 that was 546 key images in 117 specs. Neither preview
+shows it: `preview_black.py` draws no legend, and `face_preview.py` draws every
+legend at the top left. For a bottom-row binding, set
+`anchor: top-right, region: [28, 20]` (Maya's Ctrl+Space, every Pro Tools Space
+key), or draw on the whole keycap clear of the legend (`space_hint.py`, below).
+Measure it: centre the key's legend from `face_preview.standard()`, grow the
+icon by 3 px, and count the legend pixels inside. The count must be 0.
 
 ### 5. Wire the mapping + verify
 
@@ -565,6 +584,25 @@ identical. Draw the slot number into each copy in `fetch_icons.py`, not by hand.
   `INK` box a multiple of the block. ⚠️ Draw a composed icon on the half grid
   too: snapping a finished 40 px composite to blocks merged a cube into a blob.
 
+## Hold-Space hints
+
+The keyboard has no Space modifier layer, so "hold Space + key" shortcuts are
+never drawn. Where an app has them, the Space key shows that holding it does
+something: `polyhost/res/overlay_sources/space_hint.py` draws a glyph with an
+arrow on each side at the right edge of the whole 72x40 keycap, and raises if
+any ink comes within 3 px of the centred ␣.
+
+```python
+space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), out / "space_pan.png")
+```
+
+The binding needs `region: [72, 40]` and `mode: alpha` so the PNG is copied 1:1
+(Paint.NET `space_pan`, Houdini `space_view`, PR #744). A docs search of every
+supported app (2026-11-09) found Space+key combinations in only two: Houdini
+(14: Space+H, G, A, F, Z, L, B, O, E, Space+1..5) and Paint.NET (8: Space +
+arrow keys, Space + Ctrl + arrow keys). Maya's hold-Space opens the hotbox, which
+has no second key; its Space shows the hotbox, drawn at the top right.
+
 ## Several overlay PRs open at once
 
 Every new overlay appends its entry to the end of
@@ -654,6 +692,12 @@ y 126–154, the ESC mark area.
   just built (hit while adding the jetbrains `.extra.mods.` layer, 2026-08-01).
   When a generated layer looks empty, **count lit pixels per cell** before
   re-sourcing the icons — it is nearly always the mode, not the artwork.
+
+- ⚠️ **Run every `fetch_icons.py` with `PYTHONPATH=.` from the repo root**, also
+  the ones that put `overlay_sources/` on `sys.path` themselves: `icon_fetch`
+  imports `polyhost.res.overlay_sources.material_symbols`, and without it the
+  script stops with `ModuleNotFoundError: No module named 'polyhost'` (QGIS,
+  2026-11-09).
 
 - ⚠️ **Every new webapp set appends a section to the end of
   `webapps/SOURCES.md`, so two open webapp PRs always conflict there.** It is an
