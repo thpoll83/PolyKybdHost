@@ -35,6 +35,17 @@ class TapTermsDialogTest(unittest.TestCase):
         d.flow_tap.setValue(144)
         self.assertEqual(d.values(), (240, 140))
 
+    def test_the_field_shows_the_snapped_value_after_editing(self):
+        """A typed value that is off the grid is corrected in the field itself,
+        not only in what values() returns."""
+        d = TapTermsDialog({"tapping_term": 200, "flow_tap_term": 150})
+        d.tapping.setValue(237)
+        d.tapping.editingFinished.emit()
+        d.flow_tap.setValue(144)
+        d.flow_tap.editingFinished.emit()
+        self.assertEqual((d.tapping.value(), d.flow_tap.value()), (240, 140))
+        self.assertEqual(d.values(), (240, 140))
+
     def test_restore_defaults(self):
         d = TapTermsDialog({"tapping_term": 400, "flow_tap_term": 0})
         d.restore_defaults()

@@ -48,6 +48,13 @@ class TapTermsDialog(QDialog):
             self.flow_tap.setEnabled(False)
             self.flow_tap.setToolTip(_("This keyboard's firmware has no Flow Tap."))
 
+        # QSpinBox's step applies to the arrows only; a typed 205 would stay on
+        # screen while values() saves 200. Snap the field itself when editing ends,
+        # so what the user sees is what is saved.
+        for box in (self.tapping, self.flow_tap):
+            # noinspection PyUnresolvedReferences
+            box.editingFinished.connect(lambda b=box: b.setValue(self._snap(b.value())))
+
         form = QFormLayout()
         form.addRow(_("Tapping term:"), self.tapping)
         form.addRow(_("Flow Tap term:"), self.flow_tap)
