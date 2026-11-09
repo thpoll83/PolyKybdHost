@@ -3392,3 +3392,8 @@ amiberry,amiberry-lite:
   overlay: amiberry_template.mods.png
   glyph_script: amiga
   glyph_script_position: top-left
+# PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
+# English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
+# install.
+mathcadprime:
+  overlay: [mathcad_template.mods.png, mathcad_template.combo.mods.png]
