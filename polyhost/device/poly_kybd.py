@@ -16,7 +16,8 @@ from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, c
 from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement,
                                          GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
-from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
+from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
+                                          parse_id_anim_state)
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
@@ -294,6 +295,8 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
+        self.anim_state = None
 
         # Statistics, cumulative since this object was created. The stat_*
         # counters sum what EACH encoding would have cost in reports for every
@@ -512,6 +515,7 @@ class PolyKybd:
                 # with no extra command and nothing pushed from the firmware.
                 # None = this firmware has no block; do NOT read that as "unchanged".
                 self.state_generation = parse_id_state_generation(msg)
+                self.anim_state = parse_id_anim_state(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
