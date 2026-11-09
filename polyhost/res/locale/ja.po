@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-09 08:23+0000\n"
+"POT-Creation-Date: 2026-11-09 11:11+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ja\n"
@@ -4071,7 +4071,7 @@ msgstr "更新が完了しませんでした。"
 #, python-brace-format
 msgid "{n} keyboard font bundle is out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
 msgid_plural "{n} keyboard font bundles are out of date, and Auto Flash is off. Use Updates → Update keyboard fonts."
-msgstr[0] ""
+msgstr[0] "キーボードのフォントパック {n} 個が古く、自動書き込みはオフです。更新 → キーボードのフォントを更新 を使ってください。"
 
 #: polyhost/host.py:3017
 msgid "PolyKybd Firmware Update"
