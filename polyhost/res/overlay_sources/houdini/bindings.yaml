@@ -10,7 +10,8 @@
 # listed in SOURCES.md and are not drawn.
 #
 # Keys held together with Space (Space+G, Space+1, ...) are not drawn: the
-# keyboard has no Space modifier layer. They are listed in SOURCES.md.
+# keyboard has no Space modifier layer. They are listed in SOURCES.md. The
+# Space key itself shows a hint that holding it does something.
 #
 # SideFX: "Most hotkeys that use Ctrl on Windows instead use Cmd on macOS."
 # So every Ctrl chord is CMDCTRL and Alt stays ALT (Option).
@@ -54,6 +55,10 @@ bindings:
   - { key: X, mods: [], icon: snap.png, label: "Snapping menu" }
   - { key: C, mods: [], icon: radial_current.png, label: "Current radial menu" }
   - { key: V, mods: [], icon: view_pie.png, label: "View radial menu" }
+  # hold Space = view tool (tumble, track, dolly with the mouse; Space+H, G, 1..5
+  # and others, see SOURCES.md). Drawn on the whole keycap beside the centred
+  # Space legend (../space_hint.py).
+  - { key: SPACE, mods: [], icon: space_view.png, mode: alpha, region: [72, 40], label: "View tool (hold Space)" }
 
   # --- no modifier: selection ---
   - { key: F8, mods: [], icon: obj_comp_toggle.png, label: "Object / component selection" }

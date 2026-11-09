@@ -113,6 +113,7 @@ install.
 | `closeall, view_persp, nodeeditor, attributes, objectmanager` | byte copies of `../cinema4d/icons/` (Material Symbols) | Apache-2.0 |
 | `new, open, save, undo` | byte copies of `../cinema4d/icons/` (Fluent) | MIT |
 | `sel_vertex, obj_comp_toggle, material_palette, badge_key, badge_pin` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
+| `space_view` | the F8 object cube with four arrows, drawn in `fetch_icons.py` through `../space_hint.py` on the whole 72x40 keycap. Space shows that holding it is the view tool; the Space+key combinations stay undrawn | GPL-3.0-or-later |
 | `key_move, key_rotate, key_scale, key_handle, pin_camera` | composites, `../dcc_glyphs.py` `with_badge` (move / rotate / scale / gizmo + `badge_key`, `camera` + `badge_pin`) | as their parts |
 | `houdini.png` (ESC mark) | Simple Icons `houdini`, see below | artwork CC0-1.0; SideFX's mark |
 
