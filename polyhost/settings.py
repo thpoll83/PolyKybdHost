@@ -261,6 +261,7 @@ DEFAULT_SETTINGS = {
         # the id of one of the shipped polyhost/res/emojidict dictionaries, e.g. "de",
         # "zh-HK@cangjie". Changing it flashes the new one (note_settings_changed).
         "emoji_search_dict": "en",
+        "emoji_search_dict_file": "",
         # Game art from installed games (polyhost/services/game_assets): when a
         # game's own files are on this machine, overlays for it are redrawn
         # from them into the cache directory, in place of the shipped

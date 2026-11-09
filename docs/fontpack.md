@@ -131,6 +131,34 @@ and relative links were adjusted to suit a standalone file.
     `.plyf` on the same transport are still unchecked (data, so the exposure is parser
     bugs).
 
+## Slot 9: the emoji search dictionary
+
+The emoji layer's keyword search reads a dictionary from slot 9 (128 KB, font-pack
+layout v4; firmware: qmk `keyboards/polykybd/emoji/EMOJI_SEARCH.md`). The host
+ships all 79 dictionaries in `res/emojidict/` (gzipped, `manifest.json` from
+`emoji_dict.py build-all`, imported with `scripts/import_emojidict.py`).
+`services/emojidict.py` adds the chosen one to the bundle list
+(`PolyCore._bundle_manifest()`), so the connect pass, status, forced re-flash and
+wipe treat it like any other bundle.
+
+- A dictionary's `content_version` is `(number << 8) | revision`. `number` is its
+  line in qmk `dict_src/dictionaries.tsv`, so GET_ID's `V` block names the
+  dictionary on the keyboard. No HID command and no protocol version of its own.
+- ⚠️ **Slot 9 is stale on any version mismatch, not only a lower version**
+  (`hid_fontpack.bundle_is_stale()`). Another dictionary can have a lower number.
+- Slot 9 is never assumed. Firmware before layout v4 reports fewer slots, and
+  choosing a dictionary there flashes nothing: `_has_emojidict_slot()` gates it,
+  because the shared pass would flash only the other stale bundles.
+- Settings: `emoji_search_dict` (shipped id, default `en`) and
+  `emoji_search_dict_file` (a user's `.plyd`, built with `emoji_dict.py build <id>
+  --user`, revision 255). The file takes priority. An unusable file flashes nothing
+  to slot 9, so the user's dictionary on the keyboard is not replaced.
+  `PolyCore.emoji_search_choose()` sets either; choosing the file in use again
+  forces a flash, because a rebuilt file keeps its version.
+- Surfaces: tray Selected Language → Emoji Search Language, the settings dialog,
+  `polyctl emoji-dict [status|list|set ID|file PATH|file --clear]`, control methods
+  `emojidict.status` and `emojidict.choose`.
+
 ## The font pack (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._

@@ -24,6 +24,10 @@ import platformdirs
 
 BUNDLE_ID = 9           # FONTPACK_EMOJIDICT_BUNDLE_ID (fontpack_layout.h)
 DEFAULT_DICT = "en"
+SLOT_SIZE = 0x20000     # the emojidict slot, 128 KB (fonts.yaml)
+FLAG_DATA = 0x1         # PlyF flags: a data bundle, no fonts
+DICT_MAGIC = b"EmjD"    # the dictionary header after the 32 B PlyF header
+USER_REVISION = 0xFF    # emoji_dict.py build --user; shipped ones use 1..254
 
 
 def _res_dir() -> Path:
@@ -90,6 +94,29 @@ def unpacked_path(manifest: dict, entry: dict, cache: Path | None = None) -> str
         tmp.write_bytes(data)
         os.replace(tmp, out)
     return str(out)
+
+
+def user_entry(path: str) -> tuple[dict | None, str]:
+    """A hand-built dictionary file (the ``emoji_search_dict_file`` setting) as a
+    bundle entry, or (None, why it cannot be used). The file is flashed as it is;
+    its content_version comes from its own header."""
+    from polyhost.device import hid_fontpack
+    p = Path(path).expanduser()
+    try:
+        data = p.read_bytes()
+    except OSError as e:
+        return None, f"cannot read {p}: {e.strerror or e}"
+    if len(data) > SLOT_SIZE:
+        return None, f"{p.name} is {len(data):,} B, larger than the {SLOT_SIZE // 1024} KB dictionary slot"
+    ok, info = hid_fontpack.parse_fontpack_header(data)
+    if not ok:
+        return None, f"{p.name}: {info['error']}"
+    if not info["flags"] & FLAG_DATA or data[32:36] != DICT_MAGIC:
+        return None, (f"{p.name} is not an emoji search dictionary "
+                      "(build one with emoji_dict.py build <id> --user)")
+    return {"id": "emojidict", "index": BUNDLE_ID, "kind": "emojidict", "dict_id": "file",
+            "user_file": str(p), "content_version": info["content_version"],
+            "size": len(data), "path": str(p)}, ""
 
 
 def bundle_entry(manifest: dict | None, dict_id: str, cache: Path | None = None) -> dict | None:

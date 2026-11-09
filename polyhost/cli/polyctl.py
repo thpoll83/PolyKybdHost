@@ -890,13 +890,17 @@ def _cmd_doom(client, args):
 
 
 def _cmd_emoji_dict(client, args):
-    """The emoji search dictionary in font-pack slot 9: show, list, choose."""
+    """The emoji search dictionary in font-pack slot 9: show, list, choose a
+    shipped one or a hand-built file."""
+    import os
     info = client.call(protocol.M_EMOJIDICT_STATUS)
     if not info.get("shipped"):
         print("emoji search: no dictionaries shipped with this host.")
         return 1
     dicts = {d["id"]: d for d in info["dictionaries"]}
     action = getattr(args, "emoji_dict_action", None) or "status"
+    then = ("flashing it to the keyboard." if info.get("supported") else
+            "this keyboard's firmware has no dictionary slot, so nothing is flashed now.")
     if action == "list":
         for d in info["dictionaries"]:
             mark = "*" if d["id"] == info["selected"] else " "
@@ -907,16 +911,28 @@ def _cmd_emoji_dict(client, args):
             print(f"error: unknown dictionary {args.dict_id!r}; `polyctl emoji-dict list` shows them",
                   file=sys.stderr)
             return 2
-        # A plain settings write: note_settings_changed() flashes it (RpcError on failure).
-        client.call(protocol.M_SETTINGS_SET, {"key": "emoji_search_dict", "value": args.dict_id,
-                                              "source": "polyctl"})
-        print(f"emoji search dictionary: {args.dict_id} ({dicts[args.dict_id]['label']}); "
-              "flashing it to the keyboard.")
+        # Also stops using a dictionary file; the core flashes it (RpcError on failure).
+        client.call(protocol.M_EMOJIDICT_CHOOSE, {"id": args.dict_id, "source": "polyctl"})
+        print(f"emoji search dictionary: {args.dict_id} ({dicts[args.dict_id]['label']}); {then}")
+        return 0
+    if action == "file":
+        path = "" if args.clear else os.path.abspath(args.path or "")
+        if not args.clear and not args.path:
+            print("error: name a .plyd file, or pass --clear", file=sys.stderr)
+            return 2
+        client.call(protocol.M_EMOJIDICT_CHOOSE, {"path": path, "source": "polyctl"})
+        print(f"emoji search dictionary file: {path}; {then}" if path
+              else f"emoji search dictionary file: none, using {info['selected']}; {then}")
         return 0
     dev = info.get("device")
-    held = (dev["id"] + f" (revision {dev['revision']})" if dev and dev.get("id")
+    held = (dev["id"] + (" (a user build)" if dev.get("user") else f" (revision {dev['revision']})")
+            if dev and dev.get("id")
             else ("an unknown dictionary" if dev else "none"))
-    print(f"selected:    {info['selected']} ({dicts.get(info['selected'], {}).get('label', '?')})")
+    if info.get("file"):
+        print(f"file:        {info['file']}"
+              + (f" (NOT USED: {info['file_error']})" if info.get("file_error") else ""))
+    else:
+        print(f"selected:    {info['selected']} ({dicts.get(info['selected'], {}).get('label', '?')})")
     print(f"on keyboard: {held}" if info.get("supported")
           else "on keyboard: this firmware has no dictionary slot (font-pack layout v4 needed)")
     print(f"shipped:     {len(dicts)} dictionaries (polyctl emoji-dict list)")
@@ -1348,12 +1364,18 @@ def build_parser():
                            help="bundle id/index to wipe; omit to wipe every slot")
     p_fp.set_defaults(func=_cmd_fontpack)
 
-    p_ed = sub.add_parser("emoji-dict", help="emoji search dictionary (font-pack slot 9): status, list, set")
+    p_ed = sub.add_parser("emoji-dict", help="emoji search dictionary (font-pack slot 9): status, list, set, file")
     ed_sub = p_ed.add_subparsers(dest="emoji_dict_action")
     ed_sub.add_parser("status", help="selected dictionary and the one on the keyboard (default)")
     ed_sub.add_parser("list", help="the shipped dictionaries")
     p_ed_set = ed_sub.add_parser("set", help="choose a dictionary and flash it")
     p_ed_set.add_argument("dict_id", help="dictionary id, e.g. de, ru, zh-HK@cangjie")
+    p_ed_file = ed_sub.add_parser(
+        "file", help="use a hand-built dictionary (emoji_dict.py build <id> --user) and flash it; "
+                     "naming the same file again flashes it again")
+    p_ed_file.add_argument("path", nargs="?", help="the .plyd file")
+    p_ed_file.add_argument("--clear", action="store_true",
+                           help="stop using the file and flash the selected shipped dictionary")
     p_ed.set_defaults(func=_cmd_emoji_dict)
 
     p_doom = sub.add_parser("doom", help="doom easter egg operations")

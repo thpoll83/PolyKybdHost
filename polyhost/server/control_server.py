@@ -270,6 +270,9 @@ class ControlServer(MpcListenerServer):
             p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
             p.M_EMOJIDICT_STATUS: lambda conn, params: _unwrap(c.emoji_search_status()),
+            p.M_EMOJIDICT_CHOOSE: lambda conn, params: _unwrap(c.emoji_search_choose(
+                dict_id=params.get("id"), path=params.get("path"),
+                source=str(params.get("source", "control")))),
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),
             p.M_DOOM_INSTALL_PACK: lambda conn, params: _unwrap(c.install_doompack(params["path"])),
             p.M_PAUSE_SET: self._cmd_pause_set,

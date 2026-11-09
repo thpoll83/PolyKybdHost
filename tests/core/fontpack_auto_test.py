@@ -6,8 +6,11 @@ The pure decisions live in services/fontpack_bundle + device/hid_fontpack
 flash guard, flashing only the stale bundles (per-bundle versions vs the shipped
 manifest), and the emitted events. PolyCore pulls in the full device stack, so the
 suite skips if those deps are absent."""
+import os
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from polyhost.core import events
@@ -360,9 +363,10 @@ class TestManualBundleOps(unittest.TestCase):
 class TestEmojiSearchDictionary(unittest.TestCase):
     """The selected emoji search dictionary rides the bundle passes as slot 9."""
 
-    def _core(self, selected="de", device_versions=None):
+    def _core(self, selected="de", device_versions=None, user_file=""):
         core = _fake_core(device_versions=device_versions)
-        settings = {"fontpack_auto_flash": True, "fontpack_path": "", "emoji_search_dict": selected}
+        settings = {"fontpack_auto_flash": True, "fontpack_path": "", "emoji_search_dict": selected,
+                    "emoji_search_dict_file": user_file}
         core.poly_settings = types.SimpleNamespace(get=lambda k: settings.get(k))
         core._bundle_manifest = lambda: PolyCore._bundle_manifest(core)
         return core
@@ -397,8 +401,80 @@ class TestEmojiSearchDictionary(unittest.TestCase):
         ok, st = PolyCore.emoji_search_status(core)
         self.assertTrue(ok and st["shipped"] and st["supported"])
         self.assertEqual(st["selected"], "ru")
-        self.assertEqual(st["device"], {"id": "de", "revision": 1})
+        self.assertEqual(st["device"], {"id": "de", "revision": 1, "user": False})
+        self.assertEqual((st["file"], st["file_error"]), ("", ""))
         self.assertEqual(st["dictionaries"][0]["id"], "en")
+
+    def _user_file(self, tmp):
+        """The shipped German dictionary, unpacked, as a user's own file."""
+        from polyhost.services import emojidict
+        m = emojidict.load_manifest()
+        path = os.path.join(tmp, "mine.plyd")
+        with open(emojidict.unpacked_path(m, emojidict.find(m, "de"), Path(tmp)), "rb") as f, \
+                open(path, "wb") as out:
+            out.write(f.read())
+        return path
+
+    def test_user_file_is_slot_9(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+                m = PolyCore._bundle_manifest(self._core("en", user_file=path))
+        d = [b for b in m["bundles"] if b["index"] == 9]
+        self.assertEqual([(b["dict_id"], b["path"]) for b in d], [("file", path)])
+
+    def test_unusable_user_file_flashes_nothing_to_slot_9(self):
+        # Replacing the slot with a shipped dictionary would discard the user's own.
+        with tempfile.TemporaryDirectory() as tmp:
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: (1 << 8) | 0xFF},
+                              user_file=os.path.join(tmp, "missing.plyd"))
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+                ok, st = PolyCore.emoji_search_status(core)
+        self.assertFalse(ff.called)
+        self.assertIn("cannot read", st["file_error"])
+        self.assertTrue(st["device"]["user"])
+
+    def _choose_core(self, user_file=""):
+        store = {"emoji_search_dict": "en", "emoji_search_dict_file": user_file}
+        calls = []
+        core = types.SimpleNamespace(
+            poly_settings=types.SimpleNamespace(get_all=lambda: dict(store),
+                                                set_all=lambda a, source="": store.update(a) or True),
+            note_settings_changed=lambda keys: calls.append(("changed", tuple(keys))),
+            _has_emojidict_slot=lambda: True,
+            flash_fontpack_bundle=lambda b: calls.append(("flash", b)) or (True, "queued"))
+        return core, store, calls
+
+    def test_choose_a_file_then_the_same_file_again(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.realpath(self._user_file(tmp))
+            core, store, calls = self._choose_core()
+            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
+            self.assertEqual(store["emoji_search_dict_file"], path)
+            self.assertEqual(calls[-1][0], "changed")
+            # Same file again: its version did not change, so flash it by force.
+            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, "queued"))
+            self.assertEqual(calls[-1], ("flash", "emojidict"))
+
+    def test_choose_refuses_a_file_that_is_not_a_dictionary(self):
+        from polyhost.device import hid_fontpack
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "empty.plyd")
+            with open(path, "wb") as f:
+                f.write(hid_fontpack.build_empty_pack())
+            core, store, calls = self._choose_core()
+            ok, msg = PolyCore.emoji_search_choose(core, path=path)
+        self.assertFalse(ok)
+        self.assertIn("not an emoji search dictionary", msg)
+        self.assertEqual((store["emoji_search_dict_file"], calls), ("", []))
+
+    def test_choosing_a_shipped_id_stops_using_the_file(self):
+        core, store, calls = self._choose_core(user_file="/x/mine.plyd")
+        self.assertEqual(PolyCore.emoji_search_choose(core, dict_id="ru"), (True, "ru"))
+        self.assertEqual((store["emoji_search_dict"], store["emoji_search_dict_file"]), ("ru", ""))
+        self.assertFalse(PolyCore.emoji_search_choose(core, dict_id="xx")[0])
 
     def test_choosing_a_dictionary_flashes_it(self):
         calls = []
@@ -407,11 +483,18 @@ class TestEmojiSearchDictionary(unittest.TestCase):
             _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
             _fw_actions_allowed=lambda: True,
             sync_fontpack=lambda force=False: calls.append(force),
+            keeb=types.SimpleNamespace(fontpack_bundle_versions={0: 2}),
             poly_settings=types.SimpleNamespace(get=lambda k: None))
+        core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+        PolyCore.note_settings_changed(core, ["emoji_search_dict"])
+        self.assertEqual(calls, [], "no slot 9: the pass would flash only other bundles")
+        core.keeb.fontpack_bundle_versions = {0: 2, 9: 0}
         PolyCore.note_settings_changed(core, ["emoji_search_dict"])
         self.assertEqual(calls, [False])
+        PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+        self.assertEqual(calls, [False, False])
         PolyCore.note_settings_changed(core, ["fontpack_auto_flash"])
-        self.assertEqual(calls, [False], "other settings must not flash it")
+        self.assertEqual(calls, [False, False], "other settings must not flash it")
 
 
 if __name__ == "__main__":

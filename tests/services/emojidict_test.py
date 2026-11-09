@@ -51,6 +51,31 @@ class ShippedDictionaries(unittest.TestCase):
             self.assertEqual(emojidict.bundle_entry(self.m, "xx", Path(tmp))["dict_id"], "en")
 
 
+class UserFile(unittest.TestCase):
+    def test_a_dictionary_file_is_an_entry_with_its_own_version(self):
+        m = emojidict.load_manifest()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = emojidict.unpacked_path(m, emojidict.find(m, "ru"), Path(tmp))
+            e, err = emojidict.user_entry(path)
+        self.assertEqual(err, "")
+        self.assertEqual((e["index"], e["kind"], e["dict_id"], e["path"]), (9, "emojidict", "file", path))
+        self.assertEqual(e["content_version"], emojidict.find(m, "ru")["content_version"])
+
+    def test_files_that_are_not_dictionaries_are_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            empty = Path(tmp) / "empty.plyd"
+            empty.write_bytes(hid_fontpack.build_empty_pack())
+            big = Path(tmp) / "big.plyd"
+            big.write_bytes(b"\0" * (emojidict.SLOT_SIZE + 1))
+            self.assertIn("not an emoji search dictionary", emojidict.user_entry(str(empty))[1])
+            self.assertIn("larger than", emojidict.user_entry(str(big))[1])
+            self.assertIn("cannot read", emojidict.user_entry(str(Path(tmp) / "none.plyd"))[1])
+
+    def test_user_revision_is_above_every_shipped_one(self):
+        for d in emojidict.load_manifest()["dictionaries"]:
+            self.assertLess(d["revision"], emojidict.USER_REVISION, d["id"])
+
+
 class Staleness(unittest.TestCase):
     def test_dictionary_is_stale_on_any_mismatch(self):
         b = {"index": 9, "kind": "emojidict", "content_version": (0 << 8) | 1}

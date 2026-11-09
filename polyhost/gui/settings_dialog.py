@@ -99,6 +99,7 @@ SETTING_LABELS = {
     "window_report_network_enabled": N_("Report Network Enabled"),
     "fontpack_auto_flash": N_("Auto Flash"),
     "emoji_search_dict": N_("Search Language"),
+    "emoji_search_dict_file": N_("Own Dictionary File"),
     "fontpack_path": N_("Path"),
     "browser_url_detection": N_("Url Detection"),
     "browser_report_local_enabled": N_("Report Local Enabled"),
@@ -207,6 +208,10 @@ SETTING_DESCRIPTIONS = {
     "emoji_search_dict": N_(
         "The language the keyboard's emoji layer searches in. The keyboard gets "
         "the dictionary when it connects, or right away when you change this."),
+    "emoji_search_dict_file": N_(
+        "A dictionary you built yourself (.plyd), used instead of Search Language. "
+        "Empty: the shipped dictionary is used. Choose it in the tray to flash it "
+        "right away."),
     "fontpack_auto_flash": N_(
         "Flashes missing or outdated font-pack bundles when the keyboard connects."),
     "fontpack_path": N_(

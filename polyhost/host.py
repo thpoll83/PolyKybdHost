@@ -82,7 +82,7 @@ from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
-from polyhost.gui.cmd_menu import CommandsSubMenu
+from polyhost.gui.cmd_menu import CommandsSubMenu, _get_open_file_explicit
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
@@ -2443,20 +2443,51 @@ class PolyHost(QApplication):
                 act.triggered.connect(self.change_emoji_dict)
                 self.emoji_dict_menu.addAction(act)
                 self.emoji_dict_actions[d["id"]] = act
+            # A hand-built dictionary (emoji_dict.py build <id> --user). Choosing
+            # the file in use again flashes it again, for an edited rebuild.
+            self.emoji_dict_menu.addSeparator()
+            self.emoji_dict_file_action = QAction(parent=self, checkable=True)
+            self.emoji_dict_group.addAction(self.emoji_dict_file_action)
+            # noinspection PyUnresolvedReferences
+            self.emoji_dict_file_action.triggered.connect(self.choose_emoji_dict_file)
+            self.emoji_dict_menu.addAction(self.emoji_dict_file_action)
         supported = bool(st.get("supported"))
+        user_file = st.get("file") or ""
         self.emoji_dict_info.setVisible(not supported)
         for did, act in self.emoji_dict_actions.items():
             act.setEnabled(supported)
-            act.setChecked(did == st.get("selected"))
+            act.setChecked(not user_file and did == st.get("selected"))
+        fa = self.emoji_dict_file_action
+        fa.setEnabled(supported)
+        fa.setChecked(bool(user_file))
+        if not user_file:
+            fa.setText(_("Own dictionary file..."))
+        elif st.get("file_error"):
+            fa.setText(_f("Own dictionary (cannot be used): {name}", name=os.path.basename(user_file)))
+        else:
+            fa.setText(_f("Own dictionary: {name}", name=os.path.basename(user_file)))
+        fa.setToolTip(st.get("file_error") or user_file)
 
     def change_emoji_dict(self):
         dict_id = self.sender().data()
-        ok, msg = self.core.settings_set("emoji_search_dict", dict_id)
+        ok, msg = self.core.emoji_search_choose(dict_id=dict_id)
         if ok:
             self.log.info("Emoji search dictionary set to %s; flashing it.", dict_id)
         else:
             self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
             self.refresh_emoji_dict_menu()
+
+    def choose_emoji_dict_file(self):
+        path = _get_open_file_explicit(_("Choose an emoji search dictionary"),
+                                       _("Emoji search dictionary (*.plyd)"))
+        if path:
+            ok, msg = self.core.emoji_search_choose(path=path)
+            if ok:
+                self.log.info("Emoji search dictionary file %s; flashing it.", path)
+            else:
+                self.report_device_result("Error", f"Could not use the emoji search dictionary: {msg}")
+        # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
+        self.refresh_emoji_dict_menu()
 
     def refresh_glyph_size_menu(self):
         # Read the active legend size from the device and tick the matching entry;
