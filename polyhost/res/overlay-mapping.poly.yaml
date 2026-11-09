@@ -3422,6 +3422,15 @@ qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,q
       overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
     linux:
       overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
+# Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
+# and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
+# dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
+# with Cmd copies of the File and Edit keys. Not checked on an install.
+maya,maya.bin:
+  overlay: [maya_template.mods.png, maya_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [maya_template_mac.mods.png, maya_template_mac.combo.mods.png, maya_template_mac.extra.mods.png]
 # Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
 # "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
 # the Commands Keyboard Focus keys, which act only while that focus is on (the
