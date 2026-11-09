@@ -751,6 +751,8 @@ class PolyHost(QApplication):
         # built once the keyboard answers (see the language-menu builder).
         self.emoji_dict_menu = QMenu(_("Emoji Search Language"), self.menu)
         self.emoji_dict_menu.menuAction().setIcon(get_icon("translate.svg"))
+        # The own-file entry's tooltip carries its path, or why it cannot be used.
+        self.emoji_dict_menu.setToolTipsVisible(True)
         self.emoji_dict_group = QActionGroup(self)
         self.emoji_dict_group.setExclusive(True)
         self.emoji_dict_actions = {}
