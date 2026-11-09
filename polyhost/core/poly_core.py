@@ -242,6 +242,9 @@ class PolyCore(Observable):
         # decide_stale_bundles keeps it self-terminating: once the device is
         # current, a reconnect finds nothing to do.
         self._fontpack_flash_in_progress = False
+        # The connect-time check waits while Eden owns the keycaps (GET_ID 'A'
+        # block, v28); the probe releases it (_release_held_fontpack_check).
+        self._fontpack_check_held = False
         # Bundles whose last flash attempt genuinely failed: {slot index: message}.
         # Re-flashed on the next pass regardless of the version comparison, because a
         # bundle can report a failure and still read as current (see
@@ -1766,6 +1769,7 @@ class PolyCore(Observable):
             self.keeb.probe_bulk_pipe()
         snapshot["transport"] = self.keeb.get_transport()
         snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
+        self._release_held_fontpack_check(connected_now)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -3482,7 +3486,35 @@ class PolyCore(Observable):
             # nothing told the user (2026-11-08).
             self.worker.submit("fontpack_stale_notice", self._fontpack_stale_notice_job)
             return
+        if self._eden_owns_keycaps():
+            # A flash during the boot intro drew the master's legends over Eden and
+            # left the slave in it (field, 2026-11-09). The 1 s probe re-reads the
+            # block and releases the check once Eden is done.
+            if not getattr(self, "_fontpack_check_held", False):
+                self.log.info("Font pack auto-check held: Eden owns the keycaps "
+                              "(animation state %s).", self.keeb.anim_state)
+            self._fontpack_check_held = True
+            return
+        self._fontpack_check_held = False
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _eden_owns_keycaps(self) -> bool:
+        """The GET_ID 'A' block reads INTRO or IDLE. False on firmware before v28."""
+        return getattr(self.keeb, "anim_state", None) in (hid_fontpack.ANIM_INTRO,
+                                                         hid_fontpack.ANIM_IDLE)
+
+    def _release_held_fontpack_check(self, connected_now: bool):
+        """From the probe: run the held connect-time check once Eden has ended.
+
+        A disconnect drops it, because the next connect queues its own."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        if not getattr(self, "_fontpack_check_held", False):
+            return
+        if not connected_now:
+            self._fontpack_check_held = False
+        elif not self._eden_owns_keycaps():
+            self.log.info("Font pack auto-check released: Eden has ended.")
+            self._maybe_auto_flash_fontpack()
 
     def _fontpack_stale_notice_job(self, cancel):
         """With Auto Flash off: log and emit FONTPACK_STALE when bundles are stale.

@@ -237,6 +237,12 @@ class PolyKybdMock:
             return None
         return self.firmware.state_generation
 
+    @property
+    def anim_state(self):
+        if self.protocol_version < 28:
+            return None
+        return self.firmware.anim_state
+
     # -- the counters the tests read, from what the firmware received ------
 
     @property
