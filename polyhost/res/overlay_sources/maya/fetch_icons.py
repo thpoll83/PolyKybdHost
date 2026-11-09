@@ -43,7 +43,6 @@ ICONS = {
     "quaddraw": "ms:draw",
     # --- display and visibility
     "show": "ms:visibility",
-    "textured": "ms:texture",
     "quality_default": "ms:settings_backup_restore",
     "rigdisplay": "ms:accessibility_new",
     "proxy_toggle": "ms:compare",
@@ -240,17 +239,6 @@ XXXX..........XXXX
 XXXX..........XXXX"""
 
 
-def _shaded(path: Path) -> None:
-    """Shaded display: a filled disc with a highlight knocked out at the upper
-    left, so it does not look like the half-filled wireframe / shaded toggle."""
-    u, m, d = g._canvas()
-    c, r = u / 2, u * 0.40
-    d.ellipse([c - r, c - r, c + r, c + r], fill=255)
-    hx, hy, hr = c - r * 0.38, c - r * 0.38, r * 0.20
-    d.ellipse([hx - hr, hy - hr, hx + hr, hy + hr], fill=0)
-    g._save_mask(m, path)
-
-
 def _nudge(path: Path, direction: str) -> None:
     """Move one pixel: a small filled square (the pixel) and a short arrow
     leaving it, pointing up, down, left or right. Drawn for the up direction
@@ -304,23 +292,60 @@ def _save_white(m: Image.Image, path: Path) -> None:
     img.save(path)
 
 
-def _wireframe(path: Path) -> None:
-    """Wireframe display (4): an isometric cube with its faces split into a 2x2
-    mesh, drawn at the 36x32 key size so it reads as polygons, not a grid."""
+# 4, 5 and 6 show one sphere three ways: the same 30 px disc at the same place,
+# drawn at the 36x32 key size so the generator copies it 1:1.
+_SW, _SH, _SCX, _SCY, _SR = 36, 32, 18, 15.5, 15
+
+
+def _sphere_grid():
+    """Pixel grid of the sphere: x, y on the unit disc, the inside mask, the
+    surface normal's z, and the 1-px outline."""
+    import numpy as np
     from PIL import ImageDraw
-    m = Image.new("L", (36, 32), 0)
+    yy, xx = np.mgrid[0:_SH, 0:_SW]
+    x, y = (xx - _SCX) / _SR, (yy - _SCY) / _SR
+    r2 = x ** 2 + y ** 2
+    ring = Image.new("L", (_SW, _SH), 0)
+    ImageDraw.Draw(ring).ellipse([_SCX - _SR, _SCY - _SR, _SCX + _SR, _SCY + _SR], outline=255)
+    return xx, yy, x, y, r2 <= 1.0, np.sqrt(np.clip(1 - r2, 0, 1)), np.array(ring) > 0
+
+
+def _save_bool(mask, path: Path) -> None:
+    import numpy as np
+    _save_white(Image.fromarray(np.asarray(mask, bool).astype("uint8") * 255), path)
+
+
+def _wireframe(path: Path) -> None:
+    """Wireframe (4): the sphere outline with one ring each way."""
+    from PIL import ImageDraw
+    m = Image.new("L", (_SW, _SH), 0)
     d = ImageDraw.Draw(m)
-    s, ox, oy = 15, 3, 0
-
-    def pt(u, v, w):
-        return (ox + s + (u - w) * s, oy + (u + w) * s // 2 + v * s)
-
-    for t in (0, 0.5, 1):
-        for a, b in (((t, 0, 0), (t, 0, 1)), ((0, 0, t), (1, 0, t)),     # top face
-                     ((1, 0, t), (1, 1, t)), ((1, t, 0), (1, t, 1)),     # right face
-                     ((t, 0, 1), (t, 1, 1)), ((0, t, 1), (1, t, 1))):    # left face
-            d.line([pt(*a), pt(*b)], fill=255)
+    d.ellipse([_SCX - _SR, _SCY - _SR, _SCX + _SR, _SCY + _SR], outline=255)
+    d.ellipse([_SCX - _SR, _SCY - 5, _SCX + _SR, _SCY + 5], outline=255)
+    d.ellipse([_SCX - 7, _SCY - _SR, _SCX + 7, _SCY + _SR], outline=255)
     _save_white(m, path)
+
+
+def _shaded(path: Path) -> None:
+    """Shaded (5): the sphere lit from the upper left (Lambert), reduced to
+    1 bit with a 4x4 ordered dither, inside its outline."""
+    import numpy as np
+    xx, yy, x, y, inside, z, ring = _sphere_grid()
+    light = np.array([-0.55, -0.55, 0.63])
+    light /= np.linalg.norm(light)
+    lit = np.clip(x * light[0] + y * light[1] + z * light[2], 0, 1)
+    bayer = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16
+    _save_bool(((lit > bayer[yy % 4, xx % 4] * 0.9 + 0.05) & inside) | ring, path)
+
+
+def _textured(path: Path) -> None:
+    """Shaded and textured (6): a checker texture wrapped on the sphere, 8
+    tiles round the longitude and 6 over the latitude, inside its outline."""
+    import numpy as np
+    _, _, x, y, inside, z, ring = _sphere_grid()
+    lon, lat = np.arctan2(x, z), np.arcsin(np.clip(-y, -1, 1))
+    checker = (np.floor(lon / (np.pi / 4)) + np.floor(lat / (np.pi / 6))) % 2 == 0
+    _save_bool((checker & inside) | ring, path)
 
 
 def _space_hotbox(path: Path) -> None:
@@ -350,8 +375,9 @@ def main() -> int:
     icon_fetch.borrow(BORROW, out)
     for lvl in (1, 2, 3):
         g.guarded(out / f"smooth{lvl}.png", lambda p, k=lvl: _smooth(p, k), f"drawn smoothness {lvl}")
-    g.guarded(out / "shaded.png", _shaded, "drawn shaded disc")
-    g.guarded(out / "wireframe.png", _wireframe, "drawn isometric cube with a 2x2 mesh")
+    g.guarded(out / "wireframe.png", _wireframe, "drawn wire sphere")
+    g.guarded(out / "shaded.png", _shaded, "drawn dithered sphere")
+    g.guarded(out / "textured.png", _textured, "drawn checker sphere")
     g.guarded(out / "space_hotbox.png", _space_hotbox, "drawn hotbox (Space, hold), 72x40")
     for dr in ("up", "down", "left", "right"):
         g.guarded(out / f"nudge_{dr}.png", lambda p, k=dr: _nudge(p, k), f"drawn nudge ({dr})")
