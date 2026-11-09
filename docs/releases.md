@@ -187,6 +187,10 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
     tool or a small addition stays a patch even when it bumps the protocol. After 1.0
     nearly every PR took `bump:minor` (firmware 1.0.0 → 1.7.0 in six days, host 1.3.0 →
     1.15.0 in nine), and the maintainer asked for the 0.9.x habit back (2026-10-03).
+  - **A minor release with no new feature of its own** (the maintainer names the
+    number, as for 1.20.0) is a one-line docs PR labelled `bump:minor`. It must not
+    edit `_version.py`: the workflow increases the minor and zeroes the patch after
+    the merge.
   - ⚠️ **Set the label when the PR is OPENED (`issue_write`, `labels:`), never
     only ask for it in the body.** #212 (2026-09-04) asked for `bump:minor` in its
     body, was merged without it, and the label applied as the merge was happening

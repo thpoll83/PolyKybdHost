@@ -966,6 +966,9 @@ def _cmd_fontpack(client, args):
     todo = stale + retry
     if todo:
         print(f"\n{len(todo)} to flash: {', '.join(todo)} — run `fontpack sync`")
+        if info.get("auto_flash") is False:
+            print("Auto Flash is off (fontpack_auto_flash), so a connect does not flash "
+                  "them. Turn it on: `settings set fontpack_auto_flash true`")
     else:
         print("\n0 stale — all up to date")
     if retry:
@@ -1041,7 +1044,8 @@ def _cmd_settings(client, args):
             value = json.loads(args.value)
         except (ValueError, TypeError):
             value = args.value
-        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value})
+        client.call(protocol.M_SETTINGS_SET, {"key": args.key, "value": value,
+                                              "source": "polyctl"})
         print(f"{args.key} = {value!r}")
     return 0
 
@@ -1439,20 +1443,22 @@ def build_parser():
     # Local only, like shell-integration.
     p_ep = sub.add_parser(
         "editor-plugins",
-        help="copy the Vim/Neovim plugin and the Emacs package that report the "
-             "editor's mode (works with the host stopped)",
+        help="copy the Vim/Neovim plugin, the Emacs package and the GDB script that "
+             "report the program's mode (works with the host stopped)",
         description="Copies the plugin shipped with this installation to "
                     "~/.vim/pack/polykybd/start/polykybd (Vim), the Neovim "
-                    "site/pack folder, or <emacs dir>/polykybd (Emacs, plus a "
-                    "marked block in the init file, saved first). Copies made "
+                    "site/pack folder, <emacs dir>/polykybd (Emacs) or "
+                    "~/.config/gdb/polykybd (GDB); for Emacs and GDB also a "
+                    "marked block in the init file, saved first. Copies made "
                     "this way are refreshed when the app starts after an update.")
     ep_sub = p_ep.add_subparsers(dest="ep_action", required=True)
     ep_install = ep_sub.add_parser(
-        "install", help="copy the plugin (default: every editor found that is not set up)")
+        "install", help="copy the plugin (default: every editor found that is not set up, "
+                        "except GDB, which needs --editor gdb)")
     ep_remove = ep_sub.add_parser("remove", help="delete this app's copies")
     ep_status = ep_sub.add_parser("status", help="show what is set up, per editor")
     for p in (ep_install, ep_remove, ep_status):
-        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs"),
+        p.add_argument("--editor", action="append", choices=("vim", "neovim", "emacs", "gdb"),
                        help="only this editor (repeat for more)")
     p_ep.set_defaults(func=_cmd_editor_plugins)
 
