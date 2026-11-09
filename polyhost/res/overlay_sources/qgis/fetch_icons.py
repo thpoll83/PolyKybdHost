@@ -144,6 +144,19 @@ def _draw_text(path: Path, text: str) -> None:
     img.save(path)
 
 
+def _add_sign(path: Path, plus: bool) -> None:
+    """Draw a + (zoom in) or - (zoom out) in the middle of the fetched
+    zoom_in_map / zoom_out_map arrows, so the two tool keys read apart.
+    The sign is 24x6 px at the 96 px render size (10x2 px on the keycap)."""
+    img = Image.open(path).convert("RGBA")
+    d = ImageDraw.Draw(img)
+    c, half, w = RENDER_PX // 2, 12, 6
+    d.rectangle([c - half, c - w // 2, c + half - 1, c + w // 2 - 1], fill=(0, 0, 0, 255))
+    if plus:
+        d.rectangle([c - w // 2, c - half, c + w // 2 - 1, c + half - 1], fill=(0, 0, 0, 255))
+    img.save(path)
+
+
 def _logo_svg() -> bytes:
     """The logo SVG with its QGIS SVG-marker parameters resolved: every
     `param(x) <default>` takes its default, and the three without one take a
@@ -174,6 +187,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     n = icon_fetch.fluent(FLUENT, out)
     n += icon_fetch.borrow(BORROW, out)
+    _add_sign(out / "zoomintool.png", plus=True)
+    _add_sign(out / "zoomouttool.png", plus=False)
     for name, text in TEXT.items():
         _draw_text(out / f"{name}.png", text)
         n += 1

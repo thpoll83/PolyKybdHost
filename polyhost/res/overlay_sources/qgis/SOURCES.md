@@ -106,6 +106,9 @@ Platform differences in the set:
   SOURCES.md.
 - Text in DejaVu Sans Bold, drawn in `fetch_icons.py`: PG, ORA, SL, WMS, CSV,
   GPKG (the layer types) and ε (QGIS's expression symbol).
+- `zoomintool.png` and `zoomouttool.png` (Ctrl+Alt+= / Ctrl+Alt+-) are
+  `ms:zoom_in_map` / `ms:zoom_out_map` with a + or - drawn in the middle by
+  `fetch_icons.py` (`_add_sign`), so the two keys read apart.
 - New, Open, Save, Save As, Quit, Undo, Redo, Cut, Copy, Paste, Select All,
   Delete, Zoom In, Zoom Out and Help are drawn by the shared concept renderer.
 
