@@ -331,6 +331,26 @@ committed ESC cell in one row:
 The maintainer chose from this sheet four times in the 2026-11-05 batch: WPS
 (redrawn), Canva (switched to the "dark lit" column), Photopea and Steam (kept).
 
+**For an entry with `glyph_script:` in the mapping, show the keys with that
+face.** `preview_black.py` draws the icons alone; on the keyboard they share the
+keycap with the script's letters. `face_preview.py` (next to this file) draws
+both: each letter and digit key in the glyph script at the top-left placement
+(C64KEYS: the letter and its two PETSCII cells, as `render_c64_keycap()` lays
+them out), every other key with its normal legend, and the overlay on top with
+the legend cleared within 3 px of its ink. It is a model of the firmware, and it
+needs `../qmk_firmware`.
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/face_preview.py \
+    polyhost/res/overlay_sources/vice/vice.yaml c64keys --out /tmp/vice_face.png
+#   script: c64keys, amiga, ... or standard     --platform macos | linux
+```
+
+Use it before choosing an icon's size or corner on such a set. On 2026-11-07 a
+46 px "MON" label in the top-right corner of Alt+H cut the H on the C64 face,
+and the same label at the bottom right erased a PETSCII cell. Only a 36 x 32
+icon at the bottom right left both whole.
+
 ### 5. Wire the mapping + verify
 
 - Paste the printed stanza into `polyhost/res/overlay-mapping.poly.yaml` (confirm
@@ -405,6 +425,17 @@ marks, and each is more recognisable than the substitute it replaced. Two of
 them had been given generics (`mdi:console` and `mdi:console-network`) that were
 *both a `>_`*, i.e. the substitutes collided where the real logos do not.
 
+⚠️ **A logo from a GPL project ships here only if the project says "or any later
+version".** GPL-2.0-only is not compatible with this repository's
+GPL-3.0-or-later. A logo file in the project's repository with no licence of
+its own falls under the project's licence. Read the project's OWN source headers
+and README, not those of the libraries it bundles. VICE's README says "either
+version 2 of the License, or (at your option) any later version", so its logo
+shipped (#684). FS-UAE ships plain GPL-2.0, and its only "or later" headers are
+in the bundled libfsemu (LGPL-2.1+) and mt32emu, so #705 drew a 1-bit mark with
+the same motif (two ticks and "FS") instead of copying the file. Write the
+reasoning into the set's `SOURCES.md`.
+
 **Use `program_marks.own_icon(path, url, frame)`** (`overlay_sources/program_marks.py`):
 it pulls one frame out of the app's own `.ico` and is guarded so a re-run never
 clobbers a committed asset. Three things decide how it reads, and **all three are
@@ -429,13 +460,17 @@ typically hand-tune these afterwards (hence the guard above).
 **A mark with single-pixel detail (a dither band, a 1 px line) must be drawn at
 the size the keycap shows it.** With `program_icon_region: [37, 32]` and
 `fit: contain`, a square mark ends up 32x32, and `_fit_stamp` resizes a 32x32
-source to the same size, which copies it 1:1. A 256 px source goes through
-LANCZOS and a threshold, which moves or removes 1 px features. The WPS marks
+source to the same size, which copies it 1:1. A larger source is shrunk and then
+cut at a threshold, which moves or removes 1 px features. Since #710
+`_resample_for()` picks the filter from the source: one with anti-aliased alpha
+(a vector render) shrinks with BOX, which keeps straight strokes straight; one
+with hard alpha (pixel art, a dithered sprite) or none shrinks with LANCZOS, as
+does every enlargement. The WPS marks
 (rounded tile, glyph cut out, a checkerboard band on the right and a diagonal
 hatch at the bottom) are drawn at 32x32 for this reason (`wps/fetch_icons.py`).
 
 ⚠️ **N keycap pixels is not 8N source pixels.** When you edit a 256 px source to
-move or repeat a feature by whole keycap pixels, the LANCZOS + threshold rounding
+move or repeat a feature by whole keycap pixels, the filter + threshold rounding
 depends on the neighbourhood. The Keep bulb's second thread band, copied 24 px
 (3 keycap px) below the first, rendered with a different shape; 23 px gave the
 same pixels as the first band. Sweep a few offsets and read the ESC cell back
@@ -548,6 +583,58 @@ are needed. To land them:
 
 On 2026-11-05 the fheroes2 PR (#500) had been merged with `main` once and
 conflicted again as soon as the DevilutionX PR (#499) merged.
+
+⚠️ **A generator change on `main` makes an open overlay PR's PNGs stale, and
+nothing reports it.** The PNGs are committed, so the merge is clean and CI is
+green, but they were drawn by the old generator. #682 (RetroArch, MAME) and
+#674 (GDB) both merged after #688 changed the generator; #699 and #710 had to
+regenerate them (2026-11-07). Before merging an overlay PR, check
+`git log origin/main -- scripts/generate_app_overlays.py` against the branch's
+base; if the generator moved, merge `main` in and regenerate that spec.
+
+After a change to `scripts/generate_app_overlays.py` itself, regenerate every
+spec with `regen_all.py` (next to this file, about 2 minutes for 294 specs) and
+commit the PNGs in the same PR. Run it on `main` first: anything it changes there
+was already stale and is not your change.
+
+```bash
+.venv/bin/python .claude/skills/generate-app-overlays/regen_all.py
+git status --short polyhost/res/overlays/
+```
+
+A change that redraws many templates also makes icon-library entries stale, so
+it calls for a library rebuild in the same batch (`docs/fontpack.md`, the
+icon-library bullet).
+
+⚠️ **When the PR changed the same PNGs, the generator change makes them conflict**, and git
+cannot merge a binary. When `main` changed `scripts/generate_app_overlays.py` (or an
+icon source) and regenerated the sets, don't pick either side of a PNG conflict.
+Regenerate the PR's spec with the MERGED generator, then check that EVERY PNG the
+spec writes (every `Wrote` line: the primary set and each combo tier, conflicted or
+not) differs from `main` only where the PR changed something:
+
+```bash
+.venv/bin/python scripts/generate_app_overlays.py polyhost/res/overlay_sources/<app>/<spec>.yaml \
+  | tee /tmp/regen.log
+for f in $(sed -n "s|^Wrote $PWD/||p" /tmp/regen.log); do
+  git show origin/main:"$f" > /tmp/main.png 2>/dev/null || { echo "$f: new"; continue; }
+  .venv/bin/python -c "import sys; from PIL import Image, ImageChops as C; \
+print(sys.argv[1], C.difference(Image.open('/tmp/main.png').convert('RGBA'), \
+Image.open(sys.argv[1]).convert('RGBA')).getbbox(alpha_only=False))" "$f"
+done
+```
+
+`alpha_only=False` is required: by default `getbbox()` reads only the alpha channel,
+and a change of colour alone prints `None`. Each box must cover only the keys the PR
+changed. A box that spans two changed keys far apart also covers the keys between
+them, so in that case crop each key's cell and check the others print `None`. A
+`None` for a PNG the PR meant to change means the regeneration lost the PR's change:
+look at the merged spec before you continue. Then `git add` each checked PNG,
+resolve and stage any other conflicts, and run `git merge --continue`.
+
+On 2026-11-07 the MAME wordmark PR (#708) conflicted with the box-filter change
+(#710). After regenerating, both MAME PNGs differed from `main` only in x 539–576,
+y 126–154, the ESC mark area.
 
 ## Environment & gotchas
 

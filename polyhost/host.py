@@ -816,6 +816,7 @@ class PolyHost(QApplication):
         # _refresh_tray_tooltip, which is the only place that calls setToolTip.
         self._fontpack_flashing = False
         self._split_link_help_shown = False   # see _maybe_show_split_link_help
+        self._fontpack_stale_shown = False    # see _on_fontpack_stale
         self._fontpack_tooltip = ""
         self._fw_up_downloader = None
         self._fw_up_progress = None
@@ -1787,10 +1788,11 @@ class PolyHost(QApplication):
             if self.client_mode:
                 for key, value in updated.items():
                     if current.get(key) != value:
-                        ok, _msg = self.core.settings_set(key, value)
+                        ok, _msg = self.core.settings_set(key, value,
+                                                          source="Settings dialog")
                         saved = saved and ok
             else:
-                saved = self.poly_settings.set_all(updated)
+                saved = self.poly_settings.set_all(updated, source="Settings dialog")
                 # In-process mode writes settings directly (bypassing
                 # core.settings_set), so the core has to be told: it owns every
                 # side effect a setting has on the live device — the daylight
@@ -2950,6 +2952,23 @@ class PolyHost(QApplication):
                                   QSystemTrayIcon.Warning, 6000)
             self._maybe_show_split_link_help(result)
 
+    def _on_fontpack_stale(self, result):
+        """Auto Flash is off and the keyboard is behind on font bundles.
+
+        Once per session, so a replug does not repeat it. The Updates menu's
+        "Update keyboard fonts (n)" row says the same on every platform, which
+        matters because a balloon never reaches a macOS user."""
+        if self._fontpack_stale_shown:
+            return
+        self._fontpack_stale_shown = True
+        bundles = (result or {}).get("bundles") or []
+        self.show_balloon("PolyKybd",  # i18n: skip
+                          _nf("{n} keyboard font bundle is out of date, and Auto Flash is "
+                              "off. Use Updates \u2192 Update keyboard fonts.",
+                              "{n} keyboard font bundles are out of date, and Auto Flash is "
+                              "off. Use Updates \u2192 Update keyboard fonts.",
+                              len(bundles)), 8000)
+
     def _maybe_show_split_link_help(self, result):
         """Open the .uf2 recovery help when a flash found the other half silent.
 
@@ -3539,6 +3558,8 @@ class PolyHost(QApplication):
             self._on_fontpack_progress(result)
         elif name == "fontpack_flash_done":
             self._on_fontpack_done(result)
+        elif name == "fontpack_stale":
+            self._on_fontpack_stale(result)
         elif name == "wincompose_download_progress":
             self._on_wincompose_download_progress(*result)
         elif name == "wincompose_download_done":

@@ -190,6 +190,12 @@ class OpenRaFoldersTest(unittest.TestCase):
         make_ra_files(ca)
         self.assertEqual(westwood_ra.find("")["conquer.mix"].parent, ca)
 
+    def test_the_flatpak_dot_openra_folder_is_searched(self):
+        """The net.openra.OpenRA Flatpak keeps its content in ~/.var/app/<id>/.openra."""
+        ra = self.home / ".var" / "app" / "net.openra.OpenRA" / ".openra" / "Content" / "ra" / "v2"
+        make_ra_files(ra)
+        self.assertEqual(westwood_ra.find("")["hires.mix"].parent, ra)
+
     def test_a_portable_install_beside_the_game_comes_first(self):
         make_ra_files(self.home / ".config" / "openra" / "Content" / "ra" / "v2")
         game = self.home / "OpenRA"
