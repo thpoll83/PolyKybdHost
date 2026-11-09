@@ -539,6 +539,7 @@ class PolyHost(QApplication):
         self.report_problem_dialog = None
         self.crash_alert_dialog = None
         self.boot_loop_dialog = None
+        self.tap_terms_dialog = None
         self.problem_alert_dialog = None
         self._client_problem_handler = None
         if self.client_mode:
@@ -2064,26 +2065,49 @@ class PolyHost(QApplication):
         bring_to_front(self.shell_title_dialog)
 
     def open_tap_terms_dialog(self):
+        """Tray > Tap-Hold Timing…: read the terms off the GUI thread, then show the
+        dialog. Modeless, so no nested event loop runs inside the fetch callback;
+        OK sends the change through _core_click like every other tray setting."""
         from polyhost.gui.tap_terms_dialog import TapTermsDialog
-        ok, terms = self.core.get_tap_terms()
-        if not ok:
-            self.report_device_result("Error", f"Could not read the tap-hold timing: {terms}")
-            QMessageBox.warning(None, _("Tap-Hold Timing"),
-                                _("Could not read the tap-hold timing from the keyboard."))
-            return
-        dlg = TapTermsDialog(terms)
-        if dlg.exec_() != QDialog.Accepted:
-            return
+
+        def show(result):
+            ok, terms = ok_value(result)
+            if not ok:
+                self.report_device_result("Error", f"Could not read the tap-hold timing: {terms}")
+                self._show_tap_terms_message(
+                    _("Could not read the tap-hold timing from the keyboard."))
+                return
+            if self.tap_terms_dialog is not None:
+                self.tap_terms_dialog.close()
+            dlg = TapTermsDialog(terms)
+            # noinspection PyUnresolvedReferences
+            dlg.accepted.connect(lambda: self._apply_tap_terms(dlg, terms))
+            self.tap_terms_dialog = dlg
+            dlg.show()
+            bring_to_front(dlg)
+
+        self._menu_fetch.fetch("tap_terms", lambda: self.core.get_tap_terms(), show)
+
+    def _apply_tap_terms(self, dlg, terms):
         tapping, flow_tap = dlg.values()
         if tapping == terms.get("tapping_term") and flow_tap in (None, terms.get("flow_tap_term")):
             return
-        ok, msg = self.core.set_tap_terms(tapping, flow_tap)
-        if ok:
-            self.log.info("Tap terms set: tapping %s ms, flow tap %s ms.", tapping, flow_tap)
-        else:
-            self.report_device_result("Error", f"Could not set the tap-hold timing: {msg}")
-            QMessageBox.warning(None, _("Tap-Hold Timing"),
-                                _("The keyboard did not accept the tap-hold timing."))
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Tap terms set: tapping %s ms, flow tap %s ms.", tapping, flow_tap)
+            else:
+                self.report_device_result("Error", f"Could not set the tap-hold timing: {msg}")
+                self._show_tap_terms_message(_("The keyboard did not accept the tap-hold timing."))
+
+        self._core_click(lambda: self.core.set_tap_terms(tapping, flow_tap), done)
+
+    def _show_tap_terms_message(self, text):
+        # open(), not exec_(): this runs from a menu-fetch callback.
+        box = QMessageBox(QMessageBox.Warning, _("Tap-Hold Timing"), text)
+        box.setAttribute(Qt.WA_DeleteOnClose)
+        box.open()
+        self._tap_terms_message = box
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
