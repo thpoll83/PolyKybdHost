@@ -99,7 +99,7 @@ Platform differences in the set:
 - Material Symbols, Apache-2.0, <https://fonts.google.com/icons>: every `ms:`
   entry in `fetch_icons.py`.
 - Copied byte-identical (`icon_fetch.borrow`) where the action is the same:
-  `snap.png` (Blender, drawn magnet), `help.png`, `fullscreen.png`,
+  `snap.png` (Blender, drawn magnet), `fullscreen.png`,
   `refresh.png`, `console.png`, `isometric.png`, `storeview.png`,
   `recallview.png` (FreeCAD), `measure.png`, `zoomfit.png`, `unselectall.png`,
   `search.png`, `togglelayer.png` (KiCad). Their sources are in those sets'

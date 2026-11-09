@@ -103,7 +103,6 @@ FLUENT = {
 # Same action as in a sibling set: copied byte-identical.
 BORROW = {
     "snap.png": "blender",
-    "help.png": "freecad",
     "fullscreen.png": "freecad",
     "refresh.png": "freecad",
     "console.png": "freecad",
