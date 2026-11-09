@@ -49,6 +49,8 @@ MSG_DOWNLOADING_FW_OF = M_("Downloading firmware… {done} / {total} KB")
 MSG_DOWNLOADING_FW = M_("Downloading firmware… {done} KB")
 MSG_DOWNLOAD_CANCELLED = M_("Download cancelled.")
 MSG_DOWNLOADING_SIG = M_("Downloading signature…")
+MSG_SIG_RETRYING = M_("GitHub did not deliver the signature; trying again in {seconds} s "
+                      "(attempt {attempt} of {total})…")
 MSG_SIG_DOWNLOAD_FAILED = M_(
     "The image downloaded, but its signature did not ({error}).\n\n"
     "Flashing without it would make the keyboard treat this release as an "
@@ -66,7 +68,9 @@ HTTP_TIMEOUT = 5
 # Waits between signature-fetch attempts. The image is already on disk when the
 # 64-byte .sig is fetched, so one slow GitHub read (field 2026-11-05: "Read timed
 # out. (read timeout=10)", a manual retry then worked) must not throw it away.
-SIG_RETRY_DELAYS = (1.0, 3.0)
+# Field 2026-11-09: a read timeout and two 504s within 4 s, a manual retry 1.5 min
+# later worked. Six attempts over about 67 s of waiting (maintainer's choice).
+SIG_RETRY_DELAYS = (2.0, 5.0, 10.0, 20.0, 30.0)
 
 # Persists ETag values across restarts so conditional requests (If-None-Match)
 # return 304 Not Modified without counting against GitHub's rate limit.
@@ -1660,6 +1664,10 @@ class FwUpDownloader(threading.Thread):
                 delay = SIG_RETRY_DELAYS[attempt]
                 log.warning("Firmware signature download attempt %d failed (%s); "
                             "retrying in %.0f s", attempt + 1, e, delay)
+                # The wait can reach 30 s: say so, or the dialog looks stuck at 100 %.
+                _fire(self._on_progress, 100, MSG_SIG_RETRYING.format(
+                    seconds=int(delay), attempt=attempt + 2,
+                    total=len(SIG_RETRY_DELAYS) + 1))
             # Sleep in slices so Cancel still answers within ~0.1 s.
             deadline = time.monotonic() + delay
             while time.monotonic() < deadline:
