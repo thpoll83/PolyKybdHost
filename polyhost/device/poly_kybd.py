@@ -16,7 +16,8 @@ from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, c
 from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement,
                                          GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
-from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
+from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
+                                          parse_id_anim_state)
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
@@ -146,6 +147,8 @@ GLYPH_PLACEMENT_MIN_PROTOCOL = 26
 # host flashes such a library only at v27 (PolyCore._bundle_fits_device).
 ICON_SLOT_512K_MIN_PROTOCOL = 27
 LEGACY_ICON_SLOT_SIZE = 0x40000
+# Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
+ICON_FILL_MAX_WIDTH = 16
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
 BOARD_OP_SET_SPLIT_VBUS = 2
@@ -292,6 +295,8 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
+        self.anim_state = None
 
         # Statistics, cumulative since this object was created. The stat_*
         # counters sum what EACH encoding would have cost in reports for every
@@ -510,6 +515,7 @@ class PolyKybd:
                 # with no extra command and nothing pushed from the firmware.
                 # None = this firmware has no block; do NOT read that as "unchanged".
                 self.state_generation = parse_id_state_generation(msg)
+                self.anim_state = parse_id_anim_state(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
@@ -1621,7 +1627,12 @@ class PolyKybd:
         answers) names the first pair it did not apply; that pair, the rest of
         its report and every later report go back to the caller as uploads."""
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        reports = plan_mapping_reports(pairs, data_bytes)
+        # ⚠️ Icon ids are not bounded by the pool: the shipped library has ids
+        # up to 3526, which need 12 bits. The key mapping's 11-bit limit made
+        # every switch that filled one such icon raise and abort (field log
+        # 2026-11-09, `pair (31, 2324) needs 12 bits`). The firmware accepts
+        # 8..16 (OVERLAY_MAP_WIDTH_MAX, both halves, since cmd 42 exists).
+        reports = plan_mapping_reports(pairs, data_bytes, max_width=ICON_FILL_MAX_WIDTH)
         sent = 0
         for r, (width, report_pairs) in enumerate(reports):
             msg = compose_cmd(Cmd.FILL_POOL_FROM_ICON, width) + pack_report(report_pairs, data_bytes, width)

@@ -5,8 +5,9 @@ in its support folder: ``Content/cnc/`` for Tiberian Dawn, ``Content/ra/v2/``
 for Red Alert. The support folder is ``%APPDATA%\\OpenRA`` on Windows,
 ``~/Library/Application Support/OpenRA`` on macOS and ``~/.config/openra`` on
 Linux (``~/.openra`` before 2023). Flatpak and Snap packages keep their own
-copy of the Linux folder, and a portable install a ``Support`` folder beside
-the game.
+copy of the Linux folder: the ``net.openra.OpenRA`` Flatpak writes
+``~/.var/app/net.openra.OpenRA/.openra`` (seen 2026-11-09). A portable
+install has a ``Support`` folder beside the game.
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ def support_dirs(hint=None) -> list[Path]:
     dirs.append((Path(xdg) if xdg else home / ".config") / "openra")
     dirs.append(home / ".openra")
     dirs.extend(sorted((home / ".var" / "app").glob("*/config/openra")))
+    dirs.extend(sorted((home / ".var" / "app").glob("*/.openra")))
     dirs.extend(sorted((home / "snap").glob("*/current/.config/openra")))
     seen, out = set(), []
     for d in dirs:
