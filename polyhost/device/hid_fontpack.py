@@ -188,6 +188,8 @@ def _abort_cleanup(hid) -> None:
 #   ['G'][u16 little-endian generation]                       "something changed on the
 #                                                              board" -- see the firmware
 #                                                              CLAUDE.md note
+#   ['A'][u8 animation state] (v28)                           what owns the keycaps:
+#                                                              ANIM_NONE / INTRO / IDLE
 #
 # ⚠️ The blocks are APPEND-ONLY and a reader STOPS at the first tag it does not know:
 # an unknown block carries no length, so it cannot be stepped over. Firmware must append
@@ -211,6 +213,8 @@ def _find_id_block(reply, tag: int):
             size = 2 + raw[p + 1] * 2
         elif t == ord("G"):
             size = 3
+        elif t == ord("A"):
+            size = 2
         else:
             return None                   # unknown tag, or the report's zero fill
         if p + size > len(raw):
@@ -255,6 +259,23 @@ def parse_id_state_generation(reply):
         return None
     raw = bytes(reply)
     return int.from_bytes(raw[p:p + 2], "little")
+
+
+# The 'A' block's values (firmware config.h POLY_ANIM_*).
+ANIM_NONE = 0     # the normal keycaps
+ANIM_INTRO = 1    # the one-shot Eden show: the boot intro or KC_EDEN
+ANIM_IDLE = 2     # the Eden screensaver
+
+
+def parse_id_anim_state(reply):
+    """What owns the keycaps per a GET_ID reply (ANIM_*), or None with no 'A' block.
+
+    None is firmware before protocol 28, which cannot say; callers then behave as
+    they did before the block existed."""
+    p = _find_id_block(reply, ord("A"))
+    if p is None:
+        return None
+    return bytes(reply)[p]
 
 
 def device_has_slot(device_versions: dict, bundle: dict) -> bool:

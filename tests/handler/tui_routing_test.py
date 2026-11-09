@@ -69,6 +69,17 @@ TITLES = {
         "gdbtui prog",
         "sudo gdb -p 1234",
         "Default (gdb)",
+        # The PolyKybd GDB script's title at the prompt.
+        "gdb \u23f8 a.out",
+        "gdb \u23f8",
+        "gdb \u23f8 fw.elf \u2014 Konsole",
+    ],
+    # ... and while the program runs.
+    "gdb_running_template": [
+        "gdb \u25b6 a.out",
+        "gdb \u25b6",
+        "gdb \u25b6 fw.elf \u2014 Konsole",
+        "Default (gdb \u25b6 a.out)",
     ],
     "vim_normal_template": [
         "notes.txt (~) - VIM",
@@ -102,6 +113,8 @@ OTHER_TITLES = [
     "VIM",
     "vim notes.txt",
     "gdb.txt",
+    "\u25b6 Now playing",
+    "echo \u25b6",
     "bash",
 ]
 

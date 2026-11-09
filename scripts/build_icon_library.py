@@ -62,9 +62,14 @@ def _family(name: str) -> str:
     return "sublime" if name.startswith("sublime") else name
 
 
+# libyaml's loader when PyYAML was built with it: the same documents, parsed
+# several times faster.
+_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
 def _specs():
     for y in sorted(list(SOURCES.glob("*/bindings.yaml")) + list(SOURCES.glob("*/*.yaml"))):
-        spec = yaml.safe_load(y.read_text(encoding="utf-8"))
+        spec = yaml.load(y.read_text(encoding="utf-8"), Loader=_YAML_LOADER)
         if isinstance(spec, dict) and "bindings" in spec:
             name = str(y.relative_to(SOURCES)).replace("/bindings.yaml", "").replace(".yaml", "")
             yield name, y, spec
@@ -251,7 +256,8 @@ def main(argv=None) -> int:
                  "slot_offset": SLOT_OFFSET, "slot_size": SLOT_SIZE,
                  "sha256": hashlib.sha256(data).hexdigest()[:16]}
     bundles = [b for b in manifest["bundles"] if b["id"] != "icons"] + [new_entry]
-    manifest = {**manifest, "layout_version": 2, "bundle_count": len(bundles), "bundles": bundles}
+    # The layout version belongs to the firmware's fonts.yaml; keep what the file says.
+    manifest = {**manifest, "bundle_count": len(bundles), "bundles": bundles}
     manifest_text = json.dumps(manifest, indent=2) + "\n"
 
     if args.check:

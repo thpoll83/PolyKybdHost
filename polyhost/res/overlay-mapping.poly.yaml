@@ -1830,8 +1830,11 @@ windowsterminal,wt:
     "(k9s": *k9s_tui
     "^k9s": *k9s_tui
     # GDB and the common cross builds; the set is the prompt's one-letter commands.
+    # The PolyKybd GDB script (gdb-plugin/) writes "gdb ⏸ <program>" at the
+    # prompt, which this route matches, and "gdb ▶ <program>" while the program
+    # runs: this route rejects that one, and the "▶" route below takes it.
     gdb: &gdb_tui
-      title: '^(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?![—:-]\s)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s|\)))'
+      title: '^(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?![—:-]\s)(?!▶)))|(?:\s[-—:]\s|\(|\]\s|>\s\^?)(?:(?:sudo\s+)?(?:gdb|gdb-multiarch|gdbtui|arm-none-eabi-gdb|aarch64-linux-gnu-gdb|riscv64-unknown-elf-gdb)(?:$|\s(?!▶)|\)))'
       overlay: gdb_template.mods.png
     "(gdb)": *gdb_tui
     "(gdb": *gdb_tui
@@ -1856,6 +1859,11 @@ windowsterminal,wt:
     "(riscv64-unknown-elf-gdb)": *gdb_tui
     "(riscv64-unknown-elf-gdb": *gdb_tui
     "^riscv64-unknown-elf-gdb": *gdb_tui
+    # GDB with the PolyKybd script, while the program runs: only Ctrl+C
+    # reaches GDB, so the set shows Interrupt and the program mark.
+    "▶":
+      title: '(?:^|\s[-—:]\s|\(|\]\s|>\s\^?)gdb ▶(?:$|\s)'
+      overlay: gdb_running_template.mods.png
     # Vim and Neovim with `set title` write "<file> (<dir>) - VIM" and
     # "<file> - NVIM". Without the plugin's mode report that is all that is
     # known, so it loads the Normal-mode set. A report takes priority.
@@ -3328,6 +3336,92 @@ cinema 4d:
   os:
     macos:
       overlay: [cinema4d_template_mac.mods.png, cinema4d_template_mac.combo.mods.png, cinema4d_template_mac.extra.mods.png]
+# RetroArch (overlay_sources/retroarch/). The default desktop binds from
+# config.def.keybinds.h: the hotkeys and the RetroPad keys of player 1.
+# Process names: retroarch.exe on Windows, retroarch on Linux and macOS. Not
+# checked on a running install.
+retroarch:
+  overlay: retroarch_template.mods.png
+# MAME (overlay_sources/mame/). The default UI keys and the player 1 inputs from
+# src/emu/inpttype.ipp. Process names: mame.exe on Windows (mame64.exe in
+# releases before 0.237), mame on Linux and macOS. Not checked on a running
+# install.
+mame,mame64:
+  overlay: [mame_template.mods.png, mame_template.combo.mods.png]
+# VICE (overlay_sources/vice/). VICE binds its hotkeys to Alt on Windows and
+# Linux and to Command on macOS, hence the macOS branch. Process names: the
+# emulator binaries (x64sc.exe and so on on Windows). Not checked on a running
+# install. While the C64 family or the VIC-20 is in front, the keycaps also show
+# the Commodore keycap lettering in the top-left corner (see overlay-mapping.md,
+# "Keycap face per application"). The face is repeated in the macOS branch,
+# because the matcher returns the branch, not its parent.
+x64sc,x64,x128,xscpu64,x64dtv,xvic:
+  overlay: [vice_template.mods.png, vice_template.combo.mods.png]
+  glyph_script: c64keys
+  glyph_script_position: top-left
+  os:
+    macos:
+      overlay: [vice_template_mac.mods.png, vice_template_mac.combo.mods.png, vice_template_mac.extra.mods.png]
+      glyph_script: c64keys
+      glyph_script_position: top-left
+# The other VICE machines have different keyboards, so they keep the user's face.
+xplus4,xpet,xcbm2,xcbm5x0:
+  overlay: [vice_template.mods.png, vice_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [vice_template_mac.mods.png, vice_template_mac.combo.mods.png, vice_template_mac.extra.mods.png]
+# Amiga emulators: FS-UAE (overlay_sources/fs_uae/), WinUAE (winuae/) and
+# Amiberry (amiberry/). Each shows the Amiga Topaz lettering in the top-left
+# corner while it is in front. FS-UAE's Mod key is Command on macOS, hence its
+# macOS branch, which repeats the face. Process names: fs-uae, winuae.exe /
+# winuae64.exe, amiberry and amiberry-lite. Not checked on a running install.
+fs-uae:
+  overlay: fs_uae_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
+  os:
+    macos:
+      overlay: [fs_uae_template_mac.mods.png, fs_uae_template_mac.combo.mods.png]
+      glyph_script: amiga
+      glyph_script_position: top-left
+winuae,winuae64:
+  overlay: winuae_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
+amiberry,amiberry-lite:
+  overlay: amiberry_template.mods.png
+  glyph_script: amiga
+  glyph_script_position: top-left
+# PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
+# English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
+# install.
+mathcadprime:
+  overlay: [mathcad_template.mods.png, mathcad_template.combo.mods.png]
+# SideFX Houdini, Scene View and global keys (overlay_sources/houdini/).
+# Windows houdini.exe (houdinifx.exe, houdinicore.exe, happrentice.exe,
+# hindie.exe, hescape.exe launch the same program for one licence each), Linux
+# the same names or the houdini-bin binary the launcher script runs, and the
+# macOS apps "Houdini FX <version>", "Houdini Core ...", "Houdini Apprentice
+# ...", "Houdini Indie ..." (the trailing dotted version is dropped by the
+# matcher). Not checked on an install.
+houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,houdini core,houdini apprentice,houdini indie:
+  overlay: [houdini_template.mods.png, houdini_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
+# QGIS Desktop (overlay_sources/qgis/). Windows (OSGeo4W and the standalone
+# installer): qgis-bin.exe, qgis-ltr-bin.exe, qgis-dev-bin.exe, qgis-qt6-bin.exe.
+# Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
+# KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
+# id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
+# QGIS-LTR.app. Not checked on an install.
+qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
+  overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+    linux:
+      overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
 # Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
 # "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
 # the Commands Keyboard Focus keys, which act only while that focus is on (the

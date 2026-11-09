@@ -267,14 +267,14 @@ class PolyctlTest(unittest.TestCase):
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "brightness", "value": 30})
+                         {"key": "brightness", "value": 30, "source": "polyctl"})
 
     def test_settings_set_falls_back_to_string(self):
         rc, _, _, server = run_main(["settings", "set", "mode", "hex"],
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "mode", "value": "hex"})
+                         {"key": "mode", "value": "hex", "source": "polyctl"})
 
     def test_fw_version_prints(self):
         rc, out, _, _ = run_main(["fw", "version"], {protocol.M_FW_VERSION: "0.7.3"})

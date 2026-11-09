@@ -1,5 +1,5 @@
 {
-  "layout_version": 2,
+  "layout_version": 3,
   "bundle_count": 9,
   "bundles": [
     {
@@ -87,11 +87,11 @@
       "index": 8,
       "file": "icons.plyi",
       "kind": "icons",
-      "content_version": 6,
-      "size": 262068,
+      "content_version": 7,
+      "size": 356896,
       "slot_offset": 1572864,
       "slot_size": 524288,
-      "sha256": "0a07bb1092881d99"
+      "sha256": "48b8a81f24abad89"
     }
   ]
 }
