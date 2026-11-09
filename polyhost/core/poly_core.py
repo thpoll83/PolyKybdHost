@@ -2962,19 +2962,24 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        if (keys is not None and "emoji_search_dict_file" in keys
+                and self.poly_settings.get("emoji_search_dict_file")):
+            # A newly set dictionary file goes on the retry list, whichever writer
+            # set it and whether or not a keyboard is connected now: the pass then
+            # writes it even when its version equals what slot 9 reports (two user
+            # builds share one). The list is cleared only by a successful write,
+            # so it survives a reconnect, and the pass skips it on a keyboard
+            # without slot 9.
+            from polyhost.services import emojidict
+            self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
         if (keys is not None and {"emoji_search_dict", "emoji_search_dict_file"}.intersection(keys)
                 and self._fw_actions_allowed() and self._has_emojidict_slot()):
             # Flash the newly chosen dictionary now. The shared bundle pass picks it
-            # because slot 9 no longer matches; it is a deliberate choice, so it
-            # runs even with fontpack_auto_flash off. Not on keys None: every
-            # writer names the keys it changed (the in-process dialog too). Not on
-            # firmware without slot 9: the pass would flash only the OTHER stale
-            # bundles. A newly set dictionary file goes on the retry list first,
-            # whichever writer set it, so the pass writes it even when its
-            # version equals what slot 9 reports (two user builds share one).
-            if "emoji_search_dict_file" in keys and self.poly_settings.get("emoji_search_dict_file"):
-                from polyhost.services import emojidict
-                self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
+            # because slot 9 no longer matches (or from the retry list above); it is
+            # a deliberate choice, so it runs even with fontpack_auto_flash off. Not
+            # on keys None: every writer names the keys it changed (the in-process
+            # dialog too). Not on firmware without slot 9: the pass would flash only
+            # the OTHER stale bundles.
             self.sync_fontpack()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
@@ -3439,7 +3444,7 @@ class PolyCore(Observable):
                     # queue the write here, the same way it does.
                     if not self._has_emojidict_slot():
                         return False, "This keyboard's firmware has no emoji search dictionary slot"
-                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
+                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
                     ok, msg = self.sync_fontpack()
                     return (True, path) if ok else (False, msg)
             alls["emoji_search_dict_file"] = path

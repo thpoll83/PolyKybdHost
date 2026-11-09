@@ -495,6 +495,30 @@ class TestEmojiSearchDictionary(unittest.TestCase):
         self.assertIn(9, core._fontpack_failed)
         self.assertEqual(calls, [False])
 
+    def test_a_file_chosen_while_disconnected_is_written_at_reconnect(self):
+        # Chosen with no keyboard: nothing is flashed now, but the retry entry is
+        # kept, so the connect-time pass writes the file at an equal version.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core._BRIGHTNESS_SETTING_KEYS = PolyCore._BRIGHTNESS_SETTING_KEYS
+            core._GENERIC_ICON_SETTING_KEYS = PolyCore._GENERIC_ICON_SETTING_KEYS
+            core._fw_actions_allowed = lambda: False          # disconnected or paused
+            core._has_emojidict_slot = lambda: PolyCore._has_emojidict_slot(core)
+            synced = []
+            core.sync_fontpack = lambda force=False: synced.append(force)
+            PolyCore.note_settings_changed(core, ["emoji_search_dict_file"])
+            self.assertEqual(synced, [])
+            self.assertIn(9, core._fontpack_failed)
+            # Reconnect: the auto pass runs with the keyboard at an equal version.
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(True, "ok", "ok")) as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+        self.assertNotIn(9, core._fontpack_failed)
+
     def test_post_flash_check_needs_the_exact_dictionary(self):
         # A failed COMMIT while slot 9 still holds German (v257) must not read as
         # English (v1) having landed; a font bundle may read newer.
