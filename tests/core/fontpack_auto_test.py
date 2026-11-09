@@ -519,6 +519,21 @@ class TestEmojiSearchDictionary(unittest.TestCase):
         self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
         self.assertNotIn(9, core._fontpack_failed)
 
+    def test_a_failed_write_of_a_user_file_keeps_the_retry(self):
+        # The keyboard still reports the old build's version, which equals the new
+        # build's: a failed COMMIT must not read as the new file having landed.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core.keeb.query_id = lambda: (True, None)
+            core._fontpack_failed[9] = "dictionary file chosen, not written yet"
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(False, "commit lost", hid_fontpack.COMMIT_UNSPEC)):
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertIn(9, core._fontpack_failed)
+
     def test_post_flash_check_needs_the_exact_dictionary(self):
         # A failed COMMIT while slot 9 still holds German (v257) must not read as
         # English (v1) having landed; a font bundle may read newer.

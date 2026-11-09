@@ -3759,6 +3759,11 @@ class PolyCore(Observable):
         one that happens to see the ``*`` marker, the next probe still pops it."""
         if status == hid_fontpack.COMMIT_REJECTED:
             return False, ""
+        if bundle.get("user_file"):
+            # Every build of a user's dictionary file has the same version, so a
+            # matching version cannot tell the new build from the old one: keep
+            # the retry rather than count a failed write as done.
+            return False, ""
         try:
             ok, _ = self.keeb.query_id()
         except Exception as exc:                      # noqa: BLE001 — a probe must not mask the flash error

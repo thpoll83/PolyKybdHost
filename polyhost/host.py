@@ -2527,7 +2527,8 @@ class PolyHost(QApplication):
 
         def done(ok, msg):
             if ok:
-                self.log.info("Emoji search dictionary set to %s; flashing it.", dict_id)
+                self.log.info("Emoji search dictionary set to %s; the keyboard gets it unless "
+                              "it already holds it.", dict_id)
             else:
                 self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
                 self.refresh_emoji_dict_menu()
