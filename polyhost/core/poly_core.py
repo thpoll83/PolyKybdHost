@@ -1769,7 +1769,13 @@ class PolyCore(Observable):
             self.keeb.probe_bulk_pipe()
         snapshot["transport"] = self.keeb.get_transport()
         snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
-        self._release_held_fontpack_check(connected_now)
+        # Only a steady-state probe may release a held check. A reboot or a
+        # connectivity change drops it instead: the connect that follows reads
+        # the new firmware's version first, and queues its own check only when
+        # it is compatible (a newer firmware may be held in safe mode).
+        steady = (connected_now and not snapshot["state_changed"]
+                  and not snapshot["fresh_boot"])
+        self._release_held_fontpack_check(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -3503,17 +3509,23 @@ class PolyCore(Observable):
         return getattr(self.keeb, "anim_state", None) in (hid_fontpack.ANIM_INTRO,
                                                          hid_fontpack.ANIM_IDLE)
 
-    def _release_held_fontpack_check(self, connected_now: bool):
+    def _release_held_fontpack_check(self, steady: bool):
         """From the probe: run the held connect-time check once Eden has ended.
 
-        A disconnect drops it, because the next connect queues its own."""
+        `steady` is a connected probe with no reboot and no connectivity change.
+        Anything else drops the hold, because the connect that follows queues its
+        own check after its compatibility decision."""
         # getattr: tests build cores without __init__ and drive the probe.
         if not getattr(self, "_fontpack_check_held", False):
             return
-        if not connected_now:
+        if not steady:
             self._fontpack_check_held = False
         elif not self._eden_owns_keycaps():
             self.log.info("Font pack auto-check released: Eden has ended.")
+            # Cleared first: with Auto Flash turned off meanwhile, the call below
+            # takes the notice branch, which does not touch the hold, and every
+            # later probe would queue the notice again.
+            self._fontpack_check_held = False
             self._maybe_auto_flash_fontpack()
 
     def _fontpack_stale_notice_job(self, cancel):

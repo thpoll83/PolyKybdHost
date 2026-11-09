@@ -136,6 +136,19 @@ class TestMaybeAutoFlash(unittest.TestCase):
         self.assertFalse(core._fontpack_check_held)
         self.assertEqual(core._submitted, [])
 
+    def test_auto_flash_turned_off_during_the_hold_notices_once(self):
+        """The release clears the hold before it dispatches: the notice branch
+        does not touch it, and each later probe would queue the notice again."""
+        core = _fake_core(auto=True)
+        core._maybe_auto_flash_fontpack = lambda: PolyCore._maybe_auto_flash_fontpack(core)
+        core.keeb.anim_state = hid_fontpack.ANIM_INTRO
+        PolyCore._maybe_auto_flash_fontpack(core)
+        core.poly_settings = types.SimpleNamespace(get=lambda k: False)   # Auto Flash off
+        core.keeb.anim_state = hid_fontpack.ANIM_NONE
+        for _ in range(3):
+            PolyCore._release_held_fontpack_check(core, True)
+        self.assertEqual([n for n, _fn in core._submitted], ["fontpack_stale_notice"])
+
     def test_firmware_without_the_block_flashes_at_once(self):
         core = _fake_core(auto=True)
         core._fontpack_check_held = False
