@@ -1819,9 +1819,11 @@ class PolyHost(QApplication):
                 # In-process mode writes settings directly (bypassing
                 # core.settings_set), so the core has to be told: it owns every
                 # side effect a setting has on the live device — the daylight
-                # brightness push, the unicode settle watcher — and which ones
-                # exist is its business, not the dialog's.
-                self.core.note_settings_changed()
+                # brightness push, the unicode settle watcher, the emoji search
+                # dictionary flash — and which ones exist is its business, not
+                # the dialog's. It gets the changed keys, as in client mode.
+                self.core.note_settings_changed(
+                    [k for k, v in updated.items() if current.get(k) != v])
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self._refresh_theme()

@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from polyhost.core import events
+from polyhost.device import hid_fontpack
 
 try:
     from polyhost.core.poly_core import PolyCore
@@ -444,7 +445,8 @@ class TestEmojiSearchDictionary(unittest.TestCase):
                                                 set_all=lambda a, source="": store.update(a) or True),
             note_settings_changed=lambda keys: calls.append(("changed", tuple(keys))),
             _has_emojidict_slot=lambda: True,
-            flash_fontpack_bundle=lambda b: calls.append(("flash", b)) or (True, "queued"))
+            _fontpack_failed={},
+            sync_fontpack=lambda force=False: calls.append(("sync", force)) or (True, {"queued": True}))
         return core, store, calls
 
     def test_choose_a_file_then_the_same_file_again(self):
@@ -454,9 +456,39 @@ class TestEmojiSearchDictionary(unittest.TestCase):
             self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
             self.assertEqual(store["emoji_search_dict_file"], path)
             self.assertEqual(calls[-1][0], "changed")
-            # Same file again: its version did not change, so flash it by force.
-            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, "queued"))
-            self.assertEqual(calls[-1], ("flash", "emojidict"))
+            # On the retry list, so the pass writes it even at an equal version,
+            # and keeps it there if the write fails.
+            self.assertIn(9, core._fontpack_failed)
+            core._fontpack_failed.clear()
+            # Same file again: no settings change, so the pass is started here.
+            self.assertEqual(PolyCore.emoji_search_choose(core, path=path), (True, path))
+            self.assertEqual(calls[-1], ("sync", False))
+            self.assertIn(9, core._fontpack_failed)
+
+    def test_a_chosen_file_is_written_at_an_equal_version(self):
+        # The keyboard reports the same version as the file (an earlier user
+        # build): the retry entry makes the pass write it anyway.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._user_file(tmp)
+            ver = __import__("struct").unpack_from("<I", open(path, "rb").read(), 8)[0]
+            core = self._core("en", device_versions={0: 2, 5: 3, 9: ver}, user_file=path)
+            core._fontpack_failed[9] = "dictionary file chosen"
+            with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST), \
+                 patch("polyhost.device.hid_fontpack.flash_fontpack",
+                       return_value=(True, "ok", "ok")) as ff:
+                PolyCore._fontpack_flash_bundles_job(core, None, auto=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [9])
+        self.assertNotIn(9, core._fontpack_failed)
+
+    def test_post_flash_check_needs_the_exact_dictionary(self):
+        # A failed COMMIT while slot 9 still holds German (v257) must not read as
+        # English (v1) having landed; a font bundle may read newer.
+        core = self._core("en", device_versions={9: (1 << 8) | 1, 0: 3})
+        core.keeb.query_id = lambda: (True, None)
+        en = {"id": "emojidict", "index": 9, "kind": "emojidict", "content_version": 1}
+        font = {"id": "symbols", "index": 0, "content_version": 2}
+        self.assertFalse(PolyCore._verify_flashed_bundle(core, en, hid_fontpack.COMMIT_NO_SLAVE, "")[0])
+        self.assertTrue(PolyCore._verify_flashed_bundle(core, font, hid_fontpack.COMMIT_NO_SLAVE, "")[0])
 
     def test_choose_refuses_a_file_that_is_not_a_dictionary(self):
         from polyhost.device import hid_fontpack

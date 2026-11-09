@@ -16,6 +16,7 @@ layout v4) simply has no slot 9.
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -88,6 +89,10 @@ def unpacked_path(manifest: dict, entry: dict, cache: Path | None = None) -> str
     cache = cache or _cache_dir()
     cache.mkdir(parents=True, exist_ok=True)
     out = cache / f"{entry['id']}-{entry['sha256']}.plyd"
+    # Checked on every use, not only on the first unpack: the PlyF CRC covers the
+    # body only, so a damaged header (its content_version) would pass both ends.
+    if out.is_file() and hashlib.sha256(out.read_bytes()).hexdigest()[:16] != entry["sha256"]:
+        out.unlink()
     if not out.is_file():
         data = gzip.decompress((Path(manifest["_dir"]) / entry["file"]).read_bytes())
         tmp = out.with_suffix(".tmp")

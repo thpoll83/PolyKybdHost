@@ -23,20 +23,26 @@ OUT = ROOT / "polyhost" / "res" / "emojidict"
 def main(src: str) -> int:
     src_dir = Path(src)
     manifest = json.loads((src_dir / "manifest.json").read_text(encoding="utf-8"))
-    OUT.mkdir(parents=True, exist_ok=True)
-    for old in OUT.glob("*.plyd.gz"):
-        old.unlink()
-    total = 0
+    # Read and check everything first: a missing or bad source must leave the
+    # shipped dictionaries as they are, not half replaced.
+    packed = {}
     for e in manifest["dictionaries"]:
-        data = (src_dir / e["file"]).read_bytes()
+        try:
+            data = (src_dir / e["file"]).read_bytes()
+        except OSError as exc:
+            raise SystemExit(f"{e['file']}: {exc}") from exc
         if hashlib.sha256(data).hexdigest()[:16] != e["sha256"] or len(data) != e["size"]:
             raise SystemExit(f"{e['file']}: size or sha256 does not match the manifest")
-        name = e["file"] + ".gz"
         # mtime=0 keeps the .gz byte-identical across imports of the same data.
-        packed = gzip.compress(data, compresslevel=9, mtime=0)
-        (OUT / name).write_bytes(packed)
-        total += len(packed)
-        e["file"] = name
+        packed[e["file"] + ".gz"] = gzip.compress(data, compresslevel=9, mtime=0)
+        e["file"] += ".gz"
+    OUT.mkdir(parents=True, exist_ok=True)
+    for old in OUT.glob("*.plyd.gz"):
+        if old.name not in packed:
+            old.unlink()
+    for name, blob in packed.items():
+        (OUT / name).write_bytes(blob)
+    total = sum(len(b) for b in packed.values())
     (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n",
                                        encoding="utf-8")
     print(f"{len(manifest['dictionaries'])} dictionaries, {total:,} B in {OUT}")

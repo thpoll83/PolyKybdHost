@@ -2966,9 +2966,10 @@ class PolyCore(Observable):
                 and self._fw_actions_allowed() and self._has_emojidict_slot()):
             # Flash the newly chosen dictionary now. The shared bundle pass picks it
             # because slot 9 no longer matches; it is a deliberate choice, so it
-            # runs even with fontpack_auto_flash off. Not on keys None (the
-            # in-process dialog), which does not show this setting. Not on firmware
-            # without slot 9: the pass would flash only the OTHER stale bundles.
+            # runs even with fontpack_auto_flash off. Not on keys None: every
+            # writer names the keys it changed (the in-process dialog too). Not on
+            # firmware without slot 9: the pass would flash only the OTHER stale
+            # bundles.
             self.sync_fontpack()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
@@ -3408,7 +3409,11 @@ class PolyCore(Observable):
         (``""`` stops using the file). The change is flashed through
         note_settings_changed(). Choosing the file already in use flashes it
         again, so an edited and rebuilt file reaches the keyboard: its version
-        does not change between builds."""
+        does not change between builds.
+
+        A chosen file is put on the pass's retry list, so the pass writes it even
+        when its version equals what slot 9 reports, and a failed write stays on
+        that list for the next pass."""
         from polyhost.services import emojidict
         alls = self.poly_settings.get_all()
         if dict_id is not None:
@@ -3424,10 +3429,13 @@ class PolyCore(Observable):
                 if entry is None:
                     return False, err
                 path = os.path.realpath(entry["path"])
+                if self._has_emojidict_slot():
+                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen"
                 if path == alls.get("emoji_search_dict_file"):
                     if not self._has_emojidict_slot():
                         return False, "This keyboard's firmware has no emoji search dictionary slot"
-                    return self.flash_fontpack_bundle("emojidict")
+                    ok, msg = self.sync_fontpack()
+                    return (True, path) if ok else (False, msg)
             alls["emoji_search_dict_file"] = path
         saved = self.poly_settings.set_all(alls, source=source)
         self.note_settings_changed(["emoji_search_dict", "emoji_search_dict_file"])
@@ -3748,7 +3756,9 @@ class PolyCore(Observable):
         if not ok:
             return False, ""
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {}).get(bundle["index"], 0)
-        if dev < bundle["content_version"]:
+        # The bundle's own staleness rule: a font may read newer than shipped, an
+        # emoji dictionary must match exactly (another one can have a higher number).
+        if hid_fontpack.bundle_is_stale(bundle, dev):
             return False, ""
         if status == hid_fontpack.COMMIT_NO_SLAVE:
             note = (f"{bundle['id']}: stored (v{dev}), but the other half never confirmed — "

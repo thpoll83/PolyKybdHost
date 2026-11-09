@@ -207,7 +207,8 @@ SETTING_DESCRIPTIONS = {
         "network port. Applies after a restart."),
     "emoji_search_dict": N_(
         "The language the keyboard's emoji layer searches in. The keyboard gets "
-        "the dictionary when it connects, or right away when you change this."),
+        "the dictionary right away when you change this, and when it connects if "
+        "Auto Flash is on. Own Dictionary File, when set, is used instead."),
     "emoji_search_dict_file": N_(
         "A dictionary you built yourself (.plyd), used instead of Search Language. "
         "Empty: the shipped dictionary is used. Choose it in the tray to flash it "

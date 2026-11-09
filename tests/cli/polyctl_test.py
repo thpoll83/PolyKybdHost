@@ -363,7 +363,7 @@ class EmojiDictTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE],
                          {"id": "de", "source": "polyctl"})
-        self.assertIn("flashing it", out)
+        self.assertIn("the keyboard gets it", out)
 
     def test_file_sends_an_absolute_path_and_clear_sends_empty(self):
         rc, out, _, server = run_main(["emoji-dict", "file", "mine.plyd"],

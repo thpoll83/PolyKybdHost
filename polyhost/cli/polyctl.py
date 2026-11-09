@@ -899,7 +899,7 @@ def _cmd_emoji_dict(client, args):
         return 1
     dicts = {d["id"]: d for d in info["dictionaries"]}
     action = getattr(args, "emoji_dict_action", None) or "status"
-    then = ("flashing it to the keyboard." if info.get("supported") else
+    then = ("the keyboard gets it unless it already holds it." if info.get("supported") else
             "this keyboard's firmware has no dictionary slot, so nothing is flashed now.")
     if action == "list":
         for d in info["dictionaries"]:
@@ -921,7 +921,8 @@ def _cmd_emoji_dict(client, args):
             print("error: name a .plyd file, or pass --clear", file=sys.stderr)
             return 2
         client.call(protocol.M_EMOJIDICT_CHOOSE, {"path": path, "source": "polyctl"})
-        print(f"emoji search dictionary file: {path}; {then}" if path
+        print(f"emoji search dictionary file: {path}; "
+              + ("writing it to the keyboard." if info.get("supported") else then) if path
               else f"emoji search dictionary file: none, using {info['selected']}; {then}")
         return 0
     dev = info.get("device")

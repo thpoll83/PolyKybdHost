@@ -43,6 +43,16 @@ class ShippedDictionaries(unittest.TestCase):
         self.assertEqual(emojidict.label(de), "Deutsch — German")
         self.assertEqual(emojidict.label(emojidict.find(self.m, "en")), "English")
 
+    def test_a_damaged_cache_file_is_unpacked_again(self):
+        de = emojidict.find(self.m, "de")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(emojidict.unpacked_path(self.m, de, Path(tmp)))
+            data = bytearray(path.read_bytes())
+            data[8] ^= 0xFF                       # the header's content_version
+            path.write_bytes(bytes(data))
+            again = Path(emojidict.unpacked_path(self.m, de, Path(tmp)))
+            self.assertEqual(hashlib.sha256(again.read_bytes()).hexdigest()[:16], de["sha256"])
+
     def test_bundle_entry_unpacks_once_and_falls_back_to_english(self):
         with tempfile.TemporaryDirectory() as tmp:
             b = emojidict.bundle_entry(self.m, "zh-HK@cangjie", Path(tmp))
