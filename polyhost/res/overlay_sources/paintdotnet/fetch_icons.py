@@ -24,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import space_hint  # noqa: E402
 
 FLUENT = {
     # --- file ---
@@ -228,6 +229,16 @@ def main() -> int:
             fn(p)
             print(f"  {name}.png  <- custom (drawn: {what})")
         n += 1
+
+    # Space: hold Space pans (with the arrow keys or a drag). The hand from H
+    # with an arrow on each side, beside the centred Space legend.
+    p = out / "space_pan.png"
+    if p.exists():
+        print("  space_pan.png  <- committed asset (left as-is)")
+    else:
+        space_hint.draw(space_hint.glyph_from_png(out / "pan.png", 20), p)
+        print("  space_pan.png  <- custom (drawn: hand + four arrows, space_hint.py)")
+    n += 1
 
     print(f"Wrote {n} icons to {out}")
     return 0

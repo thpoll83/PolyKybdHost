@@ -25,6 +25,7 @@ from PIL import Image  # noqa: E402
 
 from polyhost.res.overlay_sources import dcc_glyphs as g  # noqa: E402
 from polyhost.res.overlay_sources import icon_fetch  # noqa: E402
+from polyhost.res.overlay_sources import space_hint  # noqa: E402
 
 ICONS = {
     # --- viewport tools and selection
@@ -189,6 +190,22 @@ def _material_palette(path: Path) -> None:
     _save_white(Image.fromarray((m * 255).astype("uint8")), path)
 
 
+def _space_view(path: Path) -> None:
+    """Space, hold for the view tool: the object cube from F8 with an arrow on
+    each side, beside the centred Space legend (``../space_hint.py``)."""
+    import numpy as np
+    from PIL import ImageDraw
+    s = 8
+    m = Image.new("L", (2 * s + 1, 2 * s + 1), 0)
+    d = ImageDraw.Draw(m)
+    top = [(s, 0), (2 * s, s // 2), (s, s), (0, s // 2)]
+    bot = [(x, y + s) for x, y in top]
+    d.polygon(top, outline=255)
+    d.line([top[3], bot[3], bot[2], bot[1], top[1]], fill=255)
+    d.line([top[2], bot[2]], fill=255)
+    space_hint.draw(np.array(m) > 127, path, gap_v=1, gap_h=1)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -197,6 +214,7 @@ def main() -> int:
     g.guarded(out / "sel_vertex.png", _sel_vertex, "drawn vertex selection glyph")
     g.guarded(out / "obj_comp_toggle.png", _obj_comp_toggle, "drawn object/component toggle (F8)")
     g.guarded(out / "material_palette.png", _material_palette, "drawn material swatches (Alt+7)")
+    g.guarded(out / "space_view.png", _space_view, "drawn cube + four arrows (Space, view tool)")
     g.guarded(out / "badge_key.png", _badge_key, "drawn keyframe diamond (badge)")
     g.guarded(out / "badge_pin.png", _badge_pin, "drawn push pin (badge)")
     # Keyframe composites: the transform glyph with a keyframe diamond badge.
