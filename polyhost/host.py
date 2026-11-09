@@ -2488,6 +2488,10 @@ class PolyHost(QApplication):
                 self.log.info("Emoji search dictionary file %s; flashing it.", path)
             else:
                 self.report_device_result("Error", f"Could not use the emoji search dictionary: {msg}")
+                # The user just picked the file, so say why it was refused (the
+                # core's reason is English, like every core message).
+                _msgbox(QMessageBox.Warning, _("Emoji search dictionary"),
+                        _f("This file cannot be used: {reason}", reason=msg))
         # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
         self.refresh_emoji_dict_menu()
 
