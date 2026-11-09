@@ -1680,6 +1680,10 @@ class FwUpDownloader(threading.Thread):
             # The wait is over: replace the countdown before the request starts.
             _fire(self._on_progress, 100, MSG_SIG_ATTEMPT.format(
                 attempt=attempt + 2, total=len(SIG_RETRY_DELAYS) + 1))
+            # Again after the callback: a Cancel pressed while it ran must not
+            # start one more request.
+            if self._cancelled():
+                raise _DownloadCancelled()
 
     def run(self):
         tmp_path = None
