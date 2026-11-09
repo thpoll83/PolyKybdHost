@@ -109,7 +109,6 @@ BORROW = {
     "frame_next.png": "blender",
     "frame_prev.png": "blender",
     "shading.png": "blender",         # wireframe / shaded toggle
-    "wireframe.png": "blender",
     "localview.png": "blender",       # isolate select
     "hide_others.png": "blender",     # hide unselected
     "subdiv_up.png": "blender",       # division levels up
@@ -121,7 +120,6 @@ BORROW = {
     "shrink.png": "blender",
     "frame_all.png": "blender",
     "quadview.png": "blender",        # base for "in all views"
-    "maximize.png": "blender",        # single / multi pane
     "workspace_prev.png": "blender",  # previous layout
     "workspace_next.png": "blender",
     "hier_parent.png": "blender",     # pick walk up
@@ -299,6 +297,52 @@ def _maya_mark(path: Path) -> None:
     Image.fromarray(np.dstack([a, a, a, a]), "RGBA").save(path)
 
 
+def _save_white(m: Image.Image, path: Path) -> None:
+    """White on transparent, the alpha channel taken from the 1-bit mask `m`."""
+    img = Image.new("RGBA", m.size, (255, 255, 255, 0))
+    img.putalpha(m.point(lambda v: 255 if v else 0))
+    img.save(path)
+
+
+def _wireframe(path: Path) -> None:
+    """Wireframe display (4): an isometric cube with its faces split into a 2x2
+    mesh, drawn at the 36x32 key size so it reads as polygons, not a grid."""
+    from PIL import ImageDraw
+    m = Image.new("L", (36, 32), 0)
+    d = ImageDraw.Draw(m)
+    s, ox, oy = 15, 3, 0
+
+    def pt(u, v, w):
+        return (ox + s + (u - w) * s, oy + (u + w) * s // 2 + v * s)
+
+    for t in (0, 0.5, 1):
+        for a, b in (((t, 0, 0), (t, 0, 1)), ((0, 0, t), (1, 0, t)),     # top face
+                     ((1, 0, t), (1, 1, t)), ((1, t, 0), (1, t, 1)),     # right face
+                     ((t, 0, 1), (t, 1, 1)), ((0, t, 1), (1, t, 1))):    # left face
+            d.line([pt(*a), pt(*b)], fill=255)
+    _save_white(m, path)
+
+
+def _space_hotbox(path: Path) -> None:
+    """Space (hold): the hotbox, menu rows above and below a centre box with a
+    marking-menu bar on each side. Drawn on the whole 72x40 keycap at the top
+    right: Space is on the thumb row, where the firmware centres the legend
+    (x 23..48, y 23..26) and clears it within 3 px of overlay ink, so the glyph
+    stays in rows 1..18."""
+    from PIL import ImageDraw
+    m = Image.new("L", (72, 40), 0)
+    d = ImageDraw.Draw(m)
+    x0, y0 = 72 - 26, 1
+    for y in (0, 3, 14, 17):
+        for x in (0, 9, 18):
+            d.line([(x0 + x, y0 + y), (x0 + x + 7, y0 + y)], fill=255)
+    for y in (8, 9):
+        d.line([(x0, y0 + y), (x0 + 6, y0 + y)], fill=255)
+        d.line([(x0 + 19, y0 + y), (x0 + 25, y0 + y)], fill=255)
+    d.rectangle([x0 + 11, y0 + 6, x0 + 14, y0 + 11], outline=255)
+    _save_white(m, path)
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -307,6 +351,8 @@ def main() -> int:
     for lvl in (1, 2, 3):
         g.guarded(out / f"smooth{lvl}.png", lambda p, k=lvl: _smooth(p, k), f"drawn smoothness {lvl}")
     g.guarded(out / "shaded.png", _shaded, "drawn shaded disc")
+    g.guarded(out / "wireframe.png", _wireframe, "drawn isometric cube with a 2x2 mesh")
+    g.guarded(out / "space_hotbox.png", _space_hotbox, "drawn hotbox (Space, hold), 72x40")
     for dr in ("up", "down", "left", "right"):
         g.guarded(out / f"nudge_{dr}.png", lambda p, k=dr: _nudge(p, k), f"drawn nudge ({dr})")
     for name, base, badge in BADGES:

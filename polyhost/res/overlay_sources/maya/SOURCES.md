@@ -33,9 +33,10 @@ Linux) and `maya_template_mac.*` (macOS). Rebuild with `fetch_icons.py`, then
   between joints, controls, and character visibility"; it is labelled
   Isolate select. Insert is both "Enter tool Edit mode" and "switch between
   move pivot and move object".
-- **Held keys:** a key held for a marking menu (Space for the hotbox; Q, W, E,
-  R and A held with the left mouse button) also has a tap action, and the tap
-  action is drawn. The snapping keys X, C, V, J and Shift+J and the curve key
+- **Held keys:** a key held for a marking menu (Q, W, E, R and A held with the
+  left mouse button) also has a tap action, and the tap action is drawn. Space
+  is the exception: it shows the hotbox, because holding Space is the main way
+  to reach Maya's menus; a tap toggles single / multi pane. The snapping keys X, C, V, J and Shift+J and the curve key
   L act while held during a drag; they are drawn with "(hold)" in the label.
 - **`=` and `+`:** "=, +" increase the manipulator size; both `=` and
   Shift+`=` are drawn.
@@ -76,13 +77,14 @@ shortcut by default and may not reach Maya.
 | File | Source | Licence |
 |---|---|---|
 | `complete, reference, intermediate, colorchooser, quaddraw, show, textured, quality_default, rigdisplay, proxy_toggle, proxy_both, mainmenu, panelmenu, paneltoolbar, fullpanels, manipulator, hotboxstyle, set_modeling, set_rigging, set_animation, set_rendering, pan2d, bookmark_add, bookmark_quick` and the `b_*` bases | [Material Symbols](https://github.com/google/material-design-icons) (`ms:` names in `fetch_icons.py`) | Apache-2.0 |
-| `move, rotate, scale, gizmo, pivot, tab_next, tab_prev, repeat, edit_mode, uv_unwrap, parent, parent_clear, play, jump_start, frame_next, frame_prev, shading, wireframe, localview, hide_others, subdiv_up, subdiv_down, knife, duplicate, group, grow, shrink, frame_all, quadview, maximize, workspace_prev, workspace_next, hier_parent, hier_child, select_left, select_right` | byte copies of `../blender/icons/` (same action; Material Symbols there) | Apache-2.0 |
+| `move, rotate, scale, gizmo, pivot, tab_next, tab_prev, repeat, edit_mode, uv_unwrap, parent, parent_clear, play, jump_start, frame_next, frame_prev, shading, localview, hide_others, subdiv_up, subdiv_down, knife, duplicate, group, grow, shrink, frame_all, quadview, workspace_prev, workspace_next, hier_parent, hier_child, select_left, select_right` | byte copies of `../blender/icons/` (same action; Material Symbols there) | Apache-2.0 |
 | `sel_vert, sel_edge, sel_face, key_insert, key_next, key_prev, snap` | byte copies of `../blender/icons/` (drawn there) | GPL-3.0-or-later |
 | `smartselect, new, open, save, undo, redo` | byte copies of `../3dsmax/icons/` (Fluent UI System Icons there) | MIT |
 | `saveas, gizmo_up, gizmo_down, viewundo, viewredo, background, hide, lighting, zoomextsel` | byte copies of `../3dsmax/icons/` (Material Symbols there) | Apache-2.0 |
 | `quit, cut, copy, paste` | byte copies of `../cinema4d/icons/` (Fluent UI System Icons there) | MIT |
 | `attributes, help, lasttool, quantize` | byte copies of `../cinema4d/icons/` (Material Symbols there) | Apache-2.0 |
-| `smooth1, smooth2, smooth3, shaded, nudge_up, nudge_down, nudge_left, nudge_right` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
+| `smooth1, smooth2, smooth3, shaded, wireframe, nudge_up, nudge_down, nudge_left, nudge_right` | drawn in `fetch_icons.py` | GPL-3.0-or-later |
+| `space_hotbox` | drawn in `fetch_icons.py` on the whole 72x40 keycap, at the top right: Space is on the thumb row, where the firmware centres the legend (x 23..48, y 23..26) and clears it within 3 px of overlay ink | GPL-3.0-or-later |
 | `snap_grid, snap_curve, snap_point, snap_relative, repeat_cursor, sel_vertface, conv_*, key_move, key_rotate, key_scale, ins_*, key_insert_all, selkey_next, selkey_prev, vis_*, show_last, rig_cycle, subdiv, proxy_options, to_subdiv, to_subdiv_options, lock_length, dup_special, dup_transform, frame_all_views, frame_sel_views, bm_*` | composites of the files above, `../dcc_glyphs.py` `with_badge` / `with_arrow` | as their parts (Apache-2.0, MIT, GPL-3.0-or-later) |
 | `maya.png` (ESC mark) | see below | CC0-1.0 artwork; Autodesk trademark |
 

@@ -7,8 +7,9 @@
 # Render View and the Artisan paint tools give the same keys other meanings
 # and are not drawn.
 #
-# A key held for a marking menu (Space for the hotbox, Q / W / E / R / A held
-# with the left mouse button) also works as a tap, and the tap action is drawn.
+# A key held for a marking menu (Q / W / E / R / A held with the left mouse
+# button) also works as a tap, and the tap action is drawn. Space is the
+# exception: it shows the hotbox it opens when held.
 # Keys that act only together with a mouse drag are left out (SOURCES.md).
 #
 # macOS: Autodesk's note says Alt = Option and Ctrl = Control on macOS, and the
@@ -154,8 +155,10 @@ bindings:
   - { key: A, mods: [SHIFT], icon: frame_all_views.png, label: "Frame all in all views" }
   - { key: F, mods: [], icon: zoomextsel.png, label: "Frame selected" }
   - { key: F, mods: [SHIFT], icon: frame_sel_views.png, label: "Frame selected in all views" }
-  - { key: SPACE, mods: [], icon: maximize.png, label: "Single / multi-pane (tap)" }
-  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, label: "Full-screen panels" }
+  # Space shows the hotbox it opens when held (a tap toggles single / multi
+  # pane). Drawn on the whole keycap clear of the centred thumb-row legend.
+  - { key: SPACE, mods: [], icon: space_hotbox.png, mode: alpha, region: [72, 40], label: "Hotbox (hold); single / multi-pane (tap)" }
+  - { key: SPACE, mods: [CTRL], icon: fullpanels.png, anchor: top-right, region: [28, 20], label: "Full-screen panels" }  # top right, clear of the centred thumb-row legend
   - { key: "[", mods: [], icon: viewundo.png, label: "Undo view change" }
   - { key: "]", mods: [], icon: viewredo.png, label: "Redo view change" }
   - { key: "[", mods: [SHIFT], icon: workspace_prev.png, label: "Previous layout" }
