@@ -747,7 +747,10 @@ class PolyHost(QApplication):
         # language the emoji layer's keyword search uses. A plain settings write;
         # PolyCore.note_settings_changed() flashes the choice. The entries come
         # from the daemon's emoji_search_status() and are built on the first show.
-        self.emoji_dict_menu = self.menu.addMenu(get_icon("translate.svg"), _("Emoji Search Language"))
+        # It sits at the end of the keyboard's "Selected Language" menu, which is
+        # built once the keyboard answers (see the language-menu builder).
+        self.emoji_dict_menu = QMenu(_("Emoji Search Language"), self.menu)
+        self.emoji_dict_menu.menuAction().setIcon(get_icon("translate.svg"))
         self.emoji_dict_group = QActionGroup(self)
         self.emoji_dict_group.setExclusive(True)
         self.emoji_dict_actions = {}
@@ -1760,6 +1763,10 @@ class PolyHost(QApplication):
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)
                     item.setIcon(self.unicode_cache.get_icon_for(home_country(lang)))
+            # clear() above leaves this submenu alive: its menu action belongs
+            # to the submenu, not to the language menu.
+            self.keeb_lang_menu.addSeparator()
+            self.keeb_lang_menu.addMenu(self.emoji_dict_menu)
         else:
             self.log.warning("Enumerating PolyKybd languages failed")
 
@@ -1769,7 +1776,7 @@ class PolyHost(QApplication):
             return
         for region_action in self.keeb_lang_menu.actions():
             sub = region_action.menu()
-            if sub is not None:
+            if sub is not None and sub is not self.emoji_dict_menu:
                 yield from sub.actions()
 
     def update_ui_on_lang_change(self, new_lang):

@@ -65,7 +65,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(
             top.split("|"),
             ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
-             "Keycap Script", "Keycap Size", "Emoji Search Language", "Configure Keymap", "Updates", "Maintenance",
+             "Keycap Script", "Keycap Size", "Configure Keymap", "Updates", "Maintenance",
              "Settings...", "Help && About", "Quit"])
         # The flat command dump is gone, and so is the demo overlay sender.
         self.assertNotIn("All PolyKybd Commands", top)
@@ -227,6 +227,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("STATUS_TEXT PolyKybd Split72", proc.stdout)
         self.assertIn("FW 0.8.0", proc.stdout)
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
+        self.assertIn("EMOJI_IN_LANG_MENU True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
         top = _grab(proc.stdout, "CLIENT_TOPLEVEL").split("|")
@@ -658,6 +659,9 @@ def _smoke_client():
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
             print("LANG_MENU_BUILT", app.keeb_lang_menu is not None)
+            # The emoji search language is the last entry of the language menu.
+            print("EMOJI_IN_LANG_MENU", app.keeb_lang_menu is not None and
+                  app.keeb_lang_menu.actions()[-1].menu() is app.emoji_dict_menu)
             # Layout editor over RPC (keymap_* via the daemon) — must construct.
             app.open_layout_editor()
             app.processEvents()
