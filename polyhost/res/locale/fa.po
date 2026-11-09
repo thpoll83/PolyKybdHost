@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PolyKybdHost VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/thpoll83/PolyKybdHost/issues\n"
-"POT-Creation-Date: 2026-11-09 05:51+0000\n"
+"POT-Creation-Date: 2026-11-09 06:31+0000\n"
 "PO-Revision-Date: 2026-10-05 16:02+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fa\n"
@@ -4621,7 +4621,12 @@ msgstr "بارگیری لغو شد."
 msgid "Downloading signature…"
 msgstr "در حال بارگیری امضا…"
 
-#: polyhost/services/updater.py:53
+#: polyhost/services/updater.py:52
+#, python-brace-format
+msgid "GitHub did not deliver the signature; trying again in {seconds} s (attempt {attempt} of {total})…"
+msgstr "GitHub امضا را تحویل نداد؛ تلاش دوباره پس از {seconds} ثانیه (تلاش {attempt} از {total})…"
+
+#: polyhost/services/updater.py:55
 #, python-brace-format
 msgid ""
 "The image downloaded, but its signature did not ({error}).\n"
