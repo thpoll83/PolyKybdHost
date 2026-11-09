@@ -146,6 +146,8 @@ GLYPH_PLACEMENT_MIN_PROTOCOL = 26
 # host flashes such a library only at v27 (PolyCore._bundle_fits_device).
 ICON_SLOT_512K_MIN_PROTOCOL = 27
 LEGACY_ICON_SLOT_SIZE = 0x40000
+# Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
+ICON_FILL_MAX_WIDTH = 16
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
 BOARD_OP_SET_SPLIT_VBUS = 2
@@ -1621,7 +1623,12 @@ class PolyKybd:
         answers) names the first pair it did not apply; that pair, the rest of
         its report and every later report go back to the caller as uploads."""
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        reports = plan_mapping_reports(pairs, data_bytes)
+        # ⚠️ Icon ids are not bounded by the pool: the shipped library has ids
+        # up to 3526, which need 12 bits. The key mapping's 11-bit limit made
+        # every switch that filled one such icon raise and abort (field log
+        # 2026-11-09, `pair (31, 2324) needs 12 bits`). The firmware accepts
+        # 8..16 (OVERLAY_MAP_WIDTH_MAX, both halves, since cmd 42 exists).
+        reports = plan_mapping_reports(pairs, data_bytes, max_width=ICON_FILL_MAX_WIDTH)
         sent = 0
         for r, (width, report_pairs) in enumerate(reports):
             msg = compose_cmd(Cmd.FILL_POOL_FROM_ICON, width) + pack_report(report_pairs, data_bytes, width)

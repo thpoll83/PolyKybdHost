@@ -121,6 +121,22 @@ class IconFillTest(unittest.TestCase):
                   (bits >> ((2 * i + 1) * width)) & ((1 << width) - 1)) for i in range(n)}
         self.assertEqual({icon for _, icon in pairs}, {i for _, i in self.icons})
 
+    def test_icon_ids_above_2047_are_sent_at_12_bits(self):
+        """Field log 2026-11-09: id 2324 raised `needs 12 bits, which exceeds
+        max_width=11` and the whole switch failed; 3 or 4 keys had an overlay."""
+        index = PolyKybd._shipped_icon_library()[1]
+        high = sorted(index, key=index.get)[-3:]
+        self.assertGreaterEqual(min(index[f] for f in high), 2048)
+        keeb, dev = _keeb(self.version)
+        self.assertTrue(_send(keeb, [_mask(f) for f in high]), "the switch must not fail")
+        report = next(p for p in dev.payloads() if p[1] == Cmd.FILL_POOL_FROM_ICON.value)
+        width = report[2]
+        self.assertEqual(width, 12)
+        bits = int.from_bytes(bytes(report[3:3 + 61]), "little")
+        ids = {(bits >> ((2 * i + 1) * width)) & ((1 << width) - 1)
+               for i in range(pairs_per_report(61, width))}
+        self.assertEqual(ids, {index[f] for f in high})
+
     def test_an_image_that_is_not_an_icon_is_still_uploaded(self):
         keeb, dev = _keeb(self.version)
         _send(keeb, self.masks[:2] + [_not_an_icon()])
