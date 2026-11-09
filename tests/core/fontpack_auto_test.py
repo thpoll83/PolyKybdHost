@@ -10,6 +10,8 @@ import types
 import unittest
 from unittest.mock import patch
 
+from polyhost.core import events
+
 try:
     from polyhost.core.poly_core import PolyCore
     _HAVE_CORE = True
@@ -45,6 +47,7 @@ def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None,
     core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
     core._bundle_fits_device = lambda b: PolyCore._bundle_fits_device(core, b)
     core._fontpack_autocheck_job = lambda cancel: None
+    core._fontpack_stale_notice_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
     return core
 
@@ -94,16 +97,47 @@ class TestIconSlotGate(unittest.TestCase):
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
 class TestMaybeAutoFlash(unittest.TestCase):
 
-    def test_disabled_setting_submits_nothing(self):
+    def test_disabled_setting_queues_only_the_stale_notice(self):
         core = _fake_core(auto=False)
         PolyCore._maybe_auto_flash_fontpack(core)
-        self.assertEqual(core._submitted, [])
+        self.assertEqual([n for n, _fn in core._submitted], ["fontpack_stale_notice"])
 
     def test_enabled_submits_worker_job(self):
         core = _fake_core(auto=True)
         PolyCore._maybe_auto_flash_fontpack(core)
         self.assertEqual(len(core._submitted), 1)
         self.assertEqual(core._submitted[0][0], "fontpack_autocheck")
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestStaleNoticeWithAutoFlashOff(unittest.TestCase):
+    """Auto Flash off: flash nothing, but say which bundles are behind."""
+
+    def _run(self, device_versions):
+        core = _fake_core(auto=False, device_versions=device_versions)
+        core.fontpack_bundle_status = lambda: PolyCore.fontpack_bundle_status(core)
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest",
+                   return_value=_MANIFEST), \
+             patch("polyhost.device.hid_fontpack.flash_fontpack") as ff:
+            PolyCore._fontpack_stale_notice_job(core, None)
+        self.assertFalse(ff.called, "the notice must never flash")
+        return core
+
+    def test_stale_bundles_are_named_in_one_event(self):
+        core = self._run({0: 1, 5: 3})
+        self.assertEqual(core._emitted, [(events.FONTPACK_STALE, {"bundles": ["symbol"]})])
+
+    def test_up_to_date_emits_nothing(self):
+        core = self._run({0: 2, 5: 3})
+        self.assertEqual(core._emitted, [])
+
+    def test_status_reports_the_setting(self):
+        core = _fake_core(auto=False, device_versions={0: 2, 5: 3})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest",
+                   return_value=_MANIFEST):
+            ok, info = PolyCore.fontpack_bundle_status(core)
+        self.assertTrue(ok)
+        self.assertIs(info["auto_flash"], False)
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")

@@ -555,8 +555,9 @@ class RemoteCore(Observable):
         except RpcError:
             return {}
 
-    def settings_set(self, key, value):
-        return self._device(p.M_SETTINGS_SET, {"key": key, "value": value})
+    def settings_set(self, key, value, source="tray (client mode)"):
+        return self._device(p.M_SETTINGS_SET, {"key": key, "value": value,
+                                               "source": source})
 
     # -- telemetry (the daemon owns the reporter; the client only asks) -----
     def telemetry_status(self):

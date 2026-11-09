@@ -278,7 +278,8 @@ class ControlServer(MpcListenerServer):
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),
             p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),
             p.M_SETTINGS_SET: lambda conn, params: _unwrap(c.settings_set(
-                params["key"], params["value"])),
+                params["key"], params["value"],
+                source=str(params.get("source") or "control socket"))),
             p.M_TELEMETRY_STATUS: lambda conn, params: c.telemetry_status(),
             p.M_TELEMETRY_PREVIEW: lambda conn, params: c.telemetry_preview(),
             p.M_TELEMETRY_SET: lambda conn, params: _unwrap(
