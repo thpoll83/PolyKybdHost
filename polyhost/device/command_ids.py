@@ -92,7 +92,7 @@ class Cmd(Enum):
     # Reboot both halves, nothing persisted (protocol v22+). ACKed before the
     # reset; used by the boot-loop diagnostic (PolyCore.start_boot_loop).
     REBOOT = 43
-    # Tap-hold timing (protocol v28+): data[2] op (0 query, 1 set), data[3..4]
+    # Tap-hold timing (protocol v29+): data[2] op (0 query, 1 set), data[3..4]
     # tapping term ms, data[5..6] Flow Tap term ms, little-endian, 0xFFFF = keep.
     # The reply carries both terms and a flags byte (bit 0: Flow Tap compiled in).
     # Ranges: TapTerms below.
@@ -157,7 +157,7 @@ class IdleTimeout(Enum):
 
 
 class TapTerms:
-    """The ranges of the tap-hold terms (HID cmd 44, protocol v28+). Mirrors the
+    """The ranges of the tap-hold terms (HID cmd 44, protocol v29+). Mirrors the
     firmware's base/tap_terms.h.
 
     Both ranges are CLOSED, like IdleTimeout: the firmware NACKs a value outside

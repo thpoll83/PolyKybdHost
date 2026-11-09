@@ -1,4 +1,4 @@
-"""Tray > "Tap-Hold Timing…": the tapping term and the Flow Tap term (cmd 44, v28+).
+"""Tray > "Tap-Hold Timing…": the tapping term and the Flow Tap term (cmd 44, v29+).
 
 The values are stored on the keyboard, not in settings.yaml, so the dialog reads
 them from the device when it opens and writes them back on OK. It goes through

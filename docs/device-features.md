@@ -199,7 +199,7 @@ full wiring, the preview rendering and the label-measurement rules are in
   6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
   local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
   this one follows GlyphSize).
-- **The tap-hold terms (cmd 44, v28+) are the same wiring again**, gated on
+- **The tap-hold terms (cmd 44, v29+) are the same wiring again**, gated on
   `"tap_terms"`, except the tray entry is a dialog (`gui/tap_terms_dialog.py`), not a
   submenu: tapping term 100..500 ms and Flow Tap term 0..300 ms (0 = off) in 10 ms
   steps, both CLOSED ranges (`TapTerms` in `command_ids.py`, mirror of firmware

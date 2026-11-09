@@ -124,7 +124,7 @@ CMD_MIN_PROTOCOL: dict[int, int] = {
     Cmd.SEND_PRC_OVERLAY.value: 19,
     Cmd.FILL_POOL_FROM_ICON.value: 20,
     Cmd.REBOOT.value: 22,
-    Cmd.TAP_TERMS.value: 28,
+    Cmd.TAP_TERMS.value: 29,
     fw.CMD_FW_UP_BEGIN: 0,
     fw.CMD_FW_UP_CHUNK: 0,
     fw.CMD_FW_UP_COMMIT: 0,
@@ -145,6 +145,7 @@ RETIRED_CMDS: dict[int, int] = {Cmd.GET_LANG_LIST.value: 2}
 BRIGHTNESS_FLAGS_MIN = 5
 GET_ID_VERSION_BLOCK_MIN = 6
 GET_ID_GENERATION_BLOCK_MIN = 16
+GET_ID_ANIM_BLOCK_MIN = 28
 UNICODE_VOLATILE_MIN = 17
 GUI_COMBO_MIN = 12
 MAPPING_FLAGS_MIN = 21
@@ -344,6 +345,9 @@ class MockFirmware:
         self.crash_record = None  # the master's archived 48-byte record (cmd 39)
         self.crash_fresh = False
         self.state_generation = 0
+        # What owns the keycaps, as the GET_ID 'A' block reports it (v28): 0 none,
+        # 1 the Eden intro, 2 the Eden screensaver. Tests set it.
+        self.anim_state = 0
         self.overlay_flags = 0
         self.bootloader_requested = False
         self.handedness_left: bool | None = None
@@ -500,6 +504,8 @@ class MockFirmware:
                 body += block
         if self.protocol >= GET_ID_GENERATION_BLOCK_MIN and len(body) + 3 <= REPORT_SIZE:
             body += b"G" + struct.pack("<H", self.state_generation & 0xFFFF)
+        if self.protocol >= GET_ID_ANIM_BLOCK_MIN and len(body) + 2 <= REPORT_SIZE:
+            body += bytes([ord("A"), self.anim_state & 0xFF])
         return _pad(body)
 
     def _get_lang(self, p):

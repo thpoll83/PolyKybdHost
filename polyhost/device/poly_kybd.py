@@ -16,7 +16,8 @@ from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, c
 from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphPlacement, TapTerms,
                                          GlyphScript, GlyphSize)
 from polyhost.device.hid_helper import DisconnectedHid, HidHelper, IoMeter
-from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
+from polyhost.device.hid_fontpack import (parse_id_version_block, parse_id_state_generation,
+                                          parse_id_anim_state)
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
@@ -149,8 +150,10 @@ ICON_SLOT_512K_MIN_PROTOCOL = 27
 # term and the Flow Tap term become settings. Below this they are the firmware's
 # compile-time 200 / 150 ms and there is nothing to read or set, so the tray entry
 # greys out rather than NACKing at runtime.
-TAP_TERMS_MIN_PROTOCOL = 28
+TAP_TERMS_MIN_PROTOCOL = 29
 LEGACY_ICON_SLOT_SIZE = 0x40000
+# Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
+ICON_FILL_MAX_WIDTH = 16
 BOARD_OP_KEEP = 0
 BOARD_OP_CLEAR_SPLIT_VBUS = 1
 BOARD_OP_SET_SPLIT_VBUS = 2
@@ -298,6 +301,8 @@ class PolyKybd:
         self.fontpack_bundle_versions = {}
         # None until a GET_ID lands, and None forever on firmware with no 'G' block.
         self.state_generation = None
+        # hid_fontpack.ANIM_* from the GET_ID 'A' block (v28); None on older firmware.
+        self.anim_state = None
 
         # Statistics, cumulative since this object was created. The stat_*
         # counters sum what EACH encoding would have cost in reports for every
@@ -516,6 +521,7 @@ class PolyKybd:
                 # with no extra command and nothing pushed from the firmware.
                 # None = this firmware has no block; do NOT read that as "unchanged".
                 self.state_generation = parse_id_state_generation(msg)
+                self.anim_state = parse_id_anim_state(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
@@ -823,7 +829,7 @@ class PolyKybd:
         }
 
     def get_tap_terms(self) -> tuple[bool, dict | str]:
-        """Read the tap-hold terms (cmd 44, v28+) as
+        """Read the tap-hold terms (cmd 44, v29+) as
         {"tapping_term": ms, "flow_tap_term": ms, "flow_tap_available": bool}.
         flow_tap_available is False on a build without Flow Tap (split42)."""
         if not self.supports("tap_terms"):
@@ -844,7 +850,7 @@ class PolyKybd:
 
     def set_tap_terms(self, tapping_term: int | None = None,
                       flow_tap_term: int | None = None) -> tuple[bool, dict | str]:
-        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v28+).
+        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v29+).
         None leaves a term unchanged. Both ranges are CLOSED (TapTerms), so a value
         outside them is refused here rather than sent. On success the payload is
         the keyboard's terms after the change, as get_tap_terms() returns them.
@@ -1694,7 +1700,12 @@ class PolyKybd:
         answers) names the first pair it did not apply; that pair, the rest of
         its report and every later report go back to the caller as uploads."""
         data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
-        reports = plan_mapping_reports(pairs, data_bytes)
+        # ⚠️ Icon ids are not bounded by the pool: the shipped library has ids
+        # up to 3526, which need 12 bits. The key mapping's 11-bit limit made
+        # every switch that filled one such icon raise and abort (field log
+        # 2026-11-09, `pair (31, 2324) needs 12 bits`). The firmware accepts
+        # 8..16 (OVERLAY_MAP_WIDTH_MAX, both halves, since cmd 42 exists).
+        reports = plan_mapping_reports(pairs, data_bytes, max_width=ICON_FILL_MAX_WIDTH)
         sent = 0
         for r, (width, report_pairs) in enumerate(reports):
             msg = compose_cmd(Cmd.FILL_POOL_FROM_ICON, width) + pack_report(report_pairs, data_bytes, width)

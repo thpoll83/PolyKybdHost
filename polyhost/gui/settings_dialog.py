@@ -31,6 +31,13 @@ def language_choices():
     return [(i18n.SETTING_AUTO, auto)] + [(lang.code, lang.endonym) for lang in i18n.LANGUAGES]
 
 
+def emoji_dict_choices():
+    """The shipped emoji search dictionaries, as (id, "native — English")."""
+    from polyhost.services import emojidict
+    manifest = emojidict.load_manifest()
+    return [(e["id"], emojidict.label(e)) for e in (manifest or {}).get("dictionaries", [])]
+
+
 # Settings whose value is one of a fixed set get a dropdown rather than the
 # free-text fallback: `ui_theme` is the first one a normal user is expected to
 # touch, and a typo there silently falls back to "auto" instead of doing what
@@ -39,6 +46,7 @@ def language_choices():
 CHOICES = {
     "ui_theme": ((THEME_AUTO, N_("Automatic")), (THEME_LIGHT, N_("Light")), (THEME_DARK, N_("Dark"))),
     "ui_language": language_choices,
+    "emoji_search_dict": emoji_dict_choices,
     "problem_scan_level": ((LEVEL_ERRORS, N_("Errors")),
                            (LEVEL_ERRORS_AND_WARNINGS, N_("Errors and warnings"))),
 }
@@ -51,6 +59,7 @@ GROUP_LABELS = {
     "General": N_("General"),
     "brightness": N_("Brightness"), "browser": N_("Browser"), "daemon": N_("Daemon"),
     "delay": N_("Delay"), "dev": N_("Dev"), "developer": N_("Developer"),
+    "emoji": N_("Emoji"),
     "fontpack": N_("Fontpack"), "game": N_("Game"), "generic": N_("Generic"), "hid": N_("Hid"),
     "irradiance": N_("Irradiance"), "max": N_("Max"), "problem": N_("Problem"),
     "shortcut": N_("Shortcut"), "telemetry": N_("Telemetry"), "ui": N_("Ui"),
@@ -89,6 +98,8 @@ SETTING_LABELS = {
     "daemon_mode": N_("Mode"),
     "window_report_network_enabled": N_("Report Network Enabled"),
     "fontpack_auto_flash": N_("Auto Flash"),
+    "emoji_search_dict": N_("Search Language"),
+    "emoji_search_dict_file": N_("Own Dictionary File"),
     "fontpack_path": N_("Path"),
     "browser_url_detection": N_("Url Detection"),
     "browser_report_local_enabled": N_("Report Local Enabled"),
@@ -194,6 +205,14 @@ SETTING_DESCRIPTIONS = {
     "window_report_network_enabled": N_(
         "Accepts window reports from a forwarder on another computer. Opens a "
         "network port. Applies after a restart."),
+    "emoji_search_dict": N_(
+        "The language the keyboard's emoji layer searches in. The keyboard gets "
+        "the dictionary right away when you change this, and when it connects if "
+        "Auto Flash is on. Own Dictionary File, when set, is used instead."),
+    "emoji_search_dict_file": N_(
+        "A dictionary you built yourself (.plyd), used instead of Search Language. "
+        "Empty: the shipped dictionary is used. Choose it in the tray to flash it "
+        "right away."),
     "fontpack_auto_flash": N_(
         "Flashes missing or outdated font-pack bundles when the keyboard connects."),
     "fontpack_path": N_(

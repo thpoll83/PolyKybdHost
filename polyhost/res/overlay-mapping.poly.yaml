@@ -3392,3 +3392,51 @@ amiberry,amiberry-lite:
   overlay: amiberry_template.mods.png
   glyph_script: amiga
   glyph_script_position: top-left
+# PTC Mathcad Prime (overlay_sources/mathcad/). Windows only: MathcadPrime.exe.
+# English / US keys from PTC's 12.0.1.0 shortcut PDF. Name not checked on an
+# install.
+mathcadprime:
+  overlay: [mathcad_template.mods.png, mathcad_template.combo.mods.png]
+# SideFX Houdini, Scene View and global keys (overlay_sources/houdini/).
+# Windows houdini.exe (houdinifx.exe, houdinicore.exe, happrentice.exe,
+# hindie.exe, hescape.exe launch the same program for one licence each), Linux
+# the same names or the houdini-bin binary the launcher script runs, and the
+# macOS apps "Houdini FX <version>", "Houdini Core ...", "Houdini Apprentice
+# ...", "Houdini Indie ..." (the trailing dotted version is dropped by the
+# matcher). Not checked on an install.
+houdini,houdinifx,houdinicore,happrentice,hindie,hescape,houdini-bin,houdini fx,houdini core,houdini apprentice,houdini indie:
+  overlay: [houdini_template.mods.png, houdini_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [houdini_template_mac.mods.png, houdini_template_mac.combo.mods.png]
+# QGIS Desktop (overlay_sources/qgis/). Windows (OSGeo4W and the standalone
+# installer): qgis-bin.exe, qgis-ltr-bin.exe, qgis-dev-bin.exe, qgis-qt6-bin.exe.
+# Linux: the process `qgis` (X11), the WM_CLASS class QGIS4 / QGIS3 (the GNOME and
+# KDE reporters) and the Wayland app id org.qgis.qgis, which is also the Flatpak
+# id. macOS: the app "QGIS" (CFBundleName), installed as QGIS.app or
+# QGIS-LTR.app. Not checked on an install.
+qgis,qgis3,qgis4,org.qgis.qgis,qgis-bin,qgis-ltr-bin,qgis-dev-bin,qgis-qt6-bin,qgis-ltr:
+  overlay: [qgis_template.mods.png, qgis_template.combo.mods.png, qgis_template.extra.mods.png]
+  os:
+    macos:
+      overlay: [qgis_template_mac.mods.png, qgis_template_mac.combo.mods.png, qgis_template_mac.extra.mods.png, qgis_template_mac.gui.mods.png]
+    linux:
+      overlay: [qgis_template_linux.mods.png, qgis_template_linux.combo.mods.png, qgis_template_linux.extra.mods.png]
+# Autodesk Maya, scene and viewport keys (overlay_sources/maya/). Windows maya.exe
+# and the macOS app "Maya" (a trailing release year such as "Maya 2026" is
+# dropped by the matcher); on Linux the process is maya.bin. macOS takes the set
+# with Cmd copies of the File and Edit keys. Not checked on an install.
+maya,maya.bin:
+  overlay: [maya_template.mods.png, maya_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [maya_template_mac.mods.png, maya_template_mac.combo.mods.png, maya_template_mac.extra.mods.png]
+# Avid Pro Tools, Edit window keys (overlay_sources/protools/). Windows
+# "ProTools.exe" and the macOS app "Pro Tools". The keys without a modifier are
+# the Commands Keyboard Focus keys, which act only while that focus is on (the
+# host cannot detect it). Not checked on an install.
+protools,pro tools:
+  overlay: [protools_template.mods.png, protools_template.combo.mods.png, protools_template.extra.mods.png, protools_template.gui.mods.png]
+  os:
+    macos:
+      overlay: [protools_template_mac.mods.png, protools_template_mac.combo.mods.png, protools_template_mac.extra.mods.png, protools_template_mac.gui.mods.png]

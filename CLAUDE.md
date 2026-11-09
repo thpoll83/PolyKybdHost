@@ -103,6 +103,10 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 - **`polyctl fw version` is a live query (cmd 0x43)** and fails with an error during a
   flash.
 - **No blocking the main thread with network I/O either.**
+- ⚠️ **A submenu's device state, and a menu click's core call, run off the GUI
+  thread** through `MenuFetcher` (`gui/menu_fetch.py`): a client-mode RPC has no
+  timeout, and a menu that waited on it froze the tray. Clicks go through
+  `_core_click` / `_report_async`, in click order. [`docs/tray-ui.md`](docs/tray-ui.md).
 - ⚠️ **A modal opened from a bridge handler dispatches the other queued bridge events.**
   Route every dialog a bridge event can open through one serializer (#257).
 - ⚠️ **A COM object never crosses a thread; every thread that calls COM initializes it.**
@@ -124,7 +128,7 @@ brightness 10 min). [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md)
 
 The host connects to any firmware with protocol ≥ `MIN_SUPPORTED_PROTOCOL` (2), then
 gates each feature with `FEATURE_MIN_PROTOCOL` (`device/poly_kybd.py`). `__protocol__`
-(`polyhost/_version.py`) is the newest protocol the host knows, 28 today, changed
+(`polyhost/_version.py`) is the newest protocol the host knows, 29 today, changed
 together with firmware `PROTOCOL_VERSION`. [`docs/protocol-gate.md`](docs/protocol-gate.md).
 
 - ⚠️ **Every new device command must be version-gated**: the `FEATURE_MIN_PROTOCOL`

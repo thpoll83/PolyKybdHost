@@ -63,7 +63,7 @@ M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=p
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_IDLE_TIMEOUT_SET = "idle.timeout.set"  # {"value": 0..5} -> (ok, payload)  (IdleTimeout preset)
 M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
-# Tap-hold timing (firmware protocol v28+). Both ranges CLOSED (TapTerms):
+# Tap-hold timing (firmware protocol v29+). Both ranges CLOSED (TapTerms):
 # tapping term 100..500 ms, Flow Tap term 0..300 ms (0 = off), 10 ms steps.
 # An omitted or null term is left unchanged.
 M_TAP_TERMS_SET = "tap_terms.set"  # {"tapping_term": ms|null, "flow_tap_term": ms|null} -> (ok, terms)
@@ -142,6 +142,10 @@ M_FONTPACK_SYNC = "fontpack.sync"      # {"force": bool=False} -> {"queued","for
 M_FONTPACK_WIPE = "fontpack.wipe"      # {} -> {"queued": bool}; empties all bundle slots
 M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{id,index,device_version,
                                          #        shipped_version,stale}]} (per-bundle device vs shipped)
+M_EMOJIDICT_STATUS = "emojidict.status"  # {} -> {"shipped","supported","selected","device",
+                                         #   "dictionaries": [{id,label,name,native,revision,size}]}
+M_EMOJIDICT_CHOOSE = "emojidict.choose"  # {"id": str} | {"path": str} -> chosen id or path;
+                                         #   "path": "" stops using a dictionary file
 M_DOOM_INSTALL = "doom.install"        # {"path": str} -> {"queued": bool}; installs the easter egg's
                                        #   WHX game data (streams fontpack_flash_* events)
 M_DOOM_INSTALL_PACK = "doom.install_pack"  # {"path": str} -> {"queued": bool}; installs the easter

@@ -82,7 +82,8 @@ from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
-from polyhost.gui.cmd_menu import CommandsSubMenu
+from polyhost.gui.cmd_menu import CommandsSubMenu, _get_open_file_explicit
+from polyhost.gui.menu_fetch import MenuFetcher, ok_value
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
@@ -615,6 +616,10 @@ class PolyHost(QApplication):
         # Both are built by CommandsSubMenu, which routes every action through the
         # core (worker job in-process, RPC in client mode) so they work in both
         # modes (H4a-2c).
+        # Every submenu that shows device state asks the core when it opens. The
+        # call runs off the GUI thread (gui/menu_fetch.py), so a stalled daemon
+        # cannot freeze the tray while a menu waits for its answer.
+        self._menu_fetch = MenuFetcher(self, self.log)
         self.cmdMenu = CommandsSubMenu(self)
 
         # Brightness: promoted out of the old "All PolyKybd Commands" list — it is
@@ -743,7 +748,22 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
 
-        # Tapping term and Flow Tap term (firmware v28+), stored on the keyboard.
+        # Emoji search dictionary (font-pack slot 9, services/emojidict.py): which
+        # language the emoji layer's keyword search uses. A plain settings write;
+        # PolyCore.note_settings_changed() flashes the choice. The entries come
+        # from the daemon's emoji_search_status() and are built on the first show.
+        # It sits at the end of the keyboard's "Selected Language" menu, which is
+        # built once the keyboard answers (see the language-menu builder).
+        self.emoji_dict_menu = QMenu(_("Emoji Search Language"), self.menu)
+        self.emoji_dict_menu.menuAction().setIcon(get_icon("translate.svg"))
+        # The own-file entry's tooltip carries its path, or why it cannot be used.
+        self.emoji_dict_menu.setToolTipsVisible(True)
+        self.emoji_dict_group = QActionGroup(self)
+        self.emoji_dict_group.setExclusive(True)
+        self.emoji_dict_actions = {}
+        # noinspection PyUnresolvedReferences
+        self.emoji_dict_menu.aboutToShow.connect(self.refresh_emoji_dict_menu)
+        # Tapping term and Flow Tap term (firmware v29+), stored on the keyboard.
         # Goes through core.get/set_tap_terms, so it works in client mode too.
         self.tap_terms_action = QAction(get_icon("timer.svg"), _("Tap-Hold Timing…"), parent=self)
         # noinspection PyUnresolvedReferences
@@ -823,6 +843,7 @@ class PolyHost(QApplication):
         # _refresh_tray_tooltip, which is the only place that calls setToolTip.
         self._fontpack_flashing = False
         self._split_link_help_shown = False   # see _maybe_show_split_link_help
+        self._fontpack_stale_shown = False    # see _on_fontpack_stale
         self._fontpack_tooltip = ""
         self._fw_up_downloader = None
         self._fw_up_progress = None
@@ -1254,12 +1275,11 @@ class PolyHost(QApplication):
         if getter is None or not self.device_present:
             action.setVisible(False)
             return
-        try:
-            ok, info = getter()
-        except Exception as exc:  # noqa: BLE001
-            self.log.debug("Font-pack status unavailable: %s", exc)
-            action.setVisible(False)
-            return
+        self._menu_fetch.fetch("fontpack", getter, self._apply_fontpack_action)
+
+    def _apply_fontpack_action(self, result):
+        action = self.fontpack_update_action
+        ok, info = ok_value(result)
         if not ok or not isinstance(info, dict) or not info.get("shipped"):
             action.setVisible(False)
             return
@@ -1296,16 +1316,22 @@ class PolyHost(QApplication):
     def _on_sync_fontpack_clicked(self):
         self.cmdMenu.sync_fontpack()
 
+    def _core_click(self, fn, done):
+        """A menu click's core call: ``fn`` runs off the GUI thread, in click
+        order (gui/menu_fetch.py), then ``done(ok, msg)`` runs on the GUI thread."""
+        self._menu_fetch.call(fn, lambda result: done(*ok_value(result)))
+
     def _refresh_unicode_mode_clicked(self):
-        ok, msg = self.core.refresh_unicode_mode()
-        if ok:
-            self.log.info("Unicode input mode refreshed: %s", msg)
-        else:
-            self.report_device_result("Error", f"Could not refresh the unicode mode: {msg}")
+        def done(ok, msg):
+            if ok:
+                self.log.info("Unicode input mode refreshed: %s", msg)
+            else:
+                self.report_device_result("Error", f"Could not refresh the unicode mode: {msg}")
+
+        self._core_click(lambda: self.core.refresh_unicode_mode(), done)
 
     def _save_mru_clicked(self):
-        self.core.save_mru()
-        self.log.info("MRU cache saved.")
+        self._menu_fetch.call(self.core.save_mru, lambda _r: self.log.info("MRU cache saved."))
 
     def _open_config_folder(self):
         """Open the config directory (settings.yaml + overlay-mapping.poly.yaml)
@@ -1341,6 +1367,9 @@ class PolyHost(QApplication):
         self.idle_timeout_menu.menuAction().setEnabled(enabled and self.supports("idle_timeout"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
         self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
+        # No protocol gate: whether the keyboard has the dictionary slot is read
+        # from its version block when the submenu opens (refresh_emoji_dict_menu).
+        self.emoji_dict_menu.menuAction().setEnabled(enabled)
         self.tap_terms_action.setEnabled(enabled and self.supports("tap_terms"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
@@ -1435,7 +1464,11 @@ class PolyHost(QApplication):
             self.log.log(level, "%s: %s", title, msg)
 
     def pause(self):
-        self.core.set_paused(not self.paused)
+        target = not self.paused
+        self._menu_fetch.call(lambda: self.core.set_paused(target),
+                              lambda _r: self._after_pause())
+
+    def _after_pause(self):
         if self.paused:
             # TRANSLATORS: status row while paused; clicking it reconnects (verb).
             self.status.setText(_("Reconnect"))
@@ -1753,6 +1786,10 @@ class PolyHost(QApplication):
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)
                     item.setIcon(self.unicode_cache.get_icon_for(home_country(lang)))
+            # clear() above leaves this submenu alive: its menu action belongs
+            # to the submenu, not to the language menu.
+            self.keeb_lang_menu.addSeparator()
+            self.keeb_lang_menu.addMenu(self.emoji_dict_menu)
         else:
             self.log.warning("Enumerating PolyKybd languages failed")
 
@@ -1762,7 +1799,7 @@ class PolyHost(QApplication):
             return
         for region_action in self.keeb_lang_menu.actions():
             sub = region_action.menu()
-            if sub is not None:
+            if sub is not None and sub is not self.emoji_dict_menu:
                 yield from sub.actions()
 
     def update_ui_on_lang_change(self, new_lang):
@@ -1795,16 +1832,19 @@ class PolyHost(QApplication):
             if self.client_mode:
                 for key, value in updated.items():
                     if current.get(key) != value:
-                        ok, _msg = self.core.settings_set(key, value)
+                        ok, _msg = self.core.settings_set(key, value,
+                                                          source="Settings dialog")
                         saved = saved and ok
             else:
-                saved = self.poly_settings.set_all(updated)
+                saved = self.poly_settings.set_all(updated, source="Settings dialog")
                 # In-process mode writes settings directly (bypassing
                 # core.settings_set), so the core has to be told: it owns every
                 # side effect a setting has on the live device — the daylight
-                # brightness push, the unicode settle watcher — and which ones
-                # exist is its business, not the dialog's.
-                self.core.note_settings_changed()
+                # brightness push, the unicode settle watcher, the emoji search
+                # dictionary flash — and which ones exist is its business, not
+                # the dialog's. It gets the changed keys, as in client mode.
+                self.core.note_settings_changed(
+                    [k for k, v in updated.items() if current.get(k) != v])
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self._refresh_theme()
@@ -2063,13 +2103,16 @@ class PolyHost(QApplication):
 
     def open_mock_board(self):
         from polyhost.gui.mock_board_dialog import MockBoardDialog
-        ok, payload = self.core.mock_keycaps(0)
-        if not ok:
-            QMessageBox.information(None, _("Mock keyboard"), str(payload))
-            return
-        self._mock_board = MockBoardDialog(self.core)
-        self._mock_board.show()
-        bring_to_front(self._mock_board)
+
+        def done(ok, payload):
+            if not ok:
+                QMessageBox.information(None, _("Mock keyboard"), str(payload))
+                return
+            self._mock_board = MockBoardDialog(self.core)
+            self._mock_board.show()
+            bring_to_front(self._mock_board)
+
+        self._core_click(lambda: self.core.mock_keycaps(0), done)
 
     def _format_uptime(self) -> str:
         """Human-readable time since this process started (for the About dialog)."""
@@ -2304,12 +2347,14 @@ class PolyHost(QApplication):
             # No local worker/keeb — change via the daemon over RPC. The menu
             # checkmark also follows the daemon's next status_changed, but
             # update it now for immediate feedback.
-            ok, msg = self.core.set_language(lang)
-            if ok:
-                self.update_ui_on_lang_change(lang)
-            elif self.keeb_lang_menu is not None:
-                self.keeb_lang_menu.setTitle(_f("Could not set {language}: {error}",
-                                                language=lang, error=msg))
+            def done(ok, msg):
+                if ok:
+                    self.update_ui_on_lang_change(lang)
+                elif self.keeb_lang_menu is not None:
+                    self.keeb_lang_menu.setTitle(_f("Could not set {language}: {error}",
+                                                    language=lang, error=msg))
+
+            self._core_click(lambda: self.core.set_language(lang), done)
             return
 
         def _job(cancel):
@@ -2331,7 +2376,10 @@ class PolyHost(QApplication):
         # round-trip onto the worker in-process, or over RPC in client mode) and
         # tick the matching item. On failure (old firmware / disconnected) leave
         # both unchecked rather than guessing.
-        ok, value = self.core.get_idle_style()
+        self._menu_fetch.fetch("idle_style", self.core.get_idle_style, self._apply_idle_style)
+
+    def _apply_idle_style(self, result):
+        ok, value = ok_value(result)
         self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
         self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
         self.idle_iddqd_action.setChecked(bool(ok) and value == IdleStyle.IDDQD.value)
@@ -2339,19 +2387,26 @@ class PolyHost(QApplication):
 
     def change_idle_style(self):
         value = self.sender().data()
-        ok, msg = self.core.set_idle_style(value)
-        if ok:
-            self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
-        else:
-            # Firmware too old (needs v4+) or device busy — log and re-sync the
-            # checkmark to the device's actual style so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set idle style: {msg}")
-            self.refresh_idle_style_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
+            else:
+                # Firmware too old (needs v4+) or device busy — log and re-sync the
+                # checkmark to the device's actual style so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set idle style: {msg}")
+                self.refresh_idle_style_menu()
+
+        self._core_click(lambda: self.core.set_idle_style(value), done)
 
     def refresh_idle_timeout_menu(self):
         # Same shape as refresh_idle_style_menu: read the device, tick the match,
         # and on failure leave everything unchecked rather than guessing.
-        ok, value = self.core.get_idle_timeout()
+        self._menu_fetch.fetch("idle_timeout", self.core.get_idle_timeout,
+                               self._apply_idle_timeout)
+
+    def _apply_idle_timeout(self, result):
+        ok, value = ok_value(result)
         # (preset, seconds) in-process; JSON turns it into a list over RPC.
         preset = value[0] if ok and value else None
         for act in self.idle_timeout_actions:
@@ -2359,14 +2414,17 @@ class PolyHost(QApplication):
 
     def change_idle_timeout(self):
         value = self.sender().data()
-        ok, msg = self.core.set_idle_timeout(value)
-        if ok:
-            self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
-        else:
-            # Firmware too old (needs v18+) or device busy — log and re-sync the
-            # checkmark to the device's actual value so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set idle timeout: {msg}")
-            self.refresh_idle_timeout_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
+            else:
+                # Firmware too old (needs v18+) or device busy — log and re-sync the
+                # checkmark to the device's actual value so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set idle timeout: {msg}")
+                self.refresh_idle_timeout_menu()
+
+        self._core_click(lambda: self.core.set_idle_timeout(value), done)
 
     def _build_glyph_script_previews(self):
         # Give each entry a preview of its own script, rendered from the shipped
@@ -2393,56 +2451,163 @@ class PolyHost(QApplication):
         self._build_glyph_script_previews()
         # Read the active glyph script from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
-        ok, value = self.core.get_glyph_script()
+        self._menu_fetch.fetch("glyph_script", self.core.get_glyph_script,
+                               self._apply_glyph_script)
+        self.refresh_glyph_placement_actions()
+
+    def _apply_glyph_script(self, result):
+        ok, value = ok_value(result)
         for sval, act in self.glyph_actions.items():
             act.setChecked(bool(ok) and value == sval)
-        self.refresh_glyph_placement_actions()
 
     def refresh_glyph_placement_actions(self):
         # A keyboard below v26 answers False: grey the pair out rather than offer a
         # choice the firmware would ignore.
-        ok, value = self.core.get_glyph_placement()
+        self._menu_fetch.fetch("glyph_placement", self.core.get_glyph_placement,
+                               self._apply_glyph_placement)
+
+    def _apply_glyph_placement(self, result):
+        ok, value = ok_value(result)
         for pval, act in self.glyph_place_actions.items():
             act.setEnabled(bool(ok))
             act.setChecked(bool(ok) and value == pval)
 
     def change_glyph_placement(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_placement(value)
-        if ok:
-            self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
-        else:
-            self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
-            self.refresh_glyph_placement_actions()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Glyph-script placement set to %s.", GlyphPlacement(value).name.lower())
+            else:
+                self.report_device_result("Error", f"Could not set the keycap script placement: {msg}")
+                self.refresh_glyph_placement_actions()
+
+        self._core_click(lambda: self.core.set_glyph_placement(value), done)
 
     def change_glyph_script(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_script(value)
-        if ok:
-            self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
+            else:
+                # Firmware too old (needs v9+) or device busy — log and re-sync the
+                # checkmark to the device's actual script so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set glyph script: {msg}")
+                self.refresh_glyph_script_menu()
+
+        self._core_click(lambda: self.core.set_glyph_script(value), done)
+
+    def refresh_emoji_dict_menu(self):
+        """Build the dictionary entries once, then tick the selected one. On a
+        keyboard without the dictionary slot (firmware before font-pack layout v4)
+        the entries are shown but greyed out, with the reason as the first row."""
+        self._menu_fetch.fetch("emoji_dict", self.core.emoji_search_status,
+                               self._apply_emoji_dict)
+
+    def _apply_emoji_dict(self, result):
+        ok, st = ok_value(result)
+        if not ok or not isinstance(st, dict) or not st.get("shipped"):
+            self.emoji_dict_menu.clear()
+            self.emoji_dict_actions = {}
+            info = self.emoji_dict_menu.addAction(_("No emoji search dictionaries shipped"))
+            info.setEnabled(False)
+            return
+        if not self.emoji_dict_actions:
+            self.emoji_dict_menu.clear()
+            self.emoji_dict_info = self.emoji_dict_menu.addAction(
+                _("Needs newer keyboard firmware"))
+            self.emoji_dict_info.setEnabled(False)
+            for d in st["dictionaries"]:
+                act = QAction(d["label"], parent=self, checkable=True)
+                act.setData(d["id"])
+                self.emoji_dict_group.addAction(act)
+                # noinspection PyUnresolvedReferences
+                act.triggered.connect(self.change_emoji_dict)
+                self.emoji_dict_menu.addAction(act)
+                self.emoji_dict_actions[d["id"]] = act
+            # A hand-built dictionary (emoji_dict.py build <id> --user). Choosing
+            # the file in use again flashes it again, for an edited rebuild.
+            self.emoji_dict_menu.addSeparator()
+            self.emoji_dict_file_action = QAction(parent=self, checkable=True)
+            self.emoji_dict_group.addAction(self.emoji_dict_file_action)
+            # noinspection PyUnresolvedReferences
+            self.emoji_dict_file_action.triggered.connect(self.choose_emoji_dict_file)
+            self.emoji_dict_menu.addAction(self.emoji_dict_file_action)
+        supported = bool(st.get("supported"))
+        user_file = st.get("file") or ""
+        self.emoji_dict_info.setVisible(not supported)
+        for did, act in self.emoji_dict_actions.items():
+            act.setEnabled(supported)
+            act.setChecked(not user_file and did == st.get("selected"))
+        fa = self.emoji_dict_file_action
+        fa.setEnabled(supported)
+        fa.setChecked(bool(user_file))
+        if not user_file:
+            fa.setText(_("Own dictionary file..."))
+        elif st.get("file_error"):
+            fa.setText(_f("Own dictionary (cannot be used): {name}", name=os.path.basename(user_file)))
         else:
-            # Firmware too old (needs v9+) or device busy — log and re-sync the
-            # checkmark to the device's actual script so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set glyph script: {msg}")
-            self.refresh_glyph_script_menu()
+            fa.setText(_f("Own dictionary: {name}", name=os.path.basename(user_file)))
+        fa.setToolTip(st.get("file_error") or user_file)
+
+    def change_emoji_dict(self):
+        dict_id = self.sender().data()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Emoji search dictionary set to %s; the keyboard gets it unless "
+                              "it already holds it.", dict_id)
+            else:
+                self.report_device_result("Error", f"Could not set the emoji search language: {msg}")
+                self.refresh_emoji_dict_menu()
+
+        self._core_click(lambda: self.core.emoji_search_choose(dict_id=dict_id), done)
+
+    def choose_emoji_dict_file(self):
+        path = _get_open_file_explicit(_("Choose an emoji search dictionary"),
+                                       _("Emoji search dictionary (*.plyd)"))
+        if not path:
+            # Re-tick from the setting: a cancelled dialog leaves the file entry checked.
+            self.refresh_emoji_dict_menu()
+            return
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Emoji search dictionary file %s; flashing it.", path)
+            else:
+                self.report_device_result("Error", f"Could not use the emoji search dictionary: {msg}")
+                # The user just picked the file, so say why it was refused (the
+                # core's reason is English, like every core message).
+                _msgbox(QMessageBox.Warning, _("Emoji search dictionary"),
+                        _f("This file cannot be used: {reason}", reason=msg))
+            self.refresh_emoji_dict_menu()
+
+        self._core_click(lambda: self.core.emoji_search_choose(path=path), done)
 
     def refresh_glyph_size_menu(self):
         # Read the active legend size from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
-        ok, value = self.core.get_glyph_size()
+        self._menu_fetch.fetch("glyph_size", self.core.get_glyph_size, self._apply_glyph_size)
+
+    def _apply_glyph_size(self, result):
+        ok, value = ok_value(result)
         for sval, act in self.glyph_size_actions.items():
             act.setChecked(bool(ok) and value == sval)
 
     def change_glyph_size(self):
         value = self.sender().data()
-        ok, msg = self.core.set_glyph_size(value)
-        if ok:
-            self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
-        else:
-            # Firmware too old (needs v13+) or device busy — log and re-sync the
-            # checkmark to the device's actual size so the menu doesn't lie.
-            self.report_device_result("Error", f"Could not set keycap size: {msg}")
-            self.refresh_glyph_size_menu()
+
+        def done(ok, msg):
+            if ok:
+                self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
+            else:
+                # Firmware too old (needs v13+) or device busy — log and re-sync the
+                # checkmark to the device's actual size so the menu doesn't lie.
+                self.report_device_result("Error", f"Could not set keycap size: {msg}")
+                self.refresh_glyph_size_menu()
+
+        self._core_click(lambda: self.core.set_glyph_size(value), done)
 
     def read_overlay_mapping_file(self, file):
         if not file:
@@ -2980,6 +3145,23 @@ class PolyHost(QApplication):
                                   QSystemTrayIcon.Warning, 6000)
             self._maybe_show_split_link_help(result)
 
+    def _on_fontpack_stale(self, result):
+        """Auto Flash is off and the keyboard is behind on font bundles.
+
+        Once per session, so a replug does not repeat it. The Updates menu's
+        "Update keyboard fonts (n)" row says the same on every platform, which
+        matters because a balloon never reaches a macOS user."""
+        if self._fontpack_stale_shown:
+            return
+        self._fontpack_stale_shown = True
+        bundles = (result or {}).get("bundles") or []
+        self.show_balloon("PolyKybd",  # i18n: skip
+                          _nf("{n} keyboard font bundle is out of date, and Auto Flash is "
+                              "off. Use Updates \u2192 Update keyboard fonts.",
+                              "{n} keyboard font bundles are out of date, and Auto Flash is "
+                              "off. Use Updates \u2192 Update keyboard fonts.",
+                              len(bundles)), 8000)
+
     def _maybe_show_split_link_help(self, result):
         """Open the .uf2 recovery help when a flash found the other half silent.
 
@@ -3512,7 +3694,7 @@ class PolyHost(QApplication):
 
     def save_keeb_mru(self):
         """Best-effort MRU persist — delegated to the core (worker job)."""
-        self.core.save_mru()
+        self._menu_fetch.call(self.core.save_mru)
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):
@@ -3569,6 +3751,8 @@ class PolyHost(QApplication):
             self._on_fontpack_progress(result)
         elif name == "fontpack_flash_done":
             self._on_fontpack_done(result)
+        elif name == "fontpack_stale":
+            self._on_fontpack_stale(result)
         elif name == "wincompose_download_progress":
             self._on_wincompose_download_progress(*result)
         elif name == "wincompose_download_done":

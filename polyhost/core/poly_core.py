@@ -242,6 +242,9 @@ class PolyCore(Observable):
         # decide_stale_bundles keeps it self-terminating: once the device is
         # current, a reconnect finds nothing to do.
         self._fontpack_flash_in_progress = False
+        # The connect-time check waits while Eden owns the keycaps (GET_ID 'A'
+        # block, v28); the probe releases it (_release_held_fontpack_check).
+        self._fontpack_check_held = False
         # Bundles whose last flash attempt genuinely failed: {slot index: message}.
         # Re-flashed on the next pass regardless of the version comparison, because a
         # bundle can report a failure and still read as current (see
@@ -1766,6 +1769,13 @@ class PolyCore(Observable):
             self.keeb.probe_bulk_pipe()
         snapshot["transport"] = self.keeb.get_transport()
         snapshot["link_rate_mbps"] = self.keeb.get_link_rate_mbps()
+        # Only a steady-state probe may release a held check. A reboot or a
+        # connectivity change drops it instead: the connect that follows reads
+        # the new firmware's version first, and queues its own check only when
+        # it is compatible (a newer firmware may be held in safe mode).
+        steady = (connected_now and not snapshot["state_changed"]
+                  and not snapshot["fresh_boot"])
+        self._release_held_fontpack_check(steady)
         if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
@@ -2939,13 +2949,14 @@ class PolyCore(Observable):
         """All settings as a plain dict (for the client's settings dialog)."""
         return dict(self.poly_settings.get_all())
 
-    def settings_set(self, key, value):
-        """Set one known setting and persist. Returns (ok, msg)."""
+    def settings_set(self, key, value, source="core"):
+        """Set one known setting and persist. Returns (ok, msg). ``source`` names
+        the writer in the settings log line (``PolySettings.save``)."""
         alls = self.poly_settings.get_all()
         if key not in alls:
             return False, f"Unknown setting '{key}'"
         alls[key] = value
-        saved = self.poly_settings.set_all(alls)
+        saved = self.poly_settings.set_all(alls, source=source)
         self.note_settings_changed([key])
         if not saved:
             # Applied in this process, but anything reading the FILE (the
@@ -2977,6 +2988,25 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
+        if (keys is not None and "emoji_search_dict_file" in keys
+                and self.poly_settings.get("emoji_search_dict_file")):
+            # A newly set dictionary file goes on the retry list, whichever writer
+            # set it and whether or not a keyboard is connected now: the pass then
+            # writes it even when its version equals what slot 9 reports (two user
+            # builds share one). The list is cleared only by a successful write,
+            # so it survives a reconnect, and the pass skips it on a keyboard
+            # without slot 9.
+            from polyhost.services import emojidict
+            self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
+        if (keys is not None and {"emoji_search_dict", "emoji_search_dict_file"}.intersection(keys)
+                and self._fw_actions_allowed() and self._has_emojidict_slot()):
+            # Flash the newly chosen dictionary now. The shared bundle pass picks it
+            # because slot 9 no longer matches (or from the retry list above); it is
+            # a deliberate choice, so it runs even with fontpack_auto_flash off. Not
+            # on keys None: every writer names the keys it changed (the in-process
+            # dialog too). Not on firmware without slot 9: the pass would flash only
+            # the OTHER stale bundles.
+            self.sync_fontpack()
         from polyhost.services import game_assets
         if keys is None or game_assets.SETTING_KEYS.intersection(keys):
             # The next send of an opted-in overlay builds again; reset() makes
@@ -3094,7 +3124,7 @@ class PolyCore(Observable):
         if not install_id:
             install_id = telemetry_svc.new_install_id()
             try:
-                self.settings_set("telemetry_install_id", install_id)
+                self.settings_set("telemetry_install_id", install_id, source="telemetry")
             except Exception:  # a read-only config must not break startup
                 self.log.debug("Could not persist telemetry install id",
                                exc_info=True)
@@ -3334,8 +3364,7 @@ class PolyCore(Observable):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
         its slot — forced, even if the keyboard is already up to date. Resolves the
         bundle to its res/fontpack/<id>.plyf and delegates to :meth:`flash_fontpack`."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return False, "No font-pack bundles shipped with this host."
         b = self._find_bundle(manifest, bundle)
@@ -3347,6 +3376,110 @@ class PolyCore(Observable):
                            f"protocol 27 or later; this keyboard's slot holds 256 KB. "
                            f"Update the firmware first.")
         return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    def _bundle_manifest(self):
+        """The shipped font-pack bundles plus the selected emoji search dictionary
+        (slot 9, services/emojidict.py) as one more bundle, so every bundle pass
+        (connect-time flash, status, forced re-flash, wipe) covers it too. None
+        when nothing is shipped."""
+        from polyhost.services import emojidict, fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        user_file = self.poly_settings.get("emoji_search_dict_file")
+        if user_file:
+            # A user's own dictionary. When it cannot be used, nothing is flashed
+            # to slot 9: replacing it with a shipped one would discard the user's.
+            entry, err = emojidict.user_entry(user_file)
+            if entry is None:
+                self.log.warning("Emoji search dictionary file not used: %s", err)
+        else:
+            try:
+                entry = emojidict.bundle_entry(emojidict.load_manifest(),
+                                               self.poly_settings.get("emoji_search_dict")
+                                               or emojidict.DEFAULT_DICT)
+            except OSError as e:
+                self.log.warning("Emoji search dictionary not available: %s", e)
+                entry = None
+        if entry is None:
+            return manifest
+        manifest = dict(manifest or {"bundles": []})
+        manifest["bundles"] = [b for b in manifest["bundles"] if b["index"] != entry["index"]] + [entry]
+        return manifest
+
+    def emoji_search_status(self):
+        """The emoji search dictionaries: which one is selected, which one the
+        keyboard holds (read from the cached GET_ID version block, no device I/O),
+        whether the keyboard has the slot at all, and the shipped list."""
+        from polyhost.services import emojidict
+        manifest = emojidict.load_manifest()
+        user_file = self.poly_settings.get("emoji_search_dict_file") or ""
+        file_error = emojidict.user_entry(user_file)[1] if user_file else ""
+        if manifest is None:
+            return True, {"shipped": False, "dictionaries": [],
+                          "file": user_file, "file_error": file_error}
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        held, revision = emojidict.identify(manifest, dev.get(emojidict.BUNDLE_ID, 0))
+        selected = self.poly_settings.get("emoji_search_dict") or emojidict.DEFAULT_DICT
+        return True, {
+            "shipped": True,
+            "supported": emojidict.BUNDLE_ID in dev,
+            "selected": selected,
+            "file": user_file,
+            "file_error": file_error,
+            "device": ({"id": held["id"], "revision": revision,
+                        "user": revision == emojidict.USER_REVISION} if held
+                       else ({"id": None, "version": dev.get(emojidict.BUNDLE_ID, 0)}
+                             if dev.get(emojidict.BUNDLE_ID) else None)),
+            "dictionaries": [{"id": e["id"], "label": emojidict.label(e), "name": e["name"],
+                              "native": e["native"], "revision": e["revision"], "size": e["size"]}
+                             for e in manifest["dictionaries"]]}
+
+    def _has_emojidict_slot(self) -> bool:
+        """Whether the keyboard's GET_ID version block lists slot 9 (font-pack
+        layout v4). Cached; no device I/O."""
+        from polyhost.services import emojidict
+        return emojidict.BUNDLE_ID in (getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+
+    def emoji_search_choose(self, dict_id=None, path=None, source="core"):
+        """Choose the emoji search dictionary: a shipped one by id (which also
+        stops using a dictionary file), or a hand-built ``.plyd`` file by path
+        (``""`` stops using the file). The change is flashed through
+        note_settings_changed(). Choosing the file already in use flashes it
+        again, so an edited and rebuilt file reaches the keyboard: its version
+        does not change between builds.
+
+        A chosen file is put on the pass's retry list, so the pass writes it even
+        when its version equals what slot 9 reports, and a failed write stays on
+        that list for the next pass."""
+        from polyhost.services import emojidict
+        alls = self.poly_settings.get_all()
+        if dict_id is not None:
+            if emojidict.find(emojidict.load_manifest(), dict_id) is None:
+                return False, f"Unknown emoji search dictionary '{dict_id}'"
+            alls["emoji_search_dict"] = dict_id
+            alls["emoji_search_dict_file"] = ""
+        elif path is None:
+            return False, "Name a dictionary id or a dictionary file"
+        else:
+            if path:
+                entry, err = emojidict.user_entry(path)
+                if entry is None:
+                    return False, err
+                path = os.path.realpath(entry["path"])
+                if path == alls.get("emoji_search_dict_file"):
+                    # No settings change, so note_settings_changed() would not run:
+                    # queue the write here, the same way it does.
+                    if not self._has_emojidict_slot():
+                        return False, "This keyboard's firmware has no emoji search dictionary slot"
+                    self._fontpack_failed[emojidict.BUNDLE_ID] = "dictionary file chosen, not written yet"
+                    ok, msg = self.sync_fontpack()
+                    return (True, path) if ok else (False, msg)
+            alls["emoji_search_dict_file"] = path
+        saved = self.poly_settings.set_all(alls, source=source)
+        self.note_settings_changed(["emoji_search_dict", "emoji_search_dict_file"])
+        if not saved:
+            return False, ("The emoji search dictionary is applied but could not be "
+                           "saved to the settings file; see the log")
+        return True, dict_id if dict_id is not None else path
 
     def _bundle_fits_device(self, b) -> bool:
         """False for an icon library larger than the 256 KB icon slot of firmware
@@ -3398,8 +3531,7 @@ class PolyCore(Observable):
         clearing the external-flash font pack. Mirrors `_fontpack_autocheck_job`'s
         progress/guard handling."""
         import os, tempfile
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         # With no shipped manifest, fall back to wiping the current 6 fixed slots.
         slots = (manifest["bundles"] if manifest
                  else [{"id": str(i), "index": i} for i in range(6)])
@@ -3446,8 +3578,7 @@ class PolyCore(Observable):
     def fontpack_bundle_status(self):
         """Per-bundle status: device version (from the GET_ID block) vs the shipped
         version, and whether each is stale. ``shipped`` is False with no bundles."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return True, {"shipped": False, "bundles": []}
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
@@ -3457,14 +3588,15 @@ class PolyCore(Observable):
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": (b["content_version"] > dev.get(b["index"], 0)
+                    "stale": (hid_fontpack.bundle_is_stale(b, dev.get(b["index"], 0))
                               and hid_fontpack.device_has_slot(dev, b)
                               and self._bundle_fits_device(b)),
                     "retry": b["index"] in self._fontpack_failed,
                     "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
         return True, {"shipped": True, "bundles": bundles,
-                      "failed": [b["id"] for b in bundles if b["retry"]]}
+                      "failed": [b["id"] for b in bundles if b["retry"]],
+                      "auto_flash": bool(self.poly_settings.get("fontpack_auto_flash"))}
 
     def get_fontpack_status(self):
         """Query the keyboard's currently-loaded font pack (present / abi /
@@ -3491,8 +3623,63 @@ class PolyCore(Observable):
         flash run on the worker (`_fontpack_autocheck_job`) so they don't block
         the caller (apply_reconnect may be on the Qt thread)."""
         if not self.poly_settings.get("fontpack_auto_flash"):
+            # Off: flash nothing, but say when the keyboard is behind. Without
+            # this a keyboard fell behind by four bundles on two computers and
+            # nothing told the user (2026-11-08).
+            self.worker.submit("fontpack_stale_notice", self._fontpack_stale_notice_job)
             return
+        if self._eden_owns_keycaps():
+            # A flash during the boot intro drew the master's legends over Eden and
+            # left the slave in it (field, 2026-11-09). The 1 s probe re-reads the
+            # block and releases the check once Eden is done.
+            if not getattr(self, "_fontpack_check_held", False):
+                self.log.info("Font pack auto-check held: Eden owns the keycaps "
+                              "(animation state %s).", self.keeb.anim_state)
+            self._fontpack_check_held = True
+            return
+        self._fontpack_check_held = False
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _eden_owns_keycaps(self) -> bool:
+        """The GET_ID 'A' block reads INTRO or IDLE. False on firmware before v28."""
+        return getattr(self.keeb, "anim_state", None) in (hid_fontpack.ANIM_INTRO,
+                                                         hid_fontpack.ANIM_IDLE)
+
+    def _release_held_fontpack_check(self, steady: bool):
+        """From the probe: run the held connect-time check once Eden has ended.
+
+        `steady` is a connected probe with no reboot and no connectivity change.
+        Anything else drops the hold, because the connect that follows queues its
+        own check after its compatibility decision."""
+        # getattr: tests build cores without __init__ and drive the probe.
+        if not getattr(self, "_fontpack_check_held", False):
+            return
+        if not steady:
+            self._fontpack_check_held = False
+        elif not self._eden_owns_keycaps():
+            self.log.info("Font pack auto-check released: Eden has ended.")
+            # Cleared first: with Auto Flash turned off meanwhile, the call below
+            # takes the notice branch, which does not touch the hold, and every
+            # later probe would queue the notice again.
+            self._fontpack_check_held = False
+            self._maybe_auto_flash_fontpack()
+
+    def _fontpack_stale_notice_job(self, cancel):
+        """With Auto Flash off: log and emit FONTPACK_STALE when bundles are stale.
+
+        Reads the cached GET_ID version block (``fontpack_bundle_status``), so it
+        does no device I/O. Flashes nothing."""
+        ok, info = self.fontpack_bundle_status()
+        if not ok or not info.get("shipped"):
+            return
+        stale = [b["id"] for b in info["bundles"] if b["stale"]]
+        if not stale:
+            return
+        self.log.warning("Font pack: %d bundle(s) out of date (%s), and Auto Flash "
+                         "(fontpack_auto_flash) is off, so nothing is flashed. "
+                         "Updates -> Update keyboard fonts, or `polyctl fontpack sync`.",
+                         len(stale), ", ".join(stale))
+        self.emit(events.FONTPACK_STALE, {"bundles": stale})
 
     def _fontpack_autocheck_job(self, cancel):
         """Flash any font-pack bundles the keyboard is missing, behind on, or that
@@ -3514,8 +3701,7 @@ class PolyCore(Observable):
 
         Targets are the stale bundles ∪ the ones a previous pass failed on, or every
         shipped bundle when ``force_all``."""
-        from polyhost.services import fontpack_bundle
-        manifest = fontpack_bundle.load_bundle_manifest()
+        manifest = self._bundle_manifest()
         if manifest is None:
             return   # no bundles shipped with this host — feature inert
         if self._fontpack_flash_in_progress:
@@ -3633,6 +3819,11 @@ class PolyCore(Observable):
         one that happens to see the ``*`` marker, the next probe still pops it."""
         if status == hid_fontpack.COMMIT_REJECTED:
             return False, ""
+        if bundle.get("user_file"):
+            # Every build of a user's dictionary file has the same version, so a
+            # matching version cannot tell the new build from the old one: keep
+            # the retry rather than count a failed write as done.
+            return False, ""
         try:
             ok, _ = self.keeb.query_id()
         except Exception as exc:                      # noqa: BLE001 — a probe must not mask the flash error
@@ -3641,7 +3832,9 @@ class PolyCore(Observable):
         if not ok:
             return False, ""
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {}).get(bundle["index"], 0)
-        if dev < bundle["content_version"]:
+        # The bundle's own staleness rule: a font may read newer than shipped, an
+        # emoji dictionary must match exactly (another one can have a higher number).
+        if hid_fontpack.bundle_is_stale(bundle, dev):
             return False, ""
         if status == hid_fontpack.COMMIT_NO_SLAVE:
             note = (f"{bundle['id']}: stored (v{dev}), but the other half never confirmed — "

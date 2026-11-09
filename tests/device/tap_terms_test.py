@@ -1,4 +1,4 @@
-"""Tap-hold timing (cmd 44, protocol v28+): the gate, the wire bytes, the closed
+"""Tap-hold timing (cmd 44, protocol v29+): the gate, the wire bytes, the closed
 ranges and the reply parse. The firmware side is qmk_firmware
 keyboards/polykybd/hid_com.c hid_cmd_44 and base/tap_terms.h."""
 
@@ -27,7 +27,7 @@ class TapTermsGateTest(unittest.TestCase):
         return keeb
 
     def test_feature_threshold(self):
-        self.assertEqual(TAP_TERMS_MIN_PROTOCOL, 28)
+        self.assertEqual(TAP_TERMS_MIN_PROTOCOL, 29)
         self.assertEqual(FEATURE_MIN_PROTOCOL["tap_terms"], TAP_TERMS_MIN_PROTOCOL)
         self.assertFalse(protocol_supports(TAP_TERMS_MIN_PROTOCOL - 1, "tap_terms"))
         self.assertTrue(protocol_supports(TAP_TERMS_MIN_PROTOCOL, "tap_terms"))

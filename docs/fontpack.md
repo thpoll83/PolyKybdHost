@@ -131,6 +131,34 @@ and relative links were adjusted to suit a standalone file.
     `.plyf` on the same transport are still unchecked (data, so the exposure is parser
     bugs).
 
+## Slot 9: the emoji search dictionary
+
+The emoji layer's keyword search reads a dictionary from slot 9 (128 KB, font-pack
+layout v4; firmware: qmk `keyboards/polykybd/emoji/EMOJI_SEARCH.md`). The host
+ships all 79 dictionaries in `res/emojidict/` (gzipped, `manifest.json` from
+`emoji_dict.py build-all`, imported with `scripts/import_emojidict.py`).
+`services/emojidict.py` adds the chosen one to the bundle list
+(`PolyCore._bundle_manifest()`), so the connect pass, status, forced re-flash and
+wipe treat it like any other bundle.
+
+- A dictionary's `content_version` is `(number << 8) | revision`. `number` is its
+  line in qmk `dict_src/dictionaries.tsv`, so GET_ID's `V` block names the
+  dictionary on the keyboard. No HID command and no protocol version of its own.
+- ⚠️ **Slot 9 is stale on any version mismatch, not only a lower version**
+  (`hid_fontpack.bundle_is_stale()`). Another dictionary can have a lower number.
+- Slot 9 is never assumed. Firmware before layout v4 reports fewer slots, and
+  choosing a dictionary there flashes nothing: `_has_emojidict_slot()` gates it,
+  because the shared pass would flash only the other stale bundles.
+- Settings: `emoji_search_dict` (shipped id, default `en`) and
+  `emoji_search_dict_file` (a user's `.plyd`, built with `emoji_dict.py build <id>
+  --user`, revision 255). The file takes priority. An unusable file flashes nothing
+  to slot 9, so the user's dictionary on the keyboard is not replaced.
+  `PolyCore.emoji_search_choose()` sets either; choosing the file in use again
+  forces a flash, because a rebuilt file keeps its version.
+- Surfaces: tray Selected Language → Emoji Search Language, the settings dialog,
+  `polyctl emoji-dict [status|list|set ID|file PATH|file --clear]`, control methods
+  `emojidict.status` and `emojidict.choose`.
+
 ## The font pack (the CLAUDE.md summary)
 
 _Moved verbatim from `CLAUDE.md` on 2026-10-10. CLAUDE.md keeps a short pointer._
@@ -179,6 +207,21 @@ autocheck job, the retry/verify logic and `polyctl fontpack` are in
   356,896 B. Over 256 KB, firmware below protocol 27 (before 1.10.2) refuses the
   bundle at BEGIN and keeps its old library (`PolyCore._bundle_fits_device`).
   Check the new size against both slot sizes before you rebuild.
+  **`--renumber-by-usage` is a ONE-TIME renumbering, still to be run with the next
+  planned rebuild.** It gives the icons most apps draw the lowest ids, so cmd 42 fits
+  more (slot, id) pairs per report: 27 at 9 bits against 20 at 12. Measured on the
+  shipped templates (2026-11-09): 6,868 fill reports over 2,861 overlay entries with
+  the append-only ids, 5,666 ranked (-17.5 %, about 0.4 report per switch). It breaks
+  the append-only rule once. Retired icons follow the live ones with their own pixels,
+  and the builder stops if a shipped frame does not match its key in `icon_ids.yaml`.
+  Run it once, then rebuild without it again.
+  ⚠️ **Do not run it before the slave can refuse a fill from another library.** The
+  host fills only when the keyboard reports exactly the shipped `content_version`, but
+  until the master has read the slave's versions that number is the master's alone,
+  and each half draws a cmd 42 fill from its OWN library. With append-only ids a slave
+  on the old library only misses a new id and NACKs; with renumbered ids it draws the
+  WRONG icon for an old one. The firmware has to carry the master's icon-library
+  version in the fill sync and the slave refuse a mismatch first.
   **An icon enters the library only if more than one app uses it** (maintainer's
   rule, 2026-10-09), and the library never decides what a key shows. The send
   path's hit test is the image BYTES, whatever made them (a template, a generic

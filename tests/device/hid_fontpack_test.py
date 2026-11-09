@@ -21,6 +21,10 @@ from polyhost.device.hid_fontpack import (
     flash_fontpack,
     parse_id_version_block,
     parse_id_state_generation,
+    parse_id_anim_state,
+    ANIM_NONE,
+    ANIM_INTRO,
+    ANIM_IDLE,
     decide_stale_bundles,
     classify_commit_reply,
     commit_error_text,
@@ -668,6 +672,33 @@ class TestIdVersionBlock(unittest.TestCase):
     def test_truncated_block_is_empty(self):         # count says 4 but bytes run out
         raw = b"P\x06.Split72 0.8.50 P6 HW2 \x00V\x04\x01\x00"
         self.assertEqual(parse_id_version_block(raw), {})
+
+
+class TestIdAnimStateBlock(unittest.TestCase):
+    """parse_id_anim_state: the ['A'][u8] block (v28), after 'V' and 'G'."""
+
+    @staticmethod
+    def _reply(anim=None):
+        raw = bytearray(b"P\x06.Split72 1.10.3 P28 HW0x0320 ") + b"\x00"
+        raw += b"V" + bytes([9]) + b"".join(struct.pack("<H", v) for v in range(9))
+        raw += b"G" + struct.pack("<H", 7)
+        if anim is not None:
+            raw += bytes([ord("A"), anim])
+        raw += b"\x00" * max(0, 64 - len(raw))
+        return bytes(raw)
+
+    def test_each_state_is_read_after_the_g_block(self):
+        for state in (ANIM_NONE, ANIM_INTRO, ANIM_IDLE):
+            with self.subTest(state=state):
+                self.assertEqual(parse_id_anim_state(self._reply(state)), state)
+
+    def test_absent_block_is_none(self):
+        self.assertIsNone(parse_id_anim_state(self._reply()))
+
+    def test_the_older_blocks_still_parse_with_it(self):
+        r = self._reply(ANIM_INTRO)
+        self.assertEqual(parse_id_state_generation(r), 7)
+        self.assertEqual(parse_id_version_block(r), {i: i for i in range(9)})
 
 
 class TestIdStateGenerationBlock(unittest.TestCase):

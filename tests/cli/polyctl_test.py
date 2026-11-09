@@ -9,6 +9,7 @@ runs against the fake server with the connection injected.
 """
 import contextlib
 import io
+import os
 import sys
 import threading
 import unittest
@@ -267,14 +268,14 @@ class PolyctlTest(unittest.TestCase):
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "brightness", "value": 30})
+                         {"key": "brightness", "value": 30, "source": "polyctl"})
 
     def test_settings_set_falls_back_to_string(self):
         rc, _, _, server = run_main(["settings", "set", "mode", "hex"],
                                     {protocol.M_SETTINGS_SET: [True, None]})
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_SETTINGS_SET],
-                         {"key": "mode", "value": "hex"})
+                         {"key": "mode", "value": "hex", "source": "polyctl"})
 
     def test_fw_version_prints(self):
         rc, out, _, _ = run_main(["fw", "version"], {protocol.M_FW_VERSION: "0.7.3"})
@@ -348,6 +349,40 @@ def run_streaming(argv, method, result, events):
     rpc.close()
     server.join()
     return rc, out.getvalue(), err.getvalue()
+
+
+class EmojiDictTest(unittest.TestCase):
+    STATUS = {"shipped": True, "supported": True, "selected": "en", "file": "", "file_error": "",
+              "device": None, "dictionaries": [{"id": "en", "label": "English"},
+                                               {"id": "de", "label": "Deutsch — German"}]}
+
+    def test_set_sends_the_id_to_choose(self):
+        rc, out, _, server = run_main(["emoji-dict", "set", "de"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: "de"})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE],
+                         {"id": "de", "source": "polyctl"})
+        self.assertIn("the keyboard gets it", out)
+
+    def test_file_sends_an_absolute_path_and_clear_sends_empty(self):
+        rc, out, _, server = run_main(["emoji-dict", "file", "mine.plyd"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: "x"})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE]["path"],
+                         os.path.abspath("mine.plyd"))
+        rc, out, _, server = run_main(["emoji-dict", "file", "--clear"],
+                                      {protocol.M_EMOJIDICT_STATUS: self.STATUS,
+                                       protocol.M_EMOJIDICT_CHOOSE: ""})
+        self.assertEqual(dict(server.received)[protocol.M_EMOJIDICT_CHOOSE]["path"], "")
+        self.assertIn("using en", out)
+
+    def test_no_slot_says_nothing_is_flashed(self):
+        st = dict(self.STATUS, supported=False)
+        rc, out, _, _ = run_main(["emoji-dict", "set", "de"],
+                                 {protocol.M_EMOJIDICT_STATUS: st, protocol.M_EMOJIDICT_CHOOSE: "de"})
+        self.assertIn("nothing is flashed now", out)
 
 
 class FwFlashUpdateTest(unittest.TestCase):

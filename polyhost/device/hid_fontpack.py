@@ -188,6 +188,8 @@ def _abort_cleanup(hid) -> None:
 #   ['G'][u16 little-endian generation]                       "something changed on the
 #                                                              board" -- see the firmware
 #                                                              CLAUDE.md note
+#   ['A'][u8 animation state] (v28)                           what owns the keycaps:
+#                                                              ANIM_NONE / INTRO / IDLE
 #
 # ⚠️ The blocks are APPEND-ONLY and a reader STOPS at the first tag it does not know:
 # an unknown block carries no length, so it cannot be stepped over. Firmware must append
@@ -211,6 +213,8 @@ def _find_id_block(reply, tag: int):
             size = 2 + raw[p + 1] * 2
         elif t == ord("G"):
             size = 3
+        elif t == ord("A"):
+            size = 2
         else:
             return None                   # unknown tag, or the report's zero fill
         if p + size > len(raw):
@@ -257,6 +261,23 @@ def parse_id_state_generation(reply):
     return int.from_bytes(raw[p:p + 2], "little")
 
 
+# The 'A' block's values (firmware config.h POLY_ANIM_*).
+ANIM_NONE = 0     # the normal keycaps
+ANIM_INTRO = 1    # the one-shot Eden show: the boot intro or KC_EDEN
+ANIM_IDLE = 2     # the Eden screensaver
+
+
+def parse_id_anim_state(reply):
+    """What owns the keycaps per a GET_ID reply (ANIM_*), or None with no 'A' block.
+
+    None is firmware before protocol 28, which cannot say; callers then behave as
+    they did before the block existed."""
+    p = _find_id_block(reply, ord("A"))
+    if p is None:
+        return None
+    return bytes(reply)[p]
+
+
 def device_has_slot(device_versions: dict, bundle: dict) -> bool:
     """Does the keyboard have a flash slot for ``bundle``?
 
@@ -267,7 +288,18 @@ def device_has_slot(device_versions: dict, bundle: dict) -> bool:
     font bundles; the icon bundle is never assumed."""
     if bundle["index"] in device_versions:
         return True
-    return not device_versions and bundle.get("kind", "fonts") != "icons"
+    return not device_versions and bundle.get("kind", "fonts") not in ("icons", "emojidict")
+
+
+def bundle_is_stale(bundle: dict, device_version: int) -> bool:
+    """Should ``bundle`` be (re)flashed over ``device_version``? A font or icon
+    bundle when the keyboard is behind. The emoji search dictionary on any
+    MISMATCH: its version names WHICH dictionary is flashed ((number << 8) |
+    revision, services/emojidict.py), and switching to one with a lower number
+    must flash too."""
+    if bundle.get("kind") == "emojidict":
+        return bundle["content_version"] != device_version
+    return bundle["content_version"] > device_version
 
 
 def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
@@ -276,13 +308,12 @@ def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     device_versions: {bundle_index: content_version} from parse_id_version_block
                      (a missing index == version 0, i.e. absent on the device).
     shipped:         list of {index, content_version, ...} (res/fontpack/bundles.json).
-    Returns the subset of `shipped` whose content_version > the device's, in order."""
+    Returns the subset of `shipped` that bundle_is_stale() picks, in order."""
     out = []
     for b in shipped:
         if not device_has_slot(device_versions, b):
             continue
-        dev = device_versions.get(b["index"], 0)
-        if b["content_version"] > dev:
+        if bundle_is_stale(b, device_versions.get(b["index"], 0)):
             out.append(b)
     return out
 
