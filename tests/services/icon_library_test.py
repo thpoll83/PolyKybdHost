@@ -205,6 +205,45 @@ class ShippedLibraryTest(unittest.TestCase):
         self.assertEqual(rc, 0, out)
 
 
+class RenumberByUsageTest(unittest.TestCase):
+    """The one-time renumbering puts the icons most apps use first, keeps every
+    retired icon with its own pixels, and leaves no id gap."""
+
+    def test_ids_follow_usage_and_retired_icons_follow_with_their_pixels(self):
+        bil = _builder()
+        a, b, c, gone = box(0, 0, 4, 4), box(10, 0, 4, 4), box(20, 0, 4, 4), box(30, 0, 4, 4)
+        ids_doc = [{"id": 0, "key": bil._key(a), "name": "a.png"},
+                   {"id": 1, "key": bil._key(gone), "name": "gone.png"},
+                   {"id": 2, "key": bil._key(b), "name": "b.png"}]
+        previous = [a, gone, b]
+        selected = {a: "a.png", b: "b.png", c: "c.png"}          # c is new
+        usage = {a: 2, b: 9, c: 5}
+        table, frames = bil.renumber_by_usage(selected, usage, ids_doc, previous)
+        self.assertEqual([e["name"] for e in table], ["b.png", "c.png", "a.png", "gone.png"])
+        self.assertEqual([e["id"] for e in table], [0, 1, 2, 3])
+        self.assertEqual(frames, [b, c, a, gone])
+        self.assertEqual(table[3]["key"], bil._key(gone))
+
+    def test_a_retired_frame_that_does_not_match_its_key_stops_the_build(self):
+        """icon_ids.yaml out of step with icons.plyi must not write another
+        icon's pixels under a retired id, in either assignment path."""
+        bil = _builder()
+        a, gone, other = box(0, 0, 4, 4), box(30, 0, 4, 4), box(40, 0, 4, 4)
+        ids_doc = [{"id": 0, "key": bil._key(a), "name": "a.png"},
+                   {"id": 1, "key": bil._key(gone), "name": "gone.png"}]
+        previous = [a, other]                       # id 1 holds the wrong pixels
+        for assign in (lambda: bil.assign_ids({a: "a.png"}, ids_doc, previous),
+                       lambda: bil.renumber_by_usage({a: "a.png"}, {a: 1}, ids_doc, previous)):
+            with self.assertRaises(SystemExit) as cm:
+                assign()
+            self.assertIn("gone.png", str(cm.exception))
+
+    def test_it_cannot_run_with_check(self):
+        bil = _builder()
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            bil.main(["--check", "--renumber-by-usage"])
+
+
 class CheckToleratesPendingIconsTest(unittest.TestCase):
     """`--check` must not force a rebuild for every new icon. A library one
     rebuild behind the templates passes and lists the new icons as pending
