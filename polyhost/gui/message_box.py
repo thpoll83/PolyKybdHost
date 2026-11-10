@@ -23,7 +23,8 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QHBoxLayou
 
 from polyhost.gui import ui_kit
 
-# The dialog's width. Qt's own box grows to about this for a paragraph.
+# The dialog's width at 100 % (ui_kit.px scales it). Qt's own box grows to
+# about this for a paragraph.
 WIDTH = 460
 
 # QMessageBox icon -> ui_kit headline kind.
@@ -63,14 +64,14 @@ class MessageBox(QDialog):
         self._clicked = None
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(16, 16, 16, 12)
-        outer.setSpacing(12)
+        outer.setContentsMargins(ui_kit.px(16), ui_kit.px(16), ui_kit.px(16), ui_kit.px(12))
+        outer.setSpacing(ui_kit.px(12))
 
         row = QHBoxLayout()
-        row.setSpacing(12)
+        row.setSpacing(ui_kit.px(12))
         self.icon = QLabel(self)
         kind = _KINDS.get(icon, icon if isinstance(icon, str) else "info")
-        px = ui_kit.HEADLINE_ICON_PX
+        px = ui_kit.headline_icon_px()
         self.icon.setPixmap(ui_kit.headline_icon(kind).pixmap(px, px))
         self.icon.setFixedSize(px, px)
         row.addWidget(self.icon, 0, Qt.AlignTop)
@@ -78,7 +79,7 @@ class MessageBox(QDialog):
         body = QWidget(self)
         col = QVBoxLayout(body)
         col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(6)
+        col.setSpacing(ui_kit.px(6))
         self.text = self._label(text, body)
         if informative:
             font = self.text.font()
@@ -166,7 +167,8 @@ class MessageBox(QDialog):
         """
         self._fitted = True
         m = self._outer.contentsMargins()
-        text_w = WIDTH - m.left() - m.right() - self.icon.width() - self._row.spacing()
+        width = ui_kit.px(WIDTH)
+        text_w = width - m.left() - m.right() - self.icon.width() - self._row.spacing()
         labels = [lbl for lbl in (self.text, self.informative) if not lbl.isHidden()]
         body_h = sum(lbl.heightForWidth(text_w) for lbl in labels)
         body_h += self._body.layout().spacing() * (len(labels) - 1)
@@ -184,12 +186,16 @@ class MessageBox(QDialog):
             scroll.setWidget(self._body)
             self._row.addWidget(scroll, 1)
             need_h = max_h
-        self.setFixedSize(WIDTH, need_h)
+        self.setFixedSize(width, need_h)
 
 
 def message(icon, title, text, buttons=QMessageBox.Ok, default=None, parent=None,
             informative=""):
-    """Show a modal box and return the clicked standard button's code."""
+    """Show a modal box and return the clicked standard button's code.
+
+    For a box with buttons from ``MessageBox.add_button``, build the box and
+    read ``clicked_button()`` instead: this returns only standard codes.
+    """
     box = MessageBox(icon, title, text, buttons, parent, informative, default)
     result = box.exec_()
     # exec_() returns the button code from _on_clicked/reject. A plain

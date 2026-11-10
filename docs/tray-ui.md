@@ -363,6 +363,24 @@ and relative links were adjusted to suit a standalone file.
   `QScrollArea` above that cap.
   Pin any width a test depends on: the dialog's starting width comes from the screen.
 
+- **Brightness, Idle Display, Keycap Script and Keycap Size are tile grids where Qt
+  draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
+  Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray
+  menu is exported over DBusMenu, which drops a widget, and macOS embeds it
+  unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the
+  menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
+  a hidden action, and a disabled action ignores `trigger()`.
+  `POLYHOST_MENU_TILES=1|0` forces the choice. Updates, Maintenance and Help & About
+  show their plain entries as icon tiles the same way
+  (`add_icon_tiles_on_first_show`, built on the first show so entries added later
+  are included); a submenu entry stays a row.
+
+- ⚠️ **A size set in pixels must go through `ui_kit.px()`.** The app does not turn
+  on Qt's high-DPI scaling, so Qt 5 draws in device pixels and the style scales
+  its own metrics from the logical DPI (Fusion's button icon: 16 px at 100 %,
+  24 px at 150 %). A fixed 18 px icon looked smaller than the one it replaced.
+  `ui_scale()` reads that factor from the style.
+
 - ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
   `question` / `information` / `warning` / `critical` take QMessageBox's static
   arguments and return the same button codes, with the ui_kit icons on the box

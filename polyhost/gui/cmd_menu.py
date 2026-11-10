@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
 )
 
-from polyhost.gui import message_box
+from polyhost.gui import keycap_tiles, menu_tiles, message_box
 from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        validate_polykybd_firmware, apply_staged_firmware,
                                        check_signature_file)
@@ -141,11 +141,17 @@ class CommandsSubMenu:
         are manual overrides; the trailing entry is the way back out of one.
         """
         menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), _("Brightness"))
+        presets = []
         for icon, label, value in (("backlight_high_off.svg", _("Off"), 0),
                                    ("backlight_low.svg", "1%", 2),
                                    ("backlight_high.svg", "50%", 25),
                                    ("backlight_high_fill.svg", "100%", 50)):
-            menu.addAction(self._act(icon, label, self.set_brightness, data=value, device=True))
+            presets.append(self._act(icon, label, self.set_brightness, data=value, device=True))
+            menu.addAction(presets[-1])
+        menu_tiles.add_tiles_on_first_show(
+            menu, presets,
+            lambda: [keycap_tiles.to_icon(keycap_tiles.brightness_panel(a.data())) for a in presets],
+            4, keycap_tiles.tile_size())
         menu.addSeparator()
         # The firmware drops auto mode on ANY manual set and never re-engages by
         # itself, so without this the presets above are a one-way door until a
@@ -200,6 +206,7 @@ class CommandsSubMenu:
         Developer instead.
         """
         menu = parent_menu.addMenu(get_icon("build.svg"), _("Maintenance"))
+        menu_tiles.add_icon_tiles_on_first_show(menu)
         self._maintenance_action = menu.menuAction()
 
         hand_menu = menu.addMenu(get_icon("flip.svg"), _("Fix Left/Right Side"))

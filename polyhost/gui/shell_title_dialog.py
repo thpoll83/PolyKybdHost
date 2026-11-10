@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QGridLayout,
                              QLabel, QPushButton, QVBoxLayout)
 
-from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, card, muted, set_button_icon,
+from polyhost.gui.ui_kit import (CARD_STYLE, WrapLabel, card, muted, px, set_button_icon,
                                  style_button_box)
 from polyhost.i18n import _, _f, translate_message
 from polyhost.services import editor_plugins, shell_title
@@ -233,7 +233,7 @@ class ShellTitleDialog(QDialog):
     def _row_grid(self):
         grid = QGridLayout()
         grid.setColumnStretch(1, 1)
-        grid.setColumnMinimumWidth(0, self._NAME_COLUMN_W)
+        grid.setColumnMinimumWidth(0, px(self._NAME_COLUMN_W))
         grid.setVerticalSpacing(2)
         return grid
 
