@@ -60,8 +60,8 @@ VENDORS = {v.vid: v for v in (
     Vendor("antigravity", "Antigravity", "AG", ("si:google",), infer_waiting=True),
     Vendor("copilot", "Copilot CLI", "Cop", ("si:githubcopilot",), infer_waiting=True),
     Vendor("cursor", "Cursor", "Cur", ("si:cursor",), infer_waiting=True),
-    Vendor("opencode", "OpenCode", "OC"),
-    Vendor("qwen", "Qwen Code", "Qwn"),
+    Vendor("opencode", "OpenCode", "OC", ("si:sst",)),         # made by SST
+    Vendor("qwen", "Qwen Code", "Qwn", ("si:alibabacloud",)),  # Qwen is Alibaba's
     Vendor("aider", "Aider", "Aid"),
 )}
 
