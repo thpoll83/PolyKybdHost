@@ -12,10 +12,11 @@ on some standard buttons and nothing on the others; ``set_button_icon`` and
 icon.
 """
 
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QEvent, QObject, QSize, Qt
 from PyQt5.QtGui import QPalette
-from PyQt5.QtWidgets import (QDialogButtonBox, QFrame, QHBoxLayout, QLabel,
-                             QPlainTextEdit, QVBoxLayout, QWidget)
+from PyQt5.QtWidgets import (QBoxLayout, QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
+                             QLabel, QMainWindow, QPlainTextEdit, QPushButton, QVBoxLayout,
+                             QWidget)
 
 from polyhost.gui.get_icon import get_icon
 
@@ -272,3 +273,84 @@ def fit_text_lines(edit, min_lines=3, max_lines=14):
     frame = edit.frameWidth() * 2 + int(edit.document().documentMargin() * 2) + 6
     edit.setFixedHeight(edit.fontMetrics().lineSpacing() * shown + frame)
     return edit
+
+
+# ── Matching button widths ────────────────────────────────────────────────────
+
+def _button_groups(layout):
+    """The runs of text buttons in a row, split where a stretch or another
+    widget stands between them. A fixed gap does not split a run."""
+    groups, run = [], []
+    for i in range(layout.count()):
+        item = layout.itemAt(i)
+        w = item.widget()
+        if w is not None and w.isHidden():
+            continue
+        if (isinstance(w, QPushButton)
+                and len(w.text().replace("&", "").strip()) > 1):
+            run.append(w)
+            continue
+        if isinstance(w, QDialogButtonBox):
+            # A Close kept in its own button box beside the action buttons
+            # (report a problem, log bundle) belongs to the same row.
+            run.extend(b for b in w.buttons()
+                       if not b.isHidden() and len(b.text().replace("&", "").strip()) > 1)
+            continue
+        spacer = item.spacerItem()
+        if spacer is not None and not spacer.expandingDirections() & Qt.Horizontal:
+            continue    # a fixed gap, such as QDialogButtonBox puts between roles
+        if run:
+            groups.append(run)
+        run = []
+    if run:
+        groups.append(run)
+    return [g for g in groups if len(g) > 1]
+
+
+def match_button_widths(window):
+    """Give buttons that sit next to each other the width of the widest one.
+
+    Each horizontal layout (a QDialogButtonBox has one too) is a row. A stretch
+    or any other widget splits a row, so a Close set apart from the actions
+    keeps its own width. A button whose text is one character (the macro
+    editor's arrows) is left out. The window widens when the row no longer fits.
+    """
+    changed = False
+    for layout in window.findChildren(QBoxLayout):
+        if layout.direction() not in (QBoxLayout.LeftToRight, QBoxLayout.RightToLeft):
+            continue
+        for group in _button_groups(layout):
+            for w in group:
+                w.setMinimumWidth(0)
+            widest = max(w.sizeHint().width() for w in group)
+            for w in group:
+                w.setMinimumWidth(widest)
+            changed = True
+    if changed and window.layout() is not None:
+        window.layout().activate()
+        need = window.minimumSizeHint().width()
+        if need > window.width() and window.maximumWidth() >= need:
+            window.resize(need, window.height())
+
+
+class _ButtonWidthFilter(QObject):
+    """Runs match_button_widths whenever a dialog or main window is shown."""
+
+    def eventFilter(self, obj, event):  # noqa: N802 - Qt name
+        if (event.type() == QEvent.Show and isinstance(obj, (QDialog, QMainWindow))):
+            try:
+                match_button_widths(obj)
+            except Exception:   # a cosmetic pass must never break a dialog
+                pass
+        return False
+
+
+def install_button_width_matching(app):
+    """Match button widths in every dialog the app shows (once per app).
+
+    apply_theme() calls this on every tray menu open; the filter is kept on
+    the app object, so it is installed once and not garbage-collected.
+    """
+    if getattr(app, "_polyhost_button_widths", None) is None:
+        app._polyhost_button_widths = _ButtonWidthFilter()
+        app.installEventFilter(app._polyhost_button_widths)

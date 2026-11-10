@@ -375,6 +375,18 @@ and relative links were adjusted to suit a standalone file.
   (`add_icon_tiles_on_first_show`, built on the first show so entries added later
   are included); a submenu entry stays a row.
 
+- **Buttons, fields, combo and spin boxes have rounded corners from one style
+  sheet**, `theme.control_style(theme)`, set by `apply_theme()`. A sheet that
+  sets a border replaces Fusion's drawing, so it draws every state and the combo
+  and spin arrows (`expand_more.svg` / `expand_less.svg`). ⚠️ Its colours are per
+  theme, not palette roles: the shared palettes leave Light/Midlight/Mid/Dark at
+  Qt's light greys, so `palette(midlight)` turned a hovered dark-theme button light
+  grey under light text. A control inside a table cell stays flat.
+- **Buttons next to each other get one width** (`ui_kit.match_button_widths`, run
+  by an app event filter on every dialog or main window shown). A stretch splits a
+  row; a fixed gap and a neighbouring QDialogButtonBox do not. One-character
+  buttons (arrows) keep their width.
+
 - ⚠️ **A size set in pixels must go through `ui_kit.px()`.** The app does not turn
   on Qt's high-DPI scaling, so Qt 5 draws in device pixels and the style scales
   its own metrics from the logical DPI (Fusion's button icon: 16 px at 100 %,

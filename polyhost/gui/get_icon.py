@@ -75,3 +75,9 @@ def get_icon(name):
             icon.addFile(str(path))
         _cache[name] = icon
     return icon
+
+
+def icon_path(name, icon_dir=_ICON_DIR):
+    """The file path of a shipped icon, with forward slashes, for a style sheet's
+    ``url()`` (Qt reads a backslash there as an escape on Windows)."""
+    return (icon_dir / name).as_posix()
