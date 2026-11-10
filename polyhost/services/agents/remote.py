@@ -107,7 +107,7 @@ def clear_forwarder_target(path: str | None = None) -> None:
                 return
         os.remove(path)
     except (OSError, ValueError, AttributeError):
-        pass
+        pass    # no file, or not ours to remove: nothing to clear
 
 
 def agent_payload(agent) -> dict:

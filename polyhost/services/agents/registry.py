@@ -8,7 +8,6 @@ positions. Slot N is key N % page_size on page N // page_size.
 """
 from __future__ import annotations
 
-import os
 import threading
 import time
 from dataclasses import dataclass, field

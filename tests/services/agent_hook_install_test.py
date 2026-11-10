@@ -11,6 +11,11 @@ from polyhost.services.agents import hook_install as hi
 ARGV = ["/opt/poly/polyctl"]
 
 
+
+def _read(path):
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
 class HookInstallTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -34,7 +39,7 @@ class HookInstallTest(unittest.TestCase):
         changes = hi.plan("claude-code", self.home, argv=ARGV)
         self.assertEqual(len(changes), 1)
         hi.apply(changes)
-        data = json.loads(open(changes[0].path, encoding="utf-8").read())
+        data = json.loads(_read(changes[0].path))
         self.assertEqual(data["model"], "x")
         # The user's own PreToolUse hook stays; ours is gone from PreToolUse.
         self.assertEqual(data["hooks"]["PreToolUse"], [{"matcher": "Bash", "hooks": [own]}])
@@ -49,24 +54,24 @@ class HookInstallTest(unittest.TestCase):
         self.assertEqual(hi.plan("claude-code", self.home, argv=ARGV), [])
         # Uninstall leaves only the user's hook.
         hi.apply(hi.plan("claude-code", self.home, install=False, argv=ARGV))
-        data = json.loads(open(changes[0].path, encoding="utf-8").read())
+        data = json.loads(_read(changes[0].path))
         self.assertEqual(data["hooks"], {"PreToolUse": [{"matcher": "Bash", "hooks": [own]}]})
 
     def test_claude_without_a_settings_file(self):
         changes = hi.plan("claude-code", self.home, argv=ARGV)
         self.assertEqual(changes[0].before, "")
         hi.apply(changes)
-        self.assertIn("SessionStart", json.load(open(changes[0].path, encoding="utf-8"))["hooks"])
+        self.assertIn("SessionStart", json.loads(_read(changes[0].path))["hooks"])
 
     def test_codex_adds_notify_and_respects_an_own_one(self):
         path = self._write(".codex/config.toml", 'model = "o3"\n\n[tui]\nx = 1\n')
         hi.apply(hi.plan("codex", self.home, argv=ARGV))
-        text = open(path, encoding="utf-8").read()
+        text = _read(path)
         self.assertTrue(text.startswith('notify = ["/opt/poly/polyctl", "agents", "hook", "codex"]\n'))
         self.assertIn("[tui]", text)
         self.assertEqual(hi.plan("codex", self.home, argv=ARGV), [])
         hi.apply(hi.plan("codex", self.home, install=False, argv=ARGV))
-        self.assertNotIn("notify", open(path, encoding="utf-8").read())
+        self.assertNotIn("notify", _read(path))
         self._write(".codex/config.toml", 'notify = ["my-notifier"]\n')
         self.assertEqual(hi.plan("codex", self.home, argv=ARGV), [])
         self.assertIn("own notify", hi.codex_conflict(self.home))
@@ -74,7 +79,7 @@ class HookInstallTest(unittest.TestCase):
     def test_copilot_file(self):
         changes = hi.plan("copilot", self.home, argv=["C:\\venv\\Scripts\\polyctl.exe"])
         hi.apply(changes)
-        data = json.load(open(changes[0].path, encoding="utf-8"))
+        data = json.loads(_read(changes[0].path))
         self.assertEqual(data["version"], 1)
         self.assertEqual(set(data["hooks"]), set(hi.COPILOT_EVENTS))
         entry = data["hooks"]["agentStop"][0]
