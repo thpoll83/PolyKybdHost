@@ -101,9 +101,18 @@ hooks to one computer instead.
   With it off, the endpoint refuses `agents.report` and relays no raise.
 - Its agents appear on the keys with this computer's name (`polyctl agents list`
   on the keyboard computer shows it in the `machine` field).
-- A key press is sent back to this computer's forwarder in the reply to its next
-  window report; while this computer has agents on the keys, the forwarder reports
-  every second, so the window comes forward within about a second.
+- A key press on one of its agents brings forward, on the keyboard computer, the
+  remote-desktop viewer that shows this computer: NoMachine, Remote Desktop, VNC
+  (RealVNC, TigerVNC, TightVNC, UltraVNC), Remmina, Parsec, AnyDesk, TeamViewer,
+  RustDesk and every app the overlay mapping marks `remote: true`. The viewer
+  whose title names this computer is taken; with no such title, the viewer, when
+  only one is open.
+- To also bring the agent's own window forward on this computer, turn on
+  `agents_raise_here` here (forwarder Settings > AI agents > "Raise agent windows
+  on this computer", off by default). The press then reaches this computer's
+  forwarder in the reply to its next window report; while this computer has agents
+  on the keys, the forwarder reports every second, so the window comes forward
+  within about a second.
 - The forwarder and the hooks must run on the same computer: both name it with its
   host name.
 

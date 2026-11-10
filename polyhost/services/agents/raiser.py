@@ -123,7 +123,12 @@ def raise_agent(agent, windows=None):
                       own[0][0] if own else None)
     if target is None:
         return False
-    if sys.platform == "win32" and windows_from_system:
+    return bring_to_front(target, windows_from_system)
+
+
+def bring_to_front(target, from_system: bool = True):
+    """True when `target` came to the front, or a text saying why not."""
+    if sys.platform == "win32" and from_system:
         try:
             if _win32_force_foreground(int(target.getHandle())):
                 return True
@@ -132,3 +137,19 @@ def raise_agent(agent, windows=None):
             pass
     target.activate()
     return True
+
+
+def raise_viewer(machine: str, extra_apps=(), windows=None):
+    """Bring forward the remote-desktop viewer that shows `machine`
+    (services/agents/viewer.py). True, False when none is open, or a text."""
+    if os.environ.get("WAYLAND_DISPLAY") and not os.environ.get("DISPLAY"):
+        return False
+    from_system = windows is None
+    if windows is None:
+        import pywinctl
+        windows = pywinctl.getAllWindows()
+    from polyhost.services.agents.viewer import find_viewer
+    target = find_viewer(machine, list(windows), extra_apps)
+    if target is None:
+        return False
+    return bring_to_front(target, from_system)

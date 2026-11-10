@@ -139,6 +139,71 @@ class ForwarderTargetTest(unittest.TestCase):
         os.remove(path)
 
 
+class _Win:
+    def __init__(self, app, title):
+        self.app, self.title, self.raised = app, title, False
+
+    def getAppName(self):
+        return self.app
+
+    def getHandle(self):
+        return 1
+
+    def activate(self):
+        self.raised = True
+
+
+class ViewerTest(unittest.TestCase):
+    """The viewer window on the keyboard's computer that shows a forwarder's computer."""
+
+    def test_finds_the_viewer_that_names_the_machine(self):
+        from polyhost.services.agents.viewer import find_viewer
+        nx = _Win("nxplayer.bin", "laptop - NoMachine")
+        vnc = _Win("vncviewer.exe", "desk.example.org (desk) - VNC Viewer")
+        rdp = _Win("mstsc.exe", "build-box - Remote Desktop Connection")
+        other = _Win("Code.exe", "laptop - notes")                 # names it, not a viewer
+        wins = [other, nx, vnc, rdp]
+        self.assertIs(find_viewer("laptop", wins), nx)
+        self.assertIs(find_viewer("desk.example.org", wins), vnc)
+        self.assertIs(find_viewer("DESK", wins), vnc)
+        self.assertIs(find_viewer("build-box", wins), rdp)
+        # No title names it: only a single open viewer is taken.
+        self.assertIsNone(find_viewer("nas", wins))
+        self.assertIs(find_viewer("nas", [other, rdp]), rdp)
+        self.assertIsNone(find_viewer("nas", [other]))
+
+    def test_mapping_remote_entries_count_as_viewers(self):
+        from polyhost.services.agents.viewer import find_viewer, mapping_viewer_apps
+        apps = mapping_viewer_apps({"myviewer,otherviewer": {"remote": True},
+                                    "code": {"overlay": ["x.png"]}})
+        self.assertEqual(apps, {"myviewer", "otherviewer"})
+        win = _Win("MyViewer.exe", "session on laptop")
+        self.assertIsNone(find_viewer("laptop", [win]))
+        self.assertIs(find_viewer("laptop", [win], apps), win)
+
+    def test_raise_viewer_brings_it_forward(self):
+        from polyhost.services.agents.raiser import raise_viewer
+        nx = _Win("nxplayer", "laptop - NoMachine")
+        self.assertTrue(raise_viewer("laptop", windows=[nx]))
+        self.assertTrue(nx.raised)
+        self.assertFalse(raise_viewer("nas", windows=[_Win("code", "x")]))
+
+    def test_press_on_a_remote_agent_queues_and_raises_the_viewer(self):
+        import threading
+        registry = AgentRegistry()
+        queue = RemoteRaiseQueue()
+        controller = AgentKeysController(registry, lambda: None, log=_NullLog())
+        controller.raise_remote = queue.request
+        done = threading.Event()
+        seen = []
+        controller.raise_viewer = lambda machine: seen.append(machine) or done.set() or True
+        registry.report("codex", "r1", "waiting", machine="laptop")
+        controller._handle_key(0)
+        self.assertTrue(done.wait(5))
+        self.assertEqual(seen, ["laptop"])
+        self.assertEqual(queue.for_machine("laptop")["agent"]["session_id"], "r1")
+
+
 class SanitizeTest(unittest.TestCase):
     def test_bounds_and_refusals(self):
         r = sanitize_report({"vendor": "claude-code", "session_id": "s" * 500,

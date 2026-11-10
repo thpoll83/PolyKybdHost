@@ -193,6 +193,11 @@ DEFAULT_SETTINGS = {
         # in its replies. Off by default, and only with agents_enabled on too;
         # see the security audit, HOST-6.
         "agents_remote_enabled": False,
+        # On a forwarder's computer: a key press on one of this computer's agents
+        # also brings the agent's own window forward here. Off: the keyboard's
+        # computer brings forward only its viewer window showing this computer
+        # (NoMachine, Remote Desktop, VNC). See the security audit, HOST-6.
+        "agents_raise_here": False,
         # Linux only: before the first harvest, switch the session's
         # accessibility flag (org.a11y.Status.IsEnabled) on, because a Qt app
         # joins the AT-SPI bus only while it is set and Plasma leaves it off

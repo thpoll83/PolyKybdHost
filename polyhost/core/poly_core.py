@@ -2340,6 +2340,12 @@ class PolyCore(Observable):
         from polyhost.services.agents.remote import RemoteRaiseQueue
         self._agent_remote_raises = RemoteRaiseQueue()
         self._agent_keys.raise_remote = self._agent_remote_raises.request
+
+        def raise_viewer(machine):
+            from polyhost.services.agents.raiser import raise_viewer as _raise_viewer
+            from polyhost.services.agents.viewer import mapping_viewer_apps
+            return _raise_viewer(machine, mapping_viewer_apps(self.mapping))
+        self._agent_keys.raise_viewer = raise_viewer
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
         self._agent_titles = TitleScanner(
             self.agents, self.log,

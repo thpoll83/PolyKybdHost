@@ -47,6 +47,7 @@ class AgentKeysController:
         self.cache_for = cache_for
         self.raise_agent = raise_agent
         self.raise_remote = None   # set by PolyCore: queue a raise for a forwarder
+        self.raise_viewer = None   # set by PolyCore: raise the viewer showing a machine
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
         # The last AI-key press and what came of it, for `polyctl agents list`: a
@@ -236,8 +237,15 @@ class AgentKeysController:
         machine, by handing it to `raise_remote(agent)`, which the forwarder picks
         up with its next window report (PolyCore.report_window)."""
         if agent.machine and agent.machine != "local":
+            # The forwarder raises the agent's own window only when its
+            # `agents_raise_here` is on; here the viewer that shows that
+            # computer comes forward (services/agents/viewer.py).
             if self.raise_remote is not None:
                 self.raise_remote(agent)
+            if self.raise_viewer is not None:
+                threading.Thread(target=self._raise_viewer, args=(agent,),
+                                 name="agent-raise-viewer", daemon=True).start()
+            else:
                 self._note(self.last_press["key"] if self.last_press else None,
                            f"sent to {agent.machine}", agent)
             return
@@ -252,6 +260,22 @@ class AgentKeysController:
                               "(setting agents_dictation_shortcut)")
         except Exception as e:  # noqa: BLE001 - must not kill anything
             self.log.info("Agent keys: dictation failed: %s", e)
+
+    def _raise_viewer(self, agent):
+        key = self.last_press["key"] if self.last_press else None
+        try:
+            result = self.raise_viewer(agent.machine)
+            if result is True:
+                result = f"sent to {agent.machine}; its viewer raised"
+            elif not result:
+                result = f"sent to {agent.machine}; no viewer window for it found"
+            self.log.info("Agent keys: %s %s: %s", agent.vendor, agent.display_headline,
+                          result)
+            self._note(key, str(result), agent)
+        except Exception as e:  # noqa: BLE001 - a failed raise must not kill anything
+            self.log.info("Agent keys: raising the viewer for %s failed: %s",
+                          agent.machine, e)
+            self._note(key, f"sent to {agent.machine}; viewer failed: {e}", agent)
 
     def _raise(self, agent):
         key = self.last_press["key"] if self.last_press else None

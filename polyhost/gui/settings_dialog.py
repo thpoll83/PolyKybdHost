@@ -101,7 +101,7 @@ SECTIONS = (
     )),
     ("agents", N_("AI agents"), (
         (None, ("agents_enabled", "agents_title_scan", "agents_dictation_shortcut",
-                "agents_remote_enabled")),
+                "agents_remote_enabled", "agents_raise_here")),
     )),
     ("developer", N_("Developer"), (
         (None, ("dev_*",)),
@@ -159,6 +159,7 @@ SETTING_LABELS = {
     "agents_title_scan": N_("Find by window title"),
     "agents_dictation_shortcut": N_("Dictation shortcut"),
     "agents_remote_enabled": N_("Agents from other computers"),
+    "agents_raise_here": N_("Raise agent windows on this computer"),
 }
 
 
@@ -174,9 +175,14 @@ SETTING_DESCRIPTIONS = {
         "Also finds agents that run in a terminal from the window title, without a "
         "hook. Not on macOS."),
     "agents_remote_enabled": N_(
-        "Also shows agents that run on a computer with the forwarder, and brings "
-        "their windows forward there. They report over the network endpoint for "
+        "Also shows agents that run on a computer with the forwarder. A key press "
+        "brings forward the remote-desktop viewer that shows that computer "
+        "(NoMachine, Remote Desktop, VNC). They report over the network endpoint for "
         "forwarders, which must be on too. Off: only this computer's agents."),
+    "agents_raise_here": N_(
+        "On a computer with the forwarder: a key press on one of this computer's "
+        "agents also brings the agent's own window forward here. Off: only the "
+        "viewer on the keyboard's computer comes forward."),
     "agents_dictation_shortcut": N_(
         "The shortcut the minus key sends in AI mode to start dictation, for example "
         "<cmd>+h or <ctrl>+<alt>+d. Empty: Win+H on Windows, nothing on macOS and "

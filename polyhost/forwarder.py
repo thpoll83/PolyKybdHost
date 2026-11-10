@@ -73,7 +73,8 @@ AGENT_HEARTBEAT_MSEC = 1000
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
 # `log_detail` sets this machine's log level at startup (main_app.resolve_dev).
 FORWARDER_SETTING_KEYS = ("ui_theme", "ui_language", "shortcut_icons_enabled",
-                          "shortcut_enable_accessibility", "log_detail") + tuple(_URL_SETTINGS)
+                          "shortcut_enable_accessibility", "log_detail",
+                          "agents_raise_here") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -563,6 +564,14 @@ class PolyForwarder(QApplication):
             from polyhost.services.agents.raiser import raise_agent
             from polyhost.services.agents.remote import RemoteAgent
             agent = RemoteAgent.from_payload(payload)
+            # ⚠️ Opt-in on THIS computer (HOST-6): a reply is authenticated only
+            # at the handshake, so without the setting a reply never moves a
+            # window here; the keyboard's computer raises its viewer instead.
+            if not read_setting("agents_raise_here", False):
+                self.log.info("Agent key for %s %s: not raised here "
+                              "(agents_raise_here is off)", agent.vendor,
+                              agent.display_headline)
+                return
             self.log.info("Agent key: raising %s %s", agent.vendor, agent.display_headline)
 
             def run():
