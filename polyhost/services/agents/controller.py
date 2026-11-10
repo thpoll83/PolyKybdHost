@@ -234,6 +234,12 @@ class AgentKeysController:
             threading.Thread(target=self._raise, args=(agent,), name="agent-raise",
                              daemon=True).start()
 
+    def raise_now(self, agent):
+        """Raise `agent` from outside the keyboard (the tray), on its own thread."""
+        if self.raise_agent is not None:
+            threading.Thread(target=self._raise, args=(agent,), name="agent-raise",
+                             daemon=True).start()
+
     def _run_dictate(self):
         try:
             if not self.dictate():

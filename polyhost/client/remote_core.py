@@ -358,6 +358,9 @@ class RemoteCore(Observable):
         return self._device(p.M_AGENTS_LABEL, {"vendor": vendor, "session_id": session_id,
                                                "text": text})
 
+    def agents_raise(self, vendor, session_id):
+        return self._device(p.M_AGENTS_RAISE, {"vendor": vendor, "session_id": session_id})
+
     def agents_forget(self, vendor, session_id):
         return self._device(p.M_AGENTS_FORGET, {"vendor": vendor, "session_id": session_id})
 

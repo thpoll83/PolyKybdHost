@@ -717,6 +717,14 @@ class PolyHost(QApplication):
         self.tap_terms_action.triggered.connect(self.open_tap_terms_dialog)
         self.menu.addAction(self.tap_terms_action)
 
+        # AI agents on the number row (services/agents, firmware v30+ for the keys).
+        # The registry is host state, so the submenu works with no keyboard: the
+        # switch, the agent list (a click raises the agent's window) and the hook
+        # setup. Rebuilt from core.agents_list() each time it opens.
+        self.agents_menu = self.menu.addMenu(get_icon("terminal.svg"), _("AI Agents"))
+        # noinspection PyUnresolvedReferences
+        self.agents_menu.aboutToShow.connect(self.refresh_agents_menu)
+
         # The layout editor is device-independent of the in-process worker — it
         # drives the device through core.keymap_* (RPC in client mode), so it
         # works in either mode (H4a-2).
@@ -1317,6 +1325,8 @@ class PolyHost(QApplication):
         # No protocol gate: whether the keyboard has the dictionary slot is read
         # from its version block when the submenu opens (refresh_emoji_dict_menu).
         self.emoji_dict_menu.menuAction().setEnabled(enabled)
+        # Host state and the user's own hook files: usable with no keyboard.
+        self.agents_menu.menuAction().setEnabled(True)
         self.tap_terms_action.setEnabled(enabled and self.supports("tap_terms"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
@@ -2392,6 +2402,102 @@ class PolyHost(QApplication):
         preset = value[0] if ok and value else None
         for act in self.idle_timeout_actions:
             act.setChecked(bool(ok) and act.data() == preset)
+
+    def refresh_agents_menu(self):
+        self._menu_fetch.fetch("agents", self.core.agents_list, self._apply_agents_menu)
+
+    def _apply_agents_menu(self, info):
+        from polyhost.services.agents.model import vendor as agent_vendor
+        info = info if isinstance(info, dict) else {}
+        menu = self.agents_menu
+        menu.clear()
+        toggle = QAction(_("Show on the Number Row"), parent=menu, checkable=True)
+        toggle.setChecked(bool(info.get("enabled")))
+        # noinspection PyUnresolvedReferences
+        toggle.triggered.connect(self._toggle_agents_enabled)
+        menu.addAction(toggle)
+        menu.addSeparator()
+        agents = info.get("agents") or []
+        if not agents:
+            empty = QAction(_("No agents reported"), parent=menu)
+            empty.setEnabled(False)
+            menu.addAction(empty)
+        states = {"working": _("working"), "waiting": _("waiting"), "done": _("done"),
+                  "idle": _("idle"), "stale": _("stale")}
+        for agent in agents:
+            key = (agent.get("key", 0) + 1) % 10
+            text = _f("Key {key}: {name}, {state}, {title}",
+                      key=key, name=agent_vendor(agent.get("vendor", "")).name,
+                      state=states.get(agent.get("state"), agent.get("state", "")),
+                      title=agent.get("headline", ""))
+            if agent.get("page"):
+                text = _f("Page {page}, {text}", page=agent["page"] + 1, text=text)
+            act = QAction(text, parent=menu)
+            act.setData((agent.get("vendor"), agent.get("session_id")))
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self._raise_agent_clicked)
+            menu.addAction(act)
+        menu.addSeparator()
+        setup = menu.addMenu(_("Set Up Hooks"))
+        for vid, label in (("claude-code", "Claude Code"), ("codex", "Codex"),
+                           ("copilot", "Copilot CLI")):
+            act = QAction(label, parent=setup)
+            act.setData(vid)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self._install_agent_hooks_clicked)
+            setup.addAction(act)
+
+    def _toggle_agents_enabled(self, checked):
+        def done(ok, msg):
+            if not ok:
+                self.report_device_result("Error", f"Could not change the setting: {msg}")
+        self._core_click(lambda: self.core.settings_set("agents_enabled", bool(checked),
+                                                        source="tray"), done)
+
+    def _raise_agent_clicked(self):
+        vendor_id, session_id = self.sender().data()
+
+        def done(ok, msg):
+            if not ok:
+                self.log.info("Could not raise the agent: %s", msg)
+        self._core_click(lambda: self.core.agents_raise(vendor_id, session_id), done)
+
+    def _install_agent_hooks_clicked(self):
+        """Write the agent's hooks after showing what changes. A local file edit on
+        this machine (the agent runs here), so it needs no core and no keyboard."""
+        import difflib
+        from polyhost.services.agents import hook_install
+        vendor_id = self.sender().data()
+        try:
+            changes = hook_install.plan(vendor_id)
+        except (ValueError, OSError) as e:
+            QMessageBox.warning(None, _("Set Up Hooks"), str(e))
+            return
+        if not changes:
+            conflict = hook_install.codex_conflict(os.path.expanduser("~")) \
+                if vendor_id == "codex" else ""
+            QMessageBox.information(None, _("Set Up Hooks"),
+                                    conflict or _("The hooks are already set up."))
+            return
+        box = QMessageBox(QMessageBox.Question, _("Set Up Hooks"),
+                          _f("Write the PolyKybd hooks into {files}? Your own hooks are "
+                             "kept, and a copy of each file is saved as "
+                             "<file>.polykybd.bak.",
+                             files=", ".join(c.path for c in changes)))
+        box.setDetailedText("\n\n".join(
+            "\n".join(difflib.unified_diff(c.before.splitlines(), c.after.splitlines(),
+                                           c.path, c.path, lineterm=""))
+            for c in changes))
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        if box.exec_() != QMessageBox.Yes:
+            return
+        try:
+            hook_install.apply(changes)
+        except OSError as e:
+            QMessageBox.warning(None, _("Set Up Hooks"), str(e))
+            return
+        self.log.info("Agent hooks written for %s: %s", vendor_id,
+                      ", ".join(c.path for c in changes))
 
     def change_idle_timeout(self):
         value = self.sender().data()

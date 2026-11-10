@@ -221,6 +221,8 @@ class ControlServer(MpcListenerServer):
                 params["vendor"], params["session_id"], params.get("text", ""))),
             p.M_AGENTS_FORGET: lambda conn, params: _unwrap(c.agents_forget(
                 params["vendor"], params["session_id"])),
+            p.M_AGENTS_RAISE: lambda conn, params: _unwrap(c.agents_raise(
+                params["vendor"], params["session_id"])),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
             p.M_GLYPH_PLACEMENT_SET: lambda conn, params: _unwrap(c.set_glyph_placement(params["value"])),

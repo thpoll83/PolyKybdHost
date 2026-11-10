@@ -2378,6 +2378,17 @@ class PolyCore(Observable):
             return False, str(e)
         return True, agent
 
+    def agents_raise(self, vendor, session_id):
+        """Bring an agent's window forward (the tray's agent list). The raise runs
+        on its own thread; (True, "raising") means it was started."""
+        agent = next((a for a in self.agents.agents()
+                      if a.vendor == vendor and a.session_id == session_id), None)
+        if agent is None:
+            return False, "No such agent"
+        self.agents.mark_seen(vendor, session_id)
+        self._agent_keys.raise_now(agent)
+        return True, "raising"
+
     def agents_label(self, vendor, session_id, text):
         ok = self.agents.label(vendor, session_id, text)
         return ok, ("ok" if ok else "No such agent")
