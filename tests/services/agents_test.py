@@ -1,6 +1,7 @@
 """The agent registry, the hook and title adapters, the card, and the controller
 against the emulated firmware (cmd 45/46, protocol v31)."""
 import unittest
+import unittest.mock as mock
 
 from polyhost.services.agents import hooks, registry as reg_mod
 from polyhost.services.agents.card import (card_bytes, fit_text, render_card,
@@ -121,11 +122,35 @@ class RegistryTest(unittest.TestCase):
         # 'a' was seen alive and exited: gone. 'b' never was: kept (wrong pid).
         self.assertEqual([a.session_id for a in r.agents()], ["b"])
 
-    def test_agent_pid_skips_shells(self):
+    def _walk(self, table, start):
+        from polyhost.services.agents import procs
+        with mock.patch.object(procs, "_parent_lookup", lambda: table.get):
+            return procs.agent_pid(start)
+
+    def test_agent_pid_skips_the_windows_launcher_chain_and_shells(self):
+        # claude (node) -> bash -> polyctl.exe -> venv python.exe -> python.exe
+        table = {50: (40, "python.exe"), 40: (30, "python.exe"), 30: (20, "polyctl.exe"),
+                 20: (10, "bash.exe"), 10: (5, "node.exe"), 5: (1, "WindowsTerminal.exe")}
+        self.assertEqual(self._walk(table, 50), 10)
+
+    def test_agent_pid_on_linux(self):
+        # claude -> sh -> python3.13 (the console script runs Python directly)
+        table = {50: (20, "python3.13"), 20: (10, "sh"), 10: (5, "claude")}
+        self.assertEqual(self._walk(table, 50), 10)
+
+    def test_agent_pid_keeps_a_python_agent_above_the_shell(self):
+        # aider (Python) -> bash -> polyctl: the launcher skip stops at the shell.
+        table = {50: (20, "python3"), 20: (10, "bash"), 10: (5, "python3")}
+        self.assertEqual(self._walk(table, 50), 10)
+
+    def test_agent_pid_is_0_when_only_launchers_and_shells_are_found(self):
+        table = {50: (40, "python.exe"), 40: (1, "cmd.exe")}
+        self.assertEqual(self._walk(table, 50), 0)
+        self.assertEqual(self._walk({}, 50), 0)
+
+    def test_is_alive(self):
         from polyhost.services.agents import procs
         import os
-        # This test process is not a shell: the walk stops at once.
-        self.assertEqual(procs.agent_pid(os.getpid()), os.getpid())
         self.assertTrue(procs.is_alive(os.getpid()))
         self.assertFalse(procs.is_alive(0))
 

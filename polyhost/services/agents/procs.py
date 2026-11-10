@@ -2,9 +2,11 @@
 and tell whether a process still runs.
 
 A hook command's parent is often a shell the agent started just for that hook
-(bash, cmd, PowerShell), which exits right after. `agent_pid()` walks up past such
-shells to the agent's own process (claude, node, codex, copilot), whose life is
-the session's. The registry removes an entry once that process is gone, but only
+(bash, cmd, PowerShell), which exits right after. On Windows polyctl itself is two
+or three processes too: pip's `polyctl.exe` launcher, the venv's `python.exe` stub
+and the real Python. `agent_pid()` first walks up past that launcher chain, then
+past the shells, to the agent's own process (claude, node, codex, copilot), whose
+life is the session's. The registry removes an entry once that process is gone, but only
 after it has seen it alive once, so a wrong pid cannot remove a live agent.
 """
 from __future__ import annotations
@@ -19,7 +21,23 @@ SHELLS = frozenset({
     "cmd.exe", "powershell.exe", "pwsh.exe", "pwsh", "bash.exe", "sh.exe",
     "conhost.exe", "wsl.exe", "git-bash.exe",
 })
-MAX_DEPTH = 8
+# polyctl's own launcher chain on Windows (pip console script, venv stub, py
+# launcher). Skipped only directly above this process, before the first shell, so
+# an agent that is itself a Python program (aider) is still found.
+LAUNCHERS = frozenset({
+    "polyctl", "polyctl.exe", "python", "python3", "python.exe", "python3.exe",
+    "pythonw.exe", "py.exe",
+})
+MAX_DEPTH = 10
+
+
+def _is_launcher(name: str) -> bool:
+    """`name` (lower case) is in LAUNCHERS or is a versioned Python, such as
+    `python3.13` on Linux or `python3.13.exe`."""
+    if name in LAUNCHERS:
+        return True
+    stem = name[:-4] if name.endswith(".exe") else name
+    return stem.startswith("python") and all(c.isdigit() or c in ".w" for c in stem[6:])
 
 
 def _linux_parent(pid: int):
@@ -98,22 +116,31 @@ def ancestors(pid: int, depth: int = MAX_DEPTH) -> list[int]:
 
 
 def agent_pid(start: int | None = None) -> int:
-    """The first process at or above `start` (default: this process's parent)
-    that is not a shell. `start` itself when the walk finds nothing better."""
-    start = start or os.getppid()
+    """The agent's process for a hook running in process `start` (default: this
+    process). Walks up past polyctl's own launcher chain (LAUNCHERS, only before
+    the first shell), then past the shells (SHELLS), and returns the first other
+    process. Returns 0 when the walk finds none: no pid is better than the pid of
+    a process that exits with the hook, because the registry removes an agent
+    once its pid is gone."""
+    pid = start or os.getpid()
     parent = _parent_lookup()
-    pid = start
+    in_launchers = True
     for _ in range(MAX_DEPTH):
         info = parent(pid)
         if info is None:
-            return start
+            return 0
         ppid, name = info
-        if name.lower() not in SHELLS:
+        name = name.lower()
+        if in_launchers and _is_launcher(name):
+            pass
+        elif name in SHELLS:
+            in_launchers = False
+        else:
             return pid
         if ppid <= 1:
-            return start
+            return 0
         pid = ppid
-    return start
+    return 0
 
 
 def is_alive(pid: int) -> bool:
