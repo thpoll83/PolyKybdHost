@@ -41,15 +41,15 @@ def _stamp(mask, rows, x0, y0, value=True):
 
 
 _EXCLAIM = ["###"] * 8 + ["..."] + ["###"] * 2
+# 11 x 7, so its bounding box centres on the ring's centre pixel (9, 9).
 _CHECK = [
-    "..........##",
-    ".........###",
-    "........###.",
-    "##.....###..",
-    "###...###...",
-    ".###.###....",
-    "..#####.....",
-    "...###......",
+    ".........##",
+    "........##.",
+    ".......##..",
+    "##....##...",
+    ".##..##....",
+    "..####.....",
+    "...##......",
 ]
 _QUESTION = [
     ".####.",
@@ -61,14 +61,15 @@ _QUESTION = [
     "......",
     "..##..",
 ]
-_ARROW_HEAD = [   # points right
-    "#...",
-    "##..",
-    "###.",
-    "####",
-    "###.",
-    "##..",
-    "#...",
+# Points right. 6 rows, so it is symmetric about the half-pixel line between the
+# two rows of the ring's 2 px band at its top end (rows 2 and 3).
+_ARROW_HEAD = [
+    "#..",
+    "##.",
+    "###",
+    "###",
+    "##.",
+    "#..",
 ]
 
 
@@ -79,7 +80,7 @@ def waiting():
 
 def done():
     """A ring with a check mark."""
-    return _stamp(_ring(9, 2), _CHECK, 3, 5)
+    return _stamp(_ring(9, 2), _CHECK, _C - 5, _C - 3)
 
 
 def stale():
@@ -104,15 +105,18 @@ def idle():
 
 def working():
     """A circular arrow (refresh): a ring open at the top right, its top end
-    carrying a head that points right, i.e. clockwise."""
-    ring = _ring(8, 2)
+    carrying a head that points right, i.e. clockwise.
+
+    The ring is r=7 so its top band (rows 2..3 at the centre column) leaves room
+    above it for the head, and the gap ends exactly at 90 degrees, so the band
+    stops at column 8 and the head starts at column 9, centred on the band."""
+    ring = _ring(7, 2)
 
     def keep(dx, dy):
         # Angle 0 = right, counter-clockwise, in screen coordinates (y down).
         angle = math.degrees(math.atan2(-dy, dx)) % 360
-        return not (15 <= angle <= 85)
+        return not (20 <= angle <= 90)
     mask = ring & _grid(keep)
-    # The top end of the ring is at x ~9, band rows 1..2; the head is centred there.
     return _stamp(mask, _ARROW_HEAD, _C, 0)
 
 
