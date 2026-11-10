@@ -134,7 +134,11 @@ class TileGrid(QWidget):
             tile.setIconSize(icon_size)
             tile.setFixedWidth(tile_width or icon_size.width() + px(20))
             tile.setIcon(icon if icon is not None else action.icon())
-            tile.clicked.connect(lambda _checked=False, a=action: self._trigger(a))
+            # Resync after the click: a click on the tile already chosen in an
+            # exclusive group unchecks the tile, while the action stays checked
+            # and emits no changed signal.
+            tile.clicked.connect(
+                lambda _checked=False, t=tile, a=action: (self._trigger(a), self._sync(t, a)))
             action.changed.connect(lambda t=tile, a=action: self._sync(t, a))
             self.tiles.append(tile)
             self._sync(tile, action, relayout=False)
@@ -210,6 +214,28 @@ def add_tiles(menu, actions, icons, columns, icon_size, labels=None, tile_width=
     return holder
 
 
+def _add_tiles_safely(menu, actions, icons, columns, icon_size, labels=None, tile_width=None):
+    """``add_tiles`` from an aboutToShow slot, where an exception must not escape.
+
+    PyQt5 turns an exception in a slot into sys.excepthook and then qFatal(),
+    which would end the tray app on opening a menu. On a failure the menu is
+    put back as it was: the grid out, the text rows in.
+    """
+    before = list(menu.actions())
+    try:
+        add_tiles(menu, actions, icons, columns, icon_size, labels, tile_width)
+    except Exception:
+        import logging
+        logging.getLogger("polyhost.menu_tiles").exception("Tile grid failed; keeping the rows")
+        for action in list(menu.actions()):
+            if action not in before:
+                menu.removeAction(action)
+        for i, action in enumerate(before):
+            if action not in menu.actions():
+                nxt = next((a for a in before[i + 1:] if a in menu.actions()), None)
+                menu.insertAction(nxt, action)
+
+
 def add_tiles_on_first_show(menu, actions, make_icons, columns, icon_size, labels=None):
     """``add_tiles``, deferred to the menu's first show.
 
@@ -230,7 +256,7 @@ def add_tiles_on_first_show(menu, actions, make_icons, columns, icon_size, label
             import logging
             logging.getLogger("polyhost.menu_tiles").exception("Tile previews failed")
             return
-        add_tiles(menu, actions, icons, columns, icon_size, labels)
+        _add_tiles_safely(menu, actions, icons, columns, icon_size, labels)
 
     menu.aboutToShow.connect(build)
 
@@ -260,7 +286,8 @@ def add_icon_tiles_on_first_show(menu, columns=3):
                    if not a.isSeparator() and a.menu() is None
                    and not isinstance(a, QWidgetAction)]
         if actions:
-            add_tiles(menu, actions, [None] * len(actions), columns,
-                      QSize(px(ICON_TILE_PX), px(ICON_TILE_PX)), tile_width=px(ICON_TILE_WIDTH))
+            _add_tiles_safely(menu, actions, [None] * len(actions), columns,
+                              QSize(px(ICON_TILE_PX), px(ICON_TILE_PX)),
+                              tile_width=px(ICON_TILE_WIDTH))
 
     menu.aboutToShow.connect(build)

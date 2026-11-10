@@ -10,7 +10,7 @@ animations the firmware computes, and a sketch of each tells them apart.
 
 import random
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon, QImage, QPixmap
 
@@ -56,7 +56,12 @@ def _paste_centred(panel, img, dx=0, dy=0, level=255):
         img = img.point(lambda v: v * level // 255)
     x = (PANEL_W - img.width) // 2 + dx
     y = (PANEL_H - img.height) // 2 + dy
-    panel.paste(img, (x, y), img)
+    # Draw on a black layer and keep the brighter pixel of the two. Pasting
+    # with the dimmed image as its own mask dimmed it twice (level^2 / 255:
+    # 1 % drew grey 45, not 107), and a later dim copy covered a bright one.
+    layer = Image.new("L", panel.size, 0)
+    layer.paste(img, (x, y))
+    panel.paste(ImageChops.lighter(panel, layer))
     return panel
 
 

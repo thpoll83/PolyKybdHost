@@ -190,5 +190,47 @@ class ScaleTest(unittest.TestCase):
             self.assertEqual(ui_kit.ui_scale(), 1.5)
 
 
+class ReviewFixesTest(unittest.TestCase):
+    """Three defects CodeRabbit found on #775."""
+
+    def test_a_dim_level_is_not_dimmed_twice(self):
+        # 1 % maps to grey 70 + 185 * sqrt(2/50) = 107.
+        self.assertEqual(keycap_tiles.brightness_panel(2).getextrema()[1], 107)
+
+    def test_a_dim_ghost_does_not_cover_the_bright_legend(self):
+        panel = keycap_tiles.idle_panel(0)
+        self.assertEqual(panel.getextrema()[1], 255)
+        self.assertIn(70, set(panel.tobytes()))
+
+    def test_clicking_the_chosen_tile_keeps_it_chosen(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        group = QActionGroup(menu)
+        actions = []
+        for text in "ab":
+            act = QAction(text, menu, checkable=True)
+            group.addAction(act)
+            menu.addAction(act)
+            actions.append(act)
+        actions[0].setChecked(True)
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
+            holder = menu_tiles.add_tiles(menu, actions, [None, None], 2, keycap_tiles.tile_size())
+        tile = holder.defaultWidget().tiles[0]
+        tile.click()
+        self.assertTrue(actions[0].isChecked())
+        self.assertTrue(tile.isChecked())
+
+    def test_a_failing_grid_leaves_the_rows(self):
+        menu = QMenu()
+        self.addCleanup(menu.deleteLater)
+        rows = [menu.addAction("a"), menu.addAction("b")]
+        with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}), \
+                mock.patch.object(menu_tiles.TileGrid, "_relayout", side_effect=RuntimeError("x")), \
+                self.assertLogs("polyhost.menu_tiles", "ERROR"):
+            menu_tiles.add_icon_tiles_on_first_show(menu)
+            menu.aboutToShow.emit()
+        self.assertEqual(menu.actions(), rows)
+
+
 if __name__ == "__main__":
     unittest.main()
