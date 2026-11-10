@@ -10,26 +10,43 @@ import time
 from polyhost.services.add_to_startup import setup_autostart_for_app, remove_autostart, get_autostart_status
 
 
-def resolve_dev(dev, debug_legacy, setting):
+# `log_detail` setting value -> log verbosity (the --dev level it stands for).
+LOG_DETAIL_LEVELS = {"normal": 0, "debug": 1, "detailed": 2}
+
+
+def resolve_dev(dev, debug_legacy, setting, log_detail="normal"):
     """Resolve ``--dev`` / the deprecated ``--debug`` / the ``developer_mode``
-    setting into ``(verbosity, developer, source)``.
+    and ``log_detail`` settings into ``(verbosity, developer, source)``.
 
     ``dev``/``debug_legacy`` are the parsed flag values (``None`` = flag absent),
-    ``setting`` the persisted ``developer_mode`` bool.
+    ``setting`` the persisted ``developer_mode`` bool and ``log_detail`` the
+    persisted log detail ("normal", "debug" or "detailed").
 
     The flag carries BOTH meanings (developer surface + log verbosity) and wins
-    over the setting **in both directions**, so ``--dev 0`` forces developer mode
-    off for one run — that is why "flag absent" must stay distinguishable from
-    ``--dev 0`` (hence ``default=None``). With no flag the log level stays INFO:
-    the setting is about the developer *surface*, not about log volume.
+    over both settings **in both directions**, so ``--dev 0`` forces developer
+    mode off and the log to INFO for one run — that is why "flag absent" must
+    stay distinguishable from ``--dev 0`` (hence ``default=None``). With no flag
+    the two settings decide independently: developer mode is about the tools
+    shown, log detail about log volume. An unknown log detail counts as normal.
 
     Pure — unit-tested in tests/main_app_test.py.
     """
     level = dev if dev is not None else debug_legacy
     if level is None:
-        return 0, bool(setting), "setting"
+        return LOG_DETAIL_LEVELS.get(log_detail, 0), bool(setting), "setting"
     source = "--dev" if dev is not None else "--debug (deprecated)"
     return level, level > 0, source
+
+
+def log_level_for(verbosity):
+    """The logging level for a resolved verbosity: 2 DEBUG_DETAILED (it shows
+    the debug_detailed lines, e.g. window-report receipts), 1 DEBUG, else INFO.
+    The headless daemon and the forwarder use it; the tray app maps the same
+    way inside PolyHost."""
+    from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
+    if verbosity > 1:
+        return DEBUG_DETAILED
+    return logging.DEBUG if verbosity > 0 else logging.INFO
 
 
 def _setup_startup_logging(debug=0):
@@ -122,7 +139,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                         help='Developer mode + log verbosity: 0 (off), 1 (basic, the default when '
                              'the flag is given bare), 2 (detailed). Reveals the Developer submenu '
                              'and the dev_ settings, and turns on debug logging. Overrides the '
-                             'developer_mode setting in BOTH directions (--dev 0 forces it off).')
+                             'developer_mode and log_detail settings in BOTH directions '
+                             '(--dev 0 forces both off).')
     # Deprecated alias for --dev, kept so existing shortcuts / autostart entries /
     # scripts keep working. Same 0/1/2 shape; resolved together in resolve_dev().
     parser.add_argument('--debug', dest='debug_legacy', type=int, default=None, choices=[0, 1, 2],
@@ -162,13 +180,15 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     args=parser.parse_args()
 
     # Developer mode + log verbosity (see resolve_dev): the flag overrides the
-    # persisted developer_mode setting in both directions; with no flag the
-    # setting decides the developer surface and logging stays at INFO. Read via
+    # persisted developer_mode and log_detail settings in both directions; with
+    # no flag each setting decides its own half. A GUI-spawned daemon gets no
+    # flag then and reads the same two settings from the same file. Read via
     # the file-only helper — PolySettings() would create/rewrite the config and
     # dump every key before we even know the launch path.
     from polyhost.settings import read_setting  # Qt-free
     verbosity, developer, dev_source = resolve_dev(
-        args.dev, args.debug_legacy, read_setting("developer_mode", False))
+        args.dev, args.debug_legacy, read_setting("developer_mode", False),
+        read_setting("log_detail", "normal"))
 
     # Pillow logs every PNG chunk at DEBUG ("STREAM b'IDAT' …", "Importing
     # PngImagePlugin"); under --dev that floods the host log (and interleaves
@@ -386,17 +406,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         slog.info("Launch path: headless daemon (no Qt).")
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
-        from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
-        # Mirror the GUI's level mapping: --dev 2 drops to DEBUG_DETAILED so the
-        # daemon surfaces debug_detailed lines (e.g. window-report receipts);
-        # --dev 1 = DEBUG, no flag = INFO.
-        if verbosity > 1:
-            hl_level = DEBUG_DETAILED
-        elif verbosity > 0:
-            hl_level = logging.DEBUG
-        else:
-            hl_level = logging.INFO
-        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer,
+        run_headless(log_level_for(verbosity), ignore_version=args.ignore_version, developer=developer,
                      claim=instance_claim)
         crash_log.note_clean_exit(slog, "headless daemon")
         sys.exit(0)
@@ -442,7 +452,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         addr = args.host or f"IP set in {args.host_file}"
         slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if verbosity>0 else logging.INFO, args.host, args.host_file,
+        app = PolyForwarder(log_level_for(verbosity), args.host, args.host_file,
                             report_rpc=args.report_rpc, report_port=args.report_port,
                             report_authkey_file=args.report_authkey_file)
     else:
@@ -500,7 +510,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             print("Executing PolyHost...")
         try:
             app = PolyHost(logging.DEBUG if verbosity>0 else logging.INFO, verbosity, developer,
-                           ignore_version=args.ignore_version,
+                           ignore_version=args.ignore_version, dev_source=dev_source,
                            client_mode=client_mode, endpoint=endpoint,
                            connect_retry=defer_connect)
         except Exception:

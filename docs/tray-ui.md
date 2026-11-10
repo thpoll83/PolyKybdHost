@@ -115,10 +115,13 @@ and relative links were adjusted to suit a standalone file.
   the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
   **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
   the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
-  is the one pure decision point (unit-tested): flag absent → the setting decides and
-  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
-  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
-  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
+  is the one pure decision point (unit-tested): flag absent → the `developer_mode` setting
+  decides the surface and the **`log_detail`** setting (normal / debug / detailed = level
+  0 / 1 / 2) the log level, independently; flag present → it wins over both **in both
+  directions**, so `--dev 0` forces developer mode off and the log to INFO (hence
+  `default=None` — "flag absent" must stay distinguishable from `--dev 0`). Both settings
+  are read once at startup; the Settings dialog says so, and shows "Set by --dev for this
+  run" under both rows when the flag decided them (`SettingsDialog.setup(flag_source=)`). The setting exists because under daemon-by-default
   the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
   developer tool unreachable unless you started the app by hand. `--debug N` survives as a
   hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.

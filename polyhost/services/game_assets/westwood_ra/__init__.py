@@ -10,10 +10,10 @@ from polyhost.services.game_assets.readers import Reader, Setting
 READER = Reader(
     module="polyhost.services.game_assets.westwood_ra.reader",
     settings=(
-        Setting("game_ra_data_dir", "", N_("Red Alert Folder"), N_(
+        Setting("game_ra_data_dir", "", N_("Red Alert folder"), N_(
             "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and "
             "LOCAL.MIX. Empty: the content folder of OpenRA is searched."), None),
-        Setting("game_ra_faction", "allies", N_("Red Alert Faction"),
+        Setting("game_ra_faction", "allies", N_("Red Alert faction"),
                 N_("Whose units and buildings the OpenRA Red Alert overlay shows."),
                 (("allies", N_("Allies")), ("soviets", N_("Soviets")))),
     ),

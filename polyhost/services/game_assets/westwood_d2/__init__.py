@@ -10,10 +10,10 @@ from polyhost.services.game_assets.readers import Reader, Setting
 READER = Reader(
     module="polyhost.services.game_assets.westwood_d2.reader",
     settings=(
-        Setting("game_dune2_data_dir", "", N_("Dune II Folder"), N_(
+        Setting("game_dune2_data_dir", "", N_("Dune II folder"), N_(
             "A folder with the original Dune II file DUNE.PAK. Empty: the data "
             "folders of Dune Legacy and OpenDUNE are searched."), None),
-        Setting("game_dune2_house", "atreides", N_("Dune II House"),
+        Setting("game_dune2_house", "atreides", N_("Dune II house"),
                 N_("Whose units the Dune II overlays show."),
                 (("atreides", N_("Atreides")), ("harkonnen", N_("Harkonnen")),
                  ("ordos", N_("Ordos")))),
