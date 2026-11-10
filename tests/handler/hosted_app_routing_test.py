@@ -424,6 +424,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
         for os_name in ("windows", "macos"):
             self.assertIn("copilot_template.mods.png", self._overlay("mscopilot", os_name))
             self.assertIn("copilot_template.mods.png", self._overlay("copilot", os_name))
+            # The Copilot app installed under Program Files (x86)\Microsoft\Copilot
+            # runs as copilotapp.exe (field, 2026-11-10: "No match", nothing drawn).
+            self.assertIn("copilot_template.mods.png", self._overlay("copilotapp", os_name))
             self.assertIn("copilot_web_template.mods.png",
                           self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
             # The host gate: a Copilot URL inside another site's query is not Copilot.
@@ -495,6 +498,25 @@ class AppNamesPerPlatformTest(unittest.TestCase):
             self.assertIn(f"chrome_template{sfx}.mods.png", overlay)
             self.assertNotIn(f"chatgpt_template{sfx}.mods.png", overlay)
 
+
+
+class CopilotKeyWithoutADisplayTest(unittest.TestCase):
+    """The Copilot names, read from the mapping file itself.
+
+    The routing classes above need a display (`active_window` imports
+    pywinctl), so a headless run skips them and still reports OK. This reads the
+    raw YAML, so the copilotapp name is checked on every run.
+    """
+
+    def test_every_copilot_app_name_shares_the_copilot_set(self):
+        raw = yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
+        entry = next((v for k, v in raw.items()
+                      if "mscopilot" in [n.strip().lower() for n in str(k).split(",")]), None)
+        self.assertIsNotNone(entry, "no mapping key lists mscopilot")
+        names = next(k for k, v in raw.items() if v is entry)
+        self.assertEqual({n.strip().lower() for n in names.split(",")},
+                         {"mscopilot", "copilotapp", "copilot"})
+        self.assertIn("copilot_template.mods.png", entry["overlay"])
 
 if __name__ == "__main__":
     unittest.main()
