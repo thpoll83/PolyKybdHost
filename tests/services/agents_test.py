@@ -285,6 +285,8 @@ class ControllerTest(unittest.TestCase):
         self.assertTrue(self.c._read_events)
 
     def test_last_press_says_what_happened(self):
+        # The real _raise (it records the result), still without a thread.
+        self.c._raise = lambda agent: AgentKeysController._raise(self.c, agent)
         self.r.report("codex", "a", "done")
         self.c.sync(self.kb)
         self.kb.press(4)                       # key 5: nobody there
