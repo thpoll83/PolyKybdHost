@@ -217,8 +217,14 @@ def fit_text_lines(edit, min_lines=3, max_lines=14):
     lines = max(1, edit.document().lineCount())
     if isinstance(edit, QPlainTextEdit) and edit.lineWrapMode() != QPlainTextEdit.NoWrap:
         # Wrapped lines are counted as blocks; a rough width estimate keeps
-        # a long line from being counted as one.
-        width = max(edit.viewport().width(), 400)
+        # a long line from being counted as one. Before the dialog is shown
+        # the viewport reports Qt's default (~100 px), so the window's own
+        # width, less the dialog margins and the frame, stands in for it.
+        width = edit.viewport().width()
+        if not edit.isVisible():
+            win = edit.window()
+            width = max(width, max(win.width(), win.minimumWidth()) - 40)
+        width = max(width, 400)
         chars = max(20, width // max(1, edit.fontMetrics().averageCharWidth()))
         lines = sum(max(1, -(-len(b) // chars)) for b in edit.toPlainText().split("\n"))
     shown = min(max(lines, min_lines), max_lines)

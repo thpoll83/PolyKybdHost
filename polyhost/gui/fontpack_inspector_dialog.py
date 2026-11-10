@@ -973,7 +973,8 @@ class FontPackSaveDialog(QDialog):
         v = QVBoxLayout(self)
         # Grey like the other dialogs' descriptions: the old light blue #9ad
         # had too little contrast on the light theme.
-        self._meta = muted(QLabel()); self._meta.setWordWrap(True)
+        self._meta = muted(QLabel())
+        self._meta.setWordWrap(True)
         v.addWidget(self._meta)
 
         form = QFormLayout()
