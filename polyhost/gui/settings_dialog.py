@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost import i18n
+from polyhost.gui.ui_kit import style_button_box
 from polyhost.i18n import _, _f, N_
 from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
@@ -851,6 +852,7 @@ class SettingsDialog(QDialog):
         note.setPalette(muted)
         footer.addWidget(note, 1)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        style_button_box(buttons)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         footer.addWidget(buttons)

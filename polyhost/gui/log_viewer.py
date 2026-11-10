@@ -7,14 +7,16 @@ import sys
 from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5.QtGui import (QColor, QFont, QKeySequence, QSyntaxHighlighter, QTextCharFormat,
                          QTextCursor, QTextDocument)
-from PyQt5.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
                               QPlainTextEdit, QPushButton, QShortcut, QTabWidget, QTextEdit,
                               QVBoxLayout, QWidget)
 
 from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
 from polyhost.i18n import _, _f, _nf
-from polyhost.util.log_util import LEVEL_HEX_COLORS
+from polyhost.gui.theme import is_dark
+from polyhost.gui.ui_kit import set_button_icon
+from polyhost.util.log_util import DEBUG_DETAILED, LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
 # Continuation lines (e.g. tracebacks) won't match and inherit the previous color.
@@ -27,12 +29,40 @@ _LEVEL_RE = re.compile(
 # State 0 means "no color"; states 1..N correspond to levels in LEVEL_HEX_COLORS.
 _LEVEL_TO_STATE = {lvl: i + 1 for i, lvl in enumerate(LEVEL_HEX_COLORS)}
 
-# Pre-built QTextCharFormat per state — reused across every highlightBlock() call.
-_STATE_TO_FORMAT: dict[int, QTextCharFormat] = {}
-for _state, _lvl in ((s, l) for l, s in _LEVEL_TO_STATE.items()):
-    _fmt = QTextCharFormat()
-    _fmt.setForeground(QColor(LEVEL_HEX_COLORS[_lvl]))
-    _STATE_TO_FORMAT[_state] = _fmt
+# LEVEL_HEX_COLORS is picked for a dark terminal. On the light theme's white
+# log view the same colours read poorly (INFO #22cc22 is about 2:1), so the
+# viewer uses these darker variants there (4.4:1 to 5.6:1 on white).
+_LIGHT_LEVEL_HEX = {
+    logging.ERROR: "#c62828",
+    logging.WARNING: "#b85c00",
+    logging.INFO: "#2e7d32",
+    logging.DEBUG: "#00796b",
+    DEBUG_DETAILED: "#00897b",
+}
+_BANNER_HEX = {True: "#00acc1", False: "#00838f"}   # cyan on dark / on light
+
+
+def _dark_theme() -> bool:
+    """Whether the app runs the dark palette (gui/theme.is_dark)."""
+    return is_dark(QApplication.palette())
+
+
+def level_color(level: int, dark: bool) -> str:
+    """The colour a log level is drawn in on a dark or a light log view."""
+    return LEVEL_HEX_COLORS[level] if dark else _LIGHT_LEVEL_HEX[level]
+
+
+def _char_format(hex_color: str) -> QTextCharFormat:
+    fmt = QTextCharFormat()
+    fmt.setForeground(QColor(hex_color))
+    return fmt
+
+
+# Pre-built QTextCharFormat per state and theme — reused across every
+# highlightBlock() call.
+_STATE_FORMATS = {dark: {state: _char_format(level_color(lvl, dark))
+                         for lvl, state in _LEVEL_TO_STATE.items()}
+                  for dark in (True, False)}
 
 
 class _LogHighlighter(QSyntaxHighlighter):
@@ -42,6 +72,10 @@ class _LogHighlighter(QSyntaxHighlighter):
     so opening large log files is near-instant.
     """
 
+    def __init__(self, document):
+        super().__init__(document)
+        self._formats = _STATE_FORMATS[_dark_theme()]
+
     def highlightBlock(self, text: str) -> None:
         m = _LEVEL_RE.match(text)
         if m:
@@ -50,7 +84,7 @@ class _LogHighlighter(QSyntaxHighlighter):
             # Inherit previous block's state (-1 on the very first block → 0 = no color)
             state = max(self.previousBlockState(), 0)
 
-        fmt = _STATE_TO_FORMAT.get(state)
+        fmt = self._formats.get(state)
         if fmt:
             self.setFormat(0, len(text), fmt)
         self.setCurrentBlockState(state)
@@ -60,12 +94,10 @@ class _LogHighlighter(QSyntaxHighlighter):
 # highlighter (below). Taken from LOG_SOURCES rather than spelled out again here.
 _CONSOLE_FILENAME = next(s.filename for s in LOG_SOURCES if s.label == "keyboard-console")
 
-_SEVERITY_TO_FORMAT: dict[str, QTextCharFormat] = {}
-for _sev, _lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
-                   (problem_scan.SEVERITY_WARNING, logging.WARNING)):
-    _fmt = QTextCharFormat()
-    _fmt.setForeground(QColor(LEVEL_HEX_COLORS[_lvl]))
-    _SEVERITY_TO_FORMAT[_sev] = _fmt
+_SEVERITY_FORMATS = {dark: {sev: _char_format(level_color(lvl, dark))
+                            for sev, lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
+                                             (problem_scan.SEVERITY_WARNING, logging.WARNING))}
+                     for dark in (True, False)}
 
 
 # The firmware's boot banner, `== PolyKybd Split72 1.8.0 … | build <branch>@<hash> … ==`,
@@ -74,8 +106,7 @@ for _sev, _lvl in ((problem_scan.SEVERITY_ERROR, logging.ERROR),
 # identity stands out in a long log.
 _BANNER_RE = re.compile(r"^\[[^\]]*\] == .* ==\s*$")
 _BANNER_DETAIL_RE = re.compile(r"^\[[^\]]*\]    \S")
-_BANNER_FORMAT = QTextCharFormat()
-_BANNER_FORMAT.setForeground(QColor("#00acc1"))   # cyan, readable on light & dark
+_BANNER_FORMATS = {dark: _char_format(_BANNER_HEX[dark]) for dark in (True, False)}
 _IN_BANNER = 1   # block state: this line belongs to a banner block
 
 
@@ -89,14 +120,20 @@ class _ConsoleHighlighter(QSyntaxHighlighter):
     and the problem dialog agree on what counts. The boot banner block is cyan;
     that is the one colour that carries state across lines."""
 
+    def __init__(self, document):
+        super().__init__(document)
+        dark = _dark_theme()
+        self._severity_formats = _SEVERITY_FORMATS[dark]
+        self._banner_format = _BANNER_FORMATS[dark]
+
     def highlightBlock(self, text: str) -> None:
         in_banner = bool(_BANNER_RE.match(text)) or (
             self.previousBlockState() == _IN_BANNER and bool(_BANNER_DETAIL_RE.match(text)))
         self.setCurrentBlockState(_IN_BANNER if in_banner else 0)
         # A problem line keeps its warning/error colour, inside a banner block too.
-        fmt = _SEVERITY_TO_FORMAT.get(problem_scan.classify_console_line(text))
+        fmt = self._severity_formats.get(problem_scan.classify_console_line(text))
         if fmt is None and in_banner:
-            fmt = _BANNER_FORMAT
+            fmt = self._banner_format
         if fmt:
             self.setFormat(0, len(text), fmt)
 
@@ -127,12 +164,12 @@ class LogViewerDialog(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.layout = QVBoxLayout(central_widget)
-        self.layout.setContentsMargins(0, 0, 0, 10)
+        self.layout.setContentsMargins(10, 10, 10, 10)
 
         # Search: case-insensitive, over the visible tab. Enter / Shift+Enter step
         # through the matches, Ctrl+F focuses the field, Esc clears it.
         search_layout = QHBoxLayout()
-        search_layout.setContentsMargins(6, 6, 6, 0)
+        search_layout.setContentsMargins(0, 0, 0, 0)
         self.search_edit = QLineEdit(self)
         self.search_edit.setPlaceholderText(_("Search (Ctrl+F)"))
         self.search_edit.setClearButtonEnabled(True)
@@ -197,35 +234,34 @@ class LogViewerDialog(QMainWindow):
             self.tab_widget.addTab(tab, tab_name)
             self.log_text[tab_name] = log_text
 
+        # Actions on the left, Close alone on the right, as in the other dialogs.
         button_layout = QHBoxLayout()
-        button_layout.addStretch(1)
 
         # Reading a log here is one thing; handing it to someone else is the
         # other half, and this is where a user looks for it.
         if collect_cb is not None:
-            button = QPushButton(_("Collect Logs..."))
+            button = set_button_icon(QPushButton(_("Collect Logs...")), "save")
             button.setToolTip(_("Save all logs as a .zip, or copy them to the clipboard"))
             button.clicked.connect(collect_cb)
             button_layout.addWidget(button)
 
-        button = QPushButton(_("Clear Logs..."))
+        button = set_button_icon(QPushButton(_("Clear Logs...")), "delete")
         button.setToolTip(_("Empty every log file, including the crash log"))
         button.clicked.connect(self.clear_logs)
         button_layout.addWidget(button)
 
-        button = QPushButton(_("Open Folder"))
+        button = set_button_icon(QPushButton(_("Open Folder")), "folder")
         button.clicked.connect(self.open_file_directory)
         button_layout.addWidget(button)
 
-        button = QPushButton(_("Reload"))
+        button = set_button_icon(QPushButton(_("Reload")), "reload")
         button.clicked.connect(self.load_log)
         button_layout.addWidget(button)
 
-        button = QPushButton(_("Close"))
+        button_layout.addStretch(1)
+        button = set_button_icon(QPushButton(_("Close")), "close")
         button.clicked.connect(self.close)
         button_layout.addWidget(button)
-
-        button_layout.addStretch(1)
         self.layout.addLayout(button_layout)
 
         self.load_log()

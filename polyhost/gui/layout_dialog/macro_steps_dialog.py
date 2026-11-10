@@ -32,6 +32,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.ui_kit import style_button_box
 from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import macro_body as mb
 from polyhost.services import macro_keys as mk
@@ -210,6 +211,8 @@ class MacroStepsDialog(QDialog):
         page.addWidget(self.summary)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
+        style_button_box(buttons)
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
         page.addWidget(buttons)

@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 
 from polyhost.gui.file_dialogs import downloads_dir
 from polyhost.gui.log_bundle_dialog import TIMEFRAMES, _CollectWorker, timeframe_index
+from polyhost.gui.ui_kit import set_button_icon, style_button_box
 from polyhost.i18n import _, _f
 from polyhost.services import log_bundle, problem_report
 
@@ -99,18 +100,18 @@ class ReportProblemDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.reveal_btn = QPushButton(_("Show Log File"), self)
+        self.reveal_btn = set_button_icon(QPushButton(_("Show Log File"), self), "folder")
         self.reveal_btn.clicked.connect(self._reveal)
         self.reveal_btn.setVisible(False)
         buttons.addWidget(self.reveal_btn)
         buttons.addStretch(1)
 
-        self.create_btn = QPushButton(_("Create Report…"), self)
+        self.create_btn = set_button_icon(QPushButton(_("Create Report…"), self), "report")
         self.create_btn.setDefault(True)
         self.create_btn.clicked.connect(self._create)
         buttons.addWidget(self.create_btn)
 
-        close = QDialogButtonBox(QDialogButtonBox.Close, self)
+        close = style_button_box(QDialogButtonBox(QDialogButtonBox.Close, self))
         close.rejected.connect(self.reject)
         buttons.addWidget(close)
         layout.addLayout(buttons)
