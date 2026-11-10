@@ -17,6 +17,7 @@ row-major, MSB first), uploaded with cmd 46 straight into a pool slot.
 from __future__ import annotations
 
 import logging
+import os
 import threading
 
 from polyhost.services.agents.model import AgentState, vendor
@@ -99,6 +100,26 @@ def wrap_text(text: str, max_lines: int = 2, width: int = PANEL_W - 2,
     return [fit_text(line, width, size) for line in lines]
 
 
+# A vendor slug "agent:<name>" is a finished card mark shipped as
+# res/icons/agents/<name>.png (tools/gen_agent_marks.py), for vendors that
+# Simple Icons and MDI do not carry. It is used as it is, never scaled.
+AGENT_MARK_PREFIX = "agent:"
+AGENT_MARK_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "res", "icons", "agents")
+
+
+def _shipped_mark(name: str):
+    try:
+        import numpy as np
+        from PIL import Image
+        with Image.open(os.path.join(AGENT_MARK_DIR, name + ".png")) as img:
+            mask = np.array(img.convert("L")) > 127
+    except Exception as e:  # noqa: BLE001 - cosmetic: fall back to the next slug
+        log.debug("Agent mark %s: %s", name, e)
+        return None
+    return mask[-MARK_SHOWN:] if mask.any() else None
+
+
 class VendorMarks:
     """Vendor marks as 1-bit masks, from app_icons' cache or shipped marks.
 
@@ -126,11 +147,18 @@ class VendorMarks:
         return mask
 
     def _load(self, vid, allow_network):
+        for slug in vendor(vid).slugs:
+            if slug.startswith(AGENT_MARK_PREFIX):
+                mask = _shipped_mark(slug[len(AGENT_MARK_PREFIX):])
+                if mask is not None:
+                    return mask
         try:
             from polyhost.services import app_icons
         except Exception:   # noqa: BLE001 - numpy/Pillow missing: draw text instead
             return None
         for slug in vendor(vid).slugs:
+            if slug.startswith(AGENT_MARK_PREFIX):
+                continue
             try:
                 path = app_icons.fetch_icon(slug, allow_network=allow_network)
                 if not path:
@@ -208,7 +236,9 @@ def render_card(vendor_id: str, state: AgentState, headline: str, marks: VendorM
         _text_centred(draw, line, y + k * LINE_PITCH, FONT_SIZE)
     canvas = np.array(img, dtype=bool)
     if mask is not None:
-        _paste(canvas, np.asarray(mask, dtype=bool), 6, 0)
+        mask = np.asarray(mask, dtype=bool)
+        # Bottom-aligned with the state icon, whatever the mark's height.
+        _paste(canvas, mask, 6, max(0, MARK_SHOWN - mask.shape[0]))
     icon = _state_icon(state)
     if icon is not None:
         _paste(canvas, icon, PANEL_W - icon.shape[1] - 4, 0)

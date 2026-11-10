@@ -277,6 +277,15 @@ class CardTest(unittest.TestCase):
         self.assertLessEqual(_measure(long)[2], 70)
         self.assertLessEqual(_measure(fit_text("polykybd-docs"))[2], 70)
 
+    def test_shipped_agent_marks_load_without_network(self):
+        from polyhost.services.agents.card import MARK_SHOWN, VendorMarks
+        marks = VendorMarks()
+        for vid in ("aider", "opencode", "qwen"):
+            mask = marks._load(vid, allow_network=False)
+            self.assertIsNotNone(mask, vid)
+            self.assertLessEqual(mask.shape[0], MARK_SHOWN)
+            self.assertTrue(mask.any())
+
     def test_wrap_text_breaks_between_words_into_two_lines(self):
         from polyhost.services.agents.card import _measure, wrap_text
         self.assertEqual(wrap_text("agent 2"), ["agent 2"])
