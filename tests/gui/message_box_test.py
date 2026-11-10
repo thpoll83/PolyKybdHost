@@ -82,5 +82,28 @@ class AnswerTest(unittest.TestCase):
                                 box.informative.heightForWidth(box.informative.width()))
 
 
+class GetTextTest(unittest.TestCase):
+
+    def _run(self, answer):
+        def exec_(dlg):
+            from PyQt5.QtWidgets import QLineEdit
+            dlg.show()
+            _APP.processEvents()
+            dlg.findChild(QLineEdit).setText("hello")
+            box = dlg.findChild(QDialogButtonBox)
+            for btn in box.buttons():
+                self.assertFalse(btn.icon().isNull(), btn.text())
+            box.button(answer).click()
+            return dlg.result()
+        with mock.patch.object(QDialog, "exec_", exec_):
+            return message_box.get_text(None, "Add text", "Characters to type:")
+
+    def test_ok_returns_the_text(self):
+        self.assertEqual(self._run(QDialogButtonBox.Ok), ("hello", True))
+
+    def test_cancel_reports_not_ok(self):
+        self.assertFalse(self._run(QDialogButtonBox.Cancel)[1])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost import i18n
-from polyhost.gui.ui_kit import style_button_box
+from polyhost.gui.ui_kit import style_button_box, px
 from polyhost.i18n import _, _f, N_
 from polyhost.services.game_assets import readers as game_asset_readers
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT
@@ -491,8 +491,8 @@ def create_editor(value, key=None):
         # Sized to its entries, but capped: the emoji dictionary list has
         # long "native — English" names that squeezed the description.
         combo.setSizeAdjustPolicy(QComboBox.AdjustToContents)
-        combo.setMinimumWidth(160)
-        combo.setMaximumWidth(260)
+        combo.setMinimumWidth(px(160))
+        combo.setMaximumWidth(px(260))
         return combo
     if isinstance(value, bool):
         switch = ToggleSwitch()
@@ -506,7 +506,7 @@ def create_editor(value, key=None):
         # int range and never start the range above a stored negative value.
         spinbox.setRange(-2_147_483_648 if value < 0 else 0, 2_147_483_647)
         spinbox.setValue(value)
-        spinbox.setFixedWidth(120)
+        spinbox.setFixedWidth(px(120))
         return spinbox
     elif isinstance(value, float):
         doublebox = SettingDoubleSpinBox()
@@ -520,7 +520,7 @@ def create_editor(value, key=None):
         # use a small step so these stay editable to their real precision.
         doublebox.setSingleStep(0.05)
         doublebox.setValue(value)
-        doublebox.setFixedWidth(120)
+        doublebox.setFixedWidth(px(120))
         return doublebox
     else:  # string fallback
         line_edit = QLineEdit()
@@ -750,7 +750,7 @@ class SettingsDialog(QDialog):
 
     def _fit_to_screen(self):
         """Open at half the screen the cursor is on, with the old size as minimum."""
-        self.setMinimumSize(MIN_DIALOG_SIZE)
+        self.setMinimumSize(px(MIN_DIALOG_SIZE.width()), px(MIN_DIALOG_SIZE.height()))
         screen = (QGuiApplication.screenAt(QCursor.pos())
                   or QGuiApplication.primaryScreen())
         if screen is not None:
@@ -784,7 +784,7 @@ class SettingsDialog(QDialog):
 
         # Sidebar: the search field and the section list.
         side = QWidget()
-        side.setFixedWidth(SIDEBAR_WIDTH)
+        side.setFixedWidth(px(SIDEBAR_WIDTH))
         side_lay = QVBoxLayout(side)
         side_lay.setContentsMargins(12, 14, 8, 12)
         side_lay.setSpacing(10)

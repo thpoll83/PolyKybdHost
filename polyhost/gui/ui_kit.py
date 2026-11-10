@@ -72,6 +72,8 @@ _BUTTON_ICONS = {
     "update": lambda: get_icon("update.svg"),
     "folder": lambda: get_icon("file_open.svg"),
     "reload": lambda: get_icon("sync.svg"),
+    "edit": lambda: get_icon("edit.svg"),
+    "image": lambda: get_icon("image.svg"),
     "left": lambda: get_icon("arrow_back.svg"),
     "right": lambda: get_icon("arrow_forward.svg"),
 }

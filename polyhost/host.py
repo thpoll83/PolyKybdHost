@@ -85,6 +85,7 @@ GLYPH_SIZE_LABELS = {
     GlyphSize.LARGE:  N_("Large"),
 }
 from polyhost.gui import keycap_tiles, menu_tiles
+from polyhost.gui.ui_kit import px
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
 from polyhost.gui.tray_wait import TrayVisibilityWaiter
@@ -189,12 +190,12 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
     else:
         dlg.setCancelButton(None)
     dlg.setValue(0)
-    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
+    dlg.setFixedSize(px(_UPD_DLG_W), px(_UPD_DLG_H))
     layout = dlg.layout()
     if layout is not None:
         m = layout.contentsMargins()
         layout.setContentsMargins(m.left(), m.top(), m.right(),
-                                  m.bottom() + _UPD_DLG_H // 10)
+                                  m.bottom() + px(_UPD_DLG_H) // 10)
     dlg.show()
     # Snap to the tray corner like HidFwUpDialog (defer a tick so the WM has
     # finalised the frame size); harmless when no tray icon is available.

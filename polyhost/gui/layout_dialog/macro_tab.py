@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (
     QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
+from polyhost.gui.ui_kit import px, set_button_icon
 from polyhost.gui import message_box
 from polyhost.device.command_ids import MacroStyle
 from polyhost.i18n import _, _f, _nf, N_
@@ -109,7 +110,7 @@ class MacroTab(QWidget):
         page.addLayout(outer, 1)
 
         self.list = QListWidget()
-        self.list.setMaximumWidth(190)
+        self.list.setMaximumWidth(px(190))
         self.list.currentRowChanged.connect(self._on_select)
         outer.addWidget(self.list)
 
@@ -187,6 +188,7 @@ class MacroTab(QWidget):
         # get an editor of their own -- and recording needs a window that can take the
         # keyboard away from this field. See macro_steps_dialog.
         self.steps_btn = QPushButton(_("Steps…"))
+        set_button_icon(self.steps_btn, "edit")
         self.steps_btn.setToolTip(
             _("Build the macro out of key presses, key combinations and pauses — or record them"))
         self.steps_btn.clicked.connect(self._on_edit_steps)
@@ -209,9 +211,11 @@ class MacroTab(QWidget):
         icon_row = QHBoxLayout()
         icon_row.setContentsMargins(0, 0, 0, 0)
         self.icon_btn = QPushButton(_("Choose icon…"))
+        set_button_icon(self.icon_btn, "image")
         self.icon_btn.clicked.connect(self._on_pick_icon)
         icon_row.addWidget(self.icon_btn, 1)
         self.icon_clear = QPushButton(_("Clear"))
+        set_button_icon(self.icon_clear, "close")
         self.icon_clear.clicked.connect(self._on_clear_icon)
         icon_row.addWidget(self.icon_clear)
         preview_col.addLayout(icon_row)
@@ -231,12 +235,15 @@ class MacroTab(QWidget):
 
         buttons = QHBoxLayout()
         self.save_btn = QPushButton(_("Save macro"))
+        set_button_icon(self.save_btn, "save")
         self.save_btn.clicked.connect(self._on_save)
         buttons.addWidget(self.save_btn)
         self.clear_btn = QPushButton(_("Clear"))
+        set_button_icon(self.clear_btn, "close")
         self.clear_btn.clicked.connect(self._on_clear)
         buttons.addWidget(self.clear_btn)
         self.assign_btn = QPushButton(_("Use on selected key"))
+        set_button_icon(self.assign_btn, "accept")
         self.assign_btn.clicked.connect(self._on_assign)
         buttons.addWidget(self.assign_btn)
         buttons.addStretch(1)
@@ -251,8 +258,8 @@ class MacroTab(QWidget):
             "less for the others"))
         # Sized, not left to the sizeHint: the hint is ~107 px, which clips the text
         # the bar exists to show. Bounded above so it cannot crowd the buttons.
-        self.storage.setMinimumWidth(260)
-        self.storage.setMaximumWidth(340)
+        self.storage.setMinimumWidth(px(260))
+        self.storage.setMaximumWidth(px(340))
         buttons.addWidget(self.storage, 1)
         page.addLayout(buttons)
 

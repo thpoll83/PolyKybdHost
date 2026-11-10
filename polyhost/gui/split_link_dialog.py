@@ -22,7 +22,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from polyhost.gui.dialog_util import bring_to_front
-from polyhost.gui.ui_kit import set_button_icon
+from polyhost.gui.ui_kit import set_button_icon, px
 from polyhost.i18n import _, _f, N_, isolate, translate_message
 from polyhost.gui.log_bundle_dialog import reveal_in_file_manager
 from polyhost.services.updater import FwUf2Downloader
@@ -52,7 +52,7 @@ _TEXT_WIDTH = 580
 
 
 def _fit(label: QLabel):
-    label.setFixedWidth(_TEXT_WIDTH)
+    label.setFixedWidth(px(_TEXT_WIDTH))
     label.setFixedHeight(label.heightForWidth(_TEXT_WIDTH))
 
 

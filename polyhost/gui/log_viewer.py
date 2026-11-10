@@ -16,7 +16,7 @@ from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
 from polyhost.i18n import _, _f, _nf
 from polyhost.gui.theme import is_dark
-from polyhost.gui.ui_kit import set_button_icon
+from polyhost.gui.ui_kit import set_button_icon, px
 from polyhost.util.log_util import DEBUG_DETAILED, LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -192,7 +192,7 @@ class LogViewerDialog(QMainWindow):
         next_button.clicked.connect(self.find_next)
         search_layout.addWidget(next_button)
         self.search_count = QLabel("", self)
-        self.search_count.setMinimumWidth(110)
+        self.search_count.setMinimumWidth(px(110))
         search_layout.addWidget(self.search_count)
         self.layout.addLayout(search_layout)
         QShortcut(QKeySequence.Find, self, activated=self._focus_search)

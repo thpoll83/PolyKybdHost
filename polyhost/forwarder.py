@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction)
 from polyhost.gui import message_box
+from polyhost.gui.ui_kit import px
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
@@ -915,7 +916,7 @@ class PolyForwarder(QApplication):
         dlg.setMinimumDuration(0)
         # Same size as the tray's update dialog. The label no longer resizes
         # the dialog, so it needs room for the longest message up front.
-        dlg.setFixedSize(400, 160)
+        dlg.setFixedSize(px(400), px(160))
         dlg.show()
         self._update_ui.attach(dlg)
         ub = self._update_bridge

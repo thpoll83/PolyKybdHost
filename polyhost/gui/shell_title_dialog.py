@@ -214,7 +214,7 @@ class ShellTitleDialog(QDialog):
         # noinspection PyUnresolvedReferences
         self.remove_button.clicked.connect(lambda: self._apply(False))
         layout.addWidget(buttons)
-        self.setMinimumWidth(620)
+        self.setMinimumWidth(px(620))
         self._update_buttons()
         self.refresh()
 

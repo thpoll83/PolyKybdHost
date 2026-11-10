@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QDialog, QDialogButtonBox, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout)
 
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.ui_kit import style_button_box
+from polyhost.gui.ui_kit import style_button_box, px
 from polyhost.i18n import _, _f, N_
 
 # Project links surfaced in the About dialog. "Get Support" used to be its own
@@ -170,5 +170,5 @@ def build_about_dialog(*, heading, description, boxed=None, muted=None,
         ok_btn.setFocus()
     outer.addWidget(btn_box)
 
-    dlg.setMinimumWidth(380)
+    dlg.setMinimumWidth(px(380))
     return dlg

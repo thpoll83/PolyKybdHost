@@ -59,7 +59,7 @@ def _size_to_notes(dlg, browser) -> None:
     h = min(max_h, dlg.sizeHint().height())
     # Released again so the user can shrink the window; the scroll bar takes
     # over when the notes no longer fit.
-    browser.setMinimumHeight(_MIN_NOTES_H)
+    browser.setMinimumHeight(px(_MIN_NOTES_H))
     dlg.resize(w, h)
 
 
@@ -111,7 +111,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     dlg = QDialog(None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
-    dlg.setMinimumSize(540, 360)
+    dlg.setMinimumSize(px(540), px(360))
 
     outer = QVBoxLayout(dlg)
     outer.setContentsMargins(16, 16, 16, 12)

@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QMessageBox, QPlainTextEdit, QPushButton, QVBoxLayout)
 
 from polyhost.gui import message_box
-from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon, px
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import crash_report
 
@@ -43,7 +43,7 @@ class CrashAlertDialog(QDialog):
         self.records: list[crash_report.CrashRecord] = []
 
         self.setWindowTitle(_("PolyKybd — the keyboard firmware crashed"))
-        self.setMinimumWidth(640)
+        self.setMinimumWidth(px(640))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 14)
         layout.setSpacing(10)

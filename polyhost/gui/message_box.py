@@ -221,3 +221,31 @@ def critical(parent, title, text, buttons=QMessageBox.Ok, default=None):
 
 def question(parent, title, text, buttons=QMessageBox.Yes | QMessageBox.No, default=None):
     return message(QMessageBox.Question, title, text, buttons, default, parent)
+
+
+def get_text(parent, title, label, text=""):
+    """A one-line text prompt, as ``QInputDialog.getText`` returns it: ``(text, ok)``.
+
+    QInputDialog draws Fusion's plain OK and Cancel; this one has the ui_kit
+    button icons and the scaled sizes of the other boxes.
+    """
+    from PyQt5.QtWidgets import QLineEdit
+    dlg = QDialog(parent)
+    dlg.setWindowTitle(title)
+    lay = QVBoxLayout(dlg)
+    lay.setContentsMargins(ui_kit.px(16), ui_kit.px(16), ui_kit.px(16), ui_kit.px(12))
+    lay.setSpacing(ui_kit.px(8))
+    caption = QLabel(label, dlg)
+    caption.setWordWrap(True)
+    lay.addWidget(caption)
+    edit = QLineEdit(text, dlg)
+    edit.setClearButtonEnabled(True)
+    lay.addWidget(edit)
+    box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dlg)
+    ui_kit.style_button_box(box)
+    box.accepted.connect(dlg.accept)
+    box.rejected.connect(dlg.reject)
+    lay.addWidget(box)
+    dlg.setMinimumWidth(ui_kit.px(360))
+    ok = dlg.exec_() == QDialog.Accepted
+    return edit.text(), ok

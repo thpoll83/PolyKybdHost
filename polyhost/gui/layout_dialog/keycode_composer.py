@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel,
 )
 
+from polyhost.gui.ui_kit import set_button_icon
 from polyhost.i18n import _, N_
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, create_nice_name,
@@ -111,6 +112,7 @@ class KeycodeComposer(QWidget):
         outer.addWidget(self.preview)
 
         self.apply_btn = QPushButton(_("Apply to selected key"))
+        set_button_icon(self.apply_btn, "accept")
         outer.addWidget(self.apply_btn)
         outer.addStretch(1)
 
