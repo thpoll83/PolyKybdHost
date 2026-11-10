@@ -550,6 +550,22 @@ class DialogBehaviourTest(unittest.TestCase):
                 group.apply_filter("q")
                 self.assertEqual([d.isVisibleTo(group) for d in group._dividers], expected)
 
+    def test_the_cards_stretch_with_the_window(self):
+        """A wider window gives wider cards, not an empty margin."""
+        from PyQt5.QtCore import QSize
+        from PyQt5.QtWidgets import QFrame
+        dlg = self._dialog()
+        card = next(f for f in dlg.findChildren(QFrame) if f.objectName() == "settingsCard")
+        widths = []
+        for width in (900, 1600):
+            dlg.resize(QSize(width, 600))
+            self.app.processEvents()
+            widths.append(card.width())
+            # The card reaches the right edge of the page, less the margin.
+            right = card.mapTo(dlg.scroll.viewport(), card.rect().topRight()).x()
+            self.assertGreater(right, dlg.scroll.viewport().width() - 40)
+        self.assertGreater(widths[1] - widths[0], 600)
+
     def test_a_switch_is_still_a_checkbox(self):
         from PyQt5.QtCore import Qt
         from PyQt5.QtTest import QTest
