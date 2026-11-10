@@ -424,6 +424,9 @@ class AppNamesPerPlatformTest(unittest.TestCase):
         for os_name in ("windows", "macos"):
             self.assertIn("copilot_template.mods.png", self._overlay("mscopilot", os_name))
             self.assertIn("copilot_template.mods.png", self._overlay("copilot", os_name))
+            # The Copilot app installed under Program Files (x86)\Microsoft\Copilot
+            # runs as copilotapp.exe (field, 2026-11-10: "No match", nothing drawn).
+            self.assertIn("copilot_template.mods.png", self._overlay("copilotapp", os_name))
             self.assertIn("copilot_web_template.mods.png",
                           self._chrome(os_name, "https://copilot.microsoft.com/chats/abc"))
             # The host gate: a Copilot URL inside another site's query is not Copilot.
