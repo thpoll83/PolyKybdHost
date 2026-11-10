@@ -215,7 +215,8 @@ def render_card(vendor_id: str, state: AgentState, headline: str, marks: VendorM
 
 
 MIC_SCALE = 1.7
-WAITING_RADIUS = 16
+WAITING_RADIUS = 15
+COUNT_SIZE = 28
 
 
 def render_dictation_card():
@@ -229,16 +230,19 @@ def render_dictation_card():
 
 
 def render_next_waiting_card(waiting: int):
-    """The '+' key in AI mode: go to the next agent that waits. The waiting icon
-    and how many wait, both large, no text line and no arrow."""
+    """The '+' key in AI mode: go to the next agent that waits. A large waiting
+    icon, an arrow and how many wait, no text line. The count shrinks until it
+    fits right of the arrow."""
     import numpy as np
     from PIL import Image
     from polyhost.services.agents import icons
     icon = icons.waiting_disk(WAITING_RADIUS)
+    arrow = icons.right_arrow(11)
+    arrow_x = 3 + icon.shape[1] + 3
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
     count = str(waiting) if waiting < 100 else "99+"
-    room = PANEL_W - icon.shape[1] - 3 - 6
-    size = 30
+    room = PANEL_W - 3 - (arrow_x + arrow.shape[1] + 2)
+    size = COUNT_SIZE
     while size > 10 and _measure(count, size)[2] - _measure(count, size)[0] > room:
         size -= 2
     box = _measure(count, size)
@@ -247,6 +251,7 @@ def render_next_waiting_card(waiting: int):
                     font=_font(size), fill=1)
     canvas = np.array(img, dtype=bool)
     _paste(canvas, icon, 3, (PANEL_H - icon.shape[0]) // 2)
+    _paste(canvas, arrow, arrow_x, (PANEL_H - arrow.shape[0]) // 2)
     return canvas
 
 
