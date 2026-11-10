@@ -564,23 +564,43 @@ class MockFirmware:
 
     def _tap_terms(self, p):
         """cmd 44: op p[2] (0 query, 1 set), terms in p[3..6], 0xFFFF keeps one.
-        Validates both before applying either, as the firmware does."""
+        v30: Auto Shift op p[7] (0 keep, 1 off, 2 on), timeout p[8..9] (0 or
+        0xFFFF keeps it); a v29 keyboard ignores those bytes, as the firmware does.
+        Validates every field before applying any, as the firmware does."""
         from polyhost.device.command_ids import TapTerms
         tap = getattr(self, "tapping_term", TapTerms.DEFAULT_TAPPING_MS)
         flow = getattr(self, "flow_tap_term", TapTerms.DEFAULT_FLOW_TAP_MS)
+        has_auto_shift = self.protocol >= 30
         op = p[2]
         new_tap = p[3] | (p[4] << 8)
         new_flow = p[5] | (p[6] << 8)
+        as_op = p[7] if has_auto_shift else TapTerms.AUTO_SHIFT_OP_KEEP
+        as_ms = (p[8] | (p[9] << 8)) if has_auto_shift else TapTerms.AUTO_SHIFT_MS_KEEP
+        if as_ms == TapTerms.KEEP:
+            as_ms = TapTerms.AUTO_SHIFT_MS_KEEP
         ok = op == 0
         if op == 1:
             ok = ((new_tap == TapTerms.KEEP or TapTerms.tapping_valid(new_tap))
-                  and (new_flow == TapTerms.KEEP or TapTerms.flow_tap_valid(new_flow)))
+                  and (new_flow == TapTerms.KEEP or TapTerms.flow_tap_valid(new_flow))
+                  and as_op <= TapTerms.AUTO_SHIFT_OP_ON
+                  and (as_ms == TapTerms.AUTO_SHIFT_MS_KEEP or TapTerms.auto_shift_valid(as_ms)))
             if ok:
                 if new_tap != TapTerms.KEEP:
                     tap = self.tapping_term = new_tap
                 if new_flow != TapTerms.KEEP:
                     flow = self.flow_tap_term = new_flow
-        body = struct.pack("<HHB", tap, flow, TapTerms.FLAG_FLOW_TAP)
+                if as_ms != TapTerms.AUTO_SHIFT_MS_KEEP:
+                    self.auto_shift_ms = as_ms
+                if as_op != TapTerms.AUTO_SHIFT_OP_KEEP:
+                    self.auto_shift = as_op == TapTerms.AUTO_SHIFT_OP_ON
+        flags = TapTerms.FLAG_FLOW_TAP
+        as_ms_now = 0
+        if has_auto_shift:
+            flags |= TapTerms.FLAG_AUTO_SHIFT
+            if getattr(self, "auto_shift", False):
+                flags |= TapTerms.FLAG_AUTO_SHIFT_ON
+            as_ms_now = getattr(self, "auto_shift_ms", TapTerms.DEFAULT_AUTO_SHIFT_MS)
+        body = struct.pack("<HHBH", tap, flow, flags, as_ms_now)
         return _reply(p[1], ok, body=body)
 
     def _default_layer(self, p):

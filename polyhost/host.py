@@ -2095,17 +2095,27 @@ class PolyHost(QApplication):
 
     def _apply_tap_terms(self, dlg, terms):
         tapping, flow_tap = dlg.values()
-        if tapping == terms.get("tapping_term") and flow_tap in (None, terms.get("flow_tap_term")):
+        auto_shift, auto_shift_ms = dlg.auto_shift_values()
+        # Send only what changed: an unchanged Auto Shift value stays None, so a
+        # v29 keyboard (no Auto Shift) gets the v29 report.
+        if auto_shift == terms.get("auto_shift"):
+            auto_shift = None
+        if auto_shift_ms == terms.get("auto_shift_ms"):
+            auto_shift_ms = None
+        if tapping == terms.get("tapping_term") and flow_tap in (None, terms.get("flow_tap_term")) \
+                and auto_shift is None and auto_shift_ms is None:
             return
 
         def done(ok, msg):
             if ok:
-                self.log.info("Tap terms set: tapping %s ms, flow tap %s ms.", tapping, flow_tap)
+                self.log.info("Tap terms set: tapping %s ms, flow tap %s ms, auto shift %s / %s ms.",
+                              tapping, flow_tap, auto_shift, auto_shift_ms)
             else:
                 self.report_device_result("Error", f"Could not set the tap-hold timing: {msg}")
                 self._show_tap_terms_message(_("The keyboard did not accept the tap-hold timing."))
 
-        self._core_click(lambda: self.core.set_tap_terms(tapping, flow_tap), done)
+        self._core_click(lambda: self.core.set_tap_terms(tapping, flow_tap,
+                                                         auto_shift, auto_shift_ms), done)
 
     def _show_tap_terms_message(self, text):
         # open(), not exec_(): this runs from a menu-fetch callback.

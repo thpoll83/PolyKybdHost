@@ -212,7 +212,8 @@ class ControlServer(MpcListenerServer):
             p.M_IDLE_TIMEOUT_SET: lambda conn, params: _unwrap(c.set_idle_timeout(params["value"])),
             p.M_IDLE_TIMEOUT_GET: lambda conn, params: _unwrap(c.get_idle_timeout()),
             p.M_TAP_TERMS_SET: lambda conn, params: _unwrap(c.set_tap_terms(
-                params.get("tapping_term"), params.get("flow_tap_term"))),
+                params.get("tapping_term"), params.get("flow_tap_term"),
+                params.get("auto_shift"), params.get("auto_shift_ms"))),
             p.M_TAP_TERMS_GET: lambda conn, params: _unwrap(c.get_tap_terms()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
