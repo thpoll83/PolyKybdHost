@@ -49,10 +49,19 @@ HID when `STENO_ENABLE` is set, `builddefs/common_features.mk`).
 - A **steno layer** in the default keymap, reached from the settings layer with a
   `TG()` key. A new layer changes stored layer numbers: add it after the existing
   layers so no stored layer moves, and check `KEYMAP_LAYERS_FL_MERGED` and the
-  `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` cap of 8 (`KEYMAP_STORAGE.md`). A layer
+  `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` cap of 8 (`qmk_firmware/keyboards/polykybd/KEYMAP_STORAGE.md`). A layer
   above the cap is served from flash and cannot be edited by the user.
-- **Legends for the 42 QMK steno keycodes** (`QK_STENO`, 0x74C0..0x751F; the
-  Plover HID extras `ST_X1`..`ST_X14` among them). Today nothing in
+- **Legends for the steno keycodes that Plover HID uses.** QMK names 83 steno
+  keycodes (`QK_STENO`, 0x74C0..0x751F). With Plover HID only 0x74C0..0x7503 do
+  anything: `process_plover_hid()` maps 64 of them to its 64 buttons (the 23 steno
+  keys with their duplicates `S1`/`S2` and `ST1`..`ST4`, the number keys
+  `N1`..`NC`, and the extras `X1`..`X26`) and ignores `FUNCTION`, `RESET1`,
+  `RESET2` and `POWER` (`key_to_plover_hid[]` in
+  `quantum/process_keycode/process_plover_hid.c`). The 11 combined keys
+  (0x750B..0x7515: `S3`, `TKL`, `PWL`, `HRL`, `FRR`, `PBR`, `LGR`, `TSR`, `DZR`,
+  `AO`, `EU`) and the 4 mode keys (0x751C..0x751F) are used only by the GeminiPR /
+  TX Bolt path and do nothing with Plover HID. So the firmware draws legends for
+  the 64 button keycodes and none for the other 19. Today nothing in
   `keyboards/polykybd/` handles this range, so a steno key would draw no legend.
   Add a `case` range in `to_static_text()` / `keycode_to_static_text()` with a
   string table, and keep `render_key()` and `to_static_text()` in step.
@@ -95,8 +104,10 @@ is angled, and the three inner thumb keys may suit better.
 
 ### Host
 
-- The 42 `ST_*` keycodes in the layout editor's keycode browser. They are QMK
-  keycodes, so their names are already in the mirrored `res/keycodes.h`.
+- The keycode browser already lists all 83 steno keycodes under its "Steno"
+  category (`qmk_keycode_helper.py`, from the mirrored `res/keycodes.h`). Hide
+  the 19 that do nothing with Plover HID, so a user cannot place a key that sends
+  nothing.
 - The steno legends in `res/preview/legends.json`
   (`scripts/export_preview_data.py`), so the editor shows the same legends as the
   keycaps.
@@ -108,7 +119,8 @@ is angled, and the three inner thumb keys may suit better.
 
 ### What the user does
 
-1. In the layout editor, open the new **Steno** tab (next to **Macros**).
+1. In the layout editor, open the new **Steno macros** tab (next to **Macros**).
+   It is not the keycode browser's existing "Steno" category, which lists keycodes.
 2. Pick a steno macro slot. Build the chord by clicking keys on a small steno
    keyboard, or type it in Plover's notation (`PHROLG`, `TK-LS`, `#ST`).
 3. Optionally give it a label, a style and an icon, as for a normal macro.
@@ -142,7 +154,7 @@ pressed)` in `quantum/plover_hid.c` sets or clears the bit directly, and
 `process_plover_hid()` calls it for each steno key. If a steno macro released
 `S-` while the physical `S-` key is still held, the bit would be cleared too early
 and Plover would see a different chord. The firmware must keep its own count of
-holders per button (one byte per button, 58 buttons) and call
+holders per button (one byte per button, 64 buttons) and call
 `plover_hid_update()` only on the change from 0 to 1 and from 1 to 0. That means
 the physical steno keys also go through the counter, not through QMK's
 `process_plover_hid()` directly.
@@ -164,11 +176,14 @@ new one.
 
 | Field | Size | Content |
 |---|---|---|
-| chord | 8 B | bit field over the Plover HID buttons, bit n = `PLV_BTN_*` index n (`quantum/plover_hid.h`, 58 buttons including `X1`..`X14`) |
+| chord | 8 B | bit field over the Plover HID buttons, bit n = `PLV_BTN_*` index n (`quantum/plover_hid.h`, `PLV_BTN_COUNT` = 64, so all 64 bits are buttons) |
 | look | 17 B | the macro look: style 1 B, icon 4 B, label 12 B (`POLY_MACRO_LOOK_LEN`) |
 
-An all-zero record is an empty slot. An unwritten EEPROM byte reads 0x00 after wear
-levelling, so a board that never stored one sees eight empty slots.
+**An all-zero chord is an empty slot**, whatever the look holds; the keycode then
+does nothing and draws no legend. Set refuses a record with an all-zero chord and a
+non-zero look, so no slot can show a label and send nothing; a record that is all
+zero clears the slot. An unwritten EEPROM byte reads 0x00 after wear levelling, so
+a board that never stored a record sees eight empty slots.
 
 **Storage.** Measured on 2026-11-10 from the split72 build flags:
 
@@ -192,8 +207,8 @@ unchanged (3824 on split72).
 1987 B loses the end of its last macros, and the steno region starts out holding
 macro text. On the first boot of the new firmware:
 
-1. Read a format byte for the steno region (new, at its start or in
-   `poly_eeconf_t`). If it is not the new value:
+1. Read a new format byte in `poly_eeconf_t`, never in the 200 B themselves: old
+   macro text there could match any value. If it is not the new value:
 2. If the bodies use more than 1987 B, cut the buffer at the last whole macro that
    fits and print one console line naming the macros that were lost.
 3. Zero the 200 B and write the format byte.
@@ -205,7 +220,16 @@ how much of the body buffer is used.
 (`poly_macro_look_get()` and the macro legend path). An empty label shows the chord
 in steno notation. To keep the notation code in one place, the host writes the
 notation into the label when the user leaves the label empty; the firmware then
-needs no notation code. A record with neither label nor icon draws `St0`..`St7`.
+needs no notation code. Two rules on the host keep that label correct:
+
+- **A notation that does not fit is not written.** The label holds 12 bytes, and
+  the keycap fits less than that in pixels (`poly_macro_label_fit()`). A long
+  chord such as `STKPWHRAO*EUF` would be cut off and could not identify the chord,
+  so the host asks for a label of the user's own when the notation does not fit.
+- **A generated label is regenerated.** When the chord changes, the host compares
+  the stored label with the notation of the stored chord. If they are equal, the
+  label was generated and is replaced with the new chord's notation; otherwise the
+  user wrote it and it stays.
 
 **Split sync.** The slave draws the keycaps, so it needs the look and, for the
 notation, the chord. Reuse the macro look sync: `poly_macro_label_sync_tick()`
@@ -224,9 +248,15 @@ against `config.h` and `PROTOCOL_HISTORY.md` when the work starts.
 | 4..11 | chord (set) | chord (get) |
 | 12..28 | look (set) | look (get) |
 
-Set validates the slot, then the look exactly as cmd 38 does, then writes. The
-record is written to EEPROM at once, like the macro looks, not at the next settings
-flush. A chord bit at or above `PLV_BTN_COUNT` is refused.
+Set validates the slot, the empty-slot rule above, then the look exactly as cmd 38
+does, then writes. The record is written to EEPROM at once, like the macro looks,
+not at the next settings flush.
+
+A power loss during the 25-byte write can leave a record with part of the old and
+part of the new data, so the keycap may show a label that does not match the chord
+until the user saves the slot again. The macro looks (cmd 38) have the same
+exposure today, and no field report shows it. This plan accepts it rather than add
+a shadow copy and a checksum for each record.
 
 ### Host
 
@@ -244,7 +274,7 @@ Follow the `add-gated-hid-command` skill:
   marks a right-only chord (`-D`). `S1`/`S2` both mean `S-`, `ST1`..`ST4` mean `*`,
   `N1`..`NC` mean `#`; the parser writes the first of each. Test it against
   Plover's own examples.
-- **Layout editor:** a Steno tab built from the Macros tab's parts
+- **Layout editor:** a "Steno macros" tab built from the Macros tab's parts
   (`gui/layout_dialog/macro_tab.py`, `macro_keycap_render.py`,
   `macro_icon_dialog.py`), a steno key picker, and the notation field. Reads and
   writes go off the GUI thread (`MenuFetcher`, see `CLAUDE.md`).
@@ -264,7 +294,7 @@ Follow the `add-gated-hid-command` skill:
   `poly_kybd_capabilities_test.py`, the notation round trip, the mock round trip,
   and the editor tab under `xvfb-run`.
 - **HIL** (`polykybd-ctnd`, the `add-hil-test` skill): set, get and clear every
-  slot; refuse a slot past the count and a chord bit past `PLV_BTN_COUNT`; the
+  slot; refuse a slot past the count and a labelled record with an empty chord; the
   power-cycle check reads one record back. The rig cannot press keys, so it cannot
   check the stroke Plover receives.
 - **On hardware with Plover 5.1+:** a steno macro alone, held with other steno
@@ -286,7 +316,7 @@ Follow the `add-gated-hid-command` skill:
    storage, no HID command and no protocol change, and they use the same holder
    counter and keycap code. The configurable version can be added after them
    without changing them.
-4. **The `ST_X1`..`ST_X14` extras.** A steno macro can send any stroke, including
+4. **The `ST_X1`..`ST_X26` extras.** A steno macro can send any stroke, including
    Plover's commands, so the extras may not be needed in the default layout.
 
 ## Order of work
