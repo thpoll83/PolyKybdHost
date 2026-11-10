@@ -449,10 +449,19 @@ class ExtendDialogTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
-class NotoDownloadDialogTest(unittest.TestCase):
+class NotoDownloadPanelTest(unittest.TestCase):
+    """The download panel inside the Extend dialog. (Its standalone wrapper
+    dialog had no caller and was removed.)"""
+
+    @staticmethod
+    def _panel():
+        panel = fed.NotoDownloadPanel()
+        chosen = []
+        panel.font_chosen.connect(chosen.append)
+        return panel, chosen
 
     def test_lists_catalog(self):
-        dlg = fed.NotoDownloadDialog()
+        dlg, _chosen = self._panel()
         self.addCleanup(dlg.deleteLater)
         from polyhost.services import font_downloader as fdl
         self.assertEqual(dlg._list.count(), len(fdl.load_catalog()))
@@ -473,12 +482,12 @@ class NotoDownloadDialogTest(unittest.TestCase):
         cache = os.path.join(tmp, "cache")
         with patch.object(fdl, "load_catalog", return_value=[font]), \
              patch.object(fdl, "default_cache_dir", return_value=cache):
-            dlg = fed.NotoDownloadDialog()
+            dlg, chosen = self._panel()
             self.addCleanup(dlg.deleteLater)
             dlg._list.setCurrentRow(0)
             dlg._download()                       # real worker thread + file:// fetch
-        self.assertEqual(dlg.result_path, os.path.join(cache, "Fake-Regular.ttf"))
-        self.assertTrue(os.path.exists(dlg.result_path))
+        self.assertEqual(chosen, [os.path.join(cache, "Fake-Regular.ttf")])
+        self.assertTrue(os.path.exists(chosen[0]))
 
     def test_cached_font_picked_without_network(self):
         import tempfile
@@ -496,13 +505,13 @@ class NotoDownloadDialogTest(unittest.TestCase):
             f.write(struct.pack(">4sHHHH", b"\x00\x01\x00\x00", 1, 16, 0, 0)
                     + struct.pack(">4sIII", b"glyf", 0, 28, len(body)) + body)
         with patch.object(fdl, "default_cache_dir", return_value=os.path.join(tmp, "fonts")):
-            dlg = fed.NotoDownloadDialog()
+            dlg, chosen = self._panel()
             self.addCleanup(dlg.deleteLater)
             dlg._list.setCurrentRow(0)
-            # _download must take the cached branch (no urlopen) and accept
+            # _download must take the cached branch (no urlopen) and choose it
             with patch("urllib.request.urlopen", side_effect=AssertionError("network!")):
                 dlg._download()
-            self.assertEqual(dlg.result_path, path)
+            self.assertEqual(chosen, [path])
 
 
 if __name__ == "__main__":

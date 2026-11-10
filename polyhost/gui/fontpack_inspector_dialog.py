@@ -31,6 +31,7 @@ from PyQt5.QtWidgets import (
     QTabWidget, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QApplication,
 )
 
+from polyhost.gui.ui_kit import muted
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import fontpack_reader as fpr
 from polyhost.services import fontpack_render as fprd
@@ -970,8 +971,9 @@ class FontPackSaveDialog(QDialog):
         self.discarded = False
 
         v = QVBoxLayout(self)
-        self._meta = QLabel(); self._meta.setWordWrap(True)
-        self._meta.setStyleSheet("color:#9ad;")
+        # Grey like the other dialogs' descriptions: the old light blue #9ad
+        # had too little contrast on the light theme.
+        self._meta = muted(QLabel()); self._meta.setWordWrap(True)
         v.addWidget(self._meta)
 
         form = QFormLayout()

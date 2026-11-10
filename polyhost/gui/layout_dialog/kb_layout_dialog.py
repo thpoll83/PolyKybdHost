@@ -8,14 +8,13 @@ from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
+    QLabel, QMessageBox,
     QToolButton, QButtonGroup, QComboBox,
-    QGraphicsScene, QDialog, QFormLayout
+    QGraphicsScene,
 )
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
-from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.keycap_preview import (
     DEFAULT_LANG, KC_NO, KC_TRANSPARENT, KeycapPreview)
@@ -67,43 +66,6 @@ def _lang_code(value):
     if len(value) == 5 and value[2] == "-" and (value[:2] + value[3:]).isalpha():
         return value
     return None
-
-
-class KeyEditDialog(QDialog):
-    """Key editing dialog"""
-    def __init__(self, key_dict):
-        super().__init__()
-        self.setWindowTitle(_("Edit Key"))
-        self.key = key_dict
-        layout = QFormLayout()
-        
-        self.qmk_edit = QLineEdit(self.key.get('qmk', ''))
-        layout.addRow(_("QMK Keycode:"), self.qmk_edit)
-        
-        self.label_edit = QTextEdit(self.key.get('label', ''))
-        layout.addRow(_("Visual Label:"), self.label_edit)
-        
-        if self.key.get('r', 0) != 0:
-            info = _f("Rotation: {angle}° around ({x}, {y})",
-                      angle=self.key['r'], x=self.key['rx'], y=self.key['ry'])
-            layout.addRow(_("Info:"), QLabel(info))
-        
-        btn_ok = QPushButton(_("OK"))
-        btn_cancel = QPushButton(_("Cancel"))
-        btn_ok.clicked.connect(self.accept_changes)
-        btn_cancel.clicked.connect(self.reject)
-        h = QHBoxLayout()
-        h.addWidget(btn_ok)
-        h.addWidget(btn_cancel)
-        layout.addRow(h)
-        self.setLayout(layout)
-        
-        self.setWindowIcon(get_icon("pcolor.png"))
-    
-    def accept_changes(self):
-        self.key['qmk'] = self.qmk_edit.text().strip()
-        self.key['label'] = self.label_edit.toPlainText()
-        self.accept()
 
 
 class KbLayoutDialog(QMainWindow):
