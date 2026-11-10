@@ -680,7 +680,8 @@ class TestCheckFwLatest(unittest.TestCase):
                                return_value=self._resp(200, _fw_release_json(
                                    "PolyKybd-fw-v0.9.0"))) as mock_get:
             release = updater.check_fw_latest("0.8.1")
-        sent = mock_get.call_args.kwargs["headers"]
+        # The first request is releases/latest; later ones read the release list.
+        sent = mock_get.call_args_list[0].kwargs["headers"]
         self.assertNotIn("If-None-Match", sent,
                          "a pre-sig_url cache entry must be refetched, not revalidated")
         self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
@@ -696,7 +697,8 @@ class TestCheckFwLatest(unittest.TestCase):
         with mock.patch.object(updater.requests, "get",
                                return_value=self._resp(304)) as mock_get:
             updater.check_fw_latest("0.8.1")
-        self.assertEqual(mock_get.call_args.kwargs["headers"]["If-None-Match"], '"abc"')
+        self.assertEqual(
+            mock_get.call_args_list[0].kwargs["headers"]["If-None-Match"], '"abc"')
 
     def test_pre_signature_cache_entry_survives_304(self):
         # An ETag cache written before sig_url existed has no such key, and the
@@ -2123,6 +2125,130 @@ class TestDiscardFwDownload(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             updater.discard_fw_download(str(Path(td) / "gone.bin"))  # no .sig either
             updater.discard_fw_download("")
+
+
+class TestSkippedReleaseNotes(unittest.TestCase):
+    """A jump over several releases shows the notes of every one of them."""
+
+    def setUp(self):
+        load_p = mock.patch.object(updater, "_load_etag_cache", return_value={})
+        save_p = mock.patch.object(updater, "_save_etag_cache")
+        self.mock_load = load_p.start()
+        save_p.start()
+        self.addCleanup(load_p.stop)
+        self.addCleanup(save_p.stop)
+
+    @staticmethod
+    def _rel(version, body, draft=False, prerelease=False):
+        return {"tag_name": f"PolyKybd-fw-v{version}", "name": f"PolyKybd v{version}",
+                "body": body, "draft": draft, "prerelease": prerelease}
+
+    def _serve(self, latest, pages):
+        """requests.get stand-in: releases/latest -> ``latest``, the list -> ``pages``."""
+        calls = []
+
+        def get(url, params=None, **_kw):
+            calls.append((url, dict(params or {})))
+            if url.endswith("/releases/latest"):
+                return _make_response(200, latest, {"ETag": '"e"'})
+            page = (params or {}).get("page", 1)
+            return _make_response(200, pages[page - 1] if page <= len(pages) else [])
+        return get, calls
+
+    def _latest_fw(self):
+        payload = _fw_release_json("PolyKybd-fw-v1.11.3")
+        payload["name"] = "PolyKybd v1.11.3"
+        payload["body"] = "tap-hold timing"
+        return payload
+
+    def test_notes_of_every_skipped_release_newest_first(self):
+        page = [self._rel("1.11.3", "tap-hold timing"),
+                self._rel("1.11.2", "search on Shift"),
+                self._rel("1.11.1", "rc", prerelease=True),
+                self._rel("1.11.0", "emoji search"),
+                self._rel("1.10.2", "icon library")]
+        get, _calls = self._serve(self._latest_fw(), [page])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        self.assertEqual(release.name, "")
+        self.assertEqual(release.notes,
+                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
+                         "# PolyKybd v1.11.2\n\nsearch on Shift\n\n"
+                         "# PolyKybd v1.11.0\n\nemoji search")
+
+    def test_one_release_ahead_keeps_its_own_name_and_notes(self):
+        page = [self._rel("1.11.3", "tap-hold timing"), self._rel("1.11.2", "x")]
+        get, _calls = self._serve(self._latest_fw(), [page])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.11.2")
+        self.assertEqual(release.name, "PolyKybd v1.11.3")
+        self.assertEqual(release.notes, "tap-hold timing")
+
+    def test_reads_further_pages_until_it_reaches_the_current_version(self):
+        full = [self._rel(f"1.{i}.0", f"n{i}") for i in range(200, 100, -1)]
+        self.assertEqual(len(full), updater._RELEASES_PAGE)
+        page2 = [self._rel("1.100.0", "n100"), self._rel("1.99.0", "n99")]
+        latest = _fw_release_json("PolyKybd-fw-v1.201.0")
+        get, calls = self._serve(latest, [full, page2])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.99.0")
+        self.assertIn("# PolyKybd v1.100.0", release.notes)
+        self.assertNotIn("v1.99.0", release.notes)
+        self.assertEqual([c[1].get("page") for c in calls if "page" in c[1]], [1, 2])
+
+    def test_a_failed_list_falls_back_to_the_latest_notes(self):
+        def get(url, params=None, **_kw):
+            if url.endswith("/releases/latest"):
+                return _make_response(200, self._latest_fw(), {"ETag": '"e"'})
+            return _make_response(403)
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.10.2")
+        self.assertEqual(release.notes, "tap-hold timing")
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+
+    def test_recovery_lookup_does_not_read_the_list(self):
+        get, calls = self._serve(self._latest_fw(), [[]])
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            updater.check_fw_latest("0", skipped_notes=False)
+        self.assertEqual([c[0] for c in calls], [updater.GITHUB_FW_API])
+
+    def test_cached_firmware_release_also_gets_the_skipped_notes(self):
+        self.mock_load.return_value = {"fw": {
+            "etag": '"e"', "tag": "PolyKybd-fw-v1.11.3", "version": "1.11.3",
+            "bin_url": "https://example.com/fw.bin", "uf2_url": "", "sig_url": "",
+            "name": "PolyKybd v1.11.3", "notes": "tap-hold timing"}}
+        page = [self._rel("1.11.3", "tap-hold timing"), self._rel("1.11.2", "search"),
+                self._rel("1.11.0", "emoji")]
+
+        def get(url, params=None, **_kw):
+            if url.endswith("/releases/latest"):
+                return _make_response(304)
+            return _make_response(200, page)
+        with mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_fw_latest("1.11.0")
+        self.assertEqual(release.notes,
+                         "# PolyKybd v1.11.3\n\ntap-hold timing\n\n"
+                         "# PolyKybd v1.11.2\n\nsearch")
+
+    def test_host_update_gets_the_skipped_notes(self):
+        latest = {"tag_name": "v1.21.4", "tarball_url": "t", "name": "v1.21.4",
+                  "body": "four"}
+        page = [{"tag_name": "v1.21.4", "name": "v1.21.4", "body": "four"},
+                {"tag_name": "v1.21.3", "name": "", "body": "three"},
+                {"tag_name": "v1.21.2", "name": "v1.21.2", "body": "two"}]
+        get, calls = self._serve(latest, [page])
+        get_latest = get
+
+        def get(url, params=None, **kw):
+            if url == updater.GITHUB_API:
+                return _make_response(200, latest, {"ETag": '"e"'})
+            return get_latest(url, params=params, **kw)
+        with mock.patch.object(updater, "__version__", "1.21.2"), \
+             mock.patch.object(updater.requests, "get", side_effect=get):
+            release = updater.check_latest()
+        self.assertEqual(release.notes, "# v1.21.4\n\nfour\n\n# v1.21.3\n\nthree")
+        self.assertIn(updater._RELEASES_API.format(repo=updater.HOST_REPO),
+                      [c[0] for c in calls])
 
 
 if __name__ == "__main__":

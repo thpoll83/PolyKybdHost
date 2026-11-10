@@ -52,7 +52,7 @@ class FwUf2DownloaderTest(unittest.TestCase):
         self.assertEqual(Path(path).read_bytes(), data)
         self.assertEqual(page, "https://example.com/release")
         # Asked against 0, so the newest release comes back whatever is installed.
-        chk.assert_called_once_with("0")
+        chk.assert_called_once_with("0", skipped_notes=False)
         self.assertEqual([p.name for p in self.dir.iterdir()], [Path(path).name])
 
     def test_a_page_that_is_not_a_uf2_is_refused(self):
