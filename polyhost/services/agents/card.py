@@ -1,12 +1,12 @@
 """Render an agent card: the 72x40 1-bit image a number key shows in AI mode.
 
     +------------------------------------+
-    | [lower half of mark]  [state icon] |   rows 0..15
+    | [lower part of mark]  [state icon] |   rows 0..15
     |  headline, up to two lines,        |
     |  centred                           |   rows 15..39
     +------------------------------------+
 
-Only the lower half of the vendor mark shows, as a hint at the top edge, so the
+Only the lower 16 rows of the 26 px vendor mark show, cut by the top edge, so the
 headline gets two lines in size 11 (card experiments, 2026-11-10: variant L for
 the mark and the font, M for the 16 px state icon). No state word: the icon says
 it. Text is Pillow's bundled sans font (Aileron) drawn without anti-aliasing.
@@ -24,7 +24,8 @@ from polyhost.services.agents.model import AgentState, vendor
 log = logging.getLogger("PolyHost")
 
 PANEL_W, PANEL_H = 72, 40
-MARK_BOX = 26          # the mark is rendered at this size; its lower half shows
+MARK_BOX = 26          # the mark is rendered at this size; its lower part shows
+MARK_SHOWN = 16        # rows of the mark shown at the top edge, as tall as the icon
 ICON = 16              # state icon height and width
 FONT_SIZE = 11
 LINE_PITCH = 12
@@ -145,7 +146,7 @@ class VendorMarks:
                     if not len(rows):
                         return None
                     mask = mask[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
-                    return mask[mask.shape[0] - (mask.shape[0] + 1) // 2:]
+                    return mask[max(0, mask.shape[0] - MARK_SHOWN):]
             except Exception as e:  # noqa: BLE001 - cosmetic
                 log.debug("Agent mark %s for %s failed: %s", slug, vid, e)
         return None
