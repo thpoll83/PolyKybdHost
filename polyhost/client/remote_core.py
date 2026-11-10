@@ -338,9 +338,12 @@ class RemoteCore(Observable):
         Callers index it, so both shapes work; don't compare it to a tuple."""
         return self._device(p.M_IDLE_TIMEOUT_GET)
 
-    def set_tap_terms(self, tapping_term=None, flow_tap_term=None):
+    def set_tap_terms(self, tapping_term=None, flow_tap_term=None,
+                      auto_shift=None, auto_shift_ms=None):
         return self._device(p.M_TAP_TERMS_SET, {"tapping_term": tapping_term,
-                                                "flow_tap_term": flow_tap_term})
+                                                "flow_tap_term": flow_tap_term,
+                                                "auto_shift": auto_shift,
+                                                "auto_shift_ms": auto_shift_ms})
 
     def get_tap_terms(self):
         return self._device(p.M_TAP_TERMS_GET)

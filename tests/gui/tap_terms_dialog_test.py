@@ -57,6 +57,31 @@ class TapTermsDialogTest(unittest.TestCase):
         self.assertFalse(d.flow_tap.isEnabled())
         self.assertEqual(d.values(), (200, None))
 
+    def test_auto_shift_is_disabled_on_firmware_without_it(self):
+        d = TapTermsDialog({"tapping_term": 200, "flow_tap_term": 150})
+        self.assertFalse(d.auto_shift.isEnabled())
+        self.assertFalse(d.auto_shift_ms.isEnabled())
+        self.assertEqual(d.auto_shift_values(), (None, None))
+
+    def test_auto_shift_values(self):
+        d = TapTermsDialog({"tapping_term": 200, "flow_tap_term": 150,
+                            "auto_shift_available": True, "auto_shift": False,
+                            "auto_shift_ms": 180})
+        self.assertEqual(d.auto_shift_values(), (False, 180))
+        self.assertFalse(d.auto_shift_ms.isEnabled())   # follows the check box
+        d.auto_shift.setChecked(True)
+        self.assertTrue(d.auto_shift_ms.isEnabled())
+        d.auto_shift_ms.setValue(233)
+        self.assertEqual(d.auto_shift_values(), (True, 230))
+        self.assertEqual((d.auto_shift_ms.minimum(), d.auto_shift_ms.maximum()), (100, 500))
+
+    def test_restore_defaults_turns_auto_shift_off(self):
+        d = TapTermsDialog({"tapping_term": 200, "flow_tap_term": 150,
+                            "auto_shift_available": True, "auto_shift": True,
+                            "auto_shift_ms": 300})
+        d.restore_defaults()
+        self.assertEqual(d.auto_shift_values(), (False, 180))
+
 
 if __name__ == "__main__":
     unittest.main()

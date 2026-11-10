@@ -151,6 +151,10 @@ ICON_SLOT_512K_MIN_PROTOCOL = 27
 # compile-time 200 / 150 ms and there is nothing to read or set, so the tray entry
 # greys out rather than NACKing at runtime.
 TAP_TERMS_MIN_PROTOCOL = 29
+# Minimum firmware PROTOCOL_VERSION for Auto Shift (cmd 44 data[7..9]). A v29
+# keyboard ignores those bytes and ACKs, so without this gate a set would report
+# success and change nothing.
+AUTO_SHIFT_MIN_PROTOCOL = 30
 LEGACY_ICON_SLOT_SIZE = 0x40000
 # Widest cmd 42 pair the firmware decodes (config.h OVERLAY_MAP_WIDTH_MAX).
 ICON_FILL_MAX_WIDTH = 16
@@ -189,6 +193,7 @@ FEATURE_MIN_PROTOCOL = {
     "glyph_placement": GLYPH_PLACEMENT_MIN_PROTOCOL,
     "icon_slot_512k": ICON_SLOT_512K_MIN_PROTOCOL,
     "tap_terms": TAP_TERMS_MIN_PROTOCOL,
+    "auto_shift": AUTO_SHIFT_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -817,21 +822,37 @@ class PolyKybd:
         return result, reply
 
     @staticmethod
-    def _tap_terms_payload(op: int, tapping_ms: int, flow_tap_ms: int) -> tuple[int, ...]:
-        return (op, tapping_ms & 0xFF, tapping_ms >> 8, flow_tap_ms & 0xFF, flow_tap_ms >> 8)
+    def _tap_terms_payload(op: int, tapping_ms: int, flow_tap_ms: int,
+                           auto_shift_op: int | None = None,
+                           auto_shift_ms: int = 0) -> tuple[int, ...]:
+        """auto_shift_op None sends the v29 form (5 bytes), which a v30 keyboard
+        reads as "keep Auto Shift" because the report is zero-padded."""
+        body = (op, tapping_ms & 0xFF, tapping_ms >> 8, flow_tap_ms & 0xFF, flow_tap_ms >> 8)
+        if auto_shift_op is None:
+            return body
+        return body + (auto_shift_op, auto_shift_ms & 0xFF, auto_shift_ms >> 8)
 
     @staticmethod
     def _parse_tap_terms(reply) -> dict:
+        flags = reply[7]
+        auto_shift_ms = (reply[8] | (reply[9] << 8)) if len(reply) > 9 else 0
+        # A v29 reply has flag bit 1 clear, so Auto Shift reads as unavailable.
+        available = bool(flags & TapTerms.FLAG_AUTO_SHIFT)
         return {
             "tapping_term": reply[3] | (reply[4] << 8),
             "flow_tap_term": reply[5] | (reply[6] << 8),
-            "flow_tap_available": bool(reply[7] & TapTerms.FLAG_FLOW_TAP),
+            "flow_tap_available": bool(flags & TapTerms.FLAG_FLOW_TAP),
+            "auto_shift_available": available,
+            "auto_shift": available and bool(flags & TapTerms.FLAG_AUTO_SHIFT_ON),
+            "auto_shift_ms": auto_shift_ms if available else TapTerms.DEFAULT_AUTO_SHIFT_MS,
         }
 
     def get_tap_terms(self) -> tuple[bool, dict | str]:
         """Read the tap-hold terms (cmd 44, v29+) as
-        {"tapping_term": ms, "flow_tap_term": ms, "flow_tap_available": bool}.
-        flow_tap_available is False on a build without Flow Tap (split42)."""
+        {"tapping_term": ms, "flow_tap_term": ms, "flow_tap_available": bool,
+         "auto_shift_available": bool, "auto_shift": bool, "auto_shift_ms": ms}.
+        flow_tap_available is False on a build without Flow Tap (split42);
+        auto_shift_available is False below protocol v30."""
         if not self.supports("tap_terms"):
             return False, (
                 f"Firmware protocol too old for tap-hold timing "
@@ -849,14 +870,18 @@ class PolyKybd:
         return False, "Could not read the tap-hold timing from the keyboard"
 
     def set_tap_terms(self, tapping_term: int | None = None,
-                      flow_tap_term: int | None = None) -> tuple[bool, dict | str]:
-        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v29+).
-        None leaves a term unchanged. Both ranges are CLOSED (TapTerms), so a value
-        outside them is refused here rather than sent. On success the payload is
-        the keyboard's terms after the change, as get_tap_terms() returns them.
+                      flow_tap_term: int | None = None,
+                      auto_shift: bool | None = None,
+                      auto_shift_ms: int | None = None) -> tuple[bool, dict | str]:
+        """Set the tapping term and/or the Flow Tap term in ms (cmd 44, v29+), and
+        Auto Shift on/off and its timeout in ms (v30+). None leaves a value
+        unchanged. All ranges are CLOSED (TapTerms), so a value outside them is
+        refused here rather than sent. On success the payload is the keyboard's
+        settings after the change, as get_tap_terms() returns them.
 
         ⚠️ The ACK marker is checked: expect() also matches a NACK."""
-        if tapping_term is None and flow_tap_term is None:
+        if tapping_term is None and flow_tap_term is None and auto_shift is None \
+                and auto_shift_ms is None:
             return False, "Nothing to set"
         if tapping_term is not None and not TapTerms.tapping_valid(tapping_term):
             return False, (f"{tapping_term!r} ms is not a valid tapping term "
@@ -866,16 +891,30 @@ class PolyKybd:
             return False, (f"{flow_tap_term!r} ms is not a valid Flow Tap term "
                            f"({TapTerms.FLOW_TAP_MIN_MS}..{TapTerms.FLOW_TAP_MAX_MS} ms "
                            f"in {TapTerms.STEP_MS} ms steps)")
+        if auto_shift_ms is not None and not TapTerms.auto_shift_valid(auto_shift_ms):
+            return False, (f"{auto_shift_ms!r} ms is not a valid Auto Shift timeout "
+                           f"({TapTerms.AUTO_SHIFT_MIN_MS}..{TapTerms.AUTO_SHIFT_MAX_MS} ms "
+                           f"in {TapTerms.STEP_MS} ms steps)")
         if not self.supports("tap_terms"):
             return False, (
                 f"Firmware protocol too old for tap-hold timing "
                 f"(need v{TAP_TERMS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        wants_auto_shift = auto_shift is not None or auto_shift_ms is not None
+        if wants_auto_shift and not self.supports("auto_shift"):
+            return False, (
+                f"Firmware protocol too old for Auto Shift "
+                f"(need v{AUTO_SHIFT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
         tap = TapTerms.KEEP if tapping_term is None else tapping_term
         flow = TapTerms.KEEP if flow_tap_term is None else flow_tap_term
-        self.log.info("Setting tap terms: tapping %s ms, flow tap %s ms...",
-                      tapping_term, flow_tap_term)
+        as_op = None
+        as_ms = TapTerms.AUTO_SHIFT_MS_KEEP if auto_shift_ms is None else auto_shift_ms
+        if wants_auto_shift:
+            as_op = (TapTerms.AUTO_SHIFT_OP_KEEP if auto_shift is None
+                     else TapTerms.AUTO_SHIFT_OP_ON if auto_shift else TapTerms.AUTO_SHIFT_OP_OFF)
+        self.log.info("Setting tap terms: tapping %s ms, flow tap %s ms, auto shift %s / %s ms...",
+                      tapping_term, flow_tap_term, auto_shift, auto_shift_ms)
         result, reply = self.hid.send_and_read_validate(
-            compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(1, tap, flow)),
+            compose_cmd(Cmd.TAP_TERMS, *self._tap_terms_payload(1, tap, flow, as_op, as_ms)),
             100, expect(Cmd.TAP_TERMS))
         if not result:
             return False, "The keyboard did not answer the tap-hold timing command"

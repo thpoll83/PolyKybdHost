@@ -208,6 +208,17 @@ full wiring, the preview rendering and the label-measurement rules are in
   byte; bit 0 clear means the build has no Flow Tap (split42), and the dialog then
   disables that field. The dialog snaps a typed value onto the 10 ms grid, because
   the firmware NACKs anything off it.
+- **Auto Shift (cmd 44 again, v30+) is gated on `"auto_shift"`, separately from
+  `"tap_terms"`.** `set_tap_terms(auto_shift=, auto_shift_ms=)` appends `data[7]` (0
+  keep, 1 off, 2 on) and `data[8..9]` (timeout, 0 keep; 100..500 ms in 10 ms steps).
+  ⚠️ A v29 keyboard ACKs those bytes and ignores them, so the host refuses an Auto
+  Shift value below v30 instead of reporting a success that changed nothing. A
+  terms-only set sends the 5-byte v29 form, which a v30 keyboard reads as "keep Auto
+  Shift". The reply's flag bit 1 says the firmware has Auto Shift, bit 2 that it is
+  on, and `data[8..9]` is the timeout; a v29 reply has bit 1 clear, so
+  `auto_shift_available` is False. The dialog sends only what changed, and the
+  default timeout is 180 ms (QMK's 175 is off the grid). Caps Word needs no host
+  side: it is a keycode (`CW_TOGG`) or both Shift keys.
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never
   that the firmware accepted it. On a CLOSED range that is the difference between a
