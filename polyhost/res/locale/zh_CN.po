@@ -2811,11 +2811,11 @@ msgstr "错误和警告"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Debug"
-msgstr ""
+msgstr "调试"
 
 #: polyhost/gui/settings_dialog.py:54
 msgid "Detailed"
-msgstr ""
+msgstr "详细"
 
 #: polyhost/gui/settings_dialog.py:63
 msgid "General"
@@ -2823,71 +2823,71 @@ msgstr "常规"
 
 #: polyhost/gui/settings_dialog.py:66
 msgid "Keycap icons"
-msgstr ""
+msgstr "键帽图标"
 
 #: polyhost/gui/settings_dialog.py:69
 msgid "Apps with their own overlay"
-msgstr ""
+msgstr "有专属叠加图标的应用"
 
 #: polyhost/gui/settings_dialog.py:71
 msgid "Linux"
-msgstr ""
+msgstr "Linux"
 
 #: polyhost/gui/settings_dialog.py:73
 msgid "Games"
-msgstr ""
+msgstr "游戏"
 
 #: polyhost/gui/settings_dialog.py:75
 msgid "Installed games"
-msgstr ""
+msgstr "已安装的游戏"
 
 #: polyhost/gui/settings_dialog.py:81
 msgid "Daylight curve"
-msgstr ""
+msgstr "日光曲线"
 
 #: polyhost/gui/settings_dialog.py:84
 msgid "Keyboard data"
-msgstr ""
+msgstr "键盘数据"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
-msgstr ""
+msgstr "字体包"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
-msgstr ""
+msgstr "表情符号搜索"
 
 #: polyhost/gui/settings_dialog.py:89
 msgid "Connections"
-msgstr ""
+msgstr "连接"
 
 #: polyhost/gui/settings_dialog.py:90
 msgid "Browser extension"
-msgstr ""
+msgstr "浏览器扩展"
 
 #: polyhost/gui/settings_dialog.py:92
 msgid "Forwarders"
-msgstr ""
+msgstr "转发器"
 
 #: polyhost/gui/settings_dialog.py:93
 msgid "USB transport"
-msgstr ""
+msgstr "USB 传输"
 
 #: polyhost/gui/settings_dialog.py:96
 msgid "Privacy and diagnostics"
-msgstr ""
+msgstr "隐私与诊断"
 
 #: polyhost/gui/settings_dialog.py:97
 msgid "Usage report"
-msgstr ""
+msgstr "使用情况报告"
 
 #: polyhost/gui/settings_dialog.py:98
 msgid "Problem detection"
-msgstr ""
+msgstr "问题检测"
 
 #: polyhost/gui/settings_dialog.py:99
 msgid "Logs"
-msgstr ""
+msgstr "日志"
 
 #: polyhost/gui/settings_dialog.py:101 polyhost/host.py:934
 msgid "Developer"
@@ -2899,71 +2899,71 @@ msgstr "其他"
 
 #: polyhost/gui/settings_dialog.py:108
 msgid "Send Unicode input mode"
-msgstr ""
+msgstr "发送 Unicode 输入模式"
 
 #: polyhost/gui/settings_dialog.py:109
 msgid "Follow daylight"
-msgstr ""
+msgstr "随日光调节"
 
 #: polyhost/gui/settings_dialog.py:110
 msgid "Online sunlight data"
-msgstr ""
+msgstr "在线辐照度数据"
 
 #: polyhost/gui/settings_dialog.py:111
 msgid "Online location lookup"
-msgstr ""
+msgstr "在线查询位置"
 
 #: polyhost/gui/settings_dialog.py:112
 msgid "Sunlight at dimmest"
-msgstr ""
+msgstr "最暗时的辐照度"
 
 #: polyhost/gui/settings_dialog.py:113
 msgid "Sunlight at brightest"
-msgstr ""
+msgstr "最亮时的辐照度"
 
 #: polyhost/gui/settings_dialog.py:114
 msgid "Sunlight scale"
-msgstr ""
+msgstr "辐照度缩放"
 
 #: polyhost/gui/settings_dialog.py:115
 msgid "Curve gamma"
-msgstr ""
+msgstr "曲线伽马"
 
 #: polyhost/gui/settings_dialog.py:116
 msgid "Generic icons"
-msgstr ""
+msgstr "通用图标"
 
 #: polyhost/gui/settings_dialog.py:117
 msgid "Add the Escape mark"
-msgstr ""
+msgstr "添加 Esc 标志"
 
 #: polyhost/gui/settings_dialog.py:118
 msgid "Add shortcut icons"
-msgstr ""
+msgstr "添加快捷键图标"
 
 #: polyhost/gui/settings_dialog.py:119
 msgid "Shortcut icons"
-msgstr ""
+msgstr "快捷键图标"
 
 #: polyhost/gui/settings_dialog.py:120
 msgid "Download missing icons"
-msgstr ""
+msgstr "下载缺失的图标"
 
 #: polyhost/gui/settings_dialog.py:121
 msgid "Turn on accessibility"
-msgstr ""
+msgstr "打开辅助功能"
 
 #: polyhost/gui/settings_dialog.py:122
 msgid "Messages before a pause"
-msgstr ""
+msgstr "暂停前的消息数"
 
 #: polyhost/gui/settings_dialog.py:123
 msgid "Pause length (s)"
-msgstr ""
+msgstr "暂停时长（秒）"
 
 #: polyhost/gui/settings_dialog.py:124
 msgid "ID requests before reconnect"
-msgstr ""
+msgstr "重新连接前的 ID 请求次数"
 
 #: polyhost/gui/settings_dialog.py:125
 msgid "Theme"
@@ -2971,107 +2971,107 @@ msgstr "主题"
 
 #: polyhost/gui/settings_dialog.py:127
 msgid "Developer mode"
-msgstr ""
+msgstr "开发者模式"
 
 #: polyhost/gui/settings_dialog.py:128
 msgid "Log detail"
-msgstr ""
+msgstr "日志详细程度"
 
 #: polyhost/gui/settings_dialog.py:129
 msgid "Add a simulated keyboard"
-msgstr ""
+msgstr "添加模拟键盘"
 
 #: polyhost/gui/settings_dialog.py:130
 msgid "Simulated keyboard only"
-msgstr ""
+msgstr "仅使用模拟键盘"
 
 #: polyhost/gui/settings_dialog.py:131
 msgid "Simulated protocol version"
-msgstr ""
+msgstr "模拟协议版本"
 
 #: polyhost/gui/settings_dialog.py:132
 msgid "Track windows without a keyboard"
-msgstr ""
+msgstr "无键盘时也跟踪窗口"
 
 #: polyhost/gui/settings_dialog.py:133
 msgid "Native Windows language switch"
-msgstr ""
+msgstr "Windows 原生语言切换"
 
 #: polyhost/gui/settings_dialog.py:134
 msgid "Legacy plaintext relay"
-msgstr ""
+msgstr "旧版明文中继"
 
 #: polyhost/gui/settings_dialog.py:135
 msgid "Force the HID link"
-msgstr ""
+msgstr "强制使用 HID 链路"
 
 #: polyhost/gui/settings_dialog.py:136
 msgid "Background service"
-msgstr ""
+msgstr "后台服务"
 
 #: polyhost/gui/settings_dialog.py:137
 msgid "Accept forwarders"
-msgstr ""
+msgstr "接受转发器"
 
 #: polyhost/gui/settings_dialog.py:138
 msgid "Update on connect"
-msgstr ""
+msgstr "连接时更新"
 
 #: polyhost/gui/settings_dialog.py:139
 msgid "Search language"
-msgstr ""
+msgstr "搜索语言"
 
 #: polyhost/gui/settings_dialog.py:140
 msgid "Own dictionary file"
-msgstr ""
+msgstr "自定义词典文件"
 
 #: polyhost/gui/settings_dialog.py:141
 msgid "Font pack file"
-msgstr ""
+msgstr "字体包文件"
 
 #: polyhost/gui/settings_dialog.py:142
 msgid "Match websites"
-msgstr ""
+msgstr "匹配网站"
 
 #: polyhost/gui/settings_dialog.py:143
 msgid "Receive browser reports"
-msgstr ""
+msgstr "接收浏览器报告"
 
 #: polyhost/gui/settings_dialog.py:144
 msgid "Receiver port"
-msgstr ""
+msgstr "接收端口"
 
 #: polyhost/gui/settings_dialog.py:145
 msgid "Receiver token"
-msgstr ""
+msgstr "接收令牌"
 
 #: polyhost/gui/settings_dialog.py:146
 msgid "Send usage report"
-msgstr ""
+msgstr "发送使用情况报告"
 
 #: polyhost/gui/settings_dialog.py:147
 msgid "Report address"
-msgstr ""
+msgstr "报告地址"
 
 #: polyhost/gui/settings_dialog.py:148
 msgid "Installation ID"
-msgstr ""
+msgstr "安装 ID"
 
 #: polyhost/gui/settings_dialog.py:149
 msgid "Watch the keyboard console"
-msgstr ""
+msgstr "监视键盘控制台"
 
 #: polyhost/gui/settings_dialog.py:150
 msgid "Watch this app's log"
-msgstr ""
+msgstr "监视此应用的日志"
 
 #: polyhost/gui/settings_dialog.py:151
 msgid "What counts as a problem"
-msgstr ""
+msgstr "问题判定级别"
 
 #: polyhost/gui/settings_dialog.py:152
 msgid "Art from installed games"
-msgstr ""
+msgstr "来自已安装游戏的图像"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3099,7 +3099,7 @@ msgstr "对应最亮级别的辐照度值。调低此值可在阴天达到最高
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
-msgstr ""
+msgstr "在应用最暗值和最亮值之前，与辐照度值相乘的系数。"
 
 #: polyhost/gui/settings_dialog.py:180
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
@@ -3119,7 +3119,7 @@ msgstr "有专属叠加图标的应用也会被读取快捷键，并在叠加图
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
-msgstr ""
+msgstr "读取当前焦点应用的快捷键，为每个快捷键绘制图标。关闭时：不读取任何应用，也不绘制快捷键图标。要移除所有通用图标（包括 Esc 标志），请关闭“通用图标”。"
 
 #: polyhost/gui/settings_dialog.py:197
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
@@ -3151,11 +3151,11 @@ msgstr "菜单和对话框的语言。在托盘应用重新启动后生效。"
 
 #: polyhost/gui/settings_dialog.py:219
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
-msgstr ""
+msgstr "在此对话框中显示开发者设置；重新启动后，还会在托盘菜单中显示“开发者”子菜单。"
 
 #: polyhost/gui/settings_dialog.py:222
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
-msgstr ""
+msgstr "应用写入日志的详细程度。“调试”和“详细”有助于报告问题，但会使日志增长更快。重新启动后生效。"
 
 #: polyhost/gui/settings_dialog.py:224
 msgid "Adds a simulated keyboard next to the real one."
@@ -3195,11 +3195,11 @@ msgstr "接收来自另一台计算机上转发器的窗口报告。会打开一
 
 #: polyhost/gui/settings_dialog.py:250
 msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
-msgstr ""
+msgstr "键盘表情符号层进行搜索所用的语言。更改此项后键盘立即获得词典；如果开启了“连接时更新”，连接时也会获得。设置了“自定义词典文件”时，改用该文件。"
 
 #: polyhost/gui/settings_dialog.py:254
 msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
-msgstr ""
+msgstr "你自己构建的词典（.plyd），用来代替“搜索语言”。留空：使用随附的词典。在托盘中选择即可立即写入。"
 
 #: polyhost/gui/settings_dialog.py:258
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
@@ -3259,11 +3259,11 @@ msgstr "PolyKybd 设置"
 
 #: polyhost/gui/settings_dialog.py:791
 msgid "Search settings"
-msgstr ""
+msgstr "搜索设置"
 
 #: polyhost/gui/settings_dialog.py:831
 msgid "No setting matches the search."
-msgstr ""
+msgstr "没有与搜索匹配的设置。"
 
 #: polyhost/gui/settings_dialog.py:846
 msgid "Some settings might need a restart to take effect."
@@ -3272,11 +3272,11 @@ msgstr "某些设置可能需要重新启动才能生效。"
 #: polyhost/gui/settings_dialog.py:878
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
-msgstr ""
+msgstr "本次运行由 {flag} 设置。应用不带此参数启动时，使用此设置。"
 
 #: polyhost/gui/settings_dialog.py:910
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
-msgstr ""
+msgstr "这些开发者设置不是默认值，因此在关闭开发者模式时仍然有效。"
 
 #: polyhost/gui/shell_title_dialog.py:42 polyhost/gui/shell_title_dialog.py:74
 msgid "Set up"
@@ -4455,7 +4455,7 @@ msgstr "已从 {init} 中移除加载插件的行，并从 {path} 中移除插�
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft folder"
-msgstr ""
+msgstr "StarCraft 文件夹"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
@@ -4463,7 +4463,7 @@ msgstr "包含 StarCraft 1.16.1 文件 StarDat.mpq 以及（用于 Brood War 单
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft race"
-msgstr ""
+msgstr "StarCraft 种族"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
@@ -4483,7 +4483,7 @@ msgstr "异虫"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"
-msgstr ""
+msgstr "Dune II 文件夹"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:14
 msgid "A folder with the original Dune II file DUNE.PAK. Empty: the data folders of Dune Legacy and OpenDUNE are searched."
@@ -4491,7 +4491,7 @@ msgstr "包含原版 Dune II 文件 DUNE.PAK 的文件夹。留空：搜索 Dune
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:16
 msgid "Dune II house"
-msgstr ""
+msgstr "Dune II 家族"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:17
 msgid "Whose units the Dune II overlays show."
@@ -4514,7 +4514,7 @@ msgstr "奥多斯"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:13
 msgid "Dune 2000 folder"
-msgstr ""
+msgstr "Dune 2000 文件夹"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:14
 msgid "A folder with the Dune 2000 files DATA.R16 (or DATA.R8) and PALETTE.BIN. Empty: the content folder of OpenRA is searched."
@@ -4522,7 +4522,7 @@ msgstr "包含 Dune 2000 文件 DATA.R16（或 DATA.R8）和 PALETTE.BIN 的文�
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:16
 msgid "Dune 2000 house"
-msgstr ""
+msgstr "Dune 2000 家族"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:17
 msgid "Whose units the OpenRA Dune 2000 overlay shows."
@@ -4530,7 +4530,7 @@ msgstr "OpenRA Dune 2000 叠加层显示哪一家族的单位。"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert folder"
-msgstr ""
+msgstr "Red Alert 文件夹"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:14
 msgid "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and LOCAL.MIX. Empty: the content folder of OpenRA is searched."
@@ -4538,7 +4538,7 @@ msgstr "包含经典 Red Alert 文件 CONQUER.MIX、HIRES.MIX 和 LOCAL.MIX 的�
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:16
 msgid "Red Alert faction"
-msgstr ""
+msgstr "Red Alert 阵营"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:17
 msgid "Whose units and buildings the OpenRA Red Alert overlay shows."
@@ -4554,7 +4554,7 @@ msgstr "苏军"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer folder"
-msgstr ""
+msgstr "Command and Conquer 文件夹"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:14
 msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection and the content folder of OpenRA are searched."
@@ -4562,7 +4562,7 @@ msgstr "包含经典 Command & Conquer 文件 CONQUER.MIX 和 TEMPERAT.MIX 的�
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer faction"
-msgstr ""
+msgstr "Command and Conquer 阵营"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:18
 msgid "Whose units and buildings the C&C Remastered and OpenRA overlays show."

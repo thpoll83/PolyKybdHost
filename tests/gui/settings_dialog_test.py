@@ -503,6 +503,29 @@ class DialogBehaviourTest(unittest.TestCase):
         dlg = self._dialog(dict(DEFAULT_SETTINGS, log_detail="detailed"))
         self.assertEqual(dlg.get_updated_settings()["log_detail"], "detailed")
 
+    def test_a_switch_mirrors_in_a_right_to_left_layout(self):
+        """"On" is the end of the reading direction: right, or left in Arabic."""
+        from PyQt5.QtCore import Qt
+        from polyhost.gui.settings_dialog import ToggleSwitch
+        images = {}
+        for direction in (Qt.LeftToRight, Qt.RightToLeft):
+            switch = ToggleSwitch()
+            self.addCleanup(switch.deleteLater)
+            switch.setLayoutDirection(direction)
+            switch.setChecked(True)
+            switch.resize(switch.sizeHint())
+            images[direction] = switch.grab().toImage()
+        def worst(a, b):
+            """The largest per-channel difference. Antialiased edges round
+            differently when mirrored, by 1 in a channel."""
+            from PyQt5.QtGui import QColor
+            return max(max(abs(p - q) for p, q in zip(QColor(a.pixel(x, y)).getRgb(),
+                                                       QColor(b.pixel(x, y)).getRgb()))
+                       for y in range(a.height()) for x in range(a.width()))
+        ltr, rtl = images[Qt.LeftToRight], images[Qt.RightToLeft]
+        self.assertLessEqual(worst(ltr.mirrored(True, False), rtl), 2)
+        self.assertGreater(worst(ltr, rtl), 100)
+
     def test_a_switch_is_still_a_checkbox(self):
         from PyQt5.QtCore import Qt
         from PyQt5.QtTest import QTest

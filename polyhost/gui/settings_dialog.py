@@ -447,7 +447,8 @@ class ToggleSwitch(QCheckBox):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         pal = self.palette()
-        track = QRectF(2, (self.height() - self.TRACK.height()) / 2,
+        left = self.width() - 2 - self.TRACK.width() if self.isRightToLeft() else 2
+        track = QRectF(left, (self.height() - self.TRACK.height()) / 2,
                        self.TRACK.width(), self.TRACK.height())
         radius = track.height() / 2
         if not self.isEnabled():
@@ -460,7 +461,10 @@ class ToggleSwitch(QCheckBox):
         painter.setBrush(fill)
         painter.drawRoundedRect(track, radius, radius)
         knob_d = track.height() - 6
-        x = track.right() - 3 - knob_d if self.isChecked() else track.left() + 3
+        # "On" is the reading direction's end: right, or left in Arabic and Persian.
+        on_right = not self.isRightToLeft()
+        at_end = self.isChecked() == on_right
+        x = track.right() - 3 - knob_d if at_end else track.left() + 3
         painter.setBrush(QColor("#ffffff"))
         painter.drawEllipse(QRectF(x, track.top() + 3, knob_d, knob_d))
         if self.hasFocus():

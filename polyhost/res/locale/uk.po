@@ -2845,11 +2845,11 @@ msgstr "Помилки та попередження"
 
 #: polyhost/gui/settings_dialog.py:53
 msgid "Debug"
-msgstr ""
+msgstr "Налагодження"
 
 #: polyhost/gui/settings_dialog.py:54
 msgid "Detailed"
-msgstr ""
+msgstr "Детально"
 
 #: polyhost/gui/settings_dialog.py:63
 msgid "General"
@@ -2857,71 +2857,71 @@ msgstr "Загальні"
 
 #: polyhost/gui/settings_dialog.py:66
 msgid "Keycap icons"
-msgstr ""
+msgstr "Значки на ковпачках"
 
 #: polyhost/gui/settings_dialog.py:69
 msgid "Apps with their own overlay"
-msgstr ""
+msgstr "Програми з власною накладкою"
 
 #: polyhost/gui/settings_dialog.py:71
 msgid "Linux"
-msgstr ""
+msgstr "Linux"
 
 #: polyhost/gui/settings_dialog.py:73
 msgid "Games"
-msgstr ""
+msgstr "Ігри"
 
 #: polyhost/gui/settings_dialog.py:75
 msgid "Installed games"
-msgstr ""
+msgstr "Встановлені ігри"
 
 #: polyhost/gui/settings_dialog.py:81
 msgid "Daylight curve"
-msgstr ""
+msgstr "Крива денного світла"
 
 #: polyhost/gui/settings_dialog.py:84
 msgid "Keyboard data"
-msgstr ""
+msgstr "Дані клавіатури"
 
 #: polyhost/gui/settings_dialog.py:86
 msgid "Font packs"
-msgstr ""
+msgstr "Пакети шрифтів"
 
 #: polyhost/gui/settings_dialog.py:87
 msgid "Emoji search"
-msgstr ""
+msgstr "Пошук емодзі"
 
 #: polyhost/gui/settings_dialog.py:89
 msgid "Connections"
-msgstr ""
+msgstr "Підключення"
 
 #: polyhost/gui/settings_dialog.py:90
 msgid "Browser extension"
-msgstr ""
+msgstr "Розширення браузера"
 
 #: polyhost/gui/settings_dialog.py:92
 msgid "Forwarders"
-msgstr ""
+msgstr "Ретранслятори"
 
 #: polyhost/gui/settings_dialog.py:93
 msgid "USB transport"
-msgstr ""
+msgstr "Передавання USB"
 
 #: polyhost/gui/settings_dialog.py:96
 msgid "Privacy and diagnostics"
-msgstr ""
+msgstr "Конфіденційність і діагностика"
 
 #: polyhost/gui/settings_dialog.py:97
 msgid "Usage report"
-msgstr ""
+msgstr "Звіт про використання"
 
 #: polyhost/gui/settings_dialog.py:98
 msgid "Problem detection"
-msgstr ""
+msgstr "Виявлення проблем"
 
 #: polyhost/gui/settings_dialog.py:99
 msgid "Logs"
-msgstr ""
+msgstr "Журнали"
 
 #: polyhost/gui/settings_dialog.py:101 polyhost/host.py:934
 msgid "Developer"
@@ -2933,71 +2933,71 @@ msgstr "Інше"
 
 #: polyhost/gui/settings_dialog.py:108
 msgid "Send Unicode input mode"
-msgstr ""
+msgstr "Надсилати режим введення Юнікоду"
 
 #: polyhost/gui/settings_dialog.py:109
 msgid "Follow daylight"
-msgstr ""
+msgstr "Залежно від денного світла"
 
 #: polyhost/gui/settings_dialog.py:110
 msgid "Online sunlight data"
-msgstr ""
+msgstr "Дані про сонячне світло онлайн"
 
 #: polyhost/gui/settings_dialog.py:111
 msgid "Online location lookup"
-msgstr ""
+msgstr "Визначення розташування онлайн"
 
 #: polyhost/gui/settings_dialog.py:112
 msgid "Sunlight at dimmest"
-msgstr ""
+msgstr "Сонячне світло за мінімуму"
 
 #: polyhost/gui/settings_dialog.py:113
 msgid "Sunlight at brightest"
-msgstr ""
+msgstr "Сонячне світло за максимуму"
 
 #: polyhost/gui/settings_dialog.py:114
 msgid "Sunlight scale"
-msgstr ""
+msgstr "Масштаб сонячного світла"
 
 #: polyhost/gui/settings_dialog.py:115
 msgid "Curve gamma"
-msgstr ""
+msgstr "Гамма кривої"
 
 #: polyhost/gui/settings_dialog.py:116
 msgid "Generic icons"
-msgstr ""
+msgstr "Універсальні значки"
 
 #: polyhost/gui/settings_dialog.py:117
 msgid "Add the Escape mark"
-msgstr ""
+msgstr "Додавати логотип на Escape"
 
 #: polyhost/gui/settings_dialog.py:118
 msgid "Add shortcut icons"
-msgstr ""
+msgstr "Додавати значки скорочень"
 
 #: polyhost/gui/settings_dialog.py:119
 msgid "Shortcut icons"
-msgstr ""
+msgstr "Значки скорочень"
 
 #: polyhost/gui/settings_dialog.py:120
 msgid "Download missing icons"
-msgstr ""
+msgstr "Завантажувати відсутні значки"
 
 #: polyhost/gui/settings_dialog.py:121
 msgid "Turn on accessibility"
-msgstr ""
+msgstr "Увімкнути спеціальні можливості"
 
 #: polyhost/gui/settings_dialog.py:122
 msgid "Messages before a pause"
-msgstr ""
+msgstr "Повідомлень до паузи"
 
 #: polyhost/gui/settings_dialog.py:123
 msgid "Pause length (s)"
-msgstr ""
+msgstr "Тривалість паузи (с)"
 
 #: polyhost/gui/settings_dialog.py:124
 msgid "ID requests before reconnect"
-msgstr ""
+msgstr "Запитів ID до повторного під’єднання"
 
 #: polyhost/gui/settings_dialog.py:125
 msgid "Theme"
@@ -3005,107 +3005,107 @@ msgstr "Тема"
 
 #: polyhost/gui/settings_dialog.py:127
 msgid "Developer mode"
-msgstr ""
+msgstr "Режим розробника"
 
 #: polyhost/gui/settings_dialog.py:128
 msgid "Log detail"
-msgstr ""
+msgstr "Докладність журналу"
 
 #: polyhost/gui/settings_dialog.py:129
 msgid "Add a simulated keyboard"
-msgstr ""
+msgstr "Додати імітовану клавіатуру"
 
 #: polyhost/gui/settings_dialog.py:130
 msgid "Simulated keyboard only"
-msgstr ""
+msgstr "Лише імітована клавіатура"
 
 #: polyhost/gui/settings_dialog.py:131
 msgid "Simulated protocol version"
-msgstr ""
+msgstr "Версія протоколу імітації"
 
 #: polyhost/gui/settings_dialog.py:132
 msgid "Track windows without a keyboard"
-msgstr ""
+msgstr "Відстежувати вікна без клавіатури"
 
 #: polyhost/gui/settings_dialog.py:133
 msgid "Native Windows language switch"
-msgstr ""
+msgstr "Нативна зміна мови Windows"
 
 #: polyhost/gui/settings_dialog.py:134
 msgid "Legacy plaintext relay"
-msgstr ""
+msgstr "Застаріла незашифрована ретрансляція"
 
 #: polyhost/gui/settings_dialog.py:135
 msgid "Force the HID link"
-msgstr ""
+msgstr "Примусово використовувати HID"
 
 #: polyhost/gui/settings_dialog.py:136
 msgid "Background service"
-msgstr ""
+msgstr "Фонова служба"
 
 #: polyhost/gui/settings_dialog.py:137
 msgid "Accept forwarders"
-msgstr ""
+msgstr "Приймати ретранслятори"
 
 #: polyhost/gui/settings_dialog.py:138
 msgid "Update on connect"
-msgstr ""
+msgstr "Оновлювати під час під’єднання"
 
 #: polyhost/gui/settings_dialog.py:139
 msgid "Search language"
-msgstr ""
+msgstr "Мова пошуку"
 
 #: polyhost/gui/settings_dialog.py:140
 msgid "Own dictionary file"
-msgstr ""
+msgstr "Власний файл словника"
 
 #: polyhost/gui/settings_dialog.py:141
 msgid "Font pack file"
-msgstr ""
+msgstr "Файл пакета шрифтів"
 
 #: polyhost/gui/settings_dialog.py:142
 msgid "Match websites"
-msgstr ""
+msgstr "Зіставляти вебсайти"
 
 #: polyhost/gui/settings_dialog.py:143
 msgid "Receive browser reports"
-msgstr ""
+msgstr "Приймати звіти браузера"
 
 #: polyhost/gui/settings_dialog.py:144
 msgid "Receiver port"
-msgstr ""
+msgstr "Порт приймача"
 
 #: polyhost/gui/settings_dialog.py:145
 msgid "Receiver token"
-msgstr ""
+msgstr "Токен приймача"
 
 #: polyhost/gui/settings_dialog.py:146
 msgid "Send usage report"
-msgstr ""
+msgstr "Надсилати звіт про використання"
 
 #: polyhost/gui/settings_dialog.py:147
 msgid "Report address"
-msgstr ""
+msgstr "Адреса звіту"
 
 #: polyhost/gui/settings_dialog.py:148
 msgid "Installation ID"
-msgstr ""
+msgstr "ID інсталяції"
 
 #: polyhost/gui/settings_dialog.py:149
 msgid "Watch the keyboard console"
-msgstr ""
+msgstr "Стежити за консоллю клавіатури"
 
 #: polyhost/gui/settings_dialog.py:150
 msgid "Watch this app's log"
-msgstr ""
+msgstr "Стежити за журналом програми"
 
 #: polyhost/gui/settings_dialog.py:151
 msgid "What counts as a problem"
-msgstr ""
+msgstr "Що вважається проблемою"
 
 #: polyhost/gui/settings_dialog.py:152
 msgid "Art from installed games"
-msgstr ""
+msgstr "Графіка зі встановлених ігор"
 
 #: polyhost/gui/settings_dialog.py:161
 msgid "Tells the keyboard how this computer takes Unicode input (for example WinCompose), on connect and whenever it changes. Off: the keyboard keeps the mode it has stored."
@@ -3133,7 +3133,7 @@ msgstr "Значення сонячного світла, за якого яск
 
 #: polyhost/gui/settings_dialog.py:178
 msgid "Multiplies the sunlight value before the dimmest and brightest values apply."
-msgstr ""
+msgstr "Множить значення сонячного світла перед застосуванням мінімального й максимального значень."
 
 #: polyhost/gui/settings_dialog.py:180
 msgid "Shapes the daylight curve. Above 1 the middle of the day gets dimmer, below 1 brighter. The dimmest and brightest levels do not change."
@@ -3153,7 +3153,7 @@ msgstr "У програми з власною накладкою теж зчит
 
 #: polyhost/gui/settings_dialog.py:193
 msgid "Reads the focused app's shortcuts to draw an icon for each. Off: no app is read and no shortcut icons are drawn. To remove every generic icon, the Escape mark included, turn off Generic icons."
-msgstr ""
+msgstr "Зчитує скорочення активної програми, щоб намалювати значок для кожного. Вимкнено: програми не зчитуються, значки скорочень не малюються. Щоб прибрати всі універсальні значки, разом із логотипом на Escape, вимкніть «Універсальні значки»."
 
 #: polyhost/gui/settings_dialog.py:197
 msgid "Downloads icons that are missing. Off: icons already downloaded keep working, new ones are skipped."
@@ -3185,11 +3185,11 @@ msgstr "Мова меню та діалогових вікон. Застосов
 
 #: polyhost/gui/settings_dialog.py:219
 msgid "Shows the developer settings in this dialog, and the Developer submenu in the tray menu after a restart."
-msgstr ""
+msgstr "Показує параметри розробника в цьому вікні, а після перезапуску — підменю «Розробник» у меню області сповіщень."
 
 #: polyhost/gui/settings_dialog.py:222
 msgid "How much the app writes to its log. Debug and Detailed help when you report a problem, and make the log grow faster. Applies after a restart."
-msgstr ""
+msgstr "Наскільки докладно програма пише в журнал. Рівні «Налагодження» і «Детально» допомагають, коли ви повідомляєте про проблему, але журнал росте швидше. Застосовується після перезапуску."
 
 #: polyhost/gui/settings_dialog.py:224
 msgid "Adds a simulated keyboard next to the real one."
@@ -3229,11 +3229,11 @@ msgstr "Приймає відомості про вікна від ретран�
 
 #: polyhost/gui/settings_dialog.py:250
 msgid "The language the keyboard's emoji layer searches in. The keyboard gets the dictionary right away when you change this, and when it connects if Update on connect is on. Own dictionary file, when set, is used instead."
-msgstr ""
+msgstr "Мова, якою шукає шар емодзі клавіатури. Клавіатура отримує словник одразу після зміни цього параметра, а також під час під’єднання, якщо ввімкнено «Оновлювати під час під’єднання». «Власний файл словника», якщо задано, використовується замість нього."
 
 #: polyhost/gui/settings_dialog.py:254
 msgid "A dictionary you built yourself (.plyd), used instead of Search language. Empty: the shipped dictionary is used. Choose it in the tray to flash it right away."
-msgstr ""
+msgstr "Словник, зібраний вами (.plyd), який використовується замість параметра «Мова пошуку». Порожньо: використовується вбудований словник. Виберіть його в треї, щоб одразу записати."
 
 #: polyhost/gui/settings_dialog.py:258
 msgid "Flashes missing or outdated font-pack bundles when the keyboard connects."
@@ -3293,11 +3293,11 @@ msgstr "Параметри PolyKybd"
 
 #: polyhost/gui/settings_dialog.py:791
 msgid "Search settings"
-msgstr ""
+msgstr "Пошук параметрів"
 
 #: polyhost/gui/settings_dialog.py:831
 msgid "No setting matches the search."
-msgstr ""
+msgstr "Жоден параметр не відповідає запиту."
 
 #: polyhost/gui/settings_dialog.py:846
 msgid "Some settings might need a restart to take effect."
@@ -3306,11 +3306,11 @@ msgstr "Для застосування деяких параметрів мож
 #: polyhost/gui/settings_dialog.py:878
 #, python-brace-format
 msgid "Set by {flag} for this run. This setting applies when the app starts without it."
-msgstr ""
+msgstr "Задано через {flag} для цього запуску. Цей параметр діє, коли програма запускається без нього."
 
 #: polyhost/gui/settings_dialog.py:910
 msgid "These developer settings are not at their default, so they stay in effect while developer mode is off."
-msgstr ""
+msgstr "Ці параметри розробника відрізняються від типових, тому вони діють і тоді, коли режим розробника вимкнено."
 
 #: polyhost/gui/shell_title_dialog.py:42 polyhost/gui/shell_title_dialog.py:74
 msgid "Set up"
@@ -4499,7 +4499,7 @@ msgstr "Рядки, що завантажують плагін, вилучено
 
 #: polyhost/services/game_assets/starcraft/__init__.py:13
 msgid "StarCraft folder"
-msgstr ""
+msgstr "Тека StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:14
 msgid "A folder with the StarCraft 1.16.1 files StarDat.mpq and, for the Brood War units, BrooDat.mpq. Empty: the usual install folders on Windows, macOS and under Wine are searched. StarCraft: Remastered keeps its files in a format this app does not read; the shipped art is used then."
@@ -4507,7 +4507,7 @@ msgstr "Тека з файлами StarCraft 1.16.1 StarDat.mpq і, для юн�
 
 #: polyhost/services/game_assets/starcraft/__init__.py:19
 msgid "StarCraft race"
-msgstr ""
+msgstr "Раса StarCraft"
 
 #: polyhost/services/game_assets/starcraft/__init__.py:20
 msgid "Whose units the StarCraft II overlay shows when it draws them from the StarCraft files."
@@ -4527,7 +4527,7 @@ msgstr "Зерги"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:13
 msgid "Dune II folder"
-msgstr ""
+msgstr "Тека Dune II"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:14
 msgid "A folder with the original Dune II file DUNE.PAK. Empty: the data folders of Dune Legacy and OpenDUNE are searched."
@@ -4535,7 +4535,7 @@ msgstr "Тека з оригінальним файлом Dune II DUNE.PAK. По
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:16
 msgid "Dune II house"
-msgstr ""
+msgstr "Дім Dune II"
 
 #: polyhost/services/game_assets/westwood_d2/__init__.py:17
 msgid "Whose units the Dune II overlays show."
@@ -4558,7 +4558,7 @@ msgstr "Ордос"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:13
 msgid "Dune 2000 folder"
-msgstr ""
+msgstr "Тека Dune 2000"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:14
 msgid "A folder with the Dune 2000 files DATA.R16 (or DATA.R8) and PALETTE.BIN. Empty: the content folder of OpenRA is searched."
@@ -4566,7 +4566,7 @@ msgstr "Тека з файлами Dune 2000 DATA.R16 (або DATA.R8) і PALETT
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:16
 msgid "Dune 2000 house"
-msgstr ""
+msgstr "Дім Dune 2000"
 
 #: polyhost/services/game_assets/westwood_d2k/__init__.py:17
 msgid "Whose units the OpenRA Dune 2000 overlay shows."
@@ -4574,7 +4574,7 @@ msgstr "Чиї юніти показує оверлей OpenRA Dune 2000."
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:13
 msgid "Red Alert folder"
-msgstr ""
+msgstr "Тека Red Alert"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:14
 msgid "A folder with the classic Red Alert files CONQUER.MIX, HIRES.MIX and LOCAL.MIX. Empty: the content folder of OpenRA is searched."
@@ -4582,7 +4582,7 @@ msgstr "Тека з класичними файлами Red Alert CONQUER.MIX, H
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:16
 msgid "Red Alert faction"
-msgstr ""
+msgstr "Фракція Red Alert"
 
 #: polyhost/services/game_assets/westwood_ra/__init__.py:17
 msgid "Whose units and buildings the OpenRA Red Alert overlay shows."
@@ -4598,7 +4598,7 @@ msgstr "Радянці"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:13
 msgid "Command and Conquer folder"
-msgstr ""
+msgstr "Тека Command and Conquer"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:14
 msgid "A folder with the classic Command & Conquer files CONQUER.MIX and TEMPERAT.MIX. Empty: the Steam and EA app installs of the Remastered Collection and the content folder of OpenRA are searched."
@@ -4606,7 +4606,7 @@ msgstr "Тека з класичними файлами Command & Conquer CONQUE
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:17
 msgid "Command and Conquer faction"
-msgstr ""
+msgstr "Фракція Command and Conquer"
 
 #: polyhost/services/game_assets/westwood_td/__init__.py:18
 msgid "Whose units and buildings the C&C Remastered and OpenRA overlays show."
