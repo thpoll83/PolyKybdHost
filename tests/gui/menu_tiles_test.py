@@ -128,6 +128,7 @@ class IconTilesTest(unittest.TestCase):
             menu_tiles.add_icon_tiles_on_first_show(menu)
             menu.aboutToShow.emit()
             menu.aboutToShow.emit()     # a second show builds nothing more
+        _APP.processEvents()
         return [a for a in menu.actions() if isinstance(a, menu_tiles.QWidgetAction)]
 
     def test_plain_entries_become_tiles_and_a_submenu_stays_a_row(self):
