@@ -19,8 +19,39 @@ from PyQt5.QtWidgets import (QDialogButtonBox, QFrame, QHBoxLayout, QLabel,
 
 from polyhost.gui.get_icon import get_icon
 
-BUTTON_ICON_SIZE = QSize(18, 18)
+# Sizes at 100 % (96 dpi). Read them through px(), button_icon_size() and
+# headline_icon_px(), which scale them with the display.
+BUTTON_ICON_PX = 18
 HEADLINE_ICON_PX = 36
+
+
+def ui_scale():
+    """The display scale Qt applies to its own sizes, 1.0 at 100 %.
+
+    The app does not turn on Qt's high-DPI scaling, so Qt 5 draws in device
+    pixels and the style scales its own metrics from the logical DPI instead:
+    Fusion's button icon is 16 px at 100 % and 24 px at 150 %. A size we set
+    in pixels does not follow unless it is multiplied by this, and a fixed
+    18 px icon then looked smaller than the 24 px one it replaced.
+    """
+    from PyQt5.QtWidgets import QApplication, QStyle
+    app = QApplication.instance()
+    if app is None:
+        return 1.0
+    return max(1.0, app.style().pixelMetric(QStyle.PM_ButtonIconSize) / 16)
+
+
+def px(value):
+    """A size given at 100 %, in pixels at the display's scale."""
+    return int(round(value * ui_scale()))
+
+
+def button_icon_size():
+    return QSize(px(BUTTON_ICON_PX), px(BUTTON_ICON_PX))
+
+
+def headline_icon_px():
+    return px(HEADLINE_ICON_PX)
 
 # What a button does -> its icon. A dialog names the kind; the file and the
 # colour follow from it. ⚠️ Every name here must exist in res/icons
@@ -83,7 +114,7 @@ def button_icon(kind):
 def set_button_icon(button, kind):
     """Give ``button`` the icon for ``kind`` and return the button."""
     button.setIcon(button_icon(kind))
-    button.setIconSize(BUTTON_ICON_SIZE)
+    button.setIconSize(button_icon_size())
     return button
 
 
@@ -163,8 +194,9 @@ class Headline(QWidget):
         row.setContentsMargins(0, 0, 0, 4)
         row.setSpacing(12)
         self.icon = QLabel(self)
-        self.icon.setPixmap(_HEADLINE_ICONS[kind]().pixmap(HEADLINE_ICON_PX, HEADLINE_ICON_PX))
-        self.icon.setFixedSize(HEADLINE_ICON_PX, HEADLINE_ICON_PX)
+        size = headline_icon_px()
+        self.icon.setPixmap(_HEADLINE_ICONS[kind]().pixmap(size, size))
+        self.icon.setFixedSize(size, size)
         row.addWidget(self.icon, 0, Qt.AlignTop)
         col = QVBoxLayout()
         col.setSpacing(2)

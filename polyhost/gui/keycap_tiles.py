@@ -18,8 +18,21 @@ from polyhost.services import fontpack_bundle
 from polyhost.services import glyph_script_preview as gsp
 
 PANEL_W, PANEL_H = 72, 40
-SCALE = 2
-TILE_SIZE = QSize(PANEL_W * SCALE, PANEL_H * SCALE)
+SCALE = 2      # whole pixels per OLED pixel at 100 %
+
+
+def tile_scale():
+    """Whole pixels per OLED pixel at the display's scale (2 at 100 %, 3 at 150 %).
+
+    A whole number keeps every OLED pixel square and sharp.
+    """
+    from polyhost.gui.ui_kit import ui_scale
+    return max(SCALE, int(round(SCALE * ui_scale())))
+
+
+def tile_size():
+    s = tile_scale()
+    return QSize(PANEL_W * s, PANEL_H * s)
 
 # The bigger legend faces in latinbig.plyf: ASCII relocated to these bases
 # (GlyphSize MEDIUM and LARGE). SMALL is the resident face.
@@ -49,7 +62,8 @@ def _paste_centred(panel, img, dx=0, dy=0, level=255):
 
 def to_icon(panel):
     """A QIcon of the panel at tile size, scaled without smoothing."""
-    big = panel.resize((PANEL_W * SCALE, PANEL_H * SCALE), Image.NEAREST).convert("RGB")
+    s = tile_scale()
+    big = panel.resize((PANEL_W * s, PANEL_H * s), Image.NEAREST).convert("RGB")
     qimg = QImage(big.tobytes(), big.width, big.height, big.width * 3,
                   QImage.Format_RGB888).copy()
     return QIcon(QPixmap.fromImage(qimg))

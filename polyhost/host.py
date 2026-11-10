@@ -587,7 +587,7 @@ class PolyHost(QApplication):
         menu_tiles.add_tiles_on_first_show(
             self.idle_style_menu, idle_actions,
             lambda: [keycap_tiles.to_icon(keycap_tiles.idle_panel(a.data())) for a in idle_actions],
-            4, keycap_tiles.TILE_SIZE,
+            4, keycap_tiles.tile_size(),
             labels=[_("Pulse"), _("Jitter"), "IDDQD", _("Eden")])
 
         # Idle TIMEOUT (firmware v18+): how long before the style above engages.
@@ -664,7 +664,7 @@ class PolyHost(QApplication):
         menu_tiles.add_tiles_on_first_show(
             self.glyph_script_menu, script_actions,
             lambda: [keycap_tiles.to_icon(keycap_tiles.script_panel(a.data())) for a in script_actions],
-            4, keycap_tiles.TILE_SIZE,
+            4, keycap_tiles.tile_size(),
             labels=[_(GLYPH_SCRIPT_TILE_LABELS.get(GlyphScript(a.data()), GLYPH_SCRIPT_LABELS[GlyphScript(a.data())]))
                     for a in script_actions])
 
@@ -691,7 +691,7 @@ class PolyHost(QApplication):
             self.glyph_size_menu, size_actions,
             lambda: [keycap_tiles.to_icon(p) for p in
                      keycap_tiles.size_panels([a.data() for a in size_actions])],
-            3, keycap_tiles.TILE_SIZE,
+            3, keycap_tiles.tile_size(),
             labels=[_("Small"), _("Medium"), _("Large")])
 
         # Emoji search dictionary (font-pack slot 9, services/emojidict.py): which

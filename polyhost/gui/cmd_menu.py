@@ -151,7 +151,7 @@ class CommandsSubMenu:
         menu_tiles.add_tiles_on_first_show(
             menu, presets,
             lambda: [keycap_tiles.to_icon(keycap_tiles.brightness_panel(a.data())) for a in presets],
-            4, keycap_tiles.TILE_SIZE)
+            4, keycap_tiles.tile_size())
         menu.addSeparator()
         # The firmware drops auto mode on ANY manual set and never re-engages by
         # itself, so without this the presets above are a one-way door until a

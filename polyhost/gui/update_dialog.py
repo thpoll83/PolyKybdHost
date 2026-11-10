@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.gui import message_box
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.ui_kit import HEADLINE_ICON_PX, style_button_box
+from polyhost.gui.ui_kit import headline_icon_px, px, style_button_box
 from polyhost.i18n import _, _f
 
 
@@ -46,7 +46,7 @@ def _size_to_notes(dlg, browser) -> None:
     avail = _available()
     max_w = _MAX_W if avail is None else min(_MAX_W, int(avail.width() * _SCREEN_FRACTION_W))
     max_h = _MAX_H if avail is None else min(_MAX_H, int(avail.height() * _SCREEN_FRACTION_H))
-    w = max(dlg.minimumWidth(), min(_READING_W, max_w))
+    w = max(dlg.minimumWidth(), min(px(_READING_W), max_w))
     # The notes' height at that width: the dialog's margins and the browser's
     # frame and scroll bar come off the text width.
     margins = dlg.layout().contentsMargins()
@@ -121,7 +121,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
     row = QHBoxLayout()
     row.setSpacing(12)
     icon_lbl = QLabel()
-    icon_lbl.setPixmap(get_icon("update.svg").pixmap(HEADLINE_ICON_PX, HEADLINE_ICON_PX))
+    icon_lbl.setPixmap(get_icon("update.svg").pixmap(headline_icon_px(), headline_icon_px()))
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
     msg_lbl = _WrapLabel(message)

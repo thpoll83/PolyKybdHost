@@ -30,6 +30,7 @@ import os
 import sys
 
 from PyQt5.QtCore import QSize, Qt
+from polyhost.gui.ui_kit import px
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QToolButton, QWidget,
                              QWidgetAction)
 
@@ -119,11 +120,11 @@ class TileGrid(QWidget):
         super().__init__(parent)
         self.setStyleSheet(_TILE_STYLE)
         self._grid = QGridLayout(self)
-        self._grid.setContentsMargins(8, 6, 8, 6)
-        self._grid.setSpacing(4)
+        self._grid.setContentsMargins(px(8), px(6), px(8), px(6))
+        self._grid.setSpacing(px(4))
         self._columns = columns
         # Measured before the stylesheet polishes the tile, so leave a margin.
-        self._text_width = (tile_width or icon_size.width() + 20) - 24
+        self._text_width = (tile_width or icon_size.width() + px(20)) - px(24)
         self.tiles = []
         self._actions = list(actions)
         for action, icon in zip(self._actions, icons):
@@ -131,7 +132,7 @@ class TileGrid(QWidget):
             tile.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             tile.setAutoRaise(True)
             tile.setIconSize(icon_size)
-            tile.setFixedWidth(tile_width or icon_size.width() + 20)
+            tile.setFixedWidth(tile_width or icon_size.width() + px(20))
             tile.setIcon(icon if icon is not None else action.icon())
             tile.clicked.connect(lambda _checked=False, a=action: self._trigger(a))
             action.changed.connect(lambda t=tile, a=action: self._sync(t, a))
@@ -234,7 +235,8 @@ def add_tiles_on_first_show(menu, actions, make_icons, columns, icon_size, label
     menu.aboutToShow.connect(build)
 
 
-# The icon tiles of the plain submenus (Updates, Maintenance, Help & About).
+# The icon tiles of the plain submenus (Updates, Maintenance, Help & About),
+# at 100 %; ui_kit.px scales them.
 ICON_TILE_PX = 32
 ICON_TILE_WIDTH = 150
 
@@ -259,6 +261,6 @@ def add_icon_tiles_on_first_show(menu, columns=3):
                    and not isinstance(a, QWidgetAction)]
         if actions:
             add_tiles(menu, actions, [None] * len(actions), columns,
-                      QSize(ICON_TILE_PX, ICON_TILE_PX), tile_width=ICON_TILE_WIDTH)
+                      QSize(px(ICON_TILE_PX), px(ICON_TILE_PX)), tile_width=px(ICON_TILE_WIDTH))
 
     menu.aboutToShow.connect(build)

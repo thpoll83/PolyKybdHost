@@ -47,7 +47,7 @@ class TileGridTest(unittest.TestCase):
         icons = [keycap_tiles.to_icon(p) for p in keycap_tiles.size_panels([0, 1, 2])]
         with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "1"}):
             self.holder = menu_tiles.add_tiles(self.menu, self.actions, icons, 3,
-                                               keycap_tiles.TILE_SIZE, labels=["S", "M", "L"])
+                                               keycap_tiles.tile_size(), labels=["S", "M", "L"])
         self.tiles = self.holder.defaultWidget().tiles
 
     def test_the_rows_are_replaced_by_the_grid(self):
@@ -83,7 +83,7 @@ class TileGridTest(unittest.TestCase):
         self.addCleanup(menu.deleteLater)
         act = menu.addAction("x")
         with mock.patch.dict(os.environ, {"POLYHOST_MENU_TILES": "0"}):
-            self.assertIsNone(menu_tiles.add_tiles(menu, [act], [None], 1, keycap_tiles.TILE_SIZE))
+            self.assertIsNone(menu_tiles.add_tiles(menu, [act], [None], 1, keycap_tiles.tile_size()))
         self.assertEqual(menu.actions(), [act])
 
 
@@ -165,6 +165,29 @@ class WrapCaptionTest(unittest.TestCase):
         self.assertLessEqual(len(lines), 3)
         for ln in lines:
             self.assertLessEqual(fm.horizontalAdvance(ln), 90)
+
+
+class ScaleTest(unittest.TestCase):
+    """Sizes set in pixels follow the display scale, as Qt's own metrics do."""
+
+    def test_sizes_grow_with_the_scale(self):
+        from polyhost.gui import ui_kit
+        with mock.patch.object(ui_kit, "ui_scale", return_value=1.5):
+            self.assertEqual(ui_kit.px(18), 27)
+            self.assertEqual(ui_kit.button_icon_size().width(), 27)
+            self.assertEqual(ui_kit.headline_icon_px(), 54)
+            self.assertEqual(keycap_tiles.tile_scale(), 3)
+            self.assertEqual(keycap_tiles.tile_size().width(), 216)
+        with mock.patch.object(ui_kit, "ui_scale", return_value=1.0):
+            self.assertEqual(keycap_tiles.tile_size().width(), 144)
+
+    def test_the_scale_follows_the_style(self):
+        from PyQt5.QtWidgets import QStyle
+        from polyhost.gui import ui_kit
+        style = _APP.style()
+        with mock.patch.object(type(style), "pixelMetric",
+                               side_effect=lambda m, *a: 24 if m == QStyle.PM_ButtonIconSize else 0):
+            self.assertEqual(ui_kit.ui_scale(), 1.5)
 
 
 if __name__ == "__main__":

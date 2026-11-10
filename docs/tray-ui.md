@@ -375,6 +375,12 @@ and relative links were adjusted to suit a standalone file.
   (`add_icon_tiles_on_first_show`, built on the first show so entries added later
   are included); a submenu entry stays a row.
 
+- ⚠️ **A size set in pixels must go through `ui_kit.px()`.** The app does not turn
+  on Qt's high-DPI scaling, so Qt 5 draws in device pixels and the style scales
+  its own metrics from the logical DPI (Fusion's button icon: 16 px at 100 %,
+  24 px at 150 %). A fixed 18 px icon looked smaller than the one it replaced.
+  `ui_scale()` reads that factor from the style.
+
 - ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
   `question` / `information` / `warning` / `critical` take QMessageBox's static
   arguments and return the same button codes, with the ui_kit icons on the box

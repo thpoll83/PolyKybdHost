@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.ui_kit import HEADLINE_ICON_PX, set_button_icon
+from polyhost.gui.ui_kit import headline_icon_px, set_button_icon
 from polyhost.i18n import _, _f, N_
 
 # (button label, returned choice). Order = left-to-right; the first entry is the
@@ -84,7 +84,7 @@ def build_newer_firmware_dialog(host_protocol, device_protocol, name="", fw_vers
     row = QHBoxLayout()
     row.setSpacing(12)
     icon_lbl = QLabel()
-    icon_lbl.setPixmap(get_icon("warning.svg").pixmap(HEADLINE_ICON_PX, HEADLINE_ICON_PX))
+    icon_lbl.setPixmap(get_icon("warning.svg").pixmap(headline_icon_px(), headline_icon_px()))
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
     msg = QLabel(lead)
