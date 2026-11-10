@@ -5,7 +5,7 @@ buttons or pressing Escape, and checks the code the caller gets back.
 """
 import os
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
