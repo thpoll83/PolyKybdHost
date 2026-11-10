@@ -846,32 +846,6 @@ class NotoDownloadPanel(QWidget):
         return state["paths"], state.get("error")
 
 
-class NotoDownloadDialog(QDialog):
-    """Standalone modal wrapper around NotoDownloadPanel (kept for direct use /
-    back-compat).  ``result_path`` holds the chosen font on accept."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(_("Download Noto source font"))
-        self.resize(440, 460)
-        self.result_path = None
-        v = QVBoxLayout(self)
-        self._panel = NotoDownloadPanel(self)
-        self._panel.setMaximumWidth(16777215)       # full width in its own window
-        self._panel.font_chosen.connect(self._on_chosen)
-        v.addWidget(self._panel, 1)
-        close = QPushButton(_("Close"))
-        close.clicked.connect(self.reject)
-        v.addWidget(close)
-        # delegate the bits the tests/standalone callers reach for
-        self._list = self._panel._list
-        self._download = self._panel._download
-
-    def _on_chosen(self, path):
-        self.result_path = path
-        self.accept()
-
-
 class _DownloadWorker(QThread):
     """Downloads a list of fonts off the GUI thread, reporting progress via
     signals.  Cancellation is cooperative: ``cancel_event`` is polled inside

@@ -22,6 +22,7 @@ from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from polyhost.gui.dialog_util import bring_to_front
+from polyhost.gui.ui_kit import set_button_icon
 from polyhost.i18n import _, _f, N_, isolate, translate_message
 from polyhost.gui.log_bundle_dialog import reveal_in_file_manager
 from polyhost.services.updater import FwUf2Downloader
@@ -85,14 +86,14 @@ class SplitLinkHelpDialog(QDialog):
         layout.addWidget(self._status)
 
         row = QHBoxLayout()
-        self._download_btn = QPushButton(_("Download .uf2"))
+        self._download_btn = set_button_icon(QPushButton(_("Download .uf2")), "save")
         self._download_btn.clicked.connect(self._start_download)
-        self._reveal_btn = QPushButton(_("Show in folder"))
+        self._reveal_btn = set_button_icon(QPushButton(_("Show in folder")), "folder")
         self._reveal_btn.setVisible(False)
         self._reveal_btn.clicked.connect(lambda: reveal_in_file_manager(self._uf2_path, self.log))
-        guide_btn = QPushButton(_("Open guide"))
+        guide_btn = set_button_icon(QPushButton(_("Open guide")), "open")
         guide_btn.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(UF2_GUIDE_URL)))
-        close_btn = QPushButton(_("Close"))
+        close_btn = set_button_icon(QPushButton(_("Close")), "close")
         close_btn.clicked.connect(self.close)
         row.addWidget(self._download_btn)
         row.addWidget(self._reveal_btn)

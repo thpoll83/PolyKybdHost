@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                              QLabel, QPushButton, QVBoxLayout)
 
 from polyhost.gui.file_dialogs import get_save_file_name
+from polyhost.gui.ui_kit import set_button_icon, style_button_box
 from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import log_bundle
 
@@ -74,7 +75,9 @@ def reveal_in_file_manager(path, log=None):
 
 # Markup around translated prose, kept out of the msgids.
 _MUTED = "<span style='color:gray;'>{}</span>"
-_ALERT = "<span style='color:#c0392b;'>{}</span>"
+# A note, not an error: the user has done nothing wrong, and a strong red
+# privacy line read as a failure. The palette's amber (gui/get_icon.py).
+_ALERT = "<span style='color:#b85c00;'>{}</span>"
 
 
 class _CollectWorker(QThread):
@@ -155,22 +158,22 @@ class LogBundleDialog(QDialog):
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.reveal_btn = QPushButton(_("Show in Folder"), self)
+        self.reveal_btn = set_button_icon(QPushButton(_("Show in Folder"), self), "folder")
         self.reveal_btn.clicked.connect(self._reveal)
         self.reveal_btn.setVisible(False)
         buttons.addWidget(self.reveal_btn)
         buttons.addStretch(1)
 
-        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
+        self.copy_btn = set_button_icon(QPushButton(_("Copy to Clipboard"), self), "copy")
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
-        self.save_btn = QPushButton(_("Save Bundle…"), self)
+        self.save_btn = set_button_icon(QPushButton(_("Save Bundle…"), self), "save")
         self.save_btn.setDefault(True)
         self.save_btn.clicked.connect(self._save)
         buttons.addWidget(self.save_btn)
 
-        close = QDialogButtonBox(QDialogButtonBox.Close, self)
+        close = style_button_box(QDialogButtonBox(QDialogButtonBox.Close, self))
         close.rejected.connect(self.reject)
         buttons.addWidget(close)
         layout.addLayout(buttons)

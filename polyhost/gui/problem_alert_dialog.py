@@ -17,10 +17,10 @@ unit-tested there.
 
 import logging
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QPlainTextEdit, QPushButton, QVBoxLayout)
 
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon
 from polyhost.i18n import _, _nf
 from polyhost.services import problem_scan
 
@@ -37,42 +37,42 @@ class ProblemAlertDialog(QDialog):
         self.setWindowTitle(_("PolyKybd — a problem was detected"))
         self.setMinimumWidth(640)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 14)
+        layout.setSpacing(10)
 
-        self.headline = QLabel()
-        self.headline.setWordWrap(True)
-        self.headline.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        layout.addWidget(self.headline)
+        self._head = Headline(kind="warning", parent=self)
+        self.headline = self._head.title
+        layout.addWidget(self._head)
 
         self.detail = QPlainTextEdit(self)
         self.detail.setReadOnly(True)
-        self.detail.setMinimumHeight(120)
         self.detail.setLineWrapMode(QPlainTextEdit.WidgetWidth)
+        fit_text_lines(self.detail, min_lines=3, max_lines=12)
         layout.addWidget(self.detail)
 
-        hint = QLabel(_(
+        hint = muted(QLabel(_(
             "Everything may still be working, but this is worth a look. A bug "
             "report collects the logs and pre-fills a GitHub issue; nothing is "
-            "sent until you press Submit there. To change what is watched, see "
-            "the problem_scan settings."))
+            "sent until you press Submit there. To change what is watched, open "
+            "Settings → Privacy and diagnostics → Problem detection.")))
         hint.setWordWrap(True)
         layout.addWidget(hint)
 
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
+        self.status = StatusLabel("")
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.report_btn = QPushButton(_("Report a Problem…"), self)
+        self.report_btn = set_button_icon(QPushButton(_("Report a Problem…"), self), "report")
         self.report_btn.setDefault(True)
         self.report_btn.clicked.connect(self._report)
         buttons.addWidget(self.report_btn)
 
-        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
+        self.copy_btn = set_button_icon(QPushButton(_("Copy to Clipboard"), self), "copy")
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
         buttons.addStretch(1)
-        dismiss = QPushButton(_("Dismiss"), self)
+        dismiss = set_button_icon(QPushButton(_("Dismiss"), self), "close")
         dismiss.clicked.connect(self.reject)
         buttons.addWidget(dismiss)
         layout.addLayout(buttons)
@@ -100,6 +100,7 @@ class ProblemAlertDialog(QDialog):
             _nf("<b>PolyKybd noticed {n} problem.</b>",
                 "<b>PolyKybd noticed {n} problems.</b>", n))
         self.detail.setPlainText(problem_scan.describe_problems(self.problems))
+        fit_text_lines(self.detail, min_lines=3, max_lines=12)
 
     # -- actions -------------------------------------------------------------
     def _copy(self) -> None:

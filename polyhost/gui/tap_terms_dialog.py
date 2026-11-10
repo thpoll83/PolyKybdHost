@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QFormLayout, QLabel, QSp
                              QVBoxLayout)
 
 from polyhost.device.command_ids import TapTerms
+from polyhost.gui.ui_kit import style_button_box
 from polyhost.i18n import _, N_
 
 _INTRO = N_(
@@ -61,6 +62,8 @@ class TapTermsDialog(QDialog):
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel
                                    | QDialogButtonBox.RestoreDefaults)
+
+        style_button_box(buttons)
         # noinspection PyUnresolvedReferences
         buttons.accepted.connect(self.accept)
         # noinspection PyUnresolvedReferences

@@ -7,9 +7,10 @@ Both tray apps (``host.py`` and ``forwarder.py``) open it, so it lives here
 rather than as two copies.
 """
 
-from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
-                             QPlainTextEdit, QPushButton, QStyle, QVBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QPlainTextEdit,
+                             QPushButton, QVBoxLayout)
 
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, set_button_icon
 from polyhost.i18n import _
 
 
@@ -25,41 +26,40 @@ class CopyableErrorDialog(QDialog):
         super().__init__(parent)
         self._commands = commands
         self.setWindowTitle(title)
-        self.setMinimumSize(560, 300)
-        self.resize(680, 460)
+        self.setMinimumWidth(560)
+        self.resize(680, 10)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 14)
+        layout.setSpacing(10)
 
-        top = QHBoxLayout()
-        icon = QLabel(self)
-        icon.setPixmap(self.style().standardPixmap(QStyle.SP_MessageBoxWarning))
-        top.addWidget(icon, 0)
-        self.headline = QLabel(headline, self)
-        self.headline.setWordWrap(True)
-        top.addWidget(self.headline, 1)
-        layout.addLayout(top)
+        self._head = Headline(headline, kind="warning", parent=self)
+        self.headline = self._head.title
+        layout.addWidget(self._head)
 
         self.detail = QPlainTextEdit(self)
         self.detail.setReadOnly(True)
         self.detail.setPlainText(details)
         self.detail.setLineWrapMode(QPlainTextEdit.WidgetWidth)
-        layout.addWidget(self.detail, 1)
+        fit_text_lines(self.detail, min_lines=3, max_lines=16)
+        layout.addWidget(self.detail)
 
-        self.status = QLabel("", self)
+        self.status = StatusLabel("", self)
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
+        self.copy_btn = set_button_icon(QPushButton(_("Copy to Clipboard"), self), "copy")
         self.copy_btn.clicked.connect(self.copy_to_clipboard)
         buttons.addWidget(self.copy_btn)
         self.copy_cmds_btn = None
         if commands:
-            self.copy_cmds_btn = QPushButton(_("Copy Fix Commands"), self)
+            self.copy_cmds_btn = set_button_icon(
+                QPushButton(_("Copy Fix Commands"), self), "copy")
             self.copy_cmds_btn.setToolTip(
                 _("Copy only the commands, to paste into a terminal after quitting."))
             self.copy_cmds_btn.clicked.connect(self.copy_commands)
             buttons.addWidget(self.copy_cmds_btn)
         buttons.addStretch(1)
-        close = QPushButton(_("Close"), self)
+        close = set_button_icon(QPushButton(_("Close"), self), "close")
         close.setDefault(True)
         close.clicked.connect(self.accept)
         buttons.addWidget(close)

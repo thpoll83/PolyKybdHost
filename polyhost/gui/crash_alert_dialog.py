@@ -20,10 +20,10 @@ unit-tested there and identical on the clipboard, in the issue and in polyctl.
 
 import logging
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QMessageBox, QPlainTextEdit, QPushButton, QVBoxLayout)
 
+from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import crash_report
 
@@ -44,34 +44,36 @@ class CrashAlertDialog(QDialog):
         self.setWindowTitle(_("PolyKybd — the keyboard firmware crashed"))
         self.setMinimumWidth(640)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 14)
+        layout.setSpacing(10)
 
-        self.headline = QLabel()
-        self.headline.setWordWrap(True)
-        self.headline.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        layout.addWidget(self.headline)
+        self._head = Headline(kind="error", parent=self)
+        self.headline = self._head.title
+        layout.addWidget(self._head)
 
         layout.addWidget(QLabel("<b>" + _("What the keyboard reported") + "</b>"))
         self.detail = QPlainTextEdit(self)
         self.detail.setReadOnly(True)
-        self.detail.setMinimumHeight(120)
-        self.detail.setLineWrapMode(QPlainTextEdit.NoWrap)
+        # Wrapped: a crash line is long, and a horizontal scrollbar hid the end
+        # of every record.
+        self.detail.setLineWrapMode(QPlainTextEdit.WidgetWidth)
+        fit_text_lines(self.detail, min_lines=4, max_lines=14)
         layout.addWidget(self.detail)
 
-        self.hint = QLabel()
+        self.hint = muted(QLabel())
         self.hint.setWordWrap(True)
         layout.addWidget(self.hint)
 
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
+        self.status = StatusLabel("")
         layout.addWidget(self.status)
 
         buttons = QHBoxLayout()
-        self.report_btn = QPushButton(_("Report on GitHub…"), self)
+        self.report_btn = set_button_icon(QPushButton(_("Report on GitHub…"), self), "report")
         self.report_btn.setDefault(True)
         self.report_btn.clicked.connect(self._report)
         buttons.addWidget(self.report_btn)
 
-        self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
+        self.copy_btn = set_button_icon(QPushButton(_("Copy to Clipboard"), self), "copy")
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
 
@@ -80,13 +82,13 @@ class CrashAlertDialog(QDialog):
         # host's list while the keyboard still holds the record would put the two
         # out of step, which is the state this button exists to prevent.
         if self._clear_cb is not None:
-            self.clear_btn = QPushButton(_("Clear"), self)
+            self.clear_btn = set_button_icon(QPushButton(_("Clear"), self), "delete")
             self.clear_btn.setToolTip(
                 _("Forget these records here AND erase the keyboard's crash archive."))
             self.clear_btn.clicked.connect(self._clear)
             buttons.addWidget(self.clear_btn)
 
-        dismiss = QPushButton(_("Dismiss"), self)
+        dismiss = set_button_icon(QPushButton(_("Dismiss"), self), "close")
         dismiss.clicked.connect(self.reject)
         buttons.addWidget(dismiss)
         layout.addLayout(buttons)
@@ -140,6 +142,7 @@ class CrashAlertDialog(QDialog):
             "\n\n".join(crash_report.summarize(r) + "\n" + r.as_console_line()
                         + "\n" + crash_report.freshness_text(r)
                         for r in self.records))
+        fit_text_lines(self.detail, min_lines=4, max_lines=14)
 
     def _text(self) -> str:
         diagnostics = ""

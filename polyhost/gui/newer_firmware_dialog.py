@@ -19,10 +19,11 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
-    QStyle,
     QVBoxLayout,
 )
 
+from polyhost.gui.get_icon import get_icon
+from polyhost.gui.ui_kit import HEADLINE_ICON_PX, set_button_icon
 from polyhost.i18n import _, _f, N_
 
 # (button label, returned choice). Order = left-to-right; the first entry is the
@@ -34,6 +35,9 @@ NEWER_FW_CHOICES = (
     (N_("Connect anyway"), "ignore"),
 )
 NEWER_FW_DEFAULT = "safe"
+# The safe default is the accept mark; connecting with everything on is the
+# risky one, so it carries the open/leave icon rather than a check.
+_CHOICE_ICONS = {"safe": "accept", "update": "update", "ignore": "open"}
 
 
 def confirm_newer_firmware(host_protocol, device_protocol, name="", fw_version=""):
@@ -80,9 +84,7 @@ def build_newer_firmware_dialog(host_protocol, device_protocol, name="", fw_vers
     row = QHBoxLayout()
     row.setSpacing(12)
     icon_lbl = QLabel()
-    px = dlg.style().standardPixmap(QStyle.SP_MessageBoxWarning)
-    if not px.isNull():
-        icon_lbl.setPixmap(px)
+    icon_lbl.setPixmap(get_icon("warning.svg").pixmap(HEADLINE_ICON_PX, HEADLINE_ICON_PX))
     icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
     row.addWidget(icon_lbl, 0, Qt.AlignTop)
     msg = QLabel(lead)
@@ -102,6 +104,7 @@ def build_newer_firmware_dialog(host_protocol, device_protocol, name="", fw_vers
     btn_box = QDialogButtonBox()
     for label, choice in NEWER_FW_CHOICES:
         b = btn_box.addButton(_(label), QDialogButtonBox.ActionRole)
+        set_button_icon(b, _CHOICE_ICONS[choice])
         b.clicked.connect(lambda _checked=False, c=choice: result.update(choice=c))
         b.clicked.connect(dlg.accept)   # any click closes the modal
         if choice == NEWER_FW_DEFAULT:

@@ -5,6 +5,7 @@ tests/services/problem_scan_test.py; here it is enough that the console tab
 gets it and the host tabs keep the level highlighter. The search tests drive the
 real widgets: type in the field, step with next/previous, switch tabs, reload.
 """
+import logging
 import os
 import tempfile
 import unittest
@@ -85,7 +86,9 @@ class LogViewerTest(unittest.TestCase):
         return colours
 
     def test_the_boot_banner_block_is_cyan_and_a_warning_inside_it_stays_orange(self):
-        cyan, orange = lv._BANNER_FORMAT.foreground().color().name(), "#ff8700"
+        dark = lv._dark_theme()
+        cyan = lv._BANNER_FORMATS[dark].foreground().color().name()
+        orange = lv.level_color(logging.WARNING, dark)
         colours = self._console_colours(
             "[t] Stop idle.\n"
             "[t] == PolyKybd Split72 1.8.0 P22 HW0x0320 | left master | build b@h 2026 ==\n"
@@ -210,6 +213,36 @@ class LogViewerTest(unittest.TestCase):
         self.dlg.load_log()
         self.assertEqual(self.dlg.search_count.text(), "3 of 3")
 
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"PyQt5 unavailable: {_IMPORT_ERR}")
+class LevelColourContrastTest(unittest.TestCase):
+    """The light theme draws the log on white: every level colour must read
+    there. INFO #22cc22, the terminal colour, is about 2:1."""
+
+    @staticmethod
+    def _contrast(hex_color, ground=(255, 255, 255)):
+        def lum(rgb):
+            def ch(c):
+                c /= 255
+                return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+            r, g, b = (ch(c) for c in rgb)
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+        rgb = tuple(int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+        hi, lo = sorted((lum(rgb), lum(ground)), reverse=True)
+        return (hi + 0.05) / (lo + 0.05)
+
+    def test_every_level_reads_on_the_light_log_view(self):
+        from polyhost.util.log_util import LEVEL_HEX_COLORS
+        for level in LEVEL_HEX_COLORS:
+            with self.subTest(level=logging.getLevelName(level)):
+                self.assertGreaterEqual(self._contrast(lv.level_color(level, dark=False)), 4.0)
+        self.assertGreaterEqual(self._contrast(lv._BANNER_HEX[False]), 4.0)
+
+    def test_the_dark_view_keeps_the_terminal_colours(self):
+        from polyhost.util.log_util import LEVEL_HEX_COLORS
+        for level, hex_color in LEVEL_HEX_COLORS.items():
+            self.assertEqual(lv.level_color(level, dark=True), hex_color)
 
 if __name__ == "__main__":
     unittest.main()
