@@ -98,6 +98,18 @@ class RegistryTest(unittest.TestCase):
         self.r.label("codex", "a", "docs")
         self.assertEqual(self.r.agents()[0].display_headline, "docs")
 
+    def test_same_folder_is_numbered(self):
+        # Two Claude Code sessions in C:\\ws\\agent (field, 2026-11-10): both showed
+        # "agent". They are numbered in key order; a unique one stays plain.
+        self.r.report("claude-code", "a", "working", cwd="C:\\ws\\team-core2")
+        self.r.report("claude-code", "b", "idle", cwd="C:\\ws\\agent")
+        self.r.report("claude-code", "c", "idle", cwd="C:\\ws\\agent")
+        self.assertEqual([a.display_headline for a in self.r.agents()],
+                         ["team-core2", "agent 1", "agent 2"])
+        self.r.label("claude-code", "c", "review")
+        self.assertEqual([a.display_headline for a in self.r.agents()],
+                         ["team-core2", "agent", "review"])
+
     def test_refuses_without_vendor_or_session(self):
         self.assertIsNone(self.r.report("", "a", "working"))
         self.assertIsNone(self.r.report("codex", "", "working"))
@@ -135,6 +147,22 @@ class HookTest(unittest.TestCase):
                          "pretool")                                         # Copilot
         oc = hooks.interpret({"type": "permission.asked", "properties": {"sessionID": "o"}})
         self.assertEqual((oc["session_id"], oc["state"]), ("o", AgentState.WAITING))  # OpenCode
+
+    def test_transcript_title(self):
+        import json
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "t.jsonl")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps({"type": "user", "message": "secret prompt"}) + "\n")
+                fh.write(json.dumps({"type": "summary", "summary": "Old title"}) + "\n")
+                fh.write("not json\n")
+                fh.write(json.dumps({"type": "summary", "summary": "Fix  the\nbuild"}) + "\n")
+                fh.write(json.dumps({"type": "assistant", "message": "x"}) + "\n")
+            self.assertEqual(hooks.transcript_title(path), "Fix the build")   # newest
+            self.assertEqual(hooks.transcript_title(os.path.join(tmp, "missing")), "")
+        self.assertEqual(hooks.transcript_title(None), "")
 
     def test_garbage(self):
         self.assertIsNone(hooks.interpret({"hook_event_name": "Stop"}))   # no session

@@ -534,11 +534,17 @@ def _agents_hook_main(args) -> int:
     can block or steer the agent, and a keyboard light is not worth that."""
     try:
         import os
-        from polyhost.services.agents.hooks import interpret
-        report = interpret(_read_hook_payload(args))
+        from polyhost.services.agents.hooks import interpret, transcript_title
+        payload = _read_hook_payload(args)
+        report = interpret(payload)
         if report is None:
             return 0
         report.update(vendor=args.vendor, pid=os.getppid(), surface="cli")
+        # The session's own title (Claude Code), so two sessions in one folder are
+        # told apart. Only the title is sent, never the transcript.
+        title = transcript_title(payload.get("transcript_path"))
+        if title:
+            report["headline"] = title
         client = connect()
         try:
             client.call(protocol.M_AGENTS_REPORT, report)

@@ -90,6 +90,46 @@ def interpret(payload: dict) -> dict | None:
             "cwd": _first(payload, _CWD_FIELDS)}
 
 
+# Record types and fields a Claude Code transcript (JSONL) uses for the session's
+# title, newest last. The title is what the terminal tab shows as "✳ <title>".
+_TITLE_TYPES = ("custom-title", "ai-title", "summary")
+_TITLE_FIELDS = ("customTitle", "aiTitle", "title", "summary")
+_TRANSCRIPT_TAIL_BYTES = 256 * 1024
+TITLE_MAX_CHARS = 60
+
+
+def transcript_title(path) -> str:
+    """The newest session title in a Claude Code transcript, or ''.
+
+    Read on the agent's own machine by the hook command, and only this one line
+    leaves it: never the prompt or the conversation. Only the file's tail is read,
+    so a long transcript costs the hook no time."""
+    import json
+    import os
+    if not path or not isinstance(path, str) or not os.path.isfile(path):
+        return ""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(max(0, os.path.getsize(path) - _TRANSCRIPT_TAIL_BYTES))
+            lines = fh.read().decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return ""
+    for line in reversed(lines):
+        if '"type"' not in line:
+            continue
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(record, dict) or record.get("type") not in _TITLE_TYPES:
+            continue
+        for name in _TITLE_FIELDS:
+            value = record.get(name)
+            if isinstance(value, str) and value.strip():
+                return " ".join(value.split())[:TITLE_MAX_CHARS]
+    return ""
+
+
 def _notification_state(payload: dict):
     """Claude Code: notification_type permission_prompt / idle_prompt.
     Gemini CLI: notification_type ToolPermission. Anything else that names a

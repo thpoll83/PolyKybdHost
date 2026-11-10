@@ -118,7 +118,12 @@ stdin. These formats were not tested with the keyboard yet.
 1. Run `polyctl agents list`. It shows `agent keys: on; keyboard active`.
 2. Send one prompt in the agent. `polyctl agents list` now shows the session with
    state `working`, then `done` when the turn ends.
-3. To show your own text on the key instead of the directory name:
+3. The key shows the session's title: for Claude Code the hook reads it from the
+   session transcript (`transcript_path`), the same text the terminal tab shows as
+   `✳ <title>`, and sends only that line. Before the first title exists, and for
+   other agents, it shows the working directory's name; agents that would show the
+   same text are numbered ("agent 1", "agent 2").
+4. To show your own text on the key instead:
    `polyctl agents label <vendor> <session_id> "<text>"` (the session id is in the
    list).
 

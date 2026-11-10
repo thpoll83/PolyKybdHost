@@ -46,21 +46,33 @@ class Agent:
     pending_tool_since: float = 0.0
     waiting_inferred: bool = False
     extra: dict = field(default_factory=dict)
+    # 1, 2, ... when other agents would show the same headline (set by agents()),
+    # 0 when this one is unique.
+    dup_number: int = 0
 
     @property
     def key(self) -> tuple:
         return (self.vendor, self.session_id)
 
     @property
-    def display_headline(self) -> str:
-        """What the keycap shows: the user's label, the topic, or the directory."""
+    def base_headline(self) -> str:
+        """The user's label, the session title, the directory, or the vendor."""
         if self.label:
             return self.label
         if self.headline:
             return self.headline
         if self.cwd:
-            return os.path.basename(self.cwd.rstrip("/\\")) or self.cwd
+            # Either separator: a forwarder on another OS can report the path.
+            path = self.cwd.replace("\\", "/").rstrip("/")
+            return path.rsplit("/", 1)[-1] or self.cwd
         return vendor(self.vendor).name
+
+    @property
+    def display_headline(self) -> str:
+        """What the keycap shows: base_headline, numbered when other agents would
+        show the same text (two sessions in one folder: "agent 1", "agent 2")."""
+        base = self.base_headline
+        return f"{base} {self.dup_number}" if self.dup_number else base
 
     def to_dict(self) -> dict:
         return {
@@ -208,9 +220,19 @@ class AgentRegistry:
     # ---- readers ---------------------------------------------------------------
 
     def agents(self) -> list[Agent]:
+        """Copies of the agents, by key, with dup_number set across all pages."""
         with self._lock:
-            return sorted((Agent(**vars(a)) for a in self._agents.values()),
-                          key=lambda a: a.slot)
+            out = sorted((Agent(**vars(a)) for a in self._agents.values()),
+                         key=lambda a: a.slot)
+        groups: dict[str, list[Agent]] = {}
+        for agent in out:
+            agent.dup_number = 0
+            groups.setdefault(agent.base_headline.casefold(), []).append(agent)
+        for same in groups.values():
+            if len(same) > 1:
+                for number, agent in enumerate(same, 1):
+                    agent.dup_number = number
+        return out
 
     def snapshot(self) -> list[dict]:
         return [a.to_dict() for a in self.agents()]
