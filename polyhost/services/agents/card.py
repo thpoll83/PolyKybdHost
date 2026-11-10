@@ -184,32 +184,29 @@ def render_card(vendor_id: str, state: AgentState, headline: str, marks: VendorM
 
 
 def render_dictation_card():
-    """The '-' key in AI mode: dictation."""
+    """The '-' key in AI mode: dictation. The microphone alone, centred."""
     import numpy as np
-    from PIL import Image
     from polyhost.services.agents import icons
-    img = Image.new("1", (PANEL_W, PANEL_H), 0)
-    _text_centred(_draw(img), "voice", HEADLINE_Y + 2)
-    canvas = np.array(img, dtype=bool)
+    canvas = np.zeros((PANEL_H, PANEL_W), dtype=bool)
     mic = icons.microphone()
-    _paste(canvas, mic, (PANEL_W - mic.shape[1]) // 2, 1)
+    _paste(canvas, mic, (PANEL_W - mic.shape[1]) // 2, (PANEL_H - mic.shape[0]) // 2)
     return canvas
 
 
 def render_next_waiting_card(waiting: int):
-    """The '+' key in AI mode: go to the next agent that waits, and how many wait."""
+    """The '+' key in AI mode: go to the next agent that waits. The waiting icon,
+    an arrow and how many wait, centred vertically, no text line."""
     import numpy as np
     from PIL import Image
     from polyhost.services.agents import icons
     img = Image.new("1", (PANEL_W, PANEL_H), 0)
-    draw = _draw(img)
     count = str(waiting) if waiting < 100 else "99+"
-    draw.text((54, 4), count, font=_font(14), fill=1)
-    _text_centred(draw, "next" if waiting else "none", HEADLINE_Y)
+    _draw(img).text((54, 12), count, font=_font(14), fill=1)
     canvas = np.array(img, dtype=bool)
-    _paste(canvas, icons.waiting(), 8, 2)
+    icon = icons.waiting()
+    _paste(canvas, icon, 8, (PANEL_H - icon.shape[0]) // 2)
     arrow = icons.right_arrow()
-    _paste(canvas, arrow, 31, 7)
+    _paste(canvas, arrow, 31, (PANEL_H - arrow.shape[0]) // 2)
     return canvas
 
 
