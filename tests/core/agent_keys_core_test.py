@@ -39,18 +39,21 @@ class AgentKeysCoreTest(unittest.TestCase):
     def test_push_and_press(self):
         core = self._core(30)
         fw = core.keeb.firmware
-        self.assertEqual(core.device_mgr.cache_capacity(), 588)
+        self.assertEqual(core.device_mgr.primary.cache.capacity, 600)   # nothing reserved
         self.assertTrue(core._agents_active())
         ok, agent = core.agents_report({"vendor": "claude-code", "session_id": "s1",
                                         "state": "waiting", "cwd": "/w/polykybd-docs"})
         self.assertTrue(ok)
         self._pass(core)
         self.assertEqual(fw.ai_states[0], AgentState.WAITING)
-        self.assertEqual(fw.ai_slots[0], 588)
-        self.assertEqual(len(fw.ai_cards[588]), 360)
-        self.assertTrue(any(fw.ai_cards[588]))
-        self.assertEqual(fw.ai_slots[10:], [598, 599])           # '-' and '+'
-        self.assertTrue(any(fw.ai_cards[598]) and any(fw.ai_cards[599]))
+        cache = core.device_mgr.primary.cache
+        card = cache.holds(("agentcard", 0))
+        self.assertEqual(fw.ai_slots[0], card)
+        self.assertEqual(len(fw.ai_cards[card]), 360)
+        self.assertTrue(any(fw.ai_cards[card]))
+        extras = [cache.holds(("agentcard", 10)), cache.holds(("agentcard", 11))]
+        self.assertEqual(fw.ai_slots[10:], extras)                # '-' and '+'
+        self.assertTrue(all(any(fw.ai_cards[s]) for s in extras))
         self.assertEqual(fw.ai_flags, 0x04 | 0x08)               # one waits; extra cards
 
         raised = threading.Event()
@@ -70,10 +73,12 @@ class AgentKeysCoreTest(unittest.TestCase):
         self.assertFalse(core._agents_active())
         self.assertEqual(core.keeb.firmware.refused, [])
 
-    def test_off_keeps_the_whole_pool(self):
+    def test_off_sends_nothing(self):
         core = self._core(30, agents_enabled=False)
-        self.assertEqual(core.device_mgr.cache_capacity(), 600)
+        core.agents_report({"vendor": "codex", "session_id": "a", "state": "working"})
+        self._pass(core)
         self.assertFalse(core._agents_active())
+        self.assertEqual(core.keeb.firmware.ai_cards, {})
         self.assertEqual(core.agents_list()["enabled"], False)
 
 

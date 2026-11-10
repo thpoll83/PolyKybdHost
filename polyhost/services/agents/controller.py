@@ -23,6 +23,7 @@ DICTATION_KEY = 11     # '-'
 NEXT_WAITING_KEY = 12  # '+'
 NO_SLOT = 0xFFFF
 NUMBER_KEYS = 10
+CARD_COUNT = NUMBER_KEYS + 2
 # Card indices after the 10 number keys (firmware AI_CARD_MINUS / AI_CARD_PLUS).
 CARD_DICTATION = 10
 CARD_NEXT_WAITING = 11
@@ -34,16 +35,16 @@ FLAG_EXTRA_CARDS = 0x08
 
 
 class AgentKeysController:
-    def __init__(self, registry, card_slots, raise_agent=None, log=None, marks=None,
+    def __init__(self, registry, cache_for, raise_agent=None, log=None, marks=None,
                  dictate=None):
-        """`card_slots`: the 12 pool slots reserved for the cards: one per number
-        key, then '-' and '+'. `raise_agent(agent)` brings an agent's window forward
-        and `dictate()` starts dictation; both run on their own thread, never on the
-        HID worker."""
+        """`cache_for()` returns the keyboard's overlay MRU cache (it is replaced at
+        every connect). The cards take pool slots from it as "aside" entries, so no
+        slot is reserved: a program switch evicts a card before any app image, and
+        the next pass here uploads the card again into a new slot.
+        `raise_agent(agent)` brings an agent's window forward and `dictate()` starts
+        dictation; both run on their own thread, never on the HID worker."""
         self.registry = registry
-        self.card_slots = list(card_slots)
-        if len(self.card_slots) != NUMBER_KEYS + 2:
-            raise ValueError("need 12 card slots: 10 number keys, '-' and '+'")
+        self.cache_for = cache_for
         self.raise_agent = raise_agent
         self.dictate = dictate
         self._last_waiting_slot = None   # the agent '+' raised last
@@ -64,7 +65,7 @@ class AgentKeysController:
         """The keyboard lost or never had our state (connect, reboot)."""
         with self._lock:
             self._pushed_keys = None
-            self._cards = [None] * len(self.card_slots)
+            self._cards = [None] * CARD_COUNT   # (what is drawn, pool slot) per card
             self._last_seq = None          # None: take the keyboard's newest as the start
             self._last_gen = None
             self._read_events = True
@@ -111,6 +112,7 @@ class AgentKeysController:
             self.page = min(self.page, self.registry.page_count() - 1)
             page = self.page
         view = self.registry.page(page)
+        cache = self.cache_for()
         states, slots = [], []
         for i, agent in enumerate(view[:NUMBER_KEYS]):
             if cancel is not None and cancel.is_set():
@@ -120,30 +122,17 @@ class AgentKeysController:
                 slots.append(NO_SLOT)
                 continue
             states.append(agent.state)
-            slots.append(self.card_slots[i])
-            card_key = (agent.vendor, agent.state, agent.display_headline, self.marks.version)
-            if self._cards[i] != card_key:
-                data = card_bytes(render_card(agent.vendor, agent.state,
-                                              agent.display_headline, self.marks))
-                ok, msg = keeb.ai_upload_card(self.card_slots[i], data)
-                if not ok:
-                    self.log.debug("Agent card %d not uploaded: %s", i, msg)
-                    self._cards[i] = None
-                    continue
-                self._cards[i] = card_key
+            drawn = (agent.vendor, agent.state, agent.display_headline, self.marks.version)
+            slots.append(self._card(keeb, cache, i, drawn,
+                                    lambda a=agent: render_card(a.vendor, a.state,
+                                                                a.display_headline,
+                                                                self.marks)))
         waiting = len(self.registry.waiting())
-        extra_ok = True
-        for card, key in ((CARD_DICTATION, ("dictation",)),
-                          (CARD_NEXT_WAITING, ("next", waiting))):
-            if self._cards[card] != key:
-                image = (render_dictation_card() if card == CARD_DICTATION
-                         else render_next_waiting_card(waiting))
-                ok, msg = keeb.ai_upload_card(self.card_slots[card], card_bytes(image))
-                self._cards[card] = key if ok else None
-                extra_ok = extra_ok and ok
-                if not ok:
-                    self.log.debug("Agent card %d not uploaded: %s", card, msg)
-        slots += [self.card_slots[CARD_DICTATION], self.card_slots[CARD_NEXT_WAITING]]
+        extra = [self._card(keeb, cache, CARD_DICTATION, ("dictation",), render_dictation_card),
+                 self._card(keeb, cache, CARD_NEXT_WAITING, ("next", waiting),
+                            lambda: render_next_waiting_card(waiting))]
+        slots += extra
+        extra_ok = NO_SLOT not in extra
         flags = 0
         if self.registry.waiting_elsewhere(page):
             flags |= FLAG_ESC_ATTENTION
@@ -160,6 +149,29 @@ class AgentKeysController:
                 self._pushed_keys = keys     # only what the keyboard confirmed
             else:
                 self.log.debug("Agent keys not pushed: %s", msg)
+
+    def _card(self, keeb, cache, index, drawn, render) -> int:
+        """The pool slot of card `index` showing `drawn`, uploading it when the slot
+        is new or the picture changed; NO_SLOT when the pool has no room for it."""
+        if cache is None:
+            return NO_SLOT
+        key = ("agentcard", index)
+        slot = cache.holds(key)
+        if slot is None:
+            slot = cache.allocate_aside(key)
+            if slot is None:
+                self._cards[index] = None
+                return NO_SLOT
+        if self._cards[index] == (drawn, slot):
+            return slot
+        cache.mark_written(slot)     # an app image reusing it later must clear it
+        ok, msg = keeb.ai_upload_card(slot, card_bytes(render()))
+        if not ok:
+            self.log.debug("Agent card %d not uploaded: %s", index, msg)
+            self._cards[index] = None
+            return NO_SLOT
+        self._cards[index] = (drawn, slot)
+        return slot
 
     def _poll_events(self, keeb):
         start = self._last_seq

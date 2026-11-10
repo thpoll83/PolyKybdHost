@@ -268,7 +268,9 @@ class ControllerTest(unittest.TestCase):
         self.r = AgentRegistry()
         self.raised = []
         self.dictated = []
-        self.c = AgentKeysController(self.r, list(range(588, 600)),
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        self.cache = OverlayMRUCache(600)
+        self.c = AgentKeysController(self.r, lambda: self.cache,
                                      raise_agent=lambda a: self.raised.append(a.session_id) or True,
                                      marks=_NoMarks(),
                                      dictate=lambda: self.dictated.append(1) or True)
@@ -279,11 +281,12 @@ class ControllerTest(unittest.TestCase):
     def test_pushes_only_changes(self):
         self.r.report("claude-code", "a", "working")
         self.c.sync(self.kb)
-        self.assertEqual(sorted(self.kb.cards), [588, 598, 599])   # key 1, '-', '+'
+        # Slots borrowed from the empty cache: key 1, '-', '+' in that order.
+        self.assertEqual(sorted(self.kb.cards), [0, 1, 2])
         states, flags, slots = self.kb.keys[-1]
         self.assertEqual(states[:2], [AgentState.WORKING, AgentState.EMPTY])
-        self.assertEqual(slots[:2], [588, NO_SLOT])
-        self.assertEqual(slots[10:], [598, 599])
+        self.assertEqual(slots[:2], [0, NO_SLOT])
+        self.assertEqual(slots[10:], [1, 2])
         self.assertEqual(flags, 0x08)                    # extra cards only: one page, none waits
         self.c.sync(self.kb)
         self.assertEqual(len(self.kb.keys), 1)            # nothing changed: nothing sent
@@ -291,7 +294,7 @@ class ControllerTest(unittest.TestCase):
         self.kb.cards.clear()
         self.c.sync(self.kb)
         # The card shows the state, and '+' shows the waiting count.
-        self.assertEqual(sorted(self.kb.cards), [588, 599])
+        self.assertEqual(sorted(self.kb.cards), [0, 2])
         self.assertEqual(self.kb.keys[-1][1], 0x08 | 0x04)
         self.assertEqual(len(self.kb.keys), 2)
 
@@ -301,7 +304,7 @@ class ControllerTest(unittest.TestCase):
         self.c.forget_device()
         kb2 = _FakeKeeb()
         self.c.sync(kb2)
-        self.assertEqual(sorted(kb2.cards), [588, 598, 599])
+        self.assertEqual(sorted(kb2.cards), [0, 1, 2])
         self.assertEqual(len(kb2.keys), 1)
 
     def test_press_raises_and_marks_seen(self):
@@ -398,9 +401,28 @@ class ControllerTest(unittest.TestCase):
         self.c.sync(self.kb)
         self.assertEqual(self.dictated, [1])
 
-    def test_needs_twelve_slots(self):
-        with self.assertRaises(ValueError):
-            AgentKeysController(self.r, list(range(590, 600)))
+    def test_a_switch_evicts_a_card_and_the_next_pass_uploads_it_again(self):
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        first = self.kb.keys[-1][2][0]
+        self.cache.forget_slot(first)            # what an eviction leaves behind
+        self.kb.cards.clear()
+        self.c.sync(self.kb)
+        again = self.kb.keys[-1][2][0]
+        self.assertIn(again, self.kb.cards)       # uploaded into its new slot
+        self.assertEqual(self.cache.holds(("agentcard", 0)), again)
+
+    def test_a_full_pool_shows_no_card_rather_than_evict_the_shown_app(self):
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        self.cache = OverlayMRUCache(3)
+        with self.cache.batch():
+            for k in range(3):
+                self.cache.get_or_allocate(("app.png", 0, k))   # one switch fills it
+        self.r.report("codex", "a", "working")
+        self.c.sync(self.kb)
+        self.assertEqual(self.kb.keys[-1][2][0], NO_SLOT)
+        self.assertFalse(self.kb.keys[-1][1] & 0x08)             # no extra cards either
+        self.assertEqual(self.kb.cards, {})
 
 
 def _pynput_usable():

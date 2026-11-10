@@ -14,8 +14,10 @@ firmware 1.11.3 (protocol 29).
   card drawing, number-row LEDs.
 - Changes from the plan below: the card upload is its own command, **cmd 46**, not an
   op of cmd 45, because a 60-byte segment plus an op byte does not fit the 62-byte
-  payload. The card slots are 588..599 (10 number keys, `-`, `+`), reserved from the
-  MRU cache only while `agents_enabled` is on, and only from the next connect.
+  payload. The 12 cards (10 number keys, `-`, `+`) borrow pool slots from the MRU
+  cache instead of reserving any (`OverlayMRUCache.allocate_aside`): a switch
+  evicts a card first and the host uploads it again on its next pass, so the
+  600-image limit per switch is unchanged.
 - Added after the first hardware test: in AI mode `-` starts dictation (the OS
   shortcut, Win+H on Windows, setting `agents_dictation_shortcut` elsewhere) and `+`
   raises the next agent that waits, cycling, from any page. Both have host-drawn
@@ -279,10 +281,10 @@ firmware bump commit exists: #276 lost 17 to #278 in the same way.
 - `PolyCore`: owns the registry; pushes op 1 when a shown key changes; uploads cards
   for the shown page; reads op 2 on the console line or a `G` change; acts on presses
   (raise, page change).
-- Pool slots: the cards take 10 slots (11 with an ESC card) out of the 600-slot pool
-  (`OVERLAY_POOL_CAPACITY` = firmware `NUM_OVERLAY_SLOTS`). The MRU claim pass must
-  leave them alone. That lowers the app overlay limit from 600 to 588 images
-  per switch: decide with the maintainer before writing it into code.
+- Pool slots: the cards borrow slots from the MRU cache (decided after the first
+  hardware test; the prototype first reserved 12, which lowered the per-switch limit
+  to 588). A switch evicts a card before any app image; a card never evicts the
+  newest switch's images.
 - Control methods `M_AGENTS_LIST`, `M_AGENTS_REPORT`, `M_AGENTS_LABEL`,
   `M_AGENTS_PIN`, `M_AGENTS_FORGET`, mirrored in `RemoteCore`.
 - `polyctl agents list | report | label | pin | forget | hooks install <vendor>`.

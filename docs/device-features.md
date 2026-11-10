@@ -223,11 +223,13 @@ full wiring, the preview rendering and the label-measurement rules are in
   sessions on the number row: `PolyKybd.ai_query/ai_set_keys/ai_read_events/
   ai_upload_card` behind the `agent_keys` gate, driven by
   `services/agents/controller.py` from PolyCore's 1 s `agents` periodic. The states
-  are a CLOSED range (`AgentState`). Cards are written straight into pool slots
-  588..599 (10 number keys, then `-` dictation and `+` next waiting agent; cmd 46
-  bypasses the display->pool mapping), and the MRU cache stays below
-  them only while `agents_enabled` is on, from the next connect
-  (`DeviceManager.reserved_tail_slots`). Design and open values:
+  are a CLOSED range (`AgentState`). The 12 cards (10 number keys,
+  then `-` dictation and `+` next waiting agent) borrow pool slots from the MRU cache
+  as "aside" entries (`OverlayMRUCache.allocate_aside`) and are written straight into
+  them (cmd 46 bypasses the display->pool mapping). Nothing is reserved: a program
+  switch evicts a card before any app image, and the next `agents` pass uploads it
+  again. A card never evicts the newest switch's images; with no room it is not
+  shown. Design and open values:
   [`agent-registry-plan.md`](agent-registry-plan.md).
 - ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
   too** — so `send_and_read_validate` returning True says the reply arrived, never

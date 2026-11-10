@@ -277,9 +277,6 @@ class PolyCore(Observable):
             self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
         self.device_mgr = DeviceManager(self.device_settings)
-        # The agent cards take the top pool slots; the MRU cache stays below them.
-        # Read once here and again at every connect (_agent_keys_reservation).
-        self.device_mgr.reserved_tail_slots = self._agent_card_reserve()
         self.device_mgr.add(self.keeb, "PolyKybdMock" if mock_primary else "PolyKybd",
                             is_primary=True)
         if self.poly_settings.get("dev_mock_enabled") and not mock_primary:
@@ -1930,7 +1927,6 @@ class PolyCore(Observable):
                     from polyhost.input.unicode_input import get_host_os
                     self._last_pushed_os = None
                     self._push_os(get_host_os())
-                self.device_mgr.reserved_tail_slots = self._agent_card_reserve()
                 self.device_mgr.reset_all_caches()
                 caches_reset = True
                 # The agent keys live in the keyboard's RAM only: send them again.
@@ -2314,17 +2310,13 @@ class PolyCore(Observable):
 
     # ---- AI agents on the number row (services/agents, cmd 45/46, v30+) --------
 
-    # The cards' pool slots: the 10 number keys, then '-' (dictation) and '+' (next
-    # waiting agent). ⚠️ A prototype value: it lowers the per-app image limit from
-    # 600 to 588 while agents_enabled is on (docs/agent-registry-plan.md).
-    AGENT_CARD_SLOTS = 12
-
-    def _agent_card_reserve(self) -> int:
-        return self.AGENT_CARD_SLOTS if self.poly_settings.get("agents_enabled") else 0
-
-    def _agent_card_slots(self) -> list[int]:
-        top = self.device_settings.OVERLAY_MAPPING_CAPACITY
-        return list(range(top - self.AGENT_CARD_SLOTS, top))
+    def _agent_card_cache(self):
+        """The primary keyboard's MRU cache. The agent cards borrow pool slots from
+        it as "aside" entries (OverlayMRUCache.allocate_aside), so no slot is
+        reserved and the per-app image limit stays 600: a switch evicts a card
+        before any app image, and the next agents pass uploads it again."""
+        primary = self.device_mgr.primary
+        return primary.cache if primary is not None else None
 
     def _init_agents(self):
         """The registry always exists, so hooks and `polyctl agents list` work with
@@ -2338,7 +2330,7 @@ class PolyCore(Observable):
             return dictation.send_shortcut(dictation.shortcut_for(
                 self.poly_settings.get("agents_dictation_shortcut")))
         self._agent_keys = AgentKeysController(
-            self.agents, self._agent_card_slots(), raise_agent=raise_agent, log=self.log,
+            self.agents, self._agent_card_cache, raise_agent=raise_agent, log=self.log,
             dictate=dictate)
         self.worker.add_periodic("agents", 1.0, self._agents_periodic)
         self._agent_titles = TitleScanner(
@@ -2348,14 +2340,10 @@ class PolyCore(Observable):
         self._agent_titles.start()
 
     def _agents_active(self) -> bool:
-        """The keyboard side runs only when the feature is on, the keyboard speaks
-        v30, and the MRU cache really stays below the card slots (that changes at
-        a connect, not when the setting is flipped)."""
+        """The keyboard side runs when the feature is on and the keyboard speaks v30."""
         return (bool(self.poly_settings.get("agents_enabled"))
                 and self.connected and not self.paused
-                and self.keeb.supports("agent_keys")
-                and self.device_mgr.cache_capacity()
-                <= self.device_settings.OVERLAY_MAPPING_CAPACITY - self.AGENT_CARD_SLOTS)
+                and self.keeb.supports("agent_keys"))
 
     def _agents_periodic(self, cancel):
         """Worker periodic (1 s): read key presses, push the shown page."""
@@ -3102,14 +3090,6 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
         if keys is None or "dev_force_hid_link" in keys:
             self._refresh_link_choice()
-        if keys is None or "agents_enabled" in keys:
-            # The card slots are kept out of the MRU cache only from the next
-            # connect (the keyboard's mapping may point there now), so the agent
-            # keys start or stop then. Nothing to do on the device here.
-            mgr = getattr(self, "device_mgr", None)
-            if mgr is not None and getattr(mgr, "reserved_tail_slots", None) != (
-                    PolyCore.AGENT_CARD_SLOTS if self.poly_settings.get("agents_enabled") else 0):
-                self.log.info("Agent keys: the change takes effect at the next keyboard connect")
         if (keys is not None and "emoji_search_dict_file" in keys
                 and self.poly_settings.get("emoji_search_dict_file")):
             # A newly set dictionary file goes on the retry list, whichever writer
