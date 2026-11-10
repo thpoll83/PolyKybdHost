@@ -65,11 +65,26 @@ GLYPH_SCRIPT_LABELS = {
 
 # Keys cover every GlyphSize so the menu builds from the enum. Worded as what the
 # user sees on the keycap, not as the internal enum name.
+# Shorter captions for the script tiles (gui/menu_tiles.py), where the menu
+# entry's description in brackets does not fit under a keycap.
+GLYPH_SCRIPT_TILE_LABELS = {
+    GlyphScript.STANDARD: N_("Standard"),
+    GlyphScript.TENGWAR:  N_("Tengwar"),
+    GlyphScript.RUNES:    N_("Runes"),
+    GlyphScript.AUREBESH: N_("Aurebesh"),
+    GlyphScript.CIRTH:    N_("Cirth"),
+    GlyphScript.IBMVGA:   N_("IBM VGA"),
+    GlyphScript.C64:      N_("C64 screen"),
+    GlyphScript.C64KEYS:  N_("C64 keycap"),
+    GlyphScript.AMIGA:    N_("Amiga Topaz"),
+}
+
 GLYPH_SIZE_LABELS = {
     GlyphSize.SMALL:  N_("Small (standard)"),
     GlyphSize.MEDIUM: N_("Medium"),
     GlyphSize.LARGE:  N_("Large"),
 }
+from polyhost.gui import keycap_tiles, menu_tiles
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
 from polyhost.gui.tray_wait import TrayVisibilityWaiter
@@ -567,6 +582,13 @@ class PolyHost(QApplication):
             self.idle_style_menu.addAction(act)
         # noinspection PyUnresolvedReferences
         self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
+        idle_actions = (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
+                        self.idle_eden_action)
+        menu_tiles.add_tiles_on_first_show(
+            self.idle_style_menu, idle_actions,
+            lambda: [keycap_tiles.to_icon(keycap_tiles.idle_panel(a.data())) for a in idle_actions],
+            4, keycap_tiles.TILE_SIZE,
+            labels=[_("Pulse"), _("Jitter"), "IDDQD", _("Eden")])
 
         # Idle TIMEOUT (firmware v18+): how long before the style above engages.
         # NESTED inside "Idle Display" rather than added as a twelfth top-level row:
@@ -638,6 +660,13 @@ class PolyHost(QApplication):
         self._glyph_previews_built = False
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
+        script_actions = list(self.glyph_actions.values())
+        menu_tiles.add_tiles_on_first_show(
+            self.glyph_script_menu, script_actions,
+            lambda: [keycap_tiles.to_icon(keycap_tiles.script_panel(a.data())) for a in script_actions],
+            4, keycap_tiles.TILE_SIZE,
+            labels=[_(GLYPH_SCRIPT_TILE_LABELS.get(GlyphScript(a.data()), GLYPH_SCRIPT_LABELS[GlyphScript(a.data())]))
+                    for a in script_actions])
 
         # Keycap legend size (firmware v13+). Same device-coupled radio pattern.
         # It sizes a key's MAIN legend only — the shift/AltGr previews stay put —
@@ -657,6 +686,13 @@ class PolyHost(QApplication):
             self.glyph_size_actions[size.value] = act
         # noinspection PyUnresolvedReferences
         self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
+        size_actions = list(self.glyph_size_actions.values())
+        menu_tiles.add_tiles_on_first_show(
+            self.glyph_size_menu, size_actions,
+            lambda: [keycap_tiles.to_icon(p) for p in
+                     keycap_tiles.size_panels([a.data() for a in size_actions])],
+            3, keycap_tiles.TILE_SIZE,
+            labels=[_("Small"), _("Medium"), _("Large")])
 
         # Emoji search dictionary (font-pack slot 9, services/emojidict.py): which
         # language the emoji layer's keyword search uses. A plain settings write;

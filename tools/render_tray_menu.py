@@ -115,6 +115,10 @@ def _grab(menu, path, log):
     menu is hidden again straight after so the next grab isn't overlapped.
     """
     from PyQt5.QtWidgets import QApplication
+    # show() does not emit aboutToShow (popup() does), and the tiled submenus
+    # (gui/menu_tiles.py) build their tiles on it.
+    menu.aboutToShow.emit()
+    QApplication.processEvents()
     menu.ensurePolished()
     menu.show()
     QApplication.processEvents()

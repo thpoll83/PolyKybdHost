@@ -363,6 +363,15 @@ and relative links were adjusted to suit a standalone file.
   `QScrollArea` above that cap.
   Pin any width a test depends on: the dialog's starting width comes from the screen.
 
+- **Brightness, Idle Display, Keycap Script and Keycap Size are tile grids where Qt
+  draws the tray menu** (`gui/menu_tiles.py`, previews in `gui/keycap_tiles.py`):
+  Windows, and Linux without a StatusNotifier host. A KDE or AppIndicator tray
+  menu is exported over DBusMenu, which drops a widget, and macOS embeds it
+  unreliably (QTBUG-63578), so both keep the text rows. ⚠️ A tile is bound to the
+  menu's QAction and the action is REMOVED from the menu, not hidden: Qt disables
+  a hidden action, and a disabled action ignores `trigger()`.
+  `POLYHOST_MENU_TILES=1|0` forces the choice.
+
 - ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
   `question` / `information` / `warning` / `critical` take QMessageBox's static
   arguments and return the same button codes, with the ui_kit icons on the box
