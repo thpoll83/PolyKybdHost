@@ -6,6 +6,7 @@ mask, at most 16 rows tall: the card shows it as it is (services/agents/card.py)
     python tools/gen_agent_marks.py
 """
 import os
+import sys
 
 import numpy as np
 from PIL import Image
@@ -49,9 +50,20 @@ def aider():
     return m[:h, :w].reshape(h // 2, 2, w // 2, 2).any(axis=(1, 3))
 
 
+def antigravity():
+    """Google's Material Symbols 'antigravity' (Apache 2.0), vendored in
+    res/icons/agents/src/. The whole arch at 16 px: its lower rows alone read
+    as two legs."""
+    sys.path.insert(0, ROOT)
+    from polyhost.services import app_icons
+    m = app_icons.render_overlay(os.path.join(OUT, "src", "antigravity.svg"), box=ROWS)
+    return _crop(m)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for name, fn in (("qwen", qwen), ("opencode", opencode), ("aider", aider)):
+    for name, fn in (("qwen", qwen), ("opencode", opencode), ("aider", aider),
+                     ("antigravity", antigravity)):
         m = fn()
         assert m.shape[0] <= ROWS, (name, m.shape)
         Image.fromarray(m.astype(np.uint8) * 255).convert("1").save(os.path.join(OUT, f"{name}.png"))

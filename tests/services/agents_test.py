@@ -280,7 +280,7 @@ class CardTest(unittest.TestCase):
     def test_shipped_agent_marks_load_without_network(self):
         from polyhost.services.agents.card import MARK_SHOWN, VendorMarks
         marks = VendorMarks()
-        for vid in ("aider", "opencode", "qwen"):
+        for vid in ("aider", "opencode", "qwen", "antigravity"):
             mask = marks._load(vid, allow_network=False)
             self.assertIsNotNone(mask, vid)
             self.assertLessEqual(mask.shape[0], MARK_SHOWN)

@@ -57,7 +57,7 @@ VENDORS = {v.vid: v for v in (
     Vendor("claude-code", "Claude Code", "CC", ("si:claude", "si:anthropic")),
     Vendor("codex", "Codex", "Cdx", ("si:openai",)),
     Vendor("gemini", "Gemini CLI", "Gem", ("si:googlegemini",)),
-    Vendor("antigravity", "Antigravity", "AG", ("si:google",), infer_waiting=True),
+    Vendor("antigravity", "Antigravity", "AG", ("agent:antigravity",), infer_waiting=True),
     Vendor("copilot", "Copilot CLI", "Cop", ("si:githubcopilot",), infer_waiting=True),
     Vendor("cursor", "Cursor", "Cur", ("si:cursor",), infer_waiting=True),
     Vendor("opencode", "OpenCode", "OC", ("agent:opencode",)),
