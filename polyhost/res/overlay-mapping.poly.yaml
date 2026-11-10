@@ -615,10 +615,12 @@ chatgpt:
       overlay: [chatgpt_template_mac.mods.png, chatgpt_template_mac.combo.mods.png, chatgpt_template_mac.extra.mods.png]
 # Microsoft Copilot (sources: overlay_sources/aichat/copilot.yaml). The app is
 # copilot.microsoft.com in a Chromium window, so UI Automation finds no
-# shortcuts; its four Alt chords come from the page's script. `mscopilot` on
-# Windows, `copilot` on macOS (Option chords, same keys). No `os:` branch: one
-# set serves both. The ESC mark comes from the app's own executable.
-mscopilot,copilot:
+# shortcuts; its four Alt chords come from the page's script. On Windows the
+# app is `mscopilot`, or `copilotapp` when installed under Program Files (x86)
+# \Microsoft\Copilot\Application; `copilot` on macOS (Option chords, same
+# keys). No `os:` branch: one set serves all. The ESC mark comes from the
+# app's own executable.
+mscopilot,copilotapp,copilot:
   overlay: [copilot_template.mods.png, copilot_template.combo.mods.png]
 # Microsoft 365 Copilot (sources: overlay_sources/aichat/m365copilot.yaml),
 # `M365Copilot.exe` on Windows. Microsoft documents no in-app shortcut; the set

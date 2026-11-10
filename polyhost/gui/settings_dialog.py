@@ -300,9 +300,6 @@ FOLDER_KEYS = frozenset(r.folder for r in game_asset_readers.READERS.values() if
 
 # The size the dialog had before it followed the screen. It stays the minimum.
 MIN_DIALOG_SIZE = QSize(640, 480)
-# The settings column stops growing here, so a label and its control stay close
-# together on a wide window.
-CONTENT_MAX_WIDTH = 760
 SIDEBAR_WIDTH = 210
 
 
@@ -813,13 +810,14 @@ class SettingsDialog(QDialog):
         holder = QWidget()
         holder_lay = QHBoxLayout(holder)
         holder_lay.setContentsMargins(16, 14, 16, 24)
+        # The column takes the whole width of the window. Each row keeps its
+        # control beside its own label and description, so a wide window
+        # widens the description rather than parting the control from it.
         column = QWidget()
-        column.setMaximumWidth(CONTENT_MAX_WIDTH)
         col_lay = QVBoxLayout(column)
         col_lay.setContentsMargins(0, 0, 0, 0)
         col_lay.setSpacing(28)
         holder_lay.addWidget(column, 1)
-        holder_lay.addStretch(0)
 
         for section_id, title, groups in layout:
             section = _Section(section_id, title)
