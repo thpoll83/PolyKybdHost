@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
 )
 
+from polyhost.gui import message_box
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.ui_kit import HEADLINE_ICON_PX, style_button_box
 from polyhost.i18n import _, _f
@@ -103,7 +104,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         # question rejoins the message so the one-line box still asks it.
         from PyQt5.QtWidgets import QMessageBox
         text = f"{message}\n\n{question}" if question else message
-        return QMessageBox.question(
+        return message_box.question(
             None, title, text,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
 

@@ -18,16 +18,10 @@ from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
     QDialog,
-    QDialogButtonBox,
-    QHBoxLayout,
-    QLabel,
     QMessageBox,
-    QProgressDialog,
-    QScrollArea,
-    QSizePolicy,
-    QStyle,
-    QVBoxLayout, )
+    QProgressDialog, )
 
+from polyhost.gui import message_box
 from polyhost import i18n
 from polyhost.i18n import _, _f, _nf, N_, translate_message
 from polyhost.core.events import FLASH_KIND_DOOMPACK, FLASH_KIND_DOOMWAD, FLASH_KIND_FONTPACK
@@ -161,97 +155,8 @@ def _fmt_release_date(published_at: str) -> str:
 
 def _msgbox(icon, title: str, text: str,
             buttons=QMessageBox.Ok, default=None) -> int:
-    """QDialog-based message box so setFixedSize is reliably respected."""
-    _ICON_MAP = {
-        QMessageBox.Information: QStyle.SP_MessageBoxInformation,
-        QMessageBox.Warning:     QStyle.SP_MessageBoxWarning,
-        QMessageBox.Critical:    QStyle.SP_MessageBoxCritical,
-        QMessageBox.Question:    QStyle.SP_MessageBoxQuestion,
-    }
-    _BTN_MAP = {
-        QMessageBox.Ok:     QDialogButtonBox.Ok,
-        QMessageBox.Yes:    QDialogButtonBox.Yes,
-        QMessageBox.No:     QDialogButtonBox.No,
-        QMessageBox.Cancel: QDialogButtonBox.Cancel,
-    }
-
-    dlg = QDialog(None)
-    dlg.setWindowTitle(title)
-
-    outer = QVBoxLayout(dlg)
-    outer.setContentsMargins(16, 16, 16, 12)
-    outer.setSpacing(12)
-
-    # Icon + text row
-    row = QHBoxLayout()
-    row.setSpacing(12)
-    icon_lbl = QLabel()
-    sp = _ICON_MAP.get(icon)
-    if sp is not None:
-        px = dlg.style().standardPixmap(sp)
-        icon_lbl.setPixmap(px)
-    icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-    row.addWidget(icon_lbl, 0, Qt.AlignTop)
-
-    text_lbl = QLabel(text)
-    text_lbl.setWordWrap(True)
-    text_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-    row.addWidget(text_lbl, 1)
-    outer.addLayout(row, 1)
-
-    # Button row
-    db_flags = QDialogButtonBox.StandardButtons()
-    for mb_flag, db_flag in _BTN_MAP.items():
-        if buttons & mb_flag:
-            db_flags |= db_flag
-    btn_box = QDialogButtonBox(db_flags)
-    btn_box.accepted.connect(dlg.accept)
-    btn_box.rejected.connect(dlg.reject)
-    outer.addWidget(btn_box, 0, Qt.AlignRight)
-
-    # Fixed width, height grown to the text. A fixed 160 px cut the no-.bin
-    # release warning to its first third (90 px of label for 274 px of text):
-    # a top-level layout does not ask a wrapped label for its height-for-width,
-    # so the height is computed here from the label's own.
-    m = outer.contentsMargins()
-    text_w = _UPD_DLG_W - m.left() - m.right() - icon_lbl.sizeHint().width() - row.spacing()
-    body_h = max(icon_lbl.sizeHint().height(), text_lbl.heightForWidth(text_w))
-    need_h = m.top() + m.bottom() + body_h + outer.spacing() + btn_box.sizeHint().height()
-    # A message taller than most of the screen (a long download error, a large
-    # desktop font) scrolls instead, so the buttons stay on screen.
-    screen = QApplication.primaryScreen()
-    max_h = int(screen.availableGeometry().height() * 0.8) if screen else need_h
-    if need_h > max_h:
-        row.removeWidget(text_lbl)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.NoFrame)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setWidget(text_lbl)
-        row.addWidget(scroll, 1)
-        need_h = max_h
-    dlg.setFixedSize(_UPD_DLG_W, max(_UPD_DLG_H, need_h))
-
-    # Set default button focus
-    if default is not None:
-        db_default = _BTN_MAP.get(default)
-        if db_default is not None:
-            b = btn_box.button(db_default)
-            if b:
-                b.setDefault(True)
-                b.setFocus()
-
-    result = dlg.exec_()
-
-    # Map QDialog result back to QMessageBox codes
-    if result == QDialog.Accepted:
-        if buttons & QMessageBox.Yes:
-            return QMessageBox.Yes
-        return QMessageBox.Ok
-    else:
-        if buttons & QMessageBox.No:
-            return QMessageBox.No
-        return QMessageBox.Cancel
+    """A modal message box with no parent; see ``gui/message_box.py``."""
+    return message_box.message(icon, title, text, buttons, default)
 
 
 def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QProgressDialog:
@@ -1863,7 +1768,7 @@ class PolyHost(QApplication):
                 # can learn the change is live now but will not survive a
                 # restart -- which matters for a privacy switch that other
                 # components read from the file.
-                QMessageBox.warning(
+                message_box.warning(
                     None, _("PolyHost settings"),
                     _("The settings are applied, but they could not be saved to "
                       "the settings file. Another program may be holding it open. "
@@ -1974,7 +1879,7 @@ class PolyHost(QApplication):
             if errors:
                 text = _f("Could not read the crash record.\n\n{errors}",
                           errors="\n".join(errors))
-            QMessageBox.information(None, _("Keyboard crash record"), text)
+            message_box.information(None, _("Keyboard crash record"), text)
             return
         dialog = self._crash_dialog()
         for rec in records:
@@ -2109,7 +2014,7 @@ class PolyHost(QApplication):
 
     def _show_tap_terms_message(self, text):
         # open(), not exec_(): this runs from a menu-fetch callback.
-        box = QMessageBox(QMessageBox.Warning, _("Tap-Hold Timing"), text)
+        box = message_box.MessageBox(QMessageBox.Warning, _("Tap-Hold Timing"), text)
         box.setAttribute(Qt.WA_DeleteOnClose)
         box.open()
         self._tap_terms_message = box
@@ -2125,7 +2030,7 @@ class PolyHost(QApplication):
         from polyhost.gui.mru_inspector_dialog import MRUInspectorDialog
         caches = [(e.name, e.cache) for e in self.device_mgr.all_entries if e.cache is not None]
         if not caches:
-            QMessageBox.information(None, _("MRU Cache"), _("MRU cache is not active (device not connected or MRU mode disabled)."))
+            message_box.information(None, _("MRU Cache"), _("MRU cache is not active (device not connected or MRU mode disabled)."))
             return
         dlg = MRUInspectorDialog(caches, self.device_settings)
         dlg.exec_()
@@ -2135,7 +2040,7 @@ class PolyHost(QApplication):
 
         def done(ok, payload):
             if not ok:
-                QMessageBox.information(None, _("Mock keyboard"), str(payload))
+                message_box.information(None, _("Mock keyboard"), str(payload))
                 return
             self._mock_board = MockBoardDialog(self.core)
             self._mock_board.show()

@@ -14,7 +14,7 @@ import unittest
 from unittest import mock
 
 from PyQt5.QtCore import QObject
-from PyQt5.QtWidgets import QApplication, QMenu, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMenu
 
 from polyhost.gui.cmd_menu import CommandsSubMenu
 
@@ -131,24 +131,20 @@ class TestSplitVbusMark(unittest.TestCase):
         cm.parent.core = mock.Mock(**{"set_handedness.return_value": (True, {"queued": True})})
         cm.parent.sender = lambda: cm.split_vbus_actions[0 if mark else 1]
 
-        class _Box:
-            Question, AcceptRole, RejectRole = QMessageBox.Question, QMessageBox.AcceptRole, \
-                QMessageBox.RejectRole
+        from polyhost.gui.message_box import MessageBox
+        added = []
+        real_add = MessageBox.add_button
 
-            def __init__(self, *args):
-                self.buttons = []
+        def add_button(box, *args):
+            added.append(real_add(box, *args))
+            return added[-1]
 
-            def addButton(self, *args):
-                self.buttons.append(object())
-                return self.buttons[-1]
+        def exec_(box):
+            box._on_clicked(added[button])
+            return 0
 
-            def exec_(self):
-                return 0
-
-            def clickedButton(self):
-                return self.buttons[button]
-
-        with mock.patch("polyhost.gui.cmd_menu.QMessageBox", _Box), \
+        with mock.patch.object(MessageBox, "add_button", add_button), \
+                mock.patch.object(MessageBox, "exec_", exec_), \
                 mock.patch.object(CommandsSubMenu, "_report") as report:
             cm.set_split_vbus()
             cm.parent._menu_fetch.wait_idle()

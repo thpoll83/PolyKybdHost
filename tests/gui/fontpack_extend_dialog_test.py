@@ -23,7 +23,7 @@ except Exception as e:  # pragma: no cover
 # -- freetype, uharfbuzz, fontTools, numpy AND PIL -- while this guard imported
 # numpy and freetype only. On a machine carrying a partial set the guard said
 # RUN, `_build()` found a dep missing, and took its non-`auto` failure path: a
-# MODAL `QMessageBox.warning` with nobody under xvfb to dismiss it.
+# MODAL `message_box.warning` with nobody under xvfb to dismiss it.
 #
 # The failure mode is the problem, not the disagreement. A missing dep normally
 # skips or errors; here the suite HANGS, silently and forever -- measured

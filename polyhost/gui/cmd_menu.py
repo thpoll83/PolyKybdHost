@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
 )
 
+from polyhost.gui import message_box
 from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
                                        validate_polykybd_firmware, apply_staged_firmware,
                                        check_signature_file)
@@ -349,7 +350,7 @@ class CommandsSubMenu:
                 "new handedness and reboot onto it (about 10 s, no replug needed).<br><br>"
                 "Make sure the USB cable is plugged into the half you want to be the "
                 "<b>RIGHT</b> side, then continue.")
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, _("Fix Left/Right Side"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
@@ -382,12 +383,13 @@ class CommandsSubMenu:
                 "<b>Remove the Rev.2 mark from the half the USB cable is plugged into?</b>"
                 "<br><br>The half saves its side, then restarts.<br><br>"
                 "Which side is this half?")
-        box = QMessageBox(QMessageBox.Question, _("Fix Left/Right Side"), text)
-        left = box.addButton(_("Left"), QMessageBox.AcceptRole)
-        right = box.addButton(_("Right"), QMessageBox.AcceptRole)
-        box.addButton(_("Cancel"), QMessageBox.RejectRole)
+        box = message_box.MessageBox(QMessageBox.Question, _("Fix Left/Right Side"), text,
+                                     QMessageBox.NoButton)
+        left = box.add_button(_("Left"), QMessageBox.AcceptRole, "left")
+        right = box.add_button(_("Right"), QMessageBox.AcceptRole, "right")
+        box.add_button(_("Cancel"), QMessageBox.RejectRole, "cancel")
         box.exec_()
-        clicked = box.clickedButton()
+        clicked = box.clicked_button()
         if clicked not in (left, right):
             self.log.info("Rev.2 mark: user cancelled at confirmation.")
             return
@@ -415,7 +417,7 @@ class CommandsSubMenu:
             "firmware ships with. This cannot be undone.<br><br>"
             "<b>All your macros are deleted too.</b><br><br>Continue?"
         )
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, _("Reset Keymap"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
@@ -469,7 +471,7 @@ class CommandsSubMenu:
         The version-based Sync cannot fix a bundle the keyboard reports as current but
         renders wrong (a lost COMMIT acknowledgement leaves exactly that state), so this
         is the way back. Confirmed because it re-sends the whole pack (~0.5 MB, ~1 min)."""
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, _("Re-flash Font Pack"),
             _("<b>Re-flash every font-pack bundle?</b><br><br>"
               "Every shipped bundle is sent again even if the keyboard already reports it as "
@@ -493,7 +495,7 @@ class CommandsSubMenu:
             "shipped with this host are re-flashed automatically on the next connect "
             "(or via Font Pack → Sync).<br><br>Continue?"
         )
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, _("Wipe Font Pack"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
@@ -552,7 +554,7 @@ class CommandsSubMenu:
                    "<th>" + _("shipped") + f"</th><th></th></tr>{rows}</table>")
 
     def _info(self, title, text):
-        QMessageBox.information(None, title, text)
+        message_box.information(None, title, text)
 
     def load_commands(self):
         file_name = _get_open_file_explicit(_("Open file"), _("PolyKybd commands (*.poly.cmd)"))
@@ -585,7 +587,7 @@ class CommandsSubMenu:
         from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
         if not self.parent.keeb.hid or not self.parent.keeb.hid.interface_acquired():
-            QMessageBox.warning(None, _("Not Connected"),
+            message_box.warning(None, _("Not Connected"),
                                 _("PolyKybd is not connected. Please connect the keyboard and try again."))
             return
 
@@ -600,18 +602,18 @@ class CommandsSubMenu:
             with open(bin_path, 'rb') as fh:
                 fw_bytes = fh.read()
         except OSError as exc:
-            QMessageBox.critical(None, _("File Error"),
+            message_box.critical(None, _("File Error"),
                                  _f("Could not read firmware file:\n{error}", error=exc))
             return
 
         valid, reason = validate_rp2040_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Invalid Firmware File"), translate_message(reason))
+            message_box.critical(None, _("Invalid Firmware File"), translate_message(reason))
             return
 
         valid, reason = validate_polykybd_firmware(fw_bytes)
         if not valid:
-            QMessageBox.critical(None, _("Wrong Keyboard"), translate_message(reason))
+            message_box.critical(None, _("Wrong Keyboard"), translate_message(reason))
             return
 
         # FW-2 advisory, at SELECTION time — before a 446 KB transfer and before
@@ -621,7 +623,7 @@ class CommandsSubMenu:
         # this never blocks the flash.
         signed, advisory = check_signature_file(bin_path)
         if not signed:
-            QMessageBox.information(None, _("Unsigned Firmware"),
+            message_box.information(None, _("Unsigned Firmware"),
                                     translate_message(advisory))
 
         # The confirmation text + title depend on whether we also activate the
@@ -661,7 +663,7 @@ class CommandsSubMenu:
         head += _f("Selected file:<br>{path}", path=bin_path) + "<br><br>"
         confirm_msg = head + confirm_body + "<br><br>" + _("Continue?")
 
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, dlg_title, confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
@@ -696,7 +698,7 @@ class CommandsSubMenu:
             "untouched.<br><br>"
             "Continue?"
         )
-        reply = QMessageBox.question(
+        reply = message_box.question(
             None, _("Apply Staged Firmware"), confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
@@ -710,7 +712,7 @@ class CommandsSubMenu:
             return
 
         if not self.parent.keeb.hid or not self.parent.keeb.hid.interface_acquired():
-            QMessageBox.warning(None, _("Not Connected"),
+            message_box.warning(None, _("Not Connected"),
                                 _("PolyKybd is not connected. Please connect the keyboard and try again."))
             return
 
@@ -722,6 +724,6 @@ class CommandsSubMenu:
                 progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
 
         if ok:
-            QMessageBox.information(None, _("Firmware Applied"), translate_message(msg))
+            message_box.information(None, _("Firmware Applied"), translate_message(msg))
         else:
-            QMessageBox.warning(None, _("Apply Failed"), translate_message(msg))
+            message_box.warning(None, _("Apply Failed"), translate_message(msg))

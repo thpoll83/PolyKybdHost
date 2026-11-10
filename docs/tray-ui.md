@@ -358,9 +358,18 @@ and relative links were adjusted to suit a standalone file.
   then set it. Setting the minimum straight from `heightForWidth()` only ratchets up,
   so a widened dialog keeps the narrow height (Greptile found it;
   `test_the_height_follows_a_live_resize` pins it at widths 540, 1200, 540).
-  `host._msgbox` computes its height the same way, caps it at 80% of
-  `availableGeometry()`, and moves the label into a `QScrollArea` above that cap.
+  `gui/message_box.py` (which `host._msgbox` now calls) computes its height the
+  same way, caps it at 80% of `availableGeometry()`, and moves the text into a
+  `QScrollArea` above that cap.
   Pin any width a test depends on: the dialog's starting width comes from the screen.
+
+- ⚠️ **Show a message with `gui/message_box.py`, not `QMessageBox`.** Its
+  `question` / `information` / `warning` / `critical` take QMessageBox's static
+  arguments and return the same button codes, with the ui_kit icons on the box
+  and on every button. A test that answers a box patches
+  `polyhost.gui.message_box.question` (or the others): patching
+  `QMessageBox.question` no longer reaches the call, and the box then waits under
+  xvfb for a click that never comes.
 
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own

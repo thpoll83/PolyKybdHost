@@ -8,11 +8,12 @@ from PyQt5.QtCore import QRectF, Qt
 from PyQt5.QtGui import QBrush, QGuiApplication, QCursor, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QMessageBox,
+    QLabel,
     QToolButton, QButtonGroup, QComboBox,
     QGraphicsScene,
 )
 
+from polyhost.gui import message_box
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
@@ -176,7 +177,7 @@ class KbLayoutDialog(QMainWindow):
         layer_names = self._layer_names()
 
         if not success:
-            QMessageBox.warning(
+            message_box.warning(
                 None, _("Not Connected"),
                 _("PolyKybd is not reachable. Please connect the keyboard and try again."))
             my_options = [_("Could not read layers from device")]
@@ -657,7 +658,7 @@ class KbLayoutDialog(QMainWindow):
             # self.row_count, self.col_count, self.mapping = build_matrix(self.matrix_pos)
             self.render_keys()
         except Exception as e:
-            QMessageBox.critical(self, _("Error"), _f("Failed to load:\n{error}\n{details}",
+            message_box.critical(self, _("Error"), _f("Failed to load:\n{error}\n{details}",
                                                      error=e, details=traceback.format_exc()))
             
     # def load_kle(self):

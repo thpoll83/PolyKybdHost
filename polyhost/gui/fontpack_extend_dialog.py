@@ -26,10 +26,11 @@ from PyQt5.QtCore import Qt, QEvent, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QSlider,
-    QMessageBox, QApplication, QWidget, QListWidget, QListWidgetItem,
+    QApplication, QWidget, QListWidget, QListWidgetItem,
     QProgressDialog, QButtonGroup, QRadioButton,
 )
 
+from polyhost.gui import message_box
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import fontpack_reader as fpr
 from polyhost.gui.fontpack_inspector_dialog import _pil_to_pixmap, load_shipped_packs
@@ -575,7 +576,7 @@ class FontPackExtendDialog(QDialog):
             if auto:
                 self._status.setText(msg)
             else:
-                QMessageBox.warning(self, title, msg)
+                message_box.warning(self, title, msg)
 
         if not self._packs:
             fail(_("Build"), _("No valid shipped bundles available to extend."))
@@ -613,7 +614,7 @@ class FontPackExtendDialog(QDialog):
             if auto:
                 self._status.setText(_f("(auto preview) {error}", error=e))
             else:
-                QMessageBox.critical(self, _("Build failed"), str(e))
+                message_box.critical(self, _("Build failed"), str(e))
             return
         # In edit mode the inspector replaces a single slot, so a multi-glyph build
         # (a widened range / multiple sequence groups) would silently drop every
@@ -722,7 +723,7 @@ class NotoDownloadPanel(QWidget):
             self._fonts = fdl.load_catalog()
         except Exception as e:  # noqa: BLE001
             self._fonts = []
-            QMessageBox.warning(self, _("Download"),
+            message_box.warning(self, _("Download"),
                                 _f("Could not read the font catalog:\n{error}", error=e))
 
         v = QVBoxLayout(self)
@@ -783,7 +784,7 @@ class NotoDownloadPanel(QWidget):
             return
         paths, err = self._run_downloads([font])
         if err:
-            QMessageBox.critical(self, _("Download failed"),
+            message_box.critical(self, _("Download failed"),
                                  _f("Could not download {name}:\n{error}",
                                     name=font.name, error=err))
             return
@@ -797,11 +798,11 @@ class NotoDownloadPanel(QWidget):
     def _download_all(self):
         todo = [f for f in self._fonts if not self._fdl.is_downloaded(f)]
         if not todo:
-            QMessageBox.information(self, _("Download all"), _("All fonts are already cached."))
+            message_box.information(self, _("Download all"), _("All fonts are already cached."))
             return
         _paths, err = self._run_downloads(todo)
         if err:
-            QMessageBox.critical(self, _("Download all"),
+            message_box.critical(self, _("Download all"),
                                  _f("Stopped on an error:\n{error}", error=err))
             return
         # marks now show ✓ cached; the user can then pick one to use

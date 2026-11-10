@@ -31,6 +31,7 @@ from PyQt5.QtWidgets import (
     QTabWidget, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QApplication,
 )
 
+from polyhost.gui import message_box
 from polyhost.gui.ui_kit import muted
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import fontpack_reader as fpr
@@ -760,7 +761,6 @@ class FontPackInspectorDialog(QDialog):
         self._empty_note.setVisible(not has)
 
     def _open_file(self):
-        from PyQt5.QtWidgets import QMessageBox
         from polyhost.gui.file_dialogs import get_open_file_name
         path, _filter = get_open_file_name(
             self, _("Open font pack"), "",
@@ -771,7 +771,7 @@ class FontPackInspectorDialog(QDialog):
         try:
             pack = fpr.decode_pack_file(path, name_hint=label)
         except Exception as e:                       # noqa: BLE001
-            QMessageBox.critical(self, _("Open failed"),
+            message_box.critical(self, _("Open failed"),
                                  _f("Could not decode '{path}':\n{error}", path=path, error=e))
             return
         # Extend the shared merged view + the Extend sources so peek/precedence and the
@@ -783,7 +783,7 @@ class FontPackInspectorDialog(QDialog):
         self._tabs.setCurrentIndex(idx)
         # TRANSLATORS: CRC check result ("crc ok")
         crc = _("ok") if pack.crc_ok else _("BAD — file may be truncated/corrupt")
-        QMessageBox.information(self, _("Opened"),
+        message_box.information(self, _("Opened"),
                                 _f("Loaded '{label}.plyf'\nabi v{abi} · content v{content} · "
                                    "{fonts} fonts · {glyphs} glyphs · crc {crc}\n\n"
                                    "Note: a .plyf carries no bundle name — this tab is named "
@@ -804,12 +804,11 @@ class FontPackInspectorDialog(QDialog):
         self._render_current()
 
     def _edit_selected(self):
-        from PyQt5.QtWidgets import QMessageBox
         tab = self._tabs.currentWidget()
         sel = tab.selected() if isinstance(tab, _BundleTab) else None
         if sel is None:
             # TRANSLATORS: message-box title (the glyph Edit action)
-            QMessageBox.information(self, _("Edit"), _("Select a glyph first (click it), "
+            message_box.information(self, _("Edit"), _("Select a glyph first (click it), "
                                                        "or double-click a glyph to edit it."))
             return
         self._on_edit(*sel)
@@ -856,11 +855,10 @@ class FontPackInspectorDialog(QDialog):
 
     def _commit_edit(self, label: str, new, edit):
         """Merge an editor result into the named bundle's working copy and record it."""
-        from PyQt5.QtWidgets import QMessageBox
         bi = next((i for i, (l, p) in enumerate(self._sources)
                    if l == label and isinstance(p, fpr.Pack)), None)
         if bi is None:
-            QMessageBox.critical(self, _("Edit"), _f("Unknown bundle {label}.", label=repr(label)))
+            message_box.critical(self, _("Edit"), _f("Unknown bundle {label}.", label=repr(label)))
             return
         fonts = self._working(bi)
         try:
@@ -882,7 +880,7 @@ class FontPackInspectorDialog(QDialog):
                            index=new.global_index, first=f"U+{new.first:04X}",
                            last=f"U+{new.last:04X}")
         except Exception as e:                       # noqa: BLE001
-            QMessageBox.critical(self, _("Edit failed"), str(e))
+            message_box.critical(self, _("Edit failed"), str(e))
             return
         self._pending.setdefault(bi, []).append(desc)
         # Mark which codepoints changed and re-render the tab from the working copy so
@@ -932,13 +930,12 @@ class FontPackInspectorDialog(QDialog):
         self._saveas_btn.setEnabled(any(self._pending.values()))
 
     def _save_as(self):
-        from PyQt5.QtWidgets import QMessageBox
         bi = self._tabs.currentIndex()
         if not (0 <= bi < len(self._sources)) or not isinstance(self._sources[bi][1], fpr.Pack):
             return
         label, base = self._sources[bi]
         if not self._pending.get(bi):
-            QMessageBox.information(self, _("Save as"),
+            message_box.information(self, _("Save as"),
                                     _f("No pending edits in '{label}'. Double-click a glyph "
                                        "(or Extend…) and confirm with OK first.", label=label))
             return
@@ -1023,7 +1020,6 @@ class FontPackSaveDialog(QDialog):
                glyphs=nonempty, size=f"{size:,}", version=self._version.value()))
 
     def _save(self):
-        from PyQt5.QtWidgets import QMessageBox
         from polyhost.gui.file_dialogs import get_save_file_name
         path, _filter = get_save_file_name(self, _("Save font pack"), f"{self._label}.plyf",
                                            _("Font pack (*.plyf)"))
@@ -1034,9 +1030,9 @@ class FontPackSaveDialog(QDialog):
             with open(path, "wb") as f:
                 f.write(data)
         except Exception as e:                       # noqa: BLE001
-            QMessageBox.critical(self, _("Save failed"), str(e))
+            message_box.critical(self, _("Save failed"), str(e))
             return
-        QMessageBox.information(self, _("Saved"),
+        message_box.information(self, _("Saved"),
                                 _f("Saved {path}\ncontent v{version} · {size} B",
                                    path=path, version=self._version.value(),
                                    size=f"{len(data):,}"))
@@ -1045,7 +1041,7 @@ class FontPackSaveDialog(QDialog):
         from PyQt5.QtWidgets import QMessageBox
         if self._flash_cb is None:
             return
-        if QMessageBox.question(self, _("Flash"),
+        if message_box.question(self, _("Flash"),
                                 _f("Flash '{label}' (content v{version}) to the keyboard?",
                                    label=self._label, version=self._version.value())) \
                 != QMessageBox.Yes:
@@ -1053,14 +1049,14 @@ class FontPackSaveDialog(QDialog):
         try:
             self._flash_cb(self._bi, self._bytes())
         except Exception as e:                       # noqa: BLE001
-            QMessageBox.critical(self, _("Flash failed"), str(e))
+            message_box.critical(self, _("Flash failed"), str(e))
             return
-        QMessageBox.information(self, _("Flash"), _("Flash started — watch the tray/log."))
+        message_box.information(self, _("Flash"), _("Flash started — watch the tray/log."))
         self.accept()
 
     def _discard(self):
         from PyQt5.QtWidgets import QMessageBox
-        if QMessageBox.question(self, _("Discard edits"),
+        if message_box.question(self, _("Discard edits"),
                                 _f("Discard all pending edits to '{label}'?",
                                    label=self._label)) \
                 != QMessageBox.Yes:

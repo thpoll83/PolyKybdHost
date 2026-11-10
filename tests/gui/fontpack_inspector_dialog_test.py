@@ -487,6 +487,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         import tempfile
         from unittest.mock import patch
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        from polyhost.gui import message_box
 
         def g(off, w, h):
             return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
@@ -501,7 +502,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         before = dlg._tabs.count()
         with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
-             patch.object(QMessageBox, "information", return_value=None):
+             patch.object(message_box, "information", return_value=None):
             dlg._open_file()
         self.assertEqual(dlg._tabs.count(), before + 1)
         self.assertEqual(dlg._tabs.tabText(before), "my-symbols")   # named after the file
@@ -513,6 +514,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         import tempfile
         from unittest.mock import patch
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        from polyhost.gui import message_box
 
         def g(off, w, h):
             return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
@@ -528,7 +530,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertTrue(dlg._empty_note.isVisibleTo(dlg))
         self.assertFalse(dlg._edit_btn.isEnabled())
         with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
-             patch.object(QMessageBox, "information", return_value=None):
+             patch.object(message_box, "information", return_value=None):
             dlg._open_file()
         self.assertEqual(dlg._tabs.count(), 1)
         self.assertTrue(dlg._edit_btn.isEnabled())
@@ -538,6 +540,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         import tempfile
         from unittest.mock import patch
         from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        from polyhost.gui import message_box
         path = os.path.join(tempfile.mkdtemp(), "junk.plyf")
         with open(path, "wb") as f:
             f.write(b"not a font pack")
@@ -546,7 +549,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         before = dlg._tabs.count()
         seen = {}
         with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
-             patch.object(QMessageBox, "critical",
+             patch.object(message_box, "critical",
                           side_effect=lambda *a, **k: seen.update(msg=a)):
             dlg._open_file()
         self.assertEqual(dlg._tabs.count(), before)      # no tab added on failure
@@ -615,6 +618,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
     def test_save_dialog_bytes_version_and_discard(self):
         from unittest.mock import patch
         from PyQt5.QtWidgets import QMessageBox
+        from polyhost.gui import message_box
         f = fpr.PackFont("n", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=9)
         base = fpr.Pack(1, 4, 0, 0, 0, True, [])               # current content v4
         dlg = fid.FontPackSaveDialog("sym", base, [f], ["edit U+0041 (g9)"])
@@ -623,13 +627,14 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         pk = fpr.decode_pack(dlg._bytes())
         self.assertTrue(pk.crc_ok)
         self.assertEqual(pk.content_version, 5)
-        with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
+        with patch.object(message_box, "question", return_value=QMessageBox.Yes):
             dlg._discard()
         self.assertTrue(dlg.discarded)
 
     def test_save_dialog_flash_callback(self):
         from unittest.mock import patch
         from PyQt5.QtWidgets import QMessageBox
+        from polyhost.gui import message_box
         f = fpr.PackFont("n", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=9)
         base = fpr.Pack(1, 2, 0, 0, 0, True, [])
         got = {}
@@ -637,8 +642,8 @@ class FontPackInspectorDialogTest(unittest.TestCase):
                                      flash_cb=lambda i, d: got.update(i=i, d=d),
                                      bundle_index=3)
         self.addCleanup(dlg.deleteLater)
-        with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes), \
-             patch.object(QMessageBox, "information", return_value=None):
+        with patch.object(message_box, "question", return_value=QMessageBox.Yes), \
+             patch.object(message_box, "information", return_value=None):
             dlg._flash()
         self.assertEqual(got["i"], 3)
         self.assertEqual(got["d"], dlg._bytes())

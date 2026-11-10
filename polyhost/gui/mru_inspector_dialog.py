@@ -13,6 +13,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier, MODIFIER_ANY
 from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
+from polyhost.gui.ui_kit import set_button_icon
 from polyhost.i18n import _, _f, _nf
 
 
@@ -99,6 +100,7 @@ class MRUInspectorDialog(QDialog):
 
         btn_row = QHBoxLayout()
         close_btn = QPushButton(_("Close"))
+        set_button_icon(close_btn, "close")
         close_btn.clicked.connect(self.accept)
         btn_row.addStretch()
         btn_row.addWidget(close_btn)

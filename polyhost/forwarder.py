@@ -14,8 +14,8 @@ from PyQt5.QtWidgets import (
     QSystemTrayIcon,
     QDialog,
     QMenu,
-    QAction,
-    QMessageBox)
+    QAction)
+from polyhost.gui import message_box
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
@@ -744,7 +744,7 @@ class PolyForwarder(QApplication):
         path = platformdirs.user_config_dir("PolyHost")
         self.log.info("Opening config folder %s", path)
         if not QDesktopServices.openUrl(QUrl.fromLocalFile(path)):
-            QMessageBox.information(None, _("Config folder"), path)
+            message_box.information(None, _("Config folder"), path)
 
     def open_settings(self):
         """Settings, narrowed to the keys that do something on this machine.
@@ -780,7 +780,7 @@ class PolyForwarder(QApplication):
                     # and the forwarder reads everything back from the file, so
                     # an unsaved change here is simply lost. save() no longer
                     # raises, so say so rather than close as if it worked.
-                    QMessageBox.warning(
+                    message_box.warning(
                         None, _("PolyForwarder settings"),
                         _("The settings could not be saved to the settings file, "
                           "so they will not take effect. Another program may be "
@@ -892,13 +892,13 @@ class PolyForwarder(QApplication):
 
     def _on_no_update(self):
         self.update_action.setText(_("Check for updates..."))
-        QMessageBox.information(
+        message_box.information(
             None, _("PolyKybdHost Update"),
             _f("You are running the latest version (v{version}).", version=__version__))
 
     def _on_check_error(self, msg):
         self.update_action.setText(_("Check for updates..."))
-        QMessageBox.warning(
+        message_box.warning(
             None, _("PolyKybdHost Update"),
             _f("Could not check for updates:\n\n{error}\n\nRun with --dev 1 for details.",
                error=msg))
