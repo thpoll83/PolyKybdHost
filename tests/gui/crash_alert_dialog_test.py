@@ -47,15 +47,15 @@ SLAVE = ("   crash: side=slave kind=hardfault core=0 pc=0x10011190 lr=0x10011187
 class CrashAlertClearTest(unittest.TestCase):
     def setUp(self):
         self._answer = QMessageBox.Yes
-        self._orig_question = cad.QMessageBox.question
-        cad.QMessageBox.question = staticmethod(lambda *a, **k: self._answer)
+        self._orig_question = cad.message_box.question
+        cad.message_box.question = lambda *a, **k: self._answer
         self.addCleanup(self._restore)
         self.records = [crash_report.parse_crash_line(MASTER),
                         crash_report.parse_crash_line(SLAVE)]
         self.assertTrue(all(self.records), "fixture lines must parse")
 
     def _restore(self):
-        cad.QMessageBox.question = self._orig_question
+        cad.message_box.question = self._orig_question
 
     def _dialog(self, clear_cb=None):
         d = cad.CrashAlertDialog(clear_cb=clear_cb, host_version="0.0.0")

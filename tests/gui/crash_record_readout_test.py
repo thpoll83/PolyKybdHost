@@ -44,7 +44,7 @@ class ReadCrashRecordsTest(unittest.TestCase):
         self.addCleanup(self.dialog.deleteLater)
         self.stub = types.SimpleNamespace(core=core, _crash_dialog=lambda: self.dialog)
         QApplication.clipboard().setText("")
-        self.info = mock.patch.object(host.QMessageBox, "information").start()
+        self.info = mock.patch.object(host.message_box, "information").start()
         self.addCleanup(mock.patch.stopall)
         mock.patch.object(host, "bring_to_front").start()
 

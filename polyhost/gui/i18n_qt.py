@@ -13,6 +13,7 @@ import os
 from PyQt5.QtCore import QLibraryInfo, QLocale, Qt, QTranslator
 from PyQt5.QtWidgets import QApplication, QMessageBox
 
+from polyhost.gui import message_box
 from polyhost import i18n
 from polyhost.i18n import _
 
@@ -84,7 +85,7 @@ def offer_language_restart(new_setting, restart):
     (the daemon keeps the keyboard)."""
     if not language_change_needs_restart(new_setting):
         return False
-    answer = QMessageBox.question(
+    answer = message_box.question(
         None, _("Language"),
         _("The new language is used after a restart. Restart now?"),
         QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)

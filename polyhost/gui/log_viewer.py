@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QLabel, QLineEdit, QMain
                               QPlainTextEdit, QPushButton, QShortcut, QTabWidget, QTextEdit,
                               QVBoxLayout, QWidget)
 
+from polyhost.gui import message_box
 from polyhost.services import problem_scan
 from polyhost.services.log_bundle import LOG_SOURCES
 from polyhost.i18n import _, _f, _nf
@@ -294,23 +295,22 @@ class LogViewerDialog(QMainWindow):
         """
         from polyhost.services import log_bundle
 
-        box = QMessageBox(self)
-        box.setIcon(QMessageBox.Warning)
-        box.setWindowTitle(_("Clear Logs"))
-        box.setText(_("Empty every log file?"))
-        box.setInformativeText(_(
-            "This clears the history behind every tab, including the crash log "
-            "— the record of whether this app has crashed. It cannot be undone, "
-            "and a problem report filed afterwards will carry nothing from "
-            "before now."))
-        clear_btn = box.addButton(_("Clear Logs"), QMessageBox.DestructiveRole)
-        collect_btn = (box.addButton(_("Collect First..."), QMessageBox.ActionRole)
+        box = message_box.MessageBox(
+            QMessageBox.Warning, _("Clear Logs"), _("Empty every log file?"),
+            QMessageBox.NoButton, self,
+            informative=_(
+                "This clears the history behind every tab, including the crash log "
+                "— the record of whether this app has crashed. It cannot be undone, "
+                "and a problem report filed afterwards will carry nothing from "
+                "before now."))
+        clear_btn = box.add_button(_("Clear Logs"), QMessageBox.DestructiveRole, "delete")
+        collect_btn = (box.add_button(_("Collect First..."), QMessageBox.ActionRole, "save")
                        if self._collect_cb is not None else None)
-        cancel_btn = box.addButton(_("Cancel"), QMessageBox.RejectRole)
-        box.setDefaultButton(cancel_btn)   # destructive, so default to not doing it
+        cancel_btn = box.add_button(_("Cancel"), QMessageBox.RejectRole, "cancel")
+        box.set_default(cancel_btn)   # destructive, so default to not doing it
         box.exec_()
 
-        clicked = box.clickedButton()
+        clicked = box.clicked_button()
         if collect_btn is not None and clicked is collect_btn:
             self._collect_cb()
             return
@@ -325,19 +325,17 @@ class LogViewerDialog(QMainWindow):
         # on disk.
         self.load_log()
 
-        done = QMessageBox(self)
-        done.setWindowTitle(_("Clear Logs"))
-        done.setIcon(QMessageBox.Warning if result.errors else QMessageBox.Information)
         if result.files:
-            done.setText(_nf("Cleared {n} file, freed {kb} KB.",
-                             "Cleared {n} files, freed {kb} KB.",
-                             result.files, kb=result.freed_kb))
+            text = _nf("Cleared {n} file, freed {kb} KB.",
+                       "Cleared {n} files, freed {kb} KB.",
+                       result.files, kb=result.freed_kb)
         else:
-            done.setText(_("No log files to clear."))
+            text = _("No log files to clear.")
+        details = ""
         if result.errors:
-            done.setInformativeText(
-                _("Some files could not be cleared:") + "\n" + "\n".join(result.errors))
-        done.exec_()
+            details = _("Some files could not be cleared:") + "\n" + "\n".join(result.errors)
+        message_box.message(QMessageBox.Warning if result.errors else QMessageBox.Information,
+                            _("Clear Logs"), text, parent=self, informative=details)
 
     def load_log(self):
         for tab_name, tab_log_file_name in self.log_files.items():

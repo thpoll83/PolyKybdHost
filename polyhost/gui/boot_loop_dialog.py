@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel, QPlainT
                              QPushButton, QSpinBox, QVBoxLayout)
 
 from polyhost.i18n import _, _f, _nf, N_
+from polyhost.gui.ui_kit import set_button_icon
 from polyhost.services import crash_report
 
 DEFAULT_ROUNDS = 50
@@ -76,18 +77,22 @@ class BootLoopDialog(QDialog):
 
         buttons = QHBoxLayout()
         self.start_btn = QPushButton(_("Start"), self)
+        set_button_icon(self.start_btn, "start")
         self.start_btn.setDefault(True)
         self.start_btn.clicked.connect(self._start)
         buttons.addWidget(self.start_btn)
         self.cancel_btn = QPushButton(_("Stop"), self)
+        set_button_icon(self.cancel_btn, "stop")
         self.cancel_btn.setEnabled(False)
         self.cancel_btn.clicked.connect(self._cancel)
         buttons.addWidget(self.cancel_btn)
         self.copy_btn = QPushButton(_("Copy to Clipboard"), self)
+        set_button_icon(self.copy_btn, "copy")
         self.copy_btn.clicked.connect(self._copy)
         buttons.addWidget(self.copy_btn)
         buttons.addStretch(1)
         close = QPushButton(_("Close"), self)
+        set_button_icon(close, "close")
         close.clicked.connect(self.hide)
         buttons.addWidget(close)
         layout.addLayout(buttons)

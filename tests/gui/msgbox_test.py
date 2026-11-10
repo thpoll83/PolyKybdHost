@@ -1,4 +1,4 @@
-"""host._msgbox: a long message is shown whole, a short one keeps the old size.
+"""host._msgbox (gui/message_box.py): a long message is shown whole, a short one fits.
 
 The box had a fixed 400x160 size, which cut the "release has no firmware
 file" warning to its first third (field report, 2026-10-14).
@@ -58,10 +58,12 @@ class MsgboxHeightTest(unittest.TestCase):
         self.assertLessEqual(seen["dialog"], int(avail * 0.8))
         self.assertTrue(seen["scrolls"])
 
-    def test_a_short_message_keeps_the_minimum_size(self):
+    def test_a_short_message_fits_its_text(self):
+        # The box is as tall as its text, not a fixed 160 px.
         seen = self._show("No firmware release could be found.")
-        self.assertEqual(seen["dialog"], self.host._UPD_DLG_H)
-
+        self.assertFalse(seen["scrolls"])
+        self.assertGreaterEqual(seen["label"], seen["needed"])
+        self.assertLess(seen["dialog"], self._show(_LONG)["dialog"])
 
 if __name__ == "__main__":
     unittest.main()

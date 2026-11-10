@@ -23,6 +23,7 @@ import logging
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
                              QMessageBox, QPlainTextEdit, QPushButton, QVBoxLayout)
 
+from polyhost.gui import message_box
 from polyhost.gui.ui_kit import Headline, StatusLabel, fit_text_lines, muted, set_button_icon
 from polyhost.i18n import _, _f, _nf
 from polyhost.services import crash_report
@@ -160,7 +161,7 @@ class CrashAlertDialog(QDialog):
         Confirmed because the keyboard's archive is the only durable copy: once
         this runs there is nothing left to report but the console log."""
         n = len(self.records)
-        if QMessageBox.question(
+        if message_box.question(
                 self, _("Clear crash records"),
                 _nf("Discard {n} crash record here and erase the keyboard's "
                     "crash archive?",

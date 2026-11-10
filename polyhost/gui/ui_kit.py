@@ -41,6 +41,8 @@ _BUTTON_ICONS = {
     "update": lambda: get_icon("update.svg"),
     "folder": lambda: get_icon("file_open.svg"),
     "reload": lambda: get_icon("sync.svg"),
+    "left": lambda: get_icon("arrow_back.svg"),
+    "right": lambda: get_icon("arrow_forward.svg"),
 }
 
 # The icon a QDialogButtonBox standard button gets.
@@ -66,6 +68,11 @@ _HEADLINE_ICONS = {
     "question": lambda: get_icon("help.svg"),
     "update": lambda: get_icon("update.svg"),
 }
+
+
+def headline_icon(kind):
+    """The QIcon for a headline kind ("info", "warning", "error", "question")."""
+    return _HEADLINE_ICONS[kind]()
 
 
 def button_icon(kind):

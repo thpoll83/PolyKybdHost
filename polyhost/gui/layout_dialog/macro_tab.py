@@ -23,9 +23,10 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QComboBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
-    QMessageBox, QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
+from polyhost.gui import message_box
 from polyhost.device.command_ids import MacroStyle
 from polyhost.i18n import _, _f, _nf, N_
 from polyhost.services import macro_label as ml
@@ -276,7 +277,7 @@ class MacroTab(QWidget):
         return lbl
 
     def _error(self, title: str, msg: str):
-        QMessageBox.warning(self, title, str(msg))
+        message_box.warning(self, title, str(msg))
 
     # -- loading ------------------------------------------------------------
 
